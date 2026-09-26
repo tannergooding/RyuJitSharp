@@ -37,7 +37,7 @@ public partial struct GCInfo
 
     public readonly WriteBarrierForm gcWriteBarrierFormFromTargetAddress(GenTree address)
     {
-        if (address.Oper is GT_LCL_ADDR)
+        if (!Compiler.fgAddrCouldBeHeap(address.SkipCopyOrReload))
         {
             return WriteBarrierForm.WBF_NoBarrier;
         }

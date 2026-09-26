@@ -308,6 +308,36 @@ public partial class Compiler
         return canSwap;
     }
 
+    public bool gtCanReorderWithoutTemp(GenTree firstOp, GenTree secondOp)
+    {
+        assert((fgOrder is FGOrderTree) ||
+            ((fgNodeThreading is NodeThreading.AllTrees) && !compRationalIRForm));
+
+        if (impIsInvariant(firstOp) || impIsInvariant(secondOp))
+        {
+            return true;
+        }
+
+        if ((secondOp.Flags & (GTF_PERSISTENT_SIDE_EFFECTS | GTF_ORDER_SIDEEFF)) != 0)
+        {
+            return false;
+        }
+
+        return gtCanSwapOrder(firstOp, secondOp);
+    }
+
+    public void gtPrepareOperandsForReordering(ref GenTree firstOp, ref GenTree secondOp)
+    {
+        if (gtCanReorderWithoutTemp(firstOp, secondOp))
+        {
+            return;
+        }
+
+        var temp = fgMakeTemp(firstOp);
+        firstOp = temp.Load;
+        secondOp = gtNewBinaryNode(GT_COMMA, secondOp.Type, temp.Store, secondOp);
+    }
+
     /// <summary>Clones the given tree value and returns a copy of the given tree.</summary>
     /// <param name="tree"></param>
     /// <param name="complexOK">When false, the cloning is only done provided the tree is not too complex(whatever that may mean);</param>
@@ -4916,9 +4946,9 @@ public partial class Compiler
                 assert((arg0 is not null) && (arg1 is not null));
 
                 var cls0 = gtGetClassHandle(arg0.Node, out var isArg0Exact, out _);
-                var cls1 = gtGetClassHandle(arg1.Node, out var isArg1Exact, out _);
+                var cls1 = gtGetClassHandle(arg1.Node, out var isArg1Exact, out var isArg1NonNull);
 
-                if ((cls0 != cls1) || (cls0 == NO_CLASS_HANDLE) || !isArg0Exact || !isArg1Exact)
+                if ((cls0 != cls1) || (cls0 == NO_CLASS_HANDLE) || !isArg0Exact || !isArg1Exact || !isArg1NonNull)
                 {
                     break;
                 }
@@ -8727,7 +8757,7 @@ public partial class Compiler
         if (varTypeIsStruct(type))
         {
             // Make an exception for implicit by-ref parameters during global morph, since
-            // their lvType has been updated to byref but their appearances have not yet all
+            // their lvType has been updated to a pointer but their appearances have not yet all
             // been rewritten and so may have struct type still.
             ref var varDsc = ref lvaGetDesc(lclNum);
 
@@ -8737,7 +8767,8 @@ public partial class Compiler
             simd12ToSimd16Widening = (type is TYP_SIMD16) && (varDsc.Type == TYP_SIMD12);
 #endif
             assert((type == varDsc.Type) || simd12ToSimd16Widening ||
-                   (lvaIsImplicitByRefLocal(lclNum) && fgGlobalMorph && (varDsc.Type == TYP_BYREF)));
+                   (lvaIsImplicitByRefLocal(lclNum) && fgGlobalMorph &&
+                    (varDsc.Type == lvaGetImplicitByRefParamType())));
         }
 
         // We cannot have assert lnum < lvaCount because the inliner uses this function to add temporaries
@@ -9470,7 +9501,7 @@ public partial class Compiler
 
         if (needsReverseOps)
         {
-            // We expect op1 to have already been spilled if needed
+            gtPrepareOperandsForReordering(ref op1, ref op2);
             (op2, op1) = (op1, op2);
         }
 
@@ -9571,6 +9602,13 @@ public partial class Compiler
                 if (op is GT_RSH)
                 {
                     var op1Dup = fgMakeMultiUse(ref op1);
+                    if (!op2.Oper.IsCnsIntOrI && op1.Oper is GT_COMMA)
+                    {
+                        maskAmountOp = gtWrapWithSideEffects(maskAmountOp, op1,
+                            GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
+                        op1 = gtCloneExpr(op1Dup);
+                    }
+
                     var signOp = gtNewSimdCmpOpNode(GT_GT, type, gtNewZeroConNode(type), op1Dup, simdBaseType, simdSize);
 
                     var shiftType = varTypeIsSmall(simdBaseType) ? TYP_INT : simdBaseType;
@@ -10462,7 +10500,9 @@ public partial class Compiler
 
         if (rangeCheckNeeded)
         {
-            op2 = addRangeCheckForHWIntrinsic(op2, 0, immUpperBound);
+            var index = fgMakeMultiUse(ref op2);
+            index = addRangeCheckForHWIntrinsic(index, 0, immUpperBound);
+            op2 = gtWrapWithSideEffects(index, op2, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
         }
 
         return gtNewSimdHWIntrinsicNode(type, NI_Vector_GetElement, simdBaseType, simdSize, op1, op2);
@@ -10589,7 +10629,8 @@ public partial class Compiler
         }
 
         assert(varTypeIsIntegral(simdBaseType));
-        return gtNewAllBitsSetConNode(type);
+        return gtWrapWithSideEffects(gtNewAllBitsSetConNode(type), op1,
+            GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
     }
 
     /// <summary>Creates a new simd IsInfinity node</summary>
@@ -10613,7 +10654,8 @@ public partial class Compiler
             op1 = gtNewSimdAbsNode(type, op1, simdBaseType, simdSize);
             return gtNewSimdIsPositiveInfinityNode(type, op1, simdBaseType, simdSize);
         }
-        return gtNewZeroConNode(type);
+        return gtWrapWithSideEffects(gtNewZeroConNode(type), op1,
+            GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
     }
 
     /// <summary>Creates a new simd IsInteger node</summary>
@@ -10634,19 +10676,15 @@ public partial class Compiler
 
         if (varTypeIsFloating(simdBaseType))
         {
-            var op1Dup1 = fgMakeMultiUse(ref op1);
-            var op1Dup2 = gtCloneExpr(op1Dup1);
-
-            op1 = gtNewSimdIsFiniteNode(type, op1, simdBaseType, simdSize);
-
-            op1Dup1 = gtNewSimdTruncNode(type, op1Dup1, simdBaseType, simdSize);
-            var op2 = gtNewSimdCmpOpNode(GT_EQ, type, op1Dup1, op1Dup2, simdBaseType, simdSize);
-
-            return gtNewSimdBinOpNode(GT_AND, type, op1, op2, simdBaseType, simdSize);
+            var op1Dup = fgMakeMultiUse(ref op1);
+            var op2 = gtNewSimdTruncNode(type, op1Dup, simdBaseType, simdSize);
+            op1 = gtNewSimdBinOpNode(GT_SUB, type, op1, op2, simdBaseType, simdSize);
+            return gtNewSimdIsZeroNode(type, op1, simdBaseType, simdSize);
         }
 
         assert(varTypeIsIntegral(simdBaseType));
-        return gtNewAllBitsSetConNode(type);
+        return gtWrapWithSideEffects(gtNewAllBitsSetConNode(type), op1,
+            GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
     }
 
     /// <summary>Creates a new simd IsNaN node</summary>
@@ -10670,7 +10708,8 @@ public partial class Compiler
             var op1Dup = fgMakeMultiUse(ref op1);
             return gtNewSimdCmpOpNode(GT_NE, type, op1, op1Dup, simdBaseType, simdSize);
         }
-        return gtNewZeroConNode(type);
+        return gtWrapWithSideEffects(gtNewZeroConNode(type), op1,
+            GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
     }
 
     /// <summary>Creates a new simd IsNegative node</summary>
@@ -10700,7 +10739,8 @@ public partial class Compiler
 
         if (varTypeIsUnsigned(simdBaseType))
         {
-            return gtNewZeroConNode(type);
+            return gtWrapWithSideEffects(gtNewZeroConNode(type), op1,
+                GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
         }
         return gtNewSimdCmpOpNode(GT_LT, type, op1, gtNewZeroConNode(type), simdBaseType, simdSize);
     }
@@ -10741,7 +10781,8 @@ public partial class Compiler
             cnsNode = gtNewSimdCreateBroadcastNode(type, cnsNode, simdBaseType, simdSize);
             return gtNewSimdCmpOpNode(GT_EQ, type, op1, cnsNode, simdBaseType, simdSize);
         }
-        return gtNewZeroConNode(type);
+        return gtWrapWithSideEffects(gtNewZeroConNode(type), op1,
+            GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
     }
 
     /// <summary>Creates a new simd IsNormal node</summary>
@@ -10842,7 +10883,8 @@ public partial class Compiler
 
         if (varTypeIsUnsigned(simdBaseType))
         {
-            return gtNewAllBitsSetConNode(type);
+            return gtWrapWithSideEffects(gtNewAllBitsSetConNode(type), op1,
+                GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
         }
         return gtNewSimdCmpOpNode(GT_GE, type, op1, gtNewZeroConNode(type), simdBaseType, simdSize);
     }
@@ -10883,7 +10925,8 @@ public partial class Compiler
 
             return gtNewSimdCmpOpNode(GT_EQ, type, op1, cnsNode, simdBaseType, simdSize);
         }
-        return gtNewZeroConNode(type);
+        return gtWrapWithSideEffects(gtNewZeroConNode(type), op1,
+            GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
     }
 
     /// <summary>Creates a new simd IsSubnormal node</summary>
@@ -10928,7 +10971,8 @@ public partial class Compiler
 
             return gtNewSimdCmpOpNode(GT_LT, type, op1, cnsNode2, simdBaseType, simdSize);
         }
-        return gtNewZeroConNode(type);
+        return gtWrapWithSideEffects(gtNewZeroConNode(type), op1,
+            GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
     }
 
     /// <summary>Creates a new simd IsZero node</summary>
@@ -11078,7 +11122,8 @@ public partial class Compiler
                     }
                     else
                     {
-                        return cnsNode;
+                        return gtWrapWithSideEffects(cnsNode, otherNode,
+                            GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
                     }
                 }
 
@@ -12666,7 +12711,9 @@ public partial class Compiler
             {
                 if (simdSize is 8)
                 {
-                    return gtNewSimdHWIntrinsicNode(type, NI_Vector_Create, simdBaseType, simdSize, op3);
+                    assert(op2.IsIntegralConst(0));
+                    var result = gtNewSimdHWIntrinsicNode(type, NI_Vector_Create, simdBaseType, simdSize, op3);
+                    return gtWrapWithSideEffects(result, op1, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
                 }
                 break;
             }
@@ -12705,7 +12752,12 @@ public partial class Compiler
 
         if (rangeCheckNeeded)
         {
-            op2 = addRangeCheckForHWIntrinsic(op2, 0, immUpperBound);
+            var index = fgMakeMultiUse(ref op2);
+            var value = gtTreeHasSideEffects(op3, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)
+                ? fgMakeMultiUse(ref op3) : op3;
+            index = addRangeCheckForHWIntrinsic(index, 0, immUpperBound);
+            value = gtWrapWithSideEffects(value, index, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
+            op3 = gtWrapWithSideEffects(value, op3, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
         }
 
         return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2, op3);

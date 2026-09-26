@@ -431,8 +431,15 @@ public sealed partial class ValueNumStore
     {
         assert(app.FuncIs(VNF_SimdType) && (app.Arity == 2));
         var size = ConstantValue<int>(app.GetArg(0));
-        var baseType = (var_types)ConstantValue<int>(app.GetArg(1));
-        jitprintf($"{FuncName(app.Func)}(simd{size}, {NativeTypeName(baseType)})");
+        var encodedTypes = ConstantValue<int>(app.GetArg(1));
+        var baseType = (var_types)(encodedTypes & SimdTypeMask);
+        var auxiliaryType = encodedTypes >> SimdTypeBits;
+        jitprintf($"{FuncName(app.Func)}(simd{size}, {NativeTypeName(baseType)}");
+        if (auxiliaryType != 0)
+        {
+            jitprintf($", aux {NativeTypeName((var_types)(auxiliaryType - 1))}");
+        }
+        jitprintf(")");
     }
 #endif
 

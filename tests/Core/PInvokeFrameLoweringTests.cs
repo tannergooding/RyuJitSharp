@@ -35,7 +35,8 @@ internal static unsafe class PInvokeFrameLoweringTests
     {
         WithCompiler((compiler, block, lowering, ee) => {
             compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_USE_PINVOKE_HELPERS);
-            compiler.info.compPublishStubParam = true;
+            compiler.info.compIsVarArgs = true;
+            compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_IL_STUB);
             var catchArg = new GenTree(GT_CATCH_ARG, TYP_I_IMPL);
             var original = new GenTree(GT_NO_OP, TYP_VOID);
             block.InsertAtEnd(catchArg);
@@ -47,7 +48,7 @@ internal static unsafe class PInvokeFrameLoweringTests
             var secretStore = secretValue?.Next;
             Assert.Multiple(() => {
                 Assert.That(secretValue?.Oper, Is.EqualTo(GT_LCL_VAR));
-                Assert.That(secretValue?.AsLclVar().LclNum, Is.EqualTo(compiler.lvaStubArgumentVar));
+                Assert.That(secretValue?.AsLclVar().LclNum, Is.EqualTo(compiler.lvaSecretStubArg));
                 Assert.That(secretStore?.Oper, Is.EqualTo(GT_STORE_LCL_FLD));
                 Assert.That(secretStore?.AsLclFld().LclNum, Is.EqualTo(compiler.lvaInlinedPInvokeFrameVar));
                 Assert.That(secretStore?.AsLclFld().LclOffs, Is.EqualTo(40));
@@ -145,7 +146,7 @@ internal static unsafe class PInvokeFrameLoweringTests
         compiler.info.compUnmanagedCallCountWithGCTransition = 1;
         compiler.info.compLvFrameListRoot = 1;
         compiler.lvaInlinedPInvokeFrameVar = 2;
-        compiler.lvaStubArgumentVar = 3;
+        compiler.lvaSecretStubArg = 3;
         compiler.lvaTable = [new LclVarDsc(), new LclVarDsc(), new LclVarDsc(), new LclVarDsc()];
         compiler.lvaCount = 4;
         compiler.lvaTable[0].Type = TYP_I_IMPL;

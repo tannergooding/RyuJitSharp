@@ -140,16 +140,6 @@ public sealed partial class LinearScan
             buildInitialParamDef(in local, parameterRegister);
         }
 
-        if (_compiler.info.compPublishStubParam)
-        {
-            incomingRegisters |= new regMaskTP(SRBM_SECRET_STUB_PARAM);
-            ref var stubParameter = ref _compiler.lvaGetDesc(_compiler.lvaStubArgumentVar);
-            if (stubParameter.lvLRACandidate)
-            {
-                buildInitialParamDef(in stubParameter, REG_SECRET_STUB_PARAM);
-            }
-        }
-
 #if DEBUG
         if (stressInitialParamReg())
         {

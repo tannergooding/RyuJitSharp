@@ -27,7 +27,6 @@ public partial struct JitFlags
     public const JitFlag JIT_FLAG_BBINSTR_IF_LOOPS = JitFlag.JIT_FLAG_BBINSTR_IF_LOOPS;
     public const JitFlag JIT_FLAG_BBOPT = JitFlag.JIT_FLAG_BBOPT;
     public const JitFlag JIT_FLAG_FRAMED = JitFlag.JIT_FLAG_FRAMED;
-    public const JitFlag JIT_FLAG_PUBLISH_SECRET_PARAM = JitFlag.JIT_FLAG_PUBLISH_SECRET_PARAM;
     public const JitFlag JIT_FLAG_USE_PINVOKE_HELPERS = JitFlag.JIT_FLAG_USE_PINVOKE_HELPERS;
     public const JitFlag JIT_FLAG_REVERSE_PINVOKE = JitFlag.JIT_FLAG_REVERSE_PINVOKE;
     public const JitFlag JIT_FLAG_TRACK_TRANSITIONS = JitFlag.JIT_FLAG_TRACK_TRANSITIONS;
@@ -111,9 +110,6 @@ public partial struct JitFlags
 
         /// <summary>All methods have an EBP frame</summary>
         JIT_FLAG_FRAMED = 21,
-
-        /// <summary>JIT must place stub secret param into local 0.  (used by IL stubs)</summary>
-        JIT_FLAG_PUBLISH_SECRET_PARAM = 22,
 
         /// <summary>The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions</summary>
         JIT_FLAG_USE_PINVOKE_HELPERS = 23,

@@ -36,10 +36,6 @@ public sealed partial class LinearScan
         }
 
 #if FEATURE_SIMD
-        if (varTypeIsSimd(indirection.Type))
-        {
-            setContainsAVXFlags(indirection.Type.Size);
-        }
         buildInternalRegisterUses();
 #endif
 

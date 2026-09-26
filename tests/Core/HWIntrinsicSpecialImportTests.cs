@@ -298,8 +298,8 @@ internal static unsafe class HWIntrinsicSpecialImportTests
         vtable.Base.Base.getTypeForPrimitiveNumericClass = &GetNumericType;
         vtable.Base.Base.getTypeInstantiationArgument = &GetTypeArgument;
         vtable.Base.notifyInstructionSetUsage =
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, byte>)
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte>)&NotifyInstructionSetUsage;
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool, byte>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte, byte>)&NotifyInstructionSetUsage;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
 #if DEBUG
         using var tls = new JitTls(&jitInfo);
@@ -338,7 +338,7 @@ internal static unsafe class HWIntrinsicSpecialImportTests
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte NotifyInstructionSetUsage(ICorJitInfo* self,
-        CORINFO_InstructionSet isa, byte supported) => supported;
+        CORINFO_InstructionSet isa, byte supported, byte preserveNegativeDependency) => supported;
 
     private struct ClassInfo
     {

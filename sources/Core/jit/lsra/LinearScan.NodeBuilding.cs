@@ -17,7 +17,15 @@ public sealed partial class LinearScan
         var isLocalDefUse = tree.IsValue && tree.IsUnusedValue;
         if (!varTypeUsesIntReg(tree.Type))
         {
-            setContainsAVXFlags();
+            uint simdSize = 0;
+#if FEATURE_SIMD
+            if (varTypeIsSimd(tree.Type) && tree.Oper is not (GT_STOREIND or GT_STORE_LCL_VAR or GT_STORE_LCL_FLD) &&
+                !tree.Oper.IsHWIntrinsic && !tree.IsVectorZero)
+            {
+                simdSize = (uint)tree.Type.Size;
+            }
+#endif
+            setContainsAVXFlags(simdSize);
         }
 
         int sourceCount;

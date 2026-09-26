@@ -101,11 +101,6 @@ public sealed partial class LinearScan
 
         // identifyCandidates<false> leaves no local candidates, so the native parameter-definition
         // and parameter-preference passes produce no references in this specialization.
-        if (_compiler.info.compPublishStubParam)
-        {
-            incomingRegisters |= new regMaskTP(SRBM_SECRET_STUB_PARAM);
-        }
-
         _placedArgumentLocalCount = 0;
         _placedArgumentRegisters = RBM_NONE;
         VarSetOps.AssignNoCopy(_compiler, ref _currentLiveVariables, VarSetOps.MakeEmpty(_compiler));

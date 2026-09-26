@@ -129,6 +129,23 @@ internal static unsafe class ObjectAllocatorEscapeAnalysisTests
     }
 
     [Test]
+    public static void CloneViabilityRejectsConflictingEnumeratorRedefinition()
+    {
+        WithAllocator((compiler, allocator) => {
+            PrepareWithPseudo(compiler, allocator);
+            var clone = AddCloneInfo(allocator, Get<int>(allocator, "_firstPseudoIndex"));
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = true;
+#endif
+            Set(clone, "AllocBlock", BasicBlock.New(compiler, BBKinds.BBJ_ALWAYS));
+            Set(clone, "HasConflictingRedefinition", true);
+
+            Assert.That(Call<bool>(allocator, "CanClone", clone), Is.False);
+            Assert.That(Get<bool>(clone, "CheckedCanClone"), Is.True);
+        });
+    }
+
+    [Test]
     public static void CloneViabilityRetainsRpoExtentProfileAndOverlapDecision()
     {
         WithAllocator((compiler, allocator) => {

@@ -223,7 +223,7 @@ internal static class SsaPhaseTests
             compiler.fgPredsComputed = true;
             compiler.lvaGSSecurityCookie = BAD_VAR_NUM;
             compiler.lvaInlinedPInvokeFrameVar = BAD_VAR_NUM;
-            compiler.lvaStubArgumentVar = BAD_VAR_NUM;
+            compiler.lvaSecretStubArg = BAD_VAR_NUM;
             compiler.lvaRetAddrVar = BAD_VAR_NUM;
             compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
 #if DEBUG

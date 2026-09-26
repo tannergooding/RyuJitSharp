@@ -24,8 +24,8 @@ internal static unsafe class JitInterfaceBoolTests
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_STRUCT_*, byte>)
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_STRUCT_*, uint>)&ReturnStatic;
         vtable.Base.notifyInstructionSetUsage =
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, byte>)
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, uint>)&ReturnDynamic;
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool, byte>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte, uint>)&ReturnDynamic;
         vtable.logMsg =
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, int, byte*, void*, byte>)
             (delegate* unmanaged[MemberFunction]<ICorJitInfo*, int, byte*, void*, uint>)&ReturnJit;
@@ -36,8 +36,8 @@ internal static unsafe class JitInterfaceBoolTests
         Assert.That(staticInfo->isIntrinsic(null), Is.EqualTo(expected));
         Assert.That(dynamicInfo->isIntrinsic(null), Is.EqualTo(expected));
         Assert.That(jitInfo.isIntrinsic(null), Is.EqualTo(expected));
-        Assert.That(dynamicInfo->notifyInstructionSetUsage(default, true), Is.EqualTo(expected));
-        Assert.That(jitInfo.notifyInstructionSetUsage(default, true), Is.EqualTo(expected));
+        Assert.That(dynamicInfo->notifyInstructionSetUsage(default, true, false), Is.EqualTo(expected));
+        Assert.That(jitInfo.notifyInstructionSetUsage(default, true, false), Is.EqualTo(expected));
         Assert.That(jitInfo.logMsg(0, null, null), Is.EqualTo(expected));
     }
 
@@ -45,7 +45,7 @@ internal static unsafe class JitInterfaceBoolTests
     private static uint ReturnStatic(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* method) => s_result;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static uint ReturnDynamic(ICorJitInfo* self, CORINFO_InstructionSet instructionSet, byte support) => s_result;
+    private static uint ReturnDynamic(ICorJitInfo* self, CORINFO_InstructionSet instructionSet, byte support, byte preserveNegativeDependency) => s_result;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static uint ReturnJit(ICorJitInfo* self, int level, byte* format, void* args) => s_result;

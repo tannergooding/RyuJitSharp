@@ -39,7 +39,7 @@ internal static unsafe class CodeGenEmissionPhaseTests
             compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
             compiler.lvaArg0Var = BAD_VAR_NUM;
             compiler.lvaInlinedPInvokeFrameVar = BAD_VAR_NUM;
-            compiler.lvaStubArgumentVar = BAD_VAR_NUM;
+            compiler.lvaSecretStubArg = BAD_VAR_NUM;
             compiler.compCalleeRegsPushed = 0;
             compiler.srbmIntCalleeTrash = SRBM_INT_CALLEE_TRASH_INIT;
             compiler.srbmFltCalleeTrash = SRBM_FLT_CALLEE_TRASH_INIT;

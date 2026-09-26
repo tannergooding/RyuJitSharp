@@ -383,7 +383,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
     public bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert) => lpVtbl->Base.convertPInvokeCalliToCall((ICorJitInfo*)(Unsafe.AsPointer(ref this)), pResolvedToken, fMustConvert) != 0;
 
-    public bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supportEnabled) => lpVtbl->Base.notifyInstructionSetUsage((ICorJitInfo*)(Unsafe.AsPointer(ref this)), instructionSet, supportEnabled) != 0;
+    public bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supportEnabled, bool preserveNegativeDependency) => lpVtbl->Base.notifyInstructionSetUsage((ICorJitInfo*)(Unsafe.AsPointer(ref this)), instructionSet, supportEnabled, preserveNegativeDependency) != 0;
 
     public void updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint) => lpVtbl->Base.updateEntryPointForTailCall((ICorJitInfo*)(Unsafe.AsPointer(ref this)), entryPoint);
 

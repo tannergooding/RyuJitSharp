@@ -731,7 +731,7 @@ internal static unsafe class AssertionTests
             var store = new ValueNumStore(compiler);
             compiler.vnStore = store;
             var zero = store.VNForIntCon(0);
-            var stack = store.VNForFuncNoFolding(TYP_BYREF, VNFunc.VNF_PtrToLoc, zero, zero);
+            var stack = store.VNForFunc(TYP_BYREF, VNFunc.VNF_PtrToLoc, zero, zero, zero);
             var offset = variableOffset ? store.VNForExpr(null, TYP_I_IMPL) : store.VNForLongCon(8);
             var address = compiler.gtNewLclvNode(TYP_BYREF, 0);
             address._vnPair.SetBoth(store.VNForFuncNoFolding(TYP_BYREF, VNFunc.VNF_ADD, stack, offset));
@@ -753,7 +753,7 @@ internal static unsafe class AssertionTests
             var store = new ValueNumStore(compiler);
             compiler.vnStore = store;
             var zero = store.VNForIntCon(0);
-            var stack = store.VNForFuncNoFolding(TYP_BYREF, VNFunc.VNF_PtrToLoc, zero, zero);
+            var stack = store.VNForFunc(TYP_BYREF, VNFunc.VNF_PtrToLoc, zero, zero, zero);
             var heap = store.VNForExpr(null, TYP_REF);
             var boxed = store.VNForHandle(0x1000, GTF_ICON_STATIC_BOX_PTR);
             var addresses = new[] {
@@ -2325,6 +2325,7 @@ internal static unsafe class AssertionTests
         compiler.opts.SetMinOpts(false);
         compiler.lvaCount = Math.Max(2, tracked);
         compiler.lvaTrackedCount = tracked;
+        compiler.info.compRetBuffArg = BAD_VAR_NUM;
 #if DEBUG
         compiler.info.compFullName = "AssertionTests";
 #endif

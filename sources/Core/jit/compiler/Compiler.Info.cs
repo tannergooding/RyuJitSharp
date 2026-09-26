@@ -140,20 +140,6 @@ public partial class Compiler
             }
         }
 
-        /// <summary>EAX captured in prolog will be available through an intrinsic</summary>
-        public bool compPublishStubParam
-        {
-            readonly get
-            {
-                return (_flags & InfoFlags.PublishStubParam) != 0;
-            }
-
-            set
-            {
-                _flags = (_flags & ~InfoFlags.PublishStubParam) | (value ? InfoFlags.PublishStubParam : InfoFlags.None);
-            }
-        }
-
         /// <summary>The NextCallReturnAddress intrinsic is used.</summary>
         public bool compHasNextCallRetAddr
         {

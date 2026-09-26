@@ -30,7 +30,6 @@ public partial struct CORJIT_FLAGS
     public const CorJitFlag CORJIT_FLAG_BBINSTR_IF_LOOPS = CorJitFlag.CORJIT_FLAG_BBINSTR_IF_LOOPS;
     public const CorJitFlag CORJIT_FLAG_BBOPT = CorJitFlag.CORJIT_FLAG_BBOPT;
     public const CorJitFlag CORJIT_FLAG_FRAMED = CorJitFlag.CORJIT_FLAG_FRAMED;
-    public const CorJitFlag CORJIT_FLAG_PUBLISH_SECRET_PARAM = CorJitFlag.CORJIT_FLAG_PUBLISH_SECRET_PARAM;
     public const CorJitFlag CORJIT_FLAG_USE_PINVOKE_HELPERS = CorJitFlag.CORJIT_FLAG_USE_PINVOKE_HELPERS;
     public const CorJitFlag CORJIT_FLAG_REVERSE_PINVOKE = CorJitFlag.CORJIT_FLAG_REVERSE_PINVOKE;
     public const CorJitFlag CORJIT_FLAG_TRACK_TRANSITIONS = CorJitFlag.CORJIT_FLAG_TRACK_TRANSITIONS;
@@ -118,10 +117,6 @@ public partial struct CORJIT_FLAGS
 
         /// <summary>All methods have an EBP frame.</summary>
         CORJIT_FLAG_FRAMED = 21,
-
-        /// <summary>JIT must place stub secret param into local 0.</summary>
-        /// <remarks>Used by IL stubs.</remarks>
-        CORJIT_FLAG_PUBLISH_SECRET_PARAM = 22,
 
         /// <summary>The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions.</summary>
         CORJIT_FLAG_USE_PINVOKE_HELPERS = 23,

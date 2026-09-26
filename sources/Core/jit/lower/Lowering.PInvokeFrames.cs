@@ -16,7 +16,8 @@ public sealed partial class Lowering
         noway_assert(compiler.info.compUnmanagedCallCountWithGCTransition != 0);
         noway_assert(compiler.lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
 
-        if (!compiler.info.compPublishStubParam && compiler.opts.ShouldUsePInvokeHelpers)
+        var hasMDContextArg = compiler.info.compIsVarArgs && compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB);
+        if (!hasMDContextArg && compiler.opts.ShouldUsePInvokeHelpers)
         {
             return;
         }
@@ -29,9 +30,10 @@ public sealed partial class Lowering
         assert(compiler.lvaGetDesc(compiler.lvaInlinedPInvokeFrameVar).IsAddressExposed);
         var insertionPoint = firstBlockRange.FirstNonCatchArgNode();
 
-        if (compiler.info.compPublishStubParam)
+        if (hasMDContextArg)
         {
-            var value = compiler.gtNewLclvNode(TYP_I_IMPL, compiler.lvaStubArgumentVar);
+            assert(compiler.compHasSecretStubArgument());
+            var value = compiler.gtNewLclvNode(TYP_I_IMPL, compiler.lvaGetSecretStubArgumentVar());
             var secretArg = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
                 checked((ushort)frameInfo.offsetOfSecretStubArg), value);
             firstBlockRange.InsertBefore(insertionPoint, LIR.SeqTree(compiler, secretArg));

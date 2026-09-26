@@ -306,8 +306,8 @@ internal static unsafe class ValueNumMapTests
                     store.VNForCastOper(TYP_LONG, srcIsUnsigned: false));
                 var add = store.VNForFuncNoFolding(TYP_INT, VNFunc.VNF_ADD,
                     store.VNForExpr(null, TYP_INT), index);
-                var pointer = store.VNForFuncNoFolding(TYP_BYREF, VNFunc.VNF_PtrToLoc,
-                    index, value);
+                var pointer = store.VNForFunc(TYP_BYREF, VNFunc.VNF_PtrToLoc,
+                    index, value, store.VNForIntCon(0));
                 var exception = store.VNForExpr(null, TYP_REF);
                 var exceptions = store.VNExcSetUnion(store.VNExcSetSingleton(exception),
                     store.VNExcSetSingleton(store.VNForExpr(null, TYP_REF)));

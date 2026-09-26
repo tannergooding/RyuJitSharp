@@ -67,8 +67,8 @@ internal static unsafe class SimdTypeTests
         vtable.Base.Base.getClassAttribs = &GetClassAttribs;
         vtable.Base.Base.getTypeInstantiationArgument = &GetTypeArgument;
         vtable.Base.Base.getTypeForPrimitiveNumericClass = &GetNumericType;
-        vtable.Base.notifyInstructionSetUsage = (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, byte>)
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte>)&NotifyInstructionSetUsage;
+        vtable.Base.notifyInstructionSetUsage = (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool, byte>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte, byte>)&NotifyInstructionSetUsage;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
         JitFlags flags = default;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -133,5 +133,5 @@ internal static unsafe class SimdTypeTests
     private static CorInfoType GetNumericType(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => CorInfoType.CORINFO_TYPE_FLOAT;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static byte NotifyInstructionSetUsage(ICorJitInfo* self, CORINFO_InstructionSet isa, byte supported) => supported;
+    private static byte NotifyInstructionSetUsage(ICorJitInfo* self, CORINFO_InstructionSet isa, byte supported, byte preserveNegativeDependency) => supported;
 }

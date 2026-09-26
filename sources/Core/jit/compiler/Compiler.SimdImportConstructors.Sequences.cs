@@ -100,6 +100,7 @@ public partial class Compiler
         }
         else
         {
+            gtPrepareOperandsForReordering(ref op1, ref op2);
             var indices = gtNewSimdGetIndicesNode(type, simdBaseType, simdSize);
             result = gtNewSimdBinOpNode(GT_MUL, type, indices, op2, simdBaseType, simdSize);
         }
@@ -125,13 +126,17 @@ public partial class Compiler
         if (count == 1)
         {
             var result = gtNewSimdCreateBroadcastNode(type, op1, simdBaseType, simdSize);
-            if (!gtTreeHasSideEffects(op2, GTF_ALL_EFFECT))
+            if (!gtTreeHasSideEffects(op2, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF))
             {
                 return result;
             }
+            if (result.Oper.IsInvariant)
+            {
+                return gtWrapWithSideEffects(result, op2, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
+            }
             var resultLcl = fgInsertCommaFormTemp(ref result);
             return gtNewBinaryNode(GT_COMMA, type, result,
-                gtWrapWithSideEffects(resultLcl, op2, GTF_ALL_EFFECT));
+                gtWrapWithSideEffects(resultLcl, op2, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF));
         }
 
         if (op1.Oper.IsConst && op2.Oper.IsConst)

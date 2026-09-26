@@ -92,6 +92,28 @@ internal static unsafe class MemoryCompareCallLoweringTests
     }
 
 #if FEATURE_SIMD && TARGET_XARCH
+    [TestCase(false, false, 32)]
+    [TestCase(true, false, 64)]
+    [TestCase(true, true, 128)]
+    public static void MemcmpThresholdFollowsSupportedEqualityWidth(
+        bool avx2, bool avx512, int expected)
+    {
+        WithCompiler(false, (compiler, _, _) => {
+            EnableIsa(compiler, CORINFO_InstructionSet.InstructionSet_AVX);
+            if (avx2)
+            {
+                EnableIsa(compiler, CORINFO_InstructionSet.InstructionSet_AVX2);
+            }
+            if (avx512)
+            {
+                EnableIsa(compiler, CORINFO_InstructionSet.InstructionSet_AVX512);
+            }
+
+            Assert.That(compiler.GetUnrollThreshold(Compiler.Memcmp), Is.EqualTo(expected));
+            Assert.That(compiler.GetUnrollThreshold(Compiler.Memcmp, canUseSimd: false), Is.EqualTo(16));
+        });
+    }
+
     [TestCase(CORINFO_InstructionSet.InstructionSet_AVX2, 32, TYP_SIMD32, true)]
     [TestCase(CORINFO_InstructionSet.InstructionSet_AVX2, 64, TYP_SIMD32, false)]
     [TestCase(CORINFO_InstructionSet.InstructionSet_AVX512, 64, TYP_SIMD64, true)]

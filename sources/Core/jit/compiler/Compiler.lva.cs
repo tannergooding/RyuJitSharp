@@ -178,6 +178,17 @@ public partial class Compiler
 
     public int lvaSecretStubArg = BAD_VAR_NUM;
 
+    public bool compHasSecretStubArgument()
+    {
+        return lvaSecretStubArg != BAD_VAR_NUM;
+    }
+
+    public int lvaGetSecretStubArgumentVar()
+    {
+        assert(compHasSecretStubArgument());
+        return lvaSecretStubArg;
+    }
+
 #if SWIFT_SUPPORT
     public int lvaSwiftSelfArg = BAD_VAR_NUM;
 
@@ -285,9 +296,6 @@ public partial class Compiler
     /// <summary>LclVar number</summary>
     public int lvaFfrRegister = BAD_VAR_NUM;
 #endif
-
-    /// <summary>Variable representing the secret stub argument</summary>
-    public int lvaStubArgumentVar = BAD_VAR_NUM;
 
 #if FEATURE_SIMD
     /// <summary>This is a temp lclVar allocated on the stack as TYP_SIMD.</summary>
@@ -2353,8 +2361,7 @@ public partial class Compiler
     /// <returns>Whether "lclNum" refers to an implicit byref.</returns>
     /// <remarks>
     ///   <para>We term structs passed via pointers to shadow copies "implicit byrefs".</para>
-    ///   <para>They are used on Windows x64 for structs 3, 5, 6, 7, > 8 bytes in size, and on ARM64/LoongArch64 for structs larger than 16 bytes.</para>
-    ///   <para>They are "byrefs" because the VM sometimes uses memory allocated on the GC heap for the shadow copies.</para>
+    ///   <para>The shadow copies are outside the GC heap; the caller reports their contents.</para>
     /// </remarks>
     public bool lvaIsImplicitByRefLocal(int lclNum)
     {
@@ -2364,11 +2371,18 @@ public partial class Compiler
         if (varDsc.IsImplicitByRef)
         {
             assert(varDsc.lvIsParam);
-            assert(varTypeIsStruct(varDsc.Type) || (varDsc.Type is TYP_BYREF));
+            assert(varTypeIsStruct(varDsc.Type) || (varDsc.Type is TYP_I_IMPL or TYP_BYREF));
             return true;
         }
 #endif
         return false;
+    }
+
+    /// <summary>Type used for implicit-byref parameters after morphing.</summary>
+    /// <remarks>Async suspension can relocate the shadow copy; derived addresses must not survive suspension.</remarks>
+    public var_types lvaGetImplicitByRefParamType()
+    {
+        return impInlineRoot.compIsAsync ? TYP_BYREF : TYP_I_IMPL;
     }
 
     /// <summary>Whether the local is an implicit-byref parameter or one of its dependently promoted fields.</summary>

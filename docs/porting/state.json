@@ -3,16 +3,16 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
-    "targetObservedAt": "2026-09-22",
-    "reconciledCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc"
+    "targetCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+    "targetObservedAt": "2026-09-26",
+    "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
   },
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Prepare an independent, main-based successor with exact C#/native WIP and artifacts preserved, publish completed handoff work to main, then synchronize oracle/residual/C# to a newly pinned latest upstream before resuming helper activation.",
+      "scope": "Synchronize oracle, residual native source and existing C# implementations from 206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc to immutable upstream 33baf8ee337b20dd0f184b69a6f09be92850bf9e, preserving inactive helper WIP and old-pin evidence before resuming helper activation.",
       "doneWhen": [
         "Reconcile every worker handoff and protect raw source bytes, staged/unstaged distinctions, execution inputs and historical evidence before retiring the old workspace.",
         "Fast-forward completed commits to verified origin/main without force; create the successor on that exact main tip and verify its diff base. Inactive helper WIP remains uncommitted.",
@@ -23,7 +23,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "B310 ABI prerequisite committeda8fc337. All workers reconciled and idle: static-init23D23R, TLS20D20R, VN-intrinsic23D23R, all private/inactive; helper probe has ordinary execution only. Preserve these packets and shared3 overlays uncommitted. Native residual176staged paths protected at7107cdcbb85a314773a5780a4294fb58ba258b77 without changing files/index. User authorized completed-work publication to main and a main-based independent successor for latest-upstream synchronization. CoreRoot free.",
+      "parentScope": "Upstream33baf8 synchronization complete: all67 JIT/interface candidates classified; oracle/residual and fresh native host match target. Native residual retains176staged paths with old/new snapshots protected. Final source snapshot18df772 excludes frozen helpers;1021Release cases pass,1044Debug cases pass with one unchanged baseline fixture failure B311. Fresh NativeAOT executes29configurations143bodies without fallback. Inactive helper compatibility77D77R passes; public phases remain inactive. No future publication authorized.",
       "parallelPackets": [
         {
           "scope": "Complete native static-initialization expansion.",
@@ -407,36 +407,63 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Successor: read artifacts\\session-handoff\\HANDOFF.md and recovery manifests; verify restored raw WIP hashes/index and main diff base, then select/fetch one immutable latest dotnet/runtime main target and synchronize oracle/residual/C# before activating the three saved helper packets. Observed latest33baf8ee337b20dd0f184b69a6f09be92850bf9e is not yet the maintained pin. Preserve native snapshot7107cdcbb85a314773a5780a4294fb58ba258b77 and old-pin evidence; refresh native host for new-pin comparisons. All old workers are resolved; do not reuse or contact them. No future automatic publication is authorized.",
+    "nextAction": "Commit the validated33baf8 synchronization with frozen helper WIP excluded, then resume static-init integration: review Compiler.HelperExpansion.cs and Compiler.StaticInitExpansion.cs against unchanged new-pin helperexpansion.cpp, activate fgExpandStaticInit with public-entry negative controls, and obtain a new positive native static-init input before claiming phase parity. The old BooleanExecutionProbe.Main positive does not reproduce on the new host (four no-change phases). Preserve TLS/VN packets inactive until their integration boundaries. B311 is an independently reproduced preexisting Debug metrics-test failure, not a new compiler regression. No push or PR is authorized.",
     "handoff": {
-      "status": "frozen-for-main-based-successor",
-      "branch": "tannergooding-ryujit-backend-continuation",
+      "status": "successor-active",
+      "branch": "tannergooding-ryujit-upstream-refresh",
       "workerPackets": "3a:127 static-init,6a:126 TLS,d62:183 VN-intrinsic and942:148-149 helper probe are frozen and collected; all idle.610 remains idle(last89). No outstanding worker result or source mutation. Do not reuse these workers from the successor. Keep inactive packets and shared support uncommitted across the upstream refresh.",
       "preserve": "Keep all29 latest execution configurations and their20corpus DLLs. Execution is not code/dump parity or broad runtime/other-target support. Preserve old-pin artifacts, C# WIP and native index/worktree while synchronizing both native trees and the C# port to the newly authorized upstream target.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
       "nativeFlowGraphSource": "src/coreclr/jit/fgopt.cpp:4373-4902",
       "executionBoundary": "The20-method minopts corpus executes managed-generated code normally and with GCStress4. Three additional methods preserve object/graph/struct references across confirmed full collections. Fresh backend-parity capture has19matching sizes/emission bodies,10matching metadata bodies and0matching generation bodies (B245 and hardware differences). Nondiffable six-method analysis places all100differing bytes inside46address fields; indirect-cell contents and eight absolute target identities remain unproved. No full dump/code or broad runtime parity claim. Earlier B135 profile diagnostics remain tracked separately.",
-      "publishedHandoffCommit": "b6d5c71c338d84b6c120766b52ea577a4df735c8",
+      "publishedHandoffCommit": "fab849f74635e74f1aed8ca043b9098cd3b52576",
       "publication": "User explicitly authorized publishing the completed handoff commits to main and basing the successor on main. Exact final remote SHA and successor diff-base verification are recorded in artifacts\\session-handoff\\publication.json. This does not authorize automatic publication of future changes.",
       "recovery": "artifacts\\session-handoff\\HANDOFF.md, csharp-handoff\\manifest.json, native-handoff\\manifest.json and frozen-packets.json preserve exact revisions, raw file hashes, original index/status and all worker boundaries. Transfer ignored artifacts intact and repair registered nested worktree back-links.",
       "upstreamRefresh": {
         "from": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
         "observedLatestMain": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
-        "status": "authorized-not-started",
+        "status": "completed",
+        "target": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "nativeRecoverySnapshot": "7107cdcbb85a314773a5780a4294fb58ba258b77",
         "nativeIndexCommit": "ac3ce8b63c467a540789768b8c1c970cf2b36a57",
-        "nativeWip": "176staged changes:1addition83deletions92modifications;93surviving file payloads verified. Oracle is clean/detached at old pin; residual main has these changes. Both share one Git common directory.",
-        "constraint": "Select a fresh immutable target when starting; preserve old/new revisions separately. Existing prepared CoreRoot and all previous parity evidence belong to the old pin."
+        "reconciledNativeSnapshot": "1f5a0464755867422c244227d988f5cc0da49a67",
+        "nativeReceipt": "artifacts\\upstream-refresh-33baf8\\native-residual-installed.json",
+        "nativeHostReceipt": "artifacts\\upstream-refresh-33baf8\\native-host.json",
+        "nativeExecution": "artifacts\\upstream-refresh-33baf8\\native-matrix-v2\\completion.json: 29 configurations and 143 positive bodies with runtime assertions and explicit collection-count contracts; not managed/native code parity.",
+        "nativeWip": "176staged paths retained at new pin, with no unstaged changes. Old snapshot7107cdc and reconciled snapshot1f5a046 are protected; all58 conflict dispositions are recorded separately. Oracle is clean/detached at target; both trees share one Git common directory.",
+        "constraint": "Old native products and historical evidence remain preserved separately. Only the freshly built33baf8 CoreRoot is used for current comparisons; old captures have not been relabeled."
       }
     },
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
     "nativeResidualIncludesCsharpWip": true,
-    "nativeOracleCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
-    "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+    "nativeOracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+    "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "upstreamRefresh": {
+        "from": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+        "to": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "sourceSnapshot": "18df7729a2655b44015c2af03b144b323e222722",
+        "nativeAotSourceSnapshot": "6a8117189f90966430fce5113ff1b9cda26b2cc9",
+        "snapshotDifference": "Only AssertionTests fixture initialization differs; production source trees are identical. Both exclude all saved helper WIP.",
+        "inventory": "artifacts\\upstream-refresh-33baf8\\source-dispositions.json: all67 raw JIT/interface candidates classified; external VM/AOT changes remain matching native-host responsibilities.",
+        "abi": "notifyInstructionSetUsage forwards preserveNegativeDependency across both wrappers/interface/vtable; native MSVC verifies exact signatures, unchanged Windows-x64 layouts and new GUID. ISA negative prerequisites bypass cached reporting; obsolete flag22/secret-local setup removed.",
+        "abiNegativeControl": "Isolated old ISA-cache/absent-ISA decisions with the new signature retained fail exactly three new dependency cases; eight signature/forwarding controls pass. Corrected ABI selection passes24Debug24Release.",
+        "debugPassed": 1044,
+        "releasePassed": 1021,
+        "skipped": 0,
+        "baselineFailure": "One Debug CompleteMachineAndMetadataPhasesPublishInNativeOrder(True,False,True) failure reproduces unchanged atfab849f: stale optional-metrics fixture reaches a null method name. B311 records it; no test disabled or unrelated production change made.",
+        "tests": "artifacts\\upstream-refresh-33baf8\\sync-validation-3\\build\\tst;39changed classes, full analyzers. Baseline comparison under baseline-regressions.",
+        "tables": "Both changed inputs match target; all48 generated files match maintained output after line-ending normalization and two generation runs are byte-identical.",
+        "nativeHost": "artifacts\\upstream-refresh-33baf8\\native-host.json: fresh Checked clr, release clr+libs and generated Checked CoreRoot; four product/layout hashes verified.",
+        "nativeAot": "artifacts\\upstream-refresh-33baf8\\sync-native-jit\\RyuJitSharp.dll",
+        "nativeAotSha256": "4E1C23EA9466B170A12348F3FD9E72B8BA3E7ACD1AD633D738F7C4097CE9575E",
+        "execution": "native-matrix-v2 and managed-matrix under artifacts\\upstream-refresh-33baf8: each29configurations143positive bodies, all20corpus hashes verified, runtime output/assertions and required GC collections preserved; managed execution requested, no fallback or skipped compilation.",
+        "phaseComparison": "phase-comparison.json compares25phase slices over five selected bodies:5/5lookup,5/5finally,3/5array,2/5lowering and2/5liveness exact. Existing diagnostic/node-ID and broader code/metadata parity gaps remain.",
+        "savedHelpers": "Eight frozen helper payloads remain byte-identical; only upstream synchronization hunks alter Compiler.fg.cs. Shared/inactive helper selection77Debug77Release passes. helperexpansion.cpp is identical between pins. The refreshed Boolean Main probe has no positive static-init expansion; old evidence is not reused."
+      },
       "threadStaticInfoAbi": {
         "snapshotBase": "1f40b70",
         "sourceManifest": "artifacts\\tls-abi-validation\\abi-overlay-manifest.json",
@@ -6025,6 +6052,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "late-liveness-scheduling",
+      "native": ["src\\coreclr\\jit\\lower.cpp", "src\\coreclr\\jit\\compiler.cpp", "src\\coreclr\\jit\\liveness.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.LateLiveness.cs", "sources\\Core\\jit\\compiler\\Compiler.comp.cs", "sources\\Core\\jit\\lower\\Lowering.cs", "sources\\Core\\jit\\liveness\\Liveness.FixedPoint.cs"],
+      "status": "Existing final liveness closure follows throw-helper construction and outgoing-argument finalization, including otherwise unreachable helper blocks; no saved helper phase is activated.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "runtime-lookup-expansion",
       "native": ["src\\coreclr\\jit\\helperexpansion.cpp:11-29,136-148,169-485,1232-1260,1276-1300", "src\\coreclr\\jit\\fgbasic.cpp:4731-4761", "src\\coreclr\\jit\\gentree.cpp:2447-2457"],

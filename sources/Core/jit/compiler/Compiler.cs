@@ -979,22 +979,6 @@ public partial class Compiler
         mostRecentlyActivePhase = phase;
     }
 
-    public bool BlockNonDeterministicIntrinsics(bool mustExpand)
-    {
-        // We explicitly block these APIs from being expanded in R2R
-        // since we know they are non-deterministic across hardware
-
-        if (IsReadyToRun)
-        {
-            if (mustExpand)
-            {
-                implReadyToRunUnsupported();
-            }
-            return true;
-        }
-        return false;
-    }
-
     /// <summary>finish execution of a phase</summary>
     /// <param name="phase">the phase that has just finished</param>
     public void EndPhase(Phases phase)
@@ -2855,11 +2839,38 @@ public partial class Compiler
     }
 
     /// <summary>Calculates the unrolling threshold for the given operation</summary>
-    /// <param name="type">kind of the operation (memset/memcpy)</param>
+    /// <param name="type">kind of memory operation</param>
     /// <param name="canUseSimd">whether it is allowed to use SIMD or not</param>
     /// <returns>The unrolling threshold for the given operation in bytes</returns>
     public int GetUnrollThreshold(UnrollKind type, bool canUseSimd = true)
     {
+        if (type is Memcmp)
+        {
+            // Match the unroller's supported ISA width, not the preferred vector width.
+#if TARGET_AMD64 || TARGET_ARM64
+#if FEATURE_SIMD
+            if (canUseSimd)
+            {
+#if TARGET_AMD64
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                {
+                    return 128;
+                }
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    // 256-bit equality requires AVX2, not just AVX.
+                    return 64;
+                }
+#endif
+                return 32;
+            }
+#endif
+            return 16;
+#else
+            return 0;
+#endif
+        }
+
         var maxRegSize = REGSIZE_BYTES;
         var threshold = maxRegSize;
 
@@ -2928,12 +2939,12 @@ public partial class Compiler
 #endif
         }
 
-        // For profiled memcmp/memmove we don't want to unroll too much as it's just a guess, and it works better for small sizes.
+        // For profiled memmove we don't want to unroll too much as it's just a guess.
 
-        if (type is ProfiledMemcmp or ProfiledMemmove)
+        if (type is ProfiledMemmove)
         {
 #if TARGET_ARM64
-            threshold = maxRegSize * (type is ProfiledMemmove ? 4 : 2);
+            threshold = maxRegSize * 4;
 #else
             threshold = maxRegSize * 2;
 #endif
@@ -2947,10 +2958,10 @@ public partial class Compiler
         => info.compCompHnd->isIntrinsicType(clsHnd);
 #endif
 
-    private unsafe bool notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported)
+    private unsafe bool notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported, bool preserveNegativeDependency = false)
     {
-        JITDUMP($"Notify VM instruction set ({InstructionSetToString(isa)}) {(supported ? "must" : "must not")} be supported.\n");
-        return info.compCompHnd->notifyInstructionSetUsage(isa, supported);
+        JITDUMP($"Notify VM instruction set ({InstructionSetToString(isa)}) {(supported ? "must" : "must not")} be supported{(preserveNegativeDependency ? " (preserve negative dependency)" : "")}.\n");
+        return info.compCompHnd->notifyInstructionSetUsage(isa, supported, preserveNegativeDependency);
     }
 
     /// <summary>Update the SQM state.</summary>

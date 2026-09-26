@@ -321,7 +321,6 @@ internal static unsafe class LinearScanIntervalConstructionTests
     {
         WithAllocator((compiler, allocator) => {
             compiler.info.compArgsCount = 2;
-            compiler.info.compPublishStubParam = true;
             compiler.compJmpOpUsed = jumpUsed;
             compiler.lvaTable = [
                 new() { Type = TYP_LONG, lvIsParam = true, lvTracked = true, _varIndex = 0 },
@@ -348,7 +347,7 @@ internal static unsafe class LinearScanIntervalConstructionTests
             Assert.That(registers.IsSet(REG_RCX), Is.EqualTo(expectedIntegerLive));
             Assert.That(registers.IsSet(REG_XMM1), Is.True);
             Assert.That(registers.IsSet(REG_RDX), Is.False);
-            Assert.That(registers.IsSet(REG_SECRET_STUB_PARAM), Is.True);
+            Assert.That(registers.IsSet(REG_SECRET_STUB_PARAM), Is.False);
             Assert.That(allocator.refPositions.Exists(reference => reference.refType is RefType.RefTypeParamDef), Is.False);
         });
     }

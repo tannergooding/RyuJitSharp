@@ -78,6 +78,40 @@ public class GenTreeOp : GenTreeUnOp
         }
     }
 
+#if TARGET_XARCH
+    // A contained memory operand establishes the legal comparison width even when small operand types differ.
+    public int GetCompareSize()
+    {
+        assert(Oper.IsCompare || Oper is GT_CMP or GT_TEST or GT_BT);
+
+        var op1Type = Op1.Type;
+        var op2Type = Op2.Type;
+        if (Oper is GT_BITTEST_EQ or GT_BITTEST_NE or GT_BT)
+        {
+            return op1Type.ActualType.Size;
+        }
+
+        if (Op1.IsContained && !Op1.Oper.IsCnsIntOrI)
+        {
+            return op1Type.Size;
+        }
+
+        if (Op2.IsContained && !Op2.Oper.IsCnsIntOrI)
+        {
+            return op2Type.Size;
+        }
+
+        if (op1Type == op2Type)
+        {
+            return op1Type.Size;
+        }
+
+        var size = op1Type.Size == 8 && op2Type.Size == 8 ? 8 : 4;
+        assert(size >= op1Type.Size && size >= op2Type.Size);
+        return size;
+    }
+#endif
+
 #nullable disable
     public ref GenTree Op2Ref => ref _op2;
 #nullable restore

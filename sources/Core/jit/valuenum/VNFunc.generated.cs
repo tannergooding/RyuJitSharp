@@ -223,6 +223,7 @@ public enum VNFunc
     VNF_TypeHandleToRuntimeTypeHandle,
     VNF_LdElemA,
     VNF_ByrefExposedLoad,
+    VNF_ByrefExposedLocalLoad,
     VNF_GetRefanyVal,
     VNF_GetClassFromMethodParam,
     VNF_GetSyncFromClassHandle,

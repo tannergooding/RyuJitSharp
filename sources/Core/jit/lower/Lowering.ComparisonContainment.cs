@@ -42,27 +42,52 @@ public sealed partial class Lowering
             return;
         }
 
+        bool CanCompareAtMemoryWidth(GenTree memoryOp, GenTree otherOp)
+        {
+            if (memoryOp.Type == otherOp.Type)
+            {
+                return true;
+            }
+
+            if ((cmp.Oper is not (GT_EQ or GT_NE or GT_LT or GT_LE or GT_GE or GT_GT)) ||
+                !CompilerInstance.opts.OptimizationEnabled ||
+                !varTypeIsSmall(memoryOp.Type) || !varTypeIsIntegral(otherOp.Type))
+            {
+                return false;
+            }
+
+            var range = IntegralRange.ForType(memoryOp.Type);
+            return otherOp.Oper.IsIntegralConst
+                ? range.Contains(otherOp.AsIntConCommon().IntegralValue)
+                : range.Contains(IntegralRange.ForNode(otherOp, CompilerInstance));
+        }
+
         if (CheckImmedAndMakeContained(cmp, op2))
         {
             if (op1Type == op2Type)
             {
                 TryMakeSrcContainedOrRegOptional(cmp, op1);
             }
+            else if (IsContainableMemoryOp(op1) && CanCompareAtMemoryWidth(op1, op2) && IsSafeToContainMem(cmp, op1))
+            {
+                MakeSrcContained(cmp, op1);
+            }
         }
-        else if (op1Type == op2Type)
+        else
         {
             // TEST has no r,rm encoding, but the emitter maps it to rm,r.
-            if (IsContainableMemoryOp(op2) && IsSafeToContainMem(cmp, op2))
+            if (IsContainableMemoryOp(op2) && CanCompareAtMemoryWidth(op2, op1) && IsSafeToContainMem(cmp, op2))
             {
                 MakeSrcContained(cmp, op2);
             }
 
-            if (!op2.IsContained && IsContainableMemoryOp(op1) && IsSafeToContainMem(cmp, op1))
+            if (!op2.IsContained && IsContainableMemoryOp(op1) &&
+                CanCompareAtMemoryWidth(op1, op2) && IsSafeToContainMem(cmp, op1))
             {
                 MakeSrcContained(cmp, op1);
             }
 
-            if (!op1.IsContained && !op2.IsContained)
+            if ((op1Type == op2Type) && !op1.IsContained && !op2.IsContained)
             {
                 var candidate = op1.Oper.IsCnsIntOrI ? op2 : PreferredRegOptionalOperand(op1, op2);
                 if (IsSafeToMarkRegOptional(cmp, candidate))
@@ -70,6 +95,14 @@ public sealed partial class Lowering
                     MakeSrcRegOptional(cmp, candidate);
                 }
             }
+        }
+
+        // A contained memory operand bounds both values; otherwise small compares
+        // have matching operand types.
+        var rangeSource = op2.IsContained && !op2.Oper.IsCnsIntOrI ? op2 : op1;
+        if (cmp.Oper.IsCompare && (cmp.GetCompareSize() < TYP_INT.Size) && varTypeIsUnsigned(rangeSource.Type))
+        {
+            cmp.IsUnsigned = true;
         }
 #else
         throw new System.NotImplementedException("Non-xarch comparison containment is not ported.");

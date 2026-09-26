@@ -444,7 +444,7 @@ public partial class Compiler
         if ((curArgVal.Flags & GTF_ALL_EFFECT) is not 0)
         {
             argInfo.argHasGlobRef = (curArgVal.Flags & GTF_GLOB_REF) is not 0;
-            argInfo.argHasSideEff = (curArgVal.Flags & (GTF_ALL_EFFECT & ~GTF_GLOB_REF)) is not 0;
+            argInfo.argHasSideEff = (curArgVal.Flags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) is not 0;
         }
 
         if (curArgVal.Oper is GT_LCL_VAR)
@@ -3484,12 +3484,6 @@ public partial class Compiler
         assert(call.IsSpecialIntrinsic());
         assert(opts.IsOptimizedWithProfile);
 
-        if (call.IsInlineCandidate)
-        {
-            // We decided to inline the whole thing? We won't be able to clone it then.
-            return call;
-        }
-
         Unsafe.SkipInit(out InlineArray8<LikelyValueRecord> inlineLikelyValues);
         var likelyValues = (Span<LikelyValueRecord>)(inlineLikelyValues);
 
@@ -3544,7 +3538,7 @@ public partial class Compiler
                 argNum = 2;
 
                 minValue = 1; // TODO: enable for 0 as well.
-                maxValue = GetUnrollThreshold(ProfiledMemcmp);
+                maxValue = GetUnrollThreshold(Memcmp);
             }
             else
             {
@@ -3593,6 +3587,14 @@ public partial class Compiler
                 }
 
                 assert(argClone is not null);
+
+                if (call.IsInlineCandidate)
+                {
+                    var inlineInfo = call.SingleInlineCandidateInfo
+                        ?? throw new FatalJitException("Missing inline candidate information.");
+                    assert(inlineInfo.retExpr is null);
+                    call.ClearInlineInfo();
+                }
 
                 var fallbackCall = gtCloneExpr(call);
                 var profiledValueNode = gtNewIconNode(argClone.Type, profiledValue);
@@ -3660,17 +3662,11 @@ public partial class Compiler
     /// <param name="sigInfo"></param>
     /// <param name="callJitType">The underlying type for the call</param>
     /// <param name="intrinsicName">The intrinsic being imported</param>
-    /// <param name="mustExpand">true if the intrinsic must return a GenTree*; otherwise, false</param>
     /// <returns></returns>
-    public unsafe GenTree? impEstimateIntrinsic(CORINFO_METHOD_HANDLE method, in CORINFO_SIG_INFO sigInfo, CorInfoType callJitType, NamedIntrinsic intrinsicName, bool mustExpand)
+    public unsafe GenTree? impEstimateIntrinsic(CORINFO_METHOD_HANDLE method, in CORINFO_SIG_INFO sigInfo, CorInfoType callJitType, NamedIntrinsic intrinsicName)
     {
         var callType = callJitType.VarType;
         assert(varTypeIsFloating(callType));
-
-        if (BlockNonDeterministicIntrinsics(mustExpand))
-        {
-            return null;
-        }
 
         if (IsIntrinsicImplementedByUserCall(intrinsicName))
         {
@@ -3692,7 +3688,7 @@ public partial class Compiler
                 assert(sigInfo.numArgs is 3);
 
 #if TARGET_XARCH
-                if (compExactlyDependsOn(InstructionSet_AVX2))
+                if (compExactlyDependsOn(InstructionSet_AVX2, true))
                 {
                     simdType = TYP_SIMD16;
                     intrinsicId = NI_AVX2_MultiplyAddScalar;
@@ -3720,7 +3716,7 @@ public partial class Compiler
                 assert(sigInfo.numArgs is 1);
 
 #if TARGET_XARCH
-                if (compExactlyDependsOn(InstructionSet_AVX512))
+                if (compExactlyDependsOn(InstructionSet_AVX512, true))
                 {
                     simdType = TYP_SIMD16;
                     intrinsicId = NI_AVX512_Reciprocal14Scalar;
@@ -3747,7 +3743,7 @@ public partial class Compiler
                 assert(sigInfo.numArgs is 1);
 
 #if TARGET_XARCH
-                if (compExactlyDependsOn(InstructionSet_AVX512))
+                if (compExactlyDependsOn(InstructionSet_AVX512, true))
                 {
                     simdType = TYP_SIMD16;
                     intrinsicId = NI_AVX512_ReciprocalSqrt14Scalar;
@@ -15787,7 +15783,7 @@ public partial class Compiler
 
 #if DEBUG
     /// <summary>Spill the stack and insert IR that poisons all implicit byrefs.</summary>
-    /// <remarks>The memory pointed to by implicit byrefs is owned by the callee but usually exists on the caller's frame (or on the heap for some reflection invoke scenarios). This function helps catch situations where the caller reads from the memory after the invocation, for example due to a bug in the JIT's own last-use copy elision for implicit byrefs.</remarks>
+    /// <remarks>The memory pointed to by implicit byrefs is owned by the callee but usually exists on the caller's frame (or in GC-protected native memory for some runtime invoke scenarios). This function helps catch situations where the caller reads from the memory after the invocation, for example due to a bug in the JIT's own last-use copy elision for implicit byrefs.</remarks>
     public void impPoisonImplicitByrefsBeforeReturn()
     {
         var spilled = false;
@@ -16181,15 +16177,13 @@ public partial class Compiler
     /// <param name="method">handle for the intrinsic method</param>
     /// <param name="sigInfo">signature of the intrinsic method</param>
     /// <param name="entryPoint">The entry point information required for R2R scenarios</param>
-    /// <param name="mustExpand">true if the intrinsic must return a GenTree*; otherwise, false</param>
     /// <returns>IR tree to use in place of the call, or null if the jit should treat the intrinsic call like a normal call.</returns>
     public unsafe GenTree? impPrimitiveNamedIntrinsic(
         NamedIntrinsic intrinsic,
         CORINFO_CLASS_HANDLE clsHnd,
         CORINFO_METHOD_HANDLE method,
         in CORINFO_SIG_INFO sigInfo,
-        in CORINFO_CONST_LOOKUP entryPoint,
-        bool mustExpand)
+        in CORINFO_CONST_LOOKUP entryPoint)
     {
         assert(sigInfo.sigInst.classInstCount is 0);
 
@@ -16221,15 +16215,6 @@ public partial class Compiler
         switch (intrinsic)
         {
             case NI_PRIMITIVE_ConvertToIntegerNative:
-            {
-                if (BlockNonDeterministicIntrinsics(mustExpand))
-                {
-                    return null;
-                }
-
-                goto case NI_PRIMITIVE_ConvertToInteger;
-            }
-
             case NI_PRIMITIVE_ConvertToInteger:
             {
                 assert(sigInfo.sigInst.methInstCount is 1);
@@ -16255,7 +16240,7 @@ public partial class Compiler
                             {
                                 hwIntrinsicId = NI_X86Base_ConvertToInt32WithTruncation;
                             }
-                            else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                            else if (compExactlyDependsOn(InstructionSet_AVX512, true))
                             {
                                 hwIntrinsicId = NI_AVX512_ConvertToUInt32WithTruncation;
                             }
@@ -16268,7 +16253,7 @@ public partial class Compiler
                             {
                                 hwIntrinsicId = NI_X86Base_ConvertToInt32WithTruncation;
                             }
-                            else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                            else if (compExactlyDependsOn(InstructionSet_AVX512, true))
                             {
                                 hwIntrinsicId = NI_AVX512_ConvertToUInt32WithTruncation;
                             }
@@ -16285,7 +16270,7 @@ public partial class Compiler
                             {
                                 hwIntrinsicId = NI_X86Base_X64_ConvertToInt64WithTruncation;
                             }
-                            else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                            else if (compExactlyDependsOn(InstructionSet_AVX512, true))
                             {
                                 hwIntrinsicId = NI_AVX512_X64_ConvertToUInt64WithTruncation;
                             }
@@ -16298,7 +16283,7 @@ public partial class Compiler
                             {
                                 hwIntrinsicId = NI_X86Base_X64_ConvertToInt64WithTruncation;
                             }
-                            else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                            else if (compExactlyDependsOn(InstructionSet_AVX512, true))
                             {
                                 hwIntrinsicId = NI_AVX512_X64_ConvertToUInt64WithTruncation;
                             }
@@ -22299,11 +22284,7 @@ public partial class Compiler
                     }
                     else if (NameEquals(namespaceName, "StubHelpers"u8) && NameEquals(className, "StubHelpers"u8))
                     {
-                        if (NameEquals(methodName, "GetStubContext"u8))
-                        {
-                            result = NI_System_StubHelpers_GetStubContext;
-                        }
-                        else if (NameEquals(methodName, "NextCallReturnAddress"u8))
+                        if (NameEquals(methodName, "NextCallReturnAddress"u8))
                         {
                             result = NI_System_StubHelpers_NextCallReturnAddress;
                         }
@@ -23199,8 +23180,10 @@ public partial class Compiler
     {
         assert(isa is not InstructionSet_ILLEGAL);
 
+        var preserveNegativeDependency = intrinsic is NI_Vector_MaxNative or NI_Vector_MinNative
+            or NI_Vector_ShuffleNative or NI_Vector_ShuffleNativeFallback;
         var isHWIntrinsicEnabled = JitConfig.EnableHWIntrinsic != 0;
-        var isIsaSupported = isHWIntrinsicEnabled && compSupportsHWIntrinsic(isa);
+        var isIsaSupported = isHWIntrinsicEnabled && compSupportsHWIntrinsic(isa, preserveNegativeDependency);
         var isHardwareAcceleratedProperty = intrinsic is NI_IsHardwareAccelerated;
         var isSupportedProperty = intrinsic is NI_IsSupported;
         var vectorByteLength = 0;
@@ -23288,9 +23271,14 @@ public partial class Compiler
         return intrinsic;
     }
 
-    internal bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
+    internal bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false)
     {
-        _ = compExactlyDependsOn(isa);
+        return compHWIntrinsicDependsOn(isa, preserveNegativeDependency);
+    }
+
+    private bool compHWIntrinsicDependsOn(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false)
+    {
+        _ = compExactlyDependsOn(isa, preserveNegativeDependency);
         return opts.compSupportsISA.HasInstructionSet(isa);
     }
 

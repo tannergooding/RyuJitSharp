@@ -10,17 +10,17 @@ public partial class Compiler
     public const UnrollKind Memset = UnrollKind.Memset;
     public const UnrollKind Memcpy = UnrollKind.Memcpy;
     public const UnrollKind Memmove = UnrollKind.Memmove;
+    public const UnrollKind Memcmp = UnrollKind.Memcmp;
     public const UnrollKind MemcmpU16 = UnrollKind.MemcmpU16;
     public const UnrollKind ProfiledMemmove = UnrollKind.ProfiledMemmove;
-    public const UnrollKind ProfiledMemcmp = UnrollKind.ProfiledMemcmp;
 
     public enum UnrollKind
     {
         Memset,
         Memcpy,
         Memmove,
+        Memcmp,
         MemcmpU16,
         ProfiledMemmove,
-        ProfiledMemcmp,
     }
 }

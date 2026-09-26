@@ -207,7 +207,7 @@ public static partial class VNFuncExtensions
         ValueNumStore.GetOpAttribsForFunc(arity: 3, commute: false, knownNonNull: false), // VNF_MapPhysicalStore
         ValueNumStore.GetOpAttribsForFunc(arity: 2, commute: false, knownNonNull: false), // VNF_BitCast
         ValueNumStore.GetOpAttribsForFunc(arity: 1, commute: false, knownNonNull: false), // VNF_ZeroObj
-        ValueNumStore.GetOpAttribsForFunc(arity: 2, commute: false, knownNonNull: true), // VNF_PtrToLoc
+        ValueNumStore.GetOpAttribsForFunc(arity: 3, commute: false, knownNonNull: true), // VNF_PtrToLoc
         ValueNumStore.GetOpAttribsForFunc(arity: 4, commute: false, knownNonNull: true), // VNF_PtrToArrElem
         ValueNumStore.GetOpAttribsForFunc(arity: 3, commute: false, knownNonNull: true), // VNF_PtrToStatic
         ValueNumStore.GetOpAttribsForFunc(arity: 2, commute: false, knownNonNull: false), // VNF_MDArrLength
@@ -223,6 +223,7 @@ public static partial class VNFuncExtensions
         ValueNumStore.GetOpAttribsForFunc(arity: 1, commute: false, knownNonNull: false), // VNF_TypeHandleToRuntimeTypeHandle
         ValueNumStore.GetOpAttribsForFunc(arity: 3, commute: false, knownNonNull: false), // VNF_LdElemA
         ValueNumStore.GetOpAttribsForFunc(arity: 3, commute: false, knownNonNull: false), // VNF_ByrefExposedLoad
+        ValueNumStore.GetOpAttribsForFunc(arity: 4, commute: false, knownNonNull: false), // VNF_ByrefExposedLocalLoad
         ValueNumStore.GetOpAttribsForFunc(arity: 2, commute: false, knownNonNull: false), // VNF_GetRefanyVal
         ValueNumStore.GetOpAttribsForFunc(arity: 1, commute: false, knownNonNull: true), // VNF_GetClassFromMethodParam
         ValueNumStore.GetOpAttribsForFunc(arity: 1, commute: false, knownNonNull: true), // VNF_GetSyncFromClassHandle

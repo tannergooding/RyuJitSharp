@@ -17,6 +17,12 @@ public sealed partial class ObjectAllocator
         JITDUMP($"** Seeing if we can clone to guarantee non-escape under V{info.Local:D2}\n");
         var allocBlock = info.AllocBlock ?? throw new InvalidOperationException("Missing enumerator allocation block.");
 
+        if (info.HasConflictingRedefinition)
+        {
+            JITDUMP($"V{info.Local:D2} has a later definition that may reach its guarded uses\n");
+            return false;
+        }
+
         if (!allocBlock.HasTarget)
         {
             JITDUMP($"allocation block {FMT_BB(allocBlock.bbNum)} is a {allocBlock.Kind}, and so has no unique target edge\n");

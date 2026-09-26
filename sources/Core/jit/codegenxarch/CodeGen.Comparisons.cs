@@ -92,7 +92,7 @@ public sealed partial class CodeGen
         assert(!varTypeIsFloating(op2Type));
 
         instruction ins;
-        var type = TYP_UNKNOWN;
+        var size = (emitAttr)tree.GetCompareSize();
         if (tree.Oper is GT_TEST_EQ or GT_TEST_NE or GT_TEST)
         {
             ins = INS_test;
@@ -101,14 +101,12 @@ public sealed partial class CodeGen
             // A byte-sized mask can instead use a byte-sized TEST.
             if (op2.Oper.IsCnsIntOrI && FitsIn(TYP_UBYTE, op2.AsIntCon().IconValue))
             {
-                type = TYP_UBYTE;
+                size = EA_1BYTE;
             }
         }
         else if (tree.Oper is GT_BITTEST_EQ or GT_BITTEST_NE or GT_BT)
         {
             ins = INS_bt;
-            // The instruction masks the index, so its width need not match the value.
-            type = op1Type.ActualType;
         }
         else if (op1.IsUsedFromReg && op2.IsIntegralConst(0))
         {
@@ -138,33 +136,16 @@ public sealed partial class CodeGen
             ins = INS_cmp;
         }
 
-        if (type == TYP_UNKNOWN)
-        {
-            if (op1Type == op2Type)
-            {
-                type = op1Type;
-            }
-            else if (op1Type.Size == op2Type.Size)
-            {
-                type = op1Type.Size == 8 ? TYP_LONG : TYP_INT;
-            }
-            else
-            {
-                type = TYP_INT;
-            }
+        assert((op1Type.Size >= (int)size) || !op1.IsUsedFromMemory);
+        assert((op2Type.Size >= (int)size) || !op2.IsUsedFromMemory);
+        assert(!op2.Oper.IsCnsIntOrI || (size != EA_1BYTE) ||
+            FitsIn(TYP_BYTE, op2.AsIntCon().IconValue) || FitsIn(TYP_UBYTE, op2.AsIntCon().IconValue));
+        assert(!op2.Oper.IsCnsIntOrI || (size != EA_2BYTE) ||
+            FitsIn(TYP_SHORT, op2.AsIntCon().IconValue) || FitsIn(TYP_USHORT, op2.AsIntCon().IconValue));
+        assert(size <= EA_PTRSIZE);
 
-            assert(type.Size >= Math.Max(op1Type.Size, op2Type.Size));
-            assert(!(varTypeIsSmall(type) && varTypeIsUnsigned(type)) || tree.IsUnsigned);
-            assert((op1Type.Size >= type.Size) || !op1.IsUsedFromMemory);
-            assert((op2Type.Size >= type.Size) || !op2.IsUsedFromMemory);
-            assert(!op2.Oper.IsCnsIntOrI || !varTypeIsSmall(type) || FitsIn(type, op2.AsIntCon().IconValue));
-        }
-
-        assert(type.Size <= TYP_I_IMPL.Size);
-        assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
-        if (!canReuseFlags || !genCanAvoidEmittingCompareAgainstZero(tree, type))
+        if (!canReuseFlags || !genCanAvoidEmittingCompareAgainstZero(tree, size))
         {
-            var size = type.EmitSize;
             var canSkip = _compiler.opts.OptimizationEnabled && (ins == INS_cmp) &&
                 !op1.IsUsedFromMemory && !op2.IsUsedFromMemory &&
                 Emitter.IsRedundantCmp(size, op1.RegNum, op2.RegNum);
@@ -182,7 +163,7 @@ public sealed partial class CodeGen
 #endif
     }
 
-    public bool genCanAvoidEmittingCompareAgainstZero(GenTree tree, var_types opType)
+    public bool genCanAvoidEmittingCompareAgainstZero(GenTree tree, emitAttr opSize)
     {
 #if !TARGET_AMD64
         throw new FatalJitException(CORJIT_SKIPPED, "Comparison flag reuse requires AMD64.");
@@ -211,7 +192,7 @@ public sealed partial class CodeGen
             }
         }
 
-        if (Emitter.AreFlagsSetToZeroCmp(op1.RegNum, opType.EmitSize, condition))
+        if (Emitter.AreFlagsSetToZeroCmp(op1.RegNum, opSize, condition))
         {
 #if DEBUG
             if (_compiler.verbose)
@@ -222,7 +203,7 @@ public sealed partial class CodeGen
             return true;
         }
 
-        if ((consumer is not null) && Emitter.AreFlagsSetForSignJumpOpt(op1.RegNum, opType.EmitSize, condition))
+        if ((consumer is not null) && Emitter.AreFlagsSetForSignJumpOpt(op1.RegNum, opSize, condition))
         {
 #if DEBUG
             if (_compiler.verbose)

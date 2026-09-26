@@ -134,39 +134,9 @@ public sealed partial class Lowering : Phase
         }
 
         // Native AfterLowerBlocks is empty outside Wasm.
-#if DEBUG
-        JITDUMP("Lower has completed modifying nodes.\n");
-        if (compiler.verbose)
-        {
-            compiler.fgDispBasicBlocks(true);
-        }
-#endif
-
-        compiler.lvaComputeRefCounts(isRecompute: true, setSlotNumbers: false);
-
         compiler._dfsTree ??= compiler.fgComputeDfs();
         _ = compiler.fgRemoveBlocksOutsideDfsTree();
 
-        if (compiler.backendRequiresLocalVarLifetimes())
-        {
-            assert(compiler.opts.OptimizationEnabled);
-
-            compiler.fgPostLowerLiveness();
-            // Liveness can delete code and leave empty blocks.
-            var modified = compiler.fgUpdateFlowGraph(doTailDuplication: false, isPhase: false);
-
-            if (modified)
-            {
-                _ = compiler.fgDfsBlocksAndRemove();
-                JITDUMP("had to run another liveness pass:\n");
-                compiler.fgPostLowerLiveness();
-            }
-
-            // Dead-code removal can leave tracked locals with zero references.
-            compiler.lvaComputeRefCounts(isRecompute: true, setSlotNumbers: false);
-        }
-
-        compiler.fgInvalidateDfsTree();
         return PhaseStatus.MODIFIED_EVERYTHING;
 #else
         const string message = "Lowering.DoPhase outside Windows AMD64 is not ported.";

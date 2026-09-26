@@ -2430,6 +2430,11 @@ public partial class Compiler
             // RetBuf is known to be on the stack
             result = false;
         }
+        else if ((op.Oper is GT_LCL_VAR) && lvaIsImplicitByRefLocal(op.AsLclVar().LclNum))
+        {
+            // Implicit byrefs cannot point into the heap.
+            result = false;
+        }
 
         return result;
     }
@@ -2443,7 +2448,8 @@ public partial class Compiler
         {
             case GT_LCL_VAR:
             {
-                return !lvaIsImplicitByRefLocal(addr.AsLclVar().LclNum);
+                var lclNum = addr.AsLclVar().LclNum;
+                return !lvaIsImplicitByRefLocal(lclNum) && (lclNum != impInlineRoot.info.compRetBuffArg);
             }
 
             case GT_LCL_ADDR:
@@ -11965,7 +11971,7 @@ public partial class Compiler
         {
             codeGen.IsFramePointerRequired = true;
         }
-        if (info.compPublishStubParam)
+        if (info.compIsVarArgs && opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB))
         {
             codeGen.SetFramePointerRequiredGCInfo(true);
         }
@@ -13330,9 +13336,9 @@ public partial class Compiler
 
         if (opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TRACK_TRANSITIONS))
         {
-            // In an IL stub, the secret argument identifies the actual target method.
-            var stubArgument = info.compPublishStubParam
-                ? (GenTree)gtNewLclvNode(TYP_I_IMPL, lvaStubArgumentVar)
+            // Reverse P/Invoke IL stubs receive UMEntryThunkData in the secret parameter.
+            var stubArgument = compHasSecretStubArgument()
+                ? (GenTree)gtNewLclvNode(TYP_I_IMPL, lvaGetSecretStubArgumentVar())
                 : gtNewIconNode(TYP_I_IMPL, 0);
             tree = gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS,
                 pInvokeFrameVar, gtNewIconEmbMethHndNode(info.compMethodHnd), stubArgument);
@@ -13467,7 +13473,8 @@ public partial class Compiler
             lvaInlinedPInvokeFrameVar = lvaGrabTempWithImplicitUse(shortLifetime: false, "Pinvoke FrameVar");
             lvaSetVarAddrExposed(lvaInlinedPInvokeFrameVar, AddressExposedReason.ESCAPE_ADDRESS);
             var eeInfo = eeGetEEInfo();
-            var frameSize = info.compPublishStubParam ? eeInfo.inlinedCallFrameInfo.sizeWithSecretStubArg : eeInfo.inlinedCallFrameInfo.size;
+            var hasMDContextArg = info.compIsVarArgs && opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB);
+            var frameSize = hasMDContextArg ? eeInfo.inlinedCallFrameInfo.sizeWithSecretStubArg : eeInfo.inlinedCallFrameInfo.size;
             lvaSetStruct(lvaInlinedPInvokeFrameVar, typGetBlkLayout(frameSize), unsafeValueClsCheck: false);
         }
 
@@ -15566,7 +15573,6 @@ public partial class Compiler
                   || lvaIsOSRLocal(varNum)
                   || (varNum == lvaGSSecurityCookie)
                   || (varNum == lvaInlinedPInvokeFrameVar)
-                  || (varNum == lvaStubArgumentVar)
                   || (varNum == lvaRetAddrVar);
 
 #if TARGET_ARM64
@@ -16086,7 +16092,7 @@ public partial class Compiler
         if (lvaIsImplicitByRefLocal(lclNum))
         {
             // SIMD field coalescing may revisit an already-expanded pointer.
-            if ((local.Oper is GT_LCL_VAR) && (local.Type is TYP_BYREF))
+            if ((local.Oper is GT_LCL_VAR) && (local.Type == varDsc.Type))
             {
                 return null;
             }
@@ -16125,7 +16131,9 @@ public partial class Compiler
         JITDUMP("\nRewriting an implicit by-ref parameter reference:\n");
         DISPTREE(local);
 
-        var pointer = new GenTreeLclVar(GT_LCL_VAR, TYP_BYREF, newLclNum, data: null, local, NodeThreading.None);
+        var pointerType = lvaGetImplicitByRefParamType();
+        assert(lvaGetDesc(newLclNum).Type == pointerType);
+        var pointer = new GenTreeLclVar(GT_LCL_VAR, pointerType, newLclNum, data: null, local, NodeThreading.None);
         pointer.Flags &= GTF_COMMON_MASK & ~GTF_ALL_EFFECT;
 
         if (isStillLastUse)
@@ -16137,7 +16145,7 @@ public partial class Compiler
 
         if (offset != 0)
         {
-            address = gtNewBinaryNode(GT_ADD, TYP_BYREF, address, gtNewIconNode(TYP_I_IMPL, offset));
+            address = gtNewBinaryNode(GT_ADD, pointerType, address, gtNewIconNode(TYP_I_IMPL, offset));
         }
 
         // Retyping loses the original struct's exposure state, so these loads
@@ -16155,6 +16163,7 @@ public partial class Compiler
             {
                 result = gtNewStoreIndNode(type, address, data);
             }
+            result.Flags |= GTF_IND_TGT_NOT_HEAP;
         }
         else if (isLoad)
         {
@@ -16287,7 +16296,7 @@ public partial class Compiler
                 if (!undoPromotion)
                 {
                     assert((fgFirstBB is not null) && (fgFirstBB.bbPreds is null));
-                    var address = gtNewLclvNode(TYP_BYREF, lclNum);
+                    var address = gtNewLclvNode(lvaGetImplicitByRefParamType(), lclNum);
                     var data = varDsc.Type is TYP_STRUCT
                         ? gtNewBlkIndir(address, layout)
                         : gtNewIndir(varDsc.Type, address);
@@ -16337,14 +16346,14 @@ public partial class Compiler
                 assert(varDsc.lvFieldLclStart == 0);
             }
 
-            varDsc.Type = TYP_BYREF;
+            varDsc.Type = lvaGetImplicitByRefParamType();
             // Taking the struct's address uses the pointer value, never the
             // address of the pointer parameter itself.
             varDsc.CleanAddressExposed();
             varDsc.lvDoNotEnregister = false;
 #if DEBUG
             varDsc.lvKeepType = true;
-            JITDUMP($"Changing the lvType for struct parameter V{lclNum:D2} to TYP_BYREF.\n");
+            JITDUMP($"Changing the lvType for struct parameter V{lclNum:D2} to {varDsc.Type}.\n");
 #endif
         }
 #endif

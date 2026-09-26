@@ -280,6 +280,21 @@ internal static unsafe class ArithmeticMorphTests
         });
     }
 
+    [Test]
+    public static void CommaThrowDoesNotReplaceStructResultWithScalarZero()
+    {
+        WithCompiler(compiler => {
+            var throwing = compiler.gtNewHelperCallNode(TYP_VOID, CorInfoHelpFunc.CORINFO_HELP_OVERFLOW);
+            var zero = compiler.gtNewIconNode(TYP_INT, 0);
+            var comma = compiler.gtNewCommaNode(TYP_INT, throwing, zero);
+            var parent = compiler.gtNewUnaryNode(GT_RETURN, TYP_STRUCT, comma);
+
+            Assert.That(compiler.fgPropagateCommaThrow(parent, comma, GTF_EMPTY), Is.Null);
+            Assert.That(comma.Type, Is.EqualTo(TYP_INT));
+            Assert.That(comma.Op2, Is.SameAs(zero));
+        });
+    }
+
     [TestCase(4, false)]
     [TestCase(8, true)]
     public static void ReturnedStructFieldsReplaceOnlyWholeLocals(int size, bool replace)
@@ -406,6 +421,27 @@ internal static unsafe class ArithmeticMorphTests
                 Assert.That(root.Op1, Is.SameAs(left));
                 Assert.That(root.Op2, Is.SameAs(right));
             }
+        });
+    }
+
+    [TestCase(GT_OR, true)]
+    [TestCase(GT_XOR, false)]
+    public static void VariableComplementaryShiftsRespectZeroCount(genTreeOps operation, bool rotate)
+    {
+        WithCompiler(compiler => {
+            var count = compiler.gtNewLclvNode(TYP_INT, 1);
+            var complement = compiler.gtNewBinaryNode(GT_ADD, TYP_INT,
+                compiler.gtNewUnaryNode(GT_NEG, TYP_INT, compiler.gtNewLclvNode(TYP_INT, 1)),
+                compiler.gtNewIconNode(TYP_INT, 32));
+            var left = compiler.gtNewBinaryNode(GT_LSH, TYP_INT,
+                compiler.gtNewLclvNode(TYP_INT, 0), count);
+            var right = compiler.gtNewBinaryNode(GT_RSZ, TYP_INT,
+                compiler.gtNewLclvNode(TYP_INT, 0), complement);
+            var root = compiler.gtNewBinaryNode(operation, TYP_INT, left, right);
+
+            var result = compiler.fgRecognizeAndMorphBitwiseRotation(root);
+            Assert.That(result is not null, Is.EqualTo(rotate));
+            Assert.That(root.Oper, Is.EqualTo(rotate ? GT_ROL : operation));
         });
     }
 

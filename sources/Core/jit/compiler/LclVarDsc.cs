@@ -105,7 +105,8 @@ public partial struct LclVarDsc
         readonly get
         {
 #if FEATURE_IMPLICIT_BYREFS
-            assert(Debugger.IsAttached || varTypeIsStruct(Type) || (IsImplicitByRef && (Type is TYP_BYREF)));
+            assert(Debugger.IsAttached || varTypeIsStruct(Type) ||
+                (IsImplicitByRef && (Type is TYP_I_IMPL or TYP_BYREF)));
 #else
             assert(Debugger.IsAttached || varTypeIsStruct(Type));
 #endif

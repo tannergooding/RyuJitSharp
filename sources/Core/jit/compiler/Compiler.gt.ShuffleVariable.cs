@@ -10,6 +10,13 @@ namespace RyuJitSharp;
 public partial class Compiler
 {
 #if FEATURE_HW_INTRINSICS
+    private GenTreeHWIntrinsic gtNewReorderedShuffleNode(var_types type, NamedIntrinsic intrinsic, var_types baseType,
+        byte simdSize, ref GenTree op1, ref GenTree op2)
+    {
+        gtPrepareOperandsForReordering(ref op1, ref op2);
+        return gtNewSimdHWIntrinsicNode(type, intrinsic, baseType, simdSize, op2, op1);
+    }
+
     public GenTree gtNewSimdShuffleVariableNode(var_types type, GenTree op1, GenTree op2, var_types baseType,
         byte simdSize, bool isShuffleNative)
     {
@@ -34,32 +41,32 @@ public partial class Compiler
                 4 => NI_AVX512_PermuteVar16x32,
                 _ => NI_AVX512_PermuteVar8x64,
             };
-            result = gtNewSimdHWIntrinsicNode(type, intrinsic, baseType, simdSize, op2, op1);
-            result.Flags |= GTF_REVERSE_OPS;
+            result = gtNewReorderedShuffleNode(type, intrinsic, baseType, simdSize, ref op1, ref op2);
         }
         else if ((elementSize == 1) && (simdSize == 16))
         {
             result = gtNewSimdHWIntrinsicNode(type, NI_X86Base_Shuffle, baseType, simdSize, op1, op2);
             signedComparisonHint = true;
         }
-        else if ((elementSize == 1) && (simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX512v2))
+        else if ((elementSize == 1) && (simdSize == 32) &&
+            compOpportunisticallyDependsOn(InstructionSet_AVX512v2, isShuffleNative))
         {
-            result = gtNewSimdHWIntrinsicNode(type, NI_AVX512v2_PermuteVar32x8, baseType, simdSize, op2, op1);
-            result.Flags |= GTF_REVERSE_OPS;
+            result = gtNewReorderedShuffleNode(type, NI_AVX512v2_PermuteVar32x8,
+                baseType, simdSize, ref op1, ref op2);
         }
-        else if ((elementSize == 2) && compOpportunisticallyDependsOn(InstructionSet_AVX512))
+        else if ((elementSize == 2) && compOpportunisticallyDependsOn(InstructionSet_AVX512, isShuffleNative))
         {
             var intrinsic = simdSize == 16 ? NI_AVX512_PermuteVar8x16 : NI_AVX512_PermuteVar16x16;
-            result = gtNewSimdHWIntrinsicNode(type, intrinsic, baseType, simdSize, op2, op1);
-            result.Flags |= GTF_REVERSE_OPS;
+            result = gtNewReorderedShuffleNode(type, intrinsic, baseType, simdSize, ref op1, ref op2);
         }
-        else if ((elementSize == 4) && ((simdSize == 32) || compOpportunisticallyDependsOn(InstructionSet_AVX)))
+        else if ((elementSize == 4) &&
+            ((simdSize == 32) || compOpportunisticallyDependsOn(InstructionSet_AVX, isShuffleNative)))
         {
             if (simdSize == 32)
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                result = gtNewSimdHWIntrinsicNode(type, NI_AVX2_PermuteVar8x32, baseType, simdSize, op2, op1);
-                result.Flags |= GTF_REVERSE_OPS;
+                result = gtNewReorderedShuffleNode(type, NI_AVX2_PermuteVar8x32,
+                    baseType, simdSize, ref op1, ref op2);
             }
             else
             {
@@ -69,15 +76,16 @@ public partial class Compiler
         }
         else if ((elementSize == 8) && (simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX512))
         {
-            result = gtNewSimdHWIntrinsicNode(type, NI_AVX512_PermuteVar4x64, baseType, simdSize, op2, op1);
-            result.Flags |= GTF_REVERSE_OPS;
+            result = gtNewReorderedShuffleNode(type, NI_AVX512_PermuteVar4x64,
+                baseType, simdSize, ref op1, ref op2);
         }
         else if ((elementSize == 8) && (simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_AVX512))
         {
             var duplicate = fgMakeMultiUse(ref op1);
             result = gtNewSimdHWIntrinsicNode(type, NI_AVX512_PermuteVar2x64x2, baseType, simdSize, op1, op2, duplicate);
         }
-        else if ((elementSize == 8) && ((simdSize == 32) || compOpportunisticallyDependsOn(InstructionSet_AVX)))
+        else if ((elementSize == 8) &&
+            ((simdSize == 32) || compOpportunisticallyDependsOn(InstructionSet_AVX, isShuffleNative)))
         {
             assert((simdSize == 32) ? compIsaSupportedDebugOnly(InstructionSet_AVX2) :
                 ((simdSize == 16) && compIsaSupportedDebugOnly(InstructionSet_AVX)));
@@ -113,8 +121,8 @@ public partial class Compiler
             op2 = gtNewSimdBinOpNode(GT_OR, type, op2, offsets, baseType, simdSize);
             if (simdSize == 32)
             {
-                result = gtNewSimdHWIntrinsicNode(type, NI_AVX2_PermuteVar8x32, baseType, simdSize, op2, op1);
-                result.Flags |= GTF_REVERSE_OPS;
+                result = gtNewReorderedShuffleNode(type, NI_AVX2_PermuteVar8x32,
+                    baseType, simdSize, ref op1, ref op2);
             }
             else
             {

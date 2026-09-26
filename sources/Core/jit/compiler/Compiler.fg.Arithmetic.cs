@@ -415,6 +415,12 @@ public partial class Compiler
         // or constants whose sum is N, where N is the value's bit width.
         if ((indexWithAdd is not null) && !indexWithAdd.HasOverflowCheck)
         {
+            if (tree.Oper is GT_XOR)
+            {
+                // At an effective shift count of zero, XOR cancels instead of rotating.
+                return null;
+            }
+
             if (indexWithAdd.Op2.Oper.IsCnsIntOrI && (indexWithAdd.Op2.AsIntCon().IconValue == bitSize) &&
                 (indexWithAdd.Op1.Oper is GT_NEG) &&
                 GenTree.Compare(indexWithAdd.Op1.AsUnOp().Op1, indexWithoutAdd))

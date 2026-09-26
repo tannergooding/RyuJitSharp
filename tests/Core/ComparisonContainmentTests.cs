@@ -12,6 +12,21 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class ComparisonContainmentTests
 {
+    [TestCase(TYP_BYTE, TYP_UBYTE, false, 4)]
+    [TestCase(TYP_SHORT, TYP_BYTE, true, 1)]
+    [TestCase(TYP_USHORT, TYP_INT, false, 4)]
+    public static void CompareSizeUsesContainedMemoryOrExtendsMixedTypes(
+        var_types firstType, var_types secondType, bool secondContained, int expectedSize)
+    {
+        WithCompiler(compiler => {
+            var first = compiler.gtNewLclvNode(firstType, 0);
+            var second = compiler.gtNewLclvNode(secondType, 1);
+            second.IsContained = secondContained;
+            var comparison = new GenTreeOp(GT_EQ, TYP_INT, first, second);
+            Assert.That(comparison.GetCompareSize(), Is.EqualTo(expectedSize));
+        });
+    }
+
     [TestCase(GT_LT, false, true)]
     [TestCase(GT_GT, false, false)]
     [TestCase(GT_LT, true, false)]
@@ -103,6 +118,31 @@ internal static unsafe class ComparisonContainmentTests
             Assert.That(comparison._vnPair.Liberal, Is.EqualTo(333u));
             Assert.That(comparison.Op1, Is.SameAs(first));
             Assert.That(comparison.Op2, Is.SameAs(second));
+        });
+    }
+
+    [TestCase(TYP_UBYTE, 200L, true, true)]
+    [TestCase(TYP_BYTE, 127L, true, false)]
+    [TestCase(TYP_UBYTE, 256L, false, false)]
+    [TestCase(TYP_BYTE, -129L, false, false)]
+    public static void OptimizedMixedWidthCompareContainsMemoryOnlyWithinItsRange(
+        var_types memoryType, long constant, bool contained, bool unsigned)
+    {
+        WithCompiler(compiler => {
+            compiler.opts.canUseAllOpts = true;
+            var address = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var memory = compiler.gtNewIndir(memoryType, address);
+            var value = compiler.gtNewIconNode(TYP_INT, (nint)constant);
+            var comparison = new GenTreeOp(GT_LT, TYP_INT, memory, value);
+            var block = NewBlock(address, memory, value, comparison);
+
+            ContainCheckCompare(NewLowering(compiler, block), comparison);
+
+            Assert.That(memory.IsContained, Is.EqualTo(contained));
+            Assert.That(value.IsContained, Is.True);
+            Assert.That(value.Type, Is.EqualTo(TYP_INT));
+            Assert.That(comparison.IsUnsigned, Is.EqualTo(unsigned));
+            Assert.That(comparison.GetCompareSize(), Is.EqualTo(contained ? 1 : 4));
         });
     }
 

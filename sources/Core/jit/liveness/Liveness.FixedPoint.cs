@@ -44,21 +44,27 @@ public partial class Liveness<TLiveness>
         }
         while (changed && dfs.HasCycle);
 
-        assert(!_compiler.fgRngChkThrowAdded);
-#if DEBUG
-        if (_compiler.fgBBcount != dfs.PostOrderCount)
+        if (TLiveness.IsLIR && (_compiler.fgBBcount != dfs.PostOrderCount))
         {
+            JITDUMP("Checking for throw helpers...\n");
+
             foreach (var block in _compiler.Blocks)
             {
-                if (dfs.Contains(block))
+                if (dfs.Contains(block) || !block.HasFlag(BBF_THROW_HELPER))
                 {
                     continue;
                 }
 
-                assert(!block.HasFlag(BBF_THROW_HELPER));
+                JITDUMP($"{FMT_BB(block.bbNum)} is a throw helper, computing liveness\n");
+                _compiler.fgSetThrowHelpBlockLiveness(block);
+                var keepAliveVars = VarSetOps.MakeEmpty(_compiler);
+                var life = VarSetOps.MakeCopy(_compiler, block.bbLiveOut);
+                ComputeLifeLIR(life, block, keepAliveVars);
+                assert(VarSetOps.Equal(_compiler, life, block.bbLiveIn));
             }
         }
 
+#if DEBUG
         if (_compiler.verbose)
         {
             jitprintf("\nBB liveness after DoLiveVarAnalysis():\n\n");

@@ -124,7 +124,9 @@ public partial class Compiler
                 }
             }
 
-            if (potentiallyNotSupported && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            var isShuffleNative = intrinsic is NI_Vector_ShuffleNative or NI_Vector_ShuffleNativeFallback;
+            if (potentiallyNotSupported &&
+                !compOpportunisticallyDependsOn(InstructionSet_AVX2, isShuffleNative))
             {
                 return null;
             }
@@ -439,12 +441,7 @@ public partial class Compiler
 
                 assert(simdBaseType == (destinationType is TYP_INT or TYP_UINT ? TYP_FLOAT : TYP_DOUBLE));
 
-                if (native && BlockNonDeterministicIntrinsics(mustExpand))
-                {
-                    break;
-                }
-
-                if (destinationType != TYP_INT && !compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                if (destinationType != TYP_INT && !compOpportunisticallyDependsOn(InstructionSet_AVX512, true))
                 {
                     break;
                 }
@@ -497,10 +494,6 @@ public partial class Compiler
             case NI_Vector_CreateSequence:
             {
                 assert(sig.numArgs == 2);
-                impSpillSideEffect(true, stackState.esStackDepth - 2,
-                    intrinsic == NI_Vector_CreateSequence
-                        ? "Spilling op1 side effects for vector CreateSequence"
-                        : "Spilling op1 side effects for vector CreateAlternatingSequence");
                 op2 = impPopStack().val;
                 op1 = impPopStack().val;
                 retNode = intrinsic == NI_Vector_CreateSequence
@@ -528,8 +521,6 @@ public partial class Compiler
                     break;
                 }
 
-                impSpillSideEffect(true, stackState.esStackDepth - 2,
-                    "Spilling op1 side effects for vector CreateGeometricSequence");
                 op2 = impPopStack().val;
                 op1 = impPopStack().val;
                 retNode = gtNewSimdCreateGeometricSequenceNode(retType, op1, op2, simdBaseType, simdSize);
@@ -825,16 +816,11 @@ public partial class Compiler
             {
                 assert(sig.numArgs == 3);
 
-                if (BlockNonDeterministicIntrinsics(mustExpand))
-                {
-                    break;
-                }
-
                 op3 = impSIMDPopStack();
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
-                if (varTypeIsFloating(simdBaseType) && compExactlyDependsOn(InstructionSet_AVX2))
+                if (varTypeIsFloating(simdBaseType) && compExactlyDependsOn(InstructionSet_AVX2, true))
                 {
                     retNode = gtNewSimdFmaNode(retType, op1, op2, op3, simdBaseType, simdSize);
                 }
@@ -956,11 +942,6 @@ public partial class Compiler
                 assert(sig.numArgs is 2 or 3);
                 var shuffleNative = intrinsic != NI_Vector_Shuffle;
 
-                if (shuffleNative && BlockNonDeterministicIntrinsics(mustExpand))
-                {
-                    break;
-                }
-
                 var indices = impStackTop(0).val;
                 var validForShuffle = IsValidForShuffle(indices, simdSize, simdBaseType,
                     out var canBecomeValidForShuffle, shuffleNative);
@@ -1048,9 +1029,9 @@ public partial class Compiler
 
                 op1 = impSIMDPopStack();
                 retNode = intrinsic switch {
-                    NI_Vector_StoreAligned => gtNewSimdStoreAlignedNode(op2, op1, simdBaseType, simdSize),
-                    NI_Vector_StoreAlignedNonTemporal => gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseType, simdSize),
-                    _ => gtNewSimdStoreNode(op2, op1, simdBaseType, simdSize),
+                    NI_Vector_StoreAligned => gtNewSimdStoreAlignedNode(op2, op1, simdBaseType, simdSize, reverseOps: true),
+                    NI_Vector_StoreAlignedNonTemporal => gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseType, simdSize, reverseOps: true),
+                    _ => gtNewSimdStoreNode(op2, op1, simdBaseType, simdSize, reverseOps: true),
                 };
                 break;
             }
@@ -1207,8 +1188,14 @@ public partial class Compiler
                         break;
                     }
 
-                    impSpillSideEffect(true, stackState.esStackDepth - 2,
-                        "Spilling op1 side effects for vector integer division");
+                    var isDirectDivision = varTypeIsInt(simdBaseType) &&
+                        (((simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
+                         ((simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX512)));
+                    if (!isDirectDivision)
+                    {
+                        impSpillSideEffect(true, stackState.esStackDepth - 2,
+                            "Spilling op1 side effects for vector integer division");
+                    }
                 }
 
                 var arg1 = sig.args;
@@ -1248,10 +1235,6 @@ public partial class Compiler
         if (isMinMaxIntrinsic)
         {
             assert(sig.numArgs == 2 && retNode is null);
-            if (isNative && BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                return null;
-            }
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();

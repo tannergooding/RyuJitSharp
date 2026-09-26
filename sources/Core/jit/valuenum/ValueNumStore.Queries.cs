@@ -326,7 +326,24 @@ public sealed partial class ValueNumStore
 #if FEATURE_HW_INTRINSICS
     public bool IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, byte simdSize)
     {
+        HashSet<ValueNum> knownMasks = [];
+        return IsVectorPerElementMask(vn, simdBaseType, simdSize, knownMasks, 0);
+    }
+
+    private bool IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, byte simdSize,
+        HashSet<ValueNum> knownMasks, int depth)
+    {
         // Keep in sync with GenTree.IsVectorPerElementMask.
+        if (knownMasks.Contains(vn))
+        {
+            return true;
+        }
+
+        if (depth >= 64)
+        {
+            return false;
+        }
+
         var type = TypeOfVN(vn);
         var elementCount = GenTreeVecCon.ElementCount(simdSize, simdBaseType);
         assert(varTypeIsSimd(type) && (type.Size == simdSize));
@@ -361,6 +378,7 @@ public sealed partial class ValueNumStore
         }
 #endif
 
+        bool isMask;
         switch (oper)
         {
             case GT_AND:
@@ -370,23 +388,31 @@ public sealed partial class ValueNumStore
             case GT_XOR:
             case GT_XOR_NOT:
             {
-                return IsVectorPerElementMask(app.GetArg(0), simdBaseType, simdSize) &&
-                    IsVectorPerElementMask(app.GetArg(1), simdBaseType, simdSize);
+                isMask = IsVectorPerElementMask(app.GetArg(0), simdBaseType, simdSize, knownMasks, depth + 1) &&
+                    IsVectorPerElementMask(app.GetArg(1), simdBaseType, simdSize, knownMasks, depth + 1);
+                break;
             }
 
             case GT_NOT:
             {
-                return IsVectorPerElementMask(app.GetArg(0), simdBaseType, simdSize);
+                isMask = IsVectorPerElementMask(app.GetArg(0), simdBaseType, simdSize, knownMasks, depth + 1);
+                break;
             }
 
             default:
             {
                 assert(!GenTreeHWIntrinsic.OperIsBitwiseHWIntrinsic(oper));
+                isMask = false;
                 break;
             }
         }
 
-        return false;
+        if (isMask)
+        {
+            _ = knownMasks.Add(vn);
+        }
+
+        return isMask;
     }
 
     public int GetVNHWIntrinsicSizeAndBaseType(VNFuncApp app, ref var_types simdBaseType)
@@ -397,7 +423,7 @@ public sealed partial class ValueNumStore
         var succeeded = GetVNFunc(app.GetArg(app.Arity - 1), ref simdType);
         assert(succeeded && simdType.FuncIs(VNF_SimdType) && (simdType.Arity == 2));
         assert(IsVNConstant(simdType.GetArg(0)) && IsVNConstant(simdType.GetArg(1)));
-        simdBaseType = (var_types)GetConstantInt32(simdType.GetArg(1));
+        simdBaseType = (var_types)(GetConstantInt32(simdType.GetArg(1)) & SimdTypeMask);
         return GetConstantInt32(simdType.GetArg(0));
     }
 #endif

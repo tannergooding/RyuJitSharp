@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Upstream synchronization
+
+The oracle, residual native source and existing C# implementations now track
+upstream `33baf8e`. The JIT/EE contract carries negative instruction-set
+dependencies, and IL-stub secret arguments use the ordinary parameter ABI.
+Implicit-byref classification, SIMD operand ordering and value numbering,
+comparison containment, conditional escape analysis and final liveness follow
+the refreshed native algorithms.
+
+The established optimized, minopts and GC-stress corpora continue to execute
+managed-generated code against a matching native host. Saved static-init, TLS
+and VN-intrinsic work remains inactive and separate from this synchronization.
+Full dump, generated-code and runtime-metadata parity remains incomplete.
+
 ## 2026-09-26: Thread-static EE contract alignment
 
 The thread-static metadata query now matches the pinned native interface across

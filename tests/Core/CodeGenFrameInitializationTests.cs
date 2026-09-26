@@ -209,7 +209,7 @@ internal static unsafe class CodeGenFrameInitializationTests
         {
             compiler.lvaGSSecurityCookie = BAD_VAR_NUM;
             compiler.lvaInlinedPInvokeFrameVar = BAD_VAR_NUM;
-            compiler.lvaStubArgumentVar = BAD_VAR_NUM;
+            compiler.lvaSecretStubArg = BAD_VAR_NUM;
             compiler.lvaRetAddrVar = BAD_VAR_NUM;
             compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
             compiler.fgFirstBB = new BasicBlock(null, null) { bbLiveIn = VarSetOps.MakeEmpty(compiler) };

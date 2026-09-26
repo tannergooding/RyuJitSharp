@@ -164,6 +164,25 @@ public sealed partial class ObjectAllocator
                     if (!added)
                     {
                         JITDUMP("Looks like enumerator var re-use (multiple defining GDVs)\n");
+
+                        foreach (var previousInfo in _cloneMap.Values)
+                        {
+                            if (previousInfo.Local != enumeratorLocal)
+                            {
+                                continue;
+                            }
+
+                            var hasDominatingDef =
+                                previousInfo.AppearanceMap is not null &&
+                                previousInfo.AppearanceMap.TryGetValue(enumeratorLocal, out var previousVar) &&
+                                previousVar.Def is not null &&
+                                compiler._domTree.Dominates(previousVar.Def.Block, block);
+
+                            if (block.HasFlag(BBF_BACKWARD_JUMP) || !hasDominatingDef)
+                            {
+                                previousInfo.HasConflictingRedefinition = true;
+                            }
+                        }
                     }
 
                     var info = new CloneInfo {

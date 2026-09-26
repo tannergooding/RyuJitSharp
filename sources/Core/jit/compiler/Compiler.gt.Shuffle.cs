@@ -17,14 +17,14 @@ public partial class Compiler
 #if TARGET_XARCH
         if (simdSize == 32)
         {
-            if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            if (!compOpportunisticallyDependsOn(InstructionSet_AVX2, isShuffleNative))
             {
                 return false;
             }
         }
         else if (simdSize == 64)
         {
-            if (varTypeIsByte(baseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512v2))
+            if (varTypeIsByte(baseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512v2, isShuffleNative))
             {
                 return false;
             }
@@ -78,7 +78,8 @@ public partial class Compiler
         }
         if (allOutOfRange)
         {
-            return gtWrapWithSideEffects(gtNewZeroConNode(type), op1, GTF_ALL_EFFECT);
+            return gtWrapWithSideEffects(gtNewZeroConNode(type), op1,
+                GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
         }
 
 #if TARGET_XARCH

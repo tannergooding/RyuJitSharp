@@ -14,7 +14,6 @@ public partial class Compiler
         IsVarArgs = 1 << 1,
         InitMem = 1 << 2,
         ProfilerCallback = 1 << 3,
-        PublishStubParam = 1 << 4,
         HasNextCallRetAddr = 1 << 5,
         UsesAsyncContinuation = 1 << 6,
     }

@@ -164,7 +164,7 @@ public partial class Compiler
         else
         {
             var func = GetVNFuncForNode(tree);
-            var typeVN = vnStore.VNForSimdType(tree.SimdSize, tree.SimdBaseType);
+            var typeVN = vnStore.VNForSimdType(tree.SimdSize, tree.SimdBaseType, tree.AuxiliaryType);
             var typePair = new ValueNumPair(typeVN, typeVN);
 #if DEBUG
             if (verbose)
@@ -185,9 +185,10 @@ public partial class Compiler
                 GetOperandVNs(tree.GetOp(1), out var op1, out var op1Exceptions);
                 if (count == 1)
                 {
-                    normal = new(
-                        vnStore.EvalHWIntrinsicFunUnary(tree, func, op1.Liberal, typePair.Liberal),
-                        vnStore.EvalHWIntrinsicFunUnary(tree, func, op1.Conservative, typePair.Conservative));
+                    var liberal = vnStore.EvalHWIntrinsicFunUnary(tree, func, op1.Liberal, typePair.Liberal);
+                    var conservative = op1.BothEqual() ? liberal
+                        : vnStore.EvalHWIntrinsicFunUnary(tree, func, op1.Conservative, typePair.Conservative);
+                    normal = new(liberal, conservative);
                     exceptions = op1Exceptions;
                 }
                 else
@@ -195,21 +196,24 @@ public partial class Compiler
                     GetOperandVNs(tree.GetOp(2), out var op2, out var op2Exceptions);
                     if (count == 2)
                     {
-                        normal = new(
-                            vnStore.EvalHWIntrinsicFunBinary(tree, func, op1.Liberal, op2.Liberal, typePair.Liberal),
-                            vnStore.EvalHWIntrinsicFunBinary(tree, func, op1.Conservative, op2.Conservative,
-                                typePair.Conservative));
+                        var liberal = vnStore.EvalHWIntrinsicFunBinary(tree, func, op1.Liberal,
+                            op2.Liberal, typePair.Liberal);
+                        var conservative = op1.BothEqual() && op2.BothEqual() ? liberal
+                            : vnStore.EvalHWIntrinsicFunBinary(tree, func, op1.Conservative, op2.Conservative,
+                                typePair.Conservative);
+                        normal = new(liberal, conservative);
                         exceptions = vnStore.VNPExcSetUnion(op1Exceptions, op2Exceptions);
                     }
                     else
                     {
                         assert(count == 3);
                         GetOperandVNs(tree.GetOp(3), out var op3, out var op3Exceptions);
-                        normal = new(
-                            vnStore.EvalHWIntrinsicFunTernary(tree, func, op1.Liberal, op2.Liberal,
-                                op3.Liberal, typePair.Liberal),
-                            vnStore.EvalHWIntrinsicFunTernary(tree, func, op1.Conservative, op2.Conservative,
-                                op3.Conservative, typePair.Conservative));
+                        var liberal = vnStore.EvalHWIntrinsicFunTernary(tree, func, op1.Liberal,
+                            op2.Liberal, op3.Liberal, typePair.Liberal);
+                        var conservative = op1.BothEqual() && op2.BothEqual() && op3.BothEqual() ? liberal
+                            : vnStore.EvalHWIntrinsicFunTernary(tree, func, op1.Conservative, op2.Conservative,
+                                op3.Conservative, typePair.Conservative);
+                        normal = new(liberal, conservative);
                         exceptions = vnStore.VNPExcSetUnion(op1Exceptions, op2Exceptions);
                         exceptions = vnStore.VNPExcSetUnion(exceptions, op3Exceptions);
                     }

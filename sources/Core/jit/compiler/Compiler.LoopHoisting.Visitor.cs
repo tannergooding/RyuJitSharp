@@ -296,7 +296,7 @@ public partial class Compiler
 
             if (_canHoistSideEffects)
             {
-                if (!invariantTree && tree.Oper is not GT_CALL && tree.MayThrow(_compiler))
+                if (!hoistable && tree.Oper is not GT_CALL && tree.MayThrow(_compiler))
                 {
                     assert(!hoistable);
                     _canHoistSideEffects = false;
@@ -313,7 +313,7 @@ public partial class Compiler
                     {
                         var helper = call.HelperNum;
                         if (helper.MutatesHeap || (helper.MayRunCctor && (call.Flags & GTF_CALL_HOISTABLE) == 0) ||
-                            (!invariantTree && !helper.NoThrow))
+                            (!hoistable && !helper.NoThrow))
                         {
                             _canHoistSideEffects = false;
                         }

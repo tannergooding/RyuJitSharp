@@ -98,7 +98,7 @@ internal static unsafe class ImporterCallTests
                 : compiler.gtNewIconNode(var_types.TYP_INT, -1);
             compiler.impPushOnStack(value, new typeInfo(value.Type));
             var signature = new CORINFO_SIG_INFO { numArgs = 1, retType = type };
-            var result = compiler.impPrimitiveNamedIntrinsic(NamedIntrinsic.NI_PRIMITIVE_Log2, null, null, signature, default, false);
+            var result = compiler.impPrimitiveNamedIntrinsic(NamedIntrinsic.NI_PRIMITIVE_Log2, null, null, signature, default);
             Assert.Multiple(() => {
                 Assert.That(result, Is.Null);
                 Assert.That(compiler.impStackHeight, Is.EqualTo(1));

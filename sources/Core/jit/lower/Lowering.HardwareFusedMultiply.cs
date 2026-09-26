@@ -13,6 +13,7 @@ public sealed partial class Lowering
     {
 #if TARGET_XARCH
         assert(node.Operands.Length == 3);
+        assert(varTypeIsFloating(node.SimdBaseType));
         var negated = false;
         var subtract = false;
         var isScalar = false;
@@ -91,7 +92,7 @@ public sealed partial class Lowering
         for (var index = 1; index <= 3; index++)
         {
             var arg = node.GetOp(index);
-            if (isScalar && (arg.Oper is GT_NEG))
+            if (isScalar && (arg.Oper is GT_NEG) && (arg.Type == node.SimdBaseType))
             {
                 // Scalar CreateScalarUnsafe wrappers are already removed, exposing bare negations.
                 var operand = arg.AsUnOp().Op1;

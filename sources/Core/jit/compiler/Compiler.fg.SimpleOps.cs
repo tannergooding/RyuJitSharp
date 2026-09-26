@@ -242,10 +242,18 @@ public partial class Compiler
                 return commaThrow.Op1;
             }
 
-            if (parent.Type.ActualType != commaThrow.Type.ActualType)
+            var parentType = parent.Type.ActualType;
+            if (parentType != commaThrow.Type.ActualType)
             {
-                commaThrow.Op2 = commaThrow.Op2.BashToZeroConst(parent.Type.ActualType);
-                commaThrow.ChangeType(parent.Type.ActualType);
+                if (parentType is TYP_STRUCT)
+                {
+                    return null;
+                }
+
+                var zero = gtNewZeroConNode(parentType);
+                zero.SetMorphed(this);
+                commaThrow.Op2 = zero;
+                commaThrow.ChangeType(parentType);
             }
 
             return commaThrow;

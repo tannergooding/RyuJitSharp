@@ -165,7 +165,7 @@ public partial class Compiler
         }
 
         if (!upper.IsNeverNegative(this) || (upper.Type != variable.Type) ||
-            ((upper.Flags & GTF_SIDE_EFFECT) != 0) ||
+            ((upper.Flags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0) ||
             (secondOp is not (GT_LT or GT_LE)))
         {
             return false;

@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
 
@@ -14,6 +15,28 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class BooleanOptimizationTests
 {
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    public static void NonnegativeRangeFoldDoesNotSpeculateOrderedLoads(bool ordered, bool expected)
+    {
+        WithCompiler(compiler => {
+            var first = compiler.gtNewBinaryNode(GT_GE, TYP_INT,
+                compiler.gtNewLclvNode(TYP_INT, 0), compiler.gtNewIconNode(TYP_INT, 0)).AsOp();
+            var upper = compiler.gtNewBinaryNode(GT_AND, TYP_INT,
+                compiler.gtNewLclvNode(TYP_INT, 1), compiler.gtNewIconNode(TYP_INT, int.MaxValue));
+            if (ordered)
+            {
+                upper.Flags |= GTF_ORDER_SIDEEFF;
+            }
+            var second = compiler.gtNewBinaryNode(GT_LT, TYP_INT,
+                compiler.gtNewLclvNode(TYP_INT, 0), upper).AsOp();
+            var method = typeof(Compiler).GetMethod("FoldBooleanRangeTests",
+                BindingFlags.NonPublic | BindingFlags.Instance) ??
+                throw new AssertionException("Missing range fold.");
+            Assert.That(method.Invoke(compiler, [first, false, second, false]), Is.EqualTo(expected));
+        });
+    }
+
     [TestCase(GT_GE, GT_LE, 0L, 100L, true, 0L, 100L)]
     [TestCase(GT_GT, GT_LT, 10L, 20L, true, 11L, 19L)]
     [TestCase(GT_GT, GT_LE, 10L, 11L, false, 11L, 11L)]

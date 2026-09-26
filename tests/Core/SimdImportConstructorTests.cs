@@ -15,6 +15,27 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class SimdImportConstructorTests
 {
+    [TestCase(NI_Vector_IsFinite, true)]
+    [TestCase(NI_Vector_IsInfinity, false)]
+    [TestCase(NI_Vector_IsInteger, true)]
+    public static void IntegralClassificationRetainsObservableOperandEffects(NamedIntrinsic intrinsic, bool allBitsSet)
+    {
+        WithCompiler(compiler => {
+            var value = new GenTreeIndir(GT_IND, TYP_SIMD16, Local(compiler, TYP_BYREF));
+            value.Flags |= GTF_EXCEPT;
+            var result = intrinsic switch {
+                NI_Vector_IsFinite => compiler.gtNewSimdIsFiniteNode(TYP_SIMD16, value, TYP_INT, 16),
+                NI_Vector_IsInfinity => compiler.gtNewSimdIsInfinityNode(TYP_SIMD16, value, TYP_INT, 16),
+                _ => compiler.gtNewSimdIsIntegerNode(TYP_SIMD16, value, TYP_INT, 16),
+            };
+            Assert.That(result.Oper, Is.EqualTo(GT_COMMA));
+            Assert.That(result.AsOp().Op1, Is.SameAs(value));
+            Assert.That(result.AsOp().Op2.Oper, Is.EqualTo(GT_CNS_VEC));
+            Assert.That(result.AsOp().Op2.AsVecCon().SimdVal.u64[0],
+                Is.EqualTo(allBitsSet ? ulong.MaxValue : 0UL));
+        });
+    }
+
     [TestCase((byte)16, NI_X86Base_Ceiling, NI_X86Base_Floor, NI_X86Base_RoundToNearestInteger)]
     [TestCase((byte)32, NI_AVX_Ceiling, NI_AVX_Floor, NI_AVX_RoundToNearestInteger)]
     [TestCase((byte)64, NI_AVX512_RoundScale, NI_AVX512_RoundScale, NI_AVX512_RoundScale)]
@@ -88,6 +109,26 @@ internal static unsafe class SimdImportConstructorTests
                     32 => NI_AVX_StoreAlignedNonTemporal,
                     _ => NI_X86Base_StoreAlignedNonTemporal,
                 }));
+        });
+    }
+
+    [Test]
+    public static void ReverseStoreCapturesValueBeforeAddressChangesIt()
+    {
+        WithCompiler(compiler =>
+        {
+            var value = Local(compiler, TYP_SIMD16);
+            var write = compiler.gtNewStoreLclVarNode(value.LclNum, compiler.gtNewVconNode(TYP_SIMD16));
+            var address = compiler.gtNewBinaryNode(GT_COMMA, TYP_BYREF, write, Local(compiler, TYP_BYREF));
+
+            var result = compiler.gtNewSimdStoreNode(address, value, TYP_INT, 16, reverseOps: true);
+            Assert.That(result.Oper, Is.EqualTo(GT_STOREIND));
+            var sequencedAddress = result.AsOp().Op1.AsOp();
+            Assert.That(sequencedAddress.Oper, Is.EqualTo(GT_COMMA));
+            Assert.That(sequencedAddress.Op1.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
+            Assert.That(sequencedAddress.Op1.AsLclVar().Data, Is.SameAs(value));
+            Assert.That(sequencedAddress.Op2, Is.SameAs(address));
+            Assert.That(result.AsOp().Op2.Oper, Is.EqualTo(GT_LCL_VAR));
         });
     }
 
@@ -293,7 +334,7 @@ internal static unsafe class SimdImportConstructorTests
     [TestCase(true, true, NI_X86Base_MoveHighToLow)]
     [TestCase(true, false, NI_X86Base_Shuffle)]
     [TestCase(false, true, NI_X86Base_Shuffle)]
-    public static void ConcatPreservesHalfSelectionAndReverseFlag(bool leftUpper,
+    public static void ConcatPreservesHalfSelectionWithoutReverseFlag(bool leftUpper,
         bool rightUpper, NamedIntrinsic expected)
     {
         WithCompiler(compiler =>
@@ -303,8 +344,7 @@ internal static unsafe class SimdImportConstructorTests
             var result = compiler.gtNewSimdConcatNode(TYP_SIMD16, left, right, TYP_INT, 16,
                 leftUpper, rightUpper).AsHWIntrinsic();
             Assert.That(result.HWIntrinsicId, Is.EqualTo(expected));
-            Assert.That((result.Flags & GTF_REVERSE_OPS) != 0,
-                Is.EqualTo(leftUpper && rightUpper));
+            Assert.That((result.Flags & GTF_REVERSE_OPS) != 0, Is.False);
             if (expected == NI_X86Base_Shuffle)
             {
                 Assert.That((int)result.GetOp(3).AsIntCon().IconValue,

@@ -93,10 +93,10 @@ or extensive fixtures, reassess the boundary rather than silently expanding it.
 
 After committing a batch, select the next batch and continue. A logical commit
 is a checkpoint, not a reason to stop. At a substantial validated milestone,
-update [MILESTONES.md](MILESTONES.md), commit the checkpoint and push the current
-porting branch, then continue into the next dependency boundary. The ongoing
-milestone publication workflow was approved on 2026-09-23; it does not authorize
-PR creation, history rewriting, or publication to other branches.
+update [MILESTONES.md](MILESTONES.md), commit the checkpoint locally, then continue
+into the next dependency boundary. The completed handoff was published to main
+with explicit authorization on 2026-09-26. That authorization does not extend to
+future pushes or PRs; obtain explicit authorization before either.
 Keep the journal reader-facing: explain capabilities, their significance and
 remaining limitations, rather than test results, provenance or recovery details.
 Execution evidence belongs in `state.json`, not in milestone descriptions.
@@ -141,10 +141,11 @@ named; no claim of current dump parity is required or implied.
 
 ## 2. Synchronize already ported code to the pinned upstream head
 
-The candidate update touches 270 files across the initial JIT/interface search
-areas in 501 commits. This is an inventory bound, not a claim that every change
-needs translation. The source and target revisions are frozen in `state.json`;
-do not chase a moving `main` while reconciling them.
+The initial synchronization covered 270 candidate files in 501 commits. The
+2026-09-26 refresh starts from the previously reconciled `206bf81` and targets
+immutable `33baf8e`; its raw JIT/interface delta contains 67 candidate files.
+Inventory size does not imply that every change needs translation. Preserve both
+revisions in `state.json`; do not chase a moving `main` while reconciling them.
 
 Prefer substantial source sections and their dependency closure over individual
 helper batches. Use builds and small focused checks for concrete behavior changes

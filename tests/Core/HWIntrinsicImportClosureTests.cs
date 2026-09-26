@@ -220,8 +220,8 @@ internal static unsafe class HWIntrinsicImportClosureTests
         vtable.Base.Base.getArgClass = &GetArgClass;
         vtable.Base.Base.getArgNext = &GetArgNext;
         vtable.Base.notifyInstructionSetUsage =
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, byte>)
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte>)&NotifyInstructionSetUsage;
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool, byte>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte, byte>)&NotifyInstructionSetUsage;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
 #if DEBUG
         using var tls = new JitTls(&jitInfo);
@@ -293,7 +293,7 @@ internal static unsafe class HWIntrinsicImportClosureTests
         => arg + 1;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static byte NotifyInstructionSetUsage(ICorJitInfo* self, CORINFO_InstructionSet isa, byte supported)
+    private static byte NotifyInstructionSetUsage(ICorJitInfo* self, CORINFO_InstructionSet isa, byte supported, byte preserveNegativeDependency)
         => supported;
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "impSimdCreate")]

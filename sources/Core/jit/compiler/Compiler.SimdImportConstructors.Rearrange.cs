@@ -35,10 +35,9 @@ public partial class Compiler
             }
             if (leftUpper && rightUpper)
             {
-                var result = gtNewSimdHWIntrinsicNode(type, NI_X86Base_MoveHighToLow, TYP_FLOAT,
+                gtPrepareOperandsForReordering(ref op1, ref op2);
+                return gtNewSimdHWIntrinsicNode(type, NI_X86Base_MoveHighToLow, TYP_FLOAT,
                     simdSize, op2, op1);
-                result.Flags |= GTF_REVERSE_OPS;
-                return result;
             }
 
             var leftStart = leftUpper ? 2 : 0;
@@ -59,14 +58,14 @@ public partial class Compiler
             return gtNewSimdWithUpperNode(type, op1, upper, simdBaseType, simdSize);
         }
 
-        var lower = gtNewSimdGetUpperNode(halfType, op1, simdBaseType, simdSize);
         if (rightUpper)
         {
-            var result = gtNewSimdWithLowerNode(type, op2, lower, simdBaseType, simdSize);
-            result.Flags |= GTF_REVERSE_OPS;
-            return result;
+            gtPrepareOperandsForReordering(ref op1, ref op2);
+            var leftLower = gtNewSimdGetUpperNode(halfType, op1, simdBaseType, simdSize);
+            return gtNewSimdWithLowerNode(type, op2, leftLower, simdBaseType, simdSize);
         }
 
+        var lower = gtNewSimdGetUpperNode(halfType, op1, simdBaseType, simdSize);
         var rightLower = gtNewSimdGetLowerNode(halfType, op2, simdBaseType, simdSize);
         var convert = simdSize == 32 ? NI_Vector_ToVector256Unsafe : NI_Vector_ToVector512Unsafe;
         var widened = gtNewSimdHWIntrinsicNode(type, convert, simdBaseType, halfSize, lower);
@@ -85,13 +84,17 @@ public partial class Compiler
         if (count == 1)
         {
             var result = op1;
-            if (!gtTreeHasSideEffects(op2, GTF_ALL_EFFECT))
+            if (!gtTreeHasSideEffects(op2, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF))
             {
                 return result;
             }
+            if (result.Oper.IsInvariant)
+            {
+                return gtWrapWithSideEffects(result, op2, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
+            }
             var resultLcl = fgInsertCommaFormTemp(ref result);
             return gtNewBinaryNode(GT_COMMA, type, result,
-                gtWrapWithSideEffects(resultLcl, op2, GTF_ALL_EFFECT));
+                gtWrapWithSideEffects(resultLcl, op2, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF));
         }
 
 #if TARGET_XARCH
@@ -160,17 +163,22 @@ public partial class Compiler
         {
             if (odd)
             {
-                var oddResult = gtWrapWithSideEffects(gtNewZeroConNode(type), op2, GTF_ALL_EFFECT);
-                return gtWrapWithSideEffects(oddResult, op1, GTF_ALL_EFFECT);
+                var oddResult = gtWrapWithSideEffects(gtNewZeroConNode(type), op2,
+                    GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
+                return gtWrapWithSideEffects(oddResult, op1, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
             }
             var result = op1;
-            if (!gtTreeHasSideEffects(op2, GTF_ALL_EFFECT))
+            if (!gtTreeHasSideEffects(op2, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF))
             {
                 return result;
             }
+            if (result.Oper.IsInvariant)
+            {
+                return gtWrapWithSideEffects(result, op2, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
+            }
             var resultLcl = fgInsertCommaFormTemp(ref result);
             return gtNewBinaryNode(GT_COMMA, type, result,
-                gtWrapWithSideEffects(resultLcl, op2, GTF_ALL_EFFECT));
+                gtWrapWithSideEffects(resultLcl, op2, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF));
         }
 
 #if TARGET_XARCH

@@ -85,7 +85,7 @@ internal static class JitInterfaceLayoutTests
             Assert.Ignore("These measurements are from the Windows-x64 native headers.");
         }
 
-        // Measured with MSVC against corjit.h at 206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc.
+        // Measured with MSVC against corjit.h at 33baf8ee337b20dd0f184b69a6f09be92850bf9e.
         // Use raw managed sizes, not marshaller layouts: the JIT passes these through pointers.
         Assert.Multiple(() => {
             Assert.That(sizeof(ICorDebugInfo.VarLoc), Is.EqualTo(16));

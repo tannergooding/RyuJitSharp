@@ -74,23 +74,7 @@ public sealed partial class Lowering
         var left = leftArg.Node;
         var right = rightArg.Node;
 
-        var maxUnrollSize = 16;
-#if FEATURE_SIMD
-#if TARGET_XARCH
-        if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX512))
-        {
-            maxUnrollSize = 128;
-        }
-        else if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2))
-        {
-            maxUnrollSize = 64;
-        }
-        else
-#endif
-        {
-            maxUnrollSize = 32;
-        }
-#endif
+        var maxUnrollSize = compiler.GetUnrollThreshold(Compiler.Memcmp);
         if (size > maxUnrollSize)
         {
             JITDUMP("Size is either 0 or too big to unroll.\n");

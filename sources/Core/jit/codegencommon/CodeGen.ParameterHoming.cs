@@ -50,17 +50,6 @@ public sealed partial class CodeGen
                 }
             }
 
-            if (_compiler.info.compPublishStubParam
-                && (paramRegs & RegisterMask(REG_SECRET_STUB_PARAM)).IsNonEmpty)
-            {
-                ref var stub = ref _compiler.lvaGetDesc(_compiler.lvaStubArgumentVar);
-                if (stub.lvOnFrame)
-                {
-                    Emitter.emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE,
-                        REG_SECRET_STUB_PARAM, _compiler.lvaStubArgumentVar, 0);
-                }
-            }
-
             return;
         }
 
@@ -94,12 +83,6 @@ public sealed partial class CodeGen
                         localNumber, in segment, graph);
                 }
             }
-        }
-
-        if (_compiler.info.compPublishStubParam
-            && (paramRegs & RegisterMask(REG_SECRET_STUB_PARAM)).IsNonEmpty)
-        {
-            genSpillOrAddNonStandardRegisterParam(_compiler.lvaStubArgumentVar, REG_SECRET_STUB_PARAM, graph);
         }
 
 #if DEBUG
@@ -251,26 +234,6 @@ public sealed partial class CodeGen
         if (!ReferenceEquals(source, destination) || (offset != 0))
         {
             graph.AddEdge(source, destination, edgeType, offset);
-        }
-    }
-
-    private void genSpillOrAddNonStandardRegisterParam(int localNumber, regNumber sourceReg, RegGraph graph)
-    {
-        ref var local = ref _compiler.lvaGetDesc(localNumber);
-        if (local.lvOnFrame && (!local.lvIsInReg || local.IsLiveInOutOfHandler))
-        {
-            Emitter.emitIns_S_R(ins_Store(local.Type), local.Type.EmitActualSize,
-                sourceReg, localNumber, 0);
-        }
-
-        if (local.lvIsInReg)
-        {
-            var source = graph.GetOrAdd(sourceReg);
-            var destination = graph.GetOrAdd(local.RegNum);
-            if (!ReferenceEquals(source, destination))
-            {
-                graph.AddEdge(source, destination, TYP_I_IMPL, 0);
-            }
         }
     }
 

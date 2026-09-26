@@ -1308,7 +1308,7 @@ public partial class Compiler
                 else
                 {
                     assert((ni > NI_PRIMITIVE_START) && (ni < NI_PRIMITIVE_END));
-                    return compiler.impPrimitiveNamedIntrinsic(ni, clsHnd, methHnd, sigInfo, entryPoint, mustExpand);
+                    return compiler.impPrimitiveNamedIntrinsic(ni, clsHnd, methHnd, sigInfo, entryPoint);
                 }
             }
 
@@ -1373,12 +1373,7 @@ public partial class Compiler
 
             intrinsicName = ni;
 
-            if (ni is NI_System_StubHelpers_GetStubContext)
-            {
-                // must be done regardless of DbgCode and MinOpts
-                return compiler.gtNewLclvNode(TYP_I_IMPL, compiler.lvaStubArgumentVar);
-            }
-            else if (ni is NI_System_StubHelpers_NextCallReturnAddress)
+            if (ni is NI_System_StubHelpers_NextCallReturnAddress)
             {
                 // For now we just avoid inlining anything into these methods since
                 // this intrinsic is only rarely used. We could do this better if we
@@ -1491,6 +1486,13 @@ public partial class Compiler
                     case NI_System_Type_GetTypeFromHandle:
                     case NI_System_Type_op_Equality:
                     case NI_System_Type_op_Inequality:
+                    {
+                        betterToExpand = true;
+                        break;
+                    }
+
+                    // This allows folding "obj.GetType() == typeof(...)".
+                    case NI_System_Object_GetType:
                     {
                         betterToExpand = true;
                         break;
@@ -3130,7 +3132,7 @@ public partial class Compiler
                     case NI_System_Math_ReciprocalEstimate:
                     case NI_System_Math_ReciprocalSqrtEstimate:
                     {
-                        retNode = compiler.impEstimateIntrinsic(methHnd, sigInfo, callJitType, ni, mustExpand);
+                        retNode = compiler.impEstimateIntrinsic(methHnd, sigInfo, callJitType, ni);
                         break;
                     }
 
@@ -3728,7 +3730,7 @@ public partial class Compiler
                         }
 #endif
                     }
-                    else if (!isNative || !compiler.BlockNonDeterministicIntrinsics(mustExpand))
+                    else
                     {
 #if FEATURE_HW_INTRINSICS
                         var op2 = compiler.impImplicitR4orR8Cast(compiler.impPopStack().val, callType);
@@ -3760,11 +3762,11 @@ public partial class Compiler
                             }
                             else
                             {
+                                op1 = compiler.impCloneExpr(op1, out op1Clone, CHECK_SPILL_ALL, "Clone op1 for Math.Min/Max");
                                 if (!isNumber)
                                 {
                                     op2 = compiler.impCloneExpr(op2, out op2Clone, CHECK_SPILL_ALL, "Clone op2 for Math.Min/Max non-Number");
                                 }
-                                op1 = compiler.impCloneExpr(op1, out op1Clone, CHECK_SPILL_ALL, "Clone op1 for Math.Min/Max");
                             }
 
                             var nullEntry = CORINFO_CONST_LOOKUP{IAT_VALUE};
@@ -3777,8 +3779,7 @@ public partial class Compiler
 
                             if (!isNative)
                             {
-                                // Make sure we return the NaN argument verbatim (if both are NaN, the first one), which is an
-                                // additional requirement for .NET Min/Max APIs on top of IEEE 754.
+                                // Select an input NaN where needed, preferring the first when both are NaN.
 
                                 if (isNumber)
                                 {
@@ -3807,6 +3808,23 @@ public partial class Compiler
                                 minMax = compiler.gtNewLclvNode(callType, tmpTop);
                             }
                             retNode = minMax;
+                        }
+#endif
+
+#if !FEATURE_HW_INTRINSICS && !TARGET_RISCV64
+                        if (isNative)
+                        {
+                            var op2 = compiler.impImplicitR4orR8Cast(compiler.impPopStack().val, callType);
+                            var op1 = compiler.impImplicitR4orR8Cast(compiler.impPopStack().val, callType);
+                            op1 = compiler.impCloneExpr(op1, out var op1Clone, CHECK_SPILL_ALL, "Clone first native min/max operand");
+                            op2 = compiler.impCloneExpr(op2, out var op2Clone, CHECK_SPILL_ALL, "Clone second native min/max operand");
+
+                            var compare = compiler.gtNewBinaryNode(isMax ? GT_GT : GT_LT, TYP_INT, op1, op2);
+                            var minMax = compiler.gtNewQmarkNode(callType, compare,
+                                compiler.gtNewColonNode(callType, op1Clone, op2Clone));
+                            var temp = compiler.lvaGrabTemp(shortLifetime: true, "Native min/max result");
+                            compiler.impStoreToTemp(temp, minMax, CHECK_SPILL_NONE);
+                            retNode = compiler.gtNewLclvNode(callType, temp);
                         }
 #endif
                     }
@@ -4348,6 +4366,19 @@ public partial class Compiler
                         }
                     }
 
+                    if ((JitConfig.JitProfileValues is not 0) && compiler.opts.IsOptimizedWithProfile &&
+                        !compiler.opts.IsInstrumented &&
+                        call.IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_SequenceEqual))
+                    {
+                        result = compiler.impDuplicateWithProfiledArg(call, opcodeOffs);
+                        if (result.Oper is GT_QMARK)
+                        {
+                            var tmp = compiler.lvaGrabTemp(shortLifetime: true, "Grabbing temp for Qmark");
+                            compiler.impStoreToTemp(tmp, result, CHECK_SPILL_ALL);
+                            result = compiler.gtNewLclvNode(result.Type, tmp);
+                        }
+                    }
+
                     var isFatPointerCandidate = call.IsFatPointerCandidate;
                     var isInlineCandidate = call.IsInlineCandidate;
                     var isGuardedDevirtualizationCandidate = call.IsGuardedDevirtualizationCandidate;
@@ -4444,21 +4475,6 @@ public partial class Compiler
                             {
                                 spillStack = false;
 
-                                if ((JitConfig.JitProfileValues is not 0) && resultCall.IsSpecialIntrinsic(compiler, NI_System_SpanHelpers_SequenceEqual))
-                                {
-                                    if (compiler.opts.IsOptimizedWithProfile && !compiler.opts.IsInstrumented)
-                                    {
-                                        result = compiler.impDuplicateWithProfiledArg(resultCall, opcodeOffs);
-
-                                        if (result.Oper is GT_QMARK)
-                                        {
-                                            // QMARK has to be a root node
-                                            var tmp = compiler.lvaGrabTemp(shortLifetime: true, "Grabbing temp for Qmark");
-                                            compiler.impStoreToTemp(tmp, result, CHECK_SPILL_ALL);
-                                            result = compiler.gtNewLclvNode(result.Type, tmp);
-                                        }
-                                    }
-                                }
                             }
                         }
 

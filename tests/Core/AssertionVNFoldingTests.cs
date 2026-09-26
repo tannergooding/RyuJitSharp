@@ -265,8 +265,8 @@ internal static unsafe class AssertionVNFoldingTests
     {
         WithCompiler("SequenceEqual", (compiler, store) =>
         {
-            var pointer = store.VNForFuncNoFolding(TYP_BYREF, VNF_PtrToLoc,
-                store.VNForIntCon(0), store.VNForIntCon(offset));
+            var pointer = store.VNForFunc(TYP_BYREF, VNF_PtrToLoc,
+                store.VNForIntCon(0), store.VNForIntCon(offset), store.VNForIntCon(0));
             var tree = compiler.gtNewLclvNode(TYP_BYREF, 0);
             tree._vnPair.SetBoth(pointer);
             var result = compiler.optVNBasedFoldConstExpr(new BasicBlock(null, null), null, tree);

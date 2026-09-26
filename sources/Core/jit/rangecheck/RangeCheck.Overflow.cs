@@ -165,7 +165,7 @@ public sealed partial class RangeCheck
         {
             overflows = DoesBinOpOverflow(block, tree.AsOp(), range);
         }
-        else if (tree.Oper is GT_AND or GT_RSH or GT_RSZ or GT_UMOD or GT_NEG)
+        else if (tree.Oper is GT_AND or GT_RSH or GT_RSZ or GT_UMOD or GT_NEG || tree.Oper.IsCompare)
         {
             overflows = false;
             foreach (var operand in tree.Operands)

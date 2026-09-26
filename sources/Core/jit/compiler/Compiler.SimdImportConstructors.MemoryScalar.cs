@@ -141,15 +141,21 @@ public partial class Compiler
 #endif
     }
 
-    public GenTree gtNewSimdStoreNode(GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize)
+    public GenTree gtNewSimdStoreNode(GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize,
+        bool reverseOps = false)
     {
         assert(op1 is not null && op2 is not null);
         assert(varTypeIsArithmetic(simdBaseType));
         assert(varTypeIsSimd(op2.Type) && GetSimdTypeForSize(simdSize) == op2.Type);
+        if (reverseOps)
+        {
+            gtPrepareOperandsForReordering(ref op2, ref op1);
+        }
         return gtNewStoreValueNode(op2.Type, op1, op2);
     }
 
-    public GenTree gtNewSimdStoreAlignedNode(GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize)
+    public GenTree gtNewSimdStoreAlignedNode(GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize,
+        bool reverseOps = false)
     {
 #if TARGET_XARCH
         assert(op1 is not null && op2 is not null);
@@ -162,13 +168,18 @@ public partial class Compiler
             64 => NI_AVX512_StoreAligned,
             _ => NI_X86Base_StoreAligned,
         };
+        if (reverseOps)
+        {
+            gtPrepareOperandsForReordering(ref op2, ref op1);
+        }
         return gtNewSimdHWIntrinsicNode(TYP_VOID, intrinsic, simdBaseType, simdSize, op1, op2);
 #else
         throw new FatalJitException("gtNewSimdStoreAlignedNode requires its target-specific implementation.");
 #endif
     }
 
-    public GenTree gtNewSimdStoreNonTemporalNode(GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize)
+    public GenTree gtNewSimdStoreNonTemporalNode(GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize,
+        bool reverseOps = false)
     {
 #if TARGET_XARCH
         assert(op1 is not null && op2 is not null);
@@ -181,6 +192,10 @@ public partial class Compiler
             32 => NI_AVX_StoreAlignedNonTemporal,
             _ => NI_X86Base_StoreAlignedNonTemporal,
         };
+        if (reverseOps)
+        {
+            gtPrepareOperandsForReordering(ref op2, ref op1);
+        }
         return gtNewSimdHWIntrinsicNode(TYP_VOID, intrinsic, simdBaseType, simdSize, op1, op2);
 #else
         throw new FatalJitException("gtNewSimdStoreNonTemporalNode requires its target-specific implementation.");

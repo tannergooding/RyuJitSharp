@@ -130,8 +130,11 @@ public partial class Compiler
                 {
                     var local = tree.AsLclFld();
                     var lclNum = local.LclNum;
+                    var frameVersion = compIsAsync
+                        ? vnStore.VNForExpr(compCurBB, TYP_INT)
+                        : vnStore.VNZeroForType(TYP_INT);
                     tree._vnPair.SetBoth(vnStore.VNForFunc(TYP_BYREF, VNF_PtrToLoc,
-                        vnStore.VNForIntCon(lclNum), vnStore.VNForIntPtrCon(local.LclOffs)));
+                        vnStore.VNForIntCon(lclNum), vnStore.VNForIntPtrCon(local.LclOffs), frameVersion));
 #if DEBUG
                     ref var descriptor = ref lvaGetDesc(lclNum);
                     assert(descriptor.IsAddressExposed || descriptor.IsDefinedViaAddress);
@@ -150,9 +153,8 @@ public partial class Compiler
                     }
                     else if (descriptor.IsAddressExposed)
                     {
-                        var address = vnStore.VNForFunc(TYP_BYREF, VNF_PtrToLoc,
-                            vnStore.VNForIntCon(lclNum), vnStore.VNForIntPtrCon(local.LclOffs));
-                        tree._vnPair.Liberal = fgValueNumberByrefExposedLoad(type, address);
+                        tree._vnPair.Liberal = fgValueNumberByrefExposedLocalLoad(type, lclNum,
+                            unchecked((uint)local.LclOffs));
                         tree._vnPair.Conservative = vnStore.VNForExpr(compCurBB, type);
                     }
                     else
@@ -175,9 +177,8 @@ public partial class Compiler
                     }
                     else if (descriptor.IsAddressExposed)
                     {
-                        var address = vnStore.VNForFunc(TYP_BYREF, VNF_PtrToLoc,
-                            vnStore.VNForIntCon(lclNum), vnStore.VNForIntPtrCon(local.LclOffs));
-                        tree._vnPair.Liberal = fgValueNumberByrefExposedLoad(type, address);
+                        tree._vnPair.Liberal = fgValueNumberByrefExposedLocalLoad(type, lclNum,
+                            unchecked((uint)local.LclOffs));
                         tree._vnPair.Conservative = vnStore.VNForExpr(compCurBB, type);
                     }
                     else
@@ -255,6 +256,11 @@ public partial class Compiler
                                     assert(embedded is not null);
                                     var handleVN = vnStore.VNForHandle((nint)embedded, GTF_ICON_CLASS_HDL);
                                     tree._vnPair = vnStore.VNPWithExc(new(handleVN, handleVN), addrExceptions);
+                                    if (tree.IndirMayFault(this))
+                                    {
+                                        tree._vnPair = vnStore.VNPWithExc(tree._vnPair,
+                                            fgValueNumberIndirNullCheckExceptions(addr));
+                                    }
                                     returnsTypeHandle = true;
                                 }
                             }

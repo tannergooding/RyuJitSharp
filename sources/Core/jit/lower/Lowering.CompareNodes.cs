@@ -30,14 +30,6 @@ public sealed partial class Lowering
             }
         }
 
-        if ((comparison.Op1.Type == comparison.Op2.Type) &&
-            varTypeIsSmall(comparison.Op1.Type) && varTypeIsUnsigned(comparison.Op1.Type))
-        {
-            // Codegen can compare the common small width without first extending it.
-            // Unsigned small operands therefore require an unsigned comparison.
-            comparison.IsUnsigned = true;
-        }
-
         ContainCheckCompare(comparison);
 
         return cmp.Next;
@@ -53,15 +45,7 @@ public sealed partial class Lowering
         var op1 = cmp.Op1;
         var op2 = cmp.Op2.AsIntConCommon();
         var op2Value = op2.IntegralValue;
-        var op1Type = op1.Type;
-
-        if (IsContainableMemoryOp(op1) && varTypeIsSmall(op1Type) && FitsIn(op1Type, op2Value))
-        {
-            // Matching widths permit a contained memory comparison and can reduce
-            // the instruction encoding, for example when comparing a byte to 200.
-            op2.Type = op1Type;
-        }
-        else if ((op1.Oper is GT_CAST) && !op1.HasOverflowCheck)
+        if ((op1.Oper is GT_CAST) && !op1.HasOverflowCheck)
         {
             var cast = op1.AsCast();
             var castToType = cast.CastType;

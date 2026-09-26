@@ -65,7 +65,8 @@ public partial class Compiler
                     }
                 }
 
-                if (matches && (inner.HWIntrinsicId is NI_Vector_Dot) && (inner.Type == type))
+                if (matches && (inner.HWIntrinsicId is NI_Vector_Dot) && (inner.Type == type) &&
+                    (varTypeToSigned(inner.SimdBaseType) == varTypeToSigned(baseType)))
                 {
                     if (toScalar is not null)
                     {
@@ -456,6 +457,14 @@ public partial class Compiler
                 {
                     var result = ExtractEffectiveOp(GT_NOT, inner, destroy: true);
                     _ = ExtractEffectiveOp(GT_NOT, node, destroy: true);
+
+                    if (conversion is not null)
+                    {
+                        conversion.SetOp(1, result);
+                        result = conversion;
+                    }
+
+                    assert(result.Type == type);
                     return result;
                 }
 
@@ -521,6 +530,12 @@ public partial class Compiler
                         _ = ExtractEffectiveOp(GT_NOT, node, destroy: true);
                         modeNode.AsIntConCommon().IntegralValue = (byte)reversed;
                         fgUpdateConstTreeValueNumber(modeNode);
+                        if (conversion is not null)
+                        {
+                            inner = conversion;
+                        }
+
+                        assert(inner.Type == type);
                         return fgMorphHWIntrinsicRequired(inner);
                     }
                 }

@@ -384,7 +384,7 @@ internal static unsafe class CodeGenPrologInitializationTests
             compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
             compiler.lvaGSSecurityCookie = BAD_VAR_NUM;
             compiler.lvaInlinedPInvokeFrameVar = BAD_VAR_NUM;
-            compiler.lvaStubArgumentVar = BAD_VAR_NUM;
+            compiler.lvaSecretStubArg = BAD_VAR_NUM;
             compiler.lvaRetAddrVar = BAD_VAR_NUM;
             codeGen.RegSet.tmpInit();
             var group = codeGen.Emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");

@@ -14,7 +14,6 @@ public sealed partial class LinearScan
         {
             throw new FatalJitException("Local register resolution requires enregistered locals.");
         }
-
         // Reconstruct assignments from entry definitions rather than trusting allocation's final register state.
         for (var index = 0; (int)_regIndices[index] < _availableRegCount; index++)
         {
@@ -243,6 +242,11 @@ public sealed partial class LinearScan
                 }
                 else if (reference.spillAfter || reference.nextRefPosition?.moveReg == true)
                 {
+                    if (varTypeIsSimd(tree.Type))
+                    {
+                        setContainsAVXFlags((uint)tree.Type.Size);
+                    }
+
                     if (reference.spillAfter)
                     {
                         tree.Flags |= GTF_SPILL;
@@ -291,6 +295,15 @@ public sealed partial class LinearScan
                                 }
                             }
                         }
+                    }
+                }
+
+                if (varTypeIsSimd(tree.Type) && tree.Oper.IsLocalStore && (tree.RegNum is not REG_NA))
+                {
+                    var source = tree.AsLclVarCommon().Data;
+                    if (!source.IsContained && (source.RegNum != tree.RegNum))
+                    {
+                        setContainsAVXFlags((uint)tree.Type.Size);
                     }
                 }
             }

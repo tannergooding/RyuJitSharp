@@ -72,6 +72,23 @@ internal static unsafe class ValueNumIntrinsicEvaluationTests
     }
 
     [Test]
+    public static void SimdTypeDistinguishesAuxiliaryTypeWithoutChangingBaseType()
+    {
+        WithStore(store => {
+            var ordinary = store.VNForSimdType(16, TYP_INT);
+            var indexedByInt = store.VNForSimdType(16, TYP_INT, TYP_INT);
+            var indexedByLong = store.VNForSimdType(16, TYP_INT, TYP_LONG);
+            Assert.That(indexedByInt, Is.Not.EqualTo(ordinary));
+            Assert.That(indexedByLong, Is.Not.EqualTo(indexedByInt));
+
+            var app = new VNFuncApp();
+            Assert.That(store.GetVNFunc(indexedByLong, ref app), Is.True);
+            Assert.That(store.GetConstantInt32(app.GetArg(1)) & 0xFF, Is.EqualTo((int)TYP_INT));
+            Assert.That(store.GetConstantInt32(app.GetArg(1)) >> 8, Is.EqualTo((int)TYP_LONG + 1));
+        });
+    }
+
+    [Test]
     public static void AotOnlyFoldsTargetImplementedMath()
     {
         WithStore(store => {

@@ -409,10 +409,32 @@ public partial class Compiler
             return vnStore.VNForExpr(compCurBB, TYP_STRUCT);
         }
 
+        var app = new VNFuncApp();
+        if (vnStore.GetVNFunc(vnStore.VNNormalValue(pointerVN), ref app) && app.FuncIs(VNF_PtrToLoc))
+        {
+            var lclNum = unchecked((int)vnStore.CoercedConstantValue<nuint>(app.GetArg(0)));
+            var lclOffs = unchecked((uint)vnStore.CoercedConstantValue<nuint>(app.GetArg(1)));
+            return fgValueNumberByrefExposedLocalLoad(type, lclNum, lclOffs);
+        }
+
         var memoryVN = fgCurMemoryVN[(int)ByrefExposed];
         var typeVN = vnStore.VNForIntCon((int)type);
         return vnStore.VNForFunc(type, VNF_ByrefExposedLoad, typeVN,
             vnStore.VNNormalValue(pointerVN), memoryVN);
+    }
+
+    public ValueNum fgValueNumberByrefExposedLocalLoad(var_types type, int lclNum, uint lclOffs)
+    {
+        assert(vnStore is not null);
+        if (type is TYP_STRUCT)
+        {
+            return vnStore.VNForExpr(compCurBB, TYP_STRUCT);
+        }
+
+        var memoryVN = fgCurMemoryVN[(int)ByrefExposed];
+        var typeVN = vnStore.VNForIntCon((int)type);
+        return vnStore.VNForFunc(type, VNF_ByrefExposedLocalLoad, typeVN,
+            vnStore.VNForIntCon(lclNum), vnStore.VNForIntPtrCon(unchecked((nint)(nuint)lclOffs)), memoryVN);
     }
 
     public static bool fgGetStaticFieldSeqAndAddress(ValueNumStore store, GenTree tree,

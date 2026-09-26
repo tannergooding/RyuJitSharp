@@ -107,7 +107,7 @@ internal static unsafe class CodeGenFrameFinalizationTests
             compiler.lvaDoneFrameLayout = Compiler.TENTATIVE_FRAME_LAYOUT;
             compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
             compiler.lvaInlinedPInvokeFrameVar = BAD_VAR_NUM;
-            compiler.lvaStubArgumentVar = BAD_VAR_NUM;
+            compiler.lvaSecretStubArg = BAD_VAR_NUM;
             compiler.srbmIntCalleeTrash = SRBM_INT_CALLEE_TRASH_INIT;
             compiler.srbmFltCalleeTrash = SRBM_FLT_CALLEE_TRASH_INIT;
             compiler.srbmMskCalleeTrash = SRBM_MSK_CALLEE_TRASH_INIT;

@@ -71,6 +71,24 @@ internal static unsafe class LivenessFixedPointTests
         });
     }
 
+    [Test]
+    public static void UnreachableThrowHelpersAreReanalyzedWithoutAddingFlowEdges()
+    {
+        WithCompiler(1, compiler => {
+            var blocks = Blocks(compiler, 2);
+            blocks[1].SetFlags(BBF_THROW_HELPER);
+            var liveness = Prepare<Policy>(compiler);
+            SetOps.AddElemD(compiler, blocks[1].bbLiveIn, compiler.lvaTable[0]._varIndex);
+            SetOps.AddElemD(compiler, blocks[1].bbLiveOut, compiler.lvaTable[0]._varIndex);
+
+            liveness.DoLiveVarAnalysis();
+
+            Assert.That(compiler._dfsTree!.Contains(blocks[1]), Is.False);
+            Assert.That(Count(compiler, blocks[1].bbLiveIn), Is.Zero);
+            Assert.That(Count(compiler, blocks[1].bbLiveOut), Is.Zero);
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void CyclesConvergeForLocalAndMemoryOnlyChanges(bool locals)

@@ -185,13 +185,12 @@ internal static class CodeGenParameterHomingTests
 
     [TestCase(true)]
     [TestCase(false)]
-    public static void PublishedStubParameterHomesUsingItsNonstandardRegister(bool minopts)
+    public static void SecretStubParameterHomesAsOrdinaryRegisterArgument(bool minopts)
     {
         CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
         {
-            compiler.info.compArgsCount = 0;
-            compiler.info.compPublishStubParam = true;
-            compiler.lvaStubArgumentVar = 0;
+            SetParameter(compiler, 0, REG_SECRET_STUB_PARAM, 8);
+            compiler.lvaSecretStubArg = 0;
             compiler.lvaTable[0].RegNum = REG_STK;
             codeGen.CalleeRegArgMaskLiveIn = Mask(REG_SECRET_STUB_PARAM);
             var stillZeroed = true;

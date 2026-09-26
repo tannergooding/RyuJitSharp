@@ -11,18 +11,38 @@ namespace RyuJitSharp;
 public sealed partial class ValueNumStore
 {
     public ValueNumPair EvalMathFuncUnary(var_types type, NamedIntrinsic intrinsic, ValueNumPair argument)
-        => new(EvalMathFuncUnary(type, intrinsic, argument.Liberal),
-            EvalMathFuncUnary(type, intrinsic, argument.Conservative));
+    {
+        var liberal = EvalMathFuncUnary(type, intrinsic, argument.Liberal);
+        var conservative = argument.BothEqual()
+            ? liberal
+            : EvalMathFuncUnary(type, intrinsic, argument.Conservative);
+        return new(liberal, conservative);
+    }
 
     public ValueNumPair EvalMathFuncBinary(var_types type, NamedIntrinsic intrinsic, ValueNumPair left,
         ValueNumPair right)
-        => new(EvalMathFuncBinary(type, intrinsic, left.Liberal, right.Liberal),
-            EvalMathFuncBinary(type, intrinsic, left.Conservative, right.Conservative));
+    {
+        var liberal = EvalMathFuncBinary(type, intrinsic, left.Liberal, right.Liberal);
+        var conservative = left.BothEqual() && right.BothEqual()
+            ? liberal
+            : EvalMathFuncBinary(type, intrinsic, left.Conservative, right.Conservative);
+        return new(liberal, conservative);
+    }
 
 #if FEATURE_SIMD
-    public ValueNum VNForSimdType(int simdSize, var_types simdBaseType)
+    private const int SimdTypeBits = 8;
+    private const int SimdTypeMask = (1 << SimdTypeBits) - 1;
+
+    public ValueNum VNForSimdType(int simdSize, var_types simdBaseType, var_types auxiliaryType = TYP_UNKNOWN)
     {
-        var baseTypeVN = VNForIntCon((int)simdBaseType);
+        assert((int)simdBaseType <= SimdTypeMask && (int)auxiliaryType <= SimdTypeMask);
+        var encodedTypes = (int)simdBaseType;
+        if (auxiliaryType is not TYP_UNKNOWN)
+        {
+            encodedTypes |= ((int)auxiliaryType + 1) << SimdTypeBits;
+        }
+
+        var baseTypeVN = VNForIntCon(encodedTypes);
         var sizeVN = VNForIntCon(simdSize);
         return VNForFunc(TYP_REF, VNF_SimdType, sizeVN, baseTypeVN);
     }
@@ -663,13 +683,11 @@ public sealed partial class ValueNumStore
                             VNAllBitsForType(type, simdSize / baseType.Size);
                     }
                     if (!varTypeIsFloating(baseType) &&
+                        ((operation is GT_EQ && constant == VNAllBitsForType(type, simdSize)) ||
+                         (operation is GT_NE && constant == VNZeroForType(type))) &&
                         IsVectorPerElementMask(variable, baseType, simdSize))
                     {
-                        if ((operation is GT_EQ && constant == VNAllBitsForType(type, simdSize)) ||
-                            (operation is GT_NE && constant == VNZeroForType(type)))
-                        {
-                            return variable;
-                        }
+                        return variable;
                     }
                     break;
                 }

@@ -117,7 +117,7 @@ public partial class Compiler
                 assert((tree.Flags & GTF_VAR_DEF) != 0);
 
                 if (!fgImplicitByRefLclFldsStale || (tree.Oper is not GT_STORE_LCL_FLD) ||
-                    (lvaGetDesc(tree.AsLclFld().LclNum).Type is not TYP_BYREF) ||
+                    (lvaGetDesc(tree.AsLclFld().LclNum).Type != lvaGetImplicitByRefParamType()) ||
                     !lvaIsImplicitByRefLocal(tree.AsLclFld().LclNum))
                 {
                     assert(((tree.Flags & GTF_VAR_USEASG) != 0) ==

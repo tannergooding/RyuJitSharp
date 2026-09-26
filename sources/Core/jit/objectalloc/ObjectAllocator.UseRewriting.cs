@@ -47,6 +47,33 @@ public sealed partial class ObjectAllocator
         return compiler.typGetCustomLayout(builder);
     }
 
+    private ClassLayout GetRetypedLayout(ClassLayout oldLayout, ClassLayout newLayout)
+    {
+        assert(oldLayout.HasGCPtr);
+
+        if (newLayout.Size == oldLayout.Size)
+        {
+            return newLayout;
+        }
+
+        assert(newLayout.Size > oldLayout.Size);
+        return newLayout.HasGCPtr ? GetByrefLayout(oldLayout) : GetNonGCLayout(oldLayout);
+    }
+
+    private void UpdateStoreType(GenTree store, var_types newType)
+    {
+        assert(varTypeIsGC(store.Type));
+
+        if (_storeAddressToIndexMap.TryGetValue(store, out var info) &&
+            (info.Index != BAD_VAR_NUM) && !DoesIndexPointToStack(info.Index))
+        {
+            store.ChangeType(TYP_BYREF);
+            return;
+        }
+
+        store.ChangeType(newType);
+    }
+
     private void UpdateAncestorTypes(GenTree tree, GenTreeStack ancestors,
         var_types newType, ClassLayout? newLayout, bool retypeFields)
     {
@@ -72,6 +99,30 @@ public sealed partial class ObjectAllocator
                         {
                             parent.ChangeType(newType);
                         }
+                    }
+                    break;
+                }
+
+                case GT_STORE_LCL_FLD:
+                {
+                    assert(tree == parent.AsLclVarCommon().Data);
+
+                    if (parent.Type is TYP_STRUCT)
+                    {
+                        assert(retypeFields);
+                        var store = parent.AsLclFld();
+                        var oldLayout = store.GetLayout(compiler)
+                            ?? throw new FatalJitException("Struct field store must have a layout.");
+
+                        if (oldLayout.HasGCPtr)
+                        {
+                            store.Layout = GetRetypedLayout(oldLayout,
+                                newLayout ?? throw new FatalJitException("Retyping struct fields requires their new layout."));
+                        }
+                    }
+                    else if (varTypeIsGC(parent.Type))
+                    {
+                        UpdateStoreType(parent, newType);
                     }
                     break;
                 }
@@ -187,17 +238,7 @@ public sealed partial class ObjectAllocator
                         assert(tree == indir.Data);
                         if (varTypeIsGC(parent.Type))
                         {
-                            var wasRetyped = false;
-                            if (_storeAddressToIndexMap.TryGetValue(parent, out var info) &&
-                                (info.Index != BAD_VAR_NUM) && !DoesIndexPointToStack(info.Index))
-                            {
-                                parent.ChangeType(TYP_BYREF);
-                                wasRetyped = true;
-                            }
-                            if (!wasRetyped)
-                            {
-                                parent.ChangeType(newType);
-                            }
+                            UpdateStoreType(parent, newType);
                         }
                         else if (retypeFields && parent.Oper is GT_STORE_BLK)
                         {
@@ -263,15 +304,7 @@ public sealed partial class ObjectAllocator
 
         var layout = newLayout
             ?? throw new FatalJitException("Retyping struct fields requires their new layout.");
-        if (layout.Size == oldLayout.Size)
-        {
-            block.Layout = layout;
-        }
-        else
-        {
-            assert(layout.Size > oldLayout.Size);
-            block.Layout = layout.HasGCPtr ? GetByrefLayout(oldLayout) : GetNonGCLayout(oldLayout);
-        }
+        block.Layout = GetRetypedLayout(oldLayout, layout);
         return true;
     }
 

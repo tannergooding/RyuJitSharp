@@ -68,6 +68,7 @@ public sealed partial class ObjectAllocator
         public List<BasicBlock>? BlocksToClone;
         public nint[] Blocks = BitVecOps.UninitVal();
         public weight_t ProfileScale;
+        public bool HasConflictingRedefinition;
         public bool CheckedCanClone;
         public bool CanClone;
         public bool WillClone;

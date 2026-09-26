@@ -136,6 +136,51 @@ internal static unsafe class ObjectAllocatorUseRewritingTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void LocalFieldStoreRetypesStackPointingData(bool definitely)
+    {
+        WithAllocator([TYP_REF, TYP_REF], (compiler, allocator, block) =>
+        {
+            Track(compiler, allocator, 1, definitely);
+            var value = compiler.gtNewLclvNode(TYP_REF, 1);
+            var store = compiler.gtNewStoreLclFldNode(TYP_REF, 0, 0, value);
+            compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(store));
+
+            allocator.RewriteUses();
+
+            Assert.That(store.Data, Is.SameAs(value));
+            Assert.That(store.Type, Is.EqualTo(definitely ? TYP_I_IMPL : TYP_BYREF));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void StructFieldStoreRetypesItsGcLayout(bool definitely)
+    {
+        WithAllocator([TYP_STRUCT, TYP_STRUCT], (compiler, allocator, block) =>
+        {
+            var builder = new ClassLayoutBuilder(compiler, 16);
+            builder.SetGCPtrType(1, TYP_REF);
+            var layout = compiler.typGetCustomLayout(builder);
+            compiler.lvaSetStruct(0, layout, unsafeValueClsCheck: false);
+            compiler.lvaSetStruct(1, layout, unsafeValueClsCheck: false);
+            SetFieldTracking(allocator);
+            Track(compiler, allocator, 0, definitely);
+            var source = new GenTreeBlk(TYP_STRUCT, compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0), layout);
+            var store = new GenTreeLclFld(TYP_STRUCT, 1, 0, source, layout);
+            compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(store));
+
+            allocator.RewriteUses();
+
+            var expected = compiler.lvaGetDesc(0).Layout!;
+            Assert.That(source.Layout, Is.SameAs(expected));
+            Assert.That(store.Layout, Is.SameAs(expected));
+            Assert.That(store.Layout!.GetGCPtrType(1),
+                Is.EqualTo(definitely ? TYP_LONG : TYP_BYREF));
+        });
+    }
+
     private static Dictionary<int, int> StackObjectMap(ObjectAllocator allocator)
     {
         return (Dictionary<int, int>)(GetField(allocator, "_heapLocalToStackObjLocalMap")

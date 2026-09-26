@@ -307,39 +307,19 @@ public sealed partial class CodeGen
             case NI_Vector_GetLower128:
             {
                 assert(op1 is not null);
+                // Only the defined low lanes are copied, even for register operands.
+                attr = intrinsicId switch {
+                    NI_Vector_GetLower => node.Type.EmitSize,
+                    NI_Vector_ToVector512Unsafe => TYP_SIMD32.EmitSize,
+                    _ => TYP_SIMD16.EmitSize,
+                };
                 if (op1.IsContained || op1.IsUsedFromSpillTemp)
                 {
-                    // Read only the necessary lower lanes from memory.
-                    if (intrinsicId == NI_Vector_GetLower)
-                    {
-                        attr = node.Type.EmitSize;
-                    }
-                    else if (intrinsicId == NI_Vector_ToVector512Unsafe)
-                    {
-                        attr = TYP_SIMD32.EmitSize;
-                    }
-                    else
-                    {
-                        attr = TYP_SIMD16.EmitSize;
-                    }
                     genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, instOptions);
                 }
                 else
                 {
                     assert(instOptions == INS_OPTS_NONE);
-                    // Upper lanes are unspecified, permitting same-register elision.
-                    if (intrinsicId == NI_Vector_GetLower)
-                    {
-                        attr = node.Type.EmitSize;
-                    }
-                    else if (intrinsicId == NI_Vector_ToVector256Unsafe)
-                    {
-                        attr = TYP_SIMD32.EmitSize;
-                    }
-                    else
-                    {
-                        attr = TYP_SIMD64.EmitSize;
-                    }
                     _ = emit.emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
                 }
                 break;
@@ -374,7 +354,7 @@ public sealed partial class CodeGen
                     divTypeSize = EA_32BYTE;
                 }
 
-                emit.emitIns_SIMD_R_R_R(INS_xorpd, typeSize, tmpReg2, tmpReg2, tmpReg2, instOptions);
+                emit.emitIns_SIMD_R_R_R(INS_xorpd, EA_16BYTE, tmpReg2, tmpReg2, tmpReg2, instOptions);
                 emit.emitIns_SIMD_R_R_R(INS_pcmpeqd, typeSize, tmpReg2, tmpReg2, op2Reg, instOptions);
                 emit.emitIns_R_R(INS_ptest, typeSize, tmpReg2, tmpReg2, instOptions);
                 genJumpToThrowHlpBlk(EJ_jne, SCK_DIV_BY_ZERO);

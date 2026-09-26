@@ -364,8 +364,8 @@ internal static unsafe class HWIntrinsicDispatchTests
         vtable.Base.Base.getArgType = &GetArgumentType;
         vtable.Base.Base.getArgNext = &GetNextArgument;
         vtable.Base.notifyInstructionSetUsage =
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, byte>)
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte>)&NotifyInstructionSetUsage;
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool, byte>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte, byte>)&NotifyInstructionSetUsage;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
 #if DEBUG
         using var tls = new JitTls(&jitInfo);
@@ -433,7 +433,7 @@ internal static unsafe class HWIntrinsicDispatchTests
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte NotifyInstructionSetUsage(ICorJitInfo* self,
-        CORINFO_InstructionSet isa, byte supported) => supported;
+        CORINFO_InstructionSet isa, byte supported, byte preserveNegativeDependency) => supported;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte IsIntrinsicType(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => 1;

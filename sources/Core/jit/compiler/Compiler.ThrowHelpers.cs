@@ -89,13 +89,21 @@ public partial class Compiler
         block.SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE);
     }
 
-    private void fgSetThrowHelpBlockLiveness(BasicBlock block)
+    internal void fgSetThrowHelpBlockLiveness(BasicBlock block)
     {
         VarSetOps.ClearD(this, block.bbLiveOut);
         if (lvaKeepAliveAndReportThis() && lvaTable[info.compThisArg].lvTracked)
         {
             VarSetOps.AddElemD(this, block.bbLiveOut, lvaGetDesc(info.compThisArg)._varIndex);
         }
+
+#if TARGET_WASM
+        ref var wasmSp = ref lvaGetDesc(lvaWasmSpArg);
+        if (wasmSp.lvTracked)
+        {
+            VarSetOps.AddElemD(this, block.bbLiveOut, wasmSp._varIndex);
+        }
+#endif
 
         if (block.HasPotentialEHSuccs(this))
         {

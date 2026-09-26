@@ -16,6 +16,31 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class ValueNumLoadStoreTests
 {
     [Test]
+    public static void PointerToLocalLoadUsesLocalAndMemoryIdentityInsteadOfFrameVersion()
+    {
+        ValueNumMemoryAccessTests.WithStore((compiler, store) => {
+            var memory = store.VNForExpr(null, TYP_MEM);
+            compiler.fgCurMemoryVN[(int)ByrefExposed] = memory;
+            var local = store.VNForIntCon(3);
+            var offset = store.VNForIntPtrCon(unchecked((nint)0xFFFFFFFFL));
+            var first = store.VNForFunc(TYP_BYREF, VNFunc.VNF_PtrToLoc,
+                local, offset, store.VNForIntCon(0));
+            var resumed = store.VNForFunc(TYP_BYREF, VNFunc.VNF_PtrToLoc,
+                local, offset, store.VNForExpr(null, TYP_INT));
+
+            var firstLoad = compiler.fgValueNumberByrefExposedLoad(TYP_INT, first);
+            var resumedLoad = compiler.fgValueNumberByrefExposedLoad(TYP_INT, resumed);
+            Assert.That(resumedLoad, Is.EqualTo(firstLoad));
+            var app = new VNFuncApp();
+            Assert.That(store.GetVNFunc(firstLoad, ref app), Is.True);
+            Assert.That(app.Func, Is.EqualTo(VNFunc.VNF_ByrefExposedLocalLoad));
+            Assert.That(app.GetArg(1), Is.EqualTo(local));
+            Assert.That(app.GetArg(2), Is.EqualTo(offset));
+            Assert.That(app.GetArg(3), Is.EqualTo(memory));
+        });
+    }
+
+    [Test]
     public static void PhysicalStoreAndLoadRecoverSubrange()
     {
         ValueNumMemoryAccessTests.WithStore((_, store) =>

@@ -349,6 +349,64 @@ internal static unsafe class FlowGraphHelperTests
         }
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ImplicitByRefParameterIsNonHeapAndNonNull(bool asyncMethod)
+    {
+#if DEBUG
+        using var jitTls = new JitTls(null);
+#endif
+        var previous = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags jitFlags = default;
+        if (asyncMethod)
+        {
+            jitFlags.Set(JitFlags.JIT_FLAG_ASYNC);
+        }
+        compiler.opts.jitFlags = &jitFlags;
+        compiler.lvaTable = [new LclVarDsc {
+            Type = asyncMethod ? var_types.TYP_BYREF : Globals.TYP_I_IMPL,
+            lvIsParam = true
+        }];
+        compiler.lvaTable[0].IsImplicitByRef = true;
+        compiler.lvaCount = 1;
+        compiler.info.compRetBuffArg = -1;
+        JitTls.Compiler = compiler;
+
+        try
+        {
+            var address = compiler.gtNewLclvNode(compiler.lvaTable[0].Type, 0);
+            Assert.That(compiler.fgAddrCouldBeNull(address), Is.False);
+            Assert.That(compiler.fgAddrCouldBeHeap(address), Is.False);
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
+    [Test]
+    public static void ReturnBufferLocalCannotBeNull()
+    {
+#if DEBUG
+        using var jitTls = new JitTls(null);
+#endif
+        var previous = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        compiler.lvaTable = [new LclVarDsc { Type = var_types.TYP_BYREF }];
+        compiler.lvaCount = 1;
+        compiler.info.compRetBuffArg = 0;
+        JitTls.Compiler = compiler;
+        try
+        {
+            Assert.That(compiler.fgAddrCouldBeNull(compiler.gtNewLclvNode(var_types.TYP_BYREF, 0)), Is.False);
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
     [TestCase(CorInfoHelpFunc.CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2, false)]
     [TestCase(CorInfoHelpFunc.CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2, true)]
     [TestCase(CorInfoHelpFunc.CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2_NOJITOPT, false)]

@@ -23,7 +23,17 @@ public sealed partial class LinearScan
 
         if (intrinsic.SimdSize != 0)
         {
-            setContainsAVXFlags((uint)intrinsic.SimdSize);
+            var simdSize = (uint)intrinsic.SimdSize;
+            if (category is HWIntrinsicCategory.HW_Category_MemoryStore ||
+                intrinsicId is NI_Vector_CreateScalar or NI_Vector_CreateScalarUnsafe)
+            {
+                simdSize = XMM_REGSIZE_BYTES;
+            }
+            else if (intrinsicId is NI_Vector_GetLower or NI_Vector_GetLower128)
+            {
+                simdSize = (uint)intrinsic.Type.Size;
+            }
+            setContainsAVXFlags(simdSize);
         }
 
         destinationCount = intrinsic.IsValue
@@ -506,6 +516,11 @@ public sealed partial class LinearScan
 
                 case NI_Vector_op_Division:
                 {
+                    if (_compiler.compOpportunisticallyDependsOn(InstructionSet_AVX))
+                    {
+                        setContainsAVXFlags((uint)(2 * intrinsic.SimdSize));
+                    }
+
                     sourceCount = buildOperandUses(op1, lowSIMDRegs());
                     sourceCount += buildOperandUses(op2, lowSIMDRegs());
                     _ = buildInternalFloatRegisterDefForNode(intrinsic, lowSIMDRegs());

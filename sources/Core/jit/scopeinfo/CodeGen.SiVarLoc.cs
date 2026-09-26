@@ -331,7 +331,7 @@ public sealed partial class CodeGen
                     if (varDsc.IsImplicitByRef)
                     {
                         assert(varDsc.lvIsParam);
-                        assert(varDsc.Type == TYP_BYREF);
+                        assert(varDsc.Type is TYP_I_IMPL or TYP_BYREF);
                         vlType = VLT_STK_BYREF;
                     }
                     else

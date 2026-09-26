@@ -1152,7 +1152,6 @@ public partial class Compiler
         }
 
         info.compIsStatic = (info.compFlags & CORINFO_FLG_STATIC) != 0;
-        info.compPublishStubParam = opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PUBLISH_SECRET_PARAM);
 
         if (opts.IsReversePInvoke)
         {
@@ -3188,14 +3187,6 @@ public partial class Compiler
             hashBv.Init(this);
 
             VarSetOps.AssignAllowUninitRhs(this, ref compCurLife, VarSetOps.UninitVal());
-
-            // The temp holding the secret stub argument is used by fgImport() when importing the intrinsic.
-            if (info.compPublishStubParam)
-            {
-                assert(lvaStubArgumentVar == BAD_VAR_NUM);
-                lvaStubArgumentVar = lvaGrabTempWithImplicitUse(false, "stub argument");
-                lvaGetDesc(lvaStubArgumentVar).Type = TYP_I_IMPL;
-            }
         });
 
         // If we're going to instrument code, we may need to prepare before we import.
@@ -3824,9 +3815,13 @@ public partial class Compiler
         _pLowering.Run(); // PHASE_LOWERING
 
         // Set stack levels and analyze throw helper usage.
+        // This may create throw helper calls that get lowered.
         var stackLevelSetter = new StackLevelSetter(this);
         stackLevelSetter.Run();
         _pLowering.FinalizeOutgoingArgSpace();
+
+        // Run the final liveness pass after adding throw helper calls.
+        DoPhase(this, PHASE_LCLVARLIVENESS, fgLateLiveness);
 
 #if TARGET_WASM
         // Determine if a Virtual IP is needed and add code as needed to keep the Virtual IP updated.
@@ -4341,14 +4336,16 @@ public partial class Compiler
 
     /// <summary>Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?</summary>
     /// <param name="isa"></param>
+    /// <param name="preserveNegativeDependency">Whether an absent ISA must be preserved as a prerequisite.</param>
     /// <returns></returns>
-    /// <remarks>The result of this api call will exactly match the target machine on which the function is executed (except for CoreLib, where there are special rules)</remarks>
-    private bool compExactlyDependsOn(CORINFO_InstructionSet isa)
+    /// <remarks>The result exactly matches the target machine, except for CoreLib unless preserving negative dependencies.</remarks>
+    private bool compExactlyDependsOn(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false)
     {
 #if TARGET_XARCH || TARGET_ARM64 || TARGET_RISCV64
-        if (!opts.compSupportsISAReported.HasInstructionSet(isa))
+        // Non-deterministic intrinsics must notify the EE even if an earlier query cached this ISA.
+        if (preserveNegativeDependency || !opts.compSupportsISAReported.HasInstructionSet(isa))
         {
-            if (notifyInstructionSetUsage(isa, opts.compSupportsISA.HasInstructionSet(isa)))
+            if (notifyInstructionSetUsage(isa, opts.compSupportsISA.HasInstructionSet(isa), preserveNegativeDependency))
             {
                 opts.compSupportsISAExactly.AddInstructionSet(isa);
             }
@@ -4636,13 +4633,14 @@ public partial class Compiler
 
     /// <summary>Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?</summary>
     /// <param name="isa"></param>
+    /// <param name="preserveNegativeDependency">Whether an absent ISA must be preserved as a prerequisite.</param>
     /// <returns></returns>
     /// <remarks>
     ///   <para>The result of this api call will match the target machine if the result is true.</para>
     ///   <para>If the result is false, then the target machine may have support for the instruction.</para>
     /// </remarks>
-    internal bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa)
-        => opts.compSupportsISA.HasInstructionSet(isa) && compExactlyDependsOn(isa);
+    internal bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false)
+        => (preserveNegativeDependency || opts.compSupportsISA.HasInstructionSet(isa)) && compExactlyDependsOn(isa, preserveNegativeDependency);
 
 #if DEBUG
     public VarName? compVarName(regNumber reg, bool isFloatReg = false)
