@@ -308,11 +308,12 @@ public partial class Compiler
                 }
                 else
                 {
-                    _src = _src.BashToZeroConst(lclType);
+                    _src = _src.BashToZeroConst(lclType, _compiler.fgNodeThreading);
                 }
 
                 var storeType = DstVarDsc.lvNormalizeOnLoad ? lclType : lclType.ActualType;
-                _store = new GenTreeLclVar(GT_STORE_LCL_VAR, storeType, _dstLclNum, _src, _store, NodeThreading.None);
+                _store = new GenTreeLclVar(GT_STORE_LCL_VAR, storeType, _dstLclNum, _src, _store,
+                    _compiler.fgNodeThreading);
                 _store.Flags |= GTF_VAR_DEF;
                 _dstLclNode = _store.AsLclVarCommon();
                 _result = _store;

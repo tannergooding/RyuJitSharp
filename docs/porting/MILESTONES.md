@@ -3,7 +3,7 @@
 A newest-first history of what the port can do and how it has developed.
 
 The primary target is Windows x64. The port can import methods, expand inline
-calls, lower heap allocations, simplify local accesses and construct internal
+calls, select heap or stack allocations, simplify local accesses and construct internal
 method entry/exit paths, rationalize expression trees into linear IR, and lower
 minopts methods, create EH funclets, allocate registers with stack-resident
 locals, emit native code and publish runtime metadata for Windows x64.
@@ -14,6 +14,22 @@ and unfinished optimization phases.
 The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
+
+## 2026-09-26: Object and array stack allocation
+
+Object-allocation orchestration now runs escape analysis, conditional cloning,
+allocation morphing and pointer/use repair in native order. Stack-array helper
+expansion initializes method-table and length fields, preserves evaluation order
+and replaces each helper with its stack address.
+
+Real nonescaping classes and fixed-size value arrays execute on the stack.
+Reference-lifetime, boxed-value and escaping controls retain native heap
+decisions. The object and hardware corpora execute together, including optimized
+and minopts GC stress. Remaining work includes conditional-clone execution,
+additional EE layouts and optimizer-driven code differences.
+
+Threaded scalar zero initialization now uses the existing whole-node replacement
+path with an explicit threading mode, preserving node identity and links.
 
 ## 2026-09-26: Hardware import and GS protection
 

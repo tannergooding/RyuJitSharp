@@ -67,12 +67,24 @@ public sealed partial class ObjectAllocator : Phase
 #endif
         if (enabled)
         {
-            IMPL_LIMITATION("object stack allocation analysis and cloning are not yet ported");
+            JITDUMP("enabled, analyzing...\n");
+            DoAnalysis();
+
+            CloneAndSpecialize();
+        }
+        else
+        {
+            JITDUMP($"disabled{(_isObjectStackAllocationEnabled ? disableReason : "")}, punting\n");
+            _isObjectStackAllocationEnabled = false;
         }
 
-        JITDUMP($"disabled{(_isObjectStackAllocationEnabled ? disableReason : "")}, punting\n");
-        _isObjectStackAllocationEnabled = false;
-        MorphHeapAllocObjNodes();
+        var didStackAllocate = MorphAllocObjNodes();
+        if (didStackAllocate)
+        {
+            assert(enabled);
+            ComputeStackObjectPointers(_bitVecTraits);
+            RewriteUses();
+        }
 
         compiler.fgInvalidateDfsTree();
         return PhaseStatus.MODIFIED_EVERYTHING;

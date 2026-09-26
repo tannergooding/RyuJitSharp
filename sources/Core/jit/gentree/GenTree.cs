@@ -2748,24 +2748,24 @@ public partial class GenTree
     }
 
     /// <summary>Return a zero constant with this node's logical identity. The caller must replace its owning use.</summary>
-    internal GenTree BashToZeroConst(var_types type)
+    internal GenTree BashToZeroConst(var_types type, NodeThreading threading = NodeThreading.None)
     {
         GenTree result;
 
         if (varTypeIsFloating(type))
         {
-            result = new GenTreeDblCon(type, 0.0, this);
+            result = new GenTreeDblCon(type, 0.0, this, threading);
         }
         else
         {
             assert(varTypeIsIntegral(type) || varTypeIsGC(type));
             type = type.ActualType;
 #if TARGET_64BIT
-            result = new GenTreeIntCon(type, 0, fields: null, this);
+            result = new GenTreeIntCon(type, 0, fields: null, this, threading);
 #else
             result = (type is TYP_LONG)
-                ? new GenTreeLngCon(0, this)
-                : new GenTreeIntCon(type, 0, fields: null, this);
+                ? new GenTreeLngCon(0, this, threading)
+                : new GenTreeIntCon(type, 0, fields: null, this, threading);
 #endif
         }
 

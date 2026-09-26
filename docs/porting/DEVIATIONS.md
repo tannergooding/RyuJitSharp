@@ -198,12 +198,11 @@ effects without the fresh-call factory's extra global-reference flag. The
 owning local store installs the returned node. General argument morphing remains
 outside this construction helper; no unported argument morphing is implied.
 
-B141 currently activates only the stack-allocation-disabled path, including
-minopts. Requests for the unported stack-allocation analysis/cloning path end
-compilation with `CORJIT_IMPLLIMITATION`; they do not silently allocate on the
-heap. This is a staged implementation limitation, not completion of the native
-phase or an accepted dump/codegen difference. The complete native phase and
-combined allocation traversal remain in the residual ledger.
+B141 now includes complete object-allocation orchestration, retaining native
+mode/configuration gates and heap fallback decisions. Minopts still uses heap
+allocation. Optimized stack allocation no longer stops at the earlier phase
+gate; execution evidence and remaining layout/clone coverage are tracked
+separately from implementation completeness.
 
 Connection-graph escape closure, allocation-site/alias traversal and conditional
 clone viability are implemented, including guarded enumerator tracking, stack
@@ -213,8 +212,13 @@ insertion, EH renumbering, block-state cloning and mapped successors.
 Object-specific clone transformations, stack/heap morphing and pointer/use
 rewriting are now implemented. Self-copy elimination uses the existing
 base-field-only `BashToNOP`, preserving aliases and logical node identity
-without cross-kind CLR retagging. Production phase orchestration and real
-JIT/EE-backed stack-path execution remain outstanding; the phase gate is unchanged.
+without cross-kind CLR retagging. Production orchestration and stack-array
+expansion are active. Real JIT/EE-backed classes and value arrays execute on the
+stack; boxed/reference-lifetime controls retain the native heap decisions.
+Conditional-clone execution and additional layouts remain coverage gaps.
+Split-created block operations are remorphed before expansion proceeds; scalar
+zero replacement passes the current threading mode to the existing node factory
+rather than relaxing its unthreaded-default contract.
 
 Hardware-import prerequisites preserve native argument order and precise types,
 table-driven eligibility and xarch immediate/range-check rules. SIMD/mask stack
