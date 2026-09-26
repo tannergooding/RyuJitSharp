@@ -838,6 +838,11 @@ SSA reset supports both native PHI-only and deep-clean modes. Memory-SSA maps
 are nullable, reflecting the native absent-map state. Deep reset retains the
 definition-array and composite-list storage for reuse while dropping map
 references; it does not mutate aliased dictionaries or removed PHI nodes.
+Composite SSA numbers retain native compact packing and outlined index/alias
+semantics. New outlined slots are explicitly zeroed after list growth, including
+reuse after reset, matching `JitExpandArray` value initialization. A readonly
+managed singleton represents native memory-PHI sentinel `0x1`; null continues
+to mean that no PHI exists.
 An empty bitset span is a valid initialized set when its trait environment has
 zero elements, even though the same representation also denotes uninitialized
 storage in nonempty environments; canonical assignment distinguishes those

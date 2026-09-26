@@ -328,8 +328,8 @@ public sealed partial class BasicBlock : LIR.Range
         }
     }
 
-    /// <summary>Special value (0x1, FWIW) to represent a to-be-filled in Phi arg list for Heap.</summary>
-    public static MemoryPhiArg? EmptyMemoryPhiDef;
+    /// <summary>Distinct sentinel (0x1 in native) representing a to-be-filled-in Phi arg list for Heap.</summary>
+    public static readonly MemoryPhiArg EmptyMemoryPhiDef = new(SsaConfig.RESERVED_SSA_NUM);
 
     /// <summary>If the "in" Heap SSA var is not a phi definition, this value is null.</summary>
     /// <remarks>Otherwise, it is either the special value EmptyMemoryPhiDefn, to indicate that Heap needs a phi definition on entry, or else it is the linked list of the phi arguments.</remarks>

@@ -12,16 +12,15 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete enregistered-local interval construction, ternary/quaternary VN interning and SSA reset prerequisites while extending filter/nested-finally execution.",
+      "scope": "Complete enregistered-local interval construction and SSA bookkeeping prerequisites while correcting native EH insertion fidelity.",
       "doneWhen": [
         "Complete Windows-AMD64 buildIntervals<true> and required native direct helpers without activating optimized allocation.",
-        "Complete native ternary/quaternary VNForFunc pure interning, preserving MapStore and zero-arity contracts.",
-        "Complete fgResetForSsa deep and PHI-only modes without activating the incomplete SSA builder.",
-        "Validate paired filter/nested-finally reference cases and stop at the first real managed frontier.",
+        "Reconcile composite SSA storage, unsigned stress encoding and the distinct memory-PHI sentinel without activating the incomplete SSA builder.",
+        "Restore the native enclosing-region boolean contract and demonstrate corrected finally insertion/branch forms with paired execution.",
         "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
       ],
       "validation": [
-        "Use focused Debug/Release selections against isolated e64909f archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
+        "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
       "parallelPackets": [
@@ -41,12 +40,12 @@
           "deferred": "Full VN phase, map-selection algorithm and unowned compiler changes."
         },
         {
-          "scope": "Paired native/managed filter and nested-finally execution with live references and confirmed collections.",
+          "scope": "Correct native enclosing EH-region output preservation and verify finally block placement and execution.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
-          "files": "artifacts\\backend-filter-gc-probe only; immutable entry-interval-jit, no production edits.",
-          "doneWhen": "Two focused methods with normal/exceptional and accepted/rejected-filter checks, exact payload/collection outcomes and provenance, or first managed failure.",
-          "status": "complete",
-          "result": "Both native and managed pass2/2headers and all accepted/rejected/normal/exceptional paths with eleven confirmed full collections; nested-finally sizes404native/407managed."
+          "files": "EHblkDsc.cs, required caller edits, a focused fixture and isolated finally-parity artifacts; no SSA/LSRA or shared documentation edits.",
+          "doneWhen": "Frozen native helper/caller correction, failing-before and Debug/Release coverage, and fresh paired GCStress4 captures for three finally methods plus catch/filter controls.",
+          "status": "in-progress",
+          "result": "Source-and-dump diagnosis in artifacts\\backend-finally-parity\\findings.txt accounts for all three extra bytes; a changed-binary counterfactual is pending."
         }
       ],
       "deferred": [
@@ -59,11 +58,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "SSA reset is complete: eight functional before failures,443Debug/428Release afterward; higher-arity VN is committed dfa1bcd. Parent next completes the SSA bookkeeping prerequisite by reproducing/reconciling complete SsaNumInfo.Composite (B254) and the distinct empty-memory-PHI sentinel (B255), without activating fgSsaBuild. LSRA worker turn5 will return full local interval construction; d62fc6a5 is isolating the recurring three-byte finally-code difference using existing captures. No optimized activation or publication.",
+    "nextAction": "Composite SSA bookkeeping B254/B255 is reconciled:14before failures,459Debug/438Release afterward. Parent next reads native SsaBuilder/rename-state declarations in ssabuilder.h to establish the complete construction closure; there is no managed SsaBuilder and fgSsaBuild remains a stub. Collect frozen LSRA worker turn5 when notified. EH worker next returns the B256 helper/caller correction plus changed-binary finally evidence. No partial SSA or optimized-allocation activation, and no publication.",
     "handoff": {
       "status": "parallel-interval-and-ssa-prerequisites",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 collected through turn4, still building full local intervals. 3a2c8d9b through turn8 is collected and committed dfa1bcd; idle. d62fc6a5 through turn71 is collected/committed df9e5c6, now investigating the recurring three-byte finally-code difference in artifacts\\backend-finally-parity. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
+      "workerPackets": "610162a0 collected through turn4, still building full local intervals. 3a2c8d9b through turn8 is collected and committed dfa1bcd; idle. d62fc6a5 through turn72 is collected; its finally diagnosis is frozen, and its next packet corrects B256 with focused and execution evidence. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -79,6 +78,23 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "ssaBookkeeping": {
+        "nativeBoundary": "gentree.cpp SsaNumInfo Composite/GetNum/GetOutlinedNumSlot/NumCanBeEncodedCompactly; jitexpandarray.h value initialization/reset; block.cpp:995 memory-PHI sentinel.",
+        "sourceManifest": "artifacts\\ssa-bookkeeping-validation\\source-manifest.json",
+        "snapshotBase": "c0320b1",
+        "rootSnapshotHashesMatch": true,
+        "beforeTests": "artifacts\\ssa-bookkeeping-validation\\snapshot\\artifacts\\tst\\Debug\\ssa-bookkeeping-before.trx",
+        "beforeFailed": 14,
+        "beforePassed": 2,
+        "debugTests": "artifacts\\ssa-bookkeeping-validation\\snapshot\\artifacts\\tst\\Debug\\ssa-bookkeeping-debug.trx",
+        "releaseTests": "artifacts\\ssa-bookkeeping-validation\\snapshot\\artifacts\\tst\\Release\\ssa-bookkeeping-release.trx",
+        "debugPassed": 459,
+        "releasePassed": 438,
+        "skipped": 0,
+        "selection": "FullyQualifiedName~Ssa|FullyQualifiedName~Liveness|FullyQualifiedName~FlowGraphCleanupTests|FullyQualifiedName~FlowGraphCompactionTests",
+        "coverage": "Ten common and six DEBUG cases cover outlined growth/capacity, compact-to-outlined copying, alias updates, reset/reuse, split indices32767/32768, memory-PHI states and unsigned stress boundaries.",
+        "limitation": "Bookkeeping fidelity only; no SSA construction or optimized runtime activation."
+      },
       "ssaReset": {
         "nativeBoundary": "ssabuilder.cpp fgResetForSsa, starting line42; both deepClean modes.",
         "sourceManifest": "artifacts\\ssa-reset-validation\\source-manifest.json",
@@ -5437,6 +5453,13 @@
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.SsaReset.cs"],
       "reconciledCommit": null,
       "scope": "Complete fgResetForSsa in both modes; SSA construction remains incomplete."
+    },
+    {
+      "area": "composite-ssa-bookkeeping",
+      "native": ["src\\coreclr\\jit\\gentree.cpp", "src\\coreclr\\jit\\jitexpandarray.h", "src\\coreclr\\jit\\block.cpp"],
+      "csharp": ["sources\\Core\\jit\\gentree\\SsaNumInfo.cs", "sources\\Core\\jit\\block\\BasicBlock.cs"],
+      "reconciledCommit": null,
+      "scope": "Complete composite SSA encoding/read/index helpers and memory-PHI placeholder identity; B254/B255."
     },
     {
       "area": "batch-temporary-initialization",

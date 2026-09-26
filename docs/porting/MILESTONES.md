@@ -15,6 +15,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Composite SSA bookkeeping
+
+Promoted-struct SSA numbers now preserve field values when moving from compact
+packing into outlined storage, including growth, storage reuse and aliased
+updates. Stress encoding retains native unsigned arithmetic. Memory PHIs now
+distinguish an absent definition from a definition awaiting arguments.
+
+These repairs complete bookkeeping prerequisites; full SSA construction and
+optimized allocation remain incomplete.
+
 ## 2026-09-25: SSA reset
 
 SSA reset now implements both native modes: removing PHI functions alone and

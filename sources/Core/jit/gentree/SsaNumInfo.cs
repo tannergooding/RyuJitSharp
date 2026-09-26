@@ -115,25 +115,25 @@ public readonly struct SsaNumInfo
 
         // Allocate a new chunk for the field numbers. Once allocated, it cannot be expanded.
         var count = compiler.lvaGetDesc(parentLclNum).lvFieldCnt;
-        var table = CollectionsMarshal.AsSpan(outlinedCompositeSsaNums);
-
-        var firstSlotIdx = table.Length;
+        var firstSlotIdx = outlinedCompositeSsaNums.Count;
         var lastSlotIdx = firstSlotIdx + count - 1;
 
-        // This will grow the table.
+        // Grow before taking a span; native GetRef also value-initializes new slots.
         CollectionsMarshal.SetCount(outlinedCompositeSsaNums, lastSlotIdx + 1);
+        var slots = CollectionsMarshal.AsSpan(outlinedCompositeSsaNums).Slice(firstSlotIdx, count);
+        slots.Clear();
 
         // Copy over all of the already encoded numbers.
         if (!baseNum.IsInvalid)
         {
-            for (var i = firstSlotIdx; i < table.Length; i++)
+            for (var i = 0; i < count; i++)
             {
-                table[i] = baseNum.GetNum(compiler, i);
+                slots[i] = baseNum.GetNum(compiler, i);
             }
         }
 
         // Copy the one being set last to overwrite any previous values.
-        table[firstSlotIdx + index] = ssaNum;
+        slots[index] = ssaNum;
 
         // Split the index if it does not fit into a small encoding.
         if ((firstSlotIdx & ~OUTLINED_INDEX_LOW_MASK) is not 0)
@@ -166,7 +166,7 @@ public readonly struct SsaNumInfo
 
         if (compiler.compStressCompile(Compiler.STRESS_SSA_INFO, 20))
         {
-            return (ssaNum - 2) < index;
+            return unchecked((uint)ssaNum - 2) < (uint)index;
         }
 #endif
 
