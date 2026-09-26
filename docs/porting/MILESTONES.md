@@ -15,6 +15,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Loop-cloning models and guards
+
+Loop-cloning support now represents array, span, type-test and delegate-target
+candidates, simplifies symbolic conditions, and constructs ordered null and
+bounds guards with short-circuit control flow. Candidate descriptors preserve
+native value-copy behavior while retaining references to the original IR.
+
+These are prerequisites, not an active cloning pass. Candidate discovery,
+fast-path transformations and the complete phase driver remain to be integrated.
+
 ## 2026-09-26: Redundant-branch optimization
 
 Redundant-branch optimization now performs native dominator inference, local

@@ -12,18 +12,18 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Preserve active optimized Windows-x64 execution while completing redundant-branch activation and preparing Boolean optimization, loop-cloning models and CSE candidate/dataflow prerequisites. Keep future phase entries inactive until complete dependency closure and execution validation.",
+      "scope": "Integrate complete loop-cloning model and CSE candidate/dataflow prerequisites while Boolean optimization, full loop cloning, CSE heuristics and if-conversion proceed independently. Keep future phase entries inactive until complete dependency closure and execution validation.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
-        "Preserve complete VN traversal/evaluation, native-order loop state and all fourteen established execution configurations while completing subsequent optimization phases.",
+        "Preserve complete VN traversal/evaluation, native-order loop state and all seventeen established execution configurations while completing subsequent optimization phases.",
         "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "RBO activation validated1130D1103R and17captures:113bodies/67phase completions/10changed.942 bounded comparisonthrough99 finds no isolated RBO discrepancy and confirms B281 resolved (native/prior/current SSA annotations0/10/0). Commit exact13source/test overlays and docs, excluding new lanes; then release CSE field ownership and integrate next frozen prerequisites.",
+      "parentScope": "Loop-cloning model8-file packet corrected for B286 and validated109D107R on7d1b595. Native ArrIndex copies preserve populated buffer aliases; scalar descriptors copied. Commit corrected model8+docs, then integrate6a:86 CSE6 (8D8R,942:101 review clear). No new public phase activation.",
       "parallelPackets": [
         {
           "scope": "Complete Boolean optimization with the native CCMP switch-detection prerequisite.",
@@ -37,14 +37,21 @@
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "New conventional loopcloning type files, Compiler.LoopCloning*.cs and LoopCloningModelTests.cs/LoopCloningTests.cs.",
           "status": "in-progress",
-          "remainingBoundary": "Afterd62:132, expanded to missing LoopCloneContext/candidate/LC_Array/LC_Ident/LC_Condition machinery from loopcloning.h191-1098 and complete required cpp bodies. Return coherent model/guard prerequisite freeze before remaining reconstruction/optimization/driver. No public optCloneLoops activation."
+          "remainingBoundary": "Model packet through133 corrected by parent for B286 in ArrIndex.cs/LcOptInfo.cs/tests;109D107R. d62 owns NEW Compiler.LoopCloning*.cs/LoopCloningTests.cs for remaining1128-3590 closure; use corrected model hashes after commit. Buffer question canceled and resolved directly at native construction/consumers. Public phase inactive."
         },
         {
           "scope": "Complete VN-CSE candidate/indexing and availability/dataflow prerequisites.",
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
           "files": "New Compiler.CSE.Candidates*.cs/Compiler.CSE.Dataflow*.cs/CSECandidateTests.cs; existing CSEdsc.cs and CSE_HeuristicCommon.cs explicitly authorized.",
           "status": "in-progress",
-          "remainingBoundary": "After6a:84, authorized one managed-reference descriptor representation and complete ConsiderTree/ComputeNumLocals/native family optcse.cpp73-120,390-1723,1773-2068. No heuristic rewriting/activation. Parent retains root Compiler.opt.cs until RBO commit;6a must report table/initializer patch and use isolated overlay meanwhile."
+          "remainingBoundary": "Six-file prerequisite frozen6a:86,8D8R on7d1b595;942:101 review found no isolated high-confidence defect. All6 frozen including Compiler.opt.cs.6a next identifies/implements complete heuristic-selection/cost/rewrite prerequisite closure in NEW files only; report shared dependencies before editing. No public activation."
+        },
+        {
+          "scope": "Complete native if-conversion descriptor, transforms and private phase core.",
+          "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
+          "files": "New ifconversion/OptIfConversionDsc*.cs, Compiler.IfConversion*.cs and IfConversionTests.cs.",
+          "status": "in-progress",
+          "remainingBoundary": "Assigned complete pinned ifconversion.cpp Windows-x64 closure on7d1b595. Shared files and public entry remain untouched. Preserve eligibility, numeric/effect order, CFG/profile and reachability budget; report actual shared blockers."
         },
         {
           "scope": "Complete native optUnrollLoops and required local helper/visitor closure.",
@@ -246,11 +253,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Unrolling committed76a6f08. Commit fully validated RBO activation:1130D1103R,17captures and942 comparisonthrough99; exact13overlays in artifacts\\redundant-branch-phase-validation\\source-manifest.json. Exclude CSE/Boolean/loop-cloning WIP. Then release Compiler.opt.cs CSE table-field ownership to6a after reviewing its exact patch; collect complete frozen Boolean+CCMP-detection, loop-cloning model/guard and CSE candidate/dataflow packets. Preserve17 configurations from artifacts\\loop-unrolling-phase-validation\\capture-configurations.json. B281 resolved; no remote publication.",
+    "nextAction": "Commit corrected loop-cloning model8+docs:109D107R, source-manifest-corrected.json in artifacts\\loop-cloning-integration, B286 fail-before regression established. Native populated-buffer aliases retained; no pending ownership question. Then integrate CSE6 from artifacts\\cse-validation\\packet.json (6a:86,8D8R,942:101 clear); public CSE remains inactive. Collect Boolean/CCMP, new cloning driver, CSE heuristic and if-conversion packets as they complete. Parent snapshot7d1b595+corrected model8 only. CoreRoot free; no publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "RBO6a:83/review942:98 andcomparison942:99 integrated1130D1103R/17captures.3a:77 unblocked for Boolean+CCMP detection;d62:132 unblocked for cloning model/guard prerequisites;6a:84 unblocked for CSE representations/candidate/dataflow with root Compiler.opt.cs reserved until RBO commit.610/942 idle, CoreRoot free. All notifications collected; no app-native sessions.",
+      "workerPackets": "Collectedd62:133 model packet,6a:85/86 CSE packet,942:100 model review and101 clear CSE review. Parent B286 repair validated109D107R.3a Boolean+CCMP ongoing;d62 new cloning driver;6a new CSE heuristic prerequisites;610 new if-conversion;942 idle. All returned packet files frozen otherwise. CoreRoot free; no app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -266,6 +273,18 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "loopCloningModels": {
+        "snapshotBase": "7d1b595",
+        "sourceManifest": "artifacts\\loop-cloning-integration\\source-manifest-corrected.json",
+        "debugPassed": 109,
+        "releasePassed": 107,
+        "skipped": 0,
+        "selection": "LoopCloningModelTests, LoopUnrollingTests, NaturalLoopTests, NaturalLoopIterationTests and LoopDiscoveryTests;15 model cases in both configurations.",
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\loop-cloning-model-corrected-{Debug,Release}.trx",
+        "regression": "CandidateDescriptorsSnapshotValuesAndRetainNodeReferences fails against initial packet (descriptor-before.trx). Corrected scalars, node references and native buffer aliases pass.",
+        "review": "942:100 found B286 only. Parent verified native JitExpandArrayStack implicit buffer sharing and populated-buffer use at loopcloning.cpp2845-2895,1962-1970; no deep-copy adaptation.",
+        "scope": "All5 candidate variants, symbolic expressions, condition evaluation/deduplication, dereference-level guards and short-circuit condition-block emission. No driver activation or new runtime parity claim; EH/profile chains and boundary cases need broader coverage."
+      },
       "redundantBranchActivation": {
         "snapshotBase": "76a6f08",
         "sourceManifest": "artifacts\\redundant-branch-phase-validation\\source-manifest.json",
@@ -6556,6 +6575,13 @@
       "native": ["src\\coreclr\\jit\\rangecheck.h", "src\\coreclr\\jit\\rangecheck.cpp", "src\\coreclr\\jit\\assertionprop.cpp"],
       "csharp": ["sources\\Core\\jit\\rangecheck\\", "sources\\Core\\jit\\compiler\\Compiler.ap.Relational.cs"],
       "status": "Complete range-analysis dependency and relational application; RangeProperties remains canonical in the relational partial. Global assertion and range-check elimination phases are active.",
+      "reconciledCommit": null
+    },
+    {
+      "area": "loop-cloning-models",
+      "native": ["src\\coreclr\\jit\\loopcloning.h:191-1098", "src\\coreclr\\jit\\loopcloningopts.h:11-17", "src\\coreclr\\jit\\loopcloning.cpp:24-63,80-1127"],
+      "csharp": ["sources\\Core\\jit\\loopcloning\\"],
+      "status": "Candidate/guard model prerequisite implemented; SpanIndex shares ArrIndex.cs, LC_Span shares LC_Array.cs, and LC_Expr shares LC_Condition.cs. Full driver and candidate transformations remain inactive.",
       "reconciledCommit": null
     },
     {

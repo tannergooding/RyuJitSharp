@@ -616,6 +616,13 @@ resolving the observed stale managed `SSA MEM:` annotations after assertion
 propagation (B281). Complex global-phi execution and full dump parity remain
 unestablished.
 
+Loop-cloning candidate, symbolic-expression and guard models are implemented,
+but `optCloneLoops` remains inactive. Jagged-array and span candidates copy
+descriptor values rather than aliasing mutable descriptors (B286). Jagged-array
+copies share the already-populated index/check buffers, as native value copies
+do; consumers do not grow those buffers. IR, block and statement references
+retain their native identity. Guard-model tests are not phase or execution parity.
+
 VN-based folding and insertion-time statement morphing are also complete
 prerequisites. Local-address folds retain the native 16-bit offset invariant;
 the native constructor's unsigned parameter does not imply wider field storage.
