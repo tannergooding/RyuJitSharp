@@ -12,36 +12,57 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Activate the complete Windows-AMD64 genGenerateCode driver using the validated generation, emission and final metadata phases, then establish fresh native-host execution evidence.",
+      "scope": "Integrate separately committed native-faithful packets for lifetime-enabled lowering, binary VN evaluation primitives and hash-vector set algebra after the completed backend parity/GC-stress boundary.",
       "doneWhen": [
-        "Port the complete native genGenerateCode orchestration, phase wrappers, Debug dumps/write-barrier queries and scoped output-address lifetime; preserve explicit unsupported optional modes.",
-        "Validate actual whole-driver publication, output/cleanup contracts and the changed former emission boundary in Debug/Release.",
-        "Publish a fresh local NativeAOT binary and capture the established minopts corpus. Resolve required backend failures without reduced algorithms, record actual managed sizes/execution and phase/code/metadata comparisons, then commit coherent validated work."
+        "Complete lifetime-enabled lowering with verified liveness/flowgraph dependency closure and native cleanup ordering, retaining the optimized allocator boundary.",
+        "Complete binary VN scalar evaluation primitives with native numeric semantics, without activating the full folding dispatcher or VN phase.",
+        "Complete hash-vector set algebra with native traversal, mutation/change flags and alias handling; keep B115's disputed APIs deferred.",
+        "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
       ],
       "validation": [
-        "Use CodeGenMetadataPhaseTests, CodeGenEmissionPhaseTests, LoweringPhaseTests and related phase tests in Debug/Release; expand only for identified failures.",
-        "Use the pinned prepared Core_Root with scripts\\porting\\Invoke-PortingCorpus.ps1 -MinOpts and fresh generation-driver-jit publication; compare against the verified native baseline. Fallback and skipped compilation are not managed execution."
+        "Use focused Debug/Release selections for each packet and the unchanged minopts path. Build only with frozen source packets; do not overlap builds writing the same configuration outputs.",
+        "For production lowering changes, republish into a fresh NativeAOT directory and rerun the established minopts execution/GCStress4 capture against pinned native inputs. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
+      ],
+      "parallelPackets": [
+        {
+          "scope": "Complete native lifetime-enabled Lowering.DoPhase cleanup without activating optimized allocation.",
+          "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
+          "files": "lower/Lowering.cs and focused LoweringPhaseTests; report required edits outside ownership.",
+          "doneWhen": "Verify cleanup dependency closure, preserve native liveness/flowgraph/DFS/refcount ordering, and pass focused Debug/Release regressions before a separate commit."
+        },
+        {
+          "scope": "Port complete binary scalar VN evaluation and comparison primitives without activating the VN phase or an incomplete folding dispatcher.",
+          "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
+          "files": "New ValueNumStore.BinaryEvaluation.cs and ValueNumBinaryEvaluationTests.cs.",
+          "doneWhen": "Preserve native numeric semantics across integer boundaries, shifts, comparisons, NaN and signed zero; validate complete functions in Debug/Release before a separate commit."
+        },
+        {
+          "scope": "Complete native hash-vector set algebra without porting the disputed countBits/setLowest APIs or activating an optimization phase.",
+          "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
+          "files": "hashbv source files and new HashBvSetAlgebraTests.cs.",
+          "doneWhen": "Preserve native traversal, mutation and change flags across unequal table sizes and aliases; validate focused Debug/Release cases before a separate commit."
+        }
       ],
       "deferred": [
-        "Multi-argument VN folding/evaluation, memory-phi traversal, map selection and the value-numbering phase.",
+        "General multi-argument VN folding dispatch, memory-phi traversal, map selection and the value-numbering phase; only the explicitly owned binary evaluation primitives are in the parallel packet.",
         "Optional general assertion propagation and optimization-only allocation analyses unless required by the active minopts dependency closure.",
         "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
-        "Non-xarch hardware-intrinsic folding and hashBv bulk/set algebra and iterator APIs.",
+        "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs; set algebra has its own parallel packet.",
         "The preexisting fgVerifyHandlerTab diagnostic stub and broader EH verification, outside the cleanup algorithm.",
         "Patchpoint metadata generation and actual OSR execution; node generation support does not activate either.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "First production execution is verified: generation-driver-status-execution exits0 with RunAltJitCode1, all20 selected methods complete and publish2166bytes, no failure markers. Final51Debug/35Release tests pass. Commit the validated activation batch if still uncommitted. Next batch: correct B244's mapped-block diagnostic IDs and allocUnwindInfo pointer formatting together, using generation-driver-status-execution/generation-comparison.json; verify remaining non-hardware raw-code differences with relocation-aware evidence and add focused runtime GC-stress validation. Preserve native-success return in compCompileHelper, supported minopts boundaries and D008/D009 explicit rejection. FoldHardware still has119managed vs35native bytes due deferred hardware import; do not conflate this with the six other nonidentical raw streams or claim full parity.",
+    "nextAction": "Collect lifetime cleanup from610162a0, binary VN evaluation from3a2c8d9b and hash-vector algebra from6a004941. Freeze source packets before shared-output builds, review complete native function boundaries, validate focused Debug/Release cases and commit each separately. Republish and rerun minopts GCStress4 after production lowering changes. The preceding B244/parity/GC-stress boundary has40Debug/31Release, fresh20-method execution, exact phases generation0/emission19/metadata10, a six-method address-field audit and three forced-GC liveness methods. Evidence workers942a496f through turn61 and d62fc6a5 through turn64 are collected/frozen. B245 and unresolved relocation identities remain explicit; do not activate optimized allocation/VN, claim broader parity, or publish.",
     "handoff": {
-      "status": "first-managed-execution-validated",
+      "status": "parallel-prerequisite-integration",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All collected/integrated/frozen: d62fc6a5-a4dd-40be-8b42-5de1405b22b7 through turn63 (whole-driver fixture); 6a004941-37d2-4a3d-b2f4-0d1a35021099 through turn30 (three diagnostic roots and exact native comparison); 942a496f-db30-4389-a403-265f28fdb23c through turn59 (B243 first-exception evidence, retained but no more runs). No outstanding edits or builds. No app-native child-session coordination.",
+      "workerPackets": "6a004941's final diagnostic comparison was collected through turn32 and frozen; it now owns hash-vector set algebra/tests. 942a496f's target evidence through turn61 and d62fc6a5's forced-GC probe through turn64 are collected/frozen with no outstanding work. 610162a0 owns lifetime-enabled lowering cleanup/tests; 3a2c8d9b owns new binary VN evaluation primitives/tests. Parent owns B244 integration, maintained tracking, shared-output build scheduling and separate commits. Implementation workers return frozen packets before integration builds. No app-native child-session coordination.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode, allocation supports minopts without enregistered locals, and Windows-AMD64 generation/emission/metadata execute the selected corpus. Keep unsupported optional modes explicit; do not infer optimized, other-target or GC-stress parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
       "nativeFlowGraphSource": "src/coreclr/jit/fgopt.cpp:4373-4902",
-      "executionBoundary": "generation-driver-status-execution executes managed-generated code for all20 selected minopts methods and exits0 without timeout or failure markers. Managed code totals2166bytes versus2082native;19method sizes and19Emit-code phase bodies match, with FoldHardware the exception. Thirteen raw byte streams are identical. Full generation/GC-EH dump parity, remaining relocation-sensitive streams and GC-stress behavior are not established. Earlier B135 profile diagnostics remain tracked separately.",
+      "executionBoundary": "The20-method minopts corpus executes managed-generated code normally and with GCStress4. Three additional methods preserve object/graph/struct references across confirmed full collections. Fresh backend-parity capture has19matching sizes/emission bodies,10matching metadata bodies and0matching generation bodies (B245 and hardware differences). Nondiffable six-method analysis places all100differing bytes inside46address fields; indirect-cell contents and eight absolute target identities remain unproved. No full dump/code or broad runtime parity claim. Earlier B135 profile diagnostics remain tracked separately.",
       "publishedHandoffCommit": "b6d5c71c338d84b6c120766b52ea577a4df735c8",
       "publication": "Verified origin/main at the completed handoff commit. This replacement session has not published changes; its app diff base is now main."
     },
@@ -52,6 +73,62 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "backendParity": {
+        "debugPassed": 40,
+        "releasePassed": 31,
+        "skipped": 0,
+        "selection": "FullyQualifiedName~EmitterInstructionAllocationTests|FullyQualifiedName~UnwindPublicationTests",
+        "debugTests": "artifacts\\backend-parity-debug.trx",
+        "releaseTests": "artifacts\\backend-parity-release.trx",
+        "source": "a284365 plus artifacts\\backend-parity-source.patch SHA256 90ECCB2CE70F8DB2F710BDFF5F0B5C44815EB97BD62D2C4E81194499928C5F9C",
+        "managedJit": "artifacts\\backend-parity-jit\\RyuJitSharp.dll",
+        "managedJitSha256": "B545F2233AA9D33B23421F9392B58256AAEE9633809E7BFDB8214A14BBE53260",
+        "nativeDirectory": "artifacts\\backend-gcstress-native",
+        "managedDirectory": "artifacts\\backend-parity-gcstress-managed",
+        "comparison": "artifacts\\backend-parity-diagnostic-comparison\\generation-comparison.json",
+        "reproduction": "Publish using README's Windows NativeAOT command into a fresh directory. Run Invoke-PortingCorpus.ps1 with manifest CoreRoot/Corpus/NativeCommit, MinOpts/RawHexCode/GcStress and fresh output paths; managed adds ManagedJit/ManagedSource/ExecuteManagedCode. Compare with artifacts\\Compare-GenerationDriver.ps1 -NativeDirectory backend-gcstress-native -ManagedDirectory backend-parity-gcstress-managed; retain all captured hash checks.",
+        "methods": 20,
+        "gcStress": 4,
+        "runAltJitCode": 1,
+        "exitCode": 0,
+        "timedOut": false,
+        "methodSizesExact": 19,
+        "generationPhaseBodiesExact": 0,
+        "emitPhaseBodiesExact": 19,
+        "metadataPhaseBodiesExact": 10,
+        "mappedBlockLinesExact": 137,
+        "unwindAllocationLinesExact": 22,
+        "unwindAllocationLines": 23,
+        "remaining": "The remaining unwind line has FoldHardware's known different code size. Native generation prints uninitialized minopts cycle/size estimates (B245). Nine metadata phases first differ in raw address-bearing code, and FoldHardware has different code. The20-method capture alone does not measure collections; the separate three-method probe below confirms collections without establishing broad runtime or relocation-target parity.",
+        "relocationTargets": {
+          "report": "artifacts\\backend-parity-relocation-targets\\report.md",
+          "fields": "artifacts\\backend-parity-relocation-targets\\target-analysis.json",
+          "reproduction": "Retained capture-pair.ps1 uses a hashed local runner snapshot changing only JitDisasmDiffable to0; rerun only into fresh directories. Reanalyze existing paired captures with python artifacts\\backend-parity-relocation-targets\\analyze.py.",
+          "methodsAudited": 6,
+          "differentBytes": 100,
+          "addressFields": 46,
+          "nonAddressDifferences": 0,
+          "directCallTargetVAsEqual": 7,
+          "globalTargetVAsEqual": 2,
+          "indirectCallCellsUnproved": 29,
+          "absoluteImmediatesUnproved": 8,
+          "remaining": "Decoded sources/types/deltas/destinations agree with each run's relocation records. Same recorded VAs are established only for the listed direct calls and globals. Indirect cells' contents and absolute immediates' actual identities require further EE-side evidence; printed labels are not proof."
+        },
+        "forcedGcLiveness": {
+          "directory": "artifacts\\backend-gc-liveness-probe",
+          "reproduction": "results.txt records the isolated build and paired runner commands with TypeName RyuJitSharp.GcLivenessCases and ExpectedMethods KeepObject/KeepGraph/KeepStruct. Use fresh capture output paths.",
+          "sourceSha256": "8D04A68988005C9F606C1FBBE9DA71242A752B5DFC13DE07BD874E1469109CD4",
+          "corpusSha256": "5F178E13501ED673C501DD0BF3D6725ADD953E259D2BD9BD98AA41E543C53F7D",
+          "methods": 3,
+          "nativeExitCode": 0,
+          "managedExitCode": 0,
+          "timedOut": false,
+          "helperConfirmedCollectionsPerRun": 3,
+          "nativeGen2Delta": 3,
+          "managedGen2Delta": 4,
+          "coverage": "Selected managed-generated methods retain an object, graph references and a reference-bearing struct across a non-selected helper's forced blocking compacting Gen2 collection. Each verifies a positive collection delta before dereference; the entry point checks payload and weak-reference identity. This does not establish exclusive rooting by the managed frame or broad GC correctness."
+        }
+      },
       "generationDriver": {
         "debugPassed": 51,
         "releasePassed": 35,

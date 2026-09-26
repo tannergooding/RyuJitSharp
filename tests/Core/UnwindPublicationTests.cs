@@ -1,6 +1,9 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+#if DEBUG
+using System.Globalization;
+#endif
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -187,6 +190,32 @@ internal static unsafe class UnwindPublicationTests
     }
 
 #if DEBUG
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void UnwindAllocationDiagnosticDiffsPointersButPassesRawAddressesToEE(bool diffable)
+    {
+        WithPublication((compiler, _, context) =>
+        {
+            compiler.opts.dspDiffable = diffable;
+            compiler.unwindReserve();
+            compiler.verbose = true;
+
+            var output = CodeGenLifeTransitionTests.Capture(
+                () => compiler.unwindEmit(context->HotCode, context->ColdCode));
+            var record = context->Allocations[0];
+            var hotAddress = diffable ? "00000000D1FFAB1E" : ((nuint)record.HotCode).ToString("X16", CultureInfo.InvariantCulture);
+            var unwindAddress = diffable ? "00000000D1FFAB1E" : ((nuint)record.UnwindBlock).ToString("X16", CultureInfo.InvariantCulture);
+
+            Assert.That(output, Does.Contain(
+                $"allocUnwindInfo(pHotCode=0x{hotAddress}, pColdCode=0x0000000000000000, " +
+                $"startOffset=0x0, endOffset=0x20, unwindSize=0x4, pUnwindBlock=0x{unwindAddress}, " +
+                "funKind=0 (main function))"));
+            Assert.That(record.HotCode, Is.EqualTo((nint)context->HotCode));
+            Assert.That(record.ColdCode, Is.EqualTo((nint)0));
+            Assert.That(record.UnwindBlock, Is.Not.EqualTo((nint)0));
+        });
+    }
+
     [TestCase(false, "0x000020")]
     [TestCase(true, "0xd1ffab1e")]
     public static void UnwindDumpUsesDiffableOffsetsWithoutChangingPublication(bool diffable, string endOffset)

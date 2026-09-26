@@ -115,7 +115,7 @@ public partial class Emitter
 
             if (_compiler.verbose)
             {
-                jitprintf($"Mapped {_compiler.compCurBB.dspToString()} to {emitLabelString(emitCurIG)}\n");
+                jitprintf($"Mapped {Globals.FMT_BB(_compiler.compCurBB.bbNum)} to {emitLabelString(emitCurIG)}\n");
             }
         }
 #endif

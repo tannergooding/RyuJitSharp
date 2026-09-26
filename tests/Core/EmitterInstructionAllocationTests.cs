@@ -3,6 +3,9 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+#if DEBUG
+using System;
+#endif
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -214,6 +217,22 @@ internal static unsafe class EmitterInstructionAllocationTests
     }
 
 #if DEBUG
+    [Test]
+    [NonParallelizable]
+    public static void BlockMappingDiagnosticPrintsBlockNumberWithoutDebugIdentifier()
+    {
+        var emitter = CreateEmitter(out var compiler);
+        var block = compiler.compCurBB ?? throw new AssertionException("Missing current block.");
+        block.bbNum = 1;
+        compiler.verbose = true;
+
+        var output = CodeGenLifeTransitionTests.Capture(() => _ = Allocate(emitter, EA_1BYTE));
+
+        var group = emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");
+        Assert.That(output, Is.EqualTo($"Mapped BB01 to {emitter.emitLabelString(group)}{Environment.NewLine}"));
+        Assert.That(group.igBlocks, Is.EqualTo((BasicBlock?[])[block]));
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     [NonParallelizable]

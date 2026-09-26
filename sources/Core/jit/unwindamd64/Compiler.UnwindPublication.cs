@@ -205,7 +205,9 @@ public partial class Compiler
                 CorJitFuncKind.CORJIT_FUNC_FILTER => "filter",
                 _ => "ILLEGAL",
             };
-            jitprintf($"allocUnwindInfo(pHotCode=0x{(nuint)pHotCode:x}, pColdCode=0x{(nuint)pColdCode:x}, startOffset=0x{startOffset:x}, endOffset=0x{endOffset:x}, unwindSize=0x{unwindSize:x}, pUnwindBlock=0x{(nuint)pUnwindBlock:x}, funKind={(int)funcKind} ({functionDescription}))\n");
+            jitprintf($"allocUnwindInfo(pHotCode=0x{(nuint)dspPtr(pHotCode):X16}, pColdCode=0x{(nuint)dspPtr(pColdCode):X16}, " +
+                      $"startOffset=0x{startOffset:x}, endOffset=0x{endOffset:x}, unwindSize=0x{unwindSize:x}, " +
+                      $"pUnwindBlock=0x{(nuint)dspPtr(pUnwindBlock):X16}, funKind={(int)funcKind} ({functionDescription}))\n");
         }
 #endif
         if (info.compMatchedVM)

@@ -13,7 +13,8 @@ param(
         "SynchronizedReturn", "GenericCatch", "PInvokeCall", "ReversePInvoke", "ManyReturns", "LocalAddressStore", "LocalAddressDifference", "ImplicitByRefArgument"),
     [ValidateRange(1, 3600)][int] $TimeoutSeconds = 120,
     [switch] $ExecuteManagedCode,
-    [switch] $RawHexCode
+    [switch] $RawHexCode,
+    [switch] $GcStress
 )
 
 $ErrorActionPreference = "Stop"
@@ -82,6 +83,9 @@ if ($DisableObjectStackAllocation) {
 }
 if ($RawHexCode) {
     $settings.DOTNET_JitRawHexCode = $selector
+}
+if ($GcStress) {
+    $settings.DOTNET_GCStress = "4"
 }
 if ($ManagedJit) {
     $settings.DOTNET_AltJit = $selector

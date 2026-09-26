@@ -297,6 +297,12 @@ bytes in the dump. This is independent of `-ExecuteManagedCode`; raw bytes that
 contain relocated addresses can differ between processes and require
 relocation-aware comparison.
 
+Use `-GcStress` to request collections at every allowable JIT-compiled
+instruction (`GCStress=4`). Run a native baseline with the same switch; add
+`-ExecuteManagedCode` for the managed capture. A normal execution pass does not
+establish GC-stress correctness, and a timeout or skipped compilation is not a
+stress pass.
+
 `scripts\porting\Compare-PortingDumps.ps1 -NativeDump <file> -ManagedDump <file>
 -OutputPath <report.json>` compares each compilation from its start header up
 to, but excluding, `Finishing PHASE Importation`. It preserves CR/LF and reports

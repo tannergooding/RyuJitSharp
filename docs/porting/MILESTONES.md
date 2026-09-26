@@ -16,6 +16,24 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Initial GC-stress execution and backend diagnostic parity
+
+The twenty-method Windows-x64 minopts corpus also executes with JIT-instruction
+GC stress enabled. A separate three-method probe preserves object, graph and
+struct references across confirmed full collections, checking payload and
+reference identity afterward. These are focused execution results, not broad
+runtime or GC correctness guarantees.
+
+Block-mapping and unwind-allocation diagnostics now match native formatting.
+Nineteen emission phase bodies and ten metadata phase bodies match exactly.
+Remaining generation differences include native minopts diagnostics reading
+uninitialized estimates; the port does not fabricate native memory-poison values.
+
+The six address-sensitive method streams differ only inside decoded address
+fields. Relocation records validate those fields, but indirect-call cell contents
+and absolute target identities remain unproved. Hardware import still produces
+different code. Exact dump and machine-code parity remain incomplete.
+
 ## 2026-09-25: First managed native-code execution
 
 The complete Windows-x64 generation driver now runs generation, emission and
