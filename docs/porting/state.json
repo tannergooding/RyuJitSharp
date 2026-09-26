@@ -12,39 +12,39 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port complete native static-initialization expansion next, sharing the native helper driver and split/spill support with independent TLS and VN-based intrinsic expansion where useful. Preserve WindowsAMD64 ABI branches, metadata, evaluation/exception order and fallback contracts.",
+      "scope": "Prepare an independent, main-based successor with exact C#/native WIP and artifacts preserved, publish completed handoff work to main, then synchronize oracle/residual/C# to a newly pinned latest upstream before resuming helper activation.",
       "doneWhen": [
-        "Complete static-initialization expansion and its shared helper prerequisites, preserving native CoreCLR/NativeAOT WindowsAMD64 paths, evaluation order and fallback contracts.",
-        "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
-        "Preserve all29 established execution configurations while activating subsequent helper-expansion phases; require positive native transformations rather than phase completion alone.",
-        "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
+        "Reconcile every worker handoff and protect raw source bytes, staged/unstaged distinctions, execution inputs and historical evidence before retiring the old workspace.",
+        "Fast-forward completed commits to verified origin/main without force; create the successor on that exact main tip and verify its diff base. Inactive helper WIP remains uncommitted.",
+        "Select one immutable latest upstream target, preserve both revisions and reconcile relevant native algorithms, EE contracts and generator/table changes into residual and C# sources.",
+        "Prepare a native host matching the new pin and validate the synchronized C# port with focused tests, fresh NativeAOT and the established29-case execution matrix before resuming helper activation."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Runtime lookup committed1f40b70. Shared3 overlays remain frozen in artifacts\\static-init-integration\\shared-helper-manifest.json,11D11R and fresh AOT2configs3bodies with3exact prior lookup slices. B310 TLS ABI prerequisite is corrected/validated separately: artifacts\\tls-abi-validation\\abi-overlay-manifest.json.6a resumed with both frozen overlays;3a static-init andd62 VN-intrinsic continue.942 returned native evidence: Boolean Main has positive static-init; selected TLS/VN phases are no-change. Public new phase entries remain inactive. CoreRoot free.",
+      "parentScope": "B310 ABI prerequisite committeda8fc337. All workers reconciled and idle: static-init23D23R, TLS20D20R, VN-intrinsic23D23R, all private/inactive; helper probe has ordinary execution only. Preserve these packets and shared3 overlays uncommitted. Native residual176staged paths protected at7107cdcbb85a314773a5780a4294fb58ba258b77 without changing files/index. User authorized completed-work publication to main and a main-based independent successor for latest-upstream synchronization. CoreRoot free.",
       "parallelPackets": [
         {
           "scope": "Complete native static-initialization expansion.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "New Compiler.StaticInitExpansion*.cs and StaticInitExpansionTests.cs; parent owns shared APIs and public entry.",
-          "status": "in-progress",
-          "remainingBoundary": "Immutable1f40b70 plus exact3shared-helper overlays. Complete helperexpansion.cpp1316-1602 closure including WindowsAMD64 CoreCLR/NativeAOT branches; freeze inactive entry with full D/R before parent activation."
+          "status": "paused",
+          "remainingBoundary": "3a:127 frozen complete/inactive;23D23R full analysis. artifacts\\static-init-validation\\freeze-receipt.json. Reconcile against refreshed upstream before parent integration, public activation and runtime comparison."
         },
         {
           "scope": "Complete native thread-local access expansion.",
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
           "files": "New Compiler.ThreadLocalExpansion*.cs and ThreadLocalExpansionTests.cs; parent owns shared APIs and public entry.",
-          "status": "in-progress",
-          "remainingBoundary": "Immutable1f40b70 plus exact3shared overlays and5ABI overlays from artifacts\\tls-abi-validation\\abi-overlay-manifest.json. B310 metadata/signature blocker resolved;6a resumed after24D24R/native-header validation. Complete helperexpansion.cpp496-1223 CoreCLR/NativeAOT WindowsAMD64 closure with real TLS/GC metadata, full D/R and explicit other-target boundaries."
+          "status": "paused",
+          "remainingBoundary": "6a:126 frozen complete/inactive;20D20R full analysis. artifacts\\thread-local-expansion-validation\\source-manifest.json. Depends on shared3 overlays and B310 ABI correction. Reconcile against refreshed upstream before parent integration, public activation and runtime comparison."
         },
         {
           "scope": "Complete native VN-based intrinsic expansion.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "New Compiler.VNIntrinsicExpansion*.cs and VNIntrinsicExpansionTests.cs; parent owns shared APIs and public entry.",
-          "status": "in-progress",
-          "remainingBoundary": "Immutable1f40b70 plus exact3shared overlays. Complete helperexpansion.cpp1612-1952 phase/ReadUtf8 closure, verifying native UTF16/UTF8 validity/length behavior rather than assuming Encoding defaults."
+          "status": "paused",
+          "remainingBoundary": "d62:183 frozen complete/inactive;23D23R full analysis. artifacts\\vn-intrinsic-validation\\source-manifest.json. Reconcile against refreshed upstream before parent integration, public activation and runtime comparison."
         },
         {
           "scope": "Complete native finally cloning and callfinally-chain merging.",
@@ -407,18 +407,28 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B310 ABI prerequisite is complete; shared helper and worker implementation WIP remain separate.6a resumed using frozen shared+ABI overlays. Collect3a static-init packet on notification and integrate it first, using positive native Boolean Main capture reported by942:146.942 is preparing an artifact-only TLS/UTF8 ReadUtf8 probe; capture with pinned CoreRoot after its handoff. IsKnownConstant does not exercise VN intrinsic expansion. Public entries remain parent-owned. Require full D/R, fresh AOT, current29-case matrix and positive phase comparisons for activation commits. No publication.",
+    "nextAction": "Successor: read artifacts\\session-handoff\\HANDOFF.md and recovery manifests; verify restored raw WIP hashes/index and main diff base, then select/fetch one immutable latest dotnet/runtime main target and synchronize oracle/residual/C# before activating the three saved helper packets. Observed latest33baf8ee337b20dd0f184b69a6f09be92850bf9e is not yet the maintained pin. Preserve native snapshot7107cdcbb85a314773a5780a4294fb58ba258b77 and old-pin evidence; refresh native host for new-pin comparisons. All old workers are resolved; do not reuse or contact them. No future automatic publication is authorized.",
     "handoff": {
-      "status": "optimized-execution-validated",
+      "status": "frozen-for-main-based-successor",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Prior packets integrated through1f40b70. Active:3a static-init(last collected125),6a TLS(last124; resumed after B310 ABI correction),d62 VN-intrinsic(181),942 artifact-only helper probe (evidence146/correction147 collected).610 idle(last89). Shared3overlays remain frozen;6a also has separate5file ABI receipt. No returned new implementation packet yet or app-native sessions. CoreRoot free.",
-      "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
+      "workerPackets": "3a:127 static-init,6a:126 TLS,d62:183 VN-intrinsic and942:148-149 helper probe are frozen and collected; all idle.610 remains idle(last89). No outstanding worker result or source mutation. Do not reuse these workers from the successor. Keep inactive packets and shared support uncommitted across the upstream refresh.",
+      "preserve": "Keep all29 latest execution configurations and their20corpus DLLs. Execution is not code/dump parity or broad runtime/other-target support. Preserve old-pin artifacts, C# WIP and native index/worktree while synchronizing both native trees and the C# port to the newly authorized upstream target.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
       "nativeFlowGraphSource": "src/coreclr/jit/fgopt.cpp:4373-4902",
       "executionBoundary": "The20-method minopts corpus executes managed-generated code normally and with GCStress4. Three additional methods preserve object/graph/struct references across confirmed full collections. Fresh backend-parity capture has19matching sizes/emission bodies,10matching metadata bodies and0matching generation bodies (B245 and hardware differences). Nondiffable six-method analysis places all100differing bytes inside46address fields; indirect-cell contents and eight absolute target identities remain unproved. No full dump/code or broad runtime parity claim. Earlier B135 profile diagnostics remain tracked separately.",
       "publishedHandoffCommit": "b6d5c71c338d84b6c120766b52ea577a4df735c8",
-      "publication": "Verified origin/main at the completed handoff commit. This replacement session has not published changes; its app diff base is now main."
+      "publication": "User explicitly authorized publishing the completed handoff commits to main and basing the successor on main. Exact final remote SHA and successor diff-base verification are recorded in artifacts\\session-handoff\\publication.json. This does not authorize automatic publication of future changes.",
+      "recovery": "artifacts\\session-handoff\\HANDOFF.md, csharp-handoff\\manifest.json, native-handoff\\manifest.json and frozen-packets.json preserve exact revisions, raw file hashes, original index/status and all worker boundaries. Transfer ignored artifacts intact and repair registered nested worktree back-links.",
+      "upstreamRefresh": {
+        "from": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+        "observedLatestMain": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "status": "authorized-not-started",
+        "nativeRecoverySnapshot": "7107cdcbb85a314773a5780a4294fb58ba258b77",
+        "nativeIndexCommit": "ac3ce8b63c467a540789768b8c1c970cf2b36a57",
+        "nativeWip": "176staged changes:1addition83deletions92modifications;93surviving file payloads verified. Oracle is clean/detached at old pin; residual main has these changes. Both share one Git common directory.",
+        "constraint": "Select a fresh immutable target when starting; preserve old/new revisions separately. Existing prepared CoreRoot and all previous parity evidence belong to the old pin."
+      }
     },
     "primaryTarget": "win-x64",
     "csharpWipIntegrated": false,
