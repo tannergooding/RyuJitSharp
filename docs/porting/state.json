@@ -23,7 +23,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Loop-cloning activation7 validated1293D1249R and20captures124bodies/78phase completions, with2 real clones and6 static optimizations. Native range comparison matches decisions/guards/block tables and resolves B283; code sizes still differ. Commit then integrate standard CSE45D45R with complete native CopyReg and regressions; no public CSE activation yet.",
+      "parentScope": "Standard CSE13 plus complete parent CopyReg2 and register-copy tests validated1318D1274R and20existing backend execution configurations after fast iteration. Commit this dependency closure without public activation. Parameterized, Random/Replay and RL families proceed independently.",
       "parallelPackets": [
         {
           "scope": "Complete Boolean optimization with the native CCMP switch-detection prerequisite.",
@@ -50,8 +50,29 @@
           "scope": "Complete VN-CSE candidate/indexing and availability/dataflow prerequisites.",
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
           "files": "New Compiler.CSE.Candidates*.cs/Compiler.CSE.Dataflow*.cs/CSECandidateTests.cs; existing CSEdsc.cs and CSE_HeuristicCommon.cs explicitly authorized.",
+          "status": "done",
+          "remainingBoundary": "Standard13 plus CopyReg2 and tests integrated1318D1274R and20backend captures onf210170. Exact manifest artifacts\\cse-standard-integration\\source-manifest-final.json. Native Windows COPY/RELOAD no-copy behavior retained; Unix helper identifier corrected. B293/B294 remain target-specific gaps; public CSE inactive."
+        },
+        {
+          "scope": "Complete native parameterized and greedy CSE heuristics.",
+          "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
+          "files": "New CSE_HeuristicParameterized*.cs and focused tests.",
           "status": "in-progress",
-          "remainingBoundary": "Candidate/helper/SSA prerequisites committed. Standard packet6a:96 frozen45D45R with completed diagnostics and Initialize virtual/override; source manifest standard-8d9a0ec-packet.json. Parent must complete native CopyReg, including call/COPY/RELOAD extra registers, and integrate before alternate-mode work.610 owns focused CopyReg tests. Public CSE inactive."
+          "remainingBoundary": "Native optcse.h175-256/optcse.cpp2305-2981 on f210170+standard15. Reuse canonical state; coordinate exact feature APIs with6a. No shared changes or dispatcher activation without integration."
+        },
+        {
+          "scope": "Complete native Debug random and replay CSE heuristics.",
+          "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
+          "files": "New CSE_HeuristicRandom*.cs, CSE_HeuristicReplay*.cs and focused tests.",
+          "status": "in-progress",
+          "remainingBoundary": "Native optcse.h128-170/optcse.cpp2095-2298 on f210170+standard15. Preserve seed/order, parsing and diagnostics; no shared edits or public activation."
+        },
+        {
+          "scope": "Complete native Debug RLHook and RL CSE heuristics.",
+          "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
+          "files": "New matching optcse partials and focused tests.",
+          "status": "in-progress",
+          "remainingBoundary": "Native optcse.h257-332/optcse.cpp3005-3954 on f210170+standard15. Coordinate feature APIs with3a; preserve numerical policy and diagnostics. No changes to frozen standard15 or production dispatcher."
         },
         {
           "scope": "Complete native if-conversion descriptor, transforms and production phase.",
@@ -260,11 +281,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Integrate frozen standard CSE packet at artifacts\\cse-validation\\standard-8d9a0ec-packet.json (45D45R; SSA prerequisites committed). Complete GenTree.CopyReg per native gentree.cpp749-764: base reg/tag across operators plus call/COPY/RELOAD extra registers;610 owns register-copy regressions, parent owns GenTree.cs. Preserve frozen standard state and native Initialize virtual/override. No public CSE activation until remaining Random/Replay/RLHook/RL/Parameterized families and dispatch close. Latest execution snapshot0610021+cloning7, loop-cloning-jit,20 configs;942:112/113 comparison resolved B283. Use fast iterations/full freeze checks. CoreRoot free; no publication.",
+    "nextAction": "Collect and integrate complete native CSE mode packets:3a Parameterized/greedy,d62 Debug Random/Replay,6a Debug RLHook/RL; review shared prerequisites before editing common state. Standard16 is validated1318D1274R/20backend captures at artifacts\\cse-standard-integration\\source-manifest-final.json onf210170. Latest JIT cse-standard-jit hash1DA06997867255815AD8B2C93AA443F2B8910F6C56AB81F5ADCE87FF9BE2D1B5; source core unchanged after adding tests. Public CSE remains inactive until all mode dispatch and phase orchestration closes. Preserve B293/B294 as separate non-Windows gaps. Use fast iterations/full freeze checks. CoreRoot free; no publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Collected6a:90-97 standard CSE45D45R and alternate-mode spans; SSA7 committed0610021.942:112/113 completed native range comparison;610 testing full native CopyReg for next CSE integration.3a/d62/6a/942 frozen and idle. Fast build wrappers committedc9c6ecb. CoreRoot free; no app-native sessions.",
+      "workerPackets": "Collected610:74-76 register-copy packet; Windows tests pass, Linux-target compile blocked before execution.3a Parameterized,d62 Random/Replay,6a RLHook/RL implementing independent CSE modes;610/942 idle. Standard16 is validated and ready to commit. Fast wrappers committedc9c6ecb. CoreRoot free; no app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -280,6 +301,23 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "standardCsePrerequisites": {
+        "snapshotBase": "f210170",
+        "sourceManifest": "artifacts\\cse-standard-integration\\source-manifest-final.json",
+        "debugPassed": 1318,
+        "releasePassed": 1274,
+        "skipped": 0,
+        "selection": "Prior loop-cloning integration plus standard CSE selection/rewrite and5 register-copy cases.",
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\cse-standard-final-{Debug,Release}.trx",
+        "nativeAot": "artifacts\\cse-standard-jit\\RyuJitSharp.dll",
+        "jitSha256": "1DA06997867255815AD8B2C93AA443F2B8910F6C56AB81F5ADCE87FF9BE2D1B5",
+        "runtimeEvidence": "artifacts\\cse-standard-integration\\runtime-validation.json",
+        "configurations": "artifacts\\ifconversion-phase-validation\\capture-configurations.json",
+        "runtime": "20 existing backend execution configurations and124 positive bodies preserved after shared CopyReg changes. Public CSE remains inactive; this is not CSE optimization evidence.",
+        "regressions": "Two cross-operator cases fail against old CopyReg. Windows tests cover base registers/tags, unchanged node spill flags, and native COPY/RELOAD indexed-register retention.",
+        "review": "942:111 found no high-confidence selection/rewrite defect;6a:96 completed missing diagnostics and base virtual/standard override wiring. Parent completed full native CopyReg delegation.",
+        "gaps": "No Unix test execution: target-property plumbing and existing conditional compilation errors block the focused attempt (B294). Non-Windows call spill-state difference remains B293."
+      },
       "loopCloningActivation": {
         "snapshotBase": "0610021",
         "sourceManifest": "artifacts\\loop-cloning-activation\\source-manifest.json",
@@ -6711,6 +6749,13 @@
       "native": ["src\\coreclr\\jit\\optimizebools.cpp:20-429,450-1486,1619-1883", "src\\coreclr\\jit\\switchrecognition.cpp:70-103,123-194,212-344,366-478"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.BooleanOptimization*.cs", "sources\\Core\\jit\\compiler\\Compiler.SwitchRecognition.Detection.cs", "sources\\Core\\jit\\compiler\\Compiler.SwitchOptimization.cs:fgFoldCondToReturnBlock"],
       "status": "Complete Boolean phase active. Its switch dependency remains an explicit complete detection-only entry; the complete conversion-mode phase is now separately active.",
+      "reconciledCommit": null
+    },
+    {
+      "area": "standard-cse-heuristic",
+      "native": ["src\\coreclr\\jit\\optcse.h:16-115,447-609", "src\\coreclr\\jit\\optcse.cpp:1734-1757,2075-2083,4269-5425,5766-5824", "src\\coreclr\\jit\\gentree.cpp:749-764", "src\\coreclr\\jit\\gentree.h:9108-9118"],
+      "csharp": ["sources\\Core\\jit\\optcse\\CSE_Heuristic*.cs", "sources\\Core\\jit\\compiler\\Compiler.CSE.HeuristicAccess.cs", "sources\\Core\\jit\\compiler\\Compiler.CSE.HeuristicConfig.cs", "sources\\Core\\jit\\gentree\\GenTree.cs:CopyReg", "sources\\Core\\jit\\gentree\\GenTreeCopyOrReload.cs:CopyOtherRegs"],
+      "status": "Complete standard ranking, profitability, traversal and SSA rewriting prerequisite with native initialization dispatch and diagnostics. CopyReg preserves native per-kind restrictions. Remaining heuristic families and production phase activation are separate.",
       "reconciledCommit": null
     },
     {

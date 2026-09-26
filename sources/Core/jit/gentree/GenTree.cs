@@ -1719,13 +1719,21 @@ public partial class GenTree
     /// <param name="tree">GenTree node from which to copy</param>
     public void CopyReg(GenTree tree)
     {
-        assert(tree._oper == _oper);
-
         _regNum = tree._regNum;
 
 #if DEBUG
         _regTag = tree._regTag;
 #endif
+
+        if (_oper is GT_CALL)
+        {
+            assert(tree._oper is GT_CALL);
+            AsCall().CopyOtherRegs(tree.AsCall());
+        }
+        else if (_oper.IsCopyOrReload)
+        {
+            AsCopyOrReload().CopyOtherRegs(tree.AsCopyOrReload());
+        }
     }
 
 #if DEBUG

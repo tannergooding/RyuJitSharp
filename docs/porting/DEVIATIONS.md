@@ -641,8 +641,18 @@ tables reference the same descriptors and retain native occurrence ordering.
 No unmanaged-layout consumer is changed. Native cost initialization, candidate
 ordering, use-count unmarking and ordered side-effect extraction are implemented.
 Nested CSE definitions remain in the tree and comma VNs retain the native
-composition rules. Heuristic selection and SSA rewriting remain incomplete;
-helper coverage is not CSE execution parity.
+composition rules. Standard candidate ranking, profitability, selection and SSA
+rewriting are also implemented, including native virtual initialization.
+Other heuristic families and phase dispatch remain incomplete; these prerequisites
+are not active CSE execution parity.
+
+Register-state copying accepts ordinary cross-operator replacements and delegates
+call/COPY/RELOAD state as native does (B292). Calls still require call sources, and
+the COPY/RELOAD helper requires matching operators. Its extra-register copy remains
+Unix-AMD64-only; Windows does not acquire invented multi-register behavior.
+Windows register/tag tests and existing backend execution pass. Cross-target
+compilation blocks Unix execution coverage (B294), and the preexisting non-Windows
+call-helper spill-flag discrepancy remains separate (B293).
 
 Boolean optimization is active, including conditional/range folding, compare
 chains and native Debug GC-stress bookkeeping. The APX switch-recognition

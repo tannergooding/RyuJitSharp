@@ -13,7 +13,7 @@ using static RyuJitSharp.HWIntrinsicCategory;
 
 namespace RyuJitSharp;
 
-public abstract class CSE_HeuristicCommon
+public abstract partial class CSE_HeuristicCommon
 {
     protected readonly Compiler m_compiler;
     protected readonly Compiler.codeOptimize codeOptKind;
@@ -24,6 +24,16 @@ public abstract class CSE_HeuristicCommon
         m_compiler = compiler;
         codeOptKind = compiler.compCodeOpt;
         enableConstCSE = Compiler.optConstantCSEEnabled();
+        cntCalleeTrashInt = compiler.CNT_CALLEE_TRASH_INT;
+        cntCalleeTrashFlt = compiler.CNT_CALLEE_TRASH_FLOAT;
+        cntCalleeTrashMsk = compiler.CNT_CALLEE_TRASH_MASK;
+#if DEBUG
+        JITDUMP($"CONST CSE is {(enableConstCSE ? "enabled" : "disabled")}\n");
+#endif
+    }
+
+    public virtual void Initialize()
+    {
     }
 
     public virtual bool ConsiderTree(GenTree tree, bool isReturn) => false;

@@ -66,7 +66,7 @@ public sealed class GenTreeCopyOrReload : GenTreeUnOp
 #if UNIX_AMD64_ABI
         for (byte i = 0; i < MAX_MULTIREG_COUNT - 1; i++)
         {
-            _otherRegs[i] = from._otherRegs[i];
+            _otherRegs[i] = tree._otherRegs[i];
         }
 #endif
     }

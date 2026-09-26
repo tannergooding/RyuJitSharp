@@ -25,7 +25,7 @@ public sealed partial class CSE_Heuristic
     private int CntAggressiveEnregMsk => (CNT_CALLEE_ENREG_MASK * 3) / 2;
     private int CntModerateEnregMsk => (CNT_CALLEE_ENREG_MASK * 3) + (m_compiler.CNT_CALLEE_TRASH_MASK * 2);
 
-    public void Initialize()
+    public override void Initialize()
     {
         uint frameSize = 0;
         var regAvailEstimateInt = unchecked((uint)(CntModerateEnreg + 1));

@@ -15,6 +15,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Standard CSE selection and rewriting
+
+The standard CSE heuristic now ranks and selects candidates, creates temporary
+definitions, and rewrites uses with incremental SSA and value-number repairs.
+Its shared initialization and diagnostics follow native dispatch and ordering.
+Register-state copying also preserves the native cross-operator replacement
+contract without broadening platform-specific multi-register behavior.
+
+The production CSE phase remains inactive while the other native heuristic
+families are completed. Existing backend execution is preserved; this is not
+evidence of active CSE optimization or broader platform parity.
+
 ## 2026-09-26: Loop cloning
 
 Loop cloning now creates guarded fast paths while retaining checked slow copies,
