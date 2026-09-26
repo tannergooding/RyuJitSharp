@@ -13,6 +13,28 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class SsaBookkeepingTests
 {
+    [TestCase(0)]
+    [TestCase(1)]
+    [TestCase(2)]
+    public static void LocalDefinitionsStartWithUnsetValueNumbers(int constructor)
+    {
+        SsaLivenessTests.WithCompiler(1, compiler =>
+        {
+            var block = BasicBlock.New(compiler, BBJ_RETURN);
+            var definition = constructor switch
+            {
+                0 => new LclSsaVarDsc(),
+                1 => new LclSsaVarDsc(block),
+                _ => new LclSsaVarDsc(block,
+                    compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 1))),
+            };
+            Assert.That(definition._vnPair, Is.EqualTo(new ValueNumPair()));
+#if DEBUG
+            Assert.That(definition._origVNPair, Is.EqualTo(new ValueNumPair()));
+#endif
+        });
+    }
+
     [TestCase(0, 0)]
     [TestCase(4, 4)]
     [TestCase(4, 16)]

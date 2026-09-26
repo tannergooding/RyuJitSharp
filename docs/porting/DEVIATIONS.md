@@ -523,6 +523,8 @@ budgets. Its cache retains ordered memory dependencies; managed membership
 storage must not change insertion order or omit the entry that promotes a
 small set. SSA memory allocation explicitly initializes the VN pair, since
 allocating a managed struct array does not invoke element constructors.
+Local SSA definitions likewise initialize current and Debug original VN pairs;
+initial definitions explicitly invoke their constructor after SSA allocation.
 
 VN pair operations preserve lane ordering and native sharing decisions rather
 than always allocating two opaque values. Memory SSA recording changes only the

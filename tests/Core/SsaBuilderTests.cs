@@ -15,6 +15,32 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class SsaBuilderTests
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void InitialLocalDefinitionHasUnsetValueNumbers(bool isParameter)
+    {
+        SsaLivenessTests.WithCompiler(1, compiler =>
+        {
+            var blocks = CreateGraph(compiler, [[]]);
+            ConfigureTrackedLocal(compiler);
+            compiler.lvaTable[0].lvIsParam = isParameter;
+            compiler.info.compInitMem = !isParameter;
+            blocks[0].bbVarDef = SetOps.MakeEmpty(compiler);
+            blocks[0].bbLiveIn = SetOps.MakeEmpty(compiler);
+            compiler._dfsTree = compiler.fgComputeDfs();
+            compiler._domTree = FlowGraphDominatorTree.Build(compiler._dfsTree);
+
+            RenameVariables(new SsaBuilder(compiler));
+
+            ref var definition = ref compiler.lvaTable[0].GetPerSsaData(SsaConfig.FIRST_SSA_NUM);
+            Assert.That(definition.Block, Is.Null);
+            Assert.That(definition._vnPair, Is.EqualTo(new ValueNumPair()));
+#if DEBUG
+            Assert.That(definition._origVNPair, Is.EqualTo(new ValueNumPair()));
+#endif
+        });
+    }
+
     [Test]
     public static void PhiInsertionAndArgumentsPreserveHeadOrderAndUseCounts()
     {

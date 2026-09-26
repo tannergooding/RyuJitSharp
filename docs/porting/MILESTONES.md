@@ -29,6 +29,10 @@ caller's index result and report no array, matching native behavior.
 These are prerequisites for tree evaluation. The full VN phase remains inactive;
 memory-access, intrinsic and call evaluation still require integration.
 
+Local SSA definitions now start with the native unset value-number pair rather
+than zero, which denotes null. This prevents unnumbered loop inputs from looking
+like existing constants during phi processing.
+
 ## 2026-09-26: Memory value numbering and diagnostics
 
 Value numbering now has precise and physical memory-map operations, including

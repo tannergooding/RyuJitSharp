@@ -145,6 +145,7 @@ public sealed partial class SsaBuilder
                 VarSetOps.IsMember(_compiler, firstBlock.bbLiveIn, varDsc._varIndex))
             {
                 var ssaNum = varDsc.lvPerSsaData.AllocSsaNum();
+                varDsc.GetPerSsaData(ssaNum) = new LclSsaVarDsc();
                 assert(ssaNum == SsaConfig.FIRST_SSA_NUM);
                 _renameStack.Push(firstBlock, lclNum, ssaNum);
             }

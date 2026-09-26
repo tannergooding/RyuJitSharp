@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete VN exception, intrinsic, memory-access and call evaluation families with shared memory-state, pair-operation and array-parser dependencies, before full tree traversal and phase activation.",
+      "scope": "Complete VN intrinsic, memory-access, call and tree evaluation with loop-side-effect analysis and native phase/block/phi orchestration; activate only after the complete dependency closure is validated.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
@@ -23,8 +23,22 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "VN maps/diagnostics committeda09b9d7. Pair/exception/memory-state/array-parser prerequisite closure integrated391D388R on that baseline, with independent pair/exception review finding no high-confidence defect. Remaining intrinsic/evaluation and memory-access closures are active; calls await local-store dependency. Do not activate a reduced fgValueNumber phase.",
+      "parentScope": "Pair/exception/memory-state/array-parser closure committed44c8450 with391D388R and independent review. Parent owns VN reachability state and full phase/block/phi orchestration, plus shared integration. Workers own loop effects, tree evaluation and remaining intrinsic/memory/call closures. Do not activate a reduced fgValueNumber phase.",
       "parallelPackets": [
+        {
+          "scope": "Complete loop-side-effect analysis required by native fgValueNumber.",
+          "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
+          "files": "LoopSideEffects.cs, new Compiler.LoopSideEffects.cs and LoopSideEffectTests.cs.",
+          "status": "in-progress",
+          "remainingBoundary": "Native optimizer.cpp5219onward: constructor, whole-loop and block analysis, nested-loop havoc and liveness helpers. Preserve complete analysis; no phase activation."
+        },
+        {
+          "scope": "Complete native fgValueNumberTree dispatcher at valuenum.cpp13370-14015.",
+          "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
+          "files": "New Compiler.VNTree.cs and ValueNumTreeTests.cs only.",
+          "status": "in-progress",
+          "remainingBoundary": "Use complete memory/intrinsic/call families as declared dependencies. No reduced case selection or phase activation."
+        },
         {
           "scope": "Complete native call/helper/special-intrinsic numbering at valuenum.cpp14592-15631.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
@@ -141,7 +155,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Integrate942's complete physical-map load/store/field-selector and GenTree.IsFieldAddr closure when returned, then unblock d62's call-family validation through fgValueNumberLocalStore.6a owns math/HWI evaluators and subsequent compiler intrinsic functions. Pair/exception/memory-state/array-parser closure is integrated391D388R with independent review; exact8overlays in vn-memory-state-validation\\source-manifest-complete.json. Full tree traversal and loop-side-effect initialization remain subsequent dependencies; fgValueNumber stays inactive. Preserve14runtime configurations; no publication.",
+    "nextAction": "Parent: implement native ValueNumberState and full fgValueNumber/Blocks/Block/PhiDef/fgMemoryVNForLoopSideEffects orchestration at valuenum.cpp11753-12565, retaining phase gate until all callees exist.3a owns tree dispatcher;610 loop effects;942 physical memory closure;6a intrinsic evaluation;d62 call validation awaits942.44c8450 commits the reviewed391D388R primitive/parser closure. Integrate returned complete families and establish full VN phase execution before claiming activation. Preserve14runtime configurations; no publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
@@ -161,6 +175,17 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "localSsaVnInitialization": {
+        "snapshotBase": "a09b9d7 plus the exact eight source/test overlays committed in44c8450",
+        "sourceManifest": "artifacts\\vn-memory-state-validation\\local-ssa-source-manifest.json",
+        "debugPassed": 495,
+        "releasePassed": 459,
+        "skipped": 0,
+        "selector": "FullyQualifiedName~Ssa|FullyQualifiedName~ValueNum",
+        "tests": "snapshot\\artifacts\\tst\\{Debug,Release}\\local-ssa-unset-{debug,release}.trx",
+        "regression": "All5 constructor/initial-definition cases fail before the correction at the VN-pair assertion; negative Debug TRX is local-ssa-unset-negative.trx.",
+        "scope": "Native LclSsaVarDsc constructor initialization and initial SSA storage allocation; no phase activation."
+      },
       "vnPairExceptionArrayClosure": {
         "snapshotBase": "a09b9d7",
         "sourceManifest": "artifacts\\vn-memory-state-validation\\source-manifest-complete.json",

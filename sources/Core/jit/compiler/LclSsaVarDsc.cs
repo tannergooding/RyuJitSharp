@@ -35,15 +35,19 @@ public struct LclSsaVarDsc
     /// <remarks>May not be accurate for for promoted fields.</remarks>
     private bool _hasGlobalUse = false;
 
-    public ValueNumPair _vnPair;
+    public ValueNumPair _vnPair = new();
 
 #if DEBUG
     /// <summary>True if this ssa def VN was updated</summary>
     public bool _updated;
 
     /// <summary>Originally assigned VN</summary>
-    public ValueNumPair _origVNPair;
+    public ValueNumPair _origVNPair = new();
 #endif
+
+    public LclSsaVarDsc()
+    {
+    }
 
     public LclSsaVarDsc(BasicBlock block)
     {
