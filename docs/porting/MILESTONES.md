@@ -9,12 +9,22 @@ minopts methods, create EH funclets, allocate registers with stack-resident
 locals, emit native code and publish runtime metadata for Windows x64.
 The selected minopts corpus executes managed-generated code. Remaining work
 includes broader execution and GC-stress coverage, full dump/code parity,
-hardware-intrinsic import, lifetime-enabled lowering cleanup and optimized
-register allocation.
+hardware-intrinsic import and optimized register allocation.
 
 The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
+
+## 2026-09-25: Lifetime-enabled lowering cleanup
+
+Windows-x64 lowering now supports both native local-lifetime modes. The
+lifetime-enabled path runs dead-code liveness and flowgraph cleanup, refreshes
+reachability and reruns liveness when the graph changes, then recomputes local
+reference counts.
+
+Minopts execution remains intact under GC stress, including the focused
+forced-collection reference cases. Optimized register allocation remains a
+separate explicit boundary; completing lowering does not enable an optimized JIT.
 
 ## 2026-09-25: Binary value-number evaluation primitives
 

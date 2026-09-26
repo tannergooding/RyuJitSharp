@@ -28,7 +28,8 @@
           "scope": "Complete native lifetime-enabled Lowering.DoPhase cleanup without activating optimized allocation.",
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
           "files": "lower/Lowering.cs and focused LoweringPhaseTests; report required edits outside ownership.",
-          "doneWhen": "Verify cleanup dependency closure, preserve native liveness/flowgraph/DFS/refcount ordering, and pass focused Debug/Release regressions before a separate commit."
+          "doneWhen": "Verify cleanup dependency closure, preserve native liveness/flowgraph/DFS/refcount ordering, and pass focused Debug/Release regressions before a separate commit.",
+          "status": "complete"
         },
         {
           "scope": "Port complete binary scalar VN evaluation and comparison primitives without activating the VN phase or an incomplete folding dispatcher.",
@@ -57,12 +58,12 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Lifetime cleanup from610162a0 through turn1 is frozen and validated58Debug/54Release against e030e2e. Numeric primitives from3a2c8d9b through turn2 are reviewed/validated151binary+14unary per configuration; Windows-only probe expectations are correctly target-guarded. Root integrated selection passes263Debug/259Release. Finish retaining the numeric expression probe (artifacts-only worker3a2c8d9b), then publish fresh NativeAOT source and rerun minopts GCStress4 before committing lifetime cleanup. Hash-vector packet committed ed1695b; numeric source packet accompanies this checkpoint. Other workers are collected/frozen. Preserve B245/B246/B247 and relocation-identity gaps; do not activate optimized allocation/VN or publish.",
+    "nextAction": "All three parallel packets are complete: hash-vector ed1695b, numeric46abccf and lifetime cleanup accompanying this checkpoint. Root integrated selection passes263Debug/259Release; lifetime-cleanup-jit executes20minopts methods underGCStress4 plus3reference cases across confirmed full collections. Numeric expression probe is retained and collected through3a2c8d9b turn3. Next complete early tree liveness using the native EarlyLiveness policy (liveness.cpp2852-2891), and binary folding eligibility/constant-FP evaluation using the completed primitives, as separate owned packets without optimized allocation or full VN activation. Preserve B245/B246/B247 and relocation-identity gaps; do not publish.",
     "handoff": {
       "status": "parallel-prerequisite-integration",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "6a004941 through turn35 is committed/frozen. 610162a0 through turn1 returned validated lifetime cleanup; parent owns runtime integration and commit. 3a2c8d9b through turn2 returned validated numeric primitives; root test guards were added and integrated tests pass, source is frozen, and worker only retains reproducible artifacts\\vn-binary-native-probe evidence. 942a496f through turn61 and d62fc6a5 through turn64 are resolved. All code packets are collected; no app-native child-session coordination.",
-      "preserve": "Production lowering supports the complete no-local-lifetimes mode, allocation supports minopts without enregistered locals, and Windows-AMD64 generation/emission/metadata execute the selected corpus. Keep unsupported optional modes explicit; do not infer optimized, other-target or GC-stress parity. Keep the pinned oracle and residual native tree unchanged.",
+      "workerPackets": "6a004941 through turn35,610162a0 through turn1,3a2c8d9b through turn3,942a496f through turn61 and d62fc6a5 through turn64 are collected/frozen. All three source packets and retained expression evidence are integrated; no outstanding handoff. Reuse workers only for concrete subsequent packets. No app-native child-session coordination.",
+      "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
       "nativeFlowGraphSource": "src/coreclr/jit/fgopt.cpp:4373-4902",
@@ -77,6 +78,36 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "lifetimeEnabledLowering": {
+        "debugPassed": 58,
+        "releasePassed": 54,
+        "skipped": 0,
+        "snapshotManifest": "artifacts\\lowering-lifetime-validation\\source-manifest.json",
+        "selection": "FullyQualifiedName~LoweringPhaseTests|FullyQualifiedName~LivenessOrchestrationLIRTests|FullyQualifiedName~FlowGraphUpdateTests",
+        "integratedDebugTests": "artifacts\\parallel-prerequisites-debug.trx",
+        "integratedReleaseTests": "artifacts\\parallel-prerequisites-release.trx",
+        "finalFixtureDebugTests": "artifacts\\lifetime-final-debug.trx",
+        "finalFixtureReleaseTests": "artifacts\\lifetime-final-release.trx",
+        "finalFixtureDebugPassed": 8,
+        "finalFixtureReleasePassed": 7,
+        "sourceSha256": "7872CBE76C7FE766B5A86A6DFB9FD4C8783C3794318AC2D781194F8C205C734E",
+        "testsSha256": "CF020FA40597E695D4CA8D54CFE06F47F6E8332B7BA997A919F1FC0DA95AC3D9",
+        "nativeBoundary": "lower.cpp:8949-9055; full Windows-AMD64 DoPhase, including existing/refreshed DFS, liveness-induced cleanup, conditional second liveness and final refcount recomputation.",
+        "managedJit": "artifacts\\lifetime-cleanup-jit\\RyuJitSharp.dll",
+        "managedJitSha256": "368E6BA3E7A806A8AA0F83D84427E81A27B871628ED16E8E6FD8E40E6E1F7405",
+        "source": "46abccf plus artifacts\\lifetime-cleanup-source.patch SHA256 7A7D901AEC27125554E3F6E8F4AA850C4AB34AE6D29146CA8FF6FEC18DE0105C",
+        "capture": "artifacts\\lifetime-cleanup-managed-gcstress",
+        "forcedGcCapture": "artifacts\\lifetime-cleanup-forced-gc",
+        "reproduction": "Publish using README's Windows NativeAOT command into a fresh directory. Run Invoke-PortingCorpus.ps1 -MinOpts -RawHexCode -GcStress -ExecuteManagedCode with pinned manifest inputs and new DLL/source provenance. Repeat the three-case forced-GC probe with its recorded TypeName/ExpectedMethods and a fresh output path.",
+        "methods": 20,
+        "forcedGcMethods": 3,
+        "confirmedFullCollections": 3,
+        "gcStress": 4,
+        "runAltJitCode": 1,
+        "exitCode": 0,
+        "timedOut": false,
+        "remaining": "Optimized register allocation remains gated; runtime captures prove unchanged minopts execution, not optimized execution."
+      },
       "binaryVnEvaluation": {
         "debugBinaryPassed": 151,
         "releaseBinaryPassed": 151,
@@ -93,7 +124,8 @@
         "integratedSelection": "LoweringPhaseTests|LivenessOrchestrationLIRTests|FlowGraphUpdateTests|HashBvSetAlgebraTests|HashBitVectorTests|ValueNumBinaryEvaluationTests|UnaryIntValueNumbersUseNativeWidth|UnaryLongValueNumbersUseNativeWidth|UnaryFloatingNegationPreservesPayloadAndFlipsSign|UnaryInterningCancelsDoubleNotAndRetainsStableFunctionViews; prefix each with FullyQualifiedName~.",
         "sourceSha256": "23DA0054F2BABABA42E436D6AB2001B4FE047FAF229C66CA160C1E8CD3EFD918",
         "testsSha256": "211FA7C61C8CA91AE181D7FC0F051BAD406EC3BDA6A30EB74A98120BDAEA7B17",
-        "coverage": "Native int/INT64/size_t/float/double instantiations, wrapping arithmetic, unsigned division/comparisons, shifts/rotates, signed zero, NaN payload/sign and unordered comparisons. WINDOW_AMD64-specific expectations are guarded by WINDOWS_AMD64_ABI; the integrated TRX confirms all151binary cases execute on the primary target.",
+        "coverage": "Native int/INT64/size_t/float/double instantiations, wrapping arithmetic, unsigned division/comparisons, shifts/rotates, signed zero, NaN payload/sign and unordered comparisons. Windows-AMD64-specific expectations are guarded by WINDOWS_AMD64_ABI; the integrated TRX confirms all151binary cases execute on the primary target.",
+        "nativeExpressionProbe": "artifacts\\vn-binary-native-probe\\run.ps1 reproduces128raw results (80shift/48FP) with MSVC /O2 /fp:precise; compiler version, source hash and output are retained in probe-manifest.txt/compiler-output.txt/probe-output.txt. Source SHA256047C96602CB715420AD625B554BD506DB69342B68319A3084AD32254BB07C512. This is expression-level evidence, not full native-JIT parity.",
         "preconditions": "Zero divisors, signed-minimum/-1 division and checked overflows are excluded by the native caller. Checked size_t paths are unreachable per utils.h:1159-1163. Native32-bit overshifts/rotate pairs include C++ undefined cases; the Windows-x64 expression probe is target-specific evidence, not a portable guarantee or native-JIT parity claim.",
         "remaining": "Full binary VN folding dispatch, EvalFuncForConstantFPArgs closure and the VN phase remain unported."
       },

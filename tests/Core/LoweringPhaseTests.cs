@@ -3,6 +3,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.Globals;
@@ -53,25 +54,75 @@ internal static unsafe class LoweringPhaseTests
         });
     }
 
-    [Test]
-    public static void LifetimeEnabledModeRejectsBeforeMutatingLocalsBlocksOrPInvokeState()
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void LifetimeEnabledModeRunsLivenessWithoutChangingTheFlowGraph(bool existingDfs)
     {
         WithCompiler((compiler, allocator) => {
-            compiler.info.compUnmanagedCallCountWithGCTransition = 1;
             var entry = BasicBlock.New(compiler, BBJ_RETURN);
             compiler.fgFirstBB = compiler.fgLastBB = entry;
-            var marker = new GenTree(GT_NO_OP, TYP_VOID);
-            entry.InsertAtEnd(marker);
-            var dfs = compiler._dfsTree = compiler.fgComputeDfs();
+            entry.bbRefs = 1;
+            entry.SetFlags(BBF_IMPORTED);
+            compiler.fgPredsComputed = true;
+            var local = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+            var keepAlive = compiler.gtNewUnaryNode(GT_KEEPALIVE, TYP_VOID, local);
+            local.Next = keepAlive;
+            keepAlive.Prev = local;
+            entry.InsertAtEnd(new LIR.Range(local, keepAlive));
+            if (existingDfs)
+            {
+                compiler._dfsTree = compiler.fgComputeDfs();
+            }
 
-            var exception = Assert.Throws<FatalJitException>(() => DoPhase(new Lowering(compiler, allocator)));
+            Assert.That(DoPhase(new Lowering(compiler, allocator)), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
 
-            Assert.That(exception!.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(compiler.lvaTable[0].lvDoNotEnregister, Is.False);
-            Assert.That(entry.FirstNode, Is.SameAs(marker));
-            Assert.That(entry.LastNode, Is.SameAs(marker));
-            Assert.That(compiler._dfsTree, Is.SameAs(dfs));
-            Assert.That(compiler.compCurBB, Is.Null);
+            Assert.That(entry.FirstNode, Is.SameAs(local));
+            Assert.That(entry.LastNode, Is.SameAs(keepAlive));
+            Assert.That(local.IsRegOptional, Is.True);
+            Assert.That(compiler.fgBBcount, Is.EqualTo(1));
+            Assert.That(compiler.fgLocalVarLivenessDone, Is.True);
+            Assert.That(compiler.fgBBVarSetsInited, Is.True);
+            Assert.That(compiler.lvaTable[0].lvRefCnt(), Is.EqualTo(1));
+            Assert.That(compiler._dfsTree, Is.Null);
+        }, minOpts: false);
+    }
+
+    [Test]
+    public static void LifetimeEnabledModeRefreshesDfsRerunsLivenessAndRecountsAfterGraphChanges()
+    {
+        WithCompiler((compiler, allocator) => {
+            var entry = BasicBlock.New(compiler, BBJ_ALWAYS);
+            var successor = BasicBlock.New(compiler, BBJ_RETURN);
+            compiler.fgFirstBB = entry;
+            compiler.fgLastBB = successor;
+            entry.Next = successor;
+            successor.Prev = entry;
+            entry.bbRefs = 1;
+            successor.bbRefs = 0;
+            entry.SetFlags(BBF_IMPORTED);
+            successor.SetFlags(BBF_IMPORTED);
+            compiler.fgPredsComputed = true;
+            entry.SetKindAndTargetEdge(BBJ_ALWAYS, compiler.fgAddRefPred(successor, entry));
+
+            var unused = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+            unused.IsUnusedValue = true;
+            entry.InsertAtEnd(unused);
+            compiler._dfsTree = compiler.fgComputeDfs();
+
+#if DEBUG
+            compiler.verbose = true;
+            var output = CodeGenLifeTransitionTests.Capture(() => DoPhase(new Lowering(compiler, allocator)));
+            Assert.That(Occurrences(output, "had to run another liveness pass:"), Is.EqualTo(1));
+            Assert.That(Occurrences(output, "In Liveness::Init"), Is.EqualTo(2));
+#else
+            Assert.That(DoPhase(new Lowering(compiler, allocator)), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+#endif
+            Assert.That(unused.Prev, Is.Null);
+            Assert.That(entry.FirstNode, Is.Null);
+            Assert.That(compiler.fgBBcount, Is.EqualTo(1));
+            Assert.That(compiler.fgLocalVarLivenessDone, Is.True);
+            Assert.That(compiler.lvaTable[0].lvRefCnt(), Is.Zero);
+            Assert.That(compiler._dfsTree, Is.Null);
         }, minOpts: false);
     }
 
@@ -115,6 +166,23 @@ internal static unsafe class LoweringPhaseTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regAlloc")]
     private static extern ref IRegAlloc? RegAlloc(Compiler compiler);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitMaxLocalsToTrack")]
+    private static extern ref int MaxLocalsToTrack(ref JitConfigValues config);
+
+#if DEBUG
+    private static int Occurrences(string text, string value)
+    {
+        var count = 0;
+        for (var position = text.IndexOf(value, StringComparison.Ordinal); position >= 0;
+            position = text.IndexOf(value, position + value.Length, StringComparison.Ordinal))
+        {
+            count++;
+        }
+
+        return count;
+    }
+#endif
+
     private static void WithCompiler(Action<Compiler, LinearScan> action, bool minOpts = true)
     {
 #if DEBUG
@@ -123,11 +191,17 @@ internal static unsafe class LoweringPhaseTests
         var previous = JitTls.Compiler;
         var previousConfig = JitConfig;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        CORINFO_METHOD_INFO methodInfo = default;
+        compiler.info.compMethodInfo = &methodInfo;
+        compiler.info.compIsStatic = true;
+        compiler.info.compRetBuffArg = BAD_VAR_NUM;
+        compiler.lvaArg0Var = BAD_VAR_NUM;
         compiler.compHndBBtab = [];
         compiler.lvaTable = new LclVarDsc[1];
         compiler.lvaCount = 1;
         compiler.lvaTable[0].Type = TYP_I_IMPL;
-        compiler.lvaTable[0].lvImplicitlyReferenced = true;
+        compiler.lvaTable[0].lvImplicitlyReferenced = minOpts;
+        compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
         compiler.compRationalIRForm = true;
         compiler.fgNodeThreading = NodeThreading.LIR;
         JitFlags flags = default;
@@ -135,8 +209,10 @@ internal static unsafe class LoweringPhaseTests
         compiler.opts.SetMinOpts(minOpts);
 #if DEBUG
         compiler.fgSafeBasicBlockCreation = true;
+        compiler.fgSafeFlowEdgeCreation = true;
 #endif
         JitConfig = new JitConfigValues();
+        MaxLocalsToTrack(ref JitConfig) = 1024;
         JitTls.Compiler = compiler;
         compiler.codeGen = new CodeGen(compiler);
         try
