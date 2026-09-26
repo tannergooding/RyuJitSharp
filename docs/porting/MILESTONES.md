@@ -15,6 +15,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Complete memory-kind iteration
+
+Memory-kind iteration now includes byref-exposed memory before the GC heap,
+matching native order. The previous enumerator skipped its first element,
+which omitted byref state from shared liveness and SSA bookkeeping loops.
+
+The established 32-method minopts corpus continues to execute managed-generated
+code under GC stress, including loop-carried references, interior and pinned
+references, catches, filters and finally paths. This is scoped execution
+coverage, not full SSA or code-generation parity.
+
 ## 2026-09-25: Enregistered-local interval construction
 
 Windows-x64 LSRA can now construct intervals for enregistered locals, including

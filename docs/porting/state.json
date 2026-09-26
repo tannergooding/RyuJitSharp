@@ -59,11 +59,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Local interval construction is fully reviewed and integrated558Debug/473Release; B256 is committed696597d. Parent next repairs confirmed B257: AllMemoryKinds.GetEnumerator must invoke its initialized Enumerator(AllMemoryKinds) constructor rather than the default constructor that skips ByrefExposed. Validate all iteration surfaces and affected liveness/SSA plus native-host execution, then integrate frozen rename-state turn9. Continue with empty FlowGraphDominatorTree/FlowGraphDominanceFrontiers: native flowgraph.cpp:7094 onward, BlockDominancePreds in block.cpp:289 and DomTreeVisitor in compiler.h:13345. SSA diagnostic worker remains active. No partial SSA/optimized activation or publication.",
+    "nextAction": "B257 is corrected:4before failures,573Debug/535Release, and32managed methods execute under GCStress4. Parent next integrates the reviewed frozen SsaRenameState turn10 and corrected SsaDiagnostics turn75 packets with focused combined validation, then ports empty FlowGraphDominatorTree/FlowGraphDominanceFrontiers: native flowgraph.cpp:7094 onward, BlockDominancePreds in block.cpp:289 and DomTreeVisitor in compiler.h:13345. LSRA worker now ports complete local block-start/end locations. No partial SSA/optimized activation or publication.",
     "handoff": {
       "status": "parallel-interval-and-ssa-prerequisites",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn6 is collected/reviewed and integrated; idle. 3a2c8d9b through turn9 is collected, SsaRenameState frozen for parent review; its B257 finding is confirmed. d62fc6a5 through turn73 is collected and committed696597d, now ports Compiler.SsaDiagnostics.cs and focused tests only. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn6 is integrated as c8bdd87; now owns new LocalBlockLocations partials/tests for native block-start/end location handling. 3a2c8d9b through turn10 is collected/reviewed; final rename-state comments/hash are frozen. d62fc6a5 through turn75 is collected; SSA diagnostics include corrected native int label formatting and three failing-before cases. Both SSA packets await parent integration. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -79,6 +79,28 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "memoryKindEnumeration": {
+        "nativeBoundary": "block.h:125-205 MemoryKindIterator/allMemoryKinds; both memory kinds in native order, B257.",
+        "sourceManifest": "artifacts\\memory-kind-validation\\source-manifest.json",
+        "sourceManifestSha256": "1500C9EFA644001D4B73C8874B379E7FE46D4E227D494BC4F804DC5AC9C7E566",
+        "snapshotBase": "c8bdd87",
+        "beforeTests": "artifacts\\memory-kind-validation\\snapshot\\artifacts\\tst\\Debug\\memory-kind-before.trx",
+        "beforeFailed": 4,
+        "debugTests": "artifacts\\memory-kind-validation\\snapshot\\artifacts\\tst\\Debug\\memory-kind-debug.trx",
+        "releaseTests": "artifacts\\memory-kind-validation\\snapshot\\artifacts\\tst\\Release\\memory-kind-release.trx",
+        "debugPassed": 573,
+        "releasePassed": 535,
+        "skipped": 0,
+        "selection": "FullyQualifiedName~MemoryKindEnumerationTests|FullyQualifiedName~Ssa|FullyQualifiedName~Liveness|FullyQualifiedName~EH|FullyQualifiedName~LoweringPhase|FullyQualifiedName~FlowGraphCleanupTests|FullyQualifiedName~FlowGraphCompactionTests",
+        "managedJit": "artifacts\\memory-kind-jit\\RyuJitSharp.dll",
+        "managedJitSha256": "4C544BF15BE6B3F288E147EB081241377825120AD47FFFAF6F10545EB3513938",
+        "executionResults": "artifacts\\memory-kind-validation\\execution-results.json",
+        "executionReproducer": "artifacts\\memory-kind-validation\\run-execution.ps1 -PriorManifest <existing capture manifest> -Name <fresh capture name>; reuses exact corpus/type/methods with MinOpts, GCStress4 and ExecuteManagedCode.",
+        "executedMethods": 32,
+        "corpusCounts": {"standard":20,"loop":4,"interiorAndPin":3,"eh":3,"filterAndNestedFinally":2},
+        "helperCollections": {"loop":12,"interiorAndPin":3,"eh":11,"filterAndNestedFinally":11},
+        "limitation": "All selected compilations have nonzero code and exit0 without timeout/skip; broader execution, SSA activation and full parity remain incomplete."
+      },
       "localIntervalConstruction": {
         "nativeBoundary": "lsrabuild.cpp:2080-2795 buildIntervals<true>, parameter stress/validation helpers; lsra.cpp:2161-2463 checkLastUses/findPredBlockForLiveIn.",
         "workerSourceManifest": "artifacts\\local-interval-construction-validation\\source-manifest.json",
@@ -5507,6 +5529,13 @@
       "csharp": ["sources\\Core\\jit\\gentree\\SsaNumInfo.cs", "sources\\Core\\jit\\block\\BasicBlock.cs"],
       "reconciledCommit": null,
       "scope": "Complete composite SSA encoding/read/index helpers and memory-PHI placeholder identity; B254/B255."
+    },
+    {
+      "area": "memory-kind-enumeration",
+      "native": ["src\\coreclr\\jit\\block.h"],
+      "csharp": ["sources\\Core\\jit\\block\\AllMemoryKinds.cs", "sources\\Core\\jit\\block\\AllMemoryKinds.Enumerator.cs"],
+      "reconciledCommit": null,
+      "scope": "AllMemoryKinds initializes its enumerator to visit ByrefExposed before GcHeap; B257."
     },
     {
       "area": "eh-enclosing-region-contract",

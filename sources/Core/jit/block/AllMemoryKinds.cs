@@ -10,7 +10,7 @@ namespace RyuJitSharp;
 
 public readonly partial struct AllMemoryKinds : IEnumerable<MemoryKind>
 {
-    public Enumerator GetEnumerator() => new Enumerator();
+    public Enumerator GetEnumerator() => new Enumerator(this);
 
     IEnumerator<MemoryKind> IEnumerable<MemoryKind>.GetEnumerator() => GetEnumerator();
 
