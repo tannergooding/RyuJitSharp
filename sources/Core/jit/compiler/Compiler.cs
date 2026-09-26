@@ -3039,20 +3039,29 @@ public partial class Compiler
 #if DEBUG
     public void vnPrint(ValueNum vn, int level)
     {
-        // TODO: Port vnPrint after vnStore is ported
-        // if (ValueNumStore.isReservedVN(vn))
-        // {
-        //     jitprintf(ValueNumStore.reservedName(vn));
-        // }
-        // else
-        // {
-        //     jitprintf(FMT_VN(vn));
-        // 
-        //     if (level > 0)
-        //     {
-        //         vnStore.vnDump(this, vn);
-        //     }
-        // }
+        var reserved = vn switch
+        {
+            ValueNumStore.RecursiveVN => "$VN.Recursive",
+            ValueNumStore.NoVN => "$VN.No",
+            0 => "$VN.Null",
+            1 => "$VN.Void",
+            2 => "$VN.EmptyExcSet",
+            _ => null,
+        };
+
+        if (reserved is not null)
+        {
+            jitprintf(reserved);
+            return;
+        }
+
+        jitprintf($"${vn:x}");
+        if (level > 0)
+        {
+            var store = vnStore
+                ?? throw new FatalJitException("VN diagnostics require a value number store.");
+            store.vnDump(this, vn);
+        }
     }
 
     public void vnpPrint(ValueNumPair vnp, int level)

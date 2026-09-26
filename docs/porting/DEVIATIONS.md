@@ -338,8 +338,9 @@ without keeping a managed entry reference across possible dictionary growth.
 Canonical field sequences use store-owned reference-identity tokens, with zero
 reserved for null, rather than movable object addresses or pinned GC handles.
 These tokens remain metadata: EE calls receive the sequence's actual field
-handle. Field-sequence diagnostics retain native symbolic formatting; the
-general VN dumper is not yet ported. Exception lists retain native unsigned-VN
+handle. Field-sequence and general VN diagnostics retain native symbolic
+formatting; EE-dependent names and full phase dumps still need runtime evidence.
+Exception lists retain native unsigned-VN
 ordering and recursive union rather than managed collection enumeration (B098).
 Tree constant numbering reuses the bounded vector-import helper instead of
 native stack temporaries and `memcpy`. Embedded-handle and field-address maps
@@ -516,6 +517,12 @@ Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native
 push/pop order, conservative SSA lookup, duplicate suppression, cycles and early
 abort. Memory phis are not traversed, matching native behavior (B091).
+
+Map selection has its own local/memory-phi fixed-point traversal and native
+budgets. Its cache retains ordered memory dependencies; managed membership
+storage must not change insertion order or omit the entry that promotes a
+small set. SSA memory allocation explicitly initializes the VN pair, since
+allocating a managed struct array does not invoke element constructors.
 
 Checked-bound/index registries use managed membership sets; no enumeration order
 is observed. Unsigned comparison results use a readonly record and failed queries

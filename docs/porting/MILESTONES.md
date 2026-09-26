@@ -15,6 +15,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Memory value numbering and diagnostics
+
+Value numbering now has precise and physical memory-map operations, including
+local and memory-SSA phi traversal, fixed-point limits and loop dependencies.
+SSA memory definitions start with the native unset value-number pair.
+
+Diagnostic support covers constants, expressions, maps and phis, retaining
+native floating-point special-value text. The value-numbering phase itself
+remains inactive; these prerequisites do not establish optimized-code or
+phase-dump parity.
+
 ## 2026-09-26: Object and array stack allocation
 
 Object-allocation orchestration now runs escape analysis, conditional cloning,

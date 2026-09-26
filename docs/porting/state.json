@@ -23,7 +23,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Hardware/GS committed43b3060. Object orchestration/stack-array expansion and shared threaded-zero replacement are integrated800D772R on that baseline; all14 selected corpus captures execute with stack allocation enabled. Finish returned VN review fixes and commit that prerequisite closure without phase activation.",
+      "parentScope": "Hardware/GS committed43b3060; object/array stack allocation committed359fc79 with800D772R and14verified execution configurations. Corrected VN map/diagnostic/memorySSA closure is integrated343D341R on359fc79 without phase activation. Next select complete VN traversal/evaluation dependencies.",
       "parallelPackets": [
         {
           "scope": "Generic hardware-dispatch regression fixtures, including InvalidNodeId-only portable operations.",
@@ -43,8 +43,8 @@
           "scope": "Complete precise/physical VN map algebra, local/memory PHIs and fixed-point budgets.",
           "owner": "942a496f-db30-4389-a403-265f28fdb23c",
           "files": "ValueNumStore.Maps/Diagnostics partials, storage and memory-SSA VN definitions, focused tests; complete optRecordLoopMemoryDependence and vnPrint/vnDump prerequisites.",
-          "status": "integration-pending",
-          "remainingBoundary": "942 fixed both3a review findings through75, with negative regressions and19D17R. Fifth dependency insertion and native UCRT floating text are corrected. Refresh broader integration and commit; no VN phase activation."
+          "status": "done",
+          "remainingBoundary": "942 through75 collected; both3a review defects corrected with negative regressions. Final current-baseline integration343D341R, zero skipped. Maps, loop dependencies, memorySSA initialization and diagnostics complete; no VN phase activation."
         },
         {
           "scope": "Object phase orchestration and stack-array expansion regression fixtures.",
@@ -96,7 +96,7 @@
         }
       ],
       "deferred": [
-        "Value-numbering map selection and the full VN/assertion phases remain incomplete; memory-SSA ownership/map access and memory-VN provenance are complete.",
+        "Full VN traversal/evaluation and assertion phases remain incomplete; map selection, diagnostics, memory-SSA ownership and memory-VN provenance are complete.",
         "General assertion propagation and broader optimized execution beyond the current backend frontier.",
         "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
         "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs. Native vector Intersects/XOR defects are recorded in B247/B246; their corrected algorithms are not authorized and those entire vector operations are deferred.",
@@ -106,12 +106,12 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Integrate and commit the returned VN map/diagnostic/memorySSA closure without activating VN.942 fixed both review findings through75 with negative regressions and19D17R; parent verified the small fixes and restored native attribution headers in three new files. Build a clean current-HEAD snapshot with the eight VN overlays (Compiler.cs now only vnPrint differs), refresh broader VN/memorySSA Debug/Release selection and evidence, then commit. Object activation is validated800D772R with14captures in objectalloc-phase-validation\\runtime-validation-complete.json, stack allocation enabled, on hardware/GS43b3060. No publication.",
+    "nextAction": "Resume the native fgValueNumber/fgValueNumberBlock/fgValueNumberTree dependency closure in pinned valuenum.cpp. fgValueNumber remains a no-op in Compiler.fg.cs; do not activate a reduced phase. Assign independent complete leaf-function families to retained workers, keep shared fields and phase orchestration in the parent, and persist exact ownership before implementation. VN maps/diagnostics are integrated343D341R on object-activation359fc79; established14execution configurations remain the runtime boundary. No publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Collected through942:75,d62:101,610:29,3a:36,6a:46. All worker packets returned and workers idle/resolved. Hardware/GS committed43b3060; object activation integrated; VN review fixes await parent integration. Compiler.cs unstaged difference is now only vnPrint. Parent owns CoreRoot, currently free. No app-native sessions.",
-      "preserve": "Windows-AMD64 lowering/allocation/placement/generation/emission/metadata execute27 selected optimized methods and the established32-method minopts corpus under GCStress4. Optimized runs use native JitObjectStackAllocation=0 on both sides while object analysis is incomplete. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
+      "workerPackets": "Collected through942:75,d62:101,610:29,3a:36,6a:46. All returned packets integrated and workers idle/resolved. Hardware/GS committed43b3060; object activation committed359fc79; VN closure validated343D341R. Parent owns CoreRoot, currently free. No app-native sessions.",
+      "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
       "nativeFlowGraphSource": "src/coreclr/jit/fgopt.cpp:4373-4902",
@@ -126,6 +126,18 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "vnMapDiagnosticClosure": {
+        "snapshotBase": "359fc79",
+        "sourceManifest": "artifacts\\vn-map-algebra-validation\\source-manifest-integrated.json",
+        "debugPassed": 343,
+        "releasePassed": 341,
+        "skipped": 0,
+        "selector": "FullyQualifiedName~ValueNum|FullyQualifiedName~MemorySsa|FullyQualifiedName~SsaMemory",
+        "tests": "snapshot\\artifacts\\tst\\{Debug,Release}\\vn-integrated-final-{debug,release}.trx",
+        "nativeBoundary": "valuenum.cpp3219-3821,3840-3868,3961-3987,10954-11495,16325-16341;optimizer.cpp4187-4255;valuenum.h625-671,954-969,2193-2219",
+        "regressions": "Worker source-manifest.json records two failing-before cases for dependency-set promotion and UCRT floating text; corrected19D17R focused selection and final343D341R integrated selection pass.",
+        "scope": "Complete map, loop-memory dependence, memorySSA VN initialization and diagnostic prerequisites. No production VN activation or phase-dump parity claim."
+      },
       "hardwareDispatcherAndGs": {
         "snapshotBase": "34101c9",
         "sourceManifest": "artifacts\\hwi-dispatch-integration\\source-manifest-final.json",
@@ -5106,12 +5118,20 @@
       "status": "Complete native WindowsAMD64 portable/special import and24constructor dependencies. Load/store reuse existing value factories; remaining generic dispatcher is not activated."
     },
     {
+      "area": "vn-map-diagnostic-closure",
+      "native": ["src\\coreclr\\jit\\valuenum.cpp:3219-3821,3840-3868,3961-3987,10954-11495,16325-16341", "src\\coreclr\\jit\\optimizer.cpp:4187-4255", "src\\coreclr\\jit\\valuenum.h:625-671,954-969,2193-2219"],
+      "csharp": ["sources\\Core\\jit\\valuenum\\ValueNumStore.Maps.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.Diagnostics.cs", "sources\\Core\\jit\\compiler\\Compiler.VNLoopMemoryDependence.cs", "sources\\Core\\jit\\compiler\\Compiler.MemorySsa.cs", "sources\\Core\\jit\\compiler\\SsaMemDef.cs", "sources\\Core\\jit\\compiler\\Compiler.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete prerequisite closure; independent review defects fixed and integrated343D341R. Full VN traversal/evaluation and phase activation remain."
+    },
+    {
       "area": "memory-vn-provenance",
       "native": ["src\\coreclr\\jit\\valuenum.h:257-272", "src\\coreclr\\jit\\valuenum.cpp:3152-3212,7055-7100"],
       "csharp": ["sources\\Core\\jit\\valuenum\\VNMemoryPhiDef.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.Queries.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.Storage.cs", "sources\\Core\\jit\\valuenum\\Globals.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete native memory-PHI allocation/query and LoopOfVN using existing natural-loop maps. ReadOnlyMemory exposes copied SSA inputs; full map-selection and VN phases remain unported."
+      "status": "Complete native memory-PHI allocation/query and LoopOfVN using existing natural-loop maps. ReadOnlyMemory exposes copied SSA inputs; map selection is now complete, while full VN traversal/evaluation remains unported."
     },
     {
       "area": "hardware-creation-fallback-and-metadata",

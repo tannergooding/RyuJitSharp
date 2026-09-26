@@ -7,7 +7,12 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    public int AllocMemorySsaNum() => lvMemoryPerSsaData.AllocSsaNum();
+    public int AllocMemorySsaNum()
+    {
+        var ssaNum = lvMemoryPerSsaData.AllocSsaNum();
+        GetMemoryPerSsaData(ssaNum) = new SsaMemDef();
+        return ssaNum;
+    }
 
     public ref SsaMemDef GetMemoryPerSsaData(int ssaNum) => ref lvMemoryPerSsaData.GetSsaDef(ssaNum);
 

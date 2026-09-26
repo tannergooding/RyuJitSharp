@@ -7,4 +7,10 @@ namespace RyuJitSharp;
 
 public struct SsaMemDef
 {
+    public ValueNumPair _vnPair;
+
+    public SsaMemDef()
+    {
+        _vnPair = new ValueNumPair();
+    }
 }
