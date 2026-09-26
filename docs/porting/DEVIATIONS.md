@@ -525,6 +525,12 @@ allocating a managed struct array does not invoke element constructors.
 Local SSA definitions likewise initialize current and Debug original VN pairs;
 initial definitions explicitly invoke their constructor after SSA allocation.
 
+Incremental SSA uses the same explicit initialization for inserted definitions.
+Its block/local dictionary key compares block references and local numbers,
+independent of mutable block numbering. Definition lookup, backward liveness and
+lazy phi construction retain native traversal and insertion order. These
+prerequisites do not activate CSE or establish broader EH/cyclic-phi parity.
+
 VN pair operations preserve lane ordering and native sharing decisions rather
 than always allocating two opaque values. Memory SSA recording changes only the
 liberal lane; GC-heap stores invalidate separate byref state, while shared states

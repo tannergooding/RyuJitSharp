@@ -15,6 +15,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Incremental SSA
+
+Incremental SSA now records inserted definitions and uses, propagates liveness
+backward, and creates phi definitions as needed by expression rewrites. Block/local
+keys retain block identity even when numbering changes, and new definitions start
+with the native unset value numbers.
+
+This prepares CSE rewriting without activating the CSE phase. Broader EH and
+cyclic-phi behavior still needs execution coverage.
+
 ## 2026-09-26: CSE cost and rewrite prerequisites
 
 CSE support now initializes the native cost model, orders candidates by execution

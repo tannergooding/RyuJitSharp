@@ -23,7 +23,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "If-conversion and B287/B291 committed57401e2. Frozen CSE helper5 integrated42D42R after fast iteration and full-analysis checkpoints; commit this prerequisite without activating CSE, preserving newer standard selection/rewrite and SSA WIP. Loop-cloning6 is diagnostic-complete and frozen.",
+      "parentScope": "If-conversion committed57401e2 and CSE helper5 committed8d9a0ec. SSA7 integrated72D72R after fast iteration and full-analysis checkpoints; commit without activating CSE. Preserve ongoing standard heuristic diagnostics/interface work. Loop-cloning6 is diagnostic-complete and ready for activation.",
       "parallelPackets": [
         {
           "scope": "Complete Boolean optimization with the native CCMP switch-detection prerequisite.",
@@ -36,8 +36,8 @@
           "scope": "Complete native UseDefLocation, IncrementalSsaBuilder and inserted-SSA liveness prerequisites for CSE rewriting.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "New ssabuilder files and IncrementalSsaBuilderTests.cs; Compiler.BasicBlockLocalPair.cs identity-key completion authorized.",
-          "status": "in-progress",
-          "remainingBoundary": "Seven-file packet frozen30D30R on82b9829;942:110 review found no high-confidence defect. Block/local key identity, phi order and explicit NoVN initialization preserved.6a consuming exact manifest for PerformCSE; integrate frozen bytes before activation. EH/cyclic-phi/frontier-limit/existing-phi coverage remains limited."
+          "status": "done",
+          "remainingBoundary": "SSA7 integrated72D72R on8d9a0ec;942:110 review found no high-confidence defect. Block/local key identity, phi order and explicit NoVN initialization preserved.6a consumes the same API for PerformCSE. EH/cyclic-phi/frontier-limit/existing-phi coverage remains limited."
         },
         {
           "scope": "Complete loop-cloning representation and guard-expression prerequisites before phase closure.",
@@ -260,7 +260,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Integrate3a frozen SSA7 from artifacts\\incremental-ssa-validation\\source-manifest.json (30D30R,942:110 clear review), preserving6a standard heuristic WIP. Helper5 validated on57401e2 at artifacts\\cse-helper-integration\\source-manifest.json,42D42R. Standard rewrite36D36R needs remaining diagnostics, CopyReg cross-operator assertion correction and Initialize virtual/override wiring; public CSE inactive. Then activate diagnostic-complete cloning6 (d62:146,31D30R) with20-config execution matrix. Latest executing JIT remains ifconversion-cost-jit. Use fast iterations/full freeze checks. CoreRoot free; no publication.",
+    "nextAction": "Activate diagnostic-complete loop-cloning6 from artifacts\\loop-cloning-phase-validation\\source-manifest.json (d62:146,31D30R), preserving6a standard CSE WIP. SSA7 integrated72D72R on8d9a0ec at artifacts\\incremental-ssa-integration\\source-manifest.json.6a completing standard rewrite diagnostics and Initialize virtual/override; parent still owns CopyReg cross-operator assertion correction. Public CSE inactive. Cloning activation requires full-analysis D/R and20-config NativeAOT execution plus positive native comparison. Latest executing JIT remains ifconversion-cost-jit. Use fast inner loops. CoreRoot free; no publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
@@ -280,6 +280,18 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "incrementalSsa": {
+        "snapshotBase": "8d9a0ec",
+        "sourceManifest": "artifacts\\incremental-ssa-integration\\source-manifest.json",
+        "debugPassed": 72,
+        "releasePassed": 72,
+        "skipped": 0,
+        "selection": "30 incremental/existing SSA cases plus42 CSE helper and if-conversion/cost cases.",
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\incremental-ssa-full-{Debug,Release}.trx",
+        "review": "942:110 found no high-confidence defect in the seven frozen sources; identity, definition order, liveness, lazy phi insertion and NoVN initialization reviewed.",
+        "scope": "Complete incremental SSA prerequisite; CSE remains inactive. No new NativeAOT or runtime parity claim.",
+        "gaps": "EH predecessors, cyclic phis, the100-frontier refusal and reuse of an existing phi lack focused coverage."
+      },
       "cseHeuristicHelpers": {
         "snapshotBase": "57401e2",
         "sourceManifest": "artifacts\\cse-helper-integration\\source-manifest.json",
@@ -6681,6 +6693,13 @@
       "native": ["src\\coreclr\\jit\\optimizebools.cpp:20-429,450-1486,1619-1883", "src\\coreclr\\jit\\switchrecognition.cpp:70-103,123-194,212-344,366-478"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.BooleanOptimization*.cs", "sources\\Core\\jit\\compiler\\Compiler.SwitchRecognition.Detection.cs", "sources\\Core\\jit\\compiler\\Compiler.SwitchOptimization.cs:fgFoldCondToReturnBlock"],
       "status": "Complete Boolean phase active. Its switch dependency remains an explicit complete detection-only entry; the complete conversion-mode phase is now separately active.",
+      "reconciledCommit": null
+    },
+    {
+      "area": "incremental-ssa",
+      "native": ["src\\coreclr\\jit\\ssabuilder.h:15-33,112-157", "src\\coreclr\\jit\\ssabuilder.cpp:151-275,1391-1790", "src\\coreclr\\jit\\block.cpp:315-372", "src\\coreclr\\jit\\compiler.h:3200-3225", "src\\coreclr\\jit\\gentree.cpp:37520-37548"],
+      "csharp": ["sources\\Core\\jit\\ssabuilder\\UseDefLocation.cs", "sources\\Core\\jit\\ssabuilder\\IncrementalLiveInBuilder.cs", "sources\\Core\\jit\\ssabuilder\\IncrementalSsaBuilder.cs", "sources\\Core\\jit\\ssabuilder\\Compiler.IncrementalSsaLiveness.cs", "sources\\Core\\jit\\ssabuilder\\SsaBuilder.IncrementalAccess.cs", "sources\\Core\\jit\\compiler\\Compiler.BasicBlockLocalPair.cs"],
+      "status": "Complete inserted-definition/use, backward liveness and lazy phi construction prerequisite, using block-reference/local-number keys and explicit NoVN descriptor initialization. Production CSE activation remains separate.",
       "reconciledCommit": null
     },
     {
