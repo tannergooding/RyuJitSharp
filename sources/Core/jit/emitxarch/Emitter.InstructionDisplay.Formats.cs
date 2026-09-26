@@ -88,7 +88,7 @@ public partial class Emitter
             GCT_BYREF => "bword ptr ",
             _ => emitSizeString(emitGetMemOpSize(id, !id.idHasMem())),
         };
-        if (ins == INS_lea)
+        if ((ins == INS_lea) && (id.idGCref() is not (GCT_GCREF or GCT_BYREF)))
         {
             assert(attr is EA_4BYTE or EA_8BYTE);
             sizeName = "";

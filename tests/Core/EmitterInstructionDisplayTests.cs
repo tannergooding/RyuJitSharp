@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
+using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp.UnitTests;
@@ -152,6 +153,27 @@ internal static unsafe class EmitterInstructionDisplayTests
         var output = Capture(() => emitter.emitDispAddrMode(id));
 
         Assert.That(output, Is.EqualTo("[rax+4*rcx-0x20]"));
+    }
+
+    [TestCase(emitAttr.EA_4BYTE, GCT_NONE, "eax, [rcx+4*rdx+0x10]")]
+    [TestCase(emitAttr.EA_8BYTE, GCT_NONE, "rax, [rcx+4*rdx+0x10]")]
+    [TestCase(emitAttr.EA_8BYTE, GCT_GCREF, "rax, gword ptr [rcx+4*rdx+0x10]")]
+    [TestCase(emitAttr.EA_8BYTE, GCT_BYREF, "rax, bword ptr [rcx+4*rdx+0x10]")]
+    public static void LeaDisplayPreservesNativeGcQualifiers(emitAttr size, GCInfo.GCtype gcType, string operands)
+    {
+        var emitter = CreateEmitter();
+        var id = Descriptor(instruction.INS_lea, IF_RWR_ARD, size, regNumber.REG_EAX, regNumber.REG_NA);
+        id.idGCref(gcType);
+        id.idAddr().iiaAddrMode.amBaseReg = regNumber.REG_ECX;
+        id.idAddr().iiaAddrMode.amIndxReg = regNumber.REG_EDX;
+        id.idAddr().iiaAddrMode.amScale = 2;
+        id.idAddr().iiaAddrMode.amDisp = 16;
+
+        var output = Capture(() => emitter.emitDispIns(id, isNew: true, doffs: false, asmfm: false));
+
+        Assert.That(output, Is.EqualTo($"       lea      {operands}{Environment.NewLine}"));
+        Assert.That(id.idGCref(), Is.EqualTo(gcType));
+        Assert.That(id.idOpSize(), Is.EqualTo(size));
     }
 
     private static Emitter CreateEmitter()

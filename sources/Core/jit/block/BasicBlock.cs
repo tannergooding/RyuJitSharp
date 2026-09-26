@@ -1780,8 +1780,8 @@ public sealed partial class BasicBlock : LIR.Range
 
         if (showFlags)
         {
-            var lowFlags = (int)(bbFlags);
-            var highFlags = (int)((long)(bbFlags) >>> 32);
+            var lowFlags = unchecked((uint)bbFlags);
+            var highFlags = unchecked((uint)((ulong)bbFlags >> 32));
             jitprintf($" flags=0x{highFlags:x8}.{lowFlags:x8}: ");
             dspFlags();
         }

@@ -12,44 +12,35 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Integrate separately committed native-faithful packets for lifetime-enabled lowering, binary VN evaluation primitives and hash-vector set algebra after the completed backend parity/GC-stress boundary.",
+      "scope": "Review and integrate early-tree liveness and binary constant-folding prerequisites after repairing diagnostic failures exposed by interior-reference and pinning execution.",
       "doneWhen": [
-        "Complete lifetime-enabled lowering with verified liveness/flowgraph dependency closure and native cleanup ordering, retaining the optimized allocator boundary.",
-        "Complete binary VN scalar evaluation primitives with native numeric semantics, without activating the full folding dispatcher or VN phase.",
-        "Complete hash-vector set algebra with native traversal, mutation/change flags and alias handling; keep B115's disputed APIs deferred.",
+        "Complete the native EarlyLiveness tree policy and its full use/def, backward traversal and dead-store closure, preserving LIR behavior.",
+        "Complete binary constant-folding eligibility/safety and scalar constant evaluation/casts without activating binary interning or the VN phase.",
         "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
       ],
       "validation": [
-        "Use focused Debug/Release selections for each packet and the unchanged minopts path. Workers validate isolated git-archive e030e2e snapshots with only their owned overlays and separate obj/bin outputs; preserve matching root/snapshot hashes and force rebuild after overlays. Do not overlap builds writing the same configuration outputs.",
-        "For production lowering changes, republish into a fresh NativeAOT directory and rerun the established minopts execution/GCStress4 capture against pinned native inputs. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
+        "Use focused Debug/Release selections against isolated ec87bbd archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
+        "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
       "parallelPackets": [
         {
-          "scope": "Complete native lifetime-enabled Lowering.DoPhase cleanup without activating optimized allocation.",
+          "scope": "Complete the native EarlyLiveness tree policy; reject other unsupported tree/SSA modes explicitly.",
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
-          "files": "lower/Lowering.cs and focused LoweringPhaseTests; report required edits outside ownership.",
-          "doneWhen": "Verify cleanup dependency closure, preserve native liveness/flowgraph/DFS/refcount ordering, and pass focused Debug/Release regressions before a separate commit.",
-          "status": "complete"
+          "files": "liveness files, new Compiler.EarlyLiveness.cs, only the fgEarlyLiveness stub in Compiler.fg.cs, and EarlyLivenessTests.cs.",
+          "doneWhen": "Review complete policy closure and isolated43Debug/38Release evidence; retain unchanged LIR behavior and validate integration before commit.",
+          "status": "awaiting-review"
         },
         {
-          "scope": "Port complete binary scalar VN evaluation and comparison primitives without activating the VN phase or an incomplete folding dispatcher.",
+          "scope": "Complete binary eligibility/safety and scalar constant evaluation/casts without full interning dispatch or VN activation.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
-          "files": "New ValueNumStore.BinaryEvaluation.cs and ValueNumBinaryEvaluationTests.cs.",
-          "doneWhen": "Preserve native numeric semantics across integer boundaries, shifts, comparisons, NaN and signed zero; validate complete functions in Debug/Release before a separate commit.",
-          "status": "complete",
-          "deferred": "EvalFuncForConstantFPArgs and binary VNForFunc dispatch require unported folding predicates and comparison dispatch; no partial wrapper or phase activation is included."
-        },
-        {
-          "scope": "Complete unaffected native hash-vector set algebra without porting disputed vector Intersects/XOR or countBits/setLowest APIs, or activating an optimization phase.",
-          "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
-          "files": "hashbv source files and new HashBvSetAlgebraTests.cs.",
-          "doneWhen": "Preserve native traversal, mutation and change flags across unequal table sizes and aliases; validate focused Debug/Release cases before a separate commit.",
-          "status": "complete",
-          "deferred": "Vector XOR and Intersects are entirely deferred under B246/B247; no corrected managed algorithms are included."
+          "files": "ValueNumStore.BinaryFolding.cs, ValueNumStore.BinaryCasts.cs and ValueNumBinaryFoldingTests.cs.",
+          "doneWhen": "Review full native function closure and isolated233Debug/233Release evidence; validate integration before commit.",
+          "status": "awaiting-review",
+          "deferred": "Binary interning, math identities, VM type comparisons and the VN phase remain outside the packet."
         }
       ],
       "deferred": [
-        "General multi-argument VN folding dispatch, memory-phi traversal, map selection and the value-numbering phase; only the explicitly owned binary evaluation primitives are in the parallel packet.",
+        "General multi-argument VN folding dispatch, memory-phi traversal, map selection and the value-numbering phase; only binary constant-folding support is in the parallel packet.",
         "Optional general assertion propagation and optimization-only allocation analyses unless required by the active minopts dependency closure.",
         "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
         "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs. Native vector Intersects/XOR defects are recorded in B247/B246; their corrected algorithms are not authorized and those entire vector operations are deferred.",
@@ -58,11 +49,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "All three parallel packets are complete: hash-vector ed1695b, numeric46abccf and lifetime cleanup accompanying this checkpoint. Root integrated selection passes263Debug/259Release; lifetime-cleanup-jit executes20minopts methods underGCStress4 plus3reference cases across confirmed full collections. Numeric expression probe is retained and collected through3a2c8d9b turn3. Next complete early tree liveness using the native EarlyLiveness policy (liveness.cpp2852-2891), and binary folding eligibility/constant-FP evaluation using the completed primitives, as separate owned packets without optimized allocation or full VN activation. Preserve B245/B246/B247 and relocation-identity gaps; do not publish.",
+    "nextAction": "Review frozen early-tree liveness from610162a0 through turn2 (43Debug/38Release) and binary folding from3a2c8d9b through turn4 (233/233), verify snapshot hashes, validate integration and commit separately. The B248/B249 diagnostic packet is complete with failing-before regressions,51Debug/41Release, and isolated interior-diagnostics-jit execution of all3interior/pinned cases across3confirmed collections plus20standard methods underGCStress4. d62fc6a5 through turn65 is resolved. All handoffs are collected; do not start new packets before integrating these. Upstream defects remain tracked/deferred; no optimized allocator/VN activation or publication.",
     "handoff": {
       "status": "parallel-prerequisite-integration",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "6a004941 through turn35,610162a0 through turn1,3a2c8d9b through turn3,942a496f through turn61 and d62fc6a5 through turn64 are collected/frozen. All three source packets and retained expression evidence are integrated; no outstanding handoff. Reuse workers only for concrete subsequent packets. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn2 returned frozen early-tree liveness and43Debug/38Release in artifacts\\early-liveness-validation. 3a2c8d9b through turn4 returned frozen binary folding and233/233 in artifacts\\vn-binary-folding-validation. d62fc6a5 through turn65 returned the interior/pin probe; parent fixed the reached B248/B249 diagnostics and validated fresh execution. 6a004941 through turn35 and942a496f through turn61 remain resolved. No unread handoffs or app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -78,6 +69,39 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "interiorReferenceDiagnostics": {
+        "snapshotBase": "ec87bbd",
+        "snapshot": "artifacts\\interior-display-validation",
+        "debugPassed": 51,
+        "releasePassed": 41,
+        "skipped": 0,
+        "selection": "FullyQualifiedName~EmitterInstructionDisplayTests|FullyQualifiedName~BlockDisplayTests",
+        "debugTests": "artifacts\\interior-display-results\\interior-diagnostics-debug.trx",
+        "releaseTests": "artifacts\\interior-display-results\\interior-diagnostics-release.trx",
+        "b248Regression": "lea-before-debug.trx:2passed ordinary LEA widths and2failed GC-qualified descriptors at the original assertion. Correct native branch preserves gword/bword qualifiers and descriptor GC metadata.",
+        "b249Regression": "block-flags-before-debug.trx:zero passed;4sign/high-word patterns failed with OverflowException. Correct unsigned extraction preserves all64bits.",
+        "source": "ec87bbd plus artifacts\\interior-diagnostics-source.patch SHA256419AE773BF20FED1B142F264923851CF82BCD9E49F7BA2DC7C58291898326810",
+        "managedJit": "artifacts\\interior-diagnostics-jit\\RyuJitSharp.dll",
+        "managedJitSha256": "86B6A78BF5FDD0860C5F044242796DAFF09E5A84423154E662FE7D49D1AE8DA2",
+        "nativeInteriorCapture": "artifacts\\backend-gc-interior-probe\\native-gcstress4",
+        "managedInteriorCapture": "artifacts\\interior-diagnostics-managed-gcstress",
+        "managedCorpusCapture": "artifacts\\interior-diagnostics-corpus",
+        "reproduction": "Build/publish the isolated snapshot with the two source fixes and two test overlays. Use the interior probe results.txt commands, fresh output directories and updated DLL/source provenance. GC_INTERIOR_CASE=all selects KeepFieldByref/KeepArrayByref/KeepPinnedArray. The standard corpus uses its existing manifest inputs and default expected methods.",
+        "interiorMethods": 3,
+        "confirmedFullCollections": 3,
+        "standardCorpusMethods": 20,
+        "gcStress": 4,
+        "runAltJitCode": 1,
+        "exitCode": 0,
+        "timedOut": false,
+        "coverage": "Field/array interior references survive forced compacting full collections and subsequent writes; pinned-array case verifies stable pointer while pinned, payload and reference identity. No exclusive-rooting or object-movement claim.",
+        "fileHashes": {
+          "sources\\Core\\jit\\block\\BasicBlock.cs": "FF16FB1F3D0151B92B023CBFAA2A2A14B354420D4FF4BE2601F1ABAF34A1929B",
+          "sources\\Core\\jit\\emitxarch\\Emitter.InstructionDisplay.Formats.cs": "3A6F30FF537AA84CE8129DF0C09F14F5FF70131ED8435D9A35C98532F0269922",
+          "tests\\Core\\BlockDisplayTests.cs": "F65297BA2BAB7014046C370B153E0C8ED102FE7A0365E1C53F751858F8D442E0",
+          "tests\\Core\\EmitterInstructionDisplayTests.cs": "FD24D0F3C7841408F8AB5BC1FC4F1D54D847847C0467223564B0D846FD23B82F"
+        }
+      },
       "lifetimeEnabledLowering": {
         "debugPassed": 58,
         "releasePassed": 54,

@@ -39,5 +39,22 @@ internal static class BlockDisplayTests
 
         Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo(expected));
     }
+
+    [TestCase(0UL, "00000000.00000000")]
+    [TestCase(0x80000000UL, "00000000.80000000")]
+    [TestCase(0x100000000UL, "00000001.00000000")]
+    [TestCase(0x8000000000000000UL, "80000000.00000000")]
+    [TestCase(ulong.MaxValue, "ffffffff.ffffffff")]
+    public static void HeaderPrintsBothFlagWordsWithoutCheckedOverflow(ulong bits, string expected)
+    {
+        var block = (BasicBlock)RuntimeHelpers.GetUninitializedObject(typeof(BasicBlock));
+        block.FlagsRaw = unchecked((BasicBlockFlags)bits);
+
+        var output = CodeGenLifeTransitionTests.Capture(
+            () => block.dspBlockHeader(showKind: false, showFlags: true, showPreds: false));
+
+        Assert.That(output, Does.Contain($" flags=0x{expected}: "));
+        Assert.That(block.FlagsRaw, Is.EqualTo(unchecked((BasicBlockFlags)bits)));
+    }
 }
 #endif

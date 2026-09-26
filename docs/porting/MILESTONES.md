@@ -15,6 +15,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Interior-reference and pinning execution
+
+Focused Windows-x64 minopts cases now preserve field and array interior
+references across confirmed full collections. A pinned-array case also checks
+address stability while pinned, then verifies writes and reference identity.
+All three execute with JIT-instruction GC stress enabled.
+
+These cases exposed two diagnostic translation defects: GC-qualified LEAs
+incorrectly entered the ordinary-size branch, and block-header flags used checked
+truncation instead of native unsigned word extraction. Both are corrected
+without changing GC metadata. The fixtures do not establish exclusive rooting
+or measure object movement; broad GC correctness remains unproved.
+
 ## 2026-09-25: Lifetime-enabled lowering cleanup
 
 Windows-x64 lowering now supports both native local-lifetime modes. The
