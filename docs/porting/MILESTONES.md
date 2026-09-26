@@ -15,6 +15,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Register resolution across edges
+
+Windows-x64 LSRA now reconciles local register homes across split, join and
+critical edges. It orders parallel moves, breaks cycles with swaps, scratch
+registers or spills, and preserves EH write-through homes and split-block
+location maps. Scratch selection shares the allocator's native stress policy.
+
+This completes the edge-resolution prerequisite without activating optimized
+allocation or changing the production minopts allocator.
+
 ## 2026-09-25: SSA construction
 
 The optimized pipeline now constructs SSA: it inserts local and memory PHIs,

@@ -40,7 +40,7 @@ public sealed partial class LinearScan
         return newMask;
     }
 
-    private SingleTypeRegSet stressLimitRegs(RefPosition refPosition, RegisterType registerType, SingleTypeRegSet mask)
+    private SingleTypeRegSet stressLimitRegs(RefPosition? refPosition, RegisterType registerType, SingleTypeRegSet mask)
     {
 #if TARGET_AMD64
         const int LimitCallee = 0x1;
@@ -77,10 +77,10 @@ public sealed partial class LinearScan
         if (constrainedMask != mask)
         {
             mask = getConstrainedRegMask(
-                refPosition, registerType, mask, constrainedMask, refPosition.minRegCandidateCount);
+                refPosition, registerType, mask, constrainedMask, refPosition?.minRegCandidateCount ?? 1);
         }
 
-        if (refPosition.isFixedRegRef)
+        if (refPosition is not null && refPosition.isFixedRegRef)
         {
             mask |= refPosition.registerAssignment;
         }
