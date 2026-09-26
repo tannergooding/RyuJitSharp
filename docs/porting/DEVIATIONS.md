@@ -643,8 +643,11 @@ ordering, use-count unmarking and ordered side-effect extraction are implemented
 Nested CSE definitions remain in the tree and comma VNs retain the native
 composition rules. Standard candidate ranking, profitability, selection and SSA
 rewriting are also implemented, including native virtual initialization.
-Other heuristic families and phase dispatch remain incomplete; these prerequisites
-are not active CSE execution parity.
+Parameterized feature scoring and greedy choice traversal are implemented as well.
+Its ordered managed choice list preserves native reverse-stack traversal and
+mutable choice references; no extra greedy iteration cap is introduced.
+Other Debug heuristic families and phase dispatch remain incomplete; these
+prerequisites are not active CSE execution parity.
 
 Register-state copying accepts ordinary cross-operator replacements and delegates
 call/COPY/RELOAD state as native does (B292). Calls still require call sources, and

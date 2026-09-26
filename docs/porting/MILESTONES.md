@@ -15,6 +15,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Parameterized CSE
+
+Parameterized CSE now computes the native feature vector and scores candidate
+choices for greedy selection. Stopping decisions, tie-breaking, choice order and
+rebuilding after use-count changes retain native behavior. The same choice and
+feature representation is available to the remaining learning-based modes.
+
+The production CSE phase remains inactive until the remaining modes and their
+dispatch are integrated.
+
 ## 2026-09-26: Standard CSE selection and rewriting
 
 The standard CSE heuristic now ranks and selects candidates, creates temporary
