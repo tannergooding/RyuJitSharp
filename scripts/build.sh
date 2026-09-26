@@ -12,6 +12,7 @@ architecture=''
 build=false
 ci=false
 configuration='Debug'
+fast=false
 help=false
 pack=false
 restore=false
@@ -38,6 +39,10 @@ while [[ $# -gt 0 ]]; do
     --configuration)
       configuration=$2
       shift 2
+      ;;
+    --fast)
+      fast=true
+      shift 1
       ;;
     --help)
       help=true
@@ -72,11 +77,15 @@ done
 
 function Build {
   logFile="$LogDir/$configuration/build.binlog"
+  local fastProperties=()
+  if $fast; then
+    fastProperties=("/p:RunAnalyzers=false;GenerateDocumentationFile=false")
+  fi
 
   if [[ -z "$properties" ]]; then
-    dotnet build -c "$configuration" --no-restore -v "$verbosity" /bl:"$logFile" /err "$solution"
+    dotnet build -c "$configuration" --no-restore -v "$verbosity" /bl:"$logFile" /err "${fastProperties[@]}" "$solution"
   else
-    dotnet build -c "$configuration" --no-restore -v "$verbosity" /bl:"$logFile" /err "${properties[@]}" "$solution"
+    dotnet build -c "$configuration" --no-restore -v "$verbosity" /bl:"$logFile" /err "${properties[@]}" "${fastProperties[@]}" "$solution"
   fi
 
   LASTEXITCODE=$?
@@ -105,6 +114,7 @@ function Help {
   echo "  --build                   Build solution"
   echo "  --test                    Run all tests in the solution"
   echo "  --pack                    Package build artifacts"
+  echo "  --fast                    Skip .NET analyzers and XML documentation during builds"
   echo ""
   echo "Advanced settings:"
   echo "  --solution <value>        Path to solution to build"

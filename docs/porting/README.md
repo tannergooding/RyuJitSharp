@@ -93,6 +93,22 @@ compilation through the established failure mechanism. `Globals.NYI` can return
 under some configurations; calling it alone does not prove the path cannot
 fall through. Do not globally change that policy as an incidental porting edit.
 
+### Fast inner-loop builds
+
+Use `.\build.cmd -fast -test` for routine compile/test iterations, optionally
+with `-solution tests\Core\RyuJitSharp.UnitTests.csproj` to select a project.
+The Bash equivalent is `./build.sh --fast --test`. The switch applies
+`RunAnalyzers=false` and `GenerateDocumentationFile=false` only to the build
+action. It defers .NET analyzer/style and trimming analysis and XML documentation,
+not C# compilation, nullable checking, source generation or requested tests.
+Restore, test and packaging actions retain their existing behavior.
+
+For direct `dotnet build` or `dotnet test` iterations, use
+`-p:RunAnalyzers=false -p:GenerateDocumentationFile=false`. Full analysis remains
+the default: build and test without these overrides in the same configuration
+before committing a porting batch, and keep final NativeAOT publication and
+execution validation unchanged. Fast-mode success is not a full-analysis checkpoint.
+
 ### C# layout
 
 Preserve recognizable algorithms without copying native layout or compressing

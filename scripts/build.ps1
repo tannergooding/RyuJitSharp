@@ -4,6 +4,7 @@ Param(
   [switch] $build,
   [switch] $ci,
   [ValidateSet("Debug", "Release")][string] $configuration = "Debug",
+  [switch] $fast,
   [switch] $help,
   [switch] $pack,
   [switch] $restore,
@@ -15,11 +16,12 @@ Param(
 
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = "Stop"
-[Net.ServicePointManager].SecurityProtocol = [Net.SecurityProtocolType].Tls12
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 function Build() {
   $logFile = Join-Path -Path $LogDir -ChildPath "$configuration\build.binlog"
-  & dotnet build -c "$configuration" --no-restore -v "$verbosity" /bl:"$logFile" /err $properties "$solution"
+  $fastProperty = if ($fast) { "/p:RunAnalyzers=false;GenerateDocumentationFile=false" } else { $null }
+  & dotnet build -c "$configuration" --no-restore -v "$verbosity" /bl:"$logFile" /err $properties $fastProperty "$solution"
 
   if ($LastExitCode -ne 0) {
     throw "'Build' failed for '$solution'"
@@ -43,6 +45,7 @@ function Help() {
     Write-Host -Object "  -build                  Build solution"
     Write-Host -Object "  -test                   Run all tests in the solution"
     Write-Host -Object "  -pack                   Package build artifacts"
+    Write-Host -Object "  -fast                   Skip .NET analyzers and XML documentation during builds"
     Write-Host -Object ""
     Write-Host -Object "Advanced settings:"
     Write-Host -Object "  -solution <value>       Path to solution to build"
