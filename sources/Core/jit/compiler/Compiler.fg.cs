@@ -10810,64 +10810,10 @@ public partial class Compiler
     internal List<BasicBlock> fgGetAllSuccessors(BasicBlock block, bool useProfile = false)
     {
         var successors = new List<BasicBlock>();
-
-        if (useProfile && (block.Kind is BBJ_COND) && (block.TrueEdge != block.FalseEdge) &&
-            (block.TrueEdge.Likelihood < block.FalseEdge.Likelihood))
-        {
-            successors.Add(block.TrueTarget);
-            successors.Add(block.FalseTarget);
-        }
-        else
-        {
-            foreach (var successor in block.Succs)
-            {
-                successors.Add(successor);
-            }
-        }
-
-        if (block.Kind is BBJ_CALLFINALLYRET)
-        {
-            return successors;
-        }
-
-        var hasPotentialEHSuccs = block.hasTryIndex;
-
-        if (!hasPotentialEHSuccs && block.hasHndIndex)
-        {
-            hasPotentialEHSuccs = ehGetDsc(block.HndIndex).InFilterRegionBBRange(block);
-        }
-
-        if (!hasPotentialEHSuccs)
-        {
-            return successors;
-        }
-
-        ref var eh = ref ehGetBlockExnFlowDsc(block);
-
-        while (!Unsafe.IsNullRef(in eh))
-        {
-            if (eh.HasFilter)
-            {
-                successors.Add(eh.ebdFilter);
-                successors.Add(eh.ebdHndBeg);
-            }
-            else if ((block.Kind is not BBJ_CALLFINALLY) || (block.Target != eh.ebdHndBeg))
-            {
-                successors.Add(eh.ebdHndBeg);
-            }
-
-            if (eh.ebdEnclosingTryIndex == EHblkDsc.NO_ENCLOSING_INDEX)
-            {
-                break;
-            }
-
-            eh = ref ehGetDsc(eh.ebdEnclosingTryIndex);
-        }
-
-        _ = block.VisitEHEnclosedHandlerSecondPassSuccs(this, successor => {
+        _ = block.VisitAllSuccs(this, successor => {
             successors.Add(successor);
             return BasicBlockVisit.Continue;
-        });
+        }, useProfile);
 
         return successors;
     }
@@ -15480,8 +15426,55 @@ public partial class Compiler
     public PhaseStatus fgWasmVirtualIP() => PhaseStatus.MODIFIED_NOTHING;
 #endif
 
-    // TODO: Port phase - fgComputeDominators
-    protected PhaseStatus fgComputeDominators() => PhaseStatus.MODIFIED_NOTHING;
+    protected PhaseStatus fgComputeDominators()
+    {
+        _dfsTree ??= fgComputeDfs();
+        _domTree ??= FlowGraphDominatorTree.Build(_dfsTree);
+
+        var anyHandlers = false;
+
+        foreach (ref var handler in new EHClauses(this))
+        {
+            if (handler.HasFilter)
+            {
+                var filter = handler.ebdFilter;
+
+                if (_dfsTree.Contains(filter))
+                {
+                    filter.SetFlags(BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY);
+                    anyHandlers = true;
+                }
+            }
+
+            var entry = handler.ebdHndBeg;
+
+            if (_dfsTree.Contains(entry))
+            {
+                entry.SetFlags(BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY);
+                anyHandlers = true;
+            }
+        }
+
+        if (anyHandlers)
+        {
+            assert(_dfsTree.GetPostOrder(_dfsTree.PostOrderCount - 1) == fgFirstBB);
+
+            // Reverse postorder visits dominators before their descendants
+            // without the extra traversal of a dominator-tree walk.
+            for (var i = _dfsTree.PostOrderCount - 1; i != 0; i--)
+            {
+                var block = _dfsTree.GetPostOrder(i - 1);
+                assert(block.bbIDom is not null);
+
+                if (block.bbIDom.HasFlag(BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY))
+                {
+                    block.SetFlags(BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY);
+                }
+            }
+        }
+
+        return PhaseStatus.MODIFIED_NOTHING;
+    }
 
     // TODO: Port phase - fgInstrumentMethod
     protected PhaseStatus fgInstrumentMethod() => PhaseStatus.MODIFIED_NOTHING;

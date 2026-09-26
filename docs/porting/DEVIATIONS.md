@@ -49,6 +49,12 @@ C# helpers may replace native structure where appropriate. Examples include
 collection ordering, integer semantics, ownership, and native interop contracts.
 Larger algorithmic or architectural changes require separate approval.
 
+SSA memory maps use the existing managed node-identity dictionary. The caller's
+shared-memory flag selects the map kind before the inline root supplies storage,
+preserving native aliasing and ownership. Shared all-successor visitation retains
+native regular/EH order, early abort and callfinally-target suppression; it does
+not change the separate EH-only traversal.
+
 Constant-data sections own managed byte arrays, block-reference arrays or
 emitter-location arrays instead of a native payload union. The linked section
 order, logical offsets, alignment and payload-kind checks remain native.

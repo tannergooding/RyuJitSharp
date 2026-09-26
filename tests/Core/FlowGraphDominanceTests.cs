@@ -164,6 +164,77 @@ internal static unsafe class FlowGraphDominanceTests
         });
     }
 
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void DominatorPhasePropagatesReachableExceptionalEntries(bool filter, bool precomputed)
+    {
+        WithCompiler(compiler =>
+        {
+            var blocks = CreateGraph(compiler, [[1], [2], [], [4], [5], [2], [2], []]);
+            blocks[1].TryIndex = 0;
+            blocks[4].HndIndex = 0;
+            blocks[5].HndIndex = 0;
+            blocks[6].HndIndex = 1;
+            blocks[7].TryIndex = 1;
+
+            if (filter)
+            {
+                blocks[3].HndIndex = 0;
+            }
+
+            compiler.compHndBBtab = [
+                new EHblkDsc
+                {
+                    ebdHandlerType = filter ? EH_HANDLER_FILTER : EH_HANDLER_CATCH,
+                    ebdTryBeg = blocks[1],
+                    ebdTryLast = blocks[1],
+                    ebdHndBeg = blocks[4],
+                    ebdHndLast = blocks[5],
+                    ebdFilter = blocks[3],
+                    ebdEnclosingTryIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+                    ebdEnclosingHndIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+                },
+                new EHblkDsc
+                {
+                    ebdHandlerType = EH_HANDLER_CATCH,
+                    ebdTryBeg = blocks[7],
+                    ebdTryLast = blocks[7],
+                    ebdHndBeg = blocks[6],
+                    ebdHndLast = blocks[6],
+                    ebdEnclosingTryIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+                    ebdEnclosingHndIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+                },
+            ];
+            compiler.compHndBBtabCount = 2;
+
+            if (precomputed)
+            {
+                compiler._dfsTree = compiler.fgComputeDfs();
+                compiler._domTree = FlowGraphDominatorTree.Build(compiler._dfsTree);
+            }
+
+            var previousDfs = compiler._dfsTree;
+            var previousDominators = compiler._domTree;
+            Assert.That(ComputeDominatorsPhase(compiler), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(compiler._dfsTree, Is.Not.Null);
+            Assert.That(compiler._domTree, Is.Not.Null);
+
+            if (precomputed)
+            {
+                Assert.That(compiler._dfsTree, Is.SameAs(previousDfs));
+                Assert.That(compiler._domTree, Is.SameAs(previousDominators));
+            }
+
+            for (var i = 0; i < blocks.Length; i++)
+            {
+                Assert.That(blocks[i].HasFlag(BasicBlockFlags.BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY),
+                    Is.EqualTo((i is 4 or 5) || ((i == 3) && filter)), $"Block {i}");
+            }
+        });
+    }
+
     [Test]
     public static void DeepTreeWalkDoesNotUseTheCallStack()
     {
@@ -388,4 +459,7 @@ internal static unsafe class FlowGraphDominanceTests
 
         public void WalkTree(FlowGraphDominatorTree tree) => IDomTreeVisitor<CountingVisitor>.WalkTree(ref this, compiler, tree);
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgComputeDominators")]
+    private static extern PhaseStatus ComputeDominatorsPhase(Compiler compiler);
 }

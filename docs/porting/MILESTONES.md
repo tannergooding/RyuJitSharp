@@ -15,6 +15,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: SSA graph, memory and zero-initialization prerequisites
+
+The dominator phase now marks blocks dominated by exceptional entries. Shared
+successor traversal preserves regular and EH ordering, while memory SSA maps
+retain native inline-root ownership and GC-heap/byref aliasing.
+
+Redundant zero-initialization cleanup now handles first references, promoted
+fields, EH restrictions and potential GC safe points. These are prerequisites
+for the full SSA builder; PHI insertion and renaming are not yet activated.
+The established minopts corpus continues to execute managed-generated code
+under GC stress.
+
 ## 2026-09-25: Dominator trees and dominance frontiers
 
 The flow graph now supports native immediate-dominator construction, ordered

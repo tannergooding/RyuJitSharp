@@ -15,6 +15,72 @@ internal static unsafe class ExceptionalPredecessorTests
 {
     [TestCase(false)]
     [TestCase(true)]
+    public static void AllSuccessorsSkipRepeatedCallfinallyTargetButKeepOuterHandlers(bool abort)
+    {
+        WithCompiler(compiler =>
+        {
+            var blocks = CreateBlocks(compiler, BBJ_CALLFINALLY, BBJ_CALLFINALLYRET,
+                BBJ_EHFINALLYRET, BBJ_RETURN, BBJ_RETURN);
+            var call = blocks[0];
+            var tail = blocks[1];
+            call.TryIndex = 0;
+            tail.TryIndex = 0;
+            blocks[2].HndIndex = 0;
+            blocks[4].HndIndex = 1;
+            call.SetKindAndTargetEdge(BBJ_CALLFINALLY, new FlowEdge(call, blocks[2], null));
+            tail.SetKindAndTargetEdge(BBJ_CALLFINALLYRET, new FlowEdge(tail, blocks[3], null));
+            compiler.compHndBBtab = [
+                Clause(EH_HANDLER_FINALLY, call, blocks[2], blocks[2]),
+                Clause(EH_HANDLER_CATCH, call, blocks[4], blocks[4]),
+            ];
+            compiler.compHndBBtab[0].ebdEnclosingTryIndex = 1;
+            compiler.compHndBBtabCount = 2;
+            var visited = new List<int>();
+            var status = call.VisitAllSuccs(compiler, successor =>
+            {
+                visited.Add(successor.bbNum);
+
+                return abort ? BasicBlockVisit.Abort : BasicBlockVisit.Continue;
+            });
+            Assert.That(status, Is.EqualTo(abort ? BasicBlockVisit.Abort : BasicBlockVisit.Continue));
+            Assert.That(visited, Is.EqualTo(abort
+                ? new[] { blocks[2].bbNum } : [blocks[2].bbNum, blocks[4].bbNum]));
+
+            visited.Clear();
+            _ = tail.VisitAllSuccs(compiler, successor =>
+            {
+                visited.Add(successor.bbNum);
+
+                return BasicBlockVisit.Continue;
+            });
+            Assert.That(visited, Is.EqualTo((int[])[blocks[3].bbNum]));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void AllSuccessorEarlyAbortHonorsProfileOrder(bool useProfile)
+    {
+        WithCompiler(compiler =>
+        {
+            var blocks = CreateBlocks(compiler, BBJ_COND, BBJ_RETURN, BBJ_RETURN);
+            blocks[0].SetCond(
+                new FlowEdge(blocks[0], blocks[1], null) { Likelihood = 0.2 },
+                new FlowEdge(blocks[0], blocks[2], null) { Likelihood = 0.8 });
+            var visited = new List<int>();
+            var status = blocks[0].VisitAllSuccs(compiler, successor =>
+            {
+                visited.Add(successor.bbNum);
+
+                return BasicBlockVisit.Abort;
+            }, useProfile);
+            Assert.That(status, Is.EqualTo(BasicBlockVisit.Abort));
+            Assert.That(visited, Is.EqualTo((int[])[blocks[useProfile ? 1 : 2].bbNum]));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
     public static void NonHandlerPredecessorsAreReturnedWithoutCaching(bool hasPred)
     {
         WithCompiler(compiler => {

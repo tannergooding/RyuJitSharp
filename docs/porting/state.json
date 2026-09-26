@@ -29,28 +29,29 @@
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
           "files": "New LocalResolution partials and LinearScanLocalResolutionTests.cs; shared helpers require a reported need before edits.",
           "doneWhen": "Frozen complete local-reference resolution with actual isolated Debug/Release evidence and exact hashes; production allocation gate unchanged.",
-          "status": "in-progress",
-          "result": "Preceding block-location packet through turn8 is committed5639060."
+          "status": "reviewed-and-validated",
+          "result": "Local-reference resolution through turn9 is frozen and reviewed; integrated995Debug/871Release and32-method GCStress4 execution pass. Commit this returned packet next."
         },
         {
           "scope": "Complete native optRemoveRedundantZeroInits without activating the SSA phase.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "Compiler.RedundantZeroInit.cs and RedundantZeroInitTests.cs only.",
           "doneWhen": "Complete native function preserving first-reference, promoted-field, EH/GC and loop invariants; frozen isolated Debug/Release evidence.",
-          "status": "in-progress",
+          "status": "complete",
+          "result": "Through turn12, complete cleanup and IsPotentialGCSafePoint are reviewed and included in the SSA-prerequisite batch; worker48Debug/40Release and integrated995Debug/871Release pass.",
           "deferred": "SsaBuilder orchestration, full SSA activation and unowned compiler changes."
         },
         {
-          "scope": "Complete native SSA summaries, annotation constraints and annotated-node reachability.",
+          "scope": "Complete native SsaBuilder PHI insertion, local/memory renaming and EH propagation.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
-          "files": "Compiler.SsaDiagnostics.cs and SsaDiagnosticsTests.cs only.",
-          "doneWhen": "Frozen complete DEBUG diagnostics with native formatting and constraint identity, focused evidence and exact hashes.",
-          "status": "complete",
-          "result": "Wide-label diagnostic casts corrected before integration; combined SSA/rename/liveness tests pass347Debug/316Release."
+          "files": "New SsaBuilder partials except parent-owned SsaBuilder.Build.cs, plus SsaBuilderTests.cs.",
+          "doneWhen": "Complete ssabuilder.cpp:102-1172 with native ordering and identity, frozen source hashes and actual Debug/Release cases; leave shared phase drivers unchanged.",
+          "status": "in-progress",
+          "result": "Turn76 reported missing shared memory SSA APIs and VisitAllSuccs without edits. Those prerequisites are now supplied; turn77 resumed. Parent Build orchestration remains uncommitted and excluded from prerequisite validation."
         }
       ],
       "deferred": [
-        "Memory-phi traversal, map selection and the full value-numbering phase.",
+        "Value-numbering memory-phi traversal and the full value-numbering phase; SSA map selection is complete.",
         "General assertion propagation and full optimized allocation activation; parent may port prerequisite algorithms without bypassing the existing gate.",
         "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
         "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs. Native vector Intersects/XOR defects are recorded in B247/B246; their corrected algorithms are not authorized and those entire vector operations are deferred.",
@@ -59,11 +60,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Dominator/frontier construction and nonallocating IDomTreeVisitor are complete with673Debug/566Release in artifacts\\dominance-integration; local block locations are committed5639060. Resume complete SsaBuilder construction/PHI insertion/renaming and native fgSsaBuild orchestration, reusing the committed graph and rename-state APIs. Worker3a2c8d9b owns optRemoveRedundantZeroInits; worker610162a0 owns resolveLocalRef. Collect and integrate their frozen packets without duplicating work. Do not activate partial SSA or optimized allocation. Latest32-method GCStress4 execution remains artifacts\\memory-kind-validation; no production execution change in these prerequisite batches and no publication.",
+    "nextAction": "Commit the reviewed local-reference-resolution packet from610162a0 turn9, already covered by artifacts\\ssa-prerequisites-validation with995Debug/871Release and32 nonzero managed-code GCStress4 executions. Then collect d62fc6a5 turn77 on completion and integrate the complete SSA core with parent SsaBuilder.Build.cs; only wire fgSsaBuild after the full closure is ready. Shared dominator-phase, memory-map and successor APIs plus redundant-zero-init cleanup are complete. Native optimized standard/loop/EH references are captured; B259 records the old managed FullOpts FoldHardware lowering assertion without an established cause. Keep optimized allocation gated and do not publish.",
     "handoff": {
-      "status": "parallel-interval-and-ssa-prerequisites",
+      "status": "ssa-core-with-reviewed-local-resolution",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn8 is integrated5639060; now running complete resolveLocalRef. 3a2c8d9b through turn10 rename state is committed032c4c9; now running optRemoveRedundantZeroInits. d62fc6a5 through turn75 diagnostics is committed032c4c9 and idle/resolved. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn9 is reviewed/integration-validated and idle, awaiting local-resolution commit. 3a2c8d9b through turn12 zero-init cleanup is integrated and idle. d62fc6a5 through turn76 is collected; turn77 implements the SSA core using supplied shared APIs. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -79,6 +80,42 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "ssaPrerequisites": {
+        "nativeBoundary": "fgopt.cpp:171-223 fgComputeDominators; compiler.hpp:543-712 complete shared EH/all-successor traversal; compiler.h:12741-12758 memory SSA map ownership; optimizer.cpp:5765-6010 optRemoveRedundantZeroInits and compiler.hpp:3314-3338 IsPotentialGCSafePoint.",
+        "sourceManifest": "artifacts\\ssa-prerequisites-validation\\source-manifest.json",
+        "sourceManifestSha256": "A34458D3738F5A570A8F1B4CF0F8DEE75E00259C6A99315DFA827D76F015D486",
+        "snapshotBase": "5b3f0b7",
+        "rootSnapshotHashesMatch": true,
+        "overlayCount": 11,
+        "debugTests": "artifacts\\ssa-prerequisites-validation\\results\\ssa-prerequisites-debug.trx",
+        "releaseTests": "artifacts\\ssa-prerequisites-validation\\results\\ssa-prerequisites-release.trx",
+        "debugPassed": 995,
+        "releasePassed": 871,
+        "skipped": 0,
+        "selection": "FullyQualifiedName~FlowGraphDominanceTests|FullyQualifiedName~FlowGraphDfsTests|FullyQualifiedName~ExceptionalPredecessorTests|FullyQualifiedName~LinearScan|FullyQualifiedName~Ssa|FullyQualifiedName~RedundantZeroInitTests|FullyQualifiedName~Liveness",
+        "reproducer": "Archive snapshotBase, apply the11 manifest overlays, verify hashes and force Debug/Release builds with --no-restore --no-incremental -p:Platform=AnyCPU; test --no-restore --no-build with selection and actual TRX results. Restore only when snapshot assets are missing.",
+        "managedJit": "artifacts\\ssa-prerequisites-jit\\RyuJitSharp.dll",
+        "managedJitSha256": "784E8B92C3C3667E16E047AE6FACD1CE59D62F1B3D675294A352341FEDFC815B",
+        "executionResults": "artifacts\\ssa-prerequisites-validation\\execution-results.json",
+        "executionReproducer": "Publish the exact snapshot as Debug win-x64 NativeLib=Shared using the established environmental VC tools. Invoke-PortingCorpus.ps1 with this DLL, each preserved manifest's corpus/type/method set, -MinOpts -GcStress -ExecuteManagedCode and a fresh capture directory.",
+        "executedMethods": 32,
+        "corpusCounts": {"standard":20,"loop":4,"interiorAndPin":3,"eh":3,"filterAndNestedFinally":2},
+        "helperCollections": {"loop":12,"interiorAndPin":3,"eh":11,"filterAndNestedFinally":11},
+        "gen2Collections": {"loop":13,"interiorAndPin":5,"eh":20,"filterAndNestedFinally":18},
+        "zeroInitWorkerManifest": "artifacts\\redundant-zero-init-validation\\source-manifest.json",
+        "zeroInitWorkerDebugPassed": 48,
+        "zeroInitWorkerReleasePassed": 40,
+        "coverage": "Exceptional-entry dominance propagation and lazy graph caches; successor order/abort/callfinally behavior; inline-root memory SSA ownership and aliasing; complete zero-init first-reference, promoted-field, EH/GC and cycle rules. Integrated snapshot also includes the reviewed local-reference-resolution packet.",
+        "limitation": "All32 selected compilations contain exactly one nonzero code listing, exit0 without timeout/skip/failure and preserve payload/identity checks. Full SSA construction, optimized allocation and broad dump/code parity are not activated or claimed. SsaBuilder.Build.cs and in-progress worker SSA files are excluded."
+      },
+      "optimizedSsaReferences": {
+        "standard": "artifacts\\ssa-native-optimized",
+        "loops": "artifacts\\ssa-native-loops-optimized",
+        "eh": "artifacts\\ssa-native-eh-optimized",
+        "methodCounts": {"standard":19,"loops":4,"eh":3},
+        "failedOldManagedBaseline": "artifacts\\ssa-managed-before-optimized",
+        "limitation": "The previously published memory-kind DLL asserts during FullOpts FoldHardware lowering (B259);12 compilation headers include duplicate Main and do not form a valid full comparison. No root cause or optimized parity is claimed."
+      },
       "dominatorsAndFrontiers": {
         "nativeBoundary": "flowgraph.cpp:7094-7520 complete dominator/frontier classes; block.cpp:289-312 BlockDominancePreds; block.h:2453 DomTreeNode; compiler.h:13345-13420 nonrecursive DomTreeVisitor.",
         "sourceManifest": "artifacts\\dominance-integration\\source-manifest.json",
@@ -5657,6 +5694,13 @@
       "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.LocalBlockLocations.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalBlockLocationsHelpers.cs"],
       "reconciledCommit": null,
       "scope": "Complete Windows-AMD64 block-start/end locations and processBlockEndAllocation<true>, with required rotation/unassignment/dead-candidate helpers; optimized gate unchanged."
+    },
+    {
+      "area": "ssa-graph-memory-and-zero-init-prerequisites",
+      "native": ["src\\coreclr\\jit\\fgopt.cpp", "src\\coreclr\\jit\\compiler.h", "src\\coreclr\\jit\\compiler.hpp", "src\\coreclr\\jit\\optimizer.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.cs", "sources\\Core\\jit\\compiler\\Compiler.MemorySsa.cs", "sources\\Core\\jit\\block\\BasicBlock.ExceptionalSuccessors.cs", "sources\\Core\\jit\\compiler\\Compiler.RedundantZeroInit.cs"],
+      "reconciledCommit": null,
+      "scope": "Complete fgComputeDominators, memory SSA allocation/map access, VisitAllSuccs/shared EH traversal and optRemoveRedundantZeroInits/IsPotentialGCSafePoint; production SSA construction remains unactivated."
     },
     {
       "area": "saved-wip-lir-and-rationalization",
