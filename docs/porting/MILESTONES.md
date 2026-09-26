@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Multidimensional array morphing
+
+Array morphing now expands multidimensional element addresses into ordered
+lower-bound adjustments, per-dimension bounds checks and row-major address
+arithmetic. It preserves effectful index evaluation, unsigned widening before
+pointer-sized scaling, and temporary reuse between blocks.
+
+A selected rank-two method executes with both zero and nonzero lower bounds and
+rejects each dimension's lower and upper out-of-range indices. Its constructed
+and remorphed expressions and post-phase CFG/IR match native byte-for-byte.
+Established optimized and minopts/GC-stress corpora continue to execute.
+Higher-rank runtime coverage, pre-expansion rank/signature diagnostics and full
+generated-code parity remain open.
+
 ## 2026-09-26: Finally cloning and chain merging
 
 Finally optimization now shares callfinally chains with a common continuation

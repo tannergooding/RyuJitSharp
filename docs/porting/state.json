@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Activate the complete frozen native array-operation morphing closure after finally optimization, preserving dimension/evaluation/exception order, unsigned pointer-width scaling and node ownership. Integrate the frozen runtime-lookup expansion closure next.",
+      "scope": "Activate the complete frozen native runtime-lookup expansion closure after array morphing. Preserve helper selection, indirections/offsets, size/null guards, split/evaluation order, ownership, CFG/EH/profile metadata and debug flags.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
@@ -23,7 +23,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Finally activation/B306 correction complete:724D599R,26configs139bodies278phases.3a:125 confirms8/8byte-identical selected phase bodies, matching CFG/effects and runtime outcomes; B307 clone IDs and FinallyPair387/367size gap remain. Next activate reviewed array packet, then reviewed runtime lookup packet. CoreRoot free.",
+      "parentScope": "Array activation complete:4overlays732D607R,6old-stub failures/2controls and27configs140bodies140phases.6a:122 confirms byte-identical constructed/remorphed trees and post-phase CFG/IR; B301/B308 input diagnostics remain. Next activate frozen/reviewed runtime-lookup packet and select RuntimeLookupCases independently. CoreRoot free.",
       "parallelPackets": [
         {
           "scope": "Complete native finally cloning and callfinally-chain merging.",
@@ -36,8 +36,8 @@
           "scope": "Complete native array-operation morphing.",
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
           "files": "New Compiler.ArrayMorphing*.cs and ArrayMorphingTests.cs; parent owns existing entry.",
-          "status": "frozen-reviewed",
-          "remainingBoundary": "6a:121 frozen three-file closure on3790d32 covers morph.cpp15850-16263/compiler.h6250-6309;8Debug/8Release full analysis, parent verifies root/snapshot/receipt hashes.942:144 found no high-confidence defect. Activate actual public entry and route tests to it after primary commit. Positive native rank-two array morphing with nonzero lower bounds and four exception checks is frozen in artifacts\\array-runtime-lookup-probe\\evidence.json."
+          "status": "done",
+          "remainingBoundary": "6a:121 source/942:144 review/6a:122 comparison integrated.4overlays732D607R,6old-stub failures/2controls;27configs140bodies140phases. Constructed/remorphed trees and post-phase CFG/IR are byte-identical; B301/B308 pre-expansion diagnostics and broader runtime/code parity remain."
         },
         {
           "scope": "Complete native runtime-lookup expansion.",
@@ -386,11 +386,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Activate frozen/reviewed6a:121 array packet on the committed finally boundary. Rename private fgMorphArrayOpsCore to actual public fgMorphArrayOps, remove Compiler.fg.cs stub and route tests through public entry; prove old-stub regression, full-analysis Debug/Release, fresh NativeAOT and26-case matrix plus frozen two-method artifacts\\array-runtime-lookup-probe. Compare positive rank-two morphing to native. Then integrate d62:178 runtime-lookup packet/942:145 review similarly. Preserve queued source bytes until each activation. No publication.",
+    "nextAction": "Activate d62:178 runtime-lookup packet/942:145 review on the committed array boundary. Rename private fgExpandRuntimeLookupsCore to public fgExpandRuntimeLookups, remove Compiler.fg.cs stub and route tests to it; prove old-stub negative control, full-analysis Debug/Release and fresh NativeAOT. Carry27-case array matrix plus isolated RuntimeLookupCases from artifacts\\array-runtime-isolated-probe (native-lookup capture ready). Preserve lowering's expanded-lookup assertion; compare real null-check/helper expansion before commit. No publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "3a:124 finally source/610:89 review/3a:125 native comparison collected and integrated.6a:121 array source/942:144 review frozen and queued;d62:178 runtime lookup source/942:145 review frozen and queued. All5workers idle; no unread handoffs or app-native sessions. Preserve queued packet files outside each coherent commit. CoreRoot free.",
+      "workerPackets": "Finally integrated at d6be2fd.6a:121 array source/942:144 review/6a:122 comparison collected and integrated. d62:178 runtime lookup source/942:145 review frozen and queued. All5workers idle; no unread handoffs or app-native sessions. Preserve lookup packet outside array commit. CoreRoot free.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -406,6 +406,24 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "arrayMorphing": {
+        "snapshotBase": "d6be2fd",
+        "sourceManifest": "artifacts\\array-morphing-integration\\source-manifest.json",
+        "debugPassed": 732,
+        "releasePassed": 607,
+        "skipped": 0,
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\array-integrated-{Debug,Release}.trx",
+        "regressions": "6positive cases fail the old public stub;2phase/block-gating controls pass. Evidence array-entry-before.trx and artifacts\\array-morphing-integration\\entry-before.log.",
+        "review": "942:144 complete morph.cpp15850-16263/compiler.h6250-6309 review found no high-confidence defect or missing path.",
+        "nativeAot": "artifacts\\array-morphing-jit\\RyuJitSharp.dll",
+        "sha256": "BB7B87AFC6956C1EC5A8D21EB72BA72E694513F1E7760A89F8D02544CD06E47C",
+        "runtime": "artifacts\\array-morphing-integration\\runtime-validation.json:27configurations140positive bodies140array phase completions; exact selected methods/JIT hash/GCStress/no fallback verified.",
+        "configurations": "artifacts\\array-morphing-integration\\capture-configurations.json:prior26 plus isolated ArrayMorphingCases.Read.",
+        "nativeEvidence": "artifacts\\array-runtime-isolated-probe\\native-array",
+        "comparison": "artifacts\\array-morphing-integration\\native-phase-comparison.json:6a:122 confirms byte-identical35-line constructed expression,38-line remorphed expression and51-line post-phase CFG/IR, including temps, node IDs, bounds order, unsigned widening, scale and offset.",
+        "probeScope": "Distinct array and lookup types allow one selected managed method per phase. Original combined selector correctly hit lowering's unexpanded-runtime-lookup assertion after array checks completed; failure is retained, not a pass. Isolated Read capture exits0/stdout42,17,4,3; Lookup is unselected/native.",
+        "gaps": "Positive runtime uses rank2 with zero/nonzero lower bounds and4dimension failures. Rank3/effectful-index order and wide offsets have focused structural tests, not matching runtime probes. B301 signature/MethodHash, B308 pre-expansion rank display and phase-following profile diagnostics remain; no fullcode parity claim."
+      },
       "finallyOptimization": {
         "snapshotBase": "3790d32",
         "sourceManifest": "artifacts\\finally-cloning-integration\\source-manifest.json",
@@ -5934,6 +5952,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "array-operation-morphing",
+      "native": ["src\\coreclr\\jit\\morph.cpp:15850-16263", "src\\coreclr\\jit\\compiler.h:6250-6309"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.ArrayMorphing.cs", "sources\\Core\\jit\\compiler\\Compiler.ArrayMorphing.Visitor.cs"],
+      "status": "Complete production phase, multidimensional-array visitor and temporary cache. Selected rank-two execution and byte-identical constructed/remorphed/post-phase IR established. B301/B308 diagnostics and broader runtime/code parity remain open.",
+      "reconciledCommit": null
+    },
     {
       "area": "finally-cloning-and-chain-merging",
       "native": ["src\\coreclr\\jit\\fgehopt.cpp:1054-1647,1673-1808,2049-2302"],
