@@ -12,25 +12,25 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete VN intrinsic, memory-access, call and tree evaluation with loop-side-effect analysis and native phase/block/phi orchestration; activate only after the complete dependency closure is validated.",
+      "scope": "Preserve active native-faithful VN and complete assertion-propagation prerequisites: range analysis, relational/arithmetic application, VN-based folding and insertion-time morphing. Activate assertion propagation only after its complete dependency closure is validated.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
-        "Port complete native VN exception, intrinsic, memory-access and call functions with their required primitives; keep fgValueNumber inactive until its full traversal/dependency closure exists.",
+        "Preserve complete VN traversal/evaluation, native-order loop state and all fourteen established execution configurations while completing assertion dependencies.",
         "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Pair/exception/memory-state/array-parser closure committed44c8450 with391D388R and independent review. Parent owns VN reachability state and full phase/block/phi orchestration, plus shared integration. Workers own loop effects, tree evaluation and remaining intrinsic/memory/call closures. Do not activate a reduced fgValueNumber phase.",
+      "parentScope": "Full VN phase activated with815D767R, reviewed native-order loop collections and fourteen exact-source native-host captures. Parent owns shared integration and upcoming full assertion orchestration; workers own bounded range, relational/arithmetic and VN-folding/morph prerequisites. Do not activate reduced phases.",
       "parallelPackets": [
         {
           "scope": "Complete relational assertion application prerequisite, assertionprop.cpp4433-4910.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "New Compiler.ap.Relational.cs and AssertionRelationalTests.cs only.",
           "status": "in-progress",
-          "remainingBoundary": "3a through64 has complete lookup with5D5R but no full dispatcher/application: requires6a range analysis and RangeProperties. Parent completed shared IsVNRelop ref-output API with275D275R. Await native range APIs rather than add equality-only dispatch; no phase activation."
+          "remainingBoundary": "3a through67 has full relational family and32D32R provisional evidence; final freeze awaits6a stable range APIs. Shared IsVNRelop query is committed4490b27. No phase activation."
         },
         {
           "scope": "Complete native range-analysis prerequisite, then arithmetic/range/cast/bounds assertion application.",
@@ -42,16 +42,16 @@
         {
           "scope": "Complete VN-based assertion folding prerequisite.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
-          "files": "New Compiler.ap.VNFolding.cs and AssertionVNFoldingTests.cs only.",
+          "files": "New Compiler.ap.VNFolding.cs/AssertionVNFoldingTests.cs plus required Compiler.MorphBlockStmt.cs/MorphBlockStmtTests.cs.",
           "status": "in-progress",
-          "remainingBoundary": "Native assertionprop.cpp2652-3469: memory-call folds, call/general/constant folding and substitution profitability. No phase activation."
+          "remainingBoundary": "d62 through119: five independent call/profitability functions13D13R; full folder needs optVNConstantPropOnJTrue and insertion-time fgMorphBlockStmt. Ownership expanded to complete morph.cpp13451onward helper and assertionprop.cpp6514-6551 prerequisite; no whole-block morph substitute or phase activation."
         },
         {
           "scope": "Complete loop-side-effect analysis required by native fgValueNumber.",
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
           "files": "LoopSideEffects.cs, new Compiler.LoopSideEffects.cs and LoopSideEffectTests.cs.",
-          "status": "in-progress",
-          "remainingBoundary": "Native optimizer.cpp5219onward: constructor, whole-loop and block analysis, nested-loop havoc and liveness helpers. Preserve complete analysis; no phase activation."
+          "status": "done",
+          "remainingBoundary": "610 through53: complete loop analysis/invariance and native-order hash enumerators.942 reviewthrough85 clear. Integrated815D767R and all14native-host captures with production VN active."
         },
         {
           "scope": "Complete native fgValueNumberTree dispatcher at valuenum.cpp13370-14015.",
@@ -166,7 +166,7 @@
         }
       ],
       "deferred": [
-        "Full VN traversal/evaluation and assertion phases remain incomplete; map selection, diagnostics, memory-SSA ownership and memory-VN provenance are complete.",
+        "Full assertion phase remains incomplete; VN traversal/evaluation, loop effects, diagnostics and phase orchestration are active.",
         "General assertion propagation and broader optimized execution beyond the current backend frontier.",
         "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
         "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs. Native vector Intersects/XOR defects are recorded in B247/B246; their corrected algorithms are not authorized and those entire vector operations are deferred.",
@@ -176,11 +176,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Tree/intrinsic/reachability committedff3b847 with584D543R. Await610 full loop-analysis/invariance handoff and native-order field/array collection API.942 phase fixture through84 has1passing/4expected-failing cases against the old production stub; artifacts\\vn-phase-tests-validation\\Debug-stub.trx. Parent Compiler.ValueNumber.cs has complete unbuilt draft phase (temporary fgValueNumberCore), Blocks/Block/PhiDef and memory-loop initialization, with IsOSR property and native TYP_UNKNOWN default corrected. Adapt provisional collection enumeration to610 contract and validate complete phase, then rename core/remove stub at activation. Publish locally and preserve14runtime configurations.3a/6a/d62 now own independent assertion prerequisites. No remote publication.",
+    "nextAction": "Full VN phase is active and exact-source validated815D767R plus14native-host configurations using artifacts\\vn-phase-final-jit\\RyuJitSharp.dll. Counted entry V02/2 receives native zeroVN; final raw loop dumps still differ in cloneIDs/traversal, and assertion substitution remains next. Collect6a complete range-analysis freeze, then3a final relational andd62 complete VN-folding/insertion-time morph packets; integrate dependency-coherently. Parent next native closure is full optAssertionPropMain/dataflow/dispatch after required callees, not an equality-only phase. Preserve14capture configurations; no remote publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Collected memory/phase942:84, intrinsic6a:68, dispatcher3a:63, reviewd62:115 and loop610:43. Memory/calls committedcc5a9f0, tree/intrinsic/reachability committedff3b847.610 continues full loop analysis;942 phase fixtures await declared source overlay. Reused3a/6a/d62 for independent assertion prerequisites after committing their VN packets. Parent owns CoreRoot, currently free. No app-native sessions.",
+      "workerPackets": "Collected loop610:53, phasefixture942:86, relational3a:67, rangeblocker6a:69, foldingd62:119.610/942 VN packets integrated and resolved;3a awaits6a final range freeze;6a owns range closure then arithmetic;d62 owns folding plus insertion-time morph prerequisite. Parent owns CoreRoot, currently free. No app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -196,6 +196,22 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "vnPhaseActivation": {
+        "snapshotBase": "4490b27",
+        "sourceManifest": "artifacts\\vn-phase-validation\\source-manifest-final.json",
+        "debugPassed": 815,
+        "releasePassed": 767,
+        "skipped": 0,
+        "selector": "FullyQualifiedName~Ssa|FullyQualifiedName~ValueNum|FullyQualifiedName~Loop",
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\vn-phase-final-{Debug,Release}.trx",
+        "nativeAot": "artifacts\\vn-phase-final-jit\\RyuJitSharp.dll",
+        "runtimeEvidence": "artifacts\\vn-phase-validation\\runtime-validation-final.json",
+        "runtime": "All14 configurations have unique nonzero managed-generated bodies with exactJIT/source hashes, no skipped/fallback markers; all55 selected FullOpts compilations complete VN. MinOpts GCStress behavior retained; stack allocation enabled throughout.",
+        "comparison": "artifacts\\vn-phase-validation\\aligned-loop-comparison-final.json: Counted entry V02/2 is $40{IntCns0} in both compilers. Native/managed sizes17/17,29/38,26/26,104/101 forCounted/Nested/Conditional/Mix. No exact raw VN phase matches; first differences are cloneIDs or loop-block traversal.",
+        "regression": "B279 operator display names: exact-text assertion fails beforefix at vn-opname-before.trx; final tests/captures corrected. Five phase cases fail4/5 against oldstub andpass5/5 with realDFS/natural-loop setup and fullphase.",
+        "review": "942 through85 reviewed610 native-order hash traversal, loop effects and invariance; no high-confidence defect.",
+        "scope": "Complete native VN phase, block/phi/memory-loop orchestration, loop-side-effect analysis and invariant query. Assertion/range WIP excluded from snapshot."
+      },
       "vnRelationalQuery": {
         "snapshotBase": "ff3b847",
         "sourceManifest": "artifacts\\vn-memory-state-validation\\relop-query-source-manifest.json",
@@ -5242,6 +5258,14 @@
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
       "status": "Complete native WindowsAMD64 portable/special import and24constructor dependencies. Load/store reuse existing value factories; remaining generic dispatcher is not activated."
+    },
+    {
+      "area": "vn-phase-loop-closure",
+      "native": ["src\\coreclr\\jit\\valuenum.cpp:11844-12565", "src\\coreclr\\jit\\optimizer.cpp:4299-4341,5048-5149,5209-5251,5288-5594", "src\\coreclr\\jit\\compiler.h:2672-2708", "src\\coreclr\\jit\\jithashtable.h:38-47,466-540,671-686,727-817,883-893"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.ValueNumber.cs", "sources\\Core\\jit\\compiler\\Compiler.LoopSideEffects.cs", "sources\\Core\\jit\\compiler\\LoopSideEffects.cs", "sources\\Core\\jit\\compiler\\FieldKindForVN.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete VN phase active,815D767R and14exact-source native-host captures. No full dump/code parity claim."
     },
     {
       "area": "vn-tree-intrinsic-closure",

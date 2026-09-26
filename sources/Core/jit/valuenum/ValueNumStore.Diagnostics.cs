@@ -487,12 +487,12 @@ public sealed partial class ValueNumStore
 
     private static string FuncName(VNFunc func)
     {
-        var name = func.ToString();
         if (func < VNF_Boundary)
         {
-            return name.StartsWith("VNF_", StringComparison.Ordinal) ? $"GT_{name[4..]}" : name;
+            return ((genTreeOps)func).Name;
         }
 
+        var name = func.ToString();
         return name.StartsWith("VNF_", StringComparison.Ordinal) ? name[4..] : name;
     }
 

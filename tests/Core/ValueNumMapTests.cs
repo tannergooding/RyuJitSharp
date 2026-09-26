@@ -344,7 +344,7 @@ internal static unsafe class ValueNumMapTests
                 Assert.That(actual, Does.Contain($": {layout.ClassName})"));
                 Assert.That(actual, Does.Contain("BitCast<int <- struct>("));
                 Assert.That(actual, Does.Contain("long <- int"));
-                Assert.That(actual, Does.Contain("GT_ADD("));
+                Assert.That(actual, Does.Contain("{ADD("));
                 Assert.That(actual, Does.Contain("PtrToLoc("));
                 Assert.That(actual, Does.Contain($"norm=${value:x}"));
                 Assert.That(actual, Does.Contain($", exc=${exceptions:x}("));

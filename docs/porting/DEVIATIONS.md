@@ -294,8 +294,7 @@ report overflow, including narrowing to infinity (B066).
 value equality. Its native signed-domain interpretation is unchanged, including
 unsigned cast inputs whose bit patterns appear negative before widening.
 Tree-based non-negativity inference and the conservative-VN fallback are active.
-The VN predicate follows native phi traversal and intrinsic rules (B086/B091);
-this does not activate the broader value-numbering phase.
+The VN predicate follows native phi traversal and intrinsic rules (B086/B091).
 
 Binary VN constant evaluation includes native eligibility and exception guards,
 numeric casts and bitcasts. Binary interning, algebraic identities and VM type
@@ -303,8 +302,8 @@ comparisons are implemented, preserving constant-interning order and runtime
 definite/unknown answers. Related-comparison tables retain native entries and
 ordering. Scalable ARM64 all-bits constants explicitly report NYI. Ternary and
 quaternary interning use the existing chunk/app storage and preserve variable
-arity and `MapStore`'s fourth-argument exception contract. Map selection and the
-full VN phase remain incomplete.
+arity and `MapStore`'s fourth-argument exception contract. Map selection and full
+VN phase orchestration are implemented.
 
 Assertion descriptors use immutable managed objects with value-type operands;
 reversal creates a new descriptor. Vector constants own a copied byte array
@@ -536,14 +535,21 @@ use target-pointer width, not the host-sized `VNForIntPtrCon` API.
 Physical loads retain native's unsigned offset truncation before the
 whole-location check; the later bounds check still uses the original signed
 offset (B278). Pointer extension uses native host-sized offsets and preserves
-the source liberal exception set. Call and memory numbering are implemented,
-but their presence does not activate the full VN phase.
+the source liberal exception set. Call and memory numbering use these contracts
+in the active VN phase.
 
-Tree dispatch and Windows-x64 math/hardware-intrinsic VN evaluators are complete.
-Reachability uses normal liberal branch values and retains shared-edge behavior;
-later redundant-branch optimization still owns removal of proven-dead edges.
-Per-loop effect storage is an array, matching native indexing. Full VN phase
-orchestration and execution validation remain separate from these prerequisites.
+Tree dispatch, Windows-x64 math/hardware-intrinsic evaluators and full VN phase
+orchestration are active. Reachability uses normal liberal branch values and
+retains shared-edge behavior; later redundant-branch optimization still owns
+removal of proven-dead edges. Per-loop effect storage is an array, matching
+native indexing.
+
+Loop field/element maps retain managed membership storage but expose native-order
+enumerators that reproduce bucket traversal, collision-chain order and rehashing,
+including growth before overwrite lookup. VN allocation consumes those
+enumerators, not dictionary iteration. Phase execution is established for the
+selected corpora; clone numbering, loop-block traversal and later optimization
+differences prevent a full dump/code parity claim.
 
 Checked-bound/index registries use managed membership sets; no enumeration order
 is observed. Unsigned comparison results use a readonly record and failed queries

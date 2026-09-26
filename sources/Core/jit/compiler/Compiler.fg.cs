@@ -15439,8 +15439,6 @@ public partial class Compiler
     }
 
     // TODO: Port phase - fgValueNumber
-    public PhaseStatus fgValueNumber() => PhaseStatus.MODIFIED_NOTHING;
-
     // TODO: Port phase - fgVNBasedIntrinsicExpansion
     public PhaseStatus fgVNBasedIntrinsicExpansion() => PhaseStatus.MODIFIED_NOTHING;
 

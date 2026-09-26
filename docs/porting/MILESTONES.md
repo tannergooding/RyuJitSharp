@@ -15,6 +15,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Value-numbering phase activation
+
+The full VN phase now numbers initial SSA values, local and memory phis, loop
+effects and statement trees in native order. Loop-header refinement retains
+invariant values, and modified-location maps preserve native hash traversal
+when allocating new value numbers.
+
+The established scalar, loop, object and hardware corpora execute with VN
+enabled, including optimized and minopts GC stress. `Counted` now receives
+native's zero value number for its entry induction-variable read; assertion
+propagation remains necessary to substitute that value into the comparison.
+
+VN diagnostics use native operator names rather than enum prefixes. Full dump
+and code parity remain open: raw loop comparisons still differ in clone IDs or
+block traversal, and some generated bodies differ in size.
+
 ## 2026-09-26: VN tree and intrinsic evaluation
 
 The complete Windows-x64 tree-numbering dispatcher now connects arithmetic,

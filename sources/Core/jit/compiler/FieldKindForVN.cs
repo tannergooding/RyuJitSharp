@@ -7,4 +7,6 @@ namespace RyuJitSharp;
 
 public enum FieldKindForVN
 {
+    SimpleStatic,
+    WithBaseAddr,
 }
