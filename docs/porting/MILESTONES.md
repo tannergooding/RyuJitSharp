@@ -15,6 +15,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Random and replay CSE
+
+Debug CSE policies now support native-seeded random selection and configured
+candidate replay. Replay and learning-based modes share the native integer
+configuration parser, including its adjacent-minus tokenization, wrapping
+arithmetic and persistent sign behavior.
+
+These complete policy prerequisites do not activate production CSE. Learning-based
+modes and the full phase dispatcher remain the next integration boundary.
+
 ## 2026-09-26: Parameterized CSE
 
 Parameterized CSE now computes the native feature vector and scores candidate

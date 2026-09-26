@@ -23,7 +23,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Parameterized/greedy5 integrated83D83R on8a251a0 with clear942:116 native review. Commit the complete family before integrating revised Random/Replay+ConfigIntArray5 (d62:152,55D29R). RLHook/RL remain in progress; public CSE inactive.",
+      "parentScope": "Corrected Random/Replay+ConfigIntArray5 integrated112D83R on c1cca5a; B295 fixed with three failing-before cases. RLHook/RL5 frozen and under native review. Parent preparing full CSE factory/phase/wrapper closure; production entry remains inactive until all families integrate.",
       "parallelPackets": [
         {
           "scope": "Complete Boolean optimization with the native CCMP switch-detection prerequisite.",
@@ -63,16 +63,16 @@
         {
           "scope": "Complete native Debug random and replay CSE heuristics.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
-          "files": "New CSE_HeuristicRandom*.cs, CSE_HeuristicReplay*.cs and focused tests.",
-          "status": "in-progress",
-          "remainingBoundary": "Revised five-file packetd62:152 frozen55D29R on8a251a0, including canonical ConfigIntArray shared with RL; private parser removed.942 reviewing mode and native parser semantics. Integrate revised manifest only, not initial3-file packet."
+          "files": "CSE_HeuristicRandom.cs, CSE_HeuristicReplay.cs, ConfigIntArray.cs and two focused test files.",
+          "status": "done",
+          "remainingBoundary": "Corrected d62:153 five-file packet integrated112D83R on c1cca5a. B295 adjacent-minus cursor fixed in both passes with three failing-before cases; native persistent sign B296 preserved. Public CSE inactive."
         },
         {
           "scope": "Complete native Debug RLHook and RL CSE heuristics.",
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
           "files": "New matching optcse partials and focused tests.",
           "status": "in-progress",
-          "remainingBoundary": "Native optcse.h257-332/optcse.cpp3005-3954 on f210170+standard15. Coordinate feature APIs with3a; preserve numerical policy and diagnostics. No changes to frozen standard15 or production dispatcher."
+          "remainingBoundary": "Frozen five-file family, unchanged through6a:107; corrected helper compatibility81D40R on c1cca5a. Exact ten overlays in artifacts\\cse-validation\\rl-c1cca5a-source-manifest.json.942 reviewing native numerical policy, ordering and diagnostics before parent integration."
         },
         {
           "scope": "Complete native if-conversion descriptor, transforms and production phase.",
@@ -281,11 +281,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Integrate revised Random/Replay+ConfigIntArray5 from artifacts\\cse-modes-validation\\source-manifest.json (d62:152,55D29R;942 review pending). Parameterized5 integrated83D83R on8a251a0 at artifacts\\cse-parameterized-integration\\source-manifest.json. Collect6a RLHook/RL next. Parent owns full native factory/phase wiring at optcse.cpp5541-5730; do not activate standard-only CSE. Existing native positive coverage records13 promotions and phi cases in artifacts\\cse-standard-integration\\native-positive-coverage.json; reuse20 configs. Latest JIT remains cse-standard-jit. Preserve B293/B294. CoreRoot free; no publication.",
+    "nextAction": "Commit corrected modes5 plus tracking after942 confirms B295 fix; integrated112D83R on c1cca5a, exact artifacts\\cse-modes-integration\\source-manifest.json. Then collect942 RL5 review and integrate frozen6a:107 packet. Parent Compiler.CSE.Phase.cs WIP includes native factory/phase and real production wrapper/cleanup (optcse.cpp5541-5764,5827-5863,5922-5935); old stubs still present until activation integration.610 owns CSEPhaseTests.cs. Native optIsCSEcandidate consumer belongs to still-unported optHoistLoopBlocks; do not add partial hoisting. Reuse20 configs/native13-promotion coverage for activation. CoreRoot free; no publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Collected3a:94-97 parameterized5 and942:116 clear review; integrated83D83R. Collectedd62:152 revised modes/parser5;942 reviewing.6a RLHook/RL active;3a/d62/610 idle. Native13-promotion coverage persisted by942:115. Fast wrappers committedc9c6ecb. CoreRoot free; no app-native sessions.",
+      "workerPackets": "d62:153 corrected modes5 frozen58D29R and integrated112D83R.6a:107 RL5 frozen81D40R against corrected helper;942 reviewing fix and RL.610 preparing production phase/dispatch tests; parent owns factory and phase implementation.3a/d62/6a otherwise idle. CoreRoot free; no app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -301,6 +301,17 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "randomReplayCse": {
+        "snapshotBase": "c1cca5a",
+        "sourceManifest": "artifacts\\cse-modes-integration\\source-manifest.json",
+        "debugPassed": 112,
+        "releasePassed": 83,
+        "skipped": 0,
+        "selection": "CSE heuristics, candidates, existing/incremental SSA, register-copy and integer parser cases.",
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\cse-modes-corrected-full-{Debug,Release}.trx",
+        "scope": "Complete Debug Random/Replay and ConfigIntArray prerequisites; public CSE remains inactive.",
+        "regressions": "B295: adjacent-minus parser cases 1-2,3 and 1-,2 plus Replay candidate behavior fail before correction. Pinned persistent sign and wrapping arithmetic retained."
+      },
       "parameterizedCse": {
         "snapshotBase": "8a251a0",
         "sourceManifest": "artifacts\\cse-parameterized-integration\\source-manifest.json",
@@ -6761,6 +6772,13 @@
       "native": ["src\\coreclr\\jit\\optimizebools.cpp:20-429,450-1486,1619-1883", "src\\coreclr\\jit\\switchrecognition.cpp:70-103,123-194,212-344,366-478"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.BooleanOptimization*.cs", "sources\\Core\\jit\\compiler\\Compiler.SwitchRecognition.Detection.cs", "sources\\Core\\jit\\compiler\\Compiler.SwitchOptimization.cs:fgFoldCondToReturnBlock"],
       "status": "Complete Boolean phase active. Its switch dependency remains an explicit complete detection-only entry; the complete conversion-mode phase is now separately active.",
+      "reconciledCommit": null
+    },
+    {
+      "area": "random-replay-cse-heuristics",
+      "native": ["src\\coreclr\\jit\\optcse.h:128-170", "src\\coreclr\\jit\\optcse.cpp:2095-2298", "src\\coreclr\\jit\\utils.cpp:918-993"],
+      "csharp": ["sources\\Core\\jit\\optcse\\CSE_HeuristicRandom.cs", "sources\\Core\\jit\\optcse\\CSE_HeuristicReplay.cs", "sources\\Core\\jit\\utils\\ConfigIntArray.cs"],
+      "status": "Complete Debug Random/Replay policies and shared integer configuration parser. Native adjacent-minus cursor, persistent sign, wrapping and initialization semantics retained. Production phase remains inactive.",
       "reconciledCommit": null
     },
     {
