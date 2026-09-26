@@ -34,7 +34,9 @@
           "scope": "Port complete binary scalar VN evaluation and comparison primitives without activating the VN phase or an incomplete folding dispatcher.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "New ValueNumStore.BinaryEvaluation.cs and ValueNumBinaryEvaluationTests.cs.",
-          "doneWhen": "Preserve native numeric semantics across integer boundaries, shifts, comparisons, NaN and signed zero; validate complete functions in Debug/Release before a separate commit."
+          "doneWhen": "Preserve native numeric semantics across integer boundaries, shifts, comparisons, NaN and signed zero; validate complete functions in Debug/Release before a separate commit.",
+          "status": "complete",
+          "deferred": "EvalFuncForConstantFPArgs and binary VNForFunc dispatch require unported folding predicates and comparison dispatch; no partial wrapper or phase activation is included."
         },
         {
           "scope": "Complete unaffected native hash-vector set algebra without porting disputed vector Intersects/XOR or countBits/setLowest APIs, or activating an optimization phase.",
@@ -55,11 +57,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Collect isolated lifetime validation from610162a0 and numeric review/validation from3a2c8d9b. Their snapshots use e030e2e plus only owned overlays. Commit complete packets separately; republish and rerun minopts GCStress4 after lowering changes. The narrowed hash-vector packet is complete with40Debug/40Release, matching root/snapshot hashes and B246/B247 tracking the deferred native defects. 6a004941 through turn35,942a496f through turn61 and d62fc6a5 through turn64 are resolved/frozen. B245 and relocation-identity gaps remain; do not activate optimized allocation/VN or publish.",
+    "nextAction": "Lifetime cleanup from610162a0 through turn1 is frozen and validated58Debug/54Release against e030e2e. Numeric primitives from3a2c8d9b through turn2 are reviewed/validated151binary+14unary per configuration; Windows-only probe expectations are correctly target-guarded. Root integrated selection passes263Debug/259Release. Finish retaining the numeric expression probe (artifacts-only worker3a2c8d9b), then publish fresh NativeAOT source and rerun minopts GCStress4 before committing lifetime cleanup. Hash-vector packet committed ed1695b; numeric source packet accompanies this checkpoint. Other workers are collected/frozen. Preserve B245/B246/B247 and relocation-identity gaps; do not activate optimized allocation/VN or publish.",
     "handoff": {
       "status": "parallel-prerequisite-integration",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "6a004941 through turn35 returned narrowed hash-vector algebra and40Debug/40Release from artifacts\\hash-vector-validation; hashes match and packet is frozen. 610162a0 through turn0 owns lifetime cleanup/tests and artifacts\\lowering-lifetime-validation. 3a2c8d9b through turn0 owns binary VN primitives/tests, numeric review corrections and artifacts\\vn-binary-validation. Validation snapshots use e030e2e plus owned overlays and independent outputs. 942a496f through turn61 and d62fc6a5 through turn64 are collected/frozen with no outstanding work. Parent reviews complete packets, maintains tracking and commits separately. No app-native child-session coordination.",
+      "workerPackets": "6a004941 through turn35 is committed/frozen. 610162a0 through turn1 returned validated lifetime cleanup; parent owns runtime integration and commit. 3a2c8d9b through turn2 returned validated numeric primitives; root test guards were added and integrated tests pass, source is frozen, and worker only retains reproducible artifacts\\vn-binary-native-probe evidence. 942a496f through turn61 and d62fc6a5 through turn64 are resolved. All code packets are collected; no app-native child-session coordination.",
       "preserve": "Production lowering supports the complete no-local-lifetimes mode, allocation supports minopts without enregistered locals, and Windows-AMD64 generation/emission/metadata execute the selected corpus. Keep unsupported optional modes explicit; do not infer optimized, other-target or GC-stress parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -75,6 +77,26 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "binaryVnEvaluation": {
+        "debugBinaryPassed": 151,
+        "releaseBinaryPassed": 151,
+        "debugUnaryPassed": 14,
+        "releaseUnaryPassed": 14,
+        "skipped": 0,
+        "nativeBoundaries": "valuenum.cpp:611-986 binary EvalOp/EvalOpSpecialized/EvalComparison, plus FloatTraits/DoubleTraits/FpAdd/FpSub/FpMul/FpDiv/FpRem at34-249.",
+        "snapshotBase": "e030e2e",
+        "snapshot": "artifacts\\vn-binary-validation",
+        "integratedDebugTests": "artifacts\\parallel-prerequisites-debug.trx",
+        "integratedReleaseTests": "artifacts\\parallel-prerequisites-release.trx",
+        "integratedDebugPassed": 263,
+        "integratedReleasePassed": 259,
+        "integratedSelection": "LoweringPhaseTests|LivenessOrchestrationLIRTests|FlowGraphUpdateTests|HashBvSetAlgebraTests|HashBitVectorTests|ValueNumBinaryEvaluationTests|UnaryIntValueNumbersUseNativeWidth|UnaryLongValueNumbersUseNativeWidth|UnaryFloatingNegationPreservesPayloadAndFlipsSign|UnaryInterningCancelsDoubleNotAndRetainsStableFunctionViews; prefix each with FullyQualifiedName~.",
+        "sourceSha256": "23DA0054F2BABABA42E436D6AB2001B4FE047FAF229C66CA160C1E8CD3EFD918",
+        "testsSha256": "211FA7C61C8CA91AE181D7FC0F051BAD406EC3BDA6A30EB74A98120BDAEA7B17",
+        "coverage": "Native int/INT64/size_t/float/double instantiations, wrapping arithmetic, unsigned division/comparisons, shifts/rotates, signed zero, NaN payload/sign and unordered comparisons. WINDOW_AMD64-specific expectations are guarded by WINDOWS_AMD64_ABI; the integrated TRX confirms all151binary cases execute on the primary target.",
+        "preconditions": "Zero divisors, signed-minimum/-1 division and checked overflows are excluded by the native caller. Checked size_t paths are unreachable per utils.h:1159-1163. Native32-bit overshifts/rotate pairs include C++ undefined cases; the Windows-x64 expression probe is target-specific evidence, not a portable guarantee or native-JIT parity claim.",
+        "remaining": "Full binary VN folding dispatch, EvalFuncForConstantFPArgs closure and the VN phase remain unported."
+      },
       "hashVectorSetAlgebra": {
         "debugPassed": 40,
         "releasePassed": 40,

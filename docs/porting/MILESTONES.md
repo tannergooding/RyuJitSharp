@@ -16,6 +16,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Binary value-number evaluation primitives
+
+Value numbering now has complete scalar binary arithmetic and comparison
+primitives for the native integer, native-sized and floating-point
+instantiations. They preserve wrapping arithmetic, unsigned ordering, valid
+division and checked-overflow preconditions, signed zero and target-specific
+NaN behavior.
+
+The binary folding dispatcher and value-numbering phase remain unactivated.
+These primitives are prerequisites, not evidence of optimized execution.
+
 ## 2026-09-25: Hash-vector set operations
 
 Sparse hash vectors now support native AND, OR, subtraction, comparison,
