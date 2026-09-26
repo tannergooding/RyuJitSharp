@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete loop-hoisting activation and continue early propagation. CSE, if-conversion, loop cloning, Boolean optimization and switch recognition are active. Keep each remaining phase inactive until its complete native dependency closure and execution validation.",
+      "scope": "Activate complete bounds-check coalescing after committed early propagation and loop hoisting. Preserve native ordering, conservative VN grouping and exception barriers. Positive unit transformations and negative-control invariants are established; two distinct runtime probes remain negative, so record that gap rather than broadening probe research.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
@@ -23,7 +23,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Early propagation4 integrated231D151R and20configurations124bodies78phases.3a:111 native comparison confirms matching range1 and fixed-array8 check removals, retained effects and unchanged range/Boolean/switch methods. Commit, then integrate reviewed d62 bounds-coalescing2.",
+      "parentScope": "Coalescing3 integrated250D170R; JITFFE23B0E executes20configs124bodies78phases plus array4/span2 bodies.3a:115 confirms native-matching no-change, barriers and exception outcomes. Positive runtime strengthening remains unestablished; focused positive/invariant tests pass. Commit coherent batch then continue next optimization closure.",
       "parallelPackets": [
         {
           "scope": "Complete Boolean optimization with the native CCMP switch-detection prerequisite.",
@@ -99,8 +99,8 @@
           "scope": "Complete native bounds-check coalescing and required local helper closure.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "New Compiler.BoundsCheckCoalescing*.cs and BoundsCheckCoalescingTests.cs; parent owns existing optBoundsCheckCoalesce stub.",
-          "status": "in-progress",
-          "remainingBoundary": "d62:158 frozen2files16D16R in artifacts\\bounds-coalescing-validation\\source-manifest.json;942:133 native review clear. Native diagnostic ordering negative control passes after correction. Await parent integration after earlyprop commit; public phase inactive."
+          "status": "done",
+          "remainingBoundary": "Parent activation3 integrated250D170R/20configs124bodies78phases plus frozen array4/span2 bodies. d62:159 finaltests19D19R with two targeted bypass failures;942:133 review clear.3a:115 confirms native-matching negative/barrier/runtime outcomes; positive runtime strengthening unestablished. B304 fixed."
         },
         {
           "scope": "Complete native if-conversion descriptor, transforms and production phase.",
@@ -309,11 +309,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit validated earlyprop4 plus tracking, then integrate frozen/reviewed d62:158 bounds-coalescing2 via public optBoundsCheckCoalesce at Compiler.comp.cs:3618. Earlyprop231D151R/20configs124bodies78phases and3a:111 native positive comparison complete. For coalescing, rename private core to public production name, remove Compiler.opt.cs stub, use direct production tests, and validate on the new committed baseline. Preserve phase order; no publication.",
+    "nextAction": "Commit validated coalescing3 plus tracking;3a:115 final native comparison collected.250D170R,20configs124bodies78phases plus array4/span2 executions and barrier outcomes pass. Positive runtime strengthening remains unestablished and is recorded, not a blocker for further phase porting. Manifest source3 and snapshot inventory verified. Then port complete optRangeCheckCloning closure using the actual production callsite, with independent prerequisite work where useful; preserve phase ordering and no publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Earlyprop3a:109 packet,942:132 review and3a:111 native comparison collected. d62:158 bounds-coalescing2 frozen and942:133 review collected. All workers idle with no unread results. CoreRoot free; no app-native sessions.",
+      "workerPackets": "Coalescing d62:159 tests,942:133 review and3a:115 final native/runtime comparison collected. All retained workers idle with no unread results. CoreRoot free; no app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -329,6 +329,23 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "boundsCheckCoalescing": {
+        "snapshotBase": "6e88266",
+        "sourceManifest": "artifacts\\bounds-coalescing-integration\\source-manifest.json",
+        "nativeAotInputs": "artifacts\\bounds-coalescing-integration\\aot-source-manifest.json:compiler inputs unchanged by subsequent tests-only coverage additions.",
+        "debugPassed": 250,
+        "releasePassed": 170,
+        "skipped": 0,
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\coalescing-integrated-{Debug,Release}.trx",
+        "nativeAot": "artifacts\\bounds-coalescing-jit\\RyuJitSharp.dll",
+        "sha256": "FFE23B0E35B42F8D63020EE0E8A6C24AC9A66B970122B76E5E7AA6520F9C3FEF",
+        "runtime": "artifacts\\bounds-coalescing-integration\\runtime-validation.json:20configurations,124positive bodies,78coalescing completions; managed execution without fallback.",
+        "regressions": "Public-entry strengthening case fails at old stub. Handler-live bypass fails1/5localstore cases; raw-VN grouping bypass fails new exception-bearing-VN case. Native diagnostic field-order case fails before B304 correction.",
+        "review": "942:133 complete native review found no high-confidence defect/missing path; both identified focused gaps closed by d62:159.",
+        "additionalRuntime": "artifacts\\bounds-coalescing-integration\\probe-runtime-validation.json:array4/span2 bodies execute with exact frozen corpus hashes and no fallback; zero strengthenings on both JITs.",
+        "comparison": "artifacts\\bounds-coalescing-integration\\native-phase-comparison.json:all6native/6managed probe phases unchanged; exact indices and ordering/exception barriers retained. Array exception/division ordering and handler-visible0/17 outcomes match; both probes exit0/stdout12.",
+        "gaps": "Dedicated arrayprobe has ARR_ADDR ordering barriers; spanprobe has potentially throwing value-load barriers. Neither provides positive strengthening execution; no positive-runtime or codegen-parity claim."
+      },
       "earlyPropagation": {
         "snapshotBase": "16b2066",
         "sourceManifest": "artifacts\\early-propagation-integration\\source-manifest.json",
@@ -5709,6 +5726,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "bounds-check-coalescing",
+      "native": ["src\\coreclr\\jit\\boundscheckcoalesce.cpp:31-43,47-109,116-273"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.BoundsCheckCoalescing.cs"],
+      "status": "Complete production phase, conservative normal-VN grouping and native side-effect barriers; focused positive transformation and selected native-matching negative/barrier execution established. Positive runtime strengthening remains unestablished.",
+      "reconciledCommit": null
+    },
     {
       "area": "early-propagation",
       "native": ["src\\coreclr\\jit\\earlyprop.cpp:17-666", "src\\coreclr\\jit\\compiler.h:8324-8346"],

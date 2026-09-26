@@ -15,6 +15,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Bounds-check coalescing
+
+Bounds-check coalescing now groups checks by block, conservative array-length
+value number and side-effect barriers. It strengthens the first eligible check
+to cover the group's highest index, allowing later assertion propagation to
+remove redundant checks. Exception ordering and handler-visible stores constrain
+which checks can share a group.
+
+Selected corpora execute with the phase enabled. Native array and span probes
+retain their checks because intervening ordering or exception barriers prevent
+coalescing; positive strengthening is covered by focused tests, not yet by
+native-host execution evidence.
+
 ## 2026-09-26: Early propagation
 
 Early propagation now follows SSA copies back to constant array allocations and
