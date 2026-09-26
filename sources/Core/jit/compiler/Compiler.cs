@@ -2501,8 +2501,16 @@ public partial class Compiler
     public unsafe int typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle)
         => typClassLayoutTable.GetObjLayoutNum(this, classHandle);
 
-    // TODO: Port phase - rangeCheckPhase
-    public PhaseStatus rangeCheckPhase() => PhaseStatus.MODIFIED_NOTHING;
+    public PhaseStatus rangeCheckPhase()
+    {
+        if (!MethodHasBoundsChecks || (fgSsaPassesCompleted == 0))
+        {
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+
+        var madeChanges = GetRangeCheck().OptimizeRangeChecks();
+        return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
+    }
 
     // TODO: Port phase - StressSplitTree
     public PhaseStatus StressSplitTree() => PhaseStatus.MODIFIED_NOTHING;

@@ -567,7 +567,14 @@ in both builds but used only in Debug, like the existing invalidation diagnostic
 tree parameter (B099).
 
 Range analysis, relational application and forward assertion dataflow now feed
-the active global assertion phase; range-check elimination remains inactive.
+the active global assertion phase. The complete range-check elimination phase
+also runs with native bounds-check/SSA gates, analysis budgets and side-effect
+repair. Established execution corpora preserve their behavior but show no
+additional removals in that phase; focused tests cover successful removal.
+A dedicated array corpus also exercises managed removal and preserves exception
+and side-effect behavior. Native removes its corresponding loop check during
+cloning, rather than range analysis; this phase-placement difference remains
+open (B283), not an accepted parity exception.
 Duplicate conditional edges preserve native BitVec assignment:
 single-word values are copied before destructive intersection, while multi-word
 storage remains aliased. The forward-analysis callback interface replaces the

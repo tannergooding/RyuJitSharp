@@ -15,6 +15,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Range-check elimination
+
+Range analysis now drives the native bounds-check elimination phase after
+assertion propagation. Constant and symbolic bounds proofs retain native
+overflow rules and analysis budgets. Removing a check preserves required
+index/length side effects and repairs ancestor flags and statement threading.
+
+The phase retains its bounds-check and completed-SSA gates. Established optimized,
+minopts and GC-stress execution remains intact; those corpora do not demonstrate
+additional check removal by this phase. A dedicated array corpus exercises
+managed check removal while preserving results, exceptions and pre-throw side
+effects. Native removes the corresponding loop check earlier, so matching
+transformation placement is not established. VN copy propagation remains the
+next integration boundary, and full dump/code parity is still open.
+
 ## 2026-09-26: Assertion-propagation phase activation
 
 Global assertion propagation now runs the complete discovery, predicate-sensitive

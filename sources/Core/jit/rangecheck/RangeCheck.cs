@@ -17,6 +17,7 @@ public sealed partial class RangeCheck
     private readonly Dictionary<GenTree, BasicBlock?> _searchPath = [];
     private ValueNum _preferredBound = ValueNumStore.NoVN;
     private int _visitBudget = MaxVisitBudget;
+    private bool _updateStmt;
 
     public RangeCheck(Compiler compiler)
     {
