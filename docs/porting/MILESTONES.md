@@ -15,6 +15,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Arithmetic assertions and statement propagation
+
+Assertion application now handles checked arithmetic, division and modulo,
+casts and bounds checks using the native range proofs and fault conditions.
+The VN statement visitor preserves execution order, updates owning uses and
+non-null facts, and repairs traversal after remorphing removes statements.
+
+Global assertion propagation remains inactive. Switch-derived assertions and
+the complete phase orchestration still need integrated execution evidence.
+
 ## 2026-09-26: VN-based folding and statement remorphing
 
 VN-based folding now handles proven constants, memory-intrinsic simplification

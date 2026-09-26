@@ -23,7 +23,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Full VN remains active with815D767R and fourteen exact-source native-host captures. Range/relational/dataflow committed61e5569; complete folding/morph integrates773D754R. Parent owns full assertion dispatcher/orchestration and shared integration; do not activate reduced phases.",
+      "parentScope": "Range/relational/dataflow committed61e5569; folding/morph committed5212336 with773D754R. Parent has written complete optAssertionProp dispatcher and private optAssertionPropMainCore in Compiler.ap.Phase.cs, pending compilation against worker freezes. Production entry remains inactive. Seven phase cases added to ValueNumberPhaseTests: six fail for missing propagation against old entrypoint, while skipped-SSA and five existing VN cases pass.",
       "parallelPackets": [
         {
           "scope": "Complete relational assertion application and canonical RangeProperties, assertionprop.cpp4141-4221,4433-4910.",
@@ -36,8 +36,8 @@
           "scope": "Complete native range-analysis prerequisite, then arithmetic/range/cast/bounds assertion application.",
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
           "files": "sources\\Core\\jit\\rangecheck\\ native analysis types/helpers and RangeAnalysisTests.cs; Compiler.ap.Arithmetic.cs/AssertionArithmeticTests.cs remain reserved but deferred.",
-          "status": "in-progress",
-          "remainingBoundary": "6a through76: range analysis committed61e5569 after B280 fix. Arithmetic/cast/bounds application authorized and running on61e5569, reusing3a RangeProperties and RangeCheck.GetRange. No phase activation."
+          "status": "done",
+          "remainingBoundary": "6a through77: arithmetic/cast/bounds packet frozen22D22R,942 reviewthrough89 clear. Combined arithmetic/VNStatement integration812D793R on5212336; canonical RangeProperties/GetRange reused. No phase activation."
         },
         {
           "scope": "Complete VN-based assertion folding prerequisite.",
@@ -50,8 +50,8 @@
           "scope": "Complete VNAssertionPropVisitor and per-statement folding/non-null propagation, assertionprop.cpp6483-6512,6552-6764.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "New Compiler.ap.VNStatement.cs and AssertionVNStatementTests.cs only.",
-          "status": "in-progress",
-          "remainingBoundary": "Preserve execution order, owning uses and removal/abort cursors; reuse integrated folding and insertion-time morphing. Return exact Debug/Release freeze; no phase activation."
+          "status": "done",
+          "remainingBoundary": "3a through74: frozen on5212336,17 new cases within59D59R. d62 reviewthrough122 clear. Combined arithmetic/VNStatement integration812D793R; no phase activation."
         },
         {
           "scope": "Complete optCreateJumpTableImpliedAssertions, assertionprop.cpp6007-6129.",
@@ -190,11 +190,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Range/relational/dataflow committed61e5569; reviewed folding/morph integrates773D754R. Parent next implements complete optAssertionProp dispatcher (assertionprop.cpp5909-6006) and optAssertionPropMain (6765-end), preserving the inactive production entry until all callees and phase fixtures are ready.6a owns arithmetic/cast/bounds,3a owns VN statement visitors,610 owns switch assertions plus required PeelOffsetsI32; collect exact freezes and integrate. Preserve14 VN-enabled captures and inspect Counted substitution after complete activation. No remote publication.",
+    "nextAction": "Arithmetic6a:77 and VNStatement3a:74 integrate812D793R on5212336; reviews942:89 andd62:122 clear (artifacts\\assertion-application-integration\\statement-manifest.json). Collect610 switch/PeelOffsetsI32 freeze and integrate. Parent dispatcher/full private phase core already exists in uncommitted Compiler.ap.Phase.cs; compile/test it via snapshot-only optAssertionPropMain forwarding. Six of seven new phase cases fail against the old stub as expected (artifacts\\assertion-phase-validation\\before-manifest.json); do not repeat that investigation. Activate only after full phase/fixture validation, then preserve14 captures and inspect Counted substitution. No remote publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Collected range610review:54, relational3a:72, range6a:76, foldingd62:121, folding942review:88, switch610:55. Range/relational/dataflow committed61e5569; folding/morph integrates773D754R.6a arithmetic,3a VN statement visitors,610 switch assertions plus PeelOffsetsI32 are active; d62/942 resolved and idle. Parent owns CoreRoot, currently free. No app-native sessions.",
+      "workerPackets": "Collected arithmetic6a:77, VNStatement3a:74, reviews942:89 andd62:122; combined812D793R.610 switch/PeelOffsetsI32 remains active after expanded ownership through55. Other packets resolved and workers idle. Parent phase/fixture WIP is uncommitted; CoreRoot is free. No app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -210,6 +210,17 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "assertionApplicationIntegration": {
+        "snapshotBase": "5212336",
+        "sourceManifest": "artifacts\\assertion-application-integration\\statement-manifest.json",
+        "debugPassed": 812,
+        "releasePassed": 793,
+        "skipped": 0,
+        "selector": "FullyQualifiedName~Assertion|FullyQualifiedName~RangeAnalysisTests|FullyQualifiedName~ValueNum|FullyQualifiedName~FlowGraphDfsTests|FullyQualifiedName~MorphBlockStmtTests",
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\assertion-statement-integrated-{Debug,Release}.trx",
+        "review": "942 arithmetic reviewthrough89 andd62 VNStatement reviewthrough122 found no high-confidence defect.",
+        "scope": "Four exact overlays: arithmetic/cast/bounds application and VN per-statement visitor/folding/non-null/remorph family. Phase and new phase fixtures excluded; no production activation."
+      },
       "assertionFoldingIntegration": {
         "snapshotBase": "61e5569",
         "sourceManifest": "artifacts\\assertion-folding-integration\\source-manifest.json",
@@ -6361,6 +6372,13 @@
       "area": "simple-operator-morphing",
       "native": ["src\\coreclr\\jit\\morph.cpp", "src\\coreclr\\jit\\optimizer.cpp", "src\\coreclr\\jit\\flowgraph.cpp", "src\\coreclr\\jit\\gentree.cpp", "src\\coreclr\\jit\\gentree.h"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.SimpleOps.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.Comparisons.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.Arithmetic.cs", "sources\\Core\\jit\\compiler\\Compiler.opt.Narrowing.cs", "sources\\Core\\jit\\compiler\\Compiler.opt.SsaUses.cs", "sources\\Core\\jit\\compiler\\Compiler.gt.cs", "sources\\Core\\jit\\gentree\\GenTreeCast.cs", "sources\\Core\\jit\\gentree\\GenTreeIntCon.cs", "sources\\Core\\jit\\gentree\\GenTreeIntConCommon.cs", "sources\\Core\\jit\\gentree\\GenTreeOp.cs"],
+      "reconciledCommit": null
+    },
+    {
+      "area": "assertion-arithmetic-and-vn-statements",
+      "native": ["src\\coreclr\\jit\\assertionprop.cpp:4222-4353,5020-5178,5651-5826,6483-6499,6553-6757"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.ap.Arithmetic.cs", "sources\\Core\\jit\\compiler\\Compiler.ap.VNStatement.cs"],
+      "status": "Complete native application and per-statement propagation families. Phase activation remains pending.",
       "reconciledCommit": null
     },
     {
