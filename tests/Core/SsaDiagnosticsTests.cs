@@ -42,6 +42,70 @@ internal static class SsaDiagnosticsTests
         SsaLivenessTests.WithCompiler(0, compiler => {
             var text = CodeGenLifeTransitionTests.Capture(compiler.JitTestCheckSSA);
             Assert.That(text, Is.Empty);
+            Assert.That(CodeGenLifeTransitionTests.Capture(compiler.JitTestCheckVN), Is.Empty);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ValueNumberConstraintsOptionallyIgnoreExceptions(bool normalize)
+    {
+        SsaLivenessTests.WithCompiler(2, compiler =>
+        {
+            var first = AddLocal(compiler, 0, 3);
+            var second = AddLocal(compiler, 1, 4);
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var value = store.VNForIntCon(17);
+            var exceptions = store.VNExcSetSingleton(store.VNForExpr(null, TYP_REF));
+            first._vnPair = new ValueNumPair(store.VNWithExc(value, exceptions), store.VNForIntCon(1));
+            second._vnPair = new ValueNumPair(value, store.VNForIntCon(2));
+            var label = normalize ? TestLabel.TL_VNNorm : TestLabel.TL_VN;
+            compiler.NodeTestData.Add(first, new TestLabelAndNum { _tl = label, _num = 10 });
+            compiler.NodeTestData.Add(second, new TestLabelAndNum { _tl = label, _num = normalize ? 10 : 11 });
+            compiler.verbose = true;
+
+            var text = CodeGenLifeTransitionTests.Capture(compiler.JitTestCheckVN);
+
+            Assert.That(text, Does.Contain("Jit Testing: Value numbering."));
+            Assert.That(text.Contains("Already in hash tables.", StringComparison.Ordinal), Is.EqualTo(normalize));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ConflictingValueNumberConstraintsFail(bool sameLabel)
+    {
+        SsaLivenessTests.WithCompiler(2, compiler =>
+        {
+            var first = AddLocal(compiler, 0, 3);
+            var second = AddLocal(compiler, 1, 4);
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            first._vnPair.SetBoth(store.VNForIntCon(17));
+            second._vnPair.SetBoth(store.VNForIntCon(sameLabel ? 18 : 17));
+            compiler.NodeTestData.Add(first, new TestLabelAndNum { _tl = TestLabel.TL_VN, _num = 10 });
+            compiler.NodeTestData.Add(second, new TestLabelAndNum { _tl = TestLabel.TL_VN, _num = sameLabel ? 10 : 11 });
+
+            var text = CodeGenLifeTransitionTests.Capture(() =>
+                Assert.That(() => compiler.JitTestCheckVN(), Throws.Exception));
+
+            Assert.That(text, Does.Contain(sameLabel
+                ? "previously bound to a different value number"
+                : "associated with a different value number class"));
+        });
+    }
+
+    [Test]
+    public static void UnreachableValueNumberAnnotationFailsBeforeComparison()
+    {
+        SsaLivenessTests.WithCompiler(1, compiler =>
+        {
+            var node = new GenTreeLclVar(TYP_INT, 0);
+            compiler.NodeTestData.Add(node, new TestLabelAndNum { _tl = TestLabel.TL_VN });
+            var text = CodeGenLifeTransitionTests.Capture(() =>
+                Assert.That(() => compiler.JitTestCheckVN(), Throws.Exception));
+            Assert.That(text, Does.Contain("has become unreachable at the time the constraint is tested."));
         });
     }
 

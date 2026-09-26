@@ -43,8 +43,8 @@
           "scope": "Complete native call/helper/special-intrinsic numbering at valuenum.cpp14592-15631.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "New Compiler.VNCalls.cs and ValueNumCallTests.cs only.",
-          "status": "in-progress",
-          "remainingBoundary": "Drafted native call family through104; compile requires942's fgValueNumberLocalStore and physical-map closure. No test counts yet. d62 independent pair/exception review through105 found no high-confidence defect."
+          "status": "done",
+          "remainingBoundary": "Corrected call packet integrated with memory, pointers and annotation checking on6ec44e4:547D506R. d62 now reviews the intrinsic/evaluator closure independently."
         },
         {
           "scope": "Complete VN exception-set evaluation and dispatch at valuenum.cpp15632-16190.",
@@ -58,7 +58,7 @@
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
           "files": "New Compiler.VNIntrinsics.cs/ValueNumIntrinsicTests.cs plus ValueNumStore.IntrinsicEvaluation.cs/ValueNumIntrinsicEvaluationTests.cs.",
           "status": "in-progress",
-          "remainingBoundary": "Missing math/HWI evaluators and SIMD VN type selection owned by6a. Parent parser and610 pair/cast primitives now integrated391D388R. Complete evaluator prerequisite family then compiler intrinsic callers."
+          "remainingBoundary": "6a through60 reports four-file evaluator/compiler packet frozen20D20R. Independent d62 review and final tree integration remain; use the current intrinsic source manifest."
         },
         {
           "scope": "Complete native VN pair cast/bitcast, expression and exception operations required by compiler evaluators.",
@@ -71,8 +71,8 @@
           "scope": "Complete local/array/field/byref load-store numbering at valuenum.cpp6685-7054,12880-13369.",
           "owner": "942a496f-db30-4389-a403-265f28fdb23c",
           "files": "New Compiler.VNMemoryAccess.cs/ValueNumMemoryAccessTests.cs plus ValueNumStore.MemoryAccess.cs/ValueNumLoadStoreTests.cs and GenTree.FieldAddress.cs.",
-          "status": "in-progress",
-          "remainingBoundary": "Drafted12compiler functions through79; no successful test run yet.942 explicitly owns missing scalar/pair physical load/store, whole-access/bitcast, field selector and GenTree.IsFieldAddr closure. Reuse maps and frozen pair APIs; no dispatcher/phase changes."
+          "status": "done",
+          "remainingBoundary": "942 through83: native unsigned-offset correction has3 failing-before regressions and19D19R focused evidence. Final parent memory/pointer/call/checker integration547D506R, exact11overlays verified; no phase activation."
         },
         {
           "scope": "Generic hardware-dispatch regression fixtures, including InvalidNodeId-only portable operations.",
@@ -155,11 +155,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Parent: implement native ValueNumberState and full fgValueNumber/Blocks/Block/PhiDef/fgMemoryVNForLoopSideEffects orchestration at valuenum.cpp11753-12565, retaining phase gate until all callees exist.3a owns tree dispatcher;610 loop effects;942 physical memory closure;6a intrinsic evaluation;d62 call validation awaits942.44c8450 commits the reviewed391D388R primitive/parser closure. Integrate returned complete families and establish full VN phase execution before claiming activation. Preserve14runtime configurations; no publication.",
+    "nextAction": "Memory/pointer/call/checker closure is validated547D506R on6ec44e4, including942's unsigned-offset correction. Collect3a final dispatcher,6a intrinsic and610 loop-analysis handoffs plusd62 intrinsic review. Parent ValueNumberState is tested but uncommitted; Compiler.ValueNumber.cs has unbuilt Blocks/Block/PhiDef bodies. Finish fgMemoryVNForLoopSideEffects and fgValueNumber using610's native-order collections and invariance query. Keep production stub until complete closure is validated, then publish locally and preserve14runtime configurations. No remote publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Collected pair610:42, exception3a:48, memory942:79, calls/reviewd62:105, intrinsic initial blocker6a:48. Pair+exception+parent memory/parser integrated391D388R.942 physical-memory and6a evaluator work active; d62 call draft awaits942. Parent owns CoreRoot, currently free. No app-native sessions.",
+      "workerPackets": "Collected memory942:83, calls/reviewd62:109, intrinsic6a:60, dispatcher3a:55 and loop610:43. Memory/pointer/call/checker closure integrated547D506R.3a finishes frozen-dependency validation;610 loop analysis andd62 intrinsic review continue. Parent owns CoreRoot, currently free. No app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -175,6 +175,17 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "vnMemoryCallClosure": {
+        "snapshotBase": "6ec44e4",
+        "sourceManifest": "artifacts\\vn-memory-state-validation\\memory-call-source-manifest.json",
+        "debugPassed": 547,
+        "releasePassed": 506,
+        "skipped": 0,
+        "selector": "FullyQualifiedName~Ssa|FullyQualifiedName~ValueNum",
+        "tests": "snapshot\\artifacts\\tst\\{Debug,Release}\\memory-call-{Debug,Release}.trx",
+        "regression": "VNForLoad offset truncation:3 failing-before cases, then19D19R focused; artifacts\\vn-memory-access-validation\\source-manifest.json.",
+        "scope": "Exact11overlays: complete memory access, physical maps, field addresses, pointer extensions, call family and Debug VN annotation checker. Excludes phase/reachability/loop/intrinsic WIP. No phase activation or new native-host parity claim."
+      },
       "localSsaVnInitialization": {
         "snapshotBase": "a09b9d7 plus the exact eight source/test overlays committed in44c8450",
         "sourceManifest": "artifacts\\vn-memory-state-validation\\local-ssa-source-manifest.json",
@@ -5188,6 +5199,14 @@
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
       "status": "Complete native WindowsAMD64 portable/special import and24constructor dependencies. Load/store reuse existing value factories; remaining generic dispatcher is not activated."
+    },
+    {
+      "area": "vn-memory-call-closure",
+      "native": ["src\\coreclr\\jit\\valuenum.cpp:3880-3914,6392-6579,6624-6668,6685-7041,12880-13369,14592-15631,16194-16306", "src\\coreclr\\jit\\gentree.cpp:21128-21209"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.VNMemoryAccess.cs", "sources\\Core\\jit\\compiler\\Compiler.VNCalls.cs", "sources\\Core\\jit\\compiler\\Compiler.ValueNumberChecks.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.MemoryAccess.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.PointerExtension.cs", "sources\\Core\\jit\\gentree\\GenTree.FieldAddress.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete prerequisite closure, integrated547D506R; native unsigned offset order preserved. Full VN phase remains inactive."
     },
     {
       "area": "vn-pair-exception-array-closure",

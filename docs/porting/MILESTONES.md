@@ -15,6 +15,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: VN memory accesses and calls
+
+Value numbering now models local, field, array and byref loads and stores,
+including physical memory maps and immutable-data reads. Pointer extensions
+retain field/array identity, offsets and exception sets. Call numbering preserves
+helper semantics, allocation identity and memory effects.
+
+The native load-offset truncation order is preserved even for offsets outside
+32 bits. Debug VN annotations can check both complete and exception-normalized
+values. These are evaluation prerequisites; the full VN phase remains inactive
+while intrinsic, tree and loop traversal integration continues.
+
 ## 2026-09-26: VN exceptions and array-address reconstruction
 
 Value-numbering support now preserves paired normal and exceptional values

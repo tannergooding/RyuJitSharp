@@ -533,6 +533,12 @@ retain one value number. Array-address parsing exposes the native failure
 contract as a nullable array output and an unchanged `ref` index VN. Its constants
 use target-pointer width, not the host-sized `VNForIntPtrCon` API.
 
+Physical loads retain native's unsigned offset truncation before the
+whole-location check; the later bounds check still uses the original signed
+offset (B278). Pointer extension uses native host-sized offsets and preserves
+the source liberal exception set. Call and memory numbering are implemented,
+but their presence does not activate the full VN phase.
+
 Checked-bound/index registries use managed membership sets; no enumeration order
 is observed. Unsigned comparison results use a readonly record and failed queries
 leave ref outputs unchanged. JTRUE bounds generation retains native edge
