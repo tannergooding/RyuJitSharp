@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
+using static RyuJitSharp.BBKinds;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -12,6 +13,48 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class BlockDisplayTests
 {
+    [TestCase(false, -2, 2)]
+    [TestCase(false, 0, 0)]
+    [TestCase(false, 2, 2)]
+    [TestCase(true, -2, 2)]
+    [TestCase(true, 0, 0)]
+    [TestCase(true, 2, 2)]
+    public static unsafe void TargetPaddingPreservesSignedPrintfWidth(bool conditional, int delta, int padding)
+    {
+        using var tls = new JitTls(null);
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+        JitTls.Compiler = compiler;
+        compiler.compHndBBtab = [];
+        compiler.fgSafeBasicBlockCreation = true;
+        compiler.fgSafeFlowEdgeCreation = true;
+        compiler.fgPredsComputed = true;
+        var block = BasicBlock.New(compiler, conditional ? BBJ_COND : BBJ_RETURN);
+        compiler.fgFirstBB = block;
+        var printedWidth = 9;
+        var targetText = "";
+        var kindText = " (return)";
+
+        if (conditional)
+        {
+            var first = BasicBlock.New(compiler, BBJ_RETURN);
+            var second = BasicBlock.New(compiler, BBJ_RETURN);
+            block.SetCond(compiler.fgAddRefPred(first, block), compiler.fgAddRefPred(second, block));
+            block.TrueEdge.Likelihood = 0.03125;
+            block.FalseEdge.Likelihood = 0.96875;
+            targetText = "-> BB02(0.0312),BB03(0.969)";
+            kindText = " ( cond )";
+            printedWidth = targetText.Length + kindText.Length;
+        }
+
+        var range = CodeGenLifeTransitionTests.Capture(block.dspBlockILRange);
+        var output = CodeGenLifeTransitionTests.Capture(
+            () => compiler.fgTableDispBasicBlock(block, blockTargetFieldWidth: printedWidth + delta));
+
+        Assert.That(output, Does.Contain(range + targetText + new string(' ', padding) + kindText));
+    }
+
     [TestCase((BasicBlockFlags)0, "")]
     [TestCase(BBF_IMPORTED, "i")]
     [TestCase(BBF_INTERNAL | BBF_COLD, "internal cold")]

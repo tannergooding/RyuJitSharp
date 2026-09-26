@@ -12307,12 +12307,13 @@ public partial class Compiler
         // Display block branch target
         //
 
+        // Native printf left-aligns negative-width fields; an empty field still pads by the width's magnitude.
         int printedBlockWidth;
 
         if ((flags & BBF_REMOVED) != 0)
         {
             printedBlockWidth = 10;
-            jitprintf($"[removed] {new string(' ', blockTargetFieldWidth - printedBlockWidth)}");
+            jitprintf($"[removed] {new string(' ', int.Abs(blockTargetFieldWidth - printedBlockWidth))}");
         }
         else
         {
@@ -12332,7 +12333,7 @@ public partial class Compiler
                             terseNext,
                             nextBlock,
                             ref printedBlockWidth)}");
-                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} ( cond )");
+                    jitprintf($"{new string(' ', int.Abs(blockTargetFieldWidth - printedBlockWidth))} ( cond )");
                     break;
                 }
 
@@ -12340,7 +12341,7 @@ public partial class Compiler
                 {
                     printedBlockWidth = 3 + 9; // "-> " + kind
                     jitprintf($"-> {DspBlockNum(block.bbTargetEdge, printEdgeLikelihoods, terseNext, nextBlock, ref printedBlockWidth)}");
-                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} (callf )");
+                    jitprintf($"{new string(' ', int.Abs(blockTargetFieldWidth - printedBlockWidth))} (callf )");
                     break;
                 }
 
@@ -12348,7 +12349,7 @@ public partial class Compiler
                 {
                     printedBlockWidth = 3 + 9; // "-> " + kind
                     jitprintf($"-> {DspBlockNum(block.bbTargetEdge, printEdgeLikelihoods, terseNext, nextBlock, ref printedBlockWidth)}");
-                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} (callfr)");
+                    jitprintf($"{new string(' ', int.Abs(blockTargetFieldWidth - printedBlockWidth))} (callfr)");
                     break;
                 }
 
@@ -12357,7 +12358,7 @@ public partial class Compiler
                     var label = ((flags & BBF_KEEP_BBJ_ALWAYS) != 0) ? "ALWAYS" : "always";
                     printedBlockWidth = 3 + 9; // "-> " + kind
                     jitprintf($"-> {DspBlockNum(block.bbTargetEdge, printEdgeLikelihoods, terseNext, nextBlock, ref printedBlockWidth)}");
-                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} ({label})");
+                    jitprintf($"{new string(' ', int.Abs(blockTargetFieldWidth - printedBlockWidth))} ({label})");
                     break;
                 }
 
@@ -12365,7 +12366,7 @@ public partial class Compiler
                 {
                     printedBlockWidth = 3 + 9; // "-> " + kind
                     jitprintf($"-> {DspBlockNum(block.bbTargetEdge, printEdgeLikelihoods, terseNext, nextBlock, ref printedBlockWidth)}");
-                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} (leave )");
+                    jitprintf($"{new string(' ', int.Abs(blockTargetFieldWidth - printedBlockWidth))} (leave )");
                     break;
                 }
 
@@ -12406,7 +12407,7 @@ public partial class Compiler
                 case BBJ_EHFAULTRET:
                 {
                     printedBlockWidth = 9; // kind
-                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} (falret)");
+                    jitprintf($"{new string(' ', int.Abs(blockTargetFieldWidth - printedBlockWidth))} (falret)");
                     break;
                 }
 
@@ -12414,7 +12415,7 @@ public partial class Compiler
                 {
                     printedBlockWidth = 3 + 9; // "-> " + kind
                     jitprintf($"-> {DspBlockNum(block.bbTargetEdge, printEdgeLikelihoods, terseNext, nextBlock, ref printedBlockWidth)}");
-                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} (fltret)");
+                    jitprintf($"{new string(' ', int.Abs(blockTargetFieldWidth - printedBlockWidth))} (fltret)");
                     break;
                 }
 
@@ -12422,21 +12423,21 @@ public partial class Compiler
                 {
                     printedBlockWidth = 3 + 9; // "-> " + kind
                     jitprintf($"-> {DspBlockNum(block.bbTargetEdge, printEdgeLikelihoods, terseNext, nextBlock, ref printedBlockWidth)}");
-                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} ( cret )");
+                    jitprintf($"{new string(' ', int.Abs(blockTargetFieldWidth - printedBlockWidth))} ( cret )");
                     break;
                 }
 
                 case BBJ_THROW:
                 {
                     printedBlockWidth = 9; // kind
-                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} (throw )");
+                    jitprintf($"{new string(' ', int.Abs(blockTargetFieldWidth - printedBlockWidth))} (throw )");
                     break;
                 }
 
                 case BBJ_RETURN:
                 {
                     printedBlockWidth = 9; // kind
-                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} (return)");
+                    jitprintf($"{new string(' ', int.Abs(blockTargetFieldWidth - printedBlockWidth))} (return)");
                     break;
                 }
 
@@ -12483,7 +12484,7 @@ public partial class Compiler
                 {
                     // Bad Kind
                     printedBlockWidth = 9; // kind
-                    jitprintf($"{new string(' ', blockTargetFieldWidth - printedBlockWidth)} (ERROR )");
+                    jitprintf($"{new string(' ', int.Abs(blockTargetFieldWidth - printedBlockWidth))} (ERROR )");
                     break;
                 }
             }

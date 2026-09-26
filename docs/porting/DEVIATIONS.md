@@ -633,10 +633,19 @@ remain incomplete; helper coverage is not CSE execution parity.
 Boolean optimization is active, including conditional/range folding, compare
 chains and native Debug GC-stress bookkeeping. The APX switch-recognition
 dependency implements the complete existing detection-only mode; it cannot
-accept a conversion-mode request. Full switch conversion remains inactive.
+accept a conversion-mode request. The separate complete conversion mode is now active.
 The positive probe matches native fold counts and pass counts with preserved
 results/side effects, but not complete generated code. A conservative Debug
 modified-phase status is not evidence that a condition was folded.
+
+Switch recognition and dominant-case peeling are active. Signed-offset chain
+conversion, successor multiplicity and profile updates retain native behavior;
+the CCMP detection-only entry remains explicitly separate. The positive probe
+matches native converted-block decisions and runtime effects, not complete
+generated code. Dominant-case peeling is covered by IR tests, including single
+evaluation, but has no positive profiled-runtime capture yet. Block-table padding
+uses the magnitude of a signed empty-field width, preserving native `printf`
+instead of throwing for long targets (B289).
 
 VN-based folding and insertion-time statement morphing are also complete
 prerequisites. Local-address folds retain the native 16-bit offset invariant;

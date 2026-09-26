@@ -16,28 +16,28 @@
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
-        "Preserve complete VN traversal/evaluation, native-order loop state and all seventeen established execution configurations while completing subsequent optimization phases.",
+        "Preserve complete VN traversal/evaluation, native-order loop state and all nineteen established execution configurations while completing subsequent optimization phases.",
         "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Models830b309/CSE115bd6b committed. Boolean activation validated1176D1149R and18captures117bodies/71phase completions/27conservative changed statuses. Positive99-case probe matches native4 actual folds and pass counts. Commit exactBoolean7+docs; then integrate corrected ifconversion4 packet or next complete lane. B287 resolved as valid native null exclusion, not upstream defect;610 repairing bypass.",
+      "parentScope": "Switch activation plus B289 dump-padding repair validated1215D1172R and19captures121bodies/75phase completions/4changed.57-case probe matches native4 converted blocks; aligned bodies unchanged. Commit exact6 overlays+docs, then integrate corrected ifconversion4 (610:66/67,43D43R). d62 repairing B290 EH scan and omitted driver diagnostics before cloning activation.",
       "parallelPackets": [
         {
           "scope": "Complete Boolean optimization with the native CCMP switch-detection prerequisite.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "New Compiler.BooleanOptimization*.cs/BooleanOptimizationTests.cs and Compiler.SwitchRecognition.Detection.cs/SwitchRecognitionDetectionTests.cs.",
           "status": "in-progress",
-          "remainingBoundary": "Packet3a:78/review942:102 integrated1176D1149R/18captures117bodies.99-case probe matches native4 actual folds; exactBoolean7 ready to commit.3a owns NEW switch-conversion files/tests only; switch public phase inactive."
+          "remainingBoundary": "Boolean committed07d9ebe. Switch3 packet3a:79/review942:106 integrated with B289 repair:1215D1172R/19captures. Positive57-case probe from3a:85 matches native4 conversions. Exact6 parent overlays ready to commit;3a idle."
         },
         {
           "scope": "Complete loop-cloning representation and guard-expression prerequisites before phase closure.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "New conventional loopcloning type files, Compiler.LoopCloning*.cs and LoopCloningModelTests.cs/LoopCloningTests.cs.",
           "status": "in-progress",
-          "remainingBoundary": "Model packet through133 corrected for B286 and committed830b309 after109D107R;d62 notified to use this baseline. d62 owns NEW Compiler.LoopCloning*.cs/LoopCloningTests.cs for remaining1128-3590 closure. No pending buffer question; public phase inactive."
+          "remainingBoundary": "Model committed830b309. Driver6 frozen through139,29D29R;942:107 found B290 premature EH-table break plus omitted phase-decision diagnostics. d62 authorized to fix scan, add failing-before nested/enclosing EH coverage and restore complete driver dumps; awaiting revised frozen packet. Public cloning phase inactive."
         },
         {
           "scope": "Complete VN-CSE candidate/indexing and availability/dataflow prerequisites.",
@@ -51,7 +51,7 @@
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
           "files": "New ifconversion/OptIfConversionDsc*.cs, Compiler.IfConversion*.cs and IfConversionTests.cs.",
           "status": "in-progress",
-          "remainingBoundary": "Packet610:57 initial22D22R/review otherwise clear. Parent resolved B287 via native nextBlock==excludedBlock check; authorized610 to restore unconditional call and update Compiler.RedundantBranches.Reachability.cs nullable fromBlock/stack contract, with scratch/budget regression. Expect revised4-file packet on115bd6b. Public phase inactive; no upstream defect or approved deviation."
+          "remainingBoundary": "Corrected4-file packet610:66/67 frozen43D43R on115bd6b; exact native null exclusion preserves scratch initialization/clear and unchanged budget. Includes authorized nullable reachability helper. Ready for parent integration after switch commit; public phase inactive. No upstream defect/deviation."
         },
         {
           "scope": "Complete native optUnrollLoops and required local helper/visitor closure.",
@@ -253,11 +253,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit Boolean7+docs after1176D1149R and18captures117bodies/71phase completions. Positive probe99cases passes native/baseline/current; native/current folds Main2,Range1,NonZeroPair1,SameTarget0 with matching pass counts. Preserve new18-config matrix artifacts\\boolean-phase-validation\\capture-configurations.json. Then collect610 corrected ifconversion4 packet (B287 nullable-exclusion contract) and other lanes. CoreRoot free. Parent snapshot115bd6b+Boolean7 only; no ifconversion/driver overlays and no publication.",
+    "nextAction": "Commit switch activation+B289 after1215D1172R and19captures: exact6 overlays artifacts\\switch-phase-validation\\source-manifest-padding.json; final JIT artifacts\\switch-padding-jit\\RyuJitSharp.dll. Positive57-case probe matches native4 converted blocks; no full code-parity claim. Then integrate610:66/67 corrected ifconversion4 packet43D43R, preserving19 configs from artifacts\\switch-phase-validation\\capture-configurations.json. Awaitd62 B290+diagnostic repair and6a CSE heuristic packet. Parent snapshot07d9ebe+switch6 only; CoreRoot free; no publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Collected3a:78;942:102-105;610:57-63 including probe62. Models830b309/CSE115bd6b committed; Boolean7 validated ready.3a switch conversion,d62 cloning driver,6a CSE heuristic prerequisites active.610 repairing ifconversion plus specifically authorized nullable reachability helper;942 idle/CoreRoot free. No app-native sessions.",
+      "workerPackets": "Collected3a:79-85 switch/probe;610:64-67 corrected ifconversion4;d62:134-140 driver6;942:106/107 switch/cloning reviews. Switch6 parent overlays validated ready. d62 repairing B290+diagnostics;6a CSE heuristic prerequisites ongoing;3a/610/942 idle. CoreRoot free; no app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -273,6 +273,24 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "switchRecognitionActivation": {
+        "snapshotBase": "07d9ebe",
+        "sourceManifest": "artifacts\\switch-phase-validation\\source-manifest-padding.json",
+        "debugPassed": 1215,
+        "releasePassed": 1172,
+        "skipped": 0,
+        "selection": "Prior exact Boolean integration plus SwitchRecognitionTests and BlockDisplayTests;23 switch cases and16 Debug display cases.",
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\switch-padding-integrated-{Debug,Release}.trx",
+        "nativeAot": "artifacts\\switch-padding-jit\\RyuJitSharp.dll",
+        "jitSha256": "0034AB45ABC56F7BF4D5ED6921653A907710BA3091ABD8B038718C8046C371D7",
+        "runtimeEvidence": "artifacts\\switch-phase-validation\\runtime-validation-padding.json",
+        "configurations": "artifacts\\switch-phase-validation\\capture-configurations.json",
+        "runtime": "19 managed execution configurations,121 positive bodies,75 switch-phase completions,4 changed phases. All prior optimized/minopts/GCStress4 retained. Native/baseline/current switch probes pass57 result/side-effect cases; native/current convert identical4 blocks.",
+        "regressions": "Public chain conversion and3 dominant peeling variants fail against stub. B289 negative conditional/return padding cases fail before fix; zero/positive controls pass. Native signed empty-field width preserved across unguarded target formatting.",
+        "comparison": "positive-probe-comparison.json records IntBoundary55->42,SignedOffset55->52,Sparse45->46 managed bytes vs Boolean baseline; mixed size results, no throughput/full-parity claim. Aligned4 bodies unchanged, Counted17/Nested29 still native-exact.",
+        "review": "942:106 found no high-confidence switch packet defect. Profiled dominant-case runtime transformation remains uncovered; IR single-evaluation/profile cases pass.",
+        "supersededEvidence": "Do not use old switch-phase-jit or failed managed-positive-probe; final repaired binary and padding-prefixed18 captures plus managed-positive-padding comprise19 final captures."
+      },
       "booleanOptimizationActivation": {
         "snapshotBase": "115bd6b",
         "sourceManifest": "artifacts\\boolean-phase-validation\\source-manifest.json",
@@ -6608,10 +6626,17 @@
       "reconciledCommit": null
     },
     {
+      "area": "switch-recognition-and-peeling",
+      "native": ["src\\coreclr\\jit\\switchrecognition.cpp:33-66,212-344,366-557", "src\\coreclr\\jit\\fgopt.cpp:2855-2975", "src\\coreclr\\jit\\fgdiagnostic.cpp:1950-2095"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.SwitchRecognition.Conversion*.cs", "sources\\Core\\jit\\compiler\\Compiler.SwitchRecognition.Detection.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.cs:fgTableDispBasicBlock"],
+      "status": "Complete conversion-mode phase and dominant-case peeling active; detection-only CCMP entry remains separate. Coupled B289 padding preserves native signed-width formatting.",
+      "reconciledCommit": null
+    },
+    {
       "area": "boolean-optimization",
       "native": ["src\\coreclr\\jit\\optimizebools.cpp:20-429,450-1486,1619-1883", "src\\coreclr\\jit\\switchrecognition.cpp:70-103,123-194,212-344,366-478"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.BooleanOptimization*.cs", "sources\\Core\\jit\\compiler\\Compiler.SwitchRecognition.Detection.cs", "sources\\Core\\jit\\compiler\\Compiler.SwitchOptimization.cs:fgFoldCondToReturnBlock"],
-      "status": "Complete Boolean phase active. Switch dependency is explicit complete detection-only specialization; no conversion-mode request/fallback. Native mixed-mode body retained and switch-conversion phase inactive.",
+      "status": "Complete Boolean phase active. Its switch dependency remains an explicit complete detection-only entry; the complete conversion-mode phase is now separately active.",
       "reconciledCommit": null
     },
     {

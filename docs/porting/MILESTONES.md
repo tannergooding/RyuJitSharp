@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Switch recognition and dominant-case peeling
+
+Switch recognition now converts eligible comparison chains into switches and
+peels profiled dominant cases while evaluating the switch value once. Signed
+normalization, predecessor multiplicities and profile redistribution follow
+native behavior.
+
+A targeted execution probe converts the same four blocks as native and preserves
+results and side effects across sparse, signed-offset and integer-boundary cases.
+Existing optimized and GC-stress execution remains intact. The new control flow
+also exposed a block-dump padding failure, now corrected to preserve native
+`printf` behavior for negative field widths. Full code parity and runtime
+coverage of profiled dominant-case peeling remain outstanding.
+
 ## 2026-09-26: Boolean optimization
 
 Boolean optimization now folds adjacent conditions and range tests, combines
