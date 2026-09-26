@@ -12,11 +12,11 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete local block-location allocation and SSA dominator/frontier prerequisites after integrating rename state and diagnostics.",
+      "scope": "Complete SSA construction using committed dominator/frontier and rename-state primitives, alongside independent local-reference resolution.",
       "doneWhen": [
-        "Complete Windows-AMD64 local block-start/end register-location handling without activating optimized allocation.",
-        "Complete native dominator construction/frontiers and their required predecessor/visitor helpers without activating the incomplete SSA builder.",
-        "Integrate complete SSA rename state and native diagnostics, preserving bookkeeping and collection-stress execution.",
+        "Complete native SSA builder, PHI insertion, local/memory renaming and required zero-initialization cleanup; activate only the complete native orchestration.",
+        "Preserve native graph/PHI ordering, diagnostics, EH propagation and shared-memory semantics; compare phase output once the full driver is ready.",
+        "Complete Windows-AMD64 local-reference resolution without activating incomplete optimized allocation.",
         "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
       ],
       "validation": [
@@ -25,12 +25,12 @@
       ],
       "parallelPackets": [
         {
-          "scope": "Complete Windows-AMD64 local block-start/end register locations and processBlockEndAllocation<true>.",
+          "scope": "Complete Windows-AMD64 resolveLocalRef and required direct helpers.",
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
-          "files": "New LocalBlockLocations partials and focused fixture; shared helpers require a reported need before edits.",
-          "doneWhen": "Frozen complete block-location closure with actual isolated Debug/Release evidence and exact hashes; production allocation gate unchanged.",
-          "status": "complete",
-          "result": "Complete block-location packet through turn8 reviewed and integrated; worker80Debug/67Release and combined673Debug/566Release. Optimized allocation remains gated."
+          "files": "New LocalResolution partials and LinearScanLocalResolutionTests.cs; shared helpers require a reported need before edits.",
+          "doneWhen": "Frozen complete local-reference resolution with actual isolated Debug/Release evidence and exact hashes; production allocation gate unchanged.",
+          "status": "in-progress",
+          "result": "Preceding block-location packet through turn8 is committed5639060."
         },
         {
           "scope": "Complete native optRemoveRedundantZeroInits without activating the SSA phase.",
@@ -59,11 +59,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Local block-location packet is reviewed and validated. Parent dominator/frontier classes, DomTreeNode, BlockDominancePreds and IDomTreeVisitor are implemented and pass combined673Debug/566Release in artifacts\\dominance-integration. Finish their separate tracking/commit boundary next; then complete SsaBuilder using these graph APIs and committed rename state. Worker3a2c8d9b owns optRemoveRedundantZeroInits independently; collect its next handoff before integrating it. Preserve zero-allocation visitor hooks, native EH/predecessor/child/frontier ordering and unchanged SSA/optimized-allocation gates. No publication.",
+    "nextAction": "Dominator/frontier construction and nonallocating IDomTreeVisitor are complete with673Debug/566Release in artifacts\\dominance-integration; local block locations are committed5639060. Resume complete SsaBuilder construction/PHI insertion/renaming and native fgSsaBuild orchestration, reusing the committed graph and rename-state APIs. Worker3a2c8d9b owns optRemoveRedundantZeroInits; worker610162a0 owns resolveLocalRef. Collect and integrate their frozen packets without duplicating work. Do not activate partial SSA or optimized allocation. Latest32-method GCStress4 execution remains artifacts\\memory-kind-validation; no production execution change in these prerequisite batches and no publication.",
     "handoff": {
       "status": "parallel-interval-and-ssa-prerequisites",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn8 is collected, reviewed and integrated as the local block-location packet; idle/resolved. 3a2c8d9b through turn10 rename state is committed032c4c9; now running optRemoveRedundantZeroInits. d62fc6a5 through turn75 diagnostics is committed032c4c9 and idle/resolved. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn8 is integrated5639060; now running complete resolveLocalRef. 3a2c8d9b through turn10 rename state is committed032c4c9; now running optRemoveRedundantZeroInits. d62fc6a5 through turn75 diagnostics is committed032c4c9 and idle/resolved. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -79,6 +79,23 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "dominatorsAndFrontiers": {
+        "nativeBoundary": "flowgraph.cpp:7094-7520 complete dominator/frontier classes; block.cpp:289-312 BlockDominancePreds; block.h:2453 DomTreeNode; compiler.h:13345-13420 nonrecursive DomTreeVisitor.",
+        "sourceManifest": "artifacts\\dominance-integration\\source-manifest.json",
+        "snapshotBase": "032c4c9",
+        "rootSnapshotHashesMatch": true,
+        "debugTests": "artifacts\\dominance-integration\\results\\integration-debug.trx",
+        "releaseTests": "artifacts\\dominance-integration\\results\\integration-release.trx",
+        "debugPassed": 673,
+        "releasePassed": 566,
+        "newDebugCases": 12,
+        "newReleaseCases": 11,
+        "skipped": 0,
+        "selection": "FullyQualifiedName~FlowGraphDominanceTests|FullyQualifiedName~FlowGraphDfsTests|FullyQualifiedName~ExceptionalPredecessorTests|FullyQualifiedName~LinearScan|FullyQualifiedName~Ssa",
+        "reproducer": "Archive snapshotBase; apply the nine sourceManifest overlays from this batch, verify hashes and restore only if assets are absent. dotnet build snapshot\\tests\\Core\\RyuJitSharp.UnitTests.csproj -c <Debug|Release> --no-restore --no-incremental -p:Platform=AnyCPU; dotnet test the same project/configuration --no-restore --no-build -p:Platform=AnyCPU --filter <selection> --logger trx.",
+        "coverage": "Set-definition oracle checks dominance/intersection/ordered IDF across diamonds, reducible/irreducible/nested cycles, unreachable and duplicate predecessors; EH/filter cache separation/rebuild; native diagnostic spacing; visitor callback order;20000-node traversal with zero measured allocation after warmup.",
+        "limitation": "Complete graph prerequisites, not SSA activation. Integrated snapshot also covers local block locations; neither changes minopts execution."
+      },
       "localBlockLocations": {
         "nativeBoundary": "lsra.cpp:3939-3962 processBlockEndAllocation<true>,3978-4009 rotateBlockStartLocation,4171-4206 unassignIntervalBlockStart,4248-4607 processBlockStartLocations/handleDeadCandidates,4624-4657 processBlockEndLocations; lsra.h:1772-1775 setRegsInUse.",
         "workerSourceManifest": "artifacts\\block-locations-validation\\source-manifest.json",
@@ -5626,6 +5643,13 @@
       "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.LocalIntervalConstruction.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalIntervalPredecessors.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalIntervalValidation.cs"],
       "reconciledCommit": null,
       "scope": "Complete Windows-AMD64 buildIntervals<true> and required predecessor/stress/validation helpers; optimized allocation gate unchanged."
+    },
+    {
+      "area": "dominator-and-frontier-construction",
+      "native": ["src\\coreclr\\jit\\flowgraph.cpp", "src\\coreclr\\jit\\compiler.h", "src\\coreclr\\jit\\block.cpp", "src\\coreclr\\jit\\block.h"],
+      "csharp": ["sources\\Core\\jit\\compiler\\FlowGraphDominatorTree.cs", "sources\\Core\\jit\\compiler\\FlowGraphDominanceFrontiers.cs", "sources\\Core\\jit\\compiler\\Compiler.DominancePreds.cs", "sources\\Core\\jit\\compiler\\IDomTreeVisitor.cs", "sources\\Core\\jit\\block\\DomTreeNode.cs"],
+      "reconciledCommit": null,
+      "scope": "Complete dominator/frontier construction, queries and dumps, separate dominance predecessor cache and nonrecursive nonallocating visitor; SSA builder remains unactivated."
     },
     {
       "area": "linear-scan-local-block-locations",

@@ -15,6 +15,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Dominator trees and dominance frontiers
+
+The flow graph now supports native immediate-dominator construction, ordered
+dominance frontiers and iterated frontiers for PHI placement. EH entries retain
+their distinct dominance predecessors, and dominator traversal preserves native
+entry/exit order without recursion or per-walk allocation.
+
+SSA construction still needs zero-initialization cleanup, PHI insertion and the
+renaming driver. These graph algorithms do not activate incomplete optimization
+phases or change the established minopts execution path.
+
 ## 2026-09-25: Enregistered-local block locations
 
 Windows-x64 LSRA now preserves local register homes across block boundaries,

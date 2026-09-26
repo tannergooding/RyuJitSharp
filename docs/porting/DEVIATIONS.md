@@ -858,6 +858,14 @@ Per-local history and the cross-stack block-pop list remain distinct; memory
 stacks stay independent, with shared-kind selection left to the builder.
 SSA annotation labels retain native pointer-width identity while diagnostics
 truncate them to signed 32-bit values at the native formatting sites.
+Dominator trees use managed child/sibling and numbering arrays while immediate
+dominators remain on the blocks. Rebuilding clears both exceptional and
+dominance-predecessor caches; those caches remain separate. Frontier lists keep
+native postorder insertion and iterated-frontier discovery order.
+`IDomTreeVisitor<TSelf>` uses constrained struct callbacks and native
+child/sibling/parent traversal. All hooks are explicit, including empty hooks,
+to avoid boxing through default interface implementations. Walking an existing
+tree requires neither recursion nor allocation.
 The enclosing EH-region helper takes a managed `ref bool`, preserving the
 native in/out value when no enclosing region exists. Output-only wrappers
 remain valid only where callers consume the kind for a present region; EH
