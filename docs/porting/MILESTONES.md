@@ -15,6 +15,14 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Catch and finally execution
+
+Selected minopts methods now execute normal and exceptional catch/finally paths
+while preserving objects and reference-bearing structs across confirmed full
+collections. Both native and managed-generated code retain the expected values
+and identities. Generated sizes still differ for two of the three methods;
+this establishes focused EH/GC execution, not code or full EH parity.
+
 ## 2026-09-25: References across loop backedges
 
 Selected minopts methods now retain objects, array interiors, conditional

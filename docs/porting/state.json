@@ -59,11 +59,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B251 batch-temp initialization and loop/reference execution are complete. Collect SSA worker turn4 (node metadata/native diagnostics repairs) and VN worker turn7 (exact constant-interning helper order and numbering regressions), review revised diffs and final hashes, then run combined Debug/Release integration selection and commit each complete packet separately. Full SSA construction, VN phase and optimized allocation remain gated. No publication.",
+    "nextAction": "SSA turn4, VN turn7 and EH/GC turn68 are collected and reviewed. Entry-local definitions are also implemented. Frozen combined snapshot passes647Debug/627Release, including16entry-definition cases. Commit reviewed VN interning and entry-definition prerequisites separately; publish a fresh NativeAOT binary from the frozen snapshot and preserve standard/loop/interior/EH execution before committing SSA liveness. Full SSA construction, VN phase and optimized allocation remain gated. No publication.",
     "handoff": {
       "status": "parallel-prerequisite-integration",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn3 is collected; SSA review found missing replacement metadata/diagnostics and same-packet repairs are running. 3a2c8d9b through turn6 is collected:261/261 includes13VM cases; parent found identity helper allocation-order differences, now under repair with numbering tests and the14existing unary cases. d62fc6a5 through turn67 is collected and resolved: all loop/corpus/interior captures pass with batch-temp-jit. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. Local candidates committed c7c08e9. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn4 and3a2c8d9b through turn7 are collected, revised packets reviewed and frozen. d62fc6a5 through turn68 is collected and resolved: EH/GC execution passes with batch-temp-jit. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. Parent entry-local definition prerequisites pass combined snapshot selection; all workers idle pending integration. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -79,6 +79,18 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "ehReferenceExecution": {
+        "scope": "CatchObject, FinallyObject and FinallyPair; normal and exceptional paths with object/reference-bearing-struct locals under minopts GCStress4.",
+        "evidence": "artifacts\\backend-eh-gc-probe\\results.txt",
+        "nativeCapture": "artifacts\\backend-eh-gc-probe\\native-final-gcstress4\\manifest.json",
+        "managedCapture": "artifacts\\backend-eh-gc-probe\\managed-final-gcstress4\\manifest.json",
+        "managedJit": "artifacts\\batch-temp-jit\\RyuJitSharp.dll",
+        "managedJitSha256": "E5EC3A199959AE1EB74E9E99044C80833B87608AE0B9636BCC1CE8949E6BA62F",
+        "source": "Same c7c08e9 plus B251 patch as batchTemporaryInitialization.",
+        "result": "Both runs exit0 with3/3exact headers, no timeout/skip/failure, and eleven helper-confirmed full collections. Managed code executes every selected method with RunAltJitCode=1. Native sizes175/352/599; managed175/355/602. Payload, weak identity and per-path collection checks pass.",
+        "reproduction": "Build artifacts\\backend-eh-gc-probe\\GcEhProbe.csproj, then use Invoke-PortingCorpus.ps1 with TypeName RyuJitSharp.GcEhProbeCases and the three scope methods, -MinOpts -GcStress; add -ExecuteManagedCode and the recorded DLL/provenance for managed. Exact commands and source/binary hashes are in evidence.",
+        "limitation": "Nonselected runtime helpers throw and collect. No exclusive-root, object-movement, full EH or codegen parity claim."
+      },
       "batchTemporaryInitialization": {
         "nativeBoundary": "compiler.hpp:2429-2495 lvaGrabTemps; managed Compiler.lva.cs.",
         "backlog": "B251",
