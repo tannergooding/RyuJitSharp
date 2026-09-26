@@ -15,6 +15,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Loop cloning
+
+Loop cloning now creates guarded fast paths while retaining checked slow copies,
+and applies optimizations whose conditions can be proven without cloning.
+Candidate discovery, profitability, ordered guards, EH extents and profile
+invalidation follow the native phase.
+
+The established optimized and GC-stress corpora still execute. The array corpus
+matches native clone decisions, guards and fast/slow block structure. Its recorded
+bounds-check removal placement difference is resolved. Broader candidate, EH and
+generated-code parity remain outstanding.
+
 ## 2026-09-26: Incremental SSA
 
 Incremental SSA now records inserted definitions and uses, propagates liveness

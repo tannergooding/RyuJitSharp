@@ -23,7 +23,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "If-conversion committed57401e2 and CSE helper5 committed8d9a0ec. SSA7 integrated72D72R after fast iteration and full-analysis checkpoints; commit without activating CSE. Preserve ongoing standard heuristic diagnostics/interface work. Loop-cloning6 is diagnostic-complete and ready for activation.",
+      "parentScope": "Loop-cloning activation7 validated1293D1249R and20captures124bodies/78phase completions, with2 real clones and6 static optimizations. Native range comparison matches decisions/guards/block tables and resolves B283; code sizes still differ. Commit then integrate standard CSE45D45R with complete native CopyReg and regressions; no public CSE activation yet.",
       "parallelPackets": [
         {
           "scope": "Complete Boolean optimization with the native CCMP switch-detection prerequisite.",
@@ -40,18 +40,18 @@
           "remainingBoundary": "SSA7 integrated72D72R on8d9a0ec;942:110 review found no high-confidence defect. Block/local key identity, phi order and explicit NoVN initialization preserved.6a consumes the same API for PerformCSE. EH/cyclic-phi/frontier-limit/existing-phi coverage remains limited."
         },
         {
-          "scope": "Complete loop-cloning representation and guard-expression prerequisites before phase closure.",
+          "scope": "Complete loop-cloning models, candidate transformations and phase activation.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "New conventional loopcloning type files, Compiler.LoopCloning*.cs and LoopCloningModelTests.cs/LoopCloningTests.cs.",
-          "status": "in-progress",
-          "remainingBoundary": "Model committed830b309. Driver6 through146 is diagnostic-complete, including candidate/condition traces, with31D30R. B290 fix and failing-before EH regression preserved. Frozen packet ready for parent activation; public cloning phase remains inactive."
+          "status": "done",
+          "remainingBoundary": "Diagnostic-complete phase activated:1293D1249R and20captures. Six cases fail against old public stub. B290 fix preserved;2 clones and6 static optimizations execute.942:112/113 comparison matches native decisions/guards/block tables and resolves B283; machine-code parity remains incomplete."
         },
         {
           "scope": "Complete VN-CSE candidate/indexing and availability/dataflow prerequisites.",
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
           "files": "New Compiler.CSE.Candidates*.cs/Compiler.CSE.Dataflow*.cs/CSECandidateTests.cs; existing CSEdsc.cs and CSE_HeuristicCommon.cs explicitly authorized.",
           "status": "in-progress",
-          "remainingBoundary": "Candidate prerequisites committed115bd6b; helper5 integrated42D42R on57401e2 with reviewed frozen bytes. Standard selection/rewrite packet36D36R remains WIP:942:111 found missing sort/per-occurrence diagnostics; CopyReg assertion removal and Initialize virtual/override are required integration gates. Complete those plus alternate modes before public activation."
+          "remainingBoundary": "Candidate/helper/SSA prerequisites committed. Standard packet6a:96 frozen45D45R with completed diagnostics and Initialize virtual/override; source manifest standard-8d9a0ec-packet.json. Parent must complete native CopyReg, including call/COPY/RELOAD extra registers, and integrate before alternate-mode work.610 owns focused CopyReg tests. Public CSE inactive."
         },
         {
           "scope": "Complete native if-conversion descriptor, transforms and production phase.",
@@ -250,7 +250,7 @@
         }
       ],
       "deferred": [
-        "VN, assertion propagation, range elimination, copy propagation, VN dead-store removal, unrolling, redundant branches, Boolean optimization, switch recognition and if-conversion are active; loop cloning and CSE remain inactive.",
+        "VN, assertion propagation, range elimination, copy propagation, VN dead-store removal, unrolling, redundant branches, Boolean optimization, switch recognition, if-conversion and loop cloning are active; CSE remains inactive.",
         "Broader optimized execution and unfinished optimization phases beyond the current backend frontier.",
         "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
         "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs. Native vector Intersects/XOR defects are recorded in B247/B246; their corrected algorithms are not authorized and those entire vector operations are deferred.",
@@ -260,11 +260,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Activate diagnostic-complete loop-cloning6 from artifacts\\loop-cloning-phase-validation\\source-manifest.json (d62:146,31D30R), preserving6a standard CSE WIP. SSA7 integrated72D72R on8d9a0ec at artifacts\\incremental-ssa-integration\\source-manifest.json.6a completing standard rewrite diagnostics and Initialize virtual/override; parent still owns CopyReg cross-operator assertion correction. Public CSE inactive. Cloning activation requires full-analysis D/R and20-config NativeAOT execution plus positive native comparison. Latest executing JIT remains ifconversion-cost-jit. Use fast inner loops. CoreRoot free; no publication.",
+    "nextAction": "Integrate frozen standard CSE packet at artifacts\\cse-validation\\standard-8d9a0ec-packet.json (45D45R; SSA prerequisites committed). Complete GenTree.CopyReg per native gentree.cpp749-764: base reg/tag across operators plus call/COPY/RELOAD extra registers;610 owns register-copy regressions, parent owns GenTree.cs. Preserve frozen standard state and native Initialize virtual/override. No public CSE activation until remaining Random/Replay/RLHook/RL/Parameterized families and dispatch close. Latest execution snapshot0610021+cloning7, loop-cloning-jit,20 configs;942:112/113 comparison resolved B283. Use fast iterations/full freeze checks. CoreRoot free; no publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Collected610:71-73 B291 regression45D45R,3a:89-92 SSA7 freeze30D30R,942:108-110 CSE/SSA reviews and initial positive comparison, d62:146-147 complete cloning diagnostics31D30R.6a heuristic closure ongoing; other packets frozen/idle. Fast build wrappers committedc9c6ecb. CoreRoot free; no app-native sessions.",
+      "workerPackets": "Collected6a:90-97 standard CSE45D45R and alternate-mode spans; SSA7 committed0610021.942:112/113 completed native range comparison;610 testing full native CopyReg for next CSE integration.3a/d62/6a/942 frozen and idle. Fast build wrappers committedc9c6ecb. CoreRoot free; no app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -280,6 +280,24 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "loopCloningActivation": {
+        "snapshotBase": "0610021",
+        "sourceManifest": "artifacts\\loop-cloning-activation\\source-manifest.json",
+        "debugPassed": 1293,
+        "releasePassed": 1249,
+        "skipped": 0,
+        "selection": "Existing exact optimization selection plus loop-cloning, incremental/existing SSA and CSE helper cases.",
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\loop-cloning-full-{Debug,Release}.trx",
+        "nativeAot": "artifacts\\loop-cloning-jit\\RyuJitSharp.dll",
+        "jitSha256": "42CF1249752FA9389BBC4092647EA33D9921A786AA0C8F9664B0AEF4928AA56B",
+        "runtimeEvidence": "artifacts\\loop-cloning-activation\\runtime-validation.json",
+        "configurations": "artifacts\\ifconversion-phase-validation\\capture-configurations.json",
+        "runtime": "20 managed execution configurations,124 positive bodies,78 Clone loops completions and18 conservative changed statuses. Range probe performs2 clones and2 static optimizations; Boolean/switch probes add4 static optimizations. All established optimized/minopts/GCStress4 retained.",
+        "regressions": "6 of31 Debug loop-cloning cases fail against old public stub. B290 nested/enclosing EH extent case fails with the premature same-try break.",
+        "comparison": "range-probe-native-comparison.md: all4 methods match native clone decisions; pre/post block tables match, with identical3 guards and fast/slow check placement. Main differs in tree content before cloning; other3 post-phase block trees match. Native/managed final bytes Main579/571,SumByLength24/26,SumShifted64/69,SumWithCount83/89; no machine-code parity claim.",
+        "resolvedPlacement": "B283 SumByLength check000025 is removed during Clone loops by both JITs, with no later Optimize index checks change. Matching corpus/oracle/host hashes verified.",
+        "gaps": "No broad candidate/EH/code parity claim. Conservative changed status is not itself evidence of a clone."
+      },
       "incrementalSsa": {
         "snapshotBase": "8d9a0ec",
         "sourceManifest": "artifacts\\incremental-ssa-integration\\source-manifest.json",
@@ -6717,10 +6735,17 @@
       "reconciledCommit": null
     },
     {
+      "area": "loop-cloning-phase",
+      "native": ["src\\coreclr\\jit\\loopcloning.cpp:1128-3590", "src\\coreclr\\jit\\flowgraph.cpp:6293-6315,7040-7072", "src\\coreclr\\jit\\compiler.hpp:5889-5923", "src\\coreclr\\jit\\optimizer.cpp:5684-5704"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.LoopCloning.Candidates.cs", "sources\\Core\\jit\\compiler\\Compiler.LoopCloning.Conditions.cs", "sources\\Core\\jit\\compiler\\Compiler.LoopCloning.Driver.cs", "sources\\Core\\jit\\compiler\\Compiler.LoopCloning.Eligibility.cs", "sources\\Core\\jit\\compiler\\Compiler.LoopCloning.Optimization.cs"],
+      "status": "Complete phase active, including candidate/condition diagnostics, guarded fast/slow duplication, static optimizations and B290 EH extent scan. HasDef/ArrLenLimit/complexity support uses existing visitors and compiler-local helpers.",
+      "reconciledCommit": null
+    },
+    {
       "area": "loop-cloning-models",
       "native": ["src\\coreclr\\jit\\loopcloning.h:191-1098", "src\\coreclr\\jit\\loopcloningopts.h:11-17", "src\\coreclr\\jit\\loopcloning.cpp:24-63,80-1127"],
       "csharp": ["sources\\Core\\jit\\loopcloning\\"],
-      "status": "Candidate/guard model prerequisite implemented; SpanIndex shares ArrIndex.cs, LC_Span shares LC_Array.cs, and LC_Expr shares LC_Condition.cs. Full driver and candidate transformations remain inactive.",
+      "status": "Candidate/guard models support the active phase; SpanIndex shares ArrIndex.cs, LC_Span shares LC_Array.cs, and LC_Expr shares LC_Condition.cs.",
       "reconciledCommit": null
     },
     {

@@ -578,9 +578,9 @@ also runs with native bounds-check/SSA gates, analysis budgets and side-effect
 repair. Established execution corpora preserve their behavior but show no
 additional removals in that phase; focused tests cover successful removal.
 A dedicated array corpus also exercises managed removal and preserves exception
-and side-effect behavior. Native removes its corresponding loop check during
-cloning, rather than range analysis; this phase-placement difference remains
-open (B283), not an accepted parity exception.
+and side-effect behavior. With loop cloning active, its recorded `SumByLength`
+check is removed during cloning by both JITs; B283's specific phase-placement
+difference is resolved without changing range analysis.
 Duplicate conditional edges preserve native BitVec assignment:
 single-word values are copied before destructive intersection, while multi-word
 storage remains aliased. The forward-analysis callback interface replaces the
@@ -622,12 +622,17 @@ resolving the observed stale managed `SSA MEM:` annotations after assertion
 propagation (B281). Complex global-phi execution and full dump parity remain
 unestablished.
 
-Loop-cloning candidate, symbolic-expression and guard models are implemented,
-but `optCloneLoops` remains inactive. Jagged-array and span candidates copy
+Loop cloning is active, including candidate discovery, profitability, condition
+derivation, guarded fast/slow duplication and static optimizations. Jagged-array
+and span candidates copy
 descriptor values rather than aliasing mutable descriptors (B286). Jagged-array
 copies share the already-populated index/check buffers, as native value copies
 do; consumers do not grow those buffers. IR, block and statement references
-retain their native identity. Guard-model tests are not phase or execution parity.
+retain their native identity. EH endpoint updates scan all enclosing clauses,
+including different-try entries (B290). Selected array execution exercises cloning
+and static bounds-check removal with matching native guards and block structure.
+The recorded `SumByLength` removal now occurs in the native phase (B283); broad
+candidate, EH and machine-code parity remain unestablished.
 
 CSE candidate discovery/indexing, descriptor local counting, tree eligibility
 and availability/dataflow are implemented without activating the CSE phase.

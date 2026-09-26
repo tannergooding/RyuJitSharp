@@ -228,9 +228,6 @@ public partial class Compiler
     // TODO: Port phase - optOptimizePostLayout
     public PhaseStatus optOptimizePostLayout() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - optCloneLoops
-    public PhaseStatus optCloneLoops() => PhaseStatus.MODIFIED_NOTHING;
-
     // TODO: Port phase - optRangeCheckCloning
     public PhaseStatus optRangeCheckCloning() => PhaseStatus.MODIFIED_NOTHING;
 
