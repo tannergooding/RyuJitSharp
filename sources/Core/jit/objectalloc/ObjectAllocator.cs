@@ -5,7 +5,7 @@
 
 namespace RyuJitSharp;
 
-public sealed class ObjectAllocator : Phase
+public sealed partial class ObjectAllocator : Phase
 {
     private bool _isObjectStackAllocationEnabled;
     private readonly bool _isR2R;
@@ -26,6 +26,8 @@ public sealed class ObjectAllocator : Phase
         : base(compiler, PHASE_ALLOCATE_OBJECTS)
     {
         _isR2R = compiler.IsReadyToRun;
+        _bitVecTraits = new BitVecTraits(compiler, compiler.lvaCount);
+        _trackFields = JitConfig.JitObjectStackAllocationTrackFields > 0;
     }
 
     public void EnableObjectStackAllocation()

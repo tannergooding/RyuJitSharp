@@ -47,8 +47,8 @@
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "New ObjectAllocator analysis partials and tests; ObjectAllocator.cs may become partial and initialize required state, but DoPhase and the heap-only path stay unchanged. No Compiler, LSRA or documentation edits.",
           "doneWhen": "Complete native tracked/index/mark/edge helpers, PrepareAnalysis, ComputeConnGraphClosure and ComputeStackObjectPointers with Debug/Release coverage and unchanged heap-only behavior.",
-          "status": "in-progress",
-          "result": "CHECK_IR committed db274ea after turn87. Turn88 reported that ComputeEscapingNodes requires AnalyzeIfCloningCanPreventEscape/AnalyzePseudoForCloning and large CheckCanClone closure (objectalloc.cpp3984-4539). Scope narrowed to exclude ComputeEscapingNodes entirely, not approximate it. Remaining foundation proceeds from db274ea; Main's object-stack-allocation frontier stays explicit."
+          "status": "complete",
+          "result": "Turn89 returned four frozen files from db274ea with16Debug/15Release graph and heap-only cases. Independent native review942a496f turn63 found no high-confidence discrepancies; parent verified source hashes and final TRX results. ComputeEscapingNodes still requires AnalyzeIfCloningCanPreventEscape/AnalyzePseudoForCloning/CheckCanClone, not a conservative substitute; Main's object-stack-allocation frontier stays explicit."
         }
       ],
       "deferred": [
@@ -62,11 +62,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Local-enabled resolution is reviewed and validated against db274ea with640Debug/539Release LSRA cases; minimal resolution and the production gate remain unchanged. Collect worker3a2c8d9b full allocation traversal after turn18, review and integrate it with the existing general selector/resolver before native doRegisterAllocation wiring. Native predicates are local-enabled build/resolve when enregisterLocalVars, full allocation when enregisterLocalVars OR OptimizationEnabled. Existing buildIntervalsWithLocals and codegen home reporting are complete. Validate actual optimized execution and preserve the checked32-method minopts baseline. Collect worker d62fc6a5 object connection-graph foundation after turn88; ComputeEscapingNodes remains wholly deferred because of its clone-analysis dependency, not approximated. No remote publication.",
+    "nextAction": "Local resolution committed4b9f59f; object connection-graph foundation reviewed and validated16Debug/15Release. Parent reviewed complete allocation traversal returned by3a2c8d9b turns19-20; worker is correcting exposed-use and nonlocal upper-save diagnostic callsites and required reference invariants before refreshed handoff. Parent's eight dispatch tests remain uncommitted: before activation three pass and five fail at the old gate. After collecting corrections, wire DoRegisterAllocation: local build/resolve when enregisterLocalVars; full allocation when enregisterLocalVars OR OptimizationEnabled. Validate integrated Debug/Release, publish fresh NativeAOT and compare to artifacts/allocation-native-fullopts (19 native bodies, DisableObjectStackAllocation and RawHexCode), then preserve checked32-method minopts execution. ComputeEscapingNodes and clone analysis remain the next independent object frontier. No remote publication.",
     "handoff": {
       "status": "local-resolution-validated-allocation-traversal-pending",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn16 fully collected; local-resolution packet reviewed and integrated, worker idle. 3a2c8d9b through turn18 collected; full allocation traversal in progress from f885d50. d62fc6a5 through turn88 collected; object foundation scope narrowed past clone-analysis blocker and continuing. 942a496f through turn62 collected: verifier-only review complete, worker idle. 6a004941 through turn35 remains resolved/idle. CoreRoot capture owner is free. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn16 resolved/idle. 3a2c8d9b through turn20 collected; bounded allocation traversal review corrections in progress. d62fc6a5 through turn89 collected; object foundation reviewed and integrated, idle. 942a496f through turn63 collected: object foundation review has no high-confidence findings, idle. 6a004941 through turn35 resolved/idle. CoreRoot is free. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -82,6 +82,39 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "objectConnectionGraph": {
+        "nativeBoundary": "objectalloc.cpp:79-175,258-555,997-1149 and corresponding objectalloc.h state/predicates.",
+        "sourceManifest": "artifacts\\objectalloc-graph-validation\\source-manifest.json",
+        "sourceManifestSha256": "1EA7E1CE8728D90E0AECD5ACD5D5A115DCEFA2BC6EFAC7A14EB4CE4E0CE87225",
+        "snapshotBase": "db274eaadcffa46b2efb0848dbeefdf72cc190a1",
+        "rootSnapshotHashesMatch": true,
+        "debugTests": "artifacts\\objectalloc-graph-validation\\debug.trx",
+        "releaseTests": "artifacts\\objectalloc-graph-validation\\release.trx",
+        "debugPassed": 16,
+        "releasePassed": 15,
+        "skipped": 0,
+        "filter": "FullyQualifiedName~ObjectAllocatorGraphTests|FullyQualifiedName~AllocationLoweringTests",
+        "review": "Independent comparison of complete functions, constructor changes, predicates and tests against the pinned native source found no high-confidence conformance discrepancies.",
+        "limit": "Connection-graph foundations only. DoPhase and heap-only morphing are unchanged; ComputeEscapingNodes and clone viability remain deferred."
+      },
+      "allocationPhasePreparation": {
+        "beforeSourceManifest": "artifacts\\allocation-phase-before\\source-manifest.json",
+        "beforeSourceManifestSha256": "F2DB73569D67B84DE39C184224881BA5D4309499837678072D95F2EA1C483F7C",
+        "beforeTests": "artifacts\\allocation-phase-before\\before.trx",
+        "beforeBase": "4b9f59f",
+        "dispatchCases": 8,
+        "existingModePasses": 3,
+        "expectedGateFailures": 5,
+        "productionDriverChanged": false,
+        "nativeManifest": "artifacts\\allocation-native-fullopts\\manifest.json",
+        "nativeManifestSha256": "48919568172298E3CEAB23D5B8335FDCAB2C0C9946090B2903031F8338E2293F",
+        "nativeDumpSha256": "851BAC3D0310C5CFC080E10CF48FFE3A2B202B7096AE7368B9681322618D2133",
+        "nativeHeadersAndNonzeroBodies": 19,
+        "nativeExitCode": 0,
+        "nativeTimedOut": false,
+        "nativeOptions": ["DisableObjectStackAllocation", "RawHexCode"],
+        "limit": "Preparation only. Five regression failures are the old explicit gate, not successful optimized managed execution."
+      },
       "localResolutionDriver": {
         "nativeBoundary": "lsra.cpp:7811-8420 resolveRegisters<true>,7444-7517 and7534-7624 upper-vector insertion,11876-12382 final allocation checking,12395-12484 move verification; Windows AMD64.",
         "workerManifest": "artifacts\\local-resolution-driver-validation\\source-manifest.json",
@@ -5918,6 +5951,13 @@
       "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.LocalResolution.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionHelpers.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionDriver.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionDriverFinalization.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionDriverVectors.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionDriverVerification.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalResolutionDriverVerificationMoves.cs"],
       "reconciledCommit": null,
       "scope": "Complete Windows-AMD64 local-reference helpers and resolveRegisters<true> driver, vector insertion, descriptor finalization and final-allocation/move checking; optimized allocation remains gated."
+    },
+    {
+      "area": "object-allocation-connection-graph",
+      "native": ["src\\coreclr\\jit\\objectalloc.cpp", "src\\coreclr\\jit\\objectalloc.h"],
+      "csharp": ["sources\\Core\\jit\\objectalloc\\ObjectAllocator.AnalysisState.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.ConnectionGraph.cs"],
+      "reconciledCommit": null,
+      "scope": "Complete tracked/index/mark/edge helpers, PrepareAnalysis, ComputeConnGraphClosure and ComputeStackObjectPointers; escape discovery, clone viability and enabled stack allocation remain unported."
     },
     {
       "area": "ssa-verification",

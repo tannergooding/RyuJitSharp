@@ -15,6 +15,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Object-allocation graph foundations
+
+Object allocation now has native connection-graph preparation and closure:
+tracked-local indexing, reserved clone and pseudo indices, unknown-source
+tracking, and stack-pointer propagation. Preparation retains the native
+configuration, OSR and field-tracking rules.
+
+These are prerequisites for escape analysis, not enabled stack allocation.
+Escape discovery and clone viability remain unported, and the existing
+heap-only execution path is unchanged.
+
 ## 2026-09-25: Enregistered-local resolution
 
 Windows-x64 LSRA now replays local-enabled register assignments into the IR,
