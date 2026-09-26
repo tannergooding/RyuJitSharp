@@ -655,7 +655,9 @@ candidate discovery and availability analysis, and rewrites profitable expressio
 Its wrapper clears prior CSE markers on repeated runs. Managed indirection
 eligibility uses the typed address accessor instead of native's unary-capable
 `GenTreeOp` cast (B298). Matching-input comparisons have not isolated a CSE
-algorithm difference; pre-CSE CFG and expression differences remain tracked in B300.
+algorithm difference. Production loop hoisting now supplies the four missing
+range-probe preheader expressions and restores native CSE weighted uses.
+The Boolean/switch pre-CSE return-merging differences remain tracked in B300.
 
 Register-state copying accepts ordinary cross-operator replacements and delegates
 call/COPY/RELOAD state as native does (B292). Calls still require call sources, and

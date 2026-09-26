@@ -15,6 +15,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Loop hoisting
+
+Loop-invariant expressions now move into loop preheaders through the production
+hoisting phase. Selection preserves native loop order, value-number and memory
+dependencies, exception ordering and register-pressure limits. Cloned expressions
+feed the subsequent CSE phase without removing their original uses prematurely.
+
+The range probes hoist the same four expressions into the same preheaders as
+native, restoring the previously missing CSE uses and weighted counts. Boolean
+and switch probes likewise agree on not hoisting. Their earlier return-merging
+differences remain; generated-code and full dump parity are still incomplete.
+
 ## 2026-09-26: CSE activation
 
 Value-number CSE now runs through the production pipeline, selecting the configured

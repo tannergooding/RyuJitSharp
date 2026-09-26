@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete CSE activation and optional metrics, then integrate the reviewed native loop-hoisting closure. If-conversion, loop cloning, Boolean optimization and switch recognition are active. Keep each remaining phase inactive until its complete native dependency closure and execution validation.",
+      "scope": "Complete loop-hoisting activation and continue early propagation. CSE, if-conversion, loop cloning, Boolean optimization and switch recognition are active. Keep each remaining phase inactive until its complete native dependency closure and execution validation.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
@@ -23,7 +23,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Complete CSE activation+metrics+diagnostics13 validated166D93R and20configs124bodies78phase completions. Final JIT30EF3A81;3a confirms7metrics methods,3exact full lines;942 confirms B299 diagnostics with unchanged promotions/code outside address operands. B300/B301 preserve input-graph and method-identity gaps. Commit coherent batch then integrate corrected hoisting5.",
+      "parentScope": "Complete hoisting6 production activation integrated208D128R and20configs124bodies78phase completions; JITD0A18A45.942:131 confirms four matching native hoists/preheaders and restores range B300 weighted uses; Boolean/switch return merging remains. B302/B303 corrected. Commit then integrate3a early propagation.",
       "parallelPackets": [
         {
           "scope": "Complete Boolean optimization with the native CCMP switch-detection prerequisite.",
@@ -82,11 +82,18 @@
           "remainingBoundary": "Integrated with complete phase166D93R and final20captures.3a:106 optional metrics7methods execute without fallback; all field order/count/policy/sequence matches native,3ifconversion full lines exact. Range size/perf/signature differences preexist; B300/B301."
         },
         {
-          "scope": "Complete native loop-hoisting prerequisite and driver closure without phase activation.",
+          "scope": "Complete native loop-hoisting closure and production activation.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "New Compiler.LoopHoisting*.cs, conventional loop-hoist models if needed, LoopHoistingTests.cs; existing shared additions require approval.",
+          "status": "done",
+          "remainingBoundary": "Parent activation6 integrated208D128R,20configs124bodies78phases.942:131 confirms matching four native hoists/preheaders and weighted CSE uses;12 body sizes unchanged from preactivation, differing bytes only address operands. B302/B303 corrected. Broader parity remains open."
+        },
+        {
+          "scope": "Complete native early propagation and required helper closure.",
+          "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
+          "files": "New Compiler.EarlyProp*.cs and EarlyPropagationTests.cs only; parent owns existing optEarlyProp stub.",
           "status": "in-progress",
-          "remainingBoundary": "d62:156 corrected duplicate-VN diagnostic, frozen5files9D6R;942:127 semantic review clear and942:128 confirms correction/hashes. artifacts\\loop-hoisting-validation\\source-manifest.json. Keep production stub until parent integration after CSE."
+          "remainingBoundary": "Private prerequisite packet based on9ebf969; collect frozen manifest/native spans/tests before parent production activation. Shared-file additions require approval."
         },
         {
           "scope": "Complete native if-conversion descriptor, transforms and production phase.",
@@ -295,11 +302,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit complete CSE activation+metrics+diagnostics13 with tracking:166D93R, final20configs124bodies78phases and7metrics methods validated; source-manifest-final.json, JIT30EF3A81. Then integrate d62:156 corrected hoisting5 from artifacts\\loop-hoisting-validation\\source-manifest.json (9D6R;942 review clear). Activate the complete private hoisting driver via production optHoistLoopCode only after exact-source integration; preserve CSE policy query and existing mode gates. Continue20configs plus positive native hoisting comparison. Do not reopen B300/B301 during this dependency batch. All worker packets collected; no publication.",
+    "nextAction": "Commit validated hoisting6 plus tracking, then collect3a early-propagation private closure and integrate the actual production optEarlyProp entry after review. Hoisting source-manifest.json verified against root/snapshot;208D128R and20configs124bodies78phases pass.942:131 native-phase-comparison.json confirms four matching hoists and resolves range B300 occurrences; Boolean/switch return merging and B301 remain. Preserve early-propagation WIP outside hoisting commit. No publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "CSE complete:610 through86 phase tests and3old-wrapper failures,6a:110 diagnostics,3a:106 metrics7methods,942:128 final comparison all collected. d62:156 corrected hoisting5 frozen9D6R and reviewed. Workers otherwise idle;3a correcting only unsupported signature-causality wording in local receipt. CoreRoot free; no app-native sessions.",
+      "workerPackets": "CSE committed9ebf969; all its packets collected. Hoistingd62:156 integrated with parent corrections;942:131 comparison collected.3a early-propagation lane active on9ebf969. d62/610/6a/942 idle. CoreRoot free; no app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -315,6 +322,20 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "loopHoisting": {
+        "snapshotBase": "9ebf969",
+        "sourceManifest": "artifacts\\loop-hoisting-activation\\source-manifest.json",
+        "debugPassed": 208,
+        "releasePassed": 128,
+        "skipped": 0,
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\hoisting-integrated-{Debug,Release}.trx",
+        "nativeAot": "artifacts\\loop-hoisting-jit\\RyuJitSharp.dll",
+        "sha256": "D0A18A450B17422FE53839419F1B85826C812CED3D633F4820A3D745AF4E44E0",
+        "runtime": "artifacts\\loop-hoisting-activation\\runtime-validation.json:20configurations,124positive bodies,78hoisting completions; managed execution without fallback.",
+        "comparison": "artifacts\\loop-hoisting-activation\\native-phase-comparison.json:four matching range hoists/preheaders restore native weighted CSE uses; Boolean/switch agree on zero hoists. All12 managed body sizes unchanged; byte changes confined to address operands.",
+        "regressions": "Two negative-bit JitNoHoist cases fail before unsigned conversion correction; duplicate-VN diagnostic fails before FMT_VN correction.",
+        "gaps": "Native/managed code sizes still differ; Main IND cost6/7 versus4/6 predates hoisting. B300 Boolean/switch return merging and B301 method identity remain. Nested-loop and throwing-sibling coverage is not exhaustive."
+      },
       "cseActivation": {
         "snapshotBase": "75f43c3",
         "sourceManifest": "artifacts\\cse-phase-validation\\source-manifest-final.json",
@@ -5666,6 +5687,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "loop-hoisting",
+      "native": ["src\\coreclr\\jit\\optimizer.cpp:3595-4045,4048-4169,4258-4290,4352-5045,5253-5286", "src\\coreclr\\jit\\compiler.h:7650-7734"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.LoopHoisting.Driver.cs", "sources\\Core\\jit\\compiler\\Compiler.LoopHoisting.Context.cs", "sources\\Core\\jit\\compiler\\Compiler.LoopHoisting.Candidates.cs", "sources\\Core\\jit\\compiler\\Compiler.LoopHoisting.Visitor.cs"],
+      "status": "Complete production phase. Selected native hoists and downstream weighted uses match; broader dump/code parity remains open.",
+      "reconciledCommit": null
+    },
     {
       "area": "global-assertion-phase-and-switch-facts",
       "native": ["src\\coreclr\\jit\\assertionprop.cpp:5909-6127,6765-7025", "src\\coreclr\\jit\\valuenum.cpp:16486-16512"],
