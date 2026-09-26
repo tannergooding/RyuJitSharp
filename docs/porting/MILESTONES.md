@@ -15,6 +15,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Scalar-evolution analysis
+
+Scalar-evolution analysis now models loop-invariant expressions and induction
+recurrences from SSA definitions. It simplifies those expressions, materializes
+IR and value numbers, infers comparisons from dominating branches, and computes
+loop exit counts with native width and overflow rules.
+
+This completes the analysis prerequisite for induction-variable optimization.
+The optimization phase itself remains inactive until its transformation closure
+is integrated; production IV execution and dump parity are not yet established.
+
 ## 2026-09-26: Range-check cloning
 
 Range-check cloning now replaces eligible groups of bounds checks with guarded
