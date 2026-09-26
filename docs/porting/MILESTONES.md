@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Runtime-lookup expansion
+
+Generic-handle lookup expansion now emits dictionary loads and the required
+size/null guards while retaining the original helper as a fallback. It preserves
+evaluation order, shared result ownership, generic context, flow weights and
+the enclosing EH region.
+
+Selected shared-generic methods resolve constructed types for different
+reference-type arguments and repeated lookups, with native-matching expansion
+decisions and CFGs. The combined array/lookup corpus now executes both selected
+managed bodies without bypassing lowering's expanded-lookup requirement.
+Post-phase node IDs and generated-code layout still differ. Runtime coverage of
+size guards, indirect offsets and lookups inside EH regions remains open.
+
 ## 2026-09-26: Multidimensional array morphing
 
 Array morphing now expands multidimensional element addresses into ordered

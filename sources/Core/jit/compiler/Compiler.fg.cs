@@ -13895,9 +13895,6 @@ public partial class Compiler
         }
     }
 
-    // TODO: Port phase - fgExpandRuntimeLookups
-    public PhaseStatus fgExpandRuntimeLookups() => PhaseStatus.MODIFIED_NOTHING;
-
     // TODO: Port phase - fgExpandStaticInit
     public PhaseStatus fgExpandStaticInit() => PhaseStatus.MODIFIED_NOTHING;
 

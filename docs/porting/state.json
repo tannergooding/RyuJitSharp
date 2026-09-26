@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Activate the complete frozen native runtime-lookup expansion closure after array morphing. Preserve helper selection, indirections/offsets, size/null guards, split/evaluation order, ownership, CFG/EH/profile metadata and debug flags.",
+      "scope": "Port complete native static-initialization expansion next, sharing the native helper driver and split/spill support with independent TLS and VN-based intrinsic expansion where useful. Preserve WindowsAMD64 ABI branches, metadata, evaluation/exception order and fallback contracts.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
@@ -23,7 +23,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Array activation complete:4overlays732D607R,6old-stub failures/2controls and27configs140bodies140phases.6a:122 confirms byte-identical constructed/remorphed trees and post-phase CFG/IR; B301/B308 input diagnostics remain. Next activate frozen/reviewed runtime-lookup packet and select RuntimeLookupCases independently. CoreRoot free.",
+      "parentScope": "Runtime lookup complete:3overlays743D618R,9old-stub failures/2controls and29configs143bodies143phases. d62:181 final comparison confirms native-matching phase/CFG slices; B307 node IDs, diagnostics and code layout remain. All returned packets integrated. Next establish reusable complete fgExpandHelper API for static/TLS/VN-intrinsic expansion without duplicating traversal. CoreRoot free.",
       "parallelPackets": [
         {
           "scope": "Complete native finally cloning and callfinally-chain merging.",
@@ -43,8 +43,8 @@
           "scope": "Complete native runtime-lookup expansion.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "New Compiler.RuntimeLookupExpansion*.cs and RuntimeLookupExpansionTests.cs; parent owns existing entry.",
-          "status": "frozen-reviewed",
-          "remainingBoundary": "d62:178 two-file fgExpandRuntimeLookups closure frozen on3790d32,11D/11R full analysis and root/snapshot hashes verified.942:145 found no high-confidence defect. Activate after array packet; exclude neighboring helper-expansion phases. Positive native shared-generic null-check/fast-path/helper evidence is artifacts\\array-runtime-lookup-probe\\evidence.json; no size-check, EH lookup or runtime branch-coverage claim."
+          "status": "done",
+          "remainingBoundary": "d62:178 source/942:145 review/d62:181 final comparison integrated. B309 native DEBUG progress check restored.3overlays743D618R,9old-stub failures/2controls;29configs143bodies143phases. Native phase/CFG slices match; B307 node IDs, diagnostics/code layout and broader lookup coverage remain open."
         },
         {
           "scope": "Complete native early/late head and tail merging.",
@@ -386,11 +386,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Activate d62:178 runtime-lookup packet/942:145 review on the committed array boundary. Rename private fgExpandRuntimeLookupsCore to public fgExpandRuntimeLookups, remove Compiler.fg.cs stub and route tests to it; prove old-stub negative control, full-analysis Debug/Release and fresh NativeAOT. Carry27-case array matrix plus isolated RuntimeLookupCases from artifacts\\array-runtime-isolated-probe (native-lookup capture ready). Preserve lowering's expanded-lookup assertion; compare real null-check/helper expansion before commit. No publication.",
+    "nextAction": "Port complete fgExpandStaticInit (helperexpansion.cpp1316 onward), with independent TLS expansion (496 onward) and VN-based intrinsic expansion (1612 onward) where useful. First parent establishes complete reusable fgExpandHelper/fgExpandHelperForBlock from1232-1300, preserving skipRarelyRunBlocks and DEBUG progress checks; reuse current split/spill support instead of duplicating it. Assign bounded new-file lanes on the committed runtime-lookup baseline, keeping shared APIs and public activation parent-owned. Carry29-case matrix and fresh NativeAOT/positive native comparisons forward. No publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Finally integrated at d6be2fd.6a:121 array source/942:144 review/6a:122 comparison collected and integrated. d62:178 runtime lookup source/942:145 review frozen and queued. All5workers idle; no unread handoffs or app-native sessions. Preserve lookup packet outside array commit. CoreRoot free.",
+      "workerPackets": "Finally integrated d6be2fd; array integrated405a663; runtime d62:178 source/942:145 review/d62:181 final comparison all collected and integrated. All5workers idle, no queued source packets, unread handoffs or app-native sessions. CoreRoot free.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -406,6 +406,24 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "runtimeLookupExpansion": {
+        "snapshotBase": "405a663",
+        "sourceManifest": "artifacts\\runtime-lookup-integration\\source-manifest.json",
+        "debugPassed": 743,
+        "releasePassed": 618,
+        "skipped": 0,
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\lookup-complete-{Debug,Release}.trx",
+        "regressions": "9expected old-stub failures include positive expansions and missing-signature rejection;2controls pass. Evidence lookup-entry-before.trx and artifacts\\runtime-lookup-integration\\entry-before.log.",
+        "review": "942:145 complete specified native closure review found no high-confidence defect. Parent restored native DEBUG originalBlock progress assertion before final publication; transformation body unchanged.",
+        "nativeAot": "artifacts\\runtime-lookup-complete-jit\\RyuJitSharp.dll",
+        "sha256": "E1E0D1B84CCCEEFDAA0E5F78907EAA806FA1DC8B7BE9FD6D8D220C6D08B986C6",
+        "runtime": "artifacts\\runtime-lookup-integration\\runtime-validation.json:29configurations143positive bodies143lookup phase completions; exact selected methods/JIT hash/GCStress/no fallback verified.",
+        "configurations": "artifacts\\runtime-lookup-integration\\capture-configurations.json:prior27 plus isolated Lookup and original combined Read/Lookup selector.",
+        "nativeEvidence": "artifacts\\array-runtime-isolated-probe\\native-lookup and artifacts\\array-runtime-lookup-probe\\native-positive",
+        "comparison": "artifacts\\runtime-lookup-integration\\native-phase-comparison.json:d62:181 final corrected captures have native-matching positive phase and CFG slices in both Lookup corpora, with +72/+16 dictionary loads, null guard, V04 spill, V03 fast/fallback result and retained owning TypeHandle-to-Type call. Corrected phase/CFG/IR/code listings match earlier managed captures exactly; raw embedded pointers differ and are not normalized.",
+        "probeScope": "Lookup uses shared reference-type instantiations and repeated constructed-type resolution. Final combined selector executes both Read and Lookup, resolving the earlier unexpanded-lookup lowering assertion without weakening it.",
+        "gaps": "Positive runtime exercises null guard, not size guard/indirect offsets/EH lookups or instrumented fallback-path coverage. Node IDs, post-phase diagnostics and code layout remain outside scoped parity."
+      },
       "arrayMorphing": {
         "snapshotBase": "d6be2fd",
         "sourceManifest": "artifacts\\array-morphing-integration\\source-manifest.json",
@@ -5952,6 +5970,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "runtime-lookup-expansion",
+      "native": ["src\\coreclr\\jit\\helperexpansion.cpp:11-29,136-148,169-485,1232-1260,1276-1300", "src\\coreclr\\jit\\fgbasic.cpp:4731-4761", "src\\coreclr\\jit\\gentree.cpp:2447-2457"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.RuntimeLookupExpansion.cs"],
+      "status": "Complete WindowsAMD64 runtime-lookup production phase and direct split/spill/helper-scan closure. Selected shared-generic/combined execution and native-matching phase/CFG slices established. B307 IDs, diagnostics, code layout and broader runtime lookup coverage remain open.",
+      "reconciledCommit": null
+    },
     {
       "area": "array-operation-morphing",
       "native": ["src\\coreclr\\jit\\morph.cpp:15850-16263", "src\\coreclr\\jit\\compiler.h:6250-6309"],
