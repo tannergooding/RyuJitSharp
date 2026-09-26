@@ -181,40 +181,37 @@ internal static unsafe class CodeGenEmissionPhaseTests
 #endif
 
     [Test]
-    public static void MetricsModeRejectsBeforeCodeSizingReservationAllocationAndPublication()
+    public static void MetricsModeEmitsAfterUnwindAndCodeAllocation()
     {
         WithEmission((compiler, codeGen, state) =>
         {
-            var hotCode = (void*)0x1110;
-            var nativeSize = 67;
+            void* hotCode = null;
+            var nativeSize = -1;
             CodePointerAddress(codeGen) = &hotCode;
             NativeSizeAddress(codeGen) = &nativeSize;
-            CodePointerRW(codeGen) = (void*)0x2220;
-            ColdCodePointer(codeGen) = (void*)0x3330;
-            ColdCodePointerRW(codeGen) = (void*)0x4440;
-            CodeSize(codeGen) = 77;
-            PrologSize(codeGen) = 88;
-            EpilogSize(codeGen) = 99;
-            compiler.info.compNativeCodeSize = 55;
-            compiler.info.compTotalHotCodeSize = 19;
-            compiler.info.compTotalColdCodeSize = 13;
             compiler.opts.dspMetrics = true;
+            compiler.info.compFullName = "MetricsFixture()";
+            compiler.info.compMethodSpmiIndex = -1;
 
-            var error = Assert.Throws<FatalJitException>(codeGen.genEmitMachineCode);
+            var output = Capture(codeGen.genEmitMachineCode);
 
-            Assert.That(error, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(state->Calls, Is.Zero);
-            Assert.That((nuint)hotCode, Is.EqualTo((nuint)0x1110));
-            Assert.That((nuint)CodePointerRW(codeGen), Is.EqualTo((nuint)0x2220));
-            Assert.That((nuint)ColdCodePointer(codeGen), Is.EqualTo((nuint)0x3330));
-            Assert.That((nuint)ColdCodePointerRW(codeGen), Is.EqualTo((nuint)0x4440));
-            Assert.That(nativeSize, Is.EqualTo(67));
-            Assert.That(CodeSize(codeGen), Is.EqualTo(77u));
-            Assert.That(PrologSize(codeGen), Is.EqualTo(88u));
-            Assert.That(EpilogSize(codeGen), Is.EqualTo(99u));
-            Assert.That(compiler.info.compNativeCodeSize, Is.EqualTo(55));
-            Assert.That(compiler.info.compTotalHotCodeSize, Is.EqualTo(19));
-            Assert.That(compiler.info.compTotalColdCodeSize, Is.EqualTo(13));
+            Assert.That(state->Calls, Is.EqualTo(2));
+            Assert.That(state->ReserveOrder, Is.EqualTo(1));
+            Assert.That(state->AllocateOrder, Is.EqualTo(2));
+            Assert.That(state->InvalidRequests, Is.Zero);
+            Assert.That((nuint)hotCode, Is.EqualTo((nuint)state->HotExec));
+            Assert.That((nuint)CodePointerRW(codeGen), Is.EqualTo((nuint)state->HotRW));
+            Assert.That((nuint)ColdCodePointer(codeGen), Is.EqualTo((nuint)0));
+            Assert.That((nuint)ColdCodePointerRW(codeGen), Is.EqualTo((nuint)0));
+            Assert.That(nativeSize, Is.EqualTo(2));
+            Assert.That(CodeSize(codeGen), Is.EqualTo(2u));
+            Assert.That(PrologSize(codeGen), Is.EqualTo(1u));
+            Assert.That(EpilogSize(codeGen), Is.Zero);
+            Assert.That(compiler.info.compNativeCodeSize, Is.EqualTo(2));
+            Assert.That(compiler.info.compTotalHotCodeSize, Is.EqualTo(2));
+            Assert.That(output, Does.StartWith("; Total bytes of code 2, prolog size 1, "));
+            Assert.That(output, Does.Contain(", num cse 0 num cand 0 Standard CSE Heuristic seq "));
+            Assert.That(output, Does.Not.Contain("; ============================================================"));
         });
     }
 

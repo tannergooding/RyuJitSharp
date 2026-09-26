@@ -180,14 +180,6 @@ public sealed partial class CodeGen
 #if LATE_DISASM
         RequireSupportedLateDisassembly();
 #endif
-#if DEBUG
-        // The CSE policy constructors and DumpMetrics hierarchy are not ported.
-        // Reject this native diagnostic mode before reserving or allocating memory.
-        if (_compiler.opts.dspMetrics)
-        {
-            throw new FatalJitException(CORJIT_SKIPPED, "Emission with CSE metrics is not implemented.");
-        }
-#endif
         assert(_codePtr is not null);
         assert(_nativeSizeOfCode is not null);
         Emitter.emitComputeCodeSizes();
@@ -230,9 +222,29 @@ public sealed partial class CodeGen
         }
 
 #if DEBUG
-        if (_compiler.opts.disAsm || _verbose)
+        var dspMetrics = _compiler.opts.dspMetrics;
+        var dspSummary = _compiler.opts.disAsm || _verbose;
+        var dspMetricsOnly = dspMetrics && !dspSummary;
+        if (dspSummary || dspMetrics)
         {
-            jitprintf($"\n; Total bytes of code {_codeSize}, prolog size {_prologSize}, PerfScore {_compiler.Metrics.PerfScore:F2}, instruction count {instrCount}, allocated bytes for code {Emitter.emitTotalHotCodeSize + Emitter.emitTotalColdCodeSize}");
+            if (!dspMetricsOnly)
+            {
+                jitprintf("\n");
+            }
+
+            jitprintf($"; Total bytes of code {_codeSize}, prolog size {_prologSize}, PerfScore {_compiler.Metrics.PerfScore:F2}, instruction count {instrCount}, allocated bytes for code {Emitter.emitTotalHotCodeSize + Emitter.emitTotalColdCodeSize}");
+
+            if (dspMetrics)
+            {
+                jitprintf($", num cse {_compiler.CseCount} num cand {_compiler.CseCandidateCount}");
+                _compiler.optGetCSEheuristic().DumpMetrics();
+
+                if (_compiler.info.compMethodSpmiIndex >= 0)
+                {
+                    jitprintf($" spmi index {_compiler.info.compMethodSpmiIndex}");
+                }
+            }
+
 #if TRACK_LSRA_STATS
             if (JitConfig.DisplayLsraStats == 3)
             {
@@ -242,7 +254,10 @@ public sealed partial class CodeGen
             }
 #endif
             jitprintf($" (MethodHash={_compiler.info.compMethodHash():x8}) for method {_compiler.info.compFullName} ({_compiler.compGetTieringName(true)})\n");
-            jitprintf("; ============================================================\n\n");
+            if (!dspMetricsOnly)
+            {
+                jitprintf("; ============================================================\n\n");
+            }
             jitstdout().Flush();
         }
         if (_verbose)

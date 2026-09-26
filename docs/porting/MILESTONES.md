@@ -15,6 +15,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: CSE activation
+
+Value-number CSE now runs through the production pipeline, selecting the configured
+native policy, classifying definitions and uses, and rewriting profitable
+expressions into SSA-repaired temporaries. Repeated invocations clear prior tree
+markers. Optional emission metrics use the same policy and method-local counts
+rather than rejecting the request.
+
+The established optimized and GC-stress corpora execute with CSE enabled.
+Native comparisons agree on decisions for matching input shapes; earlier return
+merging and expression-occurrence differences still produce different candidates
+and phi requirements. Broader dump and generated-code parity remain outstanding.
+
 ## 2026-09-26: Learning-based CSE policies
 
 The Debug RLHook and RL policies now implement configured decisions, feature

@@ -8,6 +8,7 @@ namespace RyuJitSharp;
 public partial class Compiler
 {
     internal int CseCandidateCount => optCSECandidateCount;
+    internal int CseCount => optCSEcount;
     internal CSEdsc?[] CseCandidateTable => optCSEtab;
     internal int NextCseAttempt() => optCSEattempt++;
     internal void SetCseWeight(weight_t weight) => optCSEweight = weight;

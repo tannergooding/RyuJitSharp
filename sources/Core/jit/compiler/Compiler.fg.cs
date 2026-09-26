@@ -4001,6 +4001,22 @@ public partial class Compiler
         }
     }
 
+    public void fgDumpTrees(BasicBlock? firstBlock, BasicBlock? lastBlock)
+    {
+        // The block table normally precedes this dump; do not repeat its edges.
+        for (var block = firstBlock; block is not null; block = block.Next)
+        {
+            fgDumpBlock(block);
+
+            if (block == lastBlock)
+            {
+                break;
+            }
+        }
+
+        jitprintf("\n-------------------------------------------------------------------------------------------------------------------\n");
+    }
+
     public void fgDumpBlock(BasicBlock block)
     {
         jitprintf("\n------------ ");

@@ -83,7 +83,7 @@ public abstract partial class CSE_HeuristicCommon
 
             case GT_IND:
             {
-                if (tree.AsOp().Op1.Oper is GT_ARR_ELEM)
+                if (tree.AsIndir().Addr.Oper is GT_ARR_ELEM)
                 {
                     return false;
                 }

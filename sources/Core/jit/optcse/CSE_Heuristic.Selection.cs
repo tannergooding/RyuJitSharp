@@ -33,7 +33,8 @@ public abstract partial class CSE_HeuristicCommon
                     ? $"K_{Compiler.DecodeSharedCseConstant(descriptor.csdHashKey):x}"
                     : $"${descriptor.csdHashKey,-3:x}, ${descriptor.defExcSetPromise,-3:x}";
                 Globals.jitprintf($"\nConsidering {FMT_CSE(candidate.CseIndex())} {{{key}}} " +
-                    $"[def={candidate.DefCount():F6}, use={candidate.UseCount():F6}, " +
+                    $"[def={formatFloat(candidate.DefCount(), "F6")}, " +
+                    $"use={formatFloat(candidate.UseCount(), "F6")}, " +
                     $"cost={candidate.Cost(),3}{(descriptor.csdLiveAcrossCall ? ", call" : "      ")}]\n");
                 Globals.jitprintf("CSE Expression : \n");
                 m_compiler.gtDispTree(candidate.Expr());

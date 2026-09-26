@@ -650,7 +650,12 @@ Debug random and replay policies are implemented with the shared native integer
 configuration parser. Adjacent minus tokens and the persistent negative sign
 retain pinned behavior (B295/B296). Debug RLHook and RL policies also implement
 decision replay, feature reporting, stochastic selection and parameter updates.
-Phase dispatch remains inactive; these prerequisites are not active CSE execution parity.
+The production phase now selects and caches the configured native policy, performs
+candidate discovery and availability analysis, and rewrites profitable expressions.
+Its wrapper clears prior CSE markers on repeated runs. Managed indirection
+eligibility uses the typed address accessor instead of native's unary-capable
+`GenTreeOp` cast (B298). Matching-input comparisons have not isolated a CSE
+algorithm difference; pre-CSE CFG and expression differences remain tracked in B300.
 
 Register-state copying accepts ordinary cross-operator replacements and delegates
 call/COPY/RELOAD state as native does (B292). Calls still require call sources, and
@@ -1376,18 +1381,16 @@ unported; unmatched methods and null section selections do not require them.
 Immediate instruction disassembly is available (D005). This boundary does not
 authorize silent omission of requested diagnostics or payload instructions.
 
-### D008: Machine-code emission without optional CSE metrics
+### D008: Optional CSE emission metrics
 
-**Status:** temporary implementation boundary along the existing native Debug
-`opts.dspMetrics` predicate, not an accepted output difference.
+**Status:** resolved implementation boundary; no accepted output difference.
 
-Windows-AMD64 `genEmitMachineCode` rejects this diagnostic mode with
-`CORJIT_SKIPPED` before code-size publication, unwind reservation or EE allocation.
-The complete ordinary emission path is implemented. Native `optGetCSEheuristic`
-constructs a policy even when none exists yet. The policy hierarchy and its
-`DumpMetrics` implementations are now ported, but factory activation and the
-emission callsite remain the integration boundary (B238). Returning null or
-printing invented empty metrics would not preserve the native behavior.
+Windows-AMD64 `genEmitMachineCode` now implements the native Debug `opts.dspMetrics`
+path, including metrics-only versus code-summary framing, method-local CSE counts,
+policy-specific metrics, optional SPMI index and method identity. It constructs
+the configured policy when necessary rather than substituting empty metrics.
+Output flushing and native-code-size publication retain their native ordering.
+Ordinary emission and the separate late-disassembly boundary are unchanged.
 
 ### D009: Final metadata without optional late disassembly
 

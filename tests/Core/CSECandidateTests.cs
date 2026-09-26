@@ -168,6 +168,26 @@ internal static unsafe class CSECandidateTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void IndirectionEligibilityUsesItsAddress(bool arrayElement)
+    {
+        WithCompiler(compiler =>
+        {
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            GenTree address = arrayElement
+                ? new GenTreeArrElem(TYP_BYREF, compiler.gtNewLclvNode(TYP_REF, 0), 4,
+                    [compiler.gtNewIconNode(TYP_INT, 0)])
+                : compiler.gtNewIconNode(Globals.TYP_I_IMPL, 0x1234);
+            var tree = compiler.gtNewIndir(TYP_INT, address);
+            tree._vnPair.SetBoth(store.VNForExpr(null, TYP_INT));
+            tree.SetCosts(5, 4);
+
+            Assert.That(new CSE_Heuristic(compiler).ConsiderTree(tree, false), Is.EqualTo(!arrayElement));
+        });
+    }
+
     [Test]
     public static void LocateVisitsEligibleTreesInStatementOrder()
     {

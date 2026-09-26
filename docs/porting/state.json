@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Integrate complete if-conversion, loop-cloning and CSE dependency closures. Boolean optimization and switch recognition are committed and active. Keep each remaining phase inactive until its complete native dependency closure and execution validation.",
+      "scope": "Complete CSE activation and optional metrics, then integrate the reviewed native loop-hoisting closure. If-conversion, loop cloning, Boolean optimization and switch recognition are active. Keep each remaining phase inactive until its complete native dependency closure and execution validation.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
@@ -23,7 +23,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "RLHook/RL5 integrated125D83R on2142288;942:120 confirmed B297 diagnostic correction. All policy families complete. Parent phase3 WIP includes factory/production wrapper and native fgDumpTrees;942:119/120 reviews clear,610 validating production tests after IDE0007 corrections. No active-phase runtime evidence yet.",
+      "parentScope": "Complete CSE activation+metrics+diagnostics13 validated166D93R and20configs124bodies78phase completions. Final JIT30EF3A81;3a confirms7metrics methods,3exact full lines;942 confirms B299 diagnostics with unchanged promotions/code outside address operands. B300/B301 preserve input-graph and method-identity gaps. Commit coherent batch then integrate corrected hoisting5.",
       "parallelPackets": [
         {
           "scope": "Complete Boolean optimization with the native CCMP switch-detection prerequisite.",
@@ -78,15 +78,15 @@
           "scope": "Complete optional Debug CSE emission metrics mode D008.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
           "files": "CodeGen.GenerationPhases.cs, CodeGenCSEMetricsTests.cs, CodeGenEmissionPhaseTests.cs; parent supplies readonly Compiler.CSE.HeuristicAccess.cs:CseCount.",
-          "status": "in-progress",
-          "remainingBoundary": "Three cases fail against2142288 rejection. Final isolated validation uses full policy hierarchy and parent phase3; no CoreRoot work. Do not include in phase activation unless explicitly integrated after validation."
+          "status": "done",
+          "remainingBoundary": "Integrated with complete phase166D93R and final20captures.3a:106 optional metrics7methods execute without fallback; all field order/count/policy/sequence matches native,3ifconversion full lines exact. Range size/perf/signature differences preexist; B300/B301."
         },
         {
           "scope": "Complete native loop-hoisting prerequisite and driver closure without phase activation.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "New Compiler.LoopHoisting*.cs, conventional loop-hoist models if needed, LoopHoistingTests.cs; existing shared additions require approval.",
           "status": "in-progress",
-          "remainingBoundary": "Identify complete optHoistLoopCode closure and shared prerequisites. Reuse parent policy query and existing VN/loop helpers. Keep production stub until parent integration after CSE."
+          "remainingBoundary": "d62:156 corrected duplicate-VN diagnostic, frozen5files9D6R;942:127 semantic review clear and942:128 confirms correction/hashes. artifacts\\loop-hoisting-validation\\source-manifest.json. Keep production stub until parent integration after CSE."
         },
         {
           "scope": "Complete native if-conversion descriptor, transforms and production phase.",
@@ -285,7 +285,7 @@
         }
       ],
       "deferred": [
-        "VN, assertion propagation, range elimination, copy propagation, VN dead-store removal, unrolling, redundant branches, Boolean optimization, switch recognition, if-conversion and loop cloning are active; CSE remains inactive.",
+        "VN, assertion propagation, range elimination, copy propagation, VN dead-store removal, unrolling, redundant branches, Boolean optimization, switch recognition, if-conversion, loop cloning and CSE are active.",
         "Broader optimized execution and unfinished optimization phases beyond the current backend frontier.",
         "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
         "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs. Native vector Intersects/XOR defects are recorded in B247/B246; their corrected algorithms are not authorized and those entire vector operations are deferred.",
@@ -295,11 +295,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit validated RL5 plus tracking (125D83R on2142288;942:120 clear). Collect610 CSEPhaseTests.cs full D/R after parent IDE0007 fixes; parent phase3 is Compiler.CSE.Phase.cs/Compiler.opt.cs/Compiler.fg.cs including complete fgDumpTrees.942:119/120 native reviews clear. Integrate exact phase/test source, full D/R, then fresh AOT and20 configs/native13-promotion comparison.3a D008 metrics closure remains separate;d62 loop-hoisting prerequisite active without production stub edit. CoreRoot free; no publication.",
+    "nextAction": "Commit complete CSE activation+metrics+diagnostics13 with tracking:166D93R, final20configs124bodies78phases and7metrics methods validated; source-manifest-final.json, JIT30EF3A81. Then integrate d62:156 corrected hoisting5 from artifacts\\loop-hoisting-validation\\source-manifest.json (9D6R;942 review clear). Activate the complete private hoisting driver via production optHoistLoopCode only after exact-source integration; preserve CSE policy query and existing mode gates. Continue20configs plus positive native hoisting comparison. Do not reopen B300/B301 during this dependency batch. All worker packets collected; no publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "RL5 corrected6a:108 and integrated125D83R;942:120 clear.610 owns production phase tests and refreshes corrected parent3.3a owns optional CSE metrics plus old rejection-test update;d62 owns loop-hoisting prerequisite.6a/942 idle. CoreRoot free; no app-native sessions.",
+      "workerPackets": "CSE complete:610 through86 phase tests and3old-wrapper failures,6a:110 diagnostics,3a:106 metrics7methods,942:128 final comparison all collected. d62:156 corrected hoisting5 frozen9D6R and reviewed. Workers otherwise idle;3a correcting only unsupported signature-causality wording in local receipt. CoreRoot free; no app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -315,6 +315,21 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "cseActivation": {
+        "snapshotBase": "75f43c3",
+        "sourceManifest": "artifacts\\cse-phase-validation\\source-manifest-final.json",
+        "debugPassed": 166,
+        "releasePassed": 93,
+        "skipped": 0,
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\cse-final-{Debug,Release}.trx",
+        "nativeAot": "artifacts\\cse-phase-final-jit\\RyuJitSharp.dll",
+        "sha256": "30EF3A814846A35CC0B853B04BBA280C5F96D0BCE3668F8794E36165CD28BB95",
+        "runtime": "artifacts\\cse-phase-validation\\runtime-validation-final.json:20configurations,124positive bodies,78CSE phase completions; verified managed execution/no fallback.",
+        "metrics": "artifacts\\cse-metrics-managed-validation\\comparison-receipt.json:7methods execute with JitMetrics1; field order/count/policy/sequence matches native,3ifconversion full lines exact.",
+        "regressions": "Three production-wrapper tests fail against old no-op; two indirection eligibility cases fail at old AsOp; three metrics cases fail at old rejection; eleven standard diagnostics cases fail before correction.",
+        "comparison": "942:126/128 verifies13native versus25managed promotions explained by pre-CSE graphs; final correction leaves phase IR/promotions unchanged from v2 and emitted bytes differ only in address operands.",
+        "gaps": "B300 pre-CSE CFG/expression occurrences, B301 array signatures/method hashes, broader code/dump and nonstandard-policy execution parity remain unestablished."
+      },
       "rlCse": {
         "snapshotBase": "2142288",
         "sourceManifest": "artifacts\\cse-rl-integration\\source-manifest.json",
@@ -6800,52 +6815,59 @@
       "reconciledCommit": null
     },
     {
+      "area": "cse-production-phase-and-metrics",
+      "native": ["src\\coreclr\\jit\\optcse.cpp:5541-5764,5827-5863,5922-5935", "src\\coreclr\\jit\\fgdiagnostic.cpp:2476-2491", "src\\coreclr\\jit\\codegencommon.cpp:2536-2601"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.CSE.Phase.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.cs:fgDumpTrees", "sources\\Core\\jit\\codegencommon\\CodeGen.GenerationPhases.cs:genEmitMachineCode"],
+      "status": "Complete production wrapper, repeated-run cleanup, native policy precedence/cache, phase orchestration, candidate query and optional Debug emission metrics active. D008 resolved; B298/B299 corrected. Earlier graph/identity and general parity gaps remain.",
+      "reconciledCommit": null
+    },
+    {
       "area": "rl-cse-heuristics",
       "native": ["src\\coreclr\\jit\\optcse.h:257-332", "src\\coreclr\\jit\\optcse.cpp:3005-3270,3294-3954"],
       "csharp": ["sources\\Core\\jit\\optcse\\CSE_HeuristicRLHook.Decisions.cs", "sources\\Core\\jit\\optcse\\CSE_HeuristicRLHook.Features.cs", "sources\\Core\\jit\\optcse\\CSE_HeuristicRL.cs"],
-      "status": "Complete Debug decision/feature/stochastic-selection/update policy families with shared parameterized choices and canonical ConfigIntArray. Production activation remains separate.",
+      "status": "Complete Debug decision/feature/stochastic-selection/update policy families with shared parameterized choices and canonical ConfigIntArray, integrated into native policy dispatch.",
       "reconciledCommit": null
     },
     {
       "area": "random-replay-cse-heuristics",
       "native": ["src\\coreclr\\jit\\optcse.h:128-170", "src\\coreclr\\jit\\optcse.cpp:2095-2298", "src\\coreclr\\jit\\utils.cpp:918-993"],
       "csharp": ["sources\\Core\\jit\\optcse\\CSE_HeuristicRandom.cs", "sources\\Core\\jit\\optcse\\CSE_HeuristicReplay.cs", "sources\\Core\\jit\\utils\\ConfigIntArray.cs"],
-      "status": "Complete Debug Random/Replay policies and shared integer configuration parser. Native adjacent-minus cursor, persistent sign, wrapping and initialization semantics retained. Production phase remains inactive.",
+      "status": "Complete Debug Random/Replay policies and shared integer configuration parser. Native adjacent-minus cursor, persistent sign, wrapping and initialization semantics retained; integrated into active phase dispatch.",
       "reconciledCommit": null
     },
     {
       "area": "parameterized-cse-heuristic",
       "native": ["src\\coreclr\\jit\\optcse.h:175-242", "src\\coreclr\\jit\\optcse.cpp:2305-2981"],
       "csharp": ["sources\\Core\\jit\\optcse\\CSE_HeuristicParameterized.cs", "sources\\Core\\jit\\optcse\\CSE_HeuristicParameterized.Features.cs", "sources\\Core\\jit\\optcse\\CSE_HeuristicParameterized.Diagnostics.cs", "sources\\Core\\jit\\optcse\\CSE_HeuristicParameterized.Access.cs"],
-      "status": "Complete feature scoring and greedy selection family with shared choice representation for RL. Production phase dispatch remains inactive.",
+      "status": "Complete feature scoring and greedy selection family with shared choice representation for RL, integrated into active native policy dispatch.",
       "reconciledCommit": null
     },
     {
       "area": "standard-cse-heuristic",
       "native": ["src\\coreclr\\jit\\optcse.h:16-115,447-609", "src\\coreclr\\jit\\optcse.cpp:1734-1757,2075-2083,4269-5425,5766-5824", "src\\coreclr\\jit\\gentree.cpp:749-764", "src\\coreclr\\jit\\gentree.h:9108-9118"],
       "csharp": ["sources\\Core\\jit\\optcse\\CSE_Heuristic*.cs", "sources\\Core\\jit\\compiler\\Compiler.CSE.HeuristicAccess.cs", "sources\\Core\\jit\\compiler\\Compiler.CSE.HeuristicConfig.cs", "sources\\Core\\jit\\gentree\\GenTree.cs:CopyReg", "sources\\Core\\jit\\gentree\\GenTreeCopyOrReload.cs:CopyOtherRegs"],
-      "status": "Complete standard ranking, profitability, traversal and SSA rewriting prerequisite with native initialization dispatch and diagnostics. CopyReg preserves native per-kind restrictions. Remaining heuristic families and production phase activation are separate.",
+      "status": "Complete standard ranking, profitability, traversal and SSA rewriting in the active production phase, with native initialization dispatch and corrected diagnostics. CopyReg preserves native per-kind restrictions.",
       "reconciledCommit": null
     },
     {
       "area": "incremental-ssa",
       "native": ["src\\coreclr\\jit\\ssabuilder.h:15-33,112-157", "src\\coreclr\\jit\\ssabuilder.cpp:151-275,1391-1790", "src\\coreclr\\jit\\block.cpp:315-372", "src\\coreclr\\jit\\compiler.h:3200-3225", "src\\coreclr\\jit\\gentree.cpp:37520-37548"],
       "csharp": ["sources\\Core\\jit\\ssabuilder\\UseDefLocation.cs", "sources\\Core\\jit\\ssabuilder\\IncrementalLiveInBuilder.cs", "sources\\Core\\jit\\ssabuilder\\IncrementalSsaBuilder.cs", "sources\\Core\\jit\\ssabuilder\\Compiler.IncrementalSsaLiveness.cs", "sources\\Core\\jit\\ssabuilder\\SsaBuilder.IncrementalAccess.cs", "sources\\Core\\jit\\compiler\\Compiler.BasicBlockLocalPair.cs"],
-      "status": "Complete inserted-definition/use, backward liveness and lazy phi construction prerequisite, using block-reference/local-number keys and explicit NoVN descriptor initialization. Production CSE activation remains separate.",
+      "status": "Complete inserted-definition/use, backward liveness and lazy phi construction, using block-reference/local-number keys and explicit NoVN descriptor initialization; consumed by active CSE rewriting.",
       "reconciledCommit": null
     },
     {
       "area": "cse-cost-and-rewrite-helpers",
       "native": ["src\\coreclr\\jit\\optcse.cpp:123-205,308-378,3959-3977,3994-4266,5428-5532", "src\\coreclr\\jit\\optcse.h:329-359"],
       "csharp": ["sources\\Core\\jit\\optcse\\CSE_Heuristic.Initialization.cs", "sources\\Core\\jit\\compiler\\Compiler.CSE.HeuristicCost.cs", "sources\\Core\\jit\\compiler\\Compiler.CSE.RewriteHelpers.cs"],
-      "status": "Complete initialization, cost ordering, unmarking and side-effect extraction prerequisites. Selection, SSA rewriting and production phase activation remain separate.",
+      "status": "Complete initialization, cost ordering, unmarking and side-effect extraction consumed by active CSE selection and rewriting.",
       "reconciledCommit": null
     },
     {
       "area": "cse-candidates-and-dataflow",
       "native": ["src\\coreclr\\jit\\optcse.cpp:39-41,73-120,390-1723,1773-2068,3989-3992,5870-5912", "src\\coreclr\\jit\\optcse.h:363-439"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.CSE.Candidates.cs", "sources\\Core\\jit\\compiler\\Compiler.CSE.Dataflow.cs", "sources\\Core\\jit\\optcse\\CSEdsc.cs", "sources\\Core\\jit\\optcse\\CSE_HeuristicCommon.cs"],
-      "status": "Candidate/index/eligibility/dataflow prerequisite implemented with shared managed descriptor identity. Compiler.opt.cs owns hash configuration/table fields. Heuristic selection, rewriting and production activation deferred.",
+      "status": "Candidate/index/eligibility/dataflow implemented with shared managed descriptor identity and typed indirection address access. Compiler.opt.cs owns hash configuration/table fields; production CSE is active.",
       "reconciledCommit": null
     },
     {

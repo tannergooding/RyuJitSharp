@@ -60,6 +60,13 @@ public sealed partial class CSE_Heuristic
             if (cseRefCnt >= aggressiveRefCnt)
             {
                 candidate.SetAggressive();
+#if DEBUG
+                if (m_compiler.verbose)
+                {
+                    jitprintf($"Aggressive CSE Promotion ({formatFloat(cseRefCnt, "F6")} >= " +
+                        $"{formatFloat(aggressiveRefCnt, "F6")})\n");
+                }
+#endif
                 cseDefCost = 1;
                 cseUseCost = 1;
 
@@ -83,11 +90,23 @@ public sealed partial class CSE_Heuristic
                 candidate.SetConservative();
                 if (largeFrame)
                 {
+#if DEBUG
+                    if (m_compiler.verbose)
+                    {
+                        jitprintf($"Codesize CSE Promotion ({(hugeFrame ? "huge" : "large")} frame)\n");
+                    }
+#endif
                     cseDefCost = 6;
                     cseUseCost = 5;
                 }
                 else
                 {
+#if DEBUG
+                    if (m_compiler.verbose)
+                    {
+                        jitprintf("Codesize CSE Promotion (small frame)\n");
+                    }
+#endif
                     cseDefCost = 3;
                     cseUseCost = 2;
                 }
@@ -104,12 +123,36 @@ public sealed partial class CSE_Heuristic
             if ((cseRefCnt >= aggressiveRefCnt) && canEnregister)
             {
                 candidate.SetAggressive();
+#if DEBUG
+                if (m_compiler.verbose)
+                {
+                    jitprintf($"Aggressive CSE Promotion ({formatFloat(cseRefCnt, "F6")} >= " +
+                        $"{formatFloat(aggressiveRefCnt, "F6")})\n");
+                }
+#endif
                 cseDefCost = 1;
                 cseUseCost = 1;
             }
             else if (cseRefCnt >= moderateRefCnt)
             {
                 candidate.SetModerate();
+#if DEBUG
+                if (m_compiler.verbose)
+                {
+                    if (!candidate.LiveAcrossCall() && canEnregister)
+                    {
+                        jitprintf($"Moderate CSE Promotion (CSE never live at call) " +
+                            $"({formatFloat(cseRefCnt, "F6")} >= {formatFloat(moderateRefCnt, "F6")})\n");
+                    }
+                    else
+                    {
+                        jitprintf($"Moderate CSE Promotion " +
+                            $"({(candidate.LiveAcrossCall() ? "CSE is live across a call" : "not enregisterable")}) " +
+                            $"({formatFloat(cseRefCnt, "F6")} >= {formatFloat(moderateRefCnt, "F6")})\n");
+                    }
+                }
+#endif
+
                 cseDefCost = 2;
                 if (!candidate.LiveAcrossCall() && canEnregister)
                 {
@@ -127,6 +170,22 @@ public sealed partial class CSE_Heuristic
             else
             {
                 candidate.SetConservative();
+#if DEBUG
+                if (m_compiler.verbose)
+                {
+                    if (!candidate.LiveAcrossCall() && canEnregister)
+                    {
+                        jitprintf($"Conservative CSE Promotion (not enregisterable) " +
+                            $"({formatFloat(cseRefCnt, "F6")} < {formatFloat(moderateRefCnt, "F6")})\n");
+                    }
+                    else
+                    {
+                        jitprintf($"Conservative CSE Promotion " +
+                            $"({formatFloat(cseRefCnt, "F6")} < {formatFloat(moderateRefCnt, "F6")})\n");
+                    }
+                }
+#endif
+
                 cseDefCost = 2;
                 cseUseCost = !candidate.LiveAcrossCall() && canEnregister ? 2u : 3u;
 
@@ -198,13 +257,17 @@ public sealed partial class CSE_Heuristic
 #if DEBUG
         if (m_compiler.verbose)
         {
-            JITDUMP($"cseRefCnt={cseRefCnt}, aggressiveRefCnt={aggressiveRefCnt}, " +
-                $"moderateRefCnt={moderateRefCnt}\n");
-            JITDUMP($"defCnt={candidate.DefCount()}, useCnt={candidate.UseCount()}, " +
-                $"cost={candidate.Cost()}, size={candidate.Size()}\n");
+            JITDUMP($"cseRefCnt={formatFloat(cseRefCnt, "F6")}, " +
+                $"aggressiveRefCnt={formatFloat(aggressiveRefCnt, "F6")}, " +
+                $"moderateRefCnt={formatFloat(moderateRefCnt, "F6")}\n");
+            JITDUMP($"defCnt={formatFloat(candidate.DefCount(), "F6")}, " +
+                $"useCnt={formatFloat(candidate.UseCount(), "F6")}, " +
+                $"cost={candidate.Cost()}, size={candidate.Size()}" +
+                $"{(candidate.LiveAcrossCall() ? ", LiveAcrossCall" : "")}\n");
             JITDUMP($"def_cost={cseDefCost}, use_cost={cseUseCost}, " +
                 $"extra_no_cost={extraNoCost}, extra_yes_cost={extraYesCost}\n");
-            JITDUMP($"CSE cost savings check ({noCseCost} >= {yesCseCost}) " +
+            JITDUMP($"CSE cost savings check ({formatFloat(noCseCost, "F6")} >= " +
+                $"{formatFloat(yesCseCost, "F6")}) " +
                 $"{(noCseCost >= yesCseCost ? "passes" : "fails")}\n");
         }
 #endif
