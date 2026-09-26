@@ -15,6 +15,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Conditional escape and clone analysis
+
+Object-allocation analysis now propagates escapes, recognizes cloning guards,
+and evaluates clone regions for overlap, profitability and legal control flow.
+EH clone feasibility includes nested and mutually protecting regions, filters,
+handlers and callfinally pairs without changing the graph or EH table.
+
+These complete analysis functions do not enable stack allocation. Allocation-site
+walking, actual cloning and stack/heap morphing remain required before the
+existing phase gate can be removed.
+
 ## 2026-09-26: Optimized native-code execution
 
 The Windows-x64 optimized pipeline now emits and executes the standard corpus

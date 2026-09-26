@@ -205,6 +205,13 @@ heap. This is a staged implementation limitation, not completion of the native
 phase or an accepted dump/codegen difference. The complete native phase and
 combined allocation traversal remain in the residual ledger.
 
+Connection-graph escape closure and conditional clone viability are implemented,
+including guard recognition, overlap and profitability checks. Their EH
+prerequisite, `fgCloneTryRegionFeasibility`, specializes the native no-insertion
+mode: it enumerates clone blocks and checks capacity without mutating CFG or EH
+entries. The mutating clone path, allocation-site analysis traversal and
+stack/heap morphing remain unported; the phase gate is unchanged.
+
 Local-address values retain their owning statement/operand slot rather than a
 native `GenTree**`. Unary and binary operands use direct slot identifiers;
 special-node operands use an ordinal in the owner's stable operand list. This

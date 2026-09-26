@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Collections.Generic;
+
 namespace RyuJitSharp;
 
 public sealed partial class ObjectAllocator
@@ -18,7 +20,11 @@ public sealed partial class ObjectAllocator
     private nint[][]? _connGraphAdjacencyMatrix;
     private int _nextLocalIndex;
     private int _firstPseudoIndex = BAD_VAR_NUM;
+    private int _numPseudos;
     private int _maxPseudos;
+    private int _regionsToClone;
+    private readonly int _initialMaxBlockID;
+    private readonly Dictionary<int, CloneInfo> _cloneMap = [];
     private bool _trackFields;
 
     private bool IsTrackedType(var_types type)

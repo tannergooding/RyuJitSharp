@@ -28,6 +28,7 @@ public sealed partial class ObjectAllocator : Phase
         _isR2R = compiler.IsReadyToRun;
         _bitVecTraits = new BitVecTraits(compiler, compiler.lvaCount);
         _trackFields = JitConfig.JitObjectStackAllocationTrackFields > 0;
+        _initialMaxBlockID = compiler.compBasicBlockID;
     }
 
     public void EnableObjectStackAllocation()
