@@ -15,6 +15,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: VN tree and intrinsic evaluation
+
+The complete Windows-x64 tree-numbering dispatcher now connects arithmetic,
+memory, calls, casts and hardware intrinsics. Math and SIMD evaluators retain
+native constant-folding rules and exception propagation. Reachability tracking
+uses normal liberal values while preserving shared conditional edges.
+
+The phase entrypoint remains inactive. Loop-side-effect analysis and
+block/phi orchestration must be integrated before testing actual VN-phase
+execution and its effect on optimized code.
+
 ## 2026-09-26: VN memory accesses and calls
 
 Value numbering now models local, field, array and byref loads and stores,

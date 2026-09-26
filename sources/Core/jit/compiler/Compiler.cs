@@ -123,7 +123,7 @@ public partial class Compiler
 
     public FlowGraphNaturalLoops? _loops;
 
-    public LoopSideEffects? _loopSideEffects;
+    public LoopSideEffects[]? _loopSideEffects;
 
     public BlockToNaturalLoopMap? _blockToLoop;
 

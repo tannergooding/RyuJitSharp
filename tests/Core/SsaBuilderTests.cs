@@ -15,6 +15,50 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class SsaBuilderTests
 {
+    [TestCase(-1)]
+    [TestCase(0)]
+    [TestCase(1)]
+    public static void VnReachabilityUsesNormalLiberalConditions(int condition)
+    {
+        SsaLivenessTests.WithCompiler(1, compiler =>
+        {
+            var blocks = CreateGraph(compiler, [[1, 2], [], []]);
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var test = compiler.gtNewLclvNode(TYP_INT, 0);
+            var normal = condition < 0 ? store.VNForExpr(null, TYP_INT) : store.VNForIntCon(condition);
+            var exceptions = store.VNExcSetSingleton(store.VNForExpr(null, TYP_REF));
+            test._vnPair = new ValueNumPair(store.VNWithExc(normal, exceptions), store.VNForIntCon(1 - condition));
+            _ = AddStatement(compiler, blocks[0], new GenTreeUnOp(genTreeOps.GT_JTRUE, TYP_VOID, test));
+            compiler._dfsTree = compiler.fgComputeDfs();
+            var state = new ValueNumberState(compiler);
+
+            Assert.That(state.IsReachableThroughPred(blocks[1], blocks[0]), Is.EqualTo(condition != 0));
+            Assert.That(state.IsReachableThroughPred(blocks[2], blocks[0]), Is.EqualTo(condition != 1));
+            state.SetUnreachable(blocks[0]);
+            Assert.That(state.IsReachableThroughPred(blocks[1], blocks[0]), Is.False);
+            Assert.That(state.IsReachableThroughPred(blocks[2], blocks[0]), Is.False);
+        });
+    }
+
+    [Test]
+    public static void VnReachabilityRetainsSharedEdgesAndExcludesStaticDeadBlocks()
+    {
+        SsaLivenessTests.WithCompiler(0, compiler =>
+        {
+            var blocks = CreateGraph(compiler, [[1], [], []]);
+            var edge = blocks[0].TargetEdge;
+            edge.incrementDupCount();
+            blocks[1].bbRefs++;
+            blocks[0].SetCond(edge, edge);
+            compiler._dfsTree = compiler.fgComputeDfs();
+            var state = new ValueNumberState(compiler);
+            Assert.That(blocks[0].TrueEdge, Is.SameAs(blocks[0].FalseEdge));
+            Assert.That(state.IsReachableThroughPred(blocks[1], blocks[0]), Is.True);
+            Assert.That(state.IsReachable(blocks[2]), Is.False);
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void InitialLocalDefinitionHasUnsetValueNumbers(bool isParameter)
