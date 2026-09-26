@@ -39,10 +39,13 @@ existing phase gate can be removed.
 ## 2026-09-26: Optimized native-code execution
 
 The Windows-x64 optimized pipeline now emits and executes the standard corpus
-and focused GC-loop cases. Loop-alignment placement follows native loop
+and focused GC-loop and call-free arithmetic cases. Loop-alignment placement
+follows native loop
 eligibility, normalized weight thresholds, EH exclusions and hidden-padding
 selection. Checked allocation also preserves the native spill-weight cursor;
 using the traversal cursor had incorrectly rejected a live delayed use.
+Call-free execution covers zero-padding decisions and emitted adaptive padding,
+including the actual three-byte x64 NOP sequence.
 
 The established minopts GC-stress cases remain executable. This is an execution
 milestone, not dump or machine-code parity: hardware-intrinsic import still

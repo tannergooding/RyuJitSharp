@@ -12,11 +12,11 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete enabled Windows-x64 loop-alignment placement after full allocation, while independently porting object escape/clone analysis, its EH feasibility prerequisite and hardware-intrinsic import.",
+      "scope": "Port complete native loop inversion and iteration analysis while independently completing hardware-import arguments, object allocation-site analysis and mutating EH clone prerequisites.",
       "doneWhen": [
-        "Complete native shouldAlignLoop and placeLoopAlignInstructions, preserving legality, profitability, placement and diagnostic rules rather than disabling alignment.",
-        "Validate actual optimized managed execution separately from fallback and explicit skips; preserve the established checked minopts execution baseline.",
-        "Complete independent object escape/clone analysis and nonmutating EH clone feasibility without activating unfinished object phases; port whole hardware-import prerequisites without a reduced dispatcher.",
+        "Complete optTryInvertWhileLoop/optInvertLoops with full iteration-analysis eligibility, native cost/profile/CFG behavior and optimized execution evidence.",
+        "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
+        "Complete hardware-argument prerequisites, allocation-site analysis and mutating EH clone closure or whole-function prerequisites without activating unfinished phases.",
         "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
       ],
       "validation": [
@@ -25,29 +25,37 @@
       ],
       "parallelPackets": [
         {
-          "scope": "Complete the native no-insertion EH-clone feasibility specialization required by ObjectAllocator.CheckCanClone.",
-          "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
-          "files": "New Compiler.EHCloneFeasibility.cs, required helper types and focused tests; no existing Compiler, ObjectAllocator, LSRA or phase edits.",
-          "doneWhen": "Complete fgehopt.cpp2341-2608 feasibility closure with native EH-region enumeration/capacity checks and no CFG/EH-table mutation; relay exact API to object worker.",
-          "status": "done",
-          "result": "Complete no-insertion feasibility API consumed by object analysis. Frozen packet43D38R, independently reviewed and hashes verified; integrated with its dependent object-analysis closure."
+          "scope": "Complete natural-loop iteration analysis and increment recognition required by inversion.",
+          "owner": "942a496f-db30-4389-a403-265f28fdb23c",
+          "files": "FlowGraphNaturalLoop.Iteration partials, NaturalLoopIterInfo and Compiler.LoopIteration helpers/tests; parent owns inversion.",
+          "doneWhen": "Complete native AnalyzeIteration and optIsLoopIncrTree closure, not a selected counted-loop recognizer.",
+          "status": "in-progress",
+          "result": "Assigned after collected turn65, baselinef3a5815. Preferred API AnalyzeIteration(out NaturalLoopIterInfo), TestBlock exposed; exact native return types to be confirmed."
         },
         {
-          "scope": "Complete Windows-x64 hardware-intrinsic import or a dependency-coherent set of whole prerequisites behind B111.",
+          "scope": "Complete native mutating fgCloneTryRegion or a whole-function prerequisite boundary.",
+          "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
+          "files": "Compiler.EHClone partials and required CloneTryInfo state/tests. Existing feasibility API must remain compatible; generic helper edits require a concrete handoff.",
+          "doneWhen": "Complete native mutation/order/capacity/CFG-EH bookkeeping through function end, or return a complete prerequisite with a precise blocker. No partial mutation or reduced cloning.",
+          "status": "in-progress",
+          "result": "Turn18 returned54D51R mapped-target prerequisite. Continuing same closure with authorized BasicBlock.CloneBlockState and required statement-clone helpers; no helper-only integration yet."
+        },
+        {
+          "scope": "Complete SIMD type recognition and associated hardware-import prerequisites.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
-          "files": "New Compiler.HWIntrinsicImport partials/support and focused tests; existing dispatcher stub is replaced only when its complete supported closure is ready.",
-          "doneWhen": "Establish exact native closure and preserve ISA, forceExpand, fallback, evaluation and numeric contracts. No selected-case importer or changed ISA reporting.",
-          "status": "done",
-          "result": "Complete signature reader, table/base-type predicates and xarch immediate/range-check prerequisites39D39R, reviewed against native. Combined root selection153D143R passes. Dispatcher remains gated; next prerequisites are SIMD recognition and operand handling.",
+          "files": "Compiler.SIMDImport/SIMDTypeRecognition partials and directly required SIMD stubs/state/tests; shared Compiler.cs edits require exact handoff.",
+          "doneWhen": "Complete getBaseJitTypeAndSizeOfSIMDType closure and impSIMDPopStack if bounded, preserving native ISA/type/size/fallback contracts. Keep importer gate until full closure.",
+          "status": "in-progress",
+          "result": "Turn24 returned full SIMD pop41D41R; existing SIMD recognition was already complete. Continuing same prerequisite closure with getArgForHWIntrinsic and exact dispatcher/special-import dependency plan; no helper-only integration yet.",
           "deferred": "Shared generators/tables, LSRA, ObjectAllocator, EH feasibility, other targets and publication."
         },
         {
-          "scope": "Complete ComputeEscapingNodes and its native clone-viability analysis closure.",
+          "scope": "Complete ObjectAllocator DoAnalysis and allocation-site/alias walking.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
-          "files": "New ObjectAllocator escape/clone-analysis partials and required state/tests; no DoPhase, actual clone transformations, allocation-site walking or Compiler edits.",
-          "doneWhen": "Complete AnalyzeIfCloningCanPreventEscape/AnalyzePseudoForCloning/CheckCanClone and required analysis helpers without approximating pseudo escapes; consume complete shared EH feasibility.",
-          "status": "done",
-          "result": "Frozen analysis closure33D31R includes exact read-only EH support. Independent review found no high-confidence conformance defects; root/snapshot hashes and actual executed counts verified. DoPhase remains gated."
+          "files": "ObjectAllocator analysis partials/state/tests; no DoPhase activation, clone transformations, stack/heap morphing or Compiler edits.",
+          "doneWhen": "Complete native site/alias traversal and graph/pseudo/clone-state population using the committed escape/viability helpers; preserve phase gates.",
+          "status": "in-progress",
+          "result": "Escape/viability integrated31aaac0. New assignment after collected turn92, baselinef3a5815."
         }
       ],
       "deferred": [
@@ -61,12 +69,12 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Completed loop placement/execution20b2aaf and object escape/clone analysis with EH support31aaac0; hardware prerequisites now integrated. Combined root build/selection153D143R passes. Resume productive lanes:3a complete SIMD recognition/import prerequisites, d62 complete allocation-site analysis,610 complete mutating EH clone support or its whole-function prerequisite boundary. Preserve existing APIs and phase gates until closures are complete. Parent next creates a small call-free loop execution probe under artifacts and captures native/managed FullOpts with the current validated JIT to exercise actual alignment padding; then follow concrete runtime/code differences. Current23 optimized and32 minopts GCStress4 methods execute. No code/dump parity or remote publication.",
+    "nextAction": "Call-free probe now executes4 methods at six trip counts, including actual3-byte adaptive padding (native1byte; differing earlier layout). Native inverts all4 loops while managed optInvertLoops is a no-op. Parent has read optimizer.cpp1821-2356: port complete inversion plus optInvertCountTreeInfo, reuse existing CFG/canonicalization, and integrate942's independent AnalyzeIteration/optIsLoopIncrTree closure. Next read native cost-counter preceding1821 and managed loop/CFG APIs, then implement. Other lanes continue3a hardware arguments,610 EH mutation with clone-state support,d62 allocation-site analysis. Current27 optimized and32 minopts GCStress4 methods execute. No code/dump parity or remote publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All returned packets collected and integrated:610 through17,d62 through92,3a through23;942 through65 reviewed EH/object. Combined root153D143R passes. Workers currently idle and ready for the next assignments in nextAction; do not confuse prior notifications with pending results. CoreRoot is free. No app-native child-session coordination.",
-      "preserve": "Windows-AMD64 lowering/allocation/placement/generation/emission/metadata execute23 selected optimized methods and the established32-method minopts corpus under GCStress4. Optimized runs use native JitObjectStackAllocation=0 on both sides while object analysis is incomplete. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
+      "workerPackets": "Earlier packets integrated. Active fromf3a5815:610 through18 collected and continuing clone-state/mutation;3a through24 collected and continuing hardware-argument closure;d62 allocation-site analysis after92;942 loop-iteration implementation after65. Returned mapped-target/SIMD-pop helpers belong to their continuing closure packets, not uncollected results. Parent owns inversion and CoreRoot. No app-native sessions.",
+      "preserve": "Windows-AMD64 lowering/allocation/placement/generation/emission/metadata execute27 selected optimized methods and the established32-method minopts corpus under GCStress4. Optimized runs use native JitObjectStackAllocation=0 on both sides while object analysis is incomplete. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
       "nativeFlowGraphSource": "src/coreclr/jit/fgopt.cpp:4373-4902",
@@ -81,6 +89,19 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "callFreeLoopExecution": {
+        "jitCommit": "20b2aaf",
+        "runtimeEvidence": "artifacts\\loop-alignment-execution-probe\\runtime-validation.json",
+        "runtimeEvidenceSha256": "0AA99D533D52537187A6D4EB742D32D3D436F0DAD54C2A1E49CD6030C12CEB7B",
+        "nativeCapture": "artifacts\\loop-alignment-execution-probe\\native-padding",
+        "managedCapture": "artifacts\\loop-alignment-execution-probe\\managed-padding",
+        "methods": 4,
+        "tripCounts": [0, 1, 2, 31, 128, 1024],
+        "managedPaddingBytes": 3,
+        "nativePaddingBytes": 1,
+        "scope": "Unique nonzero bodies, matching executable JIT hash, zero exits and semantic expectations verified. Actual0F1F00 NOP appears in managed raw bytes. Other methods retain valid zero-padding decisions. Different sizes/padding arise with unported loop inversion/other optimizations; not code parity.",
+        "buildLimit": "Only the local probe used RunAnalyzers=false after pathological analyzer CPU/memory consumption; it was force rebuilt. Production source builds/tests retained analyzers."
+      },
       "hardwareImportPrerequisites": {
         "nativeBoundary": "hwintrinsic.cpp1765-1798,1856-1969; hwintrinsicxarch.cpp2751-2765",
         "sourceManifest": "artifacts\\hwintrinsic-import-validation\\source-manifest.json",
@@ -4911,7 +4932,7 @@
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.LoopAlignment.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete native loop eligibility and placement, including enabled mode. Focused graph tests and selected optimized execution are validated; actual emitted padding and full dump/code parity require further execution coverage."
+      "status": "Complete native loop eligibility and placement, including enabled mode. Focused graph tests and selected optimized execution include actual adaptive padding/zero-padding decisions. Full dump/code parity remains incomplete."
     },
     {
       "area": "production-generation-driver",
