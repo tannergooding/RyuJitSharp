@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Redundant-branch optimization
+
+Redundant-branch optimization now performs native dominator inference, local
+comparison forwarding and jump threading, including SSA/phi-use repair and
+edge, profile and exception-region handling. Its VN relation helpers preserve
+signed, unsigned and unordered comparison distinctions.
+
+The phase simplifies selected loop and array methods while preserving established
+execution, including optimized unrolled loops under GCStress4. It also invalidates
+DFS/SSA analysis when no branch changes, matching native and removing stale
+SSA-memory annotations from the `Counted` dump. `Counted` and `Nested` retain
+their native-matching code bodies; complex global-phi paths and full parity
+still need broader coverage.
+
 ## 2026-09-26: Native loop unrolling
 
 Loop unrolling now uses native iteration proofs, growth limits and duplication

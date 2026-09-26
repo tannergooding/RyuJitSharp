@@ -255,9 +255,6 @@ public partial class Compiler
     // TODO: Port phase - optInductionVariables
     public PhaseStatus optInductionVariables() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - optRedundantBranches
-    public PhaseStatus optRedundantBranches() => PhaseStatus.MODIFIED_NOTHING;
-
     // TODO: Port phase - optHoistLoopCode
     protected PhaseStatus optHoistLoopCode() => PhaseStatus.MODIFIED_NOTHING;
 }

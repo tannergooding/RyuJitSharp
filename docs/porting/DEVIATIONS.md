@@ -609,6 +609,13 @@ mode. They do not transfer ownership or links implicitly: assertion application
 retains the forward traversal cursor, and statement remorphing rebuilds links.
 The unthreaded-source invariant is still enforced when the mode is `None`.
 
+Redundant-branch optimization and its VN relational predicates are active.
+The native postorder traversal, retry rules, SSA/phi repairs and edge/profile/EH
+updates are retained. DFS/SSA invalidation occurs even on an unchanged pass,
+resolving the observed stale managed `SSA MEM:` annotations after assertion
+propagation (B281). Complex global-phi execution and full dump parity remain
+unestablished.
+
 VN-based folding and insertion-time statement morphing are also complete
 prerequisites. Local-address folds retain the native 16-bit offset invariant;
 the native constructor's unsigned parameter does not imply wider field storage.

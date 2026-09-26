@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Preserve active VN, assertion propagation, range elimination and VN copy propagation while preparing redundant-branch optimization, VN dead-store removal and native loop unrolling. Keep future phase entries inactive until their complete dependency closure and execution behavior are validated.",
+      "scope": "Preserve active optimized Windows-x64 execution while completing redundant-branch activation and preparing Boolean optimization, loop-cloning models and CSE candidate/dataflow prerequisites. Keep future phase entries inactive until complete dependency closure and execution validation.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
@@ -23,8 +23,29 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Loop unrolling and coupled threaded-folding repair validated1093D1068R and17 captures:113bodies/67unroll completions/9changed. Nested now matches native29bytes; Counted retains17. Commit exact7source/test overlays and docs, then integrate reviewed redundant-branch/VN-relation packet. No broad parity or throughput claim.",
+      "parentScope": "RBO activation validated1130D1103R and17captures:113bodies/67phase completions/10changed.942 bounded comparisonthrough99 finds no isolated RBO discrepancy and confirms B281 resolved (native/prior/current SSA annotations0/10/0). Commit exact13source/test overlays and docs, excluding new lanes; then release CSE field ownership and integrate next frozen prerequisites.",
       "parallelPackets": [
+        {
+          "scope": "Complete Boolean optimization with the native CCMP switch-detection prerequisite.",
+          "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
+          "files": "New Compiler.BooleanOptimization*.cs/BooleanOptimizationTests.cs and Compiler.SwitchRecognition.Detection.cs/SwitchRecognitionDetectionTests.cs.",
+          "status": "in-progress",
+          "remainingBoundary": "After3a:77, authorized complete existing native detection-only/CCMP specialization at optimizebools.cpp1703-1718 and switchrecognition.cpp70-478 relevant functions. No conversion-mode fallback or reduced detection. Both public phases remain inactive."
+        },
+        {
+          "scope": "Complete loop-cloning representation and guard-expression prerequisites before phase closure.",
+          "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
+          "files": "New conventional loopcloning type files, Compiler.LoopCloning*.cs and LoopCloningModelTests.cs/LoopCloningTests.cs.",
+          "status": "in-progress",
+          "remainingBoundary": "Afterd62:132, expanded to missing LoopCloneContext/candidate/LC_Array/LC_Ident/LC_Condition machinery from loopcloning.h191-1098 and complete required cpp bodies. Return coherent model/guard prerequisite freeze before remaining reconstruction/optimization/driver. No public optCloneLoops activation."
+        },
+        {
+          "scope": "Complete VN-CSE candidate/indexing and availability/dataflow prerequisites.",
+          "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
+          "files": "New Compiler.CSE.Candidates*.cs/Compiler.CSE.Dataflow*.cs/CSECandidateTests.cs; existing CSEdsc.cs and CSE_HeuristicCommon.cs explicitly authorized.",
+          "status": "in-progress",
+          "remainingBoundary": "After6a:84, authorized one managed-reference descriptor representation and complete ConsiderTree/ComputeNumLocals/native family optcse.cpp73-120,390-1723,1773-2068. No heuristic rewriting/activation. Parent retains root Compiler.opt.cs until RBO commit;6a must report table/initializer patch and use isolated overlay meanwhile."
+        },
         {
           "scope": "Complete native optUnrollLoops and required local helper/visitor closure.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
@@ -36,8 +57,8 @@
           "scope": "Complete redundantbranchopts.cpp and required VN relational predicates.",
           "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
           "files": "New Compiler.RedundantBranches*.cs, RedundantBranchTests.cs, ValueNumStore.RelopRelations.cs, native relation enum and ValueNumRelopRelationTests.cs; existing VNFuncIsComparison access modifier only.",
-          "status": "in-progress",
-          "remainingBoundary": "6a through83 frozen full redundantbranchopts.cpp/VN-relop packet onab27703,34D32R. Manifest artifacts\\redundant-branch-validation\\packet.json;942 reviewthrough98 found no high-confidence defect. Ready for parent integration; public optRedundantBranches remains inactive. Complex global-phi execution remains unverified."
+          "status": "done",
+          "remainingBoundary": "6a through83/review942:98 integrated with3 public-phase regressions,1130D1103R and17captures.942 comparisonthrough99 clear of isolated RBO discrepancy; B281 resolved. Complex global-phi execution remains unverified."
         },
         {
           "scope": "Complete VN-based dead-store removal and required helper/visitor closure.",
@@ -215,7 +236,7 @@
         }
       ],
       "deferred": [
-        "VN, global assertion propagation, range elimination, VN copy propagation, VN dead-store removal and loop unrolling are active; redundant branches remain inactive.",
+        "VN, assertion propagation, range elimination, copy propagation, VN dead-store removal, unrolling and redundant branches are active; Boolean optimization, loop cloning and CSE remain inactive.",
         "Broader optimized execution and unfinished optimization phases beyond the current backend frontier.",
         "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
         "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs. Native vector Intersects/XOR defects are recorded in B247/B246; their corrected algorithms are not authorized and those entire vector operations are deferred.",
@@ -225,11 +246,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit fully validated loop unrolling plus coupled B285 folding fix:1093D1068R and17 captures using artifacts\\loop-unrolling-threaded-jit\\RyuJitSharp.dll; Nested/Counted match native29/17bytes. Exact7overlays in source-manifest-threaded.json; exclude redundant-branch/VN-relation WIP. Then integrate6a:83 frozen redundant-branch packet (942 reviewthrough98 clear), add production-entry coverage and preserve all17 configurations from artifacts\\loop-unrolling-phase-validation\\capture-configurations.json. Do not reuse failed initial capture or old unthreaded JIT. CoreRoot free; no remote publication.",
+    "nextAction": "Unrolling committed76a6f08. Commit fully validated RBO activation:1130D1103R,17captures and942 comparisonthrough99; exact13overlays in artifacts\\redundant-branch-phase-validation\\source-manifest.json. Exclude CSE/Boolean/loop-cloning WIP. Then release Compiler.opt.cs CSE table-field ownership to6a after reviewing its exact patch; collect complete frozen Boolean+CCMP-detection, loop-cloning model/guard and CSE candidate/dataflow packets. Preserve17 configurations from artifacts\\loop-unrolling-phase-validation\\capture-configurations.json. B281 resolved; no remote publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "d62 through131 unrolling integrated with B284/B285 repairs,1093D1068R/17captures.6a through83 redundant-branch/VN-relop packet frozen34D32R;942 reviewthrough98 clear.3a/610/d62/6a/942 idle, all handoffs collected. CoreRoot free. No app-native sessions.",
+      "workerPackets": "RBO6a:83/review942:98 andcomparison942:99 integrated1130D1103R/17captures.3a:77 unblocked for Boolean+CCMP detection;d62:132 unblocked for cloning model/guard prerequisites;6a:84 unblocked for CSE representations/candidate/dataflow with root Compiler.opt.cs reserved until RBO commit.610/942 idle, CoreRoot free. All notifications collected; no app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -245,6 +266,23 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "redundantBranchActivation": {
+        "snapshotBase": "76a6f08",
+        "sourceManifest": "artifacts\\redundant-branch-phase-validation\\source-manifest.json",
+        "debugPassed": 1130,
+        "releasePassed": 1103,
+        "skipped": 0,
+        "selection": "Prior exact integration plus RedundantBranchTests/ValueNumRelopRelationTests; artifacts\\redundant-branch-phase-validation\\selection.runsettings.",
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\redundant-branch-phase-integrated-{Debug,Release}.trx",
+        "nativeAot": "artifacts\\redundant-branch-phase-jit\\RyuJitSharp.dll",
+        "runtimeEvidence": "artifacts\\redundant-branch-phase-validation\\runtime-validation.json",
+        "configurations": "artifacts\\loop-unrolling-phase-validation\\capture-configurations.json",
+        "runtime": "All17 configurations execute113 positive-sized bodies with exact JIT identity, successful exits and no skip/failure markers.67 FullOpts compilations complete RBO and adjacent phases;10 RBO phases change. Optimized unrolled GCStress4, minopts stress and stack allocation preserved.",
+        "regressions": "All3 public-entry cases fail against old stub: true/false constant branches repair edges and clear stale predicates; unchanged pass still invalidates DFS/SSA. Complete37D35R helper/phase selection runs.",
+        "review": "942 through98 reviewed complete native redundantbranchopts.cpp and VN-relop closure; no high-confidence defect. Bounded comparisonthrough99 finds no isolated RBO discrepancy; Nested differs at entry and folds its remaining constant branch.",
+        "comparison": "artifacts\\redundant-branch-phase-validation\\aligned-loops-rbo-comparison.md and aligned-code-comparison.json. Counted/Nested retain exact native17/29bytes; all four bodies unchanged from unrolling baseline. B281 direction corrected and resolved: native/prior/current Counted post-AP SSA MEM counts0/10/0. Other dump/input differences remain.",
+        "scope": "Thirteen exact source/test overlays, including existing comparison-predicate visibility and complete VN relation helper; new CSE/Boolean/cloning work excluded. Complex global-phi execution remains a coverage gap."
+      },
       "loopUnrollingActivation": {
         "snapshotBase": "1a08f81",
         "sourceManifest": "artifacts\\loop-unrolling-phase-validation\\source-manifest-threaded.json",
@@ -6518,6 +6556,13 @@
       "native": ["src\\coreclr\\jit\\rangecheck.h", "src\\coreclr\\jit\\rangecheck.cpp", "src\\coreclr\\jit\\assertionprop.cpp"],
       "csharp": ["sources\\Core\\jit\\rangecheck\\", "sources\\Core\\jit\\compiler\\Compiler.ap.Relational.cs"],
       "status": "Complete range-analysis dependency and relational application; RangeProperties remains canonical in the relational partial. Global assertion and range-check elimination phases are active.",
+      "reconciledCommit": null
+    },
+    {
+      "area": "redundant-branches-and-vn-relations",
+      "native": ["src\\coreclr\\jit\\redundantbranchopts.cpp:12-3319", "src\\coreclr\\jit\\valuenum.cpp:7443-7627", "src\\coreclr\\jit\\valuenum.h:1235-1264,2582-2602", "src\\coreclr\\jit\\flowgraph.cpp:2929-2963", "src\\coreclr\\jit\\block.cpp:1048-1072"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.RedundantBranches*.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.RelopRelations.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.BinaryFolding.cs"],
+      "status": "Complete active phase, native relation inference and threading/SSA/CFG closure. Unchanged-pass DFS/SSA invalidation retained.",
       "reconciledCommit": null
     },
     {

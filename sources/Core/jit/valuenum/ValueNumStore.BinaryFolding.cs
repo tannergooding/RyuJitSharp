@@ -15,7 +15,7 @@ public sealed partial class ValueNumStore
     private static bool VNFuncIsOverflowArithmetic(VNFunc func)
         => func is >= VNF_ADD_OVF and <= VNF_MUL_UN_OVF;
 
-    private static bool VNFuncIsComparison(VNFunc func)
+    public static bool VNFuncIsComparison(VNFunc func)
         => func >= VNF_Boundary
             ? func is VNF_GT_UN or VNF_GE_UN or VNF_LT_UN or VNF_LE_UN
             : ((genTreeOps)func).IsCompare;
