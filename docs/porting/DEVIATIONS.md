@@ -524,6 +524,13 @@ storage must not change insertion order or omit the entry that promotes a
 small set. SSA memory allocation explicitly initializes the VN pair, since
 allocating a managed struct array does not invoke element constructors.
 
+VN pair operations preserve lane ordering and native sharing decisions rather
+than always allocating two opaque values. Memory SSA recording changes only the
+liberal lane; GC-heap stores invalidate separate byref state, while shared states
+retain one value number. Array-address parsing exposes the native failure
+contract as a nullable array output and an unchanged `ref` index VN. Its constants
+use target-pointer width, not the host-sized `VNForIntPtrCon` API.
+
 Checked-bound/index registries use managed membership sets; no enumeration order
 is observed. Unsigned comparison results use a readonly record and failed queries
 leave ref outputs unchanged. JTRUE bounds generation retains native edge

@@ -12,19 +12,54 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Finish the reviewed VN map/diagnostic/memorySSA prerequisite closure after hardware/GS and object/array stack-allocation activation.",
+      "scope": "Complete VN exception, intrinsic, memory-access and call evaluation families with shared memory-state, pair-operation and array-parser dependencies, before full tree traversal and phase activation.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
-        "Complete native SIMD constructor/import and object-specific clone/morph closures without activating incomplete dispatchers or phases.",
+        "Port complete native VN exception, intrinsic, memory-access and call functions with their required primitives; keep fgValueNumber inactive until its full traversal/dependency closure exists.",
         "Review each frozen packet, run focused Debug/Release cases and commit it with related tracking before integrating the next packet."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Hardware/GS committed43b3060; object/array stack allocation committed359fc79 with800D772R and14verified execution configurations. Corrected VN map/diagnostic/memorySSA closure is integrated343D341R on359fc79 without phase activation. Next select complete VN traversal/evaluation dependencies.",
+      "parentScope": "VN maps/diagnostics committeda09b9d7. Pair/exception/memory-state/array-parser prerequisite closure integrated391D388R on that baseline, with independent pair/exception review finding no high-confidence defect. Remaining intrinsic/evaluation and memory-access closures are active; calls await local-store dependency. Do not activate a reduced fgValueNumber phase.",
       "parallelPackets": [
+        {
+          "scope": "Complete native call/helper/special-intrinsic numbering at valuenum.cpp14592-15631.",
+          "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
+          "files": "New Compiler.VNCalls.cs and ValueNumCallTests.cs only.",
+          "status": "in-progress",
+          "remainingBoundary": "Drafted native call family through104; compile requires942's fgValueNumberLocalStore and physical-map closure. No test counts yet. d62 independent pair/exception review through105 found no high-confidence defect."
+        },
+        {
+          "scope": "Complete VN exception-set evaluation and dispatch at valuenum.cpp15632-16190.",
+          "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
+          "files": "New Compiler.VNExceptions.cs and focused ValueNumExceptionTests.cs only.",
+          "status": "done",
+          "remainingBoundary": "Through48 collected. Shared pair helpers reused, duplicate compositions/subset walk removed;20D19R focused and391D388R parent integration pass. Independent d62 review through105 found no high-confidence defect."
+        },
+        {
+          "scope": "Complete scalar/hardware intrinsic, array-index, cast and bitcast numbering at valuenum.cpp14016-14590.",
+          "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
+          "files": "New Compiler.VNIntrinsics.cs/ValueNumIntrinsicTests.cs plus ValueNumStore.IntrinsicEvaluation.cs/ValueNumIntrinsicEvaluationTests.cs.",
+          "status": "in-progress",
+          "remainingBoundary": "Missing math/HWI evaluators and SIMD VN type selection owned by6a. Parent parser and610 pair/cast primitives now integrated391D388R. Complete evaluator prerequisite family then compiler intrinsic callers."
+        },
+        {
+          "scope": "Complete native VN pair cast/bitcast, expression and exception operations required by compiler evaluators.",
+          "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
+          "files": "New ValueNumStore.Pairs.cs and ValueNumPairOperationTests.cs only.",
+          "status": "done",
+          "remainingBoundary": "Through42 collected. Complete scalar cast/bitcast, pair, unique, subset/intersection and target-width constant closure.21D19R focused;391D388R parent integration and independent d62 review complete."
+        },
+        {
+          "scope": "Complete local/array/field/byref load-store numbering at valuenum.cpp6685-7054,12880-13369.",
+          "owner": "942a496f-db30-4389-a403-265f28fdb23c",
+          "files": "New Compiler.VNMemoryAccess.cs/ValueNumMemoryAccessTests.cs plus ValueNumStore.MemoryAccess.cs/ValueNumLoadStoreTests.cs and GenTree.FieldAddress.cs.",
+          "status": "in-progress",
+          "remainingBoundary": "Drafted12compiler functions through79; no successful test run yet.942 explicitly owns missing scalar/pair physical load/store, whole-access/bitcast, field selector and GenTree.IsFieldAddr closure. Reuse maps and frozen pair APIs; no dispatcher/phase changes."
+        },
         {
           "scope": "Generic hardware-dispatch regression fixtures, including InvalidNodeId-only portable operations.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
@@ -106,11 +141,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Resume the native fgValueNumber/fgValueNumberBlock/fgValueNumberTree dependency closure in pinned valuenum.cpp. fgValueNumber remains a no-op in Compiler.fg.cs; do not activate a reduced phase. Assign independent complete leaf-function families to retained workers, keep shared fields and phase orchestration in the parent, and persist exact ownership before implementation. VN maps/diagnostics are integrated343D341R on object-activation359fc79; established14execution configurations remain the runtime boundary. No publication.",
+    "nextAction": "Integrate942's complete physical-map load/store/field-selector and GenTree.IsFieldAddr closure when returned, then unblock d62's call-family validation through fgValueNumberLocalStore.6a owns math/HWI evaluators and subsequent compiler intrinsic functions. Pair/exception/memory-state/array-parser closure is integrated391D388R with independent review; exact8overlays in vn-memory-state-validation\\source-manifest-complete.json. Full tree traversal and loop-side-effect initialization remain subsequent dependencies; fgValueNumber stays inactive. Preserve14runtime configurations; no publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Collected through942:75,d62:101,610:29,3a:36,6a:46. All returned packets integrated and workers idle/resolved. Hardware/GS committed43b3060; object activation committed359fc79; VN closure validated343D341R. Parent owns CoreRoot, currently free. No app-native sessions.",
+      "workerPackets": "Collected pair610:42, exception3a:48, memory942:79, calls/reviewd62:105, intrinsic initial blocker6a:48. Pair+exception+parent memory/parser integrated391D388R.942 physical-memory and6a evaluator work active; d62 call draft awaits942. Parent owns CoreRoot, currently free. No app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -126,6 +161,18 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "vnPairExceptionArrayClosure": {
+        "snapshotBase": "a09b9d7",
+        "sourceManifest": "artifacts\\vn-memory-state-validation\\source-manifest-complete.json",
+        "debugPassed": 391,
+        "releasePassed": 388,
+        "skipped": 0,
+        "selector": "FullyQualifiedName~ValueNum|FullyQualifiedName~MemorySsa|FullyQualifiedName~SsaMemory",
+        "tests": "snapshot\\artifacts\\tst\\{Debug,Release}\\vn-prerequisites-complete-{debug,release}.trx",
+        "nativeBoundary": "valuenum.h568-581,802-866,973-1114;valuenum.cpp1098-1529,6329-6375,12567-12664,14360-14591,15632-16189;gentree.cpp22000-22245",
+        "review": "Independent d62 pair/exception review found no high-confidence conformance defect. Parent verified full parser/memory-state bodies and exact8root/snapshot overlay hashes.",
+        "scope": "Complete VN primitives, compiler exception family, memory-state recording and array parsing. No VN phase activation, native-host recapture or phase-dump parity claim."
+      },
       "vnMapDiagnosticClosure": {
         "snapshotBase": "359fc79",
         "sourceManifest": "artifacts\\vn-map-algebra-validation\\source-manifest-integrated.json",
@@ -5116,6 +5163,14 @@
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
       "status": "Complete native WindowsAMD64 portable/special import and24constructor dependencies. Load/store reuse existing value factories; remaining generic dispatcher is not activated."
+    },
+    {
+      "area": "vn-pair-exception-array-closure",
+      "native": ["src\\coreclr\\jit\\valuenum.h:568-581,802-866,973-1114", "src\\coreclr\\jit\\valuenum.cpp:1098-1529,6329-6375,12567-12664,14360-14591,15632-16189", "src\\coreclr\\jit\\gentree.cpp:22000-22245"],
+      "csharp": ["sources\\Core\\jit\\valuenum\\ValueNumStore.Pairs.cs", "sources\\Core\\jit\\compiler\\Compiler.VNExceptions.cs", "sources\\Core\\jit\\compiler\\Compiler.VNMemoryState.cs", "sources\\Core\\jit\\gentree\\GenTreeArrAddr.cs"],
+      "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
+      "reconciledCommit": null,
+      "status": "Complete prerequisite closure, integrated391D388R; full memory/intrinsic/call evaluation and tree traversal remain."
     },
     {
       "area": "vn-map-diagnostic-closure",

@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: VN exceptions and array-address reconstruction
+
+Value-numbering support now preserves paired normal and exceptional values
+through numeric casts, bitcasts, arithmetic, bounds checks and indirections.
+Heap and address-exposed memory updates retain their native shared or separate
+SSA state.
+
+Array-address reconstruction recovers element indices from scaled byte offsets
+without discarding constant contributions. Unparseable addresses preserve the
+caller's index result and report no array, matching native behavior.
+
+These are prerequisites for tree evaluation. The full VN phase remains inactive;
+memory-access, intrinsic and call evaluation still require integration.
+
 ## 2026-09-26: Memory value numbering and diagnostics
 
 Value numbering now has precise and physical memory-map operations, including
