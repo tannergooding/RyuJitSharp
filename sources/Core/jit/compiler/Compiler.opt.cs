@@ -216,15 +216,6 @@ public partial class Compiler
         _ = walker.WalkTree(ref tree, null);
     }
 
-    // TODO: Port phase - optOptimizeFlow
-    public PhaseStatus optOptimizeFlow() => PhaseStatus.MODIFIED_NOTHING;
-
-    // TODO: Port phase - optOptimizePreLayout
-    public PhaseStatus optOptimizePreLayout() => PhaseStatus.MODIFIED_NOTHING;
-
-    // TODO: Port phase - optOptimizePostLayout
-    public PhaseStatus optOptimizePostLayout() => PhaseStatus.MODIFIED_NOTHING;
-
     // TODO: Port phase - optRangeCheckCloning
     public PhaseStatus optRangeCheckCloning() => PhaseStatus.MODIFIED_NOTHING;
 

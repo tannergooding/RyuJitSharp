@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Activate complete bounds-check coalescing after committed early propagation and loop hoisting. Preserve native ordering, conservative VN grouping and exception barriers. Positive unit transformations and negative-control invariants are established; two distinct runtime probes remain negative, so record that gap rather than broadening probe research.",
+      "scope": "Complete optOptimizeFlow/PreLayout/PostLayout and their rarely-run/branch-reversal prerequisites. Independently port range-check cloning. Preserve native flow/phase ordering, predecessor/profile contracts and post-LSRA in-place-only reversal.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
@@ -23,8 +23,22 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Coalescing3 integrated250D170R; JITFFE23B0E executes20configs124bodies78phases plus array4/span2 bodies.3a:115 confirms native-matching no-change, barriers and exception outcomes. Positive runtime strengthening remains unestablished; focused positive/invariant tests pass. Commit coherent batch then continue next optimization closure.",
+      "parentScope": "Complete flow7 integrated628D503R and22configs130bodies252flow completions.942:137/138 positive native comparison complete: cold blocks, switch6block removal, return compaction and in-place reversals match applicable inputs; six B300 non-Main return/CSE differences remain. Commit then integrate frozen/reviewed range-check cloning.",
       "parallelPackets": [
+        {
+          "scope": "Complete range-check cloning and required local helper/model closure.",
+          "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
+          "files": "New Compiler.RangeCheckCloning*.cs and RangeCheckCloningTests.cs; parent owns production stub.",
+          "status": "in-progress",
+          "remainingBoundary": "3a:116 frozen3files onb4df9ab,8D8R; manifest artifacts\\rangecheckcloning-validation\\source-manifest.json.6a:111 native/hash-order review clear. Await parent production activation after flow commit; no runtime parity established."
+        },
+        {
+          "scope": "Complete pre-layout unconditional-to-conditional branch optimization prerequisite.",
+          "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
+          "files": "New Compiler.FlowGraphBranchOptimization.cs and FlowGraphBranchOptimizationTests.cs only.",
+          "status": "done",
+          "remainingBoundary": "d62:160 frozen2files22D22R covering fgopt.cpp2575-2853;942:136 review clear. Integrated with complete flow phases628D503R/22configs130bodies252phases;942:137/138 native positive comparison complete."
+        },
         {
           "scope": "Complete Boolean optimization with the native CCMP switch-detection prerequisite.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
@@ -309,11 +323,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit validated coalescing3 plus tracking;3a:115 final native comparison collected.250D170R,20configs124bodies78phases plus array4/span2 executions and barrier outcomes pass. Positive runtime strengthening remains unestablished and is recorded, not a blocker for further phase porting. Manifest source3 and snapshot inventory verified. Then port complete optRangeCheckCloning closure using the actual production callsite, with independent prerequisite work where useful; preserve phase ordering and no publication.",
+    "nextAction": "Commit validated flow7 plus tracking;942:137/138 comparison collected, no introduced defect. Then integrate3a:116 frozen range-check-cloning3 on new committed baseline: rename optRangeCheckCloningCore to actual public entry, remove Compiler.opt.cs stub and route focused tests through production entry.6a:111 native/hash-order review clear. Validate fullD/R and freshAOT with flow-phase-integration\\capture-configurations.json22cases. Native phase comparison required; no publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "Coalescing d62:159 tests,942:133 review and3a:115 final native/runtime comparison collected. All retained workers idle with no unread results. CoreRoot free; no app-native sessions.",
+      "workerPackets": "Flow d62:160,942:134/136 reviews and137/138 comparison fully collected. Range-check cloning3a:116 frozen3 and6a:111 review collected. All retained workers idle with no unread results. CoreRoot free; no parent command running or app-native sessions.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -329,6 +343,22 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "flowOptimization": {
+        "snapshotBase": "b4df9ab",
+        "sourceManifest": "artifacts\\flow-phase-integration\\source-manifest.json",
+        "debugPassed": 628,
+        "releasePassed": 503,
+        "skipped": 0,
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\flow-integrated-{Debug,Release}.trx",
+        "nativeAot": "artifacts\\flow-phases-jit\\RyuJitSharp.dll",
+        "sha256": "351F916AD1951358C101761E6DCA189798DD96C826B7EE59FE5A02C9FBE7D6DE",
+        "runtime": "artifacts\\flow-phase-integration\\runtime-validation.json:22configurations,130positive bodies,252flow phase completions; managed execution without fallback.",
+        "configurations": "artifacts\\flow-phase-integration\\capture-configurations.json:prior20 plus frozen coalescing array/span probes.",
+        "regressions": "Six production-entry cases fail against the three old no-op stubs; all8selected entry cases pass after restoration. Frame/reference initialization and enum matching were corrected in the test harness before full validation.",
+        "review": "942:134 parent flow/rare/reversal closure and942:136 fgOptimizeBranch review found no actionable native-conformance defect.",
+        "comparison": "artifacts\\flow-phase-integration\\native-phase-comparison.json:matching native cold blocks, switch6block removal, return compaction, same-target switch conversion and applicable in-place reversals. SwitchMain pre-CSE/post-CSE block counts now match; six non-Main B300 return/CSE differences remain. Method sizes recorded without codegen-parity claim.",
+        "gaps": "Multi-predecessor lexical ordering, callfinally weight propagation, JCMP/JTEST post-layout reversal, leading-phi branch destinations and empty source blocks are not exhaustively covered by focused tests. Broader code/dump parity remains open."
+      },
       "boundsCheckCoalescing": {
         "snapshotBase": "6e88266",
         "sourceManifest": "artifacts\\bounds-coalescing-integration\\source-manifest.json",
@@ -5726,6 +5756,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "flow-optimization-phases",
+      "native": ["src\\coreclr\\jit\\optimizer.cpp:2366-2455", "src\\coreclr\\jit\\fgopt.cpp:2575-2853,2984-3281", "src\\coreclr\\jit\\gentree.cpp:3863-3921"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.FlowOptimization.cs", "sources\\Core\\jit\\compiler\\Compiler.RarelyRunBlocks.cs", "sources\\Core\\jit\\compiler\\Compiler.FlowGraphBranchOptimization.cs", "sources\\Core\\jit\\compiler\\Compiler.gt.cs:gtTryReverseCond/gtReverseCond"],
+      "status": "Complete early/pre-layout/post-layout phases and native prerequisite closure; selected execution and positive native phase comparisons established. Broader code/dump parity remains open.",
+      "reconciledCommit": null
+    },
     {
       "area": "bounds-check-coalescing",
       "native": ["src\\coreclr\\jit\\boundscheckcoalesce.cpp:31-43,47-109,116-273"],

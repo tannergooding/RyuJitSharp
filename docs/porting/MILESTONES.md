@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Flow optimization phases
+
+Flow optimization now runs at the native early, pre-layout and post-layout
+points. The early pass enables tail duplication and propagates cold-block
+information; the pre-layout pass performs cleanup and profitable branch
+duplication. After register allocation, reversible conditions and their existing
+edges are flipped to favor fallthrough without introducing IR nodes.
+
+Selected optimized and GC-stress corpora execute with these phases enabled,
+including the array/span exception-ordering probes. Native comparisons confirm
+cold-block marking, removal of six extra switch blocks, return-block compaction
+and in-place branch reversals. Separate-return differences in six Boolean/switch
+methods and broader generated-code parity remain outstanding.
+
 ## 2026-09-26: Bounds-check coalescing
 
 Bounds-check coalescing now groups checks by block, conservative array-length

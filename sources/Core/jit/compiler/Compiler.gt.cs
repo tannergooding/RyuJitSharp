@@ -13672,6 +13672,16 @@ public partial class Compiler
 
     public GenTree gtReverseCond(GenTree tree)
     {
+        if (!gtTryReverseCond(tree))
+        {
+            tree = gtNewBinaryNode(GT_EQ, TYP_INT, tree, gtNewZeroConNode(TYP_INT));
+        }
+
+        return tree;
+    }
+
+    public bool gtTryReverseCond(GenTree tree)
+    {
         var oper = tree.Oper;
 
         if (oper.IsCompare)
@@ -13695,9 +13705,10 @@ public partial class Compiler
         }
         else
         {
-            tree = gtNewBinaryNode(GT_EQ, TYP_INT, tree, gtNewZeroConNode(TYP_INT));
+            return false;
         }
-        return tree;
+
+        return true;
     }
 
     public int gtSetCallArgsOrder(ref CallArgs args, bool lateArgs, ref byte callCostEx, ref byte callCostSz)
