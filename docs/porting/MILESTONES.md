@@ -15,6 +15,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: Enregistered-local block locations
+
+Windows-x64 LSRA now preserves local register homes across block boundaries,
+including predecessor changes, EH stack homes, delayed spills and copy-register
+references. Allocation and resolution retain their distinct map-update rules;
+dead register occupants and upper-vector state follow native handling.
+
+These routines remain prerequisites for optimized allocation. The production
+minopts allocator and its execution boundary are unchanged.
+
 ## 2026-09-25: SSA rename state and diagnostics
 
 SSA renaming now has native block-scoped local and memory stacks, including

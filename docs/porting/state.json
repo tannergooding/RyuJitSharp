@@ -29,15 +29,15 @@
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
           "files": "New LocalBlockLocations partials and focused fixture; shared helpers require a reported need before edits.",
           "doneWhen": "Frozen complete block-location closure with actual isolated Debug/Release evidence and exact hashes; production allocation gate unchanged.",
-          "status": "in-progress",
-          "result": "Preceding local interval builder is committed c8bdd87."
+          "status": "complete",
+          "result": "Complete block-location packet through turn8 reviewed and integrated; worker80Debug/67Release and combined673Debug/566Release. Optimized allocation remains gated."
         },
         {
-          "scope": "Complete native SsaRenameState local/memory stacks and block-scoped restoration.",
+          "scope": "Complete native optRemoveRedundantZeroInits without activating the SSA phase.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
-          "files": "New ssarenamestate partials and SsaRenameStateTests.cs; no shared compiler or builder edits.",
-          "doneWhen": "Frozen complete state helper with isolated Debug/Release evidence, preserving local/memory ordering and shared-kind semantics.",
-          "status": "complete",
+          "files": "Compiler.RedundantZeroInit.cs and RedundantZeroInitTests.cs only.",
+          "doneWhen": "Complete native function preserving first-reference, promoted-field, EH/GC and loop invariants; frozen isolated Debug/Release evidence.",
+          "status": "in-progress",
           "deferred": "SsaBuilder orchestration, full SSA activation and unowned compiler changes."
         },
         {
@@ -59,11 +59,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B257 is committed2114101 with32-method GCStress4 execution. Rename state and corrected SSA diagnostics are integrated347Debug/316Release. Parent next implements the complete empty FlowGraphDominatorTree/FlowGraphDominanceFrontiers classes (flowgraph.cpp:7094-7520), DomTreeNode (block.h:2453), BlockDominancePreds (block.cpp:289-312 with a separate lazy dominance cache), and the nonrecursive DomTreeVisitor (compiler.h:13345). Existing BlockPredsWithEH and FlowGraphDfsTree are reusable. Follow existing struct-visitor CRTP interface patterns; preserve native predecessor/child order and EH behavior. LSRA worker owns local block locations. No partial SSA/optimized activation or publication.",
+    "nextAction": "Local block-location packet is reviewed and validated. Parent dominator/frontier classes, DomTreeNode, BlockDominancePreds and IDomTreeVisitor are implemented and pass combined673Debug/566Release in artifacts\\dominance-integration. Finish their separate tracking/commit boundary next; then complete SsaBuilder using these graph APIs and committed rename state. Worker3a2c8d9b owns optRemoveRedundantZeroInits independently; collect its next handoff before integrating it. Preserve zero-allocation visitor hooks, native EH/predecessor/child/frontier ordering and unchanged SSA/optimized-allocation gates. No publication.",
     "handoff": {
       "status": "parallel-interval-and-ssa-prerequisites",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn6 is integrated as c8bdd87; now owns new LocalBlockLocations partials/tests. 3a2c8d9b through turn10 and d62fc6a5 through turn75 are fully reviewed and integrated with347Debug/316Release; both idle/resolved. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
+      "workerPackets": "610162a0 through turn8 is collected, reviewed and integrated as the local block-location packet; idle/resolved. 3a2c8d9b through turn10 rename state is committed032c4c9; now running optRemoveRedundantZeroInits. d62fc6a5 through turn75 diagnostics is committed032c4c9 and idle/resolved. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -79,6 +79,24 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "localBlockLocations": {
+        "nativeBoundary": "lsra.cpp:3939-3962 processBlockEndAllocation<true>,3978-4009 rotateBlockStartLocation,4171-4206 unassignIntervalBlockStart,4248-4607 processBlockStartLocations/handleDeadCandidates,4624-4657 processBlockEndLocations; lsra.h:1772-1775 setRegsInUse.",
+        "workerSourceManifest": "artifacts\\block-locations-validation\\source-manifest.json",
+        "workerSnapshotBase": "c8bdd87",
+        "workerDebugPassed": 80,
+        "workerReleasePassed": 67,
+        "sourceManifest": "artifacts\\dominance-integration\\source-manifest.json",
+        "snapshotBase": "032c4c9",
+        "rootSnapshotHashesMatch": true,
+        "debugTests": "artifacts\\dominance-integration\\results\\integration-debug.trx",
+        "releaseTests": "artifacts\\dominance-integration\\results\\integration-release.trx",
+        "debugPassed": 673,
+        "releasePassed": 566,
+        "skipped": 0,
+        "selection": "FullyQualifiedName~FlowGraphDominanceTests|FullyQualifiedName~FlowGraphDfsTests|FullyQualifiedName~ExceptionalPredecessorTests|FullyQualifiedName~LinearScan|FullyQualifiedName~Ssa",
+        "coverage": "Predecessor/write-through/stack homes, allocation versus resolution maps, copy-register exceptions, dead constants/upper vectors, register rotation, next-block sequencing and pre-mutation mode rejection.",
+        "limitation": "Combined snapshot also contains the parent graph-prerequisite packet; neither optimized allocation nor SSA construction is activated."
+      },
       "ssaRenameAndDiagnostics": {
         "nativeBoundary": "Complete ssarenamestate.h/cpp; ssabuilder.cpp:1205-1380 DumpSsaSummary/JitTestCheckSSA; compiler.cpp:8060-8110 FindReachableNodesInNodeTestData.",
         "renameEvidence": "artifacts\\ssa-rename-state-validation\\evidence.txt",
@@ -5608,6 +5626,13 @@
       "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.LocalIntervalConstruction.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalIntervalPredecessors.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalIntervalValidation.cs"],
       "reconciledCommit": null,
       "scope": "Complete Windows-AMD64 buildIntervals<true> and required predecessor/stress/validation helpers; optimized allocation gate unchanged."
+    },
+    {
+      "area": "linear-scan-local-block-locations",
+      "native": ["src\\coreclr\\jit\\lsra.cpp", "src\\coreclr\\jit\\lsra.h"],
+      "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.LocalBlockLocations.cs", "sources\\Core\\jit\\lsra\\LinearScan.LocalBlockLocationsHelpers.cs"],
+      "reconciledCommit": null,
+      "scope": "Complete Windows-AMD64 block-start/end locations and processBlockEndAllocation<true>, with required rotation/unassignment/dead-candidate helpers; optimized gate unchanged."
     },
     {
       "area": "saved-wip-lir-and-rationalization",

@@ -828,6 +828,11 @@ as `buildIntervalsWithLocals`, alongside the unchanged minopts builder. It
 includes predecessor selection, parameter stress and local interval validation.
 Production optimized allocation remains gated until allocation and resolution
 support those intervals.
+Windows-AMD64 block-location processing includes native allocation and resolution
+map semantics, register reassignment, EH write-through homes and dead candidates.
+The complete `processBlockEndAllocation<true>` specialization is named
+`processBlockEndAllocationWithLocals`. These entrypoints reject unsupported
+targets or disabled local enregistration before mutating maps or visitation.
 
 Liveness policies use static interface members in place of native template
 traits. Per-block scratch and stored sets retain independent managed storage.
