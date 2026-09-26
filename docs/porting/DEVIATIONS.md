@@ -827,6 +827,11 @@ traits. Per-block scratch and stored sets retain independent managed storage.
 The early-tree specialization preserves native conditional-definition handling,
 dead-store side effects and the null current-statement cursor. Other tree/SSA
 policies remain explicitly rejected by this driver.
+The separate SSA-policy driver includes memory liveness, non-phi backward
+traversal and native dead-store diagnostics. Interior COMMA replacements use
+metadata-preserving constructors and update every owning edge before
+rethreading; NOP conversion uses the existing base-field-only transformation.
+This does not complete SSA construction.
 An empty bitset span is a valid initialized set when its trait environment has
 zero elements, even though the same representation also denotes uninitialized
 storage in nonempty environments; canonical assignment distinguishes those

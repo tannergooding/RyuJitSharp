@@ -12216,11 +12216,6 @@ public partial class Compiler
         }
     }
 
-    public void fgSsaLiveness()
-    {
-        // TODO: Port Compiler.fgSsaLiveness
-    }
-
 #if DEBUG
     public void fgTableDispBasicBlock(BasicBlock block, BasicBlock? nextBlock = null, bool printEdgeLikelihoods = true, int blockTargetFieldWidth = 21, int ibcColWidth = 0)
     {

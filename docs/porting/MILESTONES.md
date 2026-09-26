@@ -15,6 +15,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: SSA tree liveness
+
+The SSA liveness policy now performs native memory/local dataflow and backward
+analysis of non-phi statements, including dead-store elimination, retained side
+effects and EH keep-alive requirements. Interior rewrites preserve logical node
+identity and metadata, update aliased owners and retain native diagnostics.
+
+Early-tree and post-lowering liveness remain separate policy specializations.
+This completes SSA-policy liveness, not full SSA construction or optimized
+compilation.
+
 ## 2026-09-25: Entry-local allocation definitions
 
 Register-allocation prerequisites now include initial parameter definitions and

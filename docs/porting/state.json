@@ -30,7 +30,7 @@
           "owner": "610162a0-3e58-44a3-95f1-22a470a9d3ef",
           "files": "liveness files, new Compiler.SsaLiveness.cs, only the fgSsaLiveness stub in Compiler.fg.cs, and SsaLivenessTests.cs.",
           "doneWhen": "Frozen full policy closure with actual isolated Debug/Release evidence and root/snapshot hashes; parent reviews integration.",
-          "status": "in-progress"
+          "status": "complete"
         },
         {
           "scope": "Complete binary VNForFunc interning/dispatch with EvalUsingMathIdentity, VNEvalFoldTypeCompare and direct dependencies.",
@@ -59,11 +59,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "VN interning is committed as dbb565b; entry-local definition prerequisites are complete. SSA liveness is reviewed and ready to commit: frozen combined snapshot passes647Debug/627Release and all30standard/loop/interior/EH methods execute with the fresh entry-interval-jit. Finish SSA documentation/commit, then resume complete buildIntervals<true> closure from lsrabuild.cpp:2074-2795 without activating optimized allocation. Full SSA construction and VN phase remain incomplete. No publication.",
+    "nextAction": "SSA liveness, VN interning(dbb565b), entry-local definitions(c844973), B251 and loop/EH execution are integrated. Resume complete buildIntervals<true> closure from lsrabuild.cpp:2074-2795: reuse identifyCandidatesWithLocals and entry definitions; port missing initial-parameter stress, last-use/interval validation and any required mode helpers, retaining DoRegisterAllocation's optimized gate until build/allocation/resolution closure exists. Reuse resolved workers for bounded independent next packets after defining exact native boundaries. No publication.",
     "handoff": {
-      "status": "parallel-prerequisite-integration",
+      "status": "ready-for-local-interval-construction",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "610162a0 through turn4 is collected and SSA packet awaits documentation/commit. 3a2c8d9b through turn7 is collected and committed dbb565b; parent strengthened the numbering regression and verified2before failures and297/297final cases. d62fc6a5 through turn70 is collected and resolved: fresh NativeAOT integration passes all30methods. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. All workers idle pending next coherent scope; no app-native child-session coordination.",
+      "workerPackets": "All packets resolved:610162a0 through turn4(SSA),3a2c8d9b through turn7(VN),d62fc6a5 through turn70(runtime). Parent strengthened VN numbering regression, verified2before failures and297/297final cases, and integrated16entry-definition cases. Combined647/627and30managed runtime methods pass. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -79,6 +79,18 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "ssaTreeLiveness": {
+        "nativeBoundary": "liveness.cpp:123-153 Run,1025-1263 InterBlockLocalVarLiveness,1585-1659 ComputeLife,2039-2225 RemoveDeadStore,2768-2790 fgSsaLiveness.",
+        "sourceManifest": "artifacts\\ssa-liveness-validation\\source-manifest.txt",
+        "snapshotBase": "f613736",
+        "isolatedDebugPassed": 52,
+        "isolatedReleasePassed": 47,
+        "skipped": 0,
+        "rootSnapshotHashesMatch": true,
+        "integration": "checkpoint.validation.entryIntervalIntegration",
+        "coverage": "Native phase/repeat ordering, local/memory and EH liveness, non-phi traversal, retained side effects, interior metadata/alias replacement and native DEBUG diagnostics; B253 corrected before integration.",
+        "limitation": "SSA-policy liveness only. Full SSA construction and optimized compilation remain incomplete."
+      },
       "entryLocalDefinitions": {
         "nativeBoundary": "lsrabuild.cpp:1974-2070 insertZeroInitRefPositions and2803-2819 buildInitialParamDef; lsra.h stressInitialParamReg DEBUG/Release predicates.",
         "source": "sources\\Core\\jit\\lsra\\LinearScan.EntryDefinitions.cs",
@@ -5368,7 +5380,14 @@
       "native": ["src\\coreclr\\jit\\liveness.cpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.EarlyLiveness.cs", "sources\\Core\\jit\\liveness"],
       "reconciledCommit": null,
-      "scope": "Complete native EarlyLiveness policy; remaining non-early tree/SSA modes are not reconciled."
+      "scope": "Complete native EarlyLiveness policy; SSA has its own mapping and driver."
+    },
+    {
+      "area": "ssa-tree-liveness",
+      "native": ["src\\coreclr\\jit\\liveness.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.SsaLiveness.cs", "sources\\Core\\jit\\liveness\\Liveness.OrchestrationSsa.cs", "sources\\Core\\jit\\liveness\\Liveness.BackwardSsa.cs"],
+      "reconciledCommit": null,
+      "scope": "Complete SSA liveness policy; native mixed-mode bodies remain retained."
     },
     {
       "area": "batch-temporary-initialization",
