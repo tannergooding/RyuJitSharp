@@ -13933,9 +13933,6 @@ public partial class Compiler
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 
-    // TODO: Port phase - fgHeadTailMerge
-    public PhaseStatus fgHeadTailMerge(bool early) => PhaseStatus.MODIFIED_NOTHING;
-
     /// <summary>read the IL for the method and create jit IR</summary>
     /// <returns></returns>
     public PhaseStatus fgImport()

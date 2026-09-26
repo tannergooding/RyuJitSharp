@@ -15,6 +15,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Head and tail merging
+
+Early and post-morph head/tail merging now share equivalent statement sequences
+across predecessors and successors, including common return and throw tails.
+The phase preserves native matching order, side-effect restrictions, EH regions
+and flow weights.
+
+Six Boolean/switch probes now have the same shared returns, SSA form and CSE
+promotion choices as native, resolving the remaining input-shape differences
+tracked in B300. Their reported code sizes also match; this does not establish
+instruction or runtime-metadata parity. The two `Main` methods retain their
+earlier size gaps, and diagnostic/tree-cost differences remain.
+
 ## 2026-09-26: Induction-variable optimization
 
 Induction-variable optimization now strength-reduces derived expressions,

@@ -12,7 +12,7 @@
     "stage": "integrating-saved-wip",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete native head/tail merging and its required helper closure after IV activation. Preserve native structural matching, ordering, EH/profile contracts and diagnostics; compare remaining separate-return differences without assuming their cause.",
+      "scope": "Activate complete native forward substitution, then complete empty-EH cleanup. Preserve native eligibility, evaluation/exception ordering, node ownership and EH/profile contracts; integrate the already frozen packets sequentially.",
       "doneWhen": [
         "Preserve the completed loop-inversion/iteration-analysis contract and identify the first missing native transformation behind a concrete optimized-code difference.",
         "Preserve established optimized and checked minopts execution; code-size equality alone is not parity.",
@@ -23,8 +23,29 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Complete IV activation13 integrated656D531R with full analysis, positive old-stub failure/restored-entry pass and23configs132bodies86phases.942:141 review and3a:120 positive native comparison clear. Next close the still-stubbed fgHeadTailMerge native closure; do not attribute B300 return differences until compared. CoreRoot free.",
+      "parentScope": "Head/tail activation4 complete679D554R,9old-stub failures/14controls,23configs132bodies172phases.3a:122 confirms native shared returns/SSA/CSE choices for all6B300methods; corresponding sizes match, not codegen parity. ForwardSub6 and EHcleanup5 frozen/reviewed, awaiting sequential activation. CoreRoot free.",
       "parallelPackets": [
+        {
+          "scope": "Complete native early/late head and tail merging.",
+          "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
+          "files": "New Compiler.HeadTailMerge*.cs and HeadTailMergeTests.cs; parent owns existing Compiler.fg.cs entry.",
+          "status": "done",
+          "remainingBoundary": "3a:121 source and942:142 review integrated; public activation4 passes679D554R,9old-stub failures/14controls,23configs132bodies172phases.3a:122 confirms matching early/late decisions, positive shared-return/SSA/CSE shapes and6native code sizes. B300 recorded input-shape gaps resolved; B305 diagnostic padding deferred."
+        },
+        {
+          "scope": "Complete native forward substitution.",
+          "owner": "6a004941-37d2-4a3d-b2f4-0d1a35021099",
+          "files": "New Compiler.ForwardSub*.cs, conventional required models and ForwardSubTests.cs; parent owns existing entry.",
+          "status": "in-progress",
+          "remainingBoundary": "6a:120 frozen6files15D15R; manifest artifacts\\forwardsub-validation\\source-manifest.json;610:87 native review clear. Parent found positive native rangeMain allocation-call forwarding and3unchanged controls in artifacts\\forwardsub-integration\\native-positive-evidence.json. Await activation after head/tail commit."
+        },
+        {
+          "scope": "Complete native empty EH cleanup.",
+          "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
+          "files": "New Compiler.EHCleanup*.cs and EHCleanupTests.cs; parent owns existing entries.",
+          "status": "in-progress",
+          "remainingBoundary": "d62:174 frozen5files9D9R complete three phases plus direct predecessor/continuation helpers;942:143 native review clear. Public entries inactive; integrate after head/tail/forward substitution without mixing WIP."
+        },
         {
           "scope": "Establish bounded positive native induction-variable execution evidence.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
@@ -344,11 +365,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Port complete native fgHeadTailMerge and required helper closure behind its Compiler.fg.cs no-op stub. Establish exact native boundaries and existing managed prerequisites; preserve all WindowsAMD64 conditional paths. After coherent activation, compare B300 six non-Main Boolean/switch separate-return shapes without assuming head/tail merging resolves them. Preserve artifacts\\induction-variable-integration\\capture-configurations.json23case execution matrix. IV13 complete656D531R, old-stub regression and positive native comparison; no repeat IV investigation. No publication.",
+    "nextAction": "Activate frozen ForwardSub6 from artifacts\\forwardsub-validation\\source-manifest.json: rename fgForwardSubCore to actual public fgForwardSub, remove Compiler.fg.cs stub and route tests through public entry.610:87 native review clear; prove positive old-stub regression, integrate fullD/R and freshAOT against committed head/tail baseline. Preserve23case artifacts\\head-tail-merge-integration\\capture-configurations.json and compare rangeMain positive allocation-call forwarding using artifacts\\forwardsub-integration\\native-positive-evidence.json. Then integrate frozen/reviewed EHcleanup5. No publication.",
     "handoff": {
       "status": "optimized-execution-validated",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "6a:114-119 consumer, d62:173 positive public-entry test,942:141 review and3a:120 native comparison fully collected/integrated. All five retained workers idle; no parent command running or app-native sessions. CoreRoot free.",
+      "workerPackets": "3a:121/122 head/tail implementation/comparison and942:142 review fully integrated.6a:120 ForwardSub6 and610:87 review collected;d62:174 EHcleanup5 and942:143 review collected. The latter two packets remain inactive/uncommitted root WIP. All5workers idle; no parent command running or app-native sessions; CoreRoot free.",
       "preserve": "Windows-AMD64 backend executes27 selected optimized methods and32minopts methods under GCStress4. Latest object-activation evidence keeps stack allocation enabled in all14configurations, including object6 andhardware8 corpora. Execution is not code/dump parity or broad runtime/other-target support. Keep pinned oracle and residual source unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -364,6 +385,23 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "headTailMerge": {
+        "snapshotBase": "7753c19",
+        "sourceManifest": "artifacts\\head-tail-merge-integration\\source-manifest.json",
+        "debugPassed": 679,
+        "releasePassed": 554,
+        "skipped": 0,
+        "tests": "artifacts\\vn-memory-state-validation\\snapshot\\artifacts\\tst\\{Debug,Release}\\head-tail-integrated-{Debug,Release}.trx",
+        "regressions": "Nine positive public-entry cases fail the old stub with MODIFIED_NOTHING instead of MODIFIED_EVERYTHING;14rejection/predicate controls pass. Evidence snapshot Debug head-tail-entry-before.trx and artifacts\\head-tail-merge-integration\\entry-before.log.",
+        "review": "942:142 complete native review found no high-confidence defect; existing gtTreeContainsTailCall covers omitted native helper span.",
+        "nativeAot": "artifacts\\head-tail-merge-jit\\RyuJitSharp.dll",
+        "sha256": "02C4FDA28489F03DACC4E4B5B2622CF376AB34919AA8AFE92483066059879DC3",
+        "runtime": "artifacts\\head-tail-merge-integration\\runtime-validation.json:23configurations132positive bodies172early/late phase completions; selected methods/JIT hash/GCStress/no fallback verified.",
+        "baselineEvidence": "artifacts\\head-tail-merge-integration\\native-baseline-evidence.json",
+        "scope": "32early/late phase entries across native and current managed Boolean/switch captures. All6native non-Main methods positively merge two equivalent terminal returns in the early phase; current managed entry remains a no-op.",
+        "comparison": "artifacts\\head-tail-merge-integration\\native-phase-comparison.json:all8methods have native-matching early/late decisions. Six positive methods match shared-return CFG/IR/SSA apart from profile-check diagnostics, and now select the same single CSE promotion/native code sizes. BothMain controls unchanged with8byte smaller managed bodies. B300 input-shape differences resolved; B305 padding and earlier costs/diagnostics remain.",
+        "gaps": "Focused tests omit filter-region separation, protected OSR entries, throw/tail-call grouping, profile-weight repair and50/200candidate limits. Matching code sizes do not prove machine-code/metadata parity; profile diagnostic differences are not an accepted normalization."
+      },
       "inductionVariables": {
         "snapshotBase": "fc426c5",
         "sourceManifest": "artifacts\\induction-variable-integration\\source-manifest.json",
@@ -5823,6 +5861,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "head-tail-merging",
+      "native": ["src\\coreclr\\jit\\fgopt.cpp:5101-5635,5638-5739,5743-5770,5832-5969", "src\\coreclr\\jit\\arraystack.h:79-83,225-233"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.HeadTailMerge.cs", "sources\\Core\\jit\\compiler\\Compiler.HeadTailMerge.Head.cs"],
+      "status": "Complete early/late production phase and helper closure, reusing existing gtTreeContainsTailCall. Native positive shared-return/SSA/CSE shape comparison and selected execution established; broader parity remains open.",
+      "reconciledCommit": null
+    },
     {
       "area": "induction-variable-optimization",
       "native": ["src\\coreclr\\jit\\inductionvariableopts.cpp:60-2936", "src\\coreclr\\jit\\flowgraph.cpp:6741-6761,6775-6831"],
