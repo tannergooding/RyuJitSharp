@@ -337,7 +337,7 @@ internal static unsafe class SsaLivenessTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitMaxLocalsToTrack")]
     private static extern ref int MaxLocalsToTrack(ref JitConfigValues config);
 
-    private static void WithCompiler(int count, Action<Compiler> action)
+    internal static void WithCompiler(int count, Action<Compiler> action)
     {
 #if DEBUG
         using var tls = new JitTls(null);

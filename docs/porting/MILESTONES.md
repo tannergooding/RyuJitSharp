@@ -15,6 +15,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-25: SSA reset
+
+SSA reset now implements both native modes: removing PHI functions alone and
+clearing definition tables, memory maps, composite-number storage and retained
+local-node SSA numbers before rebuilding. PHI-prefix removal preserves the
+remaining statement links without changing unrelated flowgraph flags.
+
+Full SSA construction is still incomplete. Separate composite-number growth
+and empty-memory-PHI sentinel defects remain tracked for that work.
+
 ## 2026-09-25: Higher-arity value numbers
 
 Three- and four-operand value-number functions now use native ordered interning

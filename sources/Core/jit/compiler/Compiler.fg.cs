@@ -11904,13 +11904,6 @@ public partial class Compiler
         }
     }
 
-    /// <summary>Reset any data structures to the state expected by "fgSsaBuild", so it can be run again.</summary>
-    /// <param name="deepClean"></param>
-    public void fgResetForSsa(bool deepClean)
-    {
-        // TODO: Port Compiler.fgResetForSsa
-    }
-
     public void fgSetHndEnd(ref EHblkDsc handlerTab, BasicBlock newHndLast)
     {
         // Check if we are going to change the existing value of endHndLast

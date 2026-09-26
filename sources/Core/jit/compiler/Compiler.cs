@@ -324,7 +324,7 @@ public partial class Compiler
 
     public FieldSeqStore? _fieldSeqStore;
 
-    public InlineArrayMemoryKindCount<NodeToUnsignedMap> _memorySsaMap;
+    public InlineArrayMemoryKindCount<NodeToUnsignedMap?> _memorySsaMap;
 
     // The Refany type is the only struct type whose structure is implicitly assumed by IL.  We need its fields.
     public unsafe CORINFO_CLASS_HANDLE _refAnyClass;

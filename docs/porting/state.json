@@ -59,11 +59,11 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Parent fgResetForSsa is implemented and passes443Debug/428Release after eight functional before failures. Higher-arity VN packet is collected/reviewed and passes307/307; commit it and SSA reset with documentation, preserving the active LSRA worker files. Record the separately discovered SsaNumInfo.Composite stale-span and null EmptyMemoryPhiDef defects without silently folding them into reset. Filter/nested-finally evidence is verified. Collect LSRA worker turn5 when complete; no optimized activation or publication.",
+    "nextAction": "SSA reset is complete: eight functional before failures,443Debug/428Release afterward; higher-arity VN is committed dfa1bcd. Parent next completes the SSA bookkeeping prerequisite by reproducing/reconciling complete SsaNumInfo.Composite (B254) and the distinct empty-memory-PHI sentinel (B255), without activating fgSsaBuild. LSRA worker turn5 will return full local interval construction; d62fc6a5 is isolating the recurring three-byte finally-code difference using existing captures. No optimized activation or publication.",
     "handoff": {
       "status": "parallel-interval-and-ssa-prerequisites",
       "branch": "tannergooding-ryujit-backend-continuation",
-      "workerPackets": "All prior packets integrated through e64909f. 610162a0 collected through turn4, still building full local intervals. 3a2c8d9b through turn8 is collected, higher-arity packet reviewed and frozen. d62fc6a5 through turn71 is collected, filter/nested-finally packet verified and resolved. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
+      "workerPackets": "610162a0 collected through turn4, still building full local intervals. 3a2c8d9b through turn8 is collected and committed dfa1bcd; idle. d62fc6a5 through turn71 is collected/committed df9e5c6, now investigating the recurring three-byte finally-code difference in artifacts\\backend-finally-parity. 6a004941 through turn35 and942a496f through turn61 remain resolved/idle. No app-native child-session coordination.",
       "preserve": "Windows-AMD64 lowering supports both native lifetime modes; allocation supports minopts without enregistered locals, and generation/emission/metadata execute the selected corpus. Keep optimized allocation and other unsupported optional modes explicit; focused GC-stress results do not imply broad GC or other-target parity. Keep the pinned oracle and residual native tree unchanged.",
       "remainingOptimizedFlowGraph": [],
       "nativePhaseSource": "src/coreclr/jit/lower.cpp:8949-9055",
@@ -79,6 +79,22 @@
     "nativeResidualBaseCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "ssaReset": {
+        "nativeBoundary": "ssabuilder.cpp fgResetForSsa, starting line42; both deepClean modes.",
+        "sourceManifest": "artifacts\\ssa-reset-validation\\source-manifest.json",
+        "snapshotBase": "e64909f",
+        "rootSnapshotHashesMatch": true,
+        "beforeTests": "artifacts\\ssa-reset-validation\\snapshot\\artifacts\\tst\\Debug\\ssa-reset-before-final.trx",
+        "beforeFailed": 8,
+        "debugTests": "artifacts\\ssa-reset-validation\\snapshot\\artifacts\\tst\\Debug\\ssa-reset-debug.trx",
+        "releaseTests": "artifacts\\ssa-reset-validation\\snapshot\\artifacts\\tst\\Release\\ssa-reset-release.trx",
+        "debugPassed": 443,
+        "releasePassed": 428,
+        "skipped": 0,
+        "selection": "FullyQualifiedName~Ssa|FullyQualifiedName~Liveness|FullyQualifiedName~FlowGraphCleanupTests|FullyQualifiedName~FlowGraphCompactionTests",
+        "coverage": "Eight mode/PHI/body combinations cover definition counts/reuse, memory-PHI removal, map alias preservation versus nulling, composite-list identity/capacity, retained-node SSA reset, removed-PHI identity and statement links; native flags/pass counts and diagnostics are preserved.",
+        "limitation": "No full SSA construction or optimized runtime execution claim. B254/B255 remain separate prerequisites."
+      },
       "higherArityValueNumbers": {
         "nativeBoundary": "valuenum.cpp:2982-3017 ternary VNForFunc and3036-3069 quaternary VNForFunc.",
         "sourceManifest": "artifacts\\vn-higher-arity-validation\\evidence.txt",
@@ -5414,6 +5430,13 @@
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.SsaLiveness.cs", "sources\\Core\\jit\\liveness\\Liveness.OrchestrationSsa.cs", "sources\\Core\\jit\\liveness\\Liveness.BackwardSsa.cs"],
       "reconciledCommit": null,
       "scope": "Complete SSA liveness policy; native mixed-mode bodies remain retained."
+    },
+    {
+      "area": "ssa-reset",
+      "native": ["src\\coreclr\\jit\\ssabuilder.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.SsaReset.cs"],
+      "reconciledCommit": null,
+      "scope": "Complete fgResetForSsa in both modes; SSA construction remains incomplete."
     },
     {
       "area": "batch-temporary-initialization",

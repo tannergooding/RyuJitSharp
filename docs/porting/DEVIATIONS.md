@@ -834,6 +834,10 @@ traversal and native dead-store diagnostics. Interior COMMA replacements use
 metadata-preserving constructors and update every owning edge before
 rethreading; NOP conversion uses the existing base-field-only transformation.
 This does not complete SSA construction.
+SSA reset supports both native PHI-only and deep-clean modes. Memory-SSA maps
+are nullable, reflecting the native absent-map state. Deep reset retains the
+definition-array and composite-list storage for reuse while dropping map
+references; it does not mutate aliased dictionaries or removed PHI nodes.
 An empty bitset span is a valid initialized set when its trait environment has
 zero elements, even though the same representation also denotes uninitialized
 storage in nonempty environments; canonical assignment distinguishes those
