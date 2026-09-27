@@ -2981,6 +2981,8 @@ public partial class Compiler
         // TODO: Port RecordStateAtEndOfInlining
     }
 
+    public bool doesMethodHaveNoReturnCalls() => optNoReturnCallCount > 0;
+
     public void setMethodHasNoReturnCalls()
     {
         optNoReturnCallCount++;

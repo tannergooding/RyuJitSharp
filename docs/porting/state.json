@@ -12,19 +12,19 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port complete fgComputeBlockWeights and fgComputeMissingBlockWeights against33baf8. Preserve profile gates, predecessor/successor inference order, handler and callfinally quirks, rare flags and ten-pass convergence limit.",
+      "scope": "Port complete fgPostInlineNoReturnCleanup against33baf8. Preserve preorder execution-order discovery, qmark exclusions, early tree splitting, statement trimming and shared throw-block conversion.",
       "doneWhen": [
-        "Port both complete native functions with no changes to inference ordering, flags or iteration limits.",
-        "Activate public block-weight computation with focused graph, profile, handler and nonconvergence regressions plus old-stub controls.",
-        "Capture positive native/managed block-weight changes where reachable, retain exact evidence boundaries and preserve the execution baseline.",
-        "Commit the validated weight-computation batch locally, then continue post-inline no-return cleanup."
+        "Port complete native phase/finder and no-return method predicate, reusing existing split-tree and throw-conversion contracts.",
+        "Cover root/nested no-return calls, execution order, qmark exclusions, earlier side effects, later statement removal and CFG/profile updates with old-stub controls.",
+        "Execute positive native/managed post-inline cleanup on a focused corpus and retain the established execution baseline.",
+        "Commit the validated no-return cleanup batch locally, then continue the next remaining dependency."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Cold selection committedab20bdb. Parent owns block-weight functions/tests; independent lane captures positive native weight computation. No publication authorized; commits remain checkpoints.",
-      "deferred": "B311 optional metrics fixture, B315 incoming UTF8 graph/promotion, B318 existing argument-morph regression, B307 pre-existing EH node IDs and B320 static-data descriptions remain nonblocking. Discontiguous runtime allocation parity and unrelated optimization phases are outside this cold-selection batch.",
+      "parentScope": "Missing block weights committed389a68d. Parent owns no-return phase/finder/tests; independent lane captures positive native post-inline cleanup. No publication authorized; commits remain checkpoints.",
+      "deferred": "B311 optional metrics fixture, B315 incoming UTF8 graph/promotion, B318 existing argument-morph regression, B307 EH node IDs, B320 static-data descriptions and B321 profile-column spacing remain separate. Unrelated optimizations and discontiguous runtime allocation parity are outside this no-return cleanup batch.",
       "parallelPackets": [
         {
           "scope": "Complete native static-initialization expansion.",
@@ -408,7 +408,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Missing block weights validated at snapshot04ef4753d1c0c125cd9f4a7851d6c595c7e09535:63Debug57Release,19exact-body seeded native vectors,7old-stub failures per configuration,57no-change native/managed bodies and29/143baseline. Continue complete fgPostInlineNoReturnCleanup (fginline.cpp2891-3029), using existing gtSplitTree, gtTreeContainsOper and fgConvertBBToThrowBB; add native optNoReturnCallCount>0 getter adjacent to setMethodHasNoReturnCalls. Preserve preorder execution traversal, qmark exclusions and early splitting. No push or PR authorized.",
+    "nextAction": "Post-inline no-return validated at snapshotcbaf2bc0dbad80872e99963e1add933db1b0a588:205Debug204Release,10old-stub failures per configuration, positive DirectNested CFG/IR/24byte instruction match,14matching emitted instruction sequences/sizes and29/143baseline. Continue fgRepairProfile (fgprofile.cpp5129-5148), reusing complete existing ProfileSynthesis.Run(RetainLikelihoods); validate profile/consistency gates and positive reconstruction. Keep B322prior deferred-check diagnostics separate. No push or PR authorized.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -476,6 +476,23 @@
         "scope": "Restore pinned output-pointer-only getThreadLocalStaticBlocksInfo across three wrappers/interface/vtable; rename final metadata slot to offsetOfBaseOfThreadLocalData. Keep existing slot, calling convention, offset widths and neighboring getThreadLocalFieldInfo bool.",
         "nativeEvidence": "MSVC native-probe.cpp static_assert checks exact member signature against pinned corinfo.h; sizeof56, pointer-field offsets0/16/24/32 and scalar offsets40/44/48/52 match managed raw layout.",
         "gaps": "TLS phase is not activated. Virtual native callbacks verify forwarding without claiming actual runtime TLS expansion."
+      },
+      "postInlineNoReturn": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "snapshot": "cbaf2bc0dbad80872e99963e1add933db1b0a588",
+        "snapshotScope": "Core/tests/scripts only; the independently built corpus is included in this batch's source commit.",
+        "nativeAot": "artifacts\\post-inline-no-return\\native-jit-1\\RyuJitSharp.dll",
+        "sha256": "87AEF66A7BC58EBD5018AD9A71A27B280311C1C20D9D99E35E5CFE9A24A4D54A",
+        "corpusSha256": "4617E1BEE3CC65B228D1CDE6EC028F425B82EDE1CD20787D6DD0B7F43948512E",
+        "corpusProgramSha256": "CA554BBC7C671E7DA63128ADFE6D9E517263851D06E00938AD78084B434FD727",
+        "debugPassed": 205,
+        "releasePassed": 204,
+        "tests": "PostInlineNoReturnTests with UseEdgeIteratorTests, LocalMorphTests, MorphBlockStmtTests and QmarkExpansionTests, full analysis. Covers root/nested discovery, reverse execution order, preorder versus outer-call arguments, qmark arms/conditions and conservative split veto, side-effect preservation, statement trimming and CFG/profile changes.",
+        "negativeControls": "artifacts\\post-inline-no-return\\negative: old public stub fails10of17cases in both Debug and Release, with7controls passing.",
+        "execution": "Six optimized and eight minopts selected bodies execute with matching side effects and exceptions. Optimized DirectNested positively trims a nested no-return call classified during rejected inline-candidate examination, not a completed inline. Guard cases are no-change; minopts skips the phase. Maintained corpus runner recipe independently verified.",
+        "comparison": "artifacts\\post-inline-no-return\\comparison-cbaf-1.json:6of6optimized phase logs and14of14emitted instruction sequences/sizes match. DirectNested transformed CFG/IR and full24byte instruction slice are raw-equal; minopts DirectNested is47bytes on both sides.",
+        "baseline": "artifacts\\upstream-refresh-33baf8\\post-inline-noreturn-managed-matrix\\results.json:29configurations143positive managed bodies and unchanged runtime outcomes.",
+        "gaps": "B322deferred profile checks differ before cleanup and after the positive trim. Seven other full instruction slices differ in a raw-hex line; matching emitted IN lines and sizes are not full machine-byte or whole-dump parity."
       },
       "missingBlockWeights": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
@@ -6169,6 +6186,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "post-inline-no-return-cleanup",
+      "native": ["src\\coreclr\\jit\\fginline.cpp:fgPostInlineNoReturnCleanup", "src\\coreclr\\jit\\compiler.h:doesMethodHaveNoReturnCalls"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.PostInlineNoReturn.cs", "sources\\Core\\jit\\compiler\\Compiler.cs:doesMethodHaveNoReturnCalls"],
+      "status": "Complete public phase and execution-order preorder finder. Preserves qmark exclusions, early gtSplitTree behavior, root replacement, later-statement removal and existing throw-block/profile conversion. Native source retained.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "missing-block-weights",
       "native": ["src\\coreclr\\jit\\fgprofile.cpp:4371-4537"],

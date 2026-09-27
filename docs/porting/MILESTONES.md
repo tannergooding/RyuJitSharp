@@ -15,6 +15,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Post-inline no-return cleanup
+
+The post-inline cleanup phase now finds no-return calls in native preorder
+execution order, preserves earlier effects with early tree splitting, removes
+later statements and converts blocks to throws. Calls under qmarks are ignored;
+a qmark anywhere in a statement requiring splitting vetoes that block.
+
+The focused corpus executes a positive nested-call trim identified while an
+inline candidate is examined and rejected as unprofitable. Its phase log,
+resulting CFG/IR and 24-byte instruction slice match native; the preceding side
+effect and exception are preserved. All fourteen optimized/minopts emitted
+instruction sequences and sizes match. Minopts skips the phase. Raw hex and
+deferred profile-check diagnostics still differ in other slices, so this is not
+whole-dump or whole-corpus machine-byte parity.
+
 ## 2026-09-26: Missing block weights
 
 Block-weight computation now propagates missing weights using native

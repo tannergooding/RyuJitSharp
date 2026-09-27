@@ -14638,9 +14638,6 @@ public partial class Compiler
         fgSetHndEnd(ref handlerTab, bLast);
     }
 
-    // TODO: Port phase - fgPostInlineNoReturnCleanup
-    public PhaseStatus fgPostInlineNoReturnCleanup() => PhaseStatus.MODIFIED_NOTHING;
-
     /// <summary>Remove EH regions whose try entry is unreachable, including structurally enclosed regions.</summary>
     private PhaseStatus fgRemoveUnreachableTry()
     {
