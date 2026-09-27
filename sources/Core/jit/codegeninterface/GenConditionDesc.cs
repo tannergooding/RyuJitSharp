@@ -22,7 +22,7 @@ public readonly struct GenConditionDesc
 
     public static GenConditionDesc Get(GenCondition condition)
     {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
         assert((uint)condition.Code < (uint)s_map.Length);
         var desc = s_map[(int)condition.Code];
         assert(desc.JumpKind1 is not EJ_NONE);
@@ -31,7 +31,7 @@ public readonly struct GenConditionDesc
 
         return desc;
 #else
-        throw new System.NotImplementedException("Non-xarch condition instruction mapping is not ported.");
+        throw new System.NotImplementedException("Condition instruction mapping is not ported for this target.");
 #endif
     }
 
@@ -76,6 +76,44 @@ public readonly struct GenConditionDesc
         new(EJ_jp, GT_OR, EJ_ja), // FGTU
         new(EJ_jp), // P
         new(EJ_jnp), // NP
+    ];
+#elif TARGET_ARM64
+    private static readonly GenConditionDesc[] s_map = [
+        default, // NONE
+        default, // 1
+        new(EJ_lt), // SLT
+        new(EJ_le), // SLE
+        new(EJ_ge), // SGE
+        new(EJ_gt), // SGT
+        new(EJ_mi), // S
+        new(EJ_pl), // NS
+
+        new(EJ_eq), // EQ
+        new(EJ_ne), // NE
+        new(EJ_lo), // ULT
+        new(EJ_ls), // ULE
+        new(EJ_hs), // UGE
+        new(EJ_hi), // UGT
+        new(EJ_hs), // C
+        new(EJ_lo), // NC
+
+        new(EJ_eq), // FEQ
+        new(EJ_gt, GT_AND, EJ_lo), // FNE
+        new(EJ_lo), // FLT
+        new(EJ_ls), // FLE
+        new(EJ_ge), // FGE
+        new(EJ_gt), // FGT
+        new(EJ_vs), // O
+        new(EJ_vc), // NO
+
+        new(EJ_eq, GT_OR, EJ_vs), // FEQU
+        new(EJ_ne), // FNEU
+        new(EJ_lt), // FLTU
+        new(EJ_le), // FLEU
+        new(EJ_hs), // FGEU
+        new(EJ_hi), // FGTU
+        default, // P
+        default, // NP
     ];
 #endif
 }

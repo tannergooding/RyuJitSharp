@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: ARM64 private binary arithmetic
+
+Private ARM64 binary arithmetic now includes NOT combinations, conditional-compare
+chaining, bitfield extraction and widening-multiply subtraction. Supporting
+condition descriptors, truthifying flags and chain movement preserve native
+signed/unsigned and ordered/unordered behavior. Widening-multiply addition is
+available as a dependency for the separate ADD entrypoint.
+
+Full-analysis target suites pass 433 Debug/433 Release cases, including 58 new
+arithmetic cases. Windows arithmetic, condition and select controls pass 184 in
+each configuration. Coverage includes CCMP operand preference, nested chains,
+bitfield boundaries, overflow/interference exclusions, node ownership and distinct
+successor contracts. ARM64 node/block/phase and hardware-intrinsic dispatch remain
+inactive; these are managed helper results, not generated-code execution evidence.
+
 ## 2026-09-27: ARM64 scalar operand containment
 
 ARM64 immediate and compound-operand containment now preserves instruction

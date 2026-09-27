@@ -8634,6 +8634,15 @@ public partial class Compiler
         return node;
     }
 
+#if TARGET_ARM64
+    public GenTreeBfm gtNewBfxNode(var_types type, GenTree baseNode, uint offset, uint width)
+    {
+        var result = new GenTreeBfm(GT_BFX, type, baseNode, null, offset, width);
+        result.Flags |= baseNode.Flags & GTF_ALL_EFFECT;
+        return result;
+    }
+#endif
+
     public GenTreeIntCon gtNewIconNode(var_types type, nint value)
     {
         return new GenTreeIntCon(type, value);

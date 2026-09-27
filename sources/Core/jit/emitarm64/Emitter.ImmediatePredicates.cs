@@ -68,6 +68,11 @@ public partial class Emitter
         return canEncodeBitMaskImm(imm, size);
     }
 
+    public static bool emitIns_valid_imm_for_ccmp(long imm)
+    {
+        return (imm & 0x1f) == imm;
+    }
+
     private static ulong unsigned_abs(long imm)
     {
         return imm < 0 ? unchecked(0UL - (ulong)imm) : (ulong)imm;

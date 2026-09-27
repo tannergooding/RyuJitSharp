@@ -13,18 +13,18 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "Port complete ARM64 immediate and compound-operand containment as the dependency layer for scalar arithmetic dispatch: instruction-specific immediates, multiply/shift/rotate/negate/cast containment, and binary/unary/shift containment entrypoints.",
+      "scope": "Port complete private ARM64 LowerBinaryArithmetic with conditional-compare chaining, bitfield extraction and multiply-long add/sub transformations. Include ARM64 condition descriptors, condition-to-flags movement, CCMP immediates and the bitfield node factory.",
       "status": "completed",
       "doneWhen": [
-        "Port the complete native ARM64 IsContainableImmed and IsContainableUnaryOrBinaryOp contracts with emitter CMP/ALU predicates and ContainCheckBinary/Neg/Not/ShiftRotate.",
-        "Validate target-width shift limits, rotation mutation, cast/memory precedence, overflow/flag/interference exclusions and immediate relocation rules; commit the dependency-coherent batch and continue arithmetic lowering."
+        "Preserve every optimized path in native LowerBinaryArithmetic, including NOT combinations, CCMP candidate order, BFX mask/offset exclusions and signed/unsigned widening multiply intrinsics.",
+        "Validate node ownership, successor contracts, condition flags and chain movement, bitfield boundaries and multiply order/exclusions with focused target cases and existing Windows controls; commit the coherent batch and continue."
       ],
       "validation": [
-        "Full-analysis Linux-ARM64 suites pass375Debug/375Release, including74new cases. Windows-ARM64 operand cases pass62Debug/62Release; Windows-x64 comparison/arithmetic/bounds/cast controls pass168Debug/168Release.",
+        "Full-analysis Linux-ARM64 suites pass433Debug/433Release, including58new arithmetic cases. Windows-x64 binary arithmetic/condition/select controls pass184Debug/184Release. Cases cover numeric limits, flags, LIR ownership, chain movement and native optimization exclusions.",
         "Reuse unaffected Windows execution evidence from prerequisite commit ee71808. No Linux or ARM64 execution host is available; managed target tests are not runtime parity."
       ],
       "deferred": [
-        "LowerBinaryArithmetic still requires CCMP, BFX and multiply-long optimization dependencies; do not omit them or activate node dispatch in this batch. LowerBlock/DoPhase, per-block pairing reset, FFR state, allocation and emission remain separate. Keep B375/B376/B378/B379/B380 deferred.",
+        "LowerNode/LowerBlock/DoPhase remain inactive. General hardware-intrinsic dispatch, ADD/NEG entrypoints, per-block pairing reset, FFR state, allocation and emission remain separate. GT_BFX has no action in native ContainCheckNode; do not activate unrelated containment dispatch for it. Keep B375/B376/B378/B379/B380 deferred.",
         "Whole-pipeline dump parity, native diagnostic quirks, timing R005 and allocation D001 remain explicit."
       ],
       "parentScope": "ARM64 prerequisites committed ee71808; allocator construction committed e5b30eb with189Debug/189Release target tests and23Debug/22Release Windows controls. All previous packets are collected; no worker or child response remains outstanding.",
@@ -422,7 +422,17 @@
         }
       ]
     },
-    "nextAction": "Continue ARM64 scalar arithmetic lowering. Immediate and compound operand containment is complete; do not repeat it or the memory batches. Inspect the native TryLowerAndOrToCCMP, TryLowerAndRshToBFX and TryLowerAddSubToMulLongOp dependencies of lowerarmarch.cpp LowerBinaryArithmetic (634-724), together with managed Lowering.ConditionalCompare.cs and Lowering.BinaryArithmetic.cs. Port a complete dependency closure without dropping optimized paths. LowerNode, LowerBlock and DoPhase remain unsupported on ARM64; eventual block activation must reset _blockIndirs and native FFR state. Keep B375/B376/B378/B379/B380 deferred; do not publish, alter native trees or claim ARM64 runtime parity.",
+    "nextAction": "Continue the remaining ARM64 scalar arithmetic entrypoints. Private LowerBinaryArithmetic and its full CCMP/BFX/multiply-long dependency closure are complete, as is operand containment (7128a2d). Locate native and managed LowerAdd, LowerMul, LowerNeg, LowerShift and LowerRotate; integrate the completed multiply-long add helper and port native widening-multiply/negate and shift transformations as a coherent closure. Do not repeat memory or binary arithmetic batches. LowerNode/LowerBlock/DoPhase remain unsupported; eventual block activation must reset _blockIndirs and native FFR state. Keep B375/B376/B378/B379/B380 deferred; do not publish, alter native trees or claim ARM64 runtime parity.",
+    "arm64BinaryArithmetic": {
+      "scope": "Complete private LowerBinaryArithmetic, TryLowerAndOrToCCMP, TryLowerAndRshToBFX, TryLowerAddSubToMulLongOp and ARM64 condition-to-flags support. Includes target truthifying flags, condition descriptors, imm5 containment and bitfield node construction.",
+      "mapping": "lowerarmarch.cpp:634-726,3139-3167,3569-3657 -> lower/Lowering.BinaryArithmetic.cs, Lowering.ConditionalCompare.cs and Lowering.Arm64Arithmetic.cs; lower.cpp:4838-4962,12599-12855 -> Lowering.Conditions.cs and shared CCMP/BFX helpers; codegenarmarch.cpp:3964 condition map -> codegeninterface/GenConditionDesc.cs; gentree.cpp:9356 gtNewBfxNode -> compiler/Compiler.gt.cs; emitarm64.cpp:2549 -> Emitter.ImmediatePredicates.cs.",
+      "validation": {
+        "linuxArm64": "433Debug/433Release: arithmetic-arm64-debug-3.trx and arithmetic-arm64-release-1.trx; 58 new cases include AND/OR truth flags, dirty-side fallback, nested chains, ordered/unordered conditions, bitfield boundaries, ownership and widening-multiply exclusions.",
+        "windowsX64Controls": "184Debug/184Release: arithmetic-windows-debug-1.trx and arithmetic-windows-release-1.trx.",
+        "artifacts": "artifacts\\parallel-port; full analysis, nonempty execution and zero skips."
+      },
+      "limits": "Private arithmetic helpers only. Native ContainCheckNode has no GT_BFX action, so the BFX transformation does not invoke unsupported general containment dispatch. ADD/NEG and general hardware-intrinsic dispatch remain separate; no ARM64 node/block/phase activation or runtime parity is claimed."
+    },
     "arm64OperandContainment": {
       "scope": "Complete IsContainableImmed, IsContainableUnaryOrBinaryOp and binary/shift/negate/not containment, including instruction-specific constants, LSE gating, Windows NativeAOT section relocations, shift operand widths, native rotate normalization, extension precedence and flag/overflow/interference rules.",
       "mapping": "lowerarmarch.cpp:51-508,2814-2920,3202-3264 -> lower/Lowering.Containment.cs, Lowering.Arm64OperandContainment.cs, Lowering.Binary.cs and Lowering.Shifts.cs; emitarm64.cpp:2506-2518 CMP/ALU predicates -> emitarm64/Emitter.ImmediatePredicates.cs.",

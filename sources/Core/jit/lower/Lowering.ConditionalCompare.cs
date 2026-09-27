@@ -10,10 +10,22 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
     private static insCFlags TruthifyingFlags(GenCondition condition)
     {
         return condition.Code switch {
+#if TARGET_ARM64
+            GenCondition.EQ => INS_FLAGS_Z,
+            GenCondition.NE => INS_FLAGS_NONE,
+            GenCondition.SGE => INS_FLAGS_Z,
+            GenCondition.SGT => INS_FLAGS_NONE,
+            GenCondition.SLE => INS_FLAGS_NZC,
+            GenCondition.SLT => INS_FLAGS_NC,
+            GenCondition.UGE => INS_FLAGS_C,
+            GenCondition.UGT => INS_FLAGS_C,
+            GenCondition.ULE => INS_FLAGS_Z,
+            GenCondition.ULT => INS_FLAGS_NONE,
+#else
             GenCondition.EQ => INS_FLAGS_ZF,
             GenCondition.NE => INS_FLAGS_NONE,
             GenCondition.SGE => INS_FLAGS_NONE,
@@ -24,6 +36,7 @@ public sealed partial class Lowering
             GenCondition.UGT => INS_FLAGS_NONE,
             GenCondition.ULE => INS_FLAGS_ZF,
             GenCondition.ULT => INS_FLAGS_CF,
+#endif
             _ => throw new InvalidOperationException("Unexpected condition type."),
         };
     }
@@ -60,7 +73,7 @@ public sealed partial class Lowering
         var canConvertOp2ToCCMP = CanConvertOpToCCMP(op2, tree);
         var canConvertOp1ToCCMP = CanConvertOpToCCMP(op1, tree);
 
-        // Only the leading comparison can keep a contained memory operand. Prefer
+        // Only the leading comparison can keep a contained memory or shifted operand. Prefer
         // a clean CCMP side, but retain the native both-dirty fallback rather than
         // abandon chaining when both relops require uncontainment.
         static bool CcmpSideOperandsAreClean(GenTree relop)

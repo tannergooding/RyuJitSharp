@@ -68,7 +68,7 @@ public sealed partial class Lowering
         bool allowMultipleFlagsChecks = true)
     {
         code = default;
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
         JITDUMP("Lowering condition:\n");
         DISPTREERANGE(BlockRange(), condition);
         JITDUMP("\n");
@@ -82,6 +82,7 @@ public sealed partial class Lowering
 
             var relop = condition.AsOp();
             code = GenCondition.FromRelop(relop);
+#if TARGET_XARCH
             var optimizing = CompilerInstance.opts.OptimizationEnabled;
             var op1 = relop.Op1;
             var op2 = relop.Op2;
@@ -92,6 +93,7 @@ public sealed partial class Lowering
             {
                 code = new GenCondition(GenCondition.P);
             }
+#endif
 
             if (!allowMultipleFlagsChecks && (GenConditionDesc.Get(code).Oper is not GT_NONE))
             {
@@ -109,10 +111,12 @@ public sealed partial class Lowering
                     code = GenCondition.Swap(code);
                 }
             }
+#if TARGET_XARCH
             else if (relop.Oper is GT_BITTEST_EQ or GT_BITTEST_NE)
             {
                 relop.SetOper(GT_BT);
             }
+#endif
             else
             {
                 assert(relop.Oper is GT_TEST_EQ or GT_TEST_NE);
@@ -133,7 +137,7 @@ public sealed partial class Lowering
             var flagsEnd = condition.Prev;
             assert((flagsEnd is not null) && ((flagsEnd.Flags & GTF_SET_FLAGS) != 0));
             var flagsDef = flagsEnd;
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
             // CCMP also consumes flags. Move its producer chain as one range, with
             // the native ten-node lookback bound preventing quadratic behavior.
             for (var i = 0; (i < 10) && (flagsDef.Oper is GT_CCMP); i++)
@@ -163,7 +167,7 @@ public sealed partial class Lowering
 
         return false;
 #else
-        throw new System.NotImplementedException("Non-xarch condition-to-flags lowering is not ported.");
+        throw new System.NotImplementedException("Condition-to-flags lowering is not ported for this target.");
 #endif
     }
 }
