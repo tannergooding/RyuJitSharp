@@ -13,15 +13,15 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "Complete ARM64 private block-memory policy: initialization, copying, unrolled address containment and single-register struct-call stores, preserving native GC safety and unroll thresholds.",
+      "scope": "Complete private ARM64 stack-argument and return target entrypoints, including HFA/SIMD normalization, primitive/struct return conversion and field-list spill dependencies.",
       "status": "validated",
       "doneWhen": [
-        "Port complete ARM64 paths in LowerInitBlockStore, LowerCopyBlockStore and LowerStoreSingleRegCallStruct, reusing shared algorithms and the committed odd-size spill helper.",
-        "Preserve native checked offset-plus-size containment bounds and whole managed ADD-to-LEA replacement, and verify target unroll thresholds and GC zero/copy safety.",
-        "Validate target behavior and affected Windows controls, commit locally and continue. General helper-call, hardware and node/block/phase dispatch remain explicitly unsupported on ARM64."
+        "Port ARM64 LowerPutArgStk and LowerRet/LowerRetStruct target paths, preserving native SIMD/HFA return classification and source-width safeguards.",
+        "Wire field-list spill stores and return loads to complete private local actions rather than unsupported general node dispatch. Preserve native return-value selection in containment.",
+        "Validate target behavior and Windows controls, commit locally and continue. Field-list register repacking that needs LowerRange, PInvoke epilogs, and general hardware/node/block/phase dispatch remain separate."
       ],
       "validation": [
-        "Full-analysis Linux-ARM64 Debug/Release target suites and Windows-x64 block-store controls. Add focused address-boundary/ownership, fill-pattern, unroll-limit and GC-safety cases to existing memory fixtures.",
+        "Full-analysis Linux-ARM64 Debug/Release target suites and Windows-x64 return/field-list/argument controls. Reuse existing return fixtures where target-independent, and add focused HFA, stack-struct and Swift return-value cases.",
         "Reuse unaffected Windows execution evidence from prerequisite commit ee71808. No Linux or ARM64 execution host is available; managed target tests are not runtime parity."
       ],
       "deferred": [
@@ -423,7 +423,17 @@
         }
       ]
     },
-    "nextAction": "Commit the validated ARM64 block-memory policy closure, then continue private ARM64 argument/return lowering: LowerPutArgStk, LowerRet/LowerRetStruct and their field-list/local dependencies. LowerPutArgStk native body and LowerRet are read; next compare lower.cpp:5801-6020 and 5190-5235 with Lowering.StructReturns.cs/Returns.cs before changing target guards. LowerLclHeap already has ARM64 support; do not re-port it. Keep general helper-call/hardware/LowerNode/LowerBlock/DoPhase inactive until the target closure is complete; eventual activation must reset _blockIndirs and FFR state. Preserve B375/B376/B378/B379/B380/B381; no ARM64 execution claim, publication or native tree changes.",
+    "nextAction": "Commit the validated ARM64 return/stack-argument entrypoints and continue call-lowering dependencies. Inspect lower.cpp LowerCall at2779, direct/virtual call target bodies and lowerarmarch.cpp IsCallTargetInRange at39 against Lowering.CallLowering.cs, Calls.cs and CallTargets.cs; establish the complete target-dependent closure before editing. Register repacking and helper calls still need unsupported LowerRange/LowerNode. Keep general node/block/phase activation separate; preserve existing deferred findings and do not publish or alter native trees.",
+    "arm64ReturnsArguments": {
+      "scope": "Private ARM64 LowerRet, LowerRetStruct and LowerPutArgStk entrypoints, field-list spill-store/load dependencies, and native return-value containment.",
+      "mapping": "lower.cpp:5086-5169,5192-5232,5801-6010,9688-9720 -> Lowering.Returns.cs, Lowering.StructReturns.cs and Lowering.FieldLists.cs; lowerarmarch.cpp:792-808 -> Lowering.Arguments.cs. SIMD/HFA normalization precedes the multi-register return early exit.",
+      "validation": {
+        "linuxArm64": "590Debug/590Release: returns-arm64-debug-3.trx and returns-arm64-release-1.trx; 14 new cases cover 2/3/4-register SIMD HFAs, primitive bitcasts, small/wide struct-local returns, floating field-list spills, Swift return-value containment and all stack-struct source forms.",
+        "windowsX64Controls": "105Debug/105Release: returns-windows-debug-1.trx and returns-windows-release-1.trx; ReturnLoweringTests, StackArgumentLoweringTests and LoweringDispatchTests.",
+        "artifacts": "artifacts\\parallel-port; full analysis, completed nonempty runs and zero skips."
+      },
+      "limits": "Register repacking still needs inactive general LowerRange/LowerNode; PInvoke epilogs and full call lowering remain separate. No ARM64 phase activation, allocation/emission or generated-code execution parity."
+    },
     "arm64BlockMemory": {
       "scope": "Private block initialization/copy policy, checked unrolled-address containment, local-to-block stores, scalar copy retyping and single-register struct-call store target paths.",
       "mapping": "lowerarmarch.cpp:737-784 -> Lowering.Blocks.cs ContainBlockStoreAddress; lower.cpp:10114-10325,6213-6254 -> LowerInitBlockStore, LowerCopyBlockStore and LowerStoreSingleRegCallStruct. LowerStoreBlock extracts the native GT_STORE_BLK dispatcher action for reuse by local stores.",

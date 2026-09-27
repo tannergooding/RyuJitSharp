@@ -130,8 +130,18 @@ public sealed partial class Lowering
             TryMakeSrcContainedOrRegOptional(putArgStk, src);
         }
 #endif
+#elif TARGET_ARM64
+        var source = putArgStk.Data;
+        if (source.Type is TYP_STRUCT)
+        {
+            MakeSrcContained(putArgStk, source);
+            if (source.Oper is GT_LCL_VAR)
+            {
+                CompilerInstance.lvaSetVarDoNotEnregister(source.AsLclVar().LclNum, DoNotEnregisterReason.IsStructArg);
+            }
+        }
 #else
-        throw new System.NotImplementedException("Non-xarch stack argument lowering is not ported.");
+        throw new System.NotImplementedException("Stack argument lowering is not ported for this target.");
 #endif
     }
 

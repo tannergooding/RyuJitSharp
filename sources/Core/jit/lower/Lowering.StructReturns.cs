@@ -11,8 +11,23 @@ public sealed partial class Lowering
 {
     private unsafe void LowerRetStruct(GenTreeUnOp ret)
     {
-#if WINDOWS_AMD64_ABI
+#if WINDOWS_AMD64_ABI || TARGET_ARM64
         var compiler = CompilerInstance;
+#if TARGET_ARM64
+        if (GlobalJitOptions.compFeatureHfa && varTypeIsSimd(ret.Type))
+        {
+            if (compiler.info.compRetNativeType is TYP_STRUCT)
+            {
+                assert(varTypeIsSimd(ret.Op1.Type));
+                assert(compiler.compMethodReturnsMultiRegRetType);
+                ret.ChangeType(compiler.info.compRetNativeType);
+            }
+            else
+            {
+                assert(compiler.info.compRetNativeType == ret.Type);
+            }
+        }
+#endif
         if (compiler.compMethodReturnsMultiRegRetType)
         {
             return;
@@ -119,7 +134,7 @@ public sealed partial class Lowering
             }
         }
 #else
-        throw new NotImplementedException("Struct return lowering outside Windows AMD64 is not ported.");
+        throw new NotImplementedException("Struct return lowering is not ported for this target.");
 #endif
     }
 

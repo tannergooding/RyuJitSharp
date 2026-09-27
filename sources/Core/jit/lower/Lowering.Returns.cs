@@ -9,7 +9,7 @@ public sealed partial class Lowering
 {
     private void LowerRet(GenTreeUnOp ret)
     {
-#if WINDOWS_AMD64_ABI
+#if WINDOWS_AMD64_ABI || TARGET_ARM64
         assert(ret.Oper is GT_RETURN or GT_SWIFT_ERROR_RET);
         JITDUMP("lowering return node\n");
         DISPNODE(ret);
@@ -68,7 +68,7 @@ public sealed partial class Lowering
         }
         ContainCheckRet(ret);
 #else
-        throw new System.NotImplementedException("Return lowering outside Windows AMD64 is not ported.");
+        throw new System.NotImplementedException("Return lowering is not ported for this target.");
 #endif
     }
 
@@ -105,7 +105,11 @@ public sealed partial class Lowering
             var value = compiler.gtNewLclvNode(descriptor.Type, localNumber);
             GetRetValueRef(ret) = value;
             BlockRange().InsertBefore(ret, value);
+#if TARGET_ARM64
+            LowerLclVar(value.AsLclVar());
+#else
             _ = LowerNode(value);
+#endif
             BlockRange().Remove(fieldList);
 
             if (registerCount == 1)
@@ -130,7 +134,7 @@ public sealed partial class Lowering
 #if LOWER_DECOMPOSE_LONGS
         if (ret.Type is TYP_LONG)
         {
-            var value = ret.Op1;
+            var value = GetRetValueRef(ret);
             assert(value.Oper is GT_LONG);
             MakeSrcContained(ret, value);
         }
@@ -138,7 +142,7 @@ public sealed partial class Lowering
 #if FEATURE_MULTIREG_RET
         if (ret.Type is TYP_STRUCT)
         {
-            var value = ret.Op1;
+            var value = GetRetValueRef(ret);
             if (value.Oper is GT_LCL_VAR)
             {
                 ref var descriptor = ref CompilerInstance.lvaGetDesc(value.AsLclVarCommon().LclNum);

@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: ARM64 returns and stack arguments
+
+Private ARM64 return lowering now normalizes SIMD-backed HFAs to their
+multi-register ABI and preserves primitive bitcasts and struct-local field
+types. Incompatible return field lists spill through the private local actions,
+while stack-passed structs retain their native contained representation.
+Return containment correctly distinguishes Swift's value and error operands.
+
+Register repacking, PInvoke epilogs and general call/phase integration remain
+ahead of full ARM64 lowering; these entrypoints do not establish execution
+parity.
+
 ## 2026-09-27: ARM64 block-memory lowering
 
 Private ARM64 block initialization and copying now preserve native unroll

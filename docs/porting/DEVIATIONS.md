@@ -1385,6 +1385,13 @@ copies and single-register call stores preserve whole-node replacement.
 Large-copy/helper and GC decomposition paths still require the inactive
 ARM64 general dispatcher. These private actions do not activate the phase
 or establish generated-code parity.
+Private ARM64 return and stack-argument entrypoints now preserve SIMD/HFA
+normalization, primitive register-class bitcasts and struct-local return types.
+Field-list spills use private local-store/load actions; register repacking that
+needs `LowerRange` still reaches the inactive general dispatcher. Return
+containment selects the native return-value operand, including Swift's second
+operand rather than its error value. PInvoke epilogs and full call/phase
+activation remain separate.
 
 `Lowering.TryCreateAddrMode` implements xarch address folding and interference
 checks. Other targets throw `NotImplementedException` pending their volatile,

@@ -35,7 +35,11 @@ public sealed partial class Lowering
         {
             var store = compiler.gtNewStoreLclFldNode(use.Type, localNumber, use.Offset, use.Node);
             BlockRange().InsertAfter(use.Node, store);
+#if TARGET_ARM64
+            _ = LowerStoreLocCommon(store);
+#else
             _ = LowerNode(store);
+#endif
         }
         return localNumber;
     }
