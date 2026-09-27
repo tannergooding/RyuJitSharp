@@ -7,10 +7,21 @@ namespace RyuJitSharp;
 
 internal static class OsrCases
 {
+    public static int TouchCount;
+    public static int ContextInitializationCount;
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Touch(ref long value)
     {
+        TouchCount++;
         value += 17;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Type InitializeContext(Type type)
+    {
+        ContextInitializationCount++;
+        return type;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -30,7 +41,7 @@ internal static class OsrCases
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int ContextLoop<T>(int iterations) where T : class
     {
-        var type = typeof(T);
+        var type = InitializeContext(typeof(T));
         var result = 0;
 
         for (var i = 0; i < iterations; i++)
@@ -49,9 +60,16 @@ internal static class Program
 {
     public static int Main()
     {
-        if (OsrCases.HotLoop(1_000_000) != 499_999_500_017 ||
-            OsrCases.ContextLoop<string>(1_000_000) != 3_500_001)
+        var hotResult = OsrCases.HotLoop(1_000_000);
+        var contextResult = OsrCases.ContextLoop<string>(1_000_000);
+
+        if (hotResult != 499_999_500_017 ||
+            contextResult != 3_500_001 ||
+            OsrCases.TouchCount != 1 ||
+            OsrCases.ContextInitializationCount != 1)
         {
+            Console.Error.WriteLine(FormattableString.Invariant(
+                $"OSR corpus mismatch: hot={hotResult}, touch={OsrCases.TouchCount}, context={contextResult}, initialization={OsrCases.ContextInitializationCount}"));
             return 1;
         }
 

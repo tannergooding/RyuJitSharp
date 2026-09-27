@@ -15,6 +15,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: OSR entry redirection and carried state
+
+OSR import now starts at the designated entry block rather than replaying the
+method prolog and loop initialization. Entry-edge predecessors, weights,
+profile flags and inconsistent original-entry loop profiles follow native
+handling.
+
+The strengthened corpus detects the previous defect with independent
+initialization counters: the old JIT increments both twice; the new JIT and
+native increment each once. Both actual Tier1-OSR bodies read carried frame
+state and match native 46/78-byte instruction streams. Tier0 metadata and
+importer redirection also match. Tier0 `lea` operand formatting and the
+`Adjust throw edge likelihoods` phase-status difference remain visible rather
+than included in a whole-dump parity claim.
+
 ## 2026-09-26: Physical struct promotion
 
 Physical promotion now selects profitable primitive replacements, computes
@@ -44,7 +59,7 @@ Both loops produce actual managed Tier1-OSR compilations, but correct resumption
 is not established: the importer still enters at the original method start
 rather than redirecting to the OSR entry, repeating initialization and losing
 carried loop state. The corpus's unchanged final values do not prove correct
-resumption. That importer dependency remains separate from metadata publication;
+resumption. That capture predates the entry-redirection fix above;
 equal Tier0 code sizes are not claimed as instruction or byte parity.
 
 ## 2026-09-26: Tree-splitting stress modes

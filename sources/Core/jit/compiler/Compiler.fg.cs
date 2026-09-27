@@ -10702,11 +10702,6 @@ public partial class Compiler
         }
     }
 
-    public void fgFixEntryFlowForOSR()
-    {
-        // TODO: Port Compiler.fgFixEntryFlowForOSR
-    }
-
     public void fgInvalidateDfsTree()
     {
         _dfsTree = null;

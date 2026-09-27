@@ -431,7 +431,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Finish physical commit from exact source724f91c5df3444d3c4db8c3b83d5b8ce08361d52 (145D132R,29/143baseline); comparison-724f-1 matches three positive UTF8 algorithm/IR/instruction slices and nine struct controls, with B322 tails separate. All regression receipts collected, including8old-helper failures/2int controls. Then port full fgFixEntryFlowForOSR (native fgbasic.cpp4006-4058, managed Compiler.fg.cs10705) and verify callsites; native function read. Native lane's strengthened corpus hashD2CDBEAEB79DBEF1BEBE95E934672945B88F74F7CBD819AC72954130D0573159 passes native and fails old managed with touch=2,initialization=2; comparison-strengthened-1.json records6bodies and actual OSR variants. Metadata ab68491 committed; resumption still incorrect. Async author fixing review's post-morph removal, stale ownership, nonfaulting flags and full diagnostic omissions; public phase inactive. Preserve other WIP and do not push.",
+    "nextAction": "Commit validated OSR entry source3cbe4fa23f4128f3640b923623a3b055f5752c8d:63D60R, six old-stub failures,29/143baseline, strengthened corpus once-only counters, matching native46/78-byte actual Tier1-OSR instructions. comparison-entry-3cbe-1.json retains B333 Tier0 lea bword formatting and throw-edge phase-status differences. Physical promotion committed e815afa. Next bound B333 investigation to these existing captures: full ProfileSynthesis.AdjustThrowEdgeLikelihoods already matches native source, so inspect input likelihood provenance rather than re-port its algorithm; reconcile lea formatting separately. Async author9e905421 still owns four review fixes and complete diagnostics; collect frozen round before activation. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -6333,6 +6333,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "osr-import-entry-flow",
+      "native": ["src\\coreclr\\jit\\fgbasic.cpp:4006-4058"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.OSREntry.cs", "sources\\Core\\jit\\compiler\\Compiler.comp.cs:pre-import OSR dispatch"],
+      "status": "Complete fgFixEntryFlowForOSR redirects a new init block to the selected OSR entry, preserves original-entry identity, called count and profile flags, and invalidates profile consistency for a different original-entry loop header. Existing callsite remains between entry canonicalization and import. Six regression cases fail against old stub; strengthened runtime counters prove initialization executes once. Native actual Tier1-OSR instruction streams match for both carried-state loops. Other B333 dump differences remain explicit; native source retained.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "physical-promotion",
       "native": ["src\\coreclr\\jit\\promotion.cpp", "src\\coreclr\\jit\\promotion.h", "src\\coreclr\\jit\\promotionliveness.cpp", "src\\coreclr\\jit\\promotiondecomposition.cpp"],
