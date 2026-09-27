@@ -9,6 +9,18 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class Arm64ImmediatePredicateTests
 {
+    [TestCase(-257L, false)]
+    [TestCase(-256L, true)]
+    [TestCase(0L, true)]
+    [TestCase(255L, true)]
+    [TestCase(256L, false)]
+    [TestCase(long.MinValue, false)]
+    [TestCase(long.MaxValue, false)]
+    public static void UnscaledMemoryOffsetUsesSignedNineBits(long value, bool expected)
+    {
+        Assert.That(Emitter.emitIns_valid_imm_for_unscaled_ldst_offset(value), Is.EqualTo(expected));
+    }
+
     [TestCase(0L, true)]
     [TestCase(4095L, true)]
     [TestCase(-4095L, true)]

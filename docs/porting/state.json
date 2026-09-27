@@ -13,19 +13,18 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "Port ARM64 frame sizing and layout, including unknown-size frame bookkeeping, parameter homes, FP/LR relocation, local/temp alignment and OSR frame offsets, then enable compRsvdRegCheck and LinearScan.setFrameType with their mandatory layout side effects.",
+      "scope": "Port ARM64 memory-address formation and load/store containment, including natural scaling, RCPC2 volatile offsets, extended indices and LIR ownership. This is the first dependency batch toward complete ARM64 memory lowering.",
       "status": "completed",
       "doneWhen": [
-        "Complete the ARM64 layout dependency closure and frame-register reservations without bypassing sizing, varargs, OSR or scalable-local bookkeeping.",
-        "Validate integrated layout behavior through the existing target test project and existing Windows frame/allocator controls, then commit the dependency-coherent batch locally."
+        "Complete TryCreateAddrMode, ContainCheckIndir and ContainCheckStoreIndir for ARM64 with their required emitter predicate, retaining native safety checks and Windows behavior.",
+        "Validate address shapes, interference, volatile limits and containment through the existing target project and Windows address/memory controls; commit the coherent batch locally and continue."
       ],
       "validation": [
-        "Full-analysis target suites pass 211 Linux-ARM64, 214 Windows-ARM64 and 212 Apple-ARM64 cases in both configurations. Windows frame/allocator controls pass 47 Debug / 46 Release; Linux-x64 shared-helper controls pass 102 in each.",
-        "B377 original mask mapping reproduces three failures and one passing control. Corrected source was restored exactly before final validation.",
+        "Full-analysis Linux-ARM64 target suites pass252Debug/252Release, including41new address/containment and immediate-boundary cases. Existing Windows address/indirection controls pass61Debug/61Release.",
         "Reuse unaffected Windows execution evidence from prerequisite commit ee71808. No Linux or ARM64 execution host is available; managed target tests are not runtime parity."
       ],
       "deferred": [
-        "ARM64 lowering, allocation traversal, instruction emission and executable runtime parity remain separate unported backend sections. Keep B375 string-constant costing deferred.",
+        "The subsequent load/store entrypoint batch must include OptimizeForLdpStp, TryMakeIndirsAdjacent and IsStoreToLoadForwardingCandidateInLoop; do not omit optimized paths. Arithmetic/intrinsic lowering, allocation traversal and emission remain separate. Keep B375/B376/B378 deferred.",
         "Whole-pipeline dump parity, native diagnostic quirks, timing R005 and allocation D001 remain explicit."
       ],
       "parentScope": "ARM64 prerequisites committed ee71808; allocator construction committed e5b30eb with189Debug/189Release target tests and23Debug/22Release Windows controls. All previous packets are collected; no worker or child response remains outstanding.",
@@ -423,7 +422,17 @@
         }
       ]
     },
-    "nextAction": "Continue the ARM64 lowering frontier after the validated frame-layout batch: read Lowering.Indirections.cs, Lowering.StoreIndirections.cs and Lowering.AddressModes.cs alongside pinned lower.cpp/lowerarmarch.cpp, then port the complete memory-address/load-store containment dependency closure. Frame layout, IP1/x19 reservations and B377 mask sizing are complete with the evidence below; do not repeat that packet. Keep unrelated B375 string costing, B376 diagnostic padding and B378 boxed equality deferred. Do not contact archived sessions, publish, or claim ARM64 runtime parity.",
+    "nextAction": "Continue ARM64 memory lowering after the completed address/containment batch. Native lower.cpp:11438-11855 OptimizeForLdpStp/TryMakeIndirsAdjacent have been read; finish IsStoreToLoadForwardingCandidateInLoop at11830-11995 and MarkTree/UnmarkTree at11996 onward. Port the complete pairing/loop-forwarding dependency closure, wire per-block candidate reset, then integrate LowerIndir, LowerStoreIndirCommon and LowerStoreIndir with floating/volatile retyping and native store coalescing. Do not skip optimized paths or repeat frame/address packets. Keep B375/B376/B378 deferred; no publication, archived-session contact or ARM64 execution-parity claim.",
+    "arm64AddressContainment": {
+      "scope": "Complete ARM64 TryCreateAddrMode, ContainCheckIndir and ContainCheckStoreIndir, including natural scale, RCPC2 signed-nine-bit offsets, cast/BFIZ indices, safety and LIR replacement.",
+      "mapping": "lower.cpp:7673-7886 -> lower/Lowering.AddressModes.cs; lowerarmarch.cpp:2710-2805 -> lower/Lowering.Indirections.cs and Lowering.StoreIndirections.cs; emitarm64.cpp:2521 -> emitarm64/Emitter.ImmediatePredicates.cs.",
+      "validation": {
+        "linuxArm64": "252Debug/252Release: address-arm64-debug-4.trx and address-arm64-release-1.trx",
+        "windowsX64Controls": "61Debug/61Release: address-windows-debug-1.trx and address-windows-release-1.trx",
+        "artifacts": "artifacts\\parallel-port; all final commands used full analysis and executed nonempty suites with zero skips."
+      },
+      "limits": "Managed target helpers only. ARM64 load/store entrypoints, pair scheduling and loop-forwarding checks remain unported; no allocation/emission or runtime activation. Windows execution evidence is unchanged, not freshly captured."
+    },
     "arm64FrameLayout": {
       "nativeMappings": [
         "lclvars.cpp frame sizing/layout, argument homes, local/temp allocation and OSR offsets -> compiler/Compiler.FinalFrameLayout*.cs and Compiler.FrameOffsets.cs",

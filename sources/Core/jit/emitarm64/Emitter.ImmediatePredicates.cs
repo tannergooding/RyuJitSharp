@@ -8,6 +8,11 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    public static bool emitIns_valid_imm_for_unscaled_ldst_offset(long imm)
+    {
+        return (imm >= -256) && (imm <= 255);
+    }
+
     public static bool emitIns_valid_imm_for_mov(long imm, emitAttr size)
     {
         if (canEncodeHalfwordImm(imm, size))

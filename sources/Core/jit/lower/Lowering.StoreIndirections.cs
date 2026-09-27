@@ -238,8 +238,16 @@ public sealed partial class Lowering
         }
 
         ContainCheckIndir(node);
+#elif TARGET_ARM64
+        var src = node.Data;
+        if (src.IsIntegralConst(0))
+        {
+            MakeSrcContained(node, src);
+        }
+
+        ContainCheckIndir(node);
 #else
-        throw new NotImplementedException("Non-xarch indirect-store containment is not ported.");
+        throw new NotImplementedException("Indirect-store containment outside xarch and ARM64 is not ported.");
 #endif
     }
 }

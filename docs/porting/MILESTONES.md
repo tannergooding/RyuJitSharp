@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: ARM64 address formation and containment
+
+ARM64 address lowering now preserves access-width scaling, RCPC2 signed-nine-bit
+volatile offsets, CAST/BFIZ extended indices, interference checks and LIR owner
+replacement. Load/store containment handles stack addresses, TLS handles,
+SIMD12 restrictions, null-check probes and integer-zero stores.
+
+The Linux-ARM64 target suite passes 252 Debug/252 Release with full analysis;
+Windows address and indirect-store controls pass 61 Debug/61 Release. These are
+managed helper results, not ARM64 execution evidence. Load/store entrypoints
+remain unsupported while their pair-reordering and loop-forwarding dependency
+closure is ported next. The Windows execution baseline is unchanged.
+
 ## 2026-09-27: ARM64 frame layout and reservations
 
 ARM64 frame selection now performs conservative layout before reserving IP1,

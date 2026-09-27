@@ -69,16 +69,44 @@ public sealed partial class Lowering
 
     private bool TryCreateAddrMode(ref GenTree addr, bool isContainable, GenTree parent)
     {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
         if ((addr.Oper is not GT_ADD) || addr.HasOverflowCheck)
         {
             return false;
         }
 
+#if TARGET_ARM64
+        if (parent.Oper.IsIndir && parent.AsIndir().IsVolatile &&
+            !CompilerInstance.compOpportunisticallyDependsOn(InstructionSet_Rcpc2))
+        {
+            // LDAR/STLR require a register address; RCPC2 adds unscaled addressing.
+            return false;
+        }
+
+        if (parent.Type is TYP_MASK or TYP_SIMD)
+        {
+            return false;
+        }
+
+        var targetType = parent.Oper.IsIndir ? parent.Type : TYP_UNDEF;
+        var naturalMul = targetType.Size;
+#else
+        var naturalMul = 0;
+#endif
         var codeGen = CompilerInstance.codeGen;
         assert(codeGen is not null);
-        var doAddrMode = codeGen.genCreateAddrMode(addr.AsOp(), true, 0, out _, out var baseAddress,
+        var doAddrMode = codeGen.genCreateAddrMode(addr.AsOp(), true, naturalMul, out _, out var baseAddress,
             out var index, out var scale, out var offset);
+#if TARGET_ARM64
+        if (parent.Oper.IsIndir && parent.AsIndir().IsVolatile)
+        {
+            assert(CompilerInstance.compIsaSupportedDebugOnly(InstructionSet_Rcpc2));
+            if ((scale > 1) || !Emitter.emitIns_valid_imm_for_unscaled_ldst_offset(offset) || (index is not null))
+            {
+                return false;
+            }
+        }
+#endif
         if (scale == 0)
         {
             scale = 1;
@@ -139,12 +167,44 @@ public sealed partial class Lowering
             }
         }
 
+#if TARGET_ARM64
+        if (index is not null)
+        {
+            if ((index.Oper is GT_CAST) && (scale == 1) && (offset == 0) && varTypeIsByte(targetType))
+            {
+                if (IsInvariantInRange(index, parent))
+                {
+                    // A contained index requires its LEA to be contained through the parent.
+                    index.AsCast().CastOp.IsContained = false;
+                    MakeSrcContained(addrMode, index);
+                }
+            }
+            else if ((index.Oper is GT_BFIZ) && (index.AsOp().Op1.Oper is GT_CAST) &&
+                index.AsOp().Op2.Oper.IsCnsIntOrI && !varTypeIsStruct(targetType))
+            {
+                var cast = index.AsOp().Op1.AsCast();
+                assert(cast.IsContained);
+                var shiftBy = unchecked((uint)index.AsOp().Op2.AsIntCon().IconValue);
+
+                // SXTW/UXTW consumes the sole scale/offset slot and must match the access width.
+                if ((cast.CastOp.Type is TYP_INT) && (cast.Type is TYP_LONG) &&
+                    ((uint)targetType.Size == (1U << (int)shiftBy)) && (scale == 1) && (offset == 0))
+                {
+                    if (IsInvariantInRange(index, parent))
+                    {
+                        MakeSrcContained(addrMode, index);
+                    }
+                }
+            }
+        }
+#endif
+
         JITDUMP("New addressing mode node:\n  ");
         DISPNODE(addrMode);
         JITDUMP("\n");
         return true;
 #else
-        throw new NotImplementedException("Non-xarch address-mode lowering is not ported.");
+        throw new NotImplementedException("Address-mode lowering outside xarch and ARM64 is not ported.");
 #endif
     }
 }

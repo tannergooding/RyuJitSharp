@@ -69,8 +69,28 @@ public sealed partial class Lowering
         {
             MakeSrcContained(node, addr);
         }
+#elif TARGET_ARM64
+        if (node.Type is TYP_STRUCT or TYP_SIMD12)
+        {
+            return;
+        }
+
+        var addr = node.Addr;
+        if ((addr.Oper is GT_LEA) && IsInvariantInRange(addr, node))
+        {
+            MakeSrcContained(node, addr);
+        }
+        else if ((addr.Oper is GT_LCL_ADDR) && (node.Oper is not GT_NULLCHECK) &&
+            IsContainableLclAddr(addr.AsLclFld(), (uint)node.Size))
+        {
+            MakeSrcContained(node, addr);
+        }
+        else if (addr.Oper.IsCnsIntOrI && addr.AsIntCon().IsIconHandle(GTF_ICON_TLS_HDL))
+        {
+            MakeSrcContained(node, addr);
+        }
 #else
-        throw new NotImplementedException("Non-xarch indirection containment is not ported.");
+        throw new NotImplementedException("Indirection containment outside xarch and ARM64 is not ported.");
 #endif
     }
 
