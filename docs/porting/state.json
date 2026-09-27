@@ -12,19 +12,19 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port complete fgSearchImprovedLayout and ThreeOptLayout against33baf8 fgopt.cpp:3297-4282, including loop-aware profile-ordered RPO, native priority ordering, partition costs/swaps, hot-jump compaction, EH-safe block relinking and invalidation. Resolve B319 downstream GC-poll layout differences.",
+      "scope": "Port complete fgDetermineFirstColdBlock, fgFuncletsAreCold and fgGetCodeEstimate against33baf8, preserving procedure-splitting gates, size thresholds, funclet and callfinally constraints. Reuse existing hot/cold allocation, unwind and fake-splitting support.",
       "doneWhen": [
-        "Port complete native ThreeOptLayout plus loop-aware traversal/profile DFS prerequisites without changing other consumers' behavior.",
-        "Activate public layout with focused cost, tie-order, EH/loop and block-list tests plus old-stub controls.",
-        "Execute the existing GC-poll corpus through a fresh JIT, compare positive native layout and code, and preserve the established baseline.",
-        "Commit the validated layout batch locally, then continue the next remaining port dependency."
+        "Port complete native selection and code-size estimate helpers without changing gates or eight-byte thresholds.",
+        "Activate public cold-section selection with focused threshold, funclet, EH and callfinally regressions plus old-stub controls.",
+        "Execute positive native/managed selection with existing DEBUG fake-split support and clearly distinguish it from discontiguous allocation; preserve the baseline.",
+        "Commit the validated cold-selection batch locally, then continue the next remaining port dependency."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "GC-poll insertion committed0510e9b. Complete layout class and shared contracts are integrated and validated for local commit; B319 cold-poll placement/code-size differences are resolved. No publication authorized; commits remain checkpoints.",
-      "deferred": "B311 optional metrics fixture, B315 incoming UTF8 graph/promotion, B318 existing argument-morph regression and B307 pre-existing EH node IDs remain nonblocking. Separate cold-section selection and unrelated optimization phases remain outside this layout batch.",
+      "parentScope": "GC-poll insertion committed0510e9b and layout committede6d8dec. Parent owns cold selection/helpers/tests; independent lane captures positive native splitting. No publication authorized; commits remain checkpoints.",
+      "deferred": "B311 optional metrics fixture, B315 incoming UTF8 graph/promotion, B318 existing argument-morph regression, B307 pre-existing EH node IDs and B320 static-data descriptions remain nonblocking. Discontiguous runtime allocation parity and unrelated optimization phases are outside this cold-selection batch.",
       "parallelPackets": [
         {
           "scope": "Complete native static-initialization expansion.",
@@ -408,7 +408,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit validated block layout, then continue directly at fgDetermineFirstColdBlock and fgFuncletsAreCold (flowgraph.cpp:3282-3489). The main phase has been read completely; confirm its procedure-splitting gates, getCodeEstimate and hot/cold allocation contracts before activation and positive native split execution. Existing B307/B318/B320 diagnostics/test gaps remain separate. No push or PR authorized.",
+    "nextAction": "Cold selection validated at snapshot73cd130861c31ed127a4f4079799ab7b9347b0f2:62Debug48Release, old-stub10D/8Rfailures,23matching native/managed cold boundaries and sizes,29/143baseline. Continue directly with fgComputeBlockWeights/fgComputeMissingBlockWeights (fgprofile.cpp4371-4536), preserving ten-pass convergence bound, profile gates and cold/EH quirks. Existing B307/B318/B320 gaps remain separate. Do not claim discontiguous allocation parity or push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -476,6 +476,20 @@
         "scope": "Restore pinned output-pointer-only getThreadLocalStaticBlocksInfo across three wrappers/interface/vtable; rename final metadata slot to offsetOfBaseOfThreadLocalData. Keep existing slot, calling convention, offset widths and neighboring getThreadLocalFieldInfo bool.",
         "nativeEvidence": "MSVC native-probe.cpp static_assert checks exact member signature against pinned corinfo.h; sizeof56, pointer-field offsets0/16/24/32 and scalar offsets40/44/48/52 match managed raw layout.",
         "gaps": "TLS phase is not activated. Virtual native callbacks verify forwarding without claiming actual runtime TLS expansion."
+      },
+      "coldSectionSelection": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "snapshot": "73cd130861c31ed127a4f4079799ab7b9347b0f2",
+        "nativeAot": "artifacts\\cold-section-selection\\native-jit-1\\RyuJitSharp.dll",
+        "sha256": "9FBDC995558AF674AEF2220C14D5164770CE535AC1DEDBEC985E8836D32075CB",
+        "debugPassed": 62,
+        "releasePassed": 48,
+        "tests": "ColdSectionSelectionTests plus existing emitter/code-allocation/unwind tests, full analysis. Exact7/8byte thresholds, restart after hot blocks, all-cold entry protection, funclet grouping, callfinally pairing, stress/EH gates and non-PHI statement/control-flow costs.",
+        "negativeControls": "artifacts\\cold-section-selection\\negative: public old-stub control fails10Debug/8Release cases with21Debug/18Release controls passing.",
+        "execution": "Eight native and managed runs emit23selected bodies with expected hot/cold exception, process-ID and finally outcomes. All23cold choices, total/cold sizes and emitted block-group boundaries match. Seven positive selections include cold-tail BB02/122total/92cold in fake mode and BB03/123total/105cold in stress mode. Maintained runner splitting switches independently verified.",
+        "baseline": "artifacts\\upstream-refresh-33baf8\\cold-selection-managed-matrix\\results.json:29configurations143positive managed bodies and unchanged runtime outcomes.",
+        "comparison": "artifacts\\cold-section-selection\\comparison-73cd-final:6of7positive and15of16no-change phase/CFG slices exact after newline conversion only. Both EH differences are pre-existing B307node/temp identities.18of23raw emitted instruction sequences exact; five EH sequences retain only B320static-data annotations, with matching instructions and offsets.",
+        "gaps": "DEBUG JitFakeProcedureSplitting allocates hot and cold code contiguously. Actual discontiguous runtime allocation and full dump/machine-byte parity are not claimed; existing structural allocation/unwind coverage is separate."
       },
       "blockLayout": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
@@ -6140,6 +6154,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "cold-section-selection",
+      "native": ["src\\coreclr\\jit\\flowgraph.cpp:3282-3489", "src\\coreclr\\jit\\fgopt.cpp:4997-5041"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.ColdSectionSelection.cs"],
+      "status": "Complete public selection phase, funclet coldness predicate and code-size estimate. Preserves splitting/EH gates, stress mode, eight-byte thresholds, trailing suffix search and callfinally pairing. Existing allocation/unwind implementation reused; fake-split execution is not discontiguous allocation parity. Native source retained.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "optimized-block-layout",
       "native": ["src\\coreclr\\jit\\fgopt.cpp:3297-4282", "src\\coreclr\\jit\\compiler.hpp:5427-5500", "src\\coreclr\\jit\\jiteh.cpp:1338-1385", "src\\coreclr\\jit\\block.h:1309", "src\\coreclr\\jit\\priorityqueue.h"],

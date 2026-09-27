@@ -14,7 +14,10 @@ param(
     [ValidateRange(1, 3600)][int] $TimeoutSeconds = 120,
     [switch] $ExecuteManagedCode,
     [switch] $RawHexCode,
-    [switch] $GcStress
+    [switch] $GcStress,
+    [switch] $FakeProcedureSplitting,
+    [switch] $StressProcedureSplitting,
+    [switch] $DisableProcedureSplittingEH
 )
 
 $ErrorActionPreference = "Stop"
@@ -86,6 +89,15 @@ if ($RawHexCode) {
 }
 if ($GcStress) {
     $settings.DOTNET_GCStress = "4"
+}
+if ($FakeProcedureSplitting) {
+    $settings.DOTNET_JitFakeProcedureSplitting = "1"
+}
+if ($StressProcedureSplitting) {
+    $settings.DOTNET_JitStressProcedureSplitting = "1"
+}
+if ($DisableProcedureSplittingEH) {
+    $settings.DOTNET_JitNoProcedureSplittingEH = $selector
 }
 if ($ManagedJit) {
     $settings.DOTNET_AltJit = $selector

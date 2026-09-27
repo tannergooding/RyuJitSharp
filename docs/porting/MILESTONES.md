@@ -15,6 +15,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Cold-section selection
+
+The cold-section phase now selects a trailing rare-block suffix using native
+size estimates, preserving the eight-byte thresholds, entry-block protection,
+funclet grouping, call-finally pairs, EH gates and forced-splitting policy.
+Existing code allocation and unwind publication handle the selected boundary.
+
+The cold-throw and GC-poll corpora execute hot paths, cold exceptions and EH
+across ordinary, fake-split, forced-stress and EH-veto configurations. All
+23 selected bodies match native cold boundaries and code sizes. Six of seven
+positive phase/CFG slices match exactly; the remaining slice retains existing
+EH node identities. Emitted instructions and offsets match, with existing EH
+static-data annotation differences. These DEBUG fake-split runs allocate hot
+and cold code contiguously; they do not establish discontiguous-allocation
+runtime parity.
+
 ## 2026-09-26: Optimized block layout
 
 The layout phase now starts from profile-ordered, loop-aware traversal and runs
@@ -27,8 +43,8 @@ Cold GC-poll blocks now move behind hot returns as native does, resolving the
 observed layout code-size differences. All twelve selected corpus code sizes
 match; six of eight optimized layout slices match exactly. Remaining EH
 differences are pre-existing IR identities and static-handle descriptions, not
-layout or instruction-order differences. Separate cold-section selection remains
-unported.
+layout or instruction-order differences. Cold-section selection was completed
+in the following batch.
 
 ## 2026-09-26: GC-poll insertion
 

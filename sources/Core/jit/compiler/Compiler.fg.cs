@@ -13555,9 +13555,6 @@ public partial class Compiler
     // TODO: Port phase - fgComputeBlockWeights
     public PhaseStatus fgComputeBlockWeights() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - fgDetermineFirstColdBlock
-    public PhaseStatus fgDetermineFirstColdBlock() => PhaseStatus.MODIFIED_NOTHING;
-
     public PhaseStatus fgDfsBlocksAndRemove()
     {
         fgInvalidateDfsTree();
