@@ -298,6 +298,8 @@ public partial class Compiler
 
     private readonly long _allocatedBytesAtStart;
 
+    internal long ManagedBytesAllocated => unchecked(GC.GetAllocatedBytesForCurrentThread() - _allocatedBytesAtStart);
+
     // Max value of scope count for which we would use linear search; for larger values we would use hashtable lookup.
     public const int MAX_LINEAR_FIND_LCL_SCOPELIST = 32;
 
@@ -409,7 +411,7 @@ public partial class Compiler
 
     public unsafe Compiler(CORINFO_METHOD_HANDLE methodHandle, COMP_HANDLE jitInfo, CORINFO_METHOD_INFO* methodInfo, InlineInfo? inlineInfo)
     {
-        if ((inlineInfo is null) && (JitConfig.JitReportMetrics != 0))
+        if ((inlineInfo is null) && ((JitConfig.JitReportMetrics != 0) || (JitConfig.JitTimeLogCsv is not null)))
         {
             _allocatedBytesAtStart = GC.GetAllocatedBytesForCurrentThread();
         }
@@ -616,23 +618,17 @@ public partial class Compiler
     public unsafe bool IsReadyToRun => IsAot && !IsTargetAbi(CORINFO_NATIVEAOT_ABI);
 
 #if FEATURE_JIT_METHOD_PERF
-    private static string? _jitTimeLogCsv;
-
-    public static unsafe string JitTimeLogCsv
+    public static unsafe string? JitTimeLogCsv
     {
         get
         {
-            var jitTimeLogCsv = _jitTimeLogCsv;
-
-            if (jitTimeLogCsv is null)
+            var value = JitConfig.JitTimeLogCsv;
+            if (value is null)
             {
-                var pJitTimeLogCsvUtf8 = JitConfig.JitTimeLogCsv;
-                var jitTimeLogCsvUtf8 = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pJitTimeLogCsvUtf8);
-
-                jitTimeLogCsv = Encoding.UTF8.GetString(jitTimeLogCsvUtf8);
-                _jitTimeLogCsv = jitTimeLogCsv; 
+                return null;
             }
-            return jitTimeLogCsv;
+
+            return Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(value));
         }
     }
 #endif

@@ -336,6 +336,13 @@ the native JIT also compiles framework methods. Allocation bytes use D001's
 managed accounting, timing values vary between runs, and the AltJIT summary
 region is intentionally different from the native control's region.
 
+Use `-TimingCsv` and `-TimingSummary` for `timing.csv` and `timing.txt`.
+`-LoopHoistStats` and `-EnregistrationStats` select process-wide shutdown
+reports. Verify actual data rows, XML closure and report output rather than
+file creation alone. The AltJIT's aggregates cover its own compilations, not
+the framework methods compiled by the default JIT. Timing counter units differ
+from native RDTSC (R005); allocation columns follow D001.
+
 Use `-InstrumentedTier0` to request eager Tier0 profiling without call-count
 promotion to later tiers. This sets `TieredPGO_InstrumentOnlyHotCode=0` and
 disables runtime call counting; it is distinct from forced `-MinOpts` and

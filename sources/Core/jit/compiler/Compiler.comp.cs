@@ -559,12 +559,6 @@ public partial class Compiler
     }
 #endif
 
-    /// <summary>One time finalization code.</summary>
-    public static void compShutdown()
-    {
-        // TODO: Port compShutdown
-    }
-
     /// <summary>One-time initialization.</summary>
     public static void compStartup()
     {
@@ -613,7 +607,7 @@ public partial class Compiler
             s_checkedForJitTimeLog = true;
         }
 
-        if ((compJitTimeLogFilename is not 0) || (JitTimeLogCsv is ""))
+        if ((compJitTimeLogFilename is not 0) || (JitConfig.JitTimeLogCsv is not null))
         {
             compJitTimer = new JitTimer(info.compMethodInfo->ILCodeSize);
         }
@@ -3227,7 +3221,7 @@ public partial class Compiler
 #if MEASURE_CLRAPI_CALLS
                 EndPhase(PHASE_CLR_API);
 #endif
-                compJitTimer.Terminate(this, CompTimeSummaryInfo.s_compTimeSummary, includePhases: false);
+                compJitTimer.Terminate(this, ref CompTimeSummaryInfo.s_compTimeSummary, includePhases: false);
             }
 #endif
 
@@ -3268,7 +3262,7 @@ public partial class Compiler
 #if MEASURE_CLRAPI_CALLS
                 EndPhase(PHASE_CLR_API);
 #endif
-                compJitTimer.Terminate(this, CompTimeSummaryInfo.s_compTimeSummary, false);
+                compJitTimer.Terminate(this, ref CompTimeSummaryInfo.s_compTimeSummary, false);
             }
 #endif
 
@@ -3896,7 +3890,7 @@ public partial class Compiler
 #else
             EndPhase(PHASE_POST_EMIT);
 #endif
-            compJitTimer.Terminate(this, CompTimeSummaryInfo.s_compTimeSummary, true);
+            compJitTimer.Terminate(this, ref CompTimeSummaryInfo.s_compTimeSummary, true);
         }
 #endif
 

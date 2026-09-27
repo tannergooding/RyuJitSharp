@@ -4,9 +4,11 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if FEATURE_JIT_METHOD_PERF
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp;
 
@@ -53,11 +55,11 @@ public struct CompTimeSummaryInfo
                 _numMethods++;
 
                 // Update the totals and maxima.
-                _total._byteCodeBytes += info._byteCodeBytes;
-                _maximum._byteCodeBytes = int.Max(_maximum._byteCodeBytes, info._byteCodeBytes);
+                _total._byteCodeBytes = unchecked(_total._byteCodeBytes + info._byteCodeBytes);
+                _maximum._byteCodeBytes = uint.Max(_maximum._byteCodeBytes, info._byteCodeBytes);
 
-                _total._totalCycles += info._totalCycles;
-                _maximum._totalCycles = long.Max(_maximum._totalCycles, info._totalCycles);
+                _total._totalCycles = unchecked(_total._totalCycles + info._totalCycles);
+                _maximum._totalCycles = ulong.Max(_maximum._totalCycles, info._totalCycles);
 
 #if MEASURE_CLRAPI_CALLS
                 // Update the CLR-API values.
@@ -71,15 +73,15 @@ public struct CompTimeSummaryInfo
                 if (includeInFiltered)
                 {
                     _numFilteredMethods++;
-                    _filtered._byteCodeBytes += info._byteCodeBytes;
-                    _filtered._totalCycles += info._totalCycles;
-                    _filtered._parentPhaseEndSlop += info._parentPhaseEndSlop;
+                    _filtered._byteCodeBytes = unchecked(_filtered._byteCodeBytes + info._byteCodeBytes);
+                    _filtered._totalCycles = unchecked(_filtered._totalCycles + info._totalCycles);
+                    _filtered._parentPhaseEndSlop = unchecked(_filtered._parentPhaseEndSlop + info._parentPhaseEndSlop);
                 }
 
                 for (var phase = default(Phases); phase < PHASE_NUMBER_OF; phase++)
                 {
-                    _total._invokesByPhase[(int)(phase)] += info._invokesByPhase[(int)(phase)];
-                    _total._cyclesByPhase[(int)(phase)] += info._cyclesByPhase[(int)(phase)];
+                    _total._invokesByPhase[(int)(phase)] = unchecked(_total._invokesByPhase[(int)(phase)] + info._invokesByPhase[(int)(phase)]);
+                    _total._cyclesByPhase[(int)(phase)] = unchecked(_total._cyclesByPhase[(int)(phase)] + info._cyclesByPhase[(int)(phase)]);
 
 #if MEASURE_CLRAPI_CALLS
                     _total._clrInvokesByPhase[(int)(phase)] += info._clrInvokesByPhase[(int)(phase)];
@@ -88,8 +90,8 @@ public struct CompTimeSummaryInfo
 
                     if (includeInFiltered)
                     {
-                        _filtered._invokesByPhase[(int)(phase)] += info._invokesByPhase[(int)(phase)];
-                        _filtered._cyclesByPhase[(int)(phase)] += info._cyclesByPhase[(int)(phase)];
+                        _filtered._invokesByPhase[(int)(phase)] = unchecked(_filtered._invokesByPhase[(int)(phase)] + info._invokesByPhase[(int)(phase)]);
+                        _filtered._cyclesByPhase[(int)(phase)] = unchecked(_filtered._cyclesByPhase[(int)(phase)] + info._cyclesByPhase[(int)(phase)]);
 
 #if MEASURE_CLRAPI_CALLS
                         _filtered._clrInvokesByPhase[(int)(phase)] += info._clrInvokesByPhase[(int)(phase)];
@@ -97,15 +99,15 @@ public struct CompTimeSummaryInfo
 #endif
                     }
 
-                    _maximum._cyclesByPhase[(int)(phase)] = long.Max(_maximum._cyclesByPhase[(int)(phase)], info._cyclesByPhase[(int)(phase)]);
+                    _maximum._cyclesByPhase[(int)(phase)] = ulong.Max(_maximum._cyclesByPhase[(int)(phase)], info._cyclesByPhase[(int)(phase)]);
 
 #if MEASURE_CLRAPI_CALLS
                     _maximum._CLRcyclesByPhase[(int)(phase)] = max(_maximum._CLRcyclesByPhase[(int)(phase)], info._CLRcyclesByPhase[(int)(phase)]);
 #endif
                 }
 
-                _total._parentPhaseEndSlop += info._parentPhaseEndSlop;
-                _maximum._parentPhaseEndSlop = long.Max(_maximum._parentPhaseEndSlop, info._parentPhaseEndSlop);
+                _total._parentPhaseEndSlop = unchecked(_total._parentPhaseEndSlop + info._parentPhaseEndSlop);
+                _maximum._parentPhaseEndSlop = ulong.Max(_maximum._parentPhaseEndSlop, info._parentPhaseEndSlop);
             }
 #if MEASURE_CLRAPI_CALLS
             else
@@ -150,19 +152,27 @@ public struct CompTimeSummaryInfo
             return;
         }
 
+        var countsPerSec = (double)Stopwatch.Frequency;
+
+        if (countsPerSec is 0.0)
+        {
+            streamWriter.WriteLine("Processor does not have a high-frequency timer.");
+            return;
+        }
+
         var totTime_ms = 0.0;
 
         streamWriter.WriteLine("JIT Compilation time report:");
-        streamWriter.WriteLine($"  Compiled {_numMethods} methods.");
+        streamWriter.WriteLine(FormattableString.Invariant($"  Compiled {_numMethods} methods."));
 
         if (_numMethods is not 0)
         {
-            totTime_ms = Stopwatch.GetElapsedTime(0, _total._totalCycles).TotalMilliseconds;
+            totTime_ms = ((double)_total._totalCycles / countsPerSec) * 1000.0;
 
-            streamWriter.WriteLine($"  Compiled {_total._byteCodeBytes} bytecodes total ({_maximum._byteCodeBytes} max, {_total._byteCodeBytes / (double)(_numMethods),8:F2} avg).");
-            streamWriter.WriteLine($"  Time: total: {(_total._totalCycles / 1000000.0),10:F3} Mcycles/{totTime_ms,10:F3} ms");
-            streamWriter.WriteLine($"          max: {(_maximum._totalCycles) / 1000000.0,10:F3} Mcycles/{Stopwatch.GetElapsedTime(0, _maximum._totalCycles).TotalMilliseconds,10:F3} ms");
-            streamWriter.WriteLine($"          avg: {(_total._totalCycles) / 1000000.0 / _numMethods,10:F3} Mcycles/{totTime_ms / _numMethods,10:F3} ms");
+            streamWriter.WriteLine(FormattableString.Invariant($"  Compiled {unchecked((int)_total._byteCodeBytes)} bytecodes total ({unchecked((int)_maximum._byteCodeBytes)} max, {_total._byteCodeBytes / (double)(_numMethods),8:F2} avg)."));
+            streamWriter.WriteLine(FormattableString.Invariant($"  Time: total: {(_total._totalCycles / 1000000.0),10:F3} Mcycles/{totTime_ms,10:F3} ms"));
+            streamWriter.WriteLine(FormattableString.Invariant($"          max: {(_maximum._totalCycles) / 1000000.0,10:F3} Mcycles/{((double)_maximum._totalCycles / countsPerSec) * 1000.0,10:F3} ms"));
+            streamWriter.WriteLine(FormattableString.Invariant($"          avg: {(_total._totalCycles) / 1000000.0 / _numMethods,10:F3} Mcycles/{totTime_ms / _numMethods,10:F3} ms"));
 
             var extraHdr1 = "";
             var extraHdr2 = "";
@@ -185,8 +195,8 @@ public struct CompTimeSummaryInfo
             // Ensure that at least the names array and the Phases enum have the same number of entries:
             for (var phase = default(Phases); phase < PHASE_NUMBER_OF; phase++)
             {
-                var phase_tot_ms = Stopwatch.GetElapsedTime(0, _total._cyclesByPhase[(int)(phase)]).TotalMilliseconds;
-                var phase_max_ms = Stopwatch.GetElapsedTime(0, _maximum._cyclesByPhase[(int)(phase)]).TotalMilliseconds;
+                var phase_tot_ms = ((double)_total._cyclesByPhase[(int)(phase)] / countsPerSec) * 1000.0;
+                var phase_max_ms = ((double)_maximum._cyclesByPhase[(int)(phase)] / countsPerSec) * 1000.0;
 
 #if MEASURE_CLRAPI_CALLS  
                 if ((phase is PHASE_CLR_API) && !extraInfo)
@@ -204,7 +214,7 @@ public struct CompTimeSummaryInfo
                     streamWriter.Write("  ");
                     ancPhase = ancPhase.Parent;
                 }
-                streamWriter.Write($"     {phase.Name,-30} {_total._invokesByPhase[(int)(phase)] / (double)(_numMethods),6:F2}  {_total._cyclesByPhase[(int)(phase)] / 1000000.0,10:F2}   {phase_tot_ms,9:F3}   {((phase_tot_ms * 100.0) / totTime_ms),8:F2}%    {phase_max_ms,8:F3}");
+                streamWriter.Write(FormattableString.Invariant($"     {phase.Name,-30} {_total._invokesByPhase[(int)(phase)] / (double)(_numMethods),6:F2}  {_total._cyclesByPhase[(int)(phase)] / 1000000.0,10:F2}   {phase_tot_ms,9:F3}   {formatFloat(phase_tot_ms * 100.0 / totTime_ms, "F2"),8}%    {phase_max_ms,8:F3}"));
 
 #if MEASURE_CLRAPI_CALLS
                 if (extraInfo && (phase != PHASE_CLR_API))
@@ -223,31 +233,31 @@ public struct CompTimeSummaryInfo
             }
 
             // Show slop if it's over a certain percentage of the total
-            var pslop_pct = ((_total._parentPhaseEndSlop * 100000.0) / Stopwatch.Frequency) / totTime_ms;
+            var pslop_pct = 100.0 * _total._parentPhaseEndSlop * 1000.0 / countsPerSec / totTime_ms;
 
             if (pslop_pct >= 1.0)
             {
                 streamWriter.WriteLine();
-                streamWriter.WriteLine($"  'End phase slop' should be very small (if not, there's unattributed time): {_total._parentPhaseEndSlop / 1000000.0,9:F3} Mcycles = {pslop_pct,3:F1}% of total.");
+                streamWriter.WriteLine(FormattableString.Invariant($"  'End phase slop' should be very small (if not, there's unattributed time): {_total._parentPhaseEndSlop / 1000000.0,9:F3} Mcycles = {pslop_pct,3:F1}% of total."));
                 streamWriter.WriteLine();
             }
         }
 
         if (_numFilteredMethods > 0)
         {
-            var totFilteredTime_ms = Stopwatch.GetElapsedTime(0, _filtered._totalCycles).TotalMilliseconds;
+            var totFilteredTime_ms = ((double)_filtered._totalCycles / countsPerSec) * 1000.0;
 
-            streamWriter.WriteLine($"  Compiled {_numFilteredMethods} methods that meet the filter requirement.");
-            streamWriter.WriteLine($"  Compiled {_filtered._byteCodeBytes} bytecodes total ({_filtered._byteCodeBytes / (double)(_numFilteredMethods),8:F2} avg).");
-            streamWriter.WriteLine($"  Time: total: {(_filtered._totalCycles / 1000000.0),10:F3} Mcycles/{totFilteredTime_ms,10:F3} ms");
-            streamWriter.WriteLine($"          avg: {(_filtered._totalCycles / 1000000.0) / _numFilteredMethods,10:F3} Mcycles/{totFilteredTime_ms / (double)(_numFilteredMethods),10:F3} ms");
+            streamWriter.WriteLine(FormattableString.Invariant($"  Compiled {_numFilteredMethods} methods that meet the filter requirement."));
+            streamWriter.WriteLine(FormattableString.Invariant($"  Compiled {unchecked((int)_filtered._byteCodeBytes)} bytecodes total ({_filtered._byteCodeBytes / (double)(_numFilteredMethods),8:F2} avg)."));
+            streamWriter.WriteLine(FormattableString.Invariant($"  Time: total: {(_filtered._totalCycles / 1000000.0),10:F3} Mcycles/{totFilteredTime_ms,10:F3} ms"));
+            streamWriter.WriteLine(FormattableString.Invariant($"          avg: {(_filtered._totalCycles / 1000000.0) / _numFilteredMethods,10:F3} Mcycles/{totFilteredTime_ms / (double)(_numFilteredMethods),10:F3} ms"));
             streamWriter.WriteLine("  Total time by phases:");
             streamWriter.WriteLine("     PHASE                            inv/meth Mcycles    time (ms)  % of total");
             streamWriter.WriteLine("     --------------------------------------------------------------------------------------");
 
             for (var phase = default(Phases); phase < PHASE_NUMBER_OF; phase++)
             {
-                var phase_tot_ms = Stopwatch.GetElapsedTime(0, _filtered._cyclesByPhase[(int)(phase)]).TotalMilliseconds;
+                var phase_tot_ms = ((double)_filtered._cyclesByPhase[(int)(phase)] / countsPerSec) * 1000.0;
 
                 // Indent nested phases, according to depth.
                 var ancPhase = phase.Parent;
@@ -257,15 +267,15 @@ public struct CompTimeSummaryInfo
                     streamWriter.Write("  ");
                     ancPhase = ancPhase.Parent;
                 }
-                streamWriter.WriteLine($"     {phase.Name,-30}  {_filtered._invokesByPhase[(int)(phase)] / ((double)(_numFilteredMethods)),5:F2}  {_filtered._cyclesByPhase[(int)phase] / 1000000.0,10:F2}   {phase_tot_ms,9:F3}   {(phase_tot_ms * 100.0) / totFilteredTime_ms,8:F2}%");
+                streamWriter.WriteLine(FormattableString.Invariant($"     {phase.Name,-30}  {_filtered._invokesByPhase[(int)(phase)] / ((double)(_numFilteredMethods)),5:F2}  {_filtered._cyclesByPhase[(int)phase] / 1000000.0,10:F2}   {phase_tot_ms,9:F3}   {formatFloat(phase_tot_ms * 100.0 / totFilteredTime_ms, "F2"),8}%"));
             }
 
-            var fslop_ms = Stopwatch.GetElapsedTime(0, _filtered._parentPhaseEndSlop).TotalMilliseconds;
+            var fslop_ms = _filtered._parentPhaseEndSlop * 1000.0 / countsPerSec;
 
             if (fslop_ms > 1.0)
             {
                 streamWriter.WriteLine();
-                streamWriter.WriteLine($"  'End phase slop' should be very small (if not, there's unattributed time): {_filtered._parentPhaseEndSlop / 1000000.0,9:F3} Mcycles = {fslop_ms,3:F1}% of total.");
+                streamWriter.WriteLine(FormattableString.Invariant($"  'End phase slop' should be very small (if not, there's unattributed time): {_filtered._parentPhaseEndSlop / 1000000.0,9:F3} Mcycles = {fslop_ms,3:F1}% of total."));
                 streamWriter.WriteLine();
             }
         }

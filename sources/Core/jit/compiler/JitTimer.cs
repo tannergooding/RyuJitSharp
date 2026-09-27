@@ -5,6 +5,8 @@
 
 #if FEATURE_JIT_METHOD_PERF
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 
@@ -15,7 +17,7 @@ namespace RyuJitSharp;
 public sealed class JitTimer
 {
     /// <summary>Lock to protect the time log file.</summary>
-    private static Lock s_csvLock = new Lock();
+    private static readonly Lock s_csvLock = new Lock();
 
     /// <summary>The time log file handle.</summary>
     private static StreamWriter? s_csvFile;
@@ -66,11 +68,12 @@ public sealed class JitTimer
         _curPhaseStart = timestamp;
     }
 
+    [SuppressMessage("Reliability", "CA2000", Justification = "The cached CSV writer owns the stream and closes it in Shutdown.")]
     public static void PrintCsvHeader()
     {
         var jitTimeLogCsv = Compiler.JitTimeLogCsv;
 
-        if (string.IsNullOrEmpty(jitTimeLogCsv))
+        if (jitTimeLogCsv is null)
         {
             return;
         }
@@ -81,11 +84,18 @@ public sealed class JitTimer
 
             if (streamWriter is null)
             {
-                streamWriter = new JitTextWriter(jitTimeLogCsv, append: true);
+                var file = Compiler.OpenJitOutputFile(jitTimeLogCsv);
+
+                if (file is null)
+                {
+                    return;
+                }
+
+                streamWriter = new JitTextWriter(file, leaveOpen: false);
                 s_csvFile = streamWriter;
             }
 
-            if (streamWriter.BaseStream.Length is 0)
+            if (streamWriter.BaseStream.Seek(0, SeekOrigin.End) is 0)
             {
                 streamWriter.Write("\"Method Name\",");
                 streamWriter.Write("\"Assembly or SPMI Index\",");
@@ -127,6 +137,7 @@ public sealed class JitTimer
         lock (s_csvLock)
         {
             s_csvFile?.Close();
+            s_csvFile = null;
         }
     }
 
@@ -138,7 +149,7 @@ public sealed class JitTimer
         // assert((int)phase > (int)_lastPhase);  // We should end phases in increasing order.
 
         var timestamp = Stopwatch.GetTimestamp();
-        var phaseCycles = (timestamp - _curPhaseStart);
+        var phaseCycles = unchecked((ulong)timestamp - (ulong)_curPhaseStart);
 
         // If this is not a leaf phase, the assumption is that the last subphase must have just recently ended.
         // Credit the duration to "slop", the total of which should be very small.
@@ -175,7 +186,7 @@ public sealed class JitTimer
 
             if ((phase + 1) == lastPhase)
             {
-                _info._totalCycles = (timestamp - _start);
+                _info._totalCycles = unchecked((ulong)timestamp - (ulong)_start);
             }
             else
             {
@@ -185,7 +196,7 @@ public sealed class JitTimer
 
         if ((JitConfig.JitMeasureIR is not 0) && phase.ReportsIRSize)
         {
-            _info._nodeCountAfterPhase[(int)(phase)] = compiler.fgMeasureIR();
+            _info._nodeCountAfterPhase[(int)(phase)] = unchecked((uint)compiler.fgMeasureIR());
         }
         else
         {
@@ -206,7 +217,7 @@ public sealed class JitTimer
     {
         var jitTimeLogCsv = Compiler.JitTimeLogCsv;
 
-        if (jitTimeLogCsv is "")
+        if (jitTimeLogCsv is null)
         {
             return;
         }
@@ -222,13 +233,12 @@ public sealed class JitTimer
 
         // Try and access the SPMI index to report in the data set.
         //
-        // If the jit is not hosted under SPMI this will return the
-        // default value of zero.
+        // Native requests -1 when no SPMI index is configured; only zero
+        // selects the assembly-name column.
         //
         // Query the jit host directly here instead of going via the
         // config cache, since value will change for each method.
-        var index = 0;
-
+        int index;
         fixed (byte* pName = "SuperPMIMethodContextNumber"u8)
         {
             index = CILJit.s_jitHost->getIntConfigValue(pName, defaultValue: -1);
@@ -242,6 +252,10 @@ public sealed class JitTimer
             {
                 return;
             }
+
+            // FileMode.Append seeks only when opening a managed FileStream. A native
+            // JIT may have appended to this file since the preceding managed row.
+            streamWriter.BaseStream.Seek(0, SeekOrigin.End);
 
             streamWriter.Write($"\"{methName}\",");
 
@@ -266,7 +280,7 @@ public sealed class JitTimer
             streamWriter.Write($"{compiler.Metrics.LoopsAligned},");
 #endif
 
-            var totCycles = 0L;
+            var totCycles = 0UL;
 
             for (var phase = default(Phases); phase < PHASE_NUMBER_OF; phase++)
             {
@@ -288,9 +302,9 @@ public sealed class JitTimer
 
             streamWriter.Write($"{compiler.info.compNativeCodeSize},");
             streamWriter.Write($"{compiler.compInfoBlkSize},");
-            streamWriter.Write($"{0},");
+            streamWriter.Write($"{compiler.ManagedBytesAllocated},");
             streamWriter.Write($"{_info._totalCycles},");
-            streamWriter.WriteLine($"{Stopwatch.Frequency:F}");
+            streamWriter.WriteLine(((double)Stopwatch.Frequency).ToString("F6", CultureInfo.InvariantCulture));
 
             streamWriter.Flush();
         }
@@ -349,7 +363,7 @@ public sealed class JitTimer
 #endif
 
     // Completes the timing of the current method, which is assumed to have "byteCodeBytes" bytes of bytecode, and adds it to "sum".
-    public void Terminate(Compiler comp, in CompTimeSummaryInfo sum, bool includePhases)
+    public void Terminate(Compiler comp, ref CompTimeSummaryInfo sum, bool includePhases)
     {
         if (includePhases)
         {

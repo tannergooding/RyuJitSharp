@@ -368,6 +368,11 @@ public partial class Emitter
     {
     }
 
+    // The pinned native emitter has no process-wide teardown.
+    public static void emitDone()
+    {
+    }
+
     [StructLayout(LayoutKind.Explicit)]
     public struct _Anonymous_e__Union
     {

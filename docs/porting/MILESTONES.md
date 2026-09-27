@@ -15,6 +15,34 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Compiler shutdown and timing diagnostics
+
+Completed the enabled `compShutdown` paths: release assembly-name lists,
+finish configured inline XML before the zero-method guard, write timing
+summaries, close timing CSV and emit selected aggregate statistics.
+The existing public shutdown callback retains its ownership and ordering.
+Timing collection now activates for configured CSV rather than disabled CSV;
+termination updates its aggregate by reference instead of modifying a copy.
+Timing counters retain native unsigned widths and wraparound, native report
+formatting and NaN spelling. CSV output preserves existing rows and reports
+managed allocation rather than a fabricated zero.
+
+Complete Core passes 11,997 Debug and 10,906 Release cases. The 24 new Debug
+and 17 new Release cases cover lifecycle, configuration, aggregation, formatting
+and file behavior. Both old-code controls fail for their intended defects.
+The old checked JIT also produces a header-only timing CSV; the new JIT produces
+the four expected rows, with all 21 non-timing/non-allocation columns matching
+native and unchanged instruction streams and code sizes.
+
+A focused host probe calls the live alternate-JIT shutdown vtable slot, verifies
+that `getJit` then returns null, and captures its four-method timing summary,
+XML footer and aggregate reports. Ordinary side-by-side host teardown did not
+produce those alternate-JIT reports and remains a separate investigation (B357).
+Shared XML contains interleaved forests from both JITs; this is not a claim of
+whole-file XML validity. Timing units retain the existing Stopwatch limitation
+(R005), and allocation statistics follow D001.
+Evidence: `artifacts\compiler-shutdown\comparison-1.json`.
+
 ## 2026-09-27: Per-method compilation finalization
 
 Completed `compCompileFinish`: method counting, managed allocation metrics,

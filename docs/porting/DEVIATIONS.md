@@ -26,7 +26,9 @@ GC-allocation delta from the root `Compiler` constructor body to finalization.
 It includes intervening inlinee allocations on that thread, but excludes the
 root object and field initializers allocated before that body and non-GC native
 allocations. It is not native arena capacity or page usage. Collection is enabled
-only by `JitReportMetrics`. B352's twelve checked compilations compare all
+by `JitReportMetrics` or timing CSV collection. The CSV's `Total Bytes Allocated`
+column reads the same root-thread delta at its own reporting point; native uses
+arena allocation rather than arena usage for that column. B352's twelve checked compilations compare all
 71 neighboring metric lines exactly while recording both allocation values.
 
 Expression cloning constructs simple nodes and hardware intrinsics before their
@@ -1582,6 +1584,24 @@ an undefined pointer read or silently substitute a corrected label.
 Four complete XML graphs and 38 DOT graphs match the current-pin native files
 byte for byte. DOT supports switches independently of this XML limitation.
 See B350 and `artifacts\flowgraph-dumps\comparison-3.json`.
+
+### R005: Timing counter representation
+
+**Status:** existing implementation limitation, not native cycle-count parity.
+
+On x64, native `compiler.cpp:_our_GetThreadCycles` uses RDTSC and
+`CachedCyclesPerSecond` supplies its calibrated frequency. Managed `JitTimer`
+uses `Stopwatch.GetTimestamp` and `Stopwatch.Frequency`. The CSV's cycle columns
+therefore contain Stopwatch ticks, and the summary's `Mcycles` labels mean
+millions of those counter units. Millisecond conversion uses the corresponding
+frequency; raw counts, frequency and timing results are not interchangeable with
+the native report.
+
+Shutdown integration retains the existing managed clock instead of adding a
+native helper library or executable-memory counter thunk. Diagnostic comparisons
+must identify and exclude timing/cycle/frequency fields rather than claiming
+performance or complete timing-report parity. Native-compatible RDTSC collection
+and calibration remain open.
 
 ## Incomplete implementation, not intentional deviations
 

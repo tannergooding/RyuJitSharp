@@ -26,6 +26,10 @@ param(
     [ValidateRange(0, 2)][int] $InlineDumpData = 0,
     [ValidateRange(0, 3)][int] $InlineDumpXml = 0,
     [switch] $InlineXmlFile,
+    [switch] $TimingCsv,
+    [switch] $TimingSummary,
+    [switch] $LoopHoistStats,
+    [switch] $EnregistrationStats,
     [switch] $RawHexCode,
     [switch] $GcStress,
     [switch] $FakeProcedureSplitting,
@@ -154,6 +158,18 @@ if ($InlineDumpXml -ne 0) {
 }
 if ($InlineXmlFile) {
     $settings.DOTNET_JitInlineDumpXmlFile = Join-Path $OutputDirectory "inlines.xml"
+}
+if ($TimingCsv) {
+    $settings.DOTNET_JitTimeLogCsv = Join-Path $OutputDirectory "timing.csv"
+}
+if ($TimingSummary) {
+    $settings.DOTNET_JitTimeLogFile = Join-Path $OutputDirectory "timing.txt"
+}
+if ($LoopHoistStats) {
+    $settings.DOTNET_JitLoopHoistStats = "1"
+}
+if ($EnregistrationStats) {
+    $settings.DOTNET_JitEnregStats = "1"
 }
 if ($RawHexCode) {
     $settings.DOTNET_JitRawHexCode = $selector

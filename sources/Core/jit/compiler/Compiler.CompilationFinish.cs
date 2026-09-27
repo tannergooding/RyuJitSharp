@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -29,7 +28,7 @@ public partial class Compiler
         if (JitConfig.JitReportMetrics != 0)
         {
             // D001: measure this compilation's managed allocations, not native arena pages.
-            Metrics.BytesAllocated = unchecked(GC.GetAllocatedBytesForCurrentThread() - _allocatedBytesAtStart);
+            Metrics.BytesAllocated = ManagedBytesAllocated;
         }
 
 #if LOOP_HOIST_STATS
@@ -42,7 +41,7 @@ public partial class Compiler
         if (JitConfig.JitInlineDumpXmlFile is not null)
         {
             var path = Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(JitConfig.JitInlineDumpXmlFile));
-            using var file = OpenInlineXmlFile(path);
+            using var file = OpenJitOutputFile(path);
             if (file is not null)
             {
                 using var writer = new JitTextWriter(file, leaveOpen: true);
@@ -94,18 +93,6 @@ public partial class Compiler
     }
 
 #if DEBUG
-    private static FileStream? OpenInlineXmlFile(string path)
-    {
-        try
-        {
-            return new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
-        {
-            return null;
-        }
-    }
-
     private unsafe void compDumpOrderSummary()
     {
         var token = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);

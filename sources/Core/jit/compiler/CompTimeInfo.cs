@@ -13,17 +13,17 @@ namespace RyuJitSharp;
 /// </remarks>
 public struct CompTimeInfo
 {
-    public int _byteCodeBytes;
-    public long _totalCycles;
-    public InlineArrayPhaseCount<long> _invokesByPhase;
-    public InlineArrayPhaseCount<long> _cyclesByPhase;
+    public uint _byteCodeBytes;
+    public ulong _totalCycles;
+    public InlineArrayPhaseCount<ulong> _invokesByPhase;
+    public InlineArrayPhaseCount<ulong> _cyclesByPhase;
 
 #if MEASURE_CLRAPI_CALLS
     public InlineArrayPhaseCount<long> _clrInvokesByPhase;
     public InlineArrayPhaseCount<long> _clrCyclesByPhase;
 #endif
 
-    public InlineArrayPhaseCount<int> _nodeCountAfterPhase;
+    public InlineArrayPhaseCount<uint> _nodeCountAfterPhase;
 
     // For better documentation, we call EndPhase on
     // non-leaf phases.  We should also call EndPhase on the
@@ -33,7 +33,7 @@ public struct CompTimeInfo
     // it out in a report, so we can verify that it is, indeed, very small.  If it ever
     // isn't, this means that we're doing something significant between the end of the last
     // declared subphase and the end of its parent.
-    public long _parentPhaseEndSlop;
+    public ulong _parentPhaseEndSlop;
     public bool _timerFailure;
 
 #if MEASURE_CLRAPI_CALLS
@@ -47,7 +47,7 @@ public struct CompTimeInfo
 
     public CompTimeInfo(int byteCodeBytes)
     {
-        _byteCodeBytes = byteCodeBytes;
+        _byteCodeBytes = unchecked((uint)byteCodeBytes);
 
 #if MEASURE_CLRAPI_CALLS
         _perClrApiCalls = new int[(int)(API_ICorJitInfo_Names.API_COUNT)];
