@@ -2593,7 +2593,7 @@ public partial class Compiler
 #endif
 
 #if PROFILING_SUPPORTED && UNIX_AMD64_ABI
-        if (compIsProfilerHookNeeded())
+        if (compIsProfilerHookNeeded)
         {
             opts.compNeedToAlignFrame = true;
         }

@@ -1290,6 +1290,13 @@ does. Its non-AMD64 Swift path reports NYI and then terminates with
 `fatal(CORJIT_IMPLLIMITATION)` until the ARM64 target masks are available.
 The native constructor remains in the residual tree.
 
+The SysV x64 classifier, multireg return helpers and Swift argument/special-parameter
+helpers have Linux-target unit coverage on a Windows host. This does not establish
+Linux runtime support. Swift parameter classification in `lvaClassifyParameterAbi`
+and `Emitter.instrDescCGCA.NativeLogicalSize` under `UNIX_AMD64_ABI` still terminate
+with `CORJIT_SKIPPED`. The latter requires the native GC-type/async bitfield layout;
+the Windows descriptor size must not be reused without target layout proof.
+
 `LinearScan.setFrameType` implements AMD64 frame selection. Other targets report
 NYI and terminate with `CORJIT_IMPLLIMITATION`; their double-alignment and
 target-specific frame/register policies remain in the native tree.

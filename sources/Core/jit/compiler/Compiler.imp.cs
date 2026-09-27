@@ -15875,9 +15875,9 @@ public partial class Compiler
         assert((call.Flags & GTF_CALL_UNMANAGED) is not 0);
 
 #if SWIFT_SUPPORT
-        if (call.unmgdCallConv is CorInfoCallConvExtension.Swift)
+        if (call._unmgdCallConv is CorInfoCallConvExtension.Swift)
         {
-            impPopArgsForSwiftCall(call, sig, swiftErrorNode);
+            impPopArgsForSwiftCall(call, sig, ref swiftErrorNode);
             return;
         }
 #endif

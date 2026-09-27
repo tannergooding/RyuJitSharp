@@ -2009,7 +2009,7 @@ public partial class GenTree
     public byte GetMultiRegCount(Compiler comp)
     {
 #if FEATURE_MULTIREG_RET
-        if (IsMultiRegCall())
+        if (IsMultiRegCall)
         {
             return AsCall().ReturnTypeDesc.ReturnRegCount;
         }

@@ -76,6 +76,7 @@ internal static unsafe class LinearScanLocalStoreAndReturnTests
         });
     }
 
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [Test]
     public static void WriteThroughVectorStoreDefinesAnOptionalRegisterAndClearsPartialSpill()
     {
@@ -98,6 +99,7 @@ internal static unsafe class LinearScanLocalStoreAndReturnTests
             Assert.That(destination.isPartiallySpilled, Is.False);
         });
     }
+#endif
 
     [Test]
     public static void NonCandidateContainedConstantDoesNotDefineARegister()

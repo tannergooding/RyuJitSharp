@@ -65,6 +65,9 @@ public partial class Compiler
         /// <summary>We only need to cast the return value of pinvoke inlined calls that return small types</summary>
         private bool checkForSmallType;
 
+        // Swift calls that might throw pass a SwiftError* whose value is stored after the call.
+        private GenTree? swiftErrorNode;
+
         public unsafe bool TryImport(Compiler compiler, byte* codeAddr, byte* codeEndp, byte sz, ref var_types callTyp)
         {
             // memberRef should be set.
@@ -299,10 +302,6 @@ public partial class Compiler
             var asyncContinuation = null as GenTree;
             var asyncCallUsesOwnContexts = false;
             var ni = NI_Illegal;
-
-            // Swift calls that might throw use a SwiftError* arg that requires additional IR to handle,
-            // so if we're importing a Swift call, look for this type in the signature
-            var swiftErrorNode = null as GenTree;
 
             // First create the call node
 

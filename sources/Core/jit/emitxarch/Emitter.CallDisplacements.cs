@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -21,6 +23,8 @@ public partial class Emitter
         // two 16-byte AMD64 register masks, uint argument count, and a bool bitfield;
         // the native structure rounds to an eight-byte boundary.
 #if UNIX_AMD64_ABI
+        [SuppressMessage("Design", "CA1065:Do not raise exceptions in unexpected locations",
+            Justification = "Unsupported JIT target paths must terminate compilation with CORJIT_SKIPPED.")]
         public override int NativeLogicalSize =>
             throw new FatalJitException(CORJIT_SKIPPED, "System V large-call descriptor layout is not implemented.");
 #else

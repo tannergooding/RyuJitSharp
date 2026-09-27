@@ -292,6 +292,7 @@ internal static unsafe class LocalReferenceAccountingTests
         });
     }
 
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [TestCase(TYP_SIMD16, true)]
     [TestCase(TYP_SIMD32, false)]
     [TestCase(TYP_SIMD64, false)]
@@ -310,6 +311,7 @@ internal static unsafe class LocalReferenceAccountingTests
             Assert.That(Compiler.varTypeNeedsPartialCalleeSave(type), Is.EqualTo(!candidate));
         });
     }
+#endif
 
     [TestCase(true, false)]
     [TestCase(false, false)]

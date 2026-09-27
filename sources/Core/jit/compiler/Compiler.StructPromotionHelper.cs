@@ -435,7 +435,7 @@ public partial class Compiler
 #if FEATURE_MULTIREG_STRUCT_PROMOTE
                 // Is this a variable holding a value with exactly two fields passed in
                 // multiple registers?
-                if (varDsc.lvIsMultiRegArg || IsSysVMultiRegType(varDsc.GetLayout()))
+                if (varDsc.lvIsMultiRegArg || IsSysVMultiRegType(varDsc.Layout))
                 {
                     if ((structPromotionInfo.fieldCnt != 2) &&
                         ((structPromotionInfo.fieldCnt != 1) || !varTypeIsSimd(structPromotionInfo.fields[0].fldType)))

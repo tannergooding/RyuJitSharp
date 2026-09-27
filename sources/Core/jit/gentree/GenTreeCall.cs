@@ -38,7 +38,7 @@ public sealed class GenTreeCall : GenTree
 
 #if FEATURE_MULTIREG_RET
     // TODO-AllArch: enable for all call nodes to unify single-reg and multi-reg returns.
-    internal ReturnTypeDesc _returnTypeDesc;
+    internal ReturnTypeDesc _returnTypeDesc = new();
 
     // RegNum would always be the first return reg.
     // The following array holds the other reg numbers of multi-reg return.
@@ -723,6 +723,13 @@ public sealed class GenTreeCall : GenTree
         }
     }
 
+    public unsafe void InitializeStructReturnType(Compiler comp, CORINFO_CLASS_HANDLE retClsHnd, CorInfoCallConvExtension callConv)
+    {
+#if FEATURE_MULTIREG_RET
+        _returnTypeDesc.InitializeStructReturnType(comp, retClsHnd, callConv);
+#endif
+    }
+
     /// <summary>get the type descriptor of return value of the call</summary>
 #if FEATURE_MULTIREG_RET
     internal ref readonly ReturnTypeDesc ReturnTypeDesc => ref _returnTypeDesc;
@@ -871,6 +878,46 @@ public sealed class GenTreeCall : GenTree
 #endif
 
         return result;
+    }
+
+    public void SetRegNumByIdx(regNumber reg, byte idx)
+    {
+        assert(idx < MAX_RET_REG_COUNT);
+
+        if (idx == 0)
+        {
+            RegNum = reg;
+        }
+#if FEATURE_MULTIREG_RET
+        else
+        {
+            _otherRegs[idx - 1] = reg;
+            assert(_otherRegs[idx - 1] == reg);
+        }
+#else
+        unreached();
+#endif
+    }
+
+    public regMaskTP GetOtherRegMask()
+    {
+        var mask = RBM_NONE;
+
+#if FEATURE_MULTIREG_RET
+        for (var i = 0; i < MAX_RET_REG_COUNT - 1; i++)
+        {
+            var reg = _otherRegs[i];
+            if (reg != REG_NA)
+            {
+                mask |= regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
+                continue;
+            }
+
+            break;
+        }
+#endif
+
+        return mask;
     }
 
     /// <summary>Returns true if this call has any side effects.</summary>

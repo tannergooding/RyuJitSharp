@@ -31,7 +31,7 @@ global using NodeToLoopMemoryBlockMap = System.Collections.Generic.Dictionary<Ry
 global using SignatureToLookupInfoMap = System.Collections.Generic.Dictionary<RyuJitSharp.Pointer, RyuJitSharp.CORINFO_RUNTIME_LOOKUP>;
 
 #if SWIFT_SUPPORT
-global using SwiftLoweringMap = System.Collections.Generic.Dictionary<RyuJitSharp.Pointer<RyuJitSharp.CORINFO_CLASS_STRUCT_>, RyuJitSharp.Pointer<RyuJitSharp.CORINFO_SWIFT_LOWERING>>;
+global using SwiftLoweringMap = System.Collections.Generic.Dictionary<RyuJitSharp.Pointer<RyuJitSharp.CORINFO_CLASS_STRUCT_>, System.Runtime.CompilerServices.StrongBox<RyuJitSharp.CORINFO_SWIFT_LOWERING>>;
 #endif
 
 global using AddCodeDscMap = System.Collections.Generic.Dictionary<RyuJitSharp.Compiler.AddCodeDscKey, RyuJitSharp.Compiler.AddCodeDsc>;

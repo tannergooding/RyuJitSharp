@@ -326,7 +326,7 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
 
                 noway_assert(!varTypeIsStruct(effectiveValue.Type) ||
                              (effectiveValue.Oper is not GT_RET_EXPR) ||
-                             !effectiveValue.AsRetExpr().InlineCandidate.HasMultiRegRetVal);
+                             !effectiveValue.AsRetExpr().InlineCandidate.IsMultiRegCall);
             }
         }
 #endif

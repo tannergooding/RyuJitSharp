@@ -16,6 +16,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: SysV classification and Swift ABI helpers
+
+The SysV x64 classifier now preserves independent integer/floating register
+banks, atomic aggregate spilling, EE eightbyte layouts and native stack rounding.
+Multireg calls initialize their return descriptors and track assigned registers;
+copy/reload masks retain holes. A constructor-initialization defect previously
+made a two-register return appear to occupy four registers.
+
+Swift helpers now cache stable readonly lowering records, validate special
+parameters, lower struct arguments and preserve post-call error stores. Linux-x64
+target tests pass 61 cases in both Debug and Release, with affected Windows
+controls also passing. These are managed unit results on Windows, not Linux
+runtime parity. Swift parameter classification and the System V large-call
+descriptor layout remain explicitly unsupported.
+
+ARM64 declarations now expose the next register/intrinsic semantic dependencies.
+Its classifier, HFA/HVA and declaration tests have not executed; that packet
+remains uncommitted.
+
 ## 2026-09-27: Cross-target build prerequisites
 
 Public target-RID selection now reaches the compiler's target configuration,

@@ -161,6 +161,7 @@ internal static unsafe class LinearScanReferenceBuildingTests
         });
     }
 
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [Test]
     public static void UpperVectorRestoreForALiveLocalIsCreatedAsRegisterOptional()
     {
@@ -203,6 +204,7 @@ internal static unsafe class LinearScanReferenceBuildingTests
             Assert.That(localInterval.isPartiallySpilled, Is.False);
         });
     }
+#endif
 
     [Test]
     public static void RegisterTypeByIndexMapsScalarLongLocalsToIntegerRegisterType()

@@ -57,7 +57,9 @@ public struct ReturnTypeDesc
 #if FEATURE_MULTIREG_RET
             if (MAX_RET_REG_COUNT >= 2)
             {
+#if DEBUG
                 assert(Debugger.IsAttached || _inited);
+#endif
                 result = ((_regType[0] != TYP_UNKNOWN) && (_regType[1] != TYP_UNKNOWN));
             }
 #endif
@@ -627,15 +629,15 @@ public struct ReturnTypeDesc
     /// <param name="retClsHnd">Struct type being returned</param>
     private unsafe void InitializeSwiftReturnRegs(Compiler compiler, CORINFO_CLASS_HANDLE retClsHnd)
     {
-        var lowering = compiler.GetSwiftLowering(retClsHnd);
-        assert(!lowering->byReference);
+        ref readonly var lowering = ref compiler.GetSwiftLowering(retClsHnd);
+        assert(!lowering.byReference);
 
         assert(MAX_SWIFT_LOWERED_ELEMENTS <= MAX_RET_REG_COUNT);
-        assert(lowering->numLoweredElements <= MAX_RET_REG_COUNT);
+        assert(lowering.numLoweredElements <= MAX_RET_REG_COUNT);
 
-        for (byte i = 0; i < lowering->numLoweredElements; i++)
+        for (byte i = 0; i < lowering.numLoweredElements; i++)
         {
-            _regType[i] = JitType2VarType(lowering->loweredElements[i]);
+            _regType[i] = lowering.loweredElements[i].VarType;
         }
     }
 #endif

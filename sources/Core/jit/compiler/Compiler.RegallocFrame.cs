@@ -15,7 +15,7 @@ public partial class Compiler
 #endif
 
 #if ETW_EBP_FRAMED
-        if (!result && opts.OptimizationDisabled())
+        if (!result && opts.OptimizationDisabled)
         {
 #if DEBUG
             reasonText = "Debug Code";

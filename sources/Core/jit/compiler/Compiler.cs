@@ -1266,6 +1266,24 @@ public partial class Compiler
         return TYP_UNDEF;
     }
 
+    /// <summary>Return the number of registers needed to hold an HFA.</summary>
+    /// <remarks>ARM32 counts single-precision registers, so each double occupies two registers.</remarks>
+    public unsafe uint GetHfaCount(CORINFO_CLASS_HANDLE hClass)
+    {
+        assert(IsHfa(hClass));
+#if TARGET_ARM
+        return unchecked((uint)info.compCompHnd->getClassSize(hClass)) / REGSIZE_BYTES;
+#else
+        var hfaType = GetHfaType(hClass);
+        var classSize = unchecked((uint)info.compCompHnd->getClassSize(hClass));
+
+        // Native retains this lower bound to avoid a retail division-by-zero warning.
+        var elemSize = Math.Max(1u, EA_SIZE_IN_BYTES(hfaType.EmitActualSize));
+
+        return classSize / elemSize;
+#endif
+    }
+
     /// <summary>Given the VM's CorInfoGCType convert it to the JIT's var_types</summary>
     /// <param name="gcType">an enum value that originally came from an element of the BYTE[] returned from getClassGClayout()</param>
     /// <returns>The corresponding enum value from the JIT's var_types</returns>
@@ -1588,7 +1606,7 @@ public partial class Compiler
 #if SWIFT_SUPPORT
         if (callConv is CorInfoCallConvExtension.Swift)
         {
-            ref var lowering = ref GetSwiftLowering(clsHnd);
+            ref readonly var lowering = ref GetSwiftLowering(clsHnd);
 
             if (lowering.byReference)
             {

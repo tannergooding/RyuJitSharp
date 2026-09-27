@@ -58,9 +58,27 @@ public partial class GenTree
         get
         {
 #if FEATURE_MULTIREG_RET
-            if (IsMultiRegCall || IsCopyOrReloadOfMultiRegCall)
+            if (IsMultiRegCall)
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "Multi-register call result masks are not implemented.");
+                return regMaskTP.CreateFromRegNum(RegNum, RegNum.SingleTypeMask) | AsCall().GetOtherRegMask();
+            }
+            else if (IsCopyOrReloadOfMultiRegCall)
+            {
+                var copy = AsCopyOrReload();
+                var count = copy.Op1.AsCall().ReturnTypeDesc.ReturnRegCount;
+                var mask = RBM_NONE;
+
+                // Copies and reloads may have holes for positions that need no move.
+                for (byte i = 0; i < count; i++)
+                {
+                    var reg = copy.GetRegNumByIdx(i);
+                    if (reg != REG_NA)
+                    {
+                        mask |= regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
+                    }
+                }
+
+                return mask;
             }
 #endif
             return regMaskTP.CreateFromRegNum(RegNum, RegNum.SingleTypeMask);

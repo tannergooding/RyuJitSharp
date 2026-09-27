@@ -1905,19 +1905,19 @@ public partial class Compiler
         if (verbose && (info.compCallConv == CorInfoCallConvExtension.Swift) && varTypeIsStruct(info.compRetType))
         {
             var retTypeHnd = methodArgs.retTypeClass;
-            var lowering = GetSwiftLowering(retTypeHnd);
+            ref readonly var lowering = ref GetSwiftLowering(retTypeHnd);
 
-            if (lowering->byReference)
+            if (lowering.byReference)
             {
                 jitprintf($"Swift compilation returns {typGetObjLayout(retTypeHnd).ClassName} by reference\n");
             }
             else
             {
-                jitprintf($"Swift compilation returns {typGetObjLayout(retTypeHnd).ClassName} as {lowering->numLoweredElements} primitive(s) in registers\n");
+                jitprintf($"Swift compilation returns {typGetObjLayout(retTypeHnd).ClassName} as {lowering.numLoweredElements} primitive(s) in registers\n");
 
-                for (var i = 0; i < lowering->numLoweredElements; i++)
+                for (var i = 0; i < lowering.numLoweredElements; i++)
                 {
-                    jitprintf($"    [{i}] @ +{lowering->offsets[i]:D2}: {lowering->loweredElements[i].PreciseVarType.Name}\n");
+                    jitprintf($"    [{i}] @ +{lowering.offsets[i]:D2}: {lowering.loweredElements[i].PreciseVarType.Name}\n");
                 }
             }
         }

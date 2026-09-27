@@ -22,7 +22,8 @@
       ],
       "validation": [
         "Parent full-analysis Windows controls pass242Debug/240Release. All five exact target-routing cases pass. Shared ABI factories, multireg syntax repairs and six conditional-guard repairs form the validated prerequisite commit.",
-        "SysV and ARM64 classifier tests have not executed. Integrated builds now reach21Linux-x64 semantic diagnostics and87ARM64 declaration diagnostics, with no original parser errors; retain uncompiled classifier/constants/predicate packets as WIP.",
+        "SysV classifier/shared ABI/Swift helper tests pass61Debug/61Release with full analysis; affected Windows controls pass174Debug/172Release. Descriptor regression fails without constructor initialization (four return slots instead of two) and passes with the fix.",
+        "ARM64 declaration repairs expose467semantic diagnostics in arm64-integration-2.log, including register metadata and intrinsic support. ARM64 classifier/declaration tests have not executed; keep that packet uncommitted while resolving its concrete dependencies.",
         "No verified Linux or ARM64 runtime host is available. Compile/unit results cannot establish runtime parity; reuse the unchanged Windows NativeAOT baseline until an execution-relevant compiler change requires publication."
       ],
       "parentScope": "B369 committed7798e1f with152matching instruction streams/304phase slices and64Debug/64Release importer controls. All five fresh child sessions are archived after exact packet preservation and integration; no child response remains outstanding.",
@@ -425,7 +426,24 @@
         "Other-target implementation and new tooling infrastructure are not prerequisites for continuing Windows-x64 execution."
       ]
     },
-    "nextAction": "Finish the shared target-bootstrap prerequisite commit, retaining uncompiled SysV/ARM64 packets as WIP. Then resolve the21Linux-x64 diagnostics in artifacts\\parallel-port\\sysv-integration-2.log: multireg return initialization, GetHfaCount, stale property/layout names and Swift helpers/callsites. ARM64 separately has87declaration errors in arm64-integration-1.log; inspect native guards/target declarations rather than excluding directories. Use bounded background coding tasks for independent work, not new nested sessions. All prior child packets are collected and archived.",
+    "nextAction": "SysV classifier, multireg helpers and Swift helpers are validated in source1b621375473816b64c93991ae5e63fb848aefc0e:61Debug/61Release Linux-target cases and174Debug/172Release Windows controls. Continue ARM64 from arm64-integration-2.log (467semantic diagnostics), not the old declaration frontier. Background worker88a515cc-a043-47cc-b05d-44d3137538f4 is implementing the bounded native ARM64 register-metadata group without builds; parent owns shared build outputs and intrinsic/generator dependencies. Collect that packet, review native values, then rebuild the target and resolve the next concrete frontier. ARM classifier/HFA/declaration tests have not run; leave ARM-only work uncommitted until validated. All app-native children are archived. Swift parameter classification and SysV large-call descriptor layout remain explicit NYIs; no Linux/ARM64 runtime host or parity claim.",
+    "crossTargetAbi": {
+      "source": "1b621375473816b64c93991ae5e63fb848aefc0e",
+      "tree": "e74796bf2dd6b4d5fb4906ba4f9dcc965d1fbbde",
+      "nativePin": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+      "scope": "Complete SysV x64 classifier and EE descriptor/eightbyte helpers; multireg return initialization, setters and masks; Swift lowering cache, special parameters, argument lowering and error store; shared HFA count and dormant callsite repairs.",
+      "nativeMappings": [
+        "targetamd64.cpp:61 SysVX64Classifier::Classify -> abi/SysVX64Classifier.cs; compiler.cpp:7897 GetEightByteType -> compiler/Compiler.SysVStructClassification.cs; ee_il_dll.cpp:1503 descriptor wrapper -> ee_il_dll/Compiler.SystemVStructPassing.cs",
+        "importercalls.cpp:2359-2781 -> compiler/Compiler.SwiftAbi.cs and Compiler.SwiftCall.cs; lclvars.cpp:703-777 -> Compiler.SwiftAbi.cs special-parameter recognition",
+        "codegencommon.cpp:6342 GetHfaCount -> compiler/Compiler.cs; gentree.h:5245,5316 and gentree.cpp:1072,2009 -> gentree/GenTreeCall.cs and GenTree.CodeGen.cs"
+      ],
+      "linuxX64": "Full-analysis61Debug/61Release, no failures/skips: sysv-final-debug-5.trx and sysv-final-release-4.trx under artifacts\\parallel-port. Exact classes SysVX64ClassifierTests, AbiPassingInformationTests and SwiftAbiTests.",
+      "windowsX64": "Full-analysis174Debug/172Release, no failures/skips: abi-windows-final-debug-1.trx and abi-windows-final-release-1.trx cover ABI, local accounting, LSRA, importer and emitter controls.",
+      "regression": "sysv-descriptor-before-1.trx fails StructReturnInitializesOnlyTheDescriptorRegisters without new ReturnTypeDesc(): expected two registers, observed four. Restored source passes all61Debug target cases.",
+      "representation": "Swift cache reuses SwiftLoweringMap with boxed records and readonly references stable across dictionary growth/GC; publish each record only after EE lowering completes.",
+      "reproduce": "dotnet test tests\\Core\\RyuJitSharp.UnitTests.csproj -c Debug or Release -r win-x64 -p:TargetRuntimeIdentifier=linux-x64 with the three exact class filters above and full analysis. Native algorithm source and frozen managed source are independently identified.",
+      "limits": "Managed Linux-target unit behavior executed on a Windows host, not Linux runtime execution or phase/codegen parity. Swift parameter-classifier activation and System V large-call descriptor layout remain explicit CORJIT_SKIPPED paths. ARM64 remains uncompiled WIP."
+    },
     "crossTargetBootstrap": {
       "snapshot": "fca1f96fee67885f06a4ac32559d97cc4f0ba796",
       "tree": "47ba437a54d80053cdfb5f869a477c228555cfd1",
