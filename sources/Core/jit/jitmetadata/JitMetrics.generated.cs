@@ -188,7 +188,7 @@ public partial struct JitMetrics
         jitprintf($"{nameof(JumpThreadingsPerformed)}{new string(' ', NameMaxWidth + 5 - 23)}: {JumpThreadingsPerformed}\n");
         jitprintf($"{nameof(CseCount)}{new string(' ', NameMaxWidth + 5 - 8)}: {CseCount}\n");
         jitprintf($"{nameof(BasicBlocksAtCodegen)}{new string(' ', NameMaxWidth + 5 - 20)}: {BasicBlocksAtCodegen}\n");
-        jitprintf($"{nameof(PerfScore)}{new string(' ', NameMaxWidth + 5 - 9)}: {PerfScore}\n");
+        jitprintf($"{nameof(PerfScore)}{new string(' ', NameMaxWidth + 5 - 9)}: {formatFloat(PerfScore, "F6")}\n");
         jitprintf($"{nameof(BytesAllocated)}{new string(' ', NameMaxWidth + 5 - 14)}: {BytesAllocated}\n");
         jitprintf($"{nameof(ImporterBranchFold)}{new string(' ', NameMaxWidth + 5 - 18)}: {ImporterBranchFold}\n");
         jitprintf($"{nameof(ImporterSwitchFold)}{new string(' ', NameMaxWidth + 5 - 18)}: {ImporterSwitchFold}\n");

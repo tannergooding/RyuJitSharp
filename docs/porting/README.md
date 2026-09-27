@@ -325,6 +325,17 @@ The pinned native XML jump-kind table is stale (B350); its defined labels are
 preserved, while its out-of-bounds switch entry produces an explicit managed
 error instead of an undefined memory read. DOT does not have this limitation.
 
+Use `-ReportMetrics` to publish final metrics to the EE and `-DumpOrder` to
+capture ordered method summaries, restricted to the corpus assembly.
+`-InlineDumpData 1` captures inline CSV on stderr; `-InlineDumpXml 1` captures
+inline trees, with `-InlineXmlFile` selecting an append-mode `inlines.xml`.
+XML mode 2 omits methods without inlines, mode 3 also omits failed inline nodes,
+and data mode 2 embeds per-inline policy data. Optional policies whose native
+data hooks remain unported fail explicitly. Compare selected method records:
+the native JIT also compiles framework methods. Allocation bytes use D001's
+managed accounting, timing values vary between runs, and the AltJIT summary
+region is intentionally different from the native control's region.
+
 Use `-InstrumentedTier0` to request eager Tier0 profiling without call-count
 promotion to later tiers. This sets `TieredPGO_InstrumentOnlyHotCode=0` and
 disables runtime call counting; it is distinct from forced `-MinOpts` and

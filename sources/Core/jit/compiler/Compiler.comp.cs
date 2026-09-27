@@ -1026,11 +1026,6 @@ public partial class Compiler
         return result;
     }
 
-    public void compCompileFinish()
-    {
-        // TODO: Port Compiler.compCompileFinish
-    }
-
 #if DEBUG
     private static ConfigMethodRange s_jitEnableOsrRange;
 #endif

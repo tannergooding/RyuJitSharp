@@ -6,10 +6,11 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Threading;
 
 namespace RyuJitSharp;
 
-public sealed class InlineStrategy
+public sealed partial class InlineStrategy
 {
     public const int ALWAYS_INLINE_SIZE = 16;
 
@@ -31,7 +32,7 @@ public sealed class InlineStrategy
 #if DEBUG
     private static bool s_HasDumpedDataHeader;
     private static bool s_HasDumpedXmlHeader;
-    private static object? s_XmlWriterLock;
+    private static readonly Lock s_XmlWriterLock = new();
 #endif
 
     private Compiler _compiler;

@@ -15,6 +15,31 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Per-method compilation finalization
+
+Completed `compCompileFinish`: method counting, managed allocation metrics,
+loop-hoist aggregation, inline CSV/XML, ordered summaries, EE metric reporting,
+the final verbose metric block and referenced-local enregistration statistics.
+Inline output preserves native selection, schemas, tree ordering, escaping,
+locking and append/stdout fallback. The table generator now emits native
+six-decimal floating metric formatting.
+
+Complete Core passes 11,973 Debug and 10,889 Release cases, including 65 new
+Debug cases and two Release reporting cases. The public output regression
+fails against the old empty finalization implementation. Twelve checked
+FullOpts/MinOpts compilations preserve runtime output and instruction streams
+and sizes. Each compares all 71 non-allocation metric lines exactly.
+Ordered summaries differ only in the expected AltJIT region column; eight
+selected CSV rows and four complete XML method records match after excluding
+their timing fields. The comparator retains raw XML whitespace and line endings.
+
+Allocation bytes follow D001, not native arena accounting. Optional
+Discretionary-derived policy data and Replay finalization remain explicit
+unsupported dependencies (B354). Process-wide shutdown, including invoking
+the XML footer and aggregate statistics, remains a separate unported entry;
+this is not whole-file XML or whole-jitdump parity.
+Evidence: `artifacts\compilation-finish\comparison-2.json`.
+
 ## 2026-09-27: Native flow-graph dumping
 
 The phase hook now writes DOT and XML graphs with native method/tier/phase

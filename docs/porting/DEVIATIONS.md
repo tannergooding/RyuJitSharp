@@ -21,6 +21,14 @@ in `sources/Core/jit/gentree/GenTree.cs`. Native allocation counts/bytes are not
 expected to match. Compiler decisions, traversal order, logical node IDs,
 generated code, and diagnostics other than those statistics still must match.
 
+`compCompileFinish` reports `BytesAllocated` as the current compilation thread's
+GC-allocation delta from the root `Compiler` constructor body to finalization.
+It includes intervening inlinee allocations on that thread, but excludes the
+root object and field initializers allocated before that body and non-GC native
+allocations. It is not native arena capacity or page usage. Collection is enabled
+only by `JitReportMetrics`. B352's twelve checked compilations compare all
+71 neighboring metric lines exactly while recording both allocation values.
+
 Expression cloning constructs simple nodes and hardware intrinsics before their
 operand clones, preserving native logical IDs despite managed allocation.
 Array-element, compare-exchange and select nodes retain their distinct native

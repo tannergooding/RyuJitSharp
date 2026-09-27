@@ -7,7 +7,7 @@ using System.Collections;
 
 namespace RyuJitSharp;
 
-public sealed class InlineContext
+public sealed partial class InlineContext
 {
     /// <summary>overall strategy</summary>
     internal InlineStrategy _inlineStrategy;

@@ -21,6 +21,11 @@ param(
     [switch] $FlowGraphEH,
     [switch] $FlowGraphLoops,
     [switch] $FlowGraphMemorySsa,
+    [switch] $ReportMetrics,
+    [switch] $DumpOrder,
+    [ValidateRange(0, 2)][int] $InlineDumpData = 0,
+    [ValidateRange(0, 3)][int] $InlineDumpXml = 0,
+    [switch] $InlineXmlFile,
     [switch] $RawHexCode,
     [switch] $GcStress,
     [switch] $FakeProcedureSplitting,
@@ -48,6 +53,9 @@ if (($FlowGraphEH -or $FlowGraphLoops -or $FlowGraphMemorySsa -or $PSBoundParame
 }
 if (($FlowGraphEH -or $FlowGraphLoops -or $FlowGraphMemorySsa) -and ($FlowGraphFormat -ne "Dot")) {
     throw "EH, loop, and memory SSA graph annotations require -FlowGraphFormat Dot."
+}
+if ($InlineXmlFile -and ($InlineDumpXml -eq 0)) {
+    throw "-InlineXmlFile requires -InlineDumpXml."
 }
 
 if (($MinOpts -or $InstrumentedTier0) -and -not $PSBoundParameters.ContainsKey("ExpectedMethods")) {
@@ -130,6 +138,22 @@ if ($FlowGraphFormat -ne "None") {
 }
 if ($DisableObjectStackAllocation) {
     $settings.DOTNET_JitObjectStackAllocation = "0"
+}
+if ($ReportMetrics) {
+    $settings.DOTNET_JitReportMetrics = "1"
+}
+if ($DumpOrder) {
+    $settings.DOTNET_JitOrder = "1"
+    $settings.DOTNET_JitDisasmAssemblies = [Reflection.AssemblyName]::GetAssemblyName((Resolve-Path -LiteralPath $Corpus).Path).Name
+}
+if ($InlineDumpData -ne 0) {
+    $settings.DOTNET_JitInlineDumpData = $InlineDumpData.ToString()
+}
+if ($InlineDumpXml -ne 0) {
+    $settings.DOTNET_JitInlineDumpXml = $InlineDumpXml.ToString()
+}
+if ($InlineXmlFile) {
+    $settings.DOTNET_JitInlineDumpXmlFile = Join-Path $OutputDirectory "inlines.xml"
 }
 if ($RawHexCode) {
     $settings.DOTNET_JitRawHexCode = $selector

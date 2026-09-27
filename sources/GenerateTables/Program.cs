@@ -1985,7 +1985,11 @@ public static partial class JitMetadata
             }
 
             var name = parts[0].AsSpan().Trim();
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        jitprintf($\"{{nameof({name})}}{{new string(' ', NameMaxWidth + 5 - {name.Length})}}: {{{name}}}\\n\");");
+            var type = parts[1].AsSpan().Trim();
+            var value = type.Equals("double", StringComparison.Ordinal)
+                ? $"formatFloat({name}, \"F6\")"
+                : name.ToString();
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        jitprintf($\"{{nameof({name})}}{{new string(' ', NameMaxWidth + 5 - {name.Length})}}: {{{value}}}\\n\");");
             nameMaxWidth = int.Max(nameMaxWidth, name.Length);
         });
 

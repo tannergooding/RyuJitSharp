@@ -281,7 +281,7 @@ public partial class Compiler
     public int _totalHoistedExpressions;
 
     /// <summary>This lock protects the data structures below.</summary>
-    public static Lock? s_loopHoistStatsLock;
+    public static readonly Lock s_loopHoistStatsLock = new();
 
     public static int s_loopsConsidered;
 
@@ -295,6 +295,8 @@ public partial class Compiler
 #endif
 
     public JitMetrics Metrics;
+
+    private readonly long _allocatedBytesAtStart;
 
     // Max value of scope count for which we would use linear search; for larger values we would use hashtable lookup.
     public const int MAX_LINEAR_FIND_LCL_SCOPELIST = 32;
@@ -407,6 +409,11 @@ public partial class Compiler
 
     public unsafe Compiler(CORINFO_METHOD_HANDLE methodHandle, COMP_HANDLE jitInfo, CORINFO_METHOD_INFO* methodInfo, InlineInfo? inlineInfo)
     {
+        if ((inlineInfo is null) && (JitConfig.JitReportMetrics != 0))
+        {
+            _allocatedBytesAtStart = GC.GetAllocatedBytesForCurrentThread();
+        }
+
         impInlineInfo = inlineInfo;
         impPendingBlockMembers = [];
         impSpillCliquePredMembers = [];
