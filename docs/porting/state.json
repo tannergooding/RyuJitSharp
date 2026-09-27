@@ -12,18 +12,18 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port complete fgDetermineFirstColdBlock, fgFuncletsAreCold and fgGetCodeEstimate against33baf8, preserving procedure-splitting gates, size thresholds, funclet and callfinally constraints. Reuse existing hot/cold allocation, unwind and fake-splitting support.",
+      "scope": "Port complete fgComputeBlockWeights and fgComputeMissingBlockWeights against33baf8. Preserve profile gates, predecessor/successor inference order, handler and callfinally quirks, rare flags and ten-pass convergence limit.",
       "doneWhen": [
-        "Port complete native selection and code-size estimate helpers without changing gates or eight-byte thresholds.",
-        "Activate public cold-section selection with focused threshold, funclet, EH and callfinally regressions plus old-stub controls.",
-        "Execute positive native/managed selection with existing DEBUG fake-split support and clearly distinguish it from discontiguous allocation; preserve the baseline.",
-        "Commit the validated cold-selection batch locally, then continue the next remaining port dependency."
+        "Port both complete native functions with no changes to inference ordering, flags or iteration limits.",
+        "Activate public block-weight computation with focused graph, profile, handler and nonconvergence regressions plus old-stub controls.",
+        "Capture positive native/managed block-weight changes where reachable, retain exact evidence boundaries and preserve the execution baseline.",
+        "Commit the validated weight-computation batch locally, then continue post-inline no-return cleanup."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "GC-poll insertion committed0510e9b and layout committede6d8dec. Parent owns cold selection/helpers/tests; independent lane captures positive native splitting. No publication authorized; commits remain checkpoints.",
+      "parentScope": "Cold selection committedab20bdb. Parent owns block-weight functions/tests; independent lane captures positive native weight computation. No publication authorized; commits remain checkpoints.",
       "deferred": "B311 optional metrics fixture, B315 incoming UTF8 graph/promotion, B318 existing argument-morph regression, B307 pre-existing EH node IDs and B320 static-data descriptions remain nonblocking. Discontiguous runtime allocation parity and unrelated optimization phases are outside this cold-selection batch.",
       "parallelPackets": [
         {
@@ -408,7 +408,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Cold selection validated at snapshot73cd130861c31ed127a4f4079799ab7b9347b0f2:62Debug48Release, old-stub10D/8Rfailures,23matching native/managed cold boundaries and sizes,29/143baseline. Continue directly with fgComputeBlockWeights/fgComputeMissingBlockWeights (fgprofile.cpp4371-4536), preserving ten-pass convergence bound, profile gates and cold/EH quirks. Existing B307/B318/B320 gaps remain separate. Do not claim discontiguous allocation parity or push.",
+    "nextAction": "Missing block weights validated at snapshot04ef4753d1c0c125cd9f4a7851d6c595c7e09535:63Debug57Release,19exact-body seeded native vectors,7old-stub failures per configuration,57no-change native/managed bodies and29/143baseline. Continue complete fgPostInlineNoReturnCleanup (fginline.cpp2891-3029), using existing gtSplitTree, gtTreeContainsOper and fgConvertBBToThrowBB; add native optNoReturnCallCount>0 getter adjacent to setMethodHasNoReturnCalls. Preserve preorder execution traversal, qmark exclusions and early splitting. No push or PR authorized.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -476,6 +476,21 @@
         "scope": "Restore pinned output-pointer-only getThreadLocalStaticBlocksInfo across three wrappers/interface/vtable; rename final metadata slot to offsetOfBaseOfThreadLocalData. Keep existing slot, calling convention, offset widths and neighboring getThreadLocalFieldInfo bool.",
         "nativeEvidence": "MSVC native-probe.cpp static_assert checks exact member signature against pinned corinfo.h; sizeof56, pointer-field offsets0/16/24/32 and scalar offsets40/44/48/52 match managed raw layout.",
         "gaps": "TLS phase is not activated. Virtual native callbacks verify forwarding without claiming actual runtime TLS expansion."
+      },
+      "missingBlockWeights": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "snapshot": "04ef4753d1c0c125cd9f4a7851d6c595c7e09535",
+        "nativeAot": "artifacts\\missing-block-weights\\native-jit-1\\RyuJitSharp.dll",
+        "sha256": "5985C63EA3DFB85B27E16887E3EC38DA5E18189974A654B4F22CE44F7653C353",
+        "debugPassed": 63,
+        "releasePassed": 57,
+        "tests": "MissingBlockWeightTests, BlockWeightTests and ColdSectionSelectionTests with full analysis. Covers source-profile inference, successor precedence without successor-profile requirement, multi-reference exclusion, handler/filter/callfinally rules, exact ten-pass chain propagation and an oscillating unreachable cycle.",
+        "negativeControls": "artifacts\\missing-block-weights\\negative: replacing only the public driver with its old stub fails7of19cases in each configuration;12helper/control cases pass.",
+        "nativeFunctionOracle": "artifacts\\missing-block-weights\\native-harness\\seeded-native-2: byte-exact pinned fgprofile.cpp4376-4537 bodies (SHA2567A095ADCE8E1644312F6404B44C15FE77976E1490EAB3F3D5D0B13C2B704CA13) compiled with test-only graph/profile/EH surfaces and DEBUG disabled.19seeded vectors match managed expectations. Shim preserves native reference counts, sorted/coalesced predecessors, rare-weight multiplication and graph-modification flags. This is function evidence, not positive public JIT-phase execution.",
+        "execution": "All57selected managed bodies execute with expected results under default, fake-split and stress-profile settings. Native and managed public weight phases all report no changes.",
+        "comparison": "artifacts\\missing-block-weights\\comparison-04ef-final:53of57phase-entry CFG/weight slices raw-equal. Four stress-profile slices differ only by existing IBC-column padding (B321), on17recorded lines.",
+        "baseline": "artifacts\\upstream-refresh-33baf8\\missing-weights-managed-matrix\\results.json:29configurations143positive managed bodies and unchanged runtime outcomes.",
+        "gaps": "Positive public runtime transformation was not observed. Seeded native-body evidence and no-change runtime execution are distinct. Whole-method Main sizes and broader IR/codegen differences remain; table matches are not full parity."
       },
       "coldSectionSelection": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
@@ -6154,6 +6169,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "missing-block-weights",
+      "native": ["src\\coreclr\\jit\\fgprofile.cpp:4371-4537"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.MissingBlockWeights.cs", "sources\\Core\\jit\\compiler\\Compiler.EHCleanup.Finally.cs:fgGetFinallyContinuation"],
+      "status": "Complete public weight driver and missing-weight propagation. Preserves predecessor/successor precedence, per-block profile protection, splitting-only handler rules and ten-pass limit. Existing native-equivalent continuation helper reused. Native source retained.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "cold-section-selection",
       "native": ["src\\coreclr\\jit\\flowgraph.cpp:3282-3489", "src\\coreclr\\jit\\fgopt.cpp:4997-5041"],

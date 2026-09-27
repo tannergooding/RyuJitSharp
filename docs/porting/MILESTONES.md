@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Missing block weights
+
+Block-weight computation now propagates missing weights using native
+predecessor and successor rules. It preserves profile-weight protection,
+successor precedence, splitting-only handler adjustments, call-finally
+continuations and the ten-pass bound for nonconverging graphs.
+
+Seeded comparisons against the extracted native functions cover inference,
+EH rules and convergence. The optimized runtime corpus executes under ordinary,
+fake-split and stress-profile configurations, but all 57 selected public phases
+report no changes. This is runtime preservation, not positive transformation
+parity. Four stress-profile CFG tables retain an existing IBC-column padding
+difference; whole-method IR and codegen parity remain separate.
+
 ## 2026-09-26: Cold-section selection
 
 The cold-section phase now selects a trailing rare-block suffix using native

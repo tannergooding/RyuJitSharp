@@ -13552,9 +13552,6 @@ public partial class Compiler
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 
-    // TODO: Port phase - fgComputeBlockWeights
-    public PhaseStatus fgComputeBlockWeights() => PhaseStatus.MODIFIED_NOTHING;
-
     public PhaseStatus fgDfsBlocksAndRemove()
     {
         fgInvalidateDfsTree();
