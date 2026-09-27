@@ -21,6 +21,12 @@ in `sources/Core/jit/gentree/GenTree.cs`. Native allocation counts/bytes are not
 expected to match. Compiler decisions, traversal order, logical node IDs,
 generated code, and diagnostics other than those statistics still must match.
 
+Expression cloning constructs simple nodes and hardware intrinsics before their
+operand clones, preserving native logical IDs despite managed allocation.
+Array-element, compare-exchange and select nodes retain their distinct native
+construction order. This closes B307's finally and runtime-lookup tree differences;
+it does not accept ID normalization or establish whole-dump equality.
+
 Custom layouts with no GC pointers do not allocate unused per-slot GC arrays,
 including layouts whose unsigned byte sizes exceed `Int32.MaxValue`. Native
 allocates zero-filled storage for large no-GC layouts; managed queries use the

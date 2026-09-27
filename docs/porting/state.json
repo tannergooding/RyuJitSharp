@@ -23,8 +23,8 @@
         "Start from the current checked finally-cloning-positive capture and matched native reference, using fresh output directories if recapture is needed.",
         "Use existing clone/finally fixtures and targeted Debug/Release checks. For a production correction, publish a fresh checked JIT and compare the affected phase and execution; expand only for named regressions."
       ],
-      "parentScope": "B127 committed97645f3 and B318 committed7378a5f. B325 had the same absent return-buffer fixture omission: caller local0 was incorrectly known nonnull. Corrected fixture and explicit return-buffer controls preserve address assignment effects and optional null checks;98Debug/96Release argument tests pass, production unchanged. Finish that local commit, then resume the recorded first B307 finally-clone mismatch. No publication authorized.",
-      "deferred": "B320 static-data descriptions and B321/B323 profile formatting remain separate. B322 is a native uninitialized-bool limitation, not authorization to emulate poison. Do not assume the runtime-lookup ID mismatch shares the finally-clone cause or redesign cloning.",
+      "parentScope": "B127 committed97645f3, B318 committed7378a5f and B325 committed101ab04. B307 construction order is now corrected and validated for both finally and runtime-lookup trees, with complete phase/tree equality and retained runtime behavior. Finish its coherent local commit and continue remaining diagnostic parity work. No publication authorized.",
+      "deferred": "B320 static-data descriptions and B321/B323 profile formatting remain separate. B322 is a native uninitialized-bool limitation, not authorization to emulate poison. Five existing indirect-call fixture exception-flag failures reproduce on pre-fix Debug source; leave their correction outside the clone batch.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -429,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Finish the B325 fixture correction commit, validated byfcde0596793074acf9ba0e704021a0ae29c79005 (98D96R), production unchanged. Then confirm the first B307 finally-clone node-ID mismatch against the current checked finally-cloning-positive output and matched native source/inputs; trace the first allocation-order difference, not later consequences. B127 and B318 are committed97645f3 and7378a5f. Continue after the commit; no push.",
+    "nextAction": "Finish the validated B307 local commit, then trace B320 static-data handle descriptions from the fresh finally-cloning-positive emission. At IN0004 native says static handle while managed says data for RyuJitSharp.FinallyCloningCases:FinallyCount; IN0006 agrees, and these descriptions are unchanged by B307. Compare complete native/managed handle-recording and emission paths before changing behavior. B307 comparison-4.json already proves exact phase/tree equality for finally and runtime lookup,29/143execution and34async instruction/phase comparisons. Five unrelated indirect-call fixture failures remain baseline-only. Continue without pausing at the commit; no push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -464,6 +464,20 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "cloneNodeOrder": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "nativeFunction": "gentree.cpp:11268-11732, gtCloneExpr; mapped to Compiler.gt.cs gtCloneExpr and gtCloneFieldAddr.",
+        "sourceSnapshot": "f9457ffd0aefc46df83010ab4c26facf12339869",
+        "tests": "artifacts\\clone-node-order\\validation-4\\results:full-analysis Debug300pass/5fail, Release287pass/5fail. All14new clone cases pass in both. Five IndirectCallTransformationTests exception-flag failures reproduce in pre-fix Debug validation-3\\results\\indirect-baseline.trx; not a complete selected-suite pass.",
+        "regressionControl": "Source0577fda60594e1d2ba99791df8a0483aea115f7c, validation-5\\results\\old-order.trx:10failures/4controls. Cases cover nested STOREIND/ADD/IND, local stores, static/instance field addresses, QMARK, bounds/length, nullable LEA operands, OpCC independence, HWINTRINSIC and native special-node ordering.",
+        "contract": "Simple nodes and HWINTRINSIC allocate the parent before recursive operand clones. ARR_ELEM retains indices/object/parent order; CMPXCHG and SELECT retain operands/parent order. Field-address helper clones its operand once. Existing PUTARG_STK behavior remains scoped. No ID rewrites or dump normalization.",
+        "nativeAotLibrary": "artifacts\\clone-node-order\\native-jit-4\\RyuJitSharp.dll",
+        "nativeAotSha256": "0E1AD96712F9682259052564F282C5A9D7DCFACBC70D1B8E730E533DD24138C2",
+        "executionBaseline": "artifacts\\upstream-refresh-33baf8\\clone-node-order-managed-matrix-4\\results.json:29configurations/143positive managed bodies, no fallback, unchanged runtime results.",
+        "comparison": "artifacts\\clone-node-order\\comparison-4.json, reproduced by compare.py there with a fresh --output path. Native finally capture is current-pin native-finally-1; runtime lookup uses the matched native-matrix-v2 capture. Phase execution/status and entire post-phase tree slices match exactly; old managed trees fail comparison. Finally increment IDs are13..18 in preorder. Runtime lookup has matching56-byte instruction text.",
+        "async": "FullOpts11bodies/6transforms, GCStress4 11/6, controlled Tier0 12/7; all34body sizes and emitted IN instruction lines plus transformation execution/status logs match native. Tier0 disables optional relocations and TieredPGO and retains one positive tail await.",
+        "limits": "Finally remains45bytes with unchanged emitted instructions apart from the already-recorded native/managed static-handle description difference. Whole dumps differ, including B322. No raw-code-byte parity or full-collection-count claim. Native sources/index unchanged."
+      },
       "inlineArgumentFaultFixture": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "baseline": "Source4742961274c8426309a1869d820953dcd7eb66d1, artifacts\\inline-argument-faults\\baseline-{debug,release}.trx:one B325 failure and25controls in both configurations.",
@@ -6449,6 +6463,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "clone-node-construction-order",
+      "native": ["src\\coreclr\\jit\\gentree.cpp:gtCloneExpr"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.gt.cs:gtCloneExpr/gtCloneFieldAddr"],
+      "status": "Simple/HWINTRINSIC parent-first construction reconciled, preserving separate ARR_ELEM/CMPXCHG/SELECT order and existing other clone paths. B307 finally and runtime-lookup phase/tree identities now match native exactly. This is an allocation-order correction, not a claim of full gentree.cpp reconciliation. Native body retained.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "eh-table-verification",
       "native": ["src\\coreclr\\jit\\jiteh.cpp:fgVerifyHandlerTab"],

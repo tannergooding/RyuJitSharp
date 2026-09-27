@@ -15,6 +15,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Native clone construction order
+
+Expression cloning now allocates simple-node and hardware-intrinsic parents
+before recursively cloning their operands, matching native construction order.
+The separate array-element, compare-exchange and select orders are preserved.
+Clones retain independent operands, flags, costs and value numbers.
+
+The positive finally-clone and runtime-lookup phase output and post-phase trees
+now match the pinned native captures exactly, including node identities.
+Existing runtime results and async instruction streams are preserved.
+Static-handle descriptions and deferred-profile diagnostics still prevent
+whole-dump parity.
+
 ## 2026-09-27: Complete EH-table verification
 
 Debug compilations now check the full native EH-table contract at the existing

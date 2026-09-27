@@ -602,8 +602,8 @@ public partial class Compiler
                     var intrinsic = tree.AsIntrinsic();
                     copy = new GenTreeIntrinsic(
                         intrinsic.Type,
-                        compiler.gtCloneExpr(intrinsic.Op1),
-                        compiler.gtCloneExpr(intrinsic.Op2),
+                        intrinsic.Op1,
+                        intrinsic.Op2,
                         intrinsic.IntrinsicName,
                         intrinsic.MethodHandle
                     ) {
@@ -618,8 +618,8 @@ public partial class Compiler
                 {
                     var boundsChk = tree.AsBoundsChk();
                     copy = new GenTreeBoundsChk(
-                        compiler.gtCloneExpr(boundsChk.Index),
-                        compiler.gtCloneExpr(boundsChk.ArrayLength),
+                        boundsChk.Index,
+                        boundsChk.ArrayLength,
                         boundsChk.ThrowKind) {
                         InxType = boundsChk.InxType,
                     };
@@ -631,8 +631,8 @@ public partial class Compiler
                     var storeInd = tree.AsStoreInd();
                     copy = new GenTreeStoreInd(
                         storeInd.Type,
-                        compiler.gtCloneExpr(storeInd.Addr),
-                        compiler.gtCloneExpr(storeInd.Data)) {
+                        storeInd.Addr,
+                        storeInd.Data) {
                         RmwStatus = storeInd.RmwStatus
                     };
                     break;
@@ -647,8 +647,8 @@ public partial class Compiler
                     copy = new GenTreeIndir(
                         oper,
                         tree.Type,
-                        compiler.gtCloneExpr(tree.Op1),
-                        compiler.gtCloneExpr(tree.Op2)
+                        tree.Op1,
+                        tree.Op2
                     );
                     break;
                 }
@@ -658,8 +658,8 @@ public partial class Compiler
                     var blk = tree.AsBlk();
                     copy = new GenTreeBlk(
                         blk.Type,
-                        compiler.gtCloneExpr(blk.Addr),
-                        compiler.gtCloneExpr(blk.Data),
+                        blk.Addr,
+                        blk.Data,
                         blk.Layout
                     );
                     break;
@@ -670,8 +670,8 @@ public partial class Compiler
                     var qmark = tree.AsQmark();
                     copy = new GenTreeQmark(
                         qmark.Type,
-                        compiler.gtCloneExpr(qmark.Cond),
-                        compiler.gtCloneExpr(qmark.Colon).AsColon(),
+                        qmark.Cond,
+                        qmark.Colon,
                         qmark.ThenNodeLikelihood
                     );
                     break;
@@ -682,8 +682,8 @@ public partial class Compiler
                     var colon = tree.AsColon();
                     copy = compiler.gtNewColonNode(
                         colon.Type,
-                        compiler.gtCloneExpr(colon.ThenNode),
-                        compiler.gtCloneExpr(colon.ElseNode)
+                        colon.ThenNode,
+                        colon.ElseNode
                     );
                     break;
                 }
@@ -692,8 +692,8 @@ public partial class Compiler
                 {
                     var indexAddr = tree.AsIndexAddr();
                     copy = new GenTreeIndexAddr(
-                        compiler.gtCloneExpr(indexAddr.Arr),
-                        compiler.gtCloneExpr(indexAddr.Index),
+                        indexAddr.Arr,
+                        indexAddr.Index,
                         indexAddr.ElemType,
                         indexAddr.StructElemClass,
                         indexAddr.ElemSize,
@@ -709,8 +709,8 @@ public partial class Compiler
                     var addrMode = tree.AsAddrMode();
                     copy = new GenTreeAddrMode(
                         addrMode.Type,
-                        compiler.gtCloneExpr(addrMode.BaseAddress),
-                        compiler.gtCloneExpr(addrMode.Index),
+                        addrMode.BaseAddress,
+                        addrMode.Index,
                         addrMode.Scale,
                         addrMode.Offset
                     );
@@ -725,8 +725,8 @@ public partial class Compiler
                     var multiRegOpCopy = new GenTreeMultiRegOp(
                         oper,
                         multiRegOp.Type,
-                        compiler.gtCloneExpr(multiRegOp.Op1),
-                        compiler.gtCloneExpr(multiRegOp.Op2)
+                        multiRegOp.Op1,
+                        multiRegOp.Op2
                     );
                     multiRegOpCopy.CopyOtherRegs(multiRegOp);
 
@@ -761,8 +761,8 @@ public partial class Compiler
                     copy = new GenTreeCCMP(
                         ccmp.Type,
                         ccmp.Condition,
-                        compiler.gtCloneExpr(ccmp.Op1),
-                        compiler.gtCloneExpr(ccmp.Op2),
+                        ccmp.Op1,
+                        ccmp.Op2,
                         ccmp.FlagsVal
                     );
                     break;
@@ -774,13 +774,17 @@ public partial class Compiler
                     copy = compiler.gtNewBinaryNode(
                         oper,
                         tree.Type,
-                        compiler.gtCloneExpr(tree.Op1),
-                        compiler.gtCloneExpr(tree.Op2)
+                        tree.Op1,
+                        tree.Op2
                     );
                     break;
                 }
             }
 
+            // Native constructs simple nodes before recursively cloning their
+            // operands. Keep that order for allocation-visible tree identities.
+            copy.Op1 = compiler.gtCloneExpr(tree.Op1);
+            copy.Op2 = compiler.gtCloneExpr(tree.Op2);
             return copy;
         }
 
@@ -994,12 +998,6 @@ public partial class Compiler
                 {
                     var hwintrinsic = tree.AsHWIntrinsic();
                     var operands = hwintrinsic.Operands.ToArray();
-
-                    for (var i = 0; i < operands.Length; i++)
-                    {
-                        operands[i] = compiler.gtCloneExpr(operands[i]);
-                    }
-
                     var hwintrinsicCopy = new GenTreeHWIntrinsic(
                         hwintrinsic.Type,
                         hwintrinsic.HWIntrinsicId,
@@ -1017,6 +1015,11 @@ public partial class Compiler
                     }
                     hwintrinsicCopy.AuxiliaryType = hwintrinsic.AuxiliaryType;
                     hwintrinsicCopy.CopyOtherRegs(hwintrinsic);
+
+                    for (var i = 0; i < operands.Length; i++)
+                    {
+                        operands[i] = compiler.gtCloneExpr(operands[i]);
+                    }
 
                     copy = hwintrinsicCopy;
                     break;
@@ -1105,7 +1108,7 @@ public partial class Compiler
                     var lclVarCopy = new GenTreeLclVar(
                         lclVar.Type,
                         lclVar.LclNum,
-                        compiler.gtCloneExpr(lclVar.Data)
+                        lclVar.Data
                     );
                     lclVarCopy.CopyOtherRegs(lclVar);
 
@@ -1124,7 +1127,7 @@ public partial class Compiler
                         lclFld.Type,
                         lclFld.LclNum,
                         lclFld.LclOffs,
-                        compiler.gtCloneExpr(lclFld.Data),
+                        lclFld.Data,
                         lclFld.Layout
                     );
                     break;
@@ -1135,7 +1138,7 @@ public partial class Compiler
                     var cast = tree.AsCast();
                     copy = compiler.gtNewCastNode(
                         cast.Type,
-                        compiler.gtCloneExpr(cast.CastOp),
+                        cast.CastOp,
                         cast.IsUnsigned,
                         cast.CastType
                     );
@@ -1149,7 +1152,7 @@ public partial class Compiler
                     copy = new GenTreeIndir(
                         oper,
                         indir.Type,
-                        compiler.gtCloneExpr(indir.Addr)
+                        indir.Addr
                     );
                     break;
                 }
@@ -1159,7 +1162,7 @@ public partial class Compiler
                     var blk = tree.AsBlk();
                     copy = new GenTreeBlk(
                         blk.Type,
-                        compiler.gtCloneExpr(blk.Addr),
+                        blk.Addr,
                         blk.Layout
                     );
                     break;
@@ -1170,7 +1173,7 @@ public partial class Compiler
                     var arrLen = tree.AsArrLen();
                     copy = compiler.gtNewArrLen(
                         arrLen.Type,
-                        compiler.gtCloneExpr(arrLen.ArrRef),
+                        arrLen.ArrRef,
                         arrLen.ArrLenOffset
                     );
                     break;
@@ -1180,7 +1183,7 @@ public partial class Compiler
                 {
                     var mdArr = tree.AsMDArr();
                     copy = compiler.gtNewMDArrLen(
-                        compiler.gtCloneExpr(mdArr.ArrRef),
+                        mdArr.ArrRef,
                         mdArr.Dim,
                         mdArr.Rank
                     );
@@ -1191,7 +1194,7 @@ public partial class Compiler
                 {
                     var mdArr = tree.AsMDArr();
                     copy = compiler.gtNewMDArrLowerBound(
-                        compiler.gtCloneExpr(mdArr.ArrRef),
+                        mdArr.ArrRef,
                         mdArr.Dim,
                         mdArr.Rank
                     );
@@ -1200,8 +1203,7 @@ public partial class Compiler
 
                 case GT_FIELD_ADDR:
                 {
-                    copy = compiler.gtCloneFieldAddr(tree.AsFieldAddr());
-                    break;
+                    return compiler.gtCloneFieldAddr(tree.AsFieldAddr());
                 }
 
                 case GT_ALLOCOBJ:
@@ -1209,7 +1211,7 @@ public partial class Compiler
                     var allocObj = tree.AsAllocObj();
                     var allocObjCopy = compiler.gtNewAllocObjNode(
                         allocObj.Type,
-                        compiler.gtCloneExpr(allocObj.Op1),
+                        allocObj.Op1,
                         allocObj.NewHelper,
                         allocObj.NewHelperHasSideEffects,
                         allocObj.ClsHnd
@@ -1231,7 +1233,7 @@ public partial class Compiler
 
                     copy = new GenTreeBox(
                         box.Type,
-                        compiler.gtCloneExpr(box.BoxOp),
+                        box.BoxOp,
                         box.DefStmtWhenInlinedBoxValue,
                         box.CopyStmtWhenInlinedBoxValue
                     );
@@ -1242,7 +1244,7 @@ public partial class Compiler
                 {
                     var runtimeLookup = tree.AsRuntimeLookup();
                     copy = compiler.gtNewRuntimeLookup(
-                        compiler.gtCloneExpr(runtimeLookup.Op1),
+                        runtimeLookup.Op1,
                         runtimeLookup.Handle,
                         runtimeLookup.HandleType
                     );
@@ -1253,7 +1255,7 @@ public partial class Compiler
                 {
                     var arrAddr = tree.AsArrAddr();
                     copy = new GenTreeArrAddr(
-                        compiler.gtCloneExpr(arrAddr.Addr),
+                        arrAddr.Addr,
                         arrAddr.ElemType,
                         arrAddr.ElemClassHandle,
                         arrAddr.FirstElemOffset
@@ -1274,7 +1276,7 @@ public partial class Compiler
                         putArgStk.StackByteSize,
                         putArgStk.PutInIncomingArgArea
                     );
-                    break;
+                    return copy;
                 }
 
                 case GT_COPY:
@@ -1285,7 +1287,7 @@ public partial class Compiler
                     var copyOrRealodCopy = new GenTreeCopyOrReload(
                         oper,
                         copyOrReload.Type,
-                        compiler.gtCloneExpr(copyOrReload.Op1)
+                        copyOrReload.Op1
                     );
                     copyOrRealodCopy.CopyOtherRegs(copyOrReload);
 
@@ -1298,12 +1300,13 @@ public partial class Compiler
                     copy = compiler.gtNewUnaryNode(
                         oper,
                         tree.Type,
-                        compiler.gtCloneExpr(tree.Op1)
+                        tree.Op1
                     );
                     break;
                 }
             }
 
+            copy.Op1 = compiler.gtCloneExpr(tree.Op1);
             return copy;
         }
     }
@@ -1392,7 +1395,7 @@ public partial class Compiler
     {
         var fieldAddrCopy = gtNewFieldAddrNode(
             fieldAddr.Type,
-            gtCloneExpr(fieldAddr.FldObj),
+            fieldAddr.FldObj,
             fieldAddr.FldHnd,
             fieldAddr.FldOffset
         );
@@ -1404,6 +1407,7 @@ public partial class Compiler
         fieldAddrCopy.FieldLookup = fieldAddr.FieldLookup;
 #endif
 
+        fieldAddrCopy.Op1 = gtCloneExpr(fieldAddr.FldObj);
         return fieldAddrCopy;
     }
 
