@@ -224,7 +224,7 @@ internal static unsafe class ValueNumPairOperationTests
             store.VNPUnpackExc(replaced, out var replacedNormal, out var retained);
             Assert.That(replacedNormal.BothEqual(), Is.False);
             Assert.That(replacedNormal.Liberal, Is.Not.EqualTo(normal.Liberal));
-            Assert.That(replacedNormal.Conservative, Is.EqualTo(replacedNormal.Liberal + 1));
+            Assert.That(replacedNormal.Liberal, Is.EqualTo(replacedNormal.Conservative + 1));
             Assert.That(retained, Is.EqualTo(exceptions));
 
             var union = store.VNPExcSetUnion(new(left, left), new(right, right));

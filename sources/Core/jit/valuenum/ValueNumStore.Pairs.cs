@@ -165,8 +165,13 @@ public sealed partial class ValueNumStore
     }
 
     public ValueNumPair VNPExcSetUnion(ValueNumPair left, ValueNumPair right)
-        => new(VNExcSetUnion(left.Liberal, right.Liberal),
-            VNExcSetUnion(left.Conservative, right.Conservative));
+    {
+        // Preserve the native Windows x64 constructor-argument allocation order.
+        var conservative = VNExcSetUnion(left.Conservative, right.Conservative);
+        var liberal = VNExcSetUnion(left.Liberal, right.Liberal);
+
+        return new(liberal, conservative);
+    }
 
     public ValueNum VNExcSetIntersection(ValueNum left, ValueNum right)
     {
@@ -203,8 +208,12 @@ public sealed partial class ValueNumStore
     }
 
     public ValueNumPair VNPExcSetIntersection(ValueNumPair left, ValueNumPair right)
-        => new(VNExcSetIntersection(left.Liberal, right.Liberal),
-            VNExcSetIntersection(left.Conservative, right.Conservative));
+    {
+        var conservative = VNExcSetIntersection(left.Conservative, right.Conservative);
+        var liberal = VNExcSetIntersection(left.Liberal, right.Liberal);
+
+        return new(liberal, conservative);
+    }
 
     public bool VNExcIsSubset(ValueNum fullSet, ValueNum candidateSet)
     {
@@ -286,8 +295,12 @@ public sealed partial class ValueNumStore
     }
 
     public ValueNumPair VNPUnionExcSet(ValueNumPair values, ValueNumPair exceptions)
-        => new(VNUnionExcSet(values.Liberal, exceptions.Liberal),
-            VNUnionExcSet(values.Conservative, exceptions.Conservative));
+    {
+        var conservative = VNUnionExcSet(values.Conservative, exceptions.Conservative);
+        var liberal = VNUnionExcSet(values.Liberal, exceptions.Liberal);
+
+        return new(liberal, conservative);
+    }
 
     public ValueNumPair VNPNormalPair(ValueNumPair values)
         => new(VNNormalValue(values.Liberal), VNNormalValue(values.Conservative));
@@ -299,7 +312,12 @@ public sealed partial class ValueNumStore
     }
 
     public ValueNumPair VNPMakeNormalUniquePair(ValueNumPair values)
-        => new(VNMakeNormalUnique(values.Liberal), VNMakeNormalUnique(values.Conservative));
+    {
+        var conservative = VNMakeNormalUnique(values.Conservative);
+        var liberal = VNMakeNormalUnique(values.Liberal);
+
+        return new(liberal, conservative);
+    }
 
     public ValueNum VNUniqueWithExc(var_types type, ValueNum exceptions)
     {

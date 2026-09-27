@@ -12,19 +12,18 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port missing CSE candidate-registration, dataflow-set, availability and heuristic-cutoff diagnostics; preserve native shared-key hash truncation.",
+      "scope": "Trace and reconcile B340 liberal/conservative VN-number differences at their original producers, preserving semantic roles and native allocation order.",
       "doneWhen": [
-        "Reconcile all diagnostic branches of optValnumCSE_Index, InitDataFlow, DataFlow and Availability against pinned optcse.cpp.",
-        "Retain native uint truncation of tagged shared-constant hash keys and native six-decimal cutoff formatting; keep allocation-order VN differences separate.",
-        "Port optPrintCSEDataFlowSet using existing bitset and candidate-index formatters, including multiword sets and optional raw bits.",
-        "Cover positive phase output, disabled verbosity and exceptional/limit branches with focused controls; compare current-pin CSE runtime slices.",
-        "Commit the coherent diagnostic batch locally and continue remaining port work."
+        "Locate the first differing producer for Boolean Main control IND[000248], rather than changing the VN formatter.",
+        "Compare the native evaluation/allocation order and relevant conditional paths before changing C#.",
+        "Cover the producer with regressions and compare exact phase output while preserving the143body native instruction baseline.",
+        "Commit the coherent VN identity correction locally and continue remaining port work."
       ],
       "validation": [
-        "Use native-matrix-v2 and array-identity-managed-matrix-1 as exact current-pin native/pre-fix references.",
-        "Run relevant CSE tests with full analysis in Debug/Release and compare fresh checked Boolean/switch/range phase slices and instruction streams."
+        "Use native-matrix-v2 and cse-diagnostics-managed-matrix-5 as exact current-pin native/pre-fix references.",
+        "Select focused VN tests after identifying the producer; retain complete CSE phase and baseline instruction comparisons."
       ],
-      "parentScope": "B305/B308 committedcf69c40 and B301 committedd499c05. Continue CSE diagnostic closure without publication.",
+      "parentScope": "B338/B339 committed7b42d8b after B301d499c05. Continue B340 without publication.",
       "deferred": "B322 remains a native uninitialized-bool limitation. Five existing indirect-call fixture exception-flag failures remain separate. RL feature records intentionally use unpadded indices in native and are not part of B305.",
       "parallelPackets": [
         {
@@ -430,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B338/B339 validated: final sourceee166592,674Debug/591Release; old Debug17failures/25controls and old Release2shared/nonshared controls pass. Published sourceb0d1e7e has identical production files. comparison-5.json proves44positive prefixes and77of97full CSE phases match, preserving all143native instruction streams/sizes. Commit this batch, then trace B340 from Boolean Main control IND[000248]: native l:$328,c:$327 versus managed l:$327,c:$328. Establish its first VN producer and allocation order before changing code; do not swap semantic roles or normalize IDs. No push.",
+    "nextAction": "B340 is validated: six paired wrappers,687Debug/604Release,8old failures/6controls per configuration,97/97exact CSE phases and143native-equal instruction streams/sizes. Commit this coherent batch locally, then continue B330: use comparison-2075-1.json to locate the missing Branch VN annotation and LocalAddressStore decimal VN, verify their current producers against the pin, and establish a focused diagnostic correction boundary. Keep FoldFloating metadata separately scoped until its producer is established. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -465,6 +464,20 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "vnPairIdentity": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "nativeFunctions": "valuenum.cpp:998-1001 VNPExcSetSingleton,1105-1109 VNPExcSetUnion,1175-1179 VNPExcSetIntersection,1361-1365 VNPUnionExcSet,1430-1433 VNPMakeNormalUniquePair,1613-1617 VNPWithExc.",
+        "sourceSnapshot": "605f499cf294eb651e78676798837e1df59d23de",
+        "nativeOrder": "artifacts\\vn-pair-identity\\argument-order.cpp and argument-order-unique.cpp instrument the exact six native wrapper bodies. Both /Od and /O2 execute conservative first while retaining result roles; successful logs are argument-order-2.log and argument-order-unique.log. This is argument-order evidence, not a substitute for real JIT execution.",
+        "tests": "artifacts\\vn-pair-identity\\debug-4.trx and release-4.trx:687Debug/604Release with full analysis. Fresh-store scalar references assert exact pair identities and normal/exception meanings; equal-input interning, nontrivial intersections, unique replacement and empty-set controls are retained.",
+        "regressionControl": "Source72a57744cb6cc7c946d001c4e929aeb7f98ff265, validation-4\\results\\old-debug.trx and old-release.trx:8failures/6controls in each configuration. Includes the existing normal-unique test corrected to assert native rather than C# argument order.",
+        "nativeAotLibrary": "artifacts\\vn-pair-identity\\native-jit-3\\RyuJitSharp.dll",
+        "nativeAotSha256": "A442BECEBEBADAEF269C3C898D93200732777C0CA149888722110F4613123946",
+        "executionBaseline": "artifacts\\upstream-refresh-33baf8\\vn-pair-managed-matrix-3\\results.json:29configurations/143positive managed bodies, no fallback, retained runtime results and required collection counts.",
+        "comparison": "artifacts\\vn-pair-identity\\comparison-3.json; reproduce with compare.py --output <fresh-path>. Native-matrix-v2 and immediate old cse-diagnostics-managed-matrix-5 retain matching host/corpus hashes, settings and method identities.",
+        "results": "All97complete CSE phases match native byte-for-byte, versus77before. Boolean Main IND[000248] has native l:$328,c:$327 without normalization. All143native/old/new emitted IN streams, including line endings, and code sizes remain equal.",
+        "limits": "Explicitly sequenced general pair/load operations and shared-normal VNPUniqueWithExc remain unchanged. Whole-dump/raw-machine-byte parity, native B322 and other-target evaluation orders remain separate."
+      },
       "csePhaseDiagnostics": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "nativeFunctions": "optcse.cpp:487-499 hash,518-843 Index,915-1090 InitDataFlow,1361-1397 DataFlow,1433-1713 Availability,4253-4265 heuristic cutoffs and5944-5968 optPrintCSEDataFlowSet.",
@@ -6531,6 +6544,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "paired-exception-vn-allocation-order",
+      "native": ["src\\coreclr\\jit\\valuenum.cpp:VNPExcSetSingleton;VNPExcSetUnion;VNPExcSetIntersection;VNPUnionExcSet;VNPMakeNormalUniquePair;VNPWithExc"],
+      "csharp": ["sources\\Core\\jit\\valuenum\\ValueNumStore.Exceptions.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.Pairs.cs"],
+      "status": "Six complete allocating wrappers preserve Windows-x64 conservative-first constructor-argument evaluation and liberal/conservative result roles. Explicit native sequencing elsewhere is unchanged. All97baseline CSE phases and143instruction streams/sizes match native.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "cse-candidate-dataflow-diagnostics",
       "native": ["src\\coreclr\\jit\\optcse.cpp:optCSEKeyToHashIndex;optValnumCSE_Index/InitDataFlow/DataFlow/Availability;optPrintCSEDataFlowSet;CSE_Heuristic::Initialize diagnostics"],

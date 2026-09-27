@@ -18,6 +18,162 @@ internal static unsafe class ValueNumExceptionTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compMaxUncheckedOffsetForNullObject")]
     private static extern ref int MaxUncheckedOffset(Compiler compiler);
 
+    internal enum PairedExceptionOperation
+    {
+        Singleton,
+        Attach,
+        Union,
+        Intersection,
+        Add,
+        MakeUnique,
+    }
+
+    [TestCase(PairedExceptionOperation.Singleton, false)]
+    [TestCase(PairedExceptionOperation.Singleton, true)]
+    [TestCase(PairedExceptionOperation.Attach, false)]
+    [TestCase(PairedExceptionOperation.Attach, true)]
+    [TestCase(PairedExceptionOperation.Union, false)]
+    [TestCase(PairedExceptionOperation.Union, true)]
+    [TestCase(PairedExceptionOperation.Intersection, false)]
+    [TestCase(PairedExceptionOperation.Intersection, true)]
+    [TestCase(PairedExceptionOperation.Add, false)]
+    [TestCase(PairedExceptionOperation.Add, true)]
+    [TestCase(PairedExceptionOperation.MakeUnique, false)]
+    [TestCase(PairedExceptionOperation.MakeUnique, true)]
+    public static void PairedExceptionsPreserveNativeAllocationOrderAndSemanticRoles(
+        PairedExceptionOperation operation, bool different)
+    {
+        WithStore((compiler, store) =>
+        {
+            var reference = new ValueNumStore(compiler);
+            var actual = EvaluatePairOperation(store, operation, different, paired: true);
+            var expected = EvaluatePairOperation(reference, operation, different, paired: false);
+
+            Assert.That(actual, Is.EqualTo(expected));
+        });
+    }
+
+    private static (ValueNumPair Numbers, string LiberalMeaning, string ConservativeMeaning) EvaluatePairOperation(
+        ValueNumStore store, PairedExceptionOperation operation, bool different, bool paired)
+    {
+        var tokens = new int[8];
+
+        for (var index = 0; index < tokens.Length; index++)
+        {
+            tokens[index] = store.VNForFunc(TYP_REF, VNF_NullPtrExc, store.VNForExpr(null, TYP_BYREF));
+        }
+
+        int Set(int first, int middle, int last)
+        {
+            var tail = store.VNExcSetSingleton(tokens[last]);
+            tail = store.VNForFuncNoFolding(TYP_REF, VNF_ExcSetCons, tokens[middle], tail);
+
+            return store.VNForFuncNoFolding(TYP_REF, VNF_ExcSetCons, tokens[first], tail);
+        }
+
+        var leftLiberal = Set(0, 1, 2);
+        var rightLiberal = Set(0, 2, 3);
+        var left = new ValueNumPair(leftLiberal, different ? Set(4, 5, 6) : leftLiberal);
+        var right = new ValueNumPair(rightLiberal, different ? Set(4, 6, 7) : rightLiberal);
+
+        if (operation is PairedExceptionOperation.Singleton)
+        {
+            left = new(tokens[0], different ? tokens[4] : tokens[0]);
+        }
+        else if (operation is PairedExceptionOperation.Attach or PairedExceptionOperation.Add or
+            PairedExceptionOperation.MakeUnique)
+        {
+            var liberal = store.VNForIntCon(11);
+            var conservative = different ? store.VNForIntCon(22) : liberal;
+
+            if (operation is PairedExceptionOperation.Attach)
+            {
+                right = left;
+                left = new(liberal, conservative);
+            }
+            else
+            {
+                left = new(store.VNWithExc(liberal, left.Liberal),
+                    store.VNWithExc(conservative, left.Conservative));
+            }
+        }
+
+        int Scalar(int value, int exceptions)
+        {
+            return operation switch
+            {
+                PairedExceptionOperation.Singleton => store.VNExcSetSingleton(value),
+                PairedExceptionOperation.Attach => store.VNWithExc(value, exceptions),
+                PairedExceptionOperation.Union => store.VNExcSetUnion(value, exceptions),
+                PairedExceptionOperation.Intersection => store.VNExcSetIntersection(value, exceptions),
+                PairedExceptionOperation.Add => store.VNUnionExcSet(value, exceptions),
+                PairedExceptionOperation.MakeUnique => store.VNMakeNormalUnique(value),
+                _ => throw new ArgumentOutOfRangeException(nameof(operation)),
+            };
+        }
+
+        ValueNumPair result;
+
+        if (paired)
+        {
+            result = operation switch
+            {
+                PairedExceptionOperation.Singleton => store.VNPExcSetSingleton(left),
+                PairedExceptionOperation.Attach => store.VNPWithExc(left, right),
+                PairedExceptionOperation.Union => store.VNPExcSetUnion(left, right),
+                PairedExceptionOperation.Intersection => store.VNPExcSetIntersection(left, right),
+                PairedExceptionOperation.Add => store.VNPUnionExcSet(left, right),
+                PairedExceptionOperation.MakeUnique => store.VNPMakeNormalUniquePair(left),
+                _ => throw new ArgumentOutOfRangeException(nameof(operation)),
+            };
+        }
+        else
+        {
+            var conservative = Scalar(left.Conservative, right.Conservative);
+            var liberal = Scalar(left.Liberal, right.Liberal);
+            result = new(liberal, conservative);
+        }
+
+        string Meaning(int value)
+        {
+            var isValue = operation is PairedExceptionOperation.Attach or PairedExceptionOperation.MakeUnique;
+            var normal = isValue ? store.VNNormalValue(value) : ValueNumStore.NoVN;
+            var exceptions = isValue ? store.VNExceptionSet(value) : value;
+            var text = $"{normal}:";
+
+            while (exceptions != ValueNumStore.VNForEmptyExcSet())
+            {
+                var app = new VNFuncApp();
+                Assert.That(store.GetVNFunc(exceptions, ref app), Is.True);
+                Assert.That(app.Func, Is.EqualTo(VNF_ExcSetCons));
+                text += $"{app.GetArg(0)},";
+                exceptions = app.GetArg(1);
+            }
+
+            return text;
+        }
+
+        return (result, Meaning(result.Liberal), Meaning(result.Conservative));
+    }
+
+    [Test]
+    public static void EmptyPairedExceptionsReuseNormalValuesAndSets()
+    {
+        WithStore((_, store) =>
+        {
+            var liberal = store.VNForExpr(null, TYP_INT);
+            var conservative = store.VNForExpr(null, TYP_INT);
+            var values = new ValueNumPair(liberal, conservative);
+            var empty = ValueNumStore.VNPForEmptyExcSet();
+
+            Assert.That(store.VNPWithExc(values, empty), Is.EqualTo(values));
+            Assert.That(store.VNPUnionExcSet(values, empty), Is.EqualTo(empty));
+            Assert.That(store.VNPExcSetUnion(empty, empty), Is.EqualTo(empty));
+            Assert.That(store.VNPExcSetIntersection(empty, empty), Is.EqualTo(empty));
+            Assert.That(store.VNForExpr(null, TYP_INT), Is.EqualTo(conservative + 1));
+        });
+    }
+
 #if DEBUG
     [Test]
     public static void DebugExceptionSetCheckUsesSortedSubsetOrder()

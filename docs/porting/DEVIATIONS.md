@@ -77,9 +77,14 @@ bytes remain separate evidence requirements.
 
 CSE diagnostics use read-only spans over existing availability sets, preserving
 native bit order, candidate labels and cross-call suffixes (B338). Checked
-arithmetic does not exempt native unsigned hash truncation (B339). The remaining
-liberal/conservative VN-number differences are unaccepted parity gaps (B340),
-not formatting differences to normalize.
+arithmetic does not exempt native unsigned hash truncation (B339).
+
+Allocating paired exception wrappers and normal-value replacement explicitly
+evaluate the conservative operation first, matching native Windows-x64
+constructor-argument evaluation (B340). The returned pair retains its original
+liberal/conservative roles. Other explicitly sequenced pair operations and the
+shared unique normal value are unchanged. All 97 baseline CSE phases now match
+without normalizing value numbers; this is not other-target or whole-dump parity.
 
 SSA memory maps use the existing managed node-identity dictionary. The caller's
 shared-memory flag selects the map kind before the inline root supplies storage,

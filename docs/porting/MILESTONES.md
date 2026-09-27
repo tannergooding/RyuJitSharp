@@ -15,6 +15,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Native paired value-number allocation order
+
+Six allocating paired exception and normal-unique operations now preserve
+Windows-x64 native constructor-argument evaluation order: conservative first,
+then liberal, without changing the semantic roles of the returned values.
+Explicitly sequenced pair/load operations and shared normal values are unchanged.
+
+All 97 complete CSE phases in the baseline now match native exactly, up from 77.
+The original Boolean indirection's value numbers match without normalization.
+All 143 native instruction traces and code sizes remain identical, with runtime
+results and required collections preserved. Whole dumps, raw machine bytes and
+other targets remain outside this comparison.
+
 ## 2026-09-27: CSE candidate and dataflow diagnostics
 
 CSE now emits native candidate-registration, generated/available-set and

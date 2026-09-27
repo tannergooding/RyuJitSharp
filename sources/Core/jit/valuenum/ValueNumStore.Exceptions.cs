@@ -11,10 +11,21 @@ public sealed partial class ValueNumStore
         => VNForFuncNoFolding(TYP_REF, VNF_ExcSetCons, exception, VNForEmptyExcSet());
 
     public ValueNumPair VNPExcSetSingleton(ValueNumPair exceptions)
-        => new(VNExcSetSingleton(exceptions.Liberal), VNExcSetSingleton(exceptions.Conservative));
+    {
+        // Native Windows x64 evaluates the conservative constructor argument first.
+        var conservative = VNExcSetSingleton(exceptions.Conservative);
+        var liberal = VNExcSetSingleton(exceptions.Liberal);
+
+        return new(liberal, conservative);
+    }
 
     public ValueNumPair VNPWithExc(ValueNumPair values, ValueNumPair exceptions)
-        => new(VNWithExc(values.Liberal, exceptions.Liberal), VNWithExc(values.Conservative, exceptions.Conservative));
+    {
+        var conservative = VNWithExc(values.Conservative, exceptions.Conservative);
+        var liberal = VNWithExc(values.Liberal, exceptions.Liberal);
+
+        return new(liberal, conservative);
+    }
 
     public ValueNum VNExceptionSet(ValueNum vn)
     {
