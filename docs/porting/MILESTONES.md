@@ -15,6 +15,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: GC-poll insertion
+
+Suppressed-transition unmanaged calls now receive the native inline trap check
+or GC helper call. Optimized code scans surviving trees and recognizes regular
+unmanaged calls that already poll; minopts retains native flag-based selection.
+The phase preserves early tail-call placement, sequence points, EH boundaries,
+outgoing edges and block weights.
+
+The process-ID corpus executes suppressed and regular P/Invokes in optimized,
+minopts and GC-stress modes, including a finally handler. Eight positive
+transformation/CFG/IR slices and both no-change controls match native exactly.
+Two EH slices retain node IDs that already differ before insertion. The remaining
+optimized code-size gaps come from the still-unported layout phase, which native
+uses to move cold polls behind hot returns. Minopts selected code sizes match.
+
 ## 2026-09-26: Late cast expansion
 
 The late-cast phase now turns eligible helpers into null and method-table guards

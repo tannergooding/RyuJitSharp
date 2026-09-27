@@ -12,19 +12,19 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port the complete late-cast expansion phase against33baf8, including candidate selection, guarded casts, null/throw fallbacks, multiple exact classes and profile repair. Reuse committed helper splitting and GDV selection. Correct B316 reference-unbox dispatch fallthrough exposed by generic execution and B317 discarded indirection costs exposed by native guard comparison.",
+      "scope": "Port complete GC-poll insertion for SuppressGCTransition calls against33baf8 flowgraph.cpp:16-435, including optimized tree scanning, minopts flag selection, callout/inline polls, trap address indirection, EH/edge/weight and debug-location preservation.",
       "doneWhen": [
-        "Review and port the complete fgLateCastExpansion, PickCandidatesForTypeCheck and fgLateCastExpansionForCall closure.",
-        "Activate the public phase with focused selection/CFG regressions and an old-stub negative control.",
-        "Execute positive cast/null/failure inputs through a fresh managed JIT and compare native phase decisions and generated guards; preserve prior execution corpora.",
-        "Commit the validated late-cast batch locally, then continue the next remaining port dependency."
+        "Review and port blockNeedsGCPoll, fgInsertGCPolls and fgCreateGCPoll with their required managed contracts.",
+        "Activate public GC polling with focused selection/CFG/debug-location tests and an old-stub negative control.",
+        "Execute positive suppressed-transition calls and native/managed poll comparisons through a fresh JIT; preserve the established execution baseline.",
+        "Commit the validated GC-poll batch locally, then continue the next remaining port dependency."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Synchronization5aaefb7 and saved helper phases a6511dc/3e98aa0/62e2fe0 are locally committed. Continue remaining phase porting; commits are checkpoints, not stopping points. No publication authorized.",
-      "deferred": "B311 optional metrics fixture and B315 incoming UTF8 graph/promotion differences are nonblocking. Retain mixed native helper regions until remaining callers/platform paths are ported.",
+      "parentScope": "Synchronization5aaefb7, saved helper phases a6511dc/3e98aa0/62e2fe0 and late casts f136142 are locally committed. GC polls are validated for local commit. Continue remaining phase porting; commits are checkpoints, not stopping points. No publication authorized.",
+      "deferred": "B311 optional metrics fixture, B315 incoming UTF8 graph/promotion, B318 existing argument-morph regression and B307 pre-existing EH node IDs remain nonblocking. B319 downstream layout explains GC-poll code differences and identifies the next batch. Retain mixed native helper regions until remaining callers/platform paths are ported.",
       "parallelPackets": [
         {
           "scope": "Complete native static-initialization expansion.",
@@ -408,7 +408,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit the validated late-cast phase with B316 reference-unbox dispatch and B317 indirection cost fixes, then continue directly at fgInsertGCPolls in Compiler.fg.cs. Review flowgraph.cpp:63-436 and its GC-poll EE/CFG dependencies before activating the phase for SuppressGCTransition calls. Commits are checkpoints, not stopping points. Retain mixed native helper regions for unported platform paths. B301 array class-name diagnostics, B311 and B315 remain nonblocking. Preserve recovery refs; no push or PR is authorized.",
+    "nextAction": "Commit validated GC-poll insertion, then continue immediately at fgSearchImprovedLayout (native fgopt.cpp:4205, managed Compiler.fg.cs). The positive GC-poll corpus proves native Optimize layout moves the zero-weight poll behind the hot path while the managed public phase is still a no-op, accounting for 2/3-byte downstream code gaps (B319). Read and port its complete dependency closure before activation; reuse the same corpus and baseline. Keep B307 input EH node IDs and B318 pre-existing argument-morph test failure separate. Preserve recovery refs; no push or PR is authorized.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -476,6 +476,20 @@
         "scope": "Restore pinned output-pointer-only getThreadLocalStaticBlocksInfo across three wrappers/interface/vtable; rename final metadata slot to offsetOfBaseOfThreadLocalData. Keep existing slot, calling convention, offset widths and neighboring getThreadLocalFieldInfo bool.",
         "nativeEvidence": "MSVC native-probe.cpp static_assert checks exact member signature against pinned corinfo.h; sizeof56, pointer-field offsets0/16/24/32 and scalar offsets40/44/48/52 match managed raw layout.",
         "gaps": "TLS phase is not activated. Virtual native callbacks verify forwarding without claiming actual runtime TLS expansion."
+      },
+      "gcPollInsertion": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "snapshot": "563b0741e092862e0458c67783b4819a0de17579",
+        "nativeAot": "artifacts\\gc-poll-insertion\\native-jit-1\\RyuJitSharp.dll",
+        "sha256": "CF4ACE7075A8F87D98994E43BF46D60ED9B8E0E433A017AC92B39B6F283ADD47",
+        "debugPassed": 255,
+        "releasePassed": 246,
+        "tests": "All26GC-poll cases pass in both configurations with full analysis, together with helper/late-cast/block-splitting and argument-morph selections. One existing argument-morph case fails in each integrated run and reproduces in the immutable f136142 baseline (B318); no tests disabled. Shared conditional edges are captured before source transfer to respect managed edge-getter invariants.",
+        "negativeControls": "The old public phase stub fails21newGC-poll cases and passes5controls. Baseline archive plus unchanged argument tests produces the same B318 failure. Evidence: artifacts\\gc-poll-insertion\\negative.",
+        "execution": "PortingGCPollCorpus executes12managed and12native bodies across optimized/minopts/GCStress, asserting process identity and finally execution. Optimized/GCStress each insert3inline polls and eliminate MixedCalls polling; minopts inserts4callout polls. Exact expected process output and emitted calls are checked; no native fallback.",
+        "baseline": "artifacts\\upstream-refresh-33baf8\\gc-polls-managed-matrix\\results.json:29configurations143positive managed bodies, same output and no fallback.",
+        "comparison": "artifacts\\gc-poll-insertion\\phase-comparison-563b0741-final\\comparison.json:8of10positive transformation/CFG/IR slices and2of2no-change controls match after newline conversion only. The two EH slices differ only by five node IDs already present before GC polling. All4minopts code sizes match; optimized InlinePoll60/58, CalloutPoll48/46, MixedCalls161/161 and EhCallout91/88 bytes(native/managed).",
+        "gaps": "Full machine-code/dump parity is not claimed. B307 input EH identities and B319 unported downstream layout remain visible: native moves the rare poll behind hot returns, adding short jumps absent from the current managed layout. Indirect trap addresses, early tail-call placement and special terminators have structural rather than native-runtime coverage. Native residual remains176staged paths and zero unstaged edits."
       },
       "lateCastExpansion": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
@@ -6112,6 +6126,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "gc-poll-insertion",
+      "native": ["src\\coreclr\\jit\\flowgraph.cpp:16-435"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.GCPolls.cs"],
+      "status": "Complete block scanning, public phase and callout/inline poll construction. Native selection, statement/debug sequencing, trap address indirection, EH, predecessor and profile contracts preserved. Eight positive phase slices and two no-change controls exact; input EH IDs and downstream layout remain B307/B319. Native source retained.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "late-cast-expansion",
       "native": ["src\\coreclr\\jit\\helperexpansion.cpp:1935-2779", "src\\coreclr\\jit\\importer.cpp:10683-10688", "src\\coreclr\\jit\\gentree.cpp:gtSetEvalOrder(GT_IND)"],
