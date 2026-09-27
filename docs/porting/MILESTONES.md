@@ -15,6 +15,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: OSR patchpoint metadata publication
+
+Tier0 compilations now publish their patchpoint frame metadata through the EE's
+allocation and ownership contract. The publisher records original and shadow
+local offsets, address exposure, generic and async context slots, security and
+monitor state, and callee-save registers, including the pseudo-return frame slot.
+
+The hot-loop and generic-loop corpus matches native Tier0 patchpoint phases,
+120/136-byte frame sizes, local and special offsets, and callee-save masks.
+Both loops produce actual managed Tier1-OSR compilations, but correct resumption
+is not established: the importer still enters at the original method start
+rather than redirecting to the OSR entry, repeating initialization and losing
+carried loop state. The corpus's unchanged final values do not prove correct
+resumption. That importer dependency remains separate from metadata publication;
+equal Tier0 code sizes are not claimed as instruction or byte parity.
+
 ## 2026-09-26: Tree-splitting stress modes
 
 The tree-splitting stress phase now supports native deterministic random

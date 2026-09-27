@@ -1186,11 +1186,6 @@ public partial class Compiler
         ehTableFinalized = true;
     }
 
-    public void generatePatchpointInfo()
-    {
-        // TODO: Port Compiler.generatePatchpointInfo
-    }
-
     /// <summary>Return the length for an allocation whose length is represented by GT_ARR_LENGTH.</summary>
     /// <param name="tree">The array allocation helper call.</param>
     /// <returns>Return the array length node.</returns>

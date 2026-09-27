@@ -12,11 +12,11 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Continue the complete physical-promotion packet and port the remaining async state-machine transformation against 33baf8 in parallel. Parent integrates shared contracts and handles the complete tree-splitting stress phase while substantial packets are implemented.",
+      "scope": "Continue physical promotion and async state-machine transformation against 33baf8 in parallel. With instrumentation and tree stress committed, parent ports complete OSR patchpoint metadata publication needed by the remaining runtime execution paths.",
       "doneWhen": [
         "Complete physical promotion including candidate selection, replacement, liveness and decomposition rather than activating a partial prerequisite.",
         "Complete async transformation including normal/tail awaits, continuation layout, suspension/resumption, live state, contexts and EH rather than activating only the wrapper.",
-        "Port the complete tree-splitting stress driver and both algorithms, preserving native selection, limits, traversal and diagnostics.",
+        "Publish complete native-equivalent OSR patchpoint frame metadata, preserving EE allocation/ownership, shadow locals, exposure, context/special offsets and callee-save encoding.",
         "Integrate named shared deltas, review each complete native closure and validate focused semantic/runtime evidence with existing corpora.",
         "Commit each completed subsystem separately, preserving the other lane's WIP, and continue remaining port dependencies."
       ],
@@ -24,7 +24,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Profile instrumentation committed 40dc08c, including B324/B328/B329 and successful native-matching instrumented/value/hot-GDV execution. Parent owns remaining public phase entries and shared integration; physical UTF8/struct references are ready. Complete StressSplitTree independently while the physical and async closures proceed. Consolidate validation per subsystem, not per helper. No publication authorized.",
+      "parentScope": "Profile instrumentation committed 40dc08c and complete tree stress committed 2ae34c7. Parent owns remaining public entries and shared integration; physical fixes and async closure proceed in separate lanes. Port the complete generatePatchpointInfo metadata publisher before positive managed OSR claims. Consolidate validation per subsystem, not per helper. No publication authorized.",
       "deferred": "B311 optional metrics fixture, B318/B325 existing argument regressions, B307 EH node IDs, B320 static-data descriptions, B321-B323 profile diagnostics and remaining B315 physical-promotion/graph parity stay separate. B324 is corrected and tiered GDV/value execution now passes. No general argument-morph redesign.",
       "parallelPackets": [
         {
@@ -426,11 +426,11 @@
         "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs. Native vector Intersects/XOR defects are recorded in B247/B246; their corrected algorithms are not authorized and those entire vector operations are deferred.",
         "The preexisting fgVerifyHandlerTab diagnostic stub and broader EH verification, outside the cleanup algorithm.",
         "Broader diagnostic parity beyond the complete B261 checker closure; do not count annotation checks as equivalent.",
-        "Patchpoint metadata generation and actual OSR execution; node generation support does not activate either.",
+        "Actual OSR execution remains unverified; parent is now implementing the complete patchpoint metadata publisher as its next dependency-coherent batch.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "If HEAD is still 40dc08c, commit the completed stress batch using the three ownedPaths in artifacts\\stress-split-trees\\validation-2\\manifest.json plus related ledgers; source/tests must match 20753adcb4f7142483e56bc1fec96e71a375412c. Both 19-body stress modes and 29/143 baseline pass. Then collect physical author 9ac3e59e's complete review-fix round (dynamic init, exact weighted arithmetic, pointer wrapping and full diagnostics); parent already fixed Run diagnostics. Review fixes, activate PhysicalPromotion only after closure, and compare ready UTF8/struct evidence. Async lane 9e905421 continues full closure with five positive native cases available but no native tail-await positive. Preserve all other WIP; no push or PR.",
+    "nextAction": "Commit completed OSR publisher and corpus separately, then finish physical promotion. OSR source01b67cb passes22D22R and29/143baseline; comparison artifacts\\osr-patchpoint\\comparison-01b67-1.json matches native Tier0 metadata but proves managed Tier1-OSR restarts method initialization because importer entry redirection is absent. Do not claim correct resumption from unchanged final values. After physical commit, strengthen the corpus to detect repeated initialization and port complete native OSR importer entry handling. Physical source724f91c passes145D132R and29/143baseline after shared gtNewStoreLclVarNode normalization correction; positive UTF8/struct recaptures are under artifacts\\physical-promotion, awaiting final comparison/ledger and wrapper test receipts. Async full16-file inactive closure is frozen in layout-snapshot.manifest.txt,8D8R; reviewer6356462f is checking complete native algorithms/diagnostics before activation. Preserve WIP; local commits only.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -506,6 +506,7 @@
         "managedJit": "artifacts\\stress-split-trees\\native-jit-2\\RyuJitSharp.dll",
         "sha256": "283D3C39BBDE4A03990256673C22D5F4BBFA7084BB8D84166C3853BB583BF1A7",
         "tests": "88 Debug / 83 Release with full analysis, including 10 / 5 new phase and comma-removal cases plus existing use-edge/split tests. Covers dispatch, disabled stress, random precedence and limits, ordered call spills, side effects and nested-comma restarts.",
+        "oldStubControl": "artifacts\\stress-split-trees\\old-stub-control: the five positive public-dispatch cases fail against 40dc08c, while the disabled-mode case passes. Release does not activate stress modes.",
         "comparison": "artifacts\\stress-split-tree\\comparison-2075-1.json: exact native phase slices in all 19 methods for each mode, successful managed execution and expected outputs without fallback.",
         "randomEvidence": "Forced STRESS_SPLIT_TREES_RANDOMLY with JitStressModeNamesOnly=1 and split limit 8 matches all 74 selected locations and 22 successful splits across 11 methods. Main reaches eight splits. All sizes and 358 emitted instruction lines match; Main is 781 bytes versus 778 unstressed.",
         "commaEvidence": "Forced STRESS_SPLIT_TREES_REMOVE_COMMAS removes the same seven nodes: Main 2 to 0 and SynchronizedReturn 5 to 0. All sizes and 356 emitted instruction lines match. Modified phase status alone is not counted as positive transformation evidence.",
@@ -6331,6 +6332,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "osr-patchpoint-metadata-publication",
+      "native": ["src\\coreclr\\jit\\compiler.cpp:5618-5805"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.PatchpointMetadata.cs"],
+      "status": "Complete AMD64 generatePatchpointInfo publisher: EE-sized flexible allocation, pseudo-return frame slot, original/shadow local offsets and exposure, all eight special offsets, modified callee saves plus RBP and native diagnostics. The EE owns the published allocation; it is not compiler-owned OSR input storage. Other-target frame adjustments and FP/LR/RA masks remain explicit CORJIT_SKIPPED paths rather than silent success. Source01b67cb passes22D22R, seven old-stub failures plus one gate control and29/143baseline. Native comparison-01b67-1 matches Tier0 metadata for both corpus loops; actual Tier1-OSR bodies still restart initialization because importer redirection is absent, so resumption parity is not established. Native source retained.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "tree-splitting-stress",
       "native": ["src\\coreclr\\jit\\compiler.cpp:5432-5615"],

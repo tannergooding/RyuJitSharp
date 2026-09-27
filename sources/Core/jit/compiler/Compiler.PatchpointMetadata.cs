@@ -1,0 +1,124 @@
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+namespace RyuJitSharp;
+
+public partial class Compiler
+{
+    public unsafe void generatePatchpointInfo()
+    {
+        if (!MethodHasPatchpoint)
+        {
+            return;
+        }
+
+#if TARGET_AMD64
+        assert(codeGen is not null);
+        assert(codeGen.IsFramePointerUsed);
+
+        var patchpointInfoSize = PatchpointInfo.ComputeSize(info.compLocalsCount);
+        var patchpointInfo = (PatchpointInfo*)info.compCompHnd->allocateArray(patchpointInfoSize);
+
+        // The OSR prolog pushes a pseudo return address below the Tier0 frame.
+        // Tier0 always uses FP, so its FP-relative offsets are already virtual frame offsets.
+        var totalFrameSize = codeGen.genTotalFrameSize + TARGET_POINTER_SIZE;
+        patchpointInfo->Initialize(info.compLocalsCount, totalFrameSize);
+        JITDUMP($"--OSR--- Total Frame Size {patchpointInfo->TotalFrameSize}, local offset adjust is 0\n");
+
+        for (var lclNum = 0; lclNum < info.compLocalsCount; lclNum++)
+        {
+            var varNum = lclNum;
+            if (lvaIsUnknownSizeLocal(varNum))
+            {
+                continue;
+            }
+
+            if (gsShadowVarInfo is not null)
+            {
+                var shadowNum = gsShadowVarInfo[lclNum].ShadowCopy;
+                if (shadowNum != BAD_VAR_NUM)
+                {
+                    assert(shadowNum < lvaCount);
+                    assert(shadowNum >= info.compLocalsCount);
+                    varNum = shadowNum;
+                }
+            }
+
+            ref var varDsc = ref lvaGetDesc(varNum);
+            assert(varDsc.lvOnFrame);
+            assert(varDsc.lvFramePointerBased);
+
+            // OSR partial importation may skip the original address-of operation.
+            patchpointInfo->SetOffsetAndExposure(lclNum, varDsc.StackOffset, varDsc.lvHasLdAddrOp);
+            JITDUMP($"--OSR-- V{lclNum:D2} is at virtual offset {patchpointInfo->Offset(lclNum)}" +
+                $"{(patchpointInfo->IsExposed(lclNum) ? " (exposed)" : "")}{(varNum != lclNum ? " (shadowed)" : "")}\n");
+        }
+
+        if (lvaReportParamTypeArg())
+        {
+            patchpointInfo->GenericContextArgOffset = lvaCachedGenericContextArgOffset();
+            JITDUMP($"--OSR-- cached generic context virtual offset is {patchpointInfo->GenericContextArgOffset}\n");
+        }
+
+        if (lvaKeepAliveAndReportThis())
+        {
+            patchpointInfo->KeptAliveThisOffset = lvaCachedGenericContextArgOffset();
+            JITDUMP($"--OSR-- kept-alive this virtual offset is {patchpointInfo->KeptAliveThisOffset}\n");
+        }
+
+        if (compGSReorderStackLayout)
+        {
+            assert(lvaGSSecurityCookie != BAD_VAR_NUM);
+            patchpointInfo->SecurityCookieOffset = lvaGetDesc(lvaGSSecurityCookie).StackOffset;
+            JITDUMP($"--OSR-- security cookie V{lvaGSSecurityCookie:D2} virtual offset is {patchpointInfo->SecurityCookieOffset}\n");
+        }
+
+        if (lvaMonAcquired != BAD_VAR_NUM)
+        {
+            patchpointInfo->MonitorAcquiredOffset = lvaGetDesc(lvaMonAcquired).StackOffset;
+            JITDUMP($"--OSR-- monitor acquired V{lvaMonAcquired:D2} virtual offset is {patchpointInfo->MonitorAcquiredOffset}\n");
+        }
+
+        if (lvaResumedIndicator != BAD_VAR_NUM)
+        {
+            patchpointInfo->ResumedIndicatorOffset = lvaGetDesc(lvaResumedIndicator).StackOffset;
+            JITDUMP($"--OSR-- resumed indicator V{lvaResumedIndicator:D2} virtual offset is {patchpointInfo->ResumedIndicatorOffset}\n");
+        }
+
+        if (lvaAsyncThreadObjectVar != BAD_VAR_NUM)
+        {
+            patchpointInfo->AsyncThreadOffset = lvaGetDesc(lvaAsyncThreadObjectVar).StackOffset;
+            JITDUMP($"--OSR-- async thread object V{lvaAsyncThreadObjectVar:D2} virtual offset is {patchpointInfo->AsyncThreadOffset}\n");
+        }
+
+        if (lvaAsyncExecutionContextVar != BAD_VAR_NUM)
+        {
+            patchpointInfo->AsyncExecutionContextOffset = lvaGetDesc(lvaAsyncExecutionContextVar).StackOffset;
+            JITDUMP($"--OSR-- async execution context V{lvaAsyncExecutionContextVar:D2} virtual offset is {patchpointInfo->AsyncExecutionContextOffset}\n");
+        }
+
+        if (lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
+        {
+            patchpointInfo->AsyncSynchronizationContextOffset = lvaGetDesc(lvaAsyncSynchronizationContextVar).StackOffset;
+            JITDUMP($"--OSR-- async synchronization context V{lvaAsyncSynchronizationContextVar:D2} virtual offset is {patchpointInfo->AsyncSynchronizationContextOffset}\n");
+        }
+
+        var pushRegs = codeGen.RegSet.rsGetModifiedCalleeSavedRegsMask() | RBM_RBP;
+        patchpointInfo->CalleeSaveRegisters = unchecked((long)pushRegs.Lower);
+        JITDUMP("--OSR-- Tier0 callee saves: ");
+#if DEBUG
+        if (verbose)
+        {
+            dspRegMask(new regMaskTP((regMask)patchpointInfo->CalleeSaveRegisters));
+        }
+#endif
+        JITDUMP("\n");
+
+        info.compCompHnd->setPatchpointInfo(patchpointInfo);
+#else
+        throw new FatalJitException(CORJIT_SKIPPED, "Patchpoint metadata generation requires AMD64.");
+#endif
+    }
+}
