@@ -12,19 +12,19 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Restore early-propagation/tailcall fixture nullability and ordinary/async implicit-byref fixture types.",
+      "scope": "Correct Enum.Equals folding fixture inputs to satisfy native second-argument nonnull requirements and retain rejection coverage.",
       "doneWhen": [
-        "Initialize absent return-buffer sentinels in the two remaining evidenced null-check fixtures.",
-        "Model TYP_I_IMPL for ordinary implicit-byref parameters and TYP_BYREF for async parameters, matching pinned lclvars.cpp2532.",
-        "Cover all three local-list positions in both pointer modes while preserving death flags and node ownership assertions.",
-        "Run complete affected fixtures in Debug/Release and commit without production changes."
+        "Supply known-nonnull boxed locals in positive enum cases and nonintegral/type-exactness controls.",
+        "Retain explicit nullable-local and null-constant negative argument cases.",
+        "Keep the receiver nullable and preserve comparison load/fault assertions using BAD_VAR_NUM for the absent return buffer.",
+        "Run complete call-folding and object-allocation use fixtures in Debug/Release, commit and continue."
       ],
       "validation": [
         "Baseline artifacts\\core-validation\\debug-1.trx and release-1.trx on09bca24;11687Debug/10774Release total cases.",
         "Baseline artifacts\\core-validation\\debug-2.trx/release-2.trx retain the failing assertions and expected-type mismatches.",
-        "Run EarlyPropagationTests, TailCallMorphTests, LocalThreadingTransitionTests and SsaLivenessTests with full analysis."
+        "Run CallFoldingTests and ObjectAllocatorUseRewritingTests with full analysis; native gentree.cpp15788-15831 explains the nonnull guard."
       ],
-      "parentScope": "B343 committed6a57afd2. Remaining18Debug/12Release failures include stale fixture contracts; native behavior is not being changed.",
+      "parentScope": "Morph fixtures committed2720f38. Preserve native Enum.Equals semantics: null argument returns false; null receiver throws.",
       "deferred": "Other full-suite failure groups remain in baseline TRX. B322 and broader dump/raw-byte/GC coverage remain separate.",
       "parallelPackets": [
         {
@@ -430,7 +430,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Morph fixture corrections pass60Debug/57Release; commit locally. Then fix CallFoldingTests input contract: native Enum.Equals requires a nonnull second argument, while current positive tests supply a nullable local. Preserve the native guard, test positive nonnull and negative nullable arguments separately, and retain nonintegral/type-exactness controls. Other remaining groups are LinearScanMemoryAndComparisonTests, CompareNodeLoweringTests and StackArrayExpansionTests; no push.",
+    "nextAction": "Enum fixture correction passes32Debug/32Release; commit locally. Next align LinearScanMemoryAndComparisonTests with native AVX-flag ownership in buildNode rather than buildIndir, retaining dispatcher-positive coverage. CompareNodeLoweringTests must assert actual compare width without expecting constant retyping; pinned containment preserves TYP_INT and sets unsigned small comparisons. Trace StackArrayExpansionTests operand reordering before changing its final-order expectation. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -486,6 +486,8 @@
         "adapterTests": "artifacts\\core-validation\\adapters-debug-1.trx and adapters-release-1.trx:179Debug/183Release pass, including CallTargetLoweringTests.142baseline failures per configuration corrected.",
         "morphFixtureCorrection": "EarlyPropagationTests/TailCallMorphTests initialize absent return-buffer sentinel. LocalThreadingTransitionTests covers all three positions in ordinary TYP_I_IMPL and async TYP_BYREF modes, matching native lclvars.cpp2532. No production changes.",
         "morphFixtureTests": "artifacts\\core-validation\\morph-fixtures-debug-2.trx and morph-fixtures-release-2.trx:60Debug/57Release pass, including SsaLivenessTests.",
+        "enumFixtureCorrection": "CallFoldingTests uses known-nonnull boxed locals for positive/nonintegral/exactness inputs and distinct nullable-local/null-constant controls; missing return-buffer sentinel also initialized. Native guard and production unchanged.",
+        "enumFixtureTests": "artifacts\\core-validation\\enum-fixtures-debug-1.trx and enum-fixtures-release-1.trx:32Debug/32Release pass with ObjectAllocatorUseRewritingTests.",
         "latest": "artifacts\\core-validation\\debug-2.trx:18failed/11759passed;release-2.trx:12failed/10852passed. Runs use the already full-analysis-built corrected assemblies; no skipped cases.",
         "remaining": "B342 remains open for other baseline failures, including enum folding and assertion/ownership cases. Full-suite success has not been established."
       },

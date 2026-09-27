@@ -15,6 +15,15 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Enum folding fixture nullability
+
+Enum equality tests now provide a known-nonnull boxed argument when exercising
+unboxing. Native's distinction remains unchanged: a null receiver throws, while
+a null argument returns false. Explicit nullable-local and null-constant cases
+retain the call; unsupported underlying types and inexact/different classes
+remain rejected without being hidden behind the nullability guard.
+All 32 call-folding and object-use cases pass in both configurations.
+
 ## 2026-09-27: Null-check and implicit-byref fixture contracts
 
 Early-propagation and tailcall fixtures now initialize the absent return-buffer

@@ -82,7 +82,7 @@ internal static unsafe class CallFoldingTests
             compiler.lvaTable[0].lvClassIsExact = true;
             compiler.lvaTable[1] = compiler.lvaTable[0];
             var left = compiler.gtNewLclvNode(TYP_REF, 0);
-            var right = compiler.gtNewLclvNode(TYP_REF, 1);
+            var right = NewBoxedLocal(compiler, 1);
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(left).WithWellKnownArg(WellKnownArg.ThisPointer));
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(right));
 
@@ -121,10 +121,36 @@ internal static unsafe class CallFoldingTests
             compiler.lvaTable[1].lvClassHnd = (CORINFO_CLASS_STRUCT_*)(sameClass ? &firstType : &secondType);
             compiler.lvaTable[1].lvClassIsExact = exact;
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_REF, 0)));
-            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_REF, 1)));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(NewBoxedLocal(compiler, 1)));
             Assert.That(compiler.gtFoldExprCall(call), Is.SameAs(call));
             Assert.That(((MethodMetadata*)call._callMethHnd)->Lookups, Is.EqualTo(1));
         });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void EnumEqualityPreservesNullableArguments(bool nullConstant)
+    {
+        WithCompiler("Enum", "Equals", (compiler, call) =>
+        {
+            var enumType = CorInfoType.CORINFO_TYPE_INT;
+            compiler.lvaTable[0].lvClassHnd = (CORINFO_CLASS_STRUCT_*)&enumType;
+            compiler.lvaTable[0].lvClassIsExact = true;
+            compiler.lvaTable[1] = compiler.lvaTable[0];
+            var receiver = compiler.gtNewLclvNode(TYP_REF, 0);
+            GenTree argument = nullConstant ? compiler.gtNewNull() : compiler.gtNewLclvNode(TYP_REF, 1);
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(receiver).WithWellKnownArg(WellKnownArg.ThisPointer));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(argument));
+
+            Assert.That(compiler.gtFoldExprCall(call), Is.SameAs(call));
+            Assert.That(call.Args.GetUserArgByIndex(1)?.Node, Is.SameAs(argument));
+        });
+    }
+
+    private static GenTreeBox NewBoxedLocal(Compiler compiler, int local)
+    {
+        return new GenTreeBox(TYP_REF, compiler.gtNewLclvNode(TYP_REF, local),
+            compiler.gtNewStmt(compiler.gtNewNothingNode()), compiler.gtNewStmt(compiler.gtNewNothingNode()));
     }
 
     private static void WithCompiler(string className, string methodName, Action<Compiler, GenTreeCall> action, bool minOpts = false)
@@ -147,7 +173,7 @@ internal static unsafe class CallFoldingTests
 #endif
             var previous = JitTls.Compiler;
             var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-            compiler.info = new Compiler.Info { compCompHnd = &jitInfo };
+            compiler.info = new Compiler.Info { compCompHnd = &jitInfo, compRetBuffArg = BAD_VAR_NUM };
             compiler.lvaTable = new LclVarDsc[2];
             compiler.lvaCount = 2;
             compiler.lvaTable[0].Type = TYP_REF;
