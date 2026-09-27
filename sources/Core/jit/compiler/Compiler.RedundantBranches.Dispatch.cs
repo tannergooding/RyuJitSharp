@@ -139,13 +139,19 @@ public partial class Compiler
             relopValue = treeNormVN == vnStore.VNZeroForType(TYP_INT) ? 0 : 1;
 #if DEBUG
             JITDUMP($"Relop [{tree.TreeId:D6}] {FMT_BB(block.bbNum)} has known value " +
-                $"{(relopValue == 0 ? "false" : "true")}\n");
+                $"{(relopValue == 0 ? "false" : "true")}\n ");
 #endif
         }
         else if (domBlock is null)
         {
             return false;
         }
+#if DEBUG
+        else
+        {
+            JITDUMP($"Relop [{tree.TreeId:D6}] {FMT_BB(block.bbNum)} value unknown, trying inference\n");
+        }
+#endif
 
         var trySpeculativeDom = false;
         while ((relopValue == -1) && !trySpeculativeDom)
@@ -190,6 +196,15 @@ public partial class Compiler
                         var trueSuccessor = domBlock.TrueTarget;
                         var falseSuccessor = domBlock.FalseTarget;
 #if DEBUG
+                        if (info.VnRelation is ValueNumStore.VN_RELATION_KIND.VRK_Inferred)
+                        {
+                            JITDUMP($"\nDominator {FMT_BB(domBlock.bbNum)} of {FMT_BB(block.bbNum)} can infer value of dominated relop\n");
+                        }
+                        else
+                        {
+                            JITDUMP($"\nDominator {FMT_BB(domBlock.bbNum)} of {FMT_BB(block.bbNum)} " +
+                                $"has relop with {ValueNumStore.VNRelationString(info.VnRelation)} liberal VN\n");
+                        }
                         DISPTREE(domCmpTree);
                         JITDUMP(" Redundant compare; current relop:\n");
                         DISPTREE(tree);
@@ -212,16 +227,29 @@ public partial class Compiler
                         else if (trueReaches && !falseReaches && info.CanInferFromTrue)
                         {
                             relopValue = info.ReverseSense ? 0 : 1;
+#if DEBUG
+                            JITDUMP($"True successor {FMT_BB(trueSuccessor.bbNum)} of {FMT_BB(domBlock.bbNum)} " +
+                                $"reaches, relop [{tree.TreeId:D6}] must be {(relopValue == 1 ? "true" : "false")}\n");
+#endif
                             break;
                         }
                         else if (falseReaches && !trueReaches && info.CanInferFromFalse)
                         {
                             relopValue = info.ReverseSense ? 1 : 0;
+#if DEBUG
+                            JITDUMP($"False successor {FMT_BB(falseSuccessor.bbNum)} of {FMT_BB(domBlock.bbNum)} " +
+                                $"reaches, relop [{tree.TreeId:D6}] must be {(relopValue == 0 ? "false" : "true")}\n");
+#endif
                             break;
                         }
                         else if (!falseReaches && !trueReaches)
                         {
+                            JITDUMP("inference failed -- no apparent path, will stop looking\n");
                             break;
+                        }
+                        else
+                        {
+                            JITDUMP("inference failed -- will keep looking higher\n");
                         }
                     }
                 }

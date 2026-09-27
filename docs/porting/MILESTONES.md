@@ -15,6 +15,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Redundant-branch phase diagnostics
+
+Restored the native PHI-threading, threading-core, local-relop forwarding and
+branch-inference diagnostics. The missing trace was not missing optimization:
+the transformations and final generated instructions were already correct.
+Branch-specific messages, value numbers, tree identities, memory-PHI CSE guards
+and original native spelling are now preserved.
+
+Both original policy-probe RBO phases match native byte-for-byte, including
+positive PHI substitution and edge redirection. Main and Evaluate retain
+native-identical instructions and 277/59-byte sizes; 37 Debug and 37 Release
+branch/scalar-evolution controls pass. Evidence:
+`artifacts\rbo-diagnostics\comparison-1.json`. This closes B361, not
+whole-pipeline dump parity.
+
 ## 2026-09-27: Precise inline-scan constant propagation
 
 Restored native precise-scan behavior for literal constants, binary operations,

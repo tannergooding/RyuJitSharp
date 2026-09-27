@@ -13,18 +13,18 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "B362: reconcile precise inline-scan constant propagation and binary/comparison observations to restore native ExtendedDefault profitability.",
+      "scope": "B361: restore redundant-branch diagnostics for PHI threading, threading core, local relop forwarding, and branch inference without changing algorithms.",
       "doneWhen": [
-        "Preserve literal constants exactly once on the scan stack and reconcile complete precise binary/comparison handling, including constant arguments and symmetric operands.",
-        "Add scan regressions demonstrating old incorrect observations and preserve intrinsic/inline policy controls.",
-        "Execute the original probe and compare default inline observations, decisions, and generated code to the pinned native capture; commit locally and continue."
+        "Compare complete native/managed PHI threading, threading core, local relop, and inference contracts; establish that missing trace does not imply missing transformation.",
+        "Restore complete diagnostics for those functions, including original spelling and branch-specific ordering.",
+        "Match original probe RBO phases exactly while preserving instruction streams/runtime results, run branch controls, commit locally and continue."
       ],
       "validation": [
-        "Focused InlineScan and default/optional policy tests in Debug/Release, including before-fix observation failures.",
-        "Checked NativeAOT execution of the preserved original probe plus existing corpus controls affected by changed default inlining."
+        "Existing RedundantBranch/ScalarEvolution controls in Debug/Release; preserved pre-fix RBO diffs prove missing diagnostics.",
+        "Checked NativeAOT original-probe RBO phase comparison and unchanged code/runtime results. Algorithms remain unchanged, so reuse B362 full-suite/matrix baseline."
       ],
-      "parentScope": "B359 committed8356b3f. B362 complete under63a581c5:18old observation failures now pass,171D91R focused/12103D10958R Core,29/143executed. Original Main/Evaluate now match native instruction streams/sizes277/59, inline observations and decisions. B361 RBO differences remain.",
-      "deferred": "No profitability coefficient changes or scanner redesign. B361 downstream RBO diagnostics and B358/B360 native data/replay discrepancies remain separate. Existing clock/allocation limitations remain R005/D001.",
+      "parentScope": "B359 committed8356b3f and B362 committed3f320d5. B361 complete underf99c6cce: affected transformations already matched; diagnostics restored.37D37R controls pass; both original probe RBO phases now byte-identical, with unchanged native-equal instruction streams/sizes277/59.",
+      "deferred": "Whole-pipeline dump parity and unrelated upstream undefined behavior remain separate. B354 ProfilePolicy host-PGO evidence is next; B358/B360 native data/replay quirks and clock/allocation limitations remain explicit.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -429,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit validated B362 precise-scan batch, then continue B361 RBO: inspect complete optJumpThreadPhi/optRedundantRelop contracts against pinned redundantbranchopts.cpp using artifacts/inline-scan/rbo-0-1.diff and rbo-1-1.diff. Native Main has PhiDef substitution/threading trace missing in managed, plus smaller omitted diagnostics. Final Main/Evaluate code already matches277/59bytes; establish whether PhiDef discrepancy is just diagnostics or actual path eligibility before changing behavior. Worker95344d66 idle/collected. No push.",
+    "nextAction": "Commit validated B361 diagnostics, then close B354 ProfilePolicy host-PGO evidence: reuse the current-pin warmed/tiered infrastructure under artifacts/profile-instrumentation, select JitInlinePolicyProfile on native and managed, and require an actual profiled optimized body using ProfilePolicy rather than a no-PGO Default fallback. Read the existing driver/configuration before recapture; fix only demonstrated contract mismatches. B361 original probe has exact RBO phases and277/59-byte code. Worker95344d66 idle/collected. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -464,6 +464,15 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "redundantBranchDiagnostics": {
+        "sourceSnapshot": "f99c6cce328a79c0aafdb0709ff8a3411c6b6317",
+        "nativeFunctions": "redundantbranchopts.cpp:optJumpThreadPhi, optJumpThreadCore, optRedundantRelop and optRedundantBranch; exact native degnerate spelling restored in optRedundantDominatingBranch.",
+        "tests": "artifacts\\rbo-diagnostics\\area-debug-2.trx37passed; area-release-1.trx37passed. Pre-fix phase failures retained in artifacts\\inline-scan\\rbo-0-1.diff and rbo-1-1.diff.",
+        "nativeAotLibrary": "artifacts\\rbo-diagnostics\\native-jit-1\\RyuJitSharp.dll",
+        "nativeAotSha256": "7F4E723B7C522A2F18AD8461FF06FCD6518C83BCC4E94A37EE1802438445960E",
+        "comparison": "artifacts\\rbo-diagnostics\\comparison-1.json:2byte-identical RBO phases, including positive PHI substitution/threading. Both native instruction streams/sizes277/59, inline observations/decisions and runtime output retained.",
+        "limits": "No whole-pipeline dump parity claim. Algorithms unchanged; prior63a581c5 full Core and29/143execution remain the shared baseline."
+      },
       "preciseInlineScan": {
         "sourceSnapshot": "63a581c5ce4b43ae658b551313eaaa25c3cde187",
         "nativeScope": "fgbasic.cpp:fgFindJumpTargets precise literal, binary-expression, unary/binary branch paths; existing C# local ObserveBinaryPrecise/ObserveComparisonPrecise helpers fully reconciled for these modes.",

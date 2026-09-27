@@ -26,6 +26,7 @@ public partial class Compiler
         var treeVN = vnStore.VNNormalValue(tree._vnPair.Liberal);
         if (vnStore.IsVNConstant(treeVN))
         {
+            JITDUMP(" -- no, jump tree cond is constant\n");
             return false;
         }
 
@@ -70,6 +71,7 @@ public partial class Compiler
 
             if (previousTree.Oper is not GT_STORE_LCL_VAR)
             {
+                JITDUMP(" -- prev tree not STORE_LCL_VAR\n");
                 break;
             }
 
@@ -79,21 +81,31 @@ public partial class Compiler
             {
                 if (previous.NextStmt != statement)
                 {
+                    JITDUMP(" -- prev tree has side effects and is not next to jumpTree\n");
                     break;
                 }
 
+                JITDUMP(" -- prev tree has side effects, allowing as prev tree is immediately before jumpTree\n");
                 sideEffect = true;
             }
 
             if (previousValue.Oper is GT_PHI)
             {
+                JITDUMP(" -- prev tree is a phi\n");
                 break;
             }
 
             var previousLocal = previousTree.AsLclVarCommon().LclNum;
             ref var previousDescriptor = ref lvaGetDesc(previousLocal);
-            if (!previousDescriptor.lvTracked || (definedLocalsCount >= definedLocalsSize))
+            if (!previousDescriptor.lvTracked)
             {
+                JITDUMP($" -- prev tree defs untracked V{previousLocal:D2}\n");
+                break;
+            }
+
+            if (definedLocalsCount >= definedLocalsSize)
+            {
+                JITDUMP(" -- ran out of space for tracking kills\n");
                 break;
             }
 
@@ -114,12 +126,16 @@ public partial class Compiler
 
             if (!matched)
             {
+                JITDUMP(" -- prev tree VN is not related\n");
                 continue;
             }
+
+            JITDUMP($"  -- prev tree has relop with {ValueNumStore.VNRelationString(relationMatch)} liberal VN\n");
 
             if ((treeExcVN != ValueNumStore.VNForEmptyExcSet()) &&
                 !vnStore.VNExcIsSubset(vnStore.VNExceptionSet(previousValue._vnPair.Liberal), treeExcVN))
             {
+                JITDUMP(" -- prev tree does not anticipate all jump tree exceptions\n");
                 break;
             }
 
@@ -128,19 +144,34 @@ public partial class Compiler
             {
                 if (gtTreeHasLocalRead(previousValue, definedLocals[i]))
                 {
+                    JITDUMP($" -- prev tree ref to V{definedLocals[i]:D2} interferes\n");
                     interferes = true;
                     break;
                 }
             }
 
-            if (interferes || gtMayHaveStoreInterference(previousValue, tree))
+            if (interferes)
             {
                 break;
             }
 
-            if (!previousValue.Oper.IsCompare ||
-                VarSetOps.IsMember(this, block.bbLiveOut, previousDescriptor._varIndex))
+            if (gtMayHaveStoreInterference(previousValue, tree))
             {
+#if DEBUG
+                JITDUMP($" -- prev tree has an embedded store that interferes with [{tree.TreeId:D6}]\n");
+#endif
+                break;
+            }
+
+            if (!previousValue.Oper.IsCompare)
+            {
+                JITDUMP(" -- prev tree is not relop\n");
+                continue;
+            }
+
+            if (VarSetOps.IsMember(this, block.bbLiveOut, previousDescriptor._varIndex))
+            {
+                JITDUMP($" -- prev tree lcl V{previousLocal:D2} is live-out\n");
                 continue;
             }
 
@@ -154,6 +185,9 @@ public partial class Compiler
                     assert(between is not null);
                     if (gtTreeHasLocalRead(between.RootNode, previousLocal))
                     {
+#if DEBUG
+                        JITDUMP($"-- prev tree has GTF_GLOB_REF and {FMT_STMT(between.Id)} has an interfering use\n");
+#endif
                         extraUses = true;
                         break;
                     }

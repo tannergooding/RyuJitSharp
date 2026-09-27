@@ -110,7 +110,7 @@ public partial class Compiler
             var currentIsDomFalseSucc = domFalseSucc == currentBlock;
             if (currentIsDomTrueSucc == currentIsDomFalseSucc)
             {
-                JITDUMP($"failed -- {FMT_BB(domBlockProbe.bbNum)} is degenerate\n");
+                JITDUMP($"failed -- {FMT_BB(domBlockProbe.bbNum)} is degnerate\n");
                 break;
             }
 

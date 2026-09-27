@@ -218,6 +218,15 @@ public partial class Compiler
                 continue;
             }
 
+            JITDUMP($"... JT-PHI [interestingVN] in {FMT_BB(block.bbNum)} relop " +
+                $"{(index == 0 ? "first" : "second")} operand VN is PhiDef for V{phiVN.LclNum:D2}.{phiVN.SsaDef}\n");
+#if DEBUG
+            if (!foundPhiDef)
+            {
+                DISPTREE(tree);
+            }
+#endif
+
             foreach (var statement in block.Statements)
             {
                 if (!statement.IsPhiDefnStmt)
@@ -233,6 +242,9 @@ public partial class Compiler
                         phiLocals[index] = phiVN.LclNum;
                         phiDefs[index] = def;
                         foundPhiDef = true;
+#if DEBUG
+                        JITDUMP($"Found local PHI [{def.TreeId:D6}] for V{phiVN.LclNum:D2}\n");
+#endif
                     }
                     else
                     {
@@ -244,6 +256,7 @@ public partial class Compiler
 
         if (!foundPhiDef)
         {
+            JITDUMP("No usable PhiDef VNs\n");
             return false;
         }
 
@@ -277,18 +290,24 @@ public partial class Compiler
 
             if (!updatedArg)
             {
+                JITDUMP($"Could not map phi inputs from pred {FMT_BB(predecessor.bbNum)}\n");
+                JITDUMP($"{FMT_BB(predecessor.bbNum)} is an ambiguous pred\n");
                 _ = info.AmbiguousPreds.Add(predecessor);
                 info.NumAmbiguousPreds++;
                 continue;
             }
 
             var substVN = vnStore.VNForFunc(tree.Type, treeApp.Func, newArgs[0], newArgs[1]);
+            JITDUMP($"... substituting (${newArgs[0]:x},${newArgs[1]:x}) for " +
+                $"(${treeApp.GetArg(0):x},${treeApp.GetArg(1):x}) in ${treeNormVN:x} gives ${substVN:x}\n");
             if (vnStore.IsVNConstant(substVN))
             {
                 var isTrue = substVN != vnStore.VNZeroForType(TYP_INT);
+                JITDUMP($"... substituted VN implies relop is {(isTrue ? 1 : 0)} when coming from pred {FMT_BB(predecessor.bbNum)}\n");
                 var target = isTrue ? info.TrueTarget : info.FalseTarget;
                 if (!BasicBlock.sameEHRegion(predecessor, target))
                 {
+                    JITDUMP($"{FMT_BB(predecessor.bbNum)} is an eh constrained pred\n");
                     _ = info.AmbiguousPreds.Add(predecessor);
                     info.NumAmbiguousPreds++;
                     continue;
@@ -298,14 +317,17 @@ public partial class Compiler
                 {
                     _ = info.TruePreds.Add(predecessor);
                     info.NumTruePreds++;
+                    JITDUMP($"{FMT_BB(predecessor.bbNum)} is a true pred\n");
                 }
                 else
                 {
                     info.NumFalsePreds++;
+                    JITDUMP($"{FMT_BB(predecessor.bbNum)} is a false pred\n");
                 }
             }
             else
             {
+                JITDUMP($"{FMT_BB(predecessor.bbNum)} is an ambiguous pred\n");
                 _ = info.AmbiguousPreds.Add(predecessor);
                 info.NumAmbiguousPreds++;
                 if ((info.NumAmbiguousPreds == 1) && (substVN != treeNormVN))
@@ -318,6 +340,7 @@ public partial class Compiler
 
         if ((check is JumpThreadCheckResult.NeedsPhiUseResolution) && !optCanRewritePhiUses(info))
         {
+            JITDUMP($"{FMT_BB(block.bbNum)} has global phi uses we cannot safely account for; no phi-based threading\n");
             return false;
         }
 
