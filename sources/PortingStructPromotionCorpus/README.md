@@ -43,6 +43,14 @@ Compare the `lvaTable before/after fgPromoteStructs`, `Trees after Morph -
 Promote Structs`, and emitted instructions in the raw `jitdump.txt`, not
 just compilation headers or a successful build.
 
+The same corpus covers implicit-byref last-use copy omission. `FourFieldCopy`
+alone marks V02 during `fgMarkImplicitByRefCopyOmissionCandidates`;
+the phase still reports `[no changes]`, as native does. Global morph then
+reports `did not need to make outgoing copy for last use of V02` and passes
+`LCL_ADDR V02` to `SumQuad`. Its native-matching body is 34 bytes with a
+56-byte frame. Check the marker, ABI decision and argument tree as well as
+the absence of the two outgoing-copy `vmovups` instructions.
+
 For a later managed comparison, invoke the same maintained runner with
 a separate fresh `-OutputDirectory`, plus `-ManagedJit <published DLL>`,
 `-ManagedSource <immutable source commit>`, and `-ExecuteManagedCode`.

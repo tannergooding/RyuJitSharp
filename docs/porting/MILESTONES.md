@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Last-use implicit-byref copy omission
+
+The pre-morph phase now marks last-use struct locals eligible for passing
+their existing storage to an implicit-byref argument. Marking happens before
+argument reordering, preserving effects when the callee can mutate that storage.
+Promoted fields, implicit-byref parameters and by-value arguments retain their
+existing treatment.
+
+The nine-body struct corpus matches native marking decisions and emitted
+instruction slices. `FourFieldCopy` now passes the existing local's address
+without an outgoing copy: its body shrinks from 46 to 34 bytes and its frame
+from 72 to 56 bytes, matching native. Adjacent profile-check diagnostics remain
+outside whole-dump parity.
+
 ## 2026-09-26: Original struct-local promotion
 
 The original struct-promotion phase now dispatches through the existing

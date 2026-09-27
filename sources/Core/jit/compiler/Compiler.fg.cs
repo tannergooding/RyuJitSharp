@@ -16024,9 +16024,6 @@ public partial class Compiler
         return PhaseStatus.MODIFIED_NOTHING;
     }
 
-    // TODO: Port phase - fgMarkImplicitByRefCopyOmissionCandidates
-    private PhaseStatus fgMarkImplicitByRefCopyOmissionCandidates() => PhaseStatus.MODIFIED_NOTHING;
-
     // TODO: Port phase - fgOptimizeMaskConversions
     private PhaseStatus fgOptimizeMaskConversions() => PhaseStatus.MODIFIED_NOTHING;
 
