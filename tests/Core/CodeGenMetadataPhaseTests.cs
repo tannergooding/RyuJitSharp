@@ -28,9 +28,10 @@ internal static unsafe class CodeGenMetadataPhaseTests
     [TestCase(true, true, false)]
 #if DEBUG
     [TestCase(true, false, true)]
+    [TestCase(true, true, true)]
 #endif
     public static void CompleteMachineAndMetadataPhasesPublishInNativeOrder(
-        bool useDriver, bool debugInfo, bool rejectMetrics)
+        bool useDriver, bool debugInfo, bool displayMetrics)
     {
         var previousConfig = JitConfig;
         try
@@ -91,35 +92,29 @@ internal static unsafe class CodeGenMetadataPhaseTests
                 using var tls = new JitTls(&state.JitInfo);
                 JitTls.Compiler = compiler;
                 s_assertion = null;
-                compiler.opts.dspMetrics = rejectMetrics;
+                compiler.opts.dspMetrics = displayMetrics;
 #endif
                 if (useDriver)
                 {
                     Assert.That((nuint)CodePointerAddress(codeGen), Is.EqualTo((nuint)0));
                     Assert.That((nuint)NativeSizeAddress(codeGen), Is.EqualTo((nuint)0));
-                    if (rejectMetrics)
-                    {
 #if DEBUG
-                        var failedCode = (void*)0x1234;
-                        var failedSize = -1;
-                        var error = Assert.Throws<FatalJitException>(() => codeGen.genGenerateCode(out failedCode, out failedSize));
-                        Assert.That(error, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-                        Assert.That(compiler.mostRecentlyActivePhase, Is.EqualTo(PHASE_EMIT_CODE));
-                        Assert.That(compiler.lvaDoneFrameLayout, Is.EqualTo(Compiler.FINAL_FRAME_LAYOUT));
-                        Assert.That(state.EventCount, Is.Zero);
-                        Assert.That(state.InvalidRequests, Is.Zero);
-                        Assert.That((nuint)failedCode, Is.EqualTo((nuint)0x1234));
-                        Assert.That(failedSize, Is.EqualTo(-1));
-                        Assert.That((nuint)CodePointerAddress(codeGen), Is.EqualTo((nuint)0));
-                        Assert.That((nuint)NativeSizeAddress(codeGen), Is.EqualTo((nuint)0));
-                        Assert.That(s_assertion, Is.Null);
-                        s_assertion = null;
-                        return;
-#else
-                        Assert.Fail("Metrics rejection is only supported in Debug builds.");
-#endif
+                    void* generatedCode = null;
+                    var generatedSize = -1;
+                    var output = CodeGenLifeTransitionTests.Capture(() =>
+                        codeGen.genGenerateCode(out generatedCode, out generatedSize));
+                    code = generatedCode;
+                    size = generatedSize;
+                    if (displayMetrics)
+                    {
+                        Assert.That(output, Does.StartWith($"; Total bytes of code {size}, "));
+                        Assert.That(output, Does.Contain(", num cse 0 num cand 0 Standard CSE Heuristic seq "));
+                        Assert.That(output, Does.Contain($"for method {compiler.info.compFullName} ("));
+                        Assert.That(output, Does.Not.Contain("; ============================================================"));
                     }
+#else
                     codeGen.genGenerateCode(out code, out size);
+#endif
                     Assert.That((nuint)CodePointerAddress(codeGen), Is.EqualTo((nuint)0));
                     Assert.That((nuint)NativeSizeAddress(codeGen), Is.EqualTo((nuint)0));
                     Assert.That(compiler.mostRecentlyActivePhase, Is.EqualTo(PHASE_EMIT_GCEH));
@@ -142,6 +137,7 @@ internal static unsafe class CodeGenMetadataPhaseTests
                     Assert.Fail($"JIT assertion: {assertion}");
                 }
 #endif
+                Assert.That(compiler.lvaDoneFrameLayout, Is.EqualTo(Compiler.FINAL_FRAME_LAYOUT));
                 Assert.That(state.InvalidRequests, Is.Zero);
                 Assert.That(state.EventCount, Is.EqualTo(debugInfo ? 5 : 4));
                 PublicationEvent[] expected = debugInfo
@@ -213,6 +209,8 @@ internal static unsafe class CodeGenMetadataPhaseTests
         compiler.opts.disAsm = false;
 #if DEBUG
         compiler.opts.dspMetrics = false;
+        compiler.info.compFullName = nameof(CompleteMachineAndMetadataPhasesPublishInNativeOrder);
+        compiler.info.compMethodSpmiIndex = -1;
 #endif
         compiler.genIPmappings = [];
         compiler.genRichIPmappings = [];

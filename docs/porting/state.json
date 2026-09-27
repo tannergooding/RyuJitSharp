@@ -12,19 +12,19 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Investigate B311 optional-metrics metadata fixture against 33baf8. Reproduce the null method-name failure and restore the required fixture contract without changing production metrics or suppressing coverage.",
+      "scope": "Complete the remaining native fgVerifyHandlerTab EH-table diagnostic contract against 33baf8, preserving all applicable verification and its phase-sensitive invariants.",
       "doneWhen": [
-        "Reproduce the recorded CodeGenMetadataPhaseTests optional-metrics failure on current source.",
-        "Trace the required method-name/EE metadata contract and determine whether the fixture or production implementation is wrong.",
-        "Correct the proven mismatch without disabling metrics or weakening publication-order assertions.",
-        "Validate the focused metadata cases, commit the coherent batch and continue remaining port work."
+        "Locate and compare the complete native fgVerifyHandlerTab function with the managed stub and existing EH verification helpers.",
+        "Port the complete applicable verifier without silent no-ops or weakening native assertions.",
+        "Validate phase-sensitive EH fixtures and existing checked runtime corpora, investigating only failures caused by the new verifier.",
+        "Commit the coherent verifier batch with evidence and continue remaining port work."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Async/B336/B337 committed. B334 was a stale combined-phase test contract: native and managed retain DFS after Lowering, then run fgLateLiveness after StackLevelSetter. Tests now assert both boundaries;35Debug/32Release pass with unchanged production code. Commit test correction, then investigate B311. No publication authorized.",
-      "deferred": "B311 optional metrics fixture, B318/B325 existing argument regressions, B334 lowering assertions, B307 EH node IDs, B320 static-data descriptions and B321/B323 profile formatting stay separate. B324 and B333 are corrected. No general argument-morph redesign or profile-synthesis redesign.",
+      "parentScope": "Async/B336/B337 and B334 committed. B311 also proved to be a stale fixture: metrics already emits successfully, but the test expected rejection and omitted the method name. Metrics-enabled publication now asserts summary output, full publication order and final frame state with/without debug info;17D6R pass. Commit that test correction, then inspect fgVerifyHandlerTab. No publication authorized.",
+      "deferred": "B318/B325 existing argument regressions, B307 EH node IDs, B320 static-data descriptions and B321/B323 profile formatting stay separate. B311, B324, B333 and B334 are corrected. No general argument-morph redesign or profile-synthesis redesign.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -429,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit B334 fixture correction validated by abfee4088f4ed66b6a11e339bf072568fa4eb8bd (35D32R), then reproduce B311 with FullyQualifiedName~CodeGenMetadataPhaseTests and trace CompleteMachineAndMetadataPhasesPublishInNativeOrder(True,False,True)'s missing method name under optional metrics. Production lowering/liveness is unchanged and matches native. Do not disable the metrics path or weaken phase-publication assertions. Native lane idle, collected through66. No push.",
+    "nextAction": "Commit B311 metadata fixture correction validated by5bea7c0587afad40e04966a0dd6a8b03a478e279 (17D6R); production metrics unchanged. Then locate native fgVerifyHandlerTab, compare its entire body and managed entry, and resume that remaining diagnostic port with existing EH fixture patterns. Read only relevant source/map/deviation sections, establish its exact phase invariants before editing, and retain native sources. Native lane idle, collected through66. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -464,6 +464,14 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "metadataMetricsFixture": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "baseline": "Source13f4d46ca049e834e34b55f6317ac152ea81d92f, artifacts\\metadata-metrics\\validation-1\\results\\baseline.trx:one obsolete rejection case fails with null compFullName in compMethodHash; four controls pass.",
+        "sourceSnapshot": "5bea7c0587afad40e04966a0dd6a8b03a478e279",
+        "tests": "artifacts\\metadata-metrics\\validation-2\\results:17Debug/6Release, full analysis, metadata/emission/CSE-metrics tests.",
+        "contract": "Native codegencommon.cpp2536-2584 prints optional metrics and continues publication. Managed code already does so; the older fixture still expected CORJIT_SKIPPED.",
+        "change": "Initialize fixture method identity, require successful metrics output and preserve full machine/unwind/debug/GC publication ordering. Added metrics-plus-debug-info case; final-frame and driver pointer-cleanup checks remain. Production code and existing skip/fallback tests unchanged."
+      },
       "loweringPhaseContract": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "baseline": "Source69142cca6aac80c290863d18bd4313e4b582fe7b, artifacts\\lowering-phase\\validation-1\\results\\baseline.trx:five recorded failures and three controls reproduce.",
