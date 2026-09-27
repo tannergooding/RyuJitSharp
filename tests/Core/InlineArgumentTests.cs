@@ -11,11 +11,18 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class InlineArgumentTests
 {
-    [TestCase(false)]
-    [TestCase(true)]
-    public static void UnusedStructArgumentsPreservePossibleNullFault(bool nonFaulting)
+    [TestCase(false, false)]
+    [TestCase(true, false)]
+    [TestCase(false, true)]
+    [TestCase(true, true)]
+    public static void UnusedStructArgumentsPreservePossibleNullFault(bool nonFaulting, bool returnBuffer)
     {
         WithCompiler((compiler, inlinee, info) => {
+            if (returnBuffer)
+            {
+                compiler.info.compRetBuffArg = 0;
+            }
+
             compiler.lvaTable[0].Type = TYP_BYREF;
             var address = compiler.gtNewCommaNode(TYP_BYREF,
                 compiler.gtNewStoreLclVarNode(3, compiler.gtNewIconNode(TYP_INT, 1)),
@@ -28,6 +35,9 @@ internal static unsafe class InlineArgumentTests
                 value.Flags |= GenTreeFlags.GTF_IND_NONFAULTING;
             }
 
+            var mayFault = !nonFaulting && !returnBuffer;
+            Assert.That(compiler.fgAddrCouldBeNull(address), Is.EqualTo(!returnBuffer));
+            Assert.That(value.IndirMayFault(compiler), Is.EqualTo(mayFault));
             var argInfo = new InlArgInfo {
                 arg = new CallArg(NewCallArg.CreateForStruct(value, TYP_STRUCT, layout)),
                 argHasSideEff = true,
@@ -37,9 +47,9 @@ internal static unsafe class InlineArgumentTests
             Statement? added = null;
             compiler.fgInsertInlineeArgument(ref argInfo, block, ref after, ref added, default);
             Assert.That(added, Is.SameAs(after));
-            Assert.That(after.RootNode.Oper, Is.EqualTo(nonFaulting ? GT_COMMA : GT_NULLCHECK));
+            Assert.That(after.RootNode.Oper, Is.EqualTo(mayFault ? GT_NULLCHECK : GT_COMMA));
             Assert.That(after.RootNode.AsUnOp().Op1, Is.SameAs(address));
-            Assert.That((after.RootNode.Flags & GenTreeFlags.GTF_EXCEPT) != 0, Is.EqualTo(!nonFaulting));
+            Assert.That((after.RootNode.Flags & GenTreeFlags.GTF_EXCEPT) != 0, Is.EqualTo(mayFault));
             Assert.That(after.RootNode.Flags & GenTreeFlags.GTF_ASG, Is.EqualTo(GenTreeFlags.GTF_ASG));
         });
     }
@@ -324,6 +334,7 @@ internal static unsafe class InlineArgumentTests
 #endif
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
         var inlinee = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.InlineeCompiler = inlinee;
         compiler.lvaTable = new LclVarDsc[8];
