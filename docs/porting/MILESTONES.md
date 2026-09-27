@@ -15,6 +15,24 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Shared diagnostic output and automatic shutdown
+
+Diagnostic files now permit other JIT writers and append each encoded block at
+the current EOF, including after external truncation. The old managed writer
+denied the native JIT's lazy append open during shutdown. Isolated callback
+tracing established that ordinary teardown never entered the managed callback,
+whereas explicitly closing it first allowed subsequent runtime dispatch.
+
+With shared output, ordinary checked-host teardown produces the managed
+four-method timing summary, aggregate reports and inline XML footer without
+instrumentation or an explicit shutdown hook. All four selected instruction
+streams and sizes and 21 non-timing/non-allocation CSV fields match native.
+The two new sharing regressions fail against the old writer; complete Core
+passes 11,999 Debug and 10,908 Release cases. B357 is resolved; the R005 clock,
+D001 allocation and interleaved-XML limitations remain. Cross-JIT simultaneous
+write atomicity is not established.
+Evidence: `artifacts\shutdown-dispatch\comparison-1.json`.
+
 ## 2026-09-27: Compiler shutdown and timing diagnostics
 
 Completed the enabled `compShutdown` paths: release assembly-name lists,

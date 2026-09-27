@@ -10,20 +10,29 @@ internal sealed class JitTextWriter : StreamWriter
 {
     [SuppressMessage("Reliability", "CA2000", Justification = "The writer owns the file stream through its text-mode wrapper.")]
     public JitTextWriter(string path, bool append)
-        : this(new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read), leaveOpen: false)
+        : this(new FileStream(path, append ? FileMode.OpenOrCreate : FileMode.Create, FileAccess.Write, FileShare.ReadWrite),
+            leaveOpen: false, append)
+    { }
+
+    public JitTextWriter(Stream stream, bool leaveOpen)
+        : this(stream, leaveOpen, append: false)
     { }
 
     [SuppressMessage("Reliability", "CA2000", Justification = "The base StreamWriter owns and disposes the text-mode wrapper.")]
-    public JitTextWriter(Stream stream, bool leaveOpen)
-        : base(new TextModeStream(stream, leaveOpen))
+    private JitTextWriter(Stream stream, bool leaveOpen, bool append)
+        : base(new TextModeStream(stream, leaveOpen, append))
     {
         NewLine = "\n";
+        if (append)
+        {
+            _ = BaseStream.Seek(0, SeekOrigin.End);
+        }
     }
 
     // The native Windows CRT translates every LF byte on text-mode output.
     // Translate below StreamWriter so embedded newlines and every Write overload
     // agree. An explicit CR before LF is preserved, just as it is by the CRT.
-    private sealed class TextModeStream(Stream stream, bool leaveOpen) : Stream
+    private sealed class TextModeStream(Stream stream, bool leaveOpen, bool append) : Stream
     {
         public override bool CanRead => stream.CanRead;
 
@@ -62,6 +71,13 @@ internal sealed class JitTextWriter : StreamWriter
 
         public override void Write(ReadOnlySpan<byte> buffer)
         {
+            // Native append streams follow the current EOF, including other JITs' writes.
+            // Flush each encoded block so its buffered offset cannot become stale.
+            if (append)
+            {
+                _ = stream.Seek(0, SeekOrigin.End);
+            }
+
 #if HOST_WINDOWS
             var newline = buffer.IndexOf((byte)('\n'));
 
@@ -75,18 +91,16 @@ internal sealed class JitTextWriter : StreamWriter
 #endif
 
             stream.Write(buffer);
+            if (append)
+            {
+                stream.Flush();
+            }
         }
 
         public override void WriteByte(byte value)
         {
-#if HOST_WINDOWS
-            if (value == (byte)('\n'))
-            {
-                stream.WriteByte((byte)('\r'));
-            }
-#endif
-
-            stream.WriteByte(value);
+            ReadOnlySpan<byte> buffer = [value];
+            Write(buffer);
         }
 
         protected override void Dispose(bool disposing)

@@ -89,6 +89,38 @@ internal static class JitTextWriterTests
         }
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void AppendSharesOutputAndFollowsOtherWriters(bool truncate)
+    {
+        var path = Path.Combine(TestContext.CurrentContext.WorkDirectory, $"{Guid.NewGuid():N}.txt");
+        try
+        {
+            File.WriteAllBytes(path, GetExpectedBytes("seed\n"));
+            using (var writer = new JitTextWriter(path, append: true))
+            {
+                writer.Write("managed first\n");
+                writer.Flush();
+                using (var other = new FileStream(path, truncate ? FileMode.Create : FileMode.Append,
+                    FileAccess.Write, FileShare.ReadWrite))
+                {
+                    other.Write(GetExpectedBytes("native\n"));
+                }
+
+                writer.Write("managed last\n");
+                writer.Flush();
+                writer.BaseStream.WriteByte((byte)'!');
+            }
+
+            var expected = truncate ? "native\nmanaged last\n!" : "seed\nmanaged first\nnative\nmanaged last\n!";
+            Assert.That(File.ReadAllBytes(path), Is.EqualTo(GetExpectedBytes(expected)));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     private static byte[] GetExpectedBytes(string text)
     {
         if (OperatingSystem.IsWindows())

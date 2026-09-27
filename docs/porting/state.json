@@ -13,18 +13,17 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "Complete process-wide compiler shutdown and its enabled timing, XML and aggregate-statistics dependencies.",
+      "scope": "B357 resolved: shared diagnostic output restores ordinary side-by-side runtime teardown.",
       "doneWhen": [
-        "Replace compShutdown's empty body with all enabled Debug/Release paths and the native ordering, zero-method guard, XML fallback and aggregate selection.",
-        "Reuse and reconcile existing CompTimeSummaryInfo/JitTimer support; emitDone is genuinely empty in the native pin.",
-        "Preserve CILJit.ProcessShutdownWork -> jitShutdown -> Compiler.compShutdown ownership, then stream disposal; Compiler.ProcessShutdownWork remains genuinely empty.",
-        "Write lifecycle and output regressions alongside the area, validate at the integrated shutdown boundary, and commit before continuing."
+        "Establish whether ordinary teardown reaches the managed callback or loses its output; do not infer the cause from missing reports.",
+        "Use isolated artifact instrumentation and the exact pinned host, preserving the oracle and production source.",
+        "Fix any demonstrated managed dispatch/ownership defect; otherwise record the precise host boundary and reproduction without accepting fake teardown parity."
       ],
       "validation": [
-        "Latest baseline b29ab7c:11973Debug/10889Release Core,12checked FullOpts/MinOpts finalization compilations; graph and B349 broader execution evidence remains available.",
-        "Verify actual shutdown output/closure and statistics selection, timing-report structure with deterministic synthetic data, and native host cleanup. Do not compare inherently varying elapsed-time values as performance parity."
+        "11999Debug/10908Release Core pass; both new sharing/current-EOF regressions fail on old code.",
+        "Frozen7dedd0fe ordinary checked-host teardown produces managed summary/aggregate reports/XML footer without a hook. Four instruction streams/sizes and21non-timing/non-allocation CSV fields each match native."
       ],
-      "parentScope": "Shutdown/timing entry and support are validated:11997Debug/10906Release Core,2old-code behavior failures,4checked timing rows with21exact non-timing fields and unchanged instruction streams/sizes. An explicit live-vtable host probe produces the managed four-method summary, XML footer and aggregate reports and verifies getJit becomes null. Automatic side-by-side teardown remains B357.",
+      "parentScope": "B355 shutdown/timing committed85e59e6. JitTextWriter now permits native writers and follows current EOF after external appends/truncation. Ordinary checked-host confirmation closes B357 without callback/ownership changes.",
       "deferred": "Disabled native arena/node-size and API-measurement configurations remain disabled. Discretionary/Replay remain B354. Existing Stopwatch counter differs from native x64 RDTSC; user was unavailable and delegated judgment. Retain existing counter instead of introducing a native helper library, document as an explicit limitation, and do not claim cycle/frequency/timing parity. Native-empty Compiler.ProcessShutdownWork and emitter.emitDone stay empty.",
       "parallelPackets": [
         {
@@ -430,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit validated shutdown/timing entry/support after final diff/source verification, then continue B357's ordinary side-by-side shutdown observation. Compiler source ac2ccb8a72870fdc25ed48628330507002b8e90c passes11997Debug/10906Release; native JIT981D57D6E343FB10C85BE84D19262C87530FED65BB9C4BD84FCDB32407FCE7BA. comparison-1.json compares native-all-2 with explicit-shutdown-2:4matching instruction streams/sizes,21non-timing CSV fields each, a4-method managed summary and balanced forest headers/footers. The probe uses STARTUP_HOOKS via corerun --property (environment alone was ignored), invokes the actual managed vtable slot1, and proves getJit null afterward. Ordinary managed-all-1 had native-only summaries and missing identifiable alternate reports; do not claim automatic teardown parity. Runtime source jitinterface.cpp dispatches primary then alternate callbacks; managed CILJit.Vtbl.cs routes the slot correctly, direct tests pass. No native source changes or new clock helper; R005 retains Stopwatch. Runner's loop flag was corrected after source freeze from DisplayLoopHoistStats to actual JitLoopHoistStats. Worker c3670d87 idle/collected; no background shells or push.",
+    "nextAction": "Commit the validated B357 shared-output fix, then continue B354 optional inline policies: inspect complete native DiscretionaryPolicy and derived policy contracts against existing constructor-only shells, select a dependency-coherent implementation boundary, and persist it before editing. B357 comparison-1 establishes automatic teardown without a hook; do not repeat shutdown or clock investigations. No push; worker c3670d87 remains idle/fully collected.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -465,6 +464,16 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "shutdownDispatch": {
+        "sourceSnapshot": "7dedd0fe2e150ac0e1019cdfd44c4efa8d584622",
+        "mapping": "JitTextWriter permits shared native file access and seeks current EOF before each flushed encoded append block. Native dispatch invokes the primary JIT before the alternate JIT; the primary lazily opens shared dump output.",
+        "tests": "artifacts\\shutdown-dispatch: area-debug-1.trx48passed;area-release-1.trx36passed;full-debug-1.trx11999passed;full-release-1.trx10908passed. old-writer-1.trx has2sharing failures; old-writer-control-1.json records compiler/test hashes.",
+        "traceEvidence": "ordinary-1 with isolated callback instrumentation writes no callback trace. explicit-1 logs successful explicit shutdown followed by ordinary runtime callback with initialized=false. Instrumentation exists only in artifacts.",
+        "nativeAotLibrary": "artifacts\\shutdown-dispatch\\native-jit-1\\RyuJitSharp.dll",
+        "nativeAotSha256": "53C879CF8ED016DAD8A3DA074A4F327F8BF109B0FD90BBD57D411003F62B6F5B",
+        "comparison": "artifacts\\shutdown-dispatch\\comparison-1.json: managed-fixed-1 uses maintained Invoke-PortingCorpus, no hook or instrumentation. Ordinary teardown produces the managed4-method summary, aggregate reports and balanced XML forest headers/footers. All4instruction streams/sizes and21non-timing/non-allocation CSV fields per method match native-all-2.",
+        "limits": "R005 clock and D001 allocation differences remain. Shared XML forests may interleave; no whole-file XML validity or cross-JIT simultaneous append atomicity claim."
+      },
       "compilerShutdown": {
         "nativeFunctions": "compiler.cpp:compShutdown;CompTimeSummaryInfo;JitTimer and CompTimeInfo native widths. emit.cpp:emitDone is empty. ee_il_dll.cpp:CILJit::ProcessShutdownWork calls jitShutdown before native-empty Compiler::ProcessShutdownWork.",
         "sourceSnapshot": "ac2ccb8a72870fdc25ed48628330507002b8e90c",
@@ -6682,14 +6691,14 @@
       "area": "compiler-shutdown-and-timing",
       "native": ["src\\coreclr\\jit\\compiler.cpp:compShutdown;JitTimer;CompTimeSummaryInfo", "src\\coreclr\\jit\\compiler.h:CompTimeInfo", "src\\coreclr\\jit\\emit.cpp:emitDone"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.Shutdown.cs", "sources\\Core\\jit\\compiler\\CompTimeInfo.cs", "sources\\Core\\jit\\compiler\\CompTimeSummaryInfo.cs", "sources\\Core\\jit\\compiler\\JitTimer.cs", "sources\\Core\\jit\\emit\\Emitter.cs:emitDone"],
-      "status": "Enabled shutdown entry/support integrated and checked through a live vtable call. Native counter widths, ref aggregation and CSV/report semantics restored. R005 clock representation and B357 ordinary side-by-side teardown remain explicit limits. Native source retained.",
+      "status": "Enabled shutdown entry/support integrated and checked through explicit and ordinary runtime dispatch. B357 shared diagnostic writer access/current-EOF fixed. Native counter widths, ref aggregation and CSV/report semantics restored. R005 clock representation remains an explicit limit. Native source retained.",
       "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     },
     {
       "area": "per-method-compilation-finalization",
       "native": ["src\\coreclr\\jit\\compiler.cpp:compCompileFinish;AddLoopHoistStats;PrintAggregateLoopHoistStats;EnregisterStats", "src\\coreclr\\jit\\inline.cpp:InlineStrategy data/XML;InlineContext::DumpXml", "src\\coreclr\\jit\\jitmetadata.cpp:printMetric;dump"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.CompilationFinish.cs", "sources\\Core\\jit\\compiler\\Compiler.EnregisterStats.cs", "sources\\Core\\jit\\Inline\\InlineStrategy.Diagnostics.cs", "sources\\Core\\jit\\Inline\\InlineContext.Diagnostics.cs", "sources\\GenerateTables\\Program.cs:GenerateJitMetrics"],
-      "status": "Complete enabled per-method finalization and supported policy diagnostics. Exact native selected metrics, summaries and inline records with explicit allocation/timing/AltJIT exclusions. Process-wide compShutdown and optional policy implementations remain unported. Native source retained.",
+      "status": "Complete enabled per-method finalization and supported policy diagnostics. Exact native selected metrics, summaries and inline records with explicit allocation/timing/AltJIT exclusions. Process-wide compShutdown is now ported; optional policy implementations remain B354. Native source retained.",
       "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     },
     {
