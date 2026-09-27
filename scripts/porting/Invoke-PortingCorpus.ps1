@@ -35,6 +35,8 @@ param(
     [switch] $EnregistrationStats,
     [switch] $RawHexCode,
     [switch] $GcStress,
+    [ValidateRange(0, 2147483647)][int] $RegisterStress = 0,
+    [string] $RegisterStressRange = "",
     [switch] $FakeProcedureSplitting,
     [switch] $StressProcedureSplitting,
     [switch] $DisableProcedureSplittingEH
@@ -45,6 +47,9 @@ Set-StrictMode -Version Latest
 
 if ($ExecuteManagedCode -and -not $ManagedJit) {
     throw "-ExecuteManagedCode requires -ManagedJit."
+}
+if ($RegisterStressRange -and $RegisterStress -eq 0) {
+    throw "-RegisterStressRange requires nonzero -RegisterStress."
 }
 if ($InstrumentedTier0 -and $MinOpts) {
     throw "-InstrumentedTier0 selects the runtime's instrumented tier; do not combine it with forced -MinOpts."
@@ -192,6 +197,12 @@ if ($RawHexCode) {
 }
 if ($GcStress) {
     $settings.DOTNET_GCStress = "4"
+}
+if ($RegisterStress -ne 0) {
+    $settings.DOTNET_JitStressRegs = $RegisterStress.ToString("x", [Globalization.CultureInfo]::InvariantCulture)
+}
+if ($RegisterStressRange) {
+    $settings.DOTNET_JitStressRegsRange = $RegisterStressRange
 }
 if ($FakeProcedureSplitting) {
     $settings.DOTNET_JitFakeProcedureSplitting = "1"

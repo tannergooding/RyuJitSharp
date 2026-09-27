@@ -10,7 +10,8 @@ public sealed partial class LinearScan
     private VARSET_TP? _splitOrSpilledVars;
 
     private regMaskTP _registersWithConstants;
-    private LsraLocation? _currentBlockStartLocation;
+    // Entry parameters at MinLocation can spill before the first block boundary.
+    private LsraLocation _currentBlockStartLocation = MinLocation;
 
     private bool isAssigned(RegRecord regRecord, RegisterType newRegisterType)
     {
@@ -157,8 +158,7 @@ public sealed partial class LinearScan
             {
                 assignedInterval.isActive = false;
                 spill = false;
-                if (spillFrom.nodeLocation <= (_currentBlockStartLocation
-                        ?? throw new FatalJitException("LSRA spilling requires the current block start location.")))
+                if (spillFrom.nodeLocation <= _currentBlockStartLocation)
                 {
                     setInVarRegForBB(_currentBlockNumber, assignedInterval.varNum, REG_STK);
                     if (spillFrom.nextRefPosition is not null)
@@ -338,8 +338,7 @@ public sealed partial class LinearScan
         interval.isActive = false;
         setIntervalAsSpilled(interval);
 
-        if (fromRefPosition.nodeLocation <= (_currentBlockStartLocation
-                ?? throw new FatalJitException("LSRA spilling requires the current block start location.")))
+        if (fromRefPosition.nodeLocation <= _currentBlockStartLocation)
         {
             assert(interval.isLocalVar);
             if (!interval.isLocalVar)

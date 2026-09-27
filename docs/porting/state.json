@@ -13,18 +13,19 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "Broaden Windows-x64 execution with pinned upstream regressions for checked-subtraction loop unrolling, SIMD comparison complements/scalar FMA and multiple stack-array expansion.",
+      "scope": "Extend the four pinned upstream regressions to matched GCStress4 plus restricted-register and forced-spill allocation, with observed collection activity.",
+      "status": "done",
       "doneWhen": [
-        "Run unchanged pinned Runtime_133583, Runtime_133518, Runtime_133521 and Runtime_133523 source through their actual assertion entrypoints, forcing the selected methods to be compiled.",
-        "B364: restore complete optUnrollLoops/optTryUnrollLoop graph/tree diagnostics and CheckLoopConditionBaseCase/IsZeroTripTest native operator names; preserve all18native-equal instruction streams.",
-        "Commit the complete dependency-coherent implementation/evidence boundary and continue."
+        "Preserve all original assertions and18selected bodies; require a positive GC.CollectionCount delta in each stressed process rather than merely recording an enabled flag.",
+        "Compare native/managed under identical GCStress4 and JitStressRegs masks3/small-set and0xC03/small-set+forced-spill+reload settings; explicitly preserve native assertion boundaries B365.",
+        "Record and commit validated stress evidence or a completed prerequisite, then continue."
       ],
       "validation": [
-        "Use the matching current-pin CoreRoot and existing capture runner with TieredCompilation=0; preserve source/binary identities and exact selected-method sets.",
-        "Initialfb6831b5 passes18bodies and all native assertions;29/36selected phases match, with7unrolling differences. Add before/after diagnostic regressions, run existing loop controls in Debug/Release, and recapture the18bodies with a fresh frozen JIT after B364.",
-        "Runner now counts repeated ExpectedMethods names for overloads; native/managed18body runs pass, wrong multiplicity and case still reject. Original runner fails on the two scalar-FMA overloads."
+        "B366 regression:4pre-fix failures/2controls; final full-analysis LSRA672Debug/566Release, including ordinary parameter eviction in Release.",
+        "Source23790289 NativeAOT passes18bodies/36exact phases in default, small-set and scoped forced-spill captures. All original assertions execute; small-set stresses18methods, forced-spill stresses17with only native-failing hash8075f3c3 disabled. Every GC-stressed process reports positive collections.",
+        "Allocation effects are measured against matching GC-only inputs:9small-set and17forced-spill bodies change instructions; native/managed spill-event counts match, totaling14baseline/256small-set/2292forced-spill."
       ],
-      "parentScope": "B364 complete undereba7ba0e:80Debug/70Release loop cases,5old diagnostic failures/49controls, and18executed native-equal instruction streams. All36selected unroll/stack-expansion phases now match exactly, including6positive unrolled loops and5stack arrays. Runner overload counts accept all6scalar-FMA bodies and reject wrong multiplicity/case. B354/B363 remain committeddb9b53c.",
+      "parentScope": "B364 committedf5c7d42; eba7ba0e produces18native-equal bodies and36exact selected phases. B354/B363 committeddb9b53c. Existing Windows-x64 default coverage remains intact; broader GC behavior is the next execution boundary.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -424,7 +425,7 @@
         "Other-target implementation and new tooling infrastructure are not prerequisites for continuing Windows-x64 execution."
       ]
     },
-    "nextAction": "Commit validated B364 plus runner overload-count support and upstream regression evidence, then continue with GCStress4 execution of the same4unchanged upstream sources using Invoke-PortingCorpus -GcStress and currenteba7ba0e NativeAOT. Preserve final default native-3/managed-4 captures and comparison-4.json; use fresh stress directories, require18positive bodies and compare native/managed under the same stress settings. No push.",
+    "nextAction": "B366 and the GC/register-stress batch are validated; commit them locally before the next batch. Continue with selected-method GCStress4 masks0x7,0xb,0x13,0x83,0x203,0x1003 to cover reversed heuristics, caller/callee preference, nearest selection, extended lifetimes, rotated block boundaries and optional-register avoidance. Reuse source237902893690cd8fd438cb7e65c5d64f3ec1022d/native-jit-1 and corpus-built-3. Require18positive bodies and native-identical instructions per native-passing policy; do not infer that B365 requires exclusions outside0xC03.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -459,6 +460,27 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "allocationStressAndParameterSpilling": {
+        "sourceSnapshot": "237902893690cd8fd438cb7e65c5d64f3ec1022d",
+        "nativeScope": "lsra.cpp:allocateRegisters,spillInterval,unassignPhysReg and constructor stress initialization. A parameter at unsigned MinLocation can spill before the first BB reference; the managed nullable cursor incorrectly rejected this. Initialize it to MinLocation and retain native map/spill updates. Existing lsra folder mapping applies.",
+        "tests": "artifacts\\upstream-regressions\\spill-before-debug-4.trx:4failures/2controls. spill-area-debug-2.trx672passed and spill-area-release-2.trx566passed with full analysis. Six Debug/four Release cases cover integer/floating parameters, forced spilling, ordinary low-weight eviction and preserved-register controls. Final compiler/runner match the snapshot; Release test coverage was added afterward.",
+        "nativeAotLibrary": "artifacts\\allocation-stress\\native-jit-1\\RyuJitSharp.dll",
+        "nativeAotSha256": "DAF90D1BE8000D2EBE0574652C57780F96973C79DA41BEB2625C25E85765C767",
+        "comparisons": "artifacts\\upstream-regressions\\comparison-default-allocation-1.json,comparison-limited-2.json,comparison-spill-scoped-1.json each prove18positive native-equal instruction streams and36exact unroll/stack-expansion phases, with6unrolled loops and5expanded arrays. All original overflow/SIMD/FMA/stack-array assertions execute. Small-set stress is enabled for18bodies; scoped0xC03 for17, with native-failing ScalarFmaNegation hash8075f3c3 compiled unstressed. Both native and managed banners/ranges prove this exact scope.",
+        "allocationEffects": "allocation-effects-1.json compares identical native binaries/corpus and GCStress4 inputs. Small-set changes9instruction streams; scoped forced spilling changes17. Spill events total14/256/2292 and code sizes6770/7215/19082bytes for GC-only/small-set/forced-spill. Native and managed spill-event counts match. These establish effective stress, not performance gains.",
+        "collections": "All stressed processes report positive collections; final matched captures span3144-3541observed collections. Counts are measured independently and need not be equal.",
+        "runner": "RegisterStress is formatted as native hexadecimal; RegisterStressRange forwards native hash/range syntax and requires nonzero stress. register-range-validation-1.json verifies rejection before output creation. Exact method multiplicity and positive-body requirements remain intact.",
+        "reproduction": "Use artifacts\\upstream-regressions\\capture.ps1 with -Mode native|managed -RunId <fresh> -CorpusDirectory corpus-built-3 -GcStress -RegisterStress 3 or 0xC03. For 0xC03 add -LimitRegisterStressToSelectedMethods -UnstressedMethodHash 8075f3c3; managed adds frozen library/source. compare.py takes matching --register-stress and --unstressed-hash for 0xC03 plus --gc-stress --require-phases. Each new capture preserves its operational script.",
+        "limits": "B365 retains global EventSource and selected ScalarFma native assertions. The original managed retry is preserved separately in spill-selected-managed-1; it is not a parity pass. No unrestricted forced-spill, whole-runtime, whole-dump or raw-relocated-byte claim. Native residual source/index remain unchanged."
+      },
+      "upstreamRegressionGcStress": {
+        "sourceSnapshot": "eba7ba0ece51a5eea71fbe54f7592bb000f26232",
+        "corpus": "artifacts\\upstream-regressions\\corpus-built-3; source subdirectory preserves the driver. Original four native regression sources remain unchanged. Driver requires positive GC.CollectionCount(0) delta when DOTNET_GCStress=4.",
+        "comparison": "artifacts\\upstream-regressions\\comparison-gcstress-1.json: matched GCStress4 native/managed runs have18positive native-equal instruction streams and36exact selected phases,6unrolled loops,5expanded stack arrays, AVX512 coverage and all original assertions.",
+        "collections": "Every process observed collections: native3403/3393/3145/3389; managed3412/3363/3139/3381 for Runtime_133583/133518/133523/133521 respectively. Counts are independently observed, not required to be identical.",
+        "reproduction": "capture.ps1 -Mode native|managed -RunId <fresh> -CorpusDirectory corpus-built-3 -GcStress; managed additionally takes the current library/source. compare.py --native-run gcstress-native-1 --managed-run gcstress-managed-1 --source eba7ba0ece51a5eea71fbe54f7592bb000f26232 --output <fresh-file> --require-phases --gc-stress.",
+        "limits": "Scoped GC-stressed execution and selected code/phases, not exhaustive GC metadata or whole-runtime coverage. Register-stress validation continues separately."
+      },
       "upstreamRegressionsAndLoopDiagnostics": {
         "sourceSnapshot": "eba7ba0ece51a5eea71fbe54f7592bb000f26232",
         "nativeSources": "Runtime_133583 from src\\tests\\JIT\\Regression\\JitBlue and Runtime_133518,Runtime_133521,Runtime_133523 from src\\tests\\JIT\\Regression_ro_2 at33baf8. Sources are compiled unchanged with pinned CoreRoot Xunit assemblies; driver invokes actual assertion cases through function pointers to retain entrypoint compilation.",

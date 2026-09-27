@@ -9,6 +9,7 @@ using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.LsraGlobals;
 using static RyuJitSharp.RefCountState;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
@@ -197,6 +198,67 @@ internal static unsafe class LinearScanAllocationTraversalTests
             Assert.That(dummy.registerAssignment, Is.EqualTo(SRBM_RAX));
             Assert.That(allocator.getInVarToRegMap((uint)blocks[1].bbNum)![0], Is.EqualTo(REG_RAX));
             Assert.That(use.registerAssignment, Is.EqualTo(SRBM_RAX));
+        });
+    }
+
+    [TestCase(TYP_INT, REG_RCX, false, false)]
+    [TestCase(TYP_INT, REG_RCX, false, true)]
+    [TestCase(TYP_DOUBLE, REG_XMM0, false, false)]
+    [TestCase(TYP_DOUBLE, REG_XMM0, false, true)]
+#if DEBUG
+    [TestCase(TYP_INT, REG_RCX, true, false)]
+    [TestCase(TYP_DOUBLE, REG_XMM0, true, false)]
+#endif
+    public static void IncomingParameterCanSpillBeforeTheFirstBlock(
+        var_types type, regNumber register, bool forceSpill, bool lowWeight)
+    {
+        WithAllocator((compiler, allocator) => {
+            compiler.lvaTable = [
+                new LclVarDsc {
+                    Type = type, _varIndex = 0, lvTracked = true,
+                    lvLRACandidate = true, lvIsRegArg = true,
+                },
+            ];
+            compiler.lvaCount = 1;
+            compiler.lvaTrackedCount = 1;
+            compiler.lvaTrackedCountInSizeTUnits = 1;
+            compiler.lvaTrackedFixed = true;
+            compiler.lvaTrackedToVarNum = [0];
+            compiler.lvaTable[0].setLvRefCnt(2);
+            compiler.lvaTable[0].setLvRefCntWtd(lowWeight ? BB_UNITY_WEIGHT : 2 * BB_UNITY_WEIGHT);
+            EnregisterLocals(allocator) = true;
+            allocator.localVarIntervals = new Interval?[1];
+            LargeVectorVars(allocator) = SetOps.MakeEmpty(compiler);
+            RegisterCandidateVars(allocator) = SetOps.MakeSingleton(compiler, 0);
+            var block = BeginBlock(compiler, allocator, addBoundary: false);
+            block.bbLiveIn = SetOps.MakeSingleton(compiler, 0);
+            block.bbLiveOut = SetOps.MakeEmpty(compiler);
+            allocator.initVarRegMaps();
+
+            var interval = NewInterval(allocator, type);
+            interval.setLocalNumber(compiler, 0, allocator);
+            interval.physReg = register;
+            interval.assignedReg = allocator.physRegs[(int)register];
+            interval.assignedReg.assignedInterval = interval;
+            var mask = genSingleTypeRegMask(register);
+            CurrentBlockNumber(allocator) = 0;
+            var definition = allocator.newRefPosition(interval, 0, RefType.RefTypeParamDef, null, mask);
+            CurrentBlockNumber(allocator) = (uint)block.bbNum;
+            _ = allocator.newRefPosition(null, 1, RefType.RefTypeBB, null, SRBM_NONE);
+            var use = allocator.newRefPosition(
+                interval, 4, RefType.RefTypeUse, compiler.gtNewLclvNode(type, 0), mask);
+#if DEBUG
+            StressMask(allocator) = forceSpill ? 0x800 : 0;
+#endif
+
+            AllocateRegisters(allocator);
+
+            var expectedSpill = forceSpill || lowWeight;
+            Assert.That(definition.spillAfter, Is.EqualTo(expectedSpill));
+            Assert.That(interval.isSpilled, Is.EqualTo(expectedSpill));
+            Assert.That(use.reload, Is.EqualTo(expectedSpill));
+            Assert.That(allocator.getInVarToRegMap((uint)block.bbNum)![0],
+                Is.EqualTo(REG_STK));
         });
     }
 
@@ -405,6 +467,9 @@ internal static unsafe class LinearScanAllocationTraversalTests
     private static extern ref nint[] RegisterCandidateVars(LinearScan allocator);
 
 #if DEBUG
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
+    private static extern ref int StressMask(LinearScan allocator);
+
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_allocationDumpRegisters")]
     private static extern ref regMaskTP AllocationDumpRegisters(LinearScan allocator);
 #endif

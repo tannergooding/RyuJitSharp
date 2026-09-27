@@ -15,6 +15,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Incoming parameter spills and allocation stress
+
+Incoming register parameters can now spill before the first block boundary.
+The nullable allocation cursor previously rejected this valid path during
+forced spilling or ordinary low-weight parameter eviction, aborting optimized
+compilation. It now starts at the minimum location while preserving native
+spill and block-entry map updates. Register-stress settings and method ranges
+are exposed by the capture runner, including native enabled/disabled diagnostics.
+
+The four upstream regressions retain all original assertions and emit
+native-identical instructions under GC stress with small register sets and
+scoped forced spills. Small-set allocation changes nine bodies; forced spilling
+changes seventeen, with native and managed reporting identical spill counts.
+A pinned native assertion requires leaving one assertion-caller method outside
+the forced-spill range; that method still compiles and executes its assertions.
+Unrestricted forced-spill support is not claimed.
+
 ## 2026-09-27: Upstream regressions and loop-unrolling diagnostics
 
 Broadened Windows-x64 execution to unchanged upstream regressions for checked

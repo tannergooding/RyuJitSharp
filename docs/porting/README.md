@@ -305,6 +305,17 @@ It requires `-ManagedJit` and records the execution request in the manifest.
 Check that every selected method completed managed compilation without a skip
 or fallback before treating a successful corpus run as managed execution.
 
+Use `-RegisterStress` with a native LSRA stress mask to exercise allocation
+under restricted registers or forced spills. For example, `3` selects the
+small register set and `0xC03` additionally forces spilling and reloads.
+The runner formats this integer as the hexadecimal `JitStressRegs` setting;
+zero leaves the setting absent. Combine it with `-GcStress` to check stressed
+allocation while collections occur.
+Use `-RegisterStressRange` with native hexadecimal method hashes or ranges
+to limit stress to the intended methods; it requires nonzero `-RegisterStress`.
+This can avoid stressing unrelated framework startup, but does not establish
+that an unrestricted stress configuration works.
+
 Use `-MinOpts` on both captures to exercise required, unoptimized compilation;
 the default method set then includes `InlineCandidate`, which is no longer
 inlined. For optimized captures that exclude the still-unported object stack

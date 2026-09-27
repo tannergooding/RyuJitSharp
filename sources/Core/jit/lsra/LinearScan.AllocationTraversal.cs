@@ -491,8 +491,7 @@ public sealed partial class LinearScan
                         assert(_enregisterLocalVars &&
                             (inMap[interval.getVarIndex(_compiler)] == REG_STK) &&
                             (previousReference is not null) &&
-                            (_currentBlockStartLocation is not null) &&
-                            (previousReference.nodeLocation <= _currentBlockStartLocation.Value));
+                            (previousReference.nodeLocation <= _currentBlockStartLocation));
                         isInRegister = false;
                     }
                     else
