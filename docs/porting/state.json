@@ -13,18 +13,17 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "B361: restore redundant-branch diagnostics for PHI threading, threading core, local relop forwarding, and branch inference without changing algorithms.",
+      "scope": "B354/B363: fix stale importer membership bytes exposed by list expansion, then finish actual host-collected ProfilePolicy evidence.",
       "doneWhen": [
-        "Compare complete native/managed PHI threading, threading core, local relop, and inference contracts; establish that missing trace does not imply missing transformation.",
-        "Restore complete diagnostics for those functions, including original spelling and branch-specific ordering.",
-        "Match original probe RBO phases exactly while preserving instruction streams/runtime results, run branch controls, commit locally and continue."
+        "Preserve default initialization of newly exposed list elements after Clear/RemoveRange in both expansion helpers, retaining existing live elements.",
+        "Demonstrate failing old helper regressions and correct spill-clique reuse; rerun original counted-profile corpus without overwriting failure evidence.",
+        "Require collected-PGO ProfilePolicy decisions, correct generated execution and native comparison; commit the dependency-coherent fix/evidence and continue."
       ],
       "validation": [
-        "Existing RedundantBranch/ScalarEvolution controls in Debug/Release; preserved pre-fix RBO diffs prove missing diagnostics.",
-        "Checked NativeAOT original-probe RBO phase comparison and unchanged code/runtime results. Algorithms remain unchanged, so reuse B362 full-suite/matrix baseline."
+        "Before/after expansion and importer membership regressions, focused import/inline tests and full Core suites because both pending-block and spill-clique flags share the helper.",
+        "Fresh NativeAOT execution of original counted-profile input, native policy/decision/code comparison and established29/143execution baseline."
       ],
-      "parentScope": "B359 committed8356b3f and B362 committed3f320d5. B361 complete underf99c6cce: affected transformations already matched; diagnostics restored.37D37R controls pass; both original probe RBO phases now byte-identical, with unchanged native-equal instruction streams/sizes277/59.",
-      "deferred": "Whole-pipeline dump parity and unrelated upstream undefined behavior remain separate. B354 ProfilePolicy host-PGO evidence is next; B358/B360 native data/replay quirks and clock/allocation limitations remain explicit.",
+      "parentScope": "B354 host-PGO and B363 importer prerequisite complete underfb6831b5. Both list expansion helpers initialize newly exposed elements;6old failures/2controls and12111D10966R pass. Original counted corpus now executes correctly, shares native spill destinations and matches all3instruction streams/sizes56/86/65.29/143baseline remains intact. Commit this completed batch before starting the next port area.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -419,17 +418,12 @@
         }
       ],
       "deferred": [
-        "VN, assertion propagation, range elimination, copy propagation, VN dead-store removal, unrolling, redundant branches, Boolean optimization, switch recognition, if-conversion, loop cloning and CSE are active.",
-        "Broader optimized execution and unfinished optimization phases beyond the current backend frontier.",
-        "Full EH-funclet and hardware-import parity are subsequent execution-capability packets, not gates on the first scalar minopts backend path.",
-        "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs. Native vector Intersects/XOR defects are recorded in B247/B246; their corrected algorithms are not authorized and those entire vector operations are deferred.",
-        "The preexisting fgVerifyHandlerTab diagnostic stub and broader EH verification, outside the cleanup algorithm.",
-        "Broader diagnostic parity beyond the complete B261 checker closure; do not count annotation checks as equivalent.",
-        "Broader OSR execution remains unverified beyond the two strengthened carried-state loops; metadata and actual resumption are established for those cases.",
-        "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
+        "Whole-pipeline dump parity, raw address-bearing code and broader runtime/GC-stress coverage remain separate.",
+        "Native undefined behavior and diagnostic quirks B245/B246/B247/B322/B327/B350/B358/B360, timing R005 and allocation D001 remain explicit.",
+        "Other-target implementation and new tooling infrastructure are not prerequisites for continuing Windows-x64 execution."
       ]
     },
-    "nextAction": "Commit validated B361 diagnostics, then close B354 ProfilePolicy host-PGO evidence: reuse the current-pin warmed/tiered infrastructure under artifacts/profile-instrumentation, select JitInlinePolicyProfile on native and managed, and require an actual profiled optimized body using ProfilePolicy rather than a no-PGO Default fallback. Read the existing driver/configuration before recapture; fix only demonstrated contract mismatches. B361 original probe has exact RBO phases and277/59-byte code. Worker95344d66 idle/collected. No push.",
+    "nextAction": "Commit validated B363/B354 batch (ListExtensions,8regressions and records), then continue directly: inspect remaining explicit lowering target stubs to identify the next Windows-x64 dependency; do not reopen completed inline-policy work or non-xarch scope. If those stubs are all other-target paths, advance broader pinned native runtime regression execution beyond the established29/143baseline. Current NativeAOTfb6831b5 passes original counted ProfilePolicy input and matches native56/86/65-byte bodies. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -464,6 +458,18 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "importerMembershipAndProfilePolicy": {
+        "sourceSnapshot": "fb6831b5d6bf7fa8fdbe36d0ec44289bb95dd6cd",
+        "nativeScope": "jitexpandarray.h:JitExpandArray Reset/Get/Set value initialization; importer.cpp:impImport, impWalkSpillCliqueFromPred and membership accessors. ListExtensions is the shared managed adaptation for pending and spill-clique membership.",
+        "tests": "artifacts\\importer-membership\\before-debug-2.trx:6stale-byte failures/2controls. full-debug-1.trx12111passed;full-release-1.trx10966passed. All8new cases execute in each configuration.",
+        "nativeAotLibrary": "artifacts\\importer-membership\\native-jit-1\\RyuJitSharp.dll",
+        "nativeAotSha256": "BF938FD80EADA73E365B09ACC61B35EB0FE5CABBAD8F7D4C1D5DA2C3C394E2F2",
+        "originalCorpus": "artifacts\\profile-policy\\corpus\\bin\\Release\\net11.0\\ProfilePolicyProbe.dll;SHA25610109756B93D1822E97D9A41ED63DDDD6FC0CFC7ED5AC425B5E6F6616FC0C4F1. Four30000-call warm rounds independently check results and final hot/cold controls.",
+        "before": "managed-counted-1 exits1 after3bodies. Separate diagnostic build/capture managed-diagnostic-1 reports round2,value1,expected29,actual3. Wrong V09/V10 stores were removed as dead while the merge read V07/V08.",
+        "comparison": "Run python artifacts\\profile-policy\\compare-counted.py. comparison-counted-1.json establishes correct original-corpus execution, native V07/V08 spill destinations, actual collected DynamicPGO/ProfilePolicy with two profitable inline decisions, and identical native/managed instructions/sizes56/86/65 across Tier0,InstrumentedTier0,Tier1.",
+        "baseline": "artifacts\\upstream-refresh-33baf8\\importer-membership-managed-matrix-1\\results.json:29configurations143positive bodies, expected semantic/collection output and no fallback.",
+        "limits": "Separately collected profile frequencies and derived benefit values differ; perCall1.35185,global1,size5.4 and decisions match. No equal-profile-input or whole-pipeline dump claim. Initial GDV native-1/managed-1 selected ProfilePolicy with synthesized weights, not collected-count evidence."
+      },
       "redundantBranchDiagnostics": {
         "sourceSnapshot": "f99c6cce328a79c0aafdb0709ff8a3411c6b6317",
         "nativeFunctions": "redundantbranchopts.cpp:optJumpThreadPhi, optJumpThreadCore, optRedundantRelop and optRedundantBranch; exact native degnerate spelling restored in optRedundantDominatingBranch.",
@@ -501,7 +507,7 @@
         "nativeAotLibrary": "artifacts\\inline-policies\\native-jit-2\\RyuJitSharp.dll",
         "nativeAotSha256": "CF47C11B37472555E1B84554013CAEDBDCDE59B1A74788DF09E9F4B709D11F04",
         "comparison": "artifacts\\inline-policies\\simple\\comparison-2.json: six policies/12executed bodies match all selected XML except timing, complete schema/data and instruction streams/sizes. replay-comparison-2.json adds4bodies with four accepted inlines or one retained inline under explicit fixtures. old-replay-control.json proves the old shell ignores the same log.",
-        "limits": "B358 native CSV header/data mismatch preserved. B360 native DEBUG raw-call versus statement/context-offset mismatch retained; positive replay uses controlled inputs, not a native XML round trip. Profile policy's PGO inputs have deterministic unit coverage, not positive current host PGO evidence. Initial exception-path corpus exposed pre-existing B359; separate scalar corpus preserves its original failed capture."
+        "limits": "B358 native CSV header/data mismatch preserved. B360 native DEBUG raw-call versus statement/context-offset mismatch retained; positive replay uses controlled inputs, not a native XML round trip. This original capture has deterministic PGO-input coverage; later importerMembershipAndProfilePolicy records positive collected host-PGO evidence. Original B359 failure remains preserved."
       },
       "shutdownDispatch": {
         "sourceSnapshot": "7dedd0fe2e150ac0e1019cdfd44c4efa8d584622",
@@ -6726,6 +6732,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "importer-membership-array-initialization",
+      "native": ["src\\coreclr\\jit\\jitexpandarray.h:JitExpandArray Reset/Get/Set", "src\\coreclr\\jit\\importer.cpp:impImport;impWalkSpillCliqueFromPred;membership accessors"],
+      "csharp": ["sources\\Core\\other\\Extensions\\ListExtensions.cs:ExpandAndGet;ExpandAndSet", "sources\\Core\\jit\\compiler\\Compiler.imp.cs:pending and spill-clique membership"],
+      "status": "List.Clear plus expansion now preserves native default-initialized membership entries even when byte backing storage is reused. Both helpers clear only newly exposed elements; existing entries remain intact. Counted ProfilePolicy regression has correct shared merge locals and native-identical code.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "precise-inline-constant-observations",
       "native": ["src\\coreclr\\jit\\fgbasic.cpp:fgFindJumpTargets precise constants, binary expressions and branches"],

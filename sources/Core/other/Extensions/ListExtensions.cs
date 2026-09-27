@@ -18,10 +18,15 @@ public static class ListExtensions
         {
             if (list.Count <= index)
             {
+                var oldCount = list.Count;
                 var newCount = index + 1;
                 _ = list.EnsureCapacity(newCount);
                 CollectionsMarshal.SetCount(list, newCount);
+
+                // Clear/RemoveRange can leave value-type data beyond Count, and SetCount does not initialize it.
+                CollectionsMarshal.AsSpan(list)[oldCount..].Clear();
             }
+
             return list[index];
         }
 
@@ -29,10 +34,13 @@ public static class ListExtensions
         {
             if (list.Count <= index)
             {
+                var oldCount = list.Count;
                 var newCount = index + 1;
                 _ = list.EnsureCapacity(newCount);
                 CollectionsMarshal.SetCount(list, newCount);
+                CollectionsMarshal.AsSpan(list)[oldCount..].Clear();
             }
+
             list[index] = value;
         }
     }

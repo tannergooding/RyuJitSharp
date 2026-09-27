@@ -15,6 +15,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Reused importer state and collected-profile inlining
+
+Corrected the shared list expansion used by importer pending-block and
+spill-clique membership. Clearing a byte list does not erase its backing
+storage, and increasing its count did not initialize the newly exposed bytes.
+Stale membership flags could therefore skip a predecessor in a later inline,
+giving merging paths different spill locals and producing incorrect results.
+Expansion now initializes new entries while preserving live entries.
+
+The warmed branch probe now executes correctly with actual collected dynamic
+PGO and ProfilePolicy. Native and managed select the same two profitable
+inlines and emit identical instructions at Tier0, instrumented Tier0 and Tier1.
+Independently collected frequencies still differ; this does not establish
+whole-pipeline dump equality or identical profile inputs.
+
 ## 2026-09-27: Redundant-branch phase diagnostics
 
 Restored the native PHI-threading, threading-core, local-relop forwarding and
