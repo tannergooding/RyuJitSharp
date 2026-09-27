@@ -1347,9 +1347,16 @@ this does not activate ARM64 register allocation or establish runtime parity.
 NYI and terminate with `fatal(CORJIT_IMPLLIMITATION)` pending their call-target
 range checks; the shared direct-call lowering body remains in the native tree.
 
-`Lowering.IsContainableImmed` implements the xarch immediate and relocation
-rules. Other targets throw `NotImplementedException` pending their
-instruction-specific immediate checks; no non-xarch lowering is activated.
+`Lowering.IsContainableImmed` implements xarch and ARM64 instruction-specific
+immediate and relocation rules, including the Windows NativeAOT section-offset
+exception. ARM64 compound containment covers multiply, shift, rotate, negate
+and cast operands with native overflow, flag-setting and interference checks.
+Shift bounds use the operand width even for INT-valued comparisons of LONGs;
+rotate normalization retains native mutation before containment rejection.
+Binary and unary containment preserve cast/load-extension precedence and the
+minopts negated-multiply exception. Other targets retain explicit NYIs.
+ARM64 arithmetic lowering still requires its CCMP, bitfield and multiply-long
+dependencies; these helpers do not activate node/block/phase dispatch.
 
 `Lowering.TryCreateAddrMode` implements xarch address folding and interference
 checks. Other targets throw `NotImplementedException` pending their volatile,

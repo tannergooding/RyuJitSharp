@@ -58,6 +58,16 @@ public partial class Emitter
         return false;
     }
 
+    public static bool emitIns_valid_imm_for_cmp(long imm, emitAttr size)
+    {
+        return emitIns_valid_imm_for_add(imm, size);
+    }
+
+    public static bool emitIns_valid_imm_for_alu(long imm, emitAttr size)
+    {
+        return canEncodeBitMaskImm(imm, size);
+    }
+
     private static ulong unsigned_abs(long imm)
     {
         return imm < 0 ? unchecked(0UL - (ulong)imm) : (ulong)imm;

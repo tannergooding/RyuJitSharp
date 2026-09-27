@@ -37,6 +37,25 @@ internal static class Arm64ImmediatePredicateTests
     {
         Assert.That(Emitter.emitIns_valid_imm_for_add(value), Is.EqualTo(expected));
         Assert.That(Emitter.emitIns_valid_imm_for_add(value, EA_4BYTE), Is.EqualTo(expected));
+        Assert.That(Emitter.emitIns_valid_imm_for_cmp(value, EA_4BYTE), Is.EqualTo(expected));
+        Assert.That(Emitter.emitIns_valid_imm_for_cmp(value, EA_8BYTE), Is.EqualTo(expected));
+    }
+
+    [TestCase(0L, EA_4BYTE, false)]
+    [TestCase(-1L, EA_4BYTE, false)]
+    [TestCase(-1L, EA_8BYTE, false)]
+    [TestCase(0xFFFFFFFFL, EA_4BYTE, false)]
+    [TestCase(0xFFFFFFFFL, EA_8BYTE, true)]
+    [TestCase(0x80000001L, EA_4BYTE, true)]
+    [TestCase(0x80000001L, EA_8BYTE, false)]
+    [TestCase(0xFF00FF00L, EA_4BYTE, true)]
+    [TestCase(0xFF00FF00L, EA_8BYTE, false)]
+    [TestCase(0x00FF00FF00FF00FFL, EA_8BYTE, true)]
+    [TestCase(long.MinValue + 1, EA_8BYTE, true)]
+    [TestCase(0x0123456789ABCDEFL, EA_8BYTE, false)]
+    public static void AluImmediateRequiresARepeatedRotatedRunOfBits(long value, emitAttr size, bool expected)
+    {
+        Assert.That(Emitter.emitIns_valid_imm_for_alu(value, size), Is.EqualTo(expected));
     }
 
     [TestCase(0L, EA_4BYTE, true)]

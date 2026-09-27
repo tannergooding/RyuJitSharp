@@ -50,8 +50,15 @@ public sealed partial class Lowering
                 MakeSrcRegOptional(node, source);
             }
         }
+#elif TARGET_ARM64
+        assert(node.Oper.IsShiftOrRotate);
+        var shiftBy = node.Op2;
+        if (shiftBy.Oper.IsCnsIntOrI)
+        {
+            MakeSrcContained(node, shiftBy);
+        }
 #else
-        throw new System.NotImplementedException("Non-xarch shift containment is not ported.");
+        throw new System.NotImplementedException("Shift containment is not ported for this target.");
 #endif
     }
 }

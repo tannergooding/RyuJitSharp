@@ -13,18 +13,18 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "Integrate complete private ARM64 load/store lowering routines with volatile floating retyping, mutable-object release stores and native indirect-store coalescing/atomicity. Reuse the exact bitcast dispatch operation without activating unrelated node/block dispatch.",
+      "scope": "Port complete ARM64 immediate and compound-operand containment as the dependency layer for scalar arithmetic dispatch: instruction-specific immediates, multiply/shift/rotate/negate/cast containment, and binary/unary/shift containment entrypoints.",
       "status": "completed",
       "doneWhen": [
-        "Implement all ARM64 paths in LowerIndir, LowerStoreIndirCommon, LowerStoreIndir, floating-store retyping and indirect coalescing, calling the completed pairing helpers.",
-        "Validate volatile/plain memory operations, unused-probe ordering, frozen/mutable objects, scalar/SIMD coalescing and native atomicity through target tests and Windows memory controls, then commit and continue."
+        "Port the complete native ARM64 IsContainableImmed and IsContainableUnaryOrBinaryOp contracts with emitter CMP/ALU predicates and ContainCheckBinary/Neg/Not/ShiftRotate.",
+        "Validate target-width shift limits, rotation mutation, cast/memory precedence, overflow/flag/interference exclusions and immediate relocation rules; commit the dependency-coherent batch and continue arithmetic lowering."
       ],
       "validation": [
-        "Full-analysis ARM64 target suites pass301Debug/301Release, including25new integrated memory cases. Windows address/store/bitcast/coalescing controls pass121Debug/121Release.",
+        "Full-analysis Linux-ARM64 suites pass375Debug/375Release, including74new cases. Windows-ARM64 operand cases pass62Debug/62Release; Windows-x64 comparison/arithmetic/bounds/cast controls pass168Debug/168Release.",
         "Reuse unaffected Windows execution evidence from prerequisite commit ee71808. No Linux or ARM64 execution host is available; managed target tests are not runtime parity."
       ],
       "deferred": [
-        "LowerBlock and LowerNode dispatch remain unsupported on ARM64. Wire per-block candidate reset when those entrypoints are ported; do not activate load/store lowering without the full pairing path. Arithmetic/intrinsic lowering, allocation traversal and emission remain separate. Keep B375/B376/B378 deferred.",
+        "LowerBinaryArithmetic still requires CCMP, BFX and multiply-long optimization dependencies; do not omit them or activate node dispatch in this batch. LowerBlock/DoPhase, per-block pairing reset, FFR state, allocation and emission remain separate. Keep B375/B376/B378/B379/B380 deferred.",
         "Whole-pipeline dump parity, native diagnostic quirks, timing R005 and allocation D001 remain explicit."
       ],
       "parentScope": "ARM64 prerequisites committed ee71808; allocator construction committed e5b30eb with189Debug/189Release target tests and23Debug/22Release Windows controls. All previous packets are collected; no worker or child response remains outstanding.",
@@ -422,7 +422,18 @@
         }
       ]
     },
-    "nextAction": "Continue ARM64 scalar arithmetic/containment prerequisites for node dispatch. Start at IsContainableImmed (native lowerarmarch.cpp:51) and LowerBinaryArithmetic/ContainCheckBinary; locate their C# counterparts and required emitter compare/logical immediate predicates. Private memory lowering is complete and validated: address/containment ba4db5b, pairing d6a3843, and the memory integration evidence below. Do not repeat those packets. LowerNode, LowerBlock and DoPhase remain unsupported on ARM64; eventual block activation must reset _blockIndirs and native FFR state, and must preserve ARM64-specific dispatch paths rather than just widen guards. Keep B375/B376/B378/B379/B380 deferred; do not publish, alter native trees or claim ARM64 runtime parity.",
+    "nextAction": "Continue ARM64 scalar arithmetic lowering. Immediate and compound operand containment is complete; do not repeat it or the memory batches. Inspect the native TryLowerAndOrToCCMP, TryLowerAndRshToBFX and TryLowerAddSubToMulLongOp dependencies of lowerarmarch.cpp LowerBinaryArithmetic (634-724), together with managed Lowering.ConditionalCompare.cs and Lowering.BinaryArithmetic.cs. Port a complete dependency closure without dropping optimized paths. LowerNode, LowerBlock and DoPhase remain unsupported on ARM64; eventual block activation must reset _blockIndirs and native FFR state. Keep B375/B376/B378/B379/B380 deferred; do not publish, alter native trees or claim ARM64 runtime parity.",
+    "arm64OperandContainment": {
+      "scope": "Complete IsContainableImmed, IsContainableUnaryOrBinaryOp and binary/shift/negate/not containment, including instruction-specific constants, LSE gating, Windows NativeAOT section relocations, shift operand widths, native rotate normalization, extension precedence and flag/overflow/interference rules.",
+      "mapping": "lowerarmarch.cpp:51-508,2814-2920,3202-3264 -> lower/Lowering.Containment.cs, Lowering.Arm64OperandContainment.cs, Lowering.Binary.cs and Lowering.Shifts.cs; emitarm64.cpp:2506-2518 CMP/ALU predicates -> emitarm64/Emitter.ImmediatePredicates.cs.",
+      "validation": {
+        "linuxArm64": "375Debug/375Release: operand-arm64-debug-final-1.trx and operand-arm64-release-1.trx; 62 new operand cases and 12 new logical-immediate cases.",
+        "windowsArm64": "62Debug/62Release: operand-winarm-debug-1.trx and operand-winarm-release-1.trx; includes the positive Windows NativeAOT relocation case.",
+        "windowsX64Controls": "168Debug/168Release: operand-windows-debug-1.trx and operand-windows-release-1.trx.",
+        "artifacts": "artifacts\\parallel-port; full analysis, nonempty execution and zero skips."
+      },
+      "limits": "Managed containment helpers only. LowerBinaryArithmetic still requires its complete CCMP/BFX/multiply-long dependencies. No ARM64 node/block/phase dispatch or runtime execution is activated; Windows execution evidence is unchanged."
+    },
     "arm64MemoryLowering": {
       "scope": "Complete private LowerIndir, LowerStoreIndirCommon, LowerStoreIndir, floating-store retyping and indirect coalescing. Includes unused-probe width ordering, volatile bitcasts, mutable-object release semantics, write-barrier early return, pair scheduling and 64-bit-aligned 128-bit store atomicity.",
       "mapping": "lower.cpp memory routines -> lower/Lowering.Indirections.cs, Lowering.StoreIndirections.cs and Lowering.Locals.cs; lowerarmarch.cpp LowerStoreIndir -> Lowering.StoreIndirections.cs; lower.cpp LowerStoreCoalescing/LowerCheckCoalescedStoreAtomicity -> Lowering.IndirectStoreCoalescing.cs. LowerBitCast extracts the native GT_BITCAST dispatch operation for shared use by xarch dispatch and inserted ARM64 volatile-store bitcasts.",

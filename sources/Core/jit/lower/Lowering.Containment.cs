@@ -126,8 +126,96 @@ public sealed partial class Lowering
     {
 #if TARGET_XARCH
         return childNode.IsIntCnsFitsInI32 && !childNode.AsIntConCommon().ImmedValNeedsReloc(CompilerInstance);
+#elif TARGET_ARM64
+        if (!varTypeIsFloating(parentNode.Type))
+        {
+            if (parentNode.Oper.IsCompare && childNode.IsFloatPositiveZero)
+            {
+                assert(parentNode.Oper is not (GT_TEST_EQ or GT_TEST_NE));
+                return true;
+            }
+
+            if (!childNode.Oper.IsCnsIntOrI)
+            {
+                return false;
+            }
+
+            var constant = childNode.AsIntCon();
+            if (constant.ImmedValNeedsReloc(CompilerInstance))
+            {
+                // Windows NativeAOT emits the section-relative immediate with its consuming ADD.
+                return CompilerInstance.IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS.IsWindows &&
+                    constant.IsIconHandle(GTF_ICON_SECREL_OFFSET);
+            }
+
+            var immVal = constant.IconValue;
+            var size = EA_SIZE(childNode.Type.EmitActualSize);
+            switch (parentNode.Oper)
+            {
+                case GT_ADD:
+                case GT_SUB:
+                {
+                    return Emitter.emitIns_valid_imm_for_add(immVal, size);
+                }
+
+                case GT_CMPXCHG:
+                case GT_LOCKADD:
+                case GT_XORR:
+                case GT_XAND:
+                case GT_XADD:
+                {
+                    return !CompilerInstance.compOpportunisticallyDependsOn(InstructionSet_Atomics) &&
+                        Emitter.emitIns_valid_imm_for_add(immVal, size);
+                }
+
+                case GT_EQ:
+                case GT_NE:
+                case GT_LT:
+                case GT_LE:
+                case GT_GE:
+                case GT_GT:
+                case GT_CMP:
+                case GT_BOUNDS_CHECK:
+                {
+                    return Emitter.emitIns_valid_imm_for_cmp(immVal, size);
+                }
+
+                case GT_AND:
+                case GT_OR:
+                case GT_XOR:
+                case GT_TEST_EQ:
+                case GT_TEST_NE:
+                {
+                    return Emitter.emitIns_valid_imm_for_alu(immVal, size);
+                }
+
+                case GT_JCMP:
+                {
+                    assert(immVal == 0);
+                    return true;
+                }
+
+                case GT_JTEST:
+                {
+                    assert(System.Numerics.BitOperations.IsPow2(immVal));
+                    return true;
+                }
+
+                case GT_STORE_LCL_FLD:
+                case GT_STORE_LCL_VAR:
+                {
+                    if (immVal == 0)
+                    {
+                        return true;
+                    }
+                    break;
+                }
+            }
+        }
+
+        return false;
 #else
-        throw new System.NotImplementedException("Non-xarch immediate containment is not ported.");
+        throw new System.NotImplementedException("Immediate containment is not ported for this target.");
 #endif
     }
 }

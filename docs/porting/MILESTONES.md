@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: ARM64 scalar operand containment
+
+ARM64 immediate and compound-operand containment now preserves instruction
+encoding limits, LSE atomic gating, Windows NativeAOT section relocations,
+operand-width shift bounds, rotate normalization, cast/load-extension precedence
+and overflow/flag/interference exclusions. Binary, shift, negate and not
+containment are implemented without activating incomplete arithmetic dispatch.
+
+Full-analysis Linux-ARM64 suites pass 375 Debug/375 Release, including 74 new
+cases. Windows-ARM64 operand cases pass 62 in each configuration, and Windows-x64
+comparison/arithmetic/bounds/cast controls pass 168 in each. CCMP, bitfield and
+multiply-long optimization dependencies remain ahead of ARM64 arithmetic
+lowering. These managed results are not generated-code or runtime parity.
+
 ## 2026-09-27: ARM64 private memory lowering
 
 Private ARM64 load/store lowering now integrates address formation, containment

@@ -57,8 +57,49 @@ public sealed partial class Lowering
         {
             SetRegOptionalForBinOp(node, IsSafeToMarkRegOptional(node, op1), IsSafeToMarkRegOptional(node, op2));
         }
+#elif TARGET_ARM64
+        var op1 = node.Op1;
+        var op2 = node.Op2;
+        if (CheckImmedAndMakeContained(node, op2))
+        {
+            return;
+        }
+
+        if (node.Oper.IsCommutative && CheckImmedAndMakeContained(node, op1))
+        {
+            MakeSrcContained(node, op1);
+            (node.Op1, node.Op2) = (node.Op2, node.Op1);
+            return;
+        }
+
+        if (CompilerInstance.opts.OptimizationEnabled)
+        {
+            if (IsContainableUnaryOrBinaryOp(node, op2))
+            {
+                if ((node.Oper is GT_ADD or GT_SUB or GT_CMP) && (op2.Oper is GT_CAST))
+                {
+                    // Prefer the extended-register operation over extension in the cast's load.
+                    op2.AsCast().CastOp.IsContained = false;
+                }
+
+                MakeSrcContained(node, op2);
+                return;
+            }
+
+            if (node.Oper.IsCommutative && IsContainableUnaryOrBinaryOp(node, op1))
+            {
+                if ((node.Oper is GT_ADD or GT_SUB or GT_CMP) && (op1.Oper is GT_CAST))
+                {
+                    op1.AsCast().CastOp.IsContained = false;
+                }
+
+                MakeSrcContained(node, op1);
+                (node.Op1, node.Op2) = (node.Op2, node.Op1);
+                return;
+            }
+        }
 #else
-        throw new System.NotImplementedException("Non-xarch binary containment is not ported.");
+        throw new System.NotImplementedException("Binary containment is not ported for this target.");
 #endif
     }
 
