@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: ARM64 indirection pairing
+
+The ARM64 memory-lowering dependency layer now includes complete load/store
+pair scheduling, alias-aware adjacency reordering and loop store-to-load-
+forwarding safeguards. It preserves consumed-candidate handling, store-data
+motion, recursive mark cleanup, the 16-node reordering limit and the 100-node
+backward scan budget.
+
+Full-analysis Linux-ARM64 target suites pass 276 cases in each configuration,
+including 24 new pairing/forwarding cases and boundary checks. B379 records a
+potential native empty-predecessor scan-state issue; pinned behavior is retained.
+Public ARM64 block/load/store dispatch and candidate reset remain to be integrated.
+These managed helper results are not ARM64 execution or generated-code parity.
+
 ## 2026-09-27: ARM64 address formation and containment
 
 ARM64 address lowering now preserves access-width scaling, RCPC2 signed-nine-bit

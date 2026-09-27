@@ -1305,8 +1305,10 @@ verified ARM64 runtime host or generated-code parity result.
 ARM64 memory-address formation and load/store containment now preserve native
 natural scales, RCPC2 volatile-offset limits, extended-index containment,
 stack-probe/SIMD12 restrictions and integer-zero stores. These helpers have
-managed target coverage; the load/store entrypoints remain unsupported until
-pair reordering and loop store-to-load-forwarding checks are ported.
+managed target coverage. Pair reordering and loop store-to-load-forwarding
+checks are also implemented, preserving native distance/budget limits,
+alias checks and dataflow cleanup. The load/store entrypoints and per-block
+candidate reset remain unintegrated; these helpers do not activate the phase.
 
 Non-AMD64 `Emitter.RequireSupportedInstructionRecording`, `emitCheckIGList`
 (Debug), `emitGCregDeadUpdMask`, and `CodeGen.inst_ST_RV` terminate with
