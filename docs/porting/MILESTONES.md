@@ -16,6 +16,24 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: ARM64 frame layout and reservations
+
+ARM64 frame selection now performs conservative layout before reserving IP1,
+and reserves x19 when scalable-vector storage is present. Virtual and final
+layout preserve varargs homes, FP/LR relocation, Apple NativeAOT placement,
+OSR frame boundaries, local/temp alignment and scalable-vector offsets.
+
+Integration corrected B377: the pinned native compiler still treats masks as
+exact eight-byte values. Scalable-mask block bookkeeping remains available but
+is not activated for mask locals or temps. Replaying the old value-size mapping
+produces three regression failures with one passing control.
+
+Full-analysis target suites pass 211 Linux-ARM64, 214 Windows-ARM64 and 212
+Apple-ARM64 cases in each configuration. Windows-x64 frame/allocator controls
+pass 47 Debug/46 Release, and Linux-x64 controls pass 102 in each. These are
+managed unit results; ARM64 lowering, allocation and stack-space emission remain
+unported. The Windows execution baseline is unchanged and was not recaptured.
+
 ## 2026-09-27: ARM64 allocator construction
 
 The ARM64 allocator now constructs intervals with native integer, floating/vector

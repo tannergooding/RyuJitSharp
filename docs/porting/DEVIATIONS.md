@@ -1307,16 +1307,24 @@ Non-AMD64 `Emitter.RequireSupportedInstructionRecording`, `emitCheckIGList`
 `CORJIT_SKIPPED`; their instruction-recording, group-validation, GC-output and
 spill-store bodies remain unported. Unhandled-instruction performance diagnostics
 also terminate outside AMD64 in Debug; Release retains the native default costs.
-ARM64 unknown-size frame-address printing terminates with `CORJIT_SKIPPED`
-pending `unkSizeFrame`. Scalable vector/mask constant queries remain explicitly
-unsupported rather than reading fixed-width storage.
+ARM64 unknown-size frame metadata and address printing now support scalable
+vectors. Scalable vector/mask constant queries remain explicitly unsupported
+rather than reading fixed-width storage; the shared frame-location padding
+discrepancy is tracked as B376.
 
-`LinearScan.setFrameType` implements AMD64 frame selection. Other targets report
-NYI and terminate with `CORJIT_IMPLLIMITATION`; their double-alignment and
-target-specific frame/register policies remain in the native tree.
-ARM64 `compRsvdRegCheck` must perform `lvaFrameSize` before returning true;
-its unconditional result does not permit skipping frame layout. That sizing
-entrypoint and ARM64 virtual/final frame layout remain unported.
+`LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
+performs conservative frame layout before reserving IP1 and reserves x19 when
+the layout contains scalable vectors. The layout includes varargs homes,
+FP/LR relocation, Apple NativeAOT frame placement, OSR boundaries, local/temp
+alignment and unknown-size frame initialization/finalization. Other targets
+retain their explicit unsupported frame-selection paths.
+
+Pinned native `ValueSize::FromJitType` still treats masks as exact eight-byte
+values, not scalable values. B377 corrects the managed mismatch. The native
+unknown-frame mask-block allocator is ported and tested separately without
+activating scalable mask locals or temps. Neither these layout helpers nor
+their managed target tests activate ARM64 lowering, allocation or stack-space
+emission.
 
 ARM64 allocator construction now initializes integer, floating/vector and
 predicate banks, reserved-register exclusions, EnC restrictions and caller-save

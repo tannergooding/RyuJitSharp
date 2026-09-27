@@ -33,8 +33,8 @@ public partial class Compiler
 
     public unsafe void lvaAssignVirtualFrameOffsetsToLocals()
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Local stack layout requires Windows AMD64.");
+#if (!TARGET_AMD64 || UNIX_AMD64_ABI) && !TARGET_ARM64
+        throw new FatalJitException(CORJIT_SKIPPED, "Local stack layout requires Windows AMD64 or ARM64.");
 #else
         assert(codeGen is not null);
         var stkOffs = 0;
@@ -46,11 +46,13 @@ public partial class Compiler
             codeGen.IsFramePointerUsed = codeGen.IsFramePointerRequired;
         }
 
+#if TARGET_AMD64
         stkOffs -= TARGET_POINTER_SIZE;
         if (lvaRetAddrVar != BAD_VAR_NUM)
         {
             lvaTable[lvaRetAddrVar].StackOffset = stkOffs;
         }
+#endif
 
         if (opts.IsOSR)
         {
@@ -60,13 +62,26 @@ public partial class Compiler
             stkOffs -= originalFrameSize;
         }
 
+#if TARGET_AMD64
         if (codeGen.IsFramePointerUsed)
         {
             stkOffs -= REGSIZE_BYTES;
         }
+#endif
+
+#if TARGET_ARM64
+        // Initially place FP/LR with the other callee saves; fixup may move them below the locals.
+        var initialStkOffs = 0;
+        if (info.compIsVarArgs)
+        {
+            initialStkOffs = MAX_REG_ARG * REGSIZE_BYTES;
+            stkOffs -= initialStkOffs;
+        }
+#endif
 
         stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
         compLclFrameSize = 0;
+#if TARGET_AMD64
         if (MethodHasPatchpoint)
         {
             // Tier0 reserves the callee-save slots an OSR method may subsequently need.
@@ -92,6 +107,7 @@ public partial class Compiler
 
         stkOffs -= calleeFPRegsSavedSize;
         lvaIncrementFrameSize(calleeFPRegsSavedSize);
+#endif
 
         if (!opts.IsOSR)
         {
@@ -240,8 +256,13 @@ public partial class Compiler
                 }
                 else if (lvaIsUnknownSizeLocal(lclNum))
                 {
+#if FEATURE_SIMD && TARGET_ARM64
+                    lvaAllocUnknownSizeLocal(lclNum);
+                    continue;
+#else
                     // On AMD64 all locals have a compile-time-known stack size.
                     throw new FatalJitException(CORJIT_SKIPPED, "AMD64 unknown-size stack local is unsupported.");
+#endif
                 }
 
                 if (lclNum == lvaRetAddrVar ||
@@ -254,9 +275,37 @@ public partial class Compiler
                     continue;
                 }
 
-                if (dsc.lvIsParam && !lvaParamHasLocalStackSpace(lclNum))
+                if (dsc.lvIsParam)
                 {
-                    continue;
+#if TARGET_ARM64
+                    if (info.compIsVarArgs && dsc.lvIsRegArg && (lclNum != info.compRetBuffArg) &&
+                        (lclNum != lvaSecretStubArg))
+                    {
+                        ref readonly var abiInfo = ref lvaGetParameterAbiInfo(
+                            dsc.lvIsStructField ? dsc.lvParentLcl : lclNum);
+                        var found = false;
+                        foreach (var segment in abiInfo.Segments)
+                        {
+                            if (!segment.IsPassedInRegister ||
+                                (dsc.lvIsStructField && (segment.Offset != dsc.lvFldOffset)))
+                            {
+                                continue;
+                            }
+
+                            found = true;
+                            var regArgNum = genMapIntRegNumToRegArgNum(segment.Register, info.compCallConv);
+                            dsc.StackOffset = -initialStkOffs + (regArgNum * REGSIZE_BYTES);
+                            break;
+                        }
+
+                        assert(found);
+                        continue;
+                    }
+#endif
+                    if (!lvaParamHasLocalStackSpace(lclNum))
+                    {
+                        continue;
+                    }
                 }
 
                 if (dsc.lvIsUnsafeBuffer && compGSReorderStackLayout)
@@ -283,6 +332,16 @@ public partial class Compiler
                 }
 
                 stkOffs = lvaAllocLocalAndSetVirtualOffset(lclNum, lvaLclStackHomeSize(lclNum), stkOffs);
+#if TARGET_ARM64
+                if (dsc.lvIsRegArg && dsc.lvPromoted)
+                {
+                    for (var field = 0; field < dsc.lvFieldCnt; field++)
+                    {
+                        ref var fieldDsc = ref lvaGetDesc(dsc.lvFieldLclStart + field);
+                        fieldDsc.StackOffset = dsc.StackOffset + fieldDsc.lvFldOffset;
+                    }
+                }
+#endif
             }
         }
 
@@ -302,26 +361,60 @@ public partial class Compiler
 
         if (lvaOutgoingArgSpaceSize.Value > 0)
         {
+#if TARGET_AMD64
             noway_assert(lvaOutgoingArgSpaceSize.Value >= 4 * TARGET_POINTER_SIZE);
+#endif
             noway_assert((lvaOutgoingArgSpaceSize.Value % TARGET_POINTER_SIZE) == 0);
             stkOffs = lvaAllocLocalAndSetVirtualOffset(
                 lvaOutgoingArgSpaceVar, lvaLclStackHomeSize(lvaOutgoingArgSpaceVar), stkOffs);
         }
 
         var pushedCount = compCalleeRegsPushed;
+#if TARGET_ARM64
+        if (info.compIsVarArgs)
+        {
+            pushedCount += MAX_REG_ARG;
+        }
+#else
         if (codeGen.IsFramePointerUsed)
         {
             pushedCount++;
         }
         pushedCount++;
+#endif
         noway_assert(compLclFrameSize + originalFrameSize == -(stkOffs + (pushedCount * TARGET_POINTER_SIZE)));
+
+#if TARGET_ARM64
+        if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 0)
+        {
+            if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS.IsApplePlatform &&
+                (!codeGen.IsFramePointerRequired || (codeGen.genTotalFrameSize < 0x100)))
+            {
+                codeGen.SetSaveFpLrWithAllCalleeSavedRegisters(true);
+            }
+            else
+            {
+                codeGen.SetSaveFpLrWithAllCalleeSavedRegisters(
+                    (NeedsGSSecurityCookie && compLocallocUsed) || opts.compDbgEnC ||
+                    compStressCompile(STRESS_GENERIC_VARN, 20));
+            }
+        }
+        else if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 1)
+        {
+            codeGen.SetSaveFpLrWithAllCalleeSavedRegisters(false);
+        }
+        else if (opts.compJitSaveFpLrWithCalleeSavedRegisters is 2 or 3)
+        {
+            codeGen.SetSaveFpLrWithAllCalleeSavedRegisters(true);
+        }
+#endif
 #endif
     }
 
     public int lvaAllocLocalAndSetVirtualOffset(int lclNum, int size, int stkOffs)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Local stack slot assignment requires Windows AMD64.");
+#if (!TARGET_AMD64 || UNIX_AMD64_ABI) && !TARGET_ARM64
+        throw new FatalJitException(CORJIT_SKIPPED, "Local stack slot assignment requires Windows AMD64 or ARM64.");
 #else
         noway_assert(lclNum != BAD_VAR_NUM);
         ref var local = ref lvaGetDesc(lclNum);
@@ -386,8 +479,8 @@ public partial class Compiler
 
     public unsafe int lvaAllocAsyncContexts(int stkOffs)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Async frame contexts require Windows AMD64.");
+#if (!TARGET_AMD64 || UNIX_AMD64_ABI) && !TARGET_ARM64
+        throw new FatalJitException(CORJIT_SKIPPED, "Async frame contexts require Windows AMD64 or ARM64.");
 #else
         if (lvaResumedIndicator != BAD_VAR_NUM)
         {
@@ -435,8 +528,8 @@ public partial class Compiler
 
     public void lvaAlignFrame()
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Frame alignment requires Windows AMD64.");
+#if (!TARGET_AMD64 || UNIX_AMD64_ABI) && !TARGET_ARM64
+        throw new FatalJitException(CORJIT_SKIPPED, "Frame alignment requires Windows AMD64 or ARM64.");
 #else
         assert(codeGen is not null);
         if ((compLclFrameSize % REGSIZE_BYTES) != 0)
@@ -449,6 +542,14 @@ public partial class Compiler
         }
 
         assert((compLclFrameSize % REGSIZE_BYTES) == 0);
+#if TARGET_ARM64
+        var regPushedCountAligned = (compCalleeRegsPushed % (STACK_ALIGN / REGSIZE_BYTES)) == 0;
+        var lclFrameSizeAligned = (compLclFrameSize % STACK_ALIGN) == 0;
+        if ((lvaDoneFrameLayout != FINAL_FRAME_LAYOUT) || (regPushedCountAligned != lclFrameSizeAligned))
+        {
+            lvaIncrementFrameSize(REGSIZE_BYTES);
+        }
+#else
         var regPushedCountAligned = lvaIsCalleeSavedIntRegCountEven();
         var lclFrameSizeAligned = (compLclFrameSize % STACK_ALIGN) == 0;
         if ((!codeGen.IsFramePointerUsed && (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)) ||
@@ -457,12 +558,13 @@ public partial class Compiler
             lvaIncrementFrameSize(REGSIZE_BYTES);
         }
 #endif
+#endif
     }
 
     public int lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Spill temp frame layout requires Windows AMD64.");
+#if (!TARGET_AMD64 || UNIX_AMD64_ABI) && !TARGET_ARM64
+        throw new FatalJitException(CORJIT_SKIPPED, "Spill temp frame layout requires Windows AMD64 or ARM64.");
 #else
         if (lvaDoneFrameLayout == FINAL_FRAME_LAYOUT)
         {
@@ -474,7 +576,12 @@ public partial class Compiler
             {
                 if (varTypeHasUnknownSize(temp.tdTempType))
                 {
+#if FEATURE_SIMD && TARGET_ARM64
+                    lvaAllocateUnknownSizeTemp(temp);
+                    continue;
+#else
                     throw new FatalJitException(CORJIT_SKIPPED, "AMD64 unknown-size spill temp is unsupported.");
+#endif
                 }
 
                 if (varTypeIsGC(temp.tdTempType) && ((stkOffs % TARGET_POINTER_SIZE) != 0))
@@ -510,8 +617,8 @@ public partial class Compiler
 
     public unsafe int lvaOSRLocalTier0FrameOffset(int varNum)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "OSR local frame offsets require Windows AMD64.");
+#if (!TARGET_AMD64 || UNIX_AMD64_ABI) && !TARGET_ARM64
+        throw new FatalJitException(CORJIT_SKIPPED, "OSR local frame offsets require Windows AMD64 or ARM64.");
 #else
         assert(lvaIsOSRLocal(varNum));
         assert(info.compPatchpointInfo is not null);

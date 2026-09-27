@@ -13,22 +13,22 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "Enable complete ARM64 allocator construction and register-bank initialization as the next prerequisite for LSRA frame selection. Preserve AMD64 behavior and native ARM64 reserved-register, EnC and caller/callee-save policies.",
+      "scope": "Port ARM64 frame sizing and layout, including unknown-size frame bookkeeping, parameter homes, FP/LR relocation, local/temp alignment and OSR frame offsets, then enable compRsvdRegCheck and LinearScan.setFrameType with their mandatory layout side effects.",
       "status": "completed",
       "doneWhen": [
-        "Construct the ARM64 allocator and create intervals with native integer, floating, vector and predicate register preferences, including reserved-register and EnC restrictions.",
-        "Validate the integrated allocator setup on the existing ARM64 target project and existing Windows allocator controls, then commit the dependency-coherent batch locally."
+        "Complete the ARM64 layout dependency closure and frame-register reservations without bypassing sizing, varargs, OSR or scalable-local bookkeeping.",
+        "Validate integrated layout behavior through the existing target test project and existing Windows frame/allocator controls, then commit the dependency-coherent batch locally."
       ],
       "validation": [
-        "Full-analysis Linux-ARM64 target tests pass189Debug/189Release, including allocator construction and interval preferences. Existing Windows allocator/frame controls pass23Debug/22Release.",
+        "Full-analysis target suites pass 211 Linux-ARM64, 214 Windows-ARM64 and 212 Apple-ARM64 cases in both configurations. Windows frame/allocator controls pass 47 Debug / 46 Release; Linux-x64 shared-helper controls pass 102 in each.",
+        "B377 original mask mapping reproduces three failures and one passing control. Corrected source was restored exactly before final validation.",
         "Reuse unaffected Windows execution evidence from prerequisite commit ee71808. No Linux or ARM64 execution host is available; managed target tests are not runtime parity."
       ],
       "deferred": [
-        "ARM64 setFrameType requires compRsvdRegCheck, which must call lvaFrameSize before its unconditional ARM64 true result. lvaFrameSize is absent and lvaAssignFrameOffsets remains Windows-x64-only; complete frame-layout dependency closure is the following batch, not a bypass of that side effect.",
         "ARM64 lowering, allocation traversal, instruction emission and executable runtime parity remain separate unported backend sections. Keep B375 string-constant costing deferred.",
         "Whole-pipeline dump parity, native diagnostic quirks, timing R005 and allocation D001 remain explicit."
       ],
-      "parentScope": "ARM64 ABI/compiler prerequisites committed ee71808e887f076f7ba2408928d12849559b8cea. All previous packets are collected; no worker or child response remains outstanding.",
+      "parentScope": "ARM64 prerequisites committed ee71808; allocator construction committed e5b30eb with189Debug/189Release target tests and23Debug/22Release Windows controls. All previous packets are collected; no worker or child response remains outstanding.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -423,7 +423,32 @@
         }
       ]
     },
-    "nextAction": "Continue ARM64 frame-layout dependency closure beginning with native lclvars.cpp:lvaFrameSize (6766), lvaAssignFrameOffsets (4317) and lvaAssignVirtualFrameOffsetsToLocals (4867), comparing Compiler.FinalFrameLayout partials. Implement mandatory sizing/layout side effects before enabling compRsvdRegCheck and LinearScan.setFrameType. Allocator construction and caller/callee-save banks are complete with189Debug/189Release ARM64 and23Debug/22Release Windows controls; do not repeat that packet or the preceding ee71808 prerequisite commit. Preserve native frame algorithms and explicit unsupported paths, do not contact archived sessions or publish, and do not claim Linux/ARM64 runtime parity.",
+    "nextAction": "Continue the ARM64 lowering frontier after the validated frame-layout batch: read Lowering.Indirections.cs, Lowering.StoreIndirections.cs and Lowering.AddressModes.cs alongside pinned lower.cpp/lowerarmarch.cpp, then port the complete memory-address/load-store containment dependency closure. Frame layout, IP1/x19 reservations and B377 mask sizing are complete with the evidence below; do not repeat that packet. Keep unrelated B375 string costing, B376 diagnostic padding and B378 boxed equality deferred. Do not contact archived sessions, publish, or claim ARM64 runtime parity.",
+    "arm64FrameLayout": {
+      "nativeMappings": [
+        "lclvars.cpp frame sizing/layout, argument homes, local/temp allocation and OSR offsets -> compiler/Compiler.FinalFrameLayout*.cs and Compiler.FrameOffsets.cs",
+        "compiler.cpp:3830 compRsvdRegCheck -> compiler/Compiler.FinalFrameLayout.cs",
+        "compiler.h UnknownSizeFrame and lclvars.cpp unknown-size allocation -> compiler/Compiler.UnknownSizeFrame.cs; native Finalize is named FinalizeLayout in C#",
+        "lsra.cpp:2503 setFrameType -> lsra/LinearScan.FrameType.cs",
+        "compiler.hpp:3557 genMapIntRegNumToRegArgNum -> compiler/Globals.cs; target.h argument masks/ret-buffer indices -> target/Globals.cs",
+        "gentree.cpp:37702 ValueSize::FromJitType -> gentree/ValueSize.cs"
+      ],
+      "tests": [
+        "artifacts/parallel-port/frame-linux-debug-1.trx: 211 passed",
+        "artifacts/parallel-port/frame-linux-release-2.trx: 211 passed",
+        "artifacts/parallel-port/frame-windows-arm-debug-1.trx: 214 passed",
+        "artifacts/parallel-port/frame-windows-arm-release-1.trx: 214 passed",
+        "artifacts/parallel-port/frame-apple-debug-1.trx: 212 passed",
+        "artifacts/parallel-port/frame-apple-release-1.trx: 212 passed",
+        "artifacts/parallel-port/frame-windows-x64-debug-1.trx: 47 passed",
+        "artifacts/parallel-port/frame-windows-x64-release-1.trx: 46 passed",
+        "artifacts/parallel-port/frame-sysv-debug-1.trx: 102 passed",
+        "artifacts/parallel-port/frame-sysv-release-1.trx: 102 passed"
+      ],
+      "regression": "artifacts/parallel-port/arm64-mask-before-fix-1.trx: original mask mapping fails three cases and passes one control. The corrected ValueSize.cs blob is 61ab6a32ec08d96c8aff5854920e817e40addc03.",
+      "coverage": "Mandatory sizing before reservation, repeated layout, FP/LR placement, Apple NativeAOT 256-byte threshold, varargs register homes and split structs, OSR boundary relocation, fixed masks versus scalable vectors, and native padded-mask block bookkeeping.",
+      "limits": "No ARM64 lowering/allocation activation, stack-space emission or generated-code execution. Scalable masks remain inactive, matching pinned native FromJitType. Reuse the unchanged Windows execution baseline without relabeling it as fresh frame-batch evidence."
+    },
     "arm64AllocatorInitialization": {
       "nativeMappings": [
         "lsra.cpp:843-1040 LinearScan::LinearScan -> lsra/LinearScan.cs constructor and register initialization helpers",

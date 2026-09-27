@@ -17,8 +17,8 @@ public partial class Compiler
 
     public unsafe int lvaToCallerSPRelativeOffset(int offset, bool isFpBased, bool forRootFrame = true)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Caller-SP-relative frame offsets require Windows AMD64.");
+#if (!TARGET_AMD64 || UNIX_AMD64_ABI) && !TARGET_ARM64
+        throw new FatalJitException(CORJIT_SKIPPED, "Caller-SP-relative frame offsets require Windows AMD64 or ARM64.");
 #else
         assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
         assert(codeGen is not null);
@@ -26,9 +26,13 @@ public partial class Compiler
 #if FEATURE_ON_STACK_REPLACEMENT
         if (forRootFrame && opts.IsOSR)
         {
+#if TARGET_AMD64
             // TotalFrameSize accounts for the popped OSR pseudo return address, so the
             // root caller-SP adjustment is TotalFrameSize plus one register.
             var adjustment = info.compPatchpointInfo->TotalFrameSize + REGSIZE_BYTES;
+#else
+            var adjustment = info.compPatchpointInfo->TotalFrameSize;
+#endif
             offset -= adjustment;
         }
 #else

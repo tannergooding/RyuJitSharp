@@ -34,6 +34,40 @@ public static partial class Globals
 #endif
     }
 
+    public static int theFixedRetBuffArgNum(CorInfoCallConvExtension callConv)
+    {
+        assert(hasFixedRetBuffReg(callConv));
+#if TARGET_ARM64
+        return RET_BUFF_ARGNUM;
+#elif TARGET_AMD64 && SWIFT_SUPPORT
+        assert(callConv is CorInfoCallConvExtension.Swift);
+        return SWIFT_RET_BUFF_ARGNUM;
+#else
+        return BAD_VAR_NUM;
+#endif
+    }
+
+    public static regMaskTP fullIntArgRegMask(CorInfoCallConvExtension callConv)
+    {
+        var result = new regMaskTP(SRBM_ARG_REGS);
+        if (hasFixedRetBuffReg(callConv))
+        {
+            var reg = theFixedRetBuffReg(callConv);
+            result |= regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
+        }
+
+#if SWIFT_SUPPORT
+        if (callConv is CorInfoCallConvExtension.Swift)
+        {
+            result |= new regMaskTP(SRBM_SWIFT_SELF);
+            // SwiftError is initially marked as a register argument, then excluded from allocation.
+            result |= new regMaskTP(SRBM_SWIFT_ERROR);
+        }
+#endif
+
+        return result;
+    }
+
     // The following are human readable names for the target architectures
 #if TARGET_X86
     public const string TARGET_READABLE_NAME = "X86";

@@ -908,7 +908,10 @@ public partial class Compiler
 #if TARGET_ARM64
         if (lvaIsUnknownSizeLocal(lclNum))
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM64 unknown-size frame addressing is not ported.");
+            ref var varDsc = ref lvaGetDesc(lclNum);
+            var offset = unkSizeFrame.GetAddressingOffset(in varDsc);
+            message = $"[{REG_UNKBASE.Name,2}{(offset < 0 ? "-" : "+")}0x{(offset < 0 ? -offset : offset):X2}*" +
+                $"{(varDsc.Type is TYP_MASK ? "PL" : "VL")}] ";
         }
         else
 #endif
