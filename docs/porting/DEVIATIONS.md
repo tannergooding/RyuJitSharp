@@ -75,6 +75,12 @@ defect, not an allowed name or hash difference. All baseline method identities
 and emitted instruction traces now match native; whole dumps and raw machine
 bytes remain separate evidence requirements.
 
+CSE diagnostics use read-only spans over existing availability sets, preserving
+native bit order, candidate labels and cross-call suffixes (B338). Checked
+arithmetic does not exempt native unsigned hash truncation (B339). The remaining
+liberal/conservative VN-number differences are unaccepted parity gaps (B340),
+not formatting differences to normalize.
+
 SSA memory maps use the existing managed node-identity dictionary. The caller's
 shared-memory flag selects the map kind before the inline root supplies storage,
 preserving native aliasing and ownership. Shared all-successor visitation retains

@@ -156,8 +156,8 @@ public sealed partial class CSE_Heuristic
 #if DEBUG
         if (m_compiler.verbose)
         {
-            JITDUMP($"\nAggressive CSE Promotion cutoff is {aggressiveRefCnt}\n");
-            JITDUMP($"Moderate CSE Promotion cutoff is {moderateRefCnt}\n");
+            JITDUMP($"\nAggressive CSE Promotion cutoff is {formatFloat(aggressiveRefCnt, "F6")}\n");
+            JITDUMP($"Moderate CSE Promotion cutoff is {formatFloat(moderateRefCnt, "F6")}\n");
             JITDUMP($"enregCountInt is {enregCountInt}\n");
             JITDUMP($"enregCountFlt is {enregCountFlt}\n");
             JITDUMP($"enregCountMsk is {enregCountMsk}\n");

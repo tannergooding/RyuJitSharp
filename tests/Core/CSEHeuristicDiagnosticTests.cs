@@ -38,6 +38,43 @@ internal static unsafe class CSEHeuristicDiagnosticTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "optCSECandidateCount")]
     private static extern ref int CandidateCount(Compiler compiler);
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void InitializationCutoffsUseInvariantSixDecimalFormatting(bool verbose)
+    {
+        WithCompiler(compiler => {
+            compiler.verbose = verbose;
+            var heuristic = new CSE_Heuristic(compiler);
+            AggressiveCutoff(heuristic) = 123.5;
+            ModerateCutoff(heuristic) = 456.125;
+            var previousCulture = CultureInfo.CurrentCulture;
+
+            try
+            {
+                CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
+                var output = CodeGenLifeTransitionTests.Capture(heuristic.Initialize);
+
+                if (verbose)
+                {
+                    Assert.That(output, Does.StartWith(
+                        $"{Environment.NewLine}Aggressive CSE Promotion cutoff is 123.500000{Environment.NewLine}" +
+                        $"Moderate CSE Promotion cutoff is 456.125000{Environment.NewLine}"));
+                }
+                else
+                {
+                    Assert.That(output, Is.Empty);
+                }
+
+                Assert.That(AggressiveCutoff(heuristic), Is.EqualTo(123.5));
+                Assert.That(ModerateCutoff(heuristic), Is.EqualTo(456.125));
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = previousCulture;
+            }
+        });
+    }
+
     [TestCase(false, false, false, false, 300, 100,
         "Aggressive CSE Promotion (400.000000 >= 300.000000)")]
     [TestCase(false, false, false, false, 500, 100,

@@ -73,7 +73,7 @@ public partial class Compiler
 
     private static int optCSEKeyToHashIndex(nuint key, nint hashSize)
     {
-        var hash = (uint)key;
+        var hash = unchecked((uint)key);
 #if TARGET_64BIT
         hash ^= (uint)(key >> 32);
 #endif
@@ -179,6 +179,10 @@ public partial class Compiler
                     if ((previousExceptions != currentExceptions) &&
                         vnStore.VNExcIsSubset(currentExceptions, previousExceptions))
                     {
+#if DEBUG
+                        JITDUMP($"Skipping CSE candidate for tree [{previous.TreeId:D6}]; " +
+                            $"tree [{tree.TreeId:D6}] is a better candidate with more exceptions\n");
+#endif
                         previous._cseNum = NO_CSE;
                         first.tslStmt = stmt;
                         first.tslTree = tree;
@@ -249,6 +253,13 @@ public partial class Compiler
 
         if (optCSECandidateCount == MAX_CSE_CNT)
         {
+#if DEBUG
+            if (verbose)
+            {
+                jitprintf("Exceeded the MAX_CSE_CNT, not using tree:\n");
+                gtDispTree(tree);
+            }
+#endif
             return 0;
         }
 
@@ -258,6 +269,27 @@ public partial class Compiler
         descriptor.csdTreeList.tslTree._cseNum = checked((sbyte)cseIndex);
         tree._cseNum = checked((sbyte)cseIndex);
         descriptor.ComputeNumLocals(this);
+
+#if DEBUG
+        if (verbose)
+        {
+            jitprintf($"\nCandidate {FMT_CSE(cseIndex)}, key=");
+
+            if (!Is_Shared_Const_CSE(key))
+            {
+                vnPrint((int)key, 0);
+            }
+            else
+            {
+                var value = Decode_Shared_Const_CSE_Value(key);
+                var displayValue = unchecked((nuint)dspOffset((nint)value));
+                jitprintf($"K_{displayValue:x}");
+            }
+
+            jitprintf($" in {FMT_BB(compCurBB.bbNum)}, [cost={tree.CostEx,2}, size={tree.CostSz,2}]: \n");
+            gtDispTree(tree);
+        }
+#endif
         return cseIndex;
     }
 

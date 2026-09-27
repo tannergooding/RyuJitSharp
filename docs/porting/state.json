@@ -12,18 +12,19 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Resolve B301 array signature and MethodHash differences by tracing and reconciling the native type-name producer.",
+      "scope": "Port missing CSE candidate-registration, dataflow-set, availability and heuristic-cutoff diagnostics; preserve native shared-key hash truncation.",
       "doneWhen": [
-        "Identify the first differing type-name producer for current-pin array-isolated and range signatures.",
-        "Port the complete relevant native type-printing behavior, preserving EE contracts and non-array controls.",
-        "Validate exact signatures/hash inputs and actual managed runtime behavior against current-pin native output.",
-        "Commit the coherent identity correction locally and continue remaining port work."
+        "Reconcile all diagnostic branches of optValnumCSE_Index, InitDataFlow, DataFlow and Availability against pinned optcse.cpp.",
+        "Retain native uint truncation of tagged shared-constant hash keys and native six-decimal cutoff formatting; keep allocation-order VN differences separate.",
+        "Port optPrintCSEDataFlowSet using existing bitset and candidate-index formatters, including multiword sets and optional raw bits.",
+        "Cover positive phase output, disabled verbosity and exceptional/limit branches with focused controls; compare current-pin CSE runtime slices.",
+        "Commit the coherent diagnostic batch locally and continue remaining port work."
       ],
       "validation": [
-        "Use current native-matrix-v2 and immediate B305/B308 corrected array captures; preserve the original dynamicClass/hash mismatch.",
-        "Select focused EE printing regressions from the established producer, then full-analysis and checked runtime comparisons."
+        "Use native-matrix-v2 and array-identity-managed-matrix-1 as exact current-pin native/pre-fix references.",
+        "Run relevant CSE tests with full analysis in Debug/Release and compare fresh checked Boolean/switch/range phase slices and instruction streams."
       ],
-      "parentScope": "B305/B308 committedcf69c40. Continue B301 without publication or reopening completed scope.",
+      "parentScope": "B305/B308 committedcf69c40 and B301 committedd499c05. Continue CSE diagnostic closure without publication.",
       "deferred": "B322 remains a native uninitialized-bool limitation. Five existing indirect-call fixture exception-flag failures remain separate. RL feature records intentionally use unpadded indices in native and are not part of B305.",
       "parallelPackets": [
         {
@@ -429,7 +430,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B301 validated: source9ddce4d,114Debug/44Release,10old-producer failures/2controls; comparison-1.json proves all143baseline identities/sizes/IN streams match native and the entire array-morph phase matches. Commit B301, then trace missing candidate/dataflow CSE diagnostics from Compiler.CSE.Candidates.cs:optValnumCSE_Locate against pinned optcse.cpp and current Boolean/switch phase captures. Keep candidate decisions unchanged; native profile-poison B322 and five indirect-call fixture failures remain separate. No push.",
+    "nextAction": "B338/B339 validated: final sourceee166592,674Debug/591Release; old Debug17failures/25controls and old Release2shared/nonshared controls pass. Published sourceb0d1e7e has identical production files. comparison-5.json proves44positive prefixes and77of97full CSE phases match, preserving all143native instruction streams/sizes. Commit this batch, then trace B340 from Boolean Main control IND[000248]: native l:$328,c:$327 versus managed l:$327,c:$328. Establish its first VN producer and allocation order before changing code; do not swap semantic roles or normalize IDs. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -464,6 +465,20 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "csePhaseDiagnostics": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "nativeFunctions": "optcse.cpp:487-499 hash,518-843 Index,915-1090 InitDataFlow,1361-1397 DataFlow,1433-1713 Availability,4253-4265 heuristic cutoffs and5944-5968 optPrintCSEDataFlowSet.",
+        "sourceSnapshot": "ee166592faf9155e0702b1ed451a2dd046cd3da4",
+        "tests": "artifacts\\cse-phase-diagnostics\\final-debug-4.trx and final-release-4.trx:674Debug/591Release with full analysis. CSE, VN and array selections include positive/quiet diagnostics, shared/ordinary keys, candidate limit/replacement, multiword sets, visited-bit exclusion, exceptional rejection and cross-call liveness.",
+        "regressionControl": "Sourced8c7253895b371e03c712c82757cbd5ae80ac31a, validation-8\\results:old-debug.trx has17failures/25controls. Old-release.trx has2passing shared/nonshared registration controls. Debug's checked uint cast throws for tagged shared keys; Release already truncates. Earlier failed analysis/iteration logs are retained separately.",
+        "publishedSource": "b0d1e7e210ba6cda974c64b8d1c1125b67fb1835; git diff --quiet against final source confirms identical sources. Final snapshot adds cross-configuration registration tests only.",
+        "nativeAotLibrary": "artifacts\\cse-phase-diagnostics\\native-jit-5\\RyuJitSharp.dll",
+        "nativeAotSha256": "BE8523B848B044333012CDA3E5E8C66D0AC21FCFF9D0187A9E1341391BB73681",
+        "executionBaseline": "artifacts\\upstream-refresh-33baf8\\cse-diagnostics-managed-matrix-5\\results.json:29configurations/143positive managed bodies, no fallback and retained runtime/collection contracts.",
+        "comparison": "artifacts\\cse-phase-diagnostics\\comparison-5.json; reproduce with compare.py and a fresh --output path. Native-matrix-v2 and immediate pre-fix array-identity-managed-matrix-1 retain exact host/corpus hashes, settings and method identities.",
+        "results": "All44positive phase-entry-to-heuristic-tree spans (candidate registration, dataflow and availability) match exactly; all44old spans differ. Full phase matches are77of97versus53before, including24new positive matches. All143native/old/new instruction streams including line endings and code sizes match.",
+        "limits": "Twenty full CSE phases remain unequal, including B340 liberal/conservative VN-number differences in heuristic input trees. Native B322 and whole-dump/raw-byte parity remain separate. Shared-constant-mode behavior has focused Debug/Release controls, not dedicated native runtime captures."
+      },
       "arrayMethodIdentity": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "nativeFunctions": "eeinterface.cpp:147-201 Compiler::eePrintType; VM jitinterface.cpp:3482-3547 printClassName supplies the dynamicClass placeholder for metadata-less handles.",
@@ -6516,6 +6531,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "cse-candidate-dataflow-diagnostics",
+      "native": ["src\\coreclr\\jit\\optcse.cpp:optCSEKeyToHashIndex;optValnumCSE_Index/InitDataFlow/DataFlow/Availability;optPrintCSEDataFlowSet;CSE_Heuristic::Initialize diagnostics"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.CSE.Candidates.cs", "sources\\Core\\jit\\compiler\\Compiler.CSE.Dataflow.cs", "sources\\Core\\jit\\optcse\\CSE_Heuristic.Initialization.cs"],
+      "status": "Diagnostic branches and set formatter reconciled, including exceptional/limit paths and native cutoffs; tagged-key uint truncation explicit. Default candidate decisions and all143baseline instruction streams preserved. B340 remains outside this diagnostic closure.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "array-method-identity",
       "native": ["src\\coreclr\\jit\\eeinterface.cpp:Compiler::eePrintType"],

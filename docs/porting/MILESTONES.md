@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: CSE candidate and dataflow diagnostics
+
+CSE now emits native candidate-registration, generated/available-set and
+definition/use diagnostics, including exception rejection and newly detected
+cross-call liveness. Heuristic cutoffs retain native six-decimal formatting.
+Shared-constant keys also retain native unsigned hash truncation in checked
+builds instead of throwing.
+
+All 44 positive candidate/dataflow/availability traces match native exactly.
+Complete CSE phase matches increase from 53 to 77 of 97, including 24 positive
+phases. The 143-body execution baseline retains identical native instruction
+traces and sizes. Remaining phase differences include liberal/conservative
+VN numbering and are not normalized away.
+
 ## 2026-09-27: Array identity and baseline instruction traces
 
 Array type printing now returns after the element type and rank suffix, as

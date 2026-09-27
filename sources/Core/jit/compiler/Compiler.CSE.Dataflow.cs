@@ -2,6 +2,9 @@
 //
 // Based on the RyuJIT compiler from dotnet/runtime, optcse.cpp.
 
+#if DEBUG
+using System;
+#endif
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.genTreeOps;
@@ -84,6 +87,29 @@ public partial class Compiler
                 stmt = stmt.PrevStmt!;
             }
         }
+
+#if DEBUG
+        if (verbose)
+        {
+            var headerPrinted = false;
+
+            foreach (var block in Blocks)
+            {
+                if (!BitVecOps.IsEmpty(cseLivenessTraits, block.bbCseGen))
+                {
+                    if (!headerPrinted)
+                    {
+                        jitprintf("\nBlocks that generate CSE def/uses\n");
+                        headerPrinted = true;
+                    }
+
+                    jitprintf($"{FMT_BB(block.bbNum)} cseGen = ");
+                    optPrintCSEDataFlowSet(block.bbCseGen);
+                    jitprintf("\n");
+                }
+            }
+        }
+#endif
     }
 
     private void optValnumCSE_SetUpAsyncByrefKills()
@@ -218,14 +244,38 @@ public partial class Compiler
 
     private void optValnumCSE_DataFlow()
     {
+        JITDUMP("\nPerforming DataFlow for ValnumCSE's\n");
+
         var callback = new CSE_DataFlow(this);
         new DataFlow(this).ForwardAnalysis(ref callback);
+
+#if DEBUG
+        if (verbose)
+        {
+            jitprintf("\nAfter performing DataFlow for ValnumCSE's\n");
+
+            foreach (var block in Blocks)
+            {
+                jitprintf($"{FMT_BB(block.bbNum)}\n in: ");
+                optPrintCSEDataFlowSet(block.bbCseIn);
+                jitprintf("\ngen: ");
+                optPrintCSEDataFlowSet(block.bbCseGen);
+                jitprintf("\nout: ");
+                optPrintCSEDataFlowSet(block.bbCseOut);
+                jitprintf("\n");
+            }
+
+            jitprintf("\n");
+        }
+#endif
     }
 
     private void optValnumCSE_Availability()
     {
         assert(cseLivenessTraits is not null);
         assert(vnStore is not null);
+        JITDUMP("Labeling the CSEs with Use/Def information\n");
+
         var available = BitVecOps.MakeEmpty(cseLivenessTraits);
         foreach (var block in Blocks)
         {
@@ -253,15 +303,35 @@ public partial class Compiler
 
                         isUse = BitVecOps.IsMember(cseLivenessTraits, available, availBit);
                         isDef = !isUse;
+#if DEBUG
+                        var madeLiveAcrossCall = false;
+#endif
                         if (isUse && !descriptor.csdLiveAcrossCall &&
                             !BitVecOps.IsMember(cseLivenessTraits, available, crossCallBit))
                         {
                             descriptor.csdLiveAcrossCall = true;
+#if DEBUG
+                            madeLiveAcrossCall = true;
+#endif
                         }
 
+#if DEBUG
+                        if (isDef)
+                        {
+                            assert(!BitVecOps.IsMember(cseLivenessTraits, available, crossCallBit));
+                        }
+
+                        if (verbose)
+                        {
+                            jitprintf($"{FMT_BB(block.bbNum)} [{tree.TreeId:D6}] " +
+                                $"{(isUse ? "Use" : "Def")} of {FMT_CSE(index)} [weight={refCntWtd2str(weight)}]" +
+                                $"{(madeLiveAcrossCall ? " *** Now Live Across Call ***" : "")}\n");
+                        }
+#endif
                         if (descriptor.defExcSetPromise == ValueNumStore.NoVN)
                         {
                             tree._cseNum = NO_CSE;
+                            JITDUMP(" Abandoned - CSE candidate has defs with different exception sets!\n");
                             continue;
                         }
 
@@ -276,6 +346,20 @@ public partial class Compiler
                             {
                                 var intersection = vnStore.VNExcSetIntersection(
                                     descriptor.defExcSetCurrent, exceptions);
+#if DEBUG
+                                if (verbose)
+                                {
+                                    jitprintf(">>> defExcSetCurrent is ");
+                                    vnStore.vnDumpExc(this, descriptor.defExcSetCurrent);
+                                    jitprintf("\n");
+                                    jitprintf(">>> theLiberalExcSet is ");
+                                    vnStore.vnDumpExc(this, exceptions);
+                                    jitprintf("\n");
+                                    jitprintf(">>> the intersectionExcSet is ");
+                                    vnStore.vnDumpExc(this, intersection);
+                                    jitprintf("\n");
+                                }
+#endif
                                 assert(vnStore.VNExcIsSubset(descriptor.defExcSetCurrent, intersection));
                                 descriptor.defExcSetCurrent = intersection;
                             }
@@ -285,6 +369,7 @@ public partial class Compiler
                             {
                                 descriptor.defExcSetPromise = ValueNumStore.NoVN;
                                 tree._cseNum = NO_CSE;
+                                JITDUMP(" Abandon - CSE candidate has defs with exception sets that do not satisfy some CSE use\n");
                                 continue;
                             }
 
@@ -307,6 +392,7 @@ public partial class Compiler
                                 if (!vnStore.VNExcIsSubset(descriptor.defExcSetPromise, exceptions))
                                 {
                                     tree._cseNum = NO_CSE;
+                                    JITDUMP(" NO_CSE - This use has an exception set item that isn't contained in the defs!\n");
                                     continue;
                                 }
                             }
@@ -335,4 +421,33 @@ public partial class Compiler
             }
         }
     }
+
+#if DEBUG
+    private void optPrintCSEDataFlowSet(ReadOnlySpan<nint> set, bool includeBits = true)
+    {
+        assert(cseLivenessTraits is not null);
+
+        if (includeBits)
+        {
+            jitprintf($"{BitVecOps.ToString(cseLivenessTraits, set)} ");
+        }
+
+        var first = true;
+
+        for (var index = 1; index <= optCSECandidateCount; index++)
+        {
+            if (BitVecOps.IsMember(cseLivenessTraits, set, getCSEAvailBit(index)))
+            {
+                if (!first)
+                {
+                    jitprintf(", ");
+                }
+
+                var isAvailableAcrossCall = BitVecOps.IsMember(cseLivenessTraits, set, getCSEAvailCrossCallBit(index));
+                jitprintf($"{FMT_CSE(index)}{(isAvailableAcrossCall ? ".c" : "")}");
+                first = false;
+            }
+        }
+    }
+#endif
 }
