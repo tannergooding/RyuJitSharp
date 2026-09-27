@@ -12,19 +12,19 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port complete fgResolveGDVs against33baf8, reusing ObjectAllocator.IsGuard and existing profile repair. Resolve only exact single-definition locals whose class matches the guard; preserve guard side effects and edge mutation order.",
+      "scope": "Port complete fgPromoteStructs against33baf8, reusing StructPromotionHelper and preserving native gates, cache clearing, original-local iteration, tracking limits and SIMD/register-struct treatment.",
       "doneWhen": [
-        "Port complete native guarded-check resolution and expose the existing matcher without duplicating or changing recognition.",
-        "Cover phase gates, EQ/NE branches, exact/single-definition/class checks, side-effect preservation, duplicate edges and profile updates with old-stub controls.",
-        "Capture positive native/managed resolution where reachable and preserve established execution baselines.",
-        "Commit the validated GDV-resolution batch locally, then continue the next remaining dependency."
+        "Port the complete public struct-promotion driver and validate the existing helper contracts it activates.",
+        "Cover phase gates, local-table growth, helper cache clearing, field promotion and SIMD/tracking-limit treatment with focused regression cases.",
+        "Capture positive native/managed promotion and preserve established execution baselines.",
+        "Commit the validated struct-promotion batch locally, then continue the next remaining dependency."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Profile repair committedb954fd0. Parent owns GDV resolver/shared matcher exposure/tests; independent lane captures native GDV resolution. No publication authorized; commits remain checkpoints.",
-      "deferred": "B311 optional metrics fixture, B315 incoming UTF8 graph/promotion, B318 existing argument-morph regression, B307 EH node IDs, B320 static-data descriptions and B321 profile-column spacing remain separate. Unrelated optimizations and discontiguous runtime allocation parity are outside this no-return cleanup batch.",
+      "parentScope": "GDV resolution committed3cab710. Parent owns the struct-promotion driver and tests; independent lane captures native promotion. No publication authorized; commits remain checkpoints.",
+      "deferred": "B311 optional metrics fixture, B318 existing argument-morph regression, B307 EH node IDs, B320 static-data descriptions, B321-B323 profile diagnostics and B324 tiered heap corruption remain separate. Physical promotion is a different phase. B315 is relevant only where activating the native struct-promotion driver changes its inputs.",
       "parallelPackets": [
         {
           "scope": "Complete native static-initialization expansion.",
@@ -408,7 +408,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "GDV resolution is validated at snapshot1d00bb8d7e63500a77c0033a301f98d57cf3d8b7:153Debug128Release, eight old-stub failures per configuration, three matching default runtime controls and29/143baseline. Native Tier1 resolves two guards; positive managed parity remains blocked by B324, reproduced twice with the prior profile-repair JIT. Continue complete fgPromoteStructs (morph.cpp15243-15338), reusing StructPromotionHelper; preserve original-local iteration, helper-cache clearing, SIMD/register treatment, tracking limits and native gates. No push or PR authorized.",
+    "nextAction": "Struct promotion and B326 optional-indentation repair are validated at3688ba03c0cda46cb2dd455d7c40aef08a9378a9: all17Debug13Release new cases pass, with139Debug134Release integrated passes plus separately reproduced B325. Nine executed promotion slices and six positive instruction slices match native;29/143baseline and six UTF8 fullopts/GC-stress bodies pass. Continue complete fgMarkImplicitByRefCopyOmissionCandidates (morph.cpp15342-15493), reusing execution-order visitors, Statement.LocalsTreeList and existing ABI classification. FourFieldCopy still has a downstream copy (46managed/34native bytes); determine whether this missing phase accounts for it. No push or PR authorized.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -476,6 +476,26 @@
         "scope": "Restore pinned output-pointer-only getThreadLocalStaticBlocksInfo across three wrappers/interface/vtable; rename final metadata slot to offsetOfBaseOfThreadLocalData. Keep existing slot, calling convention, offset widths and neighboring getThreadLocalFieldInfo bool.",
         "nativeEvidence": "MSVC native-probe.cpp static_assert checks exact member signature against pinned corinfo.h; sizeof56, pointer-field offsets0/16/24/32 and scalar offsets40/44/48/52 match managed raw layout.",
         "gaps": "TLS phase is not activated. Virtual native callbacks verify forwarding without claiming actual runtime TLS expansion."
+      },
+      "structPromotion": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "snapshot": "3688ba03c0cda46cb2dd455d7c40aef08a9378a9",
+        "nativeAot": "artifacts\\struct-promotion\\native-jit-2\\RyuJitSharp.dll",
+        "sha256": "7A9A016B14AD186F25AA62523A0BB1C81E55ECA7DB3205CBAEC3BD366E19D5D1",
+        "corpusSha256": "EC42371BA3DBBDD1FA654E69AD131520FF135873A2653F1E59EA01DC08424F89",
+        "corpusProgramSha256": "F5FCBD94E50FF4C840D12AC9B6D1AE4D92206220BF740BF5BC07AAB18041F0AB",
+        "debugPassed": 139,
+        "releasePassed": 134,
+        "debugFailed": 1,
+        "releaseFailed": 1,
+        "tests": "StructPromotionTests, LocalMorphTests, InlineArgumentTests and ValueNumTreeTests with full analysis. All17Debug13Release new cases pass: original-local iteration/table growth, sorted fields, metadata cache clearing, gates, tracking limits, SIMD/mask treatment and optional indentation.",
+        "knownFailure": "B325: UnusedStructArgumentsPreservePossibleNullFault(False) fails identically in both configurations of the preceding committed3cab710 archive. The nonfaulting control passes. No assertion was disabled or changed; artifacts\\struct-promotion\\baseline-3cab710\\manifest.json.",
+        "negativeControls": "artifacts\\struct-promotion\\negative\\manifest.json: old public phase fails eight of thirteen cases in each configuration, five controls pass. Two additional Debug default-indentation cases fail before B326, with two initialized-stack controls passing; all four pass after repair.",
+        "execution": "Nine selected corpus bodies execute successfully without fallback. Six positive promotion decisions and three no-change controls match native. The maintained corpus rebuild reproduces the captured DLL exactly.",
+        "comparison": "artifacts\\struct-promotion\\comparison-3688-1.json: nine phase slices and original/resulting local tables match exactly. All six positive bodies have matching emitted instruction slices and sizes; eight of nine total instruction slices/sizes match. Raw adjacent CFG/IR slices retain B322 diagnostics.",
+        "baseline": "artifacts\\upstream-refresh-33baf8\\struct-promotion-fixed-managed-matrix\\results.json:29configurations143positive managed bodies, expected outcomes and no fallback.",
+        "utf8": "artifacts\\struct-promotion\\utf8-final-fullopts and utf8-final-gcstress execute six bodies across capacity boundaries. Original promotion adds24field-promotion decisions across three methods, matching native counts. Against the immediately preceding JIT each fullopts body shrinks159to152bytes; native remains75. Exact scope and prior/current captures are in utf8-comparison-2.json.",
+        "gaps": "FourFieldCopy is unchanged by promotion but managed code retains a16byte copy:46bytes/72byte frame versus native34bytes/56byte frame. The downstream origin remains to be established. B315 full UTF8 graph/code parity and B322 profile diagnostics remain open; matching instruction slices are not a whole-dump or machine-byte claim."
       },
       "gdvResolution": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
@@ -6217,6 +6237,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "original-struct-promotion",
+      "native": ["src\\coreclr\\jit\\morph.cpp:fgPromoteStructs", "src\\coreclr\\jit\\gentree.cpp:printIndent"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.StructPromotion.cs", "sources\\Core\\jit\\compiler\\Compiler.StructPromotionHelper.cs", "sources\\Core\\jit\\gentree\\IndentStack.cs:Print"],
+      "status": "Complete driver reusing existing promotion helper unchanged. Preserves original-local iteration, inline-time cache invalidation, SIMD/register treatment, tracking limits and native gates. B326 default indentation represents the native optional null stack. Native source retained; physical promotion and implicit-byref copy omission are separate phases.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "gdv-guard-resolution",
       "native": ["src\\coreclr\\jit\\fgopt.cpp:fgResolveGDVs", "src\\coreclr\\jit\\objectalloc.cpp:ObjectAllocator::IsGuard"],

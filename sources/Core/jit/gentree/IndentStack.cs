@@ -42,7 +42,7 @@ public readonly struct IndentStack
     ];
 
     private readonly List<Compiler.IndentInfo> _stack;
-    private readonly string[] _indents;
+    private readonly string[]? _indents;
 
     public IndentStack(Compiler compiler)
     {
@@ -77,6 +77,12 @@ public readonly struct IndentStack
     // Print the current indentation and arcs.
     public void Print()
     {
+        // A default stack represents native printIndent(nullptr), which emits no arcs.
+        if (_indents is null)
+        {
+            return;
+        }
+
         var stack = CollectionsMarshal.AsSpan(_stack);
 
         for (var i = 0; i < stack.Length; i++)

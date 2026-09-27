@@ -15,6 +15,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Original struct-local promotion
+
+The original struct-promotion phase now dispatches through the existing
+eligibility and profitability rules, clears conservative inline-time type
+information, and promotes only original locals into ordered field locals.
+SIMD/register-struct handling and tracking-limit decisions follow native.
+Promoted-local value-numbering diagnostics also preserve native null
+indentation instead of aborting compilation.
+
+The focused corpus matches native promotion decisions and field layouts;
+all six positively promoted bodies have matching emitted instruction slices.
+A downstream copy remains in the unpromoted four-field control. UTF-8 helper
+execution also benefits from promotion, but its remaining graph and code-size
+differences are not resolved.
+
 ## 2026-09-26: GDV guard resolution
 
 Guarded-devirtualization checks can now become unconditional branches when

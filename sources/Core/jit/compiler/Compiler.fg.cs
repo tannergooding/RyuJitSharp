@@ -16030,9 +16030,6 @@ public partial class Compiler
     // TODO: Port phase - fgOptimizeMaskConversions
     private PhaseStatus fgOptimizeMaskConversions() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - fgPromoteStructs
-    private PhaseStatus fgPromoteStructs() => PhaseStatus.MODIFIED_NOTHING;
-
 #if TARGET_X86
     private GenTree? fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon local)
     {
