@@ -11,8 +11,32 @@ public sealed partial class Lowering
     {
 #if TARGET_XARCH
         ContainCheckShiftRotate(tree.AsOp());
+#elif TARGET_ARM64
+        if (tree.Oper is GT_ROL)
+        {
+            var rotate = tree.AsOp();
+            var rotatedValueBitSize = rotate.Op1.Type.Size * BITS_PER_BYTE;
+            var rotateLeftIndexNode = rotate.Op2;
+            if (rotateLeftIndexNode.Oper.IsCnsIntOrI)
+            {
+                var constant = rotateLeftIndexNode.AsIntCon();
+                constant.IconValue = unchecked(rotatedValueBitSize - constant.IconValue);
+            }
+            else
+            {
+                var negate = CompilerInstance.gtNewUnaryNode(GT_NEG, rotateLeftIndexNode.Type.ActualType,
+                    rotateLeftIndexNode);
+                BlockRange().InsertAfter(rotateLeftIndexNode, negate);
+                rotate.Op2 = negate;
+            }
+
+            tree.SetOper(GT_ROR);
+            tree.Flags &= GTF_COMMON_MASK;
+        }
+
+        ContainCheckShiftRotate(tree.AsOp());
 #else
-        throw new System.NotImplementedException("Non-xarch rotate lowering is not ported.");
+        throw new System.NotImplementedException("Rotate lowering is not ported for this target.");
 #endif
     }
 

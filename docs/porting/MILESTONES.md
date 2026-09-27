@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: ARM64 scalar arithmetic lowering
+
+Private ARM64 addition, multiplication, negation, shifts and rotates now preserve
+the native widening-multiply overflow proof, multiply-add/subtract/negate
+transformations and extended bitfield shifts. Cast removal retains extension
+signedness and clears containment, while count-mask stripping and rotate
+conversion preserve the native width and wrapping rules.
+
+This completes the arithmetic dependency layer without enabling the unfinished
+node/block/phase dispatcher or general hardware-intrinsic lowering. ARM64
+generated-code execution remains unverified.
+
 ## 2026-09-27: ARM64 private binary arithmetic
 
 Private ARM64 binary arithmetic now includes NOT combinations, conditional-compare

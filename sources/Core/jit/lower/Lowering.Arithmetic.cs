@@ -104,7 +104,20 @@ public sealed partial class Lowering
 #endif
         }
 
-#if TARGET_ARM64 || TARGET_RISCV64 || TARGET_WASM
+#if TARGET_ARM64
+        if (node.Oper is GT_ADD)
+        {
+            if (TryLowerAddForPossibleContainment(node, out var next))
+            {
+                return next;
+            }
+
+            if (TryLowerAddSubToMulLongOp(node, out next))
+            {
+                return next;
+            }
+        }
+#elif TARGET_RISCV64 || TARGET_WASM
         throw new NotImplementedException("LowerAdd target-specific lowering is not ported.");
 #endif
         if (node.Oper is GT_ADD)
@@ -179,9 +192,11 @@ public sealed partial class Lowering
         return node;
 #endif
     }
+#endif
 
     private void ContainCheckMul(GenTreeOp node)
     {
+#if TARGET_XARCH
 #if TARGET_X86
         assert(node.Oper is GT_MUL or GT_MULHI or GT_MUL_LONG);
 #else
@@ -296,8 +311,12 @@ public sealed partial class Lowering
                 SetRegOptionalForBinOp(node, safeOp1, safeOp2);
             }
         }
-    }
+#elif TARGET_ARM64
+        ContainCheckBinary(node);
+#else
+        throw new NotImplementedException("Multiply containment is not ported for this target.");
 #endif
+    }
 
     private GenTree? LowerMul(GenTreeOp mul)
     {
@@ -318,8 +337,42 @@ public sealed partial class Lowering
 
         ContainCheckMul(mul);
         return mul.Next;
+#elif TARGET_ARM64
+        assert(mul.Oper is GT_MUL or GT_MULHI or GT_MUL_LONG);
+        if (CompilerInstance.opts.OptimizationEnabled && (mul.Oper is GT_MUL) && mul.IsValidLongMul())
+        {
+            var op1 = mul.Op1.AsCast();
+            var op2 = mul.Op2;
+            mul.Flags &= ~(GTF_OVERFLOW | GTF_UNSIGNED);
+            if (op1.IsUnsigned)
+            {
+                mul.Flags |= GTF_UNSIGNED;
+            }
+
+            op1.CastOp.IsContained = false;
+            mul.Op1 = op1.CastOp;
+            BlockRange().Remove(op1);
+            if (op2 is GenTreeCast cast)
+            {
+                cast.CastOp.IsContained = false;
+                mul.Op2 = cast.CastOp;
+                BlockRange().Remove(op2);
+            }
+            else
+            {
+                assert(op2.Oper.IsIntegralConst);
+                assert(FitsIn(TYP_INT, op2.AsIntConCommon().IntegralValue));
+                op2.Type = TYP_INT;
+            }
+
+            mul.SetOper(GT_MUL_LONG);
+            mul.Flags &= GTF_COMMON_MASK;
+        }
+
+        ContainCheckMul(mul);
+        return mul.Next;
 #else
-        throw new NotImplementedException("LowerMul outside xarch is not ported.");
+        throw new NotImplementedException("Multiply lowering is not ported for this target.");
 #endif
     }
 }

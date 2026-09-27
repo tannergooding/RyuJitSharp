@@ -1360,8 +1360,12 @@ chaining, bitfield extraction and widening-multiply subtraction. Its dependency
 layer also supports widening-multiply addition, condition-to-flags chain movement,
 ARM64 condition descriptors and truthifying flags. The BFX path preserves the
 native empty containment action without activating general containment dispatch.
-ADD/NEG entrypoints and general hardware-intrinsic lowering remain separate;
-these helpers do not activate node/block/phase dispatch or establish runtime parity.
+Private ADD/MUL/NEG and shift/rotate entrypoints now include the complete
+widening-multiply overflow proof, negated-multiply containment, multiply-long
+fusion and extended-shift recognition. Rotate count conversion retains the native
+unmasked subtraction; redundant mask removal remains a separate dispatch action.
+General hardware-intrinsic lowering remains separate; these helpers do not
+activate node/block/phase dispatch or establish runtime parity.
 
 `Lowering.TryCreateAddrMode` implements xarch address folding and interference
 checks. Other targets throw `NotImplementedException` pending their volatile,

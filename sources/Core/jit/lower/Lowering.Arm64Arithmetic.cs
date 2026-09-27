@@ -10,6 +10,131 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
+    private bool TryLowerAddForPossibleContainment(GenTreeOp node, out GenTree? next)
+    {
+        assert(node.Oper is GT_ADD);
+        next = null;
+        if (!CompilerInstance.opts.OptimizationEnabled || node.IsContained || !varTypeIsIntegral(node.Type) ||
+            ((node.Flags & GTF_SET_FLAGS) != 0) || node.HasOverflowCheck)
+        {
+            return false;
+        }
+
+        var op1 = node.Op1;
+        var op2 = node.Op2;
+        if (IsContainableImmed(node, op2))
+        {
+            return false;
+        }
+
+        var multiply = op1.Oper is GT_MUL ? op1 : op2;
+        var addValue = op1.Oper is GT_MUL ? op2 : op1;
+        if ((multiply.Oper is GT_MUL) && ((multiply.Flags & GTF_SET_FLAGS) == 0) &&
+            varTypeIsIntegral(multiply.Type) && !multiply.HasOverflowCheck &&
+            !multiply.IsContained && !addValue.IsContained)
+        {
+            var a = multiply.AsOp().Op1;
+            var b = multiply.AsOp().Op2;
+            if ((a.Oper is GT_NEG) && ((a.Flags & GTF_SET_FLAGS) == 0) && (b.Oper is not GT_NEG) &&
+                !a.IsContained && !a.AsUnOp().Op1.IsContained)
+            {
+                multiply.AsOp().Op1 = a.AsUnOp().Op1;
+                BlockRange().Remove(a);
+                node.Op1 = addValue;
+                node.Op2 = multiply;
+                node.SetOper(GT_SUB);
+                node.Flags &= GTF_COMMON_MASK;
+                ContainCheckBinary(node);
+                next = node.Next;
+                return true;
+            }
+            else if ((b.Oper is GT_NEG) && ((b.Flags & GTF_SET_FLAGS) == 0) && (a.Oper is not GT_NEG) &&
+                !b.IsContained && !b.AsUnOp().Op1.IsContained)
+            {
+                multiply.AsOp().Op2 = b.AsUnOp().Op1;
+                BlockRange().Remove(b);
+                node.Op1 = addValue;
+                node.Op2 = multiply;
+                node.SetOper(GT_SUB);
+                node.Flags &= GTF_COMMON_MASK;
+                ContainCheckBinary(node);
+                next = node.Next;
+                return true;
+            }
+            else if (op1.Oper is GT_MUL)
+            {
+                node.Op1 = addValue;
+                node.Op2 = multiply;
+                ContainCheckBinary(node);
+                next = node.Next;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private GenTree? LowerNeg(GenTreeUnOp node)
+    {
+        if (TryLowerNegToMulLongOp(node, out var next))
+        {
+            return next;
+        }
+
+        ContainCheckNeg(node);
+        return node.Next;
+    }
+
+    private bool TryLowerNegToMulLongOp(GenTreeUnOp op, out GenTree? next)
+    {
+        assert(op.Oper is GT_NEG);
+        next = null;
+        if (!CompilerInstance.opts.OptimizationEnabled || op.IsContained || !varTypeIsIntegral(op.Type) ||
+            ((op.Flags & GTF_SET_FLAGS) != 0))
+        {
+            return false;
+        }
+
+        var op1 = op.Op1;
+        if (op1.Oper is not GT_MUL_LONG)
+        {
+            return false;
+        }
+
+        var multiply = op1.AsOp();
+        if ((multiply.Op1.Type.ActualType is not TYP_INT) || (multiply.Op2.Type.ActualType is not TYP_INT))
+        {
+            return false;
+        }
+
+        if (!IsInvariantInRange(multiply, op))
+        {
+            return false;
+        }
+
+        var result = CompilerInstance.gtNewScalarHWIntrinsicNode(TYP_LONG, NI_ArmBase_Arm64_MultiplyLongNeg,
+            multiply.Op1, multiply.Op2);
+        result.SimdBaseType = multiply.IsUnsigned ? TYP_ULONG : TYP_LONG;
+        BlockRange().InsertAfter(op, result);
+        if (BlockRange().TryGetUse(op, out var use))
+        {
+            use.ReplaceWith(result);
+        }
+        else
+        {
+            result.IsUnusedValue = true;
+        }
+
+        BlockRange().Remove(multiply);
+        BlockRange().Remove(op);
+        JITDUMP("Converted to HW_INTRINSIC 'NI_ArmBase_Arm64_MultiplyLongNeg'.\n");
+        JITDUMP(":\n");
+        DISPTREERANGE(BlockRange(), result);
+        JITDUMP("\n");
+        next = result;
+        return true;
+    }
+
     private bool TryLowerAndRshToBFX(GenTreeOp tree, out GenTree? next)
     {
         assert(tree.Oper is GT_AND);

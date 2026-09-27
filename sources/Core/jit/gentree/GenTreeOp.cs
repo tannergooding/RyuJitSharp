@@ -112,6 +112,78 @@ public class GenTreeOp : GenTreeUnOp
     }
 #endif
 
+    public bool IsValidLongMul()
+    {
+        assert(Oper is GT_MUL);
+        var op1 = Op1;
+        var op2 = Op2;
+        if (Type is not TYP_LONG)
+        {
+            return false;
+        }
+
+        assert(op1.Type is TYP_LONG);
+        assert(op2.Type is TYP_LONG);
+        if ((op1 is not GenTreeCast firstCast) || (firstCast.CastOp.Type.ActualType is not TYP_INT))
+        {
+            return false;
+        }
+
+        if (!((op2 is GenTreeCast secondCast) && (secondCast.CastOp.Type.ActualType is TYP_INT)) &&
+            !(op2.Oper.IsIntegralConst && FitsIn(TYP_INT, op2.AsIntConCommon().IntegralValue)))
+        {
+            return false;
+        }
+
+        if (op1.HasOverflowCheck || op2.HasOverflowCheckEx)
+        {
+            return false;
+        }
+
+        if (HasOverflowCheck)
+        {
+            long GetMaxValue(GenTree operand)
+            {
+                if (operand is GenTreeCast cast)
+                {
+                    if (cast.IsUnsigned)
+                    {
+                        return cast.CastOp.Type switch {
+                            TYP_UBYTE => byte.MaxValue,
+                            TYP_USHORT => ushort.MaxValue,
+                            _ => uint.MaxValue,
+                        };
+                    }
+
+                    // A sign extension can denote UINT64_MAX for an unsigned multiply.
+                    return IsUnsigned ? -1L : int.MinValue;
+                }
+
+                return operand.AsIntConCommon().IntegralValue;
+            }
+
+            var maxOp1 = GetMaxValue(op1);
+            var maxOp2 = GetMaxValue(op2);
+            var fits = IsUnsigned
+                ? CheckedOps.TryMulUns(maxOp1, maxOp2, out _)
+                : CheckedOps.TryMul(maxOp1, maxOp2, out _);
+            if (!fits)
+            {
+                return false;
+            }
+        }
+
+        var op1ZeroExtends = firstCast.IsUnsigned;
+        var op2ZeroExtends = op2.Oper is GT_CAST ? op2.AsCast().IsUnsigned : op2.AsIntConCommon().IntegralValue >= 0;
+        var op2AnyExtensionIsSuitable = op2.Oper.IsIntegralConst && op2ZeroExtends;
+        if ((op1ZeroExtends != op2ZeroExtends) && !op2AnyExtensionIsSuitable)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
 #nullable disable
     public ref GenTree Op2Ref => ref _op2;
 #nullable restore

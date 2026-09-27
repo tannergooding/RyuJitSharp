@@ -336,8 +336,7 @@ internal static unsafe class Arm64ArithmeticLoweringTests
             }
             else
             {
-                Assert.That(TryLowerAddSubToMulLongOp(lowering, tree, out var next), Is.EqualTo(expected));
-                Assert.That(next, Is.SameAs(user.Op1));
+                Assert.That(LowerAdd(lowering, tree), Is.SameAs(user.Op1));
             }
 
             if (expected)
@@ -356,6 +355,280 @@ internal static unsafe class Arm64ArithmeticLoweringTests
             {
                 Assert.That(user.Op1, Is.SameAs(tree));
             }
+        });
+    }
+
+    [TestCase(TYP_INT, false, false, false, false, true)]
+    [TestCase(TYP_INT, false, true, false, false, true)]
+    [TestCase(TYP_INT, true, true, false, false, false)]
+    [TestCase(TYP_INT, true, true, true, false, true)]
+    [TestCase(TYP_INT, false, true, true, false, false)]
+    [TestCase(TYP_UBYTE, true, true, false, false, true)]
+    [TestCase(TYP_USHORT, true, true, false, false, true)]
+    [TestCase(TYP_INT, false, false, false, true, false)]
+    public static void LongMultiplyRecognitionUsesNativeCheckedOverflowWitnesses(
+        var_types sourceType, bool zeroExtend, bool checkMultiply, bool unsignedMultiply, bool checkedCast, bool expected)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var a = compiler.gtNewLclvNode(sourceType, 0);
+            var b = compiler.gtNewLclvNode(sourceType, 1);
+            var first = new GenTreeCast(TYP_LONG, a, zeroExtend, TYP_LONG);
+            var second = new GenTreeCast(TYP_LONG, b, zeroExtend, TYP_LONG);
+            first.Flags |= checkedCast ? GTF_OVERFLOW : GTF_EMPTY;
+            var multiply = new GenTreeOp(GT_MUL, TYP_LONG, first, second) { IsUnusedValue = true };
+            multiply.Flags |= checkMultiply ? GTF_OVERFLOW : GTF_EMPTY;
+            multiply.Flags |= unsignedMultiply ? GTF_UNSIGNED : GTF_EMPTY;
+            a.IsContained = true;
+            b.IsContained = true;
+            Append(block, a, first, b, second, multiply);
+
+            Assert.That(multiply.IsValidLongMul(), Is.EqualTo(expected));
+            Assert.That(LowerMul(lowering, multiply), Is.Null);
+            Assert.That(multiply.Oper, Is.EqualTo(expected ? GT_MUL_LONG : GT_MUL));
+            if (expected)
+            {
+                Assert.That(multiply.Op1, Is.SameAs(a));
+                Assert.That(multiply.Op2, Is.SameAs(b));
+                Assert.That(a.IsContained || b.IsContained, Is.False);
+                Assert.That(multiply.HasOverflowCheckEx, Is.False);
+                Assert.That(multiply.IsUnsigned, Is.EqualTo(zeroExtend));
+                Assert.That(first.Next, Is.Null);
+                Assert.That(second.Next, Is.Null);
+            }
+        });
+    }
+
+    [TestCase(false, -2147483649L, false)]
+    [TestCase(false, -2147483648L, true)]
+    [TestCase(false, 2147483647L, true)]
+    [TestCase(false, 2147483648L, false)]
+    [TestCase(true, -1L, false)]
+    [TestCase(true, 0L, true)]
+    [TestCase(true, 2147483647L, true)]
+    public static void LongMultiplyConstantRequiresSigned32BitsAndCompatibleExtension(
+        bool zeroExtend, long value, bool expected)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var source = compiler.gtNewLclvNode(TYP_INT, 0);
+            var cast = new GenTreeCast(TYP_LONG, source, zeroExtend, TYP_LONG);
+            var constant = compiler.gtNewIconNode(TYP_LONG, (nint)value);
+            var multiply = new GenTreeOp(GT_MUL, TYP_LONG, cast, constant) { IsUnusedValue = true };
+            Append(block, source, cast, constant, multiply);
+            Assert.That(multiply.IsValidLongMul(), Is.EqualTo(expected));
+            _ = LowerMul(lowering, multiply);
+
+            Assert.That(multiply.Oper, Is.EqualTo(expected ? GT_MUL_LONG : GT_MUL));
+            Assert.That(constant.Type, Is.EqualTo(expected ? TYP_INT : TYP_LONG));
+            Assert.That(constant.IconValue, Is.EqualTo((nint)value));
+        });
+    }
+
+    [TestCase(false, false)]
+    [TestCase(true, true)]
+    public static void LongMultiplyPreservesMixedExtensionAndMinoptsExclusions(bool sameExtension, bool minopts)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var a = compiler.gtNewLclvNode(TYP_INT, 0);
+            var b = compiler.gtNewLclvNode(TYP_INT, 1);
+            var first = new GenTreeCast(TYP_LONG, a, false, TYP_LONG);
+            var second = new GenTreeCast(TYP_LONG, b, !sameExtension, TYP_LONG);
+            var multiply = new GenTreeOp(GT_MUL, TYP_LONG, first, second) { IsUnusedValue = true };
+            Append(block, a, first, b, second, multiply);
+            Assert.That(multiply.IsValidLongMul(), Is.EqualTo(sameExtension));
+            _ = LowerMul(lowering, multiply);
+
+            Assert.That(multiply.Oper, Is.EqualTo(GT_MUL));
+        }, minopts);
+    }
+
+    [TestCase(0, false)]
+    [TestCase(0, true)]
+    [TestCase(1, false)]
+    [TestCase(1, true)]
+    [TestCase(2, false)]
+    [TestCase(2, true)]
+    [TestCase(3, false)]
+    [TestCase(3, true)]
+    public static void AddMovesMultiplyAndAbsorbsExactlyOneNegation(int negatedOperands, bool multiplyFirst)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var a = compiler.gtNewLclvNode(TYP_LONG, 0);
+            var b = compiler.gtNewLclvNode(TYP_LONG, 1);
+            GenTree first = (negatedOperands & 1) != 0 ? new GenTreeUnOp(GT_NEG, TYP_LONG, a) : a;
+            GenTree second = (negatedOperands & 2) != 0 ? new GenTreeUnOp(GT_NEG, TYP_LONG, b) : b;
+            block.InsertAtEnd(a);
+            if (first != a)
+            {
+                block.InsertAtEnd(first);
+            }
+            block.InsertAtEnd(b);
+            if (second != b)
+            {
+                block.InsertAtEnd(second);
+            }
+
+            var multiply = new GenTreeOp(GT_MUL, TYP_LONG, first, second);
+            var addValue = compiler.gtNewLclvNode(TYP_LONG, 0);
+            var add = new GenTreeOp(GT_ADD, TYP_LONG, multiplyFirst ? multiply : addValue,
+                multiplyFirst ? addValue : multiply);
+            var user = new GenTreeUnOp(GT_NEG, TYP_LONG, add) { IsUnusedValue = true };
+            Append(block, multiply, addValue, add, user);
+            var singleNegation = negatedOperands is 1 or 2;
+            var next = LowerAdd(lowering, add);
+
+            Assert.That(next, Is.SameAs(singleNegation || multiplyFirst ? user : null));
+            Assert.That(add.Oper, Is.EqualTo(singleNegation ? GT_SUB : GT_ADD));
+            Assert.That(add.Op1, Is.SameAs(addValue));
+            Assert.That(add.Op2, Is.SameAs(multiply));
+            Assert.That(multiply.IsContained, Is.True);
+            if (singleNegation)
+            {
+                Assert.That(multiply.Op1, Is.SameAs(a));
+                Assert.That(multiply.Op2, Is.SameAs(b));
+                Assert.That((negatedOperands == 1 ? first : second).Next, Is.Null);
+            }
+        });
+    }
+
+    [Test]
+    public static void AddPreservesTheSecondOperandImmediateBeforeMultiplyFusion()
+    {
+        WithLowering((compiler, lowering, block) => {
+            var a = compiler.gtNewLclvNode(TYP_LONG, 0);
+            var b = compiler.gtNewLclvNode(TYP_LONG, 1);
+            var negate = new GenTreeUnOp(GT_NEG, TYP_LONG, a);
+            var multiply = new GenTreeOp(GT_MUL, TYP_LONG, negate, b);
+            var constant = compiler.gtNewIconNode(TYP_LONG, 1);
+            var add = new GenTreeOp(GT_ADD, TYP_LONG, multiply, constant) { IsUnusedValue = true };
+            Append(block, a, negate, b, multiply, constant, add);
+            Assert.That(LowerAdd(lowering, add), Is.Null);
+            Assert.That(add.Oper, Is.EqualTo(GT_ADD));
+            Assert.That(constant.IsContained, Is.True);
+            Assert.That(multiply.Op1, Is.SameAs(negate));
+        });
+    }
+
+    [TestCase(false, false)]
+    [TestCase(true, false)]
+    [TestCase(false, true)]
+    public static void NegateFusesWideningMultiplyAndPreservesUnusedResult(bool unsigned, bool minopts)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var a = compiler.gtNewLclvNode(TYP_INT, 0);
+            var b = compiler.gtNewLclvNode(TYP_INT, 1);
+            var multiply = new GenTreeOp(GT_MUL_LONG, TYP_LONG, a, b);
+            multiply.Flags |= unsigned ? GTF_UNSIGNED : GTF_EMPTY;
+            var negate = new GenTreeUnOp(GT_NEG, TYP_LONG, multiply) { IsUnusedValue = true };
+            Append(block, a, b, multiply, negate);
+            var next = LowerNeg(lowering, negate);
+            if (!minopts)
+            {
+                var result = block.LastNode as GenTreeHWIntrinsic ?? throw new AssertionException("Intrinsic missing.");
+                Assert.That(next, Is.SameAs(result));
+                Assert.That(result.HWIntrinsicId, Is.EqualTo(NI_ArmBase_Arm64_MultiplyLongNeg));
+                Assert.That(result.SimdBaseType, Is.EqualTo(unsigned ? TYP_ULONG : TYP_LONG));
+                Assert.That(result.IsUnusedValue, Is.True);
+                Assert.That(negate.Next, Is.Null);
+                Assert.That(multiply.Next, Is.Null);
+            }
+            else
+            {
+                Assert.That(next, Is.Null);
+                Assert.That(block.LastNode, Is.SameAs(negate));
+            }
+        }, minopts);
+    }
+
+    [TestCase(TYP_INT, -1, 33L)]
+    [TestCase(TYP_INT, 0, 32L)]
+    [TestCase(TYP_INT, 31, 1L)]
+    [TestCase(TYP_INT, 32, 0L)]
+    [TestCase(TYP_INT, int.MinValue, 2147483680L)]
+    [TestCase(TYP_LONG, 63, 1L)]
+    [TestCase(TYP_LONG, 64, 0L)]
+    [TestCase(TYP_LONG, 65, -1L)]
+    public static void RotateLeftUsesNativeUnmaskedRightCount(var_types type, int count, long expected)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var value = compiler.gtNewLclvNode(type, 0);
+            var amount = compiler.gtNewIconNode(TYP_INT, count);
+            var rotate = new GenTreeOp(GT_ROL, type, value, amount) { IsUnusedValue = true };
+            Append(block, value, amount, rotate);
+            LowerRotate(lowering, rotate);
+
+            Assert.That(rotate.Oper, Is.EqualTo(GT_ROR));
+            Assert.That(amount.IconValue, Is.EqualTo((nint)expected));
+            Assert.That(amount.IsContained, Is.True);
+        });
+    }
+
+    [Test]
+    public static void VariableRotateLeftInsertsNegationAtTheCountDefinition()
+    {
+        WithLowering((compiler, lowering, block) => {
+            var value = compiler.gtNewLclvNode(TYP_LONG, 0);
+            var amount = compiler.gtNewLclvNode(TYP_INT, 1);
+            var rotate = new GenTreeOp(GT_ROL, TYP_LONG, value, amount) { IsUnusedValue = true };
+            Append(block, value, amount, rotate);
+            LowerRotate(lowering, rotate);
+
+            Assert.That(rotate.Oper, Is.EqualTo(GT_ROR));
+            Assert.That(rotate.Op2.Oper, Is.EqualTo(GT_NEG));
+            Assert.That(rotate.Op2.Type, Is.EqualTo(TYP_INT));
+            Assert.That(rotate.Op2.Prev, Is.SameAs(amount));
+            Assert.That(rotate.Op2.Next, Is.SameAs(rotate));
+            Assert.That(rotate.Op2.AsUnOp().Op1, Is.SameAs(amount));
+        });
+    }
+
+    [TestCase(TYP_INT, 31L, true)]
+    [TestCase(TYP_INT, -1L, true)]
+    [TestCase(TYP_LONG, 31L, false)]
+    [TestCase(TYP_LONG, 63L, true)]
+    [TestCase(TYP_LONG, 127L, true)]
+    public static void ShiftMaskRemovalPreservesImplicitWidthAndClearsRegisterOptionality(
+        var_types type, long maskValue, bool removed)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var value = compiler.gtNewLclvNode(type, 0);
+            var count = compiler.gtNewLclvNode(TYP_INT, 1);
+            count.IsRegOptional = true;
+            var mask = compiler.gtNewIconNode(TYP_INT, (nint)maskValue);
+            var and = new GenTreeOp(GT_AND, TYP_INT, count, mask);
+            var shift = new GenTreeOp(GT_RSZ, type, value, and) { IsUnusedValue = true };
+            Append(block, value, count, mask, and, shift);
+            LowerShift(lowering, shift);
+
+            Assert.That(shift.Op2, Is.SameAs(removed ? count : and));
+            Assert.That(count.IsRegOptional, Is.EqualTo(!removed));
+            Assert.That(and.Next, removed ? Is.Null : Is.SameAs(shift));
+        });
+    }
+
+    [TestCase(TYP_LONG, TYP_LONG, 31, false, true)]
+    [TestCase(TYP_LONG, TYP_LONG, 32, false, false)]
+    [TestCase(TYP_LONG, TYP_LONG, 0, false, false)]
+    [TestCase(TYP_INT, TYP_BYTE, 7, false, true)]
+    [TestCase(TYP_INT, TYP_BYTE, 8, false, false)]
+    [TestCase(TYP_INT, TYP_SHORT, 15, false, true)]
+    [TestCase(TYP_LONG, TYP_LONG, 3, true, false)]
+    public static void ExtendedShiftHonorsSourceWidthAndCastOverflow(
+        var_types type, var_types castType, int count, bool overflow, bool expected)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var value = compiler.gtNewLclvNode(TYP_INT, 0);
+            value.IsContained = true;
+            var cast = new GenTreeCast(type, value, false, castType);
+            cast.Flags |= overflow ? GTF_OVERFLOW : GTF_EMPTY;
+            var amount = compiler.gtNewIconNode(TYP_INT, count);
+            var shift = new GenTreeOp(GT_LSH, type, cast, amount) { IsUnusedValue = true };
+            Append(block, value, cast, amount, shift);
+            LowerShift(lowering, shift);
+
+            Assert.That(shift.Oper, Is.EqualTo(expected ? GT_BFIZ : GT_LSH));
+            Assert.That(cast.IsContained, Is.EqualTo(expected));
+            Assert.That(value.IsContained, Is.EqualTo(!expected));
+            Assert.That(amount.IsContained, Is.True);
         });
     }
 
@@ -385,8 +658,20 @@ internal static unsafe class Arm64ArithmeticLoweringTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckShiftRotate")]
     private static extern void ContainCheckShiftRotate(Lowering lowering, GenTreeOp node);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "TryLowerAddSubToMulLongOp")]
-    private static extern bool TryLowerAddSubToMulLongOp(Lowering lowering, GenTreeOp node, out GenTree? next);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerAdd")]
+    private static extern GenTree? LowerAdd(Lowering lowering, GenTreeOp node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerMul")]
+    private static extern GenTree? LowerMul(Lowering lowering, GenTreeOp node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerNeg")]
+    private static extern GenTree? LowerNeg(Lowering lowering, GenTreeUnOp node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerShift")]
+    private static extern void LowerShift(Lowering lowering, GenTreeOp node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerRotate")]
+    private static extern void LowerRotate(Lowering lowering, GenTree node);
 
     private static void WithLowering(Action<Compiler, Lowering, BasicBlock> action, bool minopts = false)
     {

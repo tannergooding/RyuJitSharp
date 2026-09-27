@@ -541,7 +541,7 @@ public sealed partial class Lowering
 #endif
     }
 
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
     private void TryRemoveShiftRotateMask(GenTreeOp operation)
     {
         assert(operation.Oper is GT_LSH or GT_RSH or GT_RSZ or GT_ROL or GT_ROR);
@@ -570,6 +570,28 @@ public sealed partial class Lowering
         assert(shift.Oper is GT_LSH or GT_RSH or GT_RSZ);
         TryRemoveShiftRotateMask(shift);
         ContainCheckShiftRotate(shift);
+#if TARGET_ARM64
+        if (CompilerInstance.opts.OptimizationEnabled && (shift.Oper is GT_LSH) &&
+            (shift.Op1 is GenTreeCast cast) && shift.Op2.Oper.IsCnsIntOrI && !shift.IsContained)
+        {
+            var constant = shift.Op2.AsIntCon();
+            if (!cast.IsContained && !cast.IsRegOptional && !cast.HasOverflowCheck &&
+                (cast.CastOp.Type is TYP_LONG or TYP_INT))
+            {
+                var dstBits = cast.Type.Size * BITS_PER_BYTE;
+                var srcBits = (varTypeIsSmall(cast.CastType) ? cast.CastType.Size : cast.CastOp.Type.Size) *
+                    BITS_PER_BYTE;
+                if ((srcBits < dstBits) && (constant.IconValue > 0) && (constant.IconValue < srcBits))
+                {
+                    JITDUMP("Recognized ubfix/sbfix pattern in LSH(CAST, CNS). Changing op to GT_BFIZ");
+                    shift.SetOper(GT_BFIZ);
+                    shift.Flags &= GTF_COMMON_MASK;
+                    cast.CastOp.IsContained = false;
+                    MakeSrcContained(shift, cast);
+                }
+            }
+        }
+#endif
     }
 #endif
 }
