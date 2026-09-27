@@ -268,7 +268,8 @@ public partial class Compiler
             }
         }
 
-        var oper = (genTreeOps)domFunc;
+        // Native genTreeOps is BYTE; extended VNFuncs are narrowed before these operator tests.
+        var oper = unchecked((genTreeOps)domFunc);
         if ((oper is not GT_EQ and not GT_NE) ||
             (domApp.GetArg(1) != vnStore.VNZeroForType(TYP_INT)))
         {
@@ -281,7 +282,7 @@ public partial class Compiler
             return;
         }
 
-        var predOper = (genTreeOps)predApp.Func;
+        var predOper = unchecked((genTreeOps)predApp.Func);
         if (predOper is not GT_AND and not GT_OR)
         {
             return;

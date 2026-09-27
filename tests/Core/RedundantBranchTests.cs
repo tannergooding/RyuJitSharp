@@ -32,6 +32,16 @@ internal static unsafe class RedundantBranchTests
         "optJumpThreadCore", BindingFlags.NonPublic | BindingFlags.Instance)
         ?? throw new MissingMethodException(nameof(Compiler), "optJumpThreadCore");
 
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors |
+        DynamicallyAccessedMemberTypes.PublicFields)]
+    private static readonly Type s_relopInfo = typeof(Compiler).GetNestedType(
+        "RelopImplicationInfo", BindingFlags.NonPublic)
+        ?? throw new MissingMemberException(nameof(Compiler), "RelopImplicationInfo");
+
+    private static readonly MethodInfo s_relopImplies = typeof(Compiler).GetMethod(
+        "optRelopImpliesRelop", BindingFlags.NonPublic | BindingFlags.Instance)
+        ?? throw new MissingMethodException(nameof(Compiler), "optRelopImpliesRelop");
+
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "optRboBlockHasSideEffects")]
     private static extern bool BlockHasSideEffects(Compiler? _, BasicBlock block);
 
@@ -120,6 +130,43 @@ internal static unsafe class RedundantBranchTests
         var result = s_implies.Invoke(null,
             [first, (nint)firstBound, second, (nint)secondBound]);
         Assert.That(result?.ToString(), Is.EqualTo(expected));
+    }
+
+    [TestCase(VNFunc.VNF_LT_UN, false)]
+    [TestCase(VNFunc.VNF_LE_UN, false)]
+    [TestCase(VNFunc.VNF_GE_UN, false)]
+    [TestCase(VNFunc.VNF_GT_UN, false)]
+    [TestCase(VNFunc.VNF_LT_UN, true)]
+    [TestCase(VNFunc.VNF_GT_UN, true)]
+    public static void ExtendedValueNumberFunctionsDoNotOverflowImplication(VNFunc func, bool wrapped)
+    {
+        WithCompiler(compiler => {
+#if DEBUG
+            compiler.info.compFullName = nameof(RedundantBranchTests);
+#endif
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var left = store.VNForExpr(null, var_types.TYP_INT);
+            var right = store.VNForExpr(null, var_types.TYP_INT);
+            var other = store.VNForExpr(null, var_types.TYP_INT);
+            var zero = store.VNForIntCon(0);
+            var dom = store.VNForFunc(var_types.TYP_INT, func, left, right);
+            if (wrapped)
+            {
+                dom = store.VNForFuncNoFolding(var_types.TYP_INT, VNFunc.VNF_EQ, dom, zero);
+            }
+            var tree = store.VNForFunc(var_types.TYP_INT, VNFunc.VNF_EQ, other, zero);
+            var info = Activator.CreateInstance(s_relopInfo)
+                ?? throw new InvalidOperationException("Could not construct implication state.");
+            (s_relopInfo.GetField("DomCmpNormVN") ?? throw new MissingFieldException("DomCmpNormVN")).SetValue(info, dom);
+            (s_relopInfo.GetField("TreeNormVN") ?? throw new MissingFieldException("TreeNormVN")).SetValue(info, tree);
+            object[] arguments = [info];
+
+            Assert.That((int)func, Is.GreaterThan(byte.MaxValue));
+            _ = s_relopImplies.Invoke(compiler, arguments);
+            Assert.That((s_relopInfo.GetField("CanInfer") ?? throw new MissingFieldException("CanInfer")).GetValue(arguments[0]),
+                Is.EqualTo(false));
+        });
     }
 
     [TestCase(8, false, "Reachable")]

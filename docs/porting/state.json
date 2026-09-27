@@ -13,18 +13,18 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "B354: complete Discretionary inline costing/data plus Model, Profile, Random, Full, Size and Replay policies and their existing diagnostic integration.",
+      "scope": "B359: preserve native byte-width VNFunc-to-genTreeOps narrowing in redundant-branch implication.",
       "doneWhen": [
-        "Replace constructor-only policies with complete pinned native implementations, retaining observation ordering, numeric models and replay log traversal.",
-        "Wire existing factory and CSV/XML/finalization surfaces; remove temporary unsupported guards only when their native implementations are present.",
-        "Validate policy decisions and data/replay behavior with focused regressions and positive checked-host comparisons, then commit locally and continue."
+        "Verify the whole optRelopImpliesRelop contract and both unguarded VNFunc-to-byte-enum conversions.",
+        "Add regressions that fail with OverflowException on valid extended VN functions and preserve existing inference cases.",
+        "Execute the preserved original failing corpus with the exact pinned native host, verify the overflow is gone and relevant native output matches, then commit locally and continue."
       ],
       "validation": [
-        "Targeted full-analysis Debug/Release policy and inline-diagnostic cases, with old-shell controls for changed decisions and schema/replay.",
-        "Freeze integrated policy area once; compare selected native policy decisions, CSV data and replay execution against the intact pinned host. Retain explicit clock/allocation exclusions."
+        "Focused RedundantBranchTests in Debug/Release, including before-fix failure; existing signed-boundary tests remain controls.",
+        "Checked NativeAOT execution of the original inline-policy exception-path corpus, comparing native/managed RBO and generated code with any pre-existing differences explicit."
       ],
-      "parentScope": "Shared diagnostic writer committed7217b0f. All B354 policy implementations integrated and validated; worker95344d66 fully collected and idle. Final sourcea887de5d passes16checked body comparisons and full Core.",
-      "deferred": "B358/B360 pinned native diagnostic inconsistencies preserved. Profile host-PGO evidence remains open. B359 pre-existing RBO overflow is the next area, not folded into policy implementation. Existing clock/allocation limitations remain R005/D001; disabled native configurations remain disabled.",
+      "parentScope": "Optional inline policies committedbdb9b55. B359 complete: both unchecked BYTE conversions restored;6old-overflow regressions and37Debug/37Release pass. Frozen299d3609 original Main executes with native-identical instructions/277bytes. Remaining RBO/default-inline differences separately recordedB361/B362.",
+      "deferred": "No global enum-conversion redesign or unrelated optimizer changes. B358/B360 and Profile host-PGO evidence remain separate. Existing clock/allocation limitations remain R005/D001.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -429,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit completed B354, then continue B359: read complete optRelopImpliesRelop and native counterpart, locate the checked-overflow operation exposed by artifacts/inline-policies/old-replay-control-1, and reconcile native arithmetic for the whole implication case. Preserve original exception-path corpus under artifacts/inline-policies/corpus. Add focused failing regression, recapture original execution against native and commit coherent fix. Policy finalsourcea887de5d and comparison-2/replay-comparison-2 match16checked bodies; no further policy investigation. Worker95344d66 idle/collected. No push.",
+    "nextAction": "Commit validated B359 narrowing fix, then continue B362 ExtendedDefault profitability: compare native-default-1 and managed-default-1 Evaluate diagnostics under artifacts/relop-narrowing to locate the first differing estimate/observation for Candidates.Outer. Both select ExtendedDefaultPolicy; native accepts both Outer calls (59bytes), managed rejects both (36bytes), while explicit Model/Full policy captures match. Fix the demonstrated input/estimate mismatch before considering B361 downstream RBO differences. B359 Main now matches277bytes/instructions; comparison-1 records nonparity limits. Worker95344d66 idle/collected. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -464,6 +464,15 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "relopNarrowing": {
+        "sourceSnapshot": "299d36091e1752d7570e7636cdc855185f546bc7",
+        "nativeFunctions": "redundantbranchopts.cpp:optRelopImpliesRelop, including both native genTreeOps(BYTE) casts. Signed-comparison helper casts remain range-guarded.",
+        "tests": "artifacts\\relop-narrowing\\before-debug-2.trx:6OverflowException failures before the fix. area-debug-1.trx37passed and area-release-1.trx37passed include direct/nested extended-VN regressions and existing signed-boundary/ScalarEvolution controls.",
+        "nativeAotLibrary": "artifacts\\relop-narrowing\\native-jit-1\\RyuJitSharp.dll",
+        "nativeAotSha256": "0C546572F6921D9F77D57A4A108206DFA30DED43FF046022AEF679F47DECA363",
+        "comparison": "artifacts\\relop-narrowing\\comparison-1.json: old-default-1 reproduces overflow under sourcea887de5d; new source executes both original probe methods. Previously failing Main matches native instruction stream and277bytes.",
+        "limits": "No whole RBO dump equality claim: B361 preserves native PhiDef-threading/diagnostic differences. Evaluate has independent ExtendedDefault input differences (B362), with native59/managed36bytes. Original source, failed and successful captures preserved."
+      },
       "optionalInlinePolicies": {
         "sourceSnapshot": "a887de5d2afc96a7ad8ad2ed1ede7463543ebf97",
         "initialSourceSnapshot": "fa0ea0479cb44576c44668dd56e6c3238bcd4080",
@@ -6699,6 +6708,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "relop-implication-native-width",
+      "native": ["src\\coreclr\\jit\\redundantbranchopts.cpp:optRelopImpliesRelop", "src\\coreclr\\jit\\gentreeopsdef.h:genTreeOps"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.RedundantBranches.Inference.cs"],
+      "status": "Both unguarded VNFunc-to-genTreeOps casts now preserve native BYTE truncation. Six overflow regressions and original failed Main execution/code equality established. B361/B362 separately bound remaining phase/input differences.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "optional-inline-policies",
       "native": ["src\\coreclr\\jit\\inlinepolicy.cpp:DiscretionaryPolicy;ModelPolicy;ProfilePolicy;RandomPolicy;FullPolicy;SizePolicy;ReplayPolicy", "src\\coreclr\\jit\\inlinepolicy.h", "src\\coreclr\\jit\\compiler.cpp:compMethodHash"],

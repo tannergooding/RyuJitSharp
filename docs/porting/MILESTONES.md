@@ -15,6 +15,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Native-width branch implication
+
+Corrected both wide value-number-function conversions in
+`optRelopImpliesRelop`. Native narrows them to byte-sized `genTreeOps`;
+checked C# conversions instead threw on valid extended comparison functions.
+Six direct and nested comparison cases reproduce the old overflow, and all
+37 focused branch/scalar-evolution cases pass in Debug and Release.
+
+The original exception-path probe now compiles and executes through the
+managed JIT. Its previously failing Main matches native instructions and
+277-byte code size. Whole RBO dump equality is not established: B361 tracks
+PhiDef-threading/diagnostic differences, and B362 tracks separate default
+inline-profitability differences in Evaluate. Both remain visible in
+`artifacts\relop-narrowing\comparison-1.json`.
+
 ## 2026-09-27: Optional inline policies and replay
 
 Completed Discretionary policy's opcode histograms, method-signature
