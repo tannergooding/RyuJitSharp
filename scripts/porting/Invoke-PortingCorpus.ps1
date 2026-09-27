@@ -26,6 +26,9 @@ param(
     [ValidateRange(0, 2)][int] $InlineDumpData = 0,
     [ValidateRange(0, 3)][int] $InlineDumpXml = 0,
     [switch] $InlineXmlFile,
+    [ValidateSet("Default", "Discretionary", "Model", "Profile", "Random", "Full", "Size", "Replay")]
+    [string] $InlinePolicy = "Default",
+    [string] $InlineReplayFile = "",
     [switch] $TimingCsv,
     [switch] $TimingSummary,
     [switch] $LoopHoistStats,
@@ -61,6 +64,9 @@ if (($FlowGraphEH -or $FlowGraphLoops -or $FlowGraphMemorySsa) -and ($FlowGraphF
 if ($InlineXmlFile -and ($InlineDumpXml -eq 0)) {
     throw "-InlineXmlFile requires -InlineDumpXml."
 }
+if (($InlinePolicy -eq "Replay") -ne (-not [string]::IsNullOrEmpty($InlineReplayFile))) {
+    throw "-InlinePolicy Replay requires -InlineReplayFile, which is only valid for replay."
+}
 
 if (($MinOpts -or $InstrumentedTier0) -and -not $PSBoundParameters.ContainsKey("ExpectedMethods")) {
     $ExpectedMethods += "InlineCandidate"
@@ -69,6 +75,10 @@ if (($MinOpts -or $InstrumentedTier0) -and -not $PSBoundParameters.ContainsKey("
 $coreRun = Join-Path $CoreRoot "corerun.exe"
 $nativeInputs = @($coreRun, (Join-Path $CoreRoot "coreclr.dll"), (Join-Path $CoreRoot "clrjit.dll"),
     (Join-Path $CoreRoot "System.Private.CoreLib.dll"), $Corpus)
+if ($InlineReplayFile) {
+    $InlineReplayFile = (Resolve-Path -LiteralPath $InlineReplayFile).Path
+    $nativeInputs += $InlineReplayFile
+}
 foreach ($path in $nativeInputs) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Required input does not exist: $path"
@@ -112,6 +122,12 @@ $settings = [ordered]@{
     DOTNET_JitDisasmDiffable = "1"
     DOTNET_JitDumpASCII = "1"
     DOTNET_JitStdOutFile = $dumpPath
+}
+if ($InlinePolicy -ne "Default") {
+    $settings["DOTNET_JitInlinePolicy$InlinePolicy"] = "1"
+}
+if ($InlineReplayFile) {
+    $settings.DOTNET_JitInlineReplayFile = $InlineReplayFile
 }
 if ($InstrumentedTier0) {
     $settings.DOTNET_TieredPGO = "1"

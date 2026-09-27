@@ -61,9 +61,9 @@ internal static unsafe class InlineStrategyDiagnosticsTests
     {
         WithStrategy((strategy, compiler) => {
             SetField(typeof(InlineStrategy), strategy, "_inlineCount", -1);
-            SetField(typeof(InlineStrategy), strategy, "_lastSuccessfulPolicy", new DiscretionaryPolicy(compiler, false));
-            _ = Assert.Throws<NotSupportedException>(() => strategy.DumpData());
-            Assert.That(GetStaticField<bool>(typeof(InlineStrategy), "s_HasDumpedDataHeader"), Is.False);
+            SetField(typeof(InlineStrategy), strategy, "_lastSuccessfulPolicy", new DefaultPolicy(compiler, false));
+            strategy.DumpData();
+            Assert.That(GetStaticField<bool>(typeof(InlineStrategy), "s_HasDumpedDataHeader"), Is.True);
         }, dumpData: 1, limit: 1);
     }
 
@@ -229,7 +229,7 @@ internal static unsafe class InlineStrategyDiagnosticsTests
     [TestCase("\u00e9\0ignored", 0x0059688fu)]
     public static void CalleeHashUsesNativeSignedUtf8BytesUntilTerminator(string name, uint expected)
     {
-        var method = typeof(InlineContext).GetMethod("HashMethodName", BindingFlags.Static | BindingFlags.NonPublic)
+        var method = typeof(Compiler).GetMethod("HashMethodName", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("Missing native callee hash.");
         Assert.That(method.Invoke(null, [name]), Is.EqualTo(expected));
     }
@@ -259,15 +259,18 @@ internal static unsafe class InlineStrategyDiagnosticsTests
     }
 
     [Test]
-    public static void MissingDiscretionarySchemaFailsBeforeWritingHeader()
+    public static void DiscretionarySchemaIsIncludedInXmlHeader()
     {
         WithStrategy((strategy, compiler) => {
             SetField(typeof(InlineStrategy), strategy, "_lastSuccessfulPolicy", new DiscretionaryPolicy(compiler, false));
             using var stream = new MemoryStream();
             using var file = new StreamWriter(stream, new UTF8Encoding(false), leaveOpen: true);
-            _ = Assert.Throws<NotSupportedException>(() => strategy.DumpXml(file));
+            strategy.DumpXml(file);
             file.Flush();
-            Assert.That(stream.Length, Is.Zero);
+            var output = Encoding.UTF8.GetString(stream.ToArray());
+            Assert.That(output, Does.Contain("<Policy>DiscretionaryPolicy</Policy>"));
+            Assert.That(output, Does.Contain("<DataSchema>Method,Version,HotSize,ColdSize,JitTime,SizeEstimate,TimeEstimate,"));
+            Assert.That(output, Does.Not.Contain("TimeEstimate,</DataSchema>"));
         }, dumpData: 1, dumpXml: 1);
     }
 

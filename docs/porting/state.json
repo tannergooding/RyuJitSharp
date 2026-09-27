@@ -13,18 +13,18 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "B357 resolved: shared diagnostic output restores ordinary side-by-side runtime teardown.",
+      "scope": "B354: complete Discretionary inline costing/data plus Model, Profile, Random, Full, Size and Replay policies and their existing diagnostic integration.",
       "doneWhen": [
-        "Establish whether ordinary teardown reaches the managed callback or loses its output; do not infer the cause from missing reports.",
-        "Use isolated artifact instrumentation and the exact pinned host, preserving the oracle and production source.",
-        "Fix any demonstrated managed dispatch/ownership defect; otherwise record the precise host boundary and reproduction without accepting fake teardown parity."
+        "Replace constructor-only policies with complete pinned native implementations, retaining observation ordering, numeric models and replay log traversal.",
+        "Wire existing factory and CSV/XML/finalization surfaces; remove temporary unsupported guards only when their native implementations are present.",
+        "Validate policy decisions and data/replay behavior with focused regressions and positive checked-host comparisons, then commit locally and continue."
       ],
       "validation": [
-        "11999Debug/10908Release Core pass; both new sharing/current-EOF regressions fail on old code.",
-        "Frozen7dedd0fe ordinary checked-host teardown produces managed summary/aggregate reports/XML footer without a hook. Four instruction streams/sizes and21non-timing/non-allocation CSV fields each match native."
+        "Targeted full-analysis Debug/Release policy and inline-diagnostic cases, with old-shell controls for changed decisions and schema/replay.",
+        "Freeze integrated policy area once; compare selected native policy decisions, CSV data and replay execution against the intact pinned host. Retain explicit clock/allocation exclusions."
       ],
-      "parentScope": "B355 shutdown/timing committed85e59e6. JitTextWriter now permits native writers and follows current EOF after external appends/truncation. Ordinary checked-host confirmation closes B357 without callback/ownership changes.",
-      "deferred": "Disabled native arena/node-size and API-measurement configurations remain disabled. Discretionary/Replay remain B354. Existing Stopwatch counter differs from native x64 RDTSC; user was unavailable and delegated judgment. Retain existing counter instead of introducing a native helper library, document as an explicit limitation, and do not claim cycle/frequency/timing parity. Native-empty Compiler.ProcessShutdownWork and emitter.emitDone stay empty.",
+      "parentScope": "Shared diagnostic writer committed7217b0f. All B354 policy implementations integrated and validated; worker95344d66 fully collected and idle. Final sourcea887de5d passes16checked body comparisons and full Core.",
+      "deferred": "B358/B360 pinned native diagnostic inconsistencies preserved. Profile host-PGO evidence remains open. B359 pre-existing RBO overflow is the next area, not folded into policy implementation. Existing clock/allocation limitations remain R005/D001; disabled native configurations remain disabled.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -429,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit the validated B357 shared-output fix, then continue B354 optional inline policies: inspect complete native DiscretionaryPolicy and derived policy contracts against existing constructor-only shells, select a dependency-coherent implementation boundary, and persist it before editing. B357 comparison-1 establishes automatic teardown without a hook; do not repeat shutdown or clock investigations. No push; worker c3670d87 remains idle/fully collected.",
+    "nextAction": "Commit completed B354, then continue B359: read complete optRelopImpliesRelop and native counterpart, locate the checked-overflow operation exposed by artifacts/inline-policies/old-replay-control-1, and reconcile native arithmetic for the whole implication case. Preserve original exception-path corpus under artifacts/inline-policies/corpus. Add focused failing regression, recapture original execution against native and commit coherent fix. Policy finalsourcea887de5d and comparison-2/replay-comparison-2 match16checked bodies; no further policy investigation. Worker95344d66 idle/collected. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -464,6 +464,18 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "optionalInlinePolicies": {
+        "sourceSnapshot": "a887de5d2afc96a7ad8ad2ed1ede7463543ebf97",
+        "initialSourceSnapshot": "fa0ea0479cb44576c44668dd56e6c3238bcd4080",
+        "nativeFunctions": "inlinepolicy.cpp/h: complete Discretionary, Model, Profile, Random, Full, Size and Replay policies. compiler.cpp:compMethodHash shared with inline diagnostics. InlineStrategy replay file-position cache and XML finalization wired.",
+        "tests": "artifacts\\inline-policies\\area-debug-3.trx98passed;area-release-1.trx25passed;full-debug-1.trx12078passed;full-release-1.trx10933passed. Replay tests cover callsite/context selection, cached hits/misses, forced-inline override, collection markers, lifecycle and bounded CRT scanning. scanf-control.txt verifies Windows CRT conversion behavior.",
+        "finalTests": "artifacts\\inline-policies\\full-debug-2.trx12078passed;full-release-2.trx10933passed. integrated-debug-98.log and artifacts\\tst\\Debug\\tagoo_GOODING-ZEN4_2026-09-27_08_48_47_net11.0.trx record final98-case targeted run.",
+        "oldControls": "artifacts\\inline-policies\\old-policy-control-2\\control.log:16expected failures (6policy names,9empty CSV schemas,1incorrect never propagation), no missing-member errors. Test SHA2560F2B598A1980F58A0BF59504BE32DFF7790CAE04285ED0AF03EA2CC25EE1311E;old compiler SHA256689D642CF3DDC2968EB64E3B07A7E0FC56C23BE6A21C44924238AB8E620BB411.",
+        "nativeAotLibrary": "artifacts\\inline-policies\\native-jit-2\\RyuJitSharp.dll",
+        "nativeAotSha256": "CF47C11B37472555E1B84554013CAEDBDCDE59B1A74788DF09E9F4B709D11F04",
+        "comparison": "artifacts\\inline-policies\\simple\\comparison-2.json: six policies/12executed bodies match all selected XML except timing, complete schema/data and instruction streams/sizes. replay-comparison-2.json adds4bodies with four accepted inlines or one retained inline under explicit fixtures. old-replay-control.json proves the old shell ignores the same log.",
+        "limits": "B358 native CSV header/data mismatch preserved. B360 native DEBUG raw-call versus statement/context-offset mismatch retained; positive replay uses controlled inputs, not a native XML round trip. Profile policy's PGO inputs have deterministic unit coverage, not positive current host PGO evidence. Initial exception-path corpus exposed pre-existing B359; separate scalar corpus preserves its original failed capture."
+      },
       "shutdownDispatch": {
         "sourceSnapshot": "7dedd0fe2e150ac0e1019cdfd44c4efa8d584622",
         "mapping": "JitTextWriter permits shared native file access and seeks current EOF before each flushed encoded append block. Native dispatch invokes the primary JIT before the alternate JIT; the primary lazily opens shared dump output.",
@@ -6688,6 +6700,13 @@
   },
   "sourceMap": [
     {
+      "area": "optional-inline-policies",
+      "native": ["src\\coreclr\\jit\\inlinepolicy.cpp:DiscretionaryPolicy;ModelPolicy;ProfilePolicy;RandomPolicy;FullPolicy;SizePolicy;ReplayPolicy", "src\\coreclr\\jit\\inlinepolicy.h", "src\\coreclr\\jit\\compiler.cpp:compMethodHash"],
+      "csharp": ["sources\\Core\\jit\\inlinepolicy\\DiscretionaryPolicy.cs", "sources\\Core\\jit\\inlinepolicy\\DiscretionaryPolicy.Opcode.cs", "sources\\Core\\jit\\inlinepolicy\\ModelPolicy.cs", "sources\\Core\\jit\\inlinepolicy\\ProfilePolicy.cs", "sources\\Core\\jit\\inlinepolicy\\RandomPolicy.cs", "sources\\Core\\jit\\inlinepolicy\\FullPolicy.cs", "sources\\Core\\jit\\inlinepolicy\\SizePolicy.cs", "sources\\Core\\jit\\inlinepolicy\\ReplayPolicy.cs", "sources\\Core\\jit\\compiler\\Compiler.PrologDiagnostics.cs", "sources\\Core\\jit\\Inline\\InlineStrategy.cs"],
+      "status": "Complete cost/observation/model and replay policies integrated with existing factory and diagnostics. Replay preserves bounded CRT scanning and cache/context traversal. Selected exact native policy/data/code evidence, with B358/B360 native quirks retained and Profile host-PGO evidence separate. Native source retained.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
+    {
       "area": "compiler-shutdown-and-timing",
       "native": ["src\\coreclr\\jit\\compiler.cpp:compShutdown;JitTimer;CompTimeSummaryInfo", "src\\coreclr\\jit\\compiler.h:CompTimeInfo", "src\\coreclr\\jit\\emit.cpp:emitDone"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.Shutdown.cs", "sources\\Core\\jit\\compiler\\CompTimeInfo.cs", "sources\\Core\\jit\\compiler\\CompTimeSummaryInfo.cs", "sources\\Core\\jit\\compiler\\JitTimer.cs", "sources\\Core\\jit\\emit\\Emitter.cs:emitDone"],
@@ -6698,7 +6717,7 @@
       "area": "per-method-compilation-finalization",
       "native": ["src\\coreclr\\jit\\compiler.cpp:compCompileFinish;AddLoopHoistStats;PrintAggregateLoopHoistStats;EnregisterStats", "src\\coreclr\\jit\\inline.cpp:InlineStrategy data/XML;InlineContext::DumpXml", "src\\coreclr\\jit\\jitmetadata.cpp:printMetric;dump"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.CompilationFinish.cs", "sources\\Core\\jit\\compiler\\Compiler.EnregisterStats.cs", "sources\\Core\\jit\\Inline\\InlineStrategy.Diagnostics.cs", "sources\\Core\\jit\\Inline\\InlineContext.Diagnostics.cs", "sources\\GenerateTables\\Program.cs:GenerateJitMetrics"],
-      "status": "Complete enabled per-method finalization and supported policy diagnostics. Exact native selected metrics, summaries and inline records with explicit allocation/timing/AltJIT exclusions. Process-wide compShutdown is now ported; optional policy implementations remain B354. Native source retained.",
+      "status": "Complete enabled per-method finalization and policy diagnostics. Exact native selected metrics, summaries and inline records with explicit allocation/timing/AltJIT exclusions. Process-wide compShutdown and B354 optional policies are now ported. Native source retained.",
       "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     },
     {

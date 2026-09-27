@@ -27,7 +27,6 @@ public sealed partial class InlineStrategy
         }
 
         DumpDataEnsurePolicyIsSet();
-        EnsurePolicyDataSupported(_lastSuccessfulPolicy);
 
         using var stream = Console.OpenStandardError();
         using var file = new JitTextWriter(stream, leaveOpen: true) {
@@ -58,19 +57,9 @@ public sealed partial class InlineStrategy
         }
     }
 
-    internal static void EnsurePolicyDataSupported(InlinePolicy policy)
-    {
-        // Native DiscretionaryPolicy overrides both hooks; the current managed policy does not.
-        if (policy is DiscretionaryPolicy)
-        {
-            throw new NotSupportedException("DiscretionaryPolicy CSV diagnostics require its native DumpSchema and DumpData overrides.");
-        }
-    }
-
     internal void DumpDataHeader(StreamWriter file)
     {
         DumpDataEnsurePolicyIsSet();
-        EnsurePolicyDataSupported(_lastSuccessfulPolicy);
         file.Write($"*** Inline Data: Policy={_lastSuccessfulPolicy.Name} JitInlineLimit={JitConfig.JitInlineLimit} ***\n");
         DumpDataSchema(file);
         file.Write('\n');
@@ -79,7 +68,6 @@ public sealed partial class InlineStrategy
     internal void DumpDataSchema(StreamWriter file)
     {
         DumpDataEnsurePolicyIsSet();
-        EnsurePolicyDataSupported(_lastSuccessfulPolicy);
         file.Write("Method,Version,HotSize,ColdSize,JitTime,SizeEstimate,TimeEstimate,");
         _lastSuccessfulPolicy.DumpSchema(file);
     }
@@ -87,7 +75,6 @@ public sealed partial class InlineStrategy
     internal unsafe void DumpDataContents(StreamWriter file)
     {
         DumpDataEnsurePolicyIsSet();
-        EnsurePolicyDataSupported(_lastSuccessfulPolicy);
 
         var info = _compiler.info;
         var token = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
@@ -113,11 +100,6 @@ public sealed partial class InlineStrategy
             {
                 DumpDataEnsurePolicyIsSet();
                 var dumpDataSetting = JitConfig.JitInlineDumpData;
-                if ((dumpDataSetting == 1) || (dumpDataSetting == 2))
-                {
-                    EnsurePolicyDataSupported(_lastSuccessfulPolicy);
-                }
-
                 file.Write("<?xml version=\"1.0\"?>\n");
                 file.Write("<InlineForest>\n");
                 file.Write($"<Policy>{_lastSuccessfulPolicy.Name}</Policy>\n");
@@ -200,7 +182,7 @@ public sealed partial class InlineStrategy
 
         if (JitConfig.JitInlinePolicyReplay != 0)
         {
-            throw new NotSupportedException("ReplayPolicy XML finalization is not ported.");
+            ReplayPolicy.FinalizeXml();
         }
     }
 #endif

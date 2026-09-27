@@ -15,6 +15,36 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Optional inline policies and replay
+
+Completed Discretionary policy's opcode histograms, method-signature
+observations, native size/performance models and CSV data, together with
+Model, Profile, Random, Full and Size policies. Replay now reads the native
+bounded text format, caches root lookup positions, traverses nested contexts,
+matches token/hash/offset keys, controls forced inlines and closes its file
+through existing XML finalization. Shared method hashing supplies identical
+keys to the reader and diagnostic writer.
+
+The integrated area passes 98 Debug and 25 Release focused cases and complete
+Core passes 12,078 Debug and 10,933 Release cases. Six configured policies
+produce matching selected method XML except timing, exact native schemas/data,
+and identical instruction streams and sizes across 12 checked compilations.
+Two additional replay configurations match four checked compilations: a full
+fixture accepts four inlines; a pruned fixture retains one, rejecting a forced
+child and the other callsite. An old checked-JIT control ignores the same replay
+log and retains DefaultPolicy decisions.
+
+Pinned native diagnostic inconsistencies remain explicit: Discretionary CSV
+has two unlabelled data columns and swapped ThrowCount/ReturnCount labels
+(B358); DEBUG replay expects raw call offsets while XML emits statement
+offsets (B360). Positive replay therefore uses controlled inputs containing
+the required call and context keys, not a claimed native XML round trip.
+Profile policy has deterministic PGO-input coverage but not positive host-PGO
+evidence. The original exception-path probe exposed separate redundant-branch
+overflow B359; its source and failed capture are preserved.
+Evidence: `artifacts\inline-policies\simple\comparison-2.json`,
+`replay-comparison-2.json` and `old-replay-control.json`.
+
 ## 2026-09-27: Shared diagnostic output and automatic shutdown
 
 Diagnostic files now permit other JIT writers and append each encoded block at

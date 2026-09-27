@@ -12,5 +12,34 @@ public sealed class FullPolicy : DiscretionaryPolicy
         : base(compiler, isPrejitRoot)
     {
     }
+
+    public override string Name => nameof(FullPolicy);
+
+    public override bool BudgetCheck()
+    {
+        return false;
+    }
+
+    public override void DetermineProfitability(in CORINFO_METHOD_INFO methodInfo)
+    {
+        var strategy = _rootCompiler._inlineStrategy;
+        assert(strategy is not null);
+
+        if (unchecked((uint)_callsiteDepth) > unchecked((uint)strategy.MaxInlineDepth))
+        {
+            SetFailure(InlineObservation.CALLSITE_IS_TOO_DEEP);
+            return;
+        }
+
+        if (unchecked((uint)_codeSize) > unchecked((uint)strategy.MaxInlineILSize))
+        {
+            SetFailure(InlineObservation.CALLEE_TOO_MUCH_IL);
+            return;
+        }
+
+        SetCandidate(_isPrejitRoot
+            ? InlineObservation.CALLEE_IS_PROFITABLE_INLINE
+            : InlineObservation.CALLSITE_IS_PROFITABLE_INLINE);
+    }
 }
 #endif

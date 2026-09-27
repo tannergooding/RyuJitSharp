@@ -128,6 +128,21 @@ public sealed partial class InlineStrategy
 
     public Compiler Compiler => _compiler;
 
+#if DEBUG
+    public int MethodXmlFilePosition
+    {
+        get
+        {
+            return _methodXmlFilePosition;
+        }
+
+        set
+        {
+            _methodXmlFilePosition = value;
+        }
+    }
+#endif
+
     /// <summary>Return the current code size estimate for this method</summary>
     public int CurrentSizeEstimate => _currentSizeEstimate;
 

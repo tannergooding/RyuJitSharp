@@ -30,9 +30,7 @@ public sealed partial class InlineContext
         {
             var compiler = _inlineStrategy.Compiler;
             var token = compiler.info.compCompHnd->getMethodDefFromMethod(_callee);
-            var hash = (_callee == compiler.info.compMethodHnd)
-                ? unchecked((uint)compiler.info.compMethodHash())
-                : HashMethodName(compiler.eeGetMethodFullName(_callee));
+            var hash = compiler.compMethodHash(_callee);
             var reason = _observation.String;
             var name = compiler.eeGetMethodFullName(_callee);
             var offset = _location.IsValid ? _location.Offset : -1;
@@ -65,7 +63,6 @@ public sealed partial class InlineContext
 
             if ((dumpDataSetting == 2) && (_policy is not null))
             {
-                InlineStrategy.EnsurePolicyDataSupported(_policy);
                 file.Write($"{new string(' ', indent + 2)}<Data>");
                 _policy.DumpData(file);
                 file.Write("</Data>\n");
@@ -115,23 +112,6 @@ public sealed partial class InlineContext
 
         file.Flush();
         file.BaseStream.Write(bytes.AsSpan(0, length));
-    }
-
-    private static uint HashMethodName(string name)
-    {
-        var hash = 5381u;
-        foreach (var value in Encoding.UTF8.GetBytes(name))
-        {
-            if (value == 0)
-            {
-                break;
-            }
-
-            // HashStringA reads a signed char on Windows x64 before widening it to int.
-            hash = unchecked(((hash << 5) + hash) ^ (uint)(sbyte)value);
-        }
-
-        return hash;
     }
 #endif
 }
