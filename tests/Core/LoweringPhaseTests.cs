@@ -16,7 +16,7 @@ internal static unsafe class LoweringPhaseTests
 {
     [TestCase(false)]
     [TestCase(true)]
-    public static void LowersAllBlocksRemovesUnreachableCodeAndInvalidatesDfs(bool existingDfs)
+    public static void LoweringRemovesUnreachableCodeAndRetainsDfsForLateLiveness(bool existingDfs)
     {
         WithCompiler((compiler, allocator) => {
             var entry = BasicBlock.New(compiler, BBJ_RETURN);
@@ -50,13 +50,17 @@ internal static unsafe class LoweringPhaseTests
             Assert.That(entry.Next, Is.Null);
             Assert.That(compiler.fgLastBB, Is.SameAs(entry));
             Assert.That(dead.HasFlag(BasicBlockFlags.BBF_REMOVED), Is.True);
+            Assert.That(compiler._dfsTree, Is.Not.Null);
+            Assert.That(compiler.fgLocalVarLivenessDone, Is.False);
+
+            Assert.That(compiler.fgLateLiveness(), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
             Assert.That(compiler._dfsTree, Is.Null);
         });
     }
 
     [TestCase(false)]
     [TestCase(true)]
-    public static void LifetimeEnabledModeRunsLivenessWithoutChangingTheFlowGraph(bool existingDfs)
+    public static void LateLivenessRunsWithoutChangingTheFlowGraph(bool existingDfs)
     {
         WithCompiler((compiler, allocator) => {
             var entry = BasicBlock.New(compiler, BBJ_RETURN);
@@ -75,6 +79,10 @@ internal static unsafe class LoweringPhaseTests
             }
 
             Assert.That(DoPhase(new Lowering(compiler, allocator)), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(compiler._dfsTree, Is.Not.Null);
+            Assert.That(compiler.fgLocalVarLivenessDone, Is.False);
+
+            Assert.That(compiler.fgLateLiveness(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
 
             Assert.That(entry.FirstNode, Is.SameAs(local));
             Assert.That(entry.LastNode, Is.SameAs(keepAlive));
@@ -88,7 +96,7 @@ internal static unsafe class LoweringPhaseTests
     }
 
     [Test]
-    public static void LifetimeEnabledModeRefreshesDfsRerunsLivenessAndRecountsAfterGraphChanges()
+    public static void LateLivenessRefreshesDfsRerunsLivenessAndRecountsAfterGraphChanges()
     {
         WithCompiler((compiler, allocator) => {
             var entry = BasicBlock.New(compiler, BBJ_ALWAYS);
@@ -109,13 +117,18 @@ internal static unsafe class LoweringPhaseTests
             entry.InsertAtEnd(unused);
             compiler._dfsTree = compiler.fgComputeDfs();
 
+            Assert.That(DoPhase(new Lowering(compiler, allocator)), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(compiler._dfsTree, Is.Not.Null);
+            Assert.That(compiler.fgLocalVarLivenessDone, Is.False);
+
 #if DEBUG
             compiler.verbose = true;
-            var output = CodeGenLifeTransitionTests.Capture(() => DoPhase(new Lowering(compiler, allocator)));
+            var output = CodeGenLifeTransitionTests.Capture(() =>
+                Assert.That(compiler.fgLateLiveness(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING)));
             Assert.That(Occurrences(output, "had to run another liveness pass:"), Is.EqualTo(1));
             Assert.That(Occurrences(output, "In Liveness::Init"), Is.EqualTo(2));
 #else
-            Assert.That(DoPhase(new Lowering(compiler, allocator)), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(compiler.fgLateLiveness(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
 #endif
             Assert.That(unused.Prev, Is.Null);
             Assert.That(entry.FirstNode, Is.Null);

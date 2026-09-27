@@ -12,18 +12,18 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Investigate B334 lowering-phase assertions against 33baf8. Establish the native DFS invalidation/liveness/recount contract and correct the port or fixtures without weakening assertions.",
+      "scope": "Investigate B311 optional-metrics metadata fixture against 33baf8. Reproduce the null method-name failure and restore the required fixture contract without changing production metrics or suppressing coverage.",
       "doneWhen": [
-        "Reproduce the five previously recorded LoweringPhaseTests failures with the current committed source.",
-        "Compare the complete native lowering-phase driver with its managed implementation and the fixtures' invariants.",
-        "Correct the established contract mismatch, preserving actual liveness and graph-analysis semantics.",
-        "Validate the focused cases and relevant dependent behavior, commit the coherent batch and continue port dependencies."
+        "Reproduce the recorded CodeGenMetadataPhaseTests optional-metrics failure on current source.",
+        "Trace the required method-name/EE metadata contract and determine whether the fixture or production implementation is wrong.",
+        "Correct the proven mismatch without disabling metrics or weakening publication-order assertions.",
+        "Validate the focused metadata cases, commit the coherent batch and continue remaining port work."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Async committed e1f3b862 and B336 committed38f105e. B337 is diagnosed as unequal dynamic-PGO inputs: disabling TieredPGO and optional relocations in both processes yields12unique bodies with identical sizes/instructions and matching transformation evidence. No compiler/VM change was needed. Commit diagnosis, then address B334 independently. No publication authorized.",
+      "parentScope": "Async/B336/B337 committed. B334 was a stale combined-phase test contract: native and managed retain DFS after Lowering, then run fgLateLiveness after StackLevelSetter. Tests now assert both boundaries;35Debug/32Release pass with unchanged production code. Commit test correction, then investigate B311. No publication authorized.",
       "deferred": "B311 optional metrics fixture, B318/B325 existing argument regressions, B334 lowering assertions, B307 EH node IDs, B320 static-data descriptions and B321/B323 profile formatting stay separate. B324 and B333 are corrected. No general argument-morph redesign or profile-synthesis redesign.",
       "parallelPackets": [
         {
@@ -429,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit B337 diagnosis with comparison-fb157-nopgo-1.json (all12body instruction streams equal under matched TieredPGO=0/optionalrelocs=0), then reproduce B334 with FullyQualifiedName~LoweringPhaseTests. Compare the five DFS/liveness/recount failures against native Lowering::DoPhase before editing. Prior identical failures are preserved in osr-entry\\validation-3\\unrelated-results\\unrelated-baseline.trx. Native lane collected through66, next unread67; no pending work. No push.",
+    "nextAction": "Commit B334 fixture correction validated by abfee4088f4ed66b6a11e339bf072568fa4eb8bd (35D32R), then reproduce B311 with FullyQualifiedName~CodeGenMetadataPhaseTests and trace CompleteMachineAndMetadataPhasesPublishInNativeOrder(True,False,True)'s missing method name under optional metrics. Production lowering/liveness is unchanged and matches native. Do not disable the metrics path or weaken phase-publication assertions. Native lane idle, collected through66. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -464,6 +464,14 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "loweringPhaseContract": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "baseline": "Source69142cca6aac80c290863d18bd4313e4b582fe7b, artifacts\\lowering-phase\\validation-1\\results\\baseline.trx:five recorded failures and three controls reproduce.",
+        "sourceSnapshot": "abfee4088f4ed66b6a11e339bf072568fa4eb8bd",
+        "tests": "artifacts\\lowering-phase\\validation-2\\results:35Debug/32Release with full analysis, LoweringPhaseTests plus LivenessOrchestrationLIRTests.",
+        "contract": "Native lower.cpp8909-8976 retains DFS after lowering/dead-block removal; fgLateLiveness at8984-9021 performs refcounts/liveness/optional graph refresh and invalidates DFS. compiler.cpp5038-5044 places it after StackLevelSetter. Managed Lowering.cs, Compiler.LateLiveness.cs and Compiler.comp.cs already match.",
+        "change": "Tests now invoke both phases and assert DFS is retained/liveness not yet published at the lowering boundary, then retain the existing late-liveness completion/refcount/repeated-pass assertions. Production code unchanged; no runtime recapture required."
+      },
       "asyncAdapterProfileInputs": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "managedSource": "fb15770e538734284f205b3987e2ada0c6b375dd",
