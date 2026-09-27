@@ -14,6 +14,60 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class NaturalLoopIterationTests
 {
+#if DEBUG
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void BaseCaseDiagnosticsUseNativeOperatorNames(bool unsigned, bool verbose)
+    {
+        WithLoop((compiler, loop, preheader, unusedHeader, latch) =>
+        {
+            compiler.fgInsertStmtAtEnd(preheader, compiler.gtNewStmt(
+                compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 0))));
+            compiler.fgInsertStmtAtEnd(latch, compiler.gtNewStmt(NewIncrement(compiler, GT_ADD, 1)));
+            AddTest(compiler, latch, GT_LT, compiler.gtNewIconNode(TYP_INT, 5));
+            if (unsigned)
+            {
+                latch.LastStmt!.RootNode.AsUnOp().Op1.Flags |= GTF_UNSIGNED;
+            }
+            compiler.verbose = verbose;
+
+            var output = CodeGenLifeTransitionTests.Capture(() => Assert.That(loop.AnalyzeIteration(out _), Is.True));
+            if (verbose)
+            {
+                Assert.That(output, Does.Contain($"Condition is trivially true on entry (0 {(unsigned ? "(uns)" : "")}LT 5)"));
+            }
+            else
+            {
+                Assert.That(output, Is.Empty);
+            }
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void MismatchedGuardDiagnosticsUseNativeOperatorNames(bool unsigned)
+    {
+        WithLoop((compiler, loop, unusedPreheader, unusedHeader, latch) =>
+        {
+            compiler.fgInsertStmtAtEnd(latch, compiler.gtNewStmt(NewIncrement(compiler, GT_ADD, 1)));
+            AddTest(compiler, latch, GT_LT, compiler.gtNewLclvNode(TYP_INT, 1));
+            if (unsigned)
+            {
+                compiler.fgFirstBB!.LastStmt!.RootNode.AsUnOp().Op1.Flags |= GTF_UNSIGNED;
+                latch.LastStmt!.RootNode.AsUnOp().Op1.Flags |= GTF_UNSIGNED;
+            }
+            compiler.verbose = true;
+
+            var output = CodeGenLifeTransitionTests.Capture(() => Assert.That(loop.AnalyzeIteration(out _), Is.False));
+            var prefix = unsigned ? "(uns) " : "";
+            Assert.That(output, Does.Contain($"Condition guarantees V00 {prefix}LE [")
+                .And.Contain($"but invariant requires V00 {prefix}LT ["));
+        }, GT_LE);
+    }
+#endif
+
     [TestCase(GT_ADD, 1, GT_LT, 5, true)]
     [TestCase(GT_SUB, 1, GT_GT, -5, true)]
     [TestCase(GT_ADD, 2, GT_NE, 5, false)]

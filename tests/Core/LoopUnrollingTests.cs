@@ -64,6 +64,41 @@ internal static unsafe class LoopUnrollingTests
         });
     }
 
+#if DEBUG
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void UnrollingDiagnosticsIncludeNativeGraphsAndTrees(bool verbose)
+    {
+        WithLoop((compiler, unusedLoop, preheader, header, latch, unusedExit) =>
+        {
+            AddCountedLoopBody(compiler, preheader, header, latch, 2);
+            compiler._loops = FlowGraphNaturalLoops.Find(ComputeDfs(compiler, false));
+            compiler.verbose = verbose;
+
+            var output = CodeGenLifeTransitionTests.Capture(() =>
+                Assert.That(compiler.optUnrollLoops(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING)));
+
+            if (verbose)
+            {
+                var unrolling = output.IndexOf("Unrolling loop L00", StringComparison.Ordinal);
+                var loopGraph = output.IndexOf("L00 header:", unrolling, StringComparison.Ordinal);
+                var trees = output.IndexOf("Whole unrolled loop:", StringComparison.Ordinal);
+                var completion = output.IndexOf("Finished unrolling 1 loops", StringComparison.Ordinal);
+                var blockTable = output.IndexOf("BBnum BBid", completion, StringComparison.Ordinal);
+                Assert.That(unrolling, Is.GreaterThanOrEqualTo(0));
+                Assert.That(loopGraph, Is.GreaterThan(unrolling));
+                Assert.That(trees, Is.GreaterThan(loopGraph));
+                Assert.That(output[trees..completion], Does.Contain("STORE_LCL_VAR").And.Contain("preds={"));
+                Assert.That(blockTable, Is.GreaterThan(completion));
+            }
+            else
+            {
+                Assert.That(output, Is.Empty);
+            }
+        });
+    }
+#endif
+
     [TestCase(1)]
     [TestCase(4)]
     public static void FullyUnrollsConstantLoopInIterationOrder(int iterations)

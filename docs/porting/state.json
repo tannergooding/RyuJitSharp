@@ -13,17 +13,18 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "B354/B363: fix stale importer membership bytes exposed by list expansion, then finish actual host-collected ProfilePolicy evidence.",
+      "scope": "Broaden Windows-x64 execution with pinned upstream regressions for checked-subtraction loop unrolling, SIMD comparison complements/scalar FMA and multiple stack-array expansion.",
       "doneWhen": [
-        "Preserve default initialization of newly exposed list elements after Clear/RemoveRange in both expansion helpers, retaining existing live elements.",
-        "Demonstrate failing old helper regressions and correct spill-clique reuse; rerun original counted-profile corpus without overwriting failure evidence.",
-        "Require collected-PGO ProfilePolicy decisions, correct generated execution and native comparison; commit the dependency-coherent fix/evidence and continue."
+        "Run unchanged pinned Runtime_133583, Runtime_133518, Runtime_133521 and Runtime_133523 source through their actual assertion entrypoints, forcing the selected methods to be compiled.",
+        "B364: restore complete optUnrollLoops/optTryUnrollLoop graph/tree diagnostics and CheckLoopConditionBaseCase/IsZeroTripTest native operator names; preserve all18native-equal instruction streams.",
+        "Commit the complete dependency-coherent implementation/evidence boundary and continue."
       ],
       "validation": [
-        "Before/after expansion and importer membership regressions, focused import/inline tests and full Core suites because both pending-block and spill-clique flags share the helper.",
-        "Fresh NativeAOT execution of original counted-profile input, native policy/decision/code comparison and established29/143execution baseline."
+        "Use the matching current-pin CoreRoot and existing capture runner with TieredCompilation=0; preserve source/binary identities and exact selected-method sets.",
+        "Initialfb6831b5 passes18bodies and all native assertions;29/36selected phases match, with7unrolling differences. Add before/after diagnostic regressions, run existing loop controls in Debug/Release, and recapture the18bodies with a fresh frozen JIT after B364.",
+        "Runner now counts repeated ExpectedMethods names for overloads; native/managed18body runs pass, wrong multiplicity and case still reject. Original runner fails on the two scalar-FMA overloads."
       ],
-      "parentScope": "B354 host-PGO and B363 importer prerequisite complete underfb6831b5. Both list expansion helpers initialize newly exposed elements;6old failures/2controls and12111D10966R pass. Original counted corpus now executes correctly, shares native spill destinations and matches all3instruction streams/sizes56/86/65.29/143baseline remains intact. Commit this completed batch before starting the next port area.",
+      "parentScope": "B364 complete undereba7ba0e:80Debug/70Release loop cases,5old diagnostic failures/49controls, and18executed native-equal instruction streams. All36selected unroll/stack-expansion phases now match exactly, including6positive unrolled loops and5stack arrays. Runner overload counts accept all6scalar-FMA bodies and reject wrong multiplicity/case. B354/B363 remain committeddb9b53c.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -423,7 +424,7 @@
         "Other-target implementation and new tooling infrastructure are not prerequisites for continuing Windows-x64 execution."
       ]
     },
-    "nextAction": "Commit validated B363/B354 batch (ListExtensions,8regressions and records), then continue directly: inspect remaining explicit lowering target stubs to identify the next Windows-x64 dependency; do not reopen completed inline-policy work or non-xarch scope. If those stubs are all other-target paths, advance broader pinned native runtime regression execution beyond the established29/143baseline. Current NativeAOTfb6831b5 passes original counted ProfilePolicy input and matches native56/86/65-byte bodies. No push.",
+    "nextAction": "Commit validated B364 plus runner overload-count support and upstream regression evidence, then continue with GCStress4 execution of the same4unchanged upstream sources using Invoke-PortingCorpus -GcStress and currenteba7ba0e NativeAOT. Preserve final default native-3/managed-4 captures and comparison-4.json; use fresh stress directories, require18positive bodies and compare native/managed under the same stress settings. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -458,6 +459,19 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "upstreamRegressionsAndLoopDiagnostics": {
+        "sourceSnapshot": "eba7ba0ece51a5eea71fbe54f7592bb000f26232",
+        "nativeSources": "Runtime_133583 from src\\tests\\JIT\\Regression\\JitBlue and Runtime_133518,Runtime_133521,Runtime_133523 from src\\tests\\JIT\\Regression_ro_2 at33baf8. Sources are compiled unchanged with pinned CoreRoot Xunit assemblies; driver invokes actual assertion cases through function pointers to retain entrypoint compilation.",
+        "nativeFunctions": "optimizer.cpp:optUnrollLoops,optTryUnrollLoop;flowgraph.cpp:CheckLoopConditionBaseCase,IsZeroTripTest. Restore native loop/tree/final-block dumps and operator names; transformations unchanged.",
+        "tests": "artifacts\\upstream-regressions\\before-debug-1.trx:5diagnostic failures/49controls. area-debug-1.trx80passed;area-release-1.trx70passed.8new Debug cases cover complete unrolling dumps, signed/unsigned base and mismatched guards, and quiet output.",
+        "nativeAotLibrary": "artifacts\\upstream-regressions\\native-jit-1\\RyuJitSharp.dll",
+        "nativeAotSha256": "AC7EFE21C7CC0F73DFC200CA58D5945D7247D97C4C92C7D884D2014522ED978B",
+        "comparison": "artifacts\\upstream-regressions\\comparison-4.json:18positive native-equal instruction streams and36exact unroll/stack-expansion phase bodies. Includes6positive checked-subtraction unrolls, preserved OverflowException,5stack-array expansions, AVX/AVX512 comparison complements and scalar-FMA bit checks including signed zero/NaN.",
+        "reproduction": "capture.ps1 runs Invoke-PortingCorpus with exact per-type methods and TieredCompilation=0. compare.py --native-run native-3 --managed-run managed-4 --source eba7ba0ece51a5eea71fbe54f7592bb000f26232 --output <fresh-file> --require-phases. Source/dependency hashes are in each inputs.json. corpus-built-1/source and corpus-built-2/source preserve both drivers.",
+        "runnerControls": "ExpectedMethods is an ordinal multiset, allowing overloaded/generic bodies without weakening total/per-name counts. Original runner native-overload-before-1 rejects NegatedScalarFma despite6successful bodies. Final native-3/managed-4 accept18bodies; selection-wrong-count-2.json and selection-wrong-case-2.json confirm rejection. selection-ordinal-1.json executes the production counting block and retains two canonically equivalent but ordinal-distinct names.",
+        "runnerSha256": "8FAAC0C0BB546C45817BB0BB194E89C15454D92F0261436897C5C4024AF0E7B7",
+        "limits": "No whole-dump/raw-relocated-byte claim. Initial comparison-2.json preserves7unroll diagnostic differences. Existing db9b53c full Core and29/143baseline retained because production changes are diagnostic-only; new GCStress coverage continues separately."
+      },
       "importerMembershipAndProfilePolicy": {
         "sourceSnapshot": "fb6831b5d6bf7fa8fdbe36d0ec44289bb95dd6cd",
         "nativeScope": "jitexpandarray.h:JitExpandArray Reset/Get/Set value initialization; importer.cpp:impImport, impWalkSpillCliqueFromPred and membership accessors. ListExtensions is the shared managed adaptation for pending and spill-clique membership.",
@@ -6732,6 +6746,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "loop-unrolling-and-entry-diagnostics",
+      "native": ["src\\coreclr\\jit\\optimizer.cpp:optUnrollLoops;optTryUnrollLoop", "src\\coreclr\\jit\\flowgraph.cpp:CheckLoopConditionBaseCase;IsZeroTripTest"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.LoopUnrolling.cs", "sources\\Core\\jit\\compiler\\FlowGraphNaturalLoop.IterationBaseCase.cs"],
+      "status": "Complete omitted unrolling graph/tree/final-block diagnostics and native operator names restored without transformation changes. Seven formerly different upstream checked-subtraction phases now match; all18regression instruction streams and36selected phases are native-equal.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "importer-membership-array-initialization",
       "native": ["src\\coreclr\\jit\\jitexpandarray.h:JitExpandArray Reset/Get/Set", "src\\coreclr\\jit\\importer.cpp:impImport;impWalkSpillCliqueFromPred;membership accessors"],

@@ -87,7 +87,7 @@ public sealed partial class FlowGraphNaturalLoop
             if (isTrue)
             {
                 JITDUMP($"  Condition is trivially true on entry ({init} " +
-                    $"{(info.TestTree.AsOp().IsUnsigned ? "(uns)" : "")}{info.TestOper()} {limit})\n");
+                    $"{(info.TestTree.AsOp().IsUnsigned ? "(uns)" : "")}{info.TestOper().Name} {limit})\n");
                 return true;
             }
         }
@@ -175,8 +175,8 @@ public sealed partial class FlowGraphNaturalLoop
         {
 #if DEBUG
             JITDUMP($"    Condition guarantees V{info.IterVar:D2} {(relop.AsOp().IsUnsigned ? "(uns) " : "")}" +
-                $"{oper} [{limitCandidate.TreeId:D6}], but invariant requires V{info.IterVar:D2} " +
-                $"{(info.TestTree.AsOp().IsUnsigned ? "(uns) " : "")}{info.TestOper()} [{info.Limit().TreeId:D6}]\n");
+                $"{oper.Name} [{limitCandidate.TreeId:D6}], but invariant requires V{info.IterVar:D2} " +
+                $"{(info.TestTree.AsOp().IsUnsigned ? "(uns) " : "")}{info.TestOper().Name} [{info.Limit().TreeId:D6}]\n");
 #endif
             return false;
         }

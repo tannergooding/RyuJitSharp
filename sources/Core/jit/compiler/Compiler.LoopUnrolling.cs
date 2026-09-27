@@ -88,6 +88,13 @@ public partial class Compiler
                 _dfsTree = fgComputeDfs();
                 _loops = FlowGraphNaturalLoops.Find(_dfsTree);
             }
+
+#if DEBUG
+            if (verbose)
+            {
+                fgDispBasicBlocks();
+            }
+#endif
         }
 
 #if DEBUG
@@ -196,7 +203,7 @@ public partial class Compiler
             ?? throw new FatalJitException("An analyzed loop must have an increment.");
         if (increment.Oper is not GT_STORE_LCL_VAR)
         {
-            JITDUMP($"Failed to unroll loop L{loop.Index:D2}: unknown increment op ({increment.Oper})\n");
+            JITDUMP($"Failed to unroll loop L{loop.Index:D2}: unknown increment op ({increment.Oper.Name})\n");
             return false;
         }
         increment = increment.AsLclVarCommon().Data;
@@ -248,6 +255,13 @@ public partial class Compiler
         }
 
         JITDUMP($"\nUnrolling loop L{loop.Index:D2} unrollCostSz = {duplicationCost}\n");
+#if DEBUG
+        if (verbose)
+        {
+            FlowGraphNaturalLoop.Dump(loop);
+        }
+#endif
+
         var blockMap = new Dictionary<BasicBlock, BasicBlock>();
         var bottom = loop.GetLexicallyBottomMostBlock();
         var insertAfter = bottom;
@@ -276,6 +290,17 @@ public partial class Compiler
         }
 
         optRedirectPrevUnrollIteration(loop, prevTestBlock, exit);
+
+#if DEBUG
+        if (verbose)
+        {
+            jitprintf("Whole unrolled loop:\n");
+            gtDispTree(iterInfo.InitTree);
+            jitprintf("\n");
+            fgDumpTrees(bottom.Next, insertAfter);
+        }
+#endif
+
         return true;
     }
 

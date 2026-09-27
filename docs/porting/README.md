@@ -293,8 +293,12 @@ identifying the C# revision and any preserved uncommitted source snapshot.
 The host must be Checked/debug and ABI-compatible with that managed binary.
 The runner isolates the child environment, rejects reused output directories,
 requires exactly the expected case-sensitive compilation headers, and records
-binary hashes, settings, timeout/exit status, and the raw dump. By default,
-the runner sets `RunAltJitCode=0`, requesting nonexecuting mode from a Debug
+binary hashes, settings, timeout/exit status, and the raw dump.
+Repeat a name in `-ExpectedMethods` when multiple overloads or generic
+instantiations are expected; the runner checks that exact count for each name.
+Names use ordinal equality, so canonically equivalent Unicode spellings remain
+distinct. By default, the runner sets `RunAltJitCode=0`, requesting nonexecuting
+mode from a Debug
 managed JIT; process success is not generated-code success. Add
 `-ExecuteManagedCode` only when validating the implemented backend.
 It requires `-ManagedJit` and records the execution request in the manifest.

@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Upstream regressions and loop-unrolling diagnostics
+
+Broadened Windows-x64 execution to unchanged upstream regressions for checked
+subtraction loops, SIMD comparison complements, scalar fused multiply-add and
+multiple stack-array allocations. Their original assertions cover overflow,
+unordered comparisons, signed zero and NaN bits, including AVX-512 paths.
+The selected methods emit native-identical instructions.
+
+The comparisons exposed omitted loop-unrolling diagnostics, not different
+transformations. Restored native loop graphs, cloned trees, final block tables
+and operator names in entry-condition messages. All selected unrolling and
+stack-expansion phases now match native. The capture runner also accepts exact
+counts of overloaded method names while retaining case-sensitive selection.
+
 ## 2026-09-27: Reused importer state and collected-profile inlining
 
 Corrected the shared list expansion used by importer pending-block and

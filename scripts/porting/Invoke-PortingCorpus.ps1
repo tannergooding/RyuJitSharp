@@ -281,10 +281,18 @@ if ($unexpectedMethodHeaders.Count -ne 0) {
 if ($methodHeaders.Count -ne $ExpectedMethods.Count) {
     throw "Expected $($ExpectedMethods.Count) selected compilation headers, got $($methodHeaders.Count); see $OutputDirectory"
 }
+$expectedCounts = [Collections.Generic.Dictionary[string, int]]::new([StringComparer]::Ordinal)
 foreach ($method in $ExpectedMethods) {
+    if (-not $expectedCounts.TryAdd($method, 1)) {
+        $expectedCounts[$method]++
+    }
+}
+foreach ($entry in $expectedCounts.GetEnumerator()) {
+    $method = $entry.Key
+    $expectedCount = $entry.Value
     $pattern = $typePattern + [regex]::Escape($method) + '(?:\[[^\r\n]*\])?\('
-    if (@($methodHeaders | Where-Object { $_ -cmatch $pattern }).Count -ne 1) {
-        throw "Expected exactly one compilation dump for $method; see $OutputDirectory"
+    if (@($methodHeaders | Where-Object { $_ -cmatch $pattern }).Count -ne $expectedCount) {
+        throw "Expected exactly $expectedCount compilation dump(s) for $method; see $OutputDirectory"
     }
 }
 Write-Output "Captured $($methodHeaders.Count) selected compilation headers in $dumpPath"
