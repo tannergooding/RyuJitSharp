@@ -13,18 +13,18 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "B359: preserve native byte-width VNFunc-to-genTreeOps narrowing in redundant-branch implication.",
+      "scope": "B362: reconcile precise inline-scan constant propagation and binary/comparison observations to restore native ExtendedDefault profitability.",
       "doneWhen": [
-        "Verify the whole optRelopImpliesRelop contract and both unguarded VNFunc-to-byte-enum conversions.",
-        "Add regressions that fail with OverflowException on valid extended VN functions and preserve existing inference cases.",
-        "Execute the preserved original failing corpus with the exact pinned native host, verify the overflow is gone and relevant native output matches, then commit locally and continue."
+        "Preserve literal constants exactly once on the scan stack and reconcile complete precise binary/comparison handling, including constant arguments and symmetric operands.",
+        "Add scan regressions demonstrating old incorrect observations and preserve intrinsic/inline policy controls.",
+        "Execute the original probe and compare default inline observations, decisions, and generated code to the pinned native capture; commit locally and continue."
       ],
       "validation": [
-        "Focused RedundantBranchTests in Debug/Release, including before-fix failure; existing signed-boundary tests remain controls.",
-        "Checked NativeAOT execution of the original inline-policy exception-path corpus, comparing native/managed RBO and generated code with any pre-existing differences explicit."
+        "Focused InlineScan and default/optional policy tests in Debug/Release, including before-fix observation failures.",
+        "Checked NativeAOT execution of the preserved original probe plus existing corpus controls affected by changed default inlining."
       ],
-      "parentScope": "Optional inline policies committedbdb9b55. B359 complete: both unchecked BYTE conversions restored;6old-overflow regressions and37Debug/37Release pass. Frozen299d3609 original Main executes with native-identical instructions/277bytes. Remaining RBO/default-inline differences separately recordedB361/B362.",
-      "deferred": "No global enum-conversion redesign or unrelated optimizer changes. B358/B360 and Profile host-PGO evidence remain separate. Existing clock/allocation limitations remain R005/D001.",
+      "parentScope": "B359 committed8356b3f. B362 complete under63a581c5:18old observation failures now pass,171D91R focused/12103D10958R Core,29/143executed. Original Main/Evaluate now match native instruction streams/sizes277/59, inline observations and decisions. B361 RBO differences remain.",
+      "deferred": "No profitability coefficient changes or scanner redesign. B361 downstream RBO diagnostics and B358/B360 native data/replay discrepancies remain separate. Existing clock/allocation limitations remain R005/D001.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -429,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit validated B359 narrowing fix, then continue B362 ExtendedDefault profitability: compare native-default-1 and managed-default-1 Evaluate diagnostics under artifacts/relop-narrowing to locate the first differing estimate/observation for Candidates.Outer. Both select ExtendedDefaultPolicy; native accepts both Outer calls (59bytes), managed rejects both (36bytes), while explicit Model/Full policy captures match. Fix the demonstrated input/estimate mismatch before considering B361 downstream RBO differences. B359 Main now matches277bytes/instructions; comparison-1 records nonparity limits. Worker95344d66 idle/collected. No push.",
+    "nextAction": "Commit validated B362 precise-scan batch, then continue B361 RBO: inspect complete optJumpThreadPhi/optRedundantRelop contracts against pinned redundantbranchopts.cpp using artifacts/inline-scan/rbo-0-1.diff and rbo-1-1.diff. Native Main has PhiDef substitution/threading trace missing in managed, plus smaller omitted diagnostics. Final Main/Evaluate code already matches277/59bytes; establish whether PhiDef discrepancy is just diagnostics or actual path eligibility before changing behavior. Worker95344d66 idle/collected. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -464,6 +464,15 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "preciseInlineScan": {
+        "sourceSnapshot": "63a581c5ce4b43ae658b551313eaaa25c3cde187",
+        "nativeScope": "fgbasic.cpp:fgFindJumpTargets precise literal, binary-expression, unary/binary branch paths; existing C# local ObserveBinaryPrecise/ObserveComparisonPrecise helpers fully reconciled for these modes.",
+        "tests": "artifacts\\inline-scan:before-debug-1.trx18actual observation failures/7controls; area-debug-1.trx171passed; area-release-1.trx91passed; full-debug-1.trx12103passed; full-release-1.trx10958passed.",
+        "nativeAotLibrary": "artifacts\\inline-scan\\native-jit-1\\RyuJitSharp.dll",
+        "nativeAotSha256": "04979933F662B42174C2DD5CAE3F4FDEF1E03A8202296E8541EC24FB596D9D4F",
+        "comparison": "artifacts\\inline-scan\\comparison-1.json: original preserved probe, current-pin native capture, matching estimates/observations/inline decisions and Main/Evaluate instructions/sizes277/59. Whole RBO dumps differ; full diffs preserved for B361.",
+        "baseline": "artifacts\\upstream-refresh-33baf8\\inline-scan-managed-matrix-1\\results.json:29configurations143positive bodies, expected runtime/collection results and no fallback."
+      },
       "relopNarrowing": {
         "sourceSnapshot": "299d36091e1752d7570e7636cdc855185f546bc7",
         "nativeFunctions": "redundantbranchopts.cpp:optRelopImpliesRelop, including both native genTreeOps(BYTE) casts. Signed-comparison helper casts remain range-guarded.",
@@ -6708,6 +6717,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "precise-inline-constant-observations",
+      "native": ["src\\coreclr\\jit\\fgbasic.cpp:fgFindJumpTargets precise constants, binary expressions and branches"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.cs:fgFindJumpTargets, ObserveBinaryPrecise, ObserveComparisonPrecise"],
+      "status": "Precise constant/binary/branch paths preserve native stack propagation and observation ordering;19scan cases, original probe code/decision equality and29/143execution. This is not a new whole-file reconciliation claim.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "relop-implication-native-width",
       "native": ["src\\coreclr\\jit\\redundantbranchopts.cpp:optRelopImpliesRelop", "src\\coreclr\\jit\\gentreeopsdef.h:genTreeOps"],

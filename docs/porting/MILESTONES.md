@@ -15,6 +15,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Precise inline-scan constant propagation
+
+Restored native precise-scan behavior for literal constants, binary operations,
+and unary/binary branches. Constants now remain on the abstract stack instead
+of immediately becoming unknown. Observations distinguish literal folding from
+constant-argument benefits, preserve argument-dependent results, and recognize
+array-length comparisons symmetrically. Comparison-producing opcodes use native
+binary-expression handling rather than branch classification.
+
+Eighteen old observation failures now pass. The original policy probe matches
+native ExtendedDefault observations, estimates, inline decisions, and both
+instruction streams/sizes (277-byte Main and 59-byte Evaluate). No profitability
+coefficients changed. The 29-configuration/143-body execution baseline passes;
+Core passes 12,103 Debug and 10,958 Release cases. B361's remaining RBO dump
+differences are retained in `artifacts\inline-scan\comparison-1.json`.
+
 ## 2026-09-27: Native-width branch implication
 
 Corrected both wide value-number-function conversions in

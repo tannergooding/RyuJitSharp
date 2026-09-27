@@ -5631,11 +5631,6 @@ public partial class Compiler
 
                     if (preciseScan)
                     {
-                        if (opcode is >= CEE_LDNULL and <= CEE_LDC_R8)
-                        {
-                            fgStack.PushConstant();
-                        }
-
                         switch (opcode)
                         {
                             case CEE_DUP:
@@ -5658,18 +5653,12 @@ public partial class Compiler
                             {
                                 var op1 = fgStack.Top();
 
-                                if (FgStack.IsConstant(op1))
+                                if (FgStack.IsConstantOrConstArg(op1, impInlineInfo))
                                 {
                                     compInlineResult.Note(InlineObservation.CALLSITE_FOLDABLE_BRANCH);
                                 }
                                 else if (FgStack.IsArgument(op1))
                                 {
-                                    if (FgStack.IsConstArgument(op1, impInlineInfo))
-                                    {
-                                        compInlineResult.Note(InlineObservation.CALLSITE_FOLDABLE_BRANCH);
-                                        compInlineResult.Note(InlineObservation.CALLSITE_CONSTANT_ARG_FEEDS_TEST);
-                                    }
-
                                     // E.g. brtrue is basically "if (X == 0)"
                                     compInlineResult.Note(InlineObservation.CALLEE_ARG_FEEDS_CONSTANT_TEST);
                                 }
@@ -5700,7 +5689,7 @@ public partial class Compiler
                             case CEE_BLE_UN:
                             case CEE_BLT_UN:
                             {
-                                ObserveComparisonPrecise(this, opcode, ref fgStack, isBranch: true);
+                                ObserveComparisonPrecise(this, ref fgStack);
                                 break;
                             }
 
@@ -5756,18 +5745,13 @@ public partial class Compiler
                             case CEE_MUL_OVF_UN:
                             case CEE_SUB_OVF:
                             case CEE_SUB_OVF_UN:
-                            {
-                                ObserveBinaryPrecise(this, opcode, ref fgStack);
-                                break;
-                            }
-
                             case CEE_CEQ:
                             case CEE_CGT:
                             case CEE_CGT_UN:
                             case CEE_CLT:
                             case CEE_CLT_UN:
                             {
-                                ObserveComparisonPrecise(this, opcode, ref fgStack, isBranch: false);
+                                ObserveBinaryPrecise(this, opcode, ref fgStack);
                                 break;
                             }
 
@@ -5825,6 +5809,22 @@ public partial class Compiler
                                 break;
                             }
 
+                            case CEE_LDNULL:
+                            case CEE_LDC_I4_M1:
+                            case CEE_LDC_I4_0:
+                            case CEE_LDC_I4_1:
+                            case CEE_LDC_I4_2:
+                            case CEE_LDC_I4_3:
+                            case CEE_LDC_I4_4:
+                            case CEE_LDC_I4_5:
+                            case CEE_LDC_I4_6:
+                            case CEE_LDC_I4_7:
+                            case CEE_LDC_I4_8:
+                            case CEE_LDC_I4_S:
+                            case CEE_LDC_I4:
+                            case CEE_LDC_I8:
+                            case CEE_LDC_R4:
+                            case CEE_LDC_R8:
                             case CEE_LDSTR:
                             case CEE_LDTOKEN:
                             {
@@ -6344,29 +6344,53 @@ public partial class Compiler
             var op1 = fgStack.Top(1);
             var op2 = fgStack.Top(0);
 
-            var isOp1Const = FgStack.IsConstantOrConstArg(op1, impInlineInfo);
-            var isOp2Const = FgStack.IsConstantOrConstArg(op2, impInlineInfo);
+            var handled = false;
 
-            if (isOp2Const)
+            if (FgStack.IsConstant(op1) && FgStack.IsConstArgument(op2, impInlineInfo))
             {
-                if (opcode is >= CEE_DIV and <= CEE_REM_UN)
+                handled = true;
+                compInlineResult.Note(InlineObservation.CALLSITE_FOLDABLE_EXPR);
+            }
+            else if (FgStack.IsConstArgument(op1, impInlineInfo) &&
+                     FgStack.IsConstantOrConstArg(op2, impInlineInfo))
+            {
+                if (FgStack.IsConstant(op2))
+                {
+                    fgStack.Push(op1);
+                }
+
+                handled = true;
+                compInlineResult.Note(InlineObservation.CALLSITE_FOLDABLE_EXPR);
+            }
+            else if (FgStack.IsConstant(op1) && FgStack.IsConstant(op2))
+            {
+                // Literal folding alone does not require inlining.
+                handled = true;
+            }
+            else if (FgStack.IsArgument(op1) && FgStack.IsConstantOrConstArg(op2, impInlineInfo))
+            {
+                fgStack.Push(op1);
+                handled = true;
+                compInlineResult.Note(InlineObservation.CALLEE_BINARY_EXRP_WITH_CNS);
+            }
+            else if (FgStack.IsArgument(op2) && FgStack.IsConstantOrConstArg(op1, impInlineInfo))
+            {
+                handled = true;
+                compInlineResult.Note(InlineObservation.CALLEE_BINARY_EXRP_WITH_CNS);
+            }
+
+            if (FgStack.IsConstArgument(op2, impInlineInfo))
+            {
+                if (opcode is CEE_DIV or CEE_DIV_UN or CEE_REM or CEE_REM_UN)
                 {
                     compInlineResult.Note(InlineObservation.CALLSITE_DIV_BY_CNS);
                 }
 
-                if (isOp1Const)
-                {
-                    compInlineResult.Note(InlineObservation.CALLSITE_FOLDABLE_EXPR);
-                }
-
-                compInlineResult.Note(InlineObservation.CALLEE_BINARY_EXRP_WITH_CNS);
                 fgStack.Push(op1);
+                handled = true;
             }
-            else if (isOp1Const)
-            {
-                compInlineResult.Note(InlineObservation.CALLEE_BINARY_EXRP_WITH_CNS);
-            }
-            else
+
+            if (!handled)
             {
                 fgStack.PushUnknown();
             }
@@ -6737,7 +6761,7 @@ public partial class Compiler
             }
         }
 
-        static void ObserveComparisonPrecise(Compiler compiler, OPCODE opcode, ref FgStack fgStack, bool isBranch)
+        static void ObserveComparisonPrecise(Compiler compiler, ref FgStack fgStack)
         {
             var compInlineResult = compiler.compInlineResult;
             var impInlineInfo = compiler.impInlineInfo;
@@ -6747,94 +6771,37 @@ public partial class Compiler
             var op1 = fgStack.Top(1);
             var op2 = fgStack.Top(0);
 
-            var isOp1Const = false;
-            var isOp1Arg = false;
-
-            if (FgStack.IsConstant(op1))
+            if (FgStack.IsConstantOrConstArg(op1, impInlineInfo) &&
+                FgStack.IsConstantOrConstArg(op2, impInlineInfo))
             {
-                isOp1Const = true;
-            }
-            else if (FgStack.IsArgument(op1))
-            {
-                isOp1Arg = true;
-                isOp1Const = FgStack.IsConstArgument(op1, impInlineInfo);
+                compInlineResult.Note(InlineObservation.CALLSITE_FOLDABLE_BRANCH);
             }
 
-            var isOp2Const = false;
-            var isOp2Arg = false;
-
-            if (FgStack.IsConstant(op2))
+            if (FgStack.IsConstArgument(op1, impInlineInfo) || FgStack.IsConstArgument(op2, impInlineInfo))
             {
-                isOp2Const = true;
-            }
-            else if (FgStack.IsArgument(op2))
-            {
-                isOp2Arg = true;
-                isOp2Const = FgStack.IsConstArgument(op2, impInlineInfo);
+                compInlineResult.Note(InlineObservation.CALLSITE_CONSTANT_ARG_FEEDS_TEST);
             }
 
-            if (isOp2Const)
+            if ((FgStack.IsArgument(op1) && FgStack.IsArrayLen(op2)) ||
+                (FgStack.IsArgument(op2) && FgStack.IsArrayLen(op1)))
             {
-                if (isOp1Const && isBranch)
-                {
-                    compInlineResult.Note(InlineObservation.CALLSITE_FOLDABLE_BRANCH);
-                }
-
-                if (isOp1Arg)
-                {
-                    compInlineResult.Note(InlineObservation.CALLEE_ARG_FEEDS_CONSTANT_TEST);
-                }
-
-                if (isOp2Arg)
-                {
-                    compInlineResult.Note(InlineObservation.CALLSITE_CONSTANT_ARG_FEEDS_TEST);
-                }
-
-                compInlineResult.Note(InlineObservation.CALLEE_BINARY_EXRP_WITH_CNS);
-
-                if (!isBranch)
-                {
-                    fgStack.Push(op1);
-                }
+                compInlineResult.Note(InlineObservation.CALLEE_ARG_FEEDS_RANGE_CHECK);
             }
-            else if (isOp1Const)
+            else if ((FgStack.IsArgument(op1) && FgStack.IsConstantOrConstArg(op2, impInlineInfo)) ||
+                     (FgStack.IsArgument(op2) && FgStack.IsConstantOrConstArg(op1, impInlineInfo)))
             {
-                if (isOp2Arg)
-                {
-                    compInlineResult.Note(InlineObservation.CALLEE_ARG_FEEDS_CONSTANT_TEST);
-                }
-
-                if (isOp1Arg)
-                {
-                    compInlineResult.Note(InlineObservation.CALLSITE_CONSTANT_ARG_FEEDS_TEST);
-                }
-
+                compInlineResult.Note(InlineObservation.CALLEE_ARG_FEEDS_CONSTANT_TEST);
+            }
+            else if (FgStack.IsArgument(op1) || FgStack.IsArgument(op2))
+            {
+                compInlineResult.Note(InlineObservation.CALLEE_ARG_FEEDS_TEST);
+            }
+            else if (FgStack.IsConstant(op1) || FgStack.IsConstant(op2))
+            {
                 compInlineResult.Note(InlineObservation.CALLEE_BINARY_EXRP_WITH_CNS);
             }
 
-            if (isOp1Arg)
-            {
-                if (FgStack.IsArgument(op2))
-                {
-                    compInlineResult.Note(InlineObservation.CALLEE_ARG_FEEDS_RANGE_CHECK);
-                }
-
-                compInlineResult.Note(InlineObservation.CALLEE_ARG_FEEDS_TEST);
-            }
-            else if (isOp2Arg)
-            {
-                if (FgStack.IsArgument(op1))
-                {
-                    compInlineResult.Note(InlineObservation.CALLEE_ARG_FEEDS_RANGE_CHECK);
-                }
-
-                compInlineResult.Note(InlineObservation.CALLEE_ARG_FEEDS_TEST);
-            }
-
-            if (isBranch)
-            {
-                fgStack.PushUnknown();
-            }
+            fgStack.PushUnknown();
         }
 
         static void StoreLocal(Compiler compiler, int varNum)
