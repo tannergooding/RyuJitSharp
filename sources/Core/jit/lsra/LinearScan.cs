@@ -114,10 +114,27 @@ public sealed partial class LinearScan : IRegAlloc
         {
             _availableRegCount -= CNT_HIGHFLOAT + CNT_MASK_REGS;
         }
+#elif TARGET_ARM64
+        _evexIsSupported = false;
+        _apxIsSupported = false;
+        _rbmAllFloat = SRBM_ALLFLOAT;
+        _rbmFltCalleeTrash = SRBM_FLT_CALLEE_TRASH;
+        _rbmAllInt = SRBM_ALLINT;
+        _rbmIntCalleeTrash = SRBM_INT_CALLEE_TRASH;
+        _regIntLast = REG_INT_LAST;
+        _rbmAllMask = SRBM_ALLMASK;
+        _rbmMskCalleeTrash = SRBM_MSK_CALLEE_TRASH;
+        initializeVarTypeCalleeTrashRegs();
+
+        _regIndices = new regNumber[(int)ACTUAL_REG_COUNT + 1];
+        for (var index = 0; index < _regIndices.Length; index++)
+        {
+            _regIndices[index] = (regNumber)index;
+        }
 #else
-        NYI("LinearScan constructor outside AMD64");
+        NYI("LinearScan constructor outside AMD64/ARM64");
         fatal(CORJIT_IMPLLIMITATION);
-        throw new FatalJitException("LinearScan constructor outside AMD64.");
+        throw new FatalJitException("LinearScan constructor outside AMD64/ARM64.");
 #endif
 
         _firstColdLocation = MaxLocation;
@@ -183,7 +200,9 @@ public sealed partial class LinearScan : IRegAlloc
             ];
         }
     }
+#endif
 
+#if TARGET_AMD64 || TARGET_ARM64
     private void initializeVarTypeCalleeTrashRegs()
     {
         for (var index = 0; index < (int)TYP_COUNT; index++)
@@ -256,6 +275,13 @@ public sealed partial class LinearScan : IRegAlloc
     {
 #if TARGET_AMD64
         _availableIntRegs = _compiler.SRBM_ALLINT & ~codeGen.RegSet.rsMaskResvd.IntRegSet;
+#elif TARGET_ARM64
+        // NativeAOT depends on LR not being used as a GPR (dotnet/runtime#101932).
+        _availableIntRegs = SRBM_ALLINT & ~(SRBM_PR | SRBM_FP | SRBM_LR) &
+            ~codeGen.RegSet.rsMaskResvd.IntRegSet;
+#endif
+
+#if TARGET_AMD64 || TARGET_ARM64
 #if ETW_EBP_FRAMED
         _availableIntRegs &= ~SRBM_FPBASE;
 #endif
@@ -268,9 +294,12 @@ public sealed partial class LinearScan : IRegAlloc
             _availableIntRegs &= (~SRBM_INT_CALLEE_SAVED | SRBM_ENC_CALLEE_SAVED);
             _availableFloatRegs &= ~SRBM_FLT_CALLEE_SAVED;
             _availableDoubleRegs &= ~SRBM_FLT_CALLEE_SAVED;
+#if TARGET_XARCH
             _availableMaskRegs &= ~SRBM_MSK_CALLEE_SAVED;
+#endif
         }
 
+#if TARGET_AMD64
         if (_compiler.MethodHasPatchpoint)
         {
             _availableFloatRegs &= ~SRBM_FLT_CALLEE_SAVED;
@@ -283,10 +312,11 @@ public sealed partial class LinearScan : IRegAlloc
             _availableFloatRegs |= SRBM_HIGHFLOAT;
             _availableDoubleRegs |= SRBM_HIGHFLOAT;
         }
+#endif
 #else
-        NYI("LinearScan register sets outside AMD64");
+        NYI("LinearScan register sets outside AMD64/ARM64");
         fatal(CORJIT_IMPLLIMITATION);
-        throw new FatalJitException("LinearScan register sets outside AMD64.");
+        throw new FatalJitException("LinearScan register sets outside AMD64/ARM64.");
 #endif
     }
 

@@ -1314,6 +1314,15 @@ unsupported rather than reading fixed-width storage.
 `LinearScan.setFrameType` implements AMD64 frame selection. Other targets report
 NYI and terminate with `CORJIT_IMPLLIMITATION`; their double-alignment and
 target-specific frame/register policies remain in the native tree.
+ARM64 `compRsvdRegCheck` must perform `lvaFrameSize` before returning true;
+its unconditional result does not permit skipping frame layout. That sizing
+entrypoint and ARM64 virtual/final frame layout remain unported.
+
+ARM64 allocator construction now initializes integer, floating/vector and
+predicate banks, reserved-register exclusions, EnC restrictions and caller-save
+sets. Patchpoints do not apply the AMD64-only floating-register restriction.
+Managed Linux-ARM64 target tests cover construction and interval preferences;
+this does not activate ARM64 register allocation or establish runtime parity.
 
 `Lowering.IsCallTargetInRange` implements the xarch policy. Other targets report
 NYI and terminate with `fatal(CORJIT_IMPLLIMITATION)` pending their call-target
@@ -1337,7 +1346,8 @@ recognition retains native status caching, whole-address interference checks
 and temporary LIR marks. These helpers do not activate arithmetic or cast
 lowering, including floating conversion expansion and optimized transforms.
 
-`LinearScan.calleeSaveRegs` currently supports AMD64. Other targets report NYI
+`LinearScan.calleeSaveRegs` supports AMD64 and ARM64 using the `lsra.h`/`typelist.h`
+register-bank mappings. Other targets report NYI
 and terminate with `fatal(CORJIT_IMPLLIMITATION)` pending their callee-save sets.
 The interval/reference support does not activate register allocation.
 

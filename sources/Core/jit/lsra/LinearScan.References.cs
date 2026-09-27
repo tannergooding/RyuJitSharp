@@ -43,7 +43,7 @@ public sealed partial class LinearScan
 
     public static SingleTypeRegSet calleeSaveRegs(RegisterType registerType)
     {
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
         // typelist.h chooses callee-save sets by this generated register classification.
         return registerType.Register switch
         {
@@ -60,7 +60,7 @@ public sealed partial class LinearScan
             return SRBM_NONE;
         }
 #else
-        NYI("LinearScan.calleeSaveRegs outside AMD64");
+        NYI("LinearScan.calleeSaveRegs outside AMD64/ARM64");
         fatal(CORJIT_IMPLLIMITATION);
         return SRBM_NONE;
 #endif

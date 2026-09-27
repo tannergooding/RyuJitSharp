@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: ARM64 allocator construction
+
+The ARM64 allocator now constructs intervals with native integer, floating/vector
+and predicate register banks. It excludes reserved registers and LR, preserves
+EnC restrictions and does not apply AMD64-only patchpoint restrictions.
+Caller/callee-save sets and register traversal indices retain native ordering.
+
+The Linux-ARM64 target suite passes 189 cases in Debug and Release; existing
+Windows allocator/frame controls pass 23 Debug/22 Release. These are managed
+tests, not ARM64 generated-code execution. Frame selection remains blocked on
+complete ARM64 frame layout: the native reservation check must perform layout
+even though it ultimately returns true.
+
 ## 2026-09-27: ARM64 ABI and compiler prerequisites
 
 ARM64 now compiles with full analysis in Debug and Release. Its classifier

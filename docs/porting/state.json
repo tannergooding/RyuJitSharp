@@ -13,20 +13,22 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "Integrate shared target-bootstrap, SysV/Swift helpers and ARM64 classifier, register, intrinsic and frame-policy prerequisites with target unit coverage and Windows execution controls.",
+      "scope": "Enable complete ARM64 allocator construction and register-bank initialization as the next prerequisite for LSRA frame selection. Preserve AMD64 behavior and native ARM64 reserved-register, EnC and caller/callee-save policies.",
       "status": "completed",
       "doneWhen": [
-        "Preserve public TargetRuntimeIdentifier routing and explicit internal overrides; supply shared ABI factories and remove dormant cross-target syntax blockers without widening supported behavior.",
-        "Run affected Windows x64 ABI/emitter/VN controls in Debug and Release, then Linux x64 and ARM64 target builds/tests with verified compile constants. Never count empty filters or Windows controls as target classifier passes.",
-        "Commit only validated dependency-coherent work; retain incomplete classifier work uncommitted if broader target dependencies block execution. Archive finished children after exact packet preservation and integration."
+        "Construct the ARM64 allocator and create intervals with native integer, floating, vector and predicate register preferences, including reserved-register and EnC restrictions.",
+        "Validate the integrated allocator setup on the existing ARM64 target project and existing Windows allocator controls, then commit the dependency-coherent batch locally."
       ],
       "validation": [
-        "Parent full-analysis Windows controls pass242Debug/240Release. All five exact target-routing cases pass. Shared ABI factories, multireg syntax repairs and six conditional-guard repairs form the validated prerequisite commit.",
-        "SysV classifier/shared ABI/Swift helper tests pass61Debug/61Release with full analysis; affected Windows controls pass174Debug/172Release. Descriptor regression fails without constructor initialization (four return slots instead of two) and passes with the fix.",
-        "ARM64 full-analysis target suites pass185Linux,188Windows and186Apple cases in both Debug and Release; the dedicated target project preserves the original Windows backend suite. Linux-x64 controls pass102/102 and shared Windows-x64 controls350/335.",
-        "No verified Linux or ARM64 runtime host is available. Fresh Windows NativeAOT sourcea5c0f9dc retains152matching instruction streams/304selected allocation-phase slices under default and GC-stressed execution; this is not other-target runtime parity."
+        "Full-analysis Linux-ARM64 target tests pass189Debug/189Release, including allocator construction and interval preferences. Existing Windows allocator/frame controls pass23Debug/22Release.",
+        "Reuse unaffected Windows execution evidence from prerequisite commit ee71808. No Linux or ARM64 execution host is available; managed target tests are not runtime parity."
       ],
-      "parentScope": "B369 committed7798e1f with152matching instruction streams/304phase slices and64Debug/64Release importer controls. All five fresh child sessions are archived after exact packet preservation and integration; no child response remains outstanding.",
+      "deferred": [
+        "ARM64 setFrameType requires compRsvdRegCheck, which must call lvaFrameSize before its unconditional ARM64 true result. lvaFrameSize is absent and lvaAssignFrameOffsets remains Windows-x64-only; complete frame-layout dependency closure is the following batch, not a bypass of that side effect.",
+        "ARM64 lowering, allocation traversal, instruction emission and executable runtime parity remain separate unported backend sections. Keep B375 string-constant costing deferred.",
+        "Whole-pipeline dump parity, native diagnostic quirks, timing R005 and allocation D001 remain explicit."
+      ],
+      "parentScope": "ARM64 ABI/compiler prerequisites committed ee71808e887f076f7ba2408928d12849559b8cea. All previous packets are collected; no worker or child response remains outstanding.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -419,14 +421,23 @@
           "status": "done",
           "result": "Clone through98 corrected reviewed self-copy identity defect andunaryguard accessor; integrationthrough99 passed82D80R withfullmorph/use packet. Direct EH-clone/multiappearance fixture gaps remain."
         }
-      ],
-      "deferred": [
-        "Whole-pipeline dump parity, raw address-bearing code and broader runtime/GC-stress coverage remain separate.",
-        "Native undefined behavior and diagnostic quirks B245/B246/B247/B322/B327/B350/B358/B360, timing R005 and allocation D001 remain explicit.",
-        "Other-target implementation and new tooling infrastructure are not prerequisites for continuing Windows-x64 execution."
       ]
     },
-    "nextAction": "Finish the local ARM64 prerequisite commit from protected sourcea5c0f9dc1a0a314a37e9c96af7c458af7b853959 after verifying staged code/test blobs match its60-path manifest. All tests and fresh Windows execution controls pass; all background packets are collected and idle. Then continue whole ARM64 LinearScan.setFrameType and calleeSaveRegs policies against pinned lsra.cpp using the existing target test project and Windows controls; the new register metadata and CodeGen FP/LR policy remove their prerequisite blockers. Do not restart declaration/test-project investigation, contact archived sessions, push, or claim Linux/ARM64 runtime parity. Keep unrelated GT_CNS_STR costing B375 deferred.",
+    "nextAction": "Continue ARM64 frame-layout dependency closure beginning with native lclvars.cpp:lvaFrameSize (6766), lvaAssignFrameOffsets (4317) and lvaAssignVirtualFrameOffsetsToLocals (4867), comparing Compiler.FinalFrameLayout partials. Implement mandatory sizing/layout side effects before enabling compRsvdRegCheck and LinearScan.setFrameType. Allocator construction and caller/callee-save banks are complete with189Debug/189Release ARM64 and23Debug/22Release Windows controls; do not repeat that packet or the preceding ee71808 prerequisite commit. Preserve native frame algorithms and explicit unsupported paths, do not contact archived sessions or publish, and do not claim Linux/ARM64 runtime parity.",
+    "arm64AllocatorInitialization": {
+      "nativeMappings": [
+        "lsra.cpp:843-1040 LinearScan::LinearScan -> lsra/LinearScan.cs constructor and register initialization helpers",
+        "lsra.h:2148-2182 and typelist.h csr/ctr columns -> LinearScan.calleeSaveRegs and initializeVarTypeCalleeTrashRegs"
+      ],
+      "tests": [
+        "artifacts/parallel-port/arm64-lsra-debug-2.trx:189passed",
+        "artifacts/parallel-port/arm64-lsra-release-2.trx:189passed",
+        "artifacts/parallel-port/windows-lsra-debug-1.trx:23passed",
+        "artifacts/parallel-port/windows-lsra-release-1.trx:22passed"
+      ],
+      "coverage": "Complete allocator construction, reserved integer registers, EnC/patchpoint combinations, integer/reference/floating/fixed and scalable vector/predicate interval preferences, caller/callee-save banks and register traversal indices.",
+      "limits": "No ARM64 frame layout, allocation phase activation or runtime parity. AMD64 behavior is unchanged; existing Windows execution evidence is reused, not represented as a fresh capture."
+    },
     "arm64Prerequisites": {
       "source": "a5c0f9dc1a0a314a37e9c96af7c458af7b853959",
       "tree": "dc16fca05cfd130b7af0fca4be331b3675184ad0",
