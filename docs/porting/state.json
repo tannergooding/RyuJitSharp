@@ -12,19 +12,19 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Correct Enum.Equals folding fixture inputs to satisfy native second-argument nonnull requirements and retain rejection coverage.",
+      "scope": "Align the remaining LSRA, comparison and stack-array test expectations with current native phase ownership and operand rules.",
       "doneWhen": [
-        "Supply known-nonnull boxed locals in positive enum cases and nonintegral/type-exactness controls.",
-        "Retain explicit nullable-local and null-constant negative argument cases.",
-        "Keep the receiver nullable and preserve comparison load/fault assertions using BAD_VAR_NUM for the absent return buffer.",
-        "Run complete call-folding and object-allocation use fixtures in Debug/Release, commit and continue."
+        "Cover direct buildIndir and buildNode dispatch, with AVX flags set only by the native dispatcher.",
+        "Assert effective small compare size while retaining TYP_INT constants and unsigned conditions.",
+        "Preserve header-store order while allowing native addition commuting; use subtraction to guard operand ownership.",
+        "Run affected groups and then full Core Debug/Release; commit and continue to the next actual port gap."
       ],
       "validation": [
         "Baseline artifacts\\core-validation\\debug-1.trx and release-1.trx on09bca24;11687Debug/10774Release total cases.",
         "Baseline artifacts\\core-validation\\debug-2.trx/release-2.trx retain the failing assertions and expected-type mismatches.",
-        "Run CallFoldingTests and ObjectAllocatorUseRewritingTests with full analysis; native gentree.cpp15788-15831 explains the nonnull guard."
+        "Run LinearScanMemoryAndComparisonTests, LinearScanNodeBuildingTests, CompareNodeLoweringTests, ComparisonContainmentTests and StackArrayExpansionTests with full analysis, followed by complete Core tests."
       ],
-      "parentScope": "Morph fixtures committed2720f38. Preserve native Enum.Equals semantics: null argument returns false; null receiver throws.",
+      "parentScope": "Enum fixtures committed5b6082e. Remaining four baseline failures are stale expectations; preserve production algorithms and test their current contracts.",
       "deferred": "Other full-suite failure groups remain in baseline TRX. B322 and broader dump/raw-byte/GC coverage remain separate.",
       "parallelPackets": [
         {
@@ -430,7 +430,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Enum fixture correction passes32Debug/32Release; commit locally. Next align LinearScanMemoryAndComparisonTests with native AVX-flag ownership in buildNode rather than buildIndir, retaining dispatcher-positive coverage. CompareNodeLoweringTests must assert actual compare width without expecting constant retyping; pinned containment preserves TYP_INT and sets unsigned small comparisons. Trace StackArrayExpansionTests operand reordering before changing its final-order expectation. No push.",
+    "nextAction": "B346 passes124Debug/124Release; full Core now passes11791Debug/10878Release, zero skipped. Commit locally, then inspect remaining public phase TODO/NYI sites in Compiler.cs, Compiler.imp.cs and Compiler.opt.cs against pinned oracle/residual sources, starting with the documented G002/G003 frontier. Select an actual reachable Windows-x64 gap rather than treating stale deviation-table entries as current stubs; persist the next bounded function/dependency batch before implementation. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -488,8 +488,10 @@
         "morphFixtureTests": "artifacts\\core-validation\\morph-fixtures-debug-2.trx and morph-fixtures-release-2.trx:60Debug/57Release pass, including SsaLivenessTests.",
         "enumFixtureCorrection": "CallFoldingTests uses known-nonnull boxed locals for positive/nonintegral/exactness inputs and distinct nullable-local/null-constant controls; missing return-buffer sentinel also initialized. Native guard and production unchanged.",
         "enumFixtureTests": "artifacts\\core-validation\\enum-fixtures-debug-1.trx and enum-fixtures-release-1.trx:32Debug/32Release pass with ObjectAllocatorUseRewritingTests.",
-        "latest": "artifacts\\core-validation\\debug-2.trx:18failed/11759passed;release-2.trx:12failed/10852passed. Runs use the already full-analysis-built corrected assemblies; no skipped cases.",
-        "remaining": "B342 remains open for other baseline failures, including enum folding and assertion/ownership cases. Full-suite success has not been established."
+        "phaseFixtureCorrection": "LSRA tests distinguish dispatcher AVX flags from direct buildIndir; comparison tests assert effective width with retained TYP_INT constants; stack-array tests permit native addition commuting and retain subtraction/header-order controls. No production changes.",
+        "phaseFixtureTests": "artifacts\\core-validation\\phase-fixtures-debug-1.trx and phase-fixtures-release-1.trx:124Debug/124Release with full analysis.",
+        "latest": "artifacts\\core-validation\\debug-3.trx:11791passed;release-3.trx:10878passed. Complete Core suites, zero failed/skipped, using the full-analysis-built final assemblies.",
+        "remaining": "Recorded B342 suite failures are closed. Broader execution, dump/raw-code parity and remaining compiler gaps are not implied complete."
       },
       "indirectCallFaultFixtures": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",

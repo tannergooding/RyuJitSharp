@@ -15,6 +15,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Full Core validation restored
+
+The full Core suite passes 11,791 Debug and 10,878 Release cases with none
+skipped. The original 200 Debug and 161 Release failures are retained as the
+baseline, with checked intrinsic bit conversions fixed in production and stale
+fixture contracts corrected separately.
+
+The final fixture group distinguishes LSRA dispatcher-owned AVX flags from
+direct indirection building, checks effective comparison width without expecting
+constant retyping, and preserves stack-array header order while allowing native
+commutative operand ordering. Dispatcher, boundary-value and subtraction controls
+pass with the complete group: 124 cases per configuration.
+This closes the recorded full-suite failures, not compiler-wide execution or
+dump/code parity. Evidence: `artifacts\core-validation`.
+
 ## 2026-09-27: Enum folding fixture nullability
 
 Enum equality tests now provide a known-nonnull boxed argument when exercising

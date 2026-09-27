@@ -102,8 +102,10 @@ internal static unsafe class StackArrayExpansionTests
         });
     }
 
-    [Test]
-    public static void TwoAllocationsInOneStatementPreserveHeaderOrderAndReplaceBothUses()
+    [TestCase(GT_ADD, 1, 0)]
+    [TestCase(GT_SUB, 0, 1)]
+    public static void TwoAllocationsInOneStatementPreserveHeaderOrderAndReplaceBothUses(
+        genTreeOps oper, int firstOperandLocal, int secondOperandLocal)
     {
         WithCompiler((compiler, block) =>
         {
@@ -111,7 +113,7 @@ internal static unsafe class StackArrayExpansionTests
                 stackAllocated: true);
             var second = NewArrayCall(compiler, CORINFO_HELP_NEWARR_1_ALIGN8, 1, 222, 5,
                 stackAllocated: true);
-            var sum = compiler.gtNewBinaryNode(GT_ADD, TYP_I_IMPL, first, second);
+            var sum = compiler.gtNewBinaryNode(oper, TYP_I_IMPL, first, second);
             sum.Flags |= GTF_CALL;
             var store = compiler.gtNewStoreLclVarNode(2, sum);
             var statement = Append(compiler, block, store);
@@ -130,10 +132,11 @@ internal static unsafe class StackArrayExpansionTests
             Assert.That(statements[2].RootNode.AsIndir().Addr.AsLclVarCommon().LclNum, Is.EqualTo(1));
 
             var expandedSum = store.Data.AsOp();
+            Assert.That(expandedSum.Oper, Is.EqualTo(oper));
             Assert.That(expandedSum.Op1.Oper, Is.EqualTo(GT_LCL_ADDR));
-            Assert.That(expandedSum.Op1.AsLclVarCommon().LclNum, Is.EqualTo(0));
+            Assert.That(expandedSum.Op1.AsLclVarCommon().LclNum, Is.EqualTo(firstOperandLocal));
             Assert.That(expandedSum.Op2.Oper, Is.EqualTo(GT_LCL_ADDR));
-            Assert.That(expandedSum.Op2.AsLclVarCommon().LclNum, Is.EqualTo(1));
+            Assert.That(expandedSum.Op2.AsLclVarCommon().LclNum, Is.EqualTo(secondOperandLocal));
         });
     }
 

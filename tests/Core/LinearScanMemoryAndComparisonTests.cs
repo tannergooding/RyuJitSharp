@@ -18,11 +18,15 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanMemoryAndComparisonTests
 {
-    [TestCase(TYP_INT, false)]
-    [TestCase(TYP_INT, true)]
-    [TestCase(TYP_SIMD32, false)]
-    [TestCase(TYP_SIMD32, true)]
-    public static void LoadsPreserveAddressConstraintsAndVectorUsage(var_types type, bool evex)
+    [TestCase(TYP_INT, false, false)]
+    [TestCase(TYP_INT, true, false)]
+    [TestCase(TYP_SIMD32, false, false)]
+    [TestCase(TYP_SIMD32, true, false)]
+    [TestCase(TYP_INT, false, true)]
+    [TestCase(TYP_INT, true, true)]
+    [TestCase(TYP_SIMD32, false, true)]
+    [TestCase(TYP_SIMD32, true, true)]
+    public static void LoadsPreserveAddressConstraintsAndVectorUsage(var_types type, bool evex, bool dispatch)
     {
         WithAllocator((compiler, allocator) => {
             EnableAvx(compiler);
@@ -35,14 +39,14 @@ internal static unsafe class LinearScanMemoryAndComparisonTests
             var load = compiler.gtNewIndir(type, address);
             ReferenceBuildLocation(allocator) = 4;
 
-            Assert.That(BuildIndir(allocator, load), Is.EqualTo(1));
+            Assert.That(dispatch ? BuildNode(allocator, load) : BuildIndir(allocator, load), Is.EqualTo(1));
             Assert.That(addressDef.nextRefPosition?.registerAssignment,
                 Is.EqualTo(evex ? AvailableIntRegs(allocator) : LowGprRegs(allocator)));
             Assert.That(allocator.refPositions[^1].treeNode, Is.SameAs(load));
             Assert.That(allocator.refPositions[^1].refType, Is.EqualTo(RefType.RefTypeDef));
             var emitter = (compiler.codeGen ?? throw new AssertionException("Missing code generator.")).Emitter;
-            Assert.That(emitter.ContainsAvxInstruction, Is.EqualTo(type == TYP_SIMD32));
-            Assert.That(emitter.Contains256BitOrMoreAvxInstruction, Is.EqualTo(type == TYP_SIMD32));
+            Assert.That(emitter.ContainsAvxInstruction, Is.EqualTo(dispatch && type == TYP_SIMD32));
+            Assert.That(emitter.Contains256BitOrMoreAvxInstruction, Is.EqualTo(dispatch && type == TYP_SIMD32));
         });
     }
 
@@ -195,6 +199,9 @@ internal static unsafe class LinearScanMemoryAndComparisonTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildIndir")]
     private static extern int BuildIndir(LinearScan allocator, GenTreeIndir tree);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildNode")]
+    private static extern int BuildNode(LinearScan allocator, GenTree tree);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildCmp")]
     private static extern int BuildCmp(LinearScan allocator, GenTree tree);

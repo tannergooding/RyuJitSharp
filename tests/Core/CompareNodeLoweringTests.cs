@@ -15,6 +15,10 @@ internal static unsafe class CompareNodeLoweringTests
     [TestCase(false, 200, true)]
     [TestCase(true, 200, false)]
     [TestCase(false, 256, false)]
+    [TestCase(false, -1, false)]
+    [TestCase(false, 0, true)]
+    [TestCase(false, 255, true)]
+    [TestCase(true, 255, false)]
     public static void SmallMemoryComparisonNarrowingHonorsOptimizationModeAndRange(
         bool minOpts, int constant, bool narrowed)
     {
@@ -28,7 +32,8 @@ internal static unsafe class CompareNodeLoweringTests
             var block = NewBlock(address, load, value, compare, owner);
 
             Assert.That(LowerCompare(NewLowering(compiler, block), compare), Is.SameAs(owner));
-            Assert.That(value.Type, Is.EqualTo(narrowed ? TYP_UBYTE : TYP_INT));
+            Assert.That(value.Type, Is.EqualTo(TYP_INT));
+            Assert.That(compare.GetCompareSize(), Is.EqualTo(narrowed ? 1 : 4));
             Assert.That(load.IsContained, Is.EqualTo(narrowed));
             Assert.That(value.IsContained, Is.True);
             Assert.That(compare.IsUnsigned, Is.EqualTo(narrowed));
