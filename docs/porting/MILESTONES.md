@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Tree-splitting stress modes
+
+The tree-splitting stress phase now supports native deterministic random
+selection and complete comma removal. It preserves split limits, statement
+evaluation order, side effects, block-operation remorphing and restart points.
+Random mode takes precedence when both modes are selected.
+
+The existing corpus matches all 74 native random split locations and 22
+successful splits, including the eight-split limit in `Main`. Comma mode removes
+the same seven nodes from `Main` and `SynchronizedReturn`. Both modes execute
+19 bodies with matching phase diagnostics, instruction sequences and sizes.
+Surrounding profile checks, VN rendering and floating-tree metadata retain
+separate dump differences; the ordinary execution baseline is unchanged.
+
 ## 2026-09-26: Profile instrumentation and tiered execution
 
 Method instrumentation now prepares and emits block or sparse-edge counters,

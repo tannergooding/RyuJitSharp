@@ -2496,9 +2496,6 @@ public partial class Compiler
         return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }
 
-    // TODO: Port phase - StressSplitTree
-    public PhaseStatus StressSplitTree() => PhaseStatus.MODIFIED_NOTHING;
-
     // TODO: Port phase - TransformAsync
     public PhaseStatus TransformAsync() => PhaseStatus.MODIFIED_NOTHING;
 

@@ -12,10 +12,11 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete physical-promotion and profile-instrumentation subsystem packets against33baf8 in parallel; parent integrates shared contracts and validates each dependency-coherent subsystem before public activation and local commit.",
+      "scope": "Continue the complete physical-promotion packet and port the remaining async state-machine transformation against 33baf8 in parallel. Parent integrates shared contracts and handles the complete tree-splitting stress phase while substantial packets are implemented.",
       "doneWhen": [
         "Complete physical promotion including candidate selection, replacement, liveness and decomposition rather than activating a partial prerequisite.",
-        "Complete all profile instrumentors and preparation/core/inline-return dispatch while preserving EE schema ownership and probe ordering.",
+        "Complete async transformation including normal/tail awaits, continuation layout, suspension/resumption, live state, contexts and EH rather than activating only the wrapper.",
+        "Port the complete tree-splitting stress driver and both algorithms, preserving native selection, limits, traversal and diagnostics.",
         "Integrate named shared deltas, review each complete native closure and validate focused semantic/runtime evidence with existing corpora.",
         "Commit each completed subsystem separately, preserving the other lane's WIP, and continue remaining port dependencies."
       ],
@@ -23,9 +24,16 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Profile instrumentation is fully integrated through snapshot 3e4b1f19, including B324 OSR ownership, B328 atomic types and B329 native count conversions. Parent owns the local batch commit and subsequent physical-promotion integration; its native UTF8/struct references are ready. Consolidate validation per subsystem, not per helper. No publication authorized; commits remain checkpoints.",
+      "parentScope": "Profile instrumentation committed 40dc08c, including B324/B328/B329 and successful native-matching instrumented/value/hot-GDV execution. Parent owns remaining public phase entries and shared integration; physical UTF8/struct references are ready. Complete StressSplitTree independently while the physical and async closures proceed. Consolidate validation per subsystem, not per helper. No publication authorized.",
       "deferred": "B311 optional metrics fixture, B318/B325 existing argument regressions, B307 EH node IDs, B320 static-data descriptions, B321-B323 profile diagnostics and remaining B315 physical-promotion/graph parity stay separate. B324 is corrected and tiered GDV/value execution now passes. No general argument-morph redesign.",
       "parallelPackets": [
+        {
+          "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
+          "owner": "9e905421-71cc-4119-ab60-d762e4b27745",
+          "files": "New async/AsyncTransformation files, Compiler.AsyncTransformation support and AsyncTransformationTests; parent owns shared deltas and the public TransformAsync entry.",
+          "status": "in-progress",
+          "remainingBoundary": "Complete inactive closure with consolidated full-analysis validation. Reuse existing async import, context, resume and codegen support. Preserve native continuation/EE ownership and node replacement contracts; report named shared blockers."
+        },
         {
           "scope": "Complete profile instrumentation: count/edge, handle and value instrumentors plus preparation/core/inline-return wrapper.",
           "owner": "4738d2a0-2db8-4c2f-855b-41d9d9cff502",
@@ -38,7 +46,7 @@
           "owner": "9ac3e59e-498c-469c-94c6-87f58abf6ff1",
           "files": "New promotion files, Compiler.PhysicalPromotion*.cs and PhysicalPromotionTests.cs; parent owns shared deltas and public entry.",
           "status": "in-progress",
-          "remainingBoundary": "Deliver substantial complete inactive implementation packet with consolidated full-analysis validation. Preserve native algorithms and approved node-replacement ownership; report genuine shared blockers. Parent handles review, public activation and runtime comparisons."
+          "remainingBoundary": "Frozen 12-file packet on 40dc08c passes 35 Debug / 35 Release; manifest artifacts\\physical-promotion\\packet-40dc08.manifest.json. Review 6356462f found nonconstant INIT_VAL wrongly treated as constant, reassociated weighted costs reversing selection, checked decomposed-address addition and broad diagnostic omissions. Author 9ac3e59e is fixing the full round with regressions and all native diagnostic sites; parent restored Run block/statement diagnostics. Finish those findings before activation and native UTF8/struct comparison."
         },
         {
           "scope": "Complete native static-initialization expansion.",
@@ -422,7 +430,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "If HEAD is still a762fa8, finish the local instrumentation commit using exact ownedPaths from artifacts\\profile-instrumentation\\integration-6\\manifest.json plus related porting documentation; executable source/tests/scripts must match 3e4b1f19cb08284bec2388e43917e29073d3eb64. All five native comparisons and the 29/143 baseline pass; B324/B328/B329 are fixed. Then collect physical worker 9ac3e59e's complete inactive promotion/liveness/decomposition packet, review the closure, activate the public PhysicalPromotion entry and compare existing UTF8/struct native evidence. Preserve all physical WIP during the instrumentation commit. Continue beyond the milestone; no push or PR authorized.",
+    "nextAction": "If HEAD is still 40dc08c, commit the completed stress batch using the three ownedPaths in artifacts\\stress-split-trees\\validation-2\\manifest.json plus related ledgers; source/tests must match 20753adcb4f7142483e56bc1fec96e71a375412c. Both 19-body stress modes and 29/143 baseline pass. Then collect physical author 9ac3e59e's complete review-fix round (dynamic init, exact weighted arithmetic, pointer wrapping and full diagnostics); parent already fixed Run diagnostics. Review fixes, activate PhysicalPromotion only after closure, and compare ready UTF8/struct evidence. Async lane 9e905421 continues full closure with five positive native cases available but no native tail-await positive. Preserve all other WIP; no push or PR.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -490,6 +498,19 @@
         "scope": "Restore pinned output-pointer-only getThreadLocalStaticBlocksInfo across three wrappers/interface/vtable; rename final metadata slot to offsetOfBaseOfThreadLocalData. Keep existing slot, calling convention, offset widths and neighboring getThreadLocalFieldInfo bool.",
         "nativeEvidence": "MSVC native-probe.cpp static_assert checks exact member signature against pinned corinfo.h; sizeof56, pointer-field offsets0/16/24/32 and scalar offsets40/44/48/52 match managed raw layout.",
         "gaps": "TLS phase is not activated. Virtual native callbacks verify forwarding without claiming actual runtime TLS expansion."
+      },
+      "stressSplitTrees": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "snapshot": "20753adcb4f7142483e56bc1fec96e71a375412c",
+        "snapshotManifest": "artifacts\\stress-split-trees\\validation-2\\manifest.json",
+        "managedJit": "artifacts\\stress-split-trees\\native-jit-2\\RyuJitSharp.dll",
+        "sha256": "283D3C39BBDE4A03990256673C22D5F4BBFA7084BB8D84166C3853BB583BF1A7",
+        "tests": "88 Debug / 83 Release with full analysis, including 10 / 5 new phase and comma-removal cases plus existing use-edge/split tests. Covers dispatch, disabled stress, random precedence and limits, ordered call spills, side effects and nested-comma restarts.",
+        "comparison": "artifacts\\stress-split-tree\\comparison-2075-1.json: exact native phase slices in all 19 methods for each mode, successful managed execution and expected outputs without fallback.",
+        "randomEvidence": "Forced STRESS_SPLIT_TREES_RANDOMLY with JitStressModeNamesOnly=1 and split limit 8 matches all 74 selected locations and 22 successful splits across 11 methods. Main reaches eight splits. All sizes and 358 emitted instruction lines match; Main is 781 bytes versus 778 unstressed.",
+        "commaEvidence": "Forced STRESS_SPLIT_TREES_REMOVE_COMMAS removes the same seven nodes: Main 2 to 0 and SynchronizedReturn 5 to 0. All sizes and 356 emitted instruction lines match. Modified phase status alone is not counted as positive transformation evidence.",
+        "baseline": "artifacts\\upstream-refresh-33baf8\\stress-split-managed-matrix-2\\results.json: 29 configurations / 143 positive managed bodies with expected outputs and no fallback.",
+        "remaining": "B322 profile diagnostics and B330 surrounding VN/tree metadata differences remain explicit. Native random/hash algorithms and writable split-use helpers are reused unchanged."
       },
       "profileInstrumentation": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
@@ -6310,6 +6331,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "tree-splitting-stress",
+      "native": ["src\\coreclr\\jit\\compiler.cpp:5432-5615"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.StressSplitTree.cs"],
+      "status": "Complete driver, random splitting and comma removal. Reuses CLRRandom and gtSplitTree's writable use, assigning replacements before remorphing can invalidate the use. Preserves random-mode precedence, limits, traversal/restart order and Debug-only random work. Both native stress-phase traces and emitted instruction slices match under successful execution. Native source retained.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "osr-patchpoint-metadata-ownership",
       "native": ["src\\coreclr\\jit\\compiler.cpp:1701-1709", "src\\coreclr\\jit\\compiler.cpp:5974-5983", "src\\coreclr\\jit\\compiler.cpp:6840-6876", "src\\coreclr\\vm\\jitinterface.cpp:CEEJitInfo::getOSRInfo"],
