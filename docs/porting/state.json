@@ -12,19 +12,19 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Repair the established indirect-call fixture's absent-return-buffer contract while preserving virtual-target exception and global-morph behavior.",
+      "scope": "Correct the same absent-return-buffer fixture defect in address lowering, VN nonnull propagation, block stores and two register-allocation fixtures.",
       "doneWhen": [
-        "Retain the reproduced five-failure/fifty-five-control baseline and confirm native absence uses BAD_VAR_NUM.",
-        "Initialize the fixture correctly rather than weakening virtual-target fault expectations or altering production.",
-        "Assert receiver nullability, method-table nonfaulting flags and separate real return-buffer/ordinary-local controls.",
-        "Run indirect-call and related argument tests in both configurations, commit the coherent test correction and continue."
+        "Preserve full-suite baseline200Debug/161Release failures before corrections.",
+        "Initialize BAD_VAR_NUM in the five fixtures whose ordinary local zero is incorrectly treated as nonnull caller-stack storage.",
+        "Retain fault, write-barrier containment and helper-register kill assertions without production changes.",
+        "Run affected fixtures and the indirect-call controls in both configurations, commit locally and continue with other evidenced failures."
       ],
       "validation": [
-        "Baseline artifacts\\indirect-call-faults\\baseline-debug.trx reproduces5failures/55controls.",
-        "Run IndirectCallTransformationTests, CallArgumentMorphTests and InlineArgumentTests with full analysis; production/runtime inputs are unchanged."
+        "Baseline artifacts\\core-validation\\debug-1.trx and release-1.trx on09bca24;11687Debug/10774Release total cases.",
+        "Run AddressLoweringTests, AssertionVNStatementTests, BlockStoreLoweringTests, LinearScanCallBuildingTests, LinearScanDefinitionConstructionTests and IndirectCallTransformationTests with full analysis."
       ],
-      "parentScope": "B330 completed in21bb4d9 afterd618a89; B340 in93ac5f4. Close the known fixture failure before broader port validation; no publication.",
-      "deferred": "B322 remains a native uninitialized-bool limitation. Broader dump/raw-byte/GC coverage and remaining compiler gaps are separate.",
+      "parentScope": "Indirect-call B341 committed09bca24. Full-suite failures now provide the validation frontier; retain native contracts rather than adapting production to incomplete fixtures.",
+      "deferred": "Other full-suite failure groups remain in baseline TRX, including emitter reflection and hardware-intrinsic fixture conversions. B322 and broader dump/raw-byte/GC coverage remain separate.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -429,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B341 fixture correction validated160Debug/158Release; commit locally, then run the full Core test project in Debug/Release to expose outstanding failures after the recent phase integrations. Preserve baseline failures and fix only evidenced native-contract/fixture defects in coherent batches. Use remaining PLAN/DEVIATIONS scope to select the next production gap if the suite is clean; no push.",
+    "nextAction": "B341 five-fixture follow-up passes154Debug/153Release, restoring seven baseline failures per configuration without production changes; commit locally. Next inspect EmitterConstantDescriptorTests.ReadConstant:140baseline failures arise from stale nested-type reflection; use actual current visibility and contracts. Remaining B342 groups stay recorded in full baseline TRX; do not weaken expectations or change production without native evidence.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -464,6 +464,13 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "coreValidation": {
+        "baselineSource": "09bca24",
+        "baseline": "artifacts\\core-validation\\debug-1.trx:200failed/11487passed;release-1.trx:161failed/10613passed; full analysis, zero skipped.",
+        "sentinelCorrection": "AddressLoweringTests, AssertionVNStatementTests, BlockStoreLoweringTests, LinearScanCallBuildingTests and LinearScanDefinitionConstructionTests initialize absent compRetBuffArg to BAD_VAR_NUM.",
+        "sentinelTests": "artifacts\\core-validation\\sentinel-debug-1.trx and sentinel-release-1.trx:154Debug/153Release pass, including IndirectCallTransformationTests. Seven original fault/write-barrier failures per configuration corrected; no expectation or production changes.",
+        "remaining": "Other baseline failures remain under B342, beginning with emitter constant-reader reflection. Full-suite success has not been established."
+      },
       "indirectCallFaultFixtures": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "nativeContract": "lclvars.cpp initializes absent compRetBuffArg to BAD_VAR_NUM; flowgraph.cpp929-934 excludes that local from nullability; morph.cpp preserves the explicit global-morph exception-clearing quirk.",

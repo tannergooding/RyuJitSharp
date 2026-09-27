@@ -29,6 +29,13 @@ Indirect-call and related argument fixtures pass 160 Debug and 158 Release cases
 with full analysis. The original five failures and 55 passing controls remain
 recorded in `artifacts\indirect-call-faults`.
 
+The full Core run exposed the same sentinel defect in five older lowering,
+VN and register-allocation fixtures. Correct initialization restores seven
+fault/write-barrier expectations per configuration; all 154 Debug and 153 Release
+cases in the affected fixtures and indirect-call controls pass unchanged.
+The full-suite baseline remains recorded in `artifacts\core-validation`:
+200 Debug and 161 Release failures, with other failure groups still under review.
+
 ## 2026-09-27: Floating local evaluation costs
 
 Floating-point local uses and definitions now retain native AMD64 size costs:

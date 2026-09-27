@@ -370,6 +370,7 @@ internal static unsafe class BlockStoreLoweringTests
 #endif
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(minOpts);
