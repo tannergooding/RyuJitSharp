@@ -402,14 +402,21 @@ internal static unsafe class CallArgumentMorphTests
         });
     }
 
-    [TestCase(false)]
-    [TestCase(true)]
-    public static void DifferentExceptionsPreserveAllEarlierThrowingArguments(bool different)
+    [TestCase(false, false)]
+    [TestCase(true, false)]
+    [TestCase(false, true)]
+    [TestCase(true, true)]
+    public static void DifferentExceptionsPreserveAllEarlierThrowingArguments(bool different, bool firstIsReturnBuffer)
     {
         WithCompiler(compiler => {
+            if (firstIsReturnBuffer)
+            {
+                compiler.info.compRetBuffArg = 0;
+            }
+
             var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
-            var first = call.Args.PushBack(NewCallArg.CreateForPrimitive(
-                compiler.gtNewIndir(TYP_INT, compiler.gtNewLclvNode(TYP_BYREF, 0))));
+            var firstNode = compiler.gtNewIndir(TYP_INT, compiler.gtNewLclvNode(TYP_BYREF, 0));
+            var first = call.Args.PushBack(NewCallArg.CreateForPrimitive(firstNode));
             var second = call.Args.PushBack(NewCallArg.CreateForPrimitive(
                 compiler.gtNewIndir(TYP_INT, compiler.gtNewLclvNode(TYP_BYREF, 1))));
             var lastNode = different
@@ -417,11 +424,15 @@ internal static unsafe class CallArgumentMorphTests
                 : compiler.gtNewIndir(TYP_INT, compiler.gtNewLclvNode(TYP_BYREF, 2));
             var last = call.Args.PushBack(NewCallArg.CreateForPrimitive(lastNode));
 
+            Assert.That((firstNode.Flags & GTF_EXCEPT) != 0, Is.EqualTo(!firstIsReturnBuffer));
+            Assert.That(compiler.gtCollectExceptions(firstNode), Is.EqualTo(firstIsReturnBuffer
+                ? ExceptionSetFlags.None : ExceptionSetFlags.NullReferenceException));
             call.Args.AddFinalArgsAndDetermineAbiInfo(compiler, call);
             call.Args.ArgsComplete(compiler, call);
-            Assert.That(first.NeedTmp, Is.EqualTo(different));
+            Assert.That(first.NeedTmp, Is.EqualTo(different && !firstIsReturnBuffer));
             Assert.That(second.NeedTmp, Is.EqualTo(different));
             Assert.That(last.NeedTmp, Is.False);
+            Assert.That(call.Args.NeedsTemps, Is.EqualTo(different));
         });
     }
 
@@ -794,6 +805,7 @@ internal static unsafe class CallArgumentMorphTests
 #endif
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        compiler.info.compRetBuffArg = BAD_VAR_NUM;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(minOpts);

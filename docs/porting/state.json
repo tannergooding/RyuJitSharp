@@ -12,19 +12,19 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Resolve B318 call-argument exception-order regression against the pinned native contract without redesigning argument morphing.",
+      "scope": "Resolve B325 unused inline struct-argument exception-preservation regression against the pinned native contract.",
       "doneWhen": [
-        "Reproduce DifferentExceptionsPreserveAllEarlierThrowingArguments(True) and its controls on the committed baseline.",
-        "Trace the relevant native and managed argument exception analysis and determine whether the implementation or fixture violates the native contract.",
-        "Correct the established discrepancy, preserve observable evaluation and exception ordering, and validate the affected argument paths.",
-        "Commit the coherent correction with evidence and continue B325 or the next remaining port dependency."
+        "Reproduce UnusedStructArgumentsPreservePossibleNullFault(False) and its nonfaulting control on the committed baseline.",
+        "Compare complete native and managed unused-argument side-effect extraction and determine whether the implementation or fixture violates the native contract.",
+        "Correct the established discrepancy without dropping possible faults or unrelated argument effects, and validate the existing inline-argument selection.",
+        "Commit the coherent correction with evidence and continue remaining port work."
       ],
       "validation": [
-        "Use the existing CallArgumentMorphTests fixture and related focused Debug/Release selections from immutable source archives.",
+        "Use the existing InlineArgumentTests fixture and related focused Debug/Release selections from immutable source archives.",
         "If production changes, demonstrate the old behavior fails the regression and exercise affected generated code; if only the fixture is stale, retain production sources unchanged. Do not expand into unrelated full-suite failures."
       ],
-      "parentScope": "Complete EH-table verification is validated:387Debug/302Release,25 old-stub regression failures,29/143 execution baseline and matching async transformation/instruction slices in FullOpts, GCStress4 and controlled Tier0. Its new full-suite failures were22 stale fixtures, now corrected;207 remaining failures reproduce with the old checker. Finish the local B127 commit, then resume the recorded B318 semantic regression. No publication authorized.",
-      "deferred": "B325 inline-argument regression follows B318. B307 EH node IDs, B320 static-data descriptions and B321/B323 profile formatting stay separate. B322 is a native uninitialized-bool limitation, not authorization to emulate poison. No general argument-morph or profile-synthesis redesign.",
+      "parentScope": "B127 committed as97645f3. B318 is a stale fixture: the uninitialized compiler marks local0 as the return-buffer argument, which native and managed correctly treat as nonnull. The fixture now initializes compRetBuffArg to BAD_VAR_NUM and explicitly covers real return-buffer controls;70Debug/68Release pass, production unchanged. Finish that local commit and resume B325. No publication authorized.",
+      "deferred": "B307 EH node IDs, B320 static-data descriptions and B321/B323 profile formatting stay separate. B322 is a native uninitialized-bool limitation, not authorization to emulate poison. No general argument-morph or profile-synthesis redesign.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -429,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Finish the local B127 EH-verifier commit, validated byafd5f6226928a6381d577b136b8aa2c09218a532 (387D302R) and production-identical NativeAOT source9e9aa0cbc5881900a0c084e41ca11c455b0b9100. Then reproduce CallArgumentMorphTests.DifferentExceptionsPreserveAllEarlierThrowingArguments(True), compare the native exception/order analysis and resolve B318 without weakening the contract. Old full-suite comparison isolates207 unrelated failures and no new checker failures. Continue after the commit; no push.",
+    "nextAction": "Finish the B318 fixture correction commit, validated by4742961274c8426309a1869d820953dcd7eb66d1 (70D68R), with production unchanged. Then reproduce InlineArgumentTests.UnusedStructArgumentsPreservePossibleNullFault(False), compare complete native/managed unused-argument side-effect extraction and resolve B325 without weakening fault preservation. B127 is already committed97645f3. Continue after the commit; no push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -464,6 +464,15 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "argumentExceptionOrderFixture": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "baseline": "Sourceafd5f6226928a6381d577b136b8aa2c09218a532, artifacts\\argument-exception-order\\baseline-{debug,release}.trx:one B318 failure with67Debug/65Release controls.",
+        "sourceSnapshot": "4742961274c8426309a1869d820953dcd7eb66d1",
+        "tests": "artifacts\\argument-exception-order\\validation-1\\results:70Debug/68Release, complete CallArgumentMorphTests selection with full analysis.",
+        "diagnosis": "RuntimeHelpers.GetUninitializedObject leaves info.compRetBuffArg=0. Native flowgraph.cpp:905-997 and managed fgAddrCouldBeNull both classify that local as nonnull caller-allocated return-buffer storage, so its load has no GTF_EXCEPT and need not spill before a different exception. Native lclvars.cpp:120 and managed Compiler.lva.cs initialize an absent return-buffer argument to BAD_VAR_NUM during real compilation.",
+        "change": "Initialize the shared fixture's absent return-buffer index; preserve the original two throwing-argument expectations and add two explicit return-buffer controls. Assert the first load's actual flags/exception set and the final NeedsTemps state.",
+        "production": "Native morph.cpp:742-1069 and managed CallArgs.Morph.cs retain matching ArgsComplete exception ordering. No compiler changes or runtime recapture."
+      },
       "ehTableVerification": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "nativeFunction": "jiteh.cpp:3210-3770, complete fgVerifyHandlerTab",
