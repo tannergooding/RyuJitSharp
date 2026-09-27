@@ -15,6 +15,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Additional allocator policy coverage
+
+Extended matched GC-stressed execution to reversed caller/callee preference,
+extended lifetimes, rotated block boundaries, optional-register avoidance and
+explicit heuristic reordering. These configurations change allocation while
+preserving native-identical instructions and spill-event counts.
+
+Two older native stress bits do not implement their named reverse/nearest
+selection policies. They remain controls, not positive policy coverage.
+The capture runner now exposes the actual native heuristic-order setting.
+A free-first reordered sequence works; fully reversing the sequence asserts
+in native framework code before selected compilation and remains a limitation.
+
 ## 2026-09-27: Incoming parameter spills and allocation stress
 
 Incoming register parameters can now spill before the first block boundary.

@@ -37,6 +37,7 @@ param(
     [switch] $GcStress,
     [ValidateRange(0, 2147483647)][int] $RegisterStress = 0,
     [string] $RegisterStressRange = "",
+    [ValidatePattern('^[A-Q]{17}$', Options = 'None')][string] $LsraOrdering = "",
     [switch] $FakeProcedureSplitting,
     [switch] $StressProcedureSplitting,
     [switch] $DisableProcedureSplittingEH
@@ -203,6 +204,9 @@ if ($RegisterStress -ne 0) {
 }
 if ($RegisterStressRange) {
     $settings.DOTNET_JitStressRegsRange = $RegisterStressRange
+}
+if ($LsraOrdering) {
+    $settings.DOTNET_JitLsraOrdering = $LsraOrdering
 }
 if ($FakeProcedureSplitting) {
     $settings.DOTNET_JitFakeProcedureSplitting = "1"

@@ -13,19 +13,18 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "Extend the four pinned upstream regressions to matched GCStress4 plus restricted-register and forced-spill allocation, with observed collection activity.",
+      "scope": "Validate additional LSRA stress policies and genuine heuristic reordering on all18unchanged upstream regression bodies with matched GCStress4.",
       "status": "done",
       "doneWhen": [
-        "Preserve all original assertions and18selected bodies; require a positive GC.CollectionCount delta in each stressed process rather than merely recording an enabled flag.",
-        "Compare native/managed under identical GCStress4 and JitStressRegs masks3/small-set and0xC03/small-set+forced-spill+reload settings; explicitly preserve native assertion boundaries B365.",
-        "Record and commit validated stress evidence or a completed prerequisite, then continue."
+        "Capture masks0x7,0xb,0x13,0x83,0x203,0x1003 with the small register set; distinguish effective policies from native legacy bits. Exercise genuine reordering through JitLsraOrdering.",
+        "For native-passing policies require all18positive bodies, all original assertions, positive collections, exact stress-range banners and matching instructions/phases. Preserve native failures separately; do not accept managed retries or weaken selection.",
+        "Fix demonstrated managed defects, commit the coherent policy boundary and continue."
       ],
       "validation": [
-        "B366 regression:4pre-fix failures/2controls; final full-analysis LSRA672Debug/566Release, including ordinary parameter eviction in Release.",
-        "Source23790289 NativeAOT passes18bodies/36exact phases in default, small-set and scoped forced-spill captures. All original assertions execute; small-set stresses18methods, forced-spill stresses17with only native-failing hash8075f3c3 disabled. Every GC-stressed process reports positive collections.",
-        "Allocation effects are measured against matching GC-only inputs:9small-set and17forced-spill bodies change instructions; native/managed spill-event counts match, totaling14baseline/256small-set/2292forced-spill."
+        "Seven native-passing configurations produce126positive native-identical instruction streams and252exact selected phases, with all original assertions, positive collections and explicit settings. Compiler source23790289 is unchanged; no rebuild was needed.",
+        "policy-effects-1.json measures5effective configurations against the small-set baseline. B367 explains the2legacy controls; B368 preserves a fully reversed native ordering assertion before selected compilation. Four malformed ordering strings reject before execution, and the default runner control remains unchanged."
       ],
-      "parentScope": "B364 committedf5c7d42; eba7ba0e produces18native-equal bodies and36exact selected phases. B354/B363 committeddb9b53c. Existing Windows-x64 default coverage remains intact; broader GC behavior is the next execution boundary.",
+      "parentScope": "B366 committed249f24c with672Debug/566Release and default/small/scoped forced-spill parity. B365's native forced-spill failures remain explicit. No new compiler changes at this policy batch's start.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -425,7 +424,7 @@
         "Other-target implementation and new tooling infrastructure are not prerequisites for continuing Windows-x64 execution."
       ]
     },
-    "nextAction": "B366 and the GC/register-stress batch are validated; commit them locally before the next batch. Continue with selected-method GCStress4 masks0x7,0xb,0x13,0x83,0x203,0x1003 to cover reversed heuristics, caller/callee preference, nearest selection, extended lifetimes, rotated block boundaries and optional-register avoidance. Reuse source237902893690cd8fd438cb7e65c5d64f3ec1022d/native-jit-1 and corpus-built-3. Require18positive bodies and native-identical instructions per native-passing policy; do not infer that B365 requires exclusions outside0xC03.",
+    "nextAction": "Commit the validated allocator-policy/ordering batch locally. Then inspect pinned src\\tests\\JIT\\opt\\ObjectStackAllocation\\ObjectStackAllocationTests.cs and Delegates.cs for unchanged EE-backed boxing/unboxing and delegate cases. Reconcile these with current production ObjectAllocator entrypoints and existing execution evidence before selecting the next bounded host corpus. Do not reopen historical inactive-packet notes as current gates.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -460,6 +459,18 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "additionalAllocatorPolicies": {
+        "compilerSource": "237902893690cd8fd438cb7e65c5d64f3ec1022d",
+        "library": "artifacts\\allocation-stress\\native-jit-1\\RyuJitSharp.dll; unchanged from B366.",
+        "captures": "artifacts\\upstream-regressions\\policy-native-*-1 and policy-managed-*-1 for reverse/caller/nearest/lifetimes/boundaries/optional; order-native-free-first-1 and order-managed-free-first-1 for actual JitLsraOrdering AMLKJIHGFEDCBNOPQ.",
+        "comparisons": "comparison-policy-*-1.json and comparison-order-free-first-1.json each establish18positive bodies,36exact selected phases, native-equal instruction streams/spill-event counts, original runtime assertions, positive collections and exact stress settings. Total126bodies/252phase comparisons. All18methods are included in every passing configuration.",
+        "effects": "policy-effects-1.json compares identical binaries/corpus against limited-native-1. Changed instruction streams for caller/lifetimes/boundaries/optional/free-first ordering:12/12/6/5/7. Spill-event totals195/477/236/248/543 versus256baseline; code bytes7765/8266/7804/7315/8359 versus7215baseline. These are stress effects, not performance improvements.",
+        "legacyControls": "Reverse0x7 and nearest0x13 retain all18baseline streams,256spill events and7215bytes. Native source confirms unused reverseSelect locals and no selector caller for doSelectNearest; B367 records the distinction from common stress initialization.",
+        "orderingRunner": "Invoke-PortingCorpus -LsraOrdering validates exactly17uppercase A-Q characters, permits repeats, and forwards DOTNET_JitLsraOrdering process-wide. ordering-validation-1.json rejects short/lowercase/invalid-letter/long strings before execution. ordering-default-native-1 has one positive native body, original assertion output and no ordering override.",
+        "nativeFailure": "B368: order-native-reverse-1 with QPONMLKJIHGFEDCBA exits0xC0000602 in native Utf8Utility.TranscodeToUtf8 during LSRA build intervals, lsra.cpp:3541 assignedInterval->isActive==false. Manifest records0selected headers and an empty dump. No managed comparison or arbitrary-order success claim.",
+        "reproduction": "capture-policies.ps1 -Mode native|managed describes the six flag configurations. For actual ordering, use capture.ps1 -GcStress -RegisterStress 3 -LimitRegisterStressToSelectedMethods -LsraOrdering AMLKJIHGFEDCBNOPQ with corpus-built-3 and fresh outputs. compare.py adds --register-stress 3 --lsra-ordering AMLKJIHGFEDCBNOPQ --gc-stress --require-phases. Preserve failure captures and choose fresh IDs before rerunning.",
+        "limits": "No compiler changes were necessary. JitLsraOrdering is process-wide, unlike register stress ranges. No whole-dump, raw-relocated-byte, exhaustive allocator-policy or whole-runtime coverage claim."
+      },
       "allocationStressAndParameterSpilling": {
         "sourceSnapshot": "237902893690cd8fd438cb7e65c5d64f3ec1022d",
         "nativeScope": "lsra.cpp:allocateRegisters,spillInterval,unassignPhysReg and constructor stress initialization. A parameter at unsigned MinLocation can spill before the first BB reference; the managed nullable cursor incorrectly rejected this. Initialize it to MinLocation and retain native map/spill updates. Existing lsra folder mapping applies.",

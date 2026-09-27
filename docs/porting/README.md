@@ -316,6 +316,13 @@ to limit stress to the intended methods; it requires nonzero `-RegisterStress`.
 This can avoid stressing unrelated framework startup, but does not establish
 that an unrestricted stress configuration works.
 
+Use `-LsraOrdering` to supply the native 17-letter heuristic order, using
+`A` through `Q`; repeated letters are allowed. Unlike `-RegisterStressRange`,
+this setting applies to all compilations in the process. The pinned native
+reverse-selection and nearest-selection stress bits do not implement those
+selection policies, so enabling those bits alone is not evidence of exercising
+different heuristic ordering.
+
 Use `-MinOpts` on both captures to exercise required, unoptimized compilation;
 the default method set then includes `InlineCandidate`, which is no longer
 inlined. For optimized captures that exclude the still-unported object stack
