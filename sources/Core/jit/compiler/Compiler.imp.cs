@@ -10122,14 +10122,13 @@ public partial class Compiler
                             {
                                 JITDUMP($"\nOptimizing {((opcode is CEE_UNBOX) ? "UNBOX" : "UNBOX.ANY")} ({eeGetClassName(clsHnd)}) -- type test will succeed\n");
 
-                                var boxPayloadOffset = gtNewIconNode(TYP_I_IMPL, TARGET_POINTER_SIZE);
-                                var boxPayloadAddress = gtNewBinaryNode(GT_ADD, TYP_BYREF, op1, boxPayloadOffset);
-
                                 // For UNBOX, null check (if necessary), and then leave the box payload byref on the stack.
                                 if (opcode is CEE_UNBOX)
                                 {
                                     op1 = impCloneExpr(op1, out cloneOperand, CHECK_SPILL_ALL, "optimized unbox clone");
-                                    boxPayloadAddress.Op1 = cloneOperand;
+
+                                    var boxPayloadOffset = gtNewIconNode(TYP_I_IMPL, TARGET_POINTER_SIZE);
+                                    var boxPayloadAddress = gtNewBinaryNode(GT_ADD, TYP_BYREF, cloneOperand, boxPayloadOffset);
 
                                     if (fgAddrCouldBeNull(op1))
                                     {
@@ -10158,7 +10157,9 @@ public partial class Compiler
 
                                 // For UNBOX.ANY load the struct from the box payload byref (the load will nullcheck)
                                 assert(opcode is CEE_UNBOX_ANY);
-                                impPushOnStack(boxPayloadAddress, new typeInfo());
+                                var boxPayloadOffsetAny = gtNewIconNode(TYP_I_IMPL, TARGET_POINTER_SIZE);
+                                var boxPayloadAddressAny = gtNewBinaryNode(GT_ADD, TYP_BYREF, op1, boxPayloadOffsetAny);
+                                impPushOnStack(boxPayloadAddressAny, new typeInfo());
 
                                 Obj(this, resolvedToken, prefixFlags);
                                 break;

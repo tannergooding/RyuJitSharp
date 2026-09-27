@@ -13,18 +13,19 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "Validate additional LSRA stress policies and genuine heuristic reordering on all18unchanged upstream regression bodies with matched GCStress4.",
+      "scope": "Extend real EE-backed object-allocation coverage using unchanged pinned ObjectStackAllocationTests.cs and Delegates.cs.",
       "status": "done",
       "doneWhen": [
-        "Capture masks0x7,0xb,0x13,0x83,0x203,0x1003 with the small register set; distinguish effective policies from native legacy bits. Exercise genuine reordering through JitLsraOrdering.",
-        "For native-passing policies require all18positive bodies, all original assertions, positive collections, exact stress-range banners and matching instructions/phases. Preserve native failures separately; do not accept managed retries or weaken selection.",
-        "Fix demonstrated managed defects, commit the coherent policy boundary and continue."
+        "Run the complete original object test entrypoint and all3delegate entries without changing upstream assertions. Default execution must preserve stack/heap allocation checks, boxed/GC-containing layouts, spans, escape controls and explicit collections.",
+        "Require exact selected-method multiplicities, positive managed bodies without retry/fallback, correct results and native comparisons for object-allocation phases/instructions. Follow demonstrated gaps rather than historical inactive-packet notes.",
+        "Repeat native-passing coverage with GCStress4 and observed collections. Upstream deliberately disables allocation-kind assertions under GC stress; record that distinction. Commit validated work before continuing."
       ],
       "validation": [
-        "Seven native-passing configurations produce126positive native-identical instruction streams and252exact selected phases, with all original assertions, positive collections and explicit settings. Compiler source23790289 is unchanged; no rebuild was needed.",
-        "policy-effects-1.json measures5effective configurations against the small-set baseline. B367 explains the2legacy controls; B368 preserves a fully reversed native ordering assertion before selected compilation. Four malformed ordering strings reject before execution, and the default runner control remains unchanged."
+        "Compiler237902893690cd8fd438cb7e65c5d64f3ec1022d preserves before-fix comparisons:152matching instruction streams but302/304selected phase slices. B369 required a fresh publication from source13d5cdee4b18e8dba19149360603d623b1f91be3.",
+        "Driver links both unchanged native sources and the exact12pinned CoreCLRTestLibrary sources. Strict native inventories select79default or73GCStress bodies; discovery/count-mismatch runs remain separately labeled.",
+        "Final64Debug/64Release importer area cases and152native-equal instruction streams/304phase slices pass. Positive transformations include32default/29GCStress stack allocations, boxed/GC-containing layouts and one delegate invoke expansion per mode."
       ],
-      "parentScope": "B366 committed249f24c with672Debug/566Release and default/small/scoped forced-spill parity. B365's native forced-spill failures remain explicit. No new compiler changes at this policy batch's start.",
+      "parentScope": "B366 committed249f24c; additional policies/ordering committedef409ad with126matching streams/252selected phases. B365/B367/B368 native limits remain explicit. This batch targets boxed/GC-containing layouts and delegate execution gaps recorded in earlier object-allocation evidence.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -424,7 +425,35 @@
         "Other-target implementation and new tooling infrastructure are not prerequisites for continuing Windows-x64 execution."
       ]
     },
-    "nextAction": "Commit the validated allocator-policy/ordering batch locally. Then inspect pinned src\\tests\\JIT\\opt\\ObjectStackAllocation\\ObjectStackAllocationTests.cs and Delegates.cs for unchanged EE-backed boxing/unboxing and delegate cases. Reconcile these with current production ObjectAllocator entrypoints and existing execution evidence before selecting the next bounded host corpus. Do not reopen historical inactive-packet notes as current gates.",
+    "nextAction": "Continue with shared target-bootstrap/SysV/ARM64 integration after the completed B369 batch. All three packets are handed off; verify final review corrections, combine their prerequisites, and run target-specific builds/tests to identify the actual semantic frontier. Keep Windows behavior validated, do not claim cross-target runtime parity, and archive each completed child after preserving its work. artifacts\\parallel-port\\coordination.json records ownership; documentation and UNBOX children are already archived with all changes retained.",
+    "objectAllocationEvidence": {
+      "source": "13d5cdee4b18e8dba19149360603d623b1f91be3",
+      "tree": "42b077d3e80d7c51f767dd28d278dc189560eb57",
+      "nativePin": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+      "nativeSource": "src/coreclr/jit/importer.cpp:10725-10766, known-type UNBOX/UNBOX_ANY branches of Compiler::impImportBlockCode",
+      "managedSource": "sources/Core/jit/compiler/Compiler.imp.cs",
+      "managedJitSha256": "351F883922A3211BAB78F1B2629E3DFEE0A4C1D47339BDFACB90F7D1C9BADACE",
+      "tests": "tests/Core/UnboxImportTests.cs: five real-importer cases; combined BoxPattern/ImporterEffects area64Debug/64Release, no skips",
+      "before": "artifacts\\object-allocation-host\\comparison-before-default-1.json and comparison-before-gcstress-1.json preserve152matching streams and302/304phase slices; each mode has the B369 allocation-phase mismatch",
+      "after": "artifacts\\object-allocation-host\\comparison-after-default-1.json and comparison-after-gcstress-1.json:152matching streams and304/304phase slices",
+      "reproduce": "Build corpus\\ObjectAllocationProbe.csproj from unchanged pinned object/delegate sources and exact CoreCLRTestLibrary inputs; use preserved inventories and capture.ps1 with explicit ManagedJit/ManagedSource, then compare.py --require-phases. Full command inputs, hashes and snapshots are under artifacts\\object-allocation-host.",
+      "default": {
+        "positiveBodies": 79,
+        "equalPhaseSlices": 158,
+        "stackAllocations": 32,
+        "delegateInvokeExpansions": 1,
+        "allocationKindAssertions": true
+      },
+      "gcStress": {
+        "positiveBodies": 73,
+        "equalPhaseSlices": 146,
+        "stackAllocations": 29,
+        "delegateInvokeExpansions": 1,
+        "allocationKindAssertions": false,
+        "omissions": "Upstream GC-stress branch skips ZeroAllocTest and its five dependencies; original remaining assertions and positive observed collections pass"
+      },
+      "limits": "Windows x64 selected execution, phase slices and diffable instructions only; no whole-dump, relocated-byte or other-target parity claim"
+    },
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",

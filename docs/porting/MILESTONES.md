@@ -16,6 +16,28 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Object layouts, delegates and UNBOX ordering
+
+Expanded Windows-x64 execution to the complete unchanged upstream object-stack
+allocation entrypoint and all three delegate entrypoints. Default execution
+retains the original stack/heap allocation assertions, including boxed values,
+GC-containing layouts, spans and escaping controls. Both default and GC-stressed
+runs complete explicit collections and exercise stack-delegate invoke rewriting.
+
+The comparisons exposed a known-type UNBOX translation defect: its payload
+address was constructed before cloning the operand, then had that operand
+replaced. This changed tree creation order and retained stale assignment flags
+when cloning spilled an effectful operand. Construction now follows cloning,
+as in native, while preserving the original assignment exactly once and the
+null-check/byref ordering dependency. UNBOX.ANY retains its own load path.
+
+The fixed compiler matches all 79 default and 73 GC-stressed instruction streams,
+plus all 304 selected object-allocation and stack-array-expansion phase slices.
+The original GC-stress path intentionally omits ZeroAllocTest and its five
+dependencies and relaxes allocation-kind assertions; it is not equivalent to
+the default assertion set. Whole-pipeline dump and raw relocated-byte parity
+remain outside this evidence.
+
 ## 2026-09-27: Additional allocator policy coverage
 
 Extended matched GC-stressed execution to reversed caller/callee preference,
