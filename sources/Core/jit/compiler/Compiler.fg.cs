@@ -15297,9 +15297,6 @@ public partial class Compiler
         return PhaseStatus.MODIFIED_NOTHING;
     }
 
-    // TODO: Port phase - fgResolveGDVs
-    public PhaseStatus fgResolveGDVs() => PhaseStatus.MODIFIED_NOTHING;
-
     public PhaseStatus fgSetBlockOrder()
     {
         JITDUMP("*************** In fgSetBlockOrder()\n");

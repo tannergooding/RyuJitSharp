@@ -103,7 +103,7 @@ public sealed partial class ObjectAllocator
         return info.CanClone;
     }
 
-    private static unsafe GenTree? IsGuard(BasicBlock block, GuardInfo info)
+    internal static unsafe GenTree? IsGuard(BasicBlock block, GuardInfo info)
     {
         if (block.Kind is not BBJ_COND)
         {

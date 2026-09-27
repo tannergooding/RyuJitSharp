@@ -12,18 +12,18 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port complete fgRepairProfile against33baf8, reusing existing ProfileSynthesis.Run with RetainLikelihoods. Preserve profile availability/consistency gates, diagnostics and reconstruction behavior.",
+      "scope": "Port complete fgResolveGDVs against33baf8, reusing ObjectAllocator.IsGuard and existing profile repair. Resolve only exact single-definition locals whose class matches the guard; preserve guard side effects and edge mutation order.",
       "doneWhen": [
-        "Activate complete native profile-repair phase without changing synthesis algorithms or profile policy.",
-        "Cover no-profile and already-consistent gates plus positive reconstruction with retained likelihoods and old-stub controls.",
-        "Capture positive native/managed repair where reachable and preserve established execution baselines.",
-        "Commit the validated profile-repair batch locally, then continue the next remaining dependency."
+        "Port complete native guarded-check resolution and expose the existing matcher without duplicating or changing recognition.",
+        "Cover phase gates, EQ/NE branches, exact/single-definition/class checks, side-effect preservation, duplicate edges and profile updates with old-stub controls.",
+        "Capture positive native/managed resolution where reachable and preserve established execution baselines.",
+        "Commit the validated GDV-resolution batch locally, then continue the next remaining dependency."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Post-inline no-return cleanup committed1eb2d8c. Parent owns profile-repair entry/tests; independent lane captures native profile repair. No publication authorized; commits remain checkpoints.",
+      "parentScope": "Profile repair committedb954fd0. Parent owns GDV resolver/shared matcher exposure/tests; independent lane captures native GDV resolution. No publication authorized; commits remain checkpoints.",
       "deferred": "B311 optional metrics fixture, B315 incoming UTF8 graph/promotion, B318 existing argument-morph regression, B307 EH node IDs, B320 static-data descriptions and B321 profile-column spacing remain separate. Unrelated optimizations and discontiguous runtime allocation parity are outside this no-return cleanup batch.",
       "parallelPackets": [
         {
@@ -408,7 +408,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Profile repair validated at snapshot1fbd43ffc1f13bfb4d48f517d952f87a833c6505:158Debug133Release,3old-stub failures per configuration,38executed bodies, two positive native/managed reconstruction tables matching,29/143baseline. Continue whole fgResolveGDVs (fgopt.cpp5977-end): reuse MethodHasGuardedDevirtualization, hasUpdatedTypeLocals, existing ObjectAllocator.IsGuard/GuardInfo and fgRepairProfileCondToUncond; expose the existing private guard matcher rather than duplicate it. No push or PR authorized.",
+    "nextAction": "GDV resolution is validated at snapshot1d00bb8d7e63500a77c0033a301f98d57cf3d8b7:153Debug128Release, eight old-stub failures per configuration, three matching default runtime controls and29/143baseline. Native Tier1 resolves two guards; positive managed parity remains blocked by B324, reproduced twice with the prior profile-repair JIT. Continue complete fgPromoteStructs (morph.cpp15243-15338), reusing StructPromotionHelper; preserve original-local iteration, helper-cache clearing, SIMD/register treatment, tracking limits and native gates. No push or PR authorized.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -476,6 +476,23 @@
         "scope": "Restore pinned output-pointer-only getThreadLocalStaticBlocksInfo across three wrappers/interface/vtable; rename final metadata slot to offsetOfBaseOfThreadLocalData. Keep existing slot, calling convention, offset widths and neighboring getThreadLocalFieldInfo bool.",
         "nativeEvidence": "MSVC native-probe.cpp static_assert checks exact member signature against pinned corinfo.h; sizeof56, pointer-field offsets0/16/24/32 and scalar offsets40/44/48/52 match managed raw layout.",
         "gaps": "TLS phase is not activated. Virtual native callbacks verify forwarding without claiming actual runtime TLS expansion."
+      },
+      "gdvResolution": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "snapshot": "1d00bb8d7e63500a77c0033a301f98d57cf3d8b7",
+        "snapshotScope": "Core/tests/scripts; the independently built corpus is included in the batch commit.",
+        "nativeAot": "artifacts\\gdv-resolution\\native-jit-1\\RyuJitSharp.dll",
+        "sha256": "0247CF54AE8CA4B5644CC0E0368F3AB0B43B862E0AE769525EF07A419034F5FC",
+        "corpusSha256": "17460D1674B6CF7B46E306658B12577A0A2C6BA9037202CEE3DECFA00D770E95",
+        "corpusProgramSha256": "68FB228CA3D2E339645EB1B3B2590F310E9201530556650FCC6A4C50B402716E",
+        "debugPassed": 153,
+        "releasePassed": 128,
+        "tests": "GdvResolutionTests with ObjectAllocatorCloneTransformationTests, ObjectAllocatorAllocationAnalysisTests and ProfileSynthesisTests, full analysis. Sixteen new cases cover method/local gates, EQ/NE and reversed operands, compile-time versus runtime handles, retained exception effects, duplicate edges and existing profile repair policy.",
+        "negativeControls": "artifacts\\gdv-resolution\\negative\\manifest.json: replacing only the public resolver with its old stub fails eight of sixteen cases in Debug and Release; eight controls pass in each.",
+        "execution": "Default optimized native/managed corpus executions succeed with three selected no-change bodies. Native tiered PGO resolves one NE guard each in InterfaceCaller and VirtualCaller, retains the relops, and redirects BB01 to BB03; UnknownReceiver has a candidate without resolution.",
+        "comparison": "artifacts\\gdv-resolution\\comparison-1d00-1.json: all three default phase logs, CFG/profile tables, IR groups, emitted instruction sequences and code sizes match. Corpus rebuild reproduces the captured DLL exactly.",
+        "baseline": "artifacts\\upstream-refresh-33baf8\\gdv-resolution-managed-matrix\\results.json: 29 configurations, 143 positive managed bodies, expected runtime outcomes and no fallback.",
+        "gaps": "B324: two managed tiered runs terminate with 0xC0000374 after five native-matching initial Tier0 bodies and before instrumented Tier0 or Tier1. The identical boundary reproduces twice with prior profile-repair source1fbd43ffc1f13bfb4d48f517d952f87a833c6505/JIT SHA2561ABF9325306C8ACBBC5BC61DE2BA0FB61AC079626D957E7E674B059EF13B5202 and its public GDV stub; root cause remains unknown. Positive managed resolution and post-resolution CFG/profile parity are unverified. Default pre-phase profile checks retain B322; matching instruction text and sizes are not whole-dump or machine-byte parity."
       },
       "profileRepair": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
@@ -6200,6 +6217,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "gdv-guard-resolution",
+      "native": ["src\\coreclr\\jit\\fgopt.cpp:fgResolveGDVs", "src\\coreclr\\jit\\objectalloc.cpp:ObjectAllocator::IsGuard"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.GdvResolution.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.CloneViability.cs:IsGuard", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.EscapeAnalysis.cs:GuardInfo"],
+      "status": "Complete public resolver with existing guard recognition exposed internally, unchanged. Preserves method/local gates, compile-time class identity, EQ/NE edge selection, predecessor mutation order, profile repair and throwing relop retention. Native source retained; positive managed tiered execution remains unverified.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "profile-repair-phase",
       "native": ["src\\coreclr\\jit\\fgprofile.cpp:fgRepairProfile"],

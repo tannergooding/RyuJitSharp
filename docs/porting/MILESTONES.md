@@ -15,6 +15,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: GDV guard resolution
+
+Guarded-devirtualization checks can now become unconditional branches when
+inlining establishes an exact, single-definition local of the guarded type.
+Resolution preserves the method-table read's exception effects and updates
+predecessor references and profiles through the existing repair logic.
+
+The native tiered corpus reaches positive interface and virtual guard
+resolution. Managed default execution matches the no-change controls, but
+managed tiered execution fails before reaching Tier1. Positive managed
+resolution and its runtime parity remain unverified.
+
 ## 2026-09-26: Profile repair
 
 The repair phase now reconstructs inconsistent profiles through the existing

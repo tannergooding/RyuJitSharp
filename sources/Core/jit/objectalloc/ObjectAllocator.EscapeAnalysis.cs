@@ -44,7 +44,7 @@ public sealed partial class ObjectAllocator
         public bool IsUseTemp;
     }
 
-    private unsafe class GuardInfo
+    internal unsafe class GuardInfo
     {
         public int Local = BAD_VAR_NUM;
         public CORINFO_CLASS_HANDLE Type = NO_CLASS_HANDLE;
