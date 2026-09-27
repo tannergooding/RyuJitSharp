@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Array identity and baseline instruction traces
+
+Array type printing now returns after the element type and rank suffix, as
+native does, instead of appending the VM's dynamic-class placeholder. This
+corrects method signatures, their hash inputs and array-related annotations.
+Recursive arrays and generic element types retain their existing formatting.
+
+All 143 bodies in the 29-configuration execution baseline now match native
+method identities, code sizes and emitted `IN` instruction lines. Fourteen
+identities and 23 annotated streams differed before this correction; sizes and
+runtime results are unchanged. The complete positive array-morph phase also
+matches. These are exact scoped comparisons, not whole-dump or raw-machine-byte
+parity.
+
 ## 2026-09-27: CSE and array diagnostic alignment
 
 CSE temporary-allocation reasons now use the native two-digit candidate index.

@@ -12,18 +12,18 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Resolve B305 CSE temporary-reason padding and B308 ARR_ELEM rank display without changing optimization or array semantics.",
+      "scope": "Resolve B301 array signature and MethodHash differences by tracing and reconciling the native type-name producer.",
       "doneWhen": [
-        "Confirm native PerformCSE uses FMT_CSE for temporary reasons and gtDispNodeName prints rank-minus-one commas.",
-        "Reuse the existing CSE formatter and preserve valid array-rank display without rewriting unrelated diagnostic forms.",
-        "Validate single-/double-digit candidate controls and ranks1-3, then compare current-pin affected runtime slices.",
-        "Commit the coherent diagnostic corrections locally and continue remaining port work."
+        "Identify the first differing type-name producer for current-pin array-isolated and range signatures.",
+        "Port the complete relevant native type-printing behavior, preserving EE contracts and non-array controls.",
+        "Validate exact signatures/hash inputs and actual managed runtime behavior against current-pin native output.",
+        "Commit the coherent identity correction locally and continue remaining port work."
       ],
       "validation": [
-        "Historical head-tail-merge/array-morphing comparisons identify the failures but use the old native pin; use current native-matrix-v2 references for new comparisons.",
-        "Run CSE perform/diagnostic/phase and array morphing tests in Debug/Release. Fresh checked captures cover Boolean, switch and isolated array corpora with exact method selections."
+        "Use current native-matrix-v2 and immediate B305/B308 corrected array captures; preserve the original dynamicClass/hash mismatch.",
+        "Select focused EE printing regressions from the established producer, then full-analysis and checked runtime comparisons."
       ],
-      "parentScope": "B307 committed2b8098d, B320 committed6cadd3b and B321/B323 committed83ce961. Continue B305/B308 without publication or reopening completed scope.",
+      "parentScope": "B305/B308 committedcf69c40. Continue B301 without publication or reopening completed scope.",
       "deferred": "B322 remains a native uninitialized-bool limitation. Five existing indirect-call fixture exception-flag failures remain separate. RL feature records intentionally use unpadded indices in native and are not part of B305.",
       "parallelPackets": [
         {
@@ -429,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B305/B308 validated: source ebe574f,79Debug/47Release,5old-source failures/2controls, and comparison-1.json with eight matching CSE reasons and matching array transformation after its announcement; nine managed instruction streams unchanged. Commit this batch, then start B301: trace the array signature producer and compMethodHash inputs behind int[,](dynamicClass) versus native int[,] in current array-isolated captures. Preserve raw captures and settle the first differing producer before changing code. No push.",
+    "nextAction": "B301 validated: source9ddce4d,114Debug/44Release,10old-producer failures/2controls; comparison-1.json proves all143baseline identities/sizes/IN streams match native and the entire array-morph phase matches. Commit B301, then trace missing candidate/dataflow CSE diagnostics from Compiler.CSE.Candidates.cs:optValnumCSE_Locate against pinned optcse.cpp and current Boolean/switch phase captures. Keep candidate decisions unchanged; native profile-poison B322 and five indirect-call fixture failures remain separate. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -464,6 +464,20 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "arrayMethodIdentity": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "nativeFunctions": "eeinterface.cpp:147-201 Compiler::eePrintType; VM jitinterface.cpp:3482-3547 printClassName supplies the dynamicClass placeholder for metadata-less handles.",
+        "sourceSnapshot": "9ddce4d5cf3778ec7a2320582c1d8e1685b4505e",
+        "tests": "artifacts\\array-method-identity\\validation-1:114Debug/44Release, full analysis of EE printing, array morphing, method ranges, CSE modes/RL and profile counts.",
+        "regressionControl": "Sourceaca153400d75a4b8f945893b60c122ff67ec2819, validation-2\\results\\old-array-names.trx:10failures/2controls. Twelve cases assert recursive ranks1-3, primitive/class/value-class and jagged elements, generic instantiation, retained builder identity/prefix and no array class-name/instantiation callbacks.",
+        "contract": "Restore the missing return after printing an array's closing bracket. No hash algorithm or EE ABI change; compMethodHash consumes the corrected full signature. Non-array printing remains unchanged.",
+        "nativeAotLibrary": "artifacts\\array-method-identity\\native-jit-1\\RyuJitSharp.dll",
+        "nativeAotSha256": "1B116424E081C574EF9FCC331B6B7F118A812B80498148E2D4EF5D0E9A971280",
+        "executionBaseline": "artifacts\\upstream-refresh-33baf8\\array-identity-managed-matrix-1\\results.json:29configurations/143positive managed bodies, no fallback, unchanged runtime results and required collection contracts.",
+        "comparison": "artifacts\\array-method-identity\\comparison-1.json; reproduce with compare.py and a fresh --output path. Current native-matrix-v2 and managed captures have identical native settings and host/corpus hashes.",
+        "results": "All143method headers including MethodHash, code sizes and raw emitted IN lines including line endings match native. Fourteen previous headers and23annotated instruction streams differ; all143managed code sizes are unchanged. The complete array-isolated Morph array ops phase now matches native and differs from immediate pre-fix B305/B308 output.",
+        "limits": "Whole dumps, complete disassembly output and raw machine bytes are not claimed equal. Missing CSE diagnostics and native B322 remain. The comparison establishes the29/143baseline, not broad runtime or other-platform parity."
+      },
       "irDiagnosticFormatting": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "nativeFunctions": "optcse.cpp:4810-4893 PerformCSE temporary reason; gentree.cpp:12822-12920 gtDispNodeName.",
@@ -6502,6 +6516,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "array-method-identity",
+      "native": ["src\\coreclr\\jit\\eeinterface.cpp:Compiler::eePrintType"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.ee.cs:eePrintType"],
+      "status": "Whole type-printing function checked against the pin; missing array-branch return restored. Recursive element/instantiation behavior and non-array paths preserved. Baseline signatures/hashes and emitted instruction traces now match.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "ir-diagnostic-formatting",
       "native": ["src\\coreclr\\jit\\optcse.cpp:CSE_HeuristicCommon::PerformCSE temporary reason", "src\\coreclr\\jit\\gentree.cpp:Compiler::gtDispNodeName array case"],

@@ -946,6 +946,8 @@ public partial class Compiler
             }
 
             _ = stringBuilder.Append(']');
+
+            return stringBuilder;
         }
 
         _ = eeAppendPrint(stringBuilder, (buffer, out requiredBufferSize) => {

@@ -69,6 +69,12 @@ node names retain rank-minus-one commas (B305/B308). Intentionally unpadded RL
 feature records are unchanged. These corrections do not establish full CSE
 diagnostic or array method-identity parity.
 
+Array type printing now terminates after the rank suffix, matching the native
+EE-query boundary (B301). The prior extra VM class-name query was a translation
+defect, not an allowed name or hash difference. All baseline method identities
+and emitted instruction traces now match native; whole dumps and raw machine
+bytes remain separate evidence requirements.
+
 SSA memory maps use the existing managed node-identity dictionary. The caller's
 shared-memory flag selects the map kind before the inline root supplies storage,
 preserving native aliasing and ownership. Shared all-successor visitation retains
