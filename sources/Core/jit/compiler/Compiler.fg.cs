@@ -13899,9 +13899,6 @@ public partial class Compiler
         }
     }
 
-    // TODO: Port phase - fgExpandThreadLocalAccess
-    public PhaseStatus fgExpandThreadLocalAccess() => PhaseStatus.MODIFIED_NOTHING;
-
     public PhaseStatus fgFindOperOrder()
     {
 #if DEBUG

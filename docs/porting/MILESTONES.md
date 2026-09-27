@@ -15,6 +15,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Thread-local access expansion
+
+The Windows x64 TLS phase now replaces optimized thread-static helpers with
+module TLS loads, direct non-GC offsets or guarded cached-block accesses. Missing
+GC blocks retain the original helper fallback. The NativeAOT branch preserves a
+GC-tracked TLS root and slow-path result; runtime validation currently covers
+CoreCLR, not NativeAOT.
+
+Selected integer and reference accesses execute across two threads and forced
+collections, including GCStress. Eight positive optimized phase slices match
+native decisions, CFGs and IR without normalizing node IDs. NativeAOT statement
+creation order and CoreCLR node allocation order were reconciled during
+integration. Minopts remains unexpanded; the existing execution matrix still
+passes. Full dumps and generated code are not yet identical.
+
 ## 2026-09-26: Static-initialization expansion
 
 The public static-init phase now replaces eligible GC and non-GC static-base
