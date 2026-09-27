@@ -3003,7 +3003,17 @@ public partial class Compiler
     /// <remarks>Assumes being called at the end of compilation.</remarks>
     private void RecordStateAtEndOfCompilation()
     {
-        // TODO: Port RecordStateAtEndOfCompilation
+#if DEBUG
+        _compCycles = 0;
+
+        var cycles = Stopwatch.GetTimestamp();
+        if (cycles > _compCyclesAtEndOfInlining)
+        {
+            _compCycles = cycles - _compCyclesAtEndOfInlining;
+            _compCycles = unchecked(_compCycles * 1000000);
+            _compCycles /= Stopwatch.Frequency;
+        }
+#endif
     }
 
     /// <summary>Records the SQM-relevant (cycles and tick count)</summary>
@@ -3013,7 +3023,9 @@ public partial class Compiler
     /// </remarks>
     private void RecordStateAtEndOfInlining()
     {
-        // TODO: Port RecordStateAtEndOfInlining
+#if DEBUG
+        _compCyclesAtEndOfInlining = Stopwatch.GetTimestamp();
+#endif
     }
 
     public bool doesMethodHaveNoReturnCalls() => optNoReturnCallCount > 0;

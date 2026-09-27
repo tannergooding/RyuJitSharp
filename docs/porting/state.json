@@ -12,21 +12,18 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete repeated-optimization annotation reset and flow-graph recomputation, including native optResetLoopInfo.",
+      "scope": "Complete native Debug-only post-inlining compilation timing hooks.",
       "doneWhen": [
-        "Replace both reachable opt-repeat no-op stubs with the complete pinned functions, reusing existing SSA/DFS/loop/dominator helpers.",
-        "Deep-clear SSA, VN, assertions, CSE markers and memoized predecessor/loop-memory maps between iterations.",
-        "Reset only nonprofile block weights, then recompute DFS/removal, loops, weights and missing dominators in native order.",
-        "Reproduce old behavior, validate state/CFG controls and positive repeated native/managed execution, retain baseline execution and commit."
+        "Port RecordStateAtEndOfInlining and RecordStateAtEndOfCompilation in full, using the existing Stopwatch counter/frequency convention.",
+        "Record the post-inlining timestamp and positive elapsed integer microseconds, clear prior values and retain native Release no-op bodies.",
+        "Validate real-clock bounds, future-timestamp zero handling, repeated records and Release behavior; commit locally and continue."
       ],
       "validation": [
-        "Existing full Core11791Debug/10878Release is the clean unit baseline on d4439b1.",
-        "Completed98Debug/97Release focused SSA/liveness/loop/weight/dominator cases; six reset/recompute regressions fail against old stubs.",
-        "Current-pin range corpus executes all four selected methods with2and12iterations. All56CSE phases,48inter-iteration recomputation fragments and8emitted bodies match native exactly.",
-        "Complete Core11799Debug/10886Release passes. All29configurations/143baseline bodies execute with unchanged instruction streams/sizes and97CSE phases."
+        "Current Core11799Debug/10886Release and29/143baseline are green on22b1657.",
+        "Completed6Debug/1Release timing cases with before/after clock bounds and5old-stub failures/1control. Timing values have no current managed consumers; no generated-code or deterministic wall-clock equality claim."
       ],
-      "parentScope": "Full Core restored and committed d4439b1. The current compiler loop already invokes both stubs on repeated optimization; native compiler.cpp5815/5850 and optimizer.cpp2461 supply the complete next dependency batch.",
-      "deferred": "B322 and broader dump/raw-byte/GC coverage remain separate. Historical commented CSE visitor declarations are not evidence of missing active implementations.",
+      "parentScope": "B347 committed22b1657. Existing compCompile calls both timing methods; native compiler.cpp9103/9114 and managed JitTimer establish complete bodies and clock conventions.",
+      "deferred": "MEASURE_NOWAY-only aggregation and process-shutdown reporting form a separate statistics batch. B322 and broader dump/raw-byte/GC coverage remain separate.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -431,7 +428,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B347 opt-repeat complete and validated; commit locally, then continue directly into remaining Compiler.cs diagnostic/statistics entry stubs: RecordNowayAssert, RecordStateAtEndOfCompilation and RecordStateAtEndOfInlining. Read their pinned native bodies and existing managed stats helpers/callsites; choose the next complete dependency-coherent reachable function batch, rather than reviving already integrated importer/CSE placeholders. Latest checked JIT and exact comparisons are under artifacts\\opt-repeat; source exports remain reconstructible from immutable snapshots. No push.",
+    "nextAction": "B348 timing hooks complete,6Debug/1Release and5old-stub failures/1control; commit locally. Then inspect the reachable ProcessShutdownWork callback and native feature guards to determine its exact active reporting dependencies before porting. Do not treat MEASURE_NOWAY-only code as an enabled production gap without checking build symbols. Latest execution binary remains B347, and no new timing runtime/parity claim is made. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -466,6 +463,14 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "compilationTiming": {
+        "nativeFunctions": "compiler.cpp9103 RecordStateAtEndOfInlining and9114 RecordStateAtEndOfCompilation; src/native/minipal/time.c Windows high-resolution counter/frequency use QueryPerformanceCounter/QueryPerformanceFrequency.",
+        "sourceSnapshot": "7ce7b10a5a2074ba2806b7c2a9addadd946d9507",
+        "mapping": "Compiler.cs timing hooks use Stopwatch.GetTimestamp/Frequency, matching existing JitTimer and Windows minipal. Existing _compCyclesAtEndOfInlining and _compCycles retain raw ticks and integer microseconds respectively; both fields and writes are Debug-only.",
+        "tests": "artifacts\\compilation-timing\\debug-1.trx:6passed;release-1.trx:1passed. Counter capture/replacement,0/1/60-second intervals with real-clock bounds, future timestamp clearing and native Release no-op behavior.",
+        "regressionControl": "Source37c583baf9538b6c675dabaaa8ad7138e836171d;old-debug-1.trx:5failed/1passed with original empty methods.",
+        "limits": "No current consumers of these timing fields. Values are wall-clock measurements, not deterministic parity outputs; no new NativeAOT/corpus capture or benchmark claim. B347 remains the latest validated checked execution binary."
+      },
       "optimizationRepeat": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "nativeFunctions": "compiler.cpp5815 ResetOptAnnotations,5850 RecomputeFlowGraphAnnotations; optimizer.cpp2461 optResetLoopInfo.",

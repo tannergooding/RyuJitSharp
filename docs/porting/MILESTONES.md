@@ -15,6 +15,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Post-inlining compilation timing
+
+Debug builds now capture the end-of-inlining counter and record the remaining
+compilation interval in integer microseconds, including clearing stale elapsed
+values when the interval is nonpositive. The hooks use the existing Stopwatch
+clock convention, matching native's Windows high-resolution counter, and remain
+empty in Release.
+
+Six Debug and one Release cases pass; five cases fail with the old empty hooks.
+These timing fields currently have no managed consumers. This is state-recording
+coverage, not a performance or new runtime-parity claim.
+Evidence: `artifacts\compilation-timing`.
+
 ## 2026-09-27: Repeated optimization state and graph reconstruction
 
 `JitOptRepeat` now clears SSA/VN/assertion/CSE annotations and memoized analysis
