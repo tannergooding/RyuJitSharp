@@ -1390,8 +1390,14 @@ normalization, primitive register-class bitcasts and struct-local return types.
 Field-list spills use private local-store/load actions; register repacking that
 needs `LowerRange` still reaches the inactive general dispatcher. Return
 containment selects the native return-value operand, including Swift's second
-operand rather than its error value. PInvoke epilogs and full call/phase
-activation remain separate.
+operand rather than its error value.
+Private ARM64 call entrypoints now preserve the VM's branch-relocation stub
+policy, empty call containment, ordinary argument placement and single-register
+HFA/struct result normalization. Windows split arguments preserve ABI segments,
+early/late links and local/field-list ownership, including spills when fields
+overlap the register/stack boundary. The complete block-indirection split source
+still needs inactive `LowerRange`; it is not an execution-supported path.
+PInvoke, CFG, fast-tailcall and full phase activation remain separate.
 
 `Lowering.TryCreateAddrMode` implements xarch address folding and interference
 checks. Other targets throw `NotImplementedException` pending their volatile,

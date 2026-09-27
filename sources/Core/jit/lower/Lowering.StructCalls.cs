@@ -11,15 +11,25 @@ public sealed partial class Lowering
 {
     private unsafe void LowerCallStruct(GenTreeCall call)
     {
-#if WINDOWS_AMD64_ABI
+#if WINDOWS_AMD64_ABI || TARGET_ARM64
         assert(varTypeIsStruct(call.Type));
         if (call.HasMultiRegRetVal)
         {
             return;
         }
 
-        // Windows x64 has no HFA returns; use the shared ABI classifier.
         var compiler = CompilerInstance;
+#if TARGET_ARM64
+        if (GlobalJitOptions.compFeatureHfa && compiler.IsHfa(call.RetClsHnd))
+        {
+            assert(compiler.GetHfaCount(call.RetClsHnd) == 1);
+            var hfaType = compiler.GetHfaType(call.RetClsHnd);
+            if (call.Type == hfaType)
+            {
+                return;
+            }
+        }
+#endif
         var returnType = compiler.GetReturnTypeForStruct(call.RetClsHnd, call.UnmanagedCallConv, out _);
         assert(returnType is not TYP_STRUCT and not TYP_UNKNOWN);
         var originalType = call.Type;
@@ -91,7 +101,7 @@ public sealed partial class Lowering
             }
         }
 #else
-        throw new NotImplementedException("LowerCallStruct outside Windows AMD64 is not ported.");
+        throw new NotImplementedException("Struct-call lowering is not ported for this target.");
 #endif
     }
 }

@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: ARM64 calls and split arguments
+
+Private ARM64 call lowering now preserves the VM-backed direct-call range
+policy, uncontained indirect targets, register/stack argument placement and
+single-register HFA/struct result normalization. Windows ARM64 split arguments
+retain early/late ordering, ABI segment ownership and local-field offsets.
+Field lists split at clean boundaries or spill once when a field overlaps.
+
+Block-indirection splits and field-list register repacking still need the
+inactive general dispatcher. PInvoke, CFG and fast-tailcall dependencies remain
+separate; managed target coverage does not establish ARM64 execution parity.
+
 ## 2026-09-27: ARM64 returns and stack arguments
 
 Private ARM64 return lowering now normalizes SIMD-backed HFAs to their

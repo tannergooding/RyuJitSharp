@@ -99,14 +99,16 @@ public sealed partial class Lowering
                 MakeSrcContained(call, control);
             }
         }
+#elif TARGET_ARM64
+        // Native ARM64 calls have no contained operands.
 #else
-        throw new NotImplementedException("Call operand containment outside AMD64 is not ported.");
+        throw new NotImplementedException("Call operand containment is not ported for this target.");
 #endif
     }
 
     private unsafe GenTree? LowerCall(GenTree node)
     {
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
         var call = node.AsCall();
         var compiler = CompilerInstance;
         JITDUMP("lowering call (before):\n");
@@ -280,7 +282,7 @@ public sealed partial class Lowering
         JITDUMP("\n");
         return null;
 #else
-        throw new NotImplementedException("LowerCall outside AMD64 is not ported.");
+        throw new NotImplementedException("Call lowering is not ported for this target.");
 #endif
     }
 }

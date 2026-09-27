@@ -13,15 +13,15 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "Complete private ARM64 stack-argument and return target entrypoints, including HFA/SIMD normalization, primitive/struct return conversion and field-list spill dependencies.",
-      "status": "validated",
+      "scope": "Complete private ARM64 call-lowering target paths, including direct/control targets, ordinary register/stack argument placement, Windows varargs split arguments and struct/HFA call-result handling.",
+      "status": "completed",
       "doneWhen": [
-        "Port ARM64 LowerPutArgStk and LowerRet/LowerRetStruct target paths, preserving native SIMD/HFA return classification and source-width safeguards.",
-        "Wire field-list spill stores and return loads to complete private local actions rather than unsupported general node dispatch. Preserve native return-value selection in containment.",
-        "Validate target behavior and Windows controls, commit locally and continue. Field-list register repacking that needs LowerRange, PInvoke epilogs, and general hardware/node/block/phase dispatch remain separate."
+        "Reconcile LowerCall, LowerArg and LowerCallStruct with complete native ARM64 target paths and native empty call containment.",
+        "Port complete SplitArgumentBetweenRegistersAndStack for Windows ARM64 varargs; preserve field/local/indirection representations, evaluation order and ABI segment ownership.",
+        "Validate Linux/Windows ARM64 managed target cases and Windows-x64 controls, commit locally and continue. General LowerRange/LowerNode, memory intrinsics, PInvoke/CFG/fast-tailcall target dependencies remain separately scoped and explicitly unsupported where unported."
       ],
       "validation": [
-        "Full-analysis Linux-ARM64 Debug/Release target suites and Windows-x64 return/field-list/argument controls. Reuse existing return fixtures where target-independent, and add focused HFA, stack-struct and Swift return-value cases.",
+        "Full-analysis Linux-ARM64 and Windows-ARM64 Debug/Release targeted suites plus Windows-x64 call/argument controls. Focus on call targets, HFA result retyping and register/stack split identity and ordering; do not use an ARM64 execution claim.",
         "Reuse unaffected Windows execution evidence from prerequisite commit ee71808. No Linux or ARM64 execution host is available; managed target tests are not runtime parity."
       ],
       "deferred": [
@@ -423,7 +423,19 @@
         }
       ]
     },
-    "nextAction": "Commit the validated ARM64 return/stack-argument entrypoints and continue call-lowering dependencies. Inspect lower.cpp LowerCall at2779, direct/virtual call target bodies and lowerarmarch.cpp IsCallTargetInRange at39 against Lowering.CallLowering.cs, Calls.cs and CallTargets.cs; establish the complete target-dependent closure before editing. Register repacking and helper calls still need unsupported LowerRange/LowerNode. Keep general node/block/phase activation separate; preserve existing deferred findings and do not publish or alter native trees.",
+    "nextAction": "Private ARM64 call and split-argument batch is validated. Continue with the remaining call-transition dependency closure: inspect LowerNonvirtPinvokeCall, LowerFastTailCall and LowerCFGCall target guards and their native ARM64 paths, then record the concrete coherent batch before editing. Keep block-indirection splits and field-list repacking at their explicit inactive LowerRange/LowerNode boundary; do not enable LowerNode/LowerBlock/DoPhase or publish.",
+    "arm64CallsArguments": {
+      "scope": "Private LowerCall, LowerArg and LowerCallStruct ARM64 entrypoints, native empty call containment and complete split-argument transformation source.",
+      "mapping": "lower.cpp:1693-1910,2779-3005,6105-6200 -> Lowering.SplitArguments.cs, Lowering.CallArguments.cs, Lowering.CallLowering.cs and Lowering.StructCalls.cs; lowerarmarch.cpp:39-42,2699 -> Lowering.Calls.cs and Lowering.CallLowering.cs. instr.cpp:1885-1893 supplies the unconditional ARM64 call-range policy, with VM relocation stubs.",
+      "validation": {
+        "linuxArm64": "613Debug/613Release: calls-linux-arm64-debug-2.trx and calls-linux-arm64-release-1.trx.",
+        "windowsArm64": "616Debug/616Release: calls-win-arm64-debug-1.trx and calls-win-arm64-release-1.trx. Windows exercises automatic split dispatch; Linux invokes the otherwise Windows-only split transformation directly before argument lowering.",
+        "newCases": "23 cases cover direct target relocation policy, uncontained indirect targets, integer/floating register and stack arguments, primitive/HFA/multi-register struct-call results, local and clean field-list splits, early/late links and ABI offsets, plus overlapping/missing-boundary field-list spills.",
+        "windowsX64Controls": "140Debug/140Release: calls-windows-debug-1.trx and calls-windows-release-1.trx; call dispatch/lowering/targets/placement, struct calls and stack arguments.",
+        "artifacts": "artifacts\\parallel-port; full analysis, total=executed=passed and zero skips."
+      },
+      "limits": "Block-indirection split source preserves native address evaluation and unsigned offset wrapping, but still needs inactive LowerRange; field-list register repacking has the same boundary. PInvoke/CFG/fast-tailcall and memory-generated dependencies remain separate. No general ARM64 phase activation or generated-code execution parity."
+    },
     "arm64ReturnsArguments": {
       "scope": "Private ARM64 LowerRet, LowerRetStruct and LowerPutArgStk entrypoints, field-list spill-store/load dependencies, and native return-value containment.",
       "mapping": "lower.cpp:5086-5169,5192-5232,5801-6010,9688-9720 -> Lowering.Returns.cs, Lowering.StructReturns.cs and Lowering.FieldLists.cs; lowerarmarch.cpp:792-808 -> Lowering.Arguments.cs. SIMD/HFA normalization precedes the multi-register return early exit.",

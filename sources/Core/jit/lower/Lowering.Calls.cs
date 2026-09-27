@@ -114,6 +114,9 @@ public sealed partial class Lowering
     {
 #if TARGET_XARCH
         return true;
+#elif TARGET_ARM64
+        // Native validImmForBL relies on the VM to create an out-of-range ARM64_BRANCH26 jump stub.
+        return true;
 #else
         NYI("Lowering.IsCallTargetInRange outside xarch");
         fatal(CORJIT_IMPLLIMITATION);

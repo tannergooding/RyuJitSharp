@@ -11,7 +11,7 @@ public sealed partial class Lowering
 {
     private void LowerArg(GenTreeCall call, CallArg callArg)
     {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
         ref var argSlot = ref callArg.NodeRef;
         var arg = argSlot;
         assert(arg is not null);
@@ -57,6 +57,15 @@ public sealed partial class Lowering
         }
 #endif
 
+#if FEATURE_ARG_SPLIT
+        if (compFeatureArgSplit() && abiInfo.IsSplitAcrossRegistersAndStack)
+        {
+            SplitArgumentBetweenRegistersAndStack(call, callArg);
+            LowerArg(call, callArg);
+            return;
+        }
+#endif
+
         if (abiInfo.HasAnyRegisterSegment)
         {
             if ((arg.Oper is GT_FIELD_LIST) || (abiInfo.NumSegments > 1))
@@ -96,7 +105,7 @@ public sealed partial class Lowering
         }
         DISPTREERANGE(BlockRange(), arg);
 #else
-        throw new NotImplementedException("Non-xarch call argument lowering, including split arguments, is not ported.");
+        throw new NotImplementedException("Call argument lowering is not ported for this target.");
 #endif
     }
 
