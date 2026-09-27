@@ -15,6 +15,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Value-numbered UTF-8 literal expansion
+
+The VN-intrinsic phase now expands immutable UTF-16 literals into guarded UTF-8
+constant stores. It preserves native source/content validation, unroll limits,
+overlapping final stores and insufficient-capacity results. The bounded converter
+matches the pinned minipal implementation across all individual UTF-16 code units
+and a deterministic boundary/random corpus, including malformed surrogate fallback.
+
+ASCII, multibyte and malformed literals execute with destination lengths around
+the required capacity in fullopts, minopts and GCStress. Optimized native and
+managed expansions have matching store widths, offsets, bytes and returned
+lengths. Whole CFGs and machine code still differ because the incoming graph and
+struct-promotion decisions differ; these are not claimed as parity.
+
+The execution closure also corrects byref-addition assertions and native string
+literal printing, including quotes, truncation, embedded NULs, replacement of
+unmatched surrogates and unavailable EE data. The established execution matrix
+and newly integrated static-init/TLS corpora remain intact.
+
 ## 2026-09-26: Thread-local access expansion
 
 The Windows x64 TLS phase now replaces optimized thread-static helpers with

@@ -880,19 +880,37 @@ public partial class Compiler
     /// <param name="token">The literal's token</param>
     public unsafe void eePrintStringLiteral(CORINFO_MODULE_HANDLE module, int token)
     {
-        var str = "";
+        var str = "<unknown string literal>";
 
         var succeeded = eeRunFunctorWithSpmiErrorTrap(() => {
             const int MAX_LITERAL_LENGTH = 50;
-            
-            Unsafe.SkipInit(out InlineArray64<char> inlineStrLiteral);
+
+            InlineArray64<char> inlineStrLiteral = default;
             var length = info.compCompHnd->getStringLiteral(module, token, &inlineStrLiteral.e0, MAX_LITERAL_LENGTH);
+
+            if (length < 0)
+            {
+                return;
+            }
 
             // Truncate length to MAX_LITERAL_LENGTH since that's the maximum we copied into str
             var truncatedLength = int.Min(length, MAX_LITERAL_LENGTH);
-
             var strLiteral = ((Span<char>)(inlineStrLiteral))[..truncatedLength];
-            str = (length > MAX_LITERAL_LENGTH) ? $"{strLiteral}..." : $"{strLiteral}";
+
+            // Native printing replaces unmatched UTF-16 surrogates and stops at the first UTF-8 NUL.
+            // Three bytes per code unit also covers replacement fallback at the truncation boundary.
+            Span<byte> utf8 = stackalloc byte[MAX_LITERAL_LENGTH * 3 + 1];
+            var written = ConvertReadUtf8Constant(MemoryMarshal.Cast<char, ushort>(strLiteral), utf8);
+            var printable = utf8[..written];
+            var terminator = printable.IndexOf((byte)0);
+
+            if (terminator >= 0)
+            {
+                printable = printable[..terminator];
+            }
+
+            var text = Encoding.UTF8.GetString(printable);
+            str = $"\"{text}{(length > MAX_LITERAL_LENGTH ? "..." : "")}\"";
         });
         jitprintf(succeeded ? str : "<unknown string literal>");
     }

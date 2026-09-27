@@ -9,6 +9,28 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ImporterEffectsTests
 {
+    [TestCase(false, var_types.TYP_INT)]
+    [TestCase(true, var_types.TYP_INT)]
+    [TestCase(false, Globals.TYP_I_IMPL)]
+    [TestCase(true, Globals.TYP_I_IMPL)]
+    public static void ByrefAdditionChecksAndWidensTheIntegerOperand(bool byrefOnRight, var_types offsetType)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Type = var_types.TYP_BYREF;
+            var byref = compiler.gtNewLclvNode(var_types.TYP_BYREF, 0);
+            var offset = compiler.gtNewIconNode(offsetType, 7);
+            GenTree left = byrefOnRight ? offset : byref;
+            GenTree right = byrefOnRight ? byref : offset;
+
+            var result = compiler.impGetByRefResultType(genTreeOps.GT_ADD, false, ref left, ref right);
+
+            Assert.That(result, Is.EqualTo(var_types.TYP_BYREF));
+            Assert.That(byrefOnRight ? right : left, Is.SameAs(byref));
+            Assert.That(byref.Type, Is.EqualTo(var_types.TYP_BYREF));
+            Assert.That((byrefOnRight ? left : right).Type, Is.EqualTo(Globals.TYP_I_IMPL));
+        });
+    }
+
     [TestCase(genTreeOps.GT_ADD, var_types.TYP_INT, false)]
     [TestCase(genTreeOps.GT_ADD, var_types.TYP_BYREF, true)]
     [TestCase(genTreeOps.GT_DIV, var_types.TYP_INT, true)]

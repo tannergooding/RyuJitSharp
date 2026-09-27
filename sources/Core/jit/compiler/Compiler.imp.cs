@@ -4553,7 +4553,7 @@ public partial class Compiler
             if (op1.Type is TYP_BYREF)
             {
                 // byref + [native] int => gives a byref
-                assert(genActualTypeIsIntOrI(op1.Type));
+                assert(genActualTypeIsIntOrI(op2.Type));
 
                 // Insert explicit upcasts if needed.
                 op1 = impImplicitIorI4Cast(op1, TYP_I_IMPL, fUnsigned);
@@ -4567,7 +4567,7 @@ public partial class Compiler
             else if (op2.Type is TYP_BYREF)
             {
                 // [native] int + byref => gives a byref
-                assert(genActualTypeIsIntOrI(op2.Type));
+                assert(genActualTypeIsIntOrI(op1.Type));
 
                 // Insert explicit upcasts if needed.
                 op1 = impImplicitIorI4Cast(op1, TYP_I_IMPL, fUnsigned);

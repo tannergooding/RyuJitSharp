@@ -9,21 +9,21 @@
   },
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
-    "stage": "integrating-saved-wip",
+    "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Integrate preserved thread-local expansion against33baf8 using committeda6511dc shared/static-init support. Keep VN-intrinsic packet inactive until its own boundary.",
+      "scope": "Integrate preserved VN-based ReadUtf8 expansion against33baf8 using committed shared/static-init/TLS support. Verify bounded UTF16 conversion semantics and positive literal expansion before public activation.",
       "doneWhen": [
-        "Review both TLS expansion functions and driver against the oracle, preserving Windows x64 paths, GC typing, node/statement order, ABI and rare/minopts/size guards.",
-        "Activate the public TLS entry and demonstrate positive tests fail against the previous stub.",
-        "Obtain positive new-pin native TLS evidence and execute thread isolation/GC cases through fresh managed code, preserving the established matrix.",
-        "Commit the complete validated TLS batch locally while preserving the inactive VN-intrinsic packet."
+        "Review the full VN-intrinsic dispatcher, ReadUtf8 transformation and bounded minipal conversion equivalent against the oracle.",
+        "Activate the public phase and demonstrate positive tests fail against the previous stub.",
+        "Execute positive ASCII/multibyte/malformed literal inputs and capacity guards through fresh managed code with native phase comparisons; preserve prior execution corpora.",
+        "Commit the complete validated VN-intrinsic batch locally and checkpoint remaining native shared-helper work."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Synchronization committed5aaefb7 and shared/static-init committeda6511dc. TLS integration complete: both Windows x64 ABI paths reviewed, public phase activated, B312 node/statement order corrected. Isolated54D54R pass;11public-stub failures/9controls and3ordering failures/17controls demonstrate coverage. Fresh NativeAOT executes29/143baseline and15TLS bodies. Eight positive native phase/CFG/IR slices match exactly before existing profile checks. VN-intrinsic stays frozen. No publication authorized.",
+      "parentScope": "Synchronization5aaefb7, shared/static-inita6511dc and TLS3e98aa0 are locally committed. Final preserved VN-intrinsic packet is integrated with B313 byref-add assertion and B314 literal-dump prerequisites.124Debug117Release cases pass; pinned minipal matches77824converter cases. Fresh final JIT executes29/143baseline plus33helper bodies across fullopts/minopts/GCStress. UTF8 store metrics match; B315 incoming graph/promotion and full-code parity remain open. No publication authorized.",
       "parallelPackets": [
         {
           "scope": "Complete native static-initialization expansion.",
@@ -43,8 +43,8 @@
           "scope": "Complete native VN-based intrinsic expansion.",
           "owner": "d62fc6a5-a4dd-40be-8b42-5de1405b22b7",
           "files": "New Compiler.VNIntrinsicExpansion*.cs and VNIntrinsicExpansionTests.cs; parent owns shared APIs and public entry.",
-          "status": "paused",
-          "remainingBoundary": "d62:183 frozen complete/inactive;23D23R full analysis. artifacts\\vn-intrinsic-validation\\source-manifest.json. Reconcile against refreshed upstream before parent integration, public activation and runtime comparison."
+          "status": "done",
+          "remainingBoundary": "Parent integrated at33baf8: public phase active,7stub-control failures/16controls,124D117R integrated full-analysis,77824native converter comparisons, and9UTF8/24static-TLS bodies plus29/143baseline on fresh NativeAOT. B313/B314 prerequisites corrected. Six positive UTF8 store metric comparisons match; B315 incoming CFG/promotion and full dump/code parity remain open."
         },
         {
           "scope": "Complete native finally cloning and callfinally-chain merging.",
@@ -407,7 +407,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Continue with preserved VN-intrinsic packet: review Compiler.VNIntrinsicExpansion.cs against33baf8 helperexpansion.cpp, obtain positive Utf8.TryWrite literal native expansion from the saved helper probe, activate fgVNBasedIntrinsicExpansion with public-entry negative controls and fresh managed execution. Static-init/shared support and TLS are integrated. Keep native shared helper region until remaining callers are reconciled. Preserve recovery refs; no push or PR is authorized.",
+    "nextAction": "Saved static-init/TLS/VN-intrinsic packets are now integrated after33baf8 synchronization. Resume the remaining helper-expansion work at public fgLateCastExpansion in Compiler.fg.cs (still a no-op): review the complete native fgLateCastExpansion/ForCall closure in helperexpansion.cpp and establish its Windows x64 dependency boundary before activation. Retain mixed native helper regions while remaining callers/platform paths are unported. B311 and B315 are recorded nonblocking gaps, not permission to broaden this batch. Preserve all recovery refs; no push or PR is authorized.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -475,6 +475,21 @@
         "scope": "Restore pinned output-pointer-only getThreadLocalStaticBlocksInfo across three wrappers/interface/vtable; rename final metadata slot to offsetOfBaseOfThreadLocalData. Keep existing slot, calling convention, offset widths and neighboring getThreadLocalFieldInfo bool.",
         "nativeEvidence": "MSVC native-probe.cpp static_assert checks exact member signature against pinned corinfo.h; sizeof56, pointer-field offsets0/16/24/32 and scalar offsets40/44/48/52 match managed raw layout.",
         "gaps": "TLS phase is not activated. Virtual native callbacks verify forwarding without claiming actual runtime TLS expansion."
+      },
+      "vnIntrinsicIntegration": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "snapshot": "d34071b038ee3c643e287070768de68aead48503",
+        "nativeAot": "artifacts\\vn-intrinsic-refresh\\native-jit-final\\RyuJitSharp.dll",
+        "sha256": "D949575D42177946B786F2A7242D2788383C695B35DDBD049D767E8F73D223E0",
+        "debugPassed": 124,
+        "releasePassed": 117,
+        "tests": "VNIntrinsicExpansionTests,ThreadLocalExpansionTests,StaticInitExpansionTests,RuntimeLookupExpansionTests,ImporterEffectsTests in isolated validation-4 sources; full analysis. Seven dump regressions are DEBUG-only.",
+        "negativeControls": "Old public stub7failures16controls. Original literal dumping7failures. Original byref-add assertion aborts the native-host UTF8 probe before the phase; four direct operand-order/width regressions now pass.",
+        "converter": "artifacts\\vn-intrinsic-refresh\\converter\\comparison.log: freshly compiled33baf8 minipal utf8.c matches all65536single UTF16 code units and12288deterministic boundary/random cases at the production256-byte capacity, including native partial trailing fallback behavior. No conversion mismatches.",
+        "execution": "artifacts\\vn-intrinsic-refresh\\final-corpus\\results.json: native/managed fullopts,minopts,GCStress,18executed UTF8 bodies. Three positive expansions per optimized capture; no minopts expansion. Each input exercises destination lengths0through10, exact successful bytes, insufficient-capacity result and untouched out-of-span sentinels.",
+        "baseline": "artifacts\\upstream-refresh-33baf8\\helpers-final-managed-matrix\\results.json:29configurations143positive managed bodies; same runtime outcomes and no fallback. Six cohort-static/cohort-tls captures add24managed bodies across the three configurations on the final JIT.",
+        "comparison": "final-corpus\\store-comparison.json compares six positive native/managed expansions: exact store widths, offsets, UTF8 constant bytes and returned byte lengths. Full raw phases remain different due to incoming struct-promotion/CFG/local/VN identities; B315 records159versus75fullopts code bytes. No full CFG/dump/code parity claim.",
+        "gaps": "Non-AMD64 expansion paths explicitly fail compilation. Larger/vector-width runtime literal coverage and full input graph parity remain open. The native shared helper region is retained for remaining late-cast and platform paths; native residual stays176staged paths."
       },
       "threadLocalIntegration": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
@@ -6082,6 +6097,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "vn-intrinsic-expansion-and-literal-diagnostics",
+      "native": ["src\\coreclr\\jit\\helperexpansion.cpp:1612-1932", "src\\coreclr\\jit\\eeinterface.cpp:709-731", "src\\coreclr\\jit\\compiler.cpp:10630-10648", "src\\coreclr\\jit\\importer.cpp:5340-5477", "src\\native\\minipal\\utf8.c"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.VNIntrinsicExpansion.cs", "sources\\Core\\jit\\compiler\\Compiler.ee.cs:eePrintStringLiteral", "sources\\Core\\jit\\compiler\\Compiler.imp.cs:impGetByRefResultType"],
+      "status": "Complete AMD64 ReadUtf8 dispatcher/transformation with native bounded conversion behavior, B313 byref-add assertions and B314 literal formatting. Positive constant-store metrics/runtime match; full incoming graph/code parity remains B315. Non-AMD64 explicit NYI; native mixed helper source retained.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "thread-local-expansion",
       "native": ["src\\coreclr\\jit\\helperexpansion.cpp:496-1219"],

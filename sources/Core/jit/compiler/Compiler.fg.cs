@@ -15429,9 +15429,6 @@ public partial class Compiler
         return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }
 
-    // TODO: Port phase - fgVNBasedIntrinsicExpansion
-    public PhaseStatus fgVNBasedIntrinsicExpansion() => PhaseStatus.MODIFIED_NOTHING;
-
 #if TARGET_WASM
     // TODO: Port phase - fgWasmEhFlow
     public PhaseStatus fgWasmEhFlow() => PhaseStatus.MODIFIED_NOTHING;
