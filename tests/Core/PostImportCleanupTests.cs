@@ -81,7 +81,7 @@ internal static unsafe class PostImportCleanupTests
                 var imported = keepLast && (i == 2);
                 var tryBlock = AddBlock(compiler, imported);
                 var handler = AddBlock(compiler, imported);
-                compiler.compHndBBtab[i] = Clause(tryBlock, tryBlock, handler, handler, i);
+                compiler.compHndBBtab[i] = Clause(compiler, tryBlock, tryBlock, handler, handler, i);
             }
 
             var lastTry = compiler.compHndBBtab[2].ebdTryBeg;
@@ -115,11 +115,13 @@ internal static unsafe class PostImportCleanupTests
             var handler = AddBlock(compiler);
             var handlerLast = AddBlock(compiler, imported: false);
             _ = AddBlock(compiler, imported: false);
-            var clause = Clause(entry, tryLast, handler, handlerLast, 0);
+            var clause = Clause(compiler, entry, tryLast, handler, handlerLast, 0);
             if (filterBlock is not null)
             {
                 filterBlock.HndIndex = 0;
                 filterBlock.SetFlags(BBF_DONT_REMOVE);
+                filterBlock.CatchType = bbCatchType.BBCT_FILTER;
+                handler.CatchType = bbCatchType.BBCT_FILTER_HANDLER;
                 clause.ebdHandlerType = EHHandlerType.EH_HANDLER_FILTER;
                 clause.ebdFilter = filterBlock;
             }
@@ -155,13 +157,13 @@ internal static unsafe class PostImportCleanupTests
             Jump(compiler, entry, osrEntry);
             Jump(compiler, tryEntry, osrEntry);
             osrEntry.TryIndex = 0;
-            var inner = Clause(tryEntry, osrEntry, handler, handler, 0);
+            var inner = Clause(compiler, tryEntry, osrEntry, handler, handler, 0);
             if (outer is not null && outerHandler is not null)
             {
                 Jump(compiler, outer, tryEntry);
                 inner.ebdEnclosingTryIndex = 1;
                 handler.TryIndex = 1;
-                compiler.compHndBBtab = [inner, Clause(outer, handler, outerHandler, outerHandler, 1)];
+                compiler.compHndBBtab = [inner, Clause(compiler, outer, handler, outerHandler, outerHandler, 1)];
             }
             else
             {
@@ -212,12 +214,12 @@ internal static unsafe class PostImportCleanupTests
             var entry = AddBlock(compiler);
             var osrEntry = AddBlock(compiler);
             var handler = AddBlock(compiler);
-            var inner = Clause(osrEntry, osrEntry, handler, handler, 0);
+            var inner = Clause(compiler, osrEntry, osrEntry, handler, handler, 0);
             if (mutualProtect)
             {
                 var outerHandler = AddBlock(compiler);
                 inner.ebdEnclosingTryIndex = 1;
-                var outer = Clause(osrEntry, osrEntry, outerHandler, outerHandler, 1);
+                var outer = Clause(compiler, osrEntry, osrEntry, outerHandler, outerHandler, 1);
                 osrEntry.TryIndex = 0;
                 compiler.compHndBBtab = [inner, outer];
             }
@@ -253,7 +255,7 @@ internal static unsafe class PostImportCleanupTests
             }
             var osrEntry = AddBlock(compiler);
             var handler = AddBlock(compiler);
-            compiler.compHndBBtab = [Clause(oldTry, osrEntry, handler, handler, 0)];
+            compiler.compHndBBtab = [Clause(compiler, oldTry, osrEntry, handler, handler, 0)];
             compiler.compHndBBtabCount = 1;
             osrEntry.TryIndex = 0;
             compiler.fgOSREntryBB = osrEntry;
@@ -308,14 +310,14 @@ internal static unsafe class PostImportCleanupTests
             var osrEntry = AddBlock(compiler);
             var innerHandler = earlyHandler ?? AddBlock(compiler);
             var outerHandler = AddBlock(compiler);
-            var inner = Clause(innerEntry, osrEntry, innerHandler, innerHandler, 0);
+            var inner = Clause(compiler, innerEntry, osrEntry, innerHandler, innerHandler, 0);
             inner.ebdEnclosingTryIndex = 1;
             if (!mutualProtect)
             {
                 innerHandler.TryIndex = 1;
             }
             var outerLast = (mutualProtect || handlerFirst) ? osrEntry : innerHandler;
-            compiler.compHndBBtab = [inner, Clause(oldOuter, outerLast, outerHandler, outerHandler, 1)];
+            compiler.compHndBBtab = [inner, Clause(compiler, oldOuter, outerLast, outerHandler, outerHandler, 1)];
             compiler.compHndBBtabCount = 2;
             osrEntry.TryIndex = 0;
             compiler.fgOSREntryBB = osrEntry;
@@ -382,13 +384,17 @@ internal static unsafe class PostImportCleanupTests
         });
     }
 
-    private static EHblkDsc Clause(BasicBlock first, BasicBlock last, BasicBlock handler, BasicBlock handlerLast, ushort index)
+    private static EHblkDsc Clause(Compiler compiler, BasicBlock first, BasicBlock last,
+        BasicBlock handler, BasicBlock handlerLast, ushort index)
     {
         first.TryIndex = index;
         handler.HndIndex = index;
         first.SetFlags(BBF_DONT_REMOVE);
         handler.SetFlags(BBF_DONT_REMOVE);
+        handler.CatchType = (bbCatchType)1;
         return new EHblkDsc {
+            ebdID = compiler.compEHID++,
+            ebdHandlerType = EHHandlerType.EH_HANDLER_CATCH,
             ebdTryBeg = first, ebdTryLast = last, ebdHndBeg = handler, ebdHndLast = handlerLast,
             ebdEnclosingTryIndex = EHblkDsc.NO_ENCLOSING_INDEX,
             ebdEnclosingHndIndex = EHblkDsc.NO_ENCLOSING_INDEX,

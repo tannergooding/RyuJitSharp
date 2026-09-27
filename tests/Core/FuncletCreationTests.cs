@@ -108,8 +108,11 @@ internal static class FuncletCreationTests
             handler.setBBProfileWeight(100);
             var clause = Clause(entry, handler);
             clause.ebdHandlerType = EH_HANDLER_FINALLY;
+            entry.SetFlags(BBF_DONT_REMOVE);
+            handler.SetFlags(BBF_DONT_REMOVE);
             compiler.compHndBBtab = [clause];
             compiler.compHndBBtabCount = 1;
+            compiler.compEHID = 1;
 
             _ = compiler.fgCreateFunclets();
 

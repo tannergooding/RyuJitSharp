@@ -12,19 +12,19 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete the remaining native fgVerifyHandlerTab EH-table diagnostic contract against 33baf8, preserving all applicable verification and its phase-sensitive invariants.",
+      "scope": "Resolve B318 call-argument exception-order regression against the pinned native contract without redesigning argument morphing.",
       "doneWhen": [
-        "Locate and compare the complete native fgVerifyHandlerTab function with the managed stub and existing EH verification helpers.",
-        "Port the complete applicable verifier without silent no-ops or weakening native assertions.",
-        "Validate phase-sensitive EH fixtures and existing checked runtime corpora, investigating only failures caused by the new verifier.",
-        "Commit the coherent verifier batch with evidence and continue remaining port work."
+        "Reproduce DifferentExceptionsPreserveAllEarlierThrowingArguments(True) and its controls on the committed baseline.",
+        "Trace the relevant native and managed argument exception analysis and determine whether the implementation or fixture violates the native contract.",
+        "Correct the established discrepancy, preserve observable evaluation and exception ordering, and validate the affected argument paths.",
+        "Commit the coherent correction with evidence and continue B325 or the next remaining port dependency."
       ],
       "validation": [
-        "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
-        "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
+        "Use the existing CallArgumentMorphTests fixture and related focused Debug/Release selections from immutable source archives.",
+        "If production changes, demonstrate the old behavior fails the regression and exercise affected generated code; if only the fixture is stale, retain production sources unchanged. Do not expand into unrelated full-suite failures."
       ],
-      "parentScope": "Async/B336/B337 and B334 committed. B311 also proved to be a stale fixture: metrics already emits successfully, but the test expected rejection and omitted the method name. Metrics-enabled publication now asserts summary output, full publication order and final frame state with/without debug info;17D6R pass. Commit that test correction, then inspect fgVerifyHandlerTab. No publication authorized.",
-      "deferred": "B318/B325 existing argument regressions, B307 EH node IDs, B320 static-data descriptions and B321/B323 profile formatting stay separate. B311, B324, B333 and B334 are corrected. No general argument-morph redesign or profile-synthesis redesign.",
+      "parentScope": "Complete EH-table verification is validated:387Debug/302Release,25 old-stub regression failures,29/143 execution baseline and matching async transformation/instruction slices in FullOpts, GCStress4 and controlled Tier0. Its new full-suite failures were22 stale fixtures, now corrected;207 remaining failures reproduce with the old checker. Finish the local B127 commit, then resume the recorded B318 semantic regression. No publication authorized.",
+      "deferred": "B325 inline-argument regression follows B318. B307 EH node IDs, B320 static-data descriptions and B321/B323 profile formatting stay separate. B322 is a native uninitialized-bool limitation, not authorization to emulate poison. No general argument-morph or profile-synthesis redesign.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -429,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit B311 metadata fixture correction validated by5bea7c0587afad40e04966a0dd6a8b03a478e279 (17D6R); production metrics unchanged. Then locate native fgVerifyHandlerTab, compare its entire body and managed entry, and resume that remaining diagnostic port with existing EH fixture patterns. Read only relevant source/map/deviation sections, establish its exact phase invariants before editing, and retain native sources. Native lane idle, collected through66. No push.",
+    "nextAction": "Finish the local B127 EH-verifier commit, validated byafd5f6226928a6381d577b136b8aa2c09218a532 (387D302R) and production-identical NativeAOT source9e9aa0cbc5881900a0c084e41ca11c455b0b9100. Then reproduce CallArgumentMorphTests.DifferentExceptionsPreserveAllEarlierThrowingArguments(True), compare the native exception/order analysis and resolve B318 without weakening the contract. Old full-suite comparison isolates207 unrelated failures and no new checker failures. Continue after the commit; no push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -464,6 +464,23 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "ehTableVerification": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "nativeFunction": "jiteh.cpp:3210-3770, complete fgVerifyHandlerTab",
+        "sourceSnapshot": "afd5f6226928a6381d577b136b8aa2c09218a532",
+        "tests": "artifacts\\eh-verification\\validation-6\\results:387Debug/302Release with full analysis, covering EH verification, cleanup/cloning/insertion, funclet creation, finally optimization, async and post-import cleanup.",
+        "regressionControl": "Source0a1b2d2df5e8398738c49d13c6843eaa38c5ffdf, validation-4\\results\\old-stub.trx:25failures/26controls. Negative cases require one recorded assertion expression and CORJIT_SKIPPED through the test's explicitly configured AltJIT assertion policy, not incidental null/index exceptions.",
+        "contract": "Checks IDs/capacity, live retained boundaries, lexical ordering and disjointness, normalization-sensitive nesting, mutual protection, filters, funclet placement, raw one-based indices and EH return kinds. Scratch arrays preserve block numbering; capacity comes from compHndBBtab.Length. Disabled native last-block normalization remains disabled. Release has no checker.",
+        "integration": "Restored missing IDs, retained-boundary flags and catch/filter metadata in22 existing fixture cases across async context save, finally optimization, funclet creation and post-import cleanup. No production assertions were weakened.",
+        "fullSuite": "The checker is called by general phase checks, so validation expanded to all11558Debug tests. Final11351pass/207fail; all207failure names reproduce in old-stub validation-4, which additionally fails the25new negative cases. No remaining failure stack involves fgVerifyHandlerTab. This is not a full-suite pass.",
+        "nativeAotSource": "9e9aa0cbc5881900a0c084e41ca11c455b0b9100",
+        "nativeAotSourceRelationship": "All sources/ blobs are identical to the final test snapshot; only PostImportCleanupTests differs.",
+        "nativeAotLibrary": "artifacts\\eh-verification\\native-jit-5\\RyuJitSharp.dll",
+        "nativeAotSha256": "A158F41589C8CB9425801911E7CEF76B4618E51C36F24C58E60125591DE9AA20",
+        "executionBaseline": "artifacts\\upstream-refresh-33baf8\\eh-verification-managed-matrix-5\\results.json:29configurations/143positive bodies, managed execution, no fallback, unchanged runtime results.",
+        "asyncComparison": "artifacts\\eh-verification\\async-comparison-5.json, reproduced by compare.py in that directory using a fresh --output path. FullOpts11bodies/6transforms, GCStress4 11/6 and controlled Tier0 12/7 match native emitted IN instruction lines, code sizes and transformation execution/status logs. Tier0 disables optional relocations and TieredPGO on both sides and retains one positive tail await.",
+        "limits": "Whole dumps still differ at preexisting diagnostics, notably B322. Instruction text is not raw-code-byte parity. The async corpus does not assert full-collection counts. Native sources/index were retained unchanged."
+      },
       "metadataMetricsFixture": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "baseline": "Source13f4d46ca049e834e34b55f6317ac152ea81d92f, artifacts\\metadata-metrics\\validation-1\\results\\baseline.trx:one obsolete rejection case fails with null compFullName in compMethodHash; four controls pass.",
@@ -5202,7 +5219,7 @@
         "corpusTransformations": 0,
         "exactImportPrefixes": ["Add", "Branch", "Locals", "FoldConstants", "FoldFloating", "FoldInteger"],
         "nativeTransformationParityEstablished": false,
-        "remainingDiagnostic": "fgVerifyHandlerTab (B127)",
+        "remainingDiagnostic": "fgVerifyHandlerTab was deferred at this capture; completed by ehTableVerification (B127).",
         "codegenParity": "not-available"
       },
       "inlineDecisionReporting": {
@@ -5754,7 +5771,7 @@
       "Importer ordering and EH visibility have focused IR coverage, not runtime EH parity. SIMD normalization preserves its output base type in controlled EE metadata cases, not generated SIMD execution.",
       "Generic virtual lookup handle kinds and array dimension local reuse have controlled EE/IR coverage, not NativeAOT-generated call or multidimensional-array execution parity.",
       "Shared instantiation construction preserves direct/indirect method/class handles and readonly-array behavior in controlled EE cases. Its Wasm ldvirtftn integration remains unvalidated on that target.",
-      "Owned and inherited async context chains preserve argument order and frame metadata in focused IR cases. Cached EE async metadata is checked across repeated and per-compiler queries, including GC during the pinned call. SaveAsyncContexts has root-method coverage for capture/fault/return ordering, context arguments, OSR, initialization, existing EH regions, non-returning bodies, and void/scalar/return-buffer-address merging. Inline phase execution, multi-register struct returns, and async lowering remain unverified; fgVerifyHandlerTab is still an existing diagnostic stub.",
+      "Owned and inherited async context chains preserve argument order and frame metadata in focused IR cases. Cached EE async metadata is checked across repeated and per-compiler queries, including GC during the pinned call. SaveAsyncContexts has root-method coverage for capture/fault/return ordering, context arguments, OSR, initialization, existing EH regions, non-returning bodies, and void/scalar/return-buffer-address merging. Inline phase execution, multi-register struct returns, and async lowering remain unverified at that capture; the formerly deferred fgVerifyHandlerTab is now covered by ehTableVerification.",
       "Async-version void/scalar return wrapping, hidden arguments, default ValueTask folding, static monitor lookup and ReadyToRun entrypoints have controlled IR/EE coverage. Struct/constructor folding, inline return wrapping and synchronized async-return execution remain unexercised; this does not establish async codegen parity.",
       "Async-version tail patterns, EE tailcall consent, async metadata, protected-region recognition, and own-versus-inherited inline contexts have focused coverage. SaveAsyncContexts now produces the generated EH IDs and saved-context arguments. Prefix integration, covariant return cleanup, and runtime tail-await execution remain unexercised by the corpus.",
       "Conditional Wasm address-mode recognition passed isolated managed probes; declaration and ARM64 threshold synchronization does not establish non-x64 target support.",
@@ -6414,6 +6431,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "eh-table-verification",
+      "native": ["src\\coreclr\\jit\\jiteh.cpp:fgVerifyHandlerTab"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.EHVerification.cs"],
+      "status": "Complete Debug checker, including phase-sensitive normalization, lexical nesting, mutual protection, filter/funclet rules and reconstructed raw block indices. Managed scratch arrays replace native stack scratch space without renumbering blocks; table Length supplies native allocation capacity. Native body retained.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "async-input-local-address-types",
       "native": ["src\\coreclr\\jit\\async.cpp:593-595,765", "src\\coreclr\\jit\\compiler.h:3453"],
@@ -7141,7 +7165,7 @@
       "native": ["src\\coreclr\\jit\\fgopt.cpp:4291-4298,4373-4902", "src\\coreclr\\jit\\fgdiagnostic.cpp:62-145", "src\\coreclr\\jit\\jiteh.cpp:677-700"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.FlowGraphUpdate.cs", "sources\\Core\\jit\\compiler\\Compiler.FlowGraphUpdateChecks.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.cs:fgUpdateFlowGraphPhase,fgDispBasicBlocks"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
-      "status": "Complete fixed-point driver, optional tail-duplication pair guard, EH-end predicates and Debug update checks; optimized phase wrapper active. B222 restores native reserve behavior in graph dumps. Independent fgVerifyHandlerTab diagnostic stub remains deferred."
+      "status": "Complete fixed-point driver, optional tail-duplication pair guard, EH-end predicates and Debug update checks; optimized phase wrapper active. B222 restores native reserve behavior in graph dumps. The independent fgVerifyHandlerTab diagnostic is complete under eh-table-verification (B127)."
     },
     {
       "area": "remaining-flowgraph-cleanup-helpers",
@@ -7497,7 +7521,7 @@
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.Funclets.cs", "sources\\Core\\jit\\compiler\\Compiler.FuncletRelocation.cs", "sources\\Core\\jit\\compiler\\FuncInfoDsc.cs", "sources\\Core\\jit\\compiler\\FuncKind.cs", "sources\\Core\\jit\\compiler\\Compiler.comp.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.Funclets.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete active AMD64 fgCreateFunclets, loop-head prolog insertion, handler relocation/unlinking, predecessor classification and current-function accessors/selection. Other-target phase entry rejects before mutation. D002 owned arrays preserve table order and by-reference metadata access; only common FuncInfoDsc metadata is implemented, not unwind/location payloads. Shared bbIsFuncletBeg reuses bbIsHandlerBeg in both configurations. Native filter-head omission is retained (B210); the preexisting fgVerifyHandlerTab stub remains deferred. Emission stays explicitly skipped."
+      "status": "Complete active AMD64 fgCreateFunclets, loop-head prolog insertion, handler relocation/unlinking, predecessor classification and current-function accessors/selection. Other-target phase entry rejects before mutation. D002 owned arrays preserve table order and by-reference metadata access; only common FuncInfoDsc metadata is implemented, not unwind/location payloads. Shared bbIsFuncletBeg reuses bbIsHandlerBeg in both configurations. Native filter-head omission is retained (B210); the formerly deferred fgVerifyHandlerTab is complete under eh-table-verification (B127). Emission stays explicitly skipped."
     },
     {
       "area": "prolog-epilog-placeholder-reservations",
@@ -7724,7 +7748,7 @@
       "native": ["src\\coreclr\\jit\\fgopt.cpp", "src\\coreclr\\jit\\jiteh.cpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.cs", "sources\\Core\\jit\\compiler\\Compiler.eh.cs"],
       "reconciledCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
-      "status": "Complete fgPostImportationCleanup and ehCanDeleteEmptyBlock/fgSetTryBeg/fgSkipRmvdBlocks (B126), not the remaining functions in these native files or fgVerifyHandlerTab (B127)."
+      "status": "Complete fgPostImportationCleanup and ehCanDeleteEmptyBlock/fgSetTryBeg/fgSkipRmvdBlocks (B126), not the remaining functions in these native files. fgVerifyHandlerTab is separately complete under eh-table-verification (B127)."
     },
     {
       "area": "indirect-call-transformation",

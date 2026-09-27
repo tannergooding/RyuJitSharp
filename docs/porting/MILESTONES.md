@@ -15,6 +15,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Complete EH-table verification
+
+Debug compilations now check the full native EH-table contract at the existing
+phase boundaries. The verifier checks clause identity, retained boundaries,
+lexical nesting and disjointness, filters, extracted funclets, block-region
+indices and legal handler exits.
+
+The checks distinguish pre-normalization shared starts from normalized regions
+and preserve mutually protected tries and shared ends. A temporary lexical map
+allows these checks without renumbering blocks or changing later compilation.
+Runtime EH and async execution retain their established behavior; this closes
+the diagnostic stub, not the remaining whole-dump parity gaps.
+
 ## 2026-09-26: Async state-machine transformation
 
 Runtime-async methods now execute the complete transformation after

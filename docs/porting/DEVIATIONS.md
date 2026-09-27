@@ -483,8 +483,13 @@ Unlinked blocks retain their links for region trimming. The OSR conditional-flow
 lambda is a local function, and statement creation uses the existing insertion
 helpers. `double.MinNumber(1.0, ratio)` preserves native `std::min` when both
 profile weights are zero: the resulting NaN ratio selects 1.0, not NaN.
-The early-return completion-flag behavior is unchanged (B126). The preexisting
-`fgVerifyHandlerTab` diagnostic stub remains a separate gap (B127).
+The early-return completion-flag behavior is unchanged (B126).
+`fgVerifyHandlerTab` now implements the complete native Debug contract (B127).
+Its temporary lexical-order, handler-start and raw-index maps use owned arrays
+instead of native stack scratch space; block numbers are not modified. The
+managed table's array length supplies native allocation capacity. Normalization,
+mutual protection and funclet-sensitive checks retain their native conditions,
+including the disabled last-block normalization.
 
 Indirect-call spilling keeps managed byrefs to owning use slots and compares
 them with `Unsafe.AreSame`, preserving native spill order while replacing nodes.

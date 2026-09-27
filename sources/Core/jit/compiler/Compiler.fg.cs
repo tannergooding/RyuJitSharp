@@ -3781,8 +3781,6 @@ public partial class Compiler
     // TODO: Port fgStress64RsltMul
     public void fgStress64RsltMul() { }
 
-    // TODO: Port phase check - fgVerifyHandlerTab
-    public void fgVerifyHandlerTab() { }
 #endif
 
 #if DUMP_FLOWGRAPHS

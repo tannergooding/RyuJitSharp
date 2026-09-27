@@ -571,8 +571,12 @@ internal static unsafe class AsyncContextSaveTests
             compiler.fgLastBB = handler;
             body.TryIndex = 0;
             handler.HndIndex = 0;
+            body.SetFlags(BBF_DONT_REMOVE);
+            handler.SetFlags(BBF_DONT_REMOVE);
+            handler.CatchType = (bbCatchType)1;
             compiler.compHndBBtab = [new EHblkDsc {
                 ebdID = 3, ebdTryBeg = body, ebdTryLast = body, ebdHndBeg = handler, ebdHndLast = handler,
+                ebdHandlerType = EHHandlerType.EH_HANDLER_CATCH,
                 ebdEnclosingTryIndex = EHblkDsc.NO_ENCLOSING_INDEX, ebdEnclosingHndIndex = EHblkDsc.NO_ENCLOSING_INDEX
             }];
             compiler.compHndBBtabCount = 1;

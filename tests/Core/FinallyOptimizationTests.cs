@@ -365,6 +365,9 @@ internal static class FinallyOptimizationTests
     private static void Clause(Compiler compiler, BasicBlock firstTry, BasicBlock lastTry,
         BasicBlock firstHandler, BasicBlock lastHandler)
     {
+        firstTry.SetFlags(BBF_DONT_REMOVE);
+        firstHandler.SetFlags(BBF_DONT_REMOVE);
+        firstHandler.CatchType = bbCatchType.BBCT_FINALLY;
         compiler.compHndBBtab =
         [
             new EHblkDsc
@@ -379,5 +382,6 @@ internal static class FinallyOptimizationTests
             },
         ];
         compiler.compHndBBtabCount = 1;
+        compiler.compEHID = 1;
     }
 }
