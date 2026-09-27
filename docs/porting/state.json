@@ -12,13 +12,14 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete async state-machine transformation against 33baf8. Physical promotion, OSR entry redirection and B333 native address/phase-status alignment are complete; parent next integrates the repaired async packet.",
+      "scope": "Complete async state-machine transformation against 33baf8. B322 investigation established an uninitialized native diagnostic flag, not a managed profile-check algorithm defect; retain that raw-dump limitation and resume final async activation.",
       "doneWhen": [
         "Complete physical promotion including candidate selection, replacement, liveness and decomposition rather than activating a partial prerequisite.",
         "Complete async transformation including normal/tail awaits, continuation layout, suspension/resumption, live state, contexts and EH rather than activating only the wrapper.",
         "Publish complete native-equivalent OSR patchpoint frame metadata, preserving EE allocation/ownership, shadow locals, exposure, context/special offsets and callee-save encoding.",
         "Redirect OSR import to the designated entry, preserving weights and profile consistency; prove initialization is not repeated and carried Tier0 state survives actual OSR execution.",
         "Preserve native integer-pointer patchpoint counter addresses and ActionPhase status semantics; verify the existing OSR operand and phase-boundary differences disappear without formatter normalization.",
+        "Establish B322's state/dispatch provenance without changing profile synthesis or emulating native undefined state; preserve raw evidence and the unresolved whole-dump limitation.",
         "Integrate named shared deltas, review each complete native closure and validate focused semantic/runtime evidence with existing corpora.",
         "Commit each completed subsystem separately, preserving the other lane's WIP, and continue remaining port dependencies."
       ],
@@ -26,15 +27,15 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "OSR metadata publisher ab68491, physical promotion e815afa and OSR entry redirection 94df2c8 are committed. B333 corrections now match native phase boundaries/statuses and emitted instructions in all six OSR bodies; commit then integrate the reviewed async packet. Async author has frozen the four-fix round; reviewer6356462f is verifying it. No publication authorized.",
-      "deferred": "B311 optional metrics fixture, B318/B325 existing argument regressions, B307 EH node IDs, B320 static-data descriptions, B321-B323 profile diagnostics and remaining B315 physical-promotion/graph parity stay separate. B324 is corrected and tiered GDV/value execution now passes. No general argument-morph redesign.",
+      "parentScope": "B333 committed5cdf72b. B322 native flag reads0xcd before its first verbose check; no production change is appropriate. Async semantic fixes are cleared, inactive integration passes264D230R, and parent reviewed the three final diagnostic callsite deltas. Activate review-final through the existing public phase and validate normal/tail/context/EH execution. No publication authorized.",
+      "deferred": "B311 optional metrics fixture, B318/B325 existing argument regressions, B334 lowering assertions, B307 EH node IDs, B320 static-data descriptions and B321/B323 profile formatting stay separate. B324 and B333 are corrected. No general argument-morph redesign or profile-synthesis redesign.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
           "owner": "9e905421-71cc-4119-ab60-d762e4b27745",
           "files": "New async/AsyncTransformation files, Compiler.AsyncTransformation support and AsyncTransformationTests; parent owns shared deltas and the public TransformAsync entry.",
           "status": "in-progress",
-          "remainingBoundary": "Author9e905421 froze review-frozen with12D12R including a tail-await transform: new CallArgs.RemoveUnsafe for all five post-morph removals, final-block offset replacement, NONFAULTING defaults and diagnostic restoration. Reviewer6356462f is checking all four repair obligations against native. Parent retains public activation and integrated/runtime validation. The pre-port zero-segment pseudoarg is supposed to be consumed by transformation, not an independently established lowering defect."
+          "remainingBoundary": "Reviewer6356462f cleared all semantic fixes and isolated three remaining diagnostic callsites. Author9e905421 froze review-final12D12R; parent verified exactly those three corrections (post-lift inventory, shared resumed-def message, full enum labels). Prior inactive integration8eac397 passed264D230R. Next activate public TransformAsync and convert the real tail-await test to that entry, then validate actual normal/tail/context/EH runtime paths. Native lane established one actual Tier0 tail-await in InlineTailVersion; FullOpts remains a no-tail control."
         },
         {
           "scope": "Complete profile instrumentation: count/edge, handle and value instrumentors plus preparation/core/inline-return wrapper.",
@@ -432,7 +433,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B333 is validated and complete: source c1e8cbf8bc2795baa1669a5cdc0ed4b68af1c2d1 passes180D154R, three old-address failures/seven controls and29/143baseline; comparison-contracts-c1e8-1.json matches all six OSR phase boundaries/statuses and emitted instruction sequences with initialization once. Raw dumps retain B322. Next collect reviewer6356462f's four-fix follow-up and integrate async review-frozen; author9e905421 reports12D12R with real tail-await coverage and is supplying the exact activation contract. Keep public activation parent-owned, validate actual native async execution and preserve old packets. No push.",
+    "nextAction": "B322 is a confirmed native uninitialized flag (raw0xcd at first verbose HotLoop checker), not a managed defect; retain limitation and commit the diagnosis. Next activate async review-final: public TransformAsync asserts compIsAsync then returns new AsyncTransformation(this).Run(); existing pipeline callsite is correctly placed. Convert TailAwaitRunCreatesSuspensionAndSplitsContinuationPath to public invocation and set JIT_FLAG_ASYNC only in that case. Freeze final17files plus parent Compiler.cs/test delta on current HEAD, run Async/OSR selection and old-stub control, publish NativeAOT and compare actual native normal/tail/context/EH cases. Native-tail-evidence-1.json records new corpus39CC2159 and positive Tier0 wrapper; do not treat FullOpts return-await syntax as native tail evidence. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -467,6 +468,14 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "deferredProfileCheckDiagnosis": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "source": "compiler.h:7195-7197 leaves fgPgoDeferredInconsistency uninitialized; compiler.cpp:7719-7740 placement-constructs Compiler in arena storage. arenaallocator.h:212-214 and jit/alloc.h:62-65 fill new DEBUG allocations with jit.h:665 UninitializedFillByte0xcd.",
+        "stateWrites": "All named writes match managed: fgprofilesynthesis.cpp310-325 clears before checking and defers actual pre-import failure; flowgraph.cpp598-605 asserts/resets synthesized-consistent profiles. Neither initializes a method that does not synthesize profiles.",
+        "nativeObservation": "artifacts\\profile-check\\native-flag-1\\debugger.txt: CDB breaks at the first verbose fgDebugCheckProfileWeights for HotLoop, reads fgPgoDeferredInconsistency at PDB offset0x3d5 as raw0xcd, then continues to successful once-only OSR corpus output.",
+        "reproduce": "Run artifacts\\profile-check\\inspect-native-flag.ps1 -OutputDirectory <fresh>. The script verifies native JIT and strengthened corpus hashes against native-strengthened-1, inherits its isolated runtime settings, and loads only matching local PDBs. No native source or memory is patched.",
+        "disposition": "B322 remains an upstream diagnostic limitation. Managed zero initialization is retained; no invalid bool emulation, dump normalization, new parity claim or oracle modification."
+      },
       "osrAddressAndPhaseContracts": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "sourceSnapshot": "c1e8cbf8bc2795baa1669a5cdc0ed4b68af1c2d1",
