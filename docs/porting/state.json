@@ -12,19 +12,19 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Resolve the recorded B307 finally-clone node-allocation-order discrepancy against the pinned native contract; trace shared causes only when established.",
+      "scope": "Resolve B320 static-data handle descriptions by comparing complete native/managed recording and emission paths for cloned and original references.",
       "doneWhen": [
-        "Reproduce or confirm the first finally-clone tree-identity difference with matched current-pin inputs and configurations.",
-        "Trace complete native and managed clone construction and identify the first allocation-order divergence.",
-        "Correct the established port discrepancy while preserving clone semantics, flags, costs and observable phase behavior; do not normalize IDs away.",
-        "Validate the affected clones and phase dumps, commit the coherent correction, and continue remaining port work."
+        "Confirm current-pin static-handle annotation differences for cloned and original field addresses.",
+        "Trace cookie/target-handle metadata from node construction through instruction display, including relevant native build conditionals.",
+        "Correct the established discrepancy without changing runtime handles or emitted machine instructions.",
+        "Validate affected metadata and exact emitted descriptions, commit locally, and continue remaining port work."
       ],
       "validation": [
-        "Start from the current checked finally-cloning-positive capture and matched native reference, using fresh output directories if recapture is needed.",
-        "Use existing clone/finally fixtures and targeted Debug/Release checks. For a production correction, publish a fresh checked JIT and compare the affected phase and execution; expand only for named regressions."
+        "Use B307's fresh native-finally-1 and managed matrix captures, plus the original B320 GC-poll EH case.",
+        "Add focused metadata/display regressions; validate Debug/Release and exact current-pin instruction annotations with a fresh checked JIT. Reuse the established execution matrix at the coherent boundary."
       ],
-      "parentScope": "B127 committed97645f3, B318 committed7378a5f and B325 committed101ab04. B307 construction order is now corrected and validated for both finally and runtime-lookup trees, with complete phase/tree equality and retained runtime behavior. Finish its coherent local commit and continue remaining diagnostic parity work. No publication authorized.",
-      "deferred": "B320 static-data descriptions and B321/B323 profile formatting remain separate. B322 is a native uninitialized-bool limitation, not authorization to emulate poison. Five existing indirect-call fixture exception-flag failures reproduce on pre-fix Debug source; leave their correction outside the clone batch.",
+      "parentScope": "B307 committed2b8098d. B320 is now validated: native integer type and clone-specific cookie policy,190Debug/183Release,13exact emitted body comparisons and29/143execution. Finish its local commit and continue B321/B323 profile formatting. No publication authorized.",
+      "deferred": "B321/B323 profile formatting remain separate. B322 is a native uninitialized-bool limitation, not authorization to emulate poison. Five existing indirect-call fixture exception-flag failures reproduce on pre-fix Debug source; leave their correction outside this batch.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -429,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Finish the validated B307 local commit, then trace B320 static-data handle descriptions from the fresh finally-cloning-positive emission. At IN0004 native says static handle while managed says data for RyuJitSharp.FinallyCloningCases:FinallyCount; IN0006 agrees, and these descriptions are unchanged by B307. Compare complete native/managed handle-recording and emission paths before changing behavior. B307 comparison-4.json already proves exact phase/tree equality for finally and runtime lookup,29/143execution and34async instruction/phase comparisons. Five unrelated indirect-call fixture failures remain baseline-only. Continue without pausing at the commit; no push.",
+    "nextAction": "Finish the validated B320 local commit, then reconcile B321/B323 profile diagnostics as one formatting batch: IBC-column padding in artifacts\\missing-block-weights\\comparison-04ef-final and exponent casing in artifacts\\profile-repair\\comparison-1fbd-1.json. Confirm current pinned formatter contracts, preserve numeric algorithms and raw whitespace, and capture exact corrected slices. B320 comparison-5.json establishes13exact instruction/body matches; B307 phase/tree slices and29/143execution remain intact. No push or milestone pause.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -464,6 +464,20 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "staticHandleDescriptions": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "nativeFunctions": "gentree.cpp:11097-11123 gtClone integer case and11268-11308 gtCloneExpr integer case; jit.h:325-333 enables LATE_DISASM in Checked x64. emit.cpp:4580-4694 cookie formatting agrees with managed.",
+        "sourceSnapshot": "bdb62fa0fb2ef8b885bc15aa6f3f99c098a8a231",
+        "tests": "artifacts\\static-handle-descriptions\\validation-5\\results:190Debug/183Release with full analysis; clone, constant codegen, instruction display, finally, tree comparison and HasFlag selections.",
+        "regressionControl": "Source3d6a9e5d259bd419a8df41a568061ecc77d2ee88, validation-6\\results\\old-cookies.trx:6failures/2controls. Eight new cases cover cheap/expression clones, ordinary/handle constants and int/byref types, preserving runtime values, compile-time handles and original cookies.",
+        "contract": "Late-disassembly handle construction preserves original Type but omits TargetHandle. Ordinary expression clones retain TargetHandle; cheap gtClone clears it. Release follows the non-LATE_DISASM constructor path. Instruction-comment formatting is unchanged.",
+        "nativeAotLibrary": "artifacts\\static-handle-descriptions\\native-jit-5\\RyuJitSharp.dll",
+        "nativeAotSha256": "1DE94FEC031C292603080FF2F3B6F37BD945F939868C7738C9BDA1FD8EF7D492",
+        "comparison": "artifacts\\static-handle-descriptions\\comparison-5.json, reproduced by compare.py with a fresh --output path. Fresh native-gcpoll and managed-gcpoll-5 cover optimized/minopts/GCStress. Together with the positive finally clone, all13body sizes and emitted IN instruction streams match native exactly, including static-handle descriptions. Old managed optimized/GCStress EH and finally streams fail comparison; minopts is a control.",
+        "executionBaseline": "artifacts\\upstream-refresh-33baf8\\static-handle-managed-matrix-5\\results.json:29configurations/143positive managed bodies, no fallback, unchanged runtime results.",
+        "retainedParity": "Finally and runtime-lookup phase execution/status and complete post-phase tree slices remain byte-exact with native. Async source-specific evidence remains under the preceding B307 checkpoint and is not relabeled.",
+        "limits": "Whole dumps remain unequal, including B322. Instruction equality is not raw-code-byte parity. Native oracle/residual source and index unchanged."
+      },
       "cloneNodeOrder": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "nativeFunction": "gentree.cpp:11268-11732, gtCloneExpr; mapped to Compiler.gt.cs gtCloneExpr and gtCloneFieldAddr.",
@@ -6463,6 +6477,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "integer-clone-handle-metadata",
+      "native": ["src\\coreclr\\jit\\gentree.cpp:gtClone/gtCloneExpr integer cases", "src\\coreclr\\jit\\jit.h:LATE_DISASM"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.gt.cs:gtClone/gtCloneCnsInt"],
+      "status": "Native late-disassembly constructor gating, original type, compile-time handle and cheap-versus-expression target-cookie policy reconciled. B320 emitted annotations now match native; runtime handle values and the display formatter are unchanged. Native bodies retained.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "clone-node-construction-order",
       "native": ["src\\coreclr\\jit\\gentree.cpp:gtCloneExpr"],

@@ -27,6 +27,11 @@ Array-element, compare-exchange and select nodes retain their distinct native
 construction order. This closes B307's finally and runtime-lookup tree differences;
 it does not accept ID normalization or establish whole-dump equality.
 
+Integer clones preserve native types and compile-time handles. Their diagnostic
+target cookie follows the native cloning mode: late-disassembly handle clones
+omit it, and cheap `gtClone` omits it for ordinary constants too. Matching this
+metadata policy closes B320 without changing the instruction-comment formatter.
+
 Custom layouts with no GC pointers do not allocate unused per-slot GC arrays,
 including layouts whose unsigned byte sizes exceed `Int32.MaxValue`. Native
 allocates zero-filled storage for large no-GC layouts; managed queries use the

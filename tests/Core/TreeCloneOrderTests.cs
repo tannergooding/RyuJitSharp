@@ -11,6 +11,51 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class TreeCloneOrderTests
 {
+    [TestCase(false, false, TYP_INT)]
+    [TestCase(false, true, TYP_INT)]
+    [TestCase(true, false, TYP_INT)]
+    [TestCase(true, true, TYP_INT)]
+    [TestCase(false, false, TYP_BYREF)]
+    [TestCase(false, true, TYP_BYREF)]
+    [TestCase(true, false, TYP_BYREF)]
+    [TestCase(true, true, TYP_BYREF)]
+    public static void IntegerClonesPreserveRuntimeMetadataAndNativeTargetCookiePolicy(
+        bool expression, bool handle, var_types type)
+    {
+        SsaLivenessTests.WithCompiler(0, compiler => {
+            var original = new GenTreeIntCon(type, 123) {
+                CompileTimeHandle = 456,
+            };
+            if (handle)
+            {
+                original.Flags |= Globals.GTF_ICON_STATIC_HDL;
+            }
+#if DEBUG
+            original.TargetHandle = 789;
+#endif
+
+            var copy = (expression ? compiler.gtCloneExpr(original) : compiler.gtClone(original, complexOK: true))
+                as GenTreeIntCon ?? throw new AssertionException("Integer cloning must produce an integer node.");
+
+            Assert.That(copy, Is.Not.SameAs(original));
+            Assert.That(copy.Type, Is.EqualTo(type));
+            Assert.That(copy.IconVal, Is.EqualTo(original.IconVal));
+            Assert.That(copy.CompileTimeHandle, Is.EqualTo(original.CompileTimeHandle));
+            Assert.That(copy.IconHandleFlag, Is.EqualTo(original.IconHandleFlag));
+#if DEBUG
+            var expectedCookie = expression ? original.TargetHandle : 0;
+#if LATE_DISASM
+            if (handle)
+            {
+                expectedCookie = 0;
+            }
+#endif
+            Assert.That(copy.TargetHandle, Is.EqualTo(expectedCookie));
+            Assert.That(original.TargetHandle, Is.EqualTo((nint)789));
+#endif
+        });
+    }
+
     [TestCase("store-indirect")]
     [TestCase("store-local")]
     [TestCase("field-instance")]
