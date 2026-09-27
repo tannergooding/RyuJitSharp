@@ -13,19 +13,19 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "Extend real EE-backed object-allocation coverage using unchanged pinned ObjectStackAllocationTests.cs and Delegates.cs.",
-      "status": "done",
+      "scope": "Integrate shared target-bootstrap and SysV x64 ABI prerequisites, then ARM64 classifier/conditional guards. Execute target tests where compilable and preserve explicit uncompiled packet boundaries.",
+      "status": "in_progress",
       "doneWhen": [
-        "Run the complete original object test entrypoint and all3delegate entries without changing upstream assertions. Default execution must preserve stack/heap allocation checks, boxed/GC-containing layouts, spans, escape controls and explicit collections.",
-        "Require exact selected-method multiplicities, positive managed bodies without retry/fallback, correct results and native comparisons for object-allocation phases/instructions. Follow demonstrated gaps rather than historical inactive-packet notes.",
-        "Repeat native-passing coverage with GCStress4 and observed collections. Upstream deliberately disables allocation-kind assertions under GC stress; record that distinction. Commit validated work before continuing."
+        "Preserve public TargetRuntimeIdentifier routing and explicit internal overrides; supply shared ABI factories and remove dormant cross-target syntax blockers without widening supported behavior.",
+        "Run affected Windows x64 ABI/emitter/VN controls in Debug and Release, then Linux x64 and ARM64 target builds/tests with verified compile constants. Never count empty filters or Windows controls as target classifier passes.",
+        "Commit only validated dependency-coherent work; retain incomplete classifier work uncommitted if broader target dependencies block execution. Archive finished children after exact packet preservation and integration."
       ],
       "validation": [
-        "Compiler237902893690cd8fd438cb7e65c5d64f3ec1022d preserves before-fix comparisons:152matching instruction streams but302/304selected phase slices. B369 required a fresh publication from source13d5cdee4b18e8dba19149360603d623b1f91be3.",
-        "Driver links both unchanged native sources and the exact12pinned CoreCLRTestLibrary sources. Strict native inventories select79default or73GCStress bodies; discovery/count-mismatch runs remain separately labeled.",
-        "Final64Debug/64Release importer area cases and152native-equal instruction streams/304phase slices pass. Positive transformations include32default/29GCStress stack allocations, boxed/GC-containing layouts and one delegate invoke expansion per mode."
+        "Parent full-analysis Windows controls pass242Debug/240Release. All five exact target-routing cases pass. Shared ABI factories, multireg syntax repairs and six conditional-guard repairs form the validated prerequisite commit.",
+        "SysV and ARM64 classifier tests have not executed. Integrated builds now reach21Linux-x64 semantic diagnostics and87ARM64 declaration diagnostics, with no original parser errors; retain uncompiled classifier/constants/predicate packets as WIP.",
+        "No verified Linux or ARM64 runtime host is available. Compile/unit results cannot establish runtime parity; reuse the unchanged Windows NativeAOT baseline until an execution-relevant compiler change requires publication."
       ],
-      "parentScope": "B366 committed249f24c; additional policies/ordering committedef409ad with126matching streams/252selected phases. B365/B367/B368 native limits remain explicit. This batch targets boxed/GC-containing layouts and delegate execution gaps recorded in earlier object-allocation evidence.",
+      "parentScope": "B369 committed7798e1f with152matching instruction streams/304phase slices and64Debug/64Release importer controls. All five fresh child sessions are archived after exact packet preservation and integration; no child response remains outstanding.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -425,7 +425,18 @@
         "Other-target implementation and new tooling infrastructure are not prerequisites for continuing Windows-x64 execution."
       ]
     },
-    "nextAction": "Continue with shared target-bootstrap/SysV/ARM64 integration after the completed B369 batch. All three packets are handed off; verify final review corrections, combine their prerequisites, and run target-specific builds/tests to identify the actual semantic frontier. Keep Windows behavior validated, do not claim cross-target runtime parity, and archive each completed child after preserving its work. artifacts\\parallel-port\\coordination.json records ownership; documentation and UNBOX children are already archived with all changes retained.",
+    "nextAction": "Finish the shared target-bootstrap prerequisite commit, retaining uncompiled SysV/ARM64 packets as WIP. Then resolve the21Linux-x64 diagnostics in artifacts\\parallel-port\\sysv-integration-2.log: multireg return initialization, GetHfaCount, stale property/layout names and Swift helpers/callsites. ARM64 separately has87declaration errors in arm64-integration-1.log; inspect native guards/target declarations rather than excluding directories. Use bounded background coding tasks for independent work, not new nested sessions. All prior child packets are collected and archived.",
+    "crossTargetBootstrap": {
+      "snapshot": "fca1f96fee67885f06a4ac32559d97cc4f0ba796",
+      "tree": "47ba437a54d80053cdfb5f869a477c228555cfd1",
+      "preservation": "artifacts\\parallel-port contains immutable source snapshot validation-1 and byte-verified bootstrap-1/sysv-1/arm64-1 packet patches/manifests; real child and parent indexes were preserved",
+      "validated": "Full-analysis242Debug/240Release Windows ABI/emitter/VN cases; five host/public-target/internal-override checks in target-routing-after-1.json",
+      "sharedMappings": "abi.cpp:252-263,578-586 -> ABI stack/two-segment factories; GenTreeCall multi-return storage reuses the existing inline array; Swift parameter ABI dispatcher remains explicit NYI with guaranteed failure",
+      "linuxX64": "sysv-integration-2.log:21semantic diagnostics after shared parser repairs; no classifier test executed",
+      "arm64": "arm64-integration-1.log:87target/emitter declaration diagnostics after parser repairs; no classifier test executed",
+      "remainingWip": "SysVX64Classifier, SysV EE descriptor/GetEightByteType helpers/tests, Arm64Classifier/target argument constants/tests, ARM64 ConsumesFlags predicate",
+      "limits": "Prerequisite progress and Windows controls only. No Linux/ARM64 execution host, target-test pass or runtime parity claim."
+    },
     "objectAllocationEvidence": {
       "source": "13d5cdee4b18e8dba19149360603d623b1f91be3",
       "tree": "42b077d3e80d7c51f767dd28d278dc189560eb57",

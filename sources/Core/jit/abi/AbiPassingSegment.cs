@@ -141,6 +141,18 @@ public struct AbiPassingSegment
         };
     }
 
+    /// <summary>Create a stack segment that does not consume a full pointer-sized slot.</summary>
+    public static AbiPassingSegment OnStackWithoutConsumingFullSlot(int stackOffset, int offset, int size)
+    {
+        return new AbiPassingSegment {
+            _register = REG_NA,
+            _stackOffset = stackOffset,
+            _isFullStackSlot = false,
+            Offset = offset,
+            Size = size,
+        };
+    }
+
 #if DEBUG
     public readonly void Dump()
     {

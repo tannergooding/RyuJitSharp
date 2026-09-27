@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Cross-target build prerequisites
+
+Public target-RID selection now reaches the compiler's target configuration,
+while retaining host fallback and explicit internal overrides. Shared ABI
+support now represents two ordered passing segments and packed stack slots.
+Dormant multireg-return declarations and misplaced xarch/intrinsic guards no
+longer cause the original cross-target syntax failures. Swift parameter
+classification remains explicitly unsupported rather than falling through.
+
+Windows-x64 ABI, emitter and value-numbering controls pass in Debug and Release.
+Linux-x64 compilation now exposes missing multireg/Swift helpers and stale member
+spellings; ARM64 exposes further target/emitter declarations. Neither target's
+classifier tests have executed. Their integrated implementation packets remain
+uncommitted while those dependencies are resolved; this is build progress, not
+Linux or ARM64 runtime support.
+
 ## 2026-09-27: Object layouts, delegates and UNBOX ordering
 
 Expanded Windows-x64 execution to the complete unchanged upstream object-stack

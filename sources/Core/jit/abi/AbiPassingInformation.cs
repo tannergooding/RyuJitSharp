@@ -145,6 +145,15 @@ public partial struct AbiPassingInformation
         return info;
     }
 
+    /// <summary>Create by-value passing information from two segments in order.</summary>
+    public static AbiPassingInformation FromSegments(Compiler comp, in AbiPassingSegment firstSegment, in AbiPassingSegment secondSegment)
+    {
+        var info = new AbiPassingInformation(2);
+        info.Segments[0] = firstSegment;
+        info.Segments[1] = secondSegment;
+        return info;
+    }
+
 #if DEBUG
     public void Dump()
     {

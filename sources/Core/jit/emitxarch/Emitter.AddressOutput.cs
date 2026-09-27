@@ -35,7 +35,6 @@ public partial class Emitter
                 // The unwinder recognizes indirect tail jumps as epilog instructions only with REX.W.
                 code = AddRexWPrefix(id, code);
             }
-            #endif
             if (id.idIsCallRegPtr())
             {
                 code = insEncodeMRreg(id, reg, EA_PTRSIZE, code);
@@ -795,3 +794,4 @@ public partial class Emitter
 #endif
     }
 }
+#endif

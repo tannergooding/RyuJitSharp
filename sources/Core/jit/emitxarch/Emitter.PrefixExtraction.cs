@@ -26,7 +26,6 @@ public partial class Emitter
                     || _compiler.compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT)
                     || _compiler.compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT_V512));
             }
-            #endif
             else if (isPrefix(sizePrefix))
             {
                 // EVEX.pp encodes no prefix, 66, F3 and F2 as 0, 1, 2 and 3.
@@ -311,3 +310,4 @@ public partial class Emitter
         return vexPrefix;
     }
 }
+#endif

@@ -92,7 +92,6 @@ public sealed partial class CodeGen
         {
             size = dstType.EmitActualSize;
         }
-        #endif
 
         _ = Emitter.emitIns_Mov(ins, size, dstReg, srcReg, canSkip);
 #else
@@ -100,3 +99,4 @@ public sealed partial class CodeGen
 #endif
     }
 }
+#endif

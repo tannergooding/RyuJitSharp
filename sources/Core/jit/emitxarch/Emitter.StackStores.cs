@@ -43,7 +43,6 @@ public partial class Emitter
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
 #endif
     }
-    #endif
 
     public void emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs, regNumber reg, int ival)
     {
@@ -117,3 +116,4 @@ public partial class Emitter
 #endif
 #endif
 }
+#endif

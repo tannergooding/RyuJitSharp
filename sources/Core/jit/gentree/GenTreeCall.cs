@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -41,7 +42,7 @@ public sealed class GenTreeCall : GenTree
 
     // RegNum would always be the first return reg.
     // The following array holds the other reg numbers of multi-reg return.
-    private regNumber _otherRegs[MAX_RET_REG_COUNT - 1];
+    private InlineArrayMaxMultiregCountMinusOne<regNumber> _otherRegs;
 
     private MultiRegSpillFlags _spillFlags;
 #endif
@@ -415,6 +416,7 @@ public sealed class GenTreeCall : GenTree
 
             return result;
 #endif
+        }
     }
 #else
     public bool HasMultiRegRetVal => false;
@@ -818,7 +820,7 @@ public sealed class GenTreeCall : GenTree
     {
 #if FEATURE_MULTIREG_RET
         Span<regNumber> otherRegs = _otherRegs;
-        otherRegs.Fille(REG_NA);
+        otherRegs.Fill(REG_NA);
         _spillFlags = 0;
 #endif
     }

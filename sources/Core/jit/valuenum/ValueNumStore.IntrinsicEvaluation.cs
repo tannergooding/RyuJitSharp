@@ -393,7 +393,6 @@ public sealed partial class ValueNumStore
                 EvaluateSimdCvtVectorToMask(baseType, ref result, value.AsSpan<byte>()[..simdSize]);
                 return VNForSimdMaskCon(result);
             }
-#endif
 
             switch (id)
             {
@@ -970,5 +969,6 @@ public sealed partial class ValueNumStore
         return VNForFunc(type, func, arg0VN, arg1VN, arg2VN, resultTypeVN);
 #endif
     }
+#endif
 #endif
 }

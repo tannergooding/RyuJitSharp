@@ -21,7 +21,6 @@ public partial class Emitter
 
             return 4;
         }
-        #endif
         else if (hasVexPrefix(code))
         {
             var vexPrefix = emitExtractVexPrefix(ins, ref code);
@@ -144,3 +143,4 @@ public partial class Emitter
         return 0;
     }
 }
+#endif
