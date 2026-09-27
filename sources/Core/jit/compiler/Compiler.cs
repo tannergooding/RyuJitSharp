@@ -2512,13 +2512,44 @@ public partial class Compiler
     /// <summary>Regenerate flow graph annotations; to be used between iterations when repeating opts.</summary>
     protected void RecomputeFlowGraphAnnotations()
     {
-        // TODO: Port Compiler.RecomputeFlowGraphAnnotations
+        assert(opts.optRepeat);
+        assert(JitConfig.JitOptRepeatCount > 0);
+        optResetLoopInfo();
+
+        _ = fgDfsBlocksAndRemove();
+        optFindLoops();
+        _ = optSetBlockWeights();
+
+        assert(_dfsTree is not null);
+        _domTree ??= FlowGraphDominatorTree.Build(_dfsTree);
     }
 
     /// <summary>Clear annotations produced during optimizations; to be used between iterations when repeating opts.</summary>
     protected void ResetOptAnnotations()
     {
-        // TODO: Port Compiler.ResetOptAnnotations
+        assert(opts.optRepeat);
+        assert(JitConfig.JitOptRepeatCount > 0);
+        fgResetForSsa(deepClean: true);
+        vnStore = null;
+        _blockToEHPreds = null;
+        _dominancePreds = null;
+        fgSsaPassesCompleted = 0;
+        fgVNPassesCompleted = 0;
+        fgSsaValid = false;
+        _nodeToLoopMemoryBlockMap = null;
+
+        foreach (var block in Blocks)
+        {
+            foreach (var statement in block.Statements)
+            {
+                foreach (var tree in statement.TreeList)
+                {
+                    tree._vnPair.SetBoth(ValueNumStore.NoVN);
+                    tree.ClearAssertion();
+                    tree._cseNum = NO_CSE;
+                }
+            }
+        }
     }
 
 #if FEATURE_SIMD

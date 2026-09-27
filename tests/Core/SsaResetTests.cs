@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
@@ -12,6 +13,72 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class SsaResetTests
 {
+    [Test]
+    public static void OptimizationResetClearsDeepStateAndRemainingTrees([Values(0, 2)] int bodyCount)
+    {
+        SsaLivenessTests.WithCompiler(2, compiler => {
+            compiler.opts.optRepeat = true;
+            OptRepeatCount(ref JitConfig) = 2;
+            var block = BasicBlock.New(compiler, BBJ_RETURN);
+            var last = BasicBlock.New(compiler, BBJ_RETURN);
+            block.Next = last;
+            compiler.fgFirstBB = block;
+            compiler.fgLastBB = last;
+            var phi = AddStatement(compiler, block, compiler.gtNewStoreLclVarNode(0, new GenTreePhi(TYP_INT)));
+            phi.RootNode._vnPair.SetBoth(19);
+            var trees = new List<GenTree>();
+
+            foreach (var current in compiler.Blocks)
+            {
+                for (var index = 0; index < bodyCount; index++)
+                {
+                    var value = new GenTreeLclVar(TYP_INT, 1) { SsaNum = 3 };
+                    var statement = AddStatement(compiler, current, compiler.gtNewStoreLclVarNode(0, value));
+                    foreach (var tree in statement.TreeList)
+                    {
+                        tree._vnPair.SetBoth(17);
+                        tree.AssertionInfo = new AssertionInfo(1);
+                        tree._cseNum = -3;
+                        trees.Add(tree);
+                    }
+                }
+            }
+
+            _ = compiler.lvaTable[0].lvPerSsaData.AllocSsaNum();
+            _ = MemoryDefinitions(compiler).AllocSsaNum();
+            compiler.vnStore = (ValueNumStore)RuntimeHelpers.GetUninitializedObject(typeof(ValueNumStore));
+            compiler._blockToEHPreds = new Dictionary<BasicBlock, FlowEdge?> { [block] = null };
+            compiler._dominancePreds = new Dictionary<BasicBlock, FlowEdge?> { [last] = null };
+            compiler._nodeToLoopMemoryBlockMap = new Dictionary<GenTree, BasicBlock> { [phi.RootNode] = block };
+            compiler.fgSsaPassesCompleted = 2;
+            compiler.fgVNPassesCompleted = 3;
+            compiler.fgSsaValid = true;
+
+            ResetOptAnnotations(compiler);
+
+            Assert.That(compiler.vnStore, Is.Null);
+            Assert.That(compiler._blockToEHPreds, Is.Null);
+            Assert.That(compiler._dominancePreds, Is.Null);
+            Assert.That(compiler._nodeToLoopMemoryBlockMap, Is.Null);
+            Assert.That(compiler.fgSsaPassesCompleted, Is.Zero);
+            Assert.That(compiler.fgVNPassesCompleted, Is.Zero);
+            Assert.That(compiler.fgSsaValid, Is.False);
+            Assert.That(compiler.lvaTable[0].lvPerSsaData.Count, Is.Zero);
+            Assert.That(MemoryDefinitions(compiler).Count, Is.Zero);
+            Assert.That(block.FirstStmt, Is.Not.SameAs(phi));
+            Assert.That(phi.RootNode._vnPair.Liberal, Is.EqualTo(19));
+            Assert.That(trees.Count, Is.EqualTo(bodyCount * 4));
+            foreach (var tree in trees)
+            {
+                Assert.That(tree._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
+                Assert.That(tree._vnPair.Conservative, Is.EqualTo(ValueNumStore.NoVN));
+                Assert.That(tree.AssertionInfo.AssertionIndex, Is.Zero);
+                Assert.That(tree._cseNum, Is.Zero);
+                Assert.That(tree.AsLclVarCommon().SsaNum, Is.EqualTo(SsaConfig.RESERVED_SSA_NUM));
+            }
+        });
+    }
+
     [Test]
     public static void ResetPreservesNativeDeepAndPhiOnlyContracts(
         [Values] bool deepClean, [Values(0, 2)] int phiCount, [Values(0, 2)] int bodyCount)
@@ -120,4 +187,10 @@ internal static class SsaResetTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "lvMemoryPerSsaData")]
     private static extern ref SsaDefArray<SsaMemDef> MemoryDefinitions(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ResetOptAnnotations")]
+    private static extern void ResetOptAnnotations(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitOptRepeatCount")]
+    private static extern ref int OptRepeatCount(ref JitConfigValues config);
 }

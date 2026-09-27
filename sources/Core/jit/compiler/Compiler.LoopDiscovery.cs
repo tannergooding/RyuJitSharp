@@ -14,6 +14,19 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private void optResetLoopInfo()
+    {
+        JITDUMP("*************** In optResetLoopInfo()\n");
+
+        foreach (var block in Blocks)
+        {
+            if (!block.hasProfileWeight)
+            {
+                block.bbWeight = BB_UNITY_WEIGHT;
+            }
+        }
+    }
+
     public PhaseStatus optFindLoopsPhase()
     {
 #if DEBUG

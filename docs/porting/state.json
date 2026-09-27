@@ -12,20 +12,21 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Align the remaining LSRA, comparison and stack-array test expectations with current native phase ownership and operand rules.",
+      "scope": "Complete repeated-optimization annotation reset and flow-graph recomputation, including native optResetLoopInfo.",
       "doneWhen": [
-        "Cover direct buildIndir and buildNode dispatch, with AVX flags set only by the native dispatcher.",
-        "Assert effective small compare size while retaining TYP_INT constants and unsigned conditions.",
-        "Preserve header-store order while allowing native addition commuting; use subtraction to guard operand ownership.",
-        "Run affected groups and then full Core Debug/Release; commit and continue to the next actual port gap."
+        "Replace both reachable opt-repeat no-op stubs with the complete pinned functions, reusing existing SSA/DFS/loop/dominator helpers.",
+        "Deep-clear SSA, VN, assertions, CSE markers and memoized predecessor/loop-memory maps between iterations.",
+        "Reset only nonprofile block weights, then recompute DFS/removal, loops, weights and missing dominators in native order.",
+        "Reproduce old behavior, validate state/CFG controls and positive repeated native/managed execution, retain baseline execution and commit."
       ],
       "validation": [
-        "Baseline artifacts\\core-validation\\debug-1.trx and release-1.trx on09bca24;11687Debug/10774Release total cases.",
-        "Baseline artifacts\\core-validation\\debug-2.trx/release-2.trx retain the failing assertions and expected-type mismatches.",
-        "Run LinearScanMemoryAndComparisonTests, LinearScanNodeBuildingTests, CompareNodeLoweringTests, ComparisonContainmentTests and StackArrayExpansionTests with full analysis, followed by complete Core tests."
+        "Existing full Core11791Debug/10878Release is the clean unit baseline on d4439b1.",
+        "Completed98Debug/97Release focused SSA/liveness/loop/weight/dominator cases; six reset/recompute regressions fail against old stubs.",
+        "Current-pin range corpus executes all four selected methods with2and12iterations. All56CSE phases,48inter-iteration recomputation fragments and8emitted bodies match native exactly.",
+        "Complete Core11799Debug/10886Release passes. All29configurations/143baseline bodies execute with unchanged instruction streams/sizes and97CSE phases."
       ],
-      "parentScope": "Enum fixtures committed5b6082e. Remaining four baseline failures are stale expectations; preserve production algorithms and test their current contracts.",
-      "deferred": "Other full-suite failure groups remain in baseline TRX. B322 and broader dump/raw-byte/GC coverage remain separate.",
+      "parentScope": "Full Core restored and committed d4439b1. The current compiler loop already invokes both stubs on repeated optimization; native compiler.cpp5815/5850 and optimizer.cpp2461 supply the complete next dependency batch.",
+      "deferred": "B322 and broader dump/raw-byte/GC coverage remain separate. Historical commented CSE visitor declarations are not evidence of missing active implementations.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -430,7 +431,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B346 passes124Debug/124Release; full Core now passes11791Debug/10878Release, zero skipped. Commit locally, then inspect remaining public phase TODO/NYI sites in Compiler.cs, Compiler.imp.cs and Compiler.opt.cs against pinned oracle/residual sources, starting with the documented G002/G003 frontier. Select an actual reachable Windows-x64 gap rather than treating stale deviation-table entries as current stubs; persist the next bounded function/dependency batch before implementation. No push.",
+    "nextAction": "B347 opt-repeat complete and validated; commit locally, then continue directly into remaining Compiler.cs diagnostic/statistics entry stubs: RecordNowayAssert, RecordStateAtEndOfCompilation and RecordStateAtEndOfInlining. Read their pinned native bodies and existing managed stats helpers/callsites; choose the next complete dependency-coherent reachable function batch, rather than reviving already integrated importer/CSE placeholders. Latest checked JIT and exact comparisons are under artifacts\\opt-repeat; source exports remain reconstructible from immutable snapshots. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -465,6 +466,22 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "optimizationRepeat": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "nativeFunctions": "compiler.cpp5815 ResetOptAnnotations,5850 RecomputeFlowGraphAnnotations; optimizer.cpp2461 optResetLoopInfo.",
+        "mapping": "Compiler.cs owns reset/recompute; Compiler.LoopDiscovery.cs owns loop-weight reset. Native tree.ClearVN is the existing _vnPair.SetBoth(NoVN) representation. Native m_blockToEHPreds/m_dominancePreds/m_nodeToLoopMemoryBlockMap map to underscore-prefixed managed fields.",
+        "sourceSnapshot": "777a7042136d533151001e344e186d597e528cfe",
+        "tests": "artifacts\\opt-repeat\\debug-4.trx:98passed;release-4.trx:97passed. Eight new cases cover multi-block/statement deep clearing, removed PHI ordering, profile-weight/flag preservation, unreachable removal, loops, heuristic weights and dominators with/without profiling.",
+        "regressionControl": "Source550ef43413e4d1fc75b611d9c2a7611d035ab988;old-debug-1.trx:all6reset/recompute tests fail against unchanged old stubs. before-repeat2-1:old checked JIT aborts at iteration2 liveness because dfs is null; native-repeat2-1 completes.",
+        "nativeAotSource": "ba450432520195e3fe63a4d590ed3d3994c0f623",
+        "nativeAotLibrary": "artifacts\\opt-repeat\\native-jit-1\\RyuJitSharp.dll",
+        "nativeAotSha256": "73AB264E332532AD60CA35E1756E853FA4884DA752A0C2E0C76DD14B04EC153A",
+        "execution": "native/managed-repeat2-1 and-repeat12-1:4positive methods each, exact requested iteration counts, equal runtime output2and no fallback. Twelve iterations also validate the capture runner's CLR hexadecimal integer setting.",
+        "comparison": "artifacts\\opt-repeat\\comparison-1.json, generated by compare.py:all8repeated instruction streams/sizes,56complete CSE phases and48complete recomputation fragments match pinned native byte-for-byte.",
+        "baseline": "artifacts\\upstream-refresh-33baf8\\opt-repeat-managed-matrix-1:29configurations/143positive bodies, no fallback, runtime/collection contracts retained. comparison-1.json compares native-matrix-v2 and intrinsic-bits-managed-matrix-1:all143instruction streams/sizes and97CSE phases unchanged.",
+        "fullCore": "artifacts\\opt-repeat\\full-debug-1.trx:11799passed;full-release-1.trx:10886passed; zero failed/skipped.",
+        "limits": "No new observable deviation. Profile-weight paths have focused state/CFG evidence; repeated runtime captures are uninstrumented. Instruction-trace equality is not whole-dump/raw-machine-byte parity."
+      },
       "intrinsicBitConversions": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "nativeFunctions": "gentree.cpp20976 integral EvaluateBroadcastInPlace and gtFoldExprHWIntrinsic scalar/mask/extraction/shift paths; simd.h EvaluateUnaryMask, EvaluateBinaryMask and EvaluateSimdCvtMaskToVector.",

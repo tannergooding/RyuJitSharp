@@ -15,6 +15,7 @@ param(
         "SynchronizedReturn", "GenericCatch", "PInvokeCall", "ReversePInvoke", "ManyReturns", "LocalAddressStore", "LocalAddressDifference", "ImplicitByRefArgument"),
     [ValidateRange(1, 3600)][int] $TimeoutSeconds = 120,
     [switch] $ExecuteManagedCode,
+    [ValidateRange(0, 2147483647)][int] $OptimizationRepeatCount = 0,
     [switch] $RawHexCode,
     [switch] $GcStress,
     [switch] $FakeProcedureSplitting,
@@ -33,6 +34,9 @@ if ($InstrumentedTier0 -and $MinOpts) {
 }
 if ($BlockCounters -and -not $InstrumentedTier0) {
     throw "-BlockCounters requires -InstrumentedTier0."
+}
+if (($OptimizationRepeatCount -gt 0) -and ($MinOpts -or $InstrumentedTier0)) {
+    throw "-OptimizationRepeatCount requires optimized compilation; do not combine it with -MinOpts or -InstrumentedTier0."
 }
 
 if (($MinOpts -or $InstrumentedTier0) -and -not $PSBoundParameters.ContainsKey("ExpectedMethods")) {
@@ -97,6 +101,10 @@ if ($InstrumentedTier0) {
 }
 if ($MinOpts) {
     $settings.DOTNET_JitMinOpts = "1"
+}
+if ($OptimizationRepeatCount -gt 0) {
+    $settings.DOTNET_JitOptRepeat = $selector
+    $settings.DOTNET_JitOptRepeatCount = $OptimizationRepeatCount.ToString("X", [Globalization.CultureInfo]::InvariantCulture)
 }
 if ($DisableObjectStackAllocation) {
     $settings.DOTNET_JitObjectStackAllocation = "0"

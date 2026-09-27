@@ -15,6 +15,27 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Repeated optimization state and graph reconstruction
+
+`JitOptRepeat` now clears SSA/VN/assertion/CSE annotations and memoized analysis
+state between iterations, resets nonprofile weights, and reconstructs DFS,
+loops, weights and dominators in native order. Previously both entry points
+were empty and the checked JIT aborted in second-iteration liveness without a
+DFS tree. Profile weights are retained.
+
+The range corpus executes all four selected methods with both two and twelve
+optimization iterations. All eight emitted instruction streams and sizes,
+56 complete CSE phases and 48 inter-iteration recomputation fragments match the
+pinned native JIT exactly. The twelve-iteration run also verifies hexadecimal
+CLR configuration encoding in the capture runner.
+
+Focused regressions pass 98 Debug and 97 Release cases; all six reset/recompute
+cases fail with the original stubs. Complete Core passes 11,799 Debug and
+10,886 Release cases. The 29-configuration/143-body execution baseline retains
+its instruction streams, sizes and 97 CSE phases.
+Evidence: `artifacts\opt-repeat`. Repeated runtime profiling, whole dumps and
+relocation-aware machine-byte comparisons remain separate coverage.
+
 ## 2026-09-27: Full Core validation restored
 
 The full Core suite passes 11,791 Debug and 10,878 Release cases with none

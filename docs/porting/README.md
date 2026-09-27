@@ -308,6 +308,13 @@ allocation analysis, use `-DisableObjectStackAllocation` on both runs. These
 switches are recorded in the manifest and do not themselves enable managed
 execution.
 
+Use `-OptimizationRepeatCount 2` on native and managed optimized captures to
+exercise two optimization iterations, including annotation reset and CFG
+recomputation between them. Zero leaves repeated optimization disabled.
+This cannot be combined with `-MinOpts` or `-InstrumentedTier0`. Verify the
+iteration diagnostics as well as generated-code execution; compilation headers
+alone do not prove that the selected iterations ran.
+
 Use `-InstrumentedTier0` to request eager Tier0 profiling without call-count
 promotion to later tiers. This sets `TieredPGO_InstrumentOnlyHotCode=0` and
 disables runtime call counting; it is distinct from forced `-MinOpts` and

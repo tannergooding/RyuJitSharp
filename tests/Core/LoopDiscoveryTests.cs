@@ -13,6 +13,79 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class LoopDiscoveryTests
 {
+    [Test]
+    public static void LoopWeightResetPreservesProfileWeightsAndFlags([Values(0.0, 37.0)] double weight)
+    {
+        WithCompiler(compiler => {
+            var blocks = CreateGraph(compiler, [[1], []]);
+            blocks[0].bbWeight = weight;
+            blocks[1].bbWeight = weight;
+            blocks[0].SetFlags(BBF_INTERNAL);
+            blocks[1].SetFlags(BBF_PROF_WEIGHT);
+
+#if DEBUG
+            compiler.verbose = true;
+            var text = CodeGenLifeTransitionTests.Capture(() => ResetLoopInfo(compiler));
+            Assert.That(text, Is.EqualTo($"*************** In optResetLoopInfo(){Environment.NewLine}"));
+#else
+            ResetLoopInfo(compiler);
+#endif
+
+            Assert.That(blocks[0].bbWeight, Is.EqualTo(BB_UNITY_WEIGHT));
+            Assert.That(blocks[0].HasFlag(BBF_INTERNAL), Is.True);
+            Assert.That(blocks[1].bbWeight, Is.EqualTo(weight));
+            Assert.That(blocks[1].hasProfileWeight, Is.True);
+        });
+    }
+
+    [Test]
+    public static void RepeatedOptimizationRebuildsGraphAnnotations([Values] bool loop, [Values] bool profile)
+    {
+        WithCompiler(compiler => {
+            var blocks = CreateGraph(compiler, loop ? [[1], [2, 3], [1], [], []] : [[1], [], []]);
+            compiler.opts.optRepeat = true;
+            OptRepeatCount(ref JitConfig) = 2;
+            compiler.fgPgoHaveWeights = profile;
+            compiler._dfsTree = compiler.fgComputeDfs();
+            var oldDfs = compiler._dfsTree;
+            compiler._domTree = FlowGraphDominatorTree.Build(oldDfs);
+            var oldDominators = compiler._domTree;
+            compiler._loops = FlowGraphNaturalLoops.Find(oldDfs);
+            var oldLoops = compiler._loops;
+            foreach (var block in blocks)
+            {
+                block.bbWeight = 37;
+                if (profile)
+                {
+                    block.SetFlags(BBF_PROF_WEIGHT);
+                }
+            }
+
+            RecomputeAnnotations(compiler);
+
+            Assert.That(compiler._dfsTree, Is.Not.Null.And.Not.SameAs(oldDfs));
+            Assert.That(compiler._domTree, Is.Not.Null.And.Not.SameAs(oldDominators));
+            Assert.That(compiler._loops, Is.Not.Null.And.Not.SameAs(oldLoops));
+            Assert.That(compiler._loops!.NumLoops, Is.EqualTo(loop ? 1 : 0));
+            Assert.That(compiler.optLoopsCanonical, Is.True);
+            Assert.That(compiler.fgHasLoops, Is.EqualTo(loop));
+            Assert.That(blocks[^1].HasFlag(BBF_REMOVED), Is.True);
+            Assert.That(blocks[1].bbIDom, Is.SameAs(blocks[0]));
+            Assert.That(blocks[0].bbWeight, Is.EqualTo(profile ? 37 : BB_UNITY_WEIGHT));
+            Assert.That(blocks[1].bbWeight, Is.EqualTo(profile ? 37 : (loop ? 8 : 1) * BB_UNITY_WEIGHT));
+            Assert.That(compiler._reachabilitySets is null, Is.EqualTo(profile));
+        });
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "optResetLoopInfo")]
+    private static extern void ResetLoopInfo(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "RecomputeFlowGraphAnnotations")]
+    private static extern void RecomputeAnnotations(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitOptRepeatCount")]
+    private static extern ref int OptRepeatCount(ref JitConfigValues config);
+
     [TestCase(false)]
     [TestCase(true)]
     public static void DiscoveryRecordsCyclesAndPhaseState(bool hasLoop)
