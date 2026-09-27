@@ -15,6 +15,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Active phase invariant checking
+
+The phase driver now verifies entry-block constraints, cached flow-graph
+annotations, local-list execution order, canonical-loop boundaries and unique
+node IDs instead of calling five empty methods. Graph construction and validation
+share the native callback-style DFS walk; validation observes existing numbering
+without overwriting it. Local checking includes physical call definitions, and
+uniqueness checking covers unthreaded trees, both threading modes and LIR.
+
+All 45 new cases pass; 29 reject deliberately corrupt states that the original
+compiler silently accepted. Complete Core passes 11,850 Debug and 10,887 Release
+cases. The checked JIT executes the 29-configuration/143-body baseline and both
+two- and twelve-iteration range captures with phase checking active. Baseline
+instruction streams, sizes and 97 CSE phases remain equal to native, as do the
+eight repeated bodies, 56 CSE phases and 48 recomputation fragments.
+Evidence: `artifacts\phase-invariants`.
+
 ## 2026-09-27: Post-inlining compilation timing
 
 Debug builds now capture the end-of-inlining counter and record the remaining

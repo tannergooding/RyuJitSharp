@@ -11,19 +11,22 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
+    "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "Complete native Debug-only post-inlining compilation timing hooks.",
+      "scope": "Complete the five active Debug phase-check stubs for entry blocks, graph annotations, linked locals, canonical loops and unique node IDs.",
       "doneWhen": [
-        "Port RecordStateAtEndOfInlining and RecordStateAtEndOfCompilation in full, using the existing Stopwatch counter/frequency convention.",
-        "Record the post-inlining timestamp and positive elapsed integer microseconds, clear prior values and retain native Release no-op bodies.",
-        "Validate real-clock bounds, future-timestamp zero handling, repeated records and Release behavior; commit locally and continue."
+        "Port complete pinned fgDebugCheckInitBB, fgDebugCheckFlowGraphAnnotations, fgDebugCheckLinkedLocals, fgDebugCheckLoops and fgDebugCheckNodesUniqueness.",
+        "Reuse existing visitors, bit vectors and CFG traversal; annotation validation must observe existing numbering rather than repair or overwrite it.",
+        "Preserve native local execution order, call-defined physical locals, tree/LIR distinctions, loop canonicalization checks and diagnostics.",
+        "Validate positive and deliberately corrupt graph/tree states, then checked NativeAOT baseline and repeated optimization; fix newly exposed translation defects within this dependency batch."
       ],
       "validation": [
-        "Current Core11799Debug/10886Release and29/143baseline are green on22b1657.",
-        "Completed6Debug/1Release timing cases with before/after clock bounds and5old-stub failures/1control. Timing values have no current managed consumers; no generated-code or deterministic wall-clock equality claim."
+        "Complete Core11850Debug/10887Release passes;45new phase-invariant cases and existing physical call-definition/local sequencing controls included.",
+        "Original compiler binary rejects none of the deliberately corrupt states:29new cases fail and16controls pass against it, without rebuilding unchanged source.",
+        "Checked29/143baseline and2/12iteration captures pass with active phase checks. All143baseline instruction streams/sizes and97CSE phases, plus8repeated bodies/56CSE phases/48recomputation fragments, remain exactly equal to native."
       ],
-      "parentScope": "B347 committed22b1657. Existing compCompile calls both timing methods; native compiler.cpp9103/9114 and managed JitTimer establish complete bodies and clock conventions.",
-      "deferred": "MEASURE_NOWAY-only aggregation and process-shutdown reporting form a separate statistics batch. B322 and broader dump/raw-byte/GC coverage remain separate.",
+      "parentScope": "B348 committede1a5e39. Phase.PostPhase calls all five current empty methods. Native fgdiagnostic.cpp3331,3799,4144,4798,4836 defines them. Compiler.ProcessShutdownWork is also empty in native and is not a missing implementation; fgVerifyHandlerTab is already fully implemented.",
+      "deferred": "MEASURE_NOWAY aggregation is disabled in the current project and remains separate. Native shutdown callback needs no changes. B322 and broader dump/raw-byte/GC coverage remain separate.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -428,7 +431,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B348 timing hooks complete,6Debug/1Release and5old-stub failures/1control; commit locally. Then inspect the reachable ProcessShutdownWork callback and native feature guards to determine its exact active reporting dependencies before porting. Do not treat MEASURE_NOWAY-only code as an enabled production gap without checking build symbols. Latest execution binary remains B347, and no new timing runtime/parity claim is made. No push.",
+    "nextAction": "B349 five phase checks complete and validated; commit locally. Next coherent area: full enabled DUMP_FLOWGRAPHS subsystem, not more isolated helpers. Native fgdiagnostic.cpp roughly151-1784 includes escape tables, fgProcessEscapes, fgDumpTree, fgOpenFlowGraphFile, complete DOT/XML fgDumpFlowGraph, EH grouping and fgDumpFlowGraphLoops. Managed fgDumpFlowGraph is an active false-return stub and DUMP_FLOWGRAPHS is enabled by the project. Implement selection/file ownership, both formats and grouping together, writing tests alongside, then one integration validation boundary with native captures. Inspect existing formatting/file-output helpers before adding any. compCompileFinish remains a separate allocation/statistics closure, not part of graph dumping. Respect workCadence. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -463,6 +466,18 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "phaseInvariants": {
+        "nativeFunctions": "fgdiagnostic.cpp3331 fgDebugCheckInitBB,3799 fgDebugCheckLinkedLocals,4144 fgDebugCheckNodesUniqueness,4798 fgDebugCheckLoops,4836 fgDebugCheckFlowGraphAnnotations; compiler.hpp5371 fgRunDfs and flowgraph.cpp4530 fgComputeDfs.",
+        "sourceSnapshot": "ba7069a9ba030f615fb0611f56b18a52bb457432",
+        "mapping": "Compiler.PhaseChecks.cs holds the five complete Debug checks and their native visitors. Compiler.fg.cs uses shared callback-based all-successor DFS traversal for construction and non-mutating validation, preserving profile order and extra roots.",
+        "tests": "artifacts\\phase-invariants\\full-debug-1.trx:11850passed;full-release-1.trx:10887passed.45new cases cover entry constraints, corrupt numbering/order/count/analysis ownership, profile/OSR/return roots, four IR representations, reversed local evaluation order, broken lists and canonical loop boundaries. Existing call-definition sequencing cases now also invoke the checker.",
+        "regressionControl": "old-debug-1.trx:29failed/16passed using final test assembly and immutable old compiler37c583baf9538b6c675dabaaa8ad7138e836171d. old-checker-control-1.json records source IDs and binary hashes; no old-source rebuild was needed.",
+        "nativeAotLibrary": "artifacts\\phase-invariants\\native-jit-1\\RyuJitSharp.dll",
+        "nativeAotSha256": "737A47E296001BA6472C88F9621349D989C0875A1D89B44DAA69C279FDD4A844",
+        "execution": "artifacts\\upstream-refresh-33baf8\\phase-invariants-managed-matrix-1:29configurations/143positive bodies. managed-repeat2-1 and managed-repeat12-1:4methods each with exact iteration counts and runtime output. No fallback;143post-phase IR-check diagnostics occur in the two-iteration capture.",
+        "comparison": "artifacts\\phase-invariants\\comparison-1.json from compare.py reuses native-matrix-v2 and B347 native repeats. All143baseline instruction streams/sizes and97CSE phases match native and B347. All8repeated bodies,56CSE phases and48inter-iteration recomputation fragments match native.",
+        "limits": "No new observable deviation or whole-dump/raw-machine-byte claim. Shared DFS traversal is the existing all-successor specialization; other-target traversal/representation gaps remain outside the Windows-x64 boundary."
+      },
       "compilationTiming": {
         "nativeFunctions": "compiler.cpp9103 RecordStateAtEndOfInlining and9114 RecordStateAtEndOfCompilation; src/native/minipal/time.c Windows high-resolution counter/frequency use QueryPerformanceCounter/QueryPerformanceFrequency.",
         "sourceSnapshot": "7ce7b10a5a2074ba2806b7c2a9addadd946d9507",

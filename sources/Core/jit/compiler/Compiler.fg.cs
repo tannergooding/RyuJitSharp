@@ -3440,21 +3440,6 @@ public partial class Compiler
         }
     }
 
-    // TODO: Port phase check - fgDebugCheckInitBB
-    public void fgDebugCheckInitBB() { }
-
-    // TODO: Port phase check - fgDebugCheckFlowGraphAnnotations
-    public void fgDebugCheckFlowGraphAnnotations() { }
-
-    // TODO: Port phase check - fgDebugCheckLinkedLocals
-    public void fgDebugCheckLinkedLocals() { }
-
-    // TODO: Port phase check - fgDebugCheckLoops
-    public void fgDebugCheckLoops() { }
-
-    // TODO: Port phase check - fgDebugCheckNodesUniqueness
-    public void fgDebugCheckNodesUniqueness() { }
-
     public void fgDebugCheckProfile(PhaseChecks checks = PhaseChecks.CHECK_NONE)
     {
         var configEnabled = (JitConfig.JitProfileChecks >= 0) && fgHaveProfileWeights && fgPredsComputed;
@@ -10781,6 +10766,52 @@ public partial class Compiler
     {
         var postOrder = new BasicBlock[fgBBcount];
         var hasCycle = false;
+
+        void VisitPreorder(BasicBlock block, int index)
+        {
+            block.bbPreorderNum = index;
+            block.bbPostorderNum = -1;
+        }
+
+        void VisitPostorder(BasicBlock block, int index)
+        {
+            block.bbPostorderNum = index;
+            assert(index < fgBBcount);
+            postOrder[index] = block;
+        }
+
+        void VisitEdge(BasicBlock block, BasicBlock successor)
+        {
+            // A node still active in the DFS, discovered no later than the
+            // current block, is an ancestor reached by a backedge.
+            if ((successor.bbPreorderNum <= block.bbPreorderNum) && (successor.bbPostorderNum == -1))
+            {
+                hasCycle = true;
+            }
+        }
+
+        assert(fgFirstBB is not null);
+        var entries = new List<BasicBlock> { fgFirstBB };
+
+        if (fgEntryBB is not null)
+        {
+            assert(opts.IsOSR);
+            entries.Add(fgEntryBB);
+        }
+
+        if ((genReturnBB is not null) && !fgGlobalMorphDone)
+        {
+            entries.Add(genReturnBB);
+        }
+
+        var count = fgRunDfs(VisitPreorder, VisitPostorder, VisitEdge, entries, useProfile);
+
+        return new FlowGraphDfsTree(this, postOrder, count, hasCycle, useProfile);
+    }
+
+    private int fgRunDfs(Action<BasicBlock, int> visitPreorder, Action<BasicBlock, int> visitPostorder,
+        Action<BasicBlock, BasicBlock> visitEdge, List<BasicBlock> entries, bool useProfile)
+    {
         var traits = new BitVecTraits(this, fgBBNumMax + 1);
         var visited = BitVecOps.MakeEmpty(traits);
         var preOrderIndex = 0;
@@ -10791,8 +10822,7 @@ public partial class Compiler
         {
             BitVecOps.AddElemD(traits, visited, entry.bbNum);
             pending.Push((entry, fgGetAllSuccessors(entry, useProfile), 0));
-            entry.bbPreorderNum = preOrderIndex++;
-            entry.bbPostorderNum = -1;
+            visitPreorder(entry, preOrderIndex++);
 
             while (pending.Count > 0)
             {
@@ -10800,9 +10830,7 @@ public partial class Compiler
 
                 if (next == successors.Count)
                 {
-                    block.bbPostorderNum = postOrderIndex;
-                    assert(postOrderIndex < fgBBcount);
-                    postOrder[postOrderIndex++] = block;
+                    visitPostorder(block, postOrderIndex++);
                     continue;
                 }
 
@@ -10812,40 +10840,25 @@ public partial class Compiler
                 if (BitVecOps.TryAddElemD(traits, visited, successor.bbNum))
                 {
                     pending.Push((successor, fgGetAllSuccessors(successor, useProfile), 0));
-                    successor.bbPreorderNum = preOrderIndex++;
-                    successor.bbPostorderNum = -1;
+                    visitPreorder(successor, preOrderIndex++);
                 }
 
-                // A node still active in the DFS, discovered no later than the
-                // current block, is an ancestor reached by a backedge.
-                if ((successor.bbPreorderNum <= block.bbPreorderNum) && (successor.bbPostorderNum == -1))
-                {
-                    hasCycle = true;
-                }
+                visitEdge(block, successor);
             }
         }
 
-        assert(fgFirstBB is not null);
-        VisitEntry(fgFirstBB);
-
-        if (fgEntryBB is not null)
+        assert(entries.Count > 0);
+        foreach (var entry in entries)
         {
-            assert(opts.IsOSR);
-
-            if (!BitVecOps.IsMember(traits, visited, fgEntryBB.bbNum))
+            if (!BitVecOps.IsMember(traits, visited, entry.bbNum))
             {
-                VisitEntry(fgEntryBB);
+                VisitEntry(entry);
             }
-        }
-
-        if ((genReturnBB is not null) && !fgGlobalMorphDone &&
-            !BitVecOps.IsMember(traits, visited, genReturnBB.bbNum))
-        {
-            VisitEntry(genReturnBB);
         }
 
         assert(preOrderIndex == postOrderIndex);
-        return new FlowGraphDfsTree(this, postOrder, preOrderIndex, hasCycle, useProfile);
+
+        return preOrderIndex;
     }
 
     internal List<BasicBlock> fgGetAllSuccessors(BasicBlock block, bool useProfile = false)
