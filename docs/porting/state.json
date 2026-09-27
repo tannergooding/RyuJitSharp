@@ -12,19 +12,19 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Correct the same absent-return-buffer fixture defect in address lowering, VN nonnull propagation, block stores and two register-allocation fixtures.",
+      "scope": "Reconnect stale emitter constant-reader and division ownership test adapters to the integrated type and helper contracts.",
       "doneWhen": [
-        "Preserve full-suite baseline200Debug/161Release failures before corrections.",
-        "Initialize BAD_VAR_NUM in the five fixtures whose ordinary local zero is incorrectly treated as nonnull caller-stack storage.",
-        "Retain fault, write-barrier containment and helper-register kill assertions without production changes.",
-        "Run affected fixtures and the indirect-call controls in both configurations, commit locally and continue with other evidenced failures."
+        "Use the actual public Emitter.CnsVal type rather than searching only nonpublic nested types.",
+        "Bind the division ownership accessor to current Lowering.ReplaceWithLclVar, matching production division consumers and existing call-target tests.",
+        "Preserve all descriptor payload/layout/relocation and ownership/temporary assertions.",
+        "Run the complete affected fixtures and call-target controls in both configurations; commit and continue."
       ],
       "validation": [
         "Baseline artifacts\\core-validation\\debug-1.trx and release-1.trx on09bca24;11687Debug/10774Release total cases.",
-        "Run AddressLoweringTests, AssertionVNStatementTests, BlockStoreLoweringTests, LinearScanCallBuildingTests, LinearScanDefinitionConstructionTests and IndirectCallTransformationTests with full analysis."
+        "Run EmitterConstantDescriptorTests, DivisionOwnershipTests and CallTargetLoweringTests with full analysis."
       ],
-      "parentScope": "Indirect-call B341 committed09bca24. Full-suite failures now provide the validation frontier; retain native contracts rather than adapting production to incomplete fixtures.",
-      "deferred": "Other full-suite failure groups remain in baseline TRX, including emitter reflection and hardware-intrinsic fixture conversions. B322 and broader dump/raw-byte/GC coverage remain separate.",
+      "parentScope": "B341 additional sentinel corrections committedc7dd8a9. B342 now addresses adapter failures before evaluating actual semantic discrepancies.",
+      "deferred": "Other full-suite failure groups remain in baseline TRX, including hardware-intrinsic fixture conversions. B322 and broader dump/raw-byte/GC coverage remain separate.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -429,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B341 five-fixture follow-up passes154Debug/153Release, restoring seven baseline failures per configuration without production changes; commit locally. Next inspect EmitterConstantDescriptorTests.ReadConstant:140baseline failures arise from stale nested-type reflection; use actual current visibility and contracts. Remaining B342 groups stay recorded in full baseline TRX; do not weaken expectations or change production without native evidence.",
+    "nextAction": "Descriptor/division adapter corrections pass179Debug/183Release; commit locally. Continue B342 intrinsic numeric defects:33Debug-only failures include production signed/unsigned bit conversions in GenTreeVecCon.EvaluateBroadcastInPlace, SIMD mask evaluators and gtFoldExprHWIntrinsic, plus two fixture expectation sites. Compare complete affected native functions and preserve truncation, negative mask bits and overshift semantics; add boundary controls before changing production.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -469,7 +469,9 @@
         "baseline": "artifacts\\core-validation\\debug-1.trx:200failed/11487passed;release-1.trx:161failed/10613passed; full analysis, zero skipped.",
         "sentinelCorrection": "AddressLoweringTests, AssertionVNStatementTests, BlockStoreLoweringTests, LinearScanCallBuildingTests and LinearScanDefinitionConstructionTests initialize absent compRetBuffArg to BAD_VAR_NUM.",
         "sentinelTests": "artifacts\\core-validation\\sentinel-debug-1.trx and sentinel-release-1.trx:154Debug/153Release pass, including IndirectCallTransformationTests. Seven original fault/write-barrier failures per configuration corrected; no expectation or production changes.",
-        "remaining": "Other baseline failures remain under B342, beginning with emitter constant-reader reflection. Full-suite success has not been established."
+        "adapterCorrection": "EmitterConstantDescriptorTests uses typeof(Emitter.CnsVal); DivisionOwnershipTests binds current Lowering.ReplaceWithLclVar. Production and test expectations unchanged.",
+        "adapterTests": "artifacts\\core-validation\\adapters-debug-1.trx and adapters-release-1.trx:179Debug/183Release pass, including CallTargetLoweringTests.142baseline failures per configuration corrected.",
+        "remaining": "Other baseline failures remain under B342, beginning with intrinsic numeric conversions in production and fixtures. Full-suite success has not been established."
       },
       "indirectCallFaultFixtures": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",

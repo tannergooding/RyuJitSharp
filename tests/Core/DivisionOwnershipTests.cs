@@ -115,7 +115,7 @@ internal static unsafe class DivisionOwnershipTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ChangeDivisionOper")]
     private static extern void ChangeOper(Lowering lowering, GenTreeOp node, genTreeOps oper);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ReplaceCallTargetUseWithLclVar")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(ReplaceWithLclVar))]
     private static extern GenTreeLclVar ReplaceWithLclVar(Lowering lowering, LIR.Use use, int tempNum = BAD_VAR_NUM);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "TryLowerConstIntUDivOrUMod")]

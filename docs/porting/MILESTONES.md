@@ -15,6 +15,15 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Descriptor and division test adapters
+
+Descriptor tests now use the public `Emitter.CnsVal` type directly, and division
+ownership tests target the integrated `Lowering.ReplaceWithLclVar` helper.
+These adapter corrections restore 142 failing cases per configuration without
+changing production or weakening payload, layout, relocation or ownership checks.
+The complete fixtures and call-target controls pass 179 Debug and 183 Release
+cases. Other full-suite failures remain under investigation.
+
 ## 2026-09-27: Indirect-call fixture fault contracts
 
 The indirect-call fixture now initializes an absent return-buffer argument to

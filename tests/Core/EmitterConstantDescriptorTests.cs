@@ -356,7 +356,7 @@ internal static unsafe class EmitterConstantDescriptorTests
     private static (nint Displacement, nint Constant, bool Relocatable) ReadConstant(
         Emitter emitter, Emitter.instrDesc descriptor, string methodName)
     {
-        var type = typeof(Emitter).GetNestedType("CnsVal", BindingFlags.NonPublic)!;
+        var type = typeof(Emitter.CnsVal);
         var method = typeof(Emitter).GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic,
             [typeof(Emitter.instrDesc), type.MakeByRefType()])!;
         object?[] arguments = [descriptor, Activator.CreateInstance(type)];
