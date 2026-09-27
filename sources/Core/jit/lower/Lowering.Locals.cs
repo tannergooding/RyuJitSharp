@@ -93,7 +93,7 @@ public sealed partial class Lowering
 
     private unsafe GenTree? LowerStoreLocCommon(GenTreeLclVarCommon lclStore)
     {
-#if WINDOWS_AMD64_ABI
+#if WINDOWS_AMD64_ABI || TARGET_ARM64
         assert(lclStore.Oper is GT_STORE_LCL_FLD or GT_STORE_LCL_VAR);
         JITDUMP("lowering store lcl var/field (before):\n");
         DISPTREERANGE(BlockRange(), lclStore);
@@ -141,8 +141,32 @@ public sealed partial class Lowering
 #if DEBUG
                 var layout = lclStore.GetLayout(CompilerInstance);
                 assert(layout is not null);
+#if TARGET_ARM64
+                if (!CompilerInstance.IsHfa(layout.ClassHandle))
+                {
+                    if (layout.SlotCount > 1)
+                    {
+                        assert(src.AsCall().HasMultiRegRetVal);
+                    }
+                    else
+                    {
+                        var size = layout.Size;
+                        assert((size <= 8) || (size == 16));
+                        assert((((size - 1) & size) == 0) == (localRegisterType is not TYP_UNDEF));
+                    }
+                }
+#else
                 assert(layout.SlotCount == 1);
                 assert(localRegisterType is not TYP_UNDEF);
+#endif
+#endif
+#if TARGET_ARM64
+                if (!src.AsCall().HasMultiRegRetVal && (localRegisterType is TYP_UNDEF))
+                {
+                    lclStore.Op1 = SpillStructCallResult(src.AsCall());
+                    JITDUMP("lowering store lcl var/field has to spill call src.\n");
+                    return LowerStoreLocCommon(lclStore);
+                }
 #endif
                 convertToStoreObj = false;
             }
@@ -170,6 +194,9 @@ public sealed partial class Lowering
             }
             else if (src.Oper is GT_IND or GT_BLK or GT_LCL_FLD)
             {
+#if TARGET_ARM64
+                convertToStoreObj = true;
+#else
                 if (src.Type is TYP_STRUCT)
                 {
                     src.Type = localRegisterType;
@@ -192,6 +219,7 @@ public sealed partial class Lowering
                     }
                 }
                 convertToStoreObj = false;
+#endif
             }
             else
             {
@@ -244,7 +272,7 @@ public sealed partial class Lowering
 
         return next;
 #else
-        throw new NotImplementedException("Non-Windows-AMD64 common local-store lowering is not ported.");
+        throw new NotImplementedException("Common local-store lowering is not ported for this target.");
 #endif
     }
 
@@ -330,19 +358,28 @@ public sealed partial class Lowering
 
     private GenTree? LowerStoreLoc(GenTreeLclVarCommon storeLoc)
     {
+#if TARGET_XARCH || TARGET_ARM64
 #if TARGET_XARCH
         if ((storeLoc.Oper is GT_STORE_LCL_VAR) && (storeLoc.Type.Size == 2) &&
             storeLoc.Op1.Oper.IsCnsIntOrI && !CompilerInstance.lvaGetDesc(storeLoc.LclNum).lvIsStructField)
         {
             storeLoc.Type = TYP_INT;
         }
+#endif
         if (storeLoc.Oper is GT_STORE_LCL_FLD)
         {
             VerifyLclFldDoNotEnregister(storeLoc.LclNum);
         }
 
         ContainCheckStoreLoc(storeLoc);
-        return storeLoc.Next;
+        var next = storeLoc.Next;
+#if TARGET_ARM64
+        if (CompilerInstance.opts.OptimizationEnabled)
+        {
+            _ = TryMoveAddSubRMWAfterIndir(storeLoc);
+        }
+#endif
+        return next;
 #else
         throw new System.NotImplementedException("Non-xarch local-store lowering is not ported.");
 #endif
@@ -350,7 +387,7 @@ public sealed partial class Lowering
 
     private void ContainCheckStoreLoc(GenTreeLclVarCommon storeLoc)
     {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
         assert(storeLoc.Oper.IsLocalStore);
         var source = storeLoc.Op1;
         if (source.Oper is GT_BITCAST)
@@ -365,12 +402,29 @@ public sealed partial class Lowering
 
         ref var descriptor = ref CompilerInstance.lvaGetDesc(storeLoc.LclNum);
 #if FEATURE_SIMD
+#if TARGET_ARM64
+        if (storeLoc.Type is TYP_SIMD8 or TYP_SIMD12)
+        {
+            if ((source.IsIntegralConst(0) || source.IsVectorZero) && descriptor.lvDoNotEnregister)
+            {
+                MakeSrcContained(storeLoc, source);
+            }
+            return;
+        }
+#else
         if (varTypeIsSimd(storeLoc.Type))
         {
             assert(!source.Oper.IsCnsIntOrI);
             return;
         }
 #endif
+#endif
+#if TARGET_ARM64
+        if (IsContainableImmed(storeLoc, source))
+        {
+            MakeSrcContained(storeLoc, source);
+        }
+#else
         var type = descriptor.GetRegisterType(storeLoc);
         if (IsContainableImmed(storeLoc, source) && (!source.IsIntegralConst(0) || varTypeIsSmall(type)))
         {
@@ -382,8 +436,44 @@ public sealed partial class Lowering
             MakeSrcContained(storeLoc, source);
         }
 #endif
+#endif
 #else
         throw new System.NotImplementedException("Non-xarch local-store containment is not ported.");
 #endif
     }
+
+    private void LowerLclVar(GenTreeLclVar local)
+    {
+        WidenSIMD12IfNecessary(local);
+        ref var descriptor = ref CompilerInstance.lvaGetDesc(local.LclNum);
+        if (local.IsMultiRegLclVar &&
+            (!descriptor.lvPromoted ||
+                (CompilerInstance.lvaGetPromotionType(in descriptor) is not Compiler.lvaPromotionType.PROMOTION_TYPE_INDEPENDENT) ||
+                (descriptor.lvFieldCnt > MAX_MULTIREG_COUNT)))
+        {
+            local.ClearMultiReg();
+            if (local.Type is TYP_STRUCT)
+            {
+                CompilerInstance.lvaSetVarDoNotEnregister(local.LclNum, DoNotEnregisterReason.BlockOp);
+            }
+        }
+    }
+
+#if TARGET_ARM64
+    private unsafe GenTreeLclVar SpillStructCallResult(GenTreeCall call)
+    {
+        var compiler = CompilerInstance;
+        var spillNumber = compiler.lvaGrabTemp(true, "Return value temp for an odd struct return size");
+        compiler.lvaSetVarDoNotEnregister(spillNumber, DoNotEnregisterReason.LocalField);
+        compiler.lvaSetStruct(spillNumber, call.RetClsHnd, false);
+        assert(call.ReturnTypeDesc.ReturnRegCount == 1);
+        var offset = call.ReturnTypeDesc.GetReturnFieldOffset(0);
+        var spill = compiler.gtNewStoreLclFldNode(call.Type, spillNumber, checked((ushort)offset), call);
+        BlockRange().InsertAfter(call, spill);
+        ContainCheckStoreLoc(spill);
+        var result = compiler.gtNewLclvNode(TYP_STRUCT, spillNumber);
+        BlockRange().InsertAfter(spill, result);
+        return result;
+    }
+#endif
 }

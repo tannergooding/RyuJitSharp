@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: ARM64 casts, division and local temporaries
+
+Private ARM64 lowering now handles cast/load extension, constant signed and
+unsigned division, and power-of-two remainder with native multiply selection
+and conditional-negate semantics. Repeated dividend uses preserve single
+evaluation, including volatile loads. Local-store support includes odd-size
+return spilling and pointer-update scheduling for post-indexed addressing.
+
+Shared containment traversal supports the scalar dependency layer while
+explicitly rejecting unported hardware-intrinsic containment. General
+node/block/phase dispatch and ARM64 execution remain unsupported.
+
 ## 2026-09-27: ARM64 conditional lowering
 
 Private comparison, conditional-branch and select lowering now supports ARM64's

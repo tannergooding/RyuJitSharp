@@ -901,6 +901,223 @@ internal static unsafe class Arm64ArithmeticLoweringTests
         });
     }
 
+    [TestCase(TYP_BYTE, -256, GTF_EMPTY, false, true)]
+    [TestCase(TYP_BYTE, -257, GTF_EMPTY, false, false)]
+    [TestCase(TYP_BYTE, 4095, GTF_EMPTY, false, true)]
+    [TestCase(TYP_BYTE, 4096, GTF_EMPTY, false, false)]
+    [TestCase(TYP_LONG, 16380, GTF_EMPTY, false, true)]
+    [TestCase(TYP_LONG, 16384, GTF_EMPTY, false, false)]
+    [TestCase(TYP_LONG, 257, GTF_EMPTY, false, false)]
+    [TestCase(TYP_LONG, 0, GTF_IND_VOLATILE, false, false)]
+    [TestCase(TYP_LONG, 0, GTF_IND_UNALIGNED, false, false)]
+    [TestCase(TYP_LONG, 0, GTF_EMPTY, true, false)]
+    public static void CastLoadContainmentChecksTheEmittedWidthAndMemoryRestrictions(
+        var_types destination, int offset, GenTreeFlags flags, bool minopts, bool expected)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var address = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var mode = new GenTreeAddrMode(TYP_BYREF, address, null, 0, offset) { IsContained = true };
+            var load = new GenTreeIndir(GT_IND, TYP_INT, mode) { Flags = flags | GTF_GLOB_REF };
+            var cast = new GenTreeCast(destination.ActualType, load, false, destination) { IsUnusedValue = true };
+            Append(block, address, mode, load, cast);
+            LowerCast(lowering, cast);
+
+            Assert.That(load.IsContained, Is.EqualTo(expected));
+            Assert.That(load.IsRegOptional, Is.False);
+            Assert.That(load.Type, Is.EqualTo(TYP_INT));
+        }, minopts);
+    }
+
+    [TestCase(TYP_FLOAT, TYP_INT)]
+    [TestCase(TYP_DOUBLE, TYP_LONG)]
+    public static void FloatingCastsKeepNativeRegisterOperands(var_types source, var_types destination)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var value = compiler.gtNewDconNode(source, 123.5);
+            var cast = new GenTreeCast(destination, value, false, destination) { IsUnusedValue = true };
+            Append(block, value, cast);
+            LowerCast(lowering, cast);
+            Assert.That(cast.CastOp, Is.SameAs(value));
+            Assert.That(value.IsContained || value.IsRegOptional, Is.False);
+        });
+    }
+
+    [TestCase(GT_DIV, 0, GT_DIV)]
+    [TestCase(GT_DIV, -1, GT_DIV)]
+    [TestCase(GT_DIV, int.MinValue, GT_EQ)]
+    [TestCase(GT_UDIV, 0, GT_UDIV)]
+    [TestCase(GT_UDIV, int.MinValue, GT_RSZ)]
+    [TestCase(GT_UDIV, -3, GT_GE)]
+    public static void DivisionRetainsExceptionalCasesAndNativeMinimumDivisorTransforms(
+        genTreeOps oper, int divisorValue, genTreeOps expected)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var value = compiler.gtNewLclvNode(TYP_INT, 0);
+            var constant = compiler.gtNewIconNode(TYP_INT, divisorValue);
+            var division = new GenTreeOp(oper, TYP_INT, value, constant);
+            var owner = new GenTreeUnOp(GT_RETURN, TYP_INT, division);
+            Append(block, value, constant, division, owner);
+            var next = oper is GT_DIV ? LowerSignedDivOrMod(lowering, division) : LowerUnsignedDivOrMod(lowering, division);
+
+            Assert.That(division.Oper, Is.EqualTo(expected));
+            Assert.That(owner.Op1, Is.SameAs(division));
+            Assert.That(next, Is.SameAs(expected is GT_EQ ? division : owner));
+            if (expected is GT_DIV or GT_UDIV)
+            {
+                Assert.That(constant.IsContained || constant.IsRegOptional, Is.False);
+            }
+        }, minopts: true);
+    }
+
+    [TestCase(3, GT_MUL_LONG, 33)]
+    [TestCase(7, GT_MULHI, 0)]
+    [TestCase(14, GT_MULHI, 0)]
+    [TestCase(28, GT_MULHI, 0)]
+    public static void UnsignedMagicUsesNativeWideningMultiplyChoice(
+        int divisorValue, genTreeOps expectedMultiply, int postShift)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var value = compiler.gtNewLclvNode(TYP_INT, 0);
+            var constant = compiler.gtNewIconNode(TYP_INT, divisorValue);
+            var division = new GenTreeOp(GT_UDIV, TYP_INT, value, constant);
+            var owner = new GenTreeUnOp(GT_RETURN, TYP_INT, division);
+            Append(block, value, constant, division, owner);
+            Assert.That(LowerUnsignedDivOrMod(lowering, division), Is.SameAs(owner));
+            Assert.That(owner.Op1.Oper, Is.EqualTo(GT_CAST));
+            var multiply = owner.Op1.AsCast().CastOp.AsOp();
+            if (postShift != 0)
+            {
+                Assert.That(multiply.Oper, Is.EqualTo(GT_RSZ));
+                Assert.That(multiply.Op2.AsIntCon().IconValue, Is.EqualTo((nint)postShift));
+                multiply = multiply.Op1.AsOp();
+            }
+            Assert.That(multiply.Oper, Is.EqualTo(expectedMultiply));
+            Assert.That(multiply.IsUnsigned, Is.True);
+            Assert.That(multiply.Op1.Type, Is.EqualTo(expectedMultiply is GT_MUL_LONG ? TYP_INT : TYP_LONG));
+            Assert.That(multiply.Op2.Type, Is.EqualTo(multiply.Op1.Type));
+            Assert.That(division.Next, Is.Null);
+        });
+    }
+
+    [TestCase(3)]
+    [TestCase(7)]
+    [TestCase(-3)]
+    public static void SignedMagicLowersItsTemporaryLocalWithoutActivatingNodeDispatch(int divisorValue)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var value = compiler.gtNewLclvNode(TYP_LONG, 0);
+            var constant = compiler.gtNewIconNode(TYP_LONG, divisorValue);
+            var division = new GenTreeOp(GT_DIV, TYP_LONG, value, constant);
+            var owner = new GenTreeUnOp(GT_RETURN, TYP_LONG, division);
+            Append(block, value, constant, division, owner);
+            var next = LowerSignedDivOrMod(lowering, division) ?? throw new AssertionException("Multiply missing.");
+            Assert.That(next.Oper, Is.EqualTo(GT_MULHI));
+            Assert.That(division.Oper, Is.EqualTo(GT_ADD));
+            Assert.That(owner.Op1, Is.SameAs(division));
+            Assert.That(compiler.lvaCount, Is.GreaterThan(2));
+        });
+    }
+
+    [TestCase(1, GenCondition.S, false)]
+    [TestCase(2, GenCondition.SLT, false)]
+    [TestCase(8, GenCondition.S, false)]
+    [TestCase(8, GenCondition.S, true)]
+    public static void PowerOfTwoRemainderPreservesConditionalNegationAndManagedOwnership(
+        int divisorValue, GenCondition.CodeKind expectedCondition, bool volatileDividend)
+    {
+        WithLowering((compiler, lowering, block) => {
+            GenTree value = compiler.gtNewLclvNode(volatileDividend ? TYP_BYREF : TYP_LONG, 0);
+            if (volatileDividend)
+            {
+                block.InsertAtEnd(value);
+                value = new GenTreeIndir(GT_IND, TYP_LONG, value) {
+                    Flags = GTF_GLOB_REF | GTF_EXCEPT | GTF_IND_VOLATILE,
+                };
+            }
+            var constant = compiler.gtNewIconNode(TYP_LONG, divisorValue);
+            var remainder = new GenTreeOp(GT_MOD, TYP_LONG, value, constant);
+            var owner = new GenTreeUnOp(GT_RETURN, TYP_LONG, remainder);
+            Append(block, value, constant, remainder, owner);
+            Assert.That(LowerSignedDivOrMod(lowering, remainder), Is.SameAs(owner));
+            var result = owner.Op1.AsOpCC();
+            Assert.That(result.Oper, Is.EqualTo(GT_SELECT_NEGCC));
+            Assert.That(result.Condition.Code, Is.EqualTo(expectedCondition));
+            Assert.That(result.Op1.Oper, Is.EqualTo(GT_AND));
+            Assert.That(result.Op1.AsOp().Op2.AsIntCon().IconValue, Is.EqualTo((nint)(divisorValue - 1)));
+            if (divisorValue == 2)
+            {
+                Assert.That(result.Op2, Is.Null);
+                Assert.That(result.Prev?.Oper, Is.EqualTo(GT_CMP));
+            }
+            else
+            {
+                Assert.That(result.Op2.Oper, Is.EqualTo(GT_AND));
+                Assert.That(result.Op2.AsOp().Op1.Flags & GTF_SET_FLAGS, Is.EqualTo(GTF_SET_FLAGS));
+            }
+            Assert.That(remainder.Next, Is.Null);
+            Assert.That(constant.Next, Is.Null);
+            if (volatileDividend)
+            {
+                Assert.That(compiler.lvaCount, Is.EqualTo(3));
+                var loads = 0;
+                for (var node = block.FirstNode; node is not null; node = node.Next)
+                {
+                    if (node.Oper is GT_IND)
+                    {
+                        loads++;
+                    }
+                }
+                Assert.That(loads, Is.EqualTo(1));
+            }
+        }, minopts: true);
+    }
+
+    [TestCase(2, GT_RSH)]
+    [TestCase(8, GT_RSH)]
+    [TestCase(-8, GT_NEG)]
+    public static void SignedPowerOfTwoDivisionResequencesNativeAdjustment(int divisorValue, genTreeOps expected)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var value = compiler.gtNewLclvNode(TYP_LONG, 0);
+            var constant = compiler.gtNewIconNode(TYP_LONG, divisorValue);
+            var division = new GenTreeOp(GT_DIV, TYP_LONG, value, constant);
+            var owner = new GenTreeUnOp(GT_RETURN, TYP_LONG, division);
+            Append(block, value, constant, division, owner);
+            Assert.That(LowerSignedDivOrMod(lowering, division), Is.SameAs(owner));
+            Assert.That(owner.Op1.Oper, Is.EqualTo(expected));
+            Assert.That(division.Next, Is.Null);
+        }, minopts: true);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void LocalPointerUpdateSchedulingPreservesInterferenceAndOriginalSuccessor(bool interference)
+    {
+        WithLowering((compiler, lowering, block) => {
+            compiler.lvaTable[0].Type = TYP_BYREF;
+            var address = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var load = new GenTreeIndir(GT_IND, TYP_LONG, address) { IsUnusedValue = true };
+            var gap = compiler.gtNewLclvNode(interference ? TYP_BYREF : TYP_LONG, interference ? 0 : 1);
+            gap.IsUnusedValue = true;
+            var pointer = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var offset = compiler.gtNewIconNode(TYP_I_IMPL, 8);
+            offset.IsContained = true;
+            var add = new GenTreeOp(GT_ADD, TYP_BYREF, pointer, offset);
+            var store = compiler.gtNewStoreLclVarNode(0, add);
+            var tail = compiler.gtNewIconNode(TYP_INT, 1);
+            tail.IsUnusedValue = true;
+            Append(block, address, load, gap, pointer, offset, add, store, tail);
+            Assert.That(OptimizeForLdpStp(lowering, load), Is.False);
+            Assert.That(LowerStoreLoc(lowering, store), Is.SameAs(tail));
+            Assert.That(load.Next, Is.SameAs(interference ? gap : pointer));
+            Assert.That(store.Next, Is.SameAs(interference ? tail : gap));
+            for (var node = block.FirstNode; node is not null; node = node.Next)
+            {
+                Assert.That(node._lirFlags & LIR.Flags.Mark, Is.EqualTo((LIR.Flags)0));
+            }
+        });
+    }
+
     private static GenTreeOp Relop(Compiler compiler, BasicBlock block, genTreeOps oper, int local)
     {
         var value = compiler.gtNewLclvNode(TYP_INT, local);
@@ -954,6 +1171,21 @@ internal static unsafe class Arm64ArithmeticLoweringTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerSelect")]
     private static extern GenTree? LowerSelect(Lowering lowering, GenTreeConditional node);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerCast")]
+    private static extern void LowerCast(Lowering lowering, GenTreeCast node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerSignedDivOrMod")]
+    private static extern GenTree? LowerSignedDivOrMod(Lowering lowering, GenTreeOp node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerUnsignedDivOrMod")]
+    private static extern GenTree? LowerUnsignedDivOrMod(Lowering lowering, GenTreeOp node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerStoreLoc")]
+    private static extern GenTree? LowerStoreLoc(Lowering lowering, GenTreeLclVarCommon node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "OptimizeForLdpStp")]
+    private static extern bool OptimizeForLdpStp(Lowering lowering, GenTreeIndir node);
+
     private static void WithLowering(Action<Compiler, Lowering, BasicBlock> action, bool minopts = false)
     {
 #if DEBUG
@@ -965,6 +1197,7 @@ internal static unsafe class Arm64ArithmeticLoweringTests
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(minopts);
         compiler.opts.compFlags = minopts ? 0 : CLFLG_REGVAR;
+        compiler.fgNodeThreading = NodeThreading.LIR;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.lvaTable = new LclVarDsc[2];
         compiler.lvaCount = 2;

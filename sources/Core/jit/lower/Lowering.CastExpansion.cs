@@ -233,8 +233,23 @@ public sealed partial class Lowering
             assert(clone is not null);
             return clone;
         }
+#elif TARGET_ARM64
+        assert(tree.Oper is GT_CAST);
+        JITDUMP("LowerCast for: ");
+        DISPNODE(tree);
+        JITDUMP("\n");
+
+        var srcType = tree.CastOp.Type.ActualType;
+        if (varTypeIsFloating(srcType))
+        {
+            noway_assert(!tree.HasOverflowCheck);
+            assert(!varTypeIsSmall(tree.CastType));
+        }
+
+        assert(!varTypeIsSmall(srcType));
+        ContainCheckCast(tree);
 #else
-        throw new System.NotImplementedException("Non-AMD64 cast expansion is not ported.");
+        throw new System.NotImplementedException("Cast lowering is not ported for this target.");
 #endif
     }
 }

@@ -27,6 +27,9 @@ public sealed partial class Lowering
     private bool TryLowerConstIntUDivOrUMod(GenTreeOp divMod, out GenTree? nextNode)
     {
         assert(divMod.Oper is GT_UDIV or GT_UMOD);
+#if TARGET_ARM64
+        assert(divMod.Oper is not GT_UMOD);
+#endif
         nextNode = null;
         var compiler = CompilerInstance;
         var dividend = divMod.Op1;
@@ -63,11 +66,15 @@ public sealed partial class Lowering
         {
             ChangeDivisionOper(divMod, GT_GE);
             divMod.IsUnsigned = true;
+#if TARGET_ARM64
+            nextNode = LowerCompare(divMod);
+#else
             nextNode = LowerNode(divMod);
+#endif
             return true;
         }
 
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
         if (compiler.opts.MinOpts || divisorValue < 3)
         {
             return false;
@@ -100,7 +107,12 @@ public sealed partial class Lowering
         {
             magic = MagicDivide.GetUnsigned32Magic((uint)divisorValue, out increment, out preShift, out postShift, bits);
 #if TARGET_64BIT
-            if (increment || ((preShift != 0) && (unchecked((int)magic) < 0)))
+#if TARGET_ARM64
+            var useNativeWidthMagic = increment || (preShift != 0);
+#else
+            var useNativeWidthMagic = increment || ((preShift != 0) && (unchecked((int)magic) < 0));
+#endif
+            if (useNativeWidthMagic)
             {
                 magic = MagicDivide.GetUnsigned64Magic(divisorValue, out increment, out preShift, out postShift, bits);
             }
@@ -124,7 +136,11 @@ public sealed partial class Lowering
 
         GenTree? firstNode = null;
         var adjustedDividend = dividend;
+#if TARGET_ARM64
+        var widen = (type is not TYP_I_IMPL) && !simpleMul;
+#else
         var widen = type is not TYP_I_IMPL;
+#endif
         if (increment)
         {
             adjustedDividend = new GenTreeUnOp(GT_INC_SATURATE, type, adjustedDividend);
@@ -168,7 +184,12 @@ public sealed partial class Lowering
         }
         else
         {
-            var mulhi = compiler.gtNewBinaryNode(simpleMul ? GT_MUL : GT_MULHI,
+#if TARGET_ARM64
+            var multiplyOper = simpleMul ? GT_MUL_LONG : GT_MULHI;
+#else
+            var multiplyOper = simpleMul ? GT_MUL : GT_MULHI;
+#endif
+            var mulhi = compiler.gtNewBinaryNode(multiplyOper,
                 TYP_I_IMPL, adjustedDividend, divisor);
             mulhi.IsUnsigned = true;
             BlockRange().InsertBefore(divMod, mulhi);

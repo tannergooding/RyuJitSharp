@@ -32,12 +32,26 @@ public sealed partial class Lowering
         var type = divMod.Type;
         assert(type is TYP_INT or TYP_LONG);
 
+#if TARGET_ARM64
+        if ((divMod.Oper is GT_MOD) && divisor.IsIntegralConstPow2)
+        {
+            var loweredMod = LowerModPow2(divMod);
+            nextNode = loweredMod.Next;
+            return true;
+        }
+
+        assert(divMod.Oper is not GT_MOD);
+#endif
         if (!divisor.Oper.IsCnsIntOrI || dividend.Oper.IsCnsIntOrI)
         {
             return false;
         }
 
+#if TARGET_ARM64
+        var divisorValue = (long)divisor.AsIntCon().IconValue;
+#else
         var divisorValue = type is TYP_INT ? (long)(int)divisor.AsIntCon().IconValue : (long)divisor.AsIntCon().IconValue;
+#endif
         if (divisorValue is 0 or -1)
         {
             return false;
@@ -62,7 +76,7 @@ public sealed partial class Lowering
                 return false;
             }
 
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
             var magic = type is TYP_INT
                 ? MagicDivide.GetSigned32Magic((int)divisorValue, out var shift32)
                 : MagicDivide.GetSigned64Magic(divisorValue, out shift32);

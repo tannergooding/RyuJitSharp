@@ -41,8 +41,14 @@ public sealed partial class Lowering
             ContainCheckRange(oldUseNode.Next, newUseNode);
 
             // SIMD12 and other special local representations also require lowering the store and load.
+#if TARGET_ARM64
+            WidenSIMD12IfNecessary(store.AsLclVarCommon());
+            _ = LowerStoreLocCommon(store.AsLclVarCommon());
+            LowerLclVar(newUseNode.AsLclVar());
+#else
             _ = LowerNode(store);
             _ = LowerNode(newUseNode);
+#endif
 
             return newUseNode.AsLclVar();
         }

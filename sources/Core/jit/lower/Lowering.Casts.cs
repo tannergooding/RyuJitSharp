@@ -51,8 +51,52 @@ public sealed partial class Lowering
             castOp.IsContained = true;
         }
 #endif
+#elif TARGET_ARM64
+        var castOp = node.CastOp;
+        var castToType = node.CastType;
+        if (CompilerInstance.opts.OptimizationEnabled && !node.HasOverflowCheck &&
+            varTypeIsIntegral(castOp.Type) && varTypeIsIntegral(castToType))
+        {
+            if (!varTypeIsSmall(castOp.Type) || (varTypeIsUnsigned(castOp.Type) == node.IsZeroExtending))
+            {
+                var srcIsContainable = false;
+                if (castOp is GenTreeIndir indir && (castOp.Oper is GT_IND))
+                {
+                    if (!indir.IsVolatile && !indir.IsUnaligned)
+                    {
+                        var address = indir.Addr;
+                        if (!address.IsContained)
+                        {
+                            srcIsContainable = true;
+                        }
+                        else if ((address is GenTreeAddrMode mode) && !mode.HasIndex)
+                        {
+                            var loadType = varTypeIsSmall(castToType) ? castToType : castOp.Type;
+                            srcIsContainable = Emitter.emitIns_valid_imm_for_ldst_offset(mode.Offset, (emitAttr)loadType.Size);
+                        }
+                    }
+                }
+                else
+                {
+                    assert(castOp.Oper.IsLocalRead || !IsContainableMemoryOp(castOp));
+                    srcIsContainable = true;
+                }
+
+                if (srcIsContainable)
+                {
+                    if (IsContainableMemoryOp(castOp) && IsSafeToContainMem(node, castOp))
+                    {
+                        MakeSrcContained(node, castOp);
+                    }
+                    else if (IsSafeToMarkRegOptional(node, castOp))
+                    {
+                        castOp.IsRegOptional = true;
+                    }
+                }
+            }
+        }
 #else
-        throw new System.NotImplementedException("Non-xarch cast containment is not ported.");
+        throw new System.NotImplementedException("Cast containment is not ported for this target.");
 #endif
     }
 }

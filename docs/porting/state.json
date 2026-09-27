@@ -13,14 +13,15 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "Complete private ARM64 comparison, conditional-branch and select lowering, including native constant-compare optimizations, comparison containment, JCMP/JTEST replacement and conditional negate/invert/increment transformations.",
-      "status": "completed",
+      "scope": "Complete private ARM64 casts and division lowering with native magic-number selection, power-of-two remainder, load-extension containment and the shared containment traversal needed by their generated LIR.",
+      "status": "validated",
       "doneWhen": [
-        "Complete LowerCompare, OptimizeConstCompare, ContainCheckCompare, LowerJTrue, LowerSelect, ContainCheckSelect and both ARM64 CSEL transformations. Reuse complete condition-to-flags and register-flag support.",
-        "Preserve operand widths, zero/carry semantics, sign-bit tests, condition reversal, native-width wrapping and owning LIR edges across managed node-class replacements; validate, commit the coherent batch and continue."
+        "Complete ARM64 LowerCast/ContainCheckCast and signed/unsigned division including LowerModPow2, with the native 32x32-to-64 multiply choice and whole-node replacement for conditional remainder results.",
+        "Close the concrete temporary-local dependency: ReplaceWithLclVar invokes local-store/local-read lowering. Port the complete ARM64 local-store body, common-store target paths, odd-struct-return spill helper and post-indexed RMW scheduling; extract the existing local-read action without enabling LowerNode.",
+        "Enable the existing containment traversal with all native ARM64 dispatch guards, preserving empty native actions and explicit unported hardware boundaries. Validate the coherent scalar closure, commit and continue without activating node/block/phase dispatch."
       ],
       "validation": [
-        "Full-analysis Linux-ARM64 Debug/Release target suites and Windows-x64 comparison/branch/select controls. Focus new coverage on ARM64 constant-compare distinctions, flag ownership, managed branch/select replacements and conditional operation transformations.",
+        "Full-analysis Linux-ARM64 Debug/Release target suites and Windows-x64 cast/division/traversal controls. Focus new cases on cast load-width/address exclusions, magic division shapes, remainder ownership and exceptional divisor boundaries.",
         "Reuse unaffected Windows execution evidence from prerequisite commit ee71808. No Linux or ARM64 execution host is available; managed target tests are not runtime parity."
       ],
       "deferred": [
@@ -422,7 +423,17 @@
         }
       ]
     },
-    "nextAction": "Continue the remaining ARM64 scalar conversion/division/intrinsic lowering closure after completed arithmetic and conditional entrypoints. LowerCast and ContainCheckCast native bodies are inspected at lowerarmarch.cpp:820-844,2987-3051; implement them in the existing cast files. Inspect complete native signed/unsigned constant division, remainder dispatch and scalar containment dependencies before wiring those entrypoints: managed division still uses xarch-only magic paths and general containment dispatch. Keep node/block/phase and general hardware dispatch inactive until their whole dependency closure is ready; eventual block activation must reset _blockIndirs and native FFR state. Preserve B381's native non-CC increment behavior pending ARM64 execution proof. Keep B375/B376/B378/B379/B380 deferred; do not publish or alter native trees.",
+    "nextAction": "Commit the validated ARM64 cast/division/local-temporary closure, then continue with ARM64 block-memory policy: lower.cpp LowerInitBlockStore/LowerCopyBlockStore/LowerStoreSingleRegCallStruct and lowerarmarch.cpp ContainBlockStoreAddress, mapped to Lowering.Blocks.cs. Read complete target paths and dependencies before editing; shared helper-call dispatch is still inactive on ARM64. Keep LowerNode/LowerBlock/DoPhase inactive until their complete target closure is ready; eventual activation must reset _blockIndirs and FFR state. Preserve B375/B376/B378/B379/B380/B381; no ARM64 execution claim, publication or native tree changes.",
+    "arm64CastsDivisionLocals": {
+      "scope": "Private casts and signed/unsigned constant division, power-of-two remainder, shared containment traversal, local-store target paths, odd-size struct return spilling and post-indexed RMW scheduling.",
+      "mapping": "lowerarmarch.cpp:509-542,820-844,893-983,1079-1260,2927-3051 -> Lowering.Locals.cs, Lowering.CastExpansion.cs, Lowering.Arm64Division.cs, Lowering.Arm64LocalStores.cs and Lowering.Casts.cs; lower.cpp:5571-5795,6267-6283,8068-8678 -> Lowering.Locals.cs and signed/unsigned division partials; emitarm64.cpp:2527-2546 -> Emitter.ImmediatePredicates.cs. LowerLclVar extracts the existing native local-read dispatcher action.",
+      "validation": {
+        "linuxArm64": "554Debug/554Release: division-arm64-debug-3.trx and division-arm64-release-1.trx; 34 new cases cover load offset/width restrictions, floating casts, zero/minimum divisors, signed power-of-two division, unsigned magic multiply/post-shift selection, conditional remainder ownership and volatile single evaluation, and pointer-update movement/interference.",
+        "windowsX64Controls": "165Debug/165Release: division-windows-debug-1.trx and division-windows-release-1.trx; constant division, division ownership, casts, local stores and LoweringDispatchTests.",
+        "artifacts": "artifacts\\parallel-port; full analysis, nonempty execution and zero skips."
+      },
+      "limits": "Private target entrypoints and scalar containment only. ARM64 hardware containment throws explicitly; struct-to-block local stores still reach inactive node dispatch. General node/block/phase activation, allocation, emission and execution parity remain separate."
+    },
     "arm64ConditionalLowering": {
       "scope": "Complete private LowerCompare, OptimizeConstCompare, ContainCheckCompare, LowerJTrue, LowerSelect, ContainCheckSelect, TryLowerCselToCSOp and TryLowerCnsIntCselToCinc.",
       "mapping": "lower.cpp:4190-4625,4636-4822 -> Lowering.CompareNodes.cs, Lowering.ConditionalBranches.cs and Lowering.Selects.cs; lowerarmarch.cpp:3060-3127,3176-3192,3274-3550 -> Lowering.ComparisonContainment.cs, Lowering.Selects.cs and Lowering.Arm64Selects.cs. Native JTRUE-to-JCMP/JTEST and SELECT-to-SELECTCC mutations use whole managed node-class replacement.",

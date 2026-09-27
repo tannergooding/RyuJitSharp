@@ -9,7 +9,7 @@ public class GenTreeOpCC : GenTreeOp
 {
     private GenCondition _condition;
 
-    public GenTreeOpCC(genTreeOps oper, var_types type, GenCondition condition, GenTree op1, GenTree op2)
+    public GenTreeOpCC(genTreeOps oper, var_types type, GenCondition condition, GenTree op1, GenTree? op2)
         : base(oper, type, op1, op2)
     {
 #if TARGET_ARM64
@@ -21,7 +21,7 @@ public class GenTreeOpCC : GenTreeOp
         _condition = condition;
     }
 
-    internal GenTreeOpCC(genTreeOps oper, var_types type, GenCondition condition, GenTree op1, GenTree op2,
+    internal GenTreeOpCC(genTreeOps oper, var_types type, GenCondition condition, GenTree op1, GenTree? op2,
         GenTree source, NodeThreading threading)
         : base(oper, type, op1, op2, source, threading)
     {

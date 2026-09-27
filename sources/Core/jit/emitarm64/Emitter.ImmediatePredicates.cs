@@ -13,6 +13,30 @@ public partial class Emitter
         return (imm >= -256) && (imm <= 255);
     }
 
+    public static bool emitIns_valid_imm_for_ldst_offset(long imm, emitAttr attr)
+    {
+        if (imm == 0)
+        {
+            return true;
+        }
+
+        if (emitIns_valid_imm_for_unscaled_ldst_offset(imm))
+        {
+            return true;
+        }
+
+        if (imm < 0)
+        {
+            return false;
+        }
+
+        var size = EA_SIZE(attr);
+        assert(size is EA_1BYTE or EA_2BYTE or EA_4BYTE or EA_8BYTE or EA_16BYTE);
+        var scale = System.Numerics.BitOperations.Log2((uint)size);
+        var mask = (long)size - 1;
+        return ((imm & mask) == 0) && ((imm >> scale) < 0x1000);
+    }
+
     public static bool emitIns_valid_imm_for_mov(long imm, emitAttr size)
     {
         if (canEncodeHalfwordImm(imm, size))

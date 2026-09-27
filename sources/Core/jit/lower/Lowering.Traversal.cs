@@ -24,7 +24,7 @@ public sealed partial class Lowering
 
     private void ContainCheckNode(GenTree node)
     {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
         switch (node.Oper)
         {
             case GT_STORE_LCL_VAR:
@@ -100,10 +100,12 @@ public sealed partial class Lowering
 
             case GT_RETURNTRAP:
             {
+#if TARGET_XARCH
                 if (node.AsUnOp().Op1.Oper is GT_IND or GT_STOREIND)
                 {
                     MakeSrcContained(node, node.AsUnOp().Op1);
                 }
+#endif
                 break;
             }
 
@@ -157,11 +159,13 @@ public sealed partial class Lowering
                 break;
             }
 
+#if TARGET_XARCH
             case GT_INTRINSIC:
             {
                 ContainCheckIntrinsic(node.AsIntrinsic());
                 break;
             }
+#endif
 
             case GT_NONLOCAL_JMP:
             {
@@ -172,13 +176,17 @@ public sealed partial class Lowering
 #if FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
             {
+#if TARGET_XARCH
                 ContainCheckHWIntrinsic(node.AsHWIntrinsic());
                 break;
+#else
+                throw new NotImplementedException("ARM64 hardware-intrinsic containment is not ported.");
+#endif
             }
 #endif
         }
 #else
-        throw new NotImplementedException("Non-xarch containment traversal is not ported.");
+        throw new NotImplementedException("Containment traversal is not ported for this target.");
 #endif
     }
 
@@ -471,20 +479,7 @@ public sealed partial class Lowering
 
             case GT_LCL_VAR:
             {
-                var local = node.AsLclVar();
-                WidenSIMD12IfNecessary(local);
-                ref var descriptor = ref CompilerInstance.lvaGetDesc(local.LclNum);
-                if (local.IsMultiRegLclVar &&
-                    (!descriptor.lvPromoted ||
-                        (CompilerInstance.lvaGetPromotionType(in descriptor) is not Compiler.lvaPromotionType.PROMOTION_TYPE_INDEPENDENT) ||
-                        (descriptor.lvFieldCnt > MAX_MULTIREG_COUNT)))
-                {
-                    local.ClearMultiReg();
-                    if (local.Type is TYP_STRUCT)
-                    {
-                        CompilerInstance.lvaSetVarDoNotEnregister(local.LclNum, DoNotEnregisterReason.BlockOp);
-                    }
-                }
+                LowerLclVar(node.AsLclVar());
                 break;
             }
 

@@ -1372,6 +1372,14 @@ transformations. JTRUE-to-JCMP/JTEST and SELECT-to-SELECTCC use whole managed
 node-class replacement, preserving owning edges and identity. B381 records the
 pinned non-CC increment path's downstream inconsistency; it remains unchanged
 pending native execution evidence.
+Private casts, constant signed/unsigned division and power-of-two remainder now
+preserve ARM64 load-width restrictions, native magic-number selection and
+conditional-negate ownership. Their temporary-local dependencies include
+local-store target paths, odd-size call-result spilling and post-indexed
+pointer-update scheduling. Shared containment traversal is available but
+explicitly rejects ARM64 hardware intrinsics. Struct-to-block stores still
+reach inactive node dispatch; this does not activate ARM64 block lowering or
+establish generated-code parity.
 
 `Lowering.TryCreateAddrMode` implements xarch address folding and interference
 checks. Other targets throw `NotImplementedException` pending their volatile,
@@ -1381,8 +1389,8 @@ scaled-index and explicit-address-add handling.
 xarch bodies. Other targets throw `NotImplementedException` pending their
 target-specific indirection containment and argument placement rules.
 
-`Lowering.ContainCheckCast` and `ContainCheckBinary` implement xarch containment;
-other targets throw `NotImplementedException`. Xarch read-modify-write
+`Lowering.ContainCheckCast` and `ContainCheckBinary` implement xarch and ARM64
+containment; other targets throw `NotImplementedException`. Xarch read-modify-write
 recognition retains native status caching, whole-address interference checks
 and temporary LIR marks. These helpers do not activate arithmetic or cast
 lowering, including floating conversion expansion and optimized transforms.

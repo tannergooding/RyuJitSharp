@@ -79,8 +79,10 @@ public sealed partial class Lowering
         {
             MakeSrcRegOptional(node, address);
         }
+#elif TARGET_ARM64
+        // Native ARM64 nonlocal jump containment is empty.
 #else
-        throw new NotImplementedException("Non-xarch nonlocal jump containment is not ported.");
+        throw new NotImplementedException("Nonlocal jump containment is not ported for this target.");
 #endif
     }
 }

@@ -38,8 +38,11 @@ public sealed partial class Lowering
         {
             MakeSrcRegOptional(node, divisor);
         }
+#elif TARGET_ARM64
+        assert(node.Oper is GT_DIV or GT_UDIV or GT_MOD);
+        // Native ARM64 division has no immediate or memory containment.
 #else
-        throw new System.NotImplementedException("Division containment outside xarch is not ported.");
+        throw new System.NotImplementedException("Division containment is not ported for this target.");
 #endif
     }
 
