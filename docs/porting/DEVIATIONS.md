@@ -1366,6 +1366,12 @@ fusion and extended-shift recognition. Rotate count conversion retains the nativ
 unmasked subtraction; redundant mask removal remains a separate dispatch action.
 General hardware-intrinsic lowering remains separate; these helpers do not
 activate node/block/phase dispatch or establish runtime parity.
+Private comparison, branch and select lowering now implements the native ARM64
+byte-mask tests, signed-bit direct branches and conditional negate/invert/increment
+transformations. JTRUE-to-JCMP/JTEST and SELECT-to-SELECTCC use whole managed
+node-class replacement, preserving owning edges and identity. B381 records the
+pinned non-CC increment path's downstream inconsistency; it remains unchanged
+pending native execution evidence.
 
 `Lowering.TryCreateAddrMode` implements xarch address folding and interference
 checks. Other targets throw `NotImplementedException` pending their volatile,

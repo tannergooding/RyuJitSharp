@@ -632,6 +632,275 @@ internal static unsafe class Arm64ArithmeticLoweringTests
         });
     }
 
+    [TestCase(GT_EQ, 0, false, GT_TEST_EQ)]
+    [TestCase(GT_NE, 0, false, GT_TEST_NE)]
+    [TestCase(GT_GT, 0, false, GT_TEST_NE)]
+    [TestCase(GT_LT, 0, false, GT_LT)]
+    [TestCase(GT_EQ, 1, false, GT_EQ)]
+    [TestCase(GT_EQ, 0, true, GT_EQ)]
+    public static void ByteCastCompareUsesFullWidthMaskOnlyForEligibleZeroTests(
+        genTreeOps oper, int constantValue, bool overflow, genTreeOps expected)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var value = compiler.gtNewLclvNode(TYP_INT, 0);
+            var cast = new GenTreeCast(TYP_INT, value, false, TYP_UBYTE);
+            cast.Flags |= overflow ? GTF_OVERFLOW : GTF_EMPTY;
+            var constant = compiler.gtNewIconNode(TYP_INT, constantValue);
+            var compare = new GenTreeOp(oper, TYP_INT, cast, constant) { IsUnusedValue = true };
+            Append(block, value, cast, constant, compare);
+            Assert.That(LowerCompare(lowering, compare), Is.Null);
+
+            var removed = expected is GT_TEST_EQ or GT_TEST_NE;
+            Assert.That(compare.Oper, Is.EqualTo(expected));
+            Assert.That(compare.Op1, Is.SameAs(removed ? value : cast));
+            Assert.That(constant.IconValue, Is.EqualTo((nint)(removed ? 255 : constantValue)));
+            Assert.That(value.Type, Is.EqualTo(TYP_INT));
+        });
+    }
+
+    [TestCase(GT_GT, true, GenCondition.NE, true)]
+    [TestCase(GT_LE, true, GenCondition.EQ, true)]
+    [TestCase(GT_GE, true, GenCondition.UGE, false)]
+    [TestCase(GT_LT, true, GenCondition.ULT, false)]
+    [TestCase(GT_GE, false, GenCondition.SGE, true)]
+    [TestCase(GT_LT, false, GenCondition.SLT, true)]
+    public static void CompareToZeroRetainsUnsignedCarrySemantics(
+        genTreeOps oper, bool unsigned, GenCondition.CodeKind expected, bool transformed)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var a = compiler.gtNewLclvNode(TYP_LONG, 0);
+            var b = compiler.gtNewLclvNode(TYP_LONG, 1);
+            var and = new GenTreeOp(GT_AND, TYP_LONG, a, b);
+            var zero = compiler.gtNewIconNode(TYP_LONG, 0);
+            var compare = new GenTreeOp(oper, TYP_INT, and, zero);
+            compare.Flags |= unsigned ? GTF_UNSIGNED : GTF_EMPTY;
+            var user = new GenTreeUnOp(GT_RETURN, TYP_INT, compare);
+            Append(block, a, b, and, zero, compare, user);
+            Assert.That(LowerCompare(lowering, compare), Is.SameAs(user));
+
+            Assert.That(user.Op1.Oper, Is.EqualTo(transformed ? GT_SETCC : oper));
+            Assert.That((and.Flags & GTF_SET_FLAGS) != 0, Is.EqualTo(transformed));
+            if (transformed)
+            {
+                Assert.That(user.Op1.AsCC().Condition.Code, Is.EqualTo(expected));
+                Assert.That(and.IsUnusedValue, Is.True);
+                Assert.That(and.Next, Is.SameAs(user.Op1));
+                Assert.That(compare.Next, Is.Null);
+            }
+        });
+    }
+
+    [TestCase(GT_EQ, TYP_LONG, GT_JCMP, 0L, GenCondition.EQ)]
+    [TestCase(GT_NE, TYP_INT, GT_JCMP, 0L, GenCondition.NE)]
+    [TestCase(GT_LT, TYP_LONG, GT_JTEST, long.MinValue, GenCondition.NE)]
+    [TestCase(GT_GE, TYP_BYTE, GT_JTEST, 128L, GenCondition.EQ)]
+    [TestCase(GT_LT, TYP_SHORT, GT_JTEST, 32768L, GenCondition.NE)]
+    public static void DirectBranchesPreserveIdentityAndSourceSignBit(
+        genTreeOps oper, var_types type, genTreeOps expected, long mask, GenCondition.CodeKind code)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var value = compiler.gtNewLclvNode(type.ActualType, 0);
+            GenTree operand = type is TYP_BYTE or TYP_SHORT ? new GenTreeCast(TYP_INT, value, false, type) : value;
+            block.InsertAtEnd(value);
+            if (operand != value)
+            {
+                block.InsertAtEnd(operand);
+            }
+
+            var zero = compiler.gtNewIconNode(type.ActualType, 0);
+            var compare = new GenTreeOp(oper, TYP_INT, operand, zero);
+            var branch = new GenTreeUnOp(GT_JTRUE, TYP_VOID, compare);
+            branch._vnPair.SetBoth(123);
+            Append(block, zero, compare, branch);
+            Assert.That(LowerJTrue(lowering, branch), Is.Null);
+            var result = block.LastNode as GenTreeOpCC ?? throw new AssertionException("Direct branch missing.");
+
+            Assert.That(result.Oper, Is.EqualTo(expected));
+            Assert.That(result.Condition.Code, Is.EqualTo(code));
+            Assert.That(result.Op1, Is.SameAs(value));
+            Assert.That(result.Op2, Is.SameAs(zero));
+            Assert.That(zero.IconValue, Is.EqualTo((nint)mask));
+            Assert.That(zero.IsContained, Is.True);
+            Assert.That(result._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
+            Assert.That(branch.Next, Is.Null);
+            Assert.That(compare.Next, Is.Null);
+#if DEBUG
+            Assert.That(result.TreeId, Is.EqualTo(branch.TreeId));
+#endif
+        });
+    }
+
+    [TestCase(8L, GT_JTEST)]
+    [TestCase(long.MinValue, GT_JCC)]
+    public static void ExistingBitTestsUseNativePositivePowerOfTwoBranchPolicy(long maskValue, genTreeOps expected)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var value = compiler.gtNewLclvNode(TYP_LONG, 0);
+            var mask = compiler.gtNewIconNode(TYP_LONG, (nint)maskValue);
+            var compare = new GenTreeOp(GT_TEST_NE, TYP_INT, value, mask);
+            var branch = new GenTreeUnOp(GT_JTRUE, TYP_VOID, compare);
+            Append(block, value, mask, compare, branch);
+            _ = LowerJTrue(lowering, branch);
+            var result = block.LastNode ?? throw new AssertionException("Branch missing.");
+            Assert.That(result.Oper, Is.EqualTo(expected));
+        });
+    }
+
+    [Test]
+    public static void CompareContainmentSwapsLeftImmediateAndRequiresExtendedSourceRegister()
+    {
+        WithLowering((compiler, lowering, block) => {
+            var immediate = compiler.gtNewIconNode(TYP_LONG, 123);
+            var value = compiler.gtNewLclvNode(TYP_LONG, 0);
+            var compare = new GenTreeOp(GT_LT, TYP_INT, immediate, value) { IsUnusedValue = true };
+            Append(block, immediate, value, compare);
+            ContainCheckCompare(lowering, compare);
+            Assert.That(compare.Oper, Is.EqualTo(GT_GT));
+            Assert.That(compare.Op2, Is.SameAs(immediate));
+            Assert.That(immediate.IsContained, Is.True);
+
+            var left = compiler.gtNewLclvNode(TYP_LONG, 0);
+            var source = compiler.gtNewLclvNode(TYP_INT, 1);
+            source.IsRegOptional = true;
+            var cast = new GenTreeCast(TYP_LONG, source, false, TYP_LONG);
+            var extended = new GenTreeOp(GT_EQ, TYP_INT, left, cast) { IsUnusedValue = true };
+            Append(block, left, source, cast, extended);
+            ContainCheckCompare(lowering, extended);
+            Assert.That(cast.IsContained, Is.True);
+            Assert.That(source.IsRegOptional, Is.False);
+        });
+    }
+
+    [TestCase(GT_NEG, false, true, GT_SELECT_NEGCC)]
+    [TestCase(GT_NEG, true, true, GT_SELECT_NEGCC)]
+    [TestCase(GT_NOT, false, true, GT_SELECT_INVCC)]
+    [TestCase(GT_NOT, true, true, GT_SELECT_INVCC)]
+    [TestCase(GT_ADD, false, true, GT_SELECT_INCCC)]
+    [TestCase(GT_ADD, true, true, GT_SELECT_INCCC)]
+    [TestCase(GT_NEG, false, false, GT_SELECT_NEG)]
+    [TestCase(GT_NEG, true, false, GT_SELECT)]
+    public static void ConditionalOperationsPreserveOwnersAndReverseOnlyEligibleConditions(
+        genTreeOps operation, bool onTruePath, bool compareCondition, genTreeOps expected)
+    {
+        WithLowering((compiler, lowering, block) => {
+            GenTree condition = compareCondition ? Relop(compiler, block, GT_LT, 0) : compiler.gtNewLclvNode(TYP_INT, 0);
+            if (!compareCondition)
+            {
+                block.InsertAtEnd(condition);
+            }
+
+            var value = compiler.gtNewLclvNode(TYP_LONG, 0);
+            value.IsRegOptional = true;
+            block.InsertAtEnd(value);
+            GenTree transformed;
+            if (operation is GT_ADD)
+            {
+                var one = compiler.gtNewIconNode(TYP_LONG, 1);
+                block.InsertAtEnd(one);
+                transformed = new GenTreeOp(GT_ADD, TYP_LONG, value, one);
+            }
+            else
+            {
+                transformed = new GenTreeUnOp(operation, TYP_LONG, value);
+            }
+
+            var other = compiler.gtNewLclvNode(TYP_LONG, 1);
+            var select = new GenTreeConditional(GT_SELECT, TYP_LONG, condition,
+                onTruePath ? transformed : other, onTruePath ? other : transformed);
+            var owner = new GenTreeUnOp(GT_RETURN, TYP_LONG, select);
+            Append(block, transformed, other, select, owner);
+            Assert.That(LowerSelect(lowering, select), Is.SameAs(owner));
+            var result = owner.Op1 as GenTreeOp ?? throw new AssertionException("Select missing.");
+            Assert.That(result.Oper, Is.EqualTo(expected));
+            if (expected is not GT_SELECT)
+            {
+                Assert.That(result.Op1, Is.SameAs(other));
+                Assert.That(result.Op2, Is.SameAs(value));
+                Assert.That(value.IsRegOptional, Is.False);
+                Assert.That(transformed.Next, Is.Null);
+            }
+            if (compareCondition)
+            {
+                Assert.That(result.AsOpCC().Condition.Code, Is.EqualTo(onTruePath ? GenCondition.SGE : GenCondition.SLT));
+                Assert.That(select.Next, Is.Null);
+            }
+        });
+    }
+
+    [TestCase(4L, 5L, 4L, GenCondition.SGE)]
+    [TestCase(5L, 4L, 4L, GenCondition.SLT)]
+    [TestCase(-1L, 0L, -1L, GenCondition.SGE)]
+    [TestCase(long.MaxValue, long.MinValue, long.MaxValue, GenCondition.SGE)]
+    public static void ConsecutiveConstantsUseNativeWidthWrappingAndOneOperandIncrement(
+        long first, long second, long expectedBase, GenCondition.CodeKind code)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var condition = Relop(compiler, block, GT_LT, 0);
+            var trueValue = compiler.gtNewIconNode(TYP_LONG, (nint)first);
+            var falseValue = compiler.gtNewIconNode(TYP_LONG, (nint)second);
+            var select = new GenTreeConditional(GT_SELECT, TYP_LONG, condition, trueValue, falseValue);
+            var owner = new GenTreeUnOp(GT_RETURN, TYP_LONG, select);
+            Append(block, trueValue, falseValue, select, owner);
+            _ = LowerSelect(lowering, select);
+            var result = owner.Op1.AsOpCC();
+            Assert.That(result.Oper, Is.EqualTo(GT_SELECT_INCCC));
+            Assert.That(result.Op1.AsIntCon().IconValue, Is.EqualTo((nint)expectedBase));
+            Assert.That(result.Op2, Is.Null);
+            Assert.That(result.Condition.Code, Is.EqualTo(code));
+        });
+    }
+
+    [TestCase(GT_EQ, false, true)]
+    [TestCase(GT_NE, false, true)]
+    [TestCase(GT_EQ, true, false)]
+    public static void ConditionalIncrementReusesComparedLocalOnlyAtMatchingActualWidth(
+        genTreeOps conditionOper, bool mismatchedWidth, bool expected)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var compareValue = compiler.gtNewLclvNode(mismatchedWidth ? TYP_INT : TYP_LONG, 0);
+            var constant = compiler.gtNewIconNode(compareValue.Type, 10);
+            var condition = new GenTreeOp(conditionOper, TYP_INT, compareValue, constant);
+            var nextValue = compiler.gtNewIconNode(TYP_LONG, 11);
+            var otherValue = compiler.gtNewLclvNode(TYP_LONG, 1);
+            var select = new GenTreeConditional(GT_SELECT, TYP_LONG, condition,
+                conditionOper is GT_EQ ? nextValue : otherValue, conditionOper is GT_EQ ? otherValue : nextValue);
+            var owner = new GenTreeUnOp(GT_RETURN, TYP_LONG, select);
+            Append(block, compareValue, constant, condition, nextValue, otherValue, select, owner);
+            _ = LowerSelect(lowering, select);
+            var result = owner.Op1.AsOpCC();
+            Assert.That(result.Oper, Is.EqualTo(expected ? GT_SELECT_INCCC : GT_SELECTCC));
+            if (expected)
+            {
+                Assert.That(result.Condition.Code, Is.EqualTo(GenCondition.NE));
+                Assert.That(result.Op1, Is.SameAs(otherValue));
+                Assert.That(result.Op2.AsLclVar().LclNum, Is.EqualTo(0));
+                Assert.That(result.Op2, Is.Not.SameAs(compareValue));
+                Assert.That(nextValue.Next, Is.Null);
+            }
+        });
+    }
+
+    [TestCase(5, 4, GT_SELECT_INC)]
+    [TestCase(4, 5, GT_SELECT)]
+    public static void NonFlagsConstantIncrementPreservesPinnedNativeShape(int first, int second, genTreeOps expected)
+    {
+        WithLowering((compiler, lowering, block) => {
+            var condition = compiler.gtNewLclvNode(TYP_INT, 0);
+            var trueValue = compiler.gtNewIconNode(TYP_LONG, first);
+            var falseValue = compiler.gtNewIconNode(TYP_LONG, second);
+            var select = new GenTreeConditional(GT_SELECT, TYP_LONG, condition, trueValue, falseValue);
+            var owner = new GenTreeUnOp(GT_RETURN, TYP_LONG, select);
+            Append(block, condition, trueValue, falseValue, select, owner);
+            _ = LowerSelect(lowering, select);
+
+            Assert.That(owner.Op1, Is.SameAs(select));
+            Assert.That(select.Oper, Is.EqualTo(expected));
+            Assert.That(select.Op1, Is.SameAs(trueValue));
+            Assert.That(select.Op2, expected is GT_SELECT_INC ? Is.Null : Is.SameAs(falseValue));
+            Assert.That(select.Cond, Is.SameAs(condition));
+        });
+    }
+
     private static GenTreeOp Relop(Compiler compiler, BasicBlock block, genTreeOps oper, int local)
     {
         var value = compiler.gtNewLclvNode(TYP_INT, local);
@@ -672,6 +941,18 @@ internal static unsafe class Arm64ArithmeticLoweringTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerRotate")]
     private static extern void LowerRotate(Lowering lowering, GenTree node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerCompare")]
+    private static extern GenTree? LowerCompare(Lowering lowering, GenTree node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerJTrue")]
+    private static extern GenTree? LowerJTrue(Lowering lowering, GenTreeUnOp node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckCompare")]
+    private static extern void ContainCheckCompare(Lowering lowering, GenTreeOp node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerSelect")]
+    private static extern GenTree? LowerSelect(Lowering lowering, GenTreeConditional node);
 
     private static void WithLowering(Action<Compiler, Lowering, BasicBlock> action, bool minopts = false)
     {

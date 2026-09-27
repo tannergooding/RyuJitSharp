@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: ARM64 conditional lowering
+
+Private comparison, conditional-branch and select lowering now supports ARM64's
+full-width byte-mask tests, direct zero/sign-bit branches and conditional
+negate/invert/increment instructions. Managed node replacements preserve their
+owning edges, while condition reversal, unsigned-zero flags and increment
+wrapping retain native semantics.
+
+The incomplete ARM64 phase dispatcher and backend remain inactive. A source
+inconsistency in native non-flags conditional increment handling is recorded as
+B381 rather than silently changed in the port.
+
 ## 2026-09-27: ARM64 scalar arithmetic lowering
 
 Private ARM64 addition, multiplication, negation, shifts and rotates now preserve

@@ -13,14 +13,14 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "Complete remaining private ARM64 scalar add/multiply/negate/shift/rotate lowering, including checked widening-multiply recognition, ADD containment transformations, multiply-long negate fusion and BFIZ extended shifts.",
+      "scope": "Complete private ARM64 comparison, conditional-branch and select lowering, including native constant-compare optimizations, comparison containment, JCMP/JTEST replacement and conditional negate/invert/increment transformations.",
       "status": "completed",
       "doneWhen": [
-        "Port IsValidLongMul, complete ARM64 LowerMul/LowerAdd/LowerShift/LowerRotate, TryLowerAddForPossibleContainment and TryLowerNegToMulLongOp. Extract the native GT_NEG dispatch action for private validation without activating LowerNode.",
-        "Preserve checked signed/unsigned multiply proofs, containment clearing, count masking, rotate wrapping, extension widths and LIR ownership; validate, commit the coherent batch and continue."
+        "Complete LowerCompare, OptimizeConstCompare, ContainCheckCompare, LowerJTrue, LowerSelect, ContainCheckSelect and both ARM64 CSEL transformations. Reuse complete condition-to-flags and register-flag support.",
+        "Preserve operand widths, zero/carry semantics, sign-bit tests, condition reversal, native-width wrapping and owning LIR edges across managed node-class replacements; validate, commit the coherent batch and continue."
       ],
       "validation": [
-        "Full-analysis Linux-ARM64 Debug/Release target suites and Windows-x64 arithmetic/shift controls. Extend the existing arithmetic fixture for checked overflow witnesses, constant boundaries, ADD/NEG fusion, count masks and extended-shift/rotate transformations.",
+        "Full-analysis Linux-ARM64 Debug/Release target suites and Windows-x64 comparison/branch/select controls. Focus new coverage on ARM64 constant-compare distinctions, flag ownership, managed branch/select replacements and conditional operation transformations.",
         "Reuse unaffected Windows execution evidence from prerequisite commit ee71808. No Linux or ARM64 execution host is available; managed target tests are not runtime parity."
       ],
       "deferred": [
@@ -422,7 +422,17 @@
         }
       ]
     },
-    "nextAction": "Continue ARM64 comparison, conditional-branch and select lowering as the next coherent scalar dependency closure. LowerAdd/LowerMul/LowerNeg/LowerShift/LowerRotate and their complete widening-multiply, containment and BFIZ helpers are now implemented and validated. Inspect OptimizeConstCompare target guards, LowerJTrue node-class replacement, ContainCheckCompare/Select and the two ARM64 CSEL transformations before integrating private entrypoints. Do not repeat completed arithmetic or memory batches. LowerNode/LowerBlock/DoPhase remain unsupported; eventual block activation must reset _blockIndirs and native FFR state. Keep B375/B376/B378/B379/B380 deferred; do not publish, alter native trees or claim ARM64 runtime parity.",
+    "nextAction": "Continue the remaining ARM64 scalar conversion/division/intrinsic lowering closure after completed arithmetic and conditional entrypoints. LowerCast and ContainCheckCast native bodies are inspected at lowerarmarch.cpp:820-844,2987-3051; implement them in the existing cast files. Inspect complete native signed/unsigned constant division, remainder dispatch and scalar containment dependencies before wiring those entrypoints: managed division still uses xarch-only magic paths and general containment dispatch. Keep node/block/phase and general hardware dispatch inactive until their whole dependency closure is ready; eventual block activation must reset _blockIndirs and native FFR state. Preserve B381's native non-CC increment behavior pending ARM64 execution proof. Keep B375/B376/B378/B379/B380 deferred; do not publish or alter native trees.",
+    "arm64ConditionalLowering": {
+      "scope": "Complete private LowerCompare, OptimizeConstCompare, ContainCheckCompare, LowerJTrue, LowerSelect, ContainCheckSelect, TryLowerCselToCSOp and TryLowerCnsIntCselToCinc.",
+      "mapping": "lower.cpp:4190-4625,4636-4822 -> Lowering.CompareNodes.cs, Lowering.ConditionalBranches.cs and Lowering.Selects.cs; lowerarmarch.cpp:3060-3127,3176-3192,3274-3550 -> Lowering.ComparisonContainment.cs, Lowering.Selects.cs and Lowering.Arm64Selects.cs. Native JTRUE-to-JCMP/JTEST and SELECT-to-SELECTCC mutations use whole managed node-class replacement.",
+      "validation": {
+        "linuxArm64": "520Debug/520Release: conditional-arm64-debug-final.trx and conditional-arm64-release-final.trx; 37 new cases cover ARM64 byte masks, unsigned-zero flags, sign-bit branches, comparison containment, owning edges, explicit/flags conditions and native-width increment wrapping.",
+        "windowsX64Controls": "1510Debug/1417Release: conditional-windows-debug-1.trx and conditional-windows-release-1.trx; comparison, condition, select and LoweringDispatchTests selectors.",
+        "artifacts": "artifacts\\parallel-port; full analysis, nonempty execution and zero skips."
+      },
+      "limits": "Private target entrypoints only; no ARM64 node/block/phase activation, general hardware dispatch or execution parity. B381 records source inconsistencies in native non-CC increment lowering/emission; the port preserves the pinned transformation."
+    },
     "arm64ScalarArithmetic": {
       "scope": "Complete private LowerAdd, LowerMul, LowerNeg, LowerShift and LowerRotate with IsValidLongMul, ADD multiply containment, multiply-long negate fusion, shift-mask removal and BFIZ recognition.",
       "mapping": "gentree.cpp:3991-4072 -> gentree/GenTreeOp.cs; lower.cpp:461-474 GT_NEG action -> private Lowering.Arm64Arithmetic.cs LowerNeg; lower.cpp:7899-8055,8794-8887 -> Lowering.Arithmetic.cs and Lowering.Traversal.cs; lowerarmarch.cpp:581-623,855-881,1281-1370,3673-3738 -> Lowering.Arithmetic.cs, Lowering.Shifts.cs and Lowering.Arm64Arithmetic.cs.",

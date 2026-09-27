@@ -9,8 +9,12 @@ public sealed partial class Lowering
 {
     private GenTree? LowerSelect(GenTreeConditional select)
     {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
         var condition = select.Cond;
+#if TARGET_ARM64
+        var trueValue = select.Op1;
+        var falseValue = select.Op2;
+#endif
         JITDUMP("Lowering select:\n");
         DISPTREERANGE(BlockRange(), select);
         JITDUMP("\n");
@@ -37,6 +41,18 @@ public sealed partial class Lowering
         {
             ContainCheckSelect(select);
         }
+
+#if TARGET_ARM64
+        GenTreeOp result = newSelect is not null ? newSelect : select;
+        if ((trueValue.Oper is GT_NOT or GT_NEG or GT_ADD) || (falseValue.Oper is GT_NOT or GT_NEG or GT_ADD))
+        {
+            TryLowerCselToCSOp(result, condition);
+        }
+        else if (trueValue.Oper.IsCnsIntOrI || falseValue.Oper.IsCnsIntOrI)
+        {
+            TryLowerCnsIntCselToCinc(result, condition);
+        }
+#endif
 
         return newSelect is not null ? newSelect.Next : select.Next;
 #else
@@ -97,8 +113,17 @@ public sealed partial class Lowering
                 MakeSrcRegOptional(select, op2);
             }
         }
+#elif TARGET_ARM64
+        if (select.Op1.IsIntegralConst(0))
+        {
+            MakeSrcContained(select, select.Op1);
+        }
+        if (select.Op2.IsIntegralConst(0))
+        {
+            MakeSrcContained(select, select.Op2);
+        }
 #else
-        throw new System.NotImplementedException("Non-xarch select containment is not ported.");
+        throw new System.NotImplementedException("Select containment is not ported for this target.");
 #endif
     }
 }

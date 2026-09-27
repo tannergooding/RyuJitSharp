@@ -104,8 +104,63 @@ public sealed partial class Lowering
         {
             cmp.IsUnsigned = true;
         }
+#elif TARGET_ARM64
+        var op1 = cmp.Op1;
+        var op2 = cmp.Op2;
+        if (CheckImmedAndMakeContained(cmp, op2))
+        {
+            return;
+        }
+
+        if (cmp.Oper.IsCompare && CheckImmedAndMakeContained(cmp, op1))
+        {
+            (cmp.Op1, cmp.Op2) = (cmp.Op2, cmp.Op1);
+            cmp.SetOper(cmp.Oper.SwapRelop);
+            return;
+        }
+
+        if (CompilerInstance.opts.OptimizationEnabled && (cmp.Oper.IsCompare || (cmp.Oper is GT_CMP)))
+        {
+            static void ForceCastOpInRegister(GenTree operand)
+            {
+                GenTreeCast? cast = operand as GenTreeCast;
+                if ((operand.Oper is GT_NEG) && (operand.AsUnOp().Op1 is GenTreeCast negatedCast))
+                {
+                    cast = negatedCast;
+                }
+
+                cast?.CastOp.IsRegOptional = false;
+            }
+
+            if (IsContainableUnaryOrBinaryOp(cmp, op2))
+            {
+                if (cmp.Oper.IsCmpCompare)
+                {
+                    ForceCastOpInRegister(op2);
+                }
+
+                MakeSrcContained(cmp, op2);
+                return;
+            }
+
+            if (IsContainableUnaryOrBinaryOp(cmp, op1))
+            {
+                if (cmp.Oper.IsCmpCompare)
+                {
+                    ForceCastOpInRegister(op1);
+                }
+
+                MakeSrcContained(cmp, op1);
+                (cmp.Op1, cmp.Op2) = (cmp.Op2, cmp.Op1);
+                if (cmp.Oper.IsCompare)
+                {
+                    cmp.SetOper(cmp.Oper.SwapRelop);
+                }
+                return;
+            }
+        }
 #else
-        throw new System.NotImplementedException("Non-xarch comparison containment is not ported.");
+        throw new System.NotImplementedException("Comparison containment is not ported for this target.");
 #endif
     }
 }
