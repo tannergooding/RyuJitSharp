@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Indirect-call fixture fault contracts
+
+The indirect-call fixture now initializes an absent return-buffer argument to
+`BAD_VAR_NUM`. Its zero-initialized compiler had incorrectly identified receiver
+local zero as nonnull, suppressing five expected method-table load faults.
+Production behavior is unchanged, including native's explicit exception-flag
+clearing during global morph.
+
+The original failing cases now pass alongside explicit receiver-nullability,
+method-table nonfaulting-flag and ordinary-local/return-buffer controls.
+Indirect-call and related argument fixtures pass 160 Debug and 158 Release cases
+with full analysis. The original five failures and 55 passing controls remain
+recorded in `artifacts\indirect-call-faults`.
+
 ## 2026-09-27: Floating local evaluation costs
 
 Floating-point local uses and definitions now retain native AMD64 size costs:

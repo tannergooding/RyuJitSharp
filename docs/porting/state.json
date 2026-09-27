@@ -12,19 +12,19 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete B330 by reconciling floating local-node costs with native gtGetLclVarNodeCost, including likely-register and memory-resident uses/definitions.",
+      "scope": "Repair the established indirect-call fixture's absent-return-buffer contract while preserving virtual-target exception and global-morph behavior.",
       "doneWhen": [
-        "Preserve native AMD64 floating size adjustments after base local costs; do not add an execution-cost penalty to floating memory locals.",
-        "Cover float/double register and memory paths, local uses/definitions, small normalization and integer/struct controls.",
-        "Compare FoldFloating local/parent costs in both stress modes and retain native stress phase/instruction equality.",
-        "Check the29/143execution baseline for cost-driven optimization changes, then commit locally and continue."
+        "Retain the reproduced five-failure/fifty-five-control baseline and confirm native absence uses BAD_VAR_NUM.",
+        "Initialize the fixture correctly rather than weakening virtual-target fault expectations or altering production.",
+        "Assert receiver nullability, method-table nonfaulting flags and separate real return-buffer/ordinary-local controls.",
+        "Run indirect-call and related argument tests in both configurations, commit the coherent test correction and continue."
       ],
       "validation": [
-        "Run local morph/cost, CSE and stress-split tests with full analysis in Debug/Release and demonstrate old-source failures.",
-        "Use stress-vn-diagnostics after-random/after-commas as immediate old captures, native stress captures as reference and the established29/143matrix."
+        "Baseline artifacts\\indirect-call-faults\\baseline-debug.trx reproduces5failures/55controls.",
+        "Run IndirectCallTransformationTests, CallArgumentMorphTests and InlineArgumentTests with full analysis; production/runtime inputs are unchanged."
       ],
-      "parentScope": "B340 committed93ac5f4 and B330 VN diagnostics committedd618a89. Continue the actual LCL_VAR cost discrepancy, not floating constants; no publication.",
-      "deferred": "B322 remains a native uninitialized-bool limitation. Five existing indirect-call fixture exception-flag failures remain separate. RL feature records intentionally use unpadded indices in native and are not part of B305.",
+      "parentScope": "B330 completed in21bb4d9 afterd618a89; B340 in93ac5f4. Close the known fixture failure before broader port validation; no publication.",
+      "deferred": "B322 remains a native uninitialized-bool limitation. Broader dump/raw-byte/GC coverage and remaining compiler gaps are separate.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -429,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B330 local costs validated: sourcef50b9185,241Debug/166Release,8old failures/9controls per configuration,54native-equal FoldFloating cost lines,143baseline plus38stress native-equal instruction streams/sizes and97CSE/38stress phases. Commit locally, then reproduce the five existing IndirectCallTransformationTests exception-flag failures and establish whether their fixture has the absent-return-buffer initialization defect already corrected in B318/B325. Do not weaken fault expectations or change production before establishing that contract. No push.",
+    "nextAction": "B341 fixture correction validated160Debug/158Release; commit locally, then run the full Core test project in Debug/Release to expose outstanding failures after the recent phase integrations. Preserve baseline failures and fix only evidenced native-contract/fixture defects in coherent batches. Use remaining PLAN/DEVIATIONS scope to select the next production gap if the suite is clean; no push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -464,6 +464,15 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "indirectCallFaultFixtures": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "nativeContract": "lclvars.cpp initializes absent compRetBuffArg to BAD_VAR_NUM; flowgraph.cpp929-934 excludes that local from nullability; morph.cpp preserves the explicit global-morph exception-clearing quirk.",
+        "sourceSnapshot": "8854790df8418ef366d0efe78c97600a4abb7fc2",
+        "baseline": "artifacts\\indirect-call-faults\\baseline-debug.trx on21bb4d9:5failed/55passed; all failures are non-global-morph virtual-target exception expectations.",
+        "tests": "artifacts\\indirect-call-faults\\debug-1.trx and release-1.trx:160Debug/158Release with full analysis. Selection: IndirectCallTransformationTests, CallArgumentMorphTests and InlineArgumentTests.",
+        "result": "Absent return-buffer sentinel restored; all eight original virtual-target cases retain explicit nullable-receiver and method-table fault/nonfaulting checks. Two additional cases distinguish ordinary byref-local loads from nonnull return-buffer loads.",
+        "limits": "Fixture-only correction. No production, ABI, phase, corpus or NativeAOT library changes; no new runtime parity claim."
+      },
       "floatingLocalCosts": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "nativeFunction": "gentree.cpp:5266-5312 Compiler::gtGetLclVarNodeCost; used by gtSetEvalOrder for local uses and definitions.",

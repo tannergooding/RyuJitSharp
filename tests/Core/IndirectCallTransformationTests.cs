@@ -174,6 +174,7 @@ internal static unsafe partial class IndirectCallTransformationTests
             compiler.fgGlobalMorph = globalMorph;
             var local = AddLocal(compiler, TYP_REF);
             var receiver = compiler.gtNewLclvNode(TYP_REF, local);
+            Assert.That(compiler.fgAddrCouldBeNull(receiver), Is.True);
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, (CORINFO_METHOD_STRUCT_*)0x1000);
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(receiver).WithWellKnownArg(WellKnownArg.ThisPointer));
 
@@ -230,9 +231,34 @@ internal static unsafe partial class IndirectCallTransformationTests
 
             Assert.That(target.Flags & (GTF_IND_NONFAULTING | GTF_IND_INVARIANT), Is.EqualTo(GTF_IND_NONFAULTING));
             Assert.That(methodTable.Flags & GTF_EXCEPT, Is.EqualTo(globalMorph ? 0 : GTF_EXCEPT));
+            Assert.That(methodTable.Flags & GTF_IND_NONFAULTING, Is.EqualTo(GTF_EMPTY));
             Assert.That(methodTable.Addr, Is.Not.SameAs(receiver));
             Assert.That(methodTable.Addr.AsLclVar().LclNum, Is.EqualTo(local));
             Assert.That(call.Args.ThisArg?.Node, Is.SameAs(receiver));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void OrdinaryLocalAndReturnBufferHaveDistinctFaultContracts(bool returnBuffer)
+    {
+        WithCompiler(compiler =>
+        {
+            Assert.That(compiler.info.compRetBuffArg, Is.EqualTo(BAD_VAR_NUM));
+            var local = AddLocal(compiler, TYP_BYREF);
+
+            if (returnBuffer)
+            {
+                compiler.info.compRetBuffArg = local;
+            }
+
+            var address = compiler.gtNewLclvNode(TYP_BYREF, local);
+            var load = compiler.gtNewIndir(TYP_INT, address);
+
+            Assert.That(compiler.fgAddrCouldBeNull(address), Is.EqualTo(!returnBuffer));
+            Assert.That(load.Flags & GTF_EXCEPT, Is.EqualTo(returnBuffer ? GTF_EMPTY : GTF_EXCEPT));
+            Assert.That(load.Flags & GTF_IND_NONFAULTING,
+                Is.EqualTo(returnBuffer ? GTF_IND_NONFAULTING : GTF_EMPTY));
         });
     }
 
@@ -519,6 +545,7 @@ internal static unsafe partial class IndirectCallTransformationTests
         compiler.fgPredsComputed = true;
         compiler.lvaTable = [];
         compiler.info.compIsStatic = true;
+        compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.info.compCompHnd = &jitInfo;
         CORINFO_METHOD_INFO methodInfo = default;
         compiler.info.compMethodInfo = &methodInfo;
