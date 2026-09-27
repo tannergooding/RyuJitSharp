@@ -9,6 +9,29 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class LocalStoreLoweringTests
 {
+    [Test]
+    public static void StoreConstructionPreservesNormalizationType(
+        [Values(var_types.TYP_BYTE, var_types.TYP_UBYTE,
+            var_types.TYP_SHORT, var_types.TYP_USHORT, var_types.TYP_INT)] var_types type,
+        [Values] bool parameter)
+    {
+        WithCompiler(compiler =>
+        {
+            ref var local = ref compiler.lvaTable[0];
+            local.Type = type;
+            local.lvIsParam = parameter;
+            var value = compiler.gtNewIconNode(var_types.TYP_INT, 257);
+
+            var store = compiler.gtNewStoreLclVarNode(0, value);
+
+            Assert.That(store.Type, Is.EqualTo(parameter ? type : var_types.TYP_INT));
+            Assert.That(store.Data, Is.SameAs(value));
+            Assert.That(store.LclNum, Is.Zero);
+            Assert.That(store.Flags & (GenTreeFlags.GTF_VAR_DEF | GenTreeFlags.GTF_ASG),
+                Is.EqualTo(GenTreeFlags.GTF_VAR_DEF | GenTreeFlags.GTF_ASG));
+        });
+    }
+
     [TestCase(var_types.TYP_DOUBLE, long.MinValue, false, false)]
     [TestCase(var_types.TYP_DOUBLE, 0x7FF8000000001234L, false, false)]
     [TestCase(var_types.TYP_FLOAT, long.MinValue, false, false)]

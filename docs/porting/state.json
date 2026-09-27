@@ -12,11 +12,12 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Continue physical promotion and async state-machine transformation against 33baf8 in parallel. With instrumentation and tree stress committed, parent ports complete OSR patchpoint metadata publication needed by the remaining runtime execution paths.",
+      "scope": "Continue physical promotion and async state-machine transformation against 33baf8. OSR metadata publication is committed; parent next ports complete fgFixEntryFlowForOSR and its importer integration to preserve carried Tier0 state.",
       "doneWhen": [
         "Complete physical promotion including candidate selection, replacement, liveness and decomposition rather than activating a partial prerequisite.",
         "Complete async transformation including normal/tail awaits, continuation layout, suspension/resumption, live state, contexts and EH rather than activating only the wrapper.",
         "Publish complete native-equivalent OSR patchpoint frame metadata, preserving EE allocation/ownership, shadow locals, exposure, context/special offsets and callee-save encoding.",
+        "Redirect OSR import to the designated entry, preserving weights and profile consistency; prove initialization is not repeated and carried Tier0 state survives actual OSR execution.",
         "Integrate named shared deltas, review each complete native closure and validate focused semantic/runtime evidence with existing corpora.",
         "Commit each completed subsystem separately, preserving the other lane's WIP, and continue remaining port dependencies."
       ],
@@ -24,7 +25,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Profile instrumentation committed 40dc08c and complete tree stress committed 2ae34c7. Parent owns remaining public entries and shared integration; physical fixes and async closure proceed in separate lanes. Port the complete generatePatchpointInfo metadata publisher before positive managed OSR claims. Consolidate validation per subsystem, not per helper. No publication authorized.",
+      "parentScope": "OSR metadata publisher committed ab68491, with B332 importer-redirection failure recorded rather than claimed as resumption parity. Physical promotion has passed reviewed-source integration and positive runtime comparison; parent completes its local commit before OSR entry work. Async closure is undergoing independent review. No publication authorized.",
       "deferred": "B311 optional metrics fixture, B318/B325 existing argument regressions, B307 EH node IDs, B320 static-data descriptions, B321-B323 profile diagnostics and remaining B315 physical-promotion/graph parity stay separate. B324 is corrected and tiered GDV/value execution now passes. No general argument-morph redesign.",
       "parallelPackets": [
         {
@@ -32,7 +33,7 @@
           "owner": "9e905421-71cc-4119-ab60-d762e4b27745",
           "files": "New async/AsyncTransformation files, Compiler.AsyncTransformation support and AsyncTransformationTests; parent owns shared deltas and the public TransformAsync entry.",
           "status": "in-progress",
-          "remainingBoundary": "Complete inactive closure with consolidated full-analysis validation. Reuse existing async import, context, resume and codegen support. Preserve native continuation/EE ownership and node replacement contracts; report named shared blockers."
+          "remainingBoundary": "Frozen16-file packet8D8R reviewed by6356462f: incorrect pre-morph Remove at five post-morph pseudoarg sites; stale continuation-offset block ownership after await splits; missing default NONFAULTING flags; broad diagnostic omissions. Author9e905421 is fixing all four with actual transformation regressions and complete diagnostic helpers/callsites. A new precise CallArgs post-morph removal partial is authorized; parent retains public activation/shared review. The pre-port zero-segment pseudoarg is supposed to be consumed by transformation, not an independently established lowering defect."
         },
         {
           "scope": "Complete profile instrumentation: count/edge, handle and value instrumentors plus preparation/core/inline-return wrapper.",
@@ -45,8 +46,8 @@
           "scope": "Complete physical-promotion subsystem against promotion.h/.cpp, promotionliveness.cpp and promotiondecomposition.cpp.",
           "owner": "9ac3e59e-498c-469c-94c6-87f58abf6ff1",
           "files": "New promotion files, Compiler.PhysicalPromotion*.cs and PhysicalPromotionTests.cs; parent owns shared deltas and public entry.",
-          "status": "in-progress",
-          "remainingBoundary": "Frozen 12-file packet on 40dc08c passes 35 Debug / 35 Release; manifest artifacts\\physical-promotion\\packet-40dc08.manifest.json. Review 6356462f found nonconstant INIT_VAL wrongly treated as constant, reassociated weighted costs reversing selection, checked decomposed-address addition and broad diagnostic omissions. Author 9ac3e59e is fixing the full round with regressions and all native diagnostic sites; parent restored Run block/statement diagnostics. Finish those findings before activation and native UTF8/struct comparison."
+          "status": "done",
+          "remainingBoundary": "Complete public phase integrated after reviewer6356462f cleared dynamic-init, weighted-cost, pointer-wrap and full diagnostic fixes. Three algorithm regressions fail on prereview code and pass after; public-entry regression fails on old stub with two controls. Parent corrected shared store normalization B331. Immutable724f91c passes145D132R and29/143baseline; comparison-724f-1.json matches three positive UTF8 algorithm/post-phase IR/instruction slices and nine unchanged struct controls. Existing B322 profile-validation tails remain distinct."
         },
         {
           "scope": "Complete native static-initialization expansion.",
@@ -430,7 +431,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit completed OSR publisher and corpus separately, then finish physical promotion. OSR source01b67cb passes22D22R and29/143baseline; comparison artifacts\\osr-patchpoint\\comparison-01b67-1.json matches native Tier0 metadata but proves managed Tier1-OSR restarts method initialization because importer entry redirection is absent. Do not claim correct resumption from unchanged final values. After physical commit, strengthen the corpus to detect repeated initialization and port complete native OSR importer entry handling. Physical source724f91c passes145D132R and29/143baseline after shared gtNewStoreLclVarNode normalization correction; positive UTF8/struct recaptures are under artifacts\\physical-promotion, awaiting final comparison/ledger and wrapper test receipts. Async full16-file inactive closure is frozen in layout-snapshot.manifest.txt,8D8R; reviewer6356462f is checking complete native algorithms/diagnostics before activation. Preserve WIP; local commits only.",
+    "nextAction": "Finish physical commit from exact source724f91c5df3444d3c4db8c3b83d5b8ce08361d52 (145D132R,29/143baseline); comparison-724f-1 matches three positive UTF8 algorithm/IR/instruction slices and nine struct controls, with B322 tails separate. All regression receipts collected, including8old-helper failures/2int controls. Then port full fgFixEntryFlowForOSR (native fgbasic.cpp4006-4058, managed Compiler.fg.cs10705) and verify callsites; native function read. Native lane's strengthened corpus hashD2CDBEAEB79DBEF1BEBE95E934672945B88F74F7CBD819AC72954130D0573159 passes native and fails old managed with touch=2,initialization=2; comparison-strengthened-1.json records6bodies and actual OSR variants. Metadata ab68491 committed; resumption still incorrect. Async author fixing review's post-morph removal, stale ownership, nonfaulting flags and full diagnostic omissions; public phase inactive. Preserve other WIP and do not push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -6332,6 +6333,20 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "physical-promotion",
+      "native": ["src\\coreclr\\jit\\promotion.cpp", "src\\coreclr\\jit\\promotion.h", "src\\coreclr\\jit\\promotionliveness.cpp", "src\\coreclr\\jit\\promotiondecomposition.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.PhysicalPromotion.Candidates.cs", "sources\\Core\\jit\\compiler\\Compiler.PhysicalPromotion.AddressExposure.cs", "sources\\Core\\jit\\compiler\\Compiler.PhysicalPromotion.Replacements.cs", "sources\\Core\\jit\\compiler\\Compiler.PhysicalPromotion.Driver.cs", "sources\\Core\\jit\\promotion"],
+      "status": "Complete candidate/access gathering, profitability, replacement and remainder liveness, block/statement rewrite, init/copy decomposition and public phase dispatch. Native order, weighted arithmetic, dynamic-init readbacks, target-width address wrapping and diagnostics retained. Source724f91c executes three positive UTF8 and nine unchanged struct controls with matching phase algorithms and instruction slices; positive post-phase IR also matches. B322 validation-tail diagnostics remain separate. Native sources retained.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
+    {
+      "area": "local-store-normalization-type",
+      "native": ["src\\coreclr\\jit\\gentree.cpp:Compiler::gtNewStoreLclVarNode"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.gt.cs:gtNewStoreLclVarNode"],
+      "status": "Corrected inverted normalize-on-load predicate found during physical-promotion integration. Normalize-on-load locals preserve the small storage type; other locals use ActualType. Four small integer types and int controls cover both parameter and ordinary-local cases.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "osr-patchpoint-metadata-publication",
       "native": ["src\\coreclr\\jit\\compiler.cpp:5618-5805"],

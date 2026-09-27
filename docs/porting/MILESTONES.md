@@ -15,6 +15,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Physical struct promotion
+
+Physical promotion now selects profitable primitive replacements, computes
+replacement and remainder liveness, and rewrites or decomposes aggregate
+accesses. Runtime-fill stores retain their required readbacks; weighted costs
+preserve native arithmetic order, and address offsets wrap at target width.
+The shared local-store factory now preserves the native normalization type for
+small locals and parameters.
+
+Each UTF8 interpolated-handler method selects twelve replacements, omits two
+dying remainders, and matches the native 16-block post-phase IR and 75-byte,
+23-instruction body. All nine struct controls retain native no-change decisions
+and emitted instructions. Physical-promotion diagnostics match through the
+phase and resulting IR; the existing deferred profile-check difference remains
+outside that parity claim. The ordinary execution baseline is unchanged.
+
 ## 2026-09-26: OSR patchpoint metadata publication
 
 Tier0 compilations now publish their patchpoint frame metadata through the EE's

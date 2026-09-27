@@ -12923,7 +12923,7 @@ public partial class Compiler
         ref var varDsc = ref lvaGetDesc(lclNum);
         var type = varDsc.Type;
 
-        if (varDsc.lvNormalizeOnLoad)
+        if (!varDsc.lvNormalizeOnLoad)
         {
             type = type.ActualType;
         }

@@ -2494,8 +2494,15 @@ public partial class Compiler
     // TODO: Port phase - TransformAsync
     public PhaseStatus TransformAsync() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - PhysicalPromotion
-    private PhaseStatus PhysicalPromotion() => PhaseStatus.MODIFIED_NOTHING;
+    private PhaseStatus PhysicalPromotion()
+    {
+        if (!PhysicalPromotionIsEnabled())
+        {
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+
+        return PhysicalPromotionRunImplementation();
+    }
 
     /// <summary>Regenerate flow graph annotations; to be used between iterations when repeating opts.</summary>
     protected void RecomputeFlowGraphAnnotations()
