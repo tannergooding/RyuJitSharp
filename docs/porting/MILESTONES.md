@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Profile repair
+
+The repair phase now reconstructs inconsistent profiles through the existing
+synthesis engine while retaining edge likelihoods. Methods without profile
+weights and already-consistent profiles remain unchanged; an unsuccessful
+reconstruction is not relabeled consistent.
+
+Profile-stress execution reaches positive post-morph repairs in `Main` and
+`ManyReturns`; native and managed post-repair tables match. The same four precise
+inconsistencies in `Main` disappear after reconstruction. Displayed weights and
+likelihoods remain unchanged, but the dumps do not expose their unrounded
+values. Ordinary execution follows the no-PGO path. Exponent casing and existing
+profile-check/padding diagnostics remain outside exact whole-dump parity.
+
 ## 2026-09-26: Post-inline no-return cleanup
 
 The post-inline cleanup phase now finds no-return calls in native preorder

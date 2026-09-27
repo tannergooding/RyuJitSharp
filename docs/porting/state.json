@@ -12,18 +12,18 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port complete fgPostInlineNoReturnCleanup against33baf8. Preserve preorder execution-order discovery, qmark exclusions, early tree splitting, statement trimming and shared throw-block conversion.",
+      "scope": "Port complete fgRepairProfile against33baf8, reusing existing ProfileSynthesis.Run with RetainLikelihoods. Preserve profile availability/consistency gates, diagnostics and reconstruction behavior.",
       "doneWhen": [
-        "Port complete native phase/finder and no-return method predicate, reusing existing split-tree and throw-conversion contracts.",
-        "Cover root/nested no-return calls, execution order, qmark exclusions, earlier side effects, later statement removal and CFG/profile updates with old-stub controls.",
-        "Execute positive native/managed post-inline cleanup on a focused corpus and retain the established execution baseline.",
-        "Commit the validated no-return cleanup batch locally, then continue the next remaining dependency."
+        "Activate complete native profile-repair phase without changing synthesis algorithms or profile policy.",
+        "Cover no-profile and already-consistent gates plus positive reconstruction with retained likelihoods and old-stub controls.",
+        "Capture positive native/managed repair where reachable and preserve established execution baselines.",
+        "Commit the validated profile-repair batch locally, then continue the next remaining dependency."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Missing block weights committed389a68d. Parent owns no-return phase/finder/tests; independent lane captures positive native post-inline cleanup. No publication authorized; commits remain checkpoints.",
+      "parentScope": "Post-inline no-return cleanup committed1eb2d8c. Parent owns profile-repair entry/tests; independent lane captures native profile repair. No publication authorized; commits remain checkpoints.",
       "deferred": "B311 optional metrics fixture, B315 incoming UTF8 graph/promotion, B318 existing argument-morph regression, B307 EH node IDs, B320 static-data descriptions and B321 profile-column spacing remain separate. Unrelated optimizations and discontiguous runtime allocation parity are outside this no-return cleanup batch.",
       "parallelPackets": [
         {
@@ -408,7 +408,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Post-inline no-return validated at snapshotcbaf2bc0dbad80872e99963e1add933db1b0a588:205Debug204Release,10old-stub failures per configuration, positive DirectNested CFG/IR/24byte instruction match,14matching emitted instruction sequences/sizes and29/143baseline. Continue fgRepairProfile (fgprofile.cpp5129-5148), reusing complete existing ProfileSynthesis.Run(RetainLikelihoods); validate profile/consistency gates and positive reconstruction. Keep B322prior deferred-check diagnostics separate. No push or PR authorized.",
+    "nextAction": "Profile repair validated at snapshot1fbd43ffc1f13bfb4d48f517d952f87a833c6505:158Debug133Release,3old-stub failures per configuration,38executed bodies, two positive native/managed reconstruction tables matching,29/143baseline. Continue whole fgResolveGDVs (fgopt.cpp5977-end): reuse MethodHasGuardedDevirtualization, hasUpdatedTypeLocals, existing ObjectAllocator.IsGuard/GuardInfo and fgRepairProfileCondToUncond; expose the existing private guard matcher rather than duplicate it. No push or PR authorized.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -476,6 +476,20 @@
         "scope": "Restore pinned output-pointer-only getThreadLocalStaticBlocksInfo across three wrappers/interface/vtable; rename final metadata slot to offsetOfBaseOfThreadLocalData. Keep existing slot, calling convention, offset widths and neighboring getThreadLocalFieldInfo bool.",
         "nativeEvidence": "MSVC native-probe.cpp static_assert checks exact member signature against pinned corinfo.h; sizeof56, pointer-field offsets0/16/24/32 and scalar offsets40/44/48/52 match managed raw layout.",
         "gaps": "TLS phase is not activated. Virtual native callbacks verify forwarding without claiming actual runtime TLS expansion."
+      },
+      "profileRepair": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "snapshot": "1fbd43ffc1f13bfb4d48f517d952f87a833c6505",
+        "nativeAot": "artifacts\\profile-repair\\native-jit-1\\RyuJitSharp.dll",
+        "sha256": "1ABF9325306C8ACBBC5BC61DE2BA0FB61AC079626D957E7E674B059EF13B5202",
+        "debugPassed": 158,
+        "releasePassed": 133,
+        "tests": "ProfileSynthesisTests with MissingBlockWeightTests and PostInlineNoReturnTests, full analysis. Six new phase cases cover all gates, RetainLikelihoods reconstruction/source policy and incomplete infinite-loop repair without false consistency.",
+        "negativeControls": "artifacts\\profile-repair\\negative: replacing only the public entry with its old stub fails3of6phase cases in each configuration, with3controls passing.",
+        "execution": "Nineteen selected bodies execute in both default and profile-stress configurations with expected outcomes and no fallback. Default repair phases take the no-PGO path. Stress reaches post-morph synthesis for Main and ManyReturns; all19pre-layout calls find consistent profiles.",
+        "comparison": "artifacts\\profile-repair\\comparison-1fbd-1.json:38of38default phase slices and36of38stress logs are raw-equal. Two positive post-repair tables match. Main has the same four precise pre-repair inconsistencies followed by a self-consistent41block profile. Within each run, displayed before/after weights and likelihoods remain unchanged for Main41rows and ManyReturns8rows.",
+        "baseline": "artifacts\\upstream-refresh-33baf8\\profile-repair-managed-matrix\\results.json:29configurations143positive managed bodies and unchanged runtime outcomes.",
+        "gaps": "Positive logs retain B323exponent casing; eight pre-phase tables retain B321padding and default pre-check diagnostics also differ. Unrounded weights and fgPgoSource are not printed; Synthesis source is established by code and focused tests, not dump observation. Existing Main code-size differences and full dump/machine-byte parity remain outside this claim."
       },
       "postInlineNoReturn": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
@@ -6186,6 +6200,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "profile-repair-phase",
+      "native": ["src\\coreclr\\jit\\fgprofile.cpp:fgRepairProfile"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.cs:fgRepairProfile", "sources\\Core\\jit\\fgprofilesynthesis\\ProfileSynthesis.cs:Run"],
+      "status": "Complete public phase with profile/consistency gates and RetainLikelihoods dispatch. Reuses existing synthesis algorithms unchanged; no guarantee of convergence is added. Native source retained.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "post-inline-no-return-cleanup",
       "native": ["src\\coreclr\\jit\\fginline.cpp:fgPostInlineNoReturnCleanup", "src\\coreclr\\jit\\compiler.h:doesMethodHaveNoReturnCalls"],

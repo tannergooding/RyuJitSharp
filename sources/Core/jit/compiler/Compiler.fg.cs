@@ -15275,8 +15275,27 @@ public partial class Compiler
         return changed;
     }
 
-    // TODO: Port phase - fgRepairProfile
-    public PhaseStatus fgRepairProfile() => PhaseStatus.MODIFIED_NOTHING;
+    public PhaseStatus fgRepairProfile()
+    {
+        if (fgIsUsingProfileWeights)
+        {
+            if (fgPgoConsistent)
+            {
+                JITDUMP("Profile is already consistent.\n");
+            }
+            else
+            {
+                ProfileSynthesis.Run(this, ProfileSynthesisOption.RetainLikelihoods);
+                return PhaseStatus.MODIFIED_EVERYTHING;
+            }
+        }
+        else
+        {
+            JITDUMP("No PGO data. Skipping profile repair.\n");
+        }
+
+        return PhaseStatus.MODIFIED_NOTHING;
+    }
 
     // TODO: Port phase - fgResolveGDVs
     public PhaseStatus fgResolveGDVs() => PhaseStatus.MODIFIED_NOTHING;

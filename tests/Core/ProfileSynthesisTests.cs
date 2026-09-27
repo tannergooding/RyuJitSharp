@@ -575,6 +575,74 @@ internal static unsafe class ProfileSynthesisTests
         });
     }
 
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void RepairPhaseRequiresInconsistentProfileWeights(bool profile, bool consistent)
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_RETURN);
+            blocks[0].SetKindAndTargetEdge(BBJ_ALWAYS, Edge(blocks[0], blocks[1], 1));
+            blocks[0].setBBProfileWeight(80);
+            compiler.fgPgoHaveWeights = profile;
+            compiler.fgPgoConsistent = consistent;
+            compiler.fgCalledCount = 77;
+            var repair = profile && !consistent;
+
+            Assert.That(compiler.fgRepairProfile(), Is.EqualTo(repair
+                ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(blocks[1].bbWeight, Is.EqualTo(repair ? 80 : 100));
+            Assert.That(compiler.fgCalledCount, Is.EqualTo(repair ? 80 : 77));
+            Assert.That(compiler.fgPgoConsistent, Is.EqualTo(consistent || repair));
+            Assert.That(compiler.Metrics.ProfileSynthesizedBlendedOrRepaired, Is.EqualTo(repair ? 1 : 0));
+        });
+    }
+
+    [Test]
+    public static void RepairPhaseRetainsBranchLikelihoodsInsteadOfRepairingOrReassigningThem()
+    {
+        WithCompiler(compiler => {
+            var blocks = Blocks(compiler, BBJ_COND, BBJ_RETURN, BBJ_RETURN);
+            var left = Edge(blocks[0], blocks[1], 0.2);
+            var right = Edge(blocks[0], blocks[2], 0.8);
+            blocks[0].SetCond(left, right);
+            blocks[0].setBBProfileWeight(100);
+            blocks[1].setBBProfileWeight(4);
+            blocks[2].setBBProfileWeight(6);
+            compiler.fgPgoHaveWeights = true;
+            compiler.fgPgoConsistent = false;
+            compiler.fgPgoSource = ICorJitInfo.PgoSource.Dynamic;
+
+            Assert.That(compiler.fgRepairProfile(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(left.Likelihood, Is.EqualTo(0.2));
+            Assert.That(right.Likelihood, Is.EqualTo(0.8));
+            Assert.That(blocks[1].bbWeight, Is.EqualTo(20));
+            Assert.That(blocks[2].bbWeight, Is.EqualTo(80));
+            Assert.That(compiler.fgPgoConsistent, Is.True);
+            Assert.That(compiler.fgPgoSource, Is.EqualTo(ICorJitInfo.PgoSource.Synthesis));
+            Assert.That(compiler.fgRepairProfile(), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(compiler.Metrics.ProfileSynthesizedBlendedOrRepaired, Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public static void RepairPhaseReportsSynthesisEvenWhenAnInfiniteLoopRemainsInconsistent()
+    {
+        WithCompiler(compiler => {
+            var block = Blocks(compiler, BBJ_ALWAYS)[0];
+            block.SetKindAndTargetEdge(BBJ_ALWAYS, Edge(block, block, 1));
+            compiler.fgPgoHaveWeights = true;
+            compiler.fgPgoConsistent = false;
+#if DEBUG
+            SolverConfig(ref JitConfig) = 0;
+#endif
+            Assert.That(compiler.fgRepairProfile(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(compiler.fgPgoConsistent, Is.False);
+            Assert.That(compiler.Metrics.ProfileSynthesizedBlendedOrRepaired, Is.EqualTo(1));
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void DriverRetainsEntryLoopFrequencyAndDerivesCalledCount(bool inlinee)
