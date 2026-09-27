@@ -619,7 +619,7 @@ public static partial class Globals
         ref simdmask_t result, in simdmask_t arg0)
     {
         var bitMask = GetMaskEvaluationBitMask(baseType, simdSize);
-        var arg0Value = (ulong)arg0.RawBits & bitMask;
+        var arg0Value = unchecked((ulong)arg0.RawBits) & bitMask;
         ulong resultValue = 0;
         switch (oper)
         {
@@ -645,8 +645,8 @@ public static partial class Globals
         ref simdmask_t result, in simdmask_t arg0, in simdmask_t arg1)
     {
         var bitMask = GetMaskEvaluationBitMask(baseType, simdSize);
-        var arg0Value = (ulong)arg0.RawBits & bitMask;
-        var arg1Value = (ulong)arg1.RawBits & bitMask;
+        var arg0Value = unchecked((ulong)arg0.RawBits) & bitMask;
+        var arg1Value = unchecked((ulong)arg1.RawBits) & bitMask;
         ulong resultValue = 0;
         switch (oper)
         {
@@ -690,7 +690,7 @@ public static partial class Globals
         var elementSize = GetSimdElementSize(baseType);
         assert((result.Length <= Unsafe.SizeOf<simd_t>()) && ((result.Length % elementSize) == 0));
         var count = result.Length / elementSize;
-        var mask = (ulong)arg0.RawBits;
+        var mask = unchecked((ulong)arg0.RawBits);
         for (var index = 0; index < count; index++)
         {
 #if TARGET_XARCH
@@ -738,7 +738,7 @@ public static partial class Globals
         // Mask instructions have an eight-bit minimum even for vectors with fewer lanes.
         var count = Math.Max(simdSize / elementSize, 8);
         assert(count is 8 or 16 or 32 or 64);
-        return (ulong)simdmask_t.GetBitMask(count);
+        return unchecked((ulong)simdmask_t.GetBitMask(count));
 #elif TARGET_ARM64
         // Predicate bits are spaced by the element width, across the entire mask storage.
         switch (elementSize)

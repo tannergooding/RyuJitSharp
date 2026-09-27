@@ -94,6 +94,12 @@ for register and memory operands, without an extra floating memory execution
 penalty. All observed local/parent cost lines now match; constants and general
 operand ordering are unchanged.
 
+Integral SIMD broadcasts and mask/folding bit conversions explicitly retain
+native truncation and signed/unsigned reinterpretation under checked builds
+(B343). This preserves sign bits, all-true masks and overshift sentinels without
+changing negative-index rejection or bit-scan undefined-zero guards.
+The project's general overflow-checking policy is unchanged.
+
 SSA memory maps use the existing managed node-identity dictionary. The caller's
 shared-memory flag selects the map kind before the inline root supplies storage,
 preserving native aliasing and ownership. Shared all-successor visitation retains

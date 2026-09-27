@@ -12,19 +12,20 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Reconnect stale emitter constant-reader and division ownership test adapters to the integrated type and helper contracts.",
+      "scope": "Restore native truncating and bit-reinterpreting conversions in integral vector broadcasts, mask evaluation and hardware-intrinsic folding.",
       "doneWhen": [
-        "Use the actual public Emitter.CnsVal type rather than searching only nonpublic nested types.",
-        "Bind the division ownership accessor to current Lowering.ReplaceWithLclVar, matching production division consumers and existing call-target tests.",
-        "Preserve all descriptor payload/layout/relocation and ownership/temporary assertions.",
-        "Run the complete affected fixtures and call-target controls in both configurations; commit and continue."
+        "Preserve all integral lane truncations and signed/unsigned mask bit patterns under checked builds.",
+        "Retain native negative-index rejection, overshift handling, unsigned lane extraction and bit-scan undefined-zero rules.",
+        "Correct two expected-value conversions independently of production and add sign-bit/truncation controls.",
+        "Validate the complete intrinsic fixture and related SIMD/VN tests, then checked-JIT execution before committing."
       ],
       "validation": [
         "Baseline artifacts\\core-validation\\debug-1.trx and release-1.trx on09bca24;11687Debug/10774Release total cases.",
-        "Run EmitterConstantDescriptorTests, DivisionOwnershipTests and CallTargetLoweringTests with full analysis."
+        "Run HardwareIntrinsicInitializationTests and related SIMD/ValueNum tests in Debug/Release; preserve existing33failure baseline and demonstrate new boundary failures.",
+        "Freeze corrected source, publish checked NativeAOT JIT and execute the established29configuration/143body baseline without fallback."
       ],
-      "parentScope": "B341 additional sentinel corrections committedc7dd8a9. B342 now addresses adapter failures before evaluating actual semantic discrepancies.",
-      "deferred": "Other full-suite failure groups remain in baseline TRX, including hardware-intrinsic fixture conversions. B322 and broader dump/raw-byte/GC coverage remain separate.",
+      "parentScope": "Adapters committed65e24b3. B342 investigation establishes actual checked-build numeric defects; no global overflow-policy changes.",
+      "deferred": "Other full-suite failure groups remain in baseline TRX. B322 and broader dump/raw-byte/GC coverage remain separate.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -429,7 +430,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Descriptor/division adapter corrections pass179Debug/183Release; commit locally. Continue B342 intrinsic numeric defects:33Debug-only failures include production signed/unsigned bit conversions in GenTreeVecCon.EvaluateBroadcastInPlace, SIMD mask evaluators and gtFoldExprHWIntrinsic, plus two fixture expectation sites. Compare complete affected native functions and preserve truncation, negative mask bits and overshift semantics; add boundary controls before changing production.",
+    "nextAction": "B343 intrinsic conversions validated: source4c629007,1094Debug/1071Release,83old Debug failures/386controls and465old Release passes; fresh29/143baseline retains all143instruction streams/sizes and97CSE phases. Commit locally, then inspect remaining18Debug/12Release failures in artifacts\\core-validation\\debug-2.trx/release-2.trx, starting with complete EarlyPropagationTests/LocalThreadingTransitionTests/TailCallMorphTests assertion stacks and CallFoldingTests enum cases. Do not weaken expectations before establishing native contracts; no push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -464,6 +465,18 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "intrinsicBitConversions": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "nativeFunctions": "gentree.cpp20976 integral EvaluateBroadcastInPlace and gtFoldExprHWIntrinsic scalar/mask/extraction/shift paths; simd.h EvaluateUnaryMask, EvaluateBinaryMask and EvaluateSimdCvtMaskToVector.",
+        "sourceSnapshot": "4c62900724638b1e27b757dc1a7615db76914272",
+        "tests": "artifacts\\intrinsic-bit-conversions\\debug-1.trx and release-1.trx:1094Debug/1071Release with full analysis. HardwareIntrinsicInitializationTests, SimdTypeTests, SimdImportConstructorTests and ValueNum tests.",
+        "regressionControl": "Source1c071e017949b4a0eca5048ce43ebef5cc707edd contains corrected tests on old production. old-debug-1.trx:83failed/386passed;old-release-1.trx:465passed. Ninety added boundary cases cover integral broadcasts/inactive bytes, signed scalar bit operations, unsigned extraction, move masks and negative mask input.",
+        "nativeAotLibrary": "artifacts\\intrinsic-bit-conversions\\native-jit-1\\RyuJitSharp.dll",
+        "nativeAotSha256": "BB6DF0385525407DFC7145A166BFD66A45A1B04EBBFF2F8EB56575349C403AFC",
+        "execution": "artifacts\\upstream-refresh-33baf8\\intrinsic-bits-managed-matrix-1:29configurations/143positive managed bodies, no fallback, retained runtime and collection contracts.",
+        "comparison": "artifacts\\intrinsic-bit-conversions\\comparison-1.json; reproduce with compare.py --output <fresh-path>. Native-matrix-v2 versus floating-costs-managed-matrix-1 versus new capture: all143instruction streams/sizes and97CSE phases equal.",
+        "limits": "Specific corrected edge cases have native-source and focused regression evidence, not separate positive native-runtime captures. No whole-dump/raw-byte or other-target execution claim."
+      },
       "coreValidation": {
         "baselineSource": "09bca24",
         "baseline": "artifacts\\core-validation\\debug-1.trx:200failed/11487passed;release-1.trx:161failed/10613passed; full analysis, zero skipped.",
@@ -471,7 +484,8 @@
         "sentinelTests": "artifacts\\core-validation\\sentinel-debug-1.trx and sentinel-release-1.trx:154Debug/153Release pass, including IndirectCallTransformationTests. Seven original fault/write-barrier failures per configuration corrected; no expectation or production changes.",
         "adapterCorrection": "EmitterConstantDescriptorTests uses typeof(Emitter.CnsVal); DivisionOwnershipTests binds current Lowering.ReplaceWithLclVar. Production and test expectations unchanged.",
         "adapterTests": "artifacts\\core-validation\\adapters-debug-1.trx and adapters-release-1.trx:179Debug/183Release pass, including CallTargetLoweringTests.142baseline failures per configuration corrected.",
-        "remaining": "Other baseline failures remain under B342, beginning with intrinsic numeric conversions in production and fixtures. Full-suite success has not been established."
+        "latest": "artifacts\\core-validation\\debug-2.trx:18failed/11759passed;release-2.trx:12failed/10852passed. Runs use the already full-analysis-built corrected assemblies; no skipped cases.",
+        "remaining": "B342 remains open for other baseline failures, including enum folding and assertion/ownership cases. Full-suite success has not been established."
       },
       "indirectCallFaultFixtures": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",

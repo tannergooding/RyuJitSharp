@@ -345,37 +345,37 @@ public sealed class GenTreeVecCon : GenTree
         {
             case TYP_BYTE:
             {
-                _simdVal.AsSpan<sbyte>()[..elementCount].Fill((sbyte)(scalar));
+                _simdVal.AsSpan<sbyte>()[..elementCount].Fill(unchecked((sbyte)scalar));
                 break;
             }
 
             case TYP_UBYTE:
             {
-                _simdVal.AsSpan<byte>()[..elementCount].Fill((byte)(scalar));
+                _simdVal.AsSpan<byte>()[..elementCount].Fill(unchecked((byte)scalar));
                 break;
             }
 
             case TYP_SHORT:
             {
-                _simdVal.AsSpan<short>()[..elementCount].Fill((short)(scalar));
+                _simdVal.AsSpan<short>()[..elementCount].Fill(unchecked((short)scalar));
                 break;
             }
 
             case TYP_USHORT:
             {
-                _simdVal.AsSpan<ushort>()[..elementCount].Fill((ushort)(scalar));
+                _simdVal.AsSpan<ushort>()[..elementCount].Fill(unchecked((ushort)scalar));
                 break;
             }
 
             case TYP_INT:
             {
-                _simdVal.AsSpan<int>()[..elementCount].Fill((int)(scalar));
+                _simdVal.AsSpan<int>()[..elementCount].Fill(unchecked((int)scalar));
                 break;
             }
 
             case TYP_UINT:
             {
-                _simdVal.AsSpan<uint>()[..elementCount].Fill((uint)(scalar));
+                _simdVal.AsSpan<uint>()[..elementCount].Fill(unchecked((uint)scalar));
                 break;
             }
 
@@ -387,7 +387,7 @@ public sealed class GenTreeVecCon : GenTree
 
             case TYP_ULONG:
             {
-                _simdVal.AsSpan<ulong>()[..elementCount].Fill((ulong)(scalar));
+                _simdVal.AsSpan<ulong>()[..elementCount].Fill(unchecked((ulong)scalar));
                 break;
             }
 

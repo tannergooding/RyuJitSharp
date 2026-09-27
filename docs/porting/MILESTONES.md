@@ -15,6 +15,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Intrinsic integer bit conversions
+
+Integral broadcasts, SIMD mask evaluation and hardware-intrinsic folding now
+preserve native truncation and signed/unsigned bit reinterpretation in checked
+builds. Negative element indices still remain unfolded, oversized shift counts
+retain native handling, and bit scans of zero retain their undefined-result
+guard. Unsigned lane extraction and 32-bit move masks preserve high bits.
+
+The intrinsic/SIMD/VN group passes 1,094 Debug and 1,071 Release cases. With the
+same corrected tests, old production fails 83 Debug cases and passes 386 controls;
+all 465 old Release cases pass, confirming the checked-build distinction.
+The fresh checked JIT executes all 29 baseline configurations and 143 bodies,
+with all instruction traces/sizes and 97 CSE phases still native-equal.
+Full Core validation is now at 18 Debug and 12 Release failures, retained for the
+next batch. Evidence: `artifacts\intrinsic-bit-conversions`.
+
 ## 2026-09-27: Descriptor and division test adapters
 
 Descriptor tests now use the public `Emitter.CnsVal` type directly, and division

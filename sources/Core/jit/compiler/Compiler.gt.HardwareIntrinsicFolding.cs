@@ -405,7 +405,7 @@ public partial class Compiler
                         assert(varTypeIsInt(retType));
                         assert(elemCount <= 32);
 
-                        resultNode = gtNewIconNode(TYP_INT, (int)(mask));
+                        resultNode = gtNewIconNode(TYP_INT, unchecked((int)mask));
                         break;
                     }
 
@@ -419,7 +419,7 @@ public partial class Compiler
                         if (varTypeIsInt(retType))
                         {
                             assert(elemCount <= 32);
-                            resultNode = gtNewIconNode(TYP_INT, (int)(mask));
+                            resultNode = gtNewIconNode(TYP_INT, unchecked((int)mask));
                         }
                         else
                         {
@@ -433,8 +433,8 @@ public partial class Compiler
                     {
                         assert(!varTypeIsSmall(retType) && !varTypeIsLong(retType));
 
-                        var value = (int)(cnsNode.AsIntConCommon().IconValue);
-                        var result = BitOperations.LeadingZeroCount((uint)(value));
+                        var value = unchecked((int)cnsNode.AsIntConCommon().IconValue);
+                        var result = BitOperations.LeadingZeroCount(unchecked((uint)value));
 
                         cnsNode.AsIntConCommon().IconValue = (int)(result);
                         resultNode = cnsNode;
@@ -446,7 +446,7 @@ public partial class Compiler
                         assert(varTypeIsLong(retType));
 
                         var value = cnsNode.AsIntConCommon().IntegralValue;
-                        var result = BitOperations.LeadingZeroCount((ulong)(value));
+                        var result = BitOperations.LeadingZeroCount(unchecked((ulong)value));
 
                         cnsNode.AsIntConCommon().IntegralValue = (long)(result);
                         resultNode = cnsNode;
@@ -539,7 +539,7 @@ public partial class Compiler
                             }
                             else
                             {
-                                resultNode = gtNewIconNode(retType, (int)(result));
+                                resultNode = gtNewIconNode(retType, unchecked((int)result));
                             }
                         }
                         break;
@@ -549,8 +549,8 @@ public partial class Compiler
                     {
                         assert(!varTypeIsSmall(retType) && !varTypeIsLong(retType));
 
-                        var value = (int)(cnsNode.AsIntConCommon().IconValue);
-                        var result = BitOperations.TrailingZeroCount((uint)(value));
+                        var value = unchecked((int)cnsNode.AsIntConCommon().IconValue);
+                        var result = BitOperations.TrailingZeroCount(unchecked((uint)value));
 
                         cnsNode.AsIntConCommon().IconValue = (int)(result);
                         resultNode = cnsNode;
@@ -562,7 +562,7 @@ public partial class Compiler
                         assert(varTypeIsLong(retType));
 
                         var value = cnsNode.AsIntConCommon().IntegralValue;
-                        var result = BitOperations.TrailingZeroCount((ulong)(value));
+                        var result = BitOperations.TrailingZeroCount(unchecked((ulong)value));
 
                         cnsNode.AsIntConCommon().IntegralValue = (long)(result);
                         resultNode = cnsNode;
@@ -573,8 +573,8 @@ public partial class Compiler
                     {
                         assert(!varTypeIsSmall(retType) && !varTypeIsLong(retType));
 
-                        var value = (int)(cnsNode.AsIntConCommon().IconValue);
-                        var result = BitOperations.PopCount((uint)(value));
+                        var value = unchecked((int)cnsNode.AsIntConCommon().IconValue);
+                        var result = BitOperations.PopCount(unchecked((uint)value));
 
                         cnsNode.AsIntConCommon().IconValue = (int)(result);
                         resultNode = cnsNode;
@@ -586,7 +586,7 @@ public partial class Compiler
                         assert(varTypeIsLong(retType));
 
                         var value = cnsNode.AsIntConCommon().IntegralValue;
-                        var result = BitOperations.PopCount((ulong)(value));
+                        var result = BitOperations.PopCount(unchecked((ulong)value));
 
                         cnsNode.AsIntConCommon().IntegralValue = (long)(result);
                         resultNode = cnsNode;
@@ -597,14 +597,14 @@ public partial class Compiler
                     {
                         assert(!varTypeIsSmall(retType) && !varTypeIsLong(retType));
 
-                        var value = (int)(cnsNode.AsIntConCommon().IconValue);
+                        var value = unchecked((int)cnsNode.AsIntConCommon().IconValue);
 
                         if (value == 0)
                         {
                             // bsf is undefined for 0
                             break;
                         }
-                        var result = BitOperations.TrailingZeroCount((uint)(value));
+                        var result = BitOperations.TrailingZeroCount(unchecked((uint)value));
 
                         cnsNode.AsIntConCommon().IconValue = (int)(result);
                         resultNode = cnsNode;
@@ -622,7 +622,7 @@ public partial class Compiler
                             // bsf is undefined for 0
                             break;
                         }
-                        var result = BitOperations.TrailingZeroCount((ulong)(value));
+                        var result = BitOperations.TrailingZeroCount(unchecked((ulong)value));
 
                         cnsNode.AsIntConCommon().IntegralValue = (long)(result);
                         resultNode = cnsNode;
@@ -633,14 +633,14 @@ public partial class Compiler
                     {
                         assert(!varTypeIsSmall(retType) && !varTypeIsLong(retType));
 
-                        var value = (int)(cnsNode.AsIntConCommon().IconValue);
+                        var value = unchecked((int)cnsNode.AsIntConCommon().IconValue);
 
                         if (value == 0)
                         {
                             // bsr is undefined for 0
                             break;
                         }
-                        var result = (31 - BitOperations.LeadingZeroCount((uint)value));
+                        var result = (31 - BitOperations.LeadingZeroCount(unchecked((uint)value)));
 
                         cnsNode.AsIntConCommon().IconValue = (int)(result);
                         resultNode = cnsNode;
@@ -658,7 +658,7 @@ public partial class Compiler
                             // bsr is undefined for 0
                             break;
                         }
-                        var result = (63 - BitOperations.LeadingZeroCount((ulong)value));
+                        var result = (63 - BitOperations.LeadingZeroCount(unchecked((ulong)value)));
 
                         cnsNode.AsIntConCommon().IntegralValue = (long)(result);
                         resultNode = cnsNode;
@@ -705,7 +705,7 @@ public partial class Compiler
 
                                     var shiftAmount = otherNode.AsVecCon().GetElementIntegral(TYP_LONG, 0);
 
-                                    if ((ulong)(shiftAmount) >=
+                                    if (unchecked((ulong)shiftAmount) >=
                                         ((ulong)(simdBaseType.Size) * BITS_PER_BYTE))
                                     {
                                         // Set to -1 to indicate an explicit overshift
@@ -738,7 +738,7 @@ public partial class Compiler
                     {
                         case NI_Vector_GetElement:
                         {
-                            var index = (uint)(otherNode.AsIntConCommon().IconValue);
+                            var index = unchecked((uint)otherNode.AsIntConCommon().IconValue);
 
                             if (index >= GenTreeVecCon.ElementCount(simdSize, simdBaseType))
                             {
@@ -763,7 +763,7 @@ public partial class Compiler
                                 }
                                 else
                                 {
-                                    resultNode = gtNewIconNode(retType, (int)(result));
+                                    resultNode = gtNewIconNode(retType, unchecked((int)result));
                                 }
                             }
                             break;
@@ -1438,7 +1438,7 @@ public partial class Compiler
                         break;
                     }
 
-                    var index = (uint)(op2.AsIntConCommon().IconValue);
+                    var index = unchecked((uint)op2.AsIntConCommon().IconValue);
 
                     if (index >= GenTreeVecCon.ElementCount(simdSize, simdBaseType))
                     {

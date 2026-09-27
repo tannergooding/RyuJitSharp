@@ -390,15 +390,20 @@ internal static unsafe class HardwareIntrinsicInitializationTests
     }
 
     [TestCase(NI_AVX2_LeadingZeroCount, false, 0L, 32)]
+    [TestCase(NI_AVX2_LeadingZeroCount, false, int.MinValue, 0)]
     [TestCase(NI_AVX2_X64_LeadingZeroCount, true, 0L, 64)]
+    [TestCase(NI_AVX2_X64_LeadingZeroCount, true, long.MinValue, 0)]
     [TestCase(NI_AVX2_TrailingZeroCount, false, 0L, 32)]
+    [TestCase(NI_AVX2_TrailingZeroCount, false, int.MinValue, 31)]
     [TestCase(NI_AVX2_X64_TrailingZeroCount, true, long.MinValue, 63)]
     [TestCase(NI_X86Base_PopCount, false, -1L, 32)]
     [TestCase(NI_X86Base_X64_PopCount, true, -1L, 64)]
     [TestCase(NI_X86Base_BitScanForward, false, 0L, -1)]
+    [TestCase(NI_X86Base_BitScanForward, false, int.MinValue, 31)]
     [TestCase(NI_X86Base_X64_BitScanForward, true, long.MinValue, 63)]
     [TestCase(NI_X86Base_BitScanReverse, false, int.MinValue, 31)]
     [TestCase(NI_X86Base_X64_BitScanReverse, true, 0L, -1)]
+    [TestCase(NI_X86Base_X64_BitScanReverse, true, long.MinValue, 63)]
     public static void HardwareFoldingScalarBitsPreserveUndefinedZero(NamedIntrinsic id, bool wide, long value, int expected)
     {
         WithCompiler(compiler => {
@@ -411,6 +416,49 @@ internal static unsafe class HardwareIntrinsicInitializationTests
             {
                 Assert.That(result.AsIntConCommon().IntegralValue, Is.EqualTo(expected));
             }
+        });
+    }
+
+    [TestCase(NI_Vector_ToScalar)]
+    [TestCase(NI_Vector_GetElement)]
+    public static void HardwareFoldingUnsignedLaneRetainsIntConstantBits(NamedIntrinsic id)
+    {
+        WithCompiler(compiler =>
+        {
+            var value = new GenTreeVecCon(TYP_SIMD16);
+            value.SimdVal.u32[0] = uint.MaxValue;
+            var tree = id == NI_Vector_ToScalar
+                ? compiler.gtNewSimdHWIntrinsicNode(TYP_INT, id, TYP_UINT, 16, value)
+                : compiler.gtNewSimdHWIntrinsicNode(TYP_INT, id, TYP_UINT, 16,
+                    value, compiler.gtNewIconNode(TYP_INT, 0));
+
+            Assert.That(compiler.gtFoldExpr(tree).AsIntConCommon().IntegralValue, Is.EqualTo(-1L));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void HardwareFoldingMoveMaskRetainsBit31(bool maskOperand)
+    {
+        WithCompiler(compiler =>
+        {
+            GenTree value;
+
+            if (maskOperand)
+            {
+                value = new GenTreeMskCon(simdmask_t.AllBitsSet(32));
+            }
+            else
+            {
+                var vector = new GenTreeVecCon(TYP_SIMD32);
+                vector.SimdVal.AsSpan<byte>()[..32].Fill(byte.MaxValue);
+                value = vector;
+            }
+
+            var id = maskOperand ? NI_AVX512_MoveMask : NI_AVX2_MoveMask;
+            var tree = compiler.gtNewSimdHWIntrinsicNode(TYP_INT, id, TYP_BYTE, 32, value);
+
+            Assert.That(compiler.gtFoldExpr(tree).AsIntConCommon().IntegralValue, Is.EqualTo(-1L));
         });
     }
 
@@ -500,7 +548,7 @@ internal static unsafe class HardwareIntrinsicInitializationTests
             var replacement = compiler.gtNewIconNode(TYP_INT, 11);
             var set = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Vector_WithElement, TYP_INT, 16,
                 value, position, replacement);
-            var valid = (uint)index < 4;
+            var valid = unchecked((uint)index) < 4;
             Assert.That(compiler.gtFoldExpr(set), Is.SameAs(valid ? value : set));
             var get = compiler.gtNewSimdHWIntrinsicNode(TYP_INT, NI_Vector_GetElement, TYP_INT, 16, value,
                 compiler.gtNewIconNode(TYP_INT, index));
@@ -985,6 +1033,7 @@ internal static unsafe class HardwareIntrinsicInitializationTests
     [TestCase(TYP_BYTE, 16, 0xFFFEUL, 1UL)]
     [TestCase(TYP_SHORT, 64, 0xFFFFFFFEUL, 1UL)]
     [TestCase(TYP_UBYTE, 64, ulong.MaxValue, 0UL)]
+    [TestCase(TYP_FLOAT, 16, 0x8000000000000000UL, ulong.MaxValue)]
     public static void UnaryMaskEvaluationUsesNativeWidthsAndNormalization(var_types type, int size, ulong value, ulong expected)
     {
         WithCompiler(_ => {
@@ -1048,9 +1097,9 @@ internal static unsafe class HardwareIntrinsicInitializationTests
         Assert.That(value.AsSpan<byte>()[size..].IndexOfAnyExcept(byte.MaxValue), Is.EqualTo(-1));
         simdmask_t result = default;
         Globals.EvaluateSimdCvtVectorToMask(type, ref result, value.AsSpan<byte>()[..size]);
-        Assert.That(result.u64[0], Is.EqualTo(mask.u64[0] & (ulong)simdmask_t.GetBitMask(size / type.Size)));
+        Assert.That(result.u64[0], Is.EqualTo(mask.u64[0] & unchecked((ulong)simdmask_t.GetBitMask(size / type.Size))));
         Globals.EvaluateExtractMSB(type, ref result, value.AsSpan<byte>()[..size]);
-        Assert.That(result.u64[0], Is.EqualTo(mask.u64[0] & (ulong)simdmask_t.GetBitMask(size / type.Size)));
+        Assert.That(result.u64[0], Is.EqualTo(mask.u64[0] & unchecked((ulong)simdmask_t.GetBitMask(size / type.Size))));
         value = simd64_t.AllBitsSet;
         Globals.EvaluateSimdCvtVectorToMask(type, ref result, value.AsSpan<byte>()[..size]);
         Assert.That(result.i64[0], Is.EqualTo(simdmask_t.GetBitMask(size / type.Size)));
@@ -1509,6 +1558,30 @@ internal static unsafe class HardwareIntrinsicInitializationTests
         });
     }
 
+    [Test]
+    public static void IntegralBroadcastTruncatesLanesAndPreservesInactiveBytes(
+        [Values(TYP_BYTE, TYP_UBYTE, TYP_SHORT, TYP_USHORT, TYP_INT, TYP_UINT, TYP_LONG, TYP_ULONG)] var_types baseType,
+        [Values(TYP_SIMD16, TYP_SIMD64)] var_types vectorType,
+        [Values(long.MinValue, -1L, 0L, 0x180000000L, long.MaxValue)] long scalar)
+    {
+        WithCompiler(_ =>
+        {
+            var node = new GenTreeVecCon(vectorType);
+            node.SimdVal.AsSpan<byte>().Fill(0xA5);
+
+            node.EvaluateBroadcastInPlace(baseType, scalar);
+
+            for (var index = 0; index < vectorType.Size; index++)
+            {
+                var shift = index % baseType.Size * 8;
+                var expected = unchecked((byte)((ulong)scalar >> shift));
+                Assert.That(node.SimdVal.u8[index], Is.EqualTo(expected));
+            }
+
+            Assert.That(node.SimdVal.AsSpan<byte>()[vectorType.Size..].IndexOfAnyExcept((byte)0xA5), Is.EqualTo(-1));
+        });
+    }
+
     [TestCase(TYP_BYTE, 0x180L, 0x80UL)]
     [TestCase(TYP_UBYTE, -1L, 0xFFUL)]
     [TestCase(TYP_SHORT, 0x18000L, 0x8000UL)]
@@ -1527,7 +1600,7 @@ internal static unsafe class HardwareIntrinsicInitializationTests
             for (var index = 0; index < 16; index++)
             {
                 var shift = index % type.Size * 8;
-                Assert.That(value.u8[index], Is.EqualTo((byte)(expected >> shift)));
+                Assert.That(value.u8[index], Is.EqualTo(unchecked((byte)(expected >> shift))));
             }
         });
     }
