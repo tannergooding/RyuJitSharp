@@ -11,7 +11,7 @@ public sealed partial class Lowering
 {
     private void ContainBlockStoreAddress(GenTreeBlk block, uint size, GenTree address, GenTree? addressParent)
     {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
         assert((block.Oper is GT_STORE_BLK) && (block._kind is GenTreeBlk.BlkOpKindUnroll));
         assert(size < int.MaxValue);
 
@@ -20,6 +20,7 @@ public sealed partial class Lowering
             address.IsContained = true;
             return;
         }
+#if TARGET_XARCH
         if ((address.Oper is not GT_LEA) && !TryCreateAddrMode(ref address, true, block))
         {
             return;
@@ -39,8 +40,54 @@ public sealed partial class Lowering
             mode.IsContained = true;
         }
 #else
-        throw new NotImplementedException("Non-xarch block-store address containment is not ported.");
+        if ((address.Oper is not GT_ADD) || address.HasOverflowCheck ||
+            (address.AsOp().Op2.Oper is not GT_CNS_INT))
+        {
+            return;
+        }
+
+        var offsetNode = address.AsOp().Op2.AsIntCon();
+        var offset = offsetNode.IconValue;
+        // Native ClrSafeInt checks the conversion as well as offset + size; INT32_MAX is excluded.
+        if ((offset < int.MinValue) || (offset > int.MaxValue) || ((long)offset + size >= int.MaxValue))
+        {
+            return;
+        }
+
+        var invariant = addressParent is null
+            ? IsInvariantInRange(address, block)
+            : IsInvariantInRange(address, block, addressParent);
+        if (!invariant)
+        {
+            return;
+        }
+
+        BlockRange().Remove(offsetNode);
+        var mode = new GenTreeAddrMode(address.Type, address.AsOp().Op1, null, 0, (int)offset,
+            address, NodeThreading.LIR) {
+            Flags = address.Flags & GTF_COMMON_MASK,
+            IsContained = true,
+        };
+        BlockRange().ReplaceNode(address, mode);
 #endif
+#else
+        throw new NotImplementedException("Block-store address containment is not ported for this target.");
+#endif
+    }
+
+    private GenTree? LowerStoreBlock(GenTreeBlk block)
+    {
+        var next = block.Next;
+        if (block.Data.Oper is GT_CALL)
+        {
+            LowerStoreSingleRegCallStruct(block);
+        }
+        else
+        {
+            LowerBlockStoreCommon(block);
+        }
+
+        return next;
     }
 
     private void LowerBlockStoreCommon(GenTreeBlk block)
@@ -124,7 +171,36 @@ public sealed partial class Lowering
         else if (varTypeIsStruct(source.Type))
         {
             source.ChangeType(registerType);
+#if TARGET_ARM64
+            switch (source.Oper)
+            {
+                case GT_IND:
+                {
+                    _ = LowerIndir(source.AsIndir());
+                    break;
+                }
+
+                case GT_LCL_VAR:
+                {
+                    LowerLclVar(source.AsLclVar());
+                    break;
+                }
+
+                case GT_LCL_FLD:
+                {
+                    VerifyLclFldDoNotEnregister(source.AsLclVarCommon().LclNum);
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+#else
             _ = LowerNode(block.Data);
+#endif
         }
         else
         {
@@ -165,6 +241,10 @@ public sealed partial class Lowering
 
 #if WINDOWS_AMD64_ABI
         unreached();
+#elif TARGET_ARM64
+        block._kind = GenTreeBlk.BlkOpKindUnroll;
+        block.Data = SpillStructCallResult(block.Data.AsCall());
+        LowerBlockStoreCommon(block);
 #else
         throw new NotImplementedException("Non-Windows-x64 irregular-size struct call result spilling is not ported.");
 #endif
@@ -172,9 +252,11 @@ public sealed partial class Lowering
 
     private void LowerInitBlockStore(GenTreeBlk block)
     {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
         assert(block.IsInitBlkOp);
+#if TARGET_XARCH
         _ = TryCreateAddrMode(ref block.AddrRef, false, block);
+#endif
         var address = block.Addr;
         var source = block.Data;
         var size = block.Size;
@@ -184,17 +266,30 @@ public sealed partial class Lowering
             source = source.AsUnOp().Op1;
         }
 
+#if TARGET_ARM64
+        // Aligned ARM64 SIMD stores preserve 8-byte atomicity for GC pointers.
+        const bool canUseSimd = true;
+#else
         var canUseSimd = !block.IsOnHeapAndContainsReferences;
+#endif
         if ((source.Oper is GT_CNS_INT) &&
             (size <= (uint)CompilerInstance.GetUnrollThreshold(Compiler.UnrollKind.Memset, canUseSimd)))
         {
             var fill = source.AsIntCon().IconValue & 0xFF;
+#if TARGET_XARCH
             if (canUseSimd && (size >= XMM_REGSIZE_BYTES))
             {
                 // Overlapping SIMD stores handle the remainder without another fill register.
                 source.IsContained = true;
             }
             else if (fill != 0)
+#else
+            if (fill == 0)
+            {
+                source.IsContained = true;
+            }
+            else
+#endif
             {
 #if TARGET_64BIT
                 if (size >= REGSIZE_BYTES)
@@ -219,19 +314,22 @@ public sealed partial class Lowering
         {
             // A GC-safe helper could observe a torn GC pointer, including in a stack destination.
             block._kind = GenTreeBlk.BlkOpKindLoop;
+#if TARGET_ARM64
+            source.IsContained = true;
+#endif
         }
         else
         {
             LowerBlockStoreAsHelperCall(block);
         }
 #else
-        throw new NotImplementedException("Non-xarch block initialization lowering is not ported.");
+        throw new NotImplementedException("Block initialization lowering is not ported for this target.");
 #endif
     }
 
     private void LowerCopyBlockStore(GenTreeBlk block)
     {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
         assert((block.Oper is GT_STORE_BLK) && !block.IsInitBlkOp);
         var source = block.Data;
         var address = block.Addr;
@@ -277,7 +375,7 @@ public sealed partial class Lowering
 
         LowerBlockStoreAsHelperCall(block);
 #else
-        throw new NotImplementedException("Non-xarch block-copy lowering is not ported.");
+        throw new NotImplementedException("Block-copy lowering is not ported for this target.");
 #endif
     }
 }

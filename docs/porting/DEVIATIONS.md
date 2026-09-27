@@ -1377,9 +1377,14 @@ preserve ARM64 load-width restrictions, native magic-number selection and
 conditional-negate ownership. Their temporary-local dependencies include
 local-store target paths, odd-size call-result spilling and post-indexed
 pointer-update scheduling. Shared containment traversal is available but
-explicitly rejects ARM64 hardware intrinsics. Struct-to-block stores still
-reach inactive node dispatch; this does not activate ARM64 block lowering or
-establish generated-code parity.
+explicitly rejects ARM64 hardware intrinsics. Private block-memory lowering
+now preserves zero-register initialization, atomic GC-zeroing loops,
+non-interruptible small stack copies and checked unrolled-address bounds.
+Local-to-block stores use the extracted native block-store action; small
+copies and single-register call stores preserve whole-node replacement.
+Large-copy/helper and GC decomposition paths still require the inactive
+ARM64 general dispatcher. These private actions do not activate the phase
+or establish generated-code parity.
 
 `Lowering.TryCreateAddrMode` implements xarch address folding and interference
 checks. Other targets throw `NotImplementedException` pending their volatile,

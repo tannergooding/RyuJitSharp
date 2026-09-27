@@ -240,8 +240,8 @@ public sealed partial class Lowering
                 };
                 BlockRange().ReplaceNode(lclStore, store);
                 BlockRange().InsertBefore(store, address);
-                // LowerNode may replace the block store; native lowering keeps the same node when changing its operator.
-                var nextNode = LowerNode(store);
+                // Lowering may replace the block store; native lowering changes its operator in place.
+                var nextNode = LowerStoreBlock(store);
 #if DEBUG
                 var loweredStore = nextNode is null ? BlockRange().LastNode : nextNode.Prev;
                 assert(loweredStore is not null);

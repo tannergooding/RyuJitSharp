@@ -278,6 +278,197 @@ internal static unsafe class Arm64MemoryLoweringTests
         });
     }
 
+    [TestCase(-2147483649L, false)]
+    [TestCase(-2147483648L, true)]
+    [TestCase(-8L, true)]
+    [TestCase(2147483622L, true)]
+    [TestCase(2147483623L, false)]
+    [TestCase(2147483648L, false)]
+    [TestCase(long.MaxValue, false)]
+    public static void BlockAddressContainmentPreservesCheckedNativeBounds(long offset, bool contained)
+    {
+        WithLowering(false, (compiler, lowering, block) => {
+            var pointer = compiler.gtNewLclvNode(TYP_LONG, 0);
+            var constant = compiler.gtNewIconNode(TYP_LONG, (nint)offset);
+            var address = new GenTreeOp(GT_ADD, TYP_LONG, pointer, constant);
+            address._vnPair.SetBoth(123);
+            var zero = compiler.gtNewIconNode(TYP_INT, 0);
+            var store = new GenTreeBlk(TYP_STRUCT, address, zero, new ClassLayout(24)) {
+                _kind = GenTreeBlk.BlkOpKindUnroll,
+            };
+            Append(block, pointer, constant, address, zero, store);
+            ContainBlockStoreAddress(lowering, store, 24, address, null);
+
+            Assert.That(store.Addr.IsContained, Is.EqualTo(contained));
+            if (contained)
+            {
+                var mode = store.Addr.AsAddrMode();
+                Assert.That(mode.BaseAddress, Is.SameAs(pointer));
+                Assert.That(mode.Index, Is.Null);
+                Assert.That(mode.Scale, Is.Zero);
+                Assert.That(mode.Offset, Is.EqualTo((int)offset));
+                Assert.That(mode._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
+                Assert.That(address.Next, Is.Null);
+                Assert.That(constant.Next, Is.Null);
+#if DEBUG
+                Assert.That(mode.TreeId, Is.EqualTo(address.TreeId));
+#endif
+            }
+            else
+            {
+                Assert.That(store.Addr, Is.SameAs(address));
+                Assert.That(address.Op2, Is.SameAs(constant));
+            }
+        });
+    }
+
+    [Test]
+    public static void BlockSourceAddressReplacementUpdatesTheIndirectionOwner()
+    {
+        WithLowering(false, (compiler, lowering, block) => {
+            var destination = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var pointer = compiler.gtNewLclvNode(TYP_BYREF, 1);
+            var offset = compiler.gtNewIconNode(TYP_LONG, 8);
+            var address = new GenTreeOp(GT_ADD, TYP_BYREF, pointer, offset);
+            var load = new GenTreeIndir(GT_IND, TYP_STRUCT, address) { Flags = GTF_GLOB_REF };
+            var store = new GenTreeBlk(TYP_STRUCT, destination, load, new ClassLayout(24)) {
+                _kind = GenTreeBlk.BlkOpKindUnroll,
+            };
+            Append(block, destination, pointer, offset, address, load, store);
+            ContainBlockStoreAddress(lowering, store, 24, address, load);
+
+            Assert.That(load.Addr.Oper, Is.EqualTo(GT_LEA));
+            Assert.That(load.Addr.IsContained, Is.True);
+            Assert.That(load.Addr.AsAddrMode().Offset, Is.EqualTo(8));
+            Assert.That(store.Data, Is.SameAs(load));
+            Assert.That(address.Next, Is.Null);
+        });
+    }
+
+    [TestCase(7, 0x112, TYP_INT, 0x12121212L, false)]
+    [TestCase(8, 0x1FF, TYP_LONG, -1L, false)]
+    [TestCase(24, 0, TYP_INT, 0L, true)]
+    [TestCase(256, 0, TYP_INT, 0L, true)]
+    public static void BlockInitializationUsesScalarFillPatternsAndTheZeroRegister(
+        int size, int fillValue, var_types fillType, long expected, bool contained)
+    {
+        WithLowering(false, (compiler, lowering, block) => {
+            Assert.That(compiler.GetUnrollThreshold(Compiler.UnrollKind.Memset), Is.EqualTo(256));
+            var address = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var fill = compiler.gtNewIconNode(TYP_INT, fillValue);
+            var init = new GenTreeUnOp(GT_INIT_VAL, TYP_INT, fill);
+            var store = new GenTreeBlk(TYP_STRUCT, address, init, new ClassLayout(size));
+            Append(block, address, fill, init, store);
+            LowerInitBlockStore(lowering, store);
+
+            Assert.That(store._kind, Is.EqualTo(GenTreeBlk.BlkOpKindUnroll));
+            Assert.That(init.IsContained, Is.True);
+            Assert.That(fill.IsContained, Is.EqualTo(contained));
+            Assert.That(fill.Type, Is.EqualTo(fillType));
+            Assert.That(fill.IconValue, Is.EqualTo((nint)expected));
+        });
+    }
+
+    [TestCase(256, false, GenTreeBlk.BlkOpKindUnroll)]
+    [TestCase(256, true, GenTreeBlk.BlkOpKindUnroll)]
+    [TestCase(264, false, GenTreeBlk.BlkOpKindLoop)]
+    [TestCase(264, true, GenTreeBlk.BlkOpKindLoop)]
+    public static void GcBlockZeroingKeepsAtomicStoresAcrossTheUnrollBoundary(
+        int size, bool stackDestination, GenTreeBlk.BlkOpKind expected)
+    {
+        WithLowering(false, (compiler, lowering, block) => {
+            var builder = new ClassLayoutBuilder(compiler, size);
+            builder.SetGCPtrType(0, TYP_REF);
+            var layout = ClassLayout.Create(compiler, builder);
+            var address = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var zero = compiler.gtNewIconNode(TYP_INT, 0);
+            var store = new GenTreeBlk(TYP_STRUCT, address, zero, layout);
+            if (stackDestination)
+            {
+                store.Flags |= GTF_IND_TGT_NOT_HEAP;
+            }
+            Append(block, address, zero, store);
+            _ = LowerStoreBlock(lowering, store);
+
+            Assert.That(store._kind, Is.EqualTo(expected));
+            Assert.That(zero.IsContained, Is.True);
+            Assert.That(store.Oper, Is.EqualTo(GT_STORE_BLK));
+        });
+    }
+
+    [TestCase(24)]
+    [TestCase(128)]
+    public static void GcStackCopiesUseNonInterruptibleUnrolling(int size)
+    {
+        WithLowering(false, (compiler, lowering, block) => {
+            Assert.That(compiler.GetUnrollThreshold(Compiler.UnrollKind.Memcpy), Is.EqualTo(128));
+            var builder = new ClassLayoutBuilder(compiler, size);
+            builder.SetGCPtrType(0, TYP_REF);
+            var layout = ClassLayout.Create(compiler, builder);
+            var destination = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var sourceAddress = compiler.gtNewLclvNode(TYP_BYREF, 1);
+            var source = new GenTreeBlk(TYP_STRUCT, sourceAddress, layout);
+            var store = new GenTreeBlk(TYP_STRUCT, destination, source, layout) {
+                Flags = GTF_ASG | GTF_IND_TGT_NOT_HEAP,
+            };
+            Append(block, destination, sourceAddress, source, store);
+            _ = LowerStoreBlock(lowering, store);
+
+            Assert.That(store._kind, Is.EqualTo(GenTreeBlk.BlkOpKindUnroll));
+            Assert.That(store._gcUnsafe, Is.True);
+            Assert.That(store.Data.Oper, Is.EqualTo(GT_IND));
+            Assert.That(store.Data.IsContained, Is.True);
+            Assert.That(source.Next, Is.Null);
+        });
+    }
+
+    [Test]
+    public static void StructLocalInitializationUsesThePrivateBlockStoreAction()
+    {
+        WithLowering(true, (compiler, lowering, block) => {
+            compiler.lvaTable[0].Type = TYP_STRUCT;
+            compiler.lvaTable[0].Layout = new ClassLayout(24);
+            compiler.lvaTable[0].lvDoNotEnregister = true;
+            var zero = compiler.gtNewIconNode(TYP_INT, 0);
+            var original = compiler.gtNewStoreLclVarNode(0, zero);
+            original.Type = TYP_STRUCT;
+            var next = new GenTreeUnOp(GT_RETURN, TYP_VOID, null);
+            Append(block, zero, original, next);
+            Assert.That(LowerStoreLocCommon(lowering, original), Is.SameAs(next));
+
+            var store = next.Prev!.AsBlk();
+            Assert.That(store._kind, Is.EqualTo(GenTreeBlk.BlkOpKindUnroll));
+            Assert.That(store.Data, Is.SameAs(zero));
+            Assert.That(store.Addr.Oper, Is.EqualTo(GT_LCL_ADDR));
+            Assert.That(store.Addr.IsContained, Is.True);
+            Assert.That(zero.IsContained, Is.True);
+            Assert.That(original.Next, Is.Null);
+        });
+    }
+
+    [TestCase(1, TYP_UBYTE)]
+    [TestCase(2, TYP_USHORT)]
+    [TestCase(8, TYP_LONG)]
+    public static void SmallBlockCopiesRetypeTheLoadAndStore(int size, var_types type)
+    {
+        WithLowering(true, (compiler, lowering, block) => {
+            var destination = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var sourceAddress = compiler.gtNewLclvNode(TYP_BYREF, 1);
+            var layout = new ClassLayout(size);
+            var source = new GenTreeBlk(TYP_STRUCT, sourceAddress, layout);
+            var store = new GenTreeBlk(TYP_STRUCT, destination, source, layout);
+            var next = new GenTreeUnOp(GT_RETURN, TYP_VOID, null);
+            Append(block, destination, sourceAddress, source, store, next);
+            Assert.That(LowerStoreBlock(lowering, store), Is.SameAs(next));
+
+            var result = next.Prev!.AsStoreInd();
+            Assert.That(result.Type, Is.EqualTo(type));
+            Assert.That(result.Data.Type, Is.EqualTo(type));
+            Assert.That(store.Next, Is.Null);
+            Assert.That(source.Next, Is.Null);
+        });
+    }
+
     private static GenTreeStoreInd ConstantStore(BasicBlock block, var_types type, int address, GenTree value)
     {
         var addr = new GenTreeIntCon(TYP_LONG, address);
@@ -309,6 +500,19 @@ internal static unsafe class Arm64MemoryLoweringTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerBitCast")]
     private static extern GenTree? LowerBitCast(Lowering lowering, GenTreeUnOp bitcast);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainBlockStoreAddress")]
+    private static extern void ContainBlockStoreAddress(
+        Lowering lowering, GenTreeBlk block, uint size, GenTree address, GenTree? addressParent);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerStoreBlock")]
+    private static extern GenTree? LowerStoreBlock(Lowering lowering, GenTreeBlk block);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerInitBlockStore")]
+    private static extern void LowerInitBlockStore(Lowering lowering, GenTreeBlk block);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerStoreLocCommon")]
+    private static extern GenTree? LowerStoreLocCommon(Lowering lowering, GenTreeLclVarCommon local);
+
     private static void WithLowering(bool optimized, Action<Compiler, Lowering, BasicBlock> action)
     {
 #if DEBUG
@@ -319,6 +523,7 @@ internal static unsafe class Arm64MemoryLoweringTests
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(!optimized);
+        compiler.fgNodeThreading = NodeThreading.LIR;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.compHndBBtab = [];
         compiler.lvaTable = new LclVarDsc[4];

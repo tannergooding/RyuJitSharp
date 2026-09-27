@@ -496,16 +496,7 @@ public sealed partial class Lowering
 
             case GT_STORE_BLK:
             {
-                var next = node.Next;
-                if (node.AsBlk().Data.Oper is GT_CALL)
-                {
-                    LowerStoreSingleRegCallStruct(node.AsBlk());
-                }
-                else
-                {
-                    LowerBlockStoreCommon(node.AsBlk());
-                }
-                return next;
+                return LowerStoreBlock(node.AsBlk());
             }
 
             case GT_LCLHEAP:

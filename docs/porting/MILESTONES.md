@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: ARM64 block-memory lowering
+
+Private ARM64 block initialization and copying now preserve native unroll
+thresholds, fill patterns and zero-register use. GC-pointer initialization
+uses atomic stores or loops; small stack copies remain non-interruptible.
+Unrolled address formation checks both narrowing and end-offset overflow,
+with managed replacement preserving the address's owning edge.
+
+Local block stores, small scalar copies and single-register call-result stores
+use the private block-store action. Large helper calls and GC decomposition
+still require the unfinished general dispatcher, and ARM64 execution remains
+unverified.
+
 ## 2026-09-27: ARM64 casts, division and local temporaries
 
 Private ARM64 lowering now handles cast/load extension, constant signed and
