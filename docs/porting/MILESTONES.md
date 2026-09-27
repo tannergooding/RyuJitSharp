@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Floating local evaluation costs
+
+Floating-point local uses and definitions now retain native AMD64 size costs:
+two for likely-register operands and four for memory operands. Memory operands
+retain the ordinary indirection execution cost rather than an extra floating
+penalty. Small-local normalization, nonfloating costs and constant costs are
+unchanged.
+
+All 54 `FoldFloating` cost lines across both stress modes now match native,
+including the local load and its parent. All 143 baseline plus 38 stress
+instruction traces and sizes remain identical, as do all 97 CSE phases and
+38 stress phases. This completes the recorded B330 discrepancies without
+normalizing dumps; native deferred-profile diagnostics remain separate.
+
 ## 2026-09-27: Range and map value-number diagnostics
 
 Range assertion merging now prints the conservative normal value number and

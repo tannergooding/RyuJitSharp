@@ -7171,13 +7171,6 @@ public partial class Compiler
                 costSz = 1;
             }
         }
-#if TARGET_AMD64
-        else if (varTypeIsFloating(node.Type))
-        {
-            costEx = 1 + IND_COST_EX;
-            costSz = 3;
-        }
-#endif
         else if (varTypeIsSmall(node.Type))
         {
             costEx = 1 + IND_COST_EX;
@@ -7193,6 +7186,19 @@ public partial class Compiler
             costEx = IND_COST_EX;
             costSz = 2;
         }
+
+#if TARGET_AMD64
+        // Floating locals have larger encodings, including an additional byte for memory accesses.
+        if (varTypeIsFloating(node.Type))
+        {
+            costSz += 1;
+
+            if (!isLikelyRegVar)
+            {
+                costSz += 1;
+            }
+        }
+#endif
     }
 
 #if DEBUG

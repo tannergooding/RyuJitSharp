@@ -16,6 +16,62 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class LocalMorphTests
 {
+    [TestCase(TYP_FLOAT, true, false, 1, 2)]
+    [TestCase(TYP_DOUBLE, true, false, 1, 2)]
+    [TestCase(TYP_FLOAT, false, false, IND_COST_EX, 4)]
+    [TestCase(TYP_DOUBLE, false, false, IND_COST_EX, 4)]
+    [TestCase(TYP_INT, true, false, 1, 1)]
+    [TestCase(TYP_INT, false, false, IND_COST_EX, 2)]
+    [TestCase(TYP_BYTE, true, false, 1, 1)]
+    [TestCase(TYP_BYTE, true, true, 2, 2)]
+    [TestCase(TYP_BYTE, false, false, IND_COST_EX + 1, 3)]
+    [TestCase(TYP_BYTE, false, true, IND_COST_EX + 1, 3)]
+    [TestCase(TYP_STRUCT, false, false, 3 * IND_COST_EX, 6)]
+    public static void LocalNodeCostsPreserveNativeRegisterMemoryAndNormalizationRules(
+        var_types type, bool likelyRegister, bool parameter, int execution, int size)
+    {
+        WithCompiler(compiler =>
+        {
+            compiler.lvaTable[0].Type = type;
+            compiler.lvaTable[0].lvIsParam = parameter;
+
+            ReadOnlySpan<bool> definitions = [false, true];
+
+            foreach (var definition in definitions)
+            {
+                var node = definition
+                    ? new GenTreeLclVar(type, 0, new GenTree(GT_NOP, type))
+                    : compiler.gtNewLclvNode(type, 0);
+                compiler.gtGetLclVarNodeCost(node, out var costEx, out var costSz, likelyRegister);
+
+                Assert.That((costEx, costSz), Is.EqualTo((execution, size)), $"definition={definition}");
+            }
+        });
+    }
+
+    [TestCase(TYP_FLOAT, true, 1, 2)]
+    [TestCase(TYP_DOUBLE, true, 1, 2)]
+    [TestCase(TYP_FLOAT, false, IND_COST_EX, 4)]
+    [TestCase(TYP_DOUBLE, false, IND_COST_EX, 4)]
+    [TestCase(TYP_INT, true, 1, 1)]
+    [TestCase(TYP_INT, false, IND_COST_EX, 2)]
+    public static void EvaluationOrderPropagatesNativeLocalCostsToParent(
+        var_types type, bool likelyRegister, int execution, int size)
+    {
+        WithCompiler(compiler =>
+        {
+            compiler.lvaRefCountState = RCS_NORMAL;
+            compiler.lvaTable[0].Type = type;
+            compiler.lvaTable[0].setLvRefCntWtd(likelyRegister ? 4 * BB_UNITY_WEIGHT : 0);
+            var local = compiler.gtNewLclvNode(type, 0);
+            var parent = compiler.gtNewUnaryNode(GT_RETURN, type, local);
+
+            Assert.That(compiler.gtSetEvalOrder(parent), Is.EqualTo(1));
+            Assert.That((local.CostEx, local.CostSz), Is.EqualTo((execution, size)));
+            Assert.That((parent.CostEx, parent.CostSz), Is.EqualTo((execution + 1, size + 1)));
+        });
+    }
+
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]

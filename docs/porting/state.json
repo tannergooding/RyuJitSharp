@@ -12,18 +12,18 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Close B330 range-assertion and VN-map diagnostic gaps, including all diagnostic branches of the affected functions; preserve separate floating-tree metadata differences.",
+      "scope": "Complete B330 by reconciling floating local-node costs with native gtGetLclVarNodeCost, including likely-register and memory-resident uses/definitions.",
       "doneWhen": [
-        "Restore the conservative normal VN and phi-edge assertion diagnostics in RangeCheck.MergeAssertion.",
-        "Use native dollar-prefixed hexadecimal IDs in precise map stores/selects and physical selects without changing map algorithms.",
-        "Cover positive and quiet diagnostics; compare both existing stress modes with current-pin native and immediate pre-fix managed execution.",
-        "Commit the coherent diagnostic correction locally, then continue the separately scoped FoldFloating metadata producer."
+        "Preserve native AMD64 floating size adjustments after base local costs; do not add an execution-cost penalty to floating memory locals.",
+        "Cover float/double register and memory paths, local uses/definitions, small normalization and integer/struct controls.",
+        "Compare FoldFloating local/parent costs in both stress modes and retain native stress phase/instruction equality.",
+        "Check the29/143execution baseline for cost-driven optimization changes, then commit locally and continue."
       ],
       "validation": [
-        "Run VN-map, range-analysis/elimination and stress-split tests with full analysis in Debug/Release.",
-        "Use the frozen19body stress corpus and matching native random-limit8/remove-commas captures; retain exact38phase and emitted-instruction comparisons."
+        "Run local morph/cost, CSE and stress-split tests with full analysis in Debug/Release and demonstrate old-source failures.",
+        "Use stress-vn-diagnostics after-random/after-commas as immediate old captures, native stress captures as reference and the established29/143matrix."
       ],
-      "parentScope": "B340 committed93ac5f4; all97baseline CSE phases and143instruction streams match native. Continue B330 without publication.",
+      "parentScope": "B340 committed93ac5f4 and B330 VN diagnostics committedd618a89. Continue the actual LCL_VAR cost discrepancy, not floating constants; no publication.",
       "deferred": "B322 remains a native uninitialized-bool limitation. Five existing indirect-call fixture exception-flag failures remain separate. RL feature records intentionally use unpadded indices in native and are not part of B305.",
       "parallelPackets": [
         {
@@ -429,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B330 VN diagnostics validated: source0c50a131,79Debug/62Release,5old failures/5quiet controls,34native-equal range/map diagnostic lines and38exact stress phases/instruction streams/sizes. Commit locally, then trace the remaining FoldFloating cost difference: native CNS_DBL (1,2) and parent (2,3), managed (1,1)/(2,2), in both stress captures. Establish the gtSetEvalOrder floating-constant producer and native target rules before changing costs; do not edit the formatter. No push.",
+    "nextAction": "B330 local costs validated: sourcef50b9185,241Debug/166Release,8old failures/9controls per configuration,54native-equal FoldFloating cost lines,143baseline plus38stress native-equal instruction streams/sizes and97CSE/38stress phases. Commit locally, then reproduce the five existing IndirectCallTransformationTests exception-flag failures and establish whether their fixture has the absent-return-buffer initialization defect already corrected in B318/B325. Do not weaken fault expectations or change production before establishing that contract. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -464,6 +464,19 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "floatingLocalCosts": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "nativeFunction": "gentree.cpp:5266-5312 Compiler::gtGetLclVarNodeCost; used by gtSetEvalOrder for local uses and definitions.",
+        "sourceSnapshot": "f50b91859c189c58bbf0963fc35845d1520196aa",
+        "tests": "artifacts\\floating-local-costs\\debug-3.trx and release-3.trx:241Debug/166Release with full analysis of local morph/cost, CSE and stress splitting. Seventeen new cases cover float/double register/memory costs, uses/definitions, small normalization, integer/struct controls and propagation to parent costs.",
+        "regressionControl": "Source69f4b568f93a97070e9b726b53d1d922a6bbd518, validation-2\\results\\old-debug.trx and old-release.trx:8failures/9controls each.",
+        "nativeAotLibrary": "artifacts\\floating-local-costs\\native-jit-1\\RyuJitSharp.dll",
+        "nativeAotSha256": "F9D10EDFD4C72CF96CF14D131B5935CF65319EF370AF2AC182ACDB220993FA74",
+        "execution": "artifacts\\upstream-refresh-33baf8\\floating-costs-managed-matrix-1:29configurations/143positive managed bodies, no fallback, retained runtime/collection contracts. Also after-random/after-commas:19positive stress bodies each with74random split attempts or7comma removals.",
+        "comparison": "artifacts\\floating-local-costs\\comparison-1.json; reproduce with compare.py --output <fresh-path>. Baseline compares native-matrix-v2 and vn-pair-managed-matrix-3; stress compares unchanged native captures and immediate old stress-vn-diagnostics after-random/after-commas.",
+        "results": "All54FoldFloating cost lines match native, including LCL_VAR double (1,2) and RETURN double (2,3). All143baseline plus38stress native/old/new emitted instruction streams and sizes remain equal; all97CSE and38stress phases remain exact.",
+        "limits": "The differing node is a floating local, not a floating constant. Other-target cost rules are unchanged; whole dumps and raw bytes remain separate, including native B322."
+      },
       "stressVnDiagnostics": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "nativeFunctions": "rangecheck.cpp:1764-1832 MergeAssertion;valuenum.cpp:3226-3251 VNForMapStore,3287-3298 VNForMapSelect and3315-3329 VNForMapPhysicalSelect.",
@@ -6557,6 +6570,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "floating-local-evaluation-costs",
+      "native": ["src\\coreclr\\jit\\gentree.cpp:Compiler::gtGetLclVarNodeCost"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.gt.cs:gtGetLclVarNodeCost"],
+      "status": "Complete local-cost function reconciled. AMD64 floating size adjustments apply after register/memory base costs; memory execution costs and nonfloating normalization match native. All observed FoldFloating costs and181baseline/stress instruction streams/sizes match.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "range-and-map-vn-diagnostics",
       "native": ["src\\coreclr\\jit\\rangecheck.cpp:RangeCheck::MergeAssertion", "src\\coreclr\\jit\\valuenum.cpp:VNForMapStore;VNForMapSelect;VNForMapPhysicalSelect"],

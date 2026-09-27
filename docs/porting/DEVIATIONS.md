@@ -89,7 +89,10 @@ without normalizing value numbers; this is not other-target or whole-dump parity
 Range-assertion diagnostics include the conservative normal VN and phi-edge
 assertion indices. Precise map stores/selects and physical selects print native
 dollar-prefixed hexadecimal VNs (B330). All 34 affected lines in the two stress
-captures now match; the separate floating-tree cost difference remains open.
+captures now match. Floating local costs also retain native AMD64 size adjustments
+for register and memory operands, without an extra floating memory execution
+penalty. All observed local/parent cost lines now match; constants and general
+operand ordering are unchanged.
 
 SSA memory maps use the existing managed node-identity dictionary. The caller's
 shared-memory flag selects the map kind before the inline root supplies storage,
