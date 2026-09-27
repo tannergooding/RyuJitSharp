@@ -11,27 +11,59 @@ public sealed partial class Lowering
 {
     private GenTree? LowerIndir(GenTreeIndir ind)
     {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
         var next = ind.Next;
         assert(ind.Oper is GT_IND or GT_NULLCHECK);
 
         if ((ind.Type is not TYP_STRUCT) || ind.IsUnusedValue)
         {
-            _ = TryCreateAddrMode(ref ind.AddrRef, true, ind);
-            ContainCheckIndir(ind);
+#if TARGET_ARM64
             if ((ind.Oper is GT_NULLCHECK) || ind.IsUnusedValue)
             {
                 ind = TransformUnusedIndirection(ind, CompilerInstance, BlockRange());
             }
+
+            if ((ind.Oper is GT_IND) && ind.IsVolatile && varTypeIsFloating(ind.Type) &&
+                BlockRange().TryGetUse(ind, out var use))
+            {
+                var targetType = ind.Type;
+                ind.Type = ind.Type is TYP_DOUBLE ? TYP_LONG : TYP_INT;
+                var isContainable = IsInvariantInRange(ind.Addr, ind, GTF_ORDER_SIDEEFF);
+                _ = TryCreateAddrMode(ref ind.AddrRef, isContainable, ind);
+
+                var bitCast = CompilerInstance.gtNewBitCastNode(targetType, ind);
+                BlockRange().InsertAfter(ind, bitCast);
+                use.ReplaceWith(bitCast);
+                return bitCast;
+            }
+
+            var addressIsContainable = IsInvariantInRange(ind.Addr, ind, GTF_ORDER_SIDEEFF);
+            _ = TryCreateAddrMode(ref ind.AddrRef, addressIsContainable, ind);
+#else
+            _ = TryCreateAddrMode(ref ind.AddrRef, true, ind);
+#endif
+            ContainCheckIndir(ind);
+#if TARGET_XARCH
+            if ((ind.Oper is GT_NULLCHECK) || ind.IsUnusedValue)
+            {
+                ind = TransformUnusedIndirection(ind, CompilerInstance, BlockRange());
+            }
+#endif
         }
         else
         {
             _ = TryCreateAddrMode(ref ind.AddrRef, false, ind);
         }
 
+#if TARGET_ARM64
+        if (CompilerInstance.opts.OptimizationEnabled && (ind.Oper is GT_IND))
+        {
+            _ = OptimizeForLdpStp(ind);
+        }
+#endif
         return next;
 #else
-        throw new NotImplementedException("Non-xarch indirection lowering is not ported.");
+        throw new NotImplementedException("Indirection lowering outside xarch and ARM64 is not ported.");
 #endif
     }
 

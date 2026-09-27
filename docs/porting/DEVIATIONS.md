@@ -1307,8 +1307,11 @@ natural scales, RCPC2 volatile-offset limits, extended-index containment,
 stack-probe/SIMD12 restrictions and integer-zero stores. These helpers have
 managed target coverage. Pair reordering and loop store-to-load-forwarding
 checks are also implemented, preserving native distance/budget limits,
-alias checks and dataflow cleanup. The load/store entrypoints and per-block
-candidate reset remain unintegrated; these helpers do not activate the phase.
+alias checks and dataflow cleanup. Private load/store lowering now integrates
+these helpers with volatile floating bitcasts, positive-zero store retyping,
+mutable-object release stores and ARM64 coalescing/atomicity. Node/block/phase
+dispatch and per-block candidate reset remain unintegrated. B380 tracks the
+pinned volatile-load bitcast round trip without changing it.
 
 Non-AMD64 `Emitter.RequireSupportedInstructionRecording`, `emitCheckIGList`
 (Debug), `emitGCregDeadUpdMask`, and `CodeGen.inst_ST_RV` terminate with

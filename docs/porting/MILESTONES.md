@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: ARM64 private memory lowering
+
+Private ARM64 load/store lowering now integrates address formation, containment
+and pair scheduling. It preserves unused-probe width ordering, volatile
+floating-point bitcasts, positive-zero store retyping, mutable-object release
+stores and write-barrier early returns. Store coalescing respects ARM64's
+64-bit-aligned 128-bit write guarantees and reuses SIMD16 constants without
+widening beyond SIMD16.
+
+Full-analysis target suites pass 301 Debug/301 Release cases; Windows memory,
+bitcast and coalescing controls pass 121 in each configuration. B380 records
+the pinned optimized volatile-load bitcast round trip, which remains unchanged.
+Full ARM64 node/block/phase dispatch is still unsupported, so this is not
+generated-code execution or runtime parity.
+
 ## 2026-09-27: ARM64 indirection pairing
 
 The ARM64 memory-lowering dependency layer now includes complete load/store

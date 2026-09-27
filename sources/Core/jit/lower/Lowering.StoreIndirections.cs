@@ -9,13 +9,19 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-    private GenTree? LowerStoreIndirCommon(GenTreeStoreInd ind)
+    private unsafe GenTree? LowerStoreIndirCommon(GenTreeStoreInd ind)
     {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
         var compiler = CompilerInstance;
         assert(ind.Type is not TYP_STRUCT);
         ind = TryRetypingFloatingPointStoreToIntegerStore(ind).AsStoreInd();
-        _ = TryCreateAddrMode(ref ind.AddrRef, true, ind);
+#if TARGET_ARM64
+        // Folding the ADD removes the intermediate byref and its ordering hint.
+        var isContainable = IsInvariantInRange(ind.Addr, ind, GTF_ORDER_SIDEEFF);
+#else
+        var isContainable = true;
+#endif
+        _ = TryCreateAddrMode(ref ind.AddrRef, isContainable, ind);
 
         assert(compiler.codeGen is not null);
         if (compiler.codeGen.GCInfo.gcIsWriteBarrierStoreIndNode(ind))
@@ -23,10 +29,18 @@ public sealed partial class Lowering
             return ind.Next;
         }
 
+#if TARGET_ARM64
+        if (ind.Data.Oper.IsCnsIntOrI && ind.Data.AsIntCon().IsIconHandle(GTF_ICON_OBJ_HDL) &&
+            !compiler.info.compCompHnd->isObjectImmutable((CORINFO_OBJECT_HANDLE)ind.Data.AsIntCon().IconValue))
+        {
+            // Publishing a potentially mutable object requires release semantics.
+            ind.Flags |= GTF_IND_VOLATILE;
+        }
+#endif
         LowerIndirectStoreCoalescing(ind);
         return LowerStoreIndir(ind);
 #else
-        throw new NotImplementedException("Non-xarch indirect-store lowering is not ported.");
+        throw new NotImplementedException("Indirect-store lowering outside xarch and ARM64 is not ported.");
 #endif
     }
 
@@ -46,8 +60,17 @@ public sealed partial class Lowering
         ContainCheckStoreIndir(node);
 
         return node.Next;
+#elif TARGET_ARM64
+        var next = node.Next;
+        ContainCheckStoreIndir(node);
+        if (CompilerInstance.opts.OptimizationEnabled)
+        {
+            _ = OptimizeForLdpStp(node);
+        }
+
+        return next;
 #else
-        throw new NotImplementedException("Non-xarch indirect-store lowering is not ported.");
+        throw new NotImplementedException("Indirect-store lowering outside xarch and ARM64 is not ported.");
 #endif
     }
 

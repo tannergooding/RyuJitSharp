@@ -13,14 +13,14 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "Port complete ARM64 load/store pair scheduling and loop store-to-load-forwarding safeguards as the next memory-lowering dependency closure.",
+      "scope": "Integrate complete private ARM64 load/store lowering routines with volatile floating retyping, mutable-object release stores and native indirect-store coalescing/atomicity. Reuse the exact bitcast dispatch operation without activating unrelated node/block dispatch.",
       "status": "completed",
       "doneWhen": [
-        "Complete OptimizeForLdpStp, TryMakeIndirsAdjacent, IsStoreToLoadForwardingCandidateInLoop and recursive mark cleanup, preserving bounded traversal, aliases, exceptions and diagnostic order.",
-        "Validate pairing/rejection, LIR ordering/cleanup and loop forwarding using the existing target project, then commit the coherent dependency batch and continue entrypoint integration."
+        "Implement all ARM64 paths in LowerIndir, LowerStoreIndirCommon, LowerStoreIndir, floating-store retyping and indirect coalescing, calling the completed pairing helpers.",
+        "Validate volatile/plain memory operations, unused-probe ordering, frozen/mutable objects, scalar/SIMD coalescing and native atomicity through target tests and Windows memory controls, then commit and continue."
       ],
       "validation": [
-        "Full-analysis Linux-ARM64 target suites pass276Debug/276Release, including24new pairing/forwarding cases and exact16-node/100-node budget boundaries. Address/containment is already committed ba4db5b; unaffected Windows controls are reused.",
+        "Full-analysis ARM64 target suites pass301Debug/301Release, including25new integrated memory cases. Windows address/store/bitcast/coalescing controls pass121Debug/121Release.",
         "Reuse unaffected Windows execution evidence from prerequisite commit ee71808. No Linux or ARM64 execution host is available; managed target tests are not runtime parity."
       ],
       "deferred": [
@@ -422,7 +422,17 @@
         }
       ]
     },
-    "nextAction": "Continue ARM64 memory entrypoint integration: address formation/containment (ba4db5b) and complete pair scheduling/loop-forwarding helpers are implemented and validated. Lowering.Traversal.cs LowerNode has a TARGET_XARCH guard; inspect the native ARM64 dispatch paths and required TryRemoveBitCast/ContainCheckBitCast before enabling volatile-store retyping. LowerBlock is Windows-only and must reset _blockIndirs plus native FFR state when activated. Port complete LowerIndir, LowerStoreIndirCommon and LowerStoreIndir with positive-zero/volatile floating retyping, mutable-object release stores and native store coalescing; do not skip optimized paths. Keep B375/B376/B378/B379 deferred, preserve native sources, and do not publish or claim ARM64 runtime parity.",
+    "nextAction": "Continue ARM64 scalar arithmetic/containment prerequisites for node dispatch. Start at IsContainableImmed (native lowerarmarch.cpp:51) and LowerBinaryArithmetic/ContainCheckBinary; locate their C# counterparts and required emitter compare/logical immediate predicates. Private memory lowering is complete and validated: address/containment ba4db5b, pairing d6a3843, and the memory integration evidence below. Do not repeat those packets. LowerNode, LowerBlock and DoPhase remain unsupported on ARM64; eventual block activation must reset _blockIndirs and native FFR state, and must preserve ARM64-specific dispatch paths rather than just widen guards. Keep B375/B376/B378/B379/B380 deferred; do not publish, alter native trees or claim ARM64 runtime parity.",
+    "arm64MemoryLowering": {
+      "scope": "Complete private LowerIndir, LowerStoreIndirCommon, LowerStoreIndir, floating-store retyping and indirect coalescing. Includes unused-probe width ordering, volatile bitcasts, mutable-object release semantics, write-barrier early return, pair scheduling and 64-bit-aligned 128-bit store atomicity.",
+      "mapping": "lower.cpp memory routines -> lower/Lowering.Indirections.cs, Lowering.StoreIndirections.cs and Lowering.Locals.cs; lowerarmarch.cpp LowerStoreIndir -> Lowering.StoreIndirections.cs; lower.cpp LowerStoreCoalescing/LowerCheckCoalescedStoreAtomicity -> Lowering.IndirectStoreCoalescing.cs. LowerBitCast extracts the native GT_BITCAST dispatch operation for shared use by xarch dispatch and inserted ARM64 volatile-store bitcasts.",
+      "validation": {
+        "linuxArm64": "301Debug/301Release: memory-entry-arm64-debug-2.trx and memory-entry-arm64-release-1.trx",
+        "windowsX64Controls": "121Debug/121Release: memory-entry-windows-debug-1.trx and memory-entry-windows-release-1.trx",
+        "artifacts": "artifacts\\parallel-port; full analysis, nonempty execution and zero skips."
+      },
+      "limits": "Private lowering routines only; no ARM64 node/block/phase dispatch or generated-code execution. B380 records the native optimized volatile-load bitcast round trip; the port preserves it. Windows runtime evidence is reused, not recaptured."
+    },
     "arm64IndirectionPairing": {
       "scope": "Complete OptimizeForLdpStp, TryMakeIndirsAdjacent, IsStoreToLoadForwardingCandidateInLoop and recursive mark/unmark helpers. Native candidate order, pair consumption, alias checks, store-data motion, loop predecessor order and bounded scans are preserved.",
       "mapping": "lower.cpp:11418-12019 and lower.h SavedIndir/m_blockIndirs -> lower/Lowering.IndirectionPairing.cs.",

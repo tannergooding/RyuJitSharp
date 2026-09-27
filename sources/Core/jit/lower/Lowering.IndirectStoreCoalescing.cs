@@ -132,6 +132,15 @@ public sealed partial class Lowering
                 return false;
             }
 
+#if TARGET_ARM64
+            if (combinedSize == 2 * TARGET_POINTER_SIZE)
+            {
+                // ARM single-copy atomicity treats a 64-bit-aligned 128-bit SIMD
+                // write as two atomic 64-bit writes. REF-based stores are already
+                // aligned; absolute addresses require an explicit alignment check.
+                return (current.BaseAddress is not null) || ((minOffset % TARGET_POINTER_SIZE) == 0);
+            }
+#endif
             return (combinedSize <= TARGET_POINTER_SIZE) && ((minOffset % combinedSize) == 0);
         }
 
@@ -140,7 +149,7 @@ public sealed partial class Lowering
 
     private void LowerIndirectStoreCoalescing(GenTreeIndir store)
     {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
         var compiler = CompilerInstance;
         if (!compiler.opts.OptimizationEnabled || (store.Oper is not (GT_STOREIND or GT_STORE_BLK)))
         {
@@ -226,13 +235,19 @@ public sealed partial class Lowering
                 TYP_INT => TYP_LONG,
 #if FEATURE_HW_INTRINSICS
                 TYP_LONG or TYP_REF => TYP_SIMD16,
+#if TARGET_XARCH
                 TYP_SIMD16 when compiler.GetPreferredVectorByteLength() >= 32 => TYP_SIMD32,
                 TYP_SIMD32 when compiler.GetPreferredVectorByteLength() >= 64 => TYP_SIMD64,
+#endif
 #endif
                 _ => TYP_UNDEF,
             };
 #if FEATURE_HW_INTRINSICS
-            reusePreviousValue = (newType is TYP_UNDEF) && (oldType is TYP_SIMD16 or TYP_SIMD32);
+            reusePreviousValue = (newType is TYP_UNDEF) && (oldType is TYP_SIMD16
+#if TARGET_XARCH
+                or TYP_SIMD32
+#endif
+                );
             if ((oldType is TYP_REF) &&
                 (!current.Value.IsIntegralConst(0) || !previous.Value.IsIntegralConst(0)))
             {
@@ -258,15 +273,17 @@ public sealed partial class Lowering
                     BlockRange().InsertBefore(current.Value, read);
                     BlockRange().Remove(current.Value);
                     store.Data = read;
+#if TARGET_XARCH
                     _ = LowerNode(tempStore);
+#endif
                 }
 #endif
                 return;
             }
 
+#if FEATURE_HW_INTRINSICS && TARGET_XARCH
             ulong previousBits = 0;
             ulong currentBits = 0;
-#if FEATURE_HW_INTRINSICS
             if (varTypeIsSimd(oldType))
             {
                 if ((previous.Value.Oper is not GT_CNS_VEC) || (current.Value.Oper is not GT_CNS_VEC))
@@ -275,9 +292,12 @@ public sealed partial class Lowering
                 }
             }
             else
-#endif
             if (!TryGetLocalStoreConstantBits(previous.Value, out previousBits) ||
                 !TryGetLocalStoreConstantBits(current.Value, out currentBits))
+#else
+            if (!TryGetLocalStoreConstantBits(previous.Value, out var previousBits) ||
+                !TryGetLocalStoreConstantBits(current.Value, out var currentBits))
+#endif
             {
                 return;
             }
@@ -298,6 +318,7 @@ public sealed partial class Lowering
             store.Data.Type = newType;
 
 #if FEATURE_HW_INTRINSICS
+#if TARGET_XARCH
             if (varTypeIsSimd(oldType))
             {
                 var left = previous.Value.AsVecCon().SimdVal.AsSpan<byte>();
@@ -309,6 +330,7 @@ public sealed partial class Lowering
                 upper.CopyTo(right.Slice(width, width));
                 continue;
             }
+#endif
             if (varTypeIsSimd(newType))
             {
                 if (previous.Offset > current.Offset)
@@ -346,7 +368,7 @@ public sealed partial class Lowering
             }
         }
 #else
-        throw new NotImplementedException("Non-xarch indirect-store coalescing is not ported.");
+        throw new NotImplementedException("Indirect-store coalescing outside xarch and ARM64 is not ported.");
 #endif
     }
 }

@@ -11,6 +11,17 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
+    private GenTree? LowerBitCast(GenTreeUnOp node)
+    {
+        var next = node.Next;
+        if (!TryRemoveBitCast(node))
+        {
+            ContainCheckBitCast(node);
+        }
+
+        return next;
+    }
+
     private bool TryRemoveBitCast(GenTreeUnOp node)
     {
         if (CompilerInstance.opts.OptimizationDisabled)

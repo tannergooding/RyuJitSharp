@@ -273,12 +273,7 @@ public sealed partial class Lowering
 
             case GT_BITCAST:
             {
-                var next = node.Next;
-                if (!TryRemoveBitCast(node.AsUnOp()))
-                {
-                    ContainCheckBitCast(node.AsUnOp());
-                }
-                return next;
+                return LowerBitCast(node.AsUnOp());
             }
 
             case GT_CAST:

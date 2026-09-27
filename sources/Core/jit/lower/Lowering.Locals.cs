@@ -11,12 +11,23 @@ public sealed partial class Lowering
 {
     private GenTree TryRetypingFloatingPointStoreToIntegerStore(GenTree store)
     {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
         assert(store.Oper.IsStore);
         if (!varTypeIsFloating(store.Type))
         {
             return store;
         }
+#if TARGET_ARM64
+        if ((store.Oper is GT_STOREIND) && store.AsStoreInd().IsVolatile)
+        {
+            store.Type = store.Type is TYP_DOUBLE ? TYP_LONG : TYP_INT;
+            var bitCast = CompilerInstance.gtNewBitCastNode(store.Type, store.Data);
+            BlockRange().InsertAfter(store.Data, bitCast);
+            store.AsStoreInd().Data = bitCast;
+            _ = LowerBitCast(bitCast);
+            return store;
+        }
+#endif
         if ((store.Oper is GT_STORE_LCL_VAR) && !CompilerInstance.lvaGetDesc(store.AsLclVar().LclNum).lvDoNotEnregister)
         {
             return store;
@@ -28,6 +39,12 @@ public sealed partial class Lowering
         {
             return store;
         }
+#if TARGET_ARM64
+        if (!value.AsDblCon().IsPositiveZero)
+        {
+            return store;
+        }
+#endif
 
         var doubleValue = value.AsDblCon().DconVal;
         var_types type;
@@ -70,7 +87,7 @@ public sealed partial class Lowering
 
         return store;
 #else
-        throw new NotImplementedException("Non-xarch floating-store retyping is not ported.");
+        throw new NotImplementedException("Floating-store retyping outside xarch and ARM64 is not ported.");
 #endif
     }
 
