@@ -16,6 +16,11 @@ param(
     [ValidateRange(1, 3600)][int] $TimeoutSeconds = 120,
     [switch] $ExecuteManagedCode,
     [ValidateRange(0, 2147483647)][int] $OptimizationRepeatCount = 0,
+    [ValidateSet("None", "Dot", "Xml")][string] $FlowGraphFormat = "None",
+    [ValidateNotNullOrEmpty()][string] $FlowGraphPhase = "DETERMINE_FIRST_COLD_BLOCK",
+    [switch] $FlowGraphEH,
+    [switch] $FlowGraphLoops,
+    [switch] $FlowGraphMemorySsa,
     [switch] $RawHexCode,
     [switch] $GcStress,
     [switch] $FakeProcedureSplitting,
@@ -37,6 +42,12 @@ if ($BlockCounters -and -not $InstrumentedTier0) {
 }
 if (($OptimizationRepeatCount -gt 0) -and ($MinOpts -or $InstrumentedTier0)) {
     throw "-OptimizationRepeatCount requires optimized compilation; do not combine it with -MinOpts or -InstrumentedTier0."
+}
+if (($FlowGraphEH -or $FlowGraphLoops -or $FlowGraphMemorySsa -or $PSBoundParameters.ContainsKey("FlowGraphPhase")) -and ($FlowGraphFormat -eq "None")) {
+    throw "Flow graph options require -FlowGraphFormat Dot or Xml."
+}
+if (($FlowGraphEH -or $FlowGraphLoops -or $FlowGraphMemorySsa) -and ($FlowGraphFormat -ne "Dot")) {
+    throw "EH, loop, and memory SSA graph annotations require -FlowGraphFormat Dot."
 }
 
 if (($MinOpts -or $InstrumentedTier0) -and -not $PSBoundParameters.ContainsKey("ExpectedMethods")) {
@@ -105,6 +116,17 @@ if ($MinOpts) {
 if ($OptimizationRepeatCount -gt 0) {
     $settings.DOTNET_JitOptRepeat = $selector
     $settings.DOTNET_JitOptRepeatCount = $OptimizationRepeatCount.ToString("X", [Globalization.CultureInfo]::InvariantCulture)
+}
+if ($FlowGraphFormat -ne "None") {
+    $settings.DOTNET_JitDumpFg = $selector
+    $settings.DOTNET_JitDumpFgTier0 = if ($InstrumentedTier0) { "1" } else { "0" }
+    $settings.DOTNET_JitDumpFgFile = "graphs"
+    $settings.DOTNET_JitDumpFgDir = $OutputDirectory
+    $settings.DOTNET_JitDumpFgPhase = $FlowGraphPhase
+    $settings.DOTNET_JitDumpFgDot = if ($FlowGraphFormat -eq "Dot") { "1" } else { "0" }
+    $settings.DOTNET_JitDumpFgEH = if ($FlowGraphEH) { "1" } else { "0" }
+    $settings.DOTNET_JitDumpFgLoops = if ($FlowGraphLoops) { "1" } else { "0" }
+    $settings.DOTNET_JitDumpFgMemorySsa = if ($FlowGraphMemorySsa) { "1" } else { "0" }
 }
 if ($DisableObjectStackAllocation) {
     $settings.DOTNET_JitObjectStackAllocation = "0"

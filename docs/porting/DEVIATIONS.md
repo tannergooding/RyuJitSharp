@@ -1558,6 +1558,23 @@ separators, invariant culture, explicit failure and ordinary dump layout.
 Complete synthesis dump parity remains unestablished. Do not normalize
 malformed-configuration or special-NaN output differences in parity reports.
 
+### R004: Stale native XML flow-graph jump-kind table
+
+**Status:** native bug retained where behavior is defined; unsafe table access
+is rejected explicitly. Correcting the labels is deferred, not an accepted
+output deviation.
+
+At `33baf8ee`, `fgdiagnostic.cpp:fgDumpFlowGraph` indexes an obsolete 11-entry
+`kindImage` table with the 12-value `BBKinds` enum. Native captures confirm that
+conditional blocks become `SWITCH` and returns become `NONE`; a real switch
+indexes beyond the array. `Compiler.FlowGraphDump.cs` preserves the defined
+labels and throws `FatalJitException` for the missing entry. It does not emulate
+an undefined pointer read or silently substitute a corrected label.
+
+Four complete XML graphs and 38 DOT graphs match the current-pin native files
+byte for byte. DOT supports switches independently of this XML limitation.
+See B350 and `artifacts\flowgraph-dumps\comparison-3.json`.
+
 ## Incomplete implementation, not intentional deviations
 
 | ID | Evidence at the recorded C# baseline | Required action |

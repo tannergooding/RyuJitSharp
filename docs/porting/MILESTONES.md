@@ -15,6 +15,28 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Native flow-graph dumping
+
+The phase hook now writes DOT and XML graphs with native method/tier/phase
+selection, filename escaping and byte-length limits, collision handling,
+append behavior and standard-stream ownership. Graphs include compact branch
+conditions, profile and memory-SSA annotations, lexical edge constraints,
+nested EH regions and natural loops. Debug builds include graph-dump support;
+the explicitly enabled non-Debug path also compiles.
+
+All 58 new cases pass, and the original public stub fails all three output
+regressions. Complete Core passes 11,908 Debug and 10,887 Release cases.
+Six checked execution captures produce 38 DOT graphs and four XML graphs
+byte-identical to the pinned native files, including instrumented Tier0.
+Their 22 managed compilations preserve runtime output, instruction streams,
+code sizes and 18 CSE phases. The broader B349 baseline is retained rather
+than recaptured for this diagnostic-only area.
+
+The native XML jump-kind table is stale: its defined labels remain unchanged,
+while the out-of-bounds switch entry fails explicitly instead of reading
+undefined memory (B350/R004). No label correction has been approved.
+Evidence: `artifacts\flowgraph-dumps\comparison-3.json`.
+
 ## 2026-09-27: Active phase invariant checking
 
 The phase driver now verifies entry-block constraints, cached flow-graph

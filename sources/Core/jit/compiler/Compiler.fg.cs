@@ -3768,14 +3768,6 @@ public partial class Compiler
 
 #endif
 
-#if DUMP_FLOWGRAPHS
-    public bool fgDumpFlowGraph(Phases phase, PhasePosition pos)
-    {
-        // TODO: Port Compiler.fgDumpFlowGraph
-        return false;
-    }
-#endif
-
 #if DEBUG
     /// <summary>Dump all basic blocks in the function.</summary>
     /// <param name="dumpTrees">if true, also dump the trees in each block</param>

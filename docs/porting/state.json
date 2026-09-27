@@ -13,20 +13,19 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "Complete the five active Debug phase-check stubs for entry blocks, graph annotations, linked locals, canonical loops and unique node IDs.",
+      "scope": "Complete the enabled flow-graph dumping subsystem: selection/file routing, DOT/XML serialization and EH/loop grouping.",
       "doneWhen": [
-        "Port complete pinned fgDebugCheckInitBB, fgDebugCheckFlowGraphAnnotations, fgDebugCheckLinkedLocals, fgDebugCheckLoops and fgDebugCheckNodesUniqueness.",
-        "Reuse existing visitors, bit vectors and CFG traversal; annotation validation must observe existing numbering rather than repair or overwrite it.",
-        "Preserve native local execution order, call-defined physical locals, tree/LIR distinctions, loop canonicalization checks and diagnostics.",
-        "Validate positive and deliberately corrupt graph/tree states, then checked NativeAOT baseline and repeated optimization; fix newly exposed translation defects within this dependency batch."
+        "Replace the active fgDumpFlowGraph false-return stub with the complete native DOT and XML paths.",
+        "Preserve method/tier/phase selection, escapes, filename truncation/collision rules, append versus exclusive creation and stdout/stderr ownership.",
+        "Port the complete compact tree formatter, block/edge attributes, EH grouping and loop grouping with native ordering and numeric formatting.",
+        "Write tests alongside the whole area, then validate selection/format/file contracts and positive native/managed graph captures at one integration boundary."
       ],
       "validation": [
-        "Complete Core11850Debug/10887Release passes;45new phase-invariant cases and existing physical call-definition/local sequencing controls included.",
-        "Original compiler binary rejects none of the deliberately corrupt states:29new cases fail and16controls pass against it, without rebuilding unchanged source.",
-        "Checked29/143baseline and2/12iteration captures pass with active phase checks. All143baseline instruction streams/sizes and97CSE phases, plus8repeated bodies/56CSE phases/48recomputation fragments, remain exactly equal to native."
+        "Latest baseline e300f85:Core11850Debug/10887Release and29/143checked execution, with exact prior instruction/CSE/recomputation evidence.",
+        "At the area boundary run DOT/XML and file-routing regressions, compare positive current-pin native/managed graph captures and check unaffected execution. Avoid per-helper build/recapture loops."
       ],
-      "parentScope": "B348 committede1a5e39. Phase.PostPhase calls all five current empty methods. Native fgdiagnostic.cpp3331,3799,4144,4798,4836 defines them. Compiler.ProcessShutdownWork is also empty in native and is not a missing implementation; fgVerifyHandlerTab is already fully implemented.",
-      "deferred": "MEASURE_NOWAY aggregation is disabled in the current project and remains separate. Native shutdown callback needs no changes. B322 and broader dump/raw-byte/GC coverage remain separate.",
+      "parentScope": "B351 graph-dumping area is implemented and validated. DUMP_FLOWGRAPHS is enabled by default in Debug; an explicitly enabled non-Debug build also passes. Native fgdiagnostic.cpp151-1769 maps to Compiler.FlowGraphDump.cs and Compiler.FlowGraphDump.Regions.cs. B350's defined XML labels remain unchanged and its unsafe switch entry fails explicitly.",
+      "deferred": "compCompileFinish allocation/statistics reporting and disabled MEASURE_NOWAY remain separate. Do not expand into other-target code generation or general I/O infrastructure. Native shutdown callback is intentionally empty.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -431,7 +430,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B349 five phase checks complete and validated; commit locally. Next coherent area: full enabled DUMP_FLOWGRAPHS subsystem, not more isolated helpers. Native fgdiagnostic.cpp roughly151-1784 includes escape tables, fgProcessEscapes, fgDumpTree, fgOpenFlowGraphFile, complete DOT/XML fgDumpFlowGraph, EH grouping and fgDumpFlowGraphLoops. Managed fgDumpFlowGraph is an active false-return stub and DUMP_FLOWGRAPHS is enabled by the project. Implement selection/file ownership, both formats and grouping together, writing tests alongside, then one integration validation boundary with native captures. Inspect existing formatting/file-output helpers before adding any. compCompileFinish remains a separate allocation/statistics closure, not part of graph dumping. Respect workCadence. No push.",
+    "nextAction": "Commit the completed B351 graph-dumping batch locally if not already committed, then continue with complete compCompileFinish allocation/statistics reporting and its required helpers as the next coherent area. B351 source32a1449ffbbf783ac6e20140f5cbf56ac73de162 passes11908D/10887R, Release with DUMP_FLOWGRAPHS explicitly enabled,42exact native graphs across6captures/22managed compilations, and18CSE phases/instruction streams/sizes. Do not reopen native XML labels: preserve defined labels and explicit B350 failure pending user approval to correct them. Native ProcessShutdownWork is intentionally empty. Respect workCadence; no push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -466,6 +465,18 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "flowGraphDumping": {
+        "nativeFunctions": "fgdiagnostic.cpp151-1769: fgProcessEscapes, fprintfDouble, fgDumpTree, fgOpenFlowGraphFile, fgDumpFlowGraph including RegionGraph, and fgDumpFlowGraphLoops.",
+        "sourceSnapshot": "32a1449ffbbf783ac6e20140f5cbf56ac73de162",
+        "mapping": "Compiler.FlowGraphDump.cs owns selection, file ownership, compact trees and DOT/XML serialization. Compiler.FlowGraphDump.Regions.cs owns the native EH interval tree and recursive natural-loop clusters. Shared JitTextWriter preserves CRT newlines; formatFloat supplies native numeric spellings.",
+        "tests": "artifacts\\flowgraph-dumps\\full-debug-2.trx:11908passed;full-release-1.trx:10887passed. All58new graph cases passed. release-enabled-3.log builds the final source with DUMP_FLOWGRAPHS additionally enabled via enable-dumps.targets and full analysis.",
+        "regressionControl": "old-debug-1.trx:3failed/0passed, all public output regressions reject the old false-return stub. old-entry-control-1.json records original compiler37c583baf9538b6c675dabaaa8ad7138e836171d and unchanged final graph tests from snapshotb4f3e3f668fd5aaaa78c1d7db4352077aa58b56e.",
+        "nativeAotLibrary": "artifacts\\flowgraph-dumps\\native-jit-2\\RyuJitSharp.dll",
+        "nativeAotSha256": "984680DA626B0B7B1AD9B2C9EB9D652C501D499FDD3F7BF46D81EE77468EF726",
+        "execution": "Six managed-*-2 captures execute22selected compilations across ranges, nested filters/finally, nested loops, memory SSA, XML and instrumented Tier0. Native references use the current pin and matching CoreRoot. No fallback; runtime output matches.",
+        "comparison": "comparison-3.json from compare.py:38DOT graphs and4XML graphs are byte-identical as complete files; all22instruction streams/sizes and18CSE phases also match. Native graph references and B349 broader29/143execution evidence are reused, not relabeled.",
+        "limits": "B350/R004: the native XML kind table has11entries for12kinds. Defined labels are retained; the undefined switch entry throws explicitly. Correcting labels is deferred. No whole-jitdump or raw-machine-byte parity claim."
+      },
       "phaseInvariants": {
         "nativeFunctions": "fgdiagnostic.cpp3331 fgDebugCheckInitBB,3799 fgDebugCheckLinkedLocals,4144 fgDebugCheckNodesUniqueness,4798 fgDebugCheckLoops,4836 fgDebugCheckFlowGraphAnnotations; compiler.hpp5371 fgRunDfs and flowgraph.cpp4530 fgComputeDfs.",
         "sourceSnapshot": "ba7069a9ba030f615fb0611f56b18a52bb457432",
@@ -6645,6 +6656,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "flow-graph-dumping",
+      "native": ["src\\coreclr\\jit\\fgdiagnostic.cpp:fgProcessEscapes;fprintfDouble;fgDumpTree;fgOpenFlowGraphFile;fgDumpFlowGraph;fgDumpFlowGraphLoops"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.FlowGraphDump.cs", "sources\\Core\\jit\\compiler\\Compiler.FlowGraphDump.Regions.cs"],
+      "status": "Complete enabled graph-dumping area with native file/phase selection, DOT/XML attributes, EH interval insertion and loop grouping.42complete native graph outputs match. B350's stale defined XML labels are retained; its undefined switch entry fails explicitly. Native source retained.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "floating-local-evaluation-costs",
       "native": ["src\\coreclr\\jit\\gentree.cpp:Compiler::gtGetLclVarNodeCost"],

@@ -315,6 +315,16 @@ This cannot be combined with `-MinOpts` or `-InstrumentedTier0`. Verify the
 iteration diagnostics as well as generated-code execution; compilation headers
 alone do not prove that the selected iterations ran.
 
+Use `-FlowGraphFormat Dot` or `Xml` to capture `graphs.dot` or `graphs.fgx`
+alongside the compilation dump. `-FlowGraphPhase` selects post-phase enum
+suffixes (for example, `IMPORTATION,VALUE_NUMBER`), not display abbreviations;
+the default is `DETERMINE_FIRST_COLD_BLOCK`. DOT additionally supports
+`-FlowGraphEH`, `-FlowGraphLoops`, and `-FlowGraphMemorySsa`. Compare the actual
+graph files: single-block methods are deliberately excluded by native selection.
+The pinned native XML jump-kind table is stale (B350); its defined labels are
+preserved, while its out-of-bounds switch entry produces an explicit managed
+error instead of an undefined memory read. DOT does not have this limitation.
+
 Use `-InstrumentedTier0` to request eager Tier0 profiling without call-count
 promotion to later tiers. This sets `TieredPGO_InstrumentOnlyHotCode=0` and
 disables runtime call counting; it is distinct from forced `-MinOpts` and
