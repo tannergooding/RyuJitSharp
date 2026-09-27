@@ -12,19 +12,19 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port complete GC-poll insertion for SuppressGCTransition calls against33baf8 flowgraph.cpp:16-435, including optimized tree scanning, minopts flag selection, callout/inline polls, trap address indirection, EH/edge/weight and debug-location preservation.",
+      "scope": "Port complete fgSearchImprovedLayout and ThreeOptLayout against33baf8 fgopt.cpp:3297-4282, including loop-aware profile-ordered RPO, native priority ordering, partition costs/swaps, hot-jump compaction, EH-safe block relinking and invalidation. Resolve B319 downstream GC-poll layout differences.",
       "doneWhen": [
-        "Review and port blockNeedsGCPoll, fgInsertGCPolls and fgCreateGCPoll with their required managed contracts.",
-        "Activate public GC polling with focused selection/CFG/debug-location tests and an old-stub negative control.",
-        "Execute positive suppressed-transition calls and native/managed poll comparisons through a fresh JIT; preserve the established execution baseline.",
-        "Commit the validated GC-poll batch locally, then continue the next remaining port dependency."
+        "Port complete native ThreeOptLayout plus loop-aware traversal/profile DFS prerequisites without changing other consumers' behavior.",
+        "Activate public layout with focused cost, tie-order, EH/loop and block-list tests plus old-stub controls.",
+        "Execute the existing GC-poll corpus through a fresh JIT, compare positive native layout and code, and preserve the established baseline.",
+        "Commit the validated layout batch locally, then continue the next remaining port dependency."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Synchronization5aaefb7, saved helper phases a6511dc/3e98aa0/62e2fe0 and late casts f136142 are locally committed. GC polls are validated for local commit. Continue remaining phase porting; commits are checkpoints, not stopping points. No publication authorized.",
-      "deferred": "B311 optional metrics fixture, B315 incoming UTF8 graph/promotion, B318 existing argument-morph regression and B307 pre-existing EH node IDs remain nonblocking. B319 downstream layout explains GC-poll code differences and identifies the next batch. Retain mixed native helper regions until remaining callers/platform paths are ported.",
+      "parentScope": "GC-poll insertion committed0510e9b. Complete layout class and shared contracts are integrated and validated for local commit; B319 cold-poll placement/code-size differences are resolved. No publication authorized; commits remain checkpoints.",
+      "deferred": "B311 optional metrics fixture, B315 incoming UTF8 graph/promotion, B318 existing argument-morph regression and B307 pre-existing EH node IDs remain nonblocking. Separate cold-section selection and unrelated optimization phases remain outside this layout batch.",
       "parallelPackets": [
         {
           "scope": "Complete native static-initialization expansion.",
@@ -408,7 +408,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit validated GC-poll insertion, then continue immediately at fgSearchImprovedLayout (native fgopt.cpp:4205, managed Compiler.fg.cs). The positive GC-poll corpus proves native Optimize layout moves the zero-weight poll behind the hot path while the managed public phase is still a no-op, accounting for 2/3-byte downstream code gaps (B319). Read and port its complete dependency closure before activation; reuse the same corpus and baseline. Keep B307 input EH node IDs and B318 pre-existing argument-morph test failure separate. Preserve recovery refs; no push or PR is authorized.",
+    "nextAction": "Commit validated block layout, then continue directly at fgDetermineFirstColdBlock and fgFuncletsAreCold (flowgraph.cpp:3282-3489). The main phase has been read completely; confirm its procedure-splitting gates, getCodeEstimate and hot/cold allocation contracts before activation and positive native split execution. Existing B307/B318/B320 diagnostics/test gaps remain separate. No push or PR authorized.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -476,6 +476,20 @@
         "scope": "Restore pinned output-pointer-only getThreadLocalStaticBlocksInfo across three wrappers/interface/vtable; rename final metadata slot to offsetOfBaseOfThreadLocalData. Keep existing slot, calling convention, offset widths and neighboring getThreadLocalFieldInfo bool.",
         "nativeEvidence": "MSVC native-probe.cpp static_assert checks exact member signature against pinned corinfo.h; sizeof56, pointer-field offsets0/16/24/32 and scalar offsets40/44/48/52 match managed raw layout.",
         "gaps": "TLS phase is not activated. Virtual native callbacks verify forwarding without claiming actual runtime TLS expansion."
+      },
+      "blockLayout": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "snapshot": "67ffabfa5c3202e89d2e16751dee603aea4dda93",
+        "nativeAot": "artifacts\\block-layout\\native-jit-1\\RyuJitSharp.dll",
+        "sha256": "FF8E275A77A7CA194DBAA9B8F0F5D0983A04B34339DA78C6F454E2DABB056056",
+        "debugPassed": 102,
+        "releasePassed": 100,
+        "tests": "BlockLayoutTests,ThreeOptLayoutTests,FlowGraphDfsTests,NaturalLoopTests,LinearScanBlockOrderTests,GCPollInsertionTests with full analysis. Covers strict cold thresholds, profile ties, nested-loop visitation, native queue visitation/ties, profitable/nonprofitable swaps, try boundaries and callfinally pairs. The existing LSRA traversal is extracted unchanged into a shared helper.",
+        "negativeControls": "Replacing only the public layout entry with the old no-op fails both cold-poll placement cases with21helper/class controls passing. Artifact: artifacts\\block-layout\\negative.",
+        "execution": "The maintained GC-poll corpus executes12managed bodies across optimized/minopts/GCStress with expected process/finally outcomes and no fallback. Six optimized/GCStress cold-poll moves now match native; all12selected native/managed code sizes match, resolving B319 (including60/48/91bytes for the three positive optimized methods).",
+        "baseline": "artifacts\\upstream-refresh-33baf8\\block-layout-managed-matrix\\results.json:29configurations143positive managed bodies and unchanged runtime outcomes.",
+        "comparison": "artifacts\\block-layout\\comparison-67ffabfa-final:6of8selected Optimize layout transformation/CFG slices and10of12raw emitted-instruction sequences match after newline conversion only. Two EH layout slices retain pre-existing node/temp IDs (B307); two EH emitted sequences differ only in static-data handle descriptions (B320), with equal instruction mnemonics and offsets.",
+        "gaps": "Full dump and relocation-normalized machine-byte parity are not claimed. Hot/cold section selection is the next separate phase. Temporary null native EH end markers use a local boolean mask to preserve nonnull managed descriptors; native DFS scratch reuse, priority heap ordering and edge-visited state are retained."
       },
       "gcPollInsertion": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
@@ -6126,6 +6140,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "optimized-block-layout",
+      "native": ["src\\coreclr\\jit\\fgopt.cpp:3297-4282", "src\\coreclr\\jit\\compiler.hpp:5427-5500", "src\\coreclr\\jit\\jiteh.cpp:1338-1385", "src\\coreclr\\jit\\block.h:1309", "src\\coreclr\\jit\\priorityqueue.h"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.BlockLayout.cs", "sources\\Core\\jit\\compiler\\Compiler.ThreeOptLayout.cs", "sources\\Core\\jit\\lsra\\LinearScan.BlockOrder.cs", "sources\\Core\\jit\\block\\BasicBlock.cs", "sources\\Core\\jit\\block\\FlowEdge.cs"],
+      "status": "Complete native 3-opt public phase/class, shared loop-aware RPO, cold candidate threshold and try-end repair. Reuses existing profile DFS, its scratch array and FlowEdge visitation state. B319 cold-poll placement resolved; B307/B320 diagnostics remain. Native source retained.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "gc-poll-insertion",
       "native": ["src\\coreclr\\jit\\flowgraph.cpp:16-435"],

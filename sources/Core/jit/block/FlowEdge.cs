@@ -58,6 +58,19 @@ public sealed class FlowEdge
 
     public int DupCount => _dupCount;
 
+    public bool Visited
+    {
+        get
+        {
+            return _visited;
+        }
+
+        set
+        {
+            _visited = value;
+        }
+    }
+
 #if DEBUG
     public bool hasLikelihood => _likelihoodSet;
 #endif

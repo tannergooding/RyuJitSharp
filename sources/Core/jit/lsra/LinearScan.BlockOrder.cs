@@ -42,41 +42,7 @@ public sealed partial class LinearScan
                 _blockSequence![_blockSequenceCount++] = block;
             }
 
-            if (loops.NumLoops == 0)
-            {
-                for (var index = dfsTree.PostOrderCount; index != 0; index--)
-                {
-                    AddBlock(dfsTree.GetPostOrder(index - 1));
-                }
-            }
-            else
-            {
-                var loopVisitorTraits = dfsTree.PostOrderTraits();
-                var loopVisitorBlocks = BitVecOps.MakeEmpty(loopVisitorTraits);
-
-                void VisitLoopAware(BasicBlock block)
-                {
-                    if (!BitVecOps.TryAddElemD(loopVisitorTraits, loopVisitorBlocks, block.bbPostorderNum))
-                    {
-                        return;
-                    }
-
-                    AddBlock(block);
-                    var loop = loops.GetLoopByHeader(block);
-                    if (loop is not null)
-                    {
-                        _ = loop.VisitLoopBlocksReversePostOrder(loopBlock => {
-                            VisitLoopAware(loopBlock);
-                            return BasicBlockVisit.Continue;
-                        });
-                    }
-                }
-
-                for (var index = dfsTree.PostOrderCount; index != 0; index--)
-                {
-                    VisitLoopAware(dfsTree.GetPostOrder(index - 1));
-                }
-            }
+            _compiler.fgVisitBlocksInLoopAwareRPO(dfsTree, loops, AddBlock);
 
             var block = _compiler.fgLastBB
                 ?? throw new FatalJitException("LSRA requires a last block when completing its block sequence.");

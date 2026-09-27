@@ -15,6 +15,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Optimized block layout
+
+The layout phase now starts from profile-ordered, loop-aware traversal and runs
+native hot-jump compaction and greedy partition swaps. It preserves priority
+ties, call-finally pairs, contiguous EH regions and try ends, then invalidates
+the reused flowgraph annotations. LSRA uses the same extracted traversal without
+changing its block sequence.
+
+Cold GC-poll blocks now move behind hot returns as native does, resolving the
+observed layout code-size differences. All twelve selected corpus code sizes
+match; six of eight optimized layout slices match exactly. Remaining EH
+differences are pre-existing IR identities and static-handle descriptions, not
+layout or instruction-order differences. Separate cold-section selection remains
+unported.
+
 ## 2026-09-26: GC-poll insertion
 
 Suppressed-transition unmanaged calls now receive the native inline trap check

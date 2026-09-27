@@ -1274,6 +1274,8 @@ public sealed partial class BasicBlock : LIR.Range
 
     public bool isMaxBBWeight => (bbWeight >= BB_MAX_WEIGHT);
 
+    public bool isBBWeightCold(Compiler comp) => bbWeight < (getCalledCount(comp) * BB_COLD_WEIGHT);
+
     public bool HasTerminator => _kind is BBJ_EHFINALLYRET or BBJ_EHFAULTRET or BBJ_EHFILTERRET or BBJ_COND or BBJ_SWITCH or BBJ_RETURN;
 
     public BasicBlockFlags FlagsRaw
