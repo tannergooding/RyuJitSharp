@@ -7,30 +7,34 @@ deferred. Exact revisions and the checkpoint are in [state.json](state.json).
 
 ## Execution order and iteration
 
-First finish reconciling already ported code and the native residual tree with
-the pinned upstream `main` revision. Then reconcile and resume the preserved WIP.
-Only after that, start new phase porting, prioritizing required Windows-x64
-minopts transformations toward code generation over optional optimizations.
-The next execution goal is managed minopts/Tier-0-level code generation, not
-completion of every optimization dependency. Once that path emits and executes
-code, fill out Tier-1 optimizations and the remaining areas. Required shared
-functions still need complete implementations; optional neighboring phases do
-not become prerequisites merely because they are adjacent.
-Do not expand synchronization into implementing every currently unported phase:
-record those boundaries accurately and reconcile existing implementations.
+Resume from `checkpoint.nextAction` in [state.json](state.json), using its pinned
+revisions and active batch rather than replaying completed synchronization or WIP
+reconciliation. Resolve any still-open reconciliation before depending on the
+affected code. Select the next dependency-coherent feature or target packet from
+the actual reachable frontier; required shared functions still need complete
+implementations, while optional neighboring phases do not become prerequisites
+merely because they are adjacent.
 
 The central execution path is rationalization, lowering, LSRA, then code
-generation and emission. Start with executable scalar minopts methods; add
-calls, GC reporting and EH as their required backend support becomes available.
-Finish dependency closures already in progress, but do not make complete parity
-in optional optimizations or unrelated corpus features a prerequisite for the
-next backend stage. Keep those differences explicit rather than hiding them.
+generation and emission. Continue extending this path and its required support
+without making complete parity in optional optimizations or unrelated corpus
+features a prerequisite. Keep remaining differences explicit rather than hiding
+them.
 
-Use a few Sol/Luna subagents for bounded translation and reconciliation packets
-that benefit from separate context or parallel implementation. Keep dependency
-selection, shared contracts, integration and parity review under the coordinating
-agent. Assign concrete file ownership and completion boundaries; reconcile shared
-interfaces explicitly instead of serializing all work or duplicating exploration.
+Parallelize substantial work as bounded, non-overlapping feature or platform
+packets when dependencies and ownership allow. Windows x64 remains the first
+execution/parity baseline, but independent Linux x64 and other architecture work
+may proceed alongside it without waiting for every Windows diagnostic gap. Give
+each packet explicit source ownership, scope, and a completion boundary; do not
+invent assignments or duplicate work. The coordinator owns dependency selection,
+shared JIT/EE and ABI contracts, cross-packet integration, and parity decisions.
+Resolve shared-contract changes there before dependent packets rely on them.
+Integrate packets at target-aware gates: build the affected target and collect
+the phase, code-generation, metadata, or execution evidence appropriate to its
+implemented frontier. Record evidence per target and distinguish compilation
+from execution parity. Use Sol for implementation, Luna for documentation, and
+Astra for complex investigations, shared-contract decisions, and final
+integration/review.
 
 Work in substantial dependency-coherent batches during both synchronization and
 new porting. Use source spot checks and localized incremental builds between
@@ -227,9 +231,12 @@ floating-point edge cases, intrinsics, tailcalls, managed/native boundaries,
 tiering/PGO/OSR, and stress. Broaden SuperPMI collections after the small corpus
 is reliable. Compare emitted bytes/metadata and execute code once supported.
 
-Windows x64 remains the first execution target. Compile-check affected alternate
-target branches and inventory their explicit NYIs without claiming runtime
-support. Never infer non-Windows behavior from a Windows run.
+Windows x64 remains the first execution/parity baseline, not a serialization
+gate for independent Linux x64 or other architecture packets. Compile-check
+affected alternate-target branches and inventory explicit NYIs without claiming
+runtime support. Never infer one target's behavior from another target's run,
+and do not treat compile-only work, native fallback, or `CORJIT_SKIPPED` as
+execution parity.
 
 **Exit per batch:** complete intended functions, explicit deferrals, scoped
 regression/parity evidence, residual-source update, and a small continuation

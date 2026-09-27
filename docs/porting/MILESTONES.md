@@ -2,14 +2,15 @@
 
 A newest-first history of what the port can do and how it has developed.
 
-The primary target is Windows x64. The port can import methods, expand inline
-calls, select heap or stack allocations, simplify local accesses and construct internal
-method entry/exit paths, rationalize expression trees into linear IR, and lower
-minopts methods, create EH funclets, allocate registers with stack-resident
-locals, emit native code and publish runtime metadata for Windows x64.
-Selected minopts and optimized corpora execute managed-generated code. Remaining
-work includes broader execution and GC-stress coverage, full dump/code parity,
-and unfinished optimization phases.
+Windows x64 is the first execution/parity baseline. Selected minopts and
+optimized corpora execute code emitted by the managed JIT. Implemented optimized
+work documented below includes inlining, value numbering and CSE, loop and flow
+optimizations, profile-guided paths, and register-allocation policies; selected
+tiered/PGO and GC-stress scenarios also have execution coverage. These results
+are scoped to their tested corpora and configurations, not blanket pipeline or
+runtime coverage. Remaining work includes broader runtime and JIT/EE ABI/GC
+coverage, full dump/code parity, and Linux and other target implementation and
+runtime validation.
 
 The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
