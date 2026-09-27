@@ -14962,11 +14962,6 @@ public partial class Compiler
                         {
                             return Done(ind, costEx, costSz, level);
                         }
-                        else
-                        {
-                            costEx = 1;
-                            costSz = 1;
-                        }
                         break;
                     }
 

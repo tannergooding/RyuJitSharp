@@ -15,6 +15,24 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Late cast expansion
+
+The late-cast phase now turns eligible helpers into null and method-table guards
+with native exact-type, speculative, profile-driven and multiple-candidate
+selection. It preserves specialized fallbacks, known-failure throws, shared
+generic handles, conditional edge probabilities and profile repair.
+
+Base/subclass, string, array and shared-generic casts execute with matching native
+success, null and exception behavior, including reference identity after GC.
+Six positive transformation/CFG/IR slices match exactly; array slices retain the
+existing dynamic-class name diagnostic difference. Matching selected code sizes
+are not a claim of complete machine-code parity.
+
+Execution exposed a missing exit after importing reference `unbox.any` as a cast;
+native comparison exposed discarded indirection costs in the shared evaluation
+walker. Both are corrected, with failing-before execution/cost checks and the
+established execution matrix preserved. Continuation proceeds to GC-poll insertion.
+
 ## 2026-09-26: Value-numbered UTF-8 literal expansion
 
 The VN-intrinsic phase now expands immutable UTF-16 literals into guarded UTF-8

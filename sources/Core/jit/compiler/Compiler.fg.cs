@@ -14179,9 +14179,6 @@ public partial class Compiler
     // TODO: Port phase - fgInsertGCPolls
     public PhaseStatus fgInsertGCPolls() => PhaseStatus.MODIFIED_NOTHING;
 
-    // TODO: Port phase - fgLateCastExpansion
-    public PhaseStatus fgLateCastExpansion() => PhaseStatus.MODIFIED_NOTHING;
-
     internal GenTree fgMorphInitBlock(GenTree tree) => MorphInitBlockHelper.MorphInitBlock(this, tree);
 
     internal bool gtRemoveTreesAfterNoReturnCall(BasicBlock block, Statement statement)

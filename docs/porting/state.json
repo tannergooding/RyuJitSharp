@@ -12,18 +12,19 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Integrate preserved VN-based ReadUtf8 expansion against33baf8 using committed shared/static-init/TLS support. Verify bounded UTF16 conversion semantics and positive literal expansion before public activation.",
+      "scope": "Port the complete late-cast expansion phase against33baf8, including candidate selection, guarded casts, null/throw fallbacks, multiple exact classes and profile repair. Reuse committed helper splitting and GDV selection. Correct B316 reference-unbox dispatch fallthrough exposed by generic execution and B317 discarded indirection costs exposed by native guard comparison.",
       "doneWhen": [
-        "Review the full VN-intrinsic dispatcher, ReadUtf8 transformation and bounded minipal conversion equivalent against the oracle.",
-        "Activate the public phase and demonstrate positive tests fail against the previous stub.",
-        "Execute positive ASCII/multibyte/malformed literal inputs and capacity guards through fresh managed code with native phase comparisons; preserve prior execution corpora.",
-        "Commit the complete validated VN-intrinsic batch locally and checkpoint remaining native shared-helper work."
+        "Review and port the complete fgLateCastExpansion, PickCandidatesForTypeCheck and fgLateCastExpansionForCall closure.",
+        "Activate the public phase with focused selection/CFG regressions and an old-stub negative control.",
+        "Execute positive cast/null/failure inputs through a fresh managed JIT and compare native phase decisions and generated guards; preserve prior execution corpora.",
+        "Commit the validated late-cast batch locally, then continue the next remaining port dependency."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Synchronization5aaefb7, shared/static-inita6511dc and TLS3e98aa0 are locally committed. Final preserved VN-intrinsic packet is integrated with B313 byref-add assertion and B314 literal-dump prerequisites.124Debug117Release cases pass; pinned minipal matches77824converter cases. Fresh final JIT executes29/143baseline plus33helper bodies across fullopts/minopts/GCStress. UTF8 store metrics match; B315 incoming graph/promotion and full-code parity remain open. No publication authorized.",
+      "parentScope": "Synchronization5aaefb7 and saved helper phases a6511dc/3e98aa0/62e2fe0 are locally committed. Continue remaining phase porting; commits are checkpoints, not stopping points. No publication authorized.",
+      "deferred": "B311 optional metrics fixture and B315 incoming UTF8 graph/promotion differences are nonblocking. Retain mixed native helper regions until remaining callers/platform paths are ported.",
       "parallelPackets": [
         {
           "scope": "Complete native static-initialization expansion.",
@@ -407,7 +408,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Saved static-init/TLS/VN-intrinsic packets are now integrated after33baf8 synchronization. Resume the remaining helper-expansion work at public fgLateCastExpansion in Compiler.fg.cs (still a no-op): review the complete native fgLateCastExpansion/ForCall closure in helperexpansion.cpp and establish its Windows x64 dependency boundary before activation. Retain mixed native helper regions while remaining callers/platform paths are unported. B311 and B315 are recorded nonblocking gaps, not permission to broaden this batch. Preserve all recovery refs; no push or PR is authorized.",
+    "nextAction": "Commit the validated late-cast phase with B316 reference-unbox dispatch and B317 indirection cost fixes, then continue directly at fgInsertGCPolls in Compiler.fg.cs. Review flowgraph.cpp:63-436 and its GC-poll EE/CFG dependencies before activating the phase for SuppressGCTransition calls. Commits are checkpoints, not stopping points. Retain mixed native helper regions for unported platform paths. B301 array class-name diagnostics, B311 and B315 remain nonblocking. Preserve recovery refs; no push or PR is authorized.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -475,6 +476,20 @@
         "scope": "Restore pinned output-pointer-only getThreadLocalStaticBlocksInfo across three wrappers/interface/vtable; rename final metadata slot to offsetOfBaseOfThreadLocalData. Keep existing slot, calling convention, offset widths and neighboring getThreadLocalFieldInfo bool.",
         "nativeEvidence": "MSVC native-probe.cpp static_assert checks exact member signature against pinned corinfo.h; sizeof56, pointer-field offsets0/16/24/32 and scalar offsets40/44/48/52 match managed raw layout.",
         "gaps": "TLS phase is not activated. Virtual native callbacks verify forwarding without claiming actual runtime TLS expansion."
+      },
+      "lateCastExpansion": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "snapshot": "8341cf3b13616f6902b2887cc43a2ada882f28e8",
+        "nativeAot": "artifacts\\late-cast-expansion\\native-jit-final\\RyuJitSharp.dll",
+        "sha256": "57BCE577D853232A800A665332D8299315C80C2649420CD75C8536C391A61F62",
+        "debugPassed": 174,
+        "releasePassed": 167,
+        "tests": "LateCastExpansionTests plus static-init/TLS/VN-intrinsic/runtime-lookup/importer-effects/if-conversion selections, full analysis. Current source/tests match immutable validation-3.",
+        "negativeControls": "Old public stub:17failures8controls. Discarded GT_IND costs:4guard-cost failures. Original reference-unbox dispatch aborts CastGeneric before late-cast expansion in managed-fullopts; final JIT executes the unchanged corpus successfully.",
+        "execution": "PortingLateCastCorpus: native and managed fullopts/minopts/GCStress execute30bodies, including nulls, successful base/subclass/string/array/shared-generic casts, four InvalidCastExceptions and reference identity after collection. Four positive expansions per optimized capture, none in minopts.",
+        "baseline": "artifacts\\upstream-refresh-33baf8\\late-cast-final-managed-matrix\\results.json:29configurations143positive managed bodies, same runtime output and no fallback.",
+        "comparison": "artifacts\\late-cast-expansion\\comparison.json:6of8positive transformation/CFG/IR slices match exactly after newline conversion, ending before fgDebugCheckBBlist. Both array slices differ only by existing B301 dynamicClass name suffixes. All15selected native/managed code sizes match, not proof of machine-code parity.",
+        "gaps": "Full post-phase diagnostics and machine-code parity remain unclaimed. Multiple exact classes and profile candidate selection have structural tests, not NativeAOT-runtime/static-PGO execution. Native residual preserved176staged paths and zero unstaged edits."
       },
       "vnIntrinsicIntegration": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
@@ -6097,6 +6112,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "late-cast-expansion",
+      "native": ["src\\coreclr\\jit\\helperexpansion.cpp:1935-2779", "src\\coreclr\\jit\\importer.cpp:10683-10688", "src\\coreclr\\jit\\gentree.cpp:gtSetEvalOrder(GT_IND)"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.LateCastExpansion.cs", "sources\\Core\\jit\\compiler\\Compiler.imp.cs:CEE_UNBOX_ANY", "sources\\Core\\jit\\compiler\\Compiler.gt.cs:gtSetEvalOrder"],
+      "status": "Complete public phase, candidate selection and CFG/profile repair. Exact/speculative/profile/unknown-handle paths preserve native fallback contracts; B316/B317 prerequisites corrected. Six positive transformation/CFG/IR slices exact; array name diagnostics remain B301. Shared native source retained for remaining platform paths.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "vn-intrinsic-expansion-and-literal-diagnostics",
       "native": ["src\\coreclr\\jit\\helperexpansion.cpp:1612-1932", "src\\coreclr\\jit\\eeinterface.cpp:709-731", "src\\coreclr\\jit\\compiler.cpp:10630-10648", "src\\coreclr\\jit\\importer.cpp:5340-5477", "src\\native\\minipal\\utf8.c"],

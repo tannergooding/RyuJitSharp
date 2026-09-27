@@ -10083,6 +10083,8 @@ public partial class Compiler
                         {
                             return;
                         }
+
+                        break;
                     }
 
                     // Pop the object and create the unbox helper call
