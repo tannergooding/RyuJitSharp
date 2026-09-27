@@ -43,6 +43,12 @@ public interface ICodeGen
     /// <remarks>Does not prohibit double alignment of the stack.</remarks>
     bool IsFrameRequired { get; set; }
 
+#if TARGET_ARM64
+    bool IsSaveFpLrWithAllCalleeSavedRegisters { get; }
+
+    void SetSaveFpLrWithAllCalleeSavedRegisters(bool value);
+#endif
+
     void SetFramePointerRequiredEH(bool value);
 
     void SetFramePointerRequiredGCInfo(bool value);

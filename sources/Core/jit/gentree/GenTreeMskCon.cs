@@ -16,11 +16,39 @@ public sealed class GenTreeMskCon : GenTree
         _simdMaskVal = simdMaskVal;
     }
 
-    public bool IsAllBitsSet => _simdMaskVal.IsAllBitsSet;
+    public bool IsAllBitsSet
+    {
+        get
+        {
+#if TARGET_ARM64 && DEBUG
+            if (JitConfig.JitUseScalableVectorT != 0)
+            {
+                NYI("ARM64 scalable mask constant all-bits query");
+                fatal(CORJIT_IMPLLIMITATION);
+            }
+#endif
+
+            return _simdMaskVal.IsAllBitsSet;
+        }
+    }
 
     public ref simdmask_t SimdMaskVal => ref _simdMaskVal;
 
-    public bool IsZero => _simdMaskVal.IsZero;
+    public bool IsZero
+    {
+        get
+        {
+#if TARGET_ARM64 && DEBUG
+            if (JitConfig.JitUseScalableVectorT != 0)
+            {
+                NYI("ARM64 scalable mask constant zero query");
+                fatal(CORJIT_IMPLLIMITATION);
+            }
+#endif
+
+            return _simdMaskVal.IsZero;
+        }
+    }
 
     public void EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType, int simdSize)
     {
@@ -55,8 +83,15 @@ public sealed class GenTreeMskCon : GenTree
 #if TARGET_ARM64
     public bool IsTrue(var_types simdBaseType)
     {
-        // Note that a byte true mask (1111...) is different to an int true mask (10001000...), therefore the simdBaseType of the mask needs to be taken into account.
-        return SveMaskPatternAll == EvaluateSimdMaskToPattern<simd16_t>(simdBaseType, AsMskCon()->gtSimdMaskVal);
+#if DEBUG
+        if (JitConfig.JitUseScalableVectorT != 0)
+        {
+            NYI("ARM64 scalable mask constant pattern evaluation");
+            fatal(CORJIT_IMPLLIMITATION);
+        }
+#endif
+
+        return EvaluateSimdMaskToPattern<simd16_t>(simdBaseType, _simdMaskVal) == SveMaskPattern.SveMaskPatternAll;
     }
 #else
     public bool IsTrue(var_types simdBaseType) => false;

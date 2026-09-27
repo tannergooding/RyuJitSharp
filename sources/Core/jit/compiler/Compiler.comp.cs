@@ -2600,9 +2600,9 @@ public partial class Compiler
 #endif
 
 #if DEBUG && TARGET_ARM64
-        if ((s_pJitMethodSet is null) || s_pJitMethodSet->IsActiveMethod(info.compFullName, info.compMethodHash()))
+        if ((s_pJitMethodSet is null) || s_pJitMethodSet.IsActiveMethod(info.compFullName, info.compMethodHash()))
         {
-            opts.compJitSaveFpLrWithCalleeSavedRegisters = JitConfig.JitSaveFpLrWithCalleeSavedRegisters();
+            opts.compJitSaveFpLrWithCalleeSavedRegisters = JitConfig.JitSaveFpLrWithCalleeSavedRegisters;
         }
 #endif
 

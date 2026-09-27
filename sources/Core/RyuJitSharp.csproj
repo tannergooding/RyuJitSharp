@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="RyuJitSharp.UnitTests" />
+    <InternalsVisibleTo Include="RyuJitSharp.Target.UnitTests" />
   </ItemGroup>
 
   <PropertyGroup>

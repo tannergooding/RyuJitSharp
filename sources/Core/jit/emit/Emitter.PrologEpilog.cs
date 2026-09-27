@@ -9,6 +9,13 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+#if !TARGET_AMD64
+    internal void RequireSupportedInstructionRecording()
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Instruction recording outside AMD64 is not ported.");
+    }
+#endif
+
     public VARSET_TP InitGCrefVars => emitInitGCrefVars;
 
     public regMaskTP InitGCrefRegs => new(emitInitGCrefRegs);
@@ -260,11 +267,13 @@ public partial class Emitter
         emitEndPrologEpilog();
     }
 
+#if TARGET_XARCH
     public void emitStartExitSeq()
     {
         assert(emitGeneratingEpilogOrFuncletEpilog());
         emitExitSeqBegLoc.CaptureLocation(this);
     }
+#endif
 
     public void emitSetFrameRangeGCRs(int offsLo, int offsHi)
     {

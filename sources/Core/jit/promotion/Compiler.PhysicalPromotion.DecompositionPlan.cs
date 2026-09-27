@@ -109,8 +109,10 @@ public partial class Compiler
                         4 => TYP_INT,
                         8 => TYP_LONG,
                         16 when compiler.GetPreferredVectorByteLength() >= 16 => TYP_SIMD16,
+#if TARGET_XARCH
                         32 when compiler.GetPreferredVectorByteLength() >= 32 => TYP_SIMD32,
                         64 when compiler.GetPreferredVectorByteLength() >= 64 => TYP_SIMD64,
+#endif
                         _ => TYP_UNDEF,
                     };
                 }

@@ -208,24 +208,37 @@ public sealed partial class CSE_Heuristic
             if (!candidate.IsConservative())
             {
                 var hasRequiredSpill = false;
-                if (!varTypeUsesIntReg(expr.Type))
+#pragma warning disable CA1508 // Callee-save register counts differ between targets.
+                if (varTypeUsesIntReg(expr.Type))
                 {
-                    if (varTypeUsesMaskReg(expr.Type))
+                    assert(CNT_CALLEE_SAVED != 0);
+                }
+                else if (varTypeUsesMaskReg(expr.Type))
+                {
+                    if (CNT_CALLEE_SAVED_MASK == 0)
                     {
-                        // Windows AMD64 has no callee-saved mask registers.
                         hasRequiredSpill = true;
                     }
-                    else
-                    {
-                        assert(varTypeUsesFloatReg(expr.Type));
-#if FEATURE_SIMD
-                        if (expr.Type is TYP_SIMD32 or TYP_SIMD64)
-                        {
-                            hasRequiredSpill = true;
-                        }
-#endif
-                    }
                 }
+                else
+                {
+                    assert(varTypeUsesFloatReg(expr.Type));
+                    if (CNT_CALLEE_SAVED_FLOAT == 0)
+                    {
+                        hasRequiredSpill = true;
+                    }
+#if FEATURE_SIMD && (TARGET_XARCH || TARGET_ARM64)
+#if TARGET_XARCH
+                    else if (expr.Type is TYP_SIMD32 or TYP_SIMD64)
+#elif TARGET_ARM64
+                    else if (expr.Type is TYP_SIMD16)
+#endif
+                    {
+                        hasRequiredSpill = true;
+                    }
+#endif
+                }
+#pragma warning restore CA1508
 
                 if (hasRequiredSpill)
                 {

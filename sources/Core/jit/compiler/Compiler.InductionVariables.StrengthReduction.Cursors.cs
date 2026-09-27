@@ -242,7 +242,9 @@ public partial class Compiler
         private bool CheckAdvancedCursors(List<CursorInfo> cursors, out ScevAddRec? nextIV)
         {
             ScevAddRec? commonIV = null;
+#if !TARGET_ARM64
             var allowRephrasingNextIV = true;
+#endif
             for (var i = 0; i < cursors.Count; i++)
             {
                 var cursor = cursors[i];
@@ -275,7 +277,9 @@ public partial class Compiler
             }
 
             nextIV = commonIV;
+#pragma warning disable CA1508 // ARM64 cursor scaling is not yet implemented.
             return commonIV is not null;
+#pragma warning restore CA1508
         }
 
         private static int Gcd(int a, int b)

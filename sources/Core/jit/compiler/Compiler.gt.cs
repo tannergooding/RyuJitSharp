@@ -635,12 +635,14 @@ public partial class Compiler
                 case GT_STOREIND:
                 {
                     var storeInd = tree.AsStoreInd();
-                    copy = new GenTreeStoreInd(
+                    var copyStoreInd = new GenTreeStoreInd(
                         storeInd.Type,
                         storeInd.Addr,
-                        storeInd.Data) {
-                        RmwStatus = storeInd.RmwStatus
-                    };
+                        storeInd.Data);
+#if TARGET_XARCH
+                    copyStoreInd.RmwStatus = storeInd.RmwStatus;
+#endif
+                    copy = copyStoreInd;
                     break;
                 }
 
@@ -9350,7 +9352,9 @@ public partial class Compiler
             intrinsic = (simdSize is 8) ? NI_AdvSimd_Arm64_AbsScalar : NI_AdvSimd_Arm64_Abs;
         }
 
+#pragma warning disable CA1508 // Retain the native intrinsic-selection assertion.
         assert(intrinsic != NI_Illegal);
+#pragma warning restore CA1508
         return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
 #else
 #error Unsupported platform
@@ -9449,7 +9453,7 @@ public partial class Compiler
 #elif TARGET_ARM64
                     if (op is not GT_LSH)
                     {
-                        op2 = gtNewOperNode(GT_NEG, TYP_INT, op2);
+                        op2 = gtNewUnaryNode(GT_NEG, TYP_INT, op2);
                     }
 
                     op2 = gtNewSimdCreateBroadcastNode(type, op2, simdBaseType, simdSize);
@@ -9916,26 +9920,32 @@ public partial class Compiler
 #elif TARGET_ARM64
                 if (varTypeIsLong(simdBaseType))
                 {
-                    GenTree** op2ToDup = null;
+                    scoped ref GenTree op2ToDup = ref Unsafe.NullRef<GenTree>();
+                    GenTree? op2ToScalar;
 
-                    assert(varTypeIsSimd(op1));
-                    op1                = gtNewSimdToScalarNode(TYP_LONG, op1, simdBaseType, simdSize);
-                    GenTree** op1ToDup = &op1->AsHWIntrinsic()->Op(1);
+                    assert(varTypeIsSimd(op1.Type));
+                    op1 = gtNewSimdToScalarNode(TYP_LONG, op1, simdBaseType, simdSize);
+                    ref var op1ToDup = ref op1.AsHWIntrinsic().GetOpRef(1);
 
-                    if (varTypeIsSimd(op2))
+                    if (varTypeIsSimd(op2.Type))
                     {
-                        op2      = gtNewSimdToScalarNode(TYP_LONG, op2, simdBaseType, simdSize);
-                        op2ToDup = &op2->AsHWIntrinsic()->Op(1);
+                        op2ToScalar = gtNewSimdToScalarNode(TYP_LONG, op2, simdBaseType, simdSize);
+                        op2 = op2ToScalar;
+                        op2ToDup = ref op2ToScalar.AsHWIntrinsic().GetOpRef(1);
+                    }
+                    else
+                    {
+                        op2ToScalar = null;
                     }
 
                     // lower = op1.GetElement(0) * op2.GetElement(0)
-                    GenTree* lower = gtNewOperNode(GT_MUL, TYP_LONG, op1, op2);
+                    var lowerMul = gtNewBinaryNode(GT_MUL, TYP_LONG, op1, op2);
 
-                    if (op2ToDup is null)
+                    if (Unsafe.IsNullRef(ref op2ToDup))
                     {
-                        op2ToDup = &lower->AsOp()->gtOp2;
+                        op2ToDup = ref lowerMul.AsOp().Op2Ref;
                     }
-                    lower = gtNewSimdCreateScalarUnsafeNode(type, lower, simdBaseType, simdSize);
+                    var lower = gtNewSimdCreateScalarUnsafeNode(type, lowerMul, simdBaseType, simdSize);
 
                     if (simdSize is 8)
                     {
@@ -9944,25 +9954,33 @@ public partial class Compiler
                     }
 
                     // Make the original op1 and op2 multi-use:
-                    GenTree* op1Dup = fgMakeMultiUse(op1ToDup);
-                    GenTree* op2Dup = fgMakeMultiUse(op2ToDup);
+                    var op1Dup = fgMakeMultiUse(ref op1ToDup);
+                    var op2Dup = fgMakeMultiUse(ref op2ToDup);
 
-                    assert(!varTypeIsArithmetic(op1Dup));
-                    op1Dup = gtNewSimdGetElementNode(TYP_LONG, op1Dup, gtNewIconNode(1), simdBaseType, simdSize);
-
-                    if (!varTypeIsArithmetic(op2Dup))
+                    gtUpdateNodeSideEffects(op1);
+                    if (op2ToScalar is not null)
                     {
-                        op2Dup = gtNewSimdGetElementNode(TYP_LONG, op2Dup, gtNewIconNode(1), simdBaseType, simdSize);
+                        gtUpdateNodeSideEffects(op2ToScalar);
+                    }
+                    gtUpdateNodeSideEffects(lowerMul);
+                    gtUpdateNodeSideEffects(lower);
+
+                    assert(!varTypeIsArithmetic(op1Dup.Type));
+                    op1Dup = gtNewSimdGetElementNode(TYP_LONG, op1Dup, gtNewIconNode(TYP_INT, 1), simdBaseType, simdSize);
+
+                    if (!varTypeIsArithmetic(op2Dup.Type))
+                    {
+                        op2Dup = gtNewSimdGetElementNode(TYP_LONG, op2Dup, gtNewIconNode(TYP_INT, 1), simdBaseType, simdSize);
                     }
 
                     // upper = op1.GetElement(1) * op2.GetElement(1)
-                    GenTree* upper = gtNewOperNode(GT_MUL, TYP_LONG, op1Dup, op2Dup);
+                    var upper = gtNewBinaryNode(GT_MUL, TYP_LONG, op1Dup, op2Dup);
 
                     // return Vector128.Create(lower, upper)
-                    return gtNewSimdWithElementNode(type, lower, gtNewIconNode(1), upper, simdBaseType, simdSize);
+                    return gtNewSimdWithElementNode(type, lower, gtNewIconNode(TYP_INT, 1), upper, simdBaseType, simdSize);
                 }
 #endif
-                    unreached();
+                unreached();
                 return null;
             }
 
@@ -11060,11 +11078,13 @@ public partial class Compiler
             assert(GetSimdTypeForSize(simdSize) == type);
         }
 
+#if TARGET_XARCH
         var intrinsic = NI_Illegal;
+#endif
 
         if (varTypeIsFloating(simdBaseType))
         {
-            var retNode = null as GenTree;
+            GenTree? retNode = null;
 
 #if TARGET_XARCH
             var cnsNode = null as GenTree;
@@ -11500,7 +11520,9 @@ public partial class Compiler
             assert(!isScalar);
 #endif
 
+#pragma warning disable CA1508 // Only xarch can select a complete intrinsic implementation above.
             if (retNode is null)
+#pragma warning restore CA1508
             {
                 var op1Dup = fgMakeMultiUse(ref op1);
                 var op2Dup = fgMakeMultiUse(ref op2);
@@ -12503,7 +12525,9 @@ public partial class Compiler
             intrinsic = NI_AdvSimd_ZeroExtendWideningLower;
         }
 
+#pragma warning disable CA1508 // Retain the native intrinsic-selection assertion.
         assert(intrinsic != NI_Illegal);
+#pragma warning restore CA1508
         tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsic, simdBaseType, 8, tmp1);
 
         if (simdSize is 8)
@@ -12694,8 +12718,10 @@ public partial class Compiler
                 intrinsic = NI_AdvSimd_ZeroExtendWideningUpper;
             }
 
+#pragma warning disable CA1508 // Retain the native intrinsic-selection assertion.
             assert(intrinsic != NI_Illegal);
-            return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseType, simdSize);
+#pragma warning restore CA1508
+            return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
         }
         else
         {
@@ -12716,9 +12742,11 @@ public partial class Compiler
                 intrinsic = NI_AdvSimd_ZeroExtendWideningLower;
             }
 
+#pragma warning disable CA1508 // Retain the native intrinsic-selection assertion.
             assert(intrinsic != NI_Illegal);
+#pragma warning restore CA1508
 
-            tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsic, simdBaseType, simdSize, op1);
+            var tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsic, simdBaseType, simdSize, op1);
             return gtNewSimdGetUpperNode(TYP_SIMD8, tmp1, simdBaseType, 16);
         }
 #else
@@ -14016,15 +14044,41 @@ public partial class Compiler
                         costEx = 2;
                         costSz = 8;
                     }
-                    else if (emitter.emitIns_valid_imm_for_add(iconVal, size))
+                    else if (Emitter.emitIns_valid_imm_for_add(iconVal, size))
                     {
                         costEx = 1;
                         costSz = 2;
                     }
-                    else if (emitter.emitIns_valid_imm_for_mov(iconVal, size))
+                    else if (Emitter.emitIns_valid_imm_for_mov(iconVal, size))
                     {
                         costEx = 1;
                         costSz = 4;
+                    }
+                    else
+                    {
+                        // Count MOVZ/MOVN plus MOVK halfwords, retaining native's
+                        // four-instruction starting estimate for either width.
+                        var preferMovz = false;
+                        var preferMovn = false;
+                        var instructionCount = 4;
+
+                        for (var i = (size is EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
+                        {
+                            var halfword = unchecked((ushort)(iconVal >> i));
+                            if (!preferMovn && (halfword is 0x0000))
+                            {
+                                preferMovz = true;
+                                instructionCount--;
+                            }
+                            else if (!preferMovz && (halfword is 0xffff))
+                            {
+                                preferMovn = true;
+                                instructionCount--;
+                            }
+                        }
+
+                        costEx = (byte)instructionCount;
+                        costSz = (byte)(4 * instructionCount);
                     }
 #elif TARGET_XARCH
                     if (intCon.ImmedValNeedsReloc(this))
@@ -14095,9 +14149,9 @@ public partial class Compiler
 
                 case GT_CNS_DBL:
                 {
-#if TARGET_XARCH
                     var dblCon = tree.AsDblCon();
 
+#if TARGET_XARCH
                     if (dblCon.IsPositiveZero || dblCon.IsAllBitsSet)
                     {
                         // Zero:       vxorps   xmm0, xmm0, xmm0
@@ -14126,7 +14180,7 @@ public partial class Compiler
                         costSz = 2 + 8;
                     }
 #elif TARGET_ARM64
-                    if (dblCon.IsPositiveZero || Emitter.emitIns_valid_imm_for_fmov(dblCon.DconValue))
+                    if (dblCon.IsPositiveZero || Emitter.emitIns_valid_imm_for_fmov(dblCon.DconVal))
                     {
                         // Zero and certain other immediates can be specially created with a single instruction
                         // These can be cheaply reconstituted but still take up 4-bytes of native codegen

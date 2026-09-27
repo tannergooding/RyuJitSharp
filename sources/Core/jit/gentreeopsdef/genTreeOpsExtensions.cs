@@ -46,8 +46,8 @@ public static partial class genTreeOpsExtensions
             get
             {
 #if TARGET_ARM64
-                assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC, GT_CCMP));
-                return oper is >= (GT_JCC and <= GT_SELECT_NEGCC) or GT_SELECT_INCCC or GT_SELECT_INVCC or GT_SELECT_NEGCC;
+                return oper is GT_JCC or GT_SETCC or GT_SELECTCC or GT_CCMP
+                    or GT_SELECT_INCCC or GT_SELECT_INVCC or GT_SELECT_NEGCC;
 #elif TARGET_AMD64
                 assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC, GT_CCMP));
                 return oper is >= GT_JCC and <= GT_CCMP;

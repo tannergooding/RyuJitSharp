@@ -109,6 +109,20 @@ the default: build and test without these overrides in the same configuration
 before committing a porting batch, and keep final NativeAOT publication and
 execution validation unchanged. Fast-mode success is not a full-analysis checkpoint.
 
+Cross-target ABI, intrinsic and register-policy fixtures also run through
+`tests\Targets\RyuJitSharp.Target.UnitTests.csproj`. This project links the relevant
+fixtures without compiling the Windows-x64 backend suite; it does not remove or
+disable fixtures in the original Core test project. For example:
+
+```powershell
+dotnet test tests\Targets\RyuJitSharp.Target.UnitTests.csproj -c Debug -r win-x64 -p:TargetRuntimeIdentifier=linux-arm64
+```
+
+Use Release as well, and select `win-arm64`, `osx-arm64` or `linux-x64` for the
+other covered ABI variants. The runtime RID selects the test host; the target
+RID selects compiler semantics. These are targeted managed unit results, not
+execution of generated code on those targets or a pass of the entire Core suite.
+
 ### C# layout
 
 Preserve recognizable algorithms without copying native layout or compressing

@@ -131,7 +131,7 @@ public partial class Compiler
 #if TARGET_AMD64
                 assert((SRBM_VALIDATE_INDIRECT_CALL_TRASH_ALL & SRBM_VALIDATE_INDIRECT_CALL_ADDR) == SRBM_NONE);
 #else
-                assert((SRBM_VALIDATE_INDIRECT_CALL_TRASH & SRBM_VALIDATE_INDIRECT_CALL_ADDR) == SRBM_NONE);
+                assert((SRBM_VALIDATE_INDIRECT_CALL_TRASH & genSingleTypeRegMask(REG_VALIDATE_INDIRECT_CALL_ADDR)) == SRBM_NONE);
 #endif
                 if (JitConfig.JitForceControlFlowGuard != 0)
                 {

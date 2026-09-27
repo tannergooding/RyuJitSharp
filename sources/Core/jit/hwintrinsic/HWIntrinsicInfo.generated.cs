@@ -9,6 +9,12 @@ namespace RyuJitSharp;
 
 public partial struct HWIntrinsicInfo
 {
+#if FEATURE_HW_INTRINSICS && !TARGET_XARCH
+    // hwintrinsiclist.h defines these xarch-only flags as zero for shared entries.
+    private const HWIntrinsicFlag HW_Flag_AvxOnlyCompatible = HW_Flag_NoFlag;
+    private const HWIntrinsicFlag HW_Flag_NoContainment = HW_Flag_NoFlag;
+#endif
+
     private static ReadOnlySpan<HWIntrinsicCategory> s_categories => [
 #if FEATURE_HW_INTRINSICS
         HW_Category_Helper, // NI_Vector_Abs

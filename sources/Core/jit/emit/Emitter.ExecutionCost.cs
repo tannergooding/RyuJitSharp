@@ -132,8 +132,12 @@ public partial class Emitter
     private void perfScoreUnhandledInstruction(instrDesc id, ref insExecutionCharacteristics result)
     {
 #if DEBUG
+#if TARGET_AMD64
         jitprintf($"PerfScore: unhandled instruction: {codeGen.genInsDisplayName(id)}, format {emitIfName(id.idInsFmt())}");
         assert(false, "PerfScore: unhandled instruction");
+#else
+        throw new FatalJitException(CORJIT_SKIPPED, "Instruction performance diagnostics outside AMD64 are not ported.");
+#endif
 #endif
         result.insThroughput = PERFSCORE_THROUGHPUT_1C;
         result.insLatency = PERFSCORE_LATENCY_1C;

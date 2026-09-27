@@ -13,8 +13,8 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "Integrate shared target-bootstrap and SysV x64 ABI prerequisites, then ARM64 classifier/conditional guards. Execute target tests where compilable and preserve explicit uncompiled packet boundaries.",
-      "status": "in_progress",
+      "scope": "Integrate shared target-bootstrap, SysV/Swift helpers and ARM64 classifier, register, intrinsic and frame-policy prerequisites with target unit coverage and Windows execution controls.",
+      "status": "completed",
       "doneWhen": [
         "Preserve public TargetRuntimeIdentifier routing and explicit internal overrides; supply shared ABI factories and remove dormant cross-target syntax blockers without widening supported behavior.",
         "Run affected Windows x64 ABI/emitter/VN controls in Debug and Release, then Linux x64 and ARM64 target builds/tests with verified compile constants. Never count empty filters or Windows controls as target classifier passes.",
@@ -23,8 +23,8 @@
       "validation": [
         "Parent full-analysis Windows controls pass242Debug/240Release. All five exact target-routing cases pass. Shared ABI factories, multireg syntax repairs and six conditional-guard repairs form the validated prerequisite commit.",
         "SysV classifier/shared ABI/Swift helper tests pass61Debug/61Release with full analysis; affected Windows controls pass174Debug/172Release. Descriptor regression fails without constructor initialization (four return slots instead of two) and passes with the fix.",
-        "ARM64 declaration repairs expose467semantic diagnostics in arm64-integration-2.log, including register metadata and intrinsic support. ARM64 classifier/declaration tests have not executed; keep that packet uncommitted while resolving its concrete dependencies.",
-        "No verified Linux or ARM64 runtime host is available. Compile/unit results cannot establish runtime parity; reuse the unchanged Windows NativeAOT baseline until an execution-relevant compiler change requires publication."
+        "ARM64 full-analysis target suites pass185Linux,188Windows and186Apple cases in both Debug and Release; the dedicated target project preserves the original Windows backend suite. Linux-x64 controls pass102/102 and shared Windows-x64 controls350/335.",
+        "No verified Linux or ARM64 runtime host is available. Fresh Windows NativeAOT sourcea5c0f9dc retains152matching instruction streams/304selected allocation-phase slices under default and GC-stressed execution; this is not other-target runtime parity."
       ],
       "parentScope": "B369 committed7798e1f with152matching instruction streams/304phase slices and64Debug/64Release importer controls. All five fresh child sessions are archived after exact packet preservation and integration; no child response remains outstanding.",
       "parallelPackets": [
@@ -426,7 +426,38 @@
         "Other-target implementation and new tooling infrastructure are not prerequisites for continuing Windows-x64 execution."
       ]
     },
-    "nextAction": "SysV classifier, multireg helpers and Swift helpers are validated in source1b621375473816b64c93991ae5e63fb848aefc0e:61Debug/61Release Linux-target cases and174Debug/172Release Windows controls. Continue ARM64 from arm64-integration-2.log (467semantic diagnostics), not the old declaration frontier. Background worker88a515cc-a043-47cc-b05d-44d3137538f4 is implementing the bounded native ARM64 register-metadata group without builds; parent owns shared build outputs and intrinsic/generator dependencies. Collect that packet, review native values, then rebuild the target and resolve the next concrete frontier. ARM classifier/HFA/declaration tests have not run; leave ARM-only work uncommitted until validated. All app-native children are archived. Swift parameter classification and SysV large-call descriptor layout remain explicit NYIs; no Linux/ARM64 runtime host or parity claim.",
+    "nextAction": "Finish the local ARM64 prerequisite commit from protected sourcea5c0f9dc1a0a314a37e9c96af7c458af7b853959 after verifying staged code/test blobs match its60-path manifest. All tests and fresh Windows execution controls pass; all background packets are collected and idle. Then continue whole ARM64 LinearScan.setFrameType and calleeSaveRegs policies against pinned lsra.cpp using the existing target test project and Windows controls; the new register metadata and CodeGen FP/LR policy remove their prerequisite blockers. Do not restart declaration/test-project investigation, contact archived sessions, push, or claim Linux/ARM64 runtime parity. Keep unrelated GT_CNS_STR costing B375 deferred.",
+    "arm64Prerequisites": {
+      "source": "a5c0f9dc1a0a314a37e9c96af7c458af7b853959",
+      "tree": "dc16fca05cfd130b7af0fca4be331b3675184ad0",
+      "nativePin": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+      "scope": "ARM64 classifier/HFA/HVA and target declarations/register banks; ADD/MOV/FMOV predicates; fixed SIMD and SVE mask-pattern metadata; xplat intrinsic importer; long-vector multiply spill effects; integer constant costs; GC return slots; FP/LR and Swift register-mask initialization; target-specific CSE spill costs; precise emitter/scalable-frame deferrals.",
+      "nativeMappings": [
+        "targetarm64.cpp:34-55 onward -> abi/Arm64Classifier.cs; targetarm64.h -> targetarm64/Globals*.cs and Target*.cs",
+        "emitarm64.cpp:2431-2503,2722-3292 -> emitarm64/Emitter.ImmediatePredicates.cs",
+        "hwintrinsic.cpp:2915-5803 -> compiler/Compiler.HWIntrinsicImportXplat.cs; simd.h:1903-2234 -> simd/SveMaskPattern.cs and Globals.SveMaskPattern.cs",
+        "gentree.cpp:6229-6292,24064-24125 -> Compiler.gt.cs integer costs and long-vector multiplication;34261-34411 -> gentree/ReturnTypeDesc.cs",
+        "codegenarm64.cpp:5171-5203 -> codegenarm64/CodeGen.FramePolicy.cs; regset.h:77-78 -> regsset/RegSet.cs; optcse.cpp:4659-4710 -> optcse/CSE_Heuristic.Profitability.cs",
+        "utils.h:79-87 -> utils/Globals.cs AreContiguous; generator preserves compiler.cpp target guard and hwintrinsiclist.h zero-valued non-xarch aliases"
+      ],
+      "tests": {
+        "host": "win-x64; full analysis, zero failures/skips in every final run",
+        "linuxArm64": "185Debug/185Release: arm64-target-debug-10.trx and arm64-target-release-1.trx",
+        "windowsArm64": "188Debug/188Release: arm64-windows-debug-1.trx and arm64-windows-release-1.trx",
+        "appleArm64": "186Debug/186Release: arm64-apple-debug-1.trx and arm64-apple-release-1.trx",
+        "linuxX64": "102Debug/102Release: sysv-target-debug-1.trx and sysv-target-release-1.trx",
+        "windowsX64": "350Debug/335Release: arm64-shared-windows-debug-1.trx and arm64-shared-windows-release-1.trx",
+        "regressions": "Removing long-multiply ancestor updates and projecting the prior spill policy gives6ARM64 failures/7controls and3SysV failures/4controls. Exact mutation patch and before TRX files are under artifacts\\parallel-port; restored files match the protected source."
+      },
+      "windowsExecution": {
+        "managedJitSha256": "7D03159F655706026251E1894F2954BF83A3FF627DFB68E859225CE78EB4D113",
+        "evidence": "artifacts\\object-allocation-host\\comparison-arm64-shared-default-1.json and comparison-arm64-shared-gcstress-1.json",
+        "result": "79default/73GC-stressed bodies,152matching instruction streams and304matching selected phase slices;32/29positive stack allocations and one stack-delegate invoke expansion per configuration",
+        "reproduce": "Publish protected source as a Debug win-x64 NativeAOT shared library. Run existing object-allocation-host\\capture.ps1 with explicit ManagedJit/ManagedSource and fresh RunIds, then compare.py --require-phases against unchanged native-default-1/native-gcstress-2."
+      },
+      "reproduce": "dotnet test tests\\Targets\\RyuJitSharp.Target.UnitTests.csproj -c Debug or Release -r win-x64 -p:TargetRuntimeIdentifier=<linux-arm64|win-arm64|osx-arm64|linux-x64>. Run shared Windows controls through the original Core test project. Full logs/TRX and validation-3\\manifest.json are under artifacts\\parallel-port.",
+      "limits": "Targeted managed unit coverage on Windows, not Linux/ARM64 runtime support. Whole ARM64 lowering/allocation/emission and scalable storage/frame paths remain incomplete. GT_CNS_STR cost discrepancy B375 is unchanged. Generated temporary Outputs were removed after byte-verifying both exported files."
+    },
     "crossTargetAbi": {
       "source": "1b621375473816b64c93991ae5e63fb848aefc0e",
       "tree": "e74796bf2dd6b4d5fb4906ba4f9dcc965d1fbbde",
@@ -442,7 +473,7 @@
       "regression": "sysv-descriptor-before-1.trx fails StructReturnInitializesOnlyTheDescriptorRegisters without new ReturnTypeDesc(): expected two registers, observed four. Restored source passes all61Debug target cases.",
       "representation": "Swift cache reuses SwiftLoweringMap with boxed records and readonly references stable across dictionary growth/GC; publish each record only after EE lowering completes.",
       "reproduce": "dotnet test tests\\Core\\RyuJitSharp.UnitTests.csproj -c Debug or Release -r win-x64 -p:TargetRuntimeIdentifier=linux-x64 with the three exact class filters above and full analysis. Native algorithm source and frozen managed source are independently identified.",
-      "limits": "Managed Linux-target unit behavior executed on a Windows host, not Linux runtime execution or phase/codegen parity. Swift parameter-classifier activation and System V large-call descriptor layout remain explicit CORJIT_SKIPPED paths. ARM64 remains uncompiled WIP."
+      "limits": "Managed Linux-target unit behavior executed on a Windows host, not Linux runtime execution or phase/codegen parity. Swift parameter-classifier activation and System V large-call descriptor layout remain explicit CORJIT_SKIPPED paths. Later ARM64 progress is tracked separately in arm64Prerequisites."
     },
     "crossTargetBootstrap": {
       "snapshot": "fca1f96fee67885f06a4ac32559d97cc4f0ba796",

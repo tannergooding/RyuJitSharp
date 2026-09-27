@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG && TARGET_AMD64
+#if DEBUG
 using System.Collections.Generic;
 using System.Numerics;
 
@@ -13,6 +13,9 @@ public partial class Emitter
 {
     private void emitCheckIGList()
     {
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Instruction-group validation outside AMD64 is not ported.");
+#else
         List<(insGroup Group, instrDesc Descriptor)> instructions = [];
         ulong currentOffset = 0;
         insGroup? previous = null;
@@ -108,6 +111,7 @@ public partial class Emitter
             }
             while (emitPrevID(ref group, ref id));
         }
+#endif
     }
 }
 #endif

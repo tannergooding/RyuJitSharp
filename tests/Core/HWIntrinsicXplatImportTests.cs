@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -11,10 +12,11 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
-#if FEATURE_HW_INTRINSICS && FEATURE_SIMD && TARGET_XARCH
+#if FEATURE_HW_INTRINSICS && FEATURE_SIMD && (TARGET_XARCH || TARGET_ARM64)
 [NonParallelizable]
 internal static unsafe class HWIntrinsicXplatImportTests
 {
+#if TARGET_XARCH
     [TestCase(NI_Vector_ConvertToDouble, TYP_LONG)]
     [TestCase(NI_Vector_ConvertToUInt32, TYP_FLOAT)]
     [TestCase(NI_Vector_FusedMultiplyAdd, TYP_FLOAT)]
@@ -75,6 +77,7 @@ internal static unsafe class HWIntrinsicXplatImportTests
             Assert.That(compiler.impStackHeight, Is.EqualTo(2));
         });
     }
+#endif
 
     [Test]
     public static void BinaryOperandsPreserveSourceOrder()
@@ -145,6 +148,158 @@ internal static unsafe class HWIntrinsicXplatImportTests
             Assert.That(compiler.impStackHeight, Is.Zero);
         });
     }
+
+#if TARGET_ARM64
+    [TestCase(TYP_LONG, (byte)8, false)]
+    [TestCase(TYP_LONG, (byte)8, true)]
+    [TestCase(TYP_LONG, (byte)16, false)]
+    [TestCase(TYP_LONG, (byte)16, true)]
+    [TestCase(TYP_ULONG, (byte)8, false)]
+    [TestCase(TYP_ULONG, (byte)8, true)]
+    [TestCase(TYP_ULONG, (byte)16, false)]
+    [TestCase(TYP_ULONG, (byte)16, true)]
+    public static void LongMultiplicationEvaluatesEachOperandOnceAndPropagatesSpillEffects(
+        var_types baseType, byte size, bool scalarSecond)
+    {
+        WithImporter(compiler => {
+            var type = size == 8 ? TYP_SIMD8 : TYP_SIMD16;
+            var first = new GenTreeIndir(genTreeOps.GT_IND, type,
+                compiler.gtNewIconNode(TYP_I_IMPL, 0x1234)) {
+                Flags = GenTreeFlags.GTF_GLOB_REF | GenTreeFlags.GTF_EXCEPT,
+            };
+            var second = new GenTreeIndir(genTreeOps.GT_IND, scalarSecond ? TYP_LONG : type,
+                compiler.gtNewIconNode(TYP_I_IMPL, 0x5678)) {
+                Flags = GenTreeFlags.GTF_GLOB_REF | GenTreeFlags.GTF_EXCEPT,
+            };
+
+            var result = compiler.gtNewSimdBinOpNode(genTreeOps.GT_MUL, type, first, second, baseType, size);
+            var loads = new List<GenTree>();
+            var stores = 0;
+            CheckEffects(result);
+
+            Assert.That(loads, Is.EqualTo(new GenTree[] { first, second }));
+            Assert.That(stores, Is.EqualTo(size == 16 ? 2 : 0));
+            Assert.That(compiler.lvaCount, Is.EqualTo(size == 16 ? 5 : 3));
+
+            void CheckEffects(GenTree node)
+            {
+                if (node.Oper == genTreeOps.GT_IND)
+                {
+                    loads.Add(node);
+                }
+                else if (node.Oper == genTreeOps.GT_STORE_LCL_VAR)
+                {
+                    stores++;
+                }
+
+                foreach (var operand in node.Operands)
+                {
+                    var effects = operand.Flags & GenTreeFlags.GTF_ALL_EFFECT;
+                    Assert.That(node.Flags & effects, Is.EqualTo(effects), node.Oper.ToString());
+                    CheckEffects(operand);
+                }
+            }
+        });
+    }
+
+    [TestCase(NI_Vector_AddSaturate, TYP_INT, (byte)16, NI_AdvSimd_AddSaturate)]
+    [TestCase(NI_Vector_AddSaturate, TYP_LONG, (byte)8, NI_AdvSimd_AddSaturateScalar)]
+    [TestCase(NI_Vector_SubtractSaturate, TYP_LONG, (byte)8, NI_AdvSimd_SubtractSaturateScalar)]
+    public static void IntegerSaturationUsesAdvSimdAndPreservesOperandOrder(
+        NamedIntrinsic operation, var_types baseType, byte size, NamedIntrinsic expected)
+    {
+        WithImporter(compiler => {
+            CORINFO_SIG_INFO sig = default;
+            sig.numArgs = 2;
+            var type = size == 8 ? TYP_SIMD8 : TYP_SIMD16;
+            compiler.lvaTable[0].Type = type;
+            compiler.lvaTable[1].Type = type;
+            var first = new GenTreeLclVar(type, 0);
+            var second = new GenTreeLclVar(type, 1);
+            compiler.impPushOnStack(first, new typeInfo(type));
+            compiler.impPushOnStack(second, new typeInfo(type));
+
+            var result = Import(compiler, operation, default, default, in sig, default,
+                baseType, type, size, false);
+
+            Assert.That(result, Is.TypeOf<GenTreeHWIntrinsic>());
+            var node = result!.AsHWIntrinsic();
+            Assert.That(node.HWIntrinsicId, Is.EqualTo(expected));
+            Assert.That(node.GetOp(1), Is.SameAs(first));
+            Assert.That(node.GetOp(2), Is.SameAs(second));
+            Assert.That(compiler.impStackHeight, Is.Zero);
+        });
+    }
+
+    [Test]
+    public static void LongCreateSequenceFallsBackBeforePoppingVariableIncrement()
+    {
+        WithImporter(compiler => {
+            CORINFO_SIG_INFO sig = default;
+            sig.numArgs = 2;
+            compiler.lvaTable[0].Type = TYP_LONG;
+            compiler.lvaTable[1].Type = TYP_LONG;
+            compiler.impPushOnStack(new GenTreeLclVar(TYP_LONG, 0), new typeInfo(TYP_LONG));
+            compiler.impPushOnStack(new GenTreeLclVar(TYP_LONG, 1), new typeInfo(TYP_LONG));
+
+            var result = Import(compiler, NI_Vector_CreateSequence, default, default, in sig, default,
+                TYP_LONG, TYP_SIMD16, 16, false);
+
+            Assert.That(result, Is.Null);
+            Assert.That(compiler.impStackHeight, Is.EqualTo(2));
+        });
+    }
+
+    [TestCase(-1)]
+    [TestCase(4)]
+    public static void OutOfRangeWithElementFallsBackBeforePopping(int lane)
+    {
+        WithImporter(compiler => {
+            CORINFO_SIG_INFO sig = default;
+            sig.numArgs = 3;
+            compiler.impPushOnStack(new GenTreeLclVar(TYP_SIMD16, 0), new typeInfo(TYP_SIMD16));
+            compiler.impPushOnStack(compiler.gtNewIconNode(TYP_INT, lane), new typeInfo(TYP_INT));
+            compiler.lvaTable[2].Type = TYP_INT;
+            compiler.impPushOnStack(new GenTreeLclVar(TYP_INT, 2), new typeInfo(TYP_INT));
+
+            var result = Import(compiler, NI_Vector_WithElement, default, default, in sig, default,
+                TYP_INT, TYP_SIMD16, 16, false);
+
+            Assert.That(result, Is.Null);
+            Assert.That(compiler.impStackHeight, Is.EqualTo(3));
+        });
+    }
+
+    [Test]
+    public static void VariableWithElementDefersExpansionWithMethodAndOperandOrder()
+    {
+        WithImporter(compiler => {
+            CORINFO_SIG_INFO sig = default;
+            sig.numArgs = 3;
+            compiler.lvaTable[1].Type = TYP_INT;
+            compiler.lvaTable[2].Type = TYP_INT;
+            var vector = new GenTreeLclVar(TYP_SIMD16, 0);
+            var index = new GenTreeLclVar(TYP_INT, 1);
+            var value = new GenTreeLclVar(TYP_INT, 2);
+            compiler.impPushOnStack(vector, new typeInfo(TYP_SIMD16));
+            compiler.impPushOnStack(index, new typeInfo(TYP_INT));
+            compiler.impPushOnStack(value, new typeInfo(TYP_INT));
+            var method = (CORINFO_METHOD_STRUCT_*)1;
+
+            var result = Import(compiler, NI_Vector_WithElement, default, method, in sig, default,
+                TYP_INT, TYP_SIMD16, 16, false);
+
+            Assert.That(result, Is.TypeOf<GenTreeHWIntrinsic>());
+            var node = result!.AsHWIntrinsic();
+            Assert.That(node.HWIntrinsicId, Is.EqualTo(NI_Vector_WithElement));
+            Assert.That(node.GetOp(1), Is.SameAs(vector));
+            Assert.That(node.GetOp(2), Is.SameAs(index));
+            Assert.That(node.GetOp(3), Is.SameAs(value));
+            Assert.That(node.MethodHandle == method, Is.True);
+            Assert.That(compiler.impStackHeight, Is.Zero);
+        });
+    }
+#endif
 
     private static void WithImporter(Action<Compiler> test)
     {

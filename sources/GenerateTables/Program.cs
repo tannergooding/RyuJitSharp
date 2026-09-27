@@ -215,9 +215,11 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+#if TARGET_XARCH
     private void compInitVarTypeCalleeTrashRegMasks()
     {
 {{compInitVarTypeCalleeTrashRegMasksBuilder}}    }
+#endif
 
     private void gtDispIconHandleFlag(GenTreeIntCon intCon)
     {
@@ -844,6 +846,12 @@ namespace RyuJitSharp;
 
 public partial struct HWIntrinsicInfo
 {
+#if FEATURE_HW_INTRINSICS && !TARGET_XARCH
+    // hwintrinsiclist.h defines these xarch-only flags as zero for shared entries.
+    private const HWIntrinsicFlag HW_Flag_AvxOnlyCompatible = HW_Flag_NoFlag;
+    private const HWIntrinsicFlag HW_Flag_NoContainment = HW_Flag_NoFlag;
+#endif
+
     private static ReadOnlySpan<HWIntrinsicCategory> s_categories => [
 {{categoryBuilder}}
     ];

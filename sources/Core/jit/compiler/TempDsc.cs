@@ -74,7 +74,7 @@ public sealed class TempDsc
     {
 #if TARGET_ARM64
         // Cannot adjust temporary offsets on the UnknownSizeFrame.
-        assert(!varTypeHasUnknownSize(tdType));
+        assert(!varTypeHasUnknownSize(_tdType));
 #endif
 
         tdTempOffs = _tdOffs + offs;

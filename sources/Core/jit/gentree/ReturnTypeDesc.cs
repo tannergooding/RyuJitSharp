@@ -271,13 +271,12 @@ public struct ReturnTypeDesc
                 // a non-HFA struct returned using two registers
                 assert(structSize is > TARGET_POINTER_SIZE and <= (2 * TARGET_POINTER_SIZE));
 
-                Unsafe.SkipInit(out InlineArray2<CorInfoGCType> inlineGcPtrs);
-                var gcPtrs = (Span<CorInfoGCType>)(inlineGcPtrs);
-                compiler.info.compCompHnd->getClassGClayout(retClsHnd, (byte*)(&gcPtrs.e0));
+                var gcPtrs = stackalloc CorInfoGCType[2] { TYPE_GC_NONE, TYPE_GC_NONE };
+                compiler.info.compCompHnd->getClassGClayout(retClsHnd, gcPtrs);
 
                 for (byte i = 0; i < 2; i++)
                 {
-                    _regType[i] = compiler.GetJitGCType(gcPtrs[i]);
+                    _regType[i] = compiler.getJitGCType(gcPtrs[i]);
                 }
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64
                 assert(structSize is > sizeof(float) and <= (2 * TARGET_POINTER_SIZE));

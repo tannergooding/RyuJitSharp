@@ -46,11 +46,11 @@ public partial struct RegSet
         rsMaskResvd = RBM_NONE;
 
 #if SWIFT_SUPPORT
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
         _rsIntCalleeSavedMask = new regMaskTP(SRBM_INT_CALLEE_SAVED);
         _rsAllCalleeSavedMask = new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED, SRBM_MSK_CALLEE_SAVED);
 #else
-        NYI("RegSet Swift callee-saved register masks outside AMD64");
+        NYI("RegSet Swift callee-saved register masks outside AMD64 and ARM64");
         fatal(CORJIT_IMPLLIMITATION);
 #endif
 #endif

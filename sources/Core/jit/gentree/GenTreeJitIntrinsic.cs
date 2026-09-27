@@ -122,6 +122,11 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
         _spillFlags = tree._spillFlags;
     }
 
+#if TARGET_ARM64
+    private bool NeedsConsecutiveRegisters =>
+        (HWIntrinsicInfo.lookupFlags(_hwIntrinsicId) & HW_Flag_NeedsConsecutiveRegisters) != 0;
+#endif
+
     /// <summary> Get regNumber of i'th position.</summary>
     /// <param name="idx">register position.</param>
     /// <returns>Returns regNumber assigned to i'th position.</returns>

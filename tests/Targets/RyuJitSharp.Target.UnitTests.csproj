@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\sources\Core\RyuJitSharp.csproj" />
+    <Compile Include="..\Core\AbiPassingInformationTests.cs" Link="AbiPassingInformationTests.cs" />
+    <Compile Include="..\Core\Arm64*Tests.cs" Link="%(Filename)%(Extension)" />
+    <Compile Include="..\Core\CSELiveAcrossCallCostTests.cs" Link="CSELiveAcrossCallCostTests.cs" />
+    <Compile Include="..\Core\EnumUtilityTests.cs" Link="EnumUtilityTests.cs" />
+    <Compile Include="..\Core\HWIntrinsicXplatImportTests.cs" Link="HWIntrinsicXplatImportTests.cs" />
+    <Compile Include="..\Core\SwiftAbiTests.cs" Link="SwiftAbiTests.cs" />
+    <Compile Include="..\Core\SysVX64ClassifierTests.cs" Link="SysVX64ClassifierTests.cs" />
+  </ItemGroup>
+
+</Project>

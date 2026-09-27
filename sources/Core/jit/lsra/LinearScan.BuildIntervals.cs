@@ -17,11 +17,17 @@ public sealed partial class LinearScan
         }
 
         setRegisterOrder(REG_VAR_ORDER);
+#if TARGET_AMD64
         setRegisterOrder(_evexIsSupported ? REG_VAR_ORDER_FLT_EVEX : REG_VAR_ORDER_FLT);
+#else
+        setRegisterOrder(REG_VAR_ORDER_FLT);
+#endif
+#if TARGET_XARCH
         if (_evexIsSupported)
         {
             setRegisterOrder(REG_VAR_ORDER_MSK);
         }
+#endif
     }
 
     private void setRegisterOrder(ReadOnlySpan<regNumber> registers)

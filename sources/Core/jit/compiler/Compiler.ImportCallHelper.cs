@@ -2472,7 +2472,7 @@ public partial class Compiler
                         }
 
 #if TARGET_ARM64
-                        if (compOpportunisticallyDependsOn(InstructionSet_Atomics))
+                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_Atomics))
 #endif
                         {
                             assert(sigInfo.numArgs is 2);
@@ -2985,8 +2985,8 @@ public partial class Compiler
                         //        Vector64.Create{ScalarUnsafe}(x)
                         //    ).ToScalar();
 
-                        compiler.impSpillSideEffect(spillGlobEffects: true, stackState.esStackDepth - 3, "Spilling op1 side effects for FusedMultiplyAdd");
-                        compiler.impSpillSideEffect(spillGlobEffects: true, stackState.esStackDepth - 2, "Spilling op2 side effects for FusedMultiplyAdd");
+                        compiler.impSpillSideEffect(spillGlobEffects: true, compiler.stackState.esStackDepth - 3, "Spilling op1 side effects for FusedMultiplyAdd");
+                        compiler.impSpillSideEffect(spillGlobEffects: true, compiler.stackState.esStackDepth - 2, "Spilling op2 side effects for FusedMultiplyAdd");
 
                         var op3 = compiler.impImplicitR4orR8Cast(compiler.impPopStack().val, callType);
                         var op2 = compiler.impImplicitR4orR8Cast(compiler.impPopStack().val, callType);
@@ -3001,7 +3001,7 @@ public partial class Compiler
                         // Note that AdvSimd.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 + op2 * op3
                         // while Math{F}.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 * op2 + op3
 
-                        retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD8, op3, op2, op1, NI_AdvSimd_FusedMultiplyAddScalar, simdBaseType, 8);
+                        retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD8, NI_AdvSimd_FusedMultiplyAddScalar, simdBaseType, 8, op3, op2, op1);
                         retNode = compiler.gtNewSimdToScalarNode(callType, retNode, simdBaseType, 8);
                         break;
 #endif

@@ -856,6 +856,16 @@ public partial class Compiler
     public int REG_INT_COUNT => REG_INT_LAST - REG_INT_FIRST + 1;
 
     public regNumber REG_INT_LAST => regIntLast;
+#else
+    public int CNT_CALLEE_TRASH_FLOAT => Globals.CNT_CALLEE_TRASH_FLOAT;
+
+    public int CNT_CALLEE_TRASH_INT => CNT_CALLEE_TRASH;
+
+    public regMask SRBM_FLT_CALLEE_TRASH => Globals.SRBM_FLT_CALLEE_TRASH;
+
+    public regMask SRBM_INT_CALLEE_TRASH => Globals.SRBM_INT_CALLEE_TRASH;
+
+    public regNumber REG_INT_LAST => Globals.REG_INT_LAST;
 #endif
 
 #if TARGET_XARCH
@@ -864,6 +874,8 @@ public partial class Compiler
     public regMask SRBM_MSK_CALLEE_TRASH => srbmMskCalleeTrash;
 
     public int CNT_CALLEE_TRASH_MASK => cntCalleeTrashMask;
+#else
+    public int CNT_CALLEE_TRASH_MASK => Globals.CNT_CALLEE_TRASH_MASK;
 #endif
 
     /// <summary>Are we running a replay under SuperPMI?</summary>
@@ -1804,7 +1816,7 @@ public partial class Compiler
                     assert(structSize > TARGET_POINTER_SIZE);
 
                     // TODO-SVE: For now, we always pass Vector<T> by reference. Support passing Vector<T> in Z registers.
-                    if (structMightRepresentSimdType(clsHnd) && (getBaseTypeAndSizeOfSIMDType(clsHnd, out var simdSize) is not TYP_UNDEF) && (simdSize is SIZE_UNKNOWN))
+                    if (structMightRepresentSimdType(clsHnd) && (getBaseTypeAndSizeOfSimdType(clsHnd, out var simdSize) is not TYP_UNDEF) && (simdSize is SIZE_UNKNOWN))
                     {
                         howToReturnStruct = SPK_ByReference;
                         useType = TYP_UNKNOWN;

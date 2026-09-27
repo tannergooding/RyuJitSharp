@@ -16,6 +16,30 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: ARM64 ABI and compiler prerequisites
+
+ARM64 now compiles with full analysis in Debug and Release. Its classifier
+preserves HFA/HVA banks, register exhaustion, Windows varargs and Apple packed
+stack slots. Target register metadata, immediate encodings, fixed-width SIMD/mask
+queries, intrinsic importing, two-register GC return layouts and FP/LR placement
+policy have focused coverage across all three ABI variants.
+
+Integration exposed an unsigned-enum assertion helper defect, missing assignment
+flags after spilling long-vector multiply operands, and incorrect cross-call CSE
+spill costs for ARM64 and SysV. The fixes retain native algorithms and have
+before-fix behavioral failures, not just successful compilation.
+
+Targeted suites pass 185 Linux-ARM64, 188 Windows-ARM64 and 186 Apple-ARM64 cases
+in each configuration. Linux-x64 controls pass 102 in each, and shared Windows-x64
+controls pass 350 Debug/335 Release. A fresh Windows NativeAOT JIT retains all
+152 matching instruction streams and 304 selected allocation-phase slices,
+including default and GC-stressed execution of the unchanged upstream corpus.
+
+The non-Windows target results are managed unit tests on Windows, not runtime
+parity. ARM64 lowering, register-allocation policies, instruction recording and
+scalable frame/storage paths still contain explicit limitations. The unchanged
+string-constant cost discrepancy is recorded separately as B375.
+
 ## 2026-09-27: SysV classification and Swift ABI helpers
 
 The SysV x64 classifier now preserves independent integer/floating register

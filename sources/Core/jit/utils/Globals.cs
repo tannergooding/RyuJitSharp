@@ -57,25 +57,20 @@ public partial class Globals
     ];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe bool AreContiguous<TEnum>(TEnum value1, TEnum value2)
+    public static bool AreContiguous<TEnum>(TEnum value1, TEnum value2)
         where TEnum : unmanaged, Enum
     {
-        if (sizeof(TEnum) == sizeof(byte))
-        {
-            return ((byte)(object)(value1) + 1) == (byte)(object)(value2);
-        }
-        else if (sizeof(TEnum) == sizeof(short))
-        {
-            return ((short)(object)(value1) + 1) == (short)(object)(value2);
-        }
-        else if (sizeof(TEnum) == sizeof(int))
-        {
-            return ((int)(object)(value1) + 1) == (int)(object)(value2);
-        }
-        else
-        {
-            return ((long)(object)(value1) + 1) == (long)(object)(value2);
-        }
+        return Type.GetTypeCode(typeof(TEnum)) switch {
+            TypeCode.SByte => (Unsafe.BitCast<TEnum, sbyte>(value1) + 1) == Unsafe.BitCast<TEnum, sbyte>(value2),
+            TypeCode.Byte => (Unsafe.BitCast<TEnum, byte>(value1) + 1) == Unsafe.BitCast<TEnum, byte>(value2),
+            TypeCode.Int16 => (Unsafe.BitCast<TEnum, short>(value1) + 1) == Unsafe.BitCast<TEnum, short>(value2),
+            TypeCode.UInt16 => (Unsafe.BitCast<TEnum, ushort>(value1) + 1) == Unsafe.BitCast<TEnum, ushort>(value2),
+            TypeCode.Int32 => (Unsafe.BitCast<TEnum, int>(value1) + 1) == Unsafe.BitCast<TEnum, int>(value2),
+            TypeCode.UInt32 => unchecked(Unsafe.BitCast<TEnum, uint>(value1) + 1) == Unsafe.BitCast<TEnum, uint>(value2),
+            TypeCode.Int64 => (Unsafe.BitCast<TEnum, long>(value1) + 1) == Unsafe.BitCast<TEnum, long>(value2),
+            TypeCode.UInt64 => unchecked(Unsafe.BitCast<TEnum, ulong>(value1) + 1) == Unsafe.BitCast<TEnum, ulong>(value2),
+            _ => throw new UnreachableException(),
+        };
     }
 
     public static bool AreContiguous<TEnum>(params ReadOnlySpan<TEnum> values)

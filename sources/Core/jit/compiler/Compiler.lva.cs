@@ -908,9 +908,7 @@ public partial class Compiler
 #if TARGET_ARM64
         if (lvaIsUnknownSizeLocal(lclNum))
         {
-            ref var varDsc = ref lvaGetDesc(lclNum);
-            var offset = unkSizeFrame.GetAddressingOffset(varDsc);
-            jitprintf($"[{REG_UNKBASE.Name,2}{(offset < 0 ? "-" : "+")}0x{(offset < 0 ? -offset : offset):X2}*{((varDsc.Type is TYP_MASK) ? "PL" : "VL")}] ");
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM64 unknown-size frame addressing is not ported.");
         }
         else
 #endif
@@ -972,7 +970,7 @@ public partial class Compiler
 
 #if TARGET_ARM && PROFILING_SUPPORTED
             var isPrespilledArg = varDsc.lvIsParam && compIsProfilerHookNeeded && lvaIsPreSpilled(varNum, codeGen.RegSet.rsMaskPreSpillRegs(false));
-#elif TARGET_ARM 
+#elif !TARGET_AMD64
             var isPrespilledArg = false;
 #endif
 
@@ -1125,6 +1123,7 @@ public partial class Compiler
         }
 
 #elif TARGET_ARM64
+        assert(codeGen is not null);
         if (fpBased && !suppressFPtoSPRewrite && !codeGen.IsFramePointerRequired && (varOffset < 0) && !opts.IsOSR && (lvaDoneFrameLayout == FINAL_FRAME_LAYOUT) && codeGen.IsSaveFpLrWithAllCalleeSavedRegisters)
         {
             var spVarOffset = varOffset + codeGen.genSPtoFPdelta;

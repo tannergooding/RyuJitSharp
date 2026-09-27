@@ -1285,10 +1285,9 @@ native `fgCanTailCallViaJitHelper` rejects every other target. The generic call
 branch retains an explicit rejection rather than accepting an unexpectedly
 flagged AMD64 call. Windows-AMD64 fast-tailcall lowering is implemented.
 
-`RegSet` initializes Swift callee-saved masks under `SWIFT_SUPPORT`, as native
-does. Its non-AMD64 Swift path reports NYI and then terminates with
-`fatal(CORJIT_IMPLLIMITATION)` until the ARM64 target masks are available.
-The native constructor remains in the residual tree.
+`RegSet` initializes Swift callee-saved masks for AMD64 and ARM64 using their
+target masks. Other Swift targets report NYI and then terminate with
+`fatal(CORJIT_IMPLLIMITATION)`. The native constructor remains in the residual tree.
 
 The SysV x64 classifier, multireg return helpers and Swift argument/special-parameter
 helpers have Linux-target unit coverage on a Windows host. This does not establish
@@ -1296,6 +1295,21 @@ Linux runtime support. Swift parameter classification in `lvaClassifyParameterAb
 and `Emitter.instrDescCGCA.NativeLogicalSize` under `UNIX_AMD64_ABI` still terminate
 with `CORJIT_SKIPPED`. The latter requires the native GC-type/async bitfield layout;
 the Windows descriptor size must not be reused without target layout proof.
+
+ARM64 target metadata, ABI classification, immediate predicates, fixed-width
+SIMD/mask queries, cross-platform intrinsic importing, FP/LR placement policy
+and two-register GC return layouts now compile and have managed unit coverage
+for Linux, Windows and Apple ABI variants on a Windows-x64 host. There is no
+verified ARM64 runtime host or generated-code parity result.
+
+Non-AMD64 `Emitter.RequireSupportedInstructionRecording`, `emitCheckIGList`
+(Debug), `emitGCregDeadUpdMask`, and `CodeGen.inst_ST_RV` terminate with
+`CORJIT_SKIPPED`; their instruction-recording, group-validation, GC-output and
+spill-store bodies remain unported. Unhandled-instruction performance diagnostics
+also terminate outside AMD64 in Debug; Release retains the native default costs.
+ARM64 unknown-size frame-address printing terminates with `CORJIT_SKIPPED`
+pending `unkSizeFrame`. Scalable vector/mask constant queries remain explicitly
+unsupported rather than reading fixed-width storage.
 
 `LinearScan.setFrameType` implements AMD64 frame selection. Other targets report
 NYI and terminate with `CORJIT_IMPLLIMITATION`; their double-alignment and

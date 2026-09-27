@@ -4458,7 +4458,7 @@ public partial class Compiler
                     // In contrast, we can only use multi-reg calls directly if they have the exact same ABI.
                     // Calling convention equality is a conservative approximation for that check.
 #if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
-                    if (!call.IsVarargs)
+                    if (!call.Args.IsVarArgs)
                     {
                         // TODO-Review: this seems unnecessary. Return ABI doesn't change under varargs.
                         return op;
@@ -16501,7 +16501,7 @@ public partial class Compiler
                 _ = impPopStack();
 
                 hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
-                result = gtNewScalarHWIntrinsicNode(TYP_INT, op1, hwintrinsic);
+                result = gtNewScalarHWIntrinsicNode(TYP_INT, hwintrinsic, op1);
                 baseType = TYP_INT;
 #endif
 #endif
@@ -16711,7 +16711,7 @@ public partial class Compiler
                 _ = impPopStack();
 
                 compFloatingPointUsed = true;
-                result = new GenTreeIntrinsic(TYP_INT, op1, NI_PRIMITIVE_PopCount, methodHandle: nullptr);
+                result = new GenTreeIntrinsic(TYP_INT, op1, NI_PRIMITIVE_PopCount, methodHandle: null);
                 baseType = TYP_INT;
 #endif
 #endif
@@ -16821,11 +16821,11 @@ public partial class Compiler
                     result = gtNewLclvNode(baseType, tmp);
                 }
 #elif TARGET_ARM64
-            // Pop the value from the stack
-            _ = impPopStack();
+                // Pop the value from the stack
+                _ = impPopStack();
 
-            result = new GenTreeIntrinsic(TYP_INT, op1, NI_PRIMITIVE_TrailingZeroCount, methodHandle: nullptr);
-            baseType = TYP_INT;
+                result = new GenTreeIntrinsic(TYP_INT, op1, NI_PRIMITIVE_TrailingZeroCount, methodHandle: null);
+                baseType = TYP_INT;
 #endif
 #endif
 

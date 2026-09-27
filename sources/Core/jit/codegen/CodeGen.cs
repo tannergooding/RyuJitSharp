@@ -257,7 +257,7 @@ public sealed partial class CodeGen : ICodeGen
             else
             {
                 // We place the saved frame pointer immediately above the outgoing argument space.
-                delta = _compiler.lvaOutgoingArgSpaceSize;
+                delta = _compiler.lvaOutgoingArgSpaceSize.Value;
             }
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64
             assert(_compiler.compCalleeRegsPushed >= 2); // always FP/RA.

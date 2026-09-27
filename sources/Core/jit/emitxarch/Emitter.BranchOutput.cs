@@ -288,6 +288,9 @@ public partial class Emitter
 
     private unsafe void emitGCregDeadUpdMask(regMaskTP regs, byte* addr)
     {
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "GC register output outside AMD64 is not ported.");
+#else
 #if DEBUG
         assert(emitIssuing);
 #endif
@@ -321,6 +324,7 @@ public partial class Emitter
             }
             emitThisByrefRegs &= ~(regMask)byrefRegs;
         }
+#endif
 #endif
     }
 }

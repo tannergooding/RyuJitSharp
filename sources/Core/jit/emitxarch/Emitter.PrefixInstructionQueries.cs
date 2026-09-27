@@ -10,9 +10,6 @@ public partial class Emitter
 {
     private static insFlags prefixFlags(instruction ins) => CodeGen.instInfo[(int)ins];
 
-    internal static bool IsSimdInstruction(instruction ins) =>
-        ins >= FIRST_SSE_INSTRUCTION && ins <= LAST_AVX512_INSTRUCTION;
-
     private static bool IsBMIInstruction(instruction ins) =>
         ins >= FIRST_BMI_INSTRUCTION && ins <= LAST_BMI_INSTRUCTION;
 
