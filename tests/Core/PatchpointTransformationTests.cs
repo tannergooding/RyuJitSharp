@@ -134,6 +134,7 @@ internal static unsafe class PatchpointTransformationTests
                 Assert.That(patchpoint.Oper, Is.EqualTo(GT_PATCHPOINT));
                 Assert.That(patchpoint.Flags & GenTreeFlags.GTF_CALL, Is.EqualTo(GenTreeFlags.GTF_CALL));
                 Assert.That(patchpoint.Op1.Oper, Is.EqualTo(GT_LCL_ADDR));
+                Assert.That(patchpoint.Op1.Type, Is.EqualTo(TYP_I_IMPL));
                 Assert.That(patchpoint.Op1.AsLclVarCommon().LclNum, Is.Zero);
                 Assert.That(patchpoint.Op2.AsIntCon().IconValue, Is.EqualTo((nint)ilOffset));
             }

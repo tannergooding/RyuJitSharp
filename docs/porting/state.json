@@ -12,12 +12,13 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Continue physical promotion and async state-machine transformation against 33baf8. OSR metadata publication is committed; parent next ports complete fgFixEntryFlowForOSR and its importer integration to preserve carried Tier0 state.",
+      "scope": "Complete async state-machine transformation against 33baf8. Physical promotion, OSR entry redirection and B333 native address/phase-status alignment are complete; parent next integrates the repaired async packet.",
       "doneWhen": [
         "Complete physical promotion including candidate selection, replacement, liveness and decomposition rather than activating a partial prerequisite.",
         "Complete async transformation including normal/tail awaits, continuation layout, suspension/resumption, live state, contexts and EH rather than activating only the wrapper.",
         "Publish complete native-equivalent OSR patchpoint frame metadata, preserving EE allocation/ownership, shadow locals, exposure, context/special offsets and callee-save encoding.",
         "Redirect OSR import to the designated entry, preserving weights and profile consistency; prove initialization is not repeated and carried Tier0 state survives actual OSR execution.",
+        "Preserve native integer-pointer patchpoint counter addresses and ActionPhase status semantics; verify the existing OSR operand and phase-boundary differences disappear without formatter normalization.",
         "Integrate named shared deltas, review each complete native closure and validate focused semantic/runtime evidence with existing corpora.",
         "Commit each completed subsystem separately, preserving the other lane's WIP, and continue remaining port dependencies."
       ],
@@ -25,7 +26,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "OSR metadata publisher committed ab68491, with B332 importer-redirection failure recorded rather than claimed as resumption parity. Physical promotion has passed reviewed-source integration and positive runtime comparison; parent completes its local commit before OSR entry work. Async closure is undergoing independent review. No publication authorized.",
+      "parentScope": "OSR metadata publisher ab68491, physical promotion e815afa and OSR entry redirection 94df2c8 are committed. B333 corrections now match native phase boundaries/statuses and emitted instructions in all six OSR bodies; commit then integrate the reviewed async packet. Async author has frozen the four-fix round; reviewer6356462f is verifying it. No publication authorized.",
       "deferred": "B311 optional metrics fixture, B318/B325 existing argument regressions, B307 EH node IDs, B320 static-data descriptions, B321-B323 profile diagnostics and remaining B315 physical-promotion/graph parity stay separate. B324 is corrected and tiered GDV/value execution now passes. No general argument-morph redesign.",
       "parallelPackets": [
         {
@@ -33,7 +34,7 @@
           "owner": "9e905421-71cc-4119-ab60-d762e4b27745",
           "files": "New async/AsyncTransformation files, Compiler.AsyncTransformation support and AsyncTransformationTests; parent owns shared deltas and the public TransformAsync entry.",
           "status": "in-progress",
-          "remainingBoundary": "Frozen16-file packet8D8R reviewed by6356462f: incorrect pre-morph Remove at five post-morph pseudoarg sites; stale continuation-offset block ownership after await splits; missing default NONFAULTING flags; broad diagnostic omissions. Author9e905421 is fixing all four with actual transformation regressions and complete diagnostic helpers/callsites. A new precise CallArgs post-morph removal partial is authorized; parent retains public activation/shared review. The pre-port zero-segment pseudoarg is supposed to be consumed by transformation, not an independently established lowering defect."
+          "remainingBoundary": "Author9e905421 froze review-frozen with12D12R including a tail-await transform: new CallArgs.RemoveUnsafe for all five post-morph removals, final-block offset replacement, NONFAULTING defaults and diagnostic restoration. Reviewer6356462f is checking all four repair obligations against native. Parent retains public activation and integrated/runtime validation. The pre-port zero-segment pseudoarg is supposed to be consumed by transformation, not an independently established lowering defect."
         },
         {
           "scope": "Complete profile instrumentation: count/edge, handle and value instrumentors plus preparation/core/inline-return wrapper.",
@@ -427,11 +428,11 @@
         "Non-xarch hardware-intrinsic folding and hashBv iterator/countBits/setLowest APIs. Native vector Intersects/XOR defects are recorded in B247/B246; their corrected algorithms are not authorized and those entire vector operations are deferred.",
         "The preexisting fgVerifyHandlerTab diagnostic stub and broader EH verification, outside the cleanup algorithm.",
         "Broader diagnostic parity beyond the complete B261 checker closure; do not count annotation checks as equivalent.",
-        "Actual OSR execution remains unverified; parent is now implementing the complete patchpoint metadata publisher as its next dependency-coherent batch.",
+        "Broader OSR execution remains unverified beyond the two strengthened carried-state loops; metadata and actual resumption are established for those cases.",
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit validated OSR entry source3cbe4fa23f4128f3640b923623a3b055f5752c8d:63D60R, six old-stub failures,29/143baseline, strengthened corpus once-only counters, matching native46/78-byte actual Tier1-OSR instructions. comparison-entry-3cbe-1.json retains B333 Tier0 lea bword formatting and throw-edge phase-status differences. Physical promotion committed e815afa. Next bound B333 investigation to these existing captures: full ProfileSynthesis.AdjustThrowEdgeLikelihoods already matches native source, so inspect input likelihood provenance rather than re-port its algorithm; reconcile lea formatting separately. Async author9e905421 still owns four review fixes and complete diagnostics; collect frozen round before activation. No push.",
+    "nextAction": "B333 is validated and complete: source c1e8cbf8bc2795baa1669a5cdc0ed4b68af1c2d1 passes180D154R, three old-address failures/seven controls and29/143baseline; comparison-contracts-c1e8-1.json matches all six OSR phase boundaries/statuses and emitted instruction sequences with initialization once. Raw dumps retain B322. Next collect reviewer6356462f's four-fix follow-up and integrate async review-frozen; author9e905421 reports12D12R with real tail-await coverage and is supplying the exact activation contract. Keep public activation parent-owned, validate actual native async execution and preserve old packets. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -466,6 +467,18 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "osrAddressAndPhaseContracts": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "sourceSnapshot": "c1e8cbf8bc2795baa1669a5cdc0ed4b68af1c2d1",
+        "manifest": "artifacts\\osr-contracts\\validation-1\\manifest.json",
+        "managedJit": "artifacts\\osr-contracts\\native-jit-1\\RyuJitSharp.dll",
+        "sha256": "2C9C181F5F8209AE017779255C9FA8AA53434FB1EA1E1D40CF759C96F248B875",
+        "tests": "180 Debug / 154 Release with full analysis: patchpoint transformations, profile synthesis, emitter display, exact PhaseTests class and OSR entry flow. No skipped tests.",
+        "oldProducerControl": "Source6690742a74b90b82e5a7f78e697263f8a7f7bb43 under artifacts\\osr-contracts\\validation-2 fails all three regular-patchpoint type assertions; seven ownership, forced-mode and flow controls pass.",
+        "executionBaseline": "artifacts\\upstream-refresh-33baf8\\osr-contracts-managed-matrix-1\\results.json:29 configurations,143 positive managed bodies, matching outputs and no fallback.",
+        "comparison": "artifacts\\osr-patchpoint\\comparison-contracts-c1e8-1.json compares fresh managed-contracts-c1e8-1 against unchanged native-strengthened-1: six selected bodies, matching headers/frames/offsets, once-only initialization, actual OSR carried-state reads, all phase boundaries/statuses and every emitted instruction line. Both Tier0 counter addresses are LCL_ADDR long and LEA spellings match. Raw whole dumps remain different; the first difference in every body is B322 deferred profile-check diagnostics. No whole-dump or raw-code-byte parity claim.",
+        "baselineFailures": "An initially broad PhaseTests substring also selected unrelated classes: five lowering assertions B334 and the B311 optional-metrics fixture fail identically in committed-source3cbe4fa. Both runs and exact failure names are retained; the final selection names the intended PhaseTests class without disabling tests."
+      },
       "upstreamRefresh": {
         "from": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
         "to": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
@@ -6334,10 +6347,17 @@
   },
   "sourceMap": [
     {
+      "area": "osr-counter-address-and-functor-phase-status",
+      "native": ["src\\coreclr\\jit\\patchpoint.cpp:187-191", "src\\coreclr\\jit\\compiler.h:gtNewLclVarAddrNode default type", "src\\coreclr\\jit\\compiler.cpp:4622-4628", "src\\coreclr\\jit\\phase.h:53-84"],
+      "csharp": ["sources\\Core\\jit\\patchpoint\\PatchpointTransformer.cs", "sources\\Core\\jit\\compiler\\Compiler.comp.cs:PHASE_ADJUST_THROW_LIKELIHOODS"],
+      "status": "Patchpoint counters use native TYP_I_IMPL addresses rather than GC byrefs. The throw-edge functor uses the Action overload, preserving native generic ActionPhase's discarded return and MODIFIED_EVERYTHING status. Member-function phase status forwarding and emitter GC qualifiers are unchanged.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
+    {
       "area": "osr-import-entry-flow",
       "native": ["src\\coreclr\\jit\\fgbasic.cpp:4006-4058"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.OSREntry.cs", "sources\\Core\\jit\\compiler\\Compiler.comp.cs:pre-import OSR dispatch"],
-      "status": "Complete fgFixEntryFlowForOSR redirects a new init block to the selected OSR entry, preserves original-entry identity, called count and profile flags, and invalidates profile consistency for a different original-entry loop header. Existing callsite remains between entry canonicalization and import. Six regression cases fail against old stub; strengthened runtime counters prove initialization executes once. Native actual Tier1-OSR instruction streams match for both carried-state loops. Other B333 dump differences remain explicit; native source retained.",
+      "status": "Complete fgFixEntryFlowForOSR redirects a new init block to the selected OSR entry, preserves original-entry identity, called count and profile flags, and invalidates profile consistency for a different original-entry loop header. Existing callsite remains between entry canonicalization and import. Six regression cases fail against old stub; strengthened runtime counters prove initialization executes once. Native actual Tier1-OSR instruction streams match for both carried-state loops. B333 is corrected; whole dumps retain B322. Native source retained.",
       "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     },
     {

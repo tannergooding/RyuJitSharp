@@ -15,6 +15,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: OSR address and phase-status alignment
+
+Patchpoint counter addresses now use native integer-pointer types rather than
+GC byrefs. The throw-edge phase also preserves the native functor wrapper's
+status contract instead of forwarding the helper's no-change result.
+
+All six strengthened OSR corpus bodies now match native phase boundaries,
+phase statuses and emitted instruction lines, including Tier0 counter-address
+loads and actual Tier1-OSR carried-state reads. Initialization still executes
+once. Whole dumps remain different at the previously recorded deferred
+profile-check diagnostics.
+
 ## 2026-09-26: OSR entry redirection and carried state
 
 OSR import now starts at the designated entry block rather than replaying the

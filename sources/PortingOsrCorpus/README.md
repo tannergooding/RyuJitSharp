@@ -60,3 +60,11 @@ once-only checks and emits native-matching Tier1-OSR instructions for this
 corpus. Its capture is `artifacts\osr-patchpoint\managed-entry-3cbe-1`;
 `comparison-entry-3cbe-1.json` records the remaining Tier0 operand-printing
 and OSR phase-status differences. These differences are not normalized away.
+
+Snapshot `c1e8cbf8bc2795baa1669a5cdc0ed4b68af1c2d1` corrects the counter
+address type and native functor phase-status contract. Its fresh capture is
+`artifacts\osr-patchpoint\managed-contracts-c1e8-1`;
+`comparison-contracts-c1e8-1.json` records matching phase boundaries, statuses
+and emitted instruction lines for all six bodies, with both initialization
+counts remaining one. Raw whole dumps still differ at the deferred
+profile-check diagnostics; this is not whole-dump or raw-code-byte parity.

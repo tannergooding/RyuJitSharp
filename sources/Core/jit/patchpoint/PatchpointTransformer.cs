@@ -96,7 +96,7 @@ public sealed class PatchpointTransformer
         // The helper returns either an OSR entry address or a skip address that
         // jumps past GT_PATCHPOINT's unconditional jump and resumes Tier0.
         var ilOffsetNode = _compiler.gtNewIconNode(TYP_INT, ilOffset);
-        var counterAddr = _compiler.gtNewLclVarAddrNode(TYP_BYREF, _ppCounterLclNum);
+        var counterAddr = _compiler.gtNewLclVarAddrNode(TYP_I_IMPL, _ppCounterLclNum);
         var patchpoint = _compiler.gtNewBinaryNode(GT_PATCHPOINT, TYP_VOID, counterAddr, ilOffsetNode);
         patchpoint.Flags |= GTF_CALL;
         _compiler.fgInsertStmtAtEnd(helperBlock, _compiler.gtNewStmt(patchpoint));

@@ -3457,7 +3457,11 @@ public partial class Compiler
             DoPhase(this, PHASE_DFS_BLOCKS3, fgDfsBlocksAndRemove);
 
             // Adjust heuristic-derived edge likelihoods into paths that are known to throw.
-            DoPhase(this, PHASE_ADJUST_THROW_LIKELIHOODS, () => ProfileSynthesis.AdjustThrowEdgeLikelihoods(this));
+            DoPhase(this, PHASE_ADJUST_THROW_LIKELIHOODS, () =>
+            {
+                // Native ActionPhase discards a functor's returned status.
+                _ = ProfileSynthesis.AdjustThrowEdgeLikelihoods(this);
+            });
 
             // Discover and classify natural loops (e.g. mark iterative loops as such).
             DoPhase(this, PHASE_FIND_LOOPS, optFindLoopsPhase);
