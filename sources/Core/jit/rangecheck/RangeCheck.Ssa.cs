@@ -148,7 +148,13 @@ public sealed partial class RangeCheck
     private void MergeAssertion(BasicBlock block, GenTree tree, ref Range range)
     {
 #if DEBUG
-        JITDUMP($"Merging assertions from pred edges of BB{block.bbNum:D2} for op [{tree.TreeId:D6}]\n");
+        if (_compiler.verbose)
+        {
+            var store = _compiler.vnStore;
+            assert(store is not null);
+            var vn = store.VNNormalValue(tree._vnPair.Conservative);
+            JITDUMP($"Merging assertions from pred edges of BB{block.bbNum:D2} for op [{tree.TreeId:D6}] ${vn:x}\n");
+        }
 #endif
         if (_compiler.AssertionCount < 1)
         {
@@ -166,6 +172,14 @@ public sealed partial class RangeCheck
             }
 
             assertions = _compiler.optGetEdgeAssertions(block, predecessor);
+#if DEBUG
+            if (!BitVecOps.MaybeUninit(assertions))
+            {
+                assert(assertions is not null);
+                JITDUMP($"Merge assertions created by {FMT_BB(predecessor.bbNum)} for {FMT_BB(block.bbNum)}\n");
+                Compiler.optDumpAssertionIndices(assertions, "\n");
+            }
+#endif
         }
         else if (tree.Oper.IsLocal)
         {

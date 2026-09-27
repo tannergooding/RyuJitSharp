@@ -1,7 +1,9 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.Compiler.optAssertionKind;
 using static RyuJitSharp.GenTreeFlags;
@@ -15,6 +17,77 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class RangeAnalysisTests
 {
+#if DEBUG
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "MergeAssertion")]
+    private static extern void MergeAssertion(RangeCheck analysis, BasicBlock block, GenTree tree, ref Range range);
+
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void AssertionMergeDiagnosticsPrintConservativeNormalValueAndPhiEdge(bool phi, bool verbose)
+    {
+        WithCompiler((compiler, store) =>
+        {
+            var block = new BasicBlock(null, null) { bbNum = 12 };
+            var predecessor = new BasicBlock(null, null) { bbNum = 7 };
+            var normal = store.VNForIntCon(42);
+            var exception = store.VNForFunc(TYP_REF, VNF_OverflowExc, normal);
+            var conservative = store.VNWithExc(normal, store.VNExcSetSingleton(exception));
+            GenTree tree;
+
+            if (phi)
+            {
+                compiler.fgFirstBB = predecessor;
+                var assertionIndex = compiler.optAddAssertion(
+                    Compiler.AssertionDsc.CreateConstantBound(compiler, VNF_GE, normal, store.VNForIntCon(0)));
+                Assert.That(assertionIndex, Is.EqualTo(1));
+                var traits = compiler.apTraits ?? throw new InvalidOperationException();
+                predecessor.bbAssertionOut = BitOps.MakeEmpty(traits);
+                BitOps.AddElemD(traits, predecessor.bbAssertionOut, assertionIndex - 1);
+                block.bbPreds = new FlowEdge(predecessor, block, null);
+                tree = new GenTreePhiArg(TYP_INT, 0, SsaConfig.RESERVED_SSA_NUM, predecessor);
+            }
+            else
+            {
+                tree = compiler.gtNewLclvNode(TYP_INT, 0);
+            }
+
+            tree._vnPair = new(store.VNForIntCon(7), conservative);
+            var range = new Range(new Limit(LimitType.Unknown));
+            using var stream = new MemoryStream();
+            using var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true);
+            var previous = Globals.s_jitstdout;
+            Globals.s_jitstdout = writer;
+            compiler.verbose = verbose;
+
+            try
+            {
+                MergeAssertion(compiler.GetRangeCheck(), block, tree, ref range);
+                writer.Flush();
+                var expected = "";
+
+                if (verbose)
+                {
+                    expected = $"Merging assertions from pred edges of BB12 for op [{tree.TreeId:D6}] ${normal:x}\n";
+
+                    if (phi)
+                    {
+                        expected += "Merge assertions created by BB07 for BB12\n#01\n";
+                    }
+                }
+
+                Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo(expected));
+                Assert.That(range.LowerLimit.IsUnknown && range.UpperLimit.IsUnknown, Is.True);
+            }
+            finally
+            {
+                Globals.s_jitstdout = previous;
+            }
+        });
+    }
+#endif
+
     [TestCase(TYP_BYTE, -128, 127)]
     [TestCase(TYP_UBYTE, 0, 255)]
     [TestCase(TYP_SHORT, -32768, 32767)]

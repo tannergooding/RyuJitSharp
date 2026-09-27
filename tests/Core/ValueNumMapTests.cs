@@ -224,6 +224,65 @@ internal static unsafe class ValueNumMapTests
     }
 
 #if DEBUG
+    [TestCase(nameof(ValueNumStore.VNForMapStore), false)]
+    [TestCase(nameof(ValueNumStore.VNForMapStore), true)]
+    [TestCase(nameof(ValueNumStore.VNForMapSelect), false)]
+    [TestCase(nameof(ValueNumStore.VNForMapSelect), true)]
+    [TestCase(nameof(ValueNumStore.VNForMapPhysicalSelect), false)]
+    [TestCase(nameof(ValueNumStore.VNForMapPhysicalSelect), true)]
+    public static void MapOperationDiagnosticsUseNativeValueNumberFormat(string operation, bool verbose)
+    {
+        WithStore((compiler, store, blocks) =>
+        {
+            compiler.compCurBB = blocks[0];
+            var physical = operation == nameof(ValueNumStore.VNForMapPhysicalSelect);
+            var map = store.VNForExpr(null, physical ? TYP_STRUCT : TYP_HEAP);
+            var index = store.VNForIntCon(4);
+            var value = store.VNForIntCon(5);
+            using var stream = new MemoryStream();
+            using var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true);
+            var previous = Globals.s_jitstdout;
+            Globals.s_jitstdout = writer;
+            compiler.verbose = verbose;
+
+            try
+            {
+                var result = operation switch
+                {
+                    nameof(ValueNumStore.VNForMapStore) => store.VNForMapStore(map, index, value),
+                    nameof(ValueNumStore.VNForMapSelect) => store.VNForMapSelect(VNK_Liberal, TYP_INT, map, index),
+                    nameof(ValueNumStore.VNForMapPhysicalSelect) =>
+                        store.VNForMapPhysicalSelect(VNK_Liberal, TYP_INT, map, 2, 4),
+                    _ => throw new ArgumentOutOfRangeException(nameof(operation)),
+                };
+                var prefix = operation switch
+                {
+                    nameof(ValueNumStore.VNForMapStore) =>
+                        $"    VNForMapStore(${map:x}, ${index:x}, ${value:x}):heap in {FMT_BB(blocks[0].bbNum)} returns ",
+                    nameof(ValueNumStore.VNForMapSelect) => $"    VNForMapSelect(${map:x}, ${index:x}):int returns ",
+                    nameof(ValueNumStore.VNForMapPhysicalSelect) => $"    VNForMapPhysicalSelect(${map:x}, [2:5]):int returns ",
+                    _ => throw new ArgumentOutOfRangeException(nameof(operation)),
+                };
+                writer.Flush();
+                var actual = Encoding.UTF8.GetString(stream.ToArray());
+
+                if (verbose)
+                {
+                    Assert.That(actual, Does.StartWith($"{prefix}${result:x}"));
+                    Assert.That(actual, Does.EndWith("\n"));
+                }
+                else
+                {
+                    Assert.That(actual, Is.Empty);
+                }
+            }
+            finally
+            {
+                Globals.s_jitstdout = previous;
+            }
+        });
+    }
+
     [Test]
     public static void FloatingConstantDumpsUseUcrtSpecialValuesAndSignedZero()
     {

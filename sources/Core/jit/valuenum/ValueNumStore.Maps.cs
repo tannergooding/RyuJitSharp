@@ -89,7 +89,7 @@ public sealed partial class ValueNumStore
 #if DEBUG
         if (_compiler.verbose)
         {
-            JITDUMP($"    VNForMapStore({map}, {index}, {value}):{VNMapTypeName(TypeOfVN(result))} " +
+            JITDUMP($"    VNForMapStore(${map:x}, ${index:x}, ${value:x}):{VNMapTypeName(TypeOfVN(result))} " +
                 $"in {FMT_BB(block.bbNum)} returns ");
             _compiler.vnPrint(result, 1);
             JITDUMP("\n");
@@ -123,7 +123,7 @@ public sealed partial class ValueNumStore
 #if DEBUG
         if (_compiler.verbose)
         {
-            JITDUMP($"    VNForMapSelect({map}, {index}):{VNMapTypeName(type)} returns ");
+            JITDUMP($"    VNForMapSelect(${map:x}, ${index:x}):{VNMapTypeName(type)} returns ");
             _compiler.vnPrint(result, 1);
             JITDUMP("\n");
         }
@@ -140,7 +140,7 @@ public sealed partial class ValueNumStore
 #if DEBUG
         if (_compiler.verbose)
         {
-            JITDUMP($"    VNForMapPhysicalSelect({map}, ");
+            JITDUMP($"    VNForMapPhysicalSelect(${map:x}, ");
             DumpPhysicalSelector(selector);
             JITDUMP($"):{VNMapTypeName(type)} returns ");
             _compiler.vnPrint(result, 1);

@@ -86,6 +86,11 @@ liberal/conservative roles. Other explicitly sequenced pair operations and the
 shared unique normal value are unchanged. All 97 baseline CSE phases now match
 without normalizing value numbers; this is not other-target or whole-dump parity.
 
+Range-assertion diagnostics include the conservative normal VN and phi-edge
+assertion indices. Precise map stores/selects and physical selects print native
+dollar-prefixed hexadecimal VNs (B330). All 34 affected lines in the two stress
+captures now match; the separate floating-tree cost difference remains open.
+
 SSA memory maps use the existing managed node-identity dictionary. The caller's
 shared-memory flag selects the map kind before the inline root supplies storage,
 preserving native aliasing and ownership. Shared all-successor visitation retains

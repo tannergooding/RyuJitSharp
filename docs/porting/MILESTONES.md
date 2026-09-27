@@ -15,6 +15,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Range and map value-number diagnostics
+
+Range assertion merging now prints the conservative normal value number and
+the selected phi-edge assertions. Precise map stores/selects and physical
+selects use native hexadecimal value-number notation rather than decimal IDs.
+The range and map algorithms are unchanged.
+
+All 34 affected diagnostic lines across both tree-splitting stress modes now
+match native, while all 38 complete stress phases, instruction traces and code
+sizes remain identical. The separately observed floating-tree cost discrepancy
+and native deferred-profile limitation still prevent whole-dump parity.
+
 ## 2026-09-27: Native paired value-number allocation order
 
 Six allocating paired exception and normal-unique operations now preserve

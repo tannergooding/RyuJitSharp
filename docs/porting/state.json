@@ -12,18 +12,18 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Trace and reconcile B340 liberal/conservative VN-number differences at their original producers, preserving semantic roles and native allocation order.",
+      "scope": "Close B330 range-assertion and VN-map diagnostic gaps, including all diagnostic branches of the affected functions; preserve separate floating-tree metadata differences.",
       "doneWhen": [
-        "Locate the first differing producer for Boolean Main control IND[000248], rather than changing the VN formatter.",
-        "Compare the native evaluation/allocation order and relevant conditional paths before changing C#.",
-        "Cover the producer with regressions and compare exact phase output while preserving the143body native instruction baseline.",
-        "Commit the coherent VN identity correction locally and continue remaining port work."
+        "Restore the conservative normal VN and phi-edge assertion diagnostics in RangeCheck.MergeAssertion.",
+        "Use native dollar-prefixed hexadecimal IDs in precise map stores/selects and physical selects without changing map algorithms.",
+        "Cover positive and quiet diagnostics; compare both existing stress modes with current-pin native and immediate pre-fix managed execution.",
+        "Commit the coherent diagnostic correction locally, then continue the separately scoped FoldFloating metadata producer."
       ],
       "validation": [
-        "Use native-matrix-v2 and cse-diagnostics-managed-matrix-5 as exact current-pin native/pre-fix references.",
-        "Select focused VN tests after identifying the producer; retain complete CSE phase and baseline instruction comparisons."
+        "Run VN-map, range-analysis/elimination and stress-split tests with full analysis in Debug/Release.",
+        "Use the frozen19body stress corpus and matching native random-limit8/remove-commas captures; retain exact38phase and emitted-instruction comparisons."
       ],
-      "parentScope": "B338/B339 committed7b42d8b after B301d499c05. Continue B340 without publication.",
+      "parentScope": "B340 committed93ac5f4; all97baseline CSE phases and143instruction streams match native. Continue B330 without publication.",
       "deferred": "B322 remains a native uninitialized-bool limitation. Five existing indirect-call fixture exception-flag failures remain separate. RL feature records intentionally use unpadded indices in native and are not part of B305.",
       "parallelPackets": [
         {
@@ -429,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B340 is validated: six paired wrappers,687Debug/604Release,8old failures/6controls per configuration,97/97exact CSE phases and143native-equal instruction streams/sizes. Commit this coherent batch locally, then continue B330: use comparison-2075-1.json to locate the missing Branch VN annotation and LocalAddressStore decimal VN, verify their current producers against the pin, and establish a focused diagnostic correction boundary. Keep FoldFloating metadata separately scoped until its producer is established. No push.",
+    "nextAction": "B330 VN diagnostics validated: source0c50a131,79Debug/62Release,5old failures/5quiet controls,34native-equal range/map diagnostic lines and38exact stress phases/instruction streams/sizes. Commit locally, then trace the remaining FoldFloating cost difference: native CNS_DBL (1,2) and parent (2,3), managed (1,1)/(2,2), in both stress captures. Establish the gtSetEvalOrder floating-constant producer and native target rules before changing costs; do not edit the formatter. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -464,6 +464,19 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "stressVnDiagnostics": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "nativeFunctions": "rangecheck.cpp:1764-1832 MergeAssertion;valuenum.cpp:3226-3251 VNForMapStore,3287-3298 VNForMapSelect and3315-3329 VNForMapPhysicalSelect.",
+        "sourceSnapshot": "0c50a13184487e147318b03ab6aef729a1c39762",
+        "tests": "artifacts\\stress-vn-diagnostics\\debug-3.trx and release-3.trx:79Debug/62Release with full analysis of VN maps, range analysis/elimination and stress splitting. Covers verbose/quiet precise stores/selects and physical selects, conservative normal-value unwrapping and phi-edge assertion indices.",
+        "regressionControl": "Sourcea91eb779dd4271eb23f4d862fc5e95c4f5efa0d6, validation-2\\results\\old-debug.trx:5positive failures/5quiet controls. Native range and map algorithms remain unchanged.",
+        "nativeAotLibrary": "artifacts\\stress-vn-diagnostics\\native-jit-1\\RyuJitSharp.dll",
+        "nativeAotSha256": "2215FBEBDBC3337D079418A43A5624D55DAC42072A32D56CA20975B5D7DE6654",
+        "execution": "Fresh before-random/before-commas use605f499; after-random/after-commas use0c50a131. Both modes execute19positive managed bodies each with empty stdout/stderr,74random split attempts or7comma removals and no rejection/fallback.",
+        "comparison": "artifacts\\stress-vn-diagnostics\\comparison-1.json; reproduce with compare.py --output <fresh-path>. Uses unchanged stress-split-tree native-random-limit8-1/native-remove-commas-1 and validates exact corpus/native-JIT hashes and settings.",
+        "results": "All34affected range/map diagnostic lines now match native byte-for-byte; all34old lines differ. All38complete stress phases and native/old/new emitted instruction streams and sizes match, including line endings.",
+        "limits": "B330 floating-tree costs and B322 profile diagnostics remain outside this correction. Phi-edge diagnostic execution has focused unit coverage, not a positive native runtime claim."
+      },
       "vnPairIdentity": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "nativeFunctions": "valuenum.cpp:998-1001 VNPExcSetSingleton,1105-1109 VNPExcSetUnion,1175-1179 VNPExcSetIntersection,1361-1365 VNPUnionExcSet,1430-1433 VNPMakeNormalUniquePair,1613-1617 VNPWithExc.",
@@ -6544,6 +6557,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "range-and-map-vn-diagnostics",
+      "native": ["src\\coreclr\\jit\\rangecheck.cpp:RangeCheck::MergeAssertion", "src\\coreclr\\jit\\valuenum.cpp:VNForMapStore;VNForMapSelect;VNForMapPhysicalSelect"],
+      "csharp": ["sources\\Core\\jit\\rangecheck\\RangeCheck.Ssa.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.Maps.cs"],
+      "status": "Complete affected functions retain algorithms and native diagnostic branches, conservative normal VN identity and dollar-hex map IDs. All34affected runtime lines and38stress phase/instruction slices match native.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "paired-exception-vn-allocation-order",
       "native": ["src\\coreclr\\jit\\valuenum.cpp:VNPExcSetSingleton;VNPExcSetUnion;VNPExcSetIntersection;VNPUnionExcSet;VNPMakeNormalUniquePair;VNPWithExc"],
