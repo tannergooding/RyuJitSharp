@@ -15,6 +15,15 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Profile diagnostic alignment
+
+Profile tables now use native decimal digit counting for IBC-column widths,
+and shared weight formatters preserve native lowercase exponents and precision.
+Default and stress-profile block-weight and repair-phase captures match exactly
+within those phases and their before/after tables, including two positive repairs.
+Profile values and generated instruction streams are unchanged. The separate
+native deferred-profile flag issue remains visible in default prechecks.
+
 ## 2026-09-27: Native clone construction and metadata
 
 Expression cloning now allocates simple-node and hardware-intrinsic parents

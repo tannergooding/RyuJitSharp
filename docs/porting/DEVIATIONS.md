@@ -60,6 +60,10 @@ C# helpers may replace native structure where appropriate. Examples include
 collection ordering, integer semantics, ownership, and native interop contracts.
 Larger algorithmic or architectural changes require separate approval.
 
+Profile diagnostic helpers retain native decimal digit counts and seven- or
+three-significant-digit lowercase general formats (B321/B323). Managed string
+formatting does not exempt column spacing, precision or exponent case.
+
 SSA memory maps use the existing managed node-identity dictionary. The caller's
 shared-memory flag selects the map kind before the inline root supplies storage,
 preserving native aliasing and ownership. Shared all-successor visitation retains

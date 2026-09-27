@@ -120,9 +120,14 @@ public partial class Globals
 
     public static int CountDigits(double value)
     {
-        value = double.MaxNumber(value, 1.0);
-        var approx = double.Log10(value);
-        return (int)(double.Ceiling(approx)) + 1;
+        var count = 1;
+        while (value >= 10)
+        {
+            value /= 10;
+            count++;
+        }
+
+        return count;
     }
 
     public static void dspRegMask(regMaskTP regMask, nint minSiz = 0)

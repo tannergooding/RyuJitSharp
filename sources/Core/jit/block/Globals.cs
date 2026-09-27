@@ -16,10 +16,10 @@ public partial class Globals
     public const string FMT_LP = "L{0:D2}";
 
     /// <summary>Use this format for profile weights</summary>
-    public static string FMT_WT(weight_t weight) => $"{weight:G7}";
+    public static string FMT_WT(weight_t weight) => $"{weight:g7}";
 
     /// <summary>Use this format for profile weights where we want to conserve horizontal space, at the expense of displaying less precision.</summary>
-    public static string FMT_WT_NARROW(weight_t weight) => $"{weight:G3}";
+    public static string FMT_WT_NARROW(weight_t weight) => $"{weight:g3}";
 
     /// <summary>how much a normal execute once block weighs</summary>
     public const weight_t BB_UNITY_WEIGHT = BB_UNITY_WEIGHT_UNSIGNED;

@@ -12,19 +12,19 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Resolve B320 static-data handle descriptions by comparing complete native/managed recording and emission paths for cloned and original references.",
+      "scope": "Resolve B321/B323 profile-diagnostic spacing and exponent casing through the shared decimal digit counter and profile-weight formatters.",
       "doneWhen": [
-        "Confirm current-pin static-handle annotation differences for cloned and original field addresses.",
-        "Trace cookie/target-handle metadata from node construction through instruction display, including relevant native build conditionals.",
-        "Correct the established discrepancy without changing runtime handles or emitted machine instructions.",
-        "Validate affected metadata and exact emitted descriptions, commit locally, and continue remaining port work."
+        "Confirm native CountDigits(double) and FMT_WT/FMT_WT_NARROW contracts against the recorded current-pin differences.",
+        "Preserve native decimal-boundary counting and lowercase general-format exponents without changing profile values or algorithms.",
+        "Cover helper boundaries and ordinary-format controls, then compare exact profile repair and block-weight slices.",
+        "Commit the coherent diagnostic corrections locally and continue remaining port work."
       ],
       "validation": [
-        "Use B307's fresh native-finally-1 and managed matrix captures, plus the original B320 GC-poll EH case.",
-        "Add focused metadata/display regressions; validate Debug/Release and exact current-pin instruction annotations with a fresh checked JIT. Reuse the established execution matrix at the coherent boundary."
+        "Use missing-block-weights comparison-04ef-final and profile-repair comparison-1fbd-1.json as the recorded failures.",
+        "Run focused decimal/formatting and profile tests in Debug/Release; capture default and stress-profile methods using the matching native host and existing corpus."
       ],
-      "parentScope": "B307 committed2b8098d. B320 is now validated: native integer type and clone-specific cookie policy,190Debug/183Release,13exact emitted body comparisons and29/143execution. Finish its local commit and continue B321/B323 profile formatting. No publication authorized.",
-      "deferred": "B321/B323 profile formatting remain separate. B322 is a native uninitialized-bool limitation, not authorization to emulate poison. Five existing indirect-call fixture exception-flag failures reproduce on pre-fix Debug source; leave their correction outside this batch.",
+      "parentScope": "B307 committed2b8098d and B320 committed6cadd3b. B321/B323 are now validated:222Debug/167Release,38executed bodies,76exact repair phase/before/after slices per category and38exact block-weight phases. Finish this local commit, then continue B305/B308 diagnostics without publication.",
+      "deferred": "B322 remains a native uninitialized-bool limitation, not authorization to emulate poison. Five existing indirect-call fixture exception-flag failures, CSE index padding and array-rank display are separate.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -429,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Finish the validated B320 local commit, then reconcile B321/B323 profile diagnostics as one formatting batch: IBC-column padding in artifacts\\missing-block-weights\\comparison-04ef-final and exponent casing in artifacts\\profile-repair\\comparison-1fbd-1.json. Confirm current pinned formatter contracts, preserve numeric algorithms and raw whitespace, and capture exact corrected slices. B320 comparison-5.json establishes13exact instruction/body matches; B307 phase/tree slices and29/143execution remain intact. No push or milestone pause.",
+    "nextAction": "Finish the validated B321/B323 local commit, then reconcile B305 CSE candidate-index padding and B308 ARR_ELEM rank display as one remaining IR-diagnostic batch. Start from artifacts\\head-tail-merge-integration\\native-phase-comparison.json and artifacts\\array-morphing-integration\\native-phase-comparison.json; locate the exact current native/managed formatter branches, preserve candidate/array algorithms and compare fresh affected slices. Profile comparison-1.json is complete; B322's19default prechecks remain unchanged. No push or milestone pause.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -464,6 +464,19 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "profileDiagnosticFormatting": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "nativeFunctions": "utils.cpp:2165-2175 CountDigits(double), decimal callsite in fgdiagnostic.cpp:2250-2270; block.h:49-53 FMT_WT/FMT_WT_NARROW.",
+        "sourceSnapshot": "6d5fa700a820f4af2044a46da35f02024f2c0e04",
+        "tests": "artifacts\\profile-diagnostic-formatting\\validation-1\\results:222Debug/167Release with full analysis, profile diagnostics/synthesis/counts/edges and SSA diagnostics.",
+        "regressionControl": "Sourcea2c72e230ed199b4dc01690170d4ac9c257a27df, validation-2\\results\\old-formatting.trx:15failures/8controls.23new cases cover decimal digit counts, adjacent representable values at10/100/1000, finite maximum, nonpositive/NaN controls, lowercase scientific exponents and retained significant-digit precision.",
+        "contract": "CountDigits(double) now follows native repeated division instead of Ceiling(Log10)+1. Its only managed callsite computes the IBC table width. Shared FMT_WT/FMT_WT_NARROW use g7/g3, preserving numeric precision. No profile algorithms or values change.",
+        "nativeAotLibrary": "artifacts\\profile-diagnostic-formatting\\native-jit-1\\RyuJitSharp.dll",
+        "nativeAotSha256": "F861182AFD17E68A62BD9C6508A4D5876D1903F7D5A87C534E5F1FD0122524B5",
+        "comparison": "artifacts\\profile-diagnostic-formatting\\comparison-1.json, reproduced by compare.py with a fresh --output path. The existing profile-repair harness captures19default and19stress-profile bodies before and after this correction. Matched native-default-3/native-stress-profile-3 captures retain identical host/corpus hashes and settings.",
+        "results": "All76repair phase logs,76before-tables,76after-tables and38Compute block weights phase slices match native exactly. Old stress captures fail2phase,8before-table and4block-weight comparisons. Main and ManyReturns positively synthesize in stress mode; default has no-PGO controls. All38managed instruction streams are unchanged from the immediate pre-fix source; all38code sizes equal native.",
+        "limits": "Nineteen default post-morph prechecks still differ at B322 and remain byte-identical to pre-fix managed output. Whole dumps and raw machine bytes are not claimed equal. Printed weight tables do not expose unrounded weights. This diagnostic-only batch does not relabel earlier baseline/async captures."
+      },
       "staticHandleDescriptions": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "nativeFunctions": "gentree.cpp:11097-11123 gtClone integer case and11268-11308 gtCloneExpr integer case; jit.h:325-333 enables LATE_DISASM in Checked x64. emit.cpp:4580-4694 cookie formatting agrees with managed.",
@@ -6477,6 +6490,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "profile-diagnostic-formatting",
+      "native": ["src\\coreclr\\jit\\utils.cpp:CountDigits(double), decimal use", "src\\coreclr\\jit\\block.h:FMT_WT/FMT_WT_NARROW"],
+      "csharp": ["sources\\Core\\jit\\utils\\Globals.cs:CountDigits(double)", "sources\\Core\\jit\\block\\Globals.cs:FMT_WT/FMT_WT_NARROW"],
+      "status": "Native repeated decimal division and lowercase seven-/three-significant-digit general formatting reconciled. B321/B323 phase and table slices match exactly; profile algorithms, integer CountDigits overload and B322 are unchanged. Native sources retained.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "integer-clone-handle-metadata",
       "native": ["src\\coreclr\\jit\\gentree.cpp:gtClone/gtCloneExpr integer cases", "src\\coreclr\\jit\\jit.h:LATE_DISASM"],
