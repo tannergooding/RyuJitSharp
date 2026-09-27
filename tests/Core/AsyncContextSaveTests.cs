@@ -466,6 +466,12 @@ internal static unsafe class AsyncContextSaveTests
                     compiler.lvaAsyncThreadObjectVar, compiler.lvaAsyncExecutionContextVar, compiler.lvaAsyncSynchronizationContextVar
                 ]));
 
+                foreach (var arg in capture.Args.Args)
+                {
+                    Assert.That(arg.Node.Oper, Is.EqualTo(GT_LCL_ADDR));
+                    Assert.That(arg.Node.Type, Is.EqualTo(TYP_I_IMPL));
+                }
+
                 if (initialize)
                 {
                     var store = entryStatements[0].RootNode.AsLclVar();

@@ -12,18 +12,18 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Correct B336 pre-transform async local-address types against 33baf8 after committing the completed async transformation. Preserve native pointer/GC contracts without changing unrelated local-address defaults.",
+      "scope": "Investigate B337 Tier0 async entry adapter ordering against 33baf8. Locate the first divergent phase/producer under matched optional-relocations-disabled settings, then correct the native contract if it is a port defect.",
       "doneWhen": [
-        "Trace the native/managed producers of the pre-transform local-address type difference, including the resumed-definition pseudoargument.",
-        "Correct the complete affected producer contract without normalizing diagnostic output or changing unrelated address defaults.",
-        "Add focused regression coverage and compare the existing async corpus under matched deterministic Tier0 settings.",
-        "Commit the validated correction with its evidence and continue remaining port dependencies."
+        "Establish the first producer of differing InitializeCurrentThread/helper ordering in the three non-transformed Task-returning adapters.",
+        "Distinguish compiler translation defects from native host-state variability using existing matched captures and pinned source.",
+        "If a port defect is established, correct its complete contract and validate targeted regressions plus existing async runtime evidence.",
+        "Commit the validated correction or bounded diagnosis, retaining remaining differences explicitly, then continue port dependencies."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Async source d5bb0f55 passes343D308R and29/143baseline. Final comparison-d5bb-1.json establishes matching transformation execution logs, CFGs and continuation records; FullOpts/GCStress instruction lines match, as do all seven transformed Tier0 bodies with optional relocations disabled. Three non-transformed adapters retain real ordering/code differences B337. Commit this completed batch, then address input-type mismatch B336. No publication authorized.",
+      "parentScope": "Async transformation committed e1f3b862. B336 source fb15770e passes270D236R and29/143baseline; comparison-fb157-1.json confirms all four addresses now match native IDs/locals/types and preserves scoped transformation/instruction equality. Commit the address correction, then investigate B337 adapters separately. No publication authorized.",
       "deferred": "B311 optional metrics fixture, B318/B325 existing argument regressions, B334 lowering assertions, B307 EH node IDs, B320 static-data descriptions and B321/B323 profile formatting stay separate. B324 and B333 are corrected. No general argument-morph redesign or profile-synthesis redesign.",
       "parallelPackets": [
         {
@@ -429,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Commit the fully validated async batch, then trace B336: Tier0 InlinedTailAwait(Task<int>):int input nodes000007/000016 are native LCL_ADDR long but managed byref before Transform async. Identify their importer/morph producer and preserve the native pointer/GC contract without changing all address defaults. Use existing corpus and deterministic DOTNET_JitEnableOptionalRelocs=0 comparison after the fix. Async comparison-d5bb-1.json and343D308R/29-143baseline are final; native lane collected through turn64, next unread65. B337 adapter ordering, VN/exponent and B322 diagnostics remain separate. No push.",
+    "nextAction": "Commit B336 address correction with final comparison-fb157-1.json, then locate the first divergent phase/producer in B337 Catch/Context/InlinedTailAwait Task-returning adapters using native-d5bb-tier0-nooptrelocs-2 and managed-fb157-tier0-nooptrelocs-1. Native InitializeCurrentThread follows dynamic thread-static helpers while managed runs it first; sizes633/624,650/638,633/624. Do not infer a cause from final code or attribute these non-transformed adapters to Transform async. Native lane collected through65, next unread66; no pending results. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -464,6 +464,19 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "asyncInputAddresses": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "sourceSnapshot": "fb15770e538734284f205b3987e2ada0c6b375dd",
+        "manifest": "artifacts\\async-addresses\\validation-3\\manifest.json",
+        "managedJit": "artifacts\\async-addresses\\native-jit-3\\RyuJitSharp.dll",
+        "sha256": "04E87A1FAAA101B29F265A61F31B42EC3CA7B1ED9D39DEBC1DC1F22568CB6DFE",
+        "nativeContract": "async.cpp593-595 and765 use gtNewLclAddrNode's TYP_I_IMPL default from compiler.h3453. All four corresponding producers in Compiler.async.cs now explicitly preserve that native type; general local-address defaults and continuation object BYREF arithmetic remain unchanged.",
+        "tests": "270 Debug / 236 Release with full analysis: async support, transformation, physical call definitions and VN call semantics. Existing root/nested/inline-frame and capture/OSR cases assert the integer-pointer contract.",
+        "oldProducerControl": "Sourceb1ac33760580d3739ab4218205e99b9f0eaafc85 under artifacts\\async-addresses\\validation-2:10failures on actual TYP_BYREF versus expected TYP_LONG,31controls. All original source and capture evidence retained.",
+        "baseline": "artifacts\\upstream-refresh-33baf8\\async-addresses-managed-matrix-3\\results.json:29 configurations143positive managed bodies with expected output and no fallback.",
+        "comparison": "artifacts\\async-transformation\\comparison-fb157-1.json compares fresh managed FullOpts/GCStress4/deterministic Tier0 captures with unchanged native d5bb references. All four targeted addresses match native types, IDs and locals before Transform async. Execution, transformation logs, statuses, CFG rows and continuation records match. FullOpts/GCStress4 match every emitted body; all seven transformed Tier0 bodies match, including80-byte positive tail and continuation-allocation call.",
+        "limits": "B337 Task-returning adapter ordering/sizes remain633/624,650/638,633/624. B322 profile diagnostics, FullOpts VN reversals and Tier0 exponent spelling still preclude whole-dump parity. No native or ordinary Tier0 recapture was needed; previous references remain unchanged."
+      },
       "asyncTransformation": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "sourceSnapshot": "d5bb0f5554eed7e297ca8250f96c7c5ee571349a",
@@ -6376,6 +6389,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "async-input-local-address-types",
+      "native": ["src\\coreclr\\jit\\async.cpp:593-595,765", "src\\coreclr\\jit\\compiler.h:3453"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.async.cs:SaveAsyncContexts/AddAsyncContextArgsVisitor.PreOrderVisit"],
+      "status": "Three capture arguments and the resumed-definition pseudoargument use native integer-pointer types rather than GC byrefs. Existing local flags, argument order and general local-address defaults are unchanged. Existing root/nested/inline and capture/OSR tests cover the contract; comparison-fb157-1.json verifies matching input nodes and retained scoped execution/codegen parity.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "async-state-machine-transformation",
       "native": ["src\\coreclr\\jit\\async.h:1-549", "src\\coreclr\\jit\\asyncanalysis.cpp:1-778", "src\\coreclr\\jit\\async.cpp:961-5282", "src\\coreclr\\jit\\gentree.cpp:1879-1907"],

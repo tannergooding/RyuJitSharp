@@ -180,9 +180,9 @@ public partial class Compiler
         if (!opts.IsOSR)
         {
             var captureCall = gtNewUserCallNode(TYP_VOID, asyncInfo.captureContextsMethHnd);
-            _ = captureCall.Args.PushFront(NewCallArg.CreateForPrimitive(gtNewLclAddrNode(TYP_BYREF, lvaAsyncSynchronizationContextVar, 0)));
-            _ = captureCall.Args.PushFront(NewCallArg.CreateForPrimitive(gtNewLclAddrNode(TYP_BYREF, lvaAsyncExecutionContextVar, 0)));
-            _ = captureCall.Args.PushFront(NewCallArg.CreateForPrimitive(gtNewLclAddrNode(TYP_BYREF, lvaAsyncThreadObjectVar, 0)));
+            _ = captureCall.Args.PushFront(NewCallArg.CreateForPrimitive(gtNewLclAddrNode(TYP_I_IMPL, lvaAsyncSynchronizationContextVar, 0)));
+            _ = captureCall.Args.PushFront(NewCallArg.CreateForPrimitive(gtNewLclAddrNode(TYP_I_IMPL, lvaAsyncExecutionContextVar, 0)));
+            _ = captureCall.Args.PushFront(NewCallArg.CreateForPrimitive(gtNewLclAddrNode(TYP_I_IMPL, lvaAsyncThreadObjectVar, 0)));
             lvaGetDesc(lvaAsyncThreadObjectVar).lvHasLdAddrOp = true;
             lvaGetDesc(lvaAsyncExecutionContextVar).lvHasLdAddrOp = true;
             lvaGetDesc(lvaAsyncSynchronizationContextVar).lvHasLdAddrOp = true;
@@ -396,7 +396,7 @@ public partial class Compiler
             }
 
             var resumed = _compiler.gtNewLclVarNode(TYP_INT, _compiler.lvaResumedIndicator);
-            var resumedAddr = _compiler.gtNewLclAddrNode(TYP_BYREF, _compiler.lvaResumedIndicator, 0);
+            var resumedAddr = _compiler.gtNewLclAddrNode(TYP_I_IMPL, _compiler.lvaResumedIndicator, 0);
             var execCtx = _compiler.gtNewLclVarNode(TYP_REF, _compiler.lvaAsyncExecutionContextVar);
             var syncCtx = _compiler.gtNewLclVarNode(TYP_REF, _compiler.lvaAsyncSynchronizationContextVar);
 #if DEBUG

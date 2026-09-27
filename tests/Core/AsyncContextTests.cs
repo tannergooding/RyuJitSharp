@@ -204,7 +204,7 @@ internal static unsafe class AsyncContextTests
             Assert.That(args[i].Node.AsLclVarCommon().LclNum, Is.EqualTo(locals[i]));
         }
 
-        Assert.That(args[0].Node.Type, Is.EqualTo(var_types.TYP_BYREF));
+        Assert.That(args[0].Node.Type, Is.EqualTo(Globals.TYP_I_IMPL));
         Assert.That(args[1].Node.Type, Is.EqualTo(var_types.TYP_INT));
     }
 
