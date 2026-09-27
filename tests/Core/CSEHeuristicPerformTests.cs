@@ -78,8 +78,11 @@ internal static unsafe class CSEHeuristicPerformTests
         });
     }
 
-    [Test]
-    public static void PerformCseReplacesDefinitionAndUseWithSameSsaLocal()
+    [TestCase(1)]
+    [TestCase(9)]
+    [TestCase(10)]
+    [TestCase(64)]
+    public static void PerformCseReplacesDefinitionAndUseWithSameSsaLocal(int index)
     {
         WithCompiler(compiler =>
         {
@@ -95,11 +98,11 @@ internal static unsafe class CSEHeuristicPerformTests
                 compiler.gtNewIconNode(TYP_INT, 21), compiler.gtNewIconNode(TYP_INT, 21));
             definition._vnPair.SetBoth(vn);
             use._vnPair.SetBoth(vn);
-            definition._cseNum = -1;
-            use._cseNum = 1;
+            definition._cseNum = (sbyte)-index;
+            use._cseNum = (sbyte)index;
             var definitionStatement = compiler.gtNewStmt(definition);
             var useStatement = compiler.gtNewStmt(use);
-            var descriptor = new CSEdsc(definition, definitionStatement, block) { csdIndex = 1 };
+            var descriptor = new CSEdsc(definition, definitionStatement, block) { csdIndex = index };
             descriptor.csdTreeList.tslNext = new treeStmtLst(use, useStatement, block);
             descriptor.csdTreeLast = descriptor.csdTreeList.tslNext;
             var heuristic = new CSE_Heuristic(compiler);
@@ -122,11 +125,14 @@ internal static unsafe class CSEHeuristicPerformTests
                 Assert.That(rewrittenUse.SsaNum, Is.EqualTo(def.SsaNum));
                 Assert.That(defUse._vnPair.Liberal, Is.EqualTo(vn));
                 Assert.That(rewrittenUse._vnPair.Conservative, Is.EqualTo(vn));
-                Assert.That(def._cseNum, Is.EqualTo(-1));
+                Assert.That(def._cseNum, Is.EqualTo(-index));
                 Assert.That(definition._cseNum, Is.Zero);
                 Assert.That(use._cseNum, Is.Zero);
                 Assert.That(compiler.lvaGetDesc(def.LclNum).lvIsCSE, Is.True);
                 Assert.That(PromotionCount(compiler), Is.EqualTo(1));
+#if DEBUG
+                Assert.That(compiler.lvaGetDesc(def.LclNum).lvReason, Is.EqualTo(FMT_CSE(index)));
+#endif
             });
         });
     }

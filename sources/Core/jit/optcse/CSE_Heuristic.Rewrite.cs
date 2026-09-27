@@ -34,9 +34,9 @@ public abstract partial class CSE_HeuristicCommon
 
         var cseLclVarNum = m_compiler.lvaGrabTemp(false,
 #if DEBUG
-            $"CSE #{descriptor.csdIndex}{category}"
+            $"{FMT_CSE(descriptor.csdIndex)}{category}"
 #else
-            $"CSE #{descriptor.csdIndex}"
+            FMT_CSE(descriptor.csdIndex)
 #endif
         );
         var cseLclVarTyp = successfulCandidate.Expr().Type.ActualType;

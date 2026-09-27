@@ -2706,7 +2706,7 @@ public partial class Compiler
         }
         else if (tree.Oper is GT_ARR_ELEM)
         {
-            buf = $" {name}[{new string(',', tree.AsArrElem().ArrRank)}]";
+            buf = $" {name}[{new string(',', tree.AsArrElem().ArrRank - 1)}]";
         }
         else if (tree.Oper is GT_LEA)
         {

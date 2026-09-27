@@ -21,6 +21,23 @@ internal static unsafe class ArrayMorphingTests
 {
     private static PhaseStatus MorphArrayOps(Compiler compiler) => compiler.fgMorphArrayOps();
 
+#if DEBUG
+    [TestCase(1, "  ARR_ELEM[]")]
+    [TestCase(2, "  ARR_ELEM[,]")]
+    [TestCase(3, "  ARR_ELEM[,,]")]
+    public static void DisplayUsesOneFewerCommasThanDimensions(int rank, string expected)
+    {
+        WithCompiler((compiler, _) => {
+            var element = NewElement(compiler, rank);
+
+            var text = CodeGenLifeTransitionTests.Capture(() => compiler.gtDispNodeName(element));
+
+            Assert.That(text, Is.EqualTo(expected));
+            Assert.That(element.ArrRank, Is.EqualTo(rank));
+        });
+    }
+#endif
+
     [TestCase(false, true)]
     [TestCase(true, false)]
     public static void PhaseAndBlockFlagsGateExpansion(bool methodFlag, bool blockFlag)

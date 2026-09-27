@@ -64,6 +64,11 @@ Profile diagnostic helpers retain native decimal digit counts and seven- or
 three-significant-digit lowercase general formats (B321/B323). Managed string
 formatting does not exempt column spacing, precision or exponent case.
 
+CSE temporary reasons retain native two-digit candidate indices, and array
+node names retain rank-minus-one commas (B305/B308). Intentionally unpadded RL
+feature records are unchanged. These corrections do not establish full CSE
+diagnostic or array method-identity parity.
+
 SSA memory maps use the existing managed node-identity dictionary. The caller's
 shared-memory flag selects the map kind before the inline root supplies storage,
 preserving native aliasing and ownership. Shared all-successor visitation retains

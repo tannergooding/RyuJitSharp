@@ -15,6 +15,14 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: CSE and array diagnostic alignment
+
+CSE temporary-allocation reasons now use the native two-digit candidate index.
+Array-element names now print one fewer comma than their rank. Both corrections
+preserve optimization decisions and generated instructions. The selected native
+CSE allocation lines and array transformation body match exactly; full CSE logs
+and the array method-signature announcement remain separate parity gaps.
+
 ## 2026-09-27: Profile diagnostic alignment
 
 Profile tables now use native decimal digit counting for IBC-column widths,
