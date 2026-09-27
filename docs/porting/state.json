@@ -27,7 +27,7 @@
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "B333 committed5cdf72b. B322 native flag reads0xcd before its first verbose check; no production change is appropriate. Async semantic fixes are cleared, inactive integration passes264D230R, and parent reviewed the three final diagnostic callsite deltas. Activate review-final through the existing public phase and validate normal/tail/context/EH execution. No publication authorized.",
+      "parentScope": "B333 committed5cdf72b and B322 diagnosis55f0023. Shared clone defect B335 is corrected with75D74R isolated,339D304R integrated and29/143baseline; the incomplete async activation remains separate WIP. Native lane is recapturing FullOpts before Tier0/GCStress. No publication authorized.",
       "deferred": "B311 optional metrics fixture, B318/B325 existing argument regressions, B334 lowering assertions, B307 EH node IDs, B320 static-data descriptions and B321/B323 profile formatting stay separate. B324 and B333 are corrected. No general argument-morph redesign or profile-synthesis redesign.",
       "parallelPackets": [
         {
@@ -433,7 +433,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B322 is a confirmed native uninitialized flag (raw0xcd at first verbose HotLoop checker), not a managed defect; retain limitation and commit the diagnosis. Next activate async review-final: public TransformAsync asserts compIsAsync then returns new AsyncTransformation(this).Run(); existing pipeline callsite is correctly placed. Convert TailAwaitRunCreatesSuspensionAndSplitsContinuationPath to public invocation and set JIT_FLAG_ASYNC only in that case. Freeze final17files plus parent Compiler.cs/test delta on current HEAD, run Async/OSR selection and old-stub control, publish NativeAOT and compare actual native normal/tail/context/EH cases. Native-tail-evidence-1.json records new corpus39CC2159 and positive Tier0 wrapper; do not treat FullOpts return-await syntax as native tail evidence. No push.",
+    "nextAction": "B335 clone correction is complete independently of async: source25aa98cb passes75D74R, and old producer e76defa fails8new cases/12controls. Integrated async sourceac447671 passes339D304R and29/143baseline; JIT79E43005 at artifacts\\async-integration\\native-jit-4. Collect native lane9b9dfbb4's fresh FullOpts replay, then Tier0 and matched GCStress4 if prerequisites pass; diagnose its first concrete failure if not. Keep async activation and17-file packet uncommitted until actual normal/tail/context/EH execution and scoped comparison are established. Preserve fa2f failure. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -468,6 +468,15 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "localStoreCloneTypes": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "sourceSnapshot": "25aa98cb5ba4a709e69033f33d1657a42d9bc43f",
+        "tests": "artifacts\\store-clone\\validation-3\\results:75 Debug / 74 Release, full analysis. Twenty table-driven clone cases cover four small types plus int, parameter/local normalization and original/normalized IR types.",
+        "negativeControl": "Sourcee76defa6302bcb029f9fffceb1f1a22c9aa0009c under artifacts\\store-clone\\validation-2:8 Release failures and12controls. The public store factory remains unchanged; only cloning preserves the explicit original type.",
+        "integratedSource": "ac44767198f69060b780ae82da27f76ab6bdba1b under artifacts\\async-integration\\validation-4 passes339D304R and publishes JIT79E430054289760A6CEE302AF1F04656E09D83914AC1C824EEF20978DB81659B.",
+        "baseline": "artifacts\\upstream-refresh-33baf8\\async-managed-matrix-4\\results.json:29configurations143positive bodies, expected output and no fallback.",
+        "firstFailure": "artifacts\\async-transformation\\managed-fa2f-first-failure.json: prior async capture aborts in gtCloneExpr during Clone finally at BB08's ubyte store before any async phase. The original raw dump is preserved. Post-fix async runtime validation remains separate."
+      },
       "deferredProfileCheckDiagnosis": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "source": "compiler.h:7195-7197 leaves fgPgoDeferredInconsistency uninitialized; compiler.cpp:7719-7740 placement-constructs Compiler in arena storage. arenaallocator.h:212-214 and jit/alloc.h:62-65 fill new DEBUG allocations with jit.h:665 UninitializedFillByte0xcd.",
@@ -6355,6 +6364,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "local-store-clone-type",
+      "native": ["src\\coreclr\\jit\\gentree.cpp:11421-11426"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.gt.cs:gtCloneExpr/gtCloneUnary GT_STORE_LCL_VAR"],
+      "status": "Constructs the cloned store with the original IR type rather than reapplying the current local descriptor's construction normalization. Existing clone flag, cost, register and operand handling remains intact; ordinary store creation retains B331.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "osr-counter-address-and-functor-phase-status",
       "native": ["src\\coreclr\\jit\\patchpoint.cpp:187-191", "src\\coreclr\\jit\\compiler.h:gtNewLclVarAddrNode default type", "src\\coreclr\\jit\\compiler.cpp:4622-4628", "src\\coreclr\\jit\\phase.h:53-84"],

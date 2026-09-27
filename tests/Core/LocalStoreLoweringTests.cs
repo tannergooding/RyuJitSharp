@@ -32,6 +32,31 @@ internal static unsafe class LocalStoreLoweringTests
         });
     }
 
+    [Test]
+    public static void StoreCloningPreservesOriginalType(
+        [Values(var_types.TYP_BYTE, var_types.TYP_UBYTE,
+            var_types.TYP_SHORT, var_types.TYP_USHORT, var_types.TYP_INT)] var_types type,
+        [Values] bool parameter, [Values] bool normalized)
+    {
+        WithCompiler(compiler =>
+        {
+            ref var local = ref compiler.lvaTable[0];
+            local.Type = type;
+            local.lvIsParam = parameter;
+            var value = compiler.gtNewIconNode(var_types.TYP_INT, 257);
+            var store = new GenTreeLclVar(normalized ? var_types.TYP_INT : type, 0, value);
+
+            var copy = compiler.gtCloneExpr(store).AsLclVar();
+
+            Assert.That(copy, Is.Not.SameAs(store));
+            Assert.That(copy.Type, Is.EqualTo(store.Type));
+            Assert.That(copy.LclNum, Is.EqualTo(store.LclNum));
+            Assert.That(copy.Flags, Is.EqualTo(store.Flags));
+            Assert.That(copy.Data, Is.Not.SameAs(value));
+            Assert.That(copy.Data.AsIntCon().IconValue, Is.EqualTo(value.IconValue));
+        });
+    }
+
     [TestCase(var_types.TYP_DOUBLE, long.MinValue, false, false)]
     [TestCase(var_types.TYP_DOUBLE, 0x7FF8000000001234L, false, false)]
     [TestCase(var_types.TYP_FLOAT, long.MinValue, false, false)]

@@ -1102,7 +1102,8 @@ public partial class Compiler
                     var lclVar = tree.AsLclVar();
                     lclVar.Flags |= GTF_VAR_MOREUSES;
 
-                    var lclVarCopy = compiler.gtNewStoreLclVarNode(
+                    var lclVarCopy = new GenTreeLclVar(
+                        lclVar.Type,
                         lclVar.LclNum,
                         compiler.gtCloneExpr(lclVar.Data)
                     );
