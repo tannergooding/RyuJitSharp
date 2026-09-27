@@ -15497,15 +15497,6 @@ public partial class Compiler
         return PhaseStatus.MODIFIED_NOTHING;
     }
 
-    // TODO: Port phase - fgInstrumentMethod
-    protected PhaseStatus fgInstrumentMethod() => PhaseStatus.MODIFIED_NOTHING;
-
-    // TODO: Port phase - fgInstrumentMethodCore
-    protected PhaseStatus fgInstrumentMethodCore() => PhaseStatus.MODIFIED_NOTHING;
-
-    // TODO: Port phase - fgPrepareToInstrumentMethod
-    protected PhaseStatus fgPrepareToInstrumentMethod() => PhaseStatus.MODIFIED_NOTHING;
-
 #if DEBUG
     protected uint fgStressBBProf()
     {

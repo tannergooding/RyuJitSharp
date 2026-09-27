@@ -3,6 +3,7 @@
 using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BBKinds;
@@ -17,6 +18,50 @@ internal static unsafe class PatchpointTransformationTests
 {
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_tC_OnStackReplacement_InitialCounter")]
     private static extern ref int InitialCounter(ref JitConfigValues config);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_ownedPatchpointInfo")]
+    private static extern ref PatchpointInfo* OwnedPatchpointInfo(Compiler compiler);
+
+    [TestCase(0)]
+    [TestCase(3)]
+    public static void CleanupDoesNotFreeBorrowedPatchpointInfo(int localCount)
+    {
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var storage = stackalloc byte[PatchpointInfo.ComputeSize(localCount)];
+        var patchpoint = (PatchpointInfo*)storage;
+        patchpoint->Initialize(localCount, 72);
+        compiler.info.compPatchpointInfo = patchpoint;
+
+        compiler.compDone();
+        compiler.compDone();
+
+        Assert.That(compiler.info.compPatchpointInfo is null, Is.True);
+        Assert.That(patchpoint->NumberOfLocals, Is.EqualTo(localCount));
+        Assert.That(patchpoint->TotalFrameSize, Is.EqualTo(72));
+    }
+
+    [Test]
+    public static void CleanupReleasesOwnedPatchpointCopyOnlyOnce()
+    {
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var patchpoint = (PatchpointInfo*)NativeMemory.Alloc((uint)PatchpointInfo.ComputeSize(0));
+        OwnedPatchpointInfo(compiler) = patchpoint;
+        compiler.info.compPatchpointInfo = patchpoint;
+
+        try
+        {
+            compiler.compDone();
+            compiler.compDone();
+
+            Assert.That(OwnedPatchpointInfo(compiler) is null, Is.True);
+            Assert.That(compiler.info.compPatchpointInfo is null, Is.True);
+        }
+        finally
+        {
+            NativeMemory.Free(OwnedPatchpointInfo(compiler));
+            OwnedPatchpointInfo(compiler) = null;
+        }
+    }
 
     [TestCase(-1)]
     [TestCase(0)]

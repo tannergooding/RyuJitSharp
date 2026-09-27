@@ -511,6 +511,14 @@ public enum genTreeOps : byte
             var structType = parts[1].Trim();
             var flags = parts[4].AsSpan().Trim();
 
+            // Native gtlist.h names the allocation base for these nodes, but the
+            // managed constructor/type contract requires gtNewAtomicNode's concrete type.
+            if ((name is "LOCKADD" or "XAND" or "XORR" or "XADD" or "XCHG") &&
+                !structType.Equals("GenTreeIndir", StringComparison.Ordinal))
+            {
+                throw new InvalidDataException($"GT_{name} must use the concrete GenTreeIndir type.");
+            }
+
             if ((flags[0] == '(') && (flags[^1] == ')'))
             {
                 flags = flags[1..^1].Trim();

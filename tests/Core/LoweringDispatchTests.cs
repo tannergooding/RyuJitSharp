@@ -497,7 +497,7 @@ internal static unsafe class LoweringDispatchTests
             compiler.lvaTable[1].Type = type;
             var address = compiler.gtNewLclvNode(TYP_BYREF, 0);
             var data = compiler.gtNewIconNode(type, (nint)value);
-            var add = new GenTreeOp(GT_XADD, type, address, data) { IsUnusedValue = unused };
+            var add = new GenTreeIndir(GT_XADD, type, address, data) { IsUnusedValue = unused };
             add._vnPair.SetBoth(123);
             var flags = add.Flags;
             var block = NewBlock(address, data, add);

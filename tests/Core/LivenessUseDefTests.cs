@@ -219,7 +219,7 @@ internal static unsafe class LivenessUseDefTests
                 GT_MEMORYBARRIER => new GenTree(GT_MEMORYBARRIER, TYP_VOID),
                 GT_CMPXCHG => new GenTreeCmpXchg(TYP_INT, address, data, compiler.gtNewIconNode(TYP_INT, 0)),
                 GT_IND => new GenTreeIndir(GT_IND, TYP_INT, address),
-                _ => new GenTreeOp(oper, oper is GT_LOCKADD ? TYP_VOID : TYP_INT, address, data),
+                _ => new GenTreeIndir(oper, oper is GT_LOCKADD ? TYP_VOID : TYP_INT, address, data),
             };
             if (isVolatile)
             {

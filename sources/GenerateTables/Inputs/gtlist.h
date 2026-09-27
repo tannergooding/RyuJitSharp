@@ -81,11 +81,11 @@ GTNODE(LCLHEAP          , GenTreeOp          ,0,1,GTK_UNOP|DBK_NOCONTAIN) // all
 GTNODE(BOUNDS_CHECK     , GenTreeBoundsChk   ,0,1,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // a bounds check - for arrays/spans/SIMDs/HWINTRINSICs
 
 GTNODE(MEMORYBARRIER    , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE)
-GTNODE(LOCKADD          , GenTreeOp          ,0,1,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
-GTNODE(XAND             , GenTreeOp          ,0,1,GTK_BINOP)
-GTNODE(XORR             , GenTreeOp          ,0,1,GTK_BINOP)
-GTNODE(XADD             , GenTreeOp          ,0,1,GTK_BINOP)
-GTNODE(XCHG             , GenTreeOp          ,0,1,GTK_BINOP)
+GTNODE(LOCKADD          , GenTreeIndir       ,0,1,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+GTNODE(XAND             , GenTreeIndir       ,0,1,GTK_BINOP)
+GTNODE(XORR             , GenTreeIndir       ,0,1,GTK_BINOP)
+GTNODE(XADD             , GenTreeIndir       ,0,1,GTK_BINOP)
+GTNODE(XCHG             , GenTreeIndir       ,0,1,GTK_BINOP)
 GTNODE(CMPXCHG          , GenTreeCmpXchg     ,0,1,GTK_SPECIAL)            // atomic CAS, small types need the comparand to be zero extended
 
 GTNODE(IND              , GenTreeIndir       ,0,1,GTK_UNOP)                                 // Load indirection

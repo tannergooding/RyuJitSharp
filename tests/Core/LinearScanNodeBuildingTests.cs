@@ -173,7 +173,7 @@ internal static unsafe class LinearScanNodeBuildingTests
             _ = Build(allocator, address);
             var addressDef = allocator.refPositions[^1];
             _ = Build(allocator, data);
-            var atomic = compiler.gtNewBinaryNode(operation, TYP_INT, address, data);
+            var atomic = compiler.gtNewAtomicNode(operation, TYP_INT, address, data);
             atomic.IsUnusedValue = unused;
             var needsLoop = !unused && operation is GT_XORR or GT_XAND;
 

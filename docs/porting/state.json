@@ -12,26 +12,26 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port complete fgOptimizeMaskConversions against33baf8 optimizemaskconversions.cpp: weighted eligibility, SIMD metadata consistency, local-use checking and conversion rewriting.",
+      "scope": "Complete physical-promotion and profile-instrumentation subsystem packets against33baf8 in parallel; parent integrates shared contracts and validates each dependency-coherent subsystem before public activation and local commit.",
       "doneWhen": [
-        "Port complete weight accounting, checker, updater and public phase with native gates and diagnostics.",
-        "Cover weighted profitability/ties, data-loss exclusions, incompatible conversion metadata and statement/local threading.",
-        "Compare positive native/managed mask-local decisions when supported by the host and preserve established execution baselines.",
-        "Commit the validated mask-conversion batch locally, then continue the next remaining dependency."
+        "Complete physical promotion including candidate selection, replacement, liveness and decomposition rather than activating a partial prerequisite.",
+        "Complete all profile instrumentors and preparation/core/inline-return dispatch while preserving EE schema ownership and probe ordering.",
+        "Integrate named shared deltas, review each complete native closure and validate focused semantic/runtime evidence with existing corpora.",
+        "Commit each completed subsystem separately, preserving the other lane's WIP, and continue remaining port dependencies."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Copy omission committed350bdf1. Parent owns complete mask-conversion phase and integration; native lane owns corpus comparisons. User requested larger implementation packets and continued parallel work overnight: independent lanes own complete inactive physical-promotion and profile-instrumentation subsystems while parent integrates masks and shared dependencies. Consolidate validation per subsystem, not per helper. No publication authorized; commits remain checkpoints.",
-      "deferred": "B311 optional metrics fixture, B318/B325 existing argument regressions, B307 EH node IDs, B320 static-data descriptions, B321-B323 profile diagnostics, B324 tiered heap corruption and remaining B315 physical-promotion/graph parity stay separate. No general argument-morph redesign.",
+      "parentScope": "Profile instrumentation is fully integrated through snapshot 3e4b1f19, including B324 OSR ownership, B328 atomic types and B329 native count conversions. Parent owns the local batch commit and subsequent physical-promotion integration; its native UTF8/struct references are ready. Consolidate validation per subsystem, not per helper. No publication authorized; commits remain checkpoints.",
+      "deferred": "B311 optional metrics fixture, B318/B325 existing argument regressions, B307 EH node IDs, B320 static-data descriptions, B321-B323 profile diagnostics and remaining B315 physical-promotion/graph parity stay separate. B324 is corrected and tiered GDV/value execution now passes. No general argument-morph redesign.",
       "parallelPackets": [
         {
           "scope": "Complete profile instrumentation: count/edge, handle and value instrumentors plus preparation/core/inline-return wrapper.",
           "owner": "4738d2a0-2db8-4c2f-855b-41d9d9cff502",
           "files": "Instrumentor.cs, new fgprofile and Compiler.Instrumentation files, ProfileInstrumentationTests.cs; parent owns shared deltas and public entries.",
-          "status": "in-progress",
-          "remainingBoundary": "Implement complete inactive subsystem against33baf8, reusing WalkSpanningTree. Preserve schema/ABI buffer ownership, probe ordering/relocation, tailcalls, minimal-intrinsic policy and histogram/value semantics. Consolidated full-analysis packet validation; parent runtime integration."
+          "status": "done",
+          "remainingBoundary": "None: complete public phase integration, reviewed schema/buffer ownership and native-width count conversions, 324 Debug / 293 Release, 29/143 baseline, successful edge/block/class/value profiling and positive hot-tier GDV comparison. Source 3e4b1f19 and comparison-3e4b-1.json identify final evidence."
         },
         {
           "scope": "Complete physical-promotion subsystem against promotion.h/.cpp, promotionliveness.cpp and promotiondecomposition.cpp.",
@@ -422,7 +422,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Mask-conversion phase validated at2bca28d58aa3b71d7e857b43195f0e849d683599: all16Debug15Release new cases pass,362Debug390Release integrated pass with33known B145 Debug failures; old stub fails three mask cases per configuration. Positive mask decisions and all three emitted instruction slices/sizes match native under separate FullOpts execution;29/143baseline passes. Commit mask batch, excluding physical-promotion/profile-instrumentation WIP, then integrate those complete packets and their named shared dependencies as ready. Native lane establishing physical-promotion evidence from existing UTF8/struct corpora. B327 full-dump failures/managed MinOpts retry are not optimized execution. No push or PR authorized.",
+    "nextAction": "If HEAD is still a762fa8, finish the local instrumentation commit using exact ownedPaths from artifacts\\profile-instrumentation\\integration-6\\manifest.json plus related porting documentation; executable source/tests/scripts must match 3e4b1f19cb08284bec2388e43917e29073d3eb64. All five native comparisons and the 29/143 baseline pass; B324/B328/B329 are fixed. Then collect physical worker 9ac3e59e's complete inactive promotion/liveness/decomposition packet, review the closure, activate the public PhysicalPromotion entry and compare existing UTF8/struct native evidence. Preserve all physical WIP during the instrumentation commit. Continue beyond the milestone; no push or PR authorized.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -490,6 +490,27 @@
         "scope": "Restore pinned output-pointer-only getThreadLocalStaticBlocksInfo across three wrappers/interface/vtable; rename final metadata slot to offsetOfBaseOfThreadLocalData. Keep existing slot, calling convention, offset widths and neighboring getThreadLocalFieldInfo bool.",
         "nativeEvidence": "MSVC native-probe.cpp static_assert checks exact member signature against pinned corinfo.h; sizeof56, pointer-field offsets0/16/24/32 and scalar offsets40/44/48/52 match managed raw layout.",
         "gaps": "TLS phase is not activated. Virtual native callbacks verify forwarding without claiming actual runtime TLS expansion."
+      },
+      "profileInstrumentation": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "status": "Complete reviewed instrumentors and original protected entries execute successfully. B324 OSR ownership, B328 atomic types/cloning and B329 native-width conversions are corrected; the native duplicate histogram tree diagnostic is preserved.",
+        "managedSnapshot": "3e4b1f19cb08284bec2388e43917e29073d3eb64; refs/porting/validation/33baf8-profile-instrumentation-6; artifacts\\profile-instrumentation\\integration-6\\manifest.json. Parent a762fa8; excludes physical-promotion WIP.",
+        "managedJit": "artifacts\\profile-instrumentation\\native-jit-6\\RyuJitSharp.dll; SHA256 5725DB26BAE6DECFDF2CA20482E8AF55EEAFCE601DDDA4191B360AAB0F905402.",
+        "integrationTests": "324 Debug / 293 Release full-analysis passes with no skipped cases: instrumentation, existing edge-count/spanning-tree, six affected atomic classes and patchpoint transformations. Includes five construction/clone regressions per configuration, 14 Debug native-conversion cases and three borrowed/owned/repeated cleanup cases. TRX: artifacts\\profile-instrumentation\\integration-6\\results.",
+        "executionBaseline": "artifacts\\upstream-refresh-33baf8\\profile-instrumentation-managed-matrix-6\\results.json: 29 configurations / 143 positive managed bodies, matching outputs and no fallback. Instrumented-tier results are separate.",
+        "comparison": "artifacts\\profile-instrumentation\\comparison-3e4b-1.json: all five fresh managed processes exit zero with expected outputs and no missing body, retry or selected native fallback. Existing pinned-native references are unchanged.",
+        "positiveExecution": "Standard edges/blocks each match 20 bodies and 564/592 emitted instruction lines. Eager GDV matches five bodies and 97 lines, with two class probes in each of three callers. Warmed values match four bodies and 97 lines: Copy/Equal Tier0 at 58/74 bytes, Equal/Copy Instrumented Tier1 at 101/106 bytes with 4/2 count probes and two value probes each. Hot-tier GDV matches 15 bodies and 198 lines, including two resolved guards and the unresolved-receiver control.",
+        "diagnosticParity": "The three eager Modified call is now diagnostics include all native 10-line call trees. Remaining differences are process-dependent EE addresses and existing B322 profile checks; only CRLF was normalized. This does not claim whole-dump or machine-byte parity.",
+        "priorInstrumentedEvidence": "artifacts\\profile-instrumentation\\comparison-f85f-1.json: standard edge and block runs each exit zero with 20 completed bodies, matching probes, post-phase trees, sizes and all emitted instructions. Eager GDV inserts native-matching class probes in three of five bodies; warmed value run completes only initial Copy/Equal Tier0. Both latter runs end at B324 and are not successful execution evidence.",
+        "tieredFailureDiagnosis": "artifacts\\profile-instrumentation\\debug-gdv-2: CDB heap diagnosis reports HEAP_FAILURE_INVALID_ARGUMENT at compDone -> NativeMemory.Free. The freed OSR metadata came from EE getOSRInfo. Pinned compiler.cpp compDone does not free it; only the mismatched-target copy is arena-owned. Compiler.comp.cs now tracks that locally allocated copy separately and never frees borrowed storage. Portable debugger downloaded/extracted under artifacts\\tools; no system debugger installation or global heap settings changed.",
+        "atomicTypeControls": "artifacts\\profile-instrumentation\\atomic-old-types: new five clone cases fail againsta762fa8 in both configurations. Debug reaches the original concrete-type assertion in GenTree.cs81 (unimplemented fixture doAssert callback then throws); Release exposes GenTreeOp clones instead of GenTreeIndir.",
+        "numericEvidence": "artifacts\\profile-instrumentation\\native-conversion-output.txt: MSVCx64 converts9223372036854779904.0 to00000000/8000000000001000 for32/64-bit counts. Separate helpers preserve the original-double signed64 truncation for narrow counters and native unsigned64 behavior for wide counters.",
+        "native": "Eager Tier0 runs use TieredPGO_InstrumentOnlyHotCode=0 and TC_CallCounting=0, so evidence does not depend on promotion to later tiers. Maintained runner now supports InstrumentedTier0/BlockCounters, with ordinary19-body default control and invalid-option guard verified.",
+        "counterEvidence": "artifacts\\profile-instrumentation\\native-standard-edges and native-standard-blocks each execute20selected standard bodies. Positive edge schema counts: Main23, Branch2, ManyReturns6. Positive block schema counts: Main41, Branch3, GenericCatch3, ManyReturns8. Raw phase slices and hashes in positive-methods.json.",
+        "histogramEvidence": "artifacts\\profile-instrumentation\\native-eager-edges executes five GDV bodies at initial Tier0. InterfaceCaller, VirtualCaller and UnknownReceiver each report two histogram schema entries. Native output verifies all inputs.",
+        "prePortControl": "artifacts\\profile-instrumentation\\managed-pre-port-eager: source 2bca28d58aa3b71d7e857b43195f0e849d683599 emits five Tier0 bodies with inactive instrumentation, then exits 0xC0000374 even with runtime call counting disabled. This preserved pre-fix B324 capture is not successful execution evidence.",
+        "valueEvidence": "artifacts\\profile-instrumentation\\native-values-optimized: new maintained PortingValueProfileCorpus (DLL B4210778472395C10B2F979117B85BA29D274EA5B9664D8020D104FD4A5AAF71) warms span Copy/Equal over lengths1-64 with initial zero-length/mismatch controls. TieredPGO_InstrumentedTierAlwaysOptimized=1 enables wrapper inlining: Copy reports2count/2value schema entries, Equal4count/2value, with VALUEPROFILE32 helper trees. Instrumented Tier1 bodies are106/101bytes and native output passes. Eager Tier0 wrappers create no value schemas; preserved native-values is the earlier no-change control.",
+        "remaining": "No instrumentation implementation blocker remains. Preserve the failed pre-fix controls and the unrelated B322 diagnostic difference; continue physical promotion after the local dependency-coherent commit."
       },
       "maskConversions": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
@@ -563,7 +584,8 @@
         "execution": "Default optimized native/managed corpus executions succeed with three selected no-change bodies. Native tiered PGO resolves one NE guard each in InterfaceCaller and VirtualCaller, retains the relops, and redirects BB01 to BB03; UnknownReceiver has a candidate without resolution.",
         "comparison": "artifacts\\gdv-resolution\\comparison-1d00-1.json: all three default phase logs, CFG/profile tables, IR groups, emitted instruction sequences and code sizes match. Corpus rebuild reproduces the captured DLL exactly.",
         "baseline": "artifacts\\upstream-refresh-33baf8\\gdv-resolution-managed-matrix\\results.json: 29 configurations, 143 positive managed bodies, expected runtime outcomes and no fallback.",
-        "gaps": "B324: two managed tiered runs terminate with 0xC0000374 after five native-matching initial Tier0 bodies and before instrumented Tier0 or Tier1. The identical boundary reproduces twice with prior profile-repair source1fbd43ffc1f13bfb4d48f517d952f87a833c6505/JIT SHA2561ABF9325306C8ACBBC5BC61DE2BA0FB61AC079626D957E7E674B059EF13B5202 and its public GDV stub; root cause remains unknown. Positive managed resolution and post-resolution CFG/profile parity are unverified. Default pre-phase profile checks retain B322; matching instruction text and sizes are not whole-dump or machine-byte parity."
+        "positiveTieredExecution": "Instrumentation snapshot 3e4b1f19 corrects B324 borrowed OSR metadata cleanup. artifacts\\gdv-resolution\\managed-tiered-3e4b-1 and artifacts\\profile-instrumentation\\comparison-3e4b-1.json establish 15 native-matching bodies across initial Tier0, Instrumented Tier0 and optimized Tier1. InterfaceCaller/VirtualCaller each resolve one guard and emit four-byte final bodies; UnknownReceiver retains its candidate and emits 42 bytes. All 198 emitted instruction lines and Resolve GDV Checks phase slices match.",
+        "gaps": "Historical B324 failure and prior-stub identities remain in comparison-1d00-1.json; they are superseded by the successful instrumentation-batch tiered execution, not relabeled. Before/after CFG and IR slices retain only B322 profile-check diagnostics. Matching instruction text and sizes do not establish whole-dump or machine-byte parity."
       },
       "profileRepair": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
@@ -6289,6 +6311,27 @@
   },
   "sourceMap": [
     {
+      "area": "osr-patchpoint-metadata-ownership",
+      "native": ["src\\coreclr\\jit\\compiler.cpp:1701-1709", "src\\coreclr\\jit\\compiler.cpp:5974-5983", "src\\coreclr\\jit\\compiler.cpp:6840-6876", "src\\coreclr\\vm\\jitinterface.cpp:CEEJitInfo::getOSRInfo"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.comp.cs:_ownedPatchpointInfo", "sources\\Core\\jit\\compiler\\Compiler.comp.cs:compDone"],
+      "status": "Preserves borrowed EE ownership of getOSRInfo storage. The mismatched-target frame-size copy uses NativeMemory rather than the native arena, so its allocation is tracked separately and freed exactly once. Cleanup clears the active reference without freeing borrowed metadata. Native CDB diagnosis, borrowed/owned cleanup regressions and successful eager/value/hot-tier execution establish the B324 correction.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
+    {
+      "area": "profile-instrumentation",
+      "native": ["src\\coreclr\\jit\\fgprofile.cpp:350-780", "src\\coreclr\\jit\\fgprofile.cpp:1192-2893"],
+      "csharp": ["sources\\Core\\jit\\fgprofile\\Instrumentor.cs", "sources\\Core\\jit\\fgprofile\\BlockCountInstrumentor.cs", "sources\\Core\\jit\\fgprofile\\EfficientEdgeCountInstrumentor.cs", "sources\\Core\\jit\\fgprofile\\HistogramInstrumentors.cs", "sources\\Core\\jit\\compiler\\Compiler.Instrumentation.cs"],
+      "status": "Complete preparation, block/efficient-edge counters, handle/value histograms and core/inline-return dispatch. Sparse probes use an instrumentor-owned block dictionary while preserving native linked-list head insertion and traversal order; BasicBlock.bbSparseProbeList remains unchanged. The schema span is pinned only during the EE allocation callback; the returned profile buffer remains EE-owned. Debug synthesized-count conversions preserve pinned MSVC x64 results separately for narrow and wide counters. Positive counter/class/value instrumentation and emitted instruction slices match native under actual execution. Native source retained.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
+    {
+      "area": "atomic-concrete-node-types",
+      "native": ["src\\coreclr\\jit\\gtlist.h:LOCKADD-XCHG", "src\\coreclr\\jit\\gentree.cpp:Compiler::gtCloneExpr"],
+      "csharp": ["sources\\GenerateTables\\Inputs\\gtlist.h", "sources\\GenerateTables\\Program.cs", "sources\\Core\\jit\\gentreeopsdef\\genTreeOpsExtensions.generated.cs", "sources\\Core\\jit\\compiler\\Compiler.gt.cs:gtCloneBinary"],
+      "status": "The five binary atomic operators retain native indirection behavior but use GenTreeIndir as their managed concrete type rather than the native table's GenTreeOp allocation base. Inputs, generator validation and generated Debug type metadata agree with gtNewAtomicNode. Cloning constructs the same concrete type and retains the existing clone flag-copying semantics; the generic binary factory is unchanged. Five construction/clone regressions pass per configuration and fail against the old representation.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
+    {
       "area": "mask-local-conversion",
       "native": ["src\\coreclr\\jit\\optimizemaskconversions.cpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.MaskConversions.cs"],
@@ -6313,7 +6356,7 @@
       "area": "gdv-guard-resolution",
       "native": ["src\\coreclr\\jit\\fgopt.cpp:fgResolveGDVs", "src\\coreclr\\jit\\objectalloc.cpp:ObjectAllocator::IsGuard"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.GdvResolution.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.CloneViability.cs:IsGuard", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.EscapeAnalysis.cs:GuardInfo"],
-      "status": "Complete public resolver with existing guard recognition exposed internally, unchanged. Preserves method/local gates, compile-time class identity, EQ/NE edge selection, predecessor mutation order, profile repair and throwing relop retention. Native source retained; positive managed tiered execution remains unverified.",
+      "status": "Complete public resolver with existing guard recognition exposed internally, unchanged. Preserves method/local gates, compile-time class identity, EQ/NE edge selection, predecessor mutation order, profile repair and throwing relop retention. Instrumentation-batch OSR ownership correction enables positive native-matching interface/virtual resolution, the unresolved control and all 15 hot-tier bodies. Native source retained.",
       "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     },
     {

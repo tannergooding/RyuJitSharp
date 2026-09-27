@@ -15,6 +15,27 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Profile instrumentation and tiered execution
+
+Method instrumentation now prepares and emits block or sparse-edge counters,
+handle histograms and value histograms through the runtime's schema allocation
+contract. Critical-edge handling, probe relocation, inline-return processing
+and native-width synthesized counts follow the pinned implementation.
+Atomic counter nodes preserve their concrete indirection type through cloning.
+
+The edge and block corpora each execute 20 native-matching bodies. Eager GDV
+callers insert and execute class-profile probes; optimized span copy/equality
+methods each insert two value probes and match the native 106/101-byte bodies.
+Probe schemas, post-phase trees and emitted instruction sequences match;
+process-dependent addresses and existing profile-check diagnostics remain
+outside whole-dump parity.
+
+This work also corrects the earlier tiered heap failure: compiler cleanup no
+longer frees borrowed EE-owned OSR metadata, while locally allocated
+mismatched-target copies remain owned and released by the compiler. The
+15-body hot-tier GDV corpus now executes successfully, matching native positive
+interface/virtual guard resolution and the unresolved-receiver control.
+
 ## 2026-09-26: Weighted mask-local conversion
 
 Mask conversion now compares block-weighted costs across all definitions and

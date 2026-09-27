@@ -638,6 +638,21 @@ public partial class Compiler
                     break;
                 }
 
+                case GT_LOCKADD:
+                case GT_XAND:
+                case GT_XORR:
+                case GT_XADD:
+                case GT_XCHG:
+                {
+                    copy = new GenTreeIndir(
+                        oper,
+                        tree.Type,
+                        compiler.gtCloneExpr(tree.Op1),
+                        compiler.gtCloneExpr(tree.Op2)
+                    );
+                    break;
+                }
+
                 case GT_STORE_BLK:
                 {
                     var blk = tree.AsBlk();

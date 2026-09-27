@@ -44,7 +44,7 @@ internal static unsafe class BlockTraversalLoweringTests
             var cast = new GenTreeUnOp(GT_BITCAST, TYP_FLOAT, bits) { IsUnusedValue = true };
             var address = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
             var increment = compiler.gtNewIconNode(TYP_INT, 1);
-            var atomic = new GenTreeOp(GT_XADD, TYP_INT, address, increment) { IsUnusedValue = true };
+            var atomic = new GenTreeIndir(GT_XADD, TYP_INT, address, increment) { IsUnusedValue = true };
             var block = NewBlock(bits, cast, address, increment, atomic);
             compiler.compCurBB = block;
 
@@ -111,7 +111,7 @@ internal static unsafe class BlockTraversalLoweringTests
             var store = new GenTreeBlk(TYP_STRUCT, destination, init, new ClassLayout(8));
             var address = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
             var increment = compiler.gtNewIconNode(TYP_INT, 1);
-            var atomic = new GenTreeOp(GT_XADD, TYP_INT, address, increment) { IsUnusedValue = true };
+            var atomic = new GenTreeIndir(GT_XADD, TYP_INT, address, increment) { IsUnusedValue = true };
             var block = NewBlock(destination, fill, init, store, address, increment, atomic);
             compiler.compCurBB = block;
 

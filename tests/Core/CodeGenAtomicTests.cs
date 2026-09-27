@@ -15,6 +15,27 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class CodeGenAtomicTests
 {
+    [TestCase(GT_LOCKADD)]
+    [TestCase(GT_XAND)]
+    [TestCase(GT_XORR)]
+    [TestCase(GT_XADD)]
+    [TestCase(GT_XCHG)]
+    public static void AtomicClonesRetainTheirConcreteTypeAndEffects(genTreeOps oper)
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, _) => {
+            var original = compiler.gtNewAtomicNode(oper, TYP_INT,
+                compiler.gtNewIconNode(TYP_I_IMPL, 4096), compiler.gtNewIconNode(TYP_INT, 3));
+            var clone = compiler.gtCloneExpr(original);
+
+            Assert.That(clone, Is.TypeOf<GenTreeIndir>());
+            Assert.That(clone.Oper, Is.EqualTo(oper));
+            Assert.That(clone.Type, Is.EqualTo(original.Type));
+            Assert.That(clone.Flags, Is.EqualTo(original.Flags));
+            Assert.That(clone.AsIndir().Addr, Is.Not.SameAs(original.AsIndir().Addr));
+            Assert.That(clone.AsIndir().Data, Is.Not.SameAs(original.AsIndir().Data));
+        });
+    }
+
     [TestCase(INS_prefetcht0)]
     [TestCase(INS_prefetcht1)]
     [TestCase(INS_prefetcht2)]
@@ -56,7 +77,7 @@ internal static class CodeGenAtomicTests
             var data = compiler.gtNewIconNode(TYP_INT, value);
             data.IsContained = immediate;
             data.RegNum = immediate ? REG_NA : REG_RDX;
-            var tree = new GenTreeOp(GT_LOCKADD, TYP_VOID, Register(compiler, TYP_BYREF, REG_RCX), data);
+            var tree = new GenTreeIndir(GT_LOCKADD, TYP_VOID, Register(compiler, TYP_BYREF, REG_RCX), data);
 
             codeGen.genCodeForLockAdd(tree);
 
@@ -85,7 +106,7 @@ internal static class CodeGenAtomicTests
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) => {
             var target = same ? REG_RDX : REG_R8;
-            var tree = new GenTreeOp(oper, type, Register(compiler, TYP_BYREF, REG_RCX),
+            var tree = new GenTreeIndir(oper, type, Register(compiler, TYP_BYREF, REG_RCX),
                 Register(compiler, type.ActualType, REG_RDX)) { RegNum = target };
 
             Assert.That(tree.IndirOrArrMetaDataAddr, Is.SameAs(tree.Op1));
@@ -113,7 +134,7 @@ internal static class CodeGenAtomicTests
     public static void BitwiseAtomicsUseCompareExchangeOnlyForUsedResults(genTreeOps oper, bool unused)
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) => {
-            var tree = new GenTreeOp(oper, TYP_INT, Register(compiler, TYP_BYREF, REG_RCX),
+            var tree = new GenTreeIndir(oper, TYP_INT, Register(compiler, TYP_BYREF, REG_RCX),
                 Register(compiler, TYP_INT, REG_RDX)) { RegNum = unused ? REG_NA : REG_R8 };
             if (unused)
             {
@@ -213,7 +234,7 @@ internal static class CodeGenAtomicTests
             var value = Register(compiler, TYP_INT, REG_RDX);
             GenTree tree = oper == GT_CMPXCHG
                 ? new GenTreeCmpXchg(TYP_INT, address, value, Register(compiler, TYP_INT, REG_R9))
-                : new GenTreeOp(oper, TYP_INT, address, value);
+                : new GenTreeIndir(oper, TYP_INT, address, value);
             tree.RegNum = REG_R8;
             compiler.opts.dspCode = true;
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>

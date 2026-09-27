@@ -631,11 +631,11 @@ public static partial class genTreeOpsExtensions
         typeof(GenTreeUnOp), // GT_LCLHEAP
         typeof(GenTreeBoundsChk), // GT_BOUNDS_CHECK
         typeof(GenTree), // GT_MEMORYBARRIER
-        typeof(GenTreeOp), // GT_LOCKADD
-        typeof(GenTreeOp), // GT_XAND
-        typeof(GenTreeOp), // GT_XORR
-        typeof(GenTreeOp), // GT_XADD
-        typeof(GenTreeOp), // GT_XCHG
+        typeof(GenTreeIndir), // GT_LOCKADD
+        typeof(GenTreeIndir), // GT_XAND
+        typeof(GenTreeIndir), // GT_XORR
+        typeof(GenTreeIndir), // GT_XADD
+        typeof(GenTreeIndir), // GT_XCHG
         typeof(GenTreeCmpXchg), // GT_CMPXCHG
         typeof(GenTreeIndir), // GT_IND
         typeof(GenTreeStoreInd), // GT_STOREIND

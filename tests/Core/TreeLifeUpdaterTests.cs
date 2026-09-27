@@ -150,7 +150,7 @@ internal static unsafe class TreeLifeUpdaterTests
             Assert.That(VarSetOps.IsMember(compiler, compiler.compCurLife, 0), Is.EqualTo(general));
             GenTree indir = oper == GT_IND
                 ? new GenTreeIndir(oper, TYP_REF, address)
-                : new GenTreeOp(oper, TYP_INT, address, compiler.gtNewIconNode(TYP_INT, 1));
+                : new GenTreeIndir(oper, TYP_INT, address, compiler.gtNewIconNode(TYP_INT, 1));
             updater.UpdateLife(indir, general);
 
             Assert.That(VarSetOps.IsMember(compiler, compiler.compCurLife, 0), Is.True);

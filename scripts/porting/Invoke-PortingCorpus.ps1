@@ -7,6 +7,8 @@ param(
     [string] $ManagedJit = "",
     [string] $ManagedSource = "",
     [switch] $MinOpts,
+    [switch] $InstrumentedTier0,
+    [switch] $BlockCounters,
     [switch] $DisableObjectStackAllocation,
     [string] $TypeName = "RyuJitSharp.PortingCorpus",
     [string[]] $ExpectedMethods = @("Main", "Add", "Branch", "Locals", "Call", "InlineCaller", "IndirectCall", "FoldConstants", "FoldFloating", "FoldInteger", "FoldHardware",
@@ -26,8 +28,14 @@ Set-StrictMode -Version Latest
 if ($ExecuteManagedCode -and -not $ManagedJit) {
     throw "-ExecuteManagedCode requires -ManagedJit."
 }
+if ($InstrumentedTier0 -and $MinOpts) {
+    throw "-InstrumentedTier0 selects the runtime's instrumented tier; do not combine it with forced -MinOpts."
+}
+if ($BlockCounters -and -not $InstrumentedTier0) {
+    throw "-BlockCounters requires -InstrumentedTier0."
+}
 
-if ($MinOpts -and -not $PSBoundParameters.ContainsKey("ExpectedMethods")) {
+if (($MinOpts -or $InstrumentedTier0) -and -not $PSBoundParameters.ContainsKey("ExpectedMethods")) {
     $ExpectedMethods += "InlineCandidate"
 }
 
@@ -72,11 +80,20 @@ foreach ($name in @($start.Environment.Keys)) {
 }
 $settings = [ordered]@{
     DOTNET_ReadyToRun = "0"
-    DOTNET_TieredCompilation = "0"
+    DOTNET_TieredCompilation = if ($InstrumentedTier0) { "1" } else { "0" }
     DOTNET_JitDump = $selector
     DOTNET_JitDisasmDiffable = "1"
     DOTNET_JitDumpASCII = "1"
     DOTNET_JitStdOutFile = $dumpPath
+}
+if ($InstrumentedTier0) {
+    $settings.DOTNET_TieredPGO = "1"
+    $settings.DOTNET_TieredPGO_InstrumentOnlyHotCode = "0"
+    $settings.DOTNET_TC_CallCounting = "0"
+    $settings.DOTNET_TC_QuickJitForLoops = "1"
+    if ($BlockCounters) {
+        $settings.DOTNET_JitEdgeProfiling = "0"
+    }
 }
 if ($MinOpts) {
     $settings.DOTNET_JitMinOpts = "1"

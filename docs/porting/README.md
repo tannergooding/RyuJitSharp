@@ -308,6 +308,14 @@ allocation analysis, use `-DisableObjectStackAllocation` on both runs. These
 switches are recorded in the manifest and do not themselves enable managed
 execution.
 
+Use `-InstrumentedTier0` to request eager Tier0 profiling without call-count
+promotion to later tiers. This sets `TieredPGO_InstrumentOnlyHotCode=0` and
+disables runtime call counting; it is distinct from forced `-MinOpts` and
+cannot be combined with it. Add `-BlockCounters` to select block rather than
+edge probes. Check the instrumentation schemas and inserted probes, not just
+the tier flags or phase completion. The default method set includes the
+non-inlined `InlineCandidate` in this mode.
+
 Use `-RawHexCode` on native and managed captures to retain emitted hot-code
 bytes in the dump. This is independent of `-ExecuteManagedCode`; raw bytes that
 contain relocated addresses can differ between processes and require

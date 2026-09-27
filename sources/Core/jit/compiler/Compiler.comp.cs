@@ -17,6 +17,8 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private unsafe PatchpointInfo* _ownedPatchpointInfo;
+
     /// <summary>Always present</summary>
     public InlineContext? compInlineContext;
 
@@ -1221,6 +1223,7 @@ public partial class Compiler
                 // Allocate a local copy with altered frame size.
                 var patchpointInfoSize = PatchpointInfo.ComputeSize(info.compLocalsCount);
                 var newInfo = (PatchpointInfo*)(NativeMemory.Alloc((uint)(patchpointInfoSize)));
+                _ownedPatchpointInfo = newInfo;
 
                 newInfo->Initialize(info.compLocalsCount, totalFrameSize + frameSizeUpdate);
                 newInfo->Copy(info.compPatchpointInfo);
@@ -1504,11 +1507,14 @@ public partial class Compiler
         codeGen?.Disassembler.disDone();
 #endif
 
-        if (info.compPatchpointInfo is not null)
+        // getOSRInfo returns EE-owned storage. Only the mismatched-target copy is ours.
+        if (_ownedPatchpointInfo is not null)
         {
-            NativeMemory.Free(info.compPatchpointInfo);
-            info.compPatchpointInfo = null;
+            NativeMemory.Free(_ownedPatchpointInfo);
+            _ownedPatchpointInfo = null;
         }
+
+        info.compPatchpointInfo = null;
     }
 
     public unsafe void compFunctionTraceEnd(void* methodCodePtr, int methodCodeSize, bool isNyi)
