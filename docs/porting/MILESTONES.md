@@ -15,6 +15,29 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Async state-machine transformation
+
+Runtime-async methods now execute the complete transformation after
+rationalization: continuation layout and reuse, normal and tail suspension,
+live-state storage, execution/synchronization contexts, resumption dispatch and
+exception handling. Post-morph pseudoarguments are consumed without invalidating
+the completed ABI classification, and symbolic continuation offsets are resolved
+in their final owning blocks.
+
+The runtime corpus exercises genuinely pending awaits, results, exceptions and
+`AsyncLocal` restoration. Its Tier0 wrapper provides a positive native tail-await
+case; the same DLL under full optimization provides a no-tail control. Existing
+LIR operands retain their costs and sequence numbers during context-helper
+construction, while helper-specific context arguments preserve native spilling.
+
+Transformation execution logs, post-phase control flow and continuation records
+match native in FullOpts, Tier0 and GCStress4 captures. FullOpts and GCStress4
+instruction streams match; with optional relocations disabled, all seven
+transformed Tier0 bodies match as well. Three non-transformed adapters retain
+code-order differences. Input address types and previously recorded diagnostics
+still prevent whole-dump parity; the async corpus does not assert a full
+collection count.
+
 ## 2026-09-26: OSR address and phase-status alignment
 
 Patchpoint counter addresses now use native integer-pointer types rather than

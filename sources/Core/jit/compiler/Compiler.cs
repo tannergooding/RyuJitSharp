@@ -2491,8 +2491,13 @@ public partial class Compiler
         return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }
 
-    // TODO: Port phase - TransformAsync
-    public PhaseStatus TransformAsync() => PhaseStatus.MODIFIED_NOTHING;
+    public PhaseStatus TransformAsync()
+    {
+        assert(compIsAsync);
+
+        var transformation = new AsyncTransformation(this);
+        return transformation.Run();
+    }
 
     private PhaseStatus PhysicalPromotion()
     {

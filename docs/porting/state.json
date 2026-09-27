@@ -12,30 +12,26 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Complete async state-machine transformation against 33baf8. B322 investigation established an uninitialized native diagnostic flag, not a managed profile-check algorithm defect; retain that raw-dump limitation and resume final async activation.",
+      "scope": "Correct B336 pre-transform async local-address types against 33baf8 after committing the completed async transformation. Preserve native pointer/GC contracts without changing unrelated local-address defaults.",
       "doneWhen": [
-        "Complete physical promotion including candidate selection, replacement, liveness and decomposition rather than activating a partial prerequisite.",
-        "Complete async transformation including normal/tail awaits, continuation layout, suspension/resumption, live state, contexts and EH rather than activating only the wrapper.",
-        "Publish complete native-equivalent OSR patchpoint frame metadata, preserving EE allocation/ownership, shadow locals, exposure, context/special offsets and callee-save encoding.",
-        "Redirect OSR import to the designated entry, preserving weights and profile consistency; prove initialization is not repeated and carried Tier0 state survives actual OSR execution.",
-        "Preserve native integer-pointer patchpoint counter addresses and ActionPhase status semantics; verify the existing OSR operand and phase-boundary differences disappear without formatter normalization.",
-        "Establish B322's state/dispatch provenance without changing profile synthesis or emulating native undefined state; preserve raw evidence and the unresolved whole-dump limitation.",
-        "Integrate named shared deltas, review each complete native closure and validate focused semantic/runtime evidence with existing corpora.",
-        "Commit each completed subsystem separately, preserving the other lane's WIP, and continue remaining port dependencies."
+        "Trace the native/managed producers of the pre-transform local-address type difference, including the resumed-definition pseudoargument.",
+        "Correct the complete affected producer contract without normalizing diagnostic output or changing unrelated address defaults.",
+        "Add focused regression coverage and compare the existing async corpus under matched deterministic Tier0 settings.",
+        "Commit the validated correction with its evidence and continue remaining port dependencies."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "B333 committed5cdf72b and B322 diagnosis55f0023. Shared clone defect B335 is corrected with75D74R isolated,339D304R integrated and29/143baseline; the incomplete async activation remains separate WIP. Native lane is recapturing FullOpts before Tier0/GCStress. No publication authorized.",
+      "parentScope": "Async source d5bb0f55 passes343D308R and29/143baseline. Final comparison-d5bb-1.json establishes matching transformation execution logs, CFGs and continuation records; FullOpts/GCStress instruction lines match, as do all seven transformed Tier0 bodies with optional relocations disabled. Three non-transformed adapters retain real ordering/code differences B337. Commit this completed batch, then address input-type mismatch B336. No publication authorized.",
       "deferred": "B311 optional metrics fixture, B318/B325 existing argument regressions, B334 lowering assertions, B307 EH node IDs, B320 static-data descriptions and B321/B323 profile formatting stay separate. B324 and B333 are corrected. No general argument-morph redesign or profile-synthesis redesign.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
           "owner": "9e905421-71cc-4119-ab60-d762e4b27745",
           "files": "New async/AsyncTransformation files, Compiler.AsyncTransformation support and AsyncTransformationTests; parent owns shared deltas and the public TransformAsync entry.",
-          "status": "in-progress",
-          "remainingBoundary": "Reviewer6356462f cleared all semantic fixes and isolated three remaining diagnostic callsites. Author9e905421 froze review-final12D12R; parent verified exactly those three corrections (post-lift inventory, shared resumed-def message, full enum labels). Prior inactive integration8eac397 passed264D230R. Next activate public TransformAsync and convert the real tail-await test to that entry, then validate actual normal/tail/context/EH runtime paths. Native lane established one actual Tier0 tail-await in InlineTailVersion; FullOpts remains a no-tail control."
+          "status": "done",
+          "remainingBoundary": "Complete public phase integrated, including post-morph argument removal, final-owner offset replacement, nonfaulting memory flags, native diagnostic closure, operand metadata and context-role spill policy.343D308R, public-stub and prior-context behavior failures,29/143baseline and actual FullOpts/Tier0/GCStress4 execution. comparison-d5bb-1.json establishes matching transformation logs/CFGs/continuation records; all transformed Tier0 instruction streams match with optional relocations disabled. B336 input types, B337 adapters and broader dump/GC coverage remain separately scoped."
         },
         {
           "scope": "Complete profile instrumentation: count/edge, handle and value instrumentors plus preparation/core/inline-return wrapper.",
@@ -433,7 +429,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B335 clone correction is complete independently of async: source25aa98cb passes75D74R, and old producer e76defa fails8new cases/12controls. Integrated async sourceac447671 passes339D304R and29/143baseline; JIT79E43005 at artifacts\\async-integration\\native-jit-4. Collect native lane9b9dfbb4's fresh FullOpts replay, then Tier0 and matched GCStress4 if prerequisites pass; diagnose its first concrete failure if not. Keep async activation and17-file packet uncommitted until actual normal/tail/context/EH execution and scoped comparison are established. Preserve fa2f failure. No push.",
+    "nextAction": "Commit the fully validated async batch, then trace B336: Tier0 InlinedTailAwait(Task<int>):int input nodes000007/000016 are native LCL_ADDR long but managed byref before Transform async. Identify their importer/morph producer and preserve the native pointer/GC contract without changing all address defaults. Use existing corpus and deterministic DOTNET_JitEnableOptionalRelocs=0 comparison after the fix. Async comparison-d5bb-1.json and343D308R/29-143baseline are final; native lane collected through turn64, next unread65. B337 adapter ordering, VN/exponent and B322 diagnostics remain separate. No push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -468,6 +464,22 @@
     "nativeResidualBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
     "validation": {
       "sdk": "11.0.100-rc.1.26425.128",
+      "asyncTransformation": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "sourceSnapshot": "d5bb0f5554eed7e297ca8250f96c7c5ee571349a",
+        "manifest": "artifacts\\async-integration\\validation-7\\manifest.json",
+        "managedJit": "artifacts\\async-integration\\native-jit-7\\RyuJitSharp.dll",
+        "sha256": "5E54FFEF08CE9BB96E38A3E21BBAA82F2EC4036CDD09F816EF7753CF0EE339A2",
+        "tests": "343 Debug / 308 Release, full analysis, no skipped tests. Async transformation, existing async support, OSR flow/patchpoints, local stores and finally/EH cloning. Explicit regressions cover existing LIR operand metadata and context-role spill policy.",
+        "oldContextControl": "Source1288d09213c2b7ab944c47a81a1a11efb04b9b33 under artifacts\\async-integration\\validation-8 restores only the old resequencing/invariant movement behavior while retaining new method signatures. Two Debug cases fail on changed costs and the absent context spill; two controls pass. No reflection-arity or fixture failures.",
+        "oldEntryControl": "Source51c2e7f01eaaf95ab55a7c3b6151e1cdf5d228d0 under artifacts\\async-integration\\validation-3: the public tail-await test fails against the original no-op; eleven controls pass.",
+        "executionBaseline": "artifacts\\upstream-refresh-33baf8\\async-managed-matrix-7\\results.json:29 configurations,143 positive managed bodies, expected output and no fallback.",
+        "corpusSha256": "39CC21594C7E68A2FD9BD57A15B1FB0467B10F457B12CEC680A693282774BA39",
+        "priorRuntimeEvidence": "artifacts\\async-transformation\\comparison-ac447-1.json preserves successful execution and the original FinishSuspension node metadata/Catch diagnostic defects. Prior artifacts are not relabeled.",
+        "comparison": "artifacts\\async-transformation\\comparison-d5bb-1.json: fresh matched FullOpts11bodies, Tier0 twelve, GCStress4 eleven and optional-relocations-disabled Tier0 twelve. All transformation execution logs, statuses, post-transform CFG rows and continuation records match. Every execution exits0 with expected output, empty stderr and no fallback.",
+        "codegen": "FullOpts and GCStress4 emitted instruction lines/sizes match for every selected body. Ordinary Tier0 retains six differing bodies. With DOTNET_JitEnableOptionalRelocs=0, all seven transformed bodies match, including the continuation allocation; positive tail await is80bytes versus74with ordinary settings, native/managed equal within each pair. Three Task-returning adapters without Transform async retain ordering/code differences B337.",
+        "limits": "No whole-dump or raw-code-byte parity claim. B336 pre-transform local-address types, existing VN annotation reversals, exponent spelling and B322 diagnostics remain visible. GCStress4 is enabled but this corpus does not assert a full-collection count. First native no-optrelocs capture has a duplicate compilation and remains preserved; native-d5bb-tier0-nooptrelocs-2 is the matched twelve-header reference."
+      },
       "localStoreCloneTypes": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "sourceSnapshot": "25aa98cb5ba4a709e69033f33d1657a42d9bc43f",
@@ -482,7 +494,7 @@
         "source": "compiler.h:7195-7197 leaves fgPgoDeferredInconsistency uninitialized; compiler.cpp:7719-7740 placement-constructs Compiler in arena storage. arenaallocator.h:212-214 and jit/alloc.h:62-65 fill new DEBUG allocations with jit.h:665 UninitializedFillByte0xcd.",
         "stateWrites": "All named writes match managed: fgprofilesynthesis.cpp310-325 clears before checking and defers actual pre-import failure; flowgraph.cpp598-605 asserts/resets synthesized-consistent profiles. Neither initializes a method that does not synthesize profiles.",
         "nativeObservation": "artifacts\\profile-check\\native-flag-1\\debugger.txt: CDB breaks at the first verbose fgDebugCheckProfileWeights for HotLoop, reads fgPgoDeferredInconsistency at PDB offset0x3d5 as raw0xcd, then continues to successful once-only OSR corpus output.",
-        "reproduce": "Run artifacts\\profile-check\\inspect-native-flag.ps1 -OutputDirectory <fresh>. The script verifies native JIT and strengthened corpus hashes against native-strengthened-1, inherits its isolated runtime settings, and loads only matching local PDBs. No native source or memory is patched.",
+        "reproduce": "Run artifacts\\profile-check\\inspect-native-flag.ps1 -OutputDirectory <fresh>. The script verifies native JIT and strengthened corpus hashes against native-strengthened-1, inherits its isolated runtime settings, and loads only matching local PDBs. No native source or flag value is patched.",
         "disposition": "B322 remains an upstream diagnostic limitation. Managed zero initialization is retained; no invalid bool emulation, dump normalization, new parity claim or oracle modification."
       },
       "osrAddressAndPhaseContracts": {
@@ -6364,6 +6376,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "async-state-machine-transformation",
+      "native": ["src\\coreclr\\jit\\async.h:1-549", "src\\coreclr\\jit\\asyncanalysis.cpp:1-778", "src\\coreclr\\jit\\async.cpp:961-5282", "src\\coreclr\\jit\\gentree.cpp:1879-1907"],
+      "csharp": ["sources\\Core\\jit\\async\\AsyncTransformation.Layout.cs", "sources\\Core\\jit\\compiler\\Compiler.AsyncTransformation.*.cs", "sources\\Core\\jit\\gentree\\CallArgs.AsyncTransformation.cs", "sources\\Core\\jit\\compiler\\Compiler.cs:TransformAsync"],
+      "status": "Complete Windows-x64 transformation closure: await analysis, continuation layout/reuse, normal/tail suspension, live-state persistence, context handling, resumption dispatch and EH. The public phase runs after rationalization and before lowering. Post-morph pseudoarguments are removed without resetting ABI state; offset replacement follows final LIR ownership. Existing operands retain sequence/cost metadata and helper-specific context spilling follows native. Final comparison-d5bb-1.json matches transformation logs/CFGs/continuation records and all transformed Tier0 instruction streams with optional relocations disabled. Input and adapter differences B336/B337 remain separate. Native sources retained.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "local-store-clone-type",
       "native": ["src\\coreclr\\jit\\gentree.cpp:11421-11426"],
