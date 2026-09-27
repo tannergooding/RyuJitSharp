@@ -13,14 +13,23 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class LocalThreadingTransitionTests
 {
-    [TestCase(0)]
-    [TestCase(1)]
-    [TestCase(2)]
-    public static void RetiringLocalListsAllowsImplicitByrefReplacementAtEveryPosition(int position)
+    [TestCase(0, false)]
+    [TestCase(1, false)]
+    [TestCase(2, false)]
+    [TestCase(0, true)]
+    [TestCase(1, true)]
+    [TestCase(2, true)]
+    public static unsafe void RetiringLocalListsAllowsImplicitByrefReplacementAtEveryPosition(int position, bool async)
     {
         SsaLivenessTests.WithCompiler(1, compiler => {
+            if (async)
+            {
+                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_ASYNC);
+            }
+
+            var pointerType = async ? TYP_BYREF : Globals.TYP_I_IMPL;
             compiler.fgNodeThreading = NodeThreading.AllLocals;
-            compiler.lvaTable[0].Type = TYP_BYREF;
+            compiler.lvaTable[0].Type = pointerType;
             compiler.lvaTable[0].lvIsParam = true;
             compiler.lvaTable[0].IsImplicitByRef = true;
             GenTreeLclFld[] locals = [
@@ -56,7 +65,7 @@ internal static class LocalThreadingTransitionTests
                 throw new InvalidOperationException("Missing implicit-byref expansion.");
             var address = result.AsIndir().Addr;
             var pointer = address.Oper is GT_ADD ? address.AsOp().Op1 : address;
-            Assert.That(pointer.Type, Is.EqualTo(TYP_BYREF));
+            Assert.That(pointer.Type, Is.EqualTo(pointerType));
             Assert.That(pointer.Flags & GTF_VAR_DEATH, Is.Not.Zero);
 #if DEBUG
             Assert.That(pointer.TreeId, Is.EqualTo(locals[position].TreeId));

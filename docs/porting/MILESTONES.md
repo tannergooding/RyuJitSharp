@@ -15,6 +15,15 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Null-check and implicit-byref fixture contracts
+
+Early-propagation and tailcall fixtures now initialize the absent return-buffer
+sentinel, preserving ordinary receiver nullability. Local-threading tests model
+native integer pointers for ordinary implicit-byref parameters and managed byrefs
+for async parameters, with all three replacement positions covered in both modes.
+The complete affected fixtures and SSA/liveness controls pass 60 Debug and
+57 Release cases without production changes.
+
 ## 2026-09-27: Intrinsic integer bit conversions
 
 Integral broadcasts, SIMD mask evaluation and hardware-intrinsic folding now

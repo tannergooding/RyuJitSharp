@@ -398,6 +398,7 @@ internal static unsafe class TailCallMorphTests
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(false);
         compiler.info.compIsStatic = true;
+        compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.info.compArgsCount = 2;
         compiler.info.compLocalsCount = 2;
         compiler.lvaTable = [

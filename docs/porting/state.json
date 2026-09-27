@@ -12,19 +12,19 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Restore native truncating and bit-reinterpreting conversions in integral vector broadcasts, mask evaluation and hardware-intrinsic folding.",
+      "scope": "Restore early-propagation/tailcall fixture nullability and ordinary/async implicit-byref fixture types.",
       "doneWhen": [
-        "Preserve all integral lane truncations and signed/unsigned mask bit patterns under checked builds.",
-        "Retain native negative-index rejection, overshift handling, unsigned lane extraction and bit-scan undefined-zero rules.",
-        "Correct two expected-value conversions independently of production and add sign-bit/truncation controls.",
-        "Validate the complete intrinsic fixture and related SIMD/VN tests, then checked-JIT execution before committing."
+        "Initialize absent return-buffer sentinels in the two remaining evidenced null-check fixtures.",
+        "Model TYP_I_IMPL for ordinary implicit-byref parameters and TYP_BYREF for async parameters, matching pinned lclvars.cpp2532.",
+        "Cover all three local-list positions in both pointer modes while preserving death flags and node ownership assertions.",
+        "Run complete affected fixtures in Debug/Release and commit without production changes."
       ],
       "validation": [
         "Baseline artifacts\\core-validation\\debug-1.trx and release-1.trx on09bca24;11687Debug/10774Release total cases.",
-        "Run HardwareIntrinsicInitializationTests and related SIMD/ValueNum tests in Debug/Release; preserve existing33failure baseline and demonstrate new boundary failures.",
-        "Freeze corrected source, publish checked NativeAOT JIT and execute the established29configuration/143body baseline without fallback."
+        "Baseline artifacts\\core-validation\\debug-2.trx/release-2.trx retain the failing assertions and expected-type mismatches.",
+        "Run EarlyPropagationTests, TailCallMorphTests, LocalThreadingTransitionTests and SsaLivenessTests with full analysis."
       ],
-      "parentScope": "Adapters committed65e24b3. B342 investigation establishes actual checked-build numeric defects; no global overflow-policy changes.",
+      "parentScope": "B343 committed6a57afd2. Remaining18Debug/12Release failures include stale fixture contracts; native behavior is not being changed.",
       "deferred": "Other full-suite failure groups remain in baseline TRX. B322 and broader dump/raw-byte/GC coverage remain separate.",
       "parallelPackets": [
         {
@@ -430,7 +430,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "B343 intrinsic conversions validated: source4c629007,1094Debug/1071Release,83old Debug failures/386controls and465old Release passes; fresh29/143baseline retains all143instruction streams/sizes and97CSE phases. Commit locally, then inspect remaining18Debug/12Release failures in artifacts\\core-validation\\debug-2.trx/release-2.trx, starting with complete EarlyPropagationTests/LocalThreadingTransitionTests/TailCallMorphTests assertion stacks and CallFoldingTests enum cases. Do not weaken expectations before establishing native contracts; no push.",
+    "nextAction": "Morph fixture corrections pass60Debug/57Release; commit locally. Then fix CallFoldingTests input contract: native Enum.Equals requires a nonnull second argument, while current positive tests supply a nullable local. Preserve the native guard, test positive nonnull and negative nullable arguments separately, and retain nonintegral/type-exactness controls. Other remaining groups are LinearScanMemoryAndComparisonTests, CompareNodeLoweringTests and StackArrayExpansionTests; no push.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -484,6 +484,8 @@
         "sentinelTests": "artifacts\\core-validation\\sentinel-debug-1.trx and sentinel-release-1.trx:154Debug/153Release pass, including IndirectCallTransformationTests. Seven original fault/write-barrier failures per configuration corrected; no expectation or production changes.",
         "adapterCorrection": "EmitterConstantDescriptorTests uses typeof(Emitter.CnsVal); DivisionOwnershipTests binds current Lowering.ReplaceWithLclVar. Production and test expectations unchanged.",
         "adapterTests": "artifacts\\core-validation\\adapters-debug-1.trx and adapters-release-1.trx:179Debug/183Release pass, including CallTargetLoweringTests.142baseline failures per configuration corrected.",
+        "morphFixtureCorrection": "EarlyPropagationTests/TailCallMorphTests initialize absent return-buffer sentinel. LocalThreadingTransitionTests covers all three positions in ordinary TYP_I_IMPL and async TYP_BYREF modes, matching native lclvars.cpp2532. No production changes.",
+        "morphFixtureTests": "artifacts\\core-validation\\morph-fixtures-debug-2.trx and morph-fixtures-release-2.trx:60Debug/57Release pass, including SsaLivenessTests.",
         "latest": "artifacts\\core-validation\\debug-2.trx:18failed/11759passed;release-2.trx:12failed/10852passed. Runs use the already full-analysis-built corrected assemblies; no skipped cases.",
         "remaining": "B342 remains open for other baseline failures, including enum folding and assertion/ownership cases. Full-suite success has not been established."
       },
