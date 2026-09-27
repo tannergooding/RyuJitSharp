@@ -15,6 +15,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-26: Weighted mask-local conversion
+
+Mask conversion now compares block-weighted costs across all definitions and
+uses of a local, retaining it as a mask when that removes more conversions
+than it adds. Ties and uses that could lose vector data remain unchanged;
+converted locals preserve the native SIMD metadata and local threading.
+
+The AVX-512 corpus removes one store conversion and two use conversions in
+the positive method. Its 52-byte body and the two unchanged control bodies
+match native emitted instruction slices under actual FullOpts execution.
+The native mask-local debug-range assertion also affects managed full dumps,
+which retry at MinOpts; separate disassembly captures establish optimized
+execution rather than counting that retry as a pass.
+
 ## 2026-09-26: Last-use implicit-byref copy omission
 
 The pre-morph phase now marks last-use struct locals eligible for passing

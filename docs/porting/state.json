@@ -12,20 +12,34 @@
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "activeBatch": {
-      "scope": "Port complete fgMarkImplicitByRefCopyOmissionCandidates against33baf8. Preserve early-liveness/target gates, execution-order traversal, last-use eligibility and existing ABI classification before argument morphing.",
+      "scope": "Port complete fgOptimizeMaskConversions against33baf8 optimizemaskconversions.cpp: weighted eligibility, SIMD metadata consistency, local-use checking and conversion rewriting.",
       "doneWhen": [
-        "Port the complete native marking phase using existing visitor, local-list and ABI helpers.",
-        "Cover last-use/call/struct gates, promoted and implicit-byref exclusions, ABI-byref requirements and nested calls.",
-        "Compare positive native/managed marking and the existing FourFieldCopy downstream code gap; preserve established execution baselines.",
-        "Commit the validated copy-omission marking batch locally, then continue the next remaining dependency."
+        "Port complete weight accounting, checker, updater and public phase with native gates and diagnostics.",
+        "Cover weighted profitability/ties, data-loss exclusions, incompatible conversion metadata and statement/local threading.",
+        "Compare positive native/managed mask-local decisions when supported by the host and preserve established execution baselines.",
+        "Commit the validated mask-conversion batch locally, then continue the next remaining dependency."
       ],
       "validation": [
         "Use focused Debug/Release selections against immutable committed archives with owned overlays and separate obj/bin outputs. Verify source hashes and force rebuild after overlays; then validate integrated contracts.",
         "For production phase changes, publish into a fresh NativeAOT directory and preserve established minopts execution/GCStress4 behavior. Primitive-only packets need focused semantic evidence, not unrelated full-runtime builds."
       ],
-      "parentScope": "Struct promotion committed6c11bfd. Parent owns copy-omission marking and tests; independent lane extracts native marking and copy decisions from the existing corpus. No publication authorized; commits remain checkpoints.",
+      "parentScope": "Copy omission committed350bdf1. Parent owns complete mask-conversion phase and integration; native lane owns corpus comparisons. User requested larger implementation packets and continued parallel work overnight: independent lanes own complete inactive physical-promotion and profile-instrumentation subsystems while parent integrates masks and shared dependencies. Consolidate validation per subsystem, not per helper. No publication authorized; commits remain checkpoints.",
       "deferred": "B311 optional metrics fixture, B318/B325 existing argument regressions, B307 EH node IDs, B320 static-data descriptions, B321-B323 profile diagnostics, B324 tiered heap corruption and remaining B315 physical-promotion/graph parity stay separate. No general argument-morph redesign.",
       "parallelPackets": [
+        {
+          "scope": "Complete profile instrumentation: count/edge, handle and value instrumentors plus preparation/core/inline-return wrapper.",
+          "owner": "4738d2a0-2db8-4c2f-855b-41d9d9cff502",
+          "files": "Instrumentor.cs, new fgprofile and Compiler.Instrumentation files, ProfileInstrumentationTests.cs; parent owns shared deltas and public entries.",
+          "status": "in-progress",
+          "remainingBoundary": "Implement complete inactive subsystem against33baf8, reusing WalkSpanningTree. Preserve schema/ABI buffer ownership, probe ordering/relocation, tailcalls, minimal-intrinsic policy and histogram/value semantics. Consolidated full-analysis packet validation; parent runtime integration."
+        },
+        {
+          "scope": "Complete physical-promotion subsystem against promotion.h/.cpp, promotionliveness.cpp and promotiondecomposition.cpp.",
+          "owner": "9ac3e59e-498c-469c-94c6-87f58abf6ff1",
+          "files": "New promotion files, Compiler.PhysicalPromotion*.cs and PhysicalPromotionTests.cs; parent owns shared deltas and public entry.",
+          "status": "in-progress",
+          "remainingBoundary": "Deliver substantial complete inactive implementation packet with consolidated full-analysis validation. Preserve native algorithms and approved node-replacement ownership; report genuine shared blockers. Parent handles review, public activation and runtime comparisons."
+        },
         {
           "scope": "Complete native static-initialization expansion.",
           "owner": "3a2c8d9b-e6b9-4635-bd3f-97da1ef78f18",
@@ -408,7 +422,7 @@
         "Exhaustive assertion-kind/capacity matrices, general test infrastructure and unchanged-frontier corpus captures."
       ]
     },
-    "nextAction": "Copy-omission marking is validated at77a8b02ee3141e73154cec046c2d364815c633a0, with only an explanatory source comment added afterward. All14new cases pass Debug/Release; integrated89Debug85Release pass with established B318 separate. Seven old-stub failures/seven controls in each configuration establish actual effects. All nine executed marking phases and instruction slices match native; FourFieldCopy shrinks46to34bytes/frame72to56 after eliminating the outgoing copy. The29/143baseline passes without fallback. Commit this completed batch and continue complete fgOptimizeMaskConversions from pinned optimizemaskconversions.cpp, including weighted eligibility and both visitors; source has been inspected but no implementation changed yet. No push or PR authorized.",
+    "nextAction": "Mask-conversion phase validated at2bca28d58aa3b71d7e857b43195f0e849d683599: all16Debug15Release new cases pass,362Debug390Release integrated pass with33known B145 Debug failures; old stub fails three mask cases per configuration. Positive mask decisions and all three emitted instruction slices/sizes match native under separate FullOpts execution;29/143baseline passes. Commit mask batch, excluding physical-promotion/profile-instrumentation WIP, then integrate those complete packets and their named shared dependencies as ready. Native lane establishing physical-promotion evidence from existing UTF8/struct corpora. B327 full-dump failures/managed MinOpts retry are not optimized execution. No push or PR authorized.",
     "handoff": {
       "status": "successor-active",
       "branch": "tannergooding-ryujit-upstream-refresh",
@@ -476,6 +490,26 @@
         "scope": "Restore pinned output-pointer-only getThreadLocalStaticBlocksInfo across three wrappers/interface/vtable; rename final metadata slot to offsetOfBaseOfThreadLocalData. Keep existing slot, calling convention, offset widths and neighboring getThreadLocalFieldInfo bool.",
         "nativeEvidence": "MSVC native-probe.cpp static_assert checks exact member signature against pinned corinfo.h; sizeof56, pointer-field offsets0/16/24/32 and scalar offsets40/44/48/52 match managed raw layout.",
         "gaps": "TLS phase is not activated. Virtual native callbacks verify forwarding without claiming actual runtime TLS expansion."
+      },
+      "maskConversions": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "snapshot": "2bca28d58aa3b71d7e857b43195f0e849d683599",
+        "snapshotScope": "Committed350bdf1 plus mask phase/entry/tests only; excludes concurrent physical-promotion WIP and separately built corpus.",
+        "nativeAot": "artifacts\\mask-conversion\\native-jit-1\\RyuJitSharp.dll",
+        "sha256": "B7CF7385C570DE2FF2B94C5B2AE978364C51739A40F401CFF9EAD179F1E65B8F",
+        "corpusSha256": "E228718B457D1D270D32CB829E825A4A7DBF2327C28CBCB43855B6F9EA251F7E",
+        "debugPassed": 362,
+        "releasePassed": 390,
+        "debugFailed": 33,
+        "releaseFailed": 0,
+        "tests": "MaskConversionTests and HardwareIntrinsicInitializationTests with full analysis on isolated source. All16Debug15Release new cases pass: weighted profitability/ties, all-definition rewrites, cached SIMD metadata, local sequencing, address/partial/vector uses, promoted fields, parameters, OSR and phase gates.",
+        "knownFailure": "B145 already records33Debug HWI mask/broadcast/folding and test-cast failures. Release passes. No assertions or checked arithmetic settings changed.",
+        "baseline": "artifacts\\upstream-refresh-33baf8\\mask-conversion-managed-matrix\\results.json:29configurations143positive managed bodies, expected outcomes and no fallback.",
+        "native": "artifacts\\mask-conversion\\native-4\\evidence.json: host AVX512F enabled, AVX10v1 unsupported. MaskRoundTrip converts V01 and removes three conversions; two executed controls retain vectors. Separate executable disassembly yields52/67/49bytes. Positive full-dump process hits pinned scopeinfo.cpp:722 assertion after phase output; not counted as execution success.",
+        "negativeControls": "artifacts\\mask-conversion\\comparison-2bca.json: committed350bdf1 archive with only MaskConversionTests.cs overlaid fails three mask cases in each configuration. The exact same33Debug HWI test IDs fail before and after; no broader B145 investigation.",
+        "comparison": "artifacts\\mask-conversion\\comparison-2bca.json: native/managed weighted eligibility and all three rewrites match (V01 current300.00/switch0.00). All10positive,14vector-use and11vector-input emitted instruction lines match; code sizes52/67/49bytes. Raw phase slices retain B322 diagnostics and line-ending differences; RWD04 constant-comment tab spacing differs.",
+        "execution": "Separate disassembly-only FullOpts runs execute all six matching/nonmatching inputs, with managed invoked-as-altjit marker and no fallback. Maintained corpus README reproduction also executed against both JITs.",
+        "gaps": "B327 native full dump aborts at scopeinfo.cpp:722; managed full dump retries at MinOpts and exits zero with160bytes. Neither diagnostic run establishes optimized execution. Matching emitted instructions do not establish raw machine-byte, metadata or whole-dump parity."
       },
       "implicitByRefCopyOmission": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
@@ -6254,6 +6288,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "mask-local-conversion",
+      "native": ["src\\coreclr\\jit\\optimizemaskconversions.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.MaskConversions.cs"],
+      "status": "Complete public phase, weighted eligibility and both execution-order visitors. Dictionary keyed by local number is not enumerated, preserving native traversal and diagnostic order. Preserves ties, invalidation/data-loss exclusions, cached metadata and local resequencing. Positive rewrite and all three FullOpts instruction slices/sizes match native; B327 full-dump limitation remains. Native source retained.",
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "implicit-byref-copy-omission",
       "native": ["src\\coreclr\\jit\\morph.cpp:fgMarkImplicitByRefCopyOmissionCandidates"],

@@ -16024,9 +16024,6 @@ public partial class Compiler
         return PhaseStatus.MODIFIED_NOTHING;
     }
 
-    // TODO: Port phase - fgOptimizeMaskConversions
-    private PhaseStatus fgOptimizeMaskConversions() => PhaseStatus.MODIFIED_NOTHING;
-
 #if TARGET_X86
     private GenTree? fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon local)
     {
