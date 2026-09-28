@@ -11,9 +11,12 @@ public sealed partial class CodeGen
 {
     public void genGeneratePrologsAndEpilogs()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Prolog and epilog materialization requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Prolog and epilog materialization requires AMD64.");
 #else
+#if UNIX_AMD64_ABI
+        RequireSupportedRootPrologAbi();
+#endif
         Emitter.RequireSupportedInstructionRecording();
 #if DEBUG
         if (_verbose)
@@ -45,9 +48,12 @@ public sealed partial class CodeGen
 
     public void genFnProlog()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Root prolog generation requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Root prolog generation requires AMD64.");
 #else
+#if UNIX_AMD64_ABI
+        RequireSupportedRootPrologAbi();
+#endif
         Emitter.RequireSupportedInstructionRecording();
         _compiler.funSetCurrentFunc(0);
         JITDUMP("*************** In genFnProlog()\n");
@@ -310,6 +316,9 @@ public sealed partial class CodeGen
             Emitter.emitMarkPrologEnd();
         }
 
+#if UNIX_AMD64_ABI && FEATURE_SIMD
+        genClearStackVec3ArgUpperBits();
+#endif
 #if SWIFT_SUPPORT
         if ((_compiler.info.compCallConv == CorInfoCallConvExtension.Swift)
             && (_compiler.lvaSwiftErrorArg != BAD_VAR_NUM))
@@ -400,4 +409,19 @@ public sealed partial class CodeGen
         throw new FatalJitException(CORJIT_SKIPPED, "The target-specific prolog hook is only ported for AMD64.");
 #endif
     }
+
+#if UNIX_AMD64_ABI
+    private void RequireSupportedRootPrologAbi()
+    {
+        if (_compiler.IsTargetAbi(CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI))
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Unix NativeAOT prologs require CFI unwind support.");
+        }
+
+        if (_compiler.info.compIsVarArgs)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Unix AMD64 varargs are unsupported.");
+        }
+    }
+#endif
 }

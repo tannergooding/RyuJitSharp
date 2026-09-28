@@ -179,8 +179,8 @@ public sealed partial class CodeGen
 #if FEATURE_SIMD
     public void genSimd12UpperClear(regNumber targetReg)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 upper clearing requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 upper clearing requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(genIsValidFloatReg(targetReg));

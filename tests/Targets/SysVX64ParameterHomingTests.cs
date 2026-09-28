@@ -218,12 +218,25 @@ internal static unsafe class SysVX64ParameterHomingTests
         });
     }
 
-    [TestCase(false)]
-    [TestCase(true)]
-    public static void RootPrologMaterializationRemainsGated(bool entirePhase)
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void UnsupportedRootPrologAbiRejectsBeforeMutatingState(bool entirePhase, bool nativeAot)
     {
         SysVX64FrameCodeGenTests.WithProlog((compiler, codeGen) =>
         {
+            if (nativeAot)
+            {
+                compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI;
+            }
+            else
+            {
+                compiler.info.compIsVarArgs = true;
+            }
+
+            var currentBlock = compiler.compCurBB;
+            var currentGroup = codeGen.Emitter.emitCurIG;
             var exception = Assert.Throws<FatalJitException>(() =>
             {
                 if (entirePhase)
@@ -237,6 +250,9 @@ internal static unsafe class SysVX64ParameterHomingTests
             });
 
             Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+            Assert.That(exception?.Message, Does.Contain(nativeAot ? "CFI" : "varargs"));
+            Assert.That(compiler.compCurBB, Is.SameAs(currentBlock));
+            Assert.That(codeGen.Emitter.emitCurIG, Is.SameAs(currentGroup));
             Assert.That(compiler.compGeneratingUnwindProlog, Is.False);
             Assert.That(compiler.funCurrentFunc().unwindCodes, Is.Null);
             Assert.That(Descriptors(codeGen), Is.Empty);

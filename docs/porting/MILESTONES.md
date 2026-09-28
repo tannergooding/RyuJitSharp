@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: SysV root prolog materialization
+
+SysV AMD64 now materializes root prologs and reserved prologs/epilogs, including
+OSR frame reconstruction and Vector3 upper-lane clearing before parameter
+homing. Unix varargs and NativeAOT CFI fail before instruction/unwind state
+changes; no Windows shadow-space convention is introduced for SysV.
+
+Full-analysis managed coverage passes 209 Debug/209 Release Linux-target cases
+and 241 Debug/217 Release Windows controls. General machine-code generation,
+emission orchestration and final metadata publication remain Windows-gated.
+These results do not establish Linux generated-code execution or parity.
+
 ## 2026-09-27: Remaining EH region queries
 
 The legacy `fgGetNestingLevel` query now preserves native handler counting and

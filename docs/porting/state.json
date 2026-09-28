@@ -16,6 +16,12 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sysvRootProlog": {
+      "scope": "Enable SysV AMD64 root prologs and reserved prolog/epilog materialization, including stack/register Vector3 upper-lane clearing before parameter homing. Reject Unix varargs and NativeAOT CFI before mutation.",
+      "mapping": "codegencommon.cpp:genFnProlog/genGeneratePrologsAndEpilogs -> CodeGen.Prolog.cs; codegenxarch.cpp:genClearStackVec3ArgUpperBits -> CodeGen.StackVectorArguments.cs; simdcodegenxarch.cpp:genSimd12UpperClear -> CodeGen.Calls.cs.",
+      "validation": "209 Debug/209 Release full-analysis Linux-x64 managed target cases; 241 Debug/217 Release Windows controls. artifacts/sysv-root-prolog-fast/tst/Debug/sysv-root-final-debug.trx; artifacts/sysv-root-prolog-release/tst/Release/sysv-root-final-release.trx; artifacts/sysv-root-win-control/tst/Debug/sysv-root-windows-debug.trx; artifacts/sysv-root-win-release/tst/Release/sysv-root-windows-release.trx. All selected cases executed and passed.",
+      "remaining": "Machine-code generation/emission orchestration and final metadata publication remain Windows-gated. SysV return and method-exit dependencies are next. B395 NativeAOT CFI remains unsupported; no Linux generated-code execution/parity claim."
+    },
     "ehRegionQueries": {
       "scope": "Complete unused fgGetNestingLevel and ehTrueEnclosingTryIndexIL without adding callsites. Preserve table order, the first finally-protected try boundary, and IL-span versus normalized-block identity.",
       "mapping": "fgbasic.cpp:4510-4548 -> Compiler.eh.cs; jiteh.cpp:829-855 -> Compiler.LoopDiscovery.EH.cs alongside the existing post-import helper.",
@@ -38,19 +44,19 @@
       "scope": "SysV frame estimation/finalization, parameter/local/outgoing stack homes, alignment, FP/SP fixups, promoted fields, OSR frame reuse/unwind/callee saves and prolog GS-cookie initialization.",
       "mapping": "lclvars.cpp -> Compiler.FinalFrameLayout.cs/Compiler.FinalFrameLayout.Locals.cs; codegencommon.cpp:genFinalizeFrame -> CodeGen.FrameFinalization.cs; codegenxarch.cpp -> CodeGen.OSRFrame.cs/CodeGen.GSCookieInitialization.cs.",
       "validation": "199 Debug/199 Release full-analysis Linux-x64 managed target cases; 208 Debug/193 Release Windows controls. artifacts/sysv-final-frame-{target,control}-{debug,release}/tst/{Debug,Release}/sysv-final-frame-packet-*.trx. All selected tests executed and passed.",
-      "remaining": "Root prolog/materialization remains gated. Complete genClearStackVec3ArgUpperBits and reconcile varargs reachability with compFeatureVarArg (false on Unix), not a fabricated SysV shadow-space ABI. B395 NativeAOT CFI remains separate. No Linux execution/parity claim."
+      "remaining": "Root prolog/materialization is now integrated under sysvRootProlog. Unix varargs remain unsupported, matching compFeatureVarArg, with no fabricated shadow-space ABI. B395 NativeAOT CFI remains separate. No Linux execution/parity claim."
     },
     "sysvParameterHoming": {
       "scope": "SysV register/stack parameter homing, upper-eightbyte SIMD insertion, register-cycle scratch handling, generic-context reporting and OSR Tier0 local loading.",
       "mapping": "codegencommon.cpp -> CodeGen.ParameterHoming.cs/ParameterHomingGraph.cs/OSRParameterHoming.cs/FrameInitialization.cs/PrologInitialization.cs; codegenxarch.cpp -> CodeGen.JmpArguments.cs; compiler.h OSR offset accessor -> Compiler.FinalFrameLayout.Locals.cs.",
       "validation": "184 Debug / 184 Release full-analysis Linux-x64 managed target cases; 221 Debug / 206 Release Windows controls. artifacts/sysv-homing-lane/tst/{Debug,Release}/sysv-homing-target-{debug,release}.trx and artifacts/sysv-homing-windows/tst/{Debug,Release}/sysv-homing-windows-{debug,release}.trx.",
-      "remaining": "Final frame layout and genFinalizeFrame are now integrated. Root prolog materialization remains gated pending the remaining SysV prolog dependencies. Two rejection cases confirm no unwind/instruction recording. B395 CFI remains separate; no Linux execution or parity claim."
+      "remaining": "Final frame layout, genFinalizeFrame and root prolog materialization are now integrated. Four root-entry rejection cases preserve state for unsupported Unix varargs/NativeAOT CFI. B395 CFI remains separate; no Linux execution or parity claim."
     },
     "sysvFrameCodeGeneration": {
       "scope": "AMD64 SysV frame allocation/probing, integer callee saves, stack initialization, root/OSR epilogs, funclet frames and CoreCLR-format unwind recording/publication.",
       "mapping": "codegenxarch.cpp/codegencommon.cpp -> CodeGen.PrologFrameSetup.cs/CalleeSaveRecording.cs/Epilog.cs/FuncletPrologEpilog.cs/PrologBlockInitialization.cs/FrameInitialization.cs/PrologInitialization.cs; unwindamd64.cpp -> Compiler.PrologRecording.cs/UnwindPublication.cs/UnwindPublicationDiagnostics.cs and Emitter.UnwindPrologOffsets.cs.",
       "validation": "174 Debug / 174 Release full-analysis Windows-host Linux-x64 managed target cases; 193 Debug / 178 Release Windows controls. artifacts/sysv-frame-lane/tst/{Debug,Release}/sysv-frame-target-{debug,release}.trx and artifacts/sysv-frame-windows/tst/{Debug,Release}/sysv-frame-windows-{debug,release}.trx.",
-      "remaining": "Incoming-parameter homing and final frame layout/genFinalizeFrame are now integrated; root prolog materialization still awaits its remaining SysV dependencies. B395 NativeAOT CFI is explicitly rejected before unwind state changes or reservation/publication, with 11 rejection cases. No Linux execution/parity claim."
+      "remaining": "Incoming-parameter homing, final frame layout/genFinalizeFrame and root prolog materialization are now integrated. B395 NativeAOT CFI is explicitly rejected before unwind state changes or reservation/publication, with 11 unwind-boundary rejection cases. No Linux execution/parity claim."
     },
     "cfgQuerySupport": {
       "scope": "B384 optCheckPreds; fgIsBlockCold, fgMoreThanOneReturnBlock, BasicBlock.StatementCountExceeds and BasicBlockRangeList.ComplexityExceeds.",
@@ -647,7 +653,7 @@
         }
       ]
     },
-    "nextAction": "Continue without stopping at milestones. Parent LIR and legacy EH mapping questions are resolved. Review and integrate the delivered SysV root-prolog/materialization packet: CodeGen.Prolog.cs, Calls.cs, StackVectorArguments.cs and target fixtures; verify Vector3 ordering, unsupported varargs/CFI rejection before mutation, and all four final TRX files before committing. ARM64 agent continues consecutive-register selection/assignment and remaining allocation/resolution dependencies; preserve the allocation gate until complete. Native cleanup continues classifying genuinely unreconciled backend bodies by targeted source comparison, without repeating behavior/parity validation. Last collected cleanup commit 4ec12e43e91582c3ea727a7f3dd3bf8ef53e9c6c; preserve oracle/recovery refs and notify the user only when full cleanup is established.",
+    "nextAction": "Continue without stopping at milestones. SysV root-prolog/materialization is integrated; continue SysV return and method-exit generation while retaining general generation/emission/publication gates. Collect and review ARM64 consecutive-register selection/assignment and remaining allocation/resolution dependencies; preserve the allocation gate until complete. Native cleanup continues classifying genuinely unreconciled backend bodies by targeted source comparison, without repeating behavior/parity validation. Last collected cleanup commit 4ec12e43e91582c3ea727a7f3dd3bf8ef53e9c6c; preserve oracle/recovery refs and notify the user only when full cleanup is established.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
