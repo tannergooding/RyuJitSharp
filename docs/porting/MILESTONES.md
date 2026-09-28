@@ -16,6 +16,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Custom-awaiter importer optimization
+
+Optimized `AwaitAwaiter` and `UnsafeAwaitAwaiter` imports now request the EE
+helper that reads a struct awaiter from its continuation. Replacement preserves
+the exact generic context and ReadyToRun entrypoint, marks the hidden awaiter
+argument and appends its symbolic member offset before adding other hidden
+arguments. Reference awaiters, intrinsic `YieldAwaiter`, declined replacements
+and unsupported generic lookups retain their original call representation.
+Async importer and continuation coverage passes 99 Debug/95 Release cases;
+this is not new native execution or generated-code parity evidence.
+
 ## 2026-09-27: ARM64 rationalization
 
 ARM64 rationalization now dispatches comparison-mask reductions, scalar

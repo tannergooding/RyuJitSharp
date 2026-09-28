@@ -1036,6 +1036,14 @@ public partial class Compiler
 
             compiler.impPopCallArgs(sigInfo, call);
 
+            if (compiler.opts.OptimizationEnabled &&
+                (ni is NI_System_Runtime_CompilerServices_AsyncHelpers_AwaitAwaiter
+                    or NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter))
+            {
+                compiler.impTryOptimizeAwaitAwaiter(call, resolvedToken, ref callInfo,
+                    ref methHnd, ref exactContextHnd, ref instParam, ni);
+            }
+
             // Extra args
             if ((instParam is not null) || (asyncContinuation is not null) || (varArgsCookie is not null))
             {

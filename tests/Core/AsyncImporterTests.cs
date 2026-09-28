@@ -11,6 +11,166 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class AsyncImporterTests
 {
+    internal enum AwaiterKind
+    {
+        Reference,
+        Yield,
+        Declined,
+        UnsupportedLookup,
+        Struct,
+        IntrinsicStruct,
+    }
+
+    [TestCase(AwaiterKind.Reference, false, false, false, false)]
+    [TestCase(AwaiterKind.Yield, true, false, true, false)]
+    [TestCase(AwaiterKind.Declined, false, false, true, false)]
+    [TestCase(AwaiterKind.UnsupportedLookup, true, true, true, false)]
+    [TestCase(AwaiterKind.Struct, false, false, false, false)]
+    [TestCase(AwaiterKind.Struct, true, false, false, true)]
+    [TestCase(AwaiterKind.Struct, false, true, false, true)]
+    [TestCase(AwaiterKind.Struct, true, true, false, false)]
+    [TestCase(AwaiterKind.Struct, false, false, true, true)]
+    [TestCase(AwaiterKind.Struct, true, false, true, false)]
+    [TestCase(AwaiterKind.Struct, false, true, true, false)]
+    [TestCase(AwaiterKind.Struct, true, true, true, true)]
+    [TestCase(AwaiterKind.IntrinsicStruct, false, false, false, false)]
+    public static void CustomAwaitersPreserveTheReplacementContract(
+        AwaiterKind kind, bool isUnsafe, bool generic, bool readyToRun, bool reuseLayout)
+    {
+        WithCompiler(compiler => {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.isIntrinsicType = &IsIntrinsicAwaiter;
+            vtable.Base.Base.getClassNameFromMetadata = &GetAwaiterName;
+            // UnmanagedCallersOnly requires the blittable byte representation of native bool.
+            delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_STRUCT_*, CORINFO_RESOLVED_TOKEN*,
+                byte, CORINFO_CONTEXT_STRUCT_**, CORINFO_LOOKUP*, CORINFO_METHOD_STRUCT_*> getCall = &GetContinuationAwaiterCall;
+            vtable.Base.Base.getAwaitAwaiterInContinuationCall =
+                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_METHOD_STRUCT_*, CORINFO_RESOLVED_TOKEN*,
+                    bool, CORINFO_CONTEXT_STRUCT_**, CORINFO_LOOKUP*, CORINFO_METHOD_STRUCT_*>)getCall;
+            vtable.Base.Base.getMethodSig = &GetContinuationAwaiterSignature;
+            vtable.Base.Base.getMethodAttribs = &GetAwaitMethodFlags;
+            vtable.Base.getFunctionEntryPoint = &GetContinuationAwaiterEntryPoint;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            var stateValue = new AwaiterState { Kind = kind, Generic = generic };
+            var state = &stateValue;
+            compiler.info.compCompHnd = &jitInfo;
+            compiler.info.compMethodHnd = (CORINFO_METHOD_STRUCT_*)state;
+
+            if (readyToRun)
+            {
+                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_AOT);
+            }
+
+            var layout = new ClassLayout((CORINFO_CLASS_STRUCT_*)state, true, 16, var_types.TYP_STRUCT, "Awaiter", "Awaiter");
+            compiler.lvaTable[0].Type = var_types.TYP_STRUCT;
+            compiler.lvaTable[0].Layout = layout;
+            var oldMethod = (CORINFO_METHOD_STRUCT_*)0x1110;
+            var oldContext = (CORINFO_CONTEXT_STRUCT_*)0x2220;
+            var call = new GenTreeCall(var_types.TYP_VOID) { _callMethHnd = oldMethod };
+            call._entryPoint.addr = (void*)0x3330;
+            GenTree node = kind is AwaiterKind.Reference ? compiler.gtNewNull() : new GenTreeLclVar(var_types.TYP_STRUCT, 0);
+            var argument = call.Args.PushBack(kind is AwaiterKind.Reference
+                ? NewCallArg.CreateForPrimitive(node)
+                : NewCallArg.CreateForStruct(node, var_types.TYP_STRUCT, layout));
+            var otherArgument = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(var_types.TYP_INT, 42)));
+            var originalInstantiation = compiler.gtNewIconNode(Globals.TYP_I_IMPL, 99);
+            GenTree? instantiation = originalInstantiation;
+            var method = oldMethod;
+            var context = oldContext;
+            var callInfo = new CORINFO_CALL_INFO {
+                hMethod = oldMethod,
+                methodFlags = CorInfoFlag.CORINFO_FLG_FINAL,
+                sig = new CORINFO_SIG_INFO { numArgs = 2 },
+            };
+            var token = new CORINFO_RESOLVED_TOKEN { token = 0x06000001 };
+            var intrinsic = isUnsafe
+                ? NamedIntrinsic.NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter
+                : NamedIntrinsic.NI_System_Runtime_CompilerServices_AsyncHelpers_AwaitAwaiter;
+
+            if (kind is AwaiterKind.UnsupportedLookup)
+            {
+                compiler.compInlineResult = new InlineResult(compiler, call, null, "awaiter lookup", doNotReport: true);
+                compiler.opts.compFlags = Globals.CLFLG_INLINING;
+                compiler.impInlineInfo = new InlineInfo { InlineRoot = compiler, InlinerCompiler = compiler };
+            }
+
+            if (reuseLayout)
+            {
+                _ = compiler.GetContinuationMemberIndex(ContinuationMember.CustomAwaiterOfLayout(new ClassLayout(16)));
+            }
+
+            compiler.impTryOptimizeAwaitAwaiter(call, token, ref callInfo, ref method, ref context, ref instantiation, intrinsic);
+
+            var queried = kind is not (AwaiterKind.Reference or AwaiterKind.Yield);
+            var replaced = kind is AwaiterKind.Struct or AwaiterKind.IntrinsicStruct;
+            Assert.That(state->Queries, Is.EqualTo(queried ? 1 : 0));
+            Assert.That(state->SignatureQueries, Is.EqualTo(queried && kind is not AwaiterKind.Declined ? 1 : 0));
+            Assert.That(state->EntryPointQueries, Is.EqualTo(replaced && readyToRun ? 1 : 0));
+            Assert.That(state->NameQueries, Is.EqualTo(kind is AwaiterKind.Yield or AwaiterKind.IntrinsicStruct ? 1 : 0));
+            Assert.That(state->NamespaceRequested, Is.False);
+
+            if (queried)
+            {
+                Assert.That(state->IsUnsafe, Is.EqualTo(isUnsafe));
+                Assert.That(state->Token, Is.EqualTo(token.token));
+            }
+
+            if (!replaced)
+            {
+                Assert.That((nint)method, Is.EqualTo((nint)oldMethod));
+                Assert.That((nint)context, Is.EqualTo((nint)oldContext));
+                Assert.That((nint)call._callMethHnd, Is.EqualTo((nint)oldMethod));
+                Assert.That((nint)callInfo.hMethod, Is.EqualTo((nint)oldMethod));
+                Assert.That(callInfo.methodFlags, Is.EqualTo(CorInfoFlag.CORINFO_FLG_FINAL));
+                Assert.That(callInfo.sig.numArgs, Is.EqualTo(2));
+                Assert.That(instantiation, Is.SameAs(originalInstantiation));
+                Assert.That((nint)call._entryPoint.addr, Is.EqualTo((nint)0x3330));
+                Assert.That(call.Args.Head, Is.SameAs(argument));
+                Assert.That(call.Args.GetUserArgByIndex(1), Is.SameAs(otherArgument));
+                Assert.That(compiler.GetContinuationMemberCount(), Is.Zero);
+
+                if (kind is AwaiterKind.UnsupportedLookup)
+                {
+                    Assert.That(compiler.compInlineResult?.IsFailure, Is.True);
+                }
+
+                return;
+            }
+
+            Assert.That((nint)method, Is.EqualTo((nint)state));
+            Assert.That((nint)context, Is.EqualTo((nint)Globals.MAKE_METHODCONTEXT((CORINFO_METHOD_STRUCT_*)state)));
+            Assert.That((nint)call._callMethHnd, Is.EqualTo((nint)state));
+            Assert.That((nint)callInfo.hMethod, Is.EqualTo((nint)state));
+            Assert.That(callInfo.methodFlags, Is.EqualTo(CorInfoFlag.CORINFO_FLG_STATIC));
+            Assert.That(callInfo.sig.numArgs, Is.EqualTo(2));
+            Assert.That(callInfo.sig.hasTypeArg(), Is.EqualTo(generic));
+            Assert.That((nint)call._entryPoint.addr, Is.EqualTo(readyToRun ? (nint)0x4321 : (nint)0x3330));
+            var replacementArgument = call.Args.Head ?? throw new InvalidOperationException("Missing replacement awaiter.");
+            Assert.That(replacementArgument.WellKnownArg, Is.EqualTo(WellKnownArg.AsyncAwaiter));
+            Assert.That(replacementArgument.Node, Is.SameAs(node));
+            Assert.That(replacementArgument.SignatureType, Is.EqualTo(var_types.TYP_STRUCT));
+            Assert.That(replacementArgument.SignatureLayout, Is.SameAs(layout));
+            Assert.That(call.Args.GetUserArgByIndex(0), Is.SameAs(otherArgument));
+            var offset = call.Args.GetUserArgByIndex(1)?.Node ?? throw new InvalidOperationException("Missing continuation offset.");
+            Assert.That(offset.Oper, Is.EqualTo(genTreeOps.GT_CONTINUATION_MEMBER_OFFSET));
+            Assert.That(offset.Type, Is.EqualTo(var_types.TYP_INT));
+            Assert.That(offset.AsVal().Val1, Is.EqualTo((nint)0));
+            Assert.That(compiler.GetContinuationMemberCount(), Is.EqualTo(1));
+            Assert.That(compiler.GetContinuationMember(0).CustomAwaiterLayout, reuseLayout ? Is.Not.SameAs(layout) : Is.SameAs(layout));
+
+            if (generic)
+            {
+                var handle = instantiation ?? throw new InvalidOperationException("Missing replacement instantiation.");
+                Assert.That(handle.AsIntCon().IconValue, Is.EqualTo((nint)0x1234));
+                Assert.That(handle.AsIntCon().IsIconHandle(Globals.GTF_ICON_METHOD_HDL), Is.True);
+            }
+            else
+            {
+                Assert.That(instantiation, Is.Null);
+            }
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void SynthesizedUserCallsQueryEntrypointsOnlyForReadyToRun(bool readyToRun)
@@ -475,6 +635,84 @@ internal static unsafe class AsyncImporterTests
         public int AwaitQueries;
         public int SignatureQueries;
         public int EntryPointQueries;
+    }
+
+    private struct AwaiterState
+    {
+        public AwaiterKind Kind;
+        public bool Generic;
+        public bool IsUnsafe;
+        public bool NamespaceRequested;
+        public int Token;
+        public int Queries;
+        public int SignatureQueries;
+        public int EntryPointQueries;
+        public int NameQueries;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte IsIntrinsicAwaiter(ICorJitInfo* jitInfo, CORINFO_CLASS_STRUCT_* cls)
+    {
+        return ((AwaiterState*)cls)->Kind is AwaiterKind.Yield or AwaiterKind.IntrinsicStruct ? (byte)1 : (byte)0;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte* GetAwaiterName(ICorJitInfo* jitInfo, CORINFO_CLASS_STRUCT_* cls, byte** namespaceName)
+    {
+        var state = (AwaiterState*)cls;
+        state->NameQueries++;
+        state->NamespaceRequested = namespaceName is not null;
+        var name = state->Kind is AwaiterKind.Yield ? "YieldAwaiter"u8 : "OtherAwaiter"u8;
+        return (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(name));
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CORINFO_METHOD_STRUCT_* GetContinuationAwaiterCall(
+        ICorJitInfo* jitInfo, CORINFO_METHOD_STRUCT_* caller, CORINFO_RESOLVED_TOKEN* token,
+        byte isUnsafe, CORINFO_CONTEXT_STRUCT_** context, CORINFO_LOOKUP* lookup)
+    {
+        var state = (AwaiterState*)caller;
+        state->Queries++;
+        state->IsUnsafe = isUnsafe != 0;
+        state->Token = token->token;
+        *context = Globals.MAKE_METHODCONTEXT(caller);
+        *lookup = default;
+        lookup->constLookup.accessType = InfoAccessType.IAT_VALUE;
+        lookup->constLookup.handle = (CORINFO_GENERIC_STRUCT_*)0x1234;
+
+        if (state->Kind is AwaiterKind.UnsupportedLookup)
+        {
+            lookup->lookupKind.needsRuntimeLookup = true;
+            lookup->lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
+        }
+
+        return state->Kind is AwaiterKind.Declined ? null : caller;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void GetContinuationAwaiterSignature(
+        ICorJitInfo* jitInfo, CORINFO_METHOD_STRUCT_* method, CORINFO_SIG_INFO* sig, CORINFO_CLASS_STRUCT_* owner)
+    {
+        var state = (AwaiterState*)method;
+        state->SignatureQueries++;
+        *sig = default;
+        sig->retType = CorInfoType.CORINFO_TYPE_VOID;
+        sig->numArgs = 2;
+
+        if (state->Generic)
+        {
+            sig->callConv = CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE;
+        }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void GetContinuationAwaiterEntryPoint(
+        ICorJitInfo* jitInfo, CORINFO_METHOD_STRUCT_* method, CORINFO_CONST_LOOKUP* lookup, CORINFO_ACCESS_FLAGS flags)
+    {
+        ((AwaiterState*)method)->EntryPointQueries++;
+        *lookup = default;
+        lookup->accessType = InfoAccessType.IAT_PVALUE;
+        lookup->addr = (void*)0x4321;
     }
 
     private struct MonitorState
