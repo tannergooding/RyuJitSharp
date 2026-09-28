@@ -16,13 +16,20 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "primarySsse3Execution": {
+      "scope": "Direct SSSE3 arithmetic/shuffle execution with AVX enabled and disabled after B433.",
+      "validation": "4204lane checks per configuration under both primary JITs. Each pair matches21raw phase slices/seven instruction traces. Explicit SSSE3/X64 support is true; legacy runs emit pshufb/palignr/pabsb/phaddsw/pmaddubsw instead of VEX forms. No timeout, AltJIT or skipped execution.",
+      "sourceSnapshot": "8cbf96c2e6a0273f8c3c3338fb7eefe41c57e126",
+      "evidence": "artifacts/primary-ssse3/evidence.json",
+      "remaining": "Next bounded Windows source boundary: direct overlapping memmove execution. Native genCodeForMemmove remains retained because managed code explicitly excludes non-Windows AMD64."
+    },
     "ssse3ClassRecognition": {
       "scope": "B433: recognize Ssse3 as X86Base, including nested X64, without changing hardware support gating.",
       "mapping": "hwintrinsicxarch.cpp lookupInstructionSet -> Compiler.imp.cs; recursive lookupIsa handles Ssse3.X64.",
       "validation": "Two positive lookup failures before the fix; final prerequisite/dispatch/initialization coverage passes526Debug/522Release including24new cases. Expanded parser passes117primary checks with all21raw phase slices/seven instruction traces equal. TryParsePKT restores scalar/vector dispatch and matches native327bytes.",
       "sourceSnapshot": "8cbf96c2e6a0273f8c3c3338fb7eefe41c57e126",
       "evidence": "artifacts/primary-assembly-parser/ssse3-evidence.json",
-      "remaining": "Execute direct SSSE3 facade arithmetic/shuffle paths now reachable through corrected recognition. No whole-dump or official-suite claim."
+      "remaining": "The subsequent primarySsse3Execution checkpoint verifies direct facade arithmetic and both encoding paths. No whole-dump or official-suite claim."
     },
     "stringReferenceCloneOrder": {
       "scope": "B432: allocate the string constant clone before the variable clone in reference-equality expansion, retaining operand order.",
@@ -587,7 +594,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "B433 closes the missing Ssse3 mapping and the parser boundary now matches all selected trees/instructions. Execute direct SSSE3 facade arithmetic/shuffle paths using pinned runtime tests, with actual support checked rather than allowing a skipped body. Worker idle; keep target/backend expansions separate.",
+      "parentScope": "Direct SSSE3 primary execution matches both encoding modes. Retained genCodeForMemmove is implemented for Windows AMD64 but not other native AMD64 targets; preserve its residual source. Next verify its scalar/SIMD load-before-store overlap contract via constant-size primary execution rather than treating retained code as an absent Windows port.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -982,7 +989,7 @@
         }
       ]
     },
-    "nextAction": "B433 verified:526Debug/522Release,117primary parser checks, exact21raw slices/seven traces. Next execute direct Ssse3 facade arithmetic/shuffle operations now reachable through corrected class recognition. Inspect pinned src/tests/JIT/HardwareIntrinsics/X86 Ssse3 tests for a bounded linked-source or adapted corpus; require actual support and nonzero lane checks, then compare selected no-inline probe bodies with the current8cbf96c2 JIT. Follow first concrete failure; do not rescan inventories or refresh upstream. Worker idle; B153/D009, B365 and ARM64 foreground expansion deferred.",
+    "nextAction": "Direct SSSE3 primary corpus verifies4204lanes and exact21slices/seven traces per AVX-enabled/disabled mode. Next bounded Windows source boundary is genCodeForMemmove: native residual codegenxarch.cpp2642 and managed CodeGen.BlockMemory.cs73 agree on capturing all source registers before stores; managed intentionally excludes non-Windows targets, so retain native source. Build constant-size no-inline Span<byte>.CopyTo probes at scalar/SIMD boundaries with same-buffer overlap in both directions, compare against snapshot copies, and capture primary trees/instructions with current8cbf96c2 JIT. Confirm actual unrolled memmove selection; follow first concrete failure. Worker idle; B153/D009, B365 and ARM64 foreground expansion deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
