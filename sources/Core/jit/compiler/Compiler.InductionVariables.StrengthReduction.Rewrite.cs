@@ -124,8 +124,17 @@ public partial class Compiler
             }
 
 #if TARGET_ARM64
-            throw new FatalJitException("ARM64 post-indexed IV update placement is not ported.");
-#else
+            var postUseInsertionPoint = FindPostUseUpdateInsertionPoint(cursors, insertionPoint, out afterStmt);
+            if (postUseInsertionPoint is not null)
+            {
+#if DEBUG
+                var latestUse = afterStmt ?? throw new FatalJitException("Post-use placement needs a use statement.");
+                JITDUMP($"    Found a legal insertion point after a last use of the IV in {FMT_BB(postUseInsertionPoint.bbNum)} after {FMT_STMT(latestUse.Id)}\n");
+#endif
+                return postUseInsertionPoint;
+            }
+#endif
+
             while ((insertionPoint is not null) && _loop.ContainsBlock(insertionPoint) &&
                 _loop.MayExecuteBlockMultipleTimesPerIteration(insertionPoint))
             {
@@ -138,8 +147,63 @@ public partial class Compiler
             }
             JITDUMP($"    Found a legal insertion point in {FMT_BB(insertionPoint.bbNum)}\n");
             return insertionPoint;
-#endif
         }
+
+#if TARGET_ARM64
+        private BasicBlock? FindPostUseUpdateInsertionPoint(List<CursorInfo> cursors,
+            BasicBlock? backEdgeDominator, out Statement? afterStmt)
+        {
+            afterStmt = null;
+            var blocksWithUses = new HashSet<BasicBlock>();
+            foreach (var cursor in cursors)
+            {
+                _ = blocksWithUses.Add(cursor.Block);
+            }
+
+            while ((backEdgeDominator is not null) && _loop.ContainsBlock(backEdgeDominator))
+            {
+                if (!blocksWithUses.Contains(backEdgeDominator))
+                {
+                    backEdgeDominator = backEdgeDominator.bbIDom;
+                    continue;
+                }
+
+                if (_loop.MayExecuteBlockMultipleTimesPerIteration(backEdgeDominator))
+                {
+                    return null;
+                }
+
+                Statement? latestStmt = null;
+                foreach (var cursor in cursors)
+                {
+                    if (cursor.Block != backEdgeDominator)
+                    {
+                        continue;
+                    }
+
+                    if (latestStmt is null)
+                    {
+                        latestStmt = cursor.Stmt;
+                    }
+                    else
+                    {
+                        latestStmt = _compiler.gtLatestStatement(latestStmt, cursor.Stmt);
+                    }
+                }
+
+                assert(latestStmt is not null);
+                if (!InsertionPointPostDominatesUses(backEdgeDominator, cursors))
+                {
+                    return null;
+                }
+
+                afterStmt = latestStmt;
+                return backEdgeDominator;
+            }
+
+            return null;
+        }
+#endif
 
         private bool InsertionPointPostDominatesUses(BasicBlock insertionPoint, List<CursorInfo> cursors)
         {

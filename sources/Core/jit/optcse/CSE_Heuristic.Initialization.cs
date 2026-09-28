@@ -61,6 +61,12 @@ public sealed partial class CSE_Heuristic
             };
 
             var onStack = (regAvailEstimate == 0) || varDsc.lvDoNotEnregister;
+#if TARGET_X86
+            if (varTypeIsLong(varType))
+            {
+                onStack = true;
+            }
+#endif
             if (onStack && !varTypeHasUnknownSize(varType))
             {
                 frameSize += unchecked((uint)m_compiler.lvaLclStackHomeSize(lclNum));
@@ -96,11 +102,35 @@ public sealed partial class CSE_Heuristic
                 }
             }
 
+#if TARGET_XARCH
             if (frameSize > 0x80)
             {
                 largeFrame = true;
                 break;
             }
+#elif TARGET_ARM
+            if (frameSize > 0x400)
+            {
+                largeFrame = true;
+            }
+            if (frameSize > 0x10000)
+            {
+                hugeFrame = true;
+                break;
+            }
+#elif TARGET_ARM64
+            if (frameSize > 0x1000)
+            {
+                largeFrame = true;
+                break;
+            }
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+            if (frameSize > 0x7ff)
+            {
+                largeFrame = true;
+                break;
+            }
+#endif
         }
 
         // Tracked locals are ordered by weighted reference count for LSRA.
@@ -121,6 +151,12 @@ public sealed partial class CSE_Heuristic
             if (varTypeUsesIntReg(varType))
             {
                 enregCount = ++enregCountInt;
+#if !TARGET_64BIT
+                if (varType is TYP_LONG)
+                {
+                    enregCount = ++enregCountInt;
+                }
+#endif
                 cntAggressiveEnreg = CntAggressiveEnreg;
                 cntModerateEnreg = CntModerateEnreg;
             }

@@ -96,8 +96,13 @@ public sealed partial class CSE_Heuristic
                         jitprintf($"Codesize CSE Promotion ({(hugeFrame ? "huge" : "large")} frame)\n");
                     }
 #endif
+#if TARGET_XARCH
                     cseDefCost = 6;
                     cseUseCost = 5;
+#else
+                    cseDefCost = hugeFrame ? 12u : 8u;
+                    cseUseCost = cseDefCost;
+#endif
                 }
                 else
                 {
@@ -107,16 +112,23 @@ public sealed partial class CSE_Heuristic
                         jitprintf("Codesize CSE Promotion (small frame)\n");
                     }
 #endif
+#if TARGET_XARCH
                     cseDefCost = 3;
                     cseUseCost = 2;
+#else
+                    cseDefCost = 2;
+                    cseUseCost = 2;
+#endif
                 }
             }
 
+#if TARGET_XARCH
             if (varTypeIsFloating(expr.Type))
             {
                 cseDefCost += 2;
                 cseUseCost += 1;
             }
+#endif
         }
         else
         {

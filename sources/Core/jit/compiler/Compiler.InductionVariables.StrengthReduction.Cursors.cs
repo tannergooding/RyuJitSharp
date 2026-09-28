@@ -242,18 +242,17 @@ public partial class Compiler
         private bool CheckAdvancedCursors(List<CursorInfo> cursors, out ScevAddRec? nextIV)
         {
             ScevAddRec? commonIV = null;
-#if !TARGET_ARM64
             var allowRephrasingNextIV = true;
-#endif
             for (var i = 0; i < cursors.Count; i++)
             {
                 var cursor = cursors[i];
                 if (cursor.IV is not null)
                 {
 #if TARGET_ARM64
-                    throw new FatalJitException("ARM64 address-mode scaling in IV strength reduction is not ported.");
+                    var allowRephrasingViaScaling = !cursor.Tree.IsPartOfAddressMode;
 #else
                     var allowRephrasingViaScaling = true;
+#endif
                     if (commonIV is null)
                     {
                         commonIV = cursor.IV;
@@ -269,7 +268,6 @@ public partial class Compiler
                         allowRephrasingNextIV &= allowRephrasingViaScaling;
                         continue;
                     }
-#endif
                 }
                 JITDUMP($"    [{i}] does not match; will not advance\n");
                 nextIV = null;
@@ -277,9 +275,7 @@ public partial class Compiler
             }
 
             nextIV = commonIV;
-#pragma warning disable CA1508 // ARM64 cursor scaling is not yet implemented.
             return commonIV is not null;
-#pragma warning restore CA1508
         }
 
         private static int Gcd(int a, int b)

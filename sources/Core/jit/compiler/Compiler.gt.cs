@@ -12884,6 +12884,32 @@ public partial class Compiler
         return gtNewStmt(exprClone, stmt.DebugInfo);
     }
 
+    public Statement gtLatestStatement(Statement stmt1, Statement stmt2)
+    {
+        if (stmt1 == stmt2)
+        {
+            return stmt1;
+        }
+
+        var cursor1 = stmt1.NextStmt;
+        var cursor2 = stmt2.NextStmt;
+        while (true)
+        {
+            if ((cursor1 == stmt2) || (cursor2 is null))
+            {
+                return stmt2;
+            }
+
+            if ((cursor2 == stmt1) || (cursor1 is null))
+            {
+                return stmt1;
+            }
+
+            cursor1 = cursor1.NextStmt;
+            cursor2 = cursor2.NextStmt;
+        }
+    }
+
     public Statement gtNewStmt(GenTree expr)
     {
         return new Statement(expr, compStatementID++);

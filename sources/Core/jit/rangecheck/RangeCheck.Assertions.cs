@@ -286,6 +286,10 @@ public sealed partial class RangeCheck
                 case VNF_HWI_AVX2_X64_TrailingZeroCount:
                 case VNF_HWI_X86Base_PopCount:
                 case VNF_HWI_X86Base_X64_PopCount:
+#elif TARGET_ARM64
+                case VNF_HWI_ArmBase_LeadingZeroCount:
+                case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
+                case VNF_HWI_ArmBase_Arm64_LeadingSignCount:
 #endif
 #endif
                 case VNF_LeadingZeroCount:

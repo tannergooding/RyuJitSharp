@@ -16,6 +16,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: ARM64 optimizer target policies
+
+Range analysis now recognizes ARM64 leading-zero/sign-count bounds. CSE uses
+native target-specific register, frame-size and small-code costs, and induction
+strength reduction respects address-mode scaling and post-use update placement.
+Latest-statement selection preserves the native identity fast path and
+two-cursor search. ARM64 managed coverage passes 777 Debug/776 Release cases,
+with 16 final optimizer regressions and 168 Windows optimizer controls in
+Debug. Allocator dependencies and target execution remain separate.
+
 ## 2026-09-27: Shared frame support corrections
 
 Frame-location dumps now append padding after the location, matching native
