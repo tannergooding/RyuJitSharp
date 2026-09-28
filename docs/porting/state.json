@@ -16,6 +16,14 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "primaryUpstreamRegressionNegation": {
+      "scope": "B428: floating SIMD negation construction-order parity, exposed by primary execution of four pinned upstream regression inputs with scoped entrypoints.",
+      "mapping": "gentree.cpp:30738 gtNewSimdUnOpNode -> Compiler.gt.cs. Restore scalar negative-zero construction followed by gtNewSimdCreateBroadcastNode; no diagnostic normalization or instruction-selection change.",
+      "reproduction": "Eight new cases fail before the fix. Initial primary execution succeeds with18matching emitted instruction traces but12of54raw phase-tree slices differ because four FMA-negation methods have shifted logical IDs.",
+      "validation": "51 Debug/51 Release full-analysis import cases, including float8/12/16/32/64 and double16/32/64byte sign-mask/allocation-order cases. Fresh corrected NativeAOT primary execution exits0 without AltJIT and matches all54raw phase-tree slices and18instruction traces, with identical stdout/stderr. Evidence: artifacts/primary-upstream-regressions/evidence.json.",
+      "sourceSnapshot": "6dd0c18643c1ec4212042698162d14c96a4c4b7c",
+      "remaining": "Scoped selected entrypoints, not all tests in the four upstream files, whole dumps, the official runtime suite or exhaustive Windows completion. The native baseline is reused unchanged for the corrected comparison."
+    },
     "xarchEmitterSurface": {
       "scope": "B427: remaining xarch bitwise classification, embedded-rounding options, direct-memory format mapping and indexed-address wrapper entrypoints.",
       "mapping": "emitxarch.cpp:GetEmbRoundingMode/IsBitwiseInstruction/emitMapFmtAtoM/emitIns_R_ARR/emitIns_ARR_R -> Emitter.InstructionOptions.cs/InstructionFlags.cs/MemoryOperands.cs/ShiftInstructions.cs/AddressStores.cs.",
@@ -384,7 +392,8 @@
     "planApprovedAt": "2026-09-22",
     "residualReconciliation": {
       "status": "in-progress",
-      "retirementCommit": "03870c0d3a03e58bc5d6954afa8040028fd7f022",
+      "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
+      "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
       "retirementBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
       "recoveredBoundary": "Reviewed 4ec12e43..8f39f402: 28 native JIT paths, 4690 deletions and six restored LowerCFGCall switch-tail lines. The retained whole LowerCFGCall matches the intact oracle. Residual source/index are clean; the cleanup commit retains the pin as its sole parent. Oracle tracked source/index are clean at the pin. All 112 current refs/porting refs remain present; the recorded reconciliation-start and EH/block snapshot anchors still resolve to their recorded IDs.",
@@ -531,7 +540,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "B427 completes the remaining xarch helper/wrapper surface. Next reuse the existing four pinned upstream regression programs under the primary JIT with a fresh current-source NativeAOT library and the matching host; this is a bounded production exercise to expose the next Windows failure, not a new unit-test matrix or claim that the official runtime suite has passed. Preserve raw dumps, distinguish actual execution from selected-method AltJIT history, and fix any first concrete port failure. Report54 is consolidated; worker idle.",
+      "parentScope": "B428 fixes the floating-negation logical-ID discrepancy found by primary execution. Continue the same pinned upstream regression corpus under MinOpts and GCStress4 using the validated jit-2 snapshot and existing primary runner; verify actual completion and compare supported raw slices/instructions, following the first concrete mismatch rather than expanding name inventories. Keep official-suite/whole-dump claims and B365 native forced-spill failures separate. Report55 consolidated; worker idle.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -926,7 +935,7 @@
         }
       ]
     },
-    "nextAction": "B427 xarch helper/wrapper support passes148Debug/141Release. Next publish the committed current source as a fresh NativeAOT library, reusing artifacts/operation-costs/debug build intermediates but writing new output under artifacts/primary-upstream-regressions. Reuse the immutable artifacts/upstream-regressions/corpus-built-3 four-program corpus and artifacts/primary-jit-probe/capture.py with a fresh reference manifest, matching pinned Checked host and selector Runtime_133583:* Runtime_133518:* Runtime_133523:* Runtime_133521:*. Capture native and managed primary runs without AltJIT, verify completion and compare scoped output; follow the first actual failure. Do not relabel the older AltJIT runs, claim official-suite completion or change B365 native stress assertions. Report54 consolidated:27692removed/403restored; native03870c0d3a03e58bc5d6954afa8040028fd7f022, worker idle. Keep B153/D009 and ARM64 foreground expansion deferred.",
+    "nextAction": "B428 verified: 51 Debug/51 Release and corrected primary execution matches 54 raw tree slices/18 instruction traces, no ID normalization. Continue existing corpus-built-3 under MinOpts and GCStress4: artifacts/primary-jit-probe/capture.py native/managed artifacts/primary-upstream-regressions/<configuration>/native-1 or managed-1 --reference artifacts/primary-upstream-regressions/reference-2/manifest.json --selector 'Runtime_133583:* Runtime_133518:* Runtime_133523:* Runtime_133521:*' plus --minopts or --gc-stress 4. Jit-2 is immutable snapshot 6dd0c18643c1ec4212042698162d14c96a4c4b7c with the verified source fix. Verify process/body completion, then compare appropriate phases/instructions; do not normalize diagnostic IDs or conflate GC collection counts with semantic output. Report55 consolidated: 27793 removed/403 restored; worker idle. Keep B153/D009, B365 forced-spill assertions and ARM64 foreground expansion deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

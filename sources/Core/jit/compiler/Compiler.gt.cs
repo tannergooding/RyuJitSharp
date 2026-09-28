@@ -12479,8 +12479,9 @@ public partial class Compiler
                 if (varTypeIsFloating(simdBaseType))
                 {
                     // op1 ^ -0.0
-                    var negZero = gtNewVconNode(type);
-                    negZero.EvaluateBroadcastInPlace(simdBaseType, -0.0);
+                    // Construct the scalar before broadcasting to preserve native logical node IDs.
+                    GenTree negZero = gtNewDconNode(simdBaseType, -0.0);
+                    negZero = gtNewSimdCreateBroadcastNode(type, negZero, simdBaseType, simdSize);
                     return gtNewSimdBinOpNode(GT_XOR, type, op1, negZero, simdBaseType, simdSize);
                 }
                 else

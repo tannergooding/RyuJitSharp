@@ -208,6 +208,51 @@ internal static unsafe class HWIntrinsicImportClosureTests
         });
     }
 
+    [TestCase(TYP_FLOAT, 8)]
+    [TestCase(TYP_FLOAT, 12)]
+    [TestCase(TYP_FLOAT, 16)]
+    [TestCase(TYP_FLOAT, 32)]
+    [TestCase(TYP_FLOAT, 64)]
+    [TestCase(TYP_DOUBLE, 16)]
+    [TestCase(TYP_DOUBLE, 32)]
+    [TestCase(TYP_DOUBLE, 64)]
+    public static void FloatingNegationPreservesBroadcastConstruction(var_types baseType, byte simdSize)
+    {
+        WithImporter(compiler => {
+            compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_AVX);
+            compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_AVX2);
+            compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_AVX512);
+            var type = Compiler.GetSimdTypeForSize(simdSize);
+            compiler.lvaTable = [new LclVarDsc { Type = type }];
+            compiler.lvaCount = 1;
+            var operand = new GenTreeLclVar(type, 0);
+
+            var result = compiler.gtNewSimdUnOpNode(genTreeOps.GT_NEG, type, operand, baseType, simdSize);
+
+            Assert.That(result, Is.TypeOf<GenTreeHWIntrinsic>());
+            var intrinsic = result.AsHWIntrinsic();
+            Assert.That(intrinsic.GetOp(1), Is.SameAs(operand));
+            Assert.That(intrinsic.GetOp(2), Is.TypeOf<GenTreeVecCon>());
+            var mask = intrinsic.GetOp(2).AsVecCon();
+            for (var index = 0; index < simdSize / baseType.Size; index++)
+            {
+                if (baseType is TYP_FLOAT)
+                {
+                    Assert.That(mask.SimdVal.u32[index], Is.EqualTo(0x80000000u));
+                }
+                else
+                {
+                    Assert.That(mask.SimdVal.u64[index], Is.EqualTo(0x8000000000000000ul));
+                }
+            }
+
+#if DEBUG
+            Assert.That(mask.TreeId, Is.EqualTo(operand.TreeId + 2));
+            Assert.That(intrinsic.TreeId, Is.EqualTo(operand.TreeId + 3));
+#endif
+        });
+    }
+
     private static void WithImporter(Action<Compiler> test)
     {
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
