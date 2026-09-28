@@ -1597,19 +1597,24 @@ are removed. Shared-block construction and inline calls use the same native
 other targets explicitly reject throw generation. Windows-AMD64 production
 emission is now active for the supported backend modes.
 
-### D007: Block generation without optional emitter-test injection
+### D007: Optional emitter-test injection
 
-**Status:** temporary implementation boundary along the existing native Debug
-`JitEmitUnitTests` method-set and non-null `JitEmitUnitTestsSections` predicates,
-not an accepted output difference.
+**Status:** resolved for Windows AMD64; other-target payloads remain an explicit
+implementation boundary, not an accepted output difference.
 
-Windows-AMD64 block generation rejects the matched emitter-test payload mode with
-`CORJIT_SKIPPED` before changing labels, GC state, or instruction groups. Ordinary
-block generation follows the complete native driver. The optional native
-`genEmitterUnitTests` dispatcher and its synthetic instruction payloads remain
-unported; unmatched methods and null section selections do not require them.
-Immediate instruction disassembly is available (D005). This boundary does not
-authorize silent omission of requested diagnostics or payload instructions.
+Windows-AMD64 Debug block generation now invokes the native dispatcher at the
+last block, after GC-root checks. Method matching, null-section rejection,
+case-sensitive substring selection, section order, branch-over wrapper and
+diagnostics follow native. All six AMD64 payloads are implemented, including
+their ISA/encoding guards; Release does not inject payloads.
+
+The selected SSE2 capture completes with the primary native and managed JITs:
+all 41 instructions, 146-byte size, branch target and import/morph/cost trees
+match. An explicitly enabled recording fixture reaches all six sections without
+executing their synthetic instructions. This does not establish encoding parity
+for the other five sections. Native `all` with default encoding settings asserts
+at `UsePromotedEVEXEncoding()`; the port does not bypass that configuration
+requirement. Evidence is recorded in `checkpoint.amd64EmitterPayloads`.
 
 ### D008: Optional CSE emission metrics
 

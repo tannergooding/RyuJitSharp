@@ -4,6 +4,7 @@ using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BBKinds;
@@ -215,54 +216,89 @@ internal static unsafe class CodeGenBlockDriverTests
     }
 
 #if DEBUG
-    [TestCase(true, true, false)]
-    [TestCase(true, true, true)]
-    [TestCase(false, true, false)]
-    [TestCase(true, false, false)]
-    public static void EmitterPayloadRejectsOnlyTheRequestedNativeModeBeforeMutation(
-        bool matches, bool sections, bool wholeList)
+    [TestCase(true, "sse2", true, false)]
+    [TestCase(true, "sse2", true, true)]
+    [TestCase(true, "prefixsse2suffix", true, false)]
+    [TestCase(true, "all", true, false)]
+    [TestCase(true, "SSE2", true, false)]
+    [TestCase(true, "unknown", true, false)]
+    [TestCase(true, "", true, false)]
+    [TestCase(true, null, true, false)]
+    [TestCase(false, "sse2", true, false)]
+    [TestCase(true, "sse2", false, false)]
+    public static void EmitterPayloadUsesNativeSectionSelectionAtTheLastBlock(
+        bool matches, string? section, bool lastBlock, bool wholeList)
     {
         WithDriver((compiler, codeGen) =>
         {
-            var blocks = Blocks(compiler, BBJ_CALLFINALLYRET, BBJ_RETURN);
+            var blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_RETURN);
+            blocks[0].TargetEdge = new FlowEdge(blocks[0], blocks[1], null);
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.Base.runWithSPMIErrorTrap = &InvokeCallback;
             vtable.Base.Base.printMethodName = &PrintMethodName;
+            vtable.Base.notifyInstructionSetUsage =
+                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool, byte>)
+                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte, byte>)&NotifyInstructionSetUsage;
             ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
             compiler.info.compCompHnd = &jitInfo;
             var previousSections = EmitterSections(ref JitConfig);
             var previousMethods = EmitterTests(ref JitConfig);
+            if (section == "all")
+            {
+                foreach (var isa in new[] { CORINFO_InstructionSet.InstructionSet_APX, CORINFO_InstructionSet.InstructionSet_AVX10v2 })
+                {
+                    compiler.opts.compSupportsISA.AddInstructionSet(isa);
+                    compiler.opts.compSupportsISAExactly.AddInstructionSet(isa);
+                    compiler.opts.compSupportsISAReported.AddInstructionSet(isa);
+                }
+                codeGen.Emitter.UseEvexEncodings = true;
+                codeGen.Emitter.UseRex2Encodings = true;
+                codeGen.Emitter.UsePromotedEvexEncodings = true;
+            }
+            var sectionBytes = section is null ? [] : Encoding.UTF8.GetBytes(section + '\0');
             fixed (byte* pattern = matches ? "Test\0"u8 : "Unmatched\0"u8)
-            fixed (byte* payload = "all\0"u8)
+            fixed (byte* payload = sectionBytes)
             {
                 EmitterTests(ref JitConfig) = new JitConfigValues.MethodSet(pattern, null);
-                EmitterSections(ref JitConfig) = sections ? payload : null;
+                EmitterSections(ref JitConfig) = section is null ? null : payload;
                 try
                 {
-                    void Generate()
+                    var firstGroup = codeGen.Emitter.emitCurIG;
+                    if (wholeList)
                     {
-                        if (wholeList)
-                        {
-                            codeGen.genCodeForBBlist();
-                        }
-                        else
-                        {
-                            codeGen.genCodeForBlock(blocks[0]);
-                        }
-                    }
-
-                    if (matches && sections)
-                    {
-                        var failure = Assert.Throws<FatalJitException>(Generate);
-                        Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+                        codeGen.genCodeForBBlist();
                     }
                     else
                     {
-                        Generate();
+                        codeGen.genCodeForBlock(blocks[lastBlock ? 1 : 0]);
                     }
-                    Assert.That(blocks[0].HasFlag(BBF_HAS_LABEL), Is.False);
-                    Assert.That(compiler.fgSafeBasicBlockCreation, Is.True);
-                    Assert.That(Descriptors(codeGen), Is.Empty);
+
+                    var instructions = CodeGenLocalHeapTests.AllDescriptors(firstGroup, codeGen)
+                        .Select(id => id.idIns()).ToArray();
+                    if (!matches || (section is null) || !lastBlock)
+                    {
+                        Assert.That(instructions, Is.Empty);
+                    }
+                    else if ((section == "all") || section.Contains("sse2", StringComparison.Ordinal))
+                    {
+                        Assert.That(instructions[0], Is.EqualTo(INS_jmp));
+                        Assert.That(instructions[1], Is.EqualTo(INS_nop));
+                        Assert.That(instructions, Does.Contain(INS_addpd));
+                        Assert.That(instructions.TakeLast(4), Is.EqualTo((instruction[])[INS_nop, INS_nop, INS_nop, INS_nop]));
+                        if (section == "all")
+                        {
+                            Assert.That(instructions, Does.Contain(INS_crc32_apx));
+                            Assert.That(instructions, Does.Contain(INS_vcvttps2dqs));
+                            Assert.That(instructions, Does.Contain(INS_ccmpe));
+                            Assert.That(instructions, Does.Contain(INS_cfcmovo));
+                            Assert.That(instructions, Does.Contain(INS_cteste));
+                        }
+                    }
+                    else
+                    {
+                        Assert.That(instructions, Is.EqualTo((instruction[])[INS_jmp, INS_nop, INS_nop, INS_nop, INS_nop, INS_nop]));
+                    }
+                    Assert.That(compiler.compCurBB, Is.Null);
                 }
                 finally
                 {
@@ -273,6 +309,10 @@ internal static unsafe class CodeGenBlockDriverTests
             }
         });
     }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte NotifyInstructionSetUsage(ICorJitInfo* self, CORINFO_InstructionSet isa,
+        byte supported, byte preserveNegativeDependency) => supported;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte InvokeCallback(ICorJitInfo* self, delegate* unmanaged[Cdecl]<void*, void> callback, void* state)

@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: AMD64 Debug emitter payloads are available
+
+The native optional emitter-test dispatcher and all six AMD64 synthetic payloads
+are implemented at the last-block callsite. Section selection, diagnostics and
+the branch that skips the payload preserve native behavior.
+
+The primary managed JIT executes the existing Add corpus with SSE2 injection.
+Its complete 41-instruction, 146-byte stream and import/morph/cost trees match
+native. The other sections have enabled descriptor-recording coverage, not an
+encoding-parity claim. Native default `all` requires promoted-EVEX configuration
+and asserts without it. Other-target payloads remain unsupported.
+
+Evidence: `checkpoint.amd64EmitterPayloads` and D007.
+
 ## 2026-09-28: Primary class profiling and selected value profiling execute
 
 Interface and virtual dispatch now run with actual class-profile probes under

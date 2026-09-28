@@ -65,6 +65,34 @@ public partial class Emitter
 #endif
     }
 
+    public void emitIns_R_R_AR(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
+        regNumber @base, int offs, insOpts instOptions = INS_OPTS_NONE)
+    {
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Two-register base-address instruction recording requires AMD64.");
+#else
+        RequireSupportedInstructionRecording();
+        assert(IsSimdInstruction(ins) || IsApxExtendedEvexInstruction(ins));
+        assert(IsThreeOperandAVXInstruction(ins) || IsApxExtendedEvexInstruction(ins));
+
+        var id = emitNewInstrAmd(attr, offs);
+        id.idIns(ins);
+        id.idReg1(reg1);
+        id.idReg2(reg2);
+        id.idInsFmt(emitInsModeFormat(ins, IF_RRD_RRD_ARD));
+        id.idAddr().iiaAddrMode.amBaseReg = @base;
+        id.idAddr().iiaAddrMode.amIndxReg = REG_NA;
+
+        SetEvexNdIfNeeded(id, instOptions);
+        SetEvexNfIfNeeded(id, instOptions);
+        var sz = emitInsSizeAM(id, insCodeRM(ins));
+        id.idCodeSize(sz);
+
+        dispIns(id);
+        emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
+#endif
+    }
+
     public void emitIns_SIMD_R_R_I(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg,
         int ival, insOpts instOptions)
     {

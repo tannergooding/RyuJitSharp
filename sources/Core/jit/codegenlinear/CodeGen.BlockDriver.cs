@@ -12,7 +12,7 @@ public sealed partial class CodeGen
 #if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
         throw new FatalJitException(CORJIT_SKIPPED, "Block-list generation requires Windows AMD64.");
 #else
-        RequireSupportedBlockGeneration();
+        Emitter.RequireSupportedInstructionRecording();
 #if DEBUG
         _genInterruptibleUsed = true;
         _compiler.fgSafeBasicBlockCreation = false;
@@ -48,7 +48,7 @@ public sealed partial class CodeGen
 #if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
         throw new FatalJitException(CORJIT_SKIPPED, "Funclet block generation requires Windows AMD64.");
 #else
-        RequireSupportedBlockGeneration();
+        Emitter.RequireSupportedInstructionRecording();
         JITDUMP(funcInfo.funKind == FuncKind.FUNC_ROOT
             ? "\n=============== Generating code for main function\n"
             : "\n=============== Generating code for funclet\n");
@@ -64,7 +64,7 @@ public sealed partial class CodeGen
 #if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
         throw new FatalJitException(CORJIT_SKIPPED, "Basic-block generation requires Windows AMD64.");
 #else
-        RequireSupportedBlockGeneration();
+        Emitter.RequireSupportedInstructionRecording();
         if (block.Kind == BBJ_CALLFINALLYRET)
         {
             return;
@@ -325,6 +325,10 @@ public sealed partial class CodeGen
             jitprintf("\n");
         }
         noway_assert(nonVarPtrRegs.IsEmpty);
+        if (block.IsLast)
+        {
+            genEmitterUnitTests();
+        }
 #endif
         genEnsureCodeEmitted(in currentDI);
         var isLastBlockProcessed = block.IsLast;
@@ -377,18 +381,6 @@ public sealed partial class CodeGen
         }
 #endif
         _compiler.compCurBB = null;
-#endif
-    }
-
-    private unsafe void RequireSupportedBlockGeneration()
-    {
-        Emitter.RequireSupportedInstructionRecording();
-#if DEBUG
-        if (JitConfig.JitEmitUnitTests.contains(_compiler.info.compMethodHnd, _compiler.info.compClassHnd,
-            &_compiler.info.compMethodInfo->args) && (JitConfig.JitEmitUnitTestsSections is not null))
-        {
-            throw new FatalJitException(CORJIT_SKIPPED, "The optional emitter instruction-test payload is not implemented.");
-        }
 #endif
     }
 

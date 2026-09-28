@@ -18,6 +18,36 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterSimdMultioperandInstructionTests
 {
+    [TestCase(INS_addps, EA_16BYTE, REG_XMM1, REG_XMM2, REG_RAX, -128, INS_OPTS_NONE, IF_RWR_RRD_ARD)]
+    [TestCase(INS_add, EA_8BYTE, REG_R16, REG_R17, REG_R31, 65536, INS_OPTS_EVEX_nd | INS_OPTS_EVEX_nf, IF_RRW_RRD_ARD)]
+    public static void TwoRegisterBaseAddressesPreserveOperandsAndEncodingOptions(
+        instruction ins, emitAttr attr, regNumber destination, regNumber source, regNumber baseReg,
+        int offset, insOpts options, Emitter.insFormat format)
+    {
+        WithEmitter((_, emitter) =>
+        {
+            emitter.UseRex2Encodings = true;
+            emitter.UsePromotedEvexEncodings = true;
+            emitter.emitIns_R_R_AR(ins, attr, destination, source, baseReg, offset, options);
+            var id = Last(emitter);
+
+            Assert.That(id.idIns(), Is.EqualTo(ins));
+            Assert.That(id.idOpSize(), Is.EqualTo(attr));
+            Assert.That(id.idInsFmt(), Is.EqualTo(format));
+            Assert.That(id.idReg1(), Is.EqualTo(destination));
+            Assert.That(id.idReg2(), Is.EqualTo(source));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(baseReg));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_NA));
+            Assert.That(AddressDisplacement(emitter, id), Is.EqualTo((nint)offset));
+            if (options != INS_OPTS_NONE)
+            {
+                Assert.That(id.idIsEvexNdContextSet(), Is.True);
+                Assert.That(id.idIsEvexNfContextSet(), Is.True);
+            }
+            CheckAccounting(emitter);
+        });
+    }
+
     [Test]
     public static void GatherFormsPreserveVsibAndMaskOperands(
         [Values(INS_vpgatherdd, INS_vpgatherdq, INS_vpgatherqd, INS_vpgatherqq,
