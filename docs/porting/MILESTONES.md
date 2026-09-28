@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Assertion occurrence reporting completed
+
+Optional `MEASURE_NOWAY` reports now collect and rank executed assertions,
+including successful ones, with stdout and append-file output. Original caller
+locations are retained instead of merging assertions at the recording wrapper.
+Native hash traversal and sorting are preserved for equal-count rows.
+
+Enabled statistics, error, liveness and shutdown coverage passes 59 Debug and
+53 Release cases; default controls pass 42 and 36. Both configurations reproduce
+the old caller-location defect before correction. The option remains disabled
+by default, and native optional-map concurrency quirks remain unchanged.
+See B444 and `checkpoint.nowayStatistics`.
+
 ## 2026-09-28: Optional basic-block statistics completed
 
 The `COUNT_BASIC_BLOCKS` configuration now records block counts, single-block IL

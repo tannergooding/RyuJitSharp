@@ -19,6 +19,10 @@ public partial class Compiler
         s_pJitDisasmIncludeAssembliesList = null;
 #endif
 
+#if MEASURE_NOWAY
+        DisplayNowayAssertMap();
+#endif
+
         Emitter.emitDone();
 
 #if DEBUG

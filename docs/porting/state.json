@@ -16,6 +16,14 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "nowayStatistics": {
+      "scope": "Complete optional MEASURE_NOWAY occurrence collection and reporting, including B444 caller-location forwarding. Counts include successful assertions. The flag remains disabled by default.",
+      "mapping": "compiler.cpp1078-1243 -> Compiler.NowayStatistics.cs; compiler.cpp1325-1327 -> Compiler.Shutdown.cs; error.h RECORD_NOWAY_ASSERT and noway_assert -> error/Globals.cs. jitstd/algorithm.h sort is shared in jitstd/algorithm/Globals.Sort.cs with the unchanged liveness sorting contract.",
+      "contract": "Native filename/line equality retains first condition text, signed UTF8-byte hashes, native bucket growth/chain/rehash ordering, host-sized unsigned counts, signed descending comparisons and native sort tie behavior. Stdout alone receives the header; file output appends and explicitly reports open failure. Report precedes emitter shutdown and the no-methods early return.",
+      "validation": "Full-analysis enabled NowayStatisticsTests/ErrorTrapTests/TrackedLocalSelectionTests/CompilerShutdownTests pass59Debug/53Release, including17 measurement cases. Default controls pass42Debug/36Release. The caller-location test fails in both configurations with the old non-forwarding call restored.",
+      "reproduction": "Enable the existing MEASURE_NOWAY DefineConstants line and run the named Core fixtures in Debug and Release. Fresh logs and TRX use noway-statistics names; this run appends the symbol through artifacts/noway-statistics/enable.targets using CustomAfterMicrosoftCommonTargets without changing project defaults.",
+      "limits": "No native-host execution or full diagnostic parity claim. Native optional-map lazy initialization and mutation remain unsynchronized; no C#-only concurrency redesign."
+    },
     "blockCountStatistics": {
       "scope": "Complete optional COUNT_BASIC_BLOCKS support, including B385 reachability iterations, the existing importer record sites and ordered compiler shutdown reports. The configuration remains disabled by default.",
       "mapping": "Pinned compiler.cpp:259-287,1519-1540,7064-7071 -> Globals.BlockStatistics.cs, Compiler.Shutdown.cs and Compiler.comp.cs; flowgraph.cpp:BlockReachabilitySets::Build -> BlockReachabilitySets.cs; jitshared histogram.h/cpp and dumpable.h -> matching managed directories; utils.cpp DumpOnShutdown -> utils/DumpOnShutdown.cs.",
@@ -736,8 +744,8 @@
         "Raw target-block getters have no pinned callsites and remain unused support. emitCodeGetCookie remains because its managed helper is only declared under TARGET_AMD64."
       ],
       "remaining": "Continue the full already-completed-code cleanup, distinguishing unreconciled areas from genuine target/CFI/optional-statistics gaps. emitGenIG/emitSavIG retain architecture/statistics paths, genCreateTempLabel retains Unix x86, and genGetRegMask retains ARM floating support. No new default Windows emission gap was established; the earlier blanket claim is withdrawn. Complete bodies are not retained merely because unfinished native callers reference them. Notify the user when the full cleanup is done.",
-      "verification": "Latest collected native cleanup isc9d7744b77c. Report84 retires63lines of SIMD length support after direct whole-function implementation29f1705; report82's corrective restoration and superseded report81 remain historical. Native index/worktree and oracle tracked source/index were clean at the reported boundary. Retirement adds no parity evidence.",
-      "targetLedger": "Collected report84 covers292 overlapping records:270 implemented,5 partial,1 unported,14 unknown and2 not-applicable, not unique functions or a compiler-completion percentage. R001 and unused SIMD support are consumed through29f1705. B385/blockCountStatistics is newer and awaits consumption. Unknown file-only umbrellas retain explicit coverage boundaries from report80. Composed arithmetic or absent callers alone do not establish a whole-function port.",
+      "verification": "Latest collected native cleanup isa7c55ef39dc. Report85 retires337lines across eight files for complete B385 reachability construction, dedicated histogram tables, Histogram/Dumpable and DumpOnShutdown support after4d2c85c. Mixed statistics dispatchers remain. Native index/worktree and oracle tracked source/index were clean at the reported boundary. Retirement adds no parity evidence.",
+      "targetLedger": "Collected report85 covers294 overlapping records:274 implemented,3 partial,1 unported,14 unknown and2 not-applicable, not unique functions or a compiler-completion percentage. B385 is consumed through4d2c85c; nowayStatistics is newer and awaits consumption. D009, R005 and B392 remain separate known optional gaps. Unknown file-only umbrellas retain explicit coverage boundaries from report80; other disabled statistics switches are not implied complete.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
       "policy": "Retire only reviewed complete implementations. Retain or explicitly identify unfinished shared/Windows paths and other-platform-only paths. Preserve the oracle and existing index distinctions; do not infer parity or percentages from deletion counts."
     },
@@ -804,7 +812,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Complete optional COUNT_BASIC_BLOCKS support as one area: native Histogram/Dumpable and shutdown registry, three block/IL/convergence histograms, existing import record sites, B385 iteration counting and ordered shutdown output. Validate the enabled Debug/Release builds with focused histogram, reachability and shutdown fixtures, then default-configuration controls before committing. Leave unrelated statistics switches, B392 hash-policy redesign, D009 disassembly and other-target expansion out of this batch. Native retirement remains separate.",
+      "parentScope": "Complete optional MEASURE_NOWAY occurrence statistics: file/line identity, unsigned host-sized counts, native bucket/chain ordering and descending sort, stdout/append-file reports and original caller locations. Reuse the already-ported native sorting algorithm without changing liveness behavior. Validate enabled Debug/Release statistics and existing error/liveness/shutdown fixtures, plus default controls before committing. Other statistics switches, B392 hash-stress policy, D009 and other-target expansion remain separate.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1206,7 +1214,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Send committed blockCountStatistics/B385 evidence to worker4b57b744 for complete-function retirement. Continue optional MEASURE_NOWAY closure: Compiler.RecordNowayAssert remains a no-op, and pinned compiler.cpp1078-1243 defines file/line keys, occurrence counts, descending report ordering and append-file output; first resolve the existing managed collection and sort mappings needed to preserve this contract. Do not restart B392 hash-stress review or broad shared-state audits. Preserve B365/B394 upstream reports. B153/D009 and ARM64 foreground expansion remain deferred.",
+    "nextAction": "Send committed nowayStatistics/B444 to worker4b57b744 for complete-function retirement. Continue the adjacent MEASURE_FATAL closure: existing error counters are signed, shutdown output is missing, and the Release noWayAssertBody(message,file,line) references the Debug-only argument counter when enabled. Preserve native error results and unsigned counter semantics, and validate enabled Debug/Release plus default controls as one bounded area. Do not restart B392 hash-stress or broad shared-state audits. Preserve B365/B394 upstream reports; B153/D009 and ARM64 foreground expansion remain deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
@@ -9767,6 +9775,13 @@
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.lva.cs"],
       "reconciledCommit": null,
       "scope": "lvaGrabTemps descriptor initialization; B251."
+    },
+    {
+      "area": "assertion-occurrence-statistics",
+      "native": ["src\\coreclr\\jit\\compiler.cpp", "src\\coreclr\\jit\\error.h", "src\\coreclr\\jit\\jithashtable.h", "src\\coreclr\\jit\\jitstd\\algorithm.h"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.NowayStatistics.cs", "sources\\Core\\jit\\compiler\\Compiler.Shutdown.cs", "sources\\Core\\jit\\error\\Globals.cs", "sources\\Core\\jitstd\\algorithm\\Globals.Sort.cs"],
+      "reconciledCommit": null,
+      "scope": "Complete MEASURE_NOWAY collector, reports and caller metadata with the required native-order map specialization; not a general JitHashTable port. Shared sorting preserves the prior liveness algorithm. See checkpoint.nowayStatistics and B444."
     },
     {
       "area": "block-count-statistics",

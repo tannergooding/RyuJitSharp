@@ -210,7 +210,11 @@ public partial class Globals
     // Used for an assert that we want to convert into BADCODE to force minopts, or in minopts to force codegen.
     public static void noway_assert([DoesNotReturnIf(false)] bool condition, [CallerArgumentExpression(nameof(condition))] ReadOnlySpan<char> conditionExpression = "", [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
+#if MEASURE_NOWAY
+        RECORD_NOWAY_ASSERT(conditionExpression, filePath, lineNumber);
+#else
         RECORD_NOWAY_ASSERT(conditionExpression);
+#endif
 
         if (!condition)                                                                                                   
         {
@@ -249,9 +253,17 @@ public partial class Globals
     public static void BADCODE3(ReadOnlySpan<char> message, ReadOnlySpan<char> message2, int arg) => badCode();
 
     // Used for an assert that we want to convert into BADCODE to force minopts, or in minopts to force codegen.
+#if MEASURE_NOWAY
+    public static void noway_assert([DoesNotReturnIf(false)] bool condition, [CallerArgumentExpression(nameof(condition))] ReadOnlySpan<char> conditionExpression = "", [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
+#else
     public static void noway_assert([DoesNotReturnIf(false)] bool condition, [CallerArgumentExpression(nameof(condition))] ReadOnlySpan<char> conditionExpression = "")
+#endif
     {
+#if MEASURE_NOWAY
+        RECORD_NOWAY_ASSERT(conditionExpression, filePath, lineNumber);
+#else
         RECORD_NOWAY_ASSERT(conditionExpression);
+#endif
 
         if (!condition)
         {

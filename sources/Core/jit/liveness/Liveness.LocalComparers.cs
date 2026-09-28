@@ -8,9 +8,8 @@ namespace RyuJitSharp;
 public partial class Liveness<TLiveness>
     where TLiveness : ILivenessPolicy
 {
-    internal interface ILocalLess
+    internal interface ILocalLess : INativeLess<int>
     {
-        bool Less(int first, int second);
     }
 
     internal readonly struct SmallCodeLess(Compiler compiler) : ILocalLess

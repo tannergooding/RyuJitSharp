@@ -853,6 +853,13 @@ than storing a second size field. Sorting retains native pivot and comparison
 order because tolerance-based profile-weight comparisons can make that order
 observable; it is not replaced with framework sorting.
 
+The same native sorting implementation is shared with optional assertion
+occurrence reports. Their managed file/line map preserves native bucket growth,
+collision-chain and rehash order before sorting, since tied counts make that
+order observable. Strings and managed nodes replace native-owned key buffers;
+host-sized unsigned counts and the signed descending comparator are unchanged.
+Native optional-mode initialization and mutation remain unsynchronized.
+
 `GenTreeCall` stores its tailcall, async-call, and unmanaged-call-convention
 variants separately. The native union cannot be reproduced with explicit
 overlapping fields because async debug information contains managed references.

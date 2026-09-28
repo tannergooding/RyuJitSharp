@@ -2313,13 +2313,6 @@ public partial class Compiler
     {
     }
 
-#if MEASURE_NOWAY
-    public void RecordNowayAssert(ReadOnlySpan<char> filePath, int lineNumber, ReadOnlySpan<char> message)
-    {
-        // TODO: Port RecordNowayAssert
-    }
-#endif
-
     public var_types roundDownMaxType(int size)
     {
         assert(size > 0);
