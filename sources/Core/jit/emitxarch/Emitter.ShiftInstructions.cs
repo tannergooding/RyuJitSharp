@@ -116,6 +116,11 @@ public partial class Emitter
 #endif
     }
 
+    public void emitIns_R_ARR(instruction ins, emitAttr attr, regNumber reg, regNumber @base, regNumber index, int disp)
+    {
+        emitIns_R_ARX(ins, attr, reg, @base, index, 1, disp);
+    }
+
     public void emitIns_R_ARX(instruction ins, emitAttr attr, regNumber reg, regNumber @base,
         regNumber index, uint scale, int disp)
     {

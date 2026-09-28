@@ -8,6 +8,17 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class InstructionFlagsTests
 {
+    [TestCase(INS_pandd, true)]
+    [TestCase(INS_pandnd, true)]
+    [TestCase(INS_pord, true)]
+    [TestCase(INS_pxord, true)]
+    [TestCase(INS_xor, false)]
+    [TestCase(INS_andps, false)]
+    public static void BitwiseClassificationRetainsTheNativePackedIntegerSet(instruction ins, bool expected)
+    {
+        Assert.That(Emitter.IsBitwiseInstruction(ins), Is.EqualTo(expected));
+    }
+
     [Test]
     public static void FlagsTableCoversEveryInstructionWithTheFullNativeBitWidth()
     {

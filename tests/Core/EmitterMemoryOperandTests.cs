@@ -21,6 +21,29 @@ internal static unsafe class EmitterMemoryOperandTests
 {
     private static CorInfoReloc s_hint;
 
+    [TestCase(1, INS_OPTS_EVEX_er_rd)]
+    [TestCase(2, INS_OPTS_EVEX_er_ru)]
+    [TestCase(3, INS_OPTS_EVEX_er_rz)]
+    public static void EmbeddedRoundingModesRetainTheirInstructionOptions(byte mode, insOpts expected)
+    {
+        WithEmitter((_, emitter) => Assert.That(emitter.GetEmbRoundingMode(mode), Is.EqualTo(expected)));
+    }
+
+    [Test]
+    public static void AddressFormatsMapToTheirCorrespondingDirectMemoryFormats()
+    {
+        WithEmitter((_, emitter) =>
+        {
+            for (var format = IF_ARD; format <= IF_RWR_RRD_ARD_RRD; format++)
+            {
+                var expectedName = format.ToString().Replace("ARD", "MRD", StringComparison.Ordinal)
+                    .Replace("ARW", "MRW", StringComparison.Ordinal)
+                    .Replace("AWR", "MWR", StringComparison.Ordinal);
+                Assert.That(emitter.emitMapFmtAtoM(format).ToString(), Is.EqualTo(expectedName));
+            }
+        });
+    }
+
     [TestCase(REG_RAX, REG_NA, 1, 0, 0u)]
     [TestCase(REG_RBP, REG_R8, 2, 128, 1u)]
     [TestCase(REG_RAX, REG_RCX, 4, 65536, 2u)]

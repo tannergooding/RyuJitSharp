@@ -9,6 +9,11 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    public void emitIns_ARR_R(instruction ins, emitAttr attr, regNumber reg, regNumber @base, regNumber index, int disp)
+    {
+        emitIns_ARX_R(ins, attr, reg, @base, index, 1, disp);
+    }
+
     public void emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber @base, nint disp,
         insOpts instOptions = INS_OPTS_NONE)
     {

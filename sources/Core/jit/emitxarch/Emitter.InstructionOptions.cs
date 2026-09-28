@@ -7,6 +7,35 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+#if TARGET_XARCH
+    public insOpts GetEmbRoundingMode(byte mode)
+    {
+        switch (mode)
+        {
+            case 1:
+            {
+                return INS_OPTS_EVEX_er_rd;
+            }
+
+            case 2:
+            {
+                return INS_OPTS_EVEX_er_ru;
+            }
+
+            case 3:
+            {
+                return INS_OPTS_EVEX_er_rz;
+            }
+
+            default:
+            {
+                unreached();
+                return INS_OPTS_NONE;
+            }
+        }
+    }
+#endif
+
 #if TARGET_AMD64
     public void SetEvexEmbMaskIfNeeded(instrDesc id, insOpts instOptions)
     {

@@ -8,6 +8,11 @@ namespace RyuJitSharp;
 public partial class Emitter
 {
 #if TARGET_XARCH
+    public static bool IsBitwiseInstruction(instruction ins)
+    {
+        return ins is INS_pandd or INS_pandnd or INS_pord or INS_pxord;
+    }
+
     public static bool DoesWriteZeroFlagForResult(instruction ins)
     {
         // BSF/BSR set ZF from the source rather than the result.

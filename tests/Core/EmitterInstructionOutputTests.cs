@@ -100,6 +100,23 @@ internal static unsafe class EmitterInstructionOutputTests
         }, hex);
     }
 
+    [TestCase(false, "488B4C1008")]
+    [TestCase(true, "48894C1008")]
+    public static void IndexedAddressWrappersUseUnitScale(bool store, string hex)
+    {
+        WithOutput((_, emitter) =>
+        {
+            if (store)
+            {
+                emitter.emitIns_ARR_R(INS_mov, EA_8BYTE, REG_RCX, REG_RAX, REG_RDX, 8);
+            }
+            else
+            {
+                emitter.emitIns_R_ARR(INS_mov, EA_8BYTE, REG_RCX, REG_RAX, REG_RDX, 8);
+            }
+        }, hex);
+    }
+
     [TestCase(false, "488B4DF0")]
     [TestCase(true, "48894DF0")]
     public static void StackDispatchPlacesTheRegisterField(bool store, string hex)

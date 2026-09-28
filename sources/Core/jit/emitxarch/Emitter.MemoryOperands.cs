@@ -10,6 +10,27 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+#if TARGET_XARCH
+    public insFormat emitMapFmtAtoM(insFormat fmt)
+    {
+        assert((fmt >= IF_ARD) && (fmt <= IF_RWR_RRD_ARD_RRD));
+        assert((IF_RWR_RRD_ARD_RRD - IF_ARD) == (IF_RWR_RRD_MRD_RRD - IF_MRD));
+        assert(IF_MRD < IF_ARD);
+
+        const uint delta = IF_ARD - IF_MRD;
+        assert((IF_ARD - delta) == IF_MRD);
+        assert((IF_ARD_CNS - delta) == IF_MRD_CNS);
+        assert((IF_ARD_RRD - delta) == IF_MRD_RRD);
+        assert((IF_RRD_ARD - delta) == IF_RRD_MRD);
+        assert((IF_RRD_ARD_CNS - delta) == IF_RRD_MRD_CNS);
+        assert((IF_RRD_ARD_RRD - delta) == IF_RRD_MRD_RRD);
+        assert((IF_RRD_RRD_ARD - delta) == IF_RRD_RRD_MRD);
+        assert((IF_RWR_RRD_ARD_RRD - delta) == IF_RWR_RRD_MRD_RRD);
+
+        return fmt - delta;
+    }
+#endif
+
     public void emitHandleMemOp(GenTreeIndir indir, instrDesc id, insFormat fmt, instruction ins)
     {
 #if !TARGET_AMD64
