@@ -2669,17 +2669,17 @@ public partial class GenTree
     // Set the costs. They are always both set at the same time.
     // Don't use the "put" property: force calling this function, to make it more obvious in the few places that set the values.
     // Note that costs are only set in gtSetEvalOrder() and its callees.
-    public void SetCosts(byte costEx, byte costSz)
+    public void SetCosts(uint costEx, uint costSz)
     {
-        assert(costEx != byte.MaxValue);
-        assert(costSz != byte.MaxValue);
+        assert(costEx != uint.MaxValue);
+        assert(costSz != uint.MaxValue);
 
 #if DEBUG
         _costsInitialized = true;
 #endif
 
-        _costEx = costEx;
-        _costSz = costSz;
+        _costEx = (byte)uint.Min(costEx, MAX_COST);
+        _costSz = (byte)uint.Min(costSz, MAX_COST);
     }
 
     /// <summary>Set GTF_EXCEPT and GTF_IND_NONFAULTING flags as appropriate on an indirection or an array length node.</summary>

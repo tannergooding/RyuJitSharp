@@ -5461,7 +5461,7 @@ public partial class Compiler
     /// <param name="costSz">parameter for the size cost</param>
     /// <returns>Whether the cost calculated includes that of address.</returns>
     /// <remarks>Used for both loads and stores.</remarks>
-    public bool gtGetAddrNodeCost(GenTree addr, var_types type, bool isVolatile, out byte costEx, out byte costSz)
+    public bool gtGetAddrNodeCost(GenTree addr, var_types type, bool isVolatile, out int costEx, out int costSz)
     {
         costEx = 0;
         costSz = 0;
@@ -5497,7 +5497,7 @@ public partial class Compiler
         {
             // Indirection of a CNS_INT, subtract 1 from costEx makes costEx 3 for x86 and 4 for amd64.
 
-            costEx += (byte)(addr.CostEx - 1);
+            costEx += addr.CostEx - 1;
             costSz += addr.CostSz;
 
             includesAddrCost = true;
@@ -7204,7 +7204,7 @@ public partial class Compiler
     /// <param name="costSz">the size cost</param>
     /// <returns> Whether the cost calculated includes that of the node's address.</returns>
     /// <remarks>Used for both loads and stores.</remarks>
-    public bool gtGetIndNodeCost(GenTreeIndir node, out byte costEx, out byte costSz)
+    public bool gtGetIndNodeCost(GenTreeIndir node, out int costEx, out int costSz)
     {
         if (varTypeIsSmall(node.Type))
         {
@@ -7263,7 +7263,7 @@ public partial class Compiler
     /// <param name="costEx">the execution cost</param>
     /// <param name="costSz">the size cost</param>
     /// <remarks>Used for both uses and defs. Only the node's own cost is calculated.</remarks>
-    public void gtGetLclFldNodeCost(GenTreeLclFld node, out byte costEx, out byte costSz)
+    public void gtGetLclFldNodeCost(GenTreeLclFld node, out int costEx, out int costSz)
     {
         if (varTypeIsSmall(node.Type))
         {
@@ -7288,7 +7288,7 @@ public partial class Compiler
     /// <param name="costSz">the size cost</param>
     /// <param name="isLikelyRegVar">Is the local likely to end up enregistered</param>
     /// <remarks>Used for both uses and defs. Only the node's own cost is calculated.</remarks>
-    public void gtGetLclVarNodeCost(GenTreeLclVar node, out byte costEx, out byte costSz, bool isLikelyRegVar)
+    public void gtGetLclVarNodeCost(GenTreeLclVar node, out int costEx, out int costSz, bool isLikelyRegVar)
     {
         if (isLikelyRegVar)
         {
@@ -7732,7 +7732,7 @@ public partial class Compiler
     /// <param name="costSz">The size cost of this address expression (in/out arg to be updated)</param>
     /// <param name="type">The type of the value being referenced by the parent of this address expression.</param>
     /// <returns>Returns true if it finds an addressing mode.</returns>
-    public bool gtMarkAddrMode(GenTree addr, ref byte costEx, ref byte costSz, var_types type)
+    public bool gtMarkAddrMode(GenTree addr, ref int costEx, ref int costSz, var_types type)
     {
         // TODO-Throughput - Consider actually instantiating these early, to avoid having to re-run the algorithm that looks for them (might also improve CQ).
 
@@ -7765,8 +7765,8 @@ public partial class Compiler
 
             var originalAddrCostEx = addr.CostEx;
             var originalAddrCostSz = addr.CostSz;
-            var addrModeCostEx = (byte)(0);
-            var addrModeCostSz = (byte)(0);
+            var addrModeCostEx = 0;
+            var addrModeCostSz = 0;
 
 #if TARGET_WASM
             // Only "base + cns" is an addressing mode on Wasm. The constant folds into the memarg, which grows by
@@ -7896,7 +7896,7 @@ public partial class Compiler
                 {
                     // decrement the gtCosts for the interior GT_ADD or GT_LSH node by the remaining addrmodeCount
 
-                    tmp.SetCosts((byte)(tmp.CostEx - addrmodeCount), (byte)(tmp.CostSz - addrmodeCount));
+                    tmp.SetCosts((uint)(tmp.CostEx - addrmodeCount), (uint)(tmp.CostSz - addrmodeCount));
                     addrmodeCount--;
 
                     if (addrmodeCount > 0)
@@ -8023,7 +8023,7 @@ public partial class Compiler
                 var addrCostExDelta = originalAddrCostEx - addrModeCostEx;
                 var addrCostSzDelta = originalAddrCostSz - addrModeCostSz;
 
-                addrComma.SetCosts((byte)(addrComma.CostEx - addrCostExDelta), (byte)(addrComma.CostSz - addrCostSzDelta));
+                addrComma.SetCosts((uint)(addrComma.CostEx - addrCostExDelta), (uint)(addrComma.CostSz - addrCostSzDelta));
 
                 var addrCommaOp = addrComma.AsOp();
 
@@ -14026,11 +14026,11 @@ public partial class Compiler
         return true;
     }
 
-    public int gtSetCallArgsOrder(ref CallArgs args, bool lateArgs, ref byte callCostEx, ref byte callCostSz)
+    public int gtSetCallArgsOrder(ref CallArgs args, bool lateArgs, ref int callCostEx, ref int callCostSz)
     {
         var level = 0;
-        byte costEx = 0;
-        byte costSz = 0;
+        var costEx = 0;
+        var costSz = 0;
 
         if (lateArgs)
         {
@@ -14048,7 +14048,7 @@ public partial class Compiler
 
                 if (nodeCostSz is not 0)
                 {
-                    costSz += (byte)(nodeCostSz + 1);
+                    costSz += nodeCostSz + 1;
                 }
 #else
                 costSz += node.CostSz;
@@ -14068,7 +14068,7 @@ public partial class Compiler
 
                 if (nodeCostEx is not 0)
                 {
-                    costEx += (byte)(nodeCostEx + IND_COST_EX);
+                    costEx += nodeCostEx + IND_COST_EX;
                 }
 
 #if TARGET_XARCH
@@ -14078,7 +14078,7 @@ public partial class Compiler
 
                 if (nodeCostSz is not 0)
                 {
-                    costSz += (byte)(nodeCostSz + 1);
+                    costSz += nodeCostSz + 1;
                 }
 #endif
             }
@@ -14117,7 +14117,7 @@ public partial class Compiler
 
         if (oper.IsLeaf)
         {
-            byte costEx, costSz;
+            int costEx, costSz;
 
             switch (oper)
             {
@@ -14598,7 +14598,7 @@ public partial class Compiler
 
             if (op2 is null)
             {
-                byte costEx, costSz;
+                int costEx, costSz;
                 var level = gtSetEvalOrder(op1);
 
                 switch (oper)
@@ -15230,7 +15230,7 @@ public partial class Compiler
                         // To preserve previous behavior, we will always use "gtMarkAddrMode" for ARR_ADDR.
                         if ((op1.Oper is GT_ADD) && gtMarkAddrMode(op1, ref costEx, ref costSz, arrAddr.ElemType))
                         {
-                            op1.SetCosts(costEx, costSz);
+                            op1.SetCosts((uint)costEx, (uint)costSz);
                             return Done(arrAddr, costEx, costSz, level);
                         }
                         break;
@@ -15354,7 +15354,7 @@ public partial class Compiler
             {
                 var binOp = unOp.AsOp();
 
-                byte costEx, costSz;
+                int costEx, costSz;
                 var level = gtSetEvalOrder(op1);
                 var lvl2 = gtSetEvalOrder(op2);
 
@@ -15660,8 +15660,8 @@ public partial class Compiler
                     case GT_COMMA:
                     {   
                         // GT_COMMA cost is the sum of op1 and op2 costs
-                        costEx = (byte)(op1.CostEx + op2.CostEx);
-                        costSz = (byte)(op1.CostSz + op2.CostSz);
+                        costEx = op1.CostEx + op2.CostEx;
+                        costSz = op1.CostSz + op2.CostSz;
 
                         // Comma tosses the result of the left operand
                         return Done(binOp, costEx, costSz, lvl2);
@@ -15932,7 +15932,7 @@ public partial class Compiler
             assert(oper.IsSpecial);
 
             int level;
-            byte costEx, costSz;
+            int costEx, costSz;
 
             // See what kind of a special operator we have here
             switch (oper)
@@ -15960,7 +15960,7 @@ public partial class Compiler
 
                         level = int.Max(level, gtSetEvalOrder(indirect));
 
-                        costEx += (byte)(indirect.CostEx + IND_COST_EX);
+                        costEx += indirect.CostEx + IND_COST_EX;
                         costSz += indirect.CostSz;
                     }
                     else
@@ -16153,7 +16153,7 @@ public partial class Compiler
             return Done(tree, costEx, costSz, level);
         }
 
-        static int CommonCns(GenTree tree, byte costEx, byte costSz)
+        static int CommonCns(GenTree tree, int costEx, int costSz)
         {
             // Note that some code below depends on constants always getting
             // moved to be the second operand of a binary operator. This is
@@ -16165,9 +16165,9 @@ public partial class Compiler
             return Done(tree, costEx, costSz, level: 0);
         }
 
-        static int Done(GenTree tree, byte costEx, byte costSz, int level)
+        static int Done(GenTree tree, int costEx, int costSz, int level)
         {
-            tree.SetCosts(costEx, costSz);
+            tree.SetCosts((uint)costEx, (uint)costSz);
             return level;
         }
     }
@@ -16397,8 +16397,8 @@ public partial class Compiler
     public int gtSetMultiOpOrder(GenTreeMultiOp multiOp)
     {
         // Most HWI nodes are simple arithmetic operations.
-        var costEx = (byte)(1);
-        var costSz = (byte)(1);
+        var costEx = 1;
+        var costSz = 1;
         var level = 0;
 
         var optsEnabled = opts.OptimizationEnabled;
@@ -16605,7 +16605,7 @@ public partial class Compiler
                                 // V128 and then log2(V128<T>.Count) add operations
 
                                 costEx = (byte)(5 + (3 * int.Log2(elementCount)));
-                                costSz += (byte)(costSz * int.Log2(elementCount));
+                                costSz += costSz * int.Log2(elementCount);
                             }
                             else
                             {
@@ -16822,7 +16822,7 @@ public partial class Compiler
                             // division
 
                             costEx = 46;
-                            costSz = (byte)((costSz * 11) + 4);
+                            costSz = (costSz * 11) + 4;
                             break;
                         }
 
@@ -16835,12 +16835,12 @@ public partial class Compiler
                             if (varTypeIsIntegral(simdBaseType))
                             {
                                 costEx = 6;
-                                costSz = (byte)((costSz * 2) + 3);
+                                costSz = (costSz * 2) + 3;
                             }
                             else
                             {
                                 costEx = 9;
-                                costSz = (byte)((costSz * 2) + 3);
+                                costSz = (costSz * 2) + 3;
                             }
                             break;
                         }
@@ -17232,7 +17232,7 @@ public partial class Compiler
 
         if (optsEnabled)
         {
-            multiOp.SetCosts(costEx, costSz);
+            multiOp.SetCosts((uint)costEx, (uint)costSz);
         }
         return level;
     }

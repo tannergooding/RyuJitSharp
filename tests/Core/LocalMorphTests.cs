@@ -16,6 +16,79 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class LocalMorphTests
 {
+    [TestCase(254u, 1u, 254, 1)]
+    [TestCase(255u, 255u, 255, 255)]
+    [TestCase(256u, 511u, 255, 255)]
+    [TestCase(uint.MaxValue - 1, 0u, 255, 0)]
+    public static void StoredCostsSaturateUnsignedInputs(uint execution, uint size, int expectedExecution, int expectedSize)
+    {
+        WithCompiler(compiler =>
+        {
+            var tree = compiler.gtNewIconNode(TYP_INT, 1);
+            tree.SetCosts(execution, size);
+
+            Assert.That((tree.CostEx, tree.CostSz), Is.EqualTo((expectedExecution, expectedSize)));
+        });
+    }
+
+    [Test]
+    public static void CompareExchangeCostRemainsSaturated([Values(false, true)] bool withParent)
+    {
+        WithCompiler(compiler =>
+        {
+            var atomic = new GenTreeCmpXchg(TYP_INT, compiler.gtNewIconNode(TYP_I_IMPL, 8),
+                compiler.gtNewIconNode(TYP_INT, 1), compiler.gtNewIconNode(TYP_INT, 0));
+            GenTree tree = withParent ? compiler.gtNewUnaryNode(GT_NEG, TYP_INT, atomic) : atomic;
+
+            _ = compiler.gtSetEvalOrder(tree);
+
+            Assert.That(atomic.CostEx, Is.EqualTo(MAX_COST));
+            Assert.That(tree.CostEx, Is.EqualTo(MAX_COST));
+        });
+    }
+
+    [Test]
+    public static void LargeTreeCostsDoNotWrap()
+    {
+        WithCompiler(compiler =>
+        {
+            GenTree tree = compiler.gtNewIconNode(TYP_INT, 1);
+            for (var i = 0; i < 260; i++)
+            {
+                tree = compiler.gtNewUnaryNode(GT_NEG, TYP_INT, tree);
+            }
+
+            _ = compiler.gtSetEvalOrder(tree);
+
+            Assert.That((tree.CostEx, tree.CostSz), Is.EqualTo((MAX_COST, MAX_COST)));
+        });
+    }
+
+    [Test]
+    public static void CallArgumentCostsStayWideUntilStored([Values(false, true)] bool late)
+    {
+        WithCompiler(compiler =>
+        {
+            CallArgs arguments = default;
+            for (var i = 0; i < 6; i++)
+            {
+                var argument = arguments.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 1)));
+                if (late)
+                {
+                    argument.LateNode = argument.EarlyNode;
+                    arguments.PushLateBack(argument);
+                }
+            }
+
+            var execution = 250;
+            var size = 250;
+            _ = compiler.gtSetCallArgsOrder(ref arguments, late, ref execution, ref size);
+
+            Assert.That(execution, Is.EqualTo(250 + (6 * (late ? 1 : 1 + IND_COST_EX))));
+            Assert.That(size, Is.EqualTo(250 + (6 * (late ? 2 : 1))));
+        });
+    }
+
     [TestCase(TYP_FLOAT, true, false, 1, 2)]
     [TestCase(TYP_DOUBLE, true, false, 1, 2)]
     [TestCase(TYP_FLOAT, false, false, IND_COST_EX, 4)]
