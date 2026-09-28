@@ -16,6 +16,69 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterStaticFieldInstructionTests
 {
+    [TestCase(INS_mov, EA_1BYTE, REG_RSP, IF_MWR_RRD, 7u)]
+    [TestCase(INS_mov, EA_8BYTE, REG_R16, IF_MWR_RRD, 8u)]
+    [TestCase(INS_xchg, EA_8BYTE, REG_RAX, IF_MRW_RRW, 7u)]
+    public static void RegisterStoresPreserveFieldRelocationAndWriteFormats(
+        instruction ins, emitAttr attr, regNumber reg, Emitter.insFormat format, uint size)
+    {
+        WithEmitter((_, emitter) =>
+        {
+            emitter.UseRex2Encodings = true;
+            var field = Compiler.eeFindJitDataOffs(64);
+            emitter.emitIns_C_R(ins, attr, field, reg, -4);
+            var id = Last(emitter);
+
+            Assert.That(id.idInsFmt(), Is.EqualTo(format));
+            Assert.That(id.idReg1(), Is.EqualTo(reg));
+            Assert.That(id.idAddr().iiaGetJitDataOffset(), Is.EqualTo(64));
+            Assert.That(id.idIsDspReloc(), Is.True);
+            Assert.That(Displacement(emitter, id), Is.EqualTo((nint)(-4)));
+            Assert.That(id.idCodeSize(), Is.EqualTo(size));
+            Assert.That(CurrentSize(emitter), Is.EqualTo((int)size));
+        });
+    }
+
+    [TestCase(INS_add, -129, -129, IF_MRW_CNS, 11u)]
+    [TestCase(INS_add, 127, 127, IF_MRW_CNS, 8u)]
+    [TestCase(INS_shl_N, 130, 2, IF_MRW_SHF, 8u)]
+    public static void FieldImmediateStoresPreserveConstantsAndNativeShiftMasking(
+        instruction ins, int value, int storedValue, Emitter.insFormat format, uint size)
+    {
+        WithEmitter((_, emitter) =>
+        {
+            emitter.emitIns_C_I(ins, EA_8BYTE, FLD_GLOBAL_DS, -16, value);
+            var id = Last(emitter);
+
+            Assert.That(id.idInsFmt(), Is.EqualTo(format));
+            Assert.That(Constant(emitter, id), Is.EqualTo((nint)storedValue));
+            Assert.That(Displacement(emitter, id), Is.EqualTo((nint)(-16)));
+            Assert.That(id.idIsDspReloc(), Is.False);
+            Assert.That(id.idCodeSize(), Is.EqualTo(size));
+            Assert.That(CurrentSize(emitter), Is.EqualTo((int)size));
+        });
+    }
+
+    [Test]
+    public static void SimdFieldStoresRetainRegisterAndImmediate()
+    {
+        WithEmitter((_, emitter) =>
+        {
+            emitter.UseVexEncodings = true;
+            var field = Compiler.eeFindJitDataOffs(64);
+            emitter.emitIns_C_R_I(INS_vcvtps2ph, EA_32BYTE, field, 8, REG_XMM1, 3);
+            var id = Last(emitter);
+
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_MWR_RRD_CNS));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM1));
+            Assert.That(Constant(emitter, id), Is.EqualTo((nint)3));
+            Assert.That(Displacement(emitter, id), Is.EqualTo((nint)8));
+            Assert.That(id.idAddr().iiaGetJitDataOffset(), Is.EqualTo(64));
+            Assert.That(id.idIsDspReloc(), Is.True);
+            Assert.That(id.idCodeSize(), Is.EqualTo(10u));
+        });
+    }
+
     [TestCase(EA_1BYTE, REG_RAX, 6u)]
     [TestCase(EA_1BYTE, REG_RSP, 7u)]
     [TestCase(EA_2BYTE, REG_RAX, 7u)]
@@ -300,6 +363,9 @@ internal static unsafe class EmitterStaticFieldInstructionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetInsDsp")]
     private static extern nint Displacement(Emitter emitter, Emitter.instrDesc descriptor);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetInsCns")]
+    private static extern nint Constant(Emitter emitter, Emitter.instrDesc descriptor);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? Buffer(Emitter emitter);

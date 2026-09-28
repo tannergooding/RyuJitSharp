@@ -128,6 +128,37 @@ internal static unsafe class EmitterInstructionOutputTests
             emitter.emitIns_R_C(INS_mov, EA_8BYTE, REG_RAX, gs ? FLD_GLOBAL_GS : FLD_GLOBAL_FS, 16), hex);
     }
 
+    [TestCase(0, "6448890510000000")]
+    [TestCase(1, "48830510000000FF")]
+    [TestCase(2, "C4E37D1D0D1000000003")]
+    public static void StaticStoreEntryPointsReachTheirOutputFormats(int entrypoint, string hex)
+    {
+        WithOutput((_, emitter) =>
+        {
+            switch (entrypoint)
+            {
+                case 0:
+                {
+                    emitter.emitIns_C_R(INS_mov, EA_8BYTE, FLD_GLOBAL_FS, REG_RAX, 16);
+                    break;
+                }
+
+                case 1:
+                {
+                    emitter.emitIns_C_I(INS_add, EA_8BYTE, FLD_GLOBAL_DS, 16, -1);
+                    break;
+                }
+
+                default:
+                {
+                    emitter.UseVexEncodings = true;
+                    emitter.emitIns_C_R_I(INS_vcvtps2ph, EA_32BYTE, FLD_GLOBAL_DS, 16, REG_XMM1, 3);
+                    break;
+                }
+            }
+        }, hex);
+    }
+
     [Test]
     public static void ThreeOperandMemoryAndImmediateFormatsReachTheRightEncoders()
     {

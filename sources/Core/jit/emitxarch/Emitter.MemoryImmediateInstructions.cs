@@ -9,6 +9,75 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    public unsafe void emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs, int val,
+        insOpts instOptions = INS_OPTS_NONE)
+    {
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Static-field immediate instruction recording requires AMD64.");
+#else
+        RequireSupportedInstructionRecording();
+        if (!jitStaticFldIsGlobAddr(fldHnd))
+        {
+            attr |= EA_DSP_RELOC_FLG;
+        }
+
+        insFormat fmt;
+        switch (ins)
+        {
+            case INS_rcl_N or INS_rcr_N or INS_rol_N or INS_ror_N or INS_shl_N or INS_shr_N or INS_sar_N:
+            {
+                assert(val != 1);
+                fmt = IF_MRW_SHF;
+                val &= 0x7F;
+                break;
+            }
+
+            default:
+            {
+                fmt = emitInsModeFormat(ins, IF_MRD_CNS);
+                break;
+            }
+        }
+
+        var id = emitNewInstrCnsDsp(attr, val, offs);
+        id.idIns(ins);
+        id.idInsFmt(fmt);
+        id.idAddr().iiaFieldHnd = fldHnd;
+        var sz = emitInsSizeCV(id, insCodeMI(ins), val);
+        id.idCodeSize(sz);
+
+        dispIns(id);
+        emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
+#endif
+    }
+
+    public unsafe void emitIns_C_R_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs,
+        regNumber reg, int ival)
+    {
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Static-field register-immediate instruction recording requires AMD64.");
+#else
+        RequireSupportedInstructionRecording();
+        assert(IsSimdInstruction(ins));
+        assert(reg != REG_NA);
+        if (!jitStaticFldIsGlobAddr(fldHnd))
+        {
+            attr |= EA_DSP_RELOC_FLG;
+        }
+
+        var id = emitNewInstrCnsDsp(attr, ival, offs);
+        id.idIns(ins);
+        id.idInsFmt(emitInsModeFormat(ins, IF_MRD_RRD_CNS));
+        id.idReg1(reg);
+        id.idAddr().iiaFieldHnd = fldHnd;
+        var sz = emitInsSizeCV(id, insCodeMR(ins), ival);
+        id.idCodeSize(sz);
+
+        dispIns(id);
+        emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
+#endif
+    }
+
     public void emitIns_R_A_I(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir indir, int ival,
         insOpts instOptions = INS_OPTS_NONE)
     {

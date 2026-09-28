@@ -9,6 +9,41 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    public unsafe void emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, regNumber reg, int offs)
+    {
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Static-field register stores require AMD64.");
+#else
+        RequireSupportedInstructionRecording();
+        if (!jitStaticFldIsGlobAddr(fldHnd))
+        {
+            attr |= EA_DSP_RELOC_FLG;
+        }
+
+        var size = EA_SIZE(attr);
+        assert(size <= EA_PTRSIZE);
+        noway_assert(emitVerifyEncodable(ins, size, reg));
+
+        var id = emitNewInstrDsp(attr, offs);
+        var fmt = (ins == INS_xchg) ? IF_MRW_RRW : emitInsModeFormat(ins, IF_MRD_RRD);
+        id.idIns(ins);
+        id.idInsFmt(fmt);
+        id.idReg1(reg);
+        var sz = emitInsSizeCV(id, insCodeMR(ins));
+
+        if ((fldHnd == FLD_GLOBAL_FS) || (fldHnd == FLD_GLOBAL_GS))
+        {
+            sz++;
+        }
+
+        id.idCodeSize(sz);
+        id.idAddr().iiaFieldHnd = fldHnd;
+
+        dispIns(id);
+        emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
+#endif
+    }
+
     public unsafe void emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO_FIELD_HANDLE fldHnd,
         int offs, insOpts instOptions = INS_OPTS_NONE)
     {
