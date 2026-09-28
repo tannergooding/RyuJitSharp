@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "primaryVectorShifts": {
+      "scope": "Vector128/256/512 shifts for all eight signed/unsigned integral element types, including negative and oversized scalar counts; B440 switch operand-width closure.",
+      "mapping": "fgbasic.cpp Compiler::fgMakeBasicBlocks -> compiler/Compiler.fg.cs.",
+      "validation": "Four pre-fix wide-switch failures/two controls; final full-analysis flowgraph/scanner/switch coverage passes 215 Debug / 207 Release.",
+      "execution": "Default, AVX512-disabled and AVX-disabled native/managed primary pairs each verify 138444 independently computed shift lanes. Exact comparisons cover 219/216/216 raw phase slices and 73/72/72 complete instruction traces. Default includes the 72-case Program.Main dispatcher.",
+      "sourceSnapshot": "aacf581e8bfca4a5b0a51e99d9a244bdaaa6dfd6",
+      "evidence": "artifacts/primary-vector-shifts/evidence.json",
+      "limits": "Selected trees and complete recorded instructions, not whole dumps, machine-byte equality or official runtime-suite parity."
+    },
     "highRegisterMaskClosure": {
       "scope": "B439: fixed-register extraction, single selection, counting and EVEX floating argument-homing cycles.",
       "mapping": "codegencommon.cpp NodeInternalRegisters::Extract/GetSingle/Count and CodeGen::genHomeRegisterParams -> codegeninterface/NodeInternalRegisters*.cs and codegencommon/CodeGen.ParameterHoming.cs.",
@@ -716,7 +725,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Continue Windows implementation independently of cleanup. B438 diagnostic and B439 internal-register/argument-homing high-bit overflow are closed. Continue bounded numeric SIMD execution to expose incomplete Windows paths while the worker owns target-ledger classification and native deletions; neither gates foreground work.",
+      "parentScope": "Continue Windows implementation independently of cleanup. B438/B439 high-bit mask defects and B440 large-switch operand-width overflow are closed. Continue bounded SIMD execution to expose incomplete Windows paths while the worker owns target-ledger classification and native deletions; neither gates foreground work.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1111,7 +1120,7 @@
         }
       ]
     },
-    "nextAction": "Continue independent Windows SIMD execution after B439: exercise fixed-width integral vector left/arithmetic/logical right shifts with boundary and out-of-range scalar counts against independently computed lanes, using a fresh current-source JIT. Reuse the established primary capture/comparison tools; investigate actual failures rather than adding broad infrastructure. Collect worker4b57b744's target-ledger baseline on notification without pausing foreground work. Existing primary-outgoing-args/jit-1 predates B439. B153/D009, B365 and ARM64 foreground expansion remain deferred.",
+    "nextAction": "Continue independent Windows SIMD execution after B440: exercise fixed-width integral Shuffle with in-range and out-of-range indices, independently checking lane selection and zeroing across subvector boundaries. Reuse primary-vector-shifts/jit-2 at source aacf581e and the established capture/comparison tools; investigate actual failures rather than adding broad infrastructure. Collect worker4b57b744's target-ledger baseline on notification without pausing foreground work. B153/D009, B365 and ARM64 foreground expansion remain deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

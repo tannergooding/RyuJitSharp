@@ -7922,7 +7922,7 @@ public partial class Compiler
             noway_assert(opcode < CEE_COUNT);
 
             var sz = opcode.Size;
-            var actualSz = sz;
+            var actualSz = (int)sz;
             int jmpDist;
 
             if (opcode is >= CEE_BR_S and <= CEE_BLT_UN)
@@ -7988,7 +7988,7 @@ public partial class Compiler
                         cases[jmpCnt] = jmpBase;
 
                         // Compute the size of the switch opcode operands
-                        actualSz = (byte)(sizeof(int) + (jmpCnt * sizeof(int)));
+                        actualSz = sizeof(int) + (jmpCnt * sizeof(int));
 
                         // Allocate the switch descriptor; we will initialize the unique successors in fgLinkBasicBlocks
                         swtDsc = new BBswtDesc(succs: [], cases, hasDefault: true);

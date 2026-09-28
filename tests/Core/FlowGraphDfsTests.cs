@@ -1,6 +1,7 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
@@ -393,6 +394,70 @@ internal static unsafe class FlowGraphDfsTests
                 Assert.That(retained.HasFlag(BasicBlockFlags.BBF_INTERNAL), Is.False);
                 Assert.That(retained.HasFlag(BasicBlockFlags.BBF_IMPORTED), Is.True);
             });
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
+    [TestCase(0)]
+    [TestCase(62)]
+    [TestCase(63)]
+    [TestCase(64)]
+    [TestCase(72)]
+    [TestCase(256)]
+    public static void SwitchOperandsPreserveFullTableWidth(int caseCount)
+    {
+        var compiler = CreateCompiler();
+#if DEBUG
+        compiler.fgSafeFlowEdgeCreation = true;
+#endif
+        var methodInfo = new CORINFO_METHOD_INFO();
+        var flags = new JitFlags();
+        compiler.info.compMethodInfo = &methodInfo;
+        compiler.opts.jitFlags = &flags;
+#if DEBUG
+        using var jitTls = new JitTls(null);
+#endif
+        var previous = JitTls.Compiler;
+        JitTls.Compiler = compiler;
+
+        try
+        {
+            var tableEnd = 6 + (caseCount * sizeof(int));
+            var il = new byte[tableEnd + 2];
+            il[0] = 0x16;
+            il[1] = 0x45;
+            BinaryPrimitives.WriteInt32LittleEndian(il.AsSpan(2), caseCount);
+            for (var i = 0; i < caseCount; i++)
+            {
+                BinaryPrimitives.WriteInt32LittleEndian(il.AsSpan(6 + (i * sizeof(int))), 1);
+            }
+            il[tableEnd] = 0x2A;
+            il[tableEnd + 1] = 0x2A;
+            compiler.info.compILCodeSize = il.Length;
+            var jumpTargets = new BitArray(il.Length);
+            jumpTargets[tableEnd] = true;
+            jumpTargets[tableEnd + 1] = true;
+
+            fixed (byte* code = il)
+            {
+                compiler.info.compCode = code;
+                compiler.fgMakeBasicBlocks(code, il.Length, jumpTargets);
+            }
+
+            var block = compiler.fgFirstBB ?? throw new AssertionException("Missing switch block.");
+            Assert.That(block.Kind, Is.EqualTo(BBJ_SWITCH));
+            Assert.That(block.bbCodeOffsEnd, Is.EqualTo(tableEnd));
+            Assert.That(block.SwitchTargets.Cases.Length, Is.EqualTo(caseCount + 1));
+            Assert.That(block.SwitchTargets.DefaultCase.DestinationBlock.bbCodeOffs, Is.EqualTo(tableEnd));
+            for (var i = 0; i < caseCount; i++)
+            {
+                Assert.That(block.SwitchTargets.Cases[i].DestinationBlock.bbCodeOffs, Is.EqualTo(tableEnd + 1));
+            }
+            Assert.That(compiler.fgBBcount, Is.EqualTo(3));
+            Assert.That(compiler.fgReturnCount, Is.EqualTo(2));
         }
         finally
         {
