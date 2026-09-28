@@ -16,6 +16,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Primary runtime-async and GC-loop execution complete
+
+Box cleanup now retains the morph state of already-processed allocation/copy
+statements and updates the live statement when narrowing a struct source. The
+runtime-async corpus completes under the primary managed JIT, including
+thread-pool startup, suspension, exception handling and AsyncLocal context checks.
+The worker-thread naming method's complete 527-byte instruction stream and all
+six transformed async bodies match native. Five Task adapters retain dynamic
+thread-static index/offset differences, recorded separately rather than counted
+as instruction parity.
+
+The existing GC-loop corpus also completes under both primary JITs, reports 12
+Gen2/helper collections, and matches native import/morph/cost trees and complete
+instructions for all four selected bodies. These remain bounded corpus results,
+not official runtime-suite or whole-dump parity.
+
+Evidence: `checkpoint.boxCleanupAndPrimaryAsync`, `checkpoint.primaryGcLoops`,
+and reports under `artifacts/box-cleanup` and `artifacts/primary-gc-loops`.
+
 ## 2026-09-28: Standard and array primary-JIT execution match
 
 The existing standard and array/runtime-lookup corpora now also complete with the

@@ -16,6 +16,91 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CallFoldingTests
 {
+    [Test]
+    public static void BoxRemovalPreservesStatementIdentityAndMorphState(
+        [Values(false, true)] bool morphed, [Values(false, true)] bool sourceEffects)
+    {
+        WithCompiler("Enum", "HasFlag", (compiler, _) =>
+        {
+            compiler.fgGlobalMorph = morphed;
+            var address = compiler.gtNewIconNode(TYP_BYREF, 16);
+            GenTree value = sourceEffects
+                ? compiler.gtNewIndir(TYP_INT, address) : compiler.gtNewIconNode(TYP_INT, 42);
+            var allocation = compiler.gtNewStoreLclVarNode(0, compiler.gtNewNull());
+            var copy = compiler.gtNewStoreIndNode(TYP_INT, address, value);
+            var allocationStatement = compiler.gtNewStmt(allocation);
+            var copyStatement = compiler.gtNewStmt(copy);
+            var box = new GenTreeBox(TYP_REF, compiler.gtNewLclvNode(TYP_REF, 0),
+                allocationStatement, copyStatement);
+            box.Flags |= GTF_BOX_VALUE;
+            allocation._vnPair.SetBoth(42);
+            copy._vnPair.SetBoth(43);
+            if (morphed)
+            {
+                allocation.SetMorphed(compiler);
+                copy.SetMorphed(compiler);
+                value.SetMorphed(compiler);
+            }
+
+            var result = compiler.gtTryRemoveBoxUpstreamEffects(box);
+
+            Assert.That(result, Is.SameAs(value));
+            Assert.That(allocationStatement.RootNode, Is.SameAs(allocation));
+            Assert.That(allocation.Oper, Is.EqualTo(GT_NOP));
+            Assert.That(allocation.Flags & GTF_ALL_EFFECT, Is.EqualTo(GTF_EMPTY));
+            Assert.That(allocation._vnPair.BothDefined, Is.False);
+            Assert.That(copyStatement.RootNode, Is.SameAs(sourceEffects ? value : copy));
+            if (!sourceEffects)
+            {
+                Assert.That(copy.Oper, Is.EqualTo(GT_NOP));
+                Assert.That(copy.Flags & GTF_ALL_EFFECT, Is.EqualTo(GTF_EMPTY));
+                Assert.That(copy._vnPair.BothDefined, Is.False);
+            }
+#if DEBUG
+            Assert.That(allocation.WasMorphed, Is.EqualTo(morphed));
+            Assert.That(copyStatement.RootNode.WasMorphed, Is.EqualTo(morphed));
+#endif
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void BoxRemovalKeepsTheLiveOwnerOfAStructSource(bool narrow)
+    {
+        WithCompiler("Enum", "HasFlag", (compiler, _) =>
+        {
+            compiler.fgGlobalMorph = true;
+            var layout = new ClassLayout(16);
+            var address = compiler.gtNewIconNode(TYP_BYREF, 16);
+            var source = compiler.gtNewBlkIndir(address, layout);
+            source.Flags |= GTF_IND_VOLATILE | GTF_IND_UNALIGNED;
+            source._vnPair.SetBoth(42);
+            source.SetMorphed(compiler);
+            var allocationStatement = compiler.gtNewStmt(compiler.gtNewStoreLclVarNode(0, compiler.gtNewNull()));
+            var copyStatement = compiler.gtNewStmt(compiler.gtNewStoreBlkNode(address, source, layout));
+            var box = new GenTreeBox(TYP_REF, compiler.gtNewLclvNode(TYP_REF, 0),
+                allocationStatement, copyStatement);
+            box.Flags |= GTF_BOX_VALUE;
+            var options = narrow ? Compiler.BoxRemovalOptions.BR_REMOVE_AND_NARROW
+                : Compiler.BoxRemovalOptions.BR_REMOVE_BUT_NOT_NARROW;
+
+            var result = compiler.gtTryRemoveBoxUpstreamEffects(box, options)
+                ?? throw new AssertionException("Box removal failed.");
+
+            Assert.That(copyStatement.RootNode, Is.SameAs(result));
+            Assert.That(result.Oper, Is.EqualTo(narrow ? GT_IND : GT_BLK));
+            Assert.That(result.Type, Is.EqualTo(narrow ? TYP_BYTE : TYP_STRUCT));
+            Assert.That(result.AsIndir().Addr, Is.SameAs(address));
+            Assert.That(result.Flags, Is.EqualTo(source.Flags));
+            Assert.That(result._vnPair.BothDefined, Is.EqualTo(!narrow));
+#if DEBUG
+            Assert.That(result.TreeId, Is.EqualTo(source.TreeId));
+            Assert.That(result.WasMorphed, Is.True);
+            Assert.That(result._morphCount, Is.EqualTo(source._morphCount));
+#endif
+        });
+    }
+
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, true)]

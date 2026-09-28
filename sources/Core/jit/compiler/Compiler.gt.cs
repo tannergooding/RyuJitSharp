@@ -17483,8 +17483,7 @@ public partial class Compiler
 #if DEBUG
             JITDUMP($"Bashing NEWOBJ [{boxLclDef.TreeId:D6}] to NOP\n");
 #endif
-            allocStmt.RootNode = gtNewNothingNode();
-            DEBUG_DESTROY_NODE(boxLclDef);
+            boxLclDef.BashToNOP();
 
             copy.AsIndir().Addr = gtNewLclVarAddrNode(TYP_BYREF, boxTempLcl);
             return gtNewLclVarAddrNode(TYP_BYREF, boxTempLcl);
@@ -17538,8 +17537,7 @@ public partial class Compiler
         JITDUMP($"\nBashing NEWOBJ [{boxLclDef.TreeId:D6}] to NOP\n");
 #endif
 
-        allocStmt.RootNode = gtNewNothingNode();
-        DEBUG_DESTROY_NODE(boxLclDef);
+        boxLclDef.BashToNOP();
 
         // Change the copy expression so it preserves key source side effects.
 
@@ -17551,8 +17549,7 @@ public partial class Compiler
         {
             // If there were no copy source side effects just bash the copy to a NOP.
             JITDUMP(" to NOP; no source side effects.\n");
-            copyStmt.RootNode = gtNewNothingNode();
-            DEBUG_DESTROY_NODE(copy);
+            copy.BashToNOP();
         }
         else if (!isStructCopy)
         {
@@ -17585,11 +17582,12 @@ public partial class Compiler
                 }
                 else
                 {
-                    var indir = gtNewIndir(TYP_BYTE, copySrc.AsIndir().Addr, copySrc.Flags);
-                    copy.DataRef = indir;
-                    copySrc = indir;
-                    DEBUG_DESTROY_NODE(copySrc);
+                    copySrc = new GenTreeIndir(GT_IND, TYP_BYTE, copySrc.AsIndir().Addr, null, copySrc, fgNodeThreading) {
+                        Flags = copySrc.Flags,
+                    };
+                    copyStmt.RootNode = copySrc;
                 }
+                copySrc._vnPair.SetBoth(ValueNumStore.NoVN);
             }
             else
             {
