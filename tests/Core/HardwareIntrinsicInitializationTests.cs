@@ -14,6 +14,37 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HardwareIntrinsicInitializationTests
 {
+    [TestCase(NI_X86Base_DivRem, TYP_INT, 8)]
+    [TestCase(NI_X86Base_DivRem, TYP_UINT, 8)]
+    [TestCase(NI_X86Base_X64_DivRem, TYP_LONG, 16)]
+    [TestCase(NI_X86Base_X64_DivRem, TYP_ULONG, 16)]
+    [TestCase(NI_X86Base_X64_BigMul, TYP_LONG, 16)]
+    [TestCase(NI_X86Base_X64_BigMul, TYP_ULONG, 16)]
+    public static void StructIntrinsicLayoutsDispatchWithoutRecursing(NamedIntrinsic id, var_types baseType, int size)
+    {
+        // A missing derived implementation otherwise recurses until the test process terminates.
+        Assert.That(typeof(GenTreeHWIntrinsic).GetMethod(nameof(GenTree.GetLayout))?.DeclaringType,
+            Is.EqualTo(typeof(GenTreeHWIntrinsic)));
+
+        WithCompiler(compiler => {
+            var operands = new GenTree[HWIntrinsicInfo.lookupNumArgs(id)];
+            for (var index = 0; index < operands.Length; index++)
+            {
+                operands[index] = new GenTreeLclVar(baseType.ActualType, index);
+            }
+            var node = new GenTreeHWIntrinsic(TYP_STRUCT, id, baseType, 0, operands);
+            var expected = compiler.typGetBlkLayout(size);
+
+            Assert.That(node.GetLayout(compiler), Is.SameAs(expected));
+            Assert.That(((GenTree)node).GetLayout(compiler), Is.SameAs(expected));
+            Assert.That(expected.Size, Is.EqualTo(size));
+            for (var slot = 0; slot < expected.SlotCount; slot++)
+            {
+                Assert.That(expected.GetGCPtrType(slot), Is.EqualTo(Globals.TYP_I_IMPL));
+            }
+        });
+    }
+
     [TestCase(TYP_UINT, TYP_INT)]
     [TestCase(TYP_ULONG, TYP_LONG)]
     [TestCase(TYP_UBYTE, TYP_UBYTE)]

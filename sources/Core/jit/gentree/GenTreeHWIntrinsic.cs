@@ -29,6 +29,92 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
         }
     }
 
+    public new ClassLayout GetLayout(Compiler compiler)
+    {
+        assert(Type is TYP_STRUCT);
+
+        switch (HWIntrinsicId)
+        {
+#if TARGET_XARCH
+            case NI_X86Base_DivRem:
+            {
+                return compiler.typGetBlkLayout(SimdBaseType.Size * 2);
+            }
+
+            case NI_X86Base_X64_BigMul:
+            case NI_X86Base_X64_DivRem:
+            {
+                return compiler.typGetBlkLayout(16);
+            }
+#endif
+
+#if TARGET_ARM64
+            case NI_AdvSimd_Arm64_LoadPairScalarVector64:
+            case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
+            case NI_AdvSimd_Arm64_LoadPairVector64:
+            case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
+            case NI_AdvSimd_Load2xVector64AndUnzip:
+            case NI_AdvSimd_Load2xVector64:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+            case NI_AdvSimd_LoadAndReplicateToVector64x2:
+            {
+                return compiler.typGetBlkLayout(16);
+            }
+
+            case NI_AdvSimd_Arm64_LoadPairVector128:
+            case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+            case NI_AdvSimd_Arm64_Load2xVector128AndUnzip:
+            case NI_AdvSimd_Arm64_Load2xVector128:
+            case NI_AdvSimd_Load4xVector64:
+            case NI_AdvSimd_Load4xVector64AndUnzip:
+            case NI_AdvSimd_LoadAndReplicateToVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+            {
+                return compiler.typGetBlkLayout(32);
+            }
+
+            case NI_AdvSimd_Load3xVector64AndUnzip:
+            case NI_AdvSimd_Load3xVector64:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+            case NI_AdvSimd_LoadAndReplicateToVector64x3:
+            {
+                return compiler.typGetBlkLayout(24);
+            }
+
+            case NI_AdvSimd_Arm64_Load3xVector128AndUnzip:
+            case NI_AdvSimd_Arm64_Load3xVector128:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
+            {
+                return compiler.typGetBlkLayout(48);
+            }
+
+            case NI_AdvSimd_Arm64_Load4xVector128AndUnzip:
+            case NI_AdvSimd_Arm64_Load4xVector128:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
+            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
+            {
+                return compiler.typGetBlkLayout(64);
+            }
+
+            case NI_Sve_Load2xVectorAndUnzip:
+            case NI_Sve_Load3xVectorAndUnzip:
+            case NI_Sve_Load4xVectorAndUnzip:
+            {
+                throw new FatalJitException(CORJIT_SKIPPED, "SVE aggregate layouts require runtime Vector<T> length resolution.");
+            }
+#endif
+
+            default:
+            {
+                unreached();
+                return null;
+            }
+        }
+    }
+
     public static bool Equals(GenTreeHWIntrinsic op1, GenTreeHWIntrinsic op2)
     {
         return (op1.Type == op2.Type) && (op1.HWIntrinsicId == op2.HWIntrinsicId) &&

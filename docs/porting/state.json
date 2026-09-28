@@ -16,13 +16,22 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "structIntrinsicLayouts": {
+      "scope": "B435: supply the missing derived layout method that caused infinite base redispatch during BigMul import.",
+      "mapping": "gentree.cpp GenTreeHWIntrinsic::GetLayout -> gentree/GenTreeHWIntrinsic.cs.",
+      "validation": "Six cases fail before the fix; final initialization/layout/special-import coverage515Debug/511Release. Concrete and base dispatch use canonical non-GC8/16-byte layouts.",
+      "execution": "4440Python-oracle wide arithmetic value/exception checks per primary process. Expanded capture includes12wrappers and five UInt128/Int128 runtime helpers, matching51raw slices/17complete traces. AVX-disabled wrappers match36slices/12traces. Actual RDX:RAX mul/imul and runtime div, not a MULX claim.",
+      "sourceSnapshot": "a14320c0050db478282d1c441d958f7996853f3c",
+      "evidence": "artifacts/primary-wide-integer/evidence.json",
+      "remaining": "Fixed ARM64 layouts are source-ported, not execution-validated. SVE aggregate layouts explicitly report NYI pending runtime Vector<T> length resolution; exact native definition restored to residual711cdfc48d9."
+    },
     "primaryAtomicExecution": {
       "scope": "Windows AMD64 locked arithmetic and successful/failed compare-exchange value contracts.",
       "mapping": "codegenxarch.cpp genCodeForLockAdd/genLockedInstructions/genCodeForCmpXchg -> CodeGen.Atomics.cs.",
       "validation": "308checks across integer overflow, used/unused locked arithmetic, floating bit patterns and null/object identity. Both primary JITs match36raw slices/12complete instruction traces. Primitive operations emit lock/xadd/cmpxchg; reference operations retain the same runtime helper. No timeout or AltJIT.",
       "sourceSnapshot": "8cbf96c2e6a0273f8c3c3338fb7eefe41c57e126",
       "evidence": "artifacts/primary-atomics/evidence.json",
-      "remaining": "No concurrency-stress claim. Next bounded Windows boundary: wide integer multiplication/division and shifts."
+      "remaining": "No concurrency-stress claim. The subsequent structIntrinsicLayouts checkpoint covers wide arithmetic."
     },
     "completeInstructionAudit": {
       "scope": "B434: comparison tooling must match hexadecimal instruction IDs, including a-f, not only decimal digits.",
@@ -476,6 +485,8 @@
     "residualReconciliation": {
       "status": "in-progress",
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
+      "residualHead": "711cdfc48d9c67409d93562de96e801759ce6d27",
+      "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
       "retirementBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
@@ -623,7 +634,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Locked arithmetic and compare-exchange primary boundaries match. Continue wide integer multiplication/division and shifts as the next bounded Windows execution surface, using independently computed expected values and complete instruction matching. Retain native other-target paths.",
+      "parentScope": "B435 closes wide-integer primary stack overflow and arithmetic/runtime-helper parity. Next execute direct signed/unsigned X86Base.DivRem at32/64bits, checking both return components and actual multireg lowering. Preserve retained other-target paths.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1018,7 +1029,7 @@
         }
       ]
     },
-    "nextAction": "Atomic boundary verified308checks and exact36raw slices/12complete traces. Continue retained genCodeForMulHi/division through no-inline UInt128/Int128 multiplication, division, remainder and shift probes. Generate bounded high/low-bit operands and expected values independently with Python integer arithmetic; include sign/shift boundaries without relying on managed BigInteger as oracle. Capture current8cbf96c2 primary JIT and pinned native, compare with artifacts/primary-jit-probe/compare-complete.py, and follow first discrepancy. Worker idle; B153/D009, B365 and ARM64 foreground expansion deferred.",
+    "nextAction": "B435 corrected missing GenTreeHWIntrinsic.GetLayout; wide arithmetic passes4440checks and17runtime/wrapper bodies match51raw slices/17complete traces usinga14320c0. Next inspect pinned X86Base.DivRem signatures and execute four no-inline signed/unsigned32/64-bit wrappers with representable quotient boundaries and independently computed quotient/remainder. Use primary-wide-integer/jit-1 and compare-complete.py; require actual multireg intrinsic lowering and follow first discrepancy. ResidualGetLayout restored at711cdfc48d9 for SVE runtime-length NYI. Worker idle; B153/D009, B365 and ARM64 foreground expansion deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
