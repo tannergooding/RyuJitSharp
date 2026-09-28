@@ -93,7 +93,7 @@ public sealed partial class Lowering
 
     private unsafe GenTree? LowerStoreLocCommon(GenTreeLclVarCommon lclStore)
     {
-#if WINDOWS_AMD64_ABI || TARGET_ARM64
+#if TARGET_AMD64 || TARGET_ARM64
         assert(lclStore.Oper is GT_STORE_LCL_FLD or GT_STORE_LCL_VAR);
         JITDUMP("lowering store lcl var/field (before):\n");
         DISPTREERANGE(BlockRange(), lclStore);
@@ -141,7 +141,7 @@ public sealed partial class Lowering
 #if DEBUG
                 var layout = lclStore.GetLayout(CompilerInstance);
                 assert(layout is not null);
-#if TARGET_ARM64
+#if TARGET_ARM64 || UNIX_AMD64_ABI
                 if (!CompilerInstance.IsHfa(layout.ClassHandle))
                 {
                     if (layout.SlotCount > 1)
@@ -160,7 +160,7 @@ public sealed partial class Lowering
                 assert(localRegisterType is not TYP_UNDEF);
 #endif
 #endif
-#if TARGET_ARM64
+#if TARGET_ARM64 || UNIX_AMD64_ABI
                 if (!src.AsCall().HasMultiRegRetVal && (localRegisterType is TYP_UNDEF))
                 {
                     lclStore.Op1 = SpillStructCallResult(src.AsCall());
@@ -459,7 +459,7 @@ public sealed partial class Lowering
         }
     }
 
-#if TARGET_ARM64
+#if TARGET_ARM64 || UNIX_AMD64_ABI
     private unsafe GenTreeLclVar SpillStructCallResult(GenTreeCall call)
     {
         var compiler = CompilerInstance;

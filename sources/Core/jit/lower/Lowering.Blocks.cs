@@ -241,7 +241,7 @@ public sealed partial class Lowering
 
 #if WINDOWS_AMD64_ABI
         unreached();
-#elif TARGET_ARM64
+#elif TARGET_ARM64 || UNIX_AMD64_ABI
         block._kind = GenTreeBlk.BlkOpKindUnroll;
         block.Data = SpillStructCallResult(block.Data.AsCall());
         LowerBlockStoreCommon(block);

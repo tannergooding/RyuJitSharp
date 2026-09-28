@@ -36,6 +36,17 @@ while clearing operator-specific flags and value numbers under native bashing
 policy. This closes the remaining extraction implementation against the pinned
 native function; it does not establish whole-pipeline parity.
 
+## 2026-09-27: SysV x64 local stores and fast tailcalls
+
+SysV x64 now lowers local variable and field stores through the shared native
+algorithm, including scalar retyping, promoted single fields, block
+initialization and copies, and irregular struct-call result spills. Fast
+tailcalls can rehome overlapping stack parameters through lowered defensive
+copies. The Linux-x64 target fixture includes these stores and all fast-tailcall
+cases without enabling unrelated ARM64 backend fixtures. On a Windows host,
+full-analysis target tests pass 119 Debug/119 Release, and selected Windows-x64
+controls pass 31 in both configurations. No Linux execution parity is claimed.
+
 ## 2026-09-27: ARM64 hardware containment
 
 ARM64 containment now handles hardware immediate families, paired operands,

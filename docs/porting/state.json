@@ -9,6 +9,12 @@
   },
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
+    "linuxX64LoweringPacket": {
+      "scope": "SysV x64 common local stores and irregular struct-call spills required by fast-tailcall defensive copies.",
+      "sourceRevision": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+      "targetEvidence": "Windows-host linux-x64 target suite: 119 Debug and 119 Release, including 12 fast-tailcall and 5 local-store cases. Windows-x64 Core controls: 31 Debug and 31 Release. No Linux generated-code execution.",
+      "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
+    },
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
     "residualReconciliation": {

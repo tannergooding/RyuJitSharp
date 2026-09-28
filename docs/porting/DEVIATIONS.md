@@ -1401,9 +1401,12 @@ Private PInvoke frame/call transitions and fast-tailcall lowering now support
 ARM64, including inline/helper GC transitions, Swift error-consumer adjacency,
 defensive copies and profiler hooks. CFG uses ARM64's validate-by-default policy
 and xarch-only constant cloning; its validate-and-call path still needs general
-`LowerRange`, so full CFG/phase activation remains separate. SysV x64 defensive
-copies still encounter unported common local-store lowering; the new backend
-fixture links apply only to ARM64 and do not claim that SysV capability.
+`LowerRange`, so full CFG/phase activation remains separate. SysV x64 now
+supports common local-store lowering and irregular single-register struct-call
+result spilling through the existing xarch block-store paths. Its fast-tailcall
+fixture is linked separately from the ARM64-only PInvoke and CFG fixtures;
+managed target coverage does not establish Linux generated-code execution.
+
 ARM64 hardware containment preserves immediate positions and paired-immediate
 constraints, signed-only ordered comparisons with zero, MOVI/FMOV constant
 selection and SVE embedded-mask ownership. SVE conversion auxiliary widths and
