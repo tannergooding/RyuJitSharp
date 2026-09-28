@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Unsigned checked multiplication
+
+The importer now preserves `mul.ovf.un` signedness through its arithmetic
+helpers. Previously, valid unsigned products could throw and overflowing
+products could return wrapped results. Signed and unchecked multiplication
+retain their existing flags and operand ordering.
+
+Six real-importer cases distinguish both integer widths and all three opcodes;
+the original code fails the two unsigned cases. Full-analysis arithmetic
+coverage passes 286 Debug/286 Release. A matching-host probe passes all 27
+signed/unsigned 32-bit, 64-bit and native-width checks, versus nine failures
+before the fix. All six import spans, emitted instruction streams and code
+sizes match native; no broader parity claim is implied.
+
 ## 2026-09-28: SysV return and method-exit generation
 
 SysV AMD64 returns now support scalar, field-list, multireg, SIMD and stack-home

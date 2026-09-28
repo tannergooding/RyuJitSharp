@@ -11289,14 +11289,14 @@ public partial class Compiler
             compiler.impPushOnStack(compiler.gtFoldExpr(op), new typeInfo());
         }
 
-        static void MathOp2Ovf(Compiler compiler, genTreeOps oper)
+        static void MathOp2Ovf(Compiler compiler, genTreeOps oper, bool uns)
         {
-            MathOp2Flags(compiler, oper, ovfl: true, uns: false);
+            MathOp2Flags(compiler, oper, ovfl: true, uns);
         }
 
         static void MulOvf(Compiler compiler, bool uns)
         {
-            MathOp2Ovf(compiler, GT_MUL);
+            MathOp2Ovf(compiler, GT_MUL, uns);
         }
 
         static void Obj(Compiler compiler, in CORINFO_RESOLVED_TOKEN resolvedToken, int prefixFlags, bool isLdobj = false)

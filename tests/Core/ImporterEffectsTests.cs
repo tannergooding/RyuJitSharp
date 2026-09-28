@@ -9,6 +9,45 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ImporterEffectsTests
 {
+    [Test]
+    public static void MultiplicationImportPreservesOverflowAndUnsignedFlags(
+        [Values(OPCODE.CEE_MUL, OPCODE.CEE_MUL_OVF, OPCODE.CEE_MUL_OVF_UN)] OPCODE opcode,
+        [Values(var_types.TYP_INT, var_types.TYP_LONG)] var_types type)
+    {
+        WithCompiler(compiler => {
+            compiler.opts.SetMinOpts(false);
+            compiler.info.compMaxStack = 2;
+            compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
+            compiler.lvaTable[0].Type = type;
+            compiler.lvaTable[1].Type = type;
+            compiler.stackState.esStack = new StackEntry[2];
+            var block = new BasicBlock(null, null) { bbCodeOffsEnd = 1 };
+            compiler.fgFirstBB = compiler.compCurBB = block;
+            var left = compiler.gtNewLclvNode(type, 0);
+            var right = compiler.gtNewLclvNode(type, 1);
+            compiler.impPushOnStack(left, new typeInfo());
+            compiler.impPushOnStack(right, new typeInfo());
+            var code = (byte)opcode;
+            compiler.info.compCode = &code;
+            compiler.info.compILCodeSize = 1;
+
+            compiler.impImportBlockCode(block);
+
+            var result = compiler.impStackTop().val.AsOp();
+            var checkedMultiply = opcode != OPCODE.CEE_MUL;
+            Assert.Multiple(() => {
+                Assert.That(compiler.stackState.esStackDepth, Is.EqualTo(1));
+                Assert.That(result.Oper, Is.EqualTo(genTreeOps.GT_MUL));
+                Assert.That(result.Type, Is.EqualTo(type));
+                Assert.That(result.Op1, Is.SameAs(left));
+                Assert.That(result.Op2, Is.SameAs(right));
+                Assert.That(result.IsUnsigned, Is.EqualTo(opcode == OPCODE.CEE_MUL_OVF_UN));
+                Assert.That((result.Flags & GenTreeFlags.GTF_OVERFLOW) != 0, Is.EqualTo(checkedMultiply));
+                Assert.That((result.Flags & GenTreeFlags.GTF_EXCEPT) != 0, Is.EqualTo(checkedMultiply));
+            });
+        });
+    }
+
     [TestCase(false, var_types.TYP_INT)]
     [TestCase(true, var_types.TYP_INT)]
     [TestCase(false, Globals.TYP_I_IMPL)]
