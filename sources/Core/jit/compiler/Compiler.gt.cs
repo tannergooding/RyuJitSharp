@@ -1770,7 +1770,123 @@ public partial class Compiler
 #if TARGET_ARM64
                     case TYP_SIMD:
                     {
-                        throw new FatalJitException(CORJIT_IMPLLIMITATION, "ARM64 scalable vector constant dumps are not yet ported.");
+                        var simdValue = vecCon.SimdScalableVal;
+                        var baseType = simdValue.BaseType;
+
+                        void PrintElement(uint elementIndex)
+                        {
+                            switch (baseType)
+                            {
+                                case TYP_BYTE:
+                                case TYP_UBYTE:
+                                {
+                                    var element = simdValue.Index.u8[0];
+                                    if (simdValue.Kind == SimdScalableKind.SimdScalableSequence)
+                                    {
+                                        element = unchecked((byte)(element + (elementIndex * simdValue.Step.u8[0])));
+                                    }
+                                    else if ((simdValue.Kind == SimdScalableKind.SimdScalableScalar) && (elementIndex != 0))
+                                    {
+                                        element = 0;
+                                    }
+                                    jitprintf($"0x{element:x2}");
+                                    break;
+                                }
+
+                                case TYP_SHORT:
+                                case TYP_USHORT:
+                                {
+                                    var element = simdValue.Index.u16[0];
+                                    if (simdValue.Kind == SimdScalableKind.SimdScalableSequence)
+                                    {
+                                        element = unchecked((ushort)(element + (elementIndex * simdValue.Step.u16[0])));
+                                    }
+                                    else if ((simdValue.Kind == SimdScalableKind.SimdScalableScalar) && (elementIndex != 0))
+                                    {
+                                        element = 0;
+                                    }
+                                    jitprintf($"0x{element:x4}");
+                                    break;
+                                }
+
+                                case TYP_INT:
+                                case TYP_UINT:
+                                {
+                                    var element = simdValue.Index.u32[0];
+                                    if (simdValue.Kind == SimdScalableKind.SimdScalableSequence)
+                                    {
+                                        element = unchecked(element + (elementIndex * simdValue.Step.u32[0]));
+                                    }
+                                    else if ((simdValue.Kind == SimdScalableKind.SimdScalableScalar) && (elementIndex != 0))
+                                    {
+                                        element = 0;
+                                    }
+                                    jitprintf($"0x{element:x8}");
+                                    break;
+                                }
+
+                                case TYP_LONG:
+                                case TYP_ULONG:
+                                {
+                                    var element = simdValue.Index.u64[0];
+                                    if (simdValue.Kind == SimdScalableKind.SimdScalableSequence)
+                                    {
+                                        element = unchecked(element + (elementIndex * simdValue.Step.u64[0]));
+                                    }
+                                    else if ((simdValue.Kind == SimdScalableKind.SimdScalableScalar) && (elementIndex != 0))
+                                    {
+                                        element = 0;
+                                    }
+                                    jitprintf($"0x{element:x16}");
+                                    break;
+                                }
+
+                                case TYP_FLOAT:
+                                {
+                                    var element = simdValue.Index.f32[0];
+                                    if (simdValue.Kind == SimdScalableKind.SimdScalableSequence)
+                                    {
+                                        element += elementIndex * simdValue.Step.f32[0];
+                                    }
+                                    else if ((simdValue.Kind == SimdScalableKind.SimdScalableScalar) && (elementIndex != 0))
+                                    {
+                                        element = 0;
+                                    }
+                                    jitprintf(formatFloatWithTrailingZeros(element, 9));
+                                    break;
+                                }
+
+                                case TYP_DOUBLE:
+                                {
+                                    var element = simdValue.Index.f64[0];
+                                    if (simdValue.Kind == SimdScalableKind.SimdScalableSequence)
+                                    {
+                                        element += elementIndex * simdValue.Step.f64[0];
+                                    }
+                                    else if ((simdValue.Kind == SimdScalableKind.SimdScalableScalar) && (elementIndex != 0))
+                                    {
+                                        element = 0;
+                                    }
+                                    jitprintf(formatFloatWithTrailingZeros(element, 17));
+                                    break;
+                                }
+
+                                default:
+                                {
+                                    unreached();
+                                    break;
+                                }
+                            }
+                        }
+
+                        jitprintf($"{baseType.Name,-6} <");
+                        PrintElement(0);
+                        jitprintf(", ");
+                        PrintElement(1);
+                        jitprintf(", ");
+                        PrintElement(2);
+                        jitprintf("...>");
+                        break;
                     }
 #endif
 

@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Scalable vector constant dumps
+
+ARM64 constant dumps now print repeated, sequence and scalar values in the native
+three-element format, including element-width integer wraparound, float-precision
+arithmetic, signed zero and NaNs. Floating text reuses the existing native-style
+significant-zero formatter.
+
+Full-analysis coverage passes 57 ARM64 Debug cases, including 16 exact-output
+dump cases, and 110 Windows formatting/constant controls. All 40 ARM64 Release
+metadata controls pass; dump code is Debug-only. This is constant-dump coverage,
+not complete ARM64 phase-dump or generated-code parity.
+
 ## 2026-09-28: Scalable IR and allocator constants
 
 ARM64 scalable constants now preserve their payload through queries, equality,

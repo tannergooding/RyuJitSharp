@@ -1340,8 +1340,8 @@ ARM64 hardware-intrinsic and mask rewrites now have a private node-dispatch path
 for inserted operations, including FFR stores and reloads after calls. Fixed-width
 true-mask construction uses the native predicate pattern. Scalable vector constants
 now have separate storage, factories, queries, cloning, debug hashing and LSRA
-temporary selection; scalable masks, VN/assertion storage, element/folding operations
-and constant dumps remain explicit limitations. `LowerBlock` initializes
+temporary selection and constant dumps; scalable masks, VN/assertion storage and
+element/folding operations remain explicit limitations. `LowerBlock` initializes
 FFR-trashed state, and switch lowering supports ARM64 bit tests and jump tables.
 `DoPhase`, allocation and emission remain separate. Managed target tests do not establish
 ARM64 execution or generated-code parity.
@@ -1530,8 +1530,10 @@ are source-ported, not execution-validated. Classification is not argument
 evaluation/scheduling and does not activate call morphing.
 
 `Compiler.gtHashValue` includes ARM64 scalable kind, base type and index/step
-words in native order. Scalable `gtDispConst` still throws pending its sequence
-and alternate-form floating rendering; no scalable dump parity is claimed.
+words in native order. Scalable-vector `gtDispConst` implements sequence/scalar
+element arithmetic and native alternate-form floating rendering using the shared
+formatter. Exact managed constant-dump cases are covered; complete ARM64 phase
+dump and generated-code parity remain unverified.
 
 `Rationalizer.RewriteHWIntrinsic`, scalar intrinsic handling in `RewriteNode`,
 and `RewriteSubLshDiv` explicitly throw for their unported ARM64 mask-reduction

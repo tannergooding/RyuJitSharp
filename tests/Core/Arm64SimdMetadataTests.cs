@@ -2,6 +2,10 @@
 
 #if TARGET_ARM64
 using System.Runtime.CompilerServices;
+#if DEBUG
+using System.IO;
+using System.Text;
+#endif
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
@@ -183,6 +187,53 @@ internal static class Arm64SimdMetadataTests
     }
 
 #if DEBUG
+    [TestCase(TYP_BYTE, SimdScalableKind.SimdScalableRepeated, 0xFFUL, 0UL, "0xff, 0xff, 0xff")]
+    [TestCase(TYP_UBYTE, SimdScalableKind.SimdScalableSequence, 0xFFUL, 1UL, "0xff, 0x00, 0x01")]
+    [TestCase(TYP_SHORT, SimdScalableKind.SimdScalableSequence, 0xFFFFUL, 1UL, "0xffff, 0x0000, 0x0001")]
+    [TestCase(TYP_USHORT, SimdScalableKind.SimdScalableScalar, 1UL, 0UL, "0x0001, 0x0000, 0x0000")]
+    [TestCase(TYP_INT, SimdScalableKind.SimdScalableSequence, 0xFFFF_FFFFUL, 1UL, "0xffffffff, 0x00000000, 0x00000001")]
+    [TestCase(TYP_UINT, SimdScalableKind.SimdScalableScalar, 1UL, 0UL, "0x00000001, 0x00000000, 0x00000000")]
+    [TestCase(TYP_LONG, SimdScalableKind.SimdScalableSequence, ulong.MaxValue, 1UL,
+        "0xffffffffffffffff, 0x0000000000000000, 0x0000000000000001")]
+    [TestCase(TYP_LONG, SimdScalableKind.SimdScalableSequence, 1UL, ulong.MaxValue,
+        "0x0000000000000001, 0x0000000000000000, 0xffffffffffffffff")]
+    [TestCase(TYP_ULONG, SimdScalableKind.SimdScalableScalar, 1UL, 0UL,
+        "0x0000000000000001, 0x0000000000000000, 0x0000000000000000")]
+    [TestCase(TYP_FLOAT, SimdScalableKind.SimdScalableSequence, 0x3F80_0000UL, 0x3F00_0000UL,
+        "1.00000000, 1.50000000, 2.00000000")]
+    [TestCase(TYP_FLOAT, SimdScalableKind.SimdScalableSequence, 0x4B80_0000UL, 0x3F80_0000UL,
+        "16777216.0, 16777216.0, 16777218.0")]
+    [TestCase(TYP_FLOAT, SimdScalableKind.SimdScalableScalar, 0x8000_0000UL, 0UL,
+        "-0.00000000, 0.00000000, 0.00000000")]
+    [TestCase(TYP_FLOAT, SimdScalableKind.SimdScalableRepeated, 0x7FC0_1234UL, 0UL, "nan, nan, nan")]
+    [TestCase(TYP_DOUBLE, SimdScalableKind.SimdScalableSequence, 0x3FF0_0000_0000_0000UL, 0x3FE0_0000_0000_0000UL,
+        "1.0000000000000000, 1.5000000000000000, 2.0000000000000000")]
+    [TestCase(TYP_DOUBLE, SimdScalableKind.SimdScalableScalar, 0x8000_0000_0000_0000UL, 0UL,
+        "-0.0000000000000000, 0.0000000000000000, 0.0000000000000000")]
+    [TestCase(TYP_DOUBLE, SimdScalableKind.SimdScalableRepeated, 0x7FF8_0000_0000_1234UL, 0UL, "nan, nan, nan")]
+    public static unsafe void ScalableConstantDumpsPreserveNativeElementArithmeticAndFormatting(
+        var_types baseType, SimdScalableKind kind, ulong index, ulong step, string elements)
+    {
+        var compiler = JitTls.Compiler ?? throw new AssertionException("The fixture compiler is not initialized.");
+        var node = compiler.gtNewSimdVconNode(TYP_SIMD, baseType, kind, index, step);
+        using var stream = new MemoryStream();
+        using var writer = new JitTextWriter(stream, leaveOpen: true);
+        var previousWriter = Globals.s_jitstdout;
+
+        try
+        {
+            Globals.s_jitstdout = writer;
+            compiler.gtDispConst(node);
+            writer.Flush();
+        }
+        finally
+        {
+            Globals.s_jitstdout = previousWriter;
+        }
+
+        Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo($"{baseType.Name,-6} <{elements}...>"));
+    }
+
     [Test]
     public static unsafe void ScalableHashCombinesBothOperandWordsInNativeOrder()
     {
