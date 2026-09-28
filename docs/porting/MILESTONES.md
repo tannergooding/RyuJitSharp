@@ -16,6 +16,15 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Promoted-field frame diagnostics
+
+Dependent promoted-field frame diagnostics now preserve native `%u` formatting
+for parent and resulting offsets, including negative FP-relative offsets.
+Stored offsets and layout are unchanged. Two negative-offset cases fail before
+the correction while a positive-offset control passes; final frame coverage
+passes 28 Debug/20 Release cases, including quiet-output checks. This closes
+B396 as a scoped diagnostic correction, not a new execution/parity result.
+
 ## 2026-09-27: SysV final frame layout
 
 Final frame layout and `genFinalizeFrame` now support SysV argument homes,

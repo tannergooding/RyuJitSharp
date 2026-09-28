@@ -16,6 +16,12 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "promotedFieldFrameDiagnostics": {
+      "scope": "B396: preserve native unsigned formatting of dependent promoted-field parent/net stack offsets without changing stored signed offsets.",
+      "mapping": "lclvars.cpp:lvaAssignFrameOffsetsToPromotedStructs -> Compiler.FinalFrameLayout.cs.",
+      "validation": "Two negative-offset failures and one positive control against original formatting; corrected full-analysis Windows frame coverage passes 28 Debug/20 Release, with verbose and quiet cases. artifacts/promoted-frame-diagnostics/tst/Debug/promoted-offset-before-2.trx and promoted-offset-debug.trx; artifacts/promoted-frame-diagnostics-release/tst/Release/promoted-offset-release.trx.",
+      "limits": "Native source-format contract and managed output checks, not whole-pipeline dump parity or new target execution."
+    },
     "sysvFinalFrameLayout": {
       "scope": "SysV frame estimation/finalization, parameter/local/outgoing stack homes, alignment, FP/SP fixups, promoted fields, OSR frame reuse/unwind/callee saves and prolog GS-cookie initialization.",
       "mapping": "lclvars.cpp -> Compiler.FinalFrameLayout.cs/Compiler.FinalFrameLayout.Locals.cs; codegencommon.cpp:genFinalizeFrame -> CodeGen.FrameFinalization.cs; codegenxarch.cpp -> CodeGen.OSRFrame.cs/CodeGen.GSCookieInitialization.cs.",

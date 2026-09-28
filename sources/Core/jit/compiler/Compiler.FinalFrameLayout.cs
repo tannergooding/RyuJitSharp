@@ -375,7 +375,8 @@ public partial class Compiler
             if (parent.lvOnFrame)
             {
                 JITDUMP($"Adjusting offset of dependent V{lclNum:D2} of V{dsc.lvParentLcl:D2}: " +
-                    $"parent {parent.StackOffset} field {dsc.lvFldOffset} net {parent.StackOffset + dsc.lvFldOffset}\n");
+                    $"parent {unchecked((uint)parent.StackOffset)} field {dsc.lvFldOffset} " +
+                    $"net {unchecked((uint)(parent.StackOffset + dsc.lvFldOffset))}\n");
                 dsc.StackOffset = parent.StackOffset + dsc.lvFldOffset;
             }
             else

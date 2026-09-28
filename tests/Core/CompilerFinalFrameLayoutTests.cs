@@ -14,6 +14,50 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class CompilerFinalFrameLayoutTests
 {
 #if DEBUG
+    [TestCase(-24, 8, 4294967272u, 4294967280u)]
+    [TestCase(-8, 8, 4294967288u, 0u)]
+    [TestCase(24, 8, 24u, 32u)]
+    public static void PromotedFieldOffsetsUseNativeUnsignedDiagnostics(
+        int parentOffset, byte fieldOffset, uint displayedParent, uint displayedOffset)
+    {
+        WithFrame((compiler, _) =>
+        {
+            compiler.lvaTable =
+            [
+                new LclVarDsc
+                {
+                    Type = TYP_STRUCT,
+                    Layout = new ClassLayout(16),
+                    lvPromoted = true,
+                    lvDoNotEnregister = true,
+                    lvFieldCnt = 1,
+                    lvFieldLclStart = 1,
+                    lvOnFrame = true,
+                    StackOffset = parentOffset,
+                },
+                new LclVarDsc
+                {
+                    Type = TYP_LONG,
+                    lvIsStructField = true,
+                    lvParentLcl = 0,
+                    lvFldOffset = fieldOffset,
+                    lvOnFrame = true,
+                },
+            ];
+            compiler.verbose = true;
+
+            var text = CodeGenLifeTransitionTests.Capture(compiler.lvaAssignFrameOffsetsToPromotedStructs);
+
+            Assert.That(text, Is.EqualTo(
+                $"Adjusting offset of dependent V01 of V00: parent {displayedParent} " +
+                $"field {fieldOffset} net {displayedOffset}{Environment.NewLine}"));
+            Assert.That(compiler.lvaTable[1].StackOffset, Is.EqualTo(parentOffset + fieldOffset));
+
+            compiler.verbose = false;
+            Assert.That(CodeGenLifeTransitionTests.Capture(compiler.lvaAssignFrameOffsetsToPromotedStructs), Is.Empty);
+        });
+    }
+
     [TestCase(false, 0, 0, "[rsp+0x00] ")]
     [TestCase(false, 8, 11, "[rsp+0x08] ")]
     [TestCase(false, 0x1234, 20, "[rsp+0x1234] ")]
