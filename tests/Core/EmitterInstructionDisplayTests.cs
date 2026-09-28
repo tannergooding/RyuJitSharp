@@ -7,6 +7,7 @@
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
@@ -17,6 +18,70 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterInstructionDisplayTests
 {
+#if DEBUG && TARGET_AMD64
+    [Test]
+    public static void NonSimdFormatsRejectSimdEvexButAllowPromotedApx(
+        [Values(IF_CNS, IF_ARD, IF_SRD, IF_RRD, IF_RWR_MRD_OFF, IF_MRD, IF_MRD_OFF, IF_LABEL, IF_METHOD)]
+        Emitter.insFormat format,
+        [Values] bool evex,
+        [Values] bool apx)
+    {
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.doAssert = &RecordAssertion;
+        vtable.Base.Base.runWithSPMIErrorTrap = &UnavailableMetadata;
+        var context = new AssertionContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
+        using var tls = new JitTls(&context.JitInfo);
+        var emitter = CreateEmitter(&context.JitInfo);
+        emitter.UseVexEncodings = true;
+        emitter.UseEvexEncodings = evex;
+        emitter.UsePromotedEvexEncodings = apx;
+        var ins = apx ? instruction.INS_add : instruction.INS_addps;
+        var size = apx ? emitAttr.EA_8BYTE : emitAttr.EA_16BYTE;
+        var reg = apx ? regNumber.REG_RAX : regNumber.REG_XMM0;
+        var id = Descriptor(ins, format, size, reg, regNumber.REG_NA);
+        if (id.idHasMemAdr())
+        {
+            id.idAddr().iiaAddrMode.amBaseReg = regNumber.REG_RAX;
+            id.idAddr().iiaAddrMode.amIndxReg = regNumber.REG_NA;
+        }
+        else if (id.idHasMemGen())
+        {
+            id.idAddr().iiaFieldHnd = FLD_GLOBAL_DS;
+        }
+
+        var output = Capture(() => emitter.emitDispIns(id, isNew: true, doffs: false, asmfm: false));
+
+        var expectedAssertions = evex && !apx ? 1 : 0;
+        if (format == IF_LABEL && !apx)
+        {
+            // Continuing after the display assertion reaches idIsBound's separate SIMD guard.
+            expectedAssertions++;
+        }
+
+        Assert.That(context.Assertions, Is.EqualTo(expectedAssertions));
+        Assert.That(output, Does.EndWith(Environment.NewLine));
+    }
+
+    private struct AssertionContext
+    {
+        public ICorJitInfo JitInfo;
+        public int Assertions;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
+    {
+        ((AssertionContext*)self)->Assertions++;
+        return 0;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte UnavailableMetadata(ICorJitInfo* self, delegate* unmanaged[Cdecl]<void*, void> callback, void* state)
+    {
+        return 0;
+    }
+#endif
+
     [Test]
     public static void FormatNamesFollowNativeTableAndInvalidValueMarker()
     {
@@ -176,9 +241,10 @@ internal static unsafe class EmitterInstructionDisplayTests
         Assert.That(id.idOpSize(), Is.EqualTo(size));
     }
 
-    private static Emitter CreateEmitter()
+    private static Emitter CreateEmitter(ICorJitInfo* jitInfo = null)
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        compiler.info.compCompHnd = jitInfo;
         var codeGen = new CodeGen(compiler)
         {
             IsFramePointerUsed = false,
@@ -191,7 +257,7 @@ internal static unsafe class EmitterInstructionDisplayTests
     private static Emitter.instrDesc Descriptor(instruction ins, Emitter.insFormat format,
         emitAttr size, regNumber first, regNumber second, int constant = 0)
     {
-        var id = DescriptorView.Create(constant);
+        var id = format == IF_LABEL ? DescriptorView.CreateLabel() : DescriptorView.Create(constant);
         id.idIns(ins);
         id.idInsFmt(format);
         id.idOpSize(size);
@@ -209,6 +275,11 @@ internal static unsafe class EmitterInstructionDisplayTests
 
     private abstract class DescriptorView(CodeGen codeGen) : Emitter(codeGen)
     {
+        public static instrDesc CreateLabel() => new instrDescJmp
+        {
+            idjTarget = new BasicBlock(null, null),
+        };
+
         public static instrDesc Create(int constant)
         {
             if (instrDesc.fitsInSmallCns(constant))

@@ -16,6 +16,13 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "simdEvexDisplayContracts": {
+      "scope": "B419: restore the native SIMD EVEX predicate and all nine emitDispIns format-group contracts on AMD64.",
+      "contracts": "IsEvexEncodableInstruction && !IsApxExtendedEvexInstruction, not a substituted generic SIMD classification. Immediate, address, stack, register, static offset/memory, label and method formats reject SIMD EVEX while allowing APX-promoted legacy instructions. Existing rendering remains unchanged.",
+      "validation": "125 Debug/84 Release display, prefix and intrinsic-encoding cases pass with full analysis. Thirty-six Debug cases cover nine format groups across EVEX availability and APX promotion. Eight cases fail before correction; 28 controls pass. Label cases separately account for the existing idIsBound SIMD guard.",
+      "evidence": "artifacts/simd-evex-contracts/evidence.json, before-2.log, debug-final.log and release-final.log. Reproduce EmitterInstructionDisplayTests, EmitterPrefixTests and IntrinsicEncodingTests with the established Core test command.",
+      "limits": "AMD64 diagnostic contracts, not new runtime or encoding parity. The helper remains AMD64-only because its underlying APX predicate still has an explicit unsupported x86 path; no new whole-xarch retirement eligibility is claimed."
+    },
     "tailcallEpilogRegisterMasks": {
       "scope": "B224: correct the complete AMD64 genCheckTailCallEpilogRegisters verifier's ABI/native register-mask conversion.",
       "contracts": "Use the existing SingleTypeMask native positions rather than the ABI bank-relative RegisterMask. Preserve fast-tailcall gating, callee-save/cookie masks, stack arguments, verbose diagnostics and the unsupported other-target boundary.",
@@ -467,7 +474,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "B224 is corrected with 77 Debug/64 Release coverage; B142/B223 stale findings are reconciled. Next follow retirement report 49's concrete IsSimdEvexEncodableInstruction diagnostic gap: inspect the complete pinned predicate and its native assertion callsites, identify equivalent managed checks, and restore missing Windows-x64 contracts without changing encoding algorithms or broadening targets. Retirement through 51 is consolidated; its worker is idle, not proof that all remaining source is classified.",
+      "parentScope": "B224 and B419 are complete. Continue the retained xarch classifier boundary: IsApxExtendedEvexInstruction has a native x86 false result but managed code throws. Inspect IsLegacyMap1 and the related target gates, establish the existing x86 build/fixture boundary before edits, and port only pure classification contracts without activating an x86 backend. Retirement through 51 is consolidated; its worker is idle, not proof that all remaining source is classified.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -862,7 +869,7 @@
         }
       ]
     },
-    "nextAction": "B224 is complete with 77 Debug/64 Release coverage. Inspect native emitxarch.cpp::IsSimdEvexEncodableInstruction and its assertion callsites, the concrete retained gap in retirement report 49. Determine whether C# has equivalent checks before implementing the missing full predicate/Windows callers; preserve native output. D009's callback bridge remains deferred. Retirement through 51 is consolidated: 25920 removed/403 restored, native 956d6b51616e6e75b7572f8b5bbb57bdb5e5d10f.",
+    "nextAction": "B419 is complete with 125 Debug/84 Release coverage. Next check the existing x86 source-build/target-fixture boundary, then reconcile native emitxarch.cpp::IsApxExtendedEvexInstruction (x86 returns false) and IsLegacyMap1 with their managed target gates. Complete only pure xarch classifiers and their direct predicate dependency; do not activate the x86 emitter/backend or expand into unrelated target failures. D009's callback bridge remains deferred. Retirement through 51 is consolidated: 25920 removed/403 restored, native 956d6b51616e6e75b7572f8b5bbb57bdb5e5d10f.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

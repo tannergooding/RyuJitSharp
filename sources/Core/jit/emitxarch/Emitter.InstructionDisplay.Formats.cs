@@ -204,7 +204,7 @@ public partial class Emitter
         {
             case IF_CNS:
             {
-                assert(!(IsEvexEncodableInstruction(ins) && IsSimdInstruction(ins)));
+                assert(!IsSimdEvexEncodableInstruction(ins));
                 emitDispConstant(id, skipComma: true);
                 break;
             }
@@ -213,6 +213,8 @@ public partial class Emitter
             case IF_AWR:
             case IF_ARW:
             {
+                assert(!IsSimdEvexEncodableInstruction(ins));
+
                 if (ins is INS_call or INS_tail_i_jmp && id.idIsCallRegPtr())
                 {
                     jitprintf(emitRegName(id.idAddr().iiaAddrMode.amBaseReg));
@@ -463,6 +465,7 @@ public partial class Emitter
             case IF_MWR:
             case IF_MRW:
             {
+                assert(!IsSimdEvexEncodableInstruction(ins));
                 Mem();
                 emitDispShift(ins);
                 break;
@@ -537,6 +540,7 @@ public partial class Emitter
             case IF_RWR:
             case IF_RRW:
             {
+                assert(!IsSimdEvexEncodableInstruction(ins));
                 Reg(1);
                 emitDispShift(ins);
                 break;
@@ -564,6 +568,7 @@ public partial class Emitter
 
             case IF_RWR_MRD_OFF:
             {
+                assert(!IsSimdEvexEncodableInstruction(ins));
                 Reg(1);
                 jitprintf(", offset");
                 emitDispClsVar(id.idAddr().iiaFieldHnd, emitGetInsDsp(id), id.idIsDspReloc());
@@ -572,6 +577,7 @@ public partial class Emitter
 
             case IF_MRD_OFF:
             {
+                assert(!IsSimdEvexEncodableInstruction(ins));
                 jitprintf("offset ");
                 emitDispClsVar(id.idAddr().iiaFieldHnd, emitGetInsDsp(id), id.idIsDspReloc());
                 break;
@@ -581,6 +587,8 @@ public partial class Emitter
             case IF_RWR_LABEL:
             case IF_SWR_LABEL:
             {
+                assert(!IsSimdEvexEncodableInstruction(ins));
+
                 if (ins == INS_lea)
                 {
                     Reg(1);
@@ -615,6 +623,8 @@ public partial class Emitter
             case IF_METHOD:
             case IF_METHPTR:
             {
+                assert(!IsSimdEvexEncodableInstruction(ins));
+
                 if (format == IF_METHPTR)
                 {
                     jitprintf("[");

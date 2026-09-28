@@ -28,6 +28,11 @@ public partial class Emitter
         return IsVexEncodableInstruction(ins) || IsEvexEncodableInstruction(ins);
     }
 
+    private bool IsSimdEvexEncodableInstruction(instruction ins)
+    {
+        return IsEvexEncodableInstruction(ins) && !IsApxExtendedEvexInstruction(ins);
+    }
+
     public bool Is4ByteSSEInstruction(instruction ins)
     {
         return !UseVexEncodings && EncodedBySSE38orSSE3A(ins);
