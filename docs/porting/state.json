@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "upstreamMaintainerReports": {
+      "scope": "B394 native VN self-test operand-order assertion and B365 native forced-spill retbuf assertion; report upstream defects rather than silently changing only the C# port.",
+      "reports": [
+        "docs/porting/upstream-reports/B394-vn-component-test.md",
+        "docs/porting/upstream-reports/B365-retbuf-spill-assertion.md"
+      ],
+      "validation": "Fresh pinned native-only captures reproduce both assertions with exit0xC0000602; corresponding component-tests-disabled and GCStress-without-register-stress controls exit zero. Input hashes verified, explicit native clrjit selection, no timeouts.",
+      "evidence": "artifacts/upstream-reports/{component-native-enabled-1,component-native-control-1,spill-native-1,spill-native-control-1}",
+      "limits": "No upstream patch applied or published. B394 is a stale test expectation; B365 dump supports a retbuf wrapper-order defect but its proposed fix is not validated. Neither report establishes ordinary-configuration miscompilation or memory-safety impact."
+    },
     "ilScannerUnsignedBounds": {
       "scope": "fgFindJumpTargets switch counts, switch table endpoints and short/long branch and leave destinations.",
       "correction": "B441 restores pinned unsigned count validation and modular destination arithmetic before jump-target indexing. Native already rejects the malformed operands; this is a C# translation defect.",
@@ -1149,7 +1159,7 @@
         }
       ]
     },
-    "nextAction": "Prepare maintainer-facing reports for preserved upstream findings B394 (VN component-test canonicalization assertion) and B365 (native forced-spill assertion), reusing exact pinned source and captured native evidence and distinguishing source-only observations from reproduced failures. Do not silently fix upstream behavior only in C#. Worker4b57b744 owns ledger correction and evidence-driven classification of19 mapping-only unknown areas; collect its next result on notification without repeating its code review, then continue concrete Windows gaps. B153/D009 and ARM64 foreground expansion remain deferred.",
+    "nextAction": "Collect worker4b57b744's corrected target-ledger result on notification, integrate its prioritized concrete Windows gaps, and continue implementation without redoing its source review. Worker owns historical-evidence classification of19 mapping-only unknown families and bulk native retirement. B441 is fixed; B365/B394 have fresh native reproductions and local maintainer reports with no upstream or C# behavioral workaround. B153/D009 and ARM64 foreground expansion remain deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
