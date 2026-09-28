@@ -76,6 +76,12 @@ public partial class Compiler
 #if FEATURE_MASKED_HW_INTRINSICS
             case TYP_MASK:
             {
+#if TARGET_ARM64 && DEBUG
+                if (JitConfig.JitUseScalableVectorT != 0)
+                {
+                    throw new NotImplementedException("Scalable mask tree storage is not yet ported.");
+                }
+#endif
                 tree._vnPair.SetBoth(vnStore.VNForSimdMaskCon(tree.AsMskCon().SimdMaskVal));
                 break;
             }

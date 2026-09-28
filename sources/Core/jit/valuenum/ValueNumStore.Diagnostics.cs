@@ -341,13 +341,21 @@ public sealed partial class ValueNumStore
 #if FEATURE_MASKED_HW_INTRINSICS
             case TYP_MASK:
             {
+                var storage = GetConstantSimdMaskValue(vn);
 #if TARGET_ARM64
-                throw new NotImplementedException("ARM64 scalable mask VN diagnostics require scalable VN storage.");
-#else
-                var value = GetConstantSimdMask(vn);
-                jitprintf($"SimdMaskCns[0x{value.u32[0]:x8}, 0x{value.u32[1]:x8}]");
-                break;
+                if (storage.IsScalable)
+                {
+                    var value = storage.Scalable;
+                    jitprintf($"SimdMaskScalableCns[base:{value.BaseType.Name} idx:{value.Index}]");
+                }
+                else
 #endif
+                {
+                    var value = storage.Fixed;
+                    jitprintf($"SimdMaskCns[0x{value.u32[0]:x8}, 0x{value.u32[1]:x8}]");
+                }
+
+                break;
             }
 #endif
 #endif

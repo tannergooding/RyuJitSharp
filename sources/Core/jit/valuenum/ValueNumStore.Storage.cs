@@ -89,11 +89,7 @@ public sealed partial class ValueNumStore
                     TYP_SIMD => new simdscalable_t[ChunkSize],
 #endif
 #if FEATURE_MASKED_HW_INTRINSICS
-#if TARGET_ARM64
-                    TYP_MASK => throw new NotImplementedException("Scalable/fixed ARM64 VN mask storage is not yet ported."),
-#else
-                    TYP_MASK => new simdmask_t[ChunkSize],
-#endif
+                    TYP_MASK => new simdmaskvalue_t[ChunkSize],
 #endif
 #endif
                     _ => throw new UnreachableException(),

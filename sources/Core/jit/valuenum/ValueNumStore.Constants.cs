@@ -65,7 +65,7 @@ public sealed partial class ValueNumStore
     private Dictionary<simdscalable_t, ValueNum>? _simdScalableCnsMap;
 #endif
 #if FEATURE_MASKED_HW_INTRINSICS
-    private Dictionary<simdmask_t, ValueNum>? _simdMaskCnsMap;
+    private Dictionary<simdmaskvalue_t, ValueNum>? _simdMaskCnsMap;
 #endif
 
     public ValueNum VNForSimd8Con(in simd8_t value) => VnForConst(value, value, _simd8CnsMap ??= [], TYP_SIMD8);
@@ -84,7 +84,21 @@ public sealed partial class ValueNumStore
 #endif
 
 #if FEATURE_MASKED_HW_INTRINSICS
-    public ValueNum VNForSimdMaskCon(in simdmask_t value) => VnForConst(value, value, _simdMaskCnsMap ??= [], TYP_MASK);
+    public ValueNum VNForSimdMaskCon(in simdmask_t value)
+    {
+        var storage = simdmaskvalue_t.FromFixed(value);
+
+        return VnForConst(storage, storage, _simdMaskCnsMap ??= [], TYP_MASK);
+    }
+
+#if TARGET_ARM64
+    public ValueNum VNForSimdMaskScalableCon(in simdmaskscalable_t value)
+    {
+        var storage = simdmaskvalue_t.FromScalable(value);
+
+        return VnForConst(storage, storage, _simdMaskCnsMap ??= [], TYP_MASK);
+    }
+#endif
 #endif
 
     private T GetVectorConstant<T>(ValueNum vn, var_types type) where T : unmanaged
@@ -108,7 +122,27 @@ public sealed partial class ValueNumStore
 #endif
 
 #if FEATURE_MASKED_HW_INTRINSICS
-    public simdmask_t GetConstantSimdMask(ValueNum vn) => GetVectorConstant<simdmask_t>(vn, TYP_MASK);
+    public simdmaskvalue_t GetConstantSimdMaskValue(ValueNum vn) => GetVectorConstant<simdmaskvalue_t>(vn, TYP_MASK);
+
+    public simdmask_t GetConstantSimdMask(ValueNum vn)
+    {
+        var storage = GetConstantSimdMaskValue(vn);
+#if TARGET_ARM64
+        noway_assert(!storage.IsScalable);
+#endif
+
+        return storage.Fixed;
+    }
+
+#if TARGET_ARM64
+    public simdmaskscalable_t GetConstantSimdMaskScalable(ValueNum vn)
+    {
+        var storage = GetConstantSimdMaskValue(vn);
+        noway_assert(storage.IsScalable);
+
+        return storage.Scalable;
+    }
+#endif
 #endif
 
     public simd_t GetConstantSimd(ValueNum vn)

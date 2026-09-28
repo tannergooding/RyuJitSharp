@@ -223,6 +223,9 @@ public sealed partial class ValueNumStore
             TYP_SIMD => VNForSimdScalableCon(simdscalable_t.AllBitsSet),
 #endif
 #if FEATURE_MASKED_HW_INTRINSICS
+#if TARGET_ARM64 && DEBUG
+            TYP_MASK when JitConfig.JitUseScalableVectorT != 0 => VNForSimdMaskScalableCon(simdmaskscalable_t.AllBitsSet),
+#endif
             TYP_MASK => VNForSimdMaskCon(simdmask_t.AllBitsSet(elementCount)),
 #endif
 #endif

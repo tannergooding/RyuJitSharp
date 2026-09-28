@@ -16,12 +16,19 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "arm64TaggedMaskValueNumbers": {
+      "scope": "B424: common tagged mask VN chunks/interner, fixed/scalable typed access, ARM64 all-bits selection and mask diagnostics; fixed ARM64 tree constants now number successfully.",
+      "mapping": "valuenum.cpp:VNForSimdMaskCon/VNForSimdMaskScalableCon/GetConstantSimdMaskValue/GetConstantSimdMask/GetConstantSimdMaskScalable/VNAllBitsForType/vnDump and valuenum.h mask maps/access -> ValueNumStore.Storage.cs/Constants.cs/BinaryInterning.cs/Diagnostics.cs.",
+      "contracts": "Both mask kinds share TYP_MASK chunks but never the same key. Scalable zero canonicalizes only within its kind and retains the first encoding. Typed access uses native noway_assert policy. VNZeroForType(TYP_MASK) deliberately remains fixed even in scalable configuration, exactly as pinned native; only all-bits selection consults the DEBUG scalable-vector switch. Dumps inspect the stored tag, not current configuration.",
+      "validation": "Three fixed ARM64 mask cases fail at the old chunk NYI. Full-analysis scalable target selection passes 145 Debug/135 Release, including 17/12 new VN cases; Windows mask/VN controls pass 175 Debug/152 Release. Evidence: artifacts/arm64-mask-vn/evidence.json.",
+      "remaining": "GenTreeMskCon still lacks scalable representation. fgValueNumberTreeConst now explicitly rejects the DEBUG scalable-mask mode before reading fixed bits; it previously failed later at chunk allocation. Implement the native tree representation, queries, factories/clone/hash/dumps and conversion consumers as a separate coherent batch. ARM64 allocation/emission remains gated."
+    },
     "arm64ScalableMaskModel": {
       "scope": "B423: standalone scalable-mask value semantics, tagged fixed/scalable VN payload model and complete scalable vector/mask conversion helpers.",
       "mapping": "simd.h:simdmaskscalable_t and simd.cpp:522-600 -> simd/simdmaskscalable_t.cs and Globals.ScalableConstants.cs; valuenum.h:simdmaskvalue_t/SimdMaskPrimitiveKeyFuncs -> valuenum/simdmaskvalue_t.cs.",
       "contracts": "Zero scalable masks compare/hash independently of base type; nonzero masks preserve base type and require equal element widths for all-bits queries. The copied tagged payload distinguishes fixed zero from scalable zero and hashes the active representation only. Vector conversion uses any nonzero raw 64-bit index, not sign bits or floating comparison; only zero bypasses form/width restrictions. Failed conversions leave the output unchanged.",
       "validation": "Full-analysis Linux-ARM64 target coverage passes 128 Debug/123 Release, including 39 new mask cases. Windows fixed-mask wrapper/conversion/VN controls pass 97 Debug/96 Release, including three new fixed-wrapper cases. Evidence: artifacts/arm64-scalable-masks/evidence.json.",
-      "remaining": "The new models and conversion helpers are not yet wired into GenTreeMskCon, VN chunks/getters, mask construction, folding or diagnostics. Existing ARM64 scalable-mask gates remain. No ARM64 allocation/emission or generated-code execution claim."
+      "remaining": "Tagged VN storage and diagnostics are recorded under arm64TaggedMaskValueNumbers. GenTreeMskCon, mask construction, folding and tree diagnostics remain separate; existing scalable-mask tree gates remain. No ARM64 allocation/emission or generated-code execution claim."
     },
     "arm64ScalableAssertions": {
       "scope": "B422: complete scalable-vector assertion payload creation and optConstantAssertionProp reconstruction.",
@@ -502,7 +509,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "B423 standalone scalable-mask and tagged VN payload models/conversions are complete. Next integrate tagged mask VN chunks, interning, typed getters, zero/all-bits and diagnostics against valuenum.cpp/h. Keep GenTreeMskCon's configuration-dependent representation explicit and do not interpret scalable payloads as fixed bits. ARM64 allocation/emission stays gated; native VN-based scalable vector folding remains absent. B153 and D009 remain outside this batch. Retirement through 52 is consolidated.",
+      "parentScope": "B424 tagged mask VN storage/access/diagnostics is complete. Next integrate GenTreeMskCon's DEBUG configuration-dependent scalable payload and complete its queries, factories, cloning, hashing, dumps and constant numbering; inspect the native union and all representation consumers before removing gates. Preserve fixed mask behavior and use the committed conversion helpers where native does. ARM64 allocation/emission, B153 x86 repairs and D009 remain gated/deferred. Retirement through 52 is consolidated.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -897,7 +904,7 @@
         }
       ]
     },
-    "nextAction": "B423 scalable mask models/conversions are complete: 128 Debug/123 Release Linux-ARM64 cases and 97 Debug/96 Release Windows controls. Next replace the ARM64 TYP_MASK chunk NYI with simdmaskvalue_t storage and port native VNForSimdMaskScalableCon/GetConstantSimdMaskValue/GetConstantSimdMaskScalable plus zero/all-bits and diagnostic dispatch. Inspect GenTreeMskCon's JitUseScalableVectorT gate and native configuration-dependent tree numbering before wiring tree constants; preserve fixed/scalable separation and do not activate ARM64 allocation/emission. Native scalable vector VN-based folding remains absent. B153/D009 stay deferred. Native retirement through 52: 26296 removed/403 restored, 4c46a856b480016a3a44ea454123c6b7ea7f188c.",
+    "nextAction": "B424 tagged mask VN storage is complete: 145 Debug/135 Release ARM64 cases and 175 Debug/152 Release Windows controls. Next inspect native gentree.h:7644-7720 GenTreeMskCon plus all gtSimdScalableMaskVal consumers, then implement the managed scalable mask tree representation and complete query/factory/clone/hash/dump/constant-numbering branches. Keep fixed-mask bytes and the native DEBUG JitUseScalableVectorT selection semantics intact. The new fgValueNumberTreeConst guard is a temporary representation boundary, not completion. Do not activate ARM64 allocation/emission or invent native-absent scalable vector VN-based folding. B153/D009 remain deferred. Native retirement through 52: 26296 removed/403 restored, 4c46a856b480016a3a44ea454123c6b7ea7f188c.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
