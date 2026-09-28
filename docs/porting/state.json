@@ -16,6 +16,12 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "cfgQuerySupport": {
+      "scope": "B384 optCheckPreds; fgIsBlockCold, fgMoreThanOneReturnBlock, BasicBlock.StatementCountExceeds and BasicBlockRangeList.ComplexityExceeds.",
+      "mapping": "optimizer.cpp -> Compiler.FlowGraphUpdateChecks.cs; flowgraph.cpp -> Compiler.Regions.cs/Compiler.fg.cs; block.cpp/compiler.hpp -> BasicBlock.Complexity.cs/BasicBlockRangeList.cs.",
+      "validation": "158 Debug / 85 Release full-analysis MorphTreeSupportTests, FlowGraphUpdateChecksTests, CfgDebugInvariantTests and FlowGraphHelperTests. New coverage includes 11 predecessor cases and 21 bounded query/count cases. artifacts/cfg-debug-closure/cfg-support-{debug,release}.trx.",
+      "limits": "Preserves unused helper status and native debug assertion policy; no new callsites, phase activation or execution/parity claim."
+    },
     "withElementFloatingConversion": {
       "scope": "B390: preserve native float-to-double-to-float lane conversion and signaling-NaN quieting without interning an intermediate scalar VN.",
       "mapping": "valuenum.cpp:EvalHWIntrinsicFunTernary/EvaluateSimdWithElementFloating and simd.h:EvaluateWithElementFloating -> ValueNumStore.IntrinsicEvaluation.cs.",
@@ -111,10 +117,9 @@
       ],
       "remainingPromotionTargets": "B382: DetermineRemainderStrategy remains for 32-bit and SIMD-disabled target selection. Windows-x64 behavior is complete; do not count this retained body as a Windows gap.",
       "remainingRangeTargets": "B383 ARM64 leading-zero/sign-count bounds are now complete; the native GetRangeFromAssertionsWorker and declaration await the next broad retirement batch.",
-      "remainingOptimizerSupport": "B384: optimizer.cpp now contains only optCheckPreds, an unported DEBUG-only predecessor verifier with no callsites found in the pinned native tree. This is legacy debug support, not an identified mandatory phase gap.",
+      "remainingOptimizerSupport": "B384 optCheckPreds is implemented with its native Debug-only checks and no new callsites; remaining optimizer.cpp and declaration await broad retirement.",
       "remainingFlowGraphSupport": [
-        "fgIsBlockCold: unported helper used only by ARM64 emitter long-branch policy in the pinned tree.",
-        "fgMoreThanOneReturnBlock: unported helper with no pinned native callsites.",
+        "fgIsBlockCold and fgMoreThanOneReturnBlock are implemented; their native bodies/declarations await broad retirement.",
         "fgAddSwiftErrorReturns: retain for Swift-enabled targets; Windows x64 does not define SWIFT_SUPPORT.",
         "fgCreateFunclets: AMD64 is complete; retain other architecture/Wasm paths rejected by the managed phase entry.",
         "B385: BlockReachabilitySets.Build retains missing optional COUNT_BASIC_BLOCKS iteration statistics; the default reachability algorithm is complete.",
@@ -135,9 +140,9 @@
       "remainingBlockSupport": [
         "block.cpp retains CanRemoveJumpToTarget for Wasm try/exnref-wrapper interval handling; managed Windows behavior is complete and Wasm fails explicitly.",
         "B392 retains the block-key hash helper for unresolved managed map hash-stress policy; predecessor shuffling is separately implemented.",
-        "StatementCountExceeds has no pinned callsites and remains unused legacy support, not an identified mandatory phase gap.",
+        "StatementCountExceeds and range ComplexityExceeds are implemented with native early cutoff and accumulation, and await broad retirement. No new callsites.",
         "B393 edge visit-state assertions, unconditional DEBUG block membership and block-iterator mutation checks are complete and await the next broad retirement batch.",
-        "Raw target-block getters and range ComplexityExceeds have no pinned callsites and remain unused support. emitCodeGetCookie remains because its managed helper is only declared under TARGET_AMD64."
+        "Raw target-block getters have no pinned callsites and remain unused support. emitCodeGetCookie remains because its managed helper is only declared under TARGET_AMD64."
       ],
       "remaining": "VN and EH/block areas are reconciled with explicit retained boundaries. Continue broader compiler inline/frontend source areas, using existing complete-function mappings and explicit NYIs instead of re-auditing every helper. Notify the user when the full runtime-port cleanup is done.",
       "verification": "Native remainder consolidated into local commit 0130319 on the pinned source baseline; native tracked working tree/index are clean and oracle HEAD/source/index remain pinned. Latest block-header delta removed 459 lines from two files without additions. Earlier assertion and trace-macro restorations remain explicitly non-deletion-only corrections. Retirement does not add parity evidence.",
@@ -193,7 +198,7 @@
       "scope": "Continue Windows-x64 compiler implementation and Linux/ARM64 NYI closure concurrently with bulk native retirement. Use existing audit findings to choose implementation work and existing completed-function evidence to remove native remainders.",
       "status": "in-progress",
       "doneWhen": [
-        "Complete the retained custom-awaiter importer optimization and recorded Windows CFG debug closure; B388/B389 VN diagnostic/invariant work is complete.",
+        "Complete the remaining shared CFG queries and legacy predecessor verifier B384; custom-awaiter importing, B388/B389 VN diagnostics, B390 conversions and B393 CFG invariants are complete.",
         "Integrate delivered platform packets and continue their remaining NYI dependency areas; a bounded packet is not platform completion.",
         "Reconcile completed source/dependency areas into native retirement using existing integrated implementation reviews and scoped evidence, not symbol-name matches alone.",
         "Identify remaining Windows/shared work separately from mixed functions retained for unfinished target paths; check earlier residual coverage as well as the post-refresh queue.",
@@ -208,7 +213,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Windows-x64 custom-awaiter importer then CFG diagnostics in the foreground; independent coding agents continue ARM64 optimizer and SysV-x64 backend NYIs. Native cleanup proceeds against committed implementation evidence only. Parent owns integration, shared documentation and C# commits; completed packets below are historical records, not active assignments.",
+      "parentScope": "Remaining shared CFG query/verifier support in the foreground, with SysV frame integration pending explicit rejection of unported NativeAOT CFI mode. Independent coding agents continue ARM64 allocator and SysV-x64 backend NYIs. Native cleanup proceeds against committed implementation evidence only. Parent owns integration, shared documentation and C# commits; completed packets below are historical records, not active assignments.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -603,7 +608,7 @@
         }
       ]
     },
-    "nextAction": "Continue overnight without stopping at milestones; periodically check breadth and validation cadence. B390 is corrected and validated; integrate the completed SysV frame/callee-save/funclet packet after checking broadened guards and native unwind behavior, then continue Windows residual audit gaps. ARM64 continues allocator dependencies. SysV incoming parameter homing is its next area. Native cleanup runs concurrently against committed source; amend only its Remove ported code commit, last recorded at 1ba86bc4752e4b77879479b88e2416bd6595392b. No routine snapshots or per-helper validation/documentation cycles. Keep the oracle pinned and notify the user when full native cleanup is finished.",
+    "nextAction": "Continue overnight without stopping at milestones; periodically check breadth and validation cadence. Shared CFG queries/B384 are validated and ready for retirement. SysV frame/callee-save/funclet integration awaits the existing agent's NativeAOT CFI rejection correction and register-walk rationale; CoreCLR unwind format is implemented, but Unix NativeAOT must not receive Windows-format metadata. Then continue SysV incoming parameter homing. ARM64 continues allocator dependencies. Continue Windows/shared gaps identified by broad native cleanup, not a fresh exhaustive audit. Native cleanup runs concurrently against committed source; amend only its Remove ported code commit, last recorded at 1ba86bc4752e4b77879479b88e2416bd6595392b. Keep the oracle pinned and notify the user when full native cleanup is finished.",
     "arm64BlockAndSwitchLowering": {
       "scope": "ARM64 LowerBlock candidate/FFR initialization, LowerSwitch and TryLowerSwitchToBitTest.",
       "mapping": "lower.cpp block/switch lowering -> Lowering.BlockTraversal.cs and Lowering.Switches.cs, preserving ARM64 shift/AND/branch construction.",

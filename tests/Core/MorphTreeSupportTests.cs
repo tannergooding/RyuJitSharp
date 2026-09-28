@@ -16,6 +16,109 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class MorphTreeSupportTests
 {
+    [TestCase(false, false, false)]
+    [TestCase(false, true, false)]
+    [TestCase(true, false, false)]
+    [TestCase(true, true, true)]
+    public static void ColdBlockQueryRequiresAnActiveColdSection(bool section, bool marked, bool expected)
+    {
+        WithCompiler(compiler => {
+            var block = new BasicBlock(null, null);
+            compiler.fgFirstColdBlock = section ? new BasicBlock(null, null) : null;
+            if (marked)
+            {
+                block.SetFlags(BasicBlockFlags.BBF_COLD);
+            }
+
+            Assert.That(compiler.fgIsBlockCold(block), Is.EqualTo(expected));
+        });
+    }
+
+    [TestCase(0, false)]
+    [TestCase(1, false)]
+    [TestCase(2, true)]
+    [TestCase(3, true)]
+    public static void ReturnBlockQueryCountsTheGraphRatherThanTheCachedReturnList(int returns, bool expected)
+    {
+        WithCompiler(compiler => {
+            var first = new BasicBlock(null, null) { Kind = BBKinds.BBJ_THROW };
+            compiler.fgFirstBB = first;
+            compiler.fgReturnBlocks = null;
+            var previous = first;
+            for (var index = 0; index < returns; index++)
+            {
+                var block = new BasicBlock(null, null) { Kind = BBKinds.BBJ_RETURN };
+                previous.Next = block;
+                previous = block;
+            }
+
+            compiler.fgLastBB = previous;
+            Assert.That(compiler.fgMoreThanOneReturnBlock(), Is.EqualTo(expected));
+        });
+    }
+
+    [TestCase(0, 0u, false, 0u)]
+    [TestCase(3, 0u, true, 1u)]
+    [TestCase(3, 2u, true, 3u)]
+    [TestCase(3, 3u, false, 3u)]
+    [TestCase(3, 4u, false, 3u)]
+    [TestCase(3, uint.MaxValue, false, 3u)]
+    public static void StatementCountStopsAfterTheLimit(int statements, uint limit, bool expected, uint count)
+    {
+        WithCompiler(compiler => {
+            var block = new BasicBlock(null, null);
+            for (var index = 0; index < statements; index++)
+            {
+                compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(compiler.gtNewNothingNode()));
+            }
+
+            Assert.That(block.StatementCountExceeds(limit, out var actualCount), Is.EqualTo(expected));
+            Assert.That(actualCount, Is.EqualTo(count));
+            Assert.That(block.StatementCountExceeds(limit), Is.EqualTo(expected));
+        });
+    }
+
+    [TestCase(0u, false, true, 1)]
+    [TestCase(1u, false, true, 1)]
+    [TestCase(2u, false, true, 3)]
+    [TestCase(4u, false, true, 3)]
+    [TestCase(5u, false, false, 3)]
+    [TestCase(uint.MaxValue, false, false, 3)]
+    [TestCase(0u, true, false, 3)]
+    public static void BlockRangeComplexityAccumulatesAcrossStatementsAndEmptyBlocks(
+        uint limit, bool zeroCost, bool expected, int visited)
+    {
+        WithCompiler(compiler => {
+            var prefix = new BasicBlock(null, null);
+            var first = new BasicBlock(null, null);
+            var empty = new BasicBlock(null, null);
+            var last = new BasicBlock(null, null);
+            var suffix = new BasicBlock(null, null);
+            prefix.Next = first;
+            first.Next = empty;
+            empty.Next = last;
+            last.Next = suffix;
+            compiler.fgInsertStmtAtEnd(prefix, compiler.gtNewStmt(compiler.gtNewIconNode(TYP_INT, 100)));
+            compiler.fgInsertStmtAtEnd(suffix, compiler.gtNewStmt(compiler.gtNewIconNode(TYP_INT, 100)));
+            var firstTree = compiler.gtNewIconNode(TYP_INT, 2);
+            var secondTree = compiler.gtNewIconNode(TYP_INT, 0);
+            var lastTree = compiler.gtNewIconNode(TYP_INT, 3);
+            compiler.fgInsertStmtAtEnd(first, compiler.gtNewStmt(firstTree));
+            compiler.fgInsertStmtAtEnd(first, compiler.gtNewStmt(secondTree));
+            compiler.fgInsertStmtAtEnd(last, compiler.gtNewStmt(lastTree));
+            List<GenTree> visits = [];
+            var range = new BasicBlockRangeList(first, last);
+
+            Assert.That(range.ComplexityExceeds(compiler, limit, tree => {
+                visits.Add(tree);
+                return zeroCost ? 0 : (uint)tree.AsIntCon().IconValue;
+            }), Is.EqualTo(expected));
+            GenTree[] order = [firstTree, secondTree, lastTree];
+            Assert.That(visits, Is.EqualTo(order[..visited]));
+            Assert.That(new BasicBlockRangeList(empty, empty).ComplexityExceeds(compiler, 0, _ => 1), Is.False);
+        });
+    }
+
     [TestCase(0u, 1, true)]
     [TestCase(4u, 5, true)]
     [TestCase(5u, 5, false)]

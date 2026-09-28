@@ -7,6 +7,17 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public bool fgIsBlockCold(BasicBlock block)
+    {
+        noway_assert(block is not null);
+        if (fgFirstColdBlock is null)
+        {
+            return false;
+        }
+
+        return block.HasFlag(BBF_COLD);
+    }
+
     public bool fgInDifferentRegions(BasicBlock blk1, BasicBlock blk2)
     {
         noway_assert(blk1 is not null);

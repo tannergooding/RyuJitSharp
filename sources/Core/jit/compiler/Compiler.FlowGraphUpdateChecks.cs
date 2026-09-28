@@ -12,6 +12,52 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public void optCheckPreds()
+    {
+        foreach (var block in Blocks)
+        {
+            foreach (var predBlock in block.PredBlocks)
+            {
+                var bb = fgFirstBB;
+                for (; bb is not null; bb = bb.Next)
+                {
+                    if (bb == predBlock)
+                    {
+                        break;
+                    }
+                }
+
+                noway_assert(bb is not null);
+                switch (bb.Kind)
+                {
+                    case BBJ_COND:
+                    {
+                        if (bb.TrueTarget == block)
+                        {
+                            break;
+                        }
+
+                        noway_assert(bb.FalseTarget == block);
+                        break;
+                    }
+
+                    case BBJ_EHFILTERRET:
+                    case BBJ_ALWAYS:
+                    case BBJ_EHCATCHRET:
+                    {
+                        noway_assert(bb.Target == block);
+                        break;
+                    }
+
+                    default:
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     /// <summary>Check that flow graph updating removed unreachable, unimported, and compactable blocks.</summary>
     public void fgDebugCheckUpdate()
     {

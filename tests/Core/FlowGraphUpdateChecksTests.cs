@@ -31,6 +31,66 @@ internal static unsafe class FlowGraphUpdateChecksTests
     }
 
 #if DEBUG
+    [TestCase(BBJ_COND, 0)]
+    [TestCase(BBJ_COND, 1)]
+    [TestCase(BBJ_COND, 2)]
+    [TestCase(BBJ_ALWAYS, 0)]
+    [TestCase(BBJ_ALWAYS, 2)]
+    [TestCase(BBJ_EHFILTERRET, 0)]
+    [TestCase(BBJ_EHFILTERRET, 2)]
+    [TestCase(BBJ_EHCATCHRET, 0)]
+    [TestCase(BBJ_EHCATCHRET, 2)]
+    [TestCase(BBJ_RETURN, 2)]
+    public static void LegacyPredecessorVerifierChecksOnlyNativeBranchKinds(BBKinds kind, int targetChoice)
+    {
+        WithCompiler(false, compiler => {
+            var source = NewBlock(compiler, kind);
+            var target = NewBlock(compiler, BBJ_RETURN);
+            var other = NewBlock(compiler, BBJ_RETURN);
+            Link(compiler, source, target, other);
+            var edge = compiler.fgAddRefPred(target, source);
+            var otherEdge = new FlowEdge(source, other, null);
+            if (kind is BBJ_COND)
+            {
+                source.SetCond(targetChoice == 0 ? edge : otherEdge, targetChoice == 1 ? edge : otherEdge);
+            }
+            else if (kind is not BBJ_RETURN)
+            {
+                source.SetKindAndTargetEdge(kind, targetChoice == 0 ? edge : otherEdge);
+            }
+
+            if ((targetChoice == 2) && (kind is not BBJ_RETURN))
+            {
+                var exception = Assert.Throws<FatalJitException>(compiler.optCheckPreds);
+                Assert.That(exception, Has.Property(nameof(FatalJitException.Result))
+                    .EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
+                Assert.That(s_assertions, Has.Count.EqualTo(1));
+            }
+            else
+            {
+                compiler.optCheckPreds();
+                Assert.That(s_assertions, Is.Empty);
+            }
+        });
+    }
+
+    [Test]
+    public static void LegacyPredecessorVerifierRejectsPredecessorsOutsideTheBlockList()
+    {
+        WithCompiler(false, compiler => {
+            var source = NewBlock(compiler, BBJ_ALWAYS);
+            var target = NewBlock(compiler, BBJ_RETURN);
+            Link(compiler, target);
+            source.SetKindAndTargetEdge(BBJ_ALWAYS, compiler.fgAddRefPred(target, source));
+
+            var exception = Assert.Throws<FatalJitException>(compiler.optCheckPreds);
+
+            Assert.That(exception, Has.Property(nameof(FatalJitException.Result))
+                .EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
+            Assert.That(s_assertions, Is.EqualTo((string[])["bb is not null"]));
+        });
+    }
+
     [Test]
     public static void EmptyGraphHasNothingToCheck()
     {

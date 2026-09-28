@@ -9,6 +9,26 @@ namespace RyuJitSharp;
 
 public sealed partial class BasicBlock
 {
+    public bool StatementCountExceeds(uint limit) => StatementCountExceeds(limit, out _);
+
+    public bool StatementCountExceeds(uint limit, out uint count)
+    {
+        var localCount = 0u;
+        var overLimit = false;
+        foreach (var statement in Statements)
+        {
+            localCount = unchecked(localCount + 1);
+            if (localCount > limit)
+            {
+                overLimit = true;
+                break;
+            }
+        }
+
+        count = localCount;
+        return overLimit;
+    }
+
     public bool ComplexityExceeds(Compiler compiler, uint limit, Func<GenTree, uint> getTreeComplexity)
     {
         var localCount = 0u;

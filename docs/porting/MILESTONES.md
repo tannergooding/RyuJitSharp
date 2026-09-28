@@ -16,6 +16,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Remaining shared CFG queries
+
+The legacy predecessor verifier now checks block-list membership and the native
+conditional/single-target branch kinds without adding callsites. Cold-section
+and multiple-return queries, bounded statement counting and range-wide tree
+complexity queries are also implemented. Counting preserves early cutoff,
+inclusive block-range bounds and native accumulation across empty blocks.
+Shared CFG/tree coverage passes 158 Debug/85 Release cases; the verifier remains
+Debug-only. This closes unused/shared support, not a newly enabled phase.
+
 ## 2026-09-27: WithElement floating conversion semantics
 
 Constant float lane replacement now preserves native float-to-double-to-float
