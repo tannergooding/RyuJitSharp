@@ -777,8 +777,10 @@ public sealed partial class Lowering
 
         ContainCheckHWIntrinsic(node);
         return node.Next;
+#elif TARGET_ARM64
+        return LowerHWIntrinsicArm64(node);
 #else
-        throw new NotImplementedException("Non-xarch hardware-intrinsic lowering is not ported.");
+        throw new NotImplementedException("Hardware-intrinsic lowering outside xarch and ARM64 is not ported.");
 #endif
     }
 }

@@ -5,11 +5,74 @@
 
 #if TARGET_ARM64
 using System.Runtime.CompilerServices;
+using static RyuJitSharp.SveMaskPattern;
 
 namespace RyuJitSharp;
 
 public static partial class Globals
 {
+    public static bool EvaluateSimdPatternToMask<TSimd>(var_types baseType, ref simdmask_t result, SveMaskPattern pattern)
+        where TSimd : unmanaged
+    {
+        var elementSize = GetSimdElementSize(baseType);
+        var count = Unsafe.SizeOf<TSimd>() / elementSize;
+        int finalOne;
+
+        switch (pattern)
+        {
+            case SveMaskPatternLargestPowerOf2:
+            case SveMaskPatternAll:
+            {
+                finalOne = count;
+                break;
+            }
+
+            case >= SveMaskPatternVectorCount1 and <= SveMaskPatternVectorCount8:
+            {
+                finalOne = pattern - SveMaskPatternVectorCount1 + 1;
+                break;
+            }
+
+            case >= SveMaskPatternVectorCount16 and <= SveMaskPatternVectorCount256:
+            {
+                finalOne = 16 << (pattern - SveMaskPatternVectorCount16);
+                break;
+            }
+
+            case SveMaskPatternLargestMultipleOf4:
+            {
+                finalOne = count - (count % 4);
+                break;
+            }
+
+            case SveMaskPatternLargestMultipleOf3:
+            {
+                finalOne = count - (count % 3);
+                break;
+            }
+
+            default:
+            {
+                return false;
+            }
+        }
+
+        // PTRUE constraints exceeding the vector's lane count produce an all-false predicate.
+        if (finalOne > count)
+        {
+            finalOne = 0;
+        }
+
+        ulong bits = 0;
+        for (var index = 0; index < finalOne; index++)
+        {
+            bits |= 1UL << (index * elementSize);
+        }
+
+        result.u64[0] = bits;
+        return true;
+    }
+
     public static SveMaskPattern EvaluateSimdMaskToPattern<TSimd>(var_types baseType, simdmask_t mask)
         where TSimd : unmanaged
     {

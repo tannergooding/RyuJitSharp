@@ -211,7 +211,7 @@ public sealed partial class Lowering
 
     private GenTree? LowerNode(GenTree node)
     {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
         switch (node.Oper)
         {
             case GT_LCL_FLD:
@@ -272,6 +272,21 @@ public sealed partial class Lowering
             case GT_NEG:
             case GT_NOT:
             {
+#if TARGET_ARM64
+                if (node.Oper is GT_NEG)
+                {
+                    if (TryLowerNegToMulLongOp(node.AsUnOp(), out var next))
+                    {
+                        return next;
+                    }
+
+                    ContainCheckNeg(node.AsUnOp());
+                }
+                else
+                {
+                    ContainCheckNot(node.AsUnOp());
+                }
+#endif
                 break;
             }
 
@@ -324,6 +339,9 @@ public sealed partial class Lowering
 
             case GT_MUL:
             case GT_MULHI:
+#if TARGET_ARM64
+            case GT_MUL_LONG:
+#endif
             {
                 return LowerMul(node.AsOp());
             }
@@ -352,6 +370,9 @@ public sealed partial class Lowering
                 {
                     return next;
                 }
+#if TARGET_ARM64
+                _ffrTrashed = true;
+#endif
                 break;
             }
 
@@ -376,6 +397,9 @@ public sealed partial class Lowering
 
             case GT_XADD:
             {
+#if TARGET_ARM64
+                _ = CheckImmedAndMakeContained(node, node.AsOp().Op2);
+#else
                 if (node.IsUnusedValue)
                 {
                     node.IsUnusedValue = false;
@@ -385,8 +409,25 @@ public sealed partial class Lowering
                     node.Type = TYP_VOID;
                     _ = CheckImmedAndMakeContained(node, node.AsOp().Op2);
                 }
+#endif
                 break;
             }
+
+#if TARGET_ARM64
+            case GT_CMPXCHG:
+            {
+                _ = CheckImmedAndMakeContained(node, node.AsCmpXchg().Comparand);
+                break;
+            }
+
+            case GT_XORR:
+            case GT_XAND:
+            case GT_XCHG:
+            {
+                _ = CheckImmedAndMakeContained(node, node.AsOp().Op2);
+                break;
+            }
+#endif
 
             case GT_JTRUE:
             {
@@ -416,20 +457,24 @@ public sealed partial class Lowering
                 break;
             }
 
+#if TARGET_XARCH
             case GT_INTRINSIC:
             {
                 ContainCheckIntrinsic(node.AsIntrinsic());
                 break;
             }
+#endif
 
-#if FEATURE_HW_INTRINSICS
+#if FEATURE_HW_INTRINSICS && TARGET_XARCH
             case GT_BSWAP:
             case GT_BSWAP16:
             {
                 LowerBswapOp(node.AsUnOp());
                 break;
             }
+#endif
 
+#if FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
             {
                 return LowerHWIntrinsic(node.AsHWIntrinsic());
@@ -505,6 +550,13 @@ public sealed partial class Lowering
                 return LowerStoreIndirCommon(node.AsStoreInd());
             }
 
+#if FEATURE_HW_INTRINSICS && TARGET_ARM64
+            case GT_CNS_MSK:
+            {
+                return LowerCnsMask(node.AsMskCon());
+            }
+#endif
+
             case GT_IND:
             case GT_NULLCHECK:
             {
@@ -519,7 +571,7 @@ public sealed partial class Lowering
 
         return node.Next;
 #else
-        throw new NotImplementedException("Non-xarch node lowering is not ported.");
+        throw new NotImplementedException("Node lowering outside xarch and ARM64 is not ported.");
 #endif
     }
 

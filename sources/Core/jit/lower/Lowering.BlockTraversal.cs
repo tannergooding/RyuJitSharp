@@ -33,7 +33,7 @@ public sealed partial class Lowering
 
     private void LowerJmpMethod(GenTree jmp)
     {
-#if WINDOWS_AMD64_ABI
+#if WINDOWS_AMD64_ABI || TARGET_ARM64
         assert(jmp.Oper is GT_JMP);
         JITDUMP("lowering GT_JMP\n");
         DISPNODE(jmp);

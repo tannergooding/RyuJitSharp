@@ -1309,9 +1309,17 @@ managed target coverage. Pair reordering and loop store-to-load-forwarding
 checks are also implemented, preserving native distance/budget limits,
 alias checks and dataflow cleanup. Private load/store lowering now integrates
 these helpers with volatile floating bitcasts, positive-zero store retyping,
-mutable-object release stores and ARM64 coalescing/atomicity. Node/block/phase
+mutable-object release stores and ARM64 coalescing/atomicity. Whole-block/phase
 dispatch and per-block candidate reset remain unintegrated. B380 tracks the
 pinned volatile-load bitcast round trip without changing it.
+
+ARM64 hardware-intrinsic and mask rewrites now have a private node-dispatch path
+for inserted operations, including FFR stores and reloads after calls. Fixed-width
+true-mask construction uses the native predicate pattern; scalable constant
+storage remains an explicit implementation limitation. `LowerBlock` and `DoPhase`
+are not activated: block-indirection reset, initial FFR state, switch lowering,
+allocation and emission remain separate. Managed target tests do not establish
+ARM64 execution or generated-code parity.
 
 Non-AMD64 `Emitter.RequireSupportedInstructionRecording`, `emitCheckIGList`
 (Debug), `emitGCregDeadUpdMask`, and `CodeGen.inst_ST_RV` terminate with
