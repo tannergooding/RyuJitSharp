@@ -460,7 +460,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "The local-class B031 guard correction is validated alongside the earlier D007/B417/B418 work. Continue the concrete B142 string-literal diagnostic finding: compare eePrintStringLiteral with the pinned native function, determine whether the recorded quote omission still exists, and restore its complete printing/truncation/unavailable-metadata contract if needed. Reuse diagnostic fixtures; no global formatting redesign, new corpus matrix or D009 callback bridge. Native retirement continues independently.",
+      "parentScope": "B031 is committed; B142 was already resolved by B314/62e2fe026c1b31cc69a2ef149e8036b22bf97712 and its stale backlog entry is corrected without reimplementation. Continue B223's recorded optimized implicit-byref ownership failure: first check current replacement code and existing later corpus evidence, then reproduce only if the failure remains unclosed. Preserve native threading/owner contracts; no broad matrix or unrelated formatting redesign. Native retirement continues independently.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -855,7 +855,7 @@
         }
       ]
     },
-    "nextAction": "Commit B031's lvaSetClass/lvaUpdateClass guards (93Debug/80Release; old disabled cases fail and enabled text matches). Then inspect Compiler.eePrintStringLiteral against the pin for B142's quote omission; check existing correction evidence before changing code, and keep the completion boundary to the whole literal printer with focused diagnostic tests. Global formatting redesign and D009's variadic callback bridge remain deferred. Retirement through48 is consolidated:25353removed/403restored, native5f8b1b1baee38ffcf913067aa14360914846568e.",
+    "nextAction": "B142 is a stale finding resolved by62e2fe026c1b31cc69a2ef149e8036b22bf97712/B314; record that closure, not a new implementation. Next inspect B223: find the current implicit-byref replacement helper and later ImplicitByRefArgument execution evidence before reproducing its old NodeThreading.None assertion. If still active, fix the complete owner/threading path and validate the existing optimized case; if already corrected, reconcile the historical finding without rerunning unrelated corpora. D009's callback bridge remains deferred. Retirement through48 is consolidated:25353removed/403restored, native5f8b1b1baee38ffcf913067aa14360914846568e.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
