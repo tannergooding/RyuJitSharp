@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Shared diagnostic counters completed
+
+Optional scalar and node counters preserve signed64 output, atomic32 recording,
+unsigned count ordering and opcode tie breaks. Generated canonical opcode names
+are now available under the native statistics guards; enum aliases no longer
+change labels such as `CNS_INT`.
+
+Combined statistics coverage passes 157 Debug and 105 Release cases, including
+nine counter cases; default controls pass 125 and 73. Of 48 regenerated files,
+only the intended name-table guard changes. This completes shared support, not
+native node-size accounting or all optional statistics consumers.
+
 ## 2026-09-28: Fatal-error statistics completed
 
 `MEASURE_FATAL` now compiles in Release and emits the native shutdown report.

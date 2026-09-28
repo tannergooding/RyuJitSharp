@@ -89,11 +89,79 @@ internal static class HistogramTests
         Assert.That(Capture(histogram), Is.EqualTo("  (no data recorded)\n"));
     }
 
-    internal static string Capture(Histogram histogram)
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+    [TestCase(0L, "0\n")]
+    [TestCase(-1L, "-1\n")]
+    [TestCase(long.MinValue, "-9223372036854775808\n")]
+    [TestCase(long.MaxValue, "9223372036854775807\n")]
+    public static void ScalarCounterPreservesSigned64BitOutput(long value, string expected)
+    {
+        Assert.That(Capture(new Counter(value)), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public static void ScalarCounterDefaultsToZeroAndRemainsMutable()
+    {
+        var counter = new Counter();
+        Assert.That(counter.Value, Is.Zero);
+        counter.Value = -17;
+
+        Assert.That(Capture(counter), Is.EqualTo("-17\n"));
+    }
+
+    [Test]
+    public static void NodeCountsSortByUnsignedCountThenOpcodeAndOmitZeroRows()
+    {
+        var counts = new NodeCounts();
+        counts.record(genTreeOps.GT_MUL);
+        counts.record(genTreeOps.GT_ADD);
+        counts.record(genTreeOps.GT_CNS_INT);
+        counts.record(genTreeOps.GT_ADD);
+        counts.record(genTreeOps.GT_MUL);
+        NodeStorage(counts)[(int)genTreeOps.GT_SUB] = int.MinValue;
+
+        Assert.That(Capture(counts), Is.EqualTo(
+            "SUB".PadRight(20) + " : 2147483648\n" +
+            "ADD".PadRight(20) + " :       2\n" +
+            "MUL".PadRight(20) + " :       2\n" +
+            "CNS_INT".PadRight(20) + " :       1\n"));
+    }
+
+    [Test]
+    public static void NodeCountsUpdateAtomically()
+    {
+        var counts = new NodeCounts();
+        _ = Parallel.For(0, 4, _ => {
+            for (var i = 0; i < 1024; i++)
+            {
+                counts.record(genTreeOps.GT_ADD);
+            }
+        });
+
+        Assert.That(Capture(counts), Is.EqualTo("ADD".PadRight(20) + " :    4096\n"));
+    }
+
+    [TestCase(int.MaxValue, 0x80000000U)]
+    [TestCase(-1, 0U)]
+    public static void NodeCountsReinterpretWrappedSignedStorage(int initial, uint expected)
+    {
+        var counts = new NodeCounts();
+        NodeStorage(counts)[(int)genTreeOps.GT_ADD] = initial;
+        counts.record(genTreeOps.GT_ADD);
+
+        Assert.That(unchecked((uint)NodeStorage(counts)[(int)genTreeOps.GT_ADD]), Is.EqualTo(expected));
+        Assert.That(Capture(counts), Is.EqualTo(expected == 0 ? "" : "ADD".PadRight(20) + $" : {expected,7}\n"));
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_counts")]
+    private static extern ref int[] NodeStorage(NodeCounts counts);
+#endif
+
+    internal static string Capture(Dumpable dumpable)
     {
         using var output = new MemoryStream();
         using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
-        histogram.dump(writer);
+        dumpable.dump(writer);
         writer.Flush();
 
         return Encoding.UTF8.GetString(output.ToArray());

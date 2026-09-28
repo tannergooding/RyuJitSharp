@@ -395,7 +395,9 @@ public static partial class genTreeOpsExtensions
         DBK_NOTHIR, // GT_IL_OFFSET
         DBK_NOTHIR, // GT_RECORD_ASYNC_RESUME
     ];
+#endif
 
+#if DEBUG || CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_MEM_ALLOC || NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS || DUMP_FLOWGRAPHS
     private static readonly string[] s_names = [
         "NONE", // GT_NONE
         "PHI", // GT_PHI

@@ -402,7 +402,7 @@ public static partial class genTreeOpsExtensions
             }
         }
 
-#if DEBUG
+#if DEBUG || CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_MEM_ALLOC || NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS || DUMP_FLOWGRAPHS
         public string Name
         {
             get

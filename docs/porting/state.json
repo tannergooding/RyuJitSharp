@@ -16,6 +16,14 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sharedDiagnosticCounters": {
+      "scope": "Complete Counter and NodeCounts shared optional diagnostic types. Their other statistics consumers remain separate.",
+      "mapping": "compiler.hpp305-351/utils.cpp1094-1146 -> utils/Counter.cs and utils/NodeCounts.cs; gentree.cpp opcode-name guards -> gentreeopsdef/genTreeOpsExtensions.cs and GenerateTables/Program.cs.",
+      "contract": "Signed64 scalar output; atomic32 node recording with unsigned snapshots and descending count/ascending opcode sorting. Zero rows are omitted. Canonical native opcode names remain available under the native diagnostic/statistics guards rather than depending on ambiguous enum alias spelling.",
+      "validation": "Combined COUNT_BASIC_BLOCKS/MEASURE_NOWAY/MEASURE_FATAL fixtures pass157Debug/105Release, including nine shared-counter cases. The canonical CNS_INT case failed in both flavors before the metadata fix. Default controls pass125Debug/73Release. All48 generated outputs were compared with an unchanged-generator baseline: only the opcode-name feature guard changed.",
+      "reproduction": "Run the existing combined statistics selection with artifacts/fatal-statistics/combined.targets; shared-counters-*-names.trx and shared-counters-default-*.trx record final runs. GenerateTables ran in separate artifacts/shared-counters/generator-baseline and generator-revised directories with copied Inputs.",
+      "limits": "No new native-host execution or complete optional-mode claim. Default Release Name fallback is unchanged. Native node-size/allocation accounting remains separate under D001."
+    },
     "fatalStatistics": {
       "scope": "Complete optional MEASURE_FATAL counter/report support and B445 enabled Release compilation failure. The flag remains disabled by default.",
       "mapping": "error.cpp fatal counters and error-function increments -> error/Globals.cs; compiler.cpp1657-1673 -> Compiler.Shutdown.cs.",
@@ -752,8 +760,8 @@
         "Raw target-block getters have no pinned callsites and remain unused support. emitCodeGetCookie remains because its managed helper is only declared under TARGET_AMD64."
       ],
       "remaining": "Continue the full already-completed-code cleanup, distinguishing unreconciled areas from genuine target/CFI/optional-statistics gaps. emitGenIG/emitSavIG retain architecture/statistics paths, genCreateTempLabel retains Unix x86, and genGetRegMask retains ARM floating support. No new default Windows emission gap was established; the earlier blanket claim is withdrawn. Complete bodies are not retained merely because unfinished native callers reference them. Notify the user when the full cleanup is done.",
-      "verification": "Latest collected native cleanup is5467c54dcc9. Report86 retires174lines of complete MEASURE_NOWAY collector/report definitions and the paired declaration after913055c. Generic hash tables and mixed shutdown/statistics dispatchers remain. Native index/worktree and oracle tracked source/index were clean at the reported boundary. Retirement adds no parity evidence.",
-      "targetLedger": "Collected report86 covers296 overlapping records:277 implemented,2 partial,1 unported,14 unknown and2 not-applicable, not unique functions or a compiler-completion percentage. B444 is consumed through913055c; fatalStatistics is newer and awaits consumption. D009, R005 and B392 remain separate known optional gaps. Unknown file-only umbrellas retain explicit coverage boundaries from report80; other disabled statistics switches are not implied complete.",
+      "verification": "Latest collected native cleanup is6d6a31dcdd7. Report87 retires16lines of complete MEASURE_FATAL counter declarations after5c9a10c. Native error.cpp was already absent and supplies no new retirement or parity evidence. Mixed shutdown/statistics dispatchers remain. Native index/worktree and oracle tracked source/index were clean at the reported boundary.",
+      "targetLedger": "Collected report87 covers298 overlapping records:279 implemented,2 partial,1 unported,14 unknown and2 not-applicable, not unique functions or a compiler-completion percentage. B445 is consumed through5c9a10c; sharedDiagnosticCounters is newer and awaits consumption. D009, R005 and B392 remain separate known optional gaps. Unknown file-only umbrellas retain explicit coverage boundaries from report80; other disabled statistics switches are not implied complete.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
       "policy": "Retire only reviewed complete implementations. Retain or explicitly identify unfinished shared/Windows paths and other-platform-only paths. Preserve the oracle and existing index distinctions; do not infer parity or percentages from deletion counts."
     },
@@ -820,7 +828,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Complete MEASURE_FATAL counters and shutdown reporting without enabling the flag by default: preserve unsigned wraparound, native error results and counting sites, and restrict the argument-body counter to Debug. Validate the enabled Release compilation regression and focused Debug/Release error/shutdown cases, then default controls before committing. Other statistics switches, B392 hash-stress policy, D009 and other-target expansion remain separate.",
+      "parentScope": "Complete retained shared Counter/NodeCounts types using Dumpable, atomic32 node counts, native unsigned descending/opcode tie sorting and native opcode labels. Reuse the existing histogram capture and enabled statistics controls; validate Debug/Release and default builds before committing. This closes shared diagnostic support, not the deferred native/managed allocation-size accounting required by COUNT_AST_OPERS and MEASURE_NODE_SIZE.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1222,7 +1230,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Send committed fatalStatistics/B445 to worker4b57b744 for complete-function retirement. Finish the remaining shared Counter and NodeCounts diagnostic types from compiler.hpp305-371/utils.cpp1094-1150, reusing Dumpable and native sorting/name metadata; keep this distinct from allocation-size statistics. COUNT_AST_OPERS and MEASURE_NODE_SIZE also depend on native true-node-size accounting, which must not be fabricated from managed reference sizes under D001. Do not restart B392 hash-stress or broad shared-state audits. Preserve B365/B394 upstream reports; B153/D009 and ARM64 foreground expansion remain deferred.",
+    "nextAction": "Send committed sharedDiagnosticCounters to worker4b57b744 for complete-type retirement. Continue DISPLAY_SIZES emitted-code statistics: trace compiler.cpp startup/shutdown, codegencommon.cpp2716-2718 recording and GC-encoder counters against the existing managed output-size fields, then implement and validate the whole supported mode. These are emitted IL/code/GC sizes, not managed object-size estimates. Retain native JIT32-only accounting limits. B446's stale CALL_ARG_STATS collector and COUNT_AST_OPERS/MEASURE_NODE_SIZE allocation accounting remain separate; do not fabricate native sizes or silently repair upstream algorithms. B392, B153/D009 and ARM64 foreground expansion remain deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
@@ -9783,6 +9791,13 @@
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.lva.cs"],
       "reconciledCommit": null,
       "scope": "lvaGrabTemps descriptor initialization; B251."
+    },
+    {
+      "area": "shared-diagnostic-counters",
+      "native": ["src\\coreclr\\jit\\compiler.hpp", "src\\coreclr\\jit\\utils.cpp", "src\\coreclr\\jit\\gentree.cpp"],
+      "csharp": ["sources\\Core\\jit\\utils\\Counter.cs", "sources\\Core\\jit\\utils\\NodeCounts.cs", "sources\\Core\\jit\\gentreeopsdef\\genTreeOpsExtensions.cs", "sources\\GenerateTables\\Program.cs"],
+      "reconciledCommit": null,
+      "scope": "Complete shared Counter/NodeCounts types and canonical opcode-name availability under native statistics guards, not completion of all consumers. See checkpoint.sharedDiagnosticCounters."
     },
     {
       "area": "fatal-error-statistics",
