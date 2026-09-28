@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Runtime method tree diagnostics match
+
+Early `isinst` expansion now preserves Windows native node-construction order,
+and struct-array address dumps no longer insert an extra separator. The reflection
+invoker's complete post-import trees and ManifestBuilder's complete post-promotion
+trees now match native, including node IDs and whitespace. Their complete
+1502-byte and 6959-byte instruction streams remain identical. The primary
+arithmetic process still completes without AltJIT; this does not establish
+whole-dump or general runtime-suite parity.
+
+Evidence: `checkpoint.runtimeTreeDiagnostics` and
+`artifacts/runtime-tree-diagnostics/comparison-1.json`.
+
 ## 2026-09-28: Monitor address-folding parity restored
 
 The arithmetic dispatcher now includes byref types in constant reassociation,

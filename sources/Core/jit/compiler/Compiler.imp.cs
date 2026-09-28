@@ -2293,17 +2293,20 @@ public partial class Compiler
         // Spill op1 if it's a complex expression
         op1 = impCloneExpr(op1, out var op1Clone, CHECK_SPILL_ALL, "ISINST eval op1");
 
+        // Preserve the Windows native compiler's right-to-left argument construction.
+        var nullValue = gtNewNull();
         var op1Clone2 = gtClone(op1);
         assert(op1Clone2 is not null);
 
-        var condNull = gtNewBinaryNode(GT_EQ, TYP_INT, op1Clone2, gtNewNull());
+        var condNull = gtNewBinaryNode(GT_EQ, TYP_INT, op1Clone2, nullValue);
         var condMT = gtNewBinaryNode(GT_NE, TYP_INT, gtNewMethodTableLookup(op1Clone), op2);
 
         GenTreeQmark qmarkResult;
 
         if (booleanCheck)
         {
-            var colon = gtNewColonNode(TYP_INT, gtNewZeroConNode(TYP_INT), gtNewOneConNode(TYP_INT));
+            var one = gtNewOneConNode(TYP_INT);
+            var colon = gtNewColonNode(TYP_INT, gtNewZeroConNode(TYP_INT), one);
             var qmarkMT = gtNewQmarkNode(TYP_INT, condMT, colon);
             qmarkResult = gtNewQmarkNode(TYP_INT, condNull, gtNewColonNode(TYP_INT, gtNewZeroConNode(TYP_INT), qmarkMT));
         }

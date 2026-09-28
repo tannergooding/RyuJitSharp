@@ -2656,7 +2656,7 @@ public partial class Compiler
 
                     if (varTypeIsStruct(elemType) && (elemClsHnd != NO_CLASS_HANDLE))
                     {
-                        jitprintf($" {eeGetShortClassName(elemClsHnd)}[]");
+                        jitprintf($"{eeGetShortClassName(elemClsHnd)}[]");
                     }
                     else
                     {

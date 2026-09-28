@@ -2,6 +2,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 
 namespace RyuJitSharp.UnitTests;
@@ -9,6 +10,74 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ImporterEffectsTests
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void EarlyIsInstPreservesNativeNodeConstructionOrder(bool booleanCheck)
+    {
+        WithCompiler(compiler =>
+        {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.isExactType = &IsExactType;
+            vtable.Base.Base.getClassAttribs = &GetClassAttributes;
+            vtable.Base.Base.getTypeForBox = &GetTypeForBox;
+            vtable.Base.Base.getCastingHelper =
+                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, bool, CorInfoHelpFunc>)
+                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, byte, CorInfoHelpFunc>)&GetCastingHelper;
+            vtable.Base.Base.getExactClasses = &GetExactClasses;
+            vtable.Base.Base.runWithSPMIErrorTrap = &UnavailableClassName;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+            compiler.opts.SetMinOpts(false);
+            var block = new BasicBlock(null, null);
+            block.setBBProfileWeight(100);
+            compiler.compCurBB = block;
+            var instance = compiler.gtNewLclvNode(var_types.TYP_REF, 0);
+            var target = compiler.gtNewIconHandleNode(0x1000, Globals.GTF_ICON_CLASS_HDL);
+            CORINFO_RESOLVED_TOKEN token = new() { hClass = (CORINFO_CLASS_STRUCT_*)0x1000 };
+
+            var result = compiler.impCastClassOrIsInstToTree(instance, target, ref token, false, ref booleanCheck, 0);
+            var statement = ImporterStatements(compiler) ?? throw new AssertionException("Missing isinst spill.");
+            var outer = statement.RootNode.AsLclVar().Data.AsQmark();
+            var inner = outer.ElseNode.AsQmark();
+            var nullCheck = outer.Cond.AsOp();
+
+            Assert.That(result.Type, Is.EqualTo(booleanCheck ? var_types.TYP_INT : var_types.TYP_REF));
+            Assert.That(nullCheck.Op1.Oper, Is.EqualTo(genTreeOps.GT_LCL_VAR));
+            Assert.That(nullCheck.Op2.IsIntegralConst(0), Is.True);
+            Assert.That(outer.ThenNode.IsIntegralConst(0), Is.True);
+            Assert.That(inner.ThenNode.IsIntegralConst(0), Is.True);
+            Assert.That(inner.ElseNode.Oper, Is.EqualTo(booleanCheck ? genTreeOps.GT_CNS_INT : genTreeOps.GT_LCL_VAR));
+#if DEBUG
+            Assert.That(nullCheck.Op2.TreeId + 1, Is.EqualTo(nullCheck.Op1.TreeId));
+            Assert.That(inner.ElseNode.TreeId + 1, Is.EqualTo(inner.ThenNode.TreeId));
+#endif
+        });
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "impStmtList")]
+    private static extern ref Statement? ImporterStatements(Compiler compiler);
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte IsExactType(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => 1;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoFlag GetClassAttributes(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => 0;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CORINFO_CLASS_STRUCT_* GetTypeForBox(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => type;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoHelpFunc GetCastingHelper(ICorJitInfo* self, CORINFO_RESOLVED_TOKEN* token, byte throwing)
+        => CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFCLASS;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int GetExactClasses(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type, int count, CORINFO_CLASS_STRUCT_** classes)
+        => 0;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte UnavailableClassName(ICorJitInfo* self, delegate* unmanaged[Cdecl]<void*, void> callback, void* state)
+        => 0;
+
     [Test]
     public static void StructArgumentNormalizationSinksCommaIntoTheBlockAddress(
         [Values(var_types.TYP_BYREF, Globals.TYP_I_IMPL)] var_types addressType,
