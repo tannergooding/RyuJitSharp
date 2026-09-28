@@ -1340,8 +1340,9 @@ ARM64 hardware-intrinsic and mask rewrites now have a private node-dispatch path
 for inserted operations, including FFR stores and reloads after calls. Fixed-width
 true-mask construction uses the native predicate pattern. Scalable vector constants
 now have separate storage, factories, queries, cloning, debug hashing and LSRA
-temporary selection and constant dumps; scalable masks, VN/assertion storage and
-element/folding operations remain explicit limitations. `LowerBlock` initializes
+temporary selection and constant dumps. Raw integral element lookup and
+representability-aware unary folding are also implemented; scalable masks and
+VN/assertion storage remain explicit limitations. `LowerBlock` initializes
 FFR-trashed state, and switch lowering supports ARM64 bit tests and jump tables.
 `DoPhase`, allocation and emission remain separate. Managed target tests do not establish
 ARM64 execution or generated-code parity.
@@ -1517,8 +1518,10 @@ comparisons have managed target coverage, not ARM64 generated-code execution.
 
 `Compiler.gtNewConWithPattern` implements scalar, fixed-width and ARM64 scalable
 vector byte patterns. Scalable zero/all-ones factories and cloning likewise
-preserve the separate payload. Fixed-byte access and unported element/folding
-consumers reject scalable values instead of treating them as SIMD16.
+preserve the separate payload. Fixed-byte access and unsupported element/binary
+consumers reject scalable values instead of treating them as SIMD16. Native's
+ordinary GetElement/SetElement and EvaluateBroadcastInPlace switches also omit
+`TYP_SIMD`; those gates are not missing scalable translations.
 
 `CallArgs.AddFinalArgsAndDetermineAbiInfo` implements outgoing argument
 classification and non-standard argument insertion for Windows x64. Its Wasm
@@ -1539,7 +1542,10 @@ dump and generated-code parity remain unverified.
 and `RewriteSubLshDiv` explicitly throw for their unported ARM64 mask-reduction
 and arithmetic rewrites. Non-xarch constant/variable shuffle factories and
 target-specific hardware immediate/MSB rationalization paths likewise throw.
-`GenTree.GetIntegralVectorConstElement` defers ARM64 scalable-vector storage.
+`GenTree.GetIntegralVectorConstElement` supports ARM64 scalable payloads using
+the native raw 64-bit sequence arithmetic, without narrow-element truncation or
+signed extension. `TryEvaluateUnaryInPlace` folds representable scalable results
+and leaves the tree unchanged otherwise.
 The mixed-target native hardware bodies remain in the residual tree; this
 batch establishes Windows-x64 rationalization, not other-target execution.
 

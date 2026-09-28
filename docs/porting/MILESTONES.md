@@ -16,6 +16,24 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Scalable element lookup and unary folding
+
+Scalable integral element lookup now follows native raw 64-bit arithmetic.
+Unary folding preserves repeated, sequence or scalar representation when
+possible, including exact floating bits and signed zero; unsupported narrow
+leading-zero counts and unrepresentable upper lanes leave the tree unchanged.
+
+Full-analysis managed ARM64 coverage passes 145 Debug/128 Release cases and
+Windows folding/tree controls pass 76 Debug/76 Release. Ordinary native
+GetElement/SetElement and broadcast helpers also lack scalable support, so those
+managed gates remain. Public allocation and ARM64 execution/parity stay separate.
+
+Native retirement has advanced through `d1ac17a`, removing 1551 lines since the
+recovered boundary. Separately, 370 lines restore the prematurely removed
+`gtDispConst` and its declaration because scalable-mask dumping is unfinished.
+The restored function matches the pinned oracle. Neither removal counts nor
+a clean tree establish catch-up.
+
 ## 2026-09-28: Scalable vector constant dumps
 
 ARM64 constant dumps now print repeated, sequence and scalar values in the native

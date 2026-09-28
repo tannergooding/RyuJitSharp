@@ -3,8 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
-
 namespace RyuJitSharp;
 
 public partial class GenTree
@@ -17,7 +15,17 @@ public partial class GenTree
 #if TARGET_ARM64
             if (Type is TYP_SIMD)
             {
-                throw new NotImplementedException("ARM64 scalable vector constant element lookup is not ported.");
+                ref var value = ref AsVecCon().SimdScalableVal;
+                assert(baseType == value.BaseType);
+
+                // Native uses raw 64-bit arithmetic here, without narrowing to the element width.
+                return value.Kind switch {
+                    SimdScalableKind.SimdScalableRepeated => value.Index.u64[0],
+                    SimdScalableKind.SimdScalableSequence =>
+                        unchecked(value.Index.u64[0] + (value.Step.u64[0] * (ulong)index)),
+                    SimdScalableKind.SimdScalableScalar => index == 0 ? value.Index.u64[0] : 0,
+                    _ => throw new FatalJitException("Unexpected scalable vector constant kind."),
+                };
             }
 #endif
             var integralType = baseType switch {

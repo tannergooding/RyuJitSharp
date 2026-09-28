@@ -365,9 +365,13 @@ public sealed class GenTreeVecCon : GenTree
 #if TARGET_ARM64
             case TYP_SIMD:
             {
-                NYI("ARM64 scalable vector unary evaluation");
-                fatal(CORJIT_IMPLLIMITATION);
-                return false;
+                if (!TryEvaluateUnarySimdScalable(oper, scalar, baseType, out var result, _simdScalableVal))
+                {
+                    return false;
+                }
+                _simdScalableVal = result;
+
+                return true;
             }
 #endif
 

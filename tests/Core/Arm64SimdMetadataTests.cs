@@ -7,9 +7,11 @@ using System.IO;
 using System.Text;
 #endif
 using NUnit.Framework;
+using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.regNumber;
+using static RyuJitSharp.SimdScalableKind;
 using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
@@ -184,6 +186,94 @@ internal static class Arm64SimdMetadataTests
         };
 
         _ = Assert.Throws<FatalJitException>(operation);
+    }
+
+    [TestCase(TYP_BYTE, SimdScalableKind.SimdScalableRepeated, 0xFFUL, 0UL, 3, 0xFFUL)]
+    [TestCase(TYP_BYTE, SimdScalableKind.SimdScalableSequence, 0xFFUL, 1UL, 1, 0x100UL)]
+    [TestCase(TYP_SHORT, SimdScalableKind.SimdScalableSequence, 0xFFFFUL, 1UL, 2, 0x10001UL)]
+    [TestCase(TYP_INT, SimdScalableKind.SimdScalableSequence, 0xFFFF_FFFFUL, 1UL, 2, 0x1_0000_0001UL)]
+    [TestCase(TYP_LONG, SimdScalableKind.SimdScalableSequence, ulong.MaxValue, 1UL, 2, 1UL)]
+    [TestCase(TYP_ULONG, SimdScalableKind.SimdScalableSequence, 1UL, ulong.MaxValue, 2, ulong.MaxValue)]
+    [TestCase(TYP_FLOAT, SimdScalableKind.SimdScalableRepeated, 0x8000_0000UL, 0UL, 1, 0x8000_0000UL)]
+    [TestCase(TYP_DOUBLE, SimdScalableKind.SimdScalableRepeated, 0x7FF8_0000_0000_1234UL, 0UL, 1, 0x7FF8_0000_0000_1234UL)]
+    [TestCase(TYP_INT, SimdScalableKind.SimdScalableScalar, 0xFFFF_FFFFUL, 0UL, 0, 0xFFFF_FFFFUL)]
+    [TestCase(TYP_INT, SimdScalableKind.SimdScalableScalar, 0xFFFF_FFFFUL, 0UL, 1, 0UL)]
+    public static void IntegralScalableElementLookupPreservesNativeRaw64BitArithmetic(
+        var_types baseType, SimdScalableKind kind, ulong indexValue, ulong step, int elementIndex, ulong expected)
+    {
+        var compiler = JitTls.Compiler ?? throw new AssertionException("The fixture compiler is not initialized.");
+        var node = compiler.gtNewSimdVconNode(TYP_SIMD, baseType, kind, indexValue, step);
+
+        Assert.That(node.GetIntegralVectorConstElement(elementIndex, baseType), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public static void FixedIntegralVectorLookupStillSignExtendsSignedElements()
+    {
+        var node = new GenTreeVecCon(TYP_SIMD16);
+        node.SimdVal.u64[0] = ulong.MaxValue;
+
+        Assert.That(node.GetIntegralVectorConstElement(0, TYP_BYTE), Is.EqualTo(ulong.MaxValue));
+        Assert.That(node.GetIntegralVectorConstElement(0, TYP_SHORT), Is.EqualTo(ulong.MaxValue));
+        Assert.That(node.GetIntegralVectorConstElement(0, TYP_INT), Is.EqualTo(ulong.MaxValue));
+        Assert.That(node.GetIntegralVectorConstElement(0, TYP_UBYTE), Is.EqualTo(0xFFUL));
+        Assert.That(node.GetIntegralVectorConstElement(0, TYP_USHORT), Is.EqualTo(0xFFFFUL));
+        Assert.That(node.GetIntegralVectorConstElement(0, TYP_UINT), Is.EqualTo(0xFFFF_FFFFUL));
+    }
+
+    [TestCase(GT_NEG, false, TYP_BYTE, SimdScalableRepeated, 0x80UL, 0UL, SimdScalableRepeated, 0x80UL, 0UL)]
+    [TestCase(GT_NOT, false, TYP_UBYTE, SimdScalableRepeated, 0xA5UL, 0UL, SimdScalableRepeated, 0x5AUL, 0UL)]
+    [TestCase(GT_NEG, false, TYP_SHORT, SimdScalableRepeated, 0x8000UL, 0UL, SimdScalableRepeated, 0x8000UL, 0UL)]
+    [TestCase(GT_NOT, false, TYP_USHORT, SimdScalableRepeated, 0x1234UL, 0UL, SimdScalableRepeated, 0xEDCBUL, 0UL)]
+    [TestCase(GT_NEG, false, TYP_INT, SimdScalableSequence, 1UL, 2UL, SimdScalableSequence, 0xFFFF_FFFFUL, 0xFFFF_FFFEUL)]
+    [TestCase(GT_NOT, false, TYP_UINT, SimdScalableSequence, 1UL, 2UL, SimdScalableSequence, 0xFFFF_FFFEUL, 0xFFFF_FFFEUL)]
+    [TestCase(GT_NEG, false, TYP_LONG, SimdScalableSequence, 1UL, 2UL, SimdScalableSequence, ulong.MaxValue, ulong.MaxValue - 1)]
+    [TestCase(GT_LZCNT, false, TYP_ULONG, SimdScalableRepeated, 1UL, 0UL, SimdScalableRepeated, 63UL, 0UL)]
+    [TestCase(GT_LZCNT, false, TYP_INT, SimdScalableSequence, 0x10UL, 0UL, SimdScalableRepeated, 27UL, 0UL)]
+    [TestCase(GT_LZCNT, false, TYP_INT, SimdScalableSequence, 0UL, 0UL, SimdScalableRepeated, 32UL, 0UL)]
+    [TestCase(GT_NEG, false, TYP_INT, SimdScalableScalar, 1UL, 0UL, SimdScalableScalar, 0xFFFF_FFFFUL, 0UL)]
+    [TestCase(GT_NOT, false, TYP_INT, SimdScalableScalar, 0UL, 0UL, SimdScalableRepeated, 0xFFFF_FFFFUL, 0UL)]
+    [TestCase(GT_NEG, true, TYP_FLOAT, SimdScalableRepeated, 0x3F80_0000UL, 0UL, SimdScalableScalar, 0xBF80_0000UL, 0UL)]
+    [TestCase(GT_NEG, false, TYP_FLOAT, SimdScalableRepeated, 0UL, 0UL, SimdScalableRepeated, 0x8000_0000UL, 0UL)]
+    [TestCase(GT_NEG, false, TYP_FLOAT, SimdScalableSequence, 0x3F80_0000UL, 0x8000_0000UL,
+        SimdScalableSequence, 0xBF80_0000UL, 0UL)]
+    [TestCase(GT_NOT, false, TYP_FLOAT, SimdScalableRepeated, 0x7FC0_1234UL, 0UL, SimdScalableRepeated, 0x803F_EDCBUL, 0UL)]
+    [TestCase(GT_LZCNT, false, TYP_FLOAT, SimdScalableRepeated, 0UL, 0UL, SimdScalableRepeated, 32UL, 0UL)]
+    [TestCase(GT_NEG, false, TYP_DOUBLE, SimdScalableRepeated, 0UL, 0UL,
+        SimdScalableRepeated, 0x8000_0000_0000_0000UL, 0UL)]
+    public static void ScalableUnaryFoldingPreservesRepresentableKindsAndExactBits(
+        genTreeOps oper, bool scalar, var_types baseType, SimdScalableKind kind, ulong index, ulong step,
+        SimdScalableKind expectedKind, ulong expectedIndex, ulong expectedStep)
+    {
+        var compiler = JitTls.Compiler ?? throw new AssertionException("The fixture compiler is not initialized.");
+        var node = compiler.gtNewSimdVconNode(TYP_SIMD, baseType, kind, index, step);
+
+        Assert.That(node.TryEvaluateUnaryInPlace(oper, scalar, baseType), Is.True);
+        Assert.That(node.SimdScalableVal.BaseType, Is.EqualTo(baseType));
+        Assert.That(node.SimdScalableVal.Kind, Is.EqualTo(expectedKind));
+        Assert.That(node.SimdScalableVal.Index.u64[0], Is.EqualTo(expectedIndex));
+        Assert.That(node.SimdScalableVal.Step.u64[0], Is.EqualTo(expectedStep));
+    }
+
+    [TestCase(GT_LZCNT, TYP_BYTE, SimdScalableRepeated, 1UL, 0UL)]
+    [TestCase(GT_LZCNT, TYP_UBYTE, SimdScalableRepeated, 1UL, 0UL)]
+    [TestCase(GT_LZCNT, TYP_SHORT, SimdScalableRepeated, 1UL, 0UL)]
+    [TestCase(GT_LZCNT, TYP_USHORT, SimdScalableRepeated, 1UL, 0UL)]
+    [TestCase(GT_LZCNT, TYP_INT, SimdScalableSequence, 1UL, 1UL)]
+    [TestCase(GT_NOT, TYP_FLOAT, SimdScalableSequence, 0x3F80_0000UL, 0x3F80_0000UL)]
+    [TestCase(GT_NEG, TYP_FLOAT, SimdScalableScalar, 0x3F80_0000UL, 0UL)]
+    [TestCase(GT_NEG, TYP_DOUBLE, SimdScalableScalar, 0x3FF0_0000_0000_0000UL, 0UL)]
+    [TestCase(GT_NOT, TYP_INT, SimdScalableScalar, 1UL, 0UL)]
+    [TestCase(GT_LZCNT, TYP_INT, SimdScalableScalar, 1UL, 0UL)]
+    public static void UnrepresentableScalableUnaryResultsLeaveTheTreeUnchanged(
+        genTreeOps oper, var_types baseType, SimdScalableKind kind, ulong index, ulong step)
+    {
+        var compiler = JitTls.Compiler ?? throw new AssertionException("The fixture compiler is not initialized.");
+        var node = compiler.gtNewSimdVconNode(TYP_SIMD, baseType, kind, index, step);
+        var original = node.SimdScalableVal;
+
+        Assert.That(node.TryEvaluateUnaryInPlace(oper, false, baseType), Is.False);
+        Assert.That(node.SimdScalableVal, Is.EqualTo(original));
     }
 
 #if DEBUG
