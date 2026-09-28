@@ -16,6 +16,14 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: SIMD length support completed
+
+Both native SIMD-length overloads are implemented, including unsigned byte-size
+division and type-handle recognition with its existing SIMD-use tracking.
+Focused SIMD recognition coverage passes 79 Debug and 79 Release cases. The
+type-handle overload has no pinned native callers; this completes retained
+support, not a newly reachable code-generation path.
+
 ## 2026-09-28: Concurrent and reentrant primary compilation
 
 The managed entry no longer serializes all compilations for debugging. Shared

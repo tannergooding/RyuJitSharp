@@ -16,6 +16,14 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "simdLengthSupport": {
+      "scope": "Complete both FEATURE_SIMD Compiler::getSIMDVectorLength overloads from pinned simd.cpp; the type-handle overload has no pinned native callers.",
+      "mapping": "Compiler.cs preserves the public static unsigned-size overload and private type-handle overload. Recognition delegates to getBaseTypeAndSizeOfSimdType, including ISA/metadata checks and SIMD-use tracking.",
+      "arithmetic": "Divide the unsigned byte size by the base-type size before converting the quotient to int. Reinterpret the recognizer's signed size as uint so scalable SIZE_UNKNOWN retains its native bit pattern; do not reuse signed ElementCount arithmetic or invent a zero fallback.",
+      "validation": "All27 new cases fail before implementation with MissingMethodException. Full-analysis SimdTypeTests and SIMDImportTests pass79Debug/79Release after implementation, covering unsigned high-bit/sentinel arithmetic, fixed and generic Numerics lengths, recognition side effects and rejection of an unknown handle.",
+      "reproduction": "dotnet test tests/Core/RyuJitSharp.UnitTests.csproj -c Debug -r win-x64 --filter \"FullyQualifiedName~SimdTypeTests|FullyQualifiedName~SIMDImportTests\"; repeat in Release. Fresh logs and TRX are under artifacts/operation-costs with simd-length prefixes.",
+      "limits": "Unused support completion, not a reachable Windows codegen fix or new execution/parity result."
+    },
     "compilerConcurrency": {
       "scope": "R001/B002: remove the temporary process-wide compileMethod lock after B442 shared-writer and B443 Debug TLS corrections.",
       "sharedStateReview": "Fresh Compiler instances and thread-local nested restoration remain per compilation. Timing CSV/summary, inline XML and replay-read locks are preserved. Config arrays publish fully built local arrays. Native-style lazy initialization and optional counter quirks remain unchanged, not silently fixed as port-only behavior.",
@@ -721,7 +729,7 @@
       ],
       "remaining": "Continue the full already-completed-code cleanup, distinguishing unreconciled areas from genuine target/CFI/optional-statistics gaps. emitGenIG/emitSavIG retain architecture/statistics paths, genCreateTempLabel retains Unix x86, and genGetRegMask retains ARM floating support. No new default Windows emission gap was established; the earlier blanket claim is withdrawn. Complete bodies are not retained merely because unfinished native callers reference them. Notify the user when the full cleanup is done.",
       "verification": "Latest collected native cleanup is252644817e7. Report82 restores the63-line SIMD length support removed by packet81: the unused type-handle overload has no complete managed equivalent. Report79's202-line classifier retirement remains valid. Native index/worktree and oracle tracked source/index were clean at the reported boundary. Retirement adds no parity evidence.",
-      "targetLedger": "Collected report82 covers291 overlapping records:267 implemented,7 partial,1 unported,14 unknown and2 not-applicable, not unique functions or a compiler-completion percentage. SIMD recognition is partial native-source coverage because an unused type-handle helper is untranslated, not a demonstrated reachable Windows gap. Unknown file-only umbrellas retain explicit coverage boundaries from report80. Composed arithmetic or absent callers do not establish a whole-function port. R001 closure is newer than the worker's consumed cursor.",
+      "targetLedger": "Collected report83 covers291 overlapping records:268 implemented,6 partial,1 unported,14 unknown and2 not-applicable, not unique functions or a compiler-completion percentage. R001 closure is consumed through089b27f; compileMethod was already absent and adds no deletion. SIMD length support is now implemented by checkpoint.simdLengthSupport but awaits ledger consumption and retirement. Unknown file-only umbrellas retain explicit coverage boundaries from report80. Composed arithmetic or absent callers alone do not establish a whole-function port.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
       "policy": "Retire only reviewed complete implementations. Retain or explicitly identify unfinished shared/Windows paths and other-platform-only paths. Preserve the oracle and existing index distinctions; do not infer parity or percentages from deletion counts."
     },
@@ -1190,7 +1198,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Send committed B443/R001 evidence to worker4b57b744 for ledger consumption, then close the concrete untranslated getSIMDVectorLength(typeHnd) support restored by report82 at native252644817e7 using the pinned whole-function contract and existing SIMD type-recognition tests. This is unused support, not a discovered reachable Windows codegen bug. Do not repeat shared-state or overlap-only umbrella audits. Preserve B365/B394 upstream reports and native initialization quirks. B153/D009 and ARM64 foreground expansion remain deferred.",
+    "nextAction": "Send committed simdLengthSupport to worker4b57b744 for restored whole-function retirement. Continue the concrete optional COUNT_BASIC_BLOCKS statistics closure, including B385 reachability convergence counts and existing unresolved bbCntTable/bbOneBBSizeTable consumers, using the pinned complete contract and existing histogram support. Do not restart B392 collection/hash-policy review or shared-state umbrella audits. Preserve B365/B394 upstream reports and native initialization quirks. B153/D009 and ARM64 foreground expansion remain deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
@@ -9756,7 +9764,8 @@
       "area": "simd-recognition",
       "native": ["src\\coreclr\\jit\\simd.cpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.cs", "sources\\Core\\jit\\compiler\\Compiler.lva.cs"],
-      "reconciledCommit": null
+      "reconciledCommit": null,
+      "scope": "Compiler.cs now also implements both complete getSIMDVectorLength overloads, including native unsigned division and the private type-handle recognition wrapper; see checkpoint.simdLengthSupport. No new callsites or whole-file execution claim."
     },
     {
       "area": "register-temporaries",

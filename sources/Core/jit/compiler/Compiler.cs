@@ -2586,6 +2586,18 @@ public partial class Compiler
     }
 
 #if FEATURE_SIMD
+    public static int getSIMDVectorLength(uint simdSize, var_types baseType)
+    {
+        return unchecked((int)(simdSize / (uint)baseType.Size));
+    }
+
+    private unsafe int getSIMDVectorLength(CORINFO_CLASS_HANDLE typeHnd)
+    {
+        var baseType = getBaseTypeAndSizeOfSimdType(typeHnd, out var sizeBytes);
+
+        return getSIMDVectorLength(unchecked((uint)sizeBytes), baseType);
+    }
+
     /// <summary>Return the base type and size of simd vector type given its type handle.</summary>
     /// <param name="typeHnd">The handle of the type we're interested in.</param>
     /// <param name="sizeBytes">set to size in bytes.</param>
