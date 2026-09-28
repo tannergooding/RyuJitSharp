@@ -16,6 +16,13 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "primaryDivRemExecution": {
+      "scope": "Direct32/64-bit signed/unsigned X86Base.DivRem and native-sized aliases on Windows AMD64.",
+      "validation": "648independent Python-oracle operand cases,1944quotient/remainder component checks. Both primary processes match18raw slices/sixcomplete traces; all six bodies emit div/idiv using EDX:EAX or RDX:RAX. Quotients are constrained to representable instruction range.",
+      "sourceSnapshot": "a14320c0050db478282d1c441d958f7996853f3c",
+      "evidence": "artifacts/primary-divrem/evidence.json",
+      "remaining": "No divide-error exception or other-target claim. Next bounded Windows boundary: checked/unchecked floating-to-integral conversions."
+    },
     "structIntrinsicLayouts": {
       "scope": "B435: supply the missing derived layout method that caused infinite base redispatch during BigMul import.",
       "mapping": "gentree.cpp GenTreeHWIntrinsic::GetLayout -> gentree/GenTreeHWIntrinsic.cs.",
@@ -634,7 +641,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "B435 closes wide-integer primary stack overflow and arithmetic/runtime-helper parity. Next execute direct signed/unsigned X86Base.DivRem at32/64bits, checking both return components and actual multireg lowering. Preserve retained other-target paths.",
+      "parentScope": "Wide arithmetic and direct DivRem now match with both tuple components consumed. Next execute checked/unchecked floating-to-integral conversions across rounding, range, infinity and NaN boundaries. Preserve retained other-target paths.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1029,7 +1036,7 @@
         }
       ]
     },
-    "nextAction": "B435 corrected missing GenTreeHWIntrinsic.GetLayout; wide arithmetic passes4440checks and17runtime/wrapper bodies match51raw slices/17complete traces usinga14320c0. Next inspect pinned X86Base.DivRem signatures and execute four no-inline signed/unsigned32/64-bit wrappers with representable quotient boundaries and independently computed quotient/remainder. Use primary-wide-integer/jit-1 and compare-complete.py; require actual multireg intrinsic lowering and follow first discrepancy. ResidualGetLayout restored at711cdfc48d9 for SVE runtime-length NYI. Worker idle; B153/D009, B365 and ARM64 foreground expansion deferred.",
+    "nextAction": "Direct DivRem verifies1944components and sixexact bodies usinga14320c0. Next read CodeGen.FloatingCasts.cs and corresponding pinned casts/lowering contracts; execute no-inline checked/unchecked float/double-to-int/uint/long/ulong probes across fractions, boundaries, signed zero, infinity and NaN. Establish exact pinned unchecked semantics before generating expectations. Use primary-wide-integer/jit-1 and compare-complete.py, follow first discrepancy. Worker idle; B153/D009, B365 and ARM64 foreground expansion deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
