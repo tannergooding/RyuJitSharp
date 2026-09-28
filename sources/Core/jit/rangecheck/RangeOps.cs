@@ -101,8 +101,8 @@ public static class RangeOps
     {
         var result = new Range(new Limit(LimitType.Unknown));
         if (!right.IsConstantRange() ||
-            ((uint)right.LowerLimit.GetConstant() > 31) ||
-            ((uint)right.UpperLimit.GetConstant() > 31))
+            (unchecked((uint)right.LowerLimit.GetConstant()) > 31) ||
+            (unchecked((uint)right.UpperLimit.GetConstant()) > 31))
         {
             return result;
         }

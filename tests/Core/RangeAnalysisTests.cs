@@ -167,6 +167,47 @@ internal static unsafe class RangeAnalysisTests
         });
     }
 
+    [TestCase(-1, -1, false)]
+    [TestCase(-1, -1, true)]
+    [TestCase(int.MinValue, -1, false)]
+    [TestCase(int.MinValue, -1, true)]
+    [TestCase(-1, 31, false)]
+    [TestCase(-1, 31, true)]
+    [TestCase(0, 32, false)]
+    [TestCase(0, 32, true)]
+    [TestCase(32, int.MaxValue, false)]
+    [TestCase(32, int.MaxValue, true)]
+    public static void RightShiftRejectsOutOfRangeCounts(int low, int high, bool logical)
+    {
+        var left = new Range(new Limit(LimitType.Constant, 64), new Limit(LimitType.Constant, 1024));
+        var right = new Range(new Limit(LimitType.Constant, low), new Limit(LimitType.Constant, high));
+
+        var result = RangeOps.ShiftRight(left, right, logical);
+
+        Assert.That(result.LowerLimit.IsUnknown, Is.True);
+        Assert.That(result.UpperLimit.IsUnknown, Is.True);
+    }
+
+    [TestCase(0, 0, 64, 1024, false)]
+    [TestCase(0, 0, 64, 1024, true)]
+    [TestCase(0, 31, 0, 1024, false)]
+    [TestCase(0, 31, 0, 1024, true)]
+    [TestCase(1, 3, 8, 512, false)]
+    [TestCase(1, 3, 8, 512, true)]
+    [TestCase(31, 31, 0, 0, false)]
+    [TestCase(31, 31, 0, 0, true)]
+    public static void RightShiftPreservesValidCountBounds(int low, int high, int expectedLow, int expectedHigh,
+        bool logical)
+    {
+        var left = new Range(new Limit(LimitType.Constant, 64), new Limit(LimitType.Constant, 1024));
+        var right = new Range(new Limit(LimitType.Constant, low), new Limit(LimitType.Constant, high));
+
+        var result = RangeOps.ShiftRight(left, right, logical);
+
+        Assert.That(result.IsConstantRange(), Is.True);
+        Assert.That((result.LowerLimit.Constant, result.UpperLimit.Constant), Is.EqualTo((expectedLow, expectedHigh)));
+    }
+
     [TestCase(32, 0, int.MaxValue)]
     [TestCase(63, 0, int.MaxValue)]
     [TestCase(31, null, null)]
