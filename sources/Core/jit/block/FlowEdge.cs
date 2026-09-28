@@ -67,6 +67,7 @@ public sealed class FlowEdge
 
         set
         {
+            assert(_visited != value);
             _visited = value;
         }
     }

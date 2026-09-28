@@ -16,6 +16,15 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: CFG debug invariants
+
+Flow-edge visitation now checks state transitions, and block-list iterators
+verify that the current block remains doubly linked while allowing edits
+elsewhere. Basic-block membership always searches in Debug; scratch-range
+membership retains the optional expensive-check gate. Ten regression cases
+fail with the original behavior, with five controls passing. CFG and layout
+coverage passes 156 Debug/141 Release cases without changing Release behavior.
+
 ## 2026-09-27: SysV helper-driven code generation
 
 SysV x64 now generates return traps, checked/unchecked write barriers and

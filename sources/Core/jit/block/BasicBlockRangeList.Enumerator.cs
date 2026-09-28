@@ -35,6 +35,9 @@ public partial struct BasicBlockRangeList
 
             if (current is not null)
             {
+                // Adjacent blocks may change, but the current block must remain in the list.
+                assert((current.Next is null) || (current.Next.Prev == current));
+                assert((current.Prev is null) || (current.Prev.Next == current));
                 current = current.Next;
             }
             else

@@ -16,6 +16,12 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "cfgDebugClosure": {
+      "scope": "B393 edge visit transitions, unconditional DEBUG BasicBlock.Contains and current-block double-link invariants in both block-list enumerators.",
+      "mapping": "block.h:681-691,1896-1907,1934-1963 -> FlowEdge.cs, BasicBlock.cs and BasicBlockSimpleList/BasicBlockRangeList.Enumerator.cs.",
+      "validation": "156 Debug / 141 Release full-analysis CFG, LIR, layout and block-transformation cases. Original behavior fails 10 of 15 regression cases, with five controls. artifacts/cfg-debug-closure/cfg-original-behavior.trx and cfg-area-{debug,release}-final.trx.",
+      "limits": "Preserves optional scratch-range checking and Release behavior; no generated-code parity claim."
+    },
     "sysvHelperCodeGeneration": {
       "scope": "Return traps, profiler enter/leave/tailcall callbacks and write barriers, with register consumption/reloads and caller-SP offset dependencies.",
       "mapping": "codegenxarch.cpp -> CodeGen.ReturnTraps.cs/Profiling.cs/ProfilingEntry.cs; codegencommon.cpp -> CodeGen.WriteBarriers.cs; codegenlinear.cpp -> CodeGen.ConsumeRegisters.cs/UnspillRegisters.cs; lclvars.cpp -> Compiler.FrameOffsets.cs.",
@@ -111,7 +117,7 @@
         "block.cpp retains CanRemoveJumpToTarget for Wasm try/exnref-wrapper interval handling; managed Windows behavior is complete and Wasm fails explicitly.",
         "B392 retains the block-key hash helper for unresolved managed map hash-stress policy; predecessor shuffling is separately implemented.",
         "StatementCountExceeds has no pinned callsites and remains unused legacy support, not an identified mandatory phase gap.",
-        "B393 retains edge visit-state assertions, unconditional DEBUG block membership and block-iterator mutation checks, with supporting range models.",
+        "B393 edge visit-state assertions, unconditional DEBUG block membership and block-iterator mutation checks are complete and await the next broad retirement batch.",
         "Raw target-block getters and range ComplexityExceeds have no pinned callsites and remain unused support. emitCodeGetCookie remains because its managed helper is only declared under TARGET_AMD64."
       ],
       "remaining": "VN and EH/block areas are reconciled with explicit retained boundaries. Continue broader compiler inline/frontend source areas, using existing complete-function mappings and explicit NYIs instead of re-auditing every helper. Notify the user when the full runtime-port cleanup is done.",
@@ -578,7 +584,7 @@
         }
       ]
     },
-    "nextAction": "Continue overnight without stopping at milestones; periodically check breadth and validation cadence. Windows foreground: custom-awaiter importer is complete; restore B393 FlowEdge visit-state, BasicBlock membership and range-iterator link invariants as one CFG debug-support area. ARM64 block/switch and rationalization are integrated; continue optimizer range/CSE/induction target dependencies. SysV helper-driven return traps, profiling and write barriers are integrated; continue prolog/epilog and callee-save handling. Native cleanup runs concurrently against committed source; amend only its Remove ported code commit, last recorded at 702c6b0b10b5db531fa33d86948cdf2ef6b048f6, including B388/B389 retirement. No routine snapshots or per-helper validation/documentation cycles. Keep the oracle pinned and notify the user when full native cleanup is finished.",
+    "nextAction": "Continue overnight without stopping at milestones; periodically check breadth and validation cadence. Windows foreground: custom-awaiter import and B393 CFG invariants are complete; resolve recorded B376 frame-location diagnostic padding and B378 boxed ValueSize equality, then continue concrete Windows gaps identified by native cleanup. ARM64 continues optimizer range/CSE/induction target dependencies. SysV continues prolog/epilog and callee-save handling. Native cleanup runs concurrently against committed source; amend only its Remove ported code commit, last recorded at 702c6b0b10b5db531fa33d86948cdf2ef6b048f6. No routine snapshots or per-helper validation/documentation cycles. Keep the oracle pinned and notify the user when full native cleanup is finished.",
     "arm64BlockAndSwitchLowering": {
       "scope": "ARM64 LowerBlock candidate/FFR initialization, LowerSwitch and TryLowerSwitchToBitTest.",
       "mapping": "lower.cpp block/switch lowering -> Lowering.BlockTraversal.cs and Lowering.Switches.cs, preserving ARM64 shift/AND/branch construction.",

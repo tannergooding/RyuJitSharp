@@ -1088,6 +1088,23 @@ public sealed partial class BasicBlock : LIR.Range
         return (bbFlags & flag) != 0;
     }
 
+#if DEBUG
+    public new bool Contains(GenTree node)
+    {
+        assert(IsLIR);
+
+        foreach (var candidate in this)
+        {
+            if (candidate == node)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+#endif
+
     public void MakeLir(GenTree? firstNode, GenTree? lastNode)
     {
         assert(!IsLIR);
