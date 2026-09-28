@@ -18,10 +18,10 @@
       "startIndexCommit": "4816a0d823a22b12e2f5de4686bba6201ff08a0b",
       "protectedRef": "refs/porting/snapshots/residual-reconcile-start-20260927",
       "startTree": "59d3dbb096ebc96e66e006f75d77176444088d8c",
-      "latestSnapshot": "37caf2cf87b9186b38572d5e21f5bc6663dbe376",
-      "latestIndexCommit": "541e50532f5df7d679795d13915322b53b6fe516",
-      "latestProtectedRef": "refs/porting/snapshots/residual-cse-20260927",
-      "latestTree": "ba7f61e7826f3e9dcbac58fe85bae140a9a9fa23",
+      "latestSnapshot": "d9bc5e7db9d0e75d9b2e3e395a962089b94fe1c0",
+      "latestIndexCommit": "6c23237525c18d77ad0c541d1a3a8bd58e3a37b5",
+      "latestProtectedRef": "refs/porting/snapshots/residual-assertions-20260927",
+      "latestTree": "2eeb2872f6455140ca8d8fa004c7c816d46740f9",
       "startingState": "176 staged paths: one addition, 83 deletions and 92 modifications; no unstaged changes. Original staged content is protected independently of new retirement edits.",
       "retired": [
         "2e6b6e34: gtExtractSideEffectsFromUnusedNode and related declarations. gtExtractSideEffList's native body had already been removed; its former absence was not used as evidence of completion.",
@@ -34,7 +34,8 @@
         "Completed flowgraph.cpp hot/cold-region comparison, static monitor lookup, funclet-prolog helpers, throw helpers, DFS/dominator/frontier construction/query/dump closure and reachability queries/dumps, with associated declarations.",
         "Complete loop-cloning implementation/models/options and complexity support, complete SCEV model/context, and completed induction-variable analysis/transformation/driver closure. Retain the three ARM64 strength-reduction bodies and their cursor/context shell.",
         "Complete early propagation, bounds-check coalescing and redundant-branch phase implementations, with relation models, VN relop mapping/reversal/diagnostics, signed-comparison predicate and associated declarations.",
-        "Completed CSE candidates/dataflow/diagnostics, optional heuristic families, standard ranking, SSA rewriting, production/configuration support and models/declarations. Retain standard Initialize/PromotionCheck and their class/macro support for B386 target costs."
+        "Completed CSE candidates/dataflow/diagnostics, optional heuristic families, standard ranking, SSA rewriting, production/configuration support and models/declarations. Retain standard Initialize/PromotionCheck and their class/macro support for B386 target costs.",
+        "Completed remaining assertion phase, VN folding, arithmetic/relational application, switch facts, forward dataflow and statement propagation, with descriptor queries, relation/equality helpers, non-constant factories, tables and declarations. Restore optConstantAssertionProp from the oracle and retain the generic factory/model support for B387."
       ],
       "remainingHelperTargets": [
         "helperexpansion.cpp now contains only the two TLS call transformations and ReadUtf8. All three are complete for Windows x64.",
@@ -53,8 +54,9 @@
       ],
       "remainingInductionTargets": "inductionvariableopts.cpp retains StrengthReductionContext.CheckAdvancedCursors, FindUpdateInsertionPoint and FindPostUseUpdateInsertionPoint, plus their cursor/context shell. ARM64 address-mode scaling and post-indexed update placement remain explicitly unsupported in managed code; the post-use helper is unported. Windows AMD64 is complete.",
       "remainingCseTargets": "B386: CSE_Heuristic.Initialize and PromotionCheck remain for x86 long stack homes, 32-bit register-pair counting, non-xarch frame thresholds and SMALL_CODE costs. Managed bodies use AMD64 initialization and xarch encoding costs; Windows AMD64 is complete. Pinned CSE_INTO_HANDLERS=0 and CSE_CONSTS=1 match the managed configuration.",
-      "remaining": "Reconcile remaining assertionprop.cpp and its assertion model/declaration closure next. The post-refresh commit queue is not a completeness denominator.",
-      "verification": "CSE retirement removes 5786 lines across exactly three files relative to d9e5e6b, retaining both target-incomplete standard-heuristic bodies. Hashed preimages, ranges, earlier deltas and protected snapshot receipts are in artifacts/residual-reconciliation. Each delta is deletion-only under git diff --minimal. Inherited staging is preserved; no unstaged native changes remain. Oracle tracked source/index are unchanged.",
+      "remainingAssertionTargets": "B387: assertionprop.cpp contains only restored optConstantAssertionProp; compiler.h retains CreateConstLclVarAssertion and descriptor support. Both managed paths explicitly reject ARM64 scalable constants; Windows AMD64 is complete. The earlier local-assertion retirement predates the current mixed-target retention policy; its absence was not evidence of target completion.",
+      "remaining": "Reconcile copyprop.cpp and its driver/context declarations next, then the completed value-numbering implementation and remaining target/optional support. The post-refresh commit queue is not a completeness denominator.",
+      "verification": "Assertion reconciliation changes exactly two files relative to 37caf2c: 76 added / 3443 removed lines, net 3367 removed. Additions restore the complete mixed-target constant-application function and declaration; other changes retire completed code. Final assertionprop.cpp is an unchanged-line subset of the pinned oracle. Delta whitespace checks pass; inherited staging and unrelated whitespace findings are preserved, with no unstaged changes. Oracle tracked source/index are unchanged. Hashes and protected receipts are in artifacts/residual-reconciliation.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
       "policy": "Retire only reviewed complete implementations. Retain or explicitly identify unfinished shared/Windows paths and other-platform-only paths. Preserve the oracle and existing index distinctions; do not infer parity or percentages from deletion counts."
     },
@@ -507,7 +509,7 @@
         }
       ]
     },
-    "nextAction": "Continue native residual reconciliation from protected staged snapshot 37caf2cf87b9186b38572d5e21f5bc6663dbe376; do not reapply prior deletions. Completed CSE implementation is retired; Initialize/PromotionCheck remain for B386 target cost gaps. Next reconcile assertionprop.cpp and its assertion model/declaration closure against integrated mappings, checking the remaining SIMD/HW/32-bit paths. Retain classified target-incomplete bodies and B382-B386 support. Preserve native staging and the oracle; use direct file tools and consolidated hidden process runners rather than focus-stealing PowerShell launches. Pending platform integration commits remain Linux e42864b53384c77e22daefbe743e77023f7a577e and ARM64 0c0d33f22a29cfc79133f93757071914b0cb27e5.",
+    "nextAction": "Continue native residual reconciliation from protected staged snapshot d9bc5e7db9d0e75d9b2e3e395a962089b94fe1c0; do not reapply prior deletions. Completed assertion implementation is retired; optConstantAssertionProp was restored from the pin and its generic factory retained for B387 scalable constants. Next reconcile copyprop.cpp and its driver/context declarations, then completed value-numbering bodies and their target/optional guards. Retain classified target-incomplete bodies and B382-B387 support. Preserve native staging and the oracle; use direct file tools and consolidated hidden process runners rather than focus-stealing PowerShell launches. Pending platform integration commits remain Linux e42864b53384c77e22daefbe743e77023f7a577e and ARM64 0c0d33f22a29cfc79133f93757071914b0cb27e5.",
     "arm64HardwareContainment": {
       "scope": "Complete ARM64 hardware and bounds containment, with MOVI/MVNI byte-shift and doubleword-mask predicates, exact FMOV constants, comparison-zero rules and SVE embedded masking.",
       "mapping": "lowerarmarch.cpp:2033-2060,3805-4225 -> Lowering.Arm64HardwareContainment.cs and Lowering.BoundsChecks.cs; emitarm64.cpp:2451-2483,3113-3207 -> Emitter.ImmediatePredicates.cs. Shared ContainCheckNode now dispatches ARM64 hardware containment; bounds containment remains a separate LowerNode action, matching native.",
@@ -7533,7 +7535,7 @@
       "area": "global-assertion-phase-and-switch-facts",
       "native": ["src\\coreclr\\jit\\assertionprop.cpp:5909-6127,6765-7025", "src\\coreclr\\jit\\valuenum.cpp:16486-16512"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.ap.Phase.cs", "sources\\Core\\jit\\compiler\\Compiler.ap.SwitchAssertions.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.Queries.cs"],
-      "status": "Complete production global assertion phase, switch-implied assertions and int32 offset peeling. NativeAOT execution verified; full diagnostic parity remains open.",
+      "status": "Complete production global assertion phase, switch-implied assertions and int32 offset peeling. NativeAOT execution verified; full diagnostic parity remains open. Completed assertion phase and switch-fact bodies retired from runtime-port.",
       "reconciledCommit": null
     },
     {
@@ -8651,21 +8653,21 @@
       "area": "assertion-arithmetic-and-vn-statements",
       "native": ["src\\coreclr\\jit\\assertionprop.cpp:4222-4353,5020-5178,5651-5826,6483-6499,6553-6757"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.ap.Arithmetic.cs", "sources\\Core\\jit\\compiler\\Compiler.ap.VNStatement.cs"],
-      "status": "Complete native application and per-statement propagation families consumed by the active global assertion phase.",
+      "status": "Complete native application and per-statement propagation families consumed by the active global assertion phase; corresponding assertionprop.cpp bodies retired.",
       "reconciledCommit": null
     },
     {
       "area": "vn-folding-and-statement-morphing",
       "native": ["src\\coreclr\\jit\\assertionprop.cpp:2652-3453,6514-6551", "src\\coreclr\\jit\\morph.cpp:13451-13569"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.ap.VNFolding.cs", "sources\\Core\\jit\\compiler\\Compiler.MorphBlockStmt.cs"],
-      "status": "Complete native function families consumed by the active global assertion phase.",
+      "status": "Complete native function families consumed by the active global assertion phase. Completed assertionprop.cpp folding bodies retired; shared morph support remains separately tracked.",
       "reconciledCommit": null
     },
     {
       "area": "assertion-range-analysis-and-relational-application",
       "native": ["src\\coreclr\\jit\\rangecheck.h", "src\\coreclr\\jit\\rangecheck.cpp", "src\\coreclr\\jit\\assertionprop.cpp"],
       "csharp": ["sources\\Core\\jit\\rangecheck\\", "sources\\Core\\jit\\compiler\\Compiler.ap.Relational.cs"],
-      "status": "Complete Windows-x64 range-analysis dependency and relational application; RangeProperties remains canonical in the relational partial. Global assertion and range-check elimination phases are active. Completed range definitions are retired from runtime-port; GetRangeFromAssertionsWorker and its declaration remain for B383 ARM64 intrinsic bounds. Assertionprop bodies await residual reconciliation.",
+      "status": "Complete Windows-x64 range-analysis dependency and relational application; RangeProperties remains canonical in the relational partial. Global assertion and range-check elimination phases are active. Completed range and assertion-application definitions are retired from runtime-port; GetRangeFromAssertionsWorker and its declaration remain for B383 ARM64 intrinsic bounds.",
       "reconciledCommit": null
     },
     {
@@ -8798,7 +8800,7 @@
       "area": "forward-assertion-dataflow",
       "native": ["src\\coreclr\\jit\\dataflow.h", "src\\coreclr\\jit\\optimizer.cpp:20-23", "src\\coreclr\\jit\\assertionprop.cpp:6181-6480"],
       "csharp": ["sources\\Core\\jit\\dataflow\\DataFlow.cs", "sources\\Core\\jit\\assertionprop\\AssertionPropFlowCallback.cs", "sources\\Core\\jit\\compiler\\Compiler.ap.Dataflow.cs"],
-      "status": "Complete forward traversal and assertion initialization/gen/merge equations consumed by the active phase. Native per-merge tracing remains disabled.",
+      "status": "Complete forward traversal and assertion initialization/gen/merge equations consumed by the active phase. Native per-merge tracing remains disabled. Completed assertion dataflow implementation and declarations retired from runtime-port.",
       "reconciledCommit": null
     },
     {
@@ -8811,6 +8813,7 @@
       "area": "assertion-representation-and-tables",
       "native": ["src\\coreclr\\jit\\assertionprop.cpp", "src\\coreclr\\jit\\compiler.h", "src\\coreclr\\jit\\compiler.hpp", "src\\coreclr\\jit\\valuenum.h"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.AssertionDsc.cs", "sources\\Core\\jit\\compiler\\Compiler.ap.cs", "sources\\Core\\jit\\compiler\\Compiler.opt.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.cs"],
+      "status": "WindowsAMD64 representation/tables complete. Completed descriptor queries, relations/equality, non-constant factories and table state retired. B387 retains the mixed-target constant factory and model support, and restores constant application for ARM64 scalable payloads.",
       "reconciledCommit": null
     },
     {
