@@ -310,6 +310,41 @@ public partial class Compiler
         return HBtab.InFilterRegionILRange(blk);
     }
 
+    /// <inheritdoc cref="fgGetNestingLevel(BasicBlock, out uint)" />
+    public uint fgGetNestingLevel(BasicBlock block) => fgGetNestingLevel(block, out _);
+
+    /// <summary>Returns the block's handler nesting level.</summary>
+    /// <param name="block">The block to query.</param>
+    /// <param name="finallyNesting">The handler nesting level of the innermost finally-protected try, or zero if absent.</param>
+    /// <returns>The number of enclosing handlers.</returns>
+    public uint fgGetNestingLevel(BasicBlock block, out uint finallyNesting)
+    {
+        uint nesting = 0;
+        var tryFinally = uint.MaxValue;
+        for (ushort index = 0; index < compHndBBtabCount; index++)
+        {
+            ref var clause = ref ehGetDsc(index);
+            noway_assert((clause.ebdTryBeg is not null) && (clause.ebdHndBeg is not null));
+
+            if (clause.HasFinallyHandler && (tryFinally == uint.MaxValue) && bbInTryRegions(index, block))
+            {
+                tryFinally = nesting;
+            }
+            else if (bbInHandlerRegions(index, block))
+            {
+                nesting++;
+            }
+        }
+
+        if (tryFinally == uint.MaxValue)
+        {
+            tryFinally = nesting;
+        }
+
+        finallyNesting = nesting - tryFinally;
+        return nesting;
+    }
+
     /// <summary>Given a block, check to see if it is in the handler block of the EH descriptor.</summary>
     /// <param name="regionIndex"></param>
     /// <param name="blk"></param>

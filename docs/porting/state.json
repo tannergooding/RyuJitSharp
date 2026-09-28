@@ -16,6 +16,12 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "ehRegionQueries": {
+      "scope": "Complete unused fgGetNestingLevel and ehTrueEnclosingTryIndexIL without adding callsites. Preserve table order, the first finally-protected try boundary, and IL-span versus normalized-block identity.",
+      "mapping": "fgbasic.cpp:4510-4548 -> Compiler.eh.cs; jiteh.cpp:829-855 -> Compiler.LoopDiscovery.EH.cs alongside the existing post-import helper.",
+      "validation": "Thirteen new query cases; full-analysis EH/loop coverage passes 97 Debug/47 Release. artifacts/lir-closure/tst/Debug/eh-region-queries-debug-2.trx and artifacts/lir-closure-release/tst/Release/eh-region-queries-release-2.trx. Existing handler-before-try fixtures now reset stale first/last links when relinking, preserving production iterator assertions.",
+      "limits": "Legacy support completion, not a newly activated phase or execution/parity result."
+    },
     "lirOperandRangesAndUses": {
       "scope": "GetRangeOfOperandTrees and B397 dummy-use value semantics. Operand-only ranges reuse GetMarkedRange without changing GetTreeRange or adding callsites. Dummy copies keep independent node values; real uses retain shared operand edges.",
       "mapping": "lir.cpp:GetRangeOfOperandTrees -> LIR.Range.cs; native Use copy constructor/assignment and dummy access/replacement -> LIR.Use.cs explicit dummy discriminator.",
@@ -641,7 +647,7 @@
         }
       ]
     },
-    "nextAction": "Continue without stopping at milestones. Parent LIR operand-range and dummy-copy questions are resolved; next reconcile fgGetNestingLevel and ehTrueEnclosingTryIndexIL against the pinned oracle without inventing callsites. ARM64 agent continues consecutive-register selection/assignment and remaining allocation/resolution dependencies; preserve the allocation gate until complete. SysV agent closes root prolog/materialization dependencies, including Vector3 upper-bit clearing and the existing varargs feature boundary; retain B395 NativeAOT CFI rejection. Native cleanup continues classifying genuinely unreconciled backend bodies by targeted source comparison, without repeating behavior/parity validation. Last collected cleanup commit 4ec12e43e91582c3ea727a7f3dd3bf8ef53e9c6c; preserve oracle/recovery refs and notify the user only when full cleanup is established.",
+    "nextAction": "Continue without stopping at milestones. Parent LIR and legacy EH mapping questions are resolved. Review and integrate the delivered SysV root-prolog/materialization packet: CodeGen.Prolog.cs, Calls.cs, StackVectorArguments.cs and target fixtures; verify Vector3 ordering, unsupported varargs/CFI rejection before mutation, and all four final TRX files before committing. ARM64 agent continues consecutive-register selection/assignment and remaining allocation/resolution dependencies; preserve the allocation gate until complete. Native cleanup continues classifying genuinely unreconciled backend bodies by targeted source comparison, without repeating behavior/parity validation. Last collected cleanup commit 4ec12e43e91582c3ea727a7f3dd3bf8ef53e9c6c; preserve oracle/recovery refs and notify the user only when full cleanup is established.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

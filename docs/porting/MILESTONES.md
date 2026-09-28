@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Remaining EH region queries
+
+The legacy `fgGetNestingLevel` query now preserves native handler counting and
+the innermost finally-protected try boundary. `ehTrueEnclosingTryIndexIL`
+compares import-time IL spans rather than normalized block identity, preserving
+the distinction from the existing post-import helper. Neither adds callsites.
+
+Thirteen cases cover nested handlers/finally regions, empty tables, mutually
+protecting clauses and differing IL/block boundaries. Combined EH and loop
+coverage passes 97 Debug/47 Release cases. EH verifier fixtures also clear
+stale list endpoints when relinking blocks; production link assertions remain
+unchanged.
+
 ## 2026-09-27: LIR operand ranges and dummy-use copies
 
 `GetRangeOfOperandTrees` now implements the distinct native operand-only range

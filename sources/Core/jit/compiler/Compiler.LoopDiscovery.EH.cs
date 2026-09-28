@@ -10,6 +10,29 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public ushort ehTrueEnclosingTryIndexIL(ushort regionIndex)
+    {
+        assert(regionIndex != EHblkDsc.NO_ENCLOSING_INDEX);
+        assert(!fgImportDone);
+
+        ref var root = ref ehGetDsc(regionIndex);
+        for (;;)
+        {
+            regionIndex = ehGetDsc(regionIndex).ebdEnclosingTryIndex;
+            if (regionIndex == EHblkDsc.NO_ENCLOSING_INDEX)
+            {
+                break;
+            }
+
+            if (!EHblkDsc.ebdIsSameILTry(root, ehGetDsc(regionIndex)))
+            {
+                break;
+            }
+        }
+
+        return regionIndex;
+    }
+
     public ushort ehTrueEnclosingTryIndex(ushort regionIndex)
     {
         assert(regionIndex != EHblkDsc.NO_ENCLOSING_INDEX);

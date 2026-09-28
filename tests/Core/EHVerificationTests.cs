@@ -525,6 +525,8 @@ internal static unsafe class EHVerificationTests
     {
         compiler.fgFirstBB = blocks[0];
         compiler.fgLastBB = blocks[^1];
+        blocks[0].Prev = null;
+        blocks[^1].Next = null;
         for (var i = 0; i < blocks.Length - 1; i++)
         {
             blocks[i].Next = blocks[i + 1];
