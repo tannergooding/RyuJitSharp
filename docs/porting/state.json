@@ -696,7 +696,7 @@
       ],
       "remaining": "Continue the full already-completed-code cleanup, distinguishing unreconciled areas from genuine target/CFI/optional-statistics gaps. emitGenIG/emitSavIG retain architecture/statistics paths, genCreateTempLabel retains Unix x86, and genGetRegMask retains ARM floating support. No new default Windows emission gap was established; the earlier blanket claim is withdrawn. Complete bodies are not retained merely because unfinished native callers reference them. Notify the user when the full cleanup is done.",
       "verification": "Latest collected native cleanup is 193bd210156 on the pinned source baseline. Report76 retires the complete portable LowerArrLength definition and declaration (70 lines) using approved D002/B064 whole-node replacement and existing tests. Native index/worktree and oracle tracked source/index were clean at that reported boundary. Earlier diagnostic/frame batches and assertion/trace-macro restorations retain their recorded receipts. Retirement adds no parity evidence.",
-      "targetLedger": "Worker4b57b744's local windows-x64-ledger.json baseline covers287 overlapping review records, not unique functions or a compiler-completion percentage. Historical source-map prose must be reconciled with later checkpoint/backlog closure; B231 was incorrectly carried as partial despite being resolved. Nineteen mapping-only families still need evidence classification. Worker owns ledger updates and bulk native retirement; foreground implementation remains independent.",
+      "targetLedger": "Collected report77 covers289 overlapping records:262 implemented,6 partial,1 unported,19 unknown and1 not-applicable, not unique functions or a compiler-completion percentage. B231/B086/B441 closure is reconciled. Eighteen unknowns are file-only umbrellas, fifteen linked to later bounded reviews; overlap alone does not prove whole-family completion. The additional non-minopts allocation unknown is superseded by fba66f05, fullAllocationIntegration and current FullOpts execution, as verified in allocationModeClassification. Report77 deletes no native code. Worker owns ledger updates and bulk retirement.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
       "policy": "Retire only reviewed complete implementations. Retain or explicitly identify unfinished shared/Windows paths and other-platform-only paths. Preserve the oracle and existing index distinctions; do not infer parity or percentages from deletion counts."
     },
@@ -1159,7 +1159,14 @@
         }
       ]
     },
-    "nextAction": "Collect worker4b57b744's corrected target-ledger result on notification, integrate its prioritized concrete Windows gaps, and continue implementation without redoing its source review. Worker owns historical-evidence classification of19 mapping-only unknown families and bulk native retirement. B441 is fixed; B365/B394 have fresh native reproductions and local maintainer reports with no upstream or C# behavioral workaround. B153/D009 and ARM64 foreground expansion remain deferred.",
+    "allocationModeClassification": {
+      "scope": "Resolve the stale allocation-beyond-minopts ledger boundary, not claim exhaustive allocator execution or other-target phase activation.",
+      "implementation": "fba66f05b49fabbc8c94f9d2760597b254870635 activates complete Windows-x64 register allocation. Current DoRegisterAllocation selects local-enabled interval construction/resolution and general allocation for enregistered locals or optimized methods; minopts-only rejection is absent.",
+      "existingReview": "checkpoint.validation.fullAllocationIntegration records complete Windows traversal review and 677 Debug/572 Release, building on generalRegisterSelection and localResolutionDriver.",
+      "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
+      "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
+    },
+    "nextAction": "Review R001 from CILJit.compileMethod's serialization lock and the existing shared/TLS contracts; identify concrete mutable-state and reentrancy blockers before changing concurrency behavior. Allocation-beyond-minopts and the three previously unlinked vector/classification/temporary families now have bounded existing evidence in their mappings; send these committed corrections to worker4b57b744 for ledger consumption without a duplicate code audit. Worker owns remaining umbrella classification and native retirement. B441 is fixed; B365/B394 reports are committed. B153/D009 and ARM64 foreground expansion remain deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
@@ -9278,7 +9285,7 @@
       "csharp": ["sources\\Core\\jit\\lsra\\LinearScan.cs", "sources\\Core\\jit\\lsra\\LinearScan.AllocationStatistics.cs", "sources\\Core\\jit\\lsra\\LinearScan.AllocationDiagnostics.cs", "sources\\Core\\jit\\lsra\\LinearScan.MinimalAllocationTraversal.cs", "sources\\Core\\jit\\lsra\\LinearScan.MinimalCandidates.cs", "sources\\Core\\jit\\lsra\\LinearScan.SelectorHelpers.cs", "sources\\Core\\jit\\lsra\\LinearScan.RegisterAssignment.cs", "sources\\Core\\jit\\lsra\\LinearScan.RegisterLifetime.cs", "sources\\Core\\jit\\target\\regMaskTP.cs", "sources\\Core\\jit\\compiler\\Compiler.fg.cs", "sources\\Core\\jit\\compiler\\Compiler.cs", "sources\\Core\\jit\\codegen\\CodeGen.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Production Windows-AMD64 minopts allocation without enregistered locals is active. Complete textual statistics and morph-time frame/GC option policy are integrated. Unsupported allocation modes and enabled loop alignment reject before their unported work; genGenerateCode remains an explicit emission skip. Full allocation bodies match native for 17/20 methods; native mixed-mode bodies are retained."
+      "status": "Production Windows-AMD64 minimal and optimized allocation are active, including enregistered-local construction/resolution and general register selection. The original minopts-only boundary is superseded by fba66f05 and checkpoint.validation.fullAllocationIntegration; current FullOpts primary execution confirms reachability (checkpoint.allocationModeClassification). Textual statistics and morph-time frame/GC option policy remain integrated. Historical 17/20 minopts allocation-body comparisons are preserved as scoped evidence, not exhaustive parity or other-target completion."
     },
     {
       "area": "lsra-minimal-resolution",
@@ -9636,13 +9643,15 @@
       "area": "vector-constant-evaluation",
       "native": ["src\\coreclr\\jit\\simd.h", "src\\coreclr\\jit\\gentree.cpp"],
       "csharp": ["sources\\Core\\jit\\simd\\Globals.cs", "sources\\Core\\jit\\gentree\\GenTreeVecCon.cs"],
-      "reconciledCommit": null
+      "reconciledCommit": null,
+      "status": "Bounded Windows fixed-width vector unary/binary constant evaluation is implemented. checkpoint.validation.vectorUnaryEvaluation (84bb1dbe) and vectorBinaryEvaluation (d64e3099) record 26/47 new cases and the corresponding source snapshots; mask and creation evaluation have separate checkpoints. This describes the named evaluation family, not every definition in simd.h/gentree.cpp, scalable-target execution or whole-file retirement."
     },
     {
       "area": "hwi-operation-classification",
       "native": ["src\\coreclr\\jit\\gentree.cpp", "src\\coreclr\\jit\\gentree.h"],
       "csharp": ["sources\\Core\\jit\\gentree\\GenTreeHWIntrinsic.Operations.cs", "sources\\Core\\jit\\gentree\\GenTreeVecCon.cs"],
-      "reconciledCommit": null
+      "reconciledCommit": null,
+      "status": "Windows hardware-intrinsic operation/bitwise classification and constant-propagation eligibility are implemented. checkpoint.validation.hwiOperationClassification anchors source snapshot6a69e772, 44 new cases, 146 target-guarded mappings and eight previously retired definitions. Named classification behavior only; not whole gentree files, all constant folding or non-Windows execution."
     },
     {
       "area": "non-hwi-expression-folding",
@@ -9728,8 +9737,9 @@
     {
       "area": "register-temporaries",
       "native": ["src\\coreclr\\jit\\regset.cpp", "src\\coreclr\\jit\\regset.h"],
-      "csharp": ["sources\\Core\\jit\\regsset\\RegSet.cs"],
-      "reconciledCommit": null
+      "csharp": ["sources\\Core\\jit\\regsset\\RegSet.cs", "sources\\Core\\jit\\regsset\\RegSet.Temps.cs", "sources\\Core\\jit\\regsset\\RegSet.TreeSpills.cs"],
+      "reconciledCommit": null,
+      "status": "Windows temporary preallocation, normalized-type acquisition, free/used-list release and reuse are implemented by9ba941f9 (checkpoint.validation.spillTemporarySupport). Tree-spill allocation, lookup, unlinking and descriptor reuse follow in5646c8df (checkpoint.validation.registerValues, 991 Debug/958 Release). Those historical pre-emission limits are superseded by generationDriver and subsequent primary execution. Scope is temporary/spill lifecycle, not every RegSet method or whole-target native retirement."
     },
     {
       "area": "linear-scan-local-candidates",
