@@ -16,6 +16,101 @@ internal static unsafe class CompilerShutdownTests
 {
     private static readonly string[] s_csvConfigurations = ["", "first.csv", "second.csv"];
 
+#if MEASURE_FATAL
+    [Test]
+    public static void FatalCountersPreserveResultsAndReportNativeLabels()
+    {
+        WithState(() => {
+            var saved = (s_fatalBadCodeCount, s_fatalNoWayCount, s_fatalImplLimitationCount,
+                s_fatalNoMemCount, s_fatalNoWayAssertBodyCount, s_fatalNyiCount);
+#if DEBUG
+            var savedArgs = s_fatalNoWayAssertBodyArgsCount;
+            using var tls = new JitTls(null);
+#endif
+            var previousCompiler = JitTls.Compiler;
+            var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+            JitFlags flags = default;
+            compiler.opts.jitFlags = &flags;
+            JitTls.Compiler = compiler;
+            using var output = new MemoryStream();
+            using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
+            s_jitstdout = writer;
+
+            try
+            {
+                s_fatalBadCodeCount = s_fatalNoWayCount = s_fatalImplLimitationCount = 0;
+                s_fatalNoMemCount = s_fatalNoWayAssertBodyCount = s_fatalNyiCount = 0;
+#if DEBUG
+                s_fatalNoWayAssertBodyArgsCount = 0;
+#endif
+                Assert.That(Assert.Throws<FatalJitException>(badCode)?.Result, Is.EqualTo(CorJitResult.CORJIT_BADCODE));
+                Assert.That(Assert.Throws<FatalJitException>(noWay)?.Result, Is.EqualTo(CorJitResult.CORJIT_INTERNALERROR));
+                Assert.That(Assert.Throws<FatalJitException>(implLimitation)?.Result, Is.EqualTo(CorJitResult.CORJIT_IMPLLIMITATION));
+                Assert.That(Assert.Throws<FatalJitException>(NOMEM)?.Result, Is.EqualTo(CorJitResult.CORJIT_OUTOFMEM));
+                Assert.That(Assert.Throws<FatalJitException>(noWayAssertBody)?.Result, Is.EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
+                Assert.That(Assert.Throws<FatalJitException>(() => noWayAssertBody("condition", "a", 1))?.Result,
+                    Is.EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
+                Assert.That(Assert.Throws<FatalJitException>(() => NYIRAW("counted", "a", 1))?.Result,
+                    Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+                Compiler.compShutdown();
+                writer.Flush();
+
+                var expected =
+                    "\n---------------------------------------------------\n" +
+                    "Fatal errors stats\n" +
+                    "---------------------------------------------------\n" +
+                    "   badCode:             1\n" +
+                    "   noWay:               1\n" +
+                    "   implLimitation:      1\n" +
+                    "   NOMEM:               1\n" +
+                    "   noWayAssertBody:     2\n" +
+#if DEBUG
+                    "   noWayAssertBodyArgs: 1\n" +
+#endif
+                    "   NYI:                 1\n";
+
+                Assert.That(Encoding.UTF8.GetString(output.ToArray()), Does.EndWith(expected));
+            }
+            finally
+            {
+                JitTls.Compiler = previousCompiler;
+                (s_fatalBadCodeCount, s_fatalNoWayCount, s_fatalImplLimitationCount,
+                    s_fatalNoMemCount, s_fatalNoWayAssertBodyCount, s_fatalNyiCount) = saved;
+#if DEBUG
+                s_fatalNoWayAssertBodyArgsCount = savedArgs;
+#endif
+            }
+        });
+    }
+
+    [TestCase(0x7FFFFFFFU, 0x80000000U)]
+    [TestCase(uint.MaxValue, 0U)]
+    public static void FatalCountersUseUnsignedWrappingAndOutput(uint initial, uint expected)
+    {
+        WithState(() => {
+            var saved = s_fatalBadCodeCount;
+            using var output = new MemoryStream();
+            using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
+            s_jitstdout = writer;
+
+            try
+            {
+                s_fatalBadCodeCount = initial;
+                _ = Assert.Throws<FatalJitException>(badCode);
+                Compiler.compShutdown();
+                writer.Flush();
+
+                Assert.That(s_fatalBadCodeCount, Is.EqualTo(expected));
+                Assert.That(Encoding.UTF8.GetString(output.ToArray()), Does.Contain($"   badCode:             {expected}\n"));
+            }
+            finally
+            {
+                s_fatalBadCodeCount = saved;
+            }
+        });
+    }
+#endif
+
 #if COUNT_BASIC_BLOCKS
     [Test]
     public static void ShutdownPrintsBlockStatisticsBeforeRegisteredDumps()

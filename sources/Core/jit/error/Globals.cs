@@ -17,15 +17,15 @@ public partial class Globals
     public const int FATAL_JIT_EXCEPTION = 0x02345678;
 
 #if MEASURE_FATAL
-    private static int s_fatalBadCodeCount;
-    private static int s_fatalNoWayCount;
-    private static int s_fatalImplLimitationCount;
-    private static int s_fatalNoMemCount;
-    private static int s_fatalNoWayAssertBodyCount;
+    internal static uint s_fatalBadCodeCount;
+    internal static uint s_fatalNoWayCount;
+    internal static uint s_fatalImplLimitationCount;
+    internal static uint s_fatalNoMemCount;
+    internal static uint s_fatalNoWayAssertBodyCount;
 #if DEBUG
-    private static int s_fatalNoWayAssertBodyArgsCount;
+    internal static uint s_fatalNoWayAssertBodyArgsCount;
 #endif
-    private static int s_fatalNyiCount;
+    internal static uint s_fatalNyiCount;
 #endif
 
 #if DEBUG
@@ -55,7 +55,7 @@ public partial class Globals
     public static void badCode()
     {
 #if MEASURE_FATAL
-        s_fatalBadCodeCount++;
+        s_fatalBadCodeCount = unchecked(s_fatalBadCodeCount + 1);
 #endif
 
         fatal(CORJIT_BADCODE);
@@ -74,7 +74,7 @@ public partial class Globals
     public static void noWay()
     {
 #if MEASURE_FATAL
-        s_fatalNoWayCount++;
+        s_fatalNoWayCount = unchecked(s_fatalNoWayCount + 1);
 #endif
 
         fatal(CORJIT_INTERNALERROR);
@@ -84,7 +84,7 @@ public partial class Globals
     public static void implLimitation()
     {
 #if MEASURE_FATAL
-        s_fatalImplLimitationCount++;
+        s_fatalImplLimitationCount = unchecked(s_fatalImplLimitationCount + 1);
 #endif
 
         fatal(CORJIT_IMPLLIMITATION);
@@ -97,7 +97,7 @@ public partial class Globals
     public static void NOMEM()
     {
 #if MEASURE_FATAL
-        s_fatalNoMemCount++;
+        s_fatalNoMemCount = unchecked(s_fatalNoMemCount + 1);
 #endif
 
         fatal(CORJIT_OUTOFMEM);
@@ -124,7 +124,7 @@ public partial class Globals
     public static void noWayAssertBody()
     {
 #if MEASURE_FATAL
-        s_fatalNoWayAssertBodyCount++;
+        s_fatalNoWayAssertBodyCount = unchecked(s_fatalNoWayAssertBodyCount + 1);
 #endif
 
 #if !DEBUG
@@ -145,8 +145,8 @@ public partial class Globals
     [DoesNotReturn]
     public static void noWayAssertBody(ReadOnlySpan<char> message, ReadOnlySpan<char> filePath, int lineNumber)
     {
-#if MEASURE_FATAL
-        s_fatalNoWayAssertBodyArgsCount++;
+#if MEASURE_FATAL && DEBUG
+        s_fatalNoWayAssertBodyArgsCount = unchecked(s_fatalNoWayAssertBodyArgsCount + 1);
 #endif
 
         noWayAssertAbortHelper(message, filePath, lineNumber);
@@ -348,7 +348,7 @@ public partial class Globals
         if ((altJitAssertOnNyi & 2) == 0)
         {
 #if MEASURE_FATAL
-            s_fatalNyiCount++;
+            s_fatalNyiCount = unchecked(s_fatalNyiCount + 1);
 #endif
 
             fatal(CORJIT_SKIPPED);

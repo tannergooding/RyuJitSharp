@@ -16,6 +16,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Fatal-error statistics completed
+
+`MEASURE_FATAL` now compiles in Release and emits the native shutdown report.
+Counters preserve unsigned wraparound, Debug-only argument-body accounting and
+the original compilation error results.
+
+The three completed statistics modes also work together: combined coverage passes
+148 Debug and 96 Release cases, with 125 and 73 default-configuration controls.
+They remain disabled by default. This closes B445, not native execution parity
+or the other allocation-size/statistics modes.
+
 ## 2026-09-28: Assertion occurrence reporting completed
 
 Optional `MEASURE_NOWAY` reports now collect and rank executed assertions,

@@ -102,6 +102,22 @@ public partial class Compiler
         }
 #endif
 
+#if MEASURE_FATAL
+        jitprintf("\n");
+        jitprintf("---------------------------------------------------\n");
+        jitprintf("Fatal errors stats\n");
+        jitprintf("---------------------------------------------------\n");
+        jitprintf($"   badCode:             {s_fatalBadCodeCount}\n");
+        jitprintf($"   noWay:               {s_fatalNoWayCount}\n");
+        jitprintf($"   implLimitation:      {s_fatalImplLimitationCount}\n");
+        jitprintf($"   NOMEM:               {s_fatalNoMemCount}\n");
+        jitprintf($"   noWayAssertBody:     {s_fatalNoWayAssertBodyCount}\n");
+#if DEBUG
+        jitprintf($"   noWayAssertBodyArgs: {s_fatalNoWayAssertBodyArgsCount}\n");
+#endif
+        jitprintf($"   NYI:                 {s_fatalNyiCount}\n");
+#endif
+
 #if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
         DumpOnShutdown.DumpAll();
 #endif
