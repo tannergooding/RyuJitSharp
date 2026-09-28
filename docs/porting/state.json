@@ -16,6 +16,14 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "vectorMemoryAddressCasts": {
+      "scope": "B429: use the unary cast representation when vector loads/stores unwrap byref address casts.",
+      "mapping": "hwintrinsic.cpp vector load/store branches -> Compiler.HWIntrinsicImportXplat.cs. Both sites now use AsCast().CastOp; non-byref casts, offsets and operand ordering are unchanged.",
+      "validation": "61 Debug/61 Release full-analysis import cases, including ten new address-cast cases. Pinned Runtime_134334/Runtime_133718 corpus completes all38upstream cases under native and corrected managed primary JITs with matching stdout and no timeout/AltJIT. The previously failing shared-object store/arithmetic methods match selected raw trees/instructions.",
+      "sourceSnapshot": "d34c1f637f56c3e8235e85cedca071646696767b",
+      "evidence": "artifacts/primary-operand-order/cast-evidence.json;39completed selected bodies,114of117raw phase slices and38of39instruction traces match.",
+      "remaining": "B430 variable-byte-shift mismatch remains active. The original short Runtime_133718 selector omitted namespace-qualified dumps; final comparison uses Runtime_133718.Runtime_133718."
+    },
     "primaryUpstreamRegressionModes": {
       "scope": "Extend the B428 four-input primary execution boundary to MinOpts and GCStress4, using the unchanged validated source snapshot and host/corpus hashes.",
       "validation": "Both configurations complete 18 selected bodies per primary JIT, with all 54 raw phase-tree slices and 18 emitted instruction traces equal in each pair. All selected MinOpts bodies report opts.MinOpts()==true. GCStress4 observes 3256 native and 3043 managed collections; positive counts are retained observations, not equality claims. Semantic stdout matches and stderr is empty.",
@@ -546,7 +554,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "The existing four-input primary corpus matches under optimized, MinOpts and GCStress4. Next execute the pinned Runtime_134334 and Runtime_133718 operand-order regression inputs, selected from the oracle's latest regression commits fd53e564dc6 and 2f56ca5b839. Reuse the simple linked-source corpus project and primary runner; invoke the actual upstream Fact/Theory cases, preserve source/dependency hashes, capture native and managed primary output, then follow the first concrete failure. No upstream refresh or new test framework. Worker idle.",
+      "parentScope": "B429 vector address-cast crash is fixed and all38upstream cases execute under both primary JITs. Continue B430: Runtime_133718.ShiftRight has native mask255 versus managed-1 and stale CreateScalar/ShiftRightLogical exception flags. Reconcile the complete variable-byte-shift construction, add successful arithmetic coverage beyond the upstream exception-only calls, then recapture the same39-body raw comparison. No ID/flag normalization or new accepted deviation. Worker idle.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -941,7 +949,7 @@
         }
       ]
     },
-    "nextAction": "Primary MinOpts and GCStress4 each match 54 raw tree slices/18 instruction traces with successful actual execution; evidence artifacts/primary-upstream-regressions/modes-evidence.json. Next create a fresh small linked-source corpus for pinned src/tests/JIT/Regression_ro_2/Runtime_134334.cs and Runtime_133718.cs under artifacts/primary-operand-order. The former has three public Facts; the latter has35Fact/Theory invocations from the public cases read through line185 (check remaining public cases before finalizing the driver). Reuse existing upstream-regressions project references and the primary capture runner; do not copy/edit native test source or introduce reflection/test-framework infrastructure. Build the corpus, anchor exact source/dependency hashes to the pin, run native and managed primary using validated jit-2/source6dd0c18643c1ec4212042698162d14c96a4c4b7c, and follow the first concrete failure/mismatch. No upstream resynchronization. Worker idle; B153/D009, B365 forced-spill assertions and ARM64 foreground expansion stay deferred.",
+    "nextAction": "B429 is validated:61Debug/61Release, all38operand-order cases execute with identical stdout. Continue B430 from artifacts/primary-operand-order/after/method-17-Importation.diff and method-17-instructions.diff: gtNewSimdBinOpNode's variable signed-byte right shift emits mask-1 instead of native255 and retains extra exception flags on CreateScalar/ShiftRightLogical after replacing the count operand. Locate this branch in Compiler.gt.cs against pinned gentree.cpp; port its complete construction, test real successful variable-byte arithmetic and flag propagation, then publish/recapture with the namespace-qualified selector. Current comparison has39completed bodies:114of117raw phase slices and38of39instruction traces match. Do not accept the remaining mismatch merely because exception-only upstream tests pass. Worker idle; B153/D009, B365 and ARM64 foreground expansion deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

@@ -895,9 +895,9 @@ public partial class Compiler
                 }
 
                 op1 = impPopStack().val;
-                if (op1.Oper == GT_CAST && op1.AsOp().Op1.Type == TYP_BYREF)
+                if (op1.Oper == GT_CAST && op1.AsCast().CastOp.Type == TYP_BYREF)
                 {
-                    op1 = op1.AsOp().Op1;
+                    op1 = op1.AsCast().CastOp;
                 }
 
                 if (offset is not null)
@@ -1204,9 +1204,9 @@ public partial class Compiler
 
                 op2 = impPopStack().val;
 
-                if (op2.Oper == GT_CAST && op2.AsOp().Op1.Type == TYP_BYREF)
+                if (op2.Oper == GT_CAST && op2.AsCast().CastOp.Type == TYP_BYREF)
                 {
-                    op2 = op2.AsOp().Op1;
+                    op2 = op2.AsCast().CastOp;
                 }
 
                 if (offset is not null)

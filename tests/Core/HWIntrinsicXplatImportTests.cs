@@ -17,6 +17,65 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class HWIntrinsicXplatImportTests
 {
 #if TARGET_XARCH
+    private static int s_assertionCount;
+
+    [TestCase(NI_Vector_LoadAligned, false, true)]
+    [TestCase(NI_Vector_LoadAlignedNonTemporal, false, true)]
+    [TestCase(NI_Vector_LoadUnsafe, false, true)]
+    [TestCase(NI_Vector_LoadUnsafe, true, true)]
+    [TestCase(NI_Vector_StoreAligned, false, true)]
+    [TestCase(NI_Vector_StoreAlignedNonTemporal, false, true)]
+    [TestCase(NI_Vector_StoreUnsafe, false, true)]
+    [TestCase(NI_Vector_StoreUnsafe, true, true)]
+    [TestCase(NI_Vector_LoadAligned, false, false)]
+    [TestCase(NI_Vector_StoreAligned, false, false)]
+    public static void MemoryImportsStripOnlyByrefAddressCasts(
+        NamedIntrinsic intrinsic, bool withOffset, bool fromByref)
+    {
+        WithImporter(compiler => {
+#if DEBUG
+            compiler.info.compFullName = nameof(MemoryImportsStripOnlyByrefAddressCasts);
+#endif
+            var isStore = intrinsic is NI_Vector_StoreAligned or NI_Vector_StoreAlignedNonTemporal or NI_Vector_StoreUnsafe;
+            var operandType = fromByref ? TYP_BYREF : TYP_INT;
+            compiler.lvaTable[1].Type = operandType;
+            var original = new GenTreeLclVar(operandType, 1);
+            var cast = new GenTreeCast(TYP_I_IMPL, original, false, TYP_I_IMPL);
+            if (isStore)
+            {
+                compiler.impPushOnStack(new GenTreeLclVar(TYP_SIMD16, 0), new typeInfo(TYP_SIMD16));
+            }
+            compiler.impPushOnStack(cast, new typeInfo(TYP_I_IMPL));
+            if (withOffset)
+            {
+                compiler.impPushOnStack(compiler.gtNewIconNode(TYP_I_IMPL, 3), new typeInfo(TYP_I_IMPL));
+            }
+            CORINFO_SIG_INFO sig = default;
+            sig.numArgs = (ushort)((isStore ? 2 : 1) + (withOffset ? 1 : 0));
+            s_assertionCount = 0;
+
+            var result = Import(compiler, intrinsic, default, default, in sig, default,
+                TYP_INT, isStore ? TYP_VOID : TYP_SIMD16, 16, false);
+
+            Assert.That(result, Is.Not.Null);
+            var address = result switch {
+                GenTreeHWIntrinsic hardware => hardware.GetOp(1),
+                GenTreeStoreInd store => store.Addr,
+                GenTreeIndir load => load.Addr,
+                _ => throw new InvalidOperationException("Unexpected vector memory import."),
+            };
+            if (withOffset)
+            {
+                Assert.That(address.Oper, Is.EqualTo(genTreeOps.GT_ADD));
+                Assert.That(address.AsOp().Op2.AsOp().Op2.AsIntCon().IconValue, Is.EqualTo((nint)4));
+                address = address.AsOp().Op1;
+            }
+            Assert.That(address, Is.SameAs(fromByref ? original : (GenTree)cast));
+            Assert.That(compiler.impStackHeight, Is.Zero);
+            Assert.That(s_assertionCount, Is.Zero);
+        });
+    }
+
     [TestCase(NI_Vector_ConvertToDouble, TYP_LONG)]
     [TestCase(NI_Vector_ConvertToUInt32, TYP_FLOAT)]
     [TestCase(NI_Vector_FusedMultiplyAdd, TYP_FLOAT)]
@@ -342,7 +401,13 @@ internal static unsafe class HWIntrinsicXplatImportTests
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression) => 0;
+    private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
+    {
+#if TARGET_XARCH
+        s_assertionCount++;
+#endif
+        return 0;
+    }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte NotifyInstructionSetUsage(ICorJitInfo* self,
