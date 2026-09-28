@@ -29,15 +29,10 @@ public sealed class JitTls : IDisposable
         t_jitTls = this;
     }
 
-    ~JitTls()
-    {
-        Dispose(isDisposing: false);
-    }
-
+    // Native JitTls is a stack scope; restore TLS on the owning thread, not a finalizer thread.
     public void Dispose()
     {
-        Dispose(isDisposing: true);
-        GC.SuppressFinalize(this);
+        t_jitTls = _next;
     }
 
     public static Compiler? Compiler
@@ -63,11 +58,6 @@ public sealed class JitTls : IDisposable
             var jitTls = t_jitTls;
             return ref ((jitTls is not null) ? ref jitTls._logEnv : ref Unsafe.NullRef<LogEnv>());
         }
-    }
-
-    private void Dispose(bool isDisposing)
-    {
-        t_jitTls = _next;
     }
 }
 #else

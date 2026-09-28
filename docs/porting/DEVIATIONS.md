@@ -1669,6 +1669,13 @@ enclosing lock. The four-thread regression preserves all 512 records. This is
 diagnostic I/O coverage, not parallel/reentrant compiler validation; initialization,
 other shared state and TLS nesting still require review before removing the lock.
 
+B443 removes an incorrect GC finalizer from the Debug TLS scope. An abandoned
+nested scope on a terminated thread demonstrably installed its outer compiler in
+the finalizer thread's TLS. Native stack destruction corresponds to deterministic
+`Dispose`, not GC finalization. Normal and exceptional nested scope restoration
+is covered on four threads; shared compiler state and full compilation reentrancy
+remain outside that coverage.
+
 ### R002: Windows dump line endings
 
 **Status:** output-path mismatch corrected by `JitTextWriter`, not waived as an

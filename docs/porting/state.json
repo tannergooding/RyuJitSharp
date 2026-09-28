@@ -23,6 +23,14 @@
       "evidence": "artifacts/compilation-concurrency/writer-evidence.json",
       "limits": "Synchronous native-style diagnostic I/O only, not asynchronous stream I/O or complete compiler concurrency. Shared initialization and TLS/reentrancy review remain before removing the compileMethod lock."
     },
+    "jitTlsScopeLifetime": {
+      "scope": "B443/R001 prerequisite: Debug JitTls deterministic stack restoration and managed finalizer-thread isolation.",
+      "mapping": "ee_il_dll.cpp JitTls constructor/destructor at pinned lines225-236 -> sources/Core/jit/jit/JitTls.cs.",
+      "correction": "Remove GC finalization, which incorrectly restored another thread's outer scope onto the finalizer thread; retain owning-thread Dispose restoration and unchanged Release TLS.",
+      "validation": "Actual finalization fails before correction by installing a worker's compiler on the finalizer thread; two four-thread nested-scope normal/exception controls pass. Final full-analysis selection passes 73 Debug / 35 Release, with all three new Debug TLS cases passing.",
+      "evidence": "artifacts/compilation-concurrency/tls-evidence.json",
+      "limits": "The regression deliberately abandons a nested scope on a terminated worker. Correctly disposed compileMethod behavior is preserved. This is not full compiler parallel/reentrant execution coverage."
+    },
     "upstreamMaintainerReports": {
       "scope": "B394 native VN self-test operand-order assertion and B365 native forced-spill retbuf assertion; report upstream defects rather than silently changing only the C# port.",
       "reports": [
@@ -1173,7 +1181,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Continue R001 at JitTls debug scope lifetime/finalization and Compiler.comp.cs shared initialization gates (config lists, component-test once state, timing-log check); establish thread-local restoration and shared publication before considering compileMethod lock removal. B442 diagnostic writer synchronization is complete but does not establish concurrent compilation. Worker4b57b744 owns the15 remaining file-only umbrella classifications and bulk retirement after collected native c77ff6d72b2/report79. B365/B394 upstream reports remain unchanged; B153/D009 and ARM64 foreground expansion remain deferred.",
+    "nextAction": "Continue R001 at Compiler.comp.cs shared initialization gates and ConfigMethodRange/ConfigIntArray/ConfigDoubleArray publication. The pinned native ConfigMethodRange::EnsureInit is also unsynchronized, so distinguish upstream issues for maintainer reports from C#-only defects instead of silently changing algorithms. B442 writer and B443 Debug TLS lifetime prerequisites are complete; retain compileMethod serialization until shared-state and actual parallel/reentrant compilation are validated. Worker4b57b744 consumed b24f1465 in report80; its next bounded family is simd-recognition, not another overlap-only umbrella sweep. Native HEAD remains c77ff6d72b2. B153/D009 and ARM64 foreground expansion remain deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
