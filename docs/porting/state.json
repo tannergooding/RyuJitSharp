@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "avx2IntegerNarrowing": {
+      "scope": "B437: restore signed/unsigned64->32 AVX2 narrowing and native unsigned permute metadata for32->16.",
+      "mapping": "gentree.cpp Compiler::gtNewSimdNarrowNode256-bit integral cases -> Compiler.gt.cs gtNewSimdNarrowNode.",
+      "validation": "Two missing-body and one native-type regressions fail before their corrections; final constructor/initialization coverage539Debug/535Release.",
+      "execution": "Default, AVX512-disabled and AVX-disabled native/managed primary pairs each pass14112independent truncation/lane-order checks across18Vector128/256/512 wrappers. Each pair matches54raw slices/18complete traces.",
+      "sourceSnapshot": "b29587b3a92c4cca695fe9640b7ecc0a7cab4701",
+      "evidence": "artifacts/primary-vector-narrowing/evidence.json",
+      "remaining": "Floating narrowing and integral widening are separate execution boundaries; no exhaustive SIMD or machine-byte parity claim."
+    },
     "evexMemoryBlendMasks": {
       "scope": "B436: restore explicit mask encoding for address, static-field and stack blend sources.",
       "mapping": "emitxarch.cpp AddEvexPrefix three IF_RWR_RRD_*RD_RRD cases -> Emitter.RegisterOutputEncoding.cs.",
@@ -659,7 +668,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Packed numeric conversion matches default, AVX2 and legacy paths after B436. Continue integral vector narrowing and lane-order/truncation boundaries. Native retirement worker continues larger evidence-based batches without re-auditing established ports.",
+      "parentScope": "B437 restores AVX2 integer narrowing; integral narrow execution now matches default, AVX2 and legacy paths. Continue widening signed/unsigned lanes and lower/upper source selection. Native retirement worker continues larger evidence-based batches without re-auditing established ports.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1054,7 +1063,7 @@
         }
       ]
     },
-    "nextAction": "Packed numeric conversion now matches default, AVX512-disabled and AVX-disabled execution. Next execute Vector128/256/512.Narrow for signed/unsigned16->8,32->16,64->32 integral lanes, checking truncation and lower/upper source lane order with independent bit expectations. Use primary-vector-conversions/jit-1 sourceb8ff5520 and compare-complete.py. Capture default then AVX512-disabled as indicated by actual lowering. Retirement worker4b57b744 continues full catch-up in larger audit-trail-based batches; collect56+reports on notification. B153/D009, B365 and ARM64 foreground expansion deferred.",
+    "nextAction": "B437 integral narrowing is complete:14112lanes per primary process, default/AVX2/legacy each54raw slices/18traces exact. Next execute Vector128/256/512.WidenLower/WidenUpper for signed/unsigned8->16,16->32,32->64, independently checking sign extension and selected source halves. Reuse primary-vector-narrowing/jit-2 sourceb29587b3 with fresh hashed corpus/reference; compare default and reduced-ISA lowerings using compare-complete.py. Retirement worker4b57b744 continues full catch-up in larger audit-trail-based batches; collect56+reports on notification. B153/D009, B365 and ARM64 foreground expansion deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

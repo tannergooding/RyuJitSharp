@@ -12179,12 +12179,41 @@ public partial class Compiler
                     tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseType, simdSize);
                     tmp3 = gtNewSimdHWIntrinsicNode(type, NI_AVX2_PackUnsignedSaturate, TYP_USHORT, simdSize, tmp1, tmp2);
 
-                    var permuteBaseType = (simdBaseType == TYP_SHORT) ? TYP_LONG : TYP_ULONG;
-                    return gtNewSimdHWIntrinsicNode(type, NI_AVX2_Permute4x64, permuteBaseType, simdSize, tmp3, gtNewIconNode(TYP_INT, SHUFFLE_WYZX));
+                    // Upstream's TYP_BYTE discriminator selects unsigned lanes for both 16-bit destinations.
+                    return gtNewSimdHWIntrinsicNode(type, NI_AVX2_Permute4x64, TYP_ULONG, simdSize,
+                        tmp3, gtNewIconNode(TYP_INT, SHUFFLE_WYZX));
                 }
 
                 case TYP_INT:
                 case TYP_UINT:
+                {
+                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+
+                    // op1 = Elements 0, 1 | 2, 3;        0L, 0U, 1L, 1U | 2L, 2U, 3L, 3U
+                    // op2 = Elements 4, 5 | 6, 7;        4L, 4U, 5L, 5U | 6L, 6U, 7L, 7U
+                    //
+                    // tmp1 = Elements 0L, 4L, 0U, 4U | 2L, 6L, 2U, 6U
+                    // tmp2 = Elements 1L, 5L, 1U, 5U | 3L, 7L, 3U, 7U
+                    // tmp3 = Elements 0L, 1L, 4L, 5L | 2L, 3L, 6L, 7L
+                    // return Elements 0L, 1L, 2L, 3L | 4L, 5L, 6L, 7L
+                    //
+                    // var tmp1 = Avx2.UnpackLow(op1, op2);
+                    // var tmp2 = Avx2.UnpackHigh(op1, op2);
+                    // var tmp3 = Avx2.UnpackLow(tmp1, tmp2);
+                    // return Avx2.Permute4x64(tmp3.AsUInt64(), SHUFFLE_WYZX).AsUInt32();
+
+                    var opBaseType = (simdBaseType == TYP_INT) ? TYP_LONG : TYP_ULONG;
+
+                    var op1Dup = fgMakeMultiUse(ref op1);
+                    var op2Dup = fgMakeMultiUse(ref op2);
+
+                    tmp1 = gtNewSimdHWIntrinsicNode(type, NI_AVX2_UnpackLow, simdBaseType, simdSize, op1, op2);
+                    tmp2 = gtNewSimdHWIntrinsicNode(type, NI_AVX2_UnpackHigh, simdBaseType, simdSize, op1Dup, op2Dup);
+                    tmp3 = gtNewSimdHWIntrinsicNode(type, NI_AVX2_UnpackLow, simdBaseType, simdSize, tmp1, tmp2);
+
+                    return gtNewSimdHWIntrinsicNode(type, NI_AVX2_Permute4x64, opBaseType, simdSize,
+                        tmp3, gtNewIconNode(TYP_INT, SHUFFLE_WYZX));
+                }
 
                 case TYP_FLOAT:
                 {

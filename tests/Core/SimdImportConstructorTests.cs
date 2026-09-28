@@ -415,6 +415,72 @@ internal static unsafe class SimdImportConstructorTests
         });
     }
 
+    [TestCase(TYP_INT, TYP_LONG)]
+    [TestCase(TYP_UINT, TYP_ULONG)]
+    public static void Avx2IntegerNarrowUnpacksAndPermutesLowHalves(var_types baseType,
+        var_types permuteBaseType)
+    {
+        WithCompiler(compiler =>
+        {
+            Enable(compiler, InstructionSet_AVX2);
+            var lower = Local(compiler, TYP_SIMD32);
+            var upper = Local(compiler, TYP_SIMD32);
+            var result = compiler.gtNewSimdNarrowNode(TYP_SIMD32, lower, upper, baseType, 32)
+                .AsHWIntrinsic();
+
+            Assert.That(result.HWIntrinsicId, Is.EqualTo(NI_AVX2_Permute4x64));
+            Assert.That(result.SimdBaseType, Is.EqualTo(permuteBaseType));
+            Assert.That((int)result.GetOp(2).AsIntCon().IconValue, Is.EqualTo(SHUFFLE_WYZX));
+            var combined = result.GetOp(1).AsHWIntrinsic();
+            var low = combined.GetOp(1).AsHWIntrinsic();
+            var high = combined.GetOp(2).AsHWIntrinsic();
+            Assert.That(combined.HWIntrinsicId, Is.EqualTo(NI_AVX2_UnpackLow));
+            Assert.That(low.HWIntrinsicId, Is.EqualTo(NI_AVX2_UnpackLow));
+            Assert.That(high.HWIntrinsicId, Is.EqualTo(NI_AVX2_UnpackHigh));
+
+            foreach (var unpack in new[] { combined, low, high })
+            {
+                Assert.That(unpack.SimdBaseType, Is.EqualTo(baseType));
+                Assert.That(unpack.SimdSize, Is.EqualTo(32));
+            }
+            Assert.That(low.GetOp(1), Is.SameAs(lower));
+            Assert.That(low.GetOp(2), Is.SameAs(upper));
+            Assert.That(high.GetOp(1).AsLclVar().LclNum, Is.EqualTo(lower.LclNum));
+            Assert.That(high.GetOp(2).AsLclVar().LclNum, Is.EqualTo(upper.LclNum));
+        });
+    }
+
+    [TestCase(TYP_BYTE, TYP_LONG)]
+    [TestCase(TYP_UBYTE, TYP_ULONG)]
+    [TestCase(TYP_SHORT, TYP_ULONG)]
+    [TestCase(TYP_USHORT, TYP_ULONG)]
+    public static void Avx2PackedNarrowPreservesNativePermuteLaneType(var_types baseType,
+        var_types permuteBaseType)
+    {
+        WithCompiler(compiler =>
+        {
+            Enable(compiler, InstructionSet_AVX2);
+            var result = compiler.gtNewSimdNarrowNode(TYP_SIMD32, Local(compiler, TYP_SIMD32),
+                Local(compiler, TYP_SIMD32), baseType, 32).AsHWIntrinsic();
+            Assert.That(result.HWIntrinsicId, Is.EqualTo(NI_AVX2_Permute4x64));
+            Assert.That(result.SimdBaseType, Is.EqualTo(permuteBaseType));
+        });
+    }
+
+    [Test]
+    public static void AvxFloatingNarrowRetainsFloatingConversion()
+    {
+        WithCompiler(compiler =>
+        {
+            Enable(compiler, InstructionSet_AVX);
+            var result = compiler.gtNewSimdNarrowNode(TYP_SIMD32, Local(compiler, TYP_SIMD32),
+                Local(compiler, TYP_SIMD32), TYP_FLOAT, 32).AsHWIntrinsic();
+            Assert.That(result.HWIntrinsicId, Is.EqualTo(NI_Vector_WithUpper));
+            Assert.That(ContainsIntrinsic(result, NI_AVX_ConvertToVector128Single), Is.True);
+            Assert.That(ContainsIntrinsic(result, NI_AVX2_UnpackLow), Is.False);
+        });
+    }
+
     private static bool ContainsIntrinsic(GenTree tree, NamedIntrinsic id)
     {
         if (tree is GenTreeHWIntrinsic intrinsic && intrinsic.HWIntrinsicId == id)

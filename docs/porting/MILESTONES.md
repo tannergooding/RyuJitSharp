@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Integral narrowing executes across x64 ISA levels
+
+Vector128/256/512 integral narrowing now preserves truncation and source-lane
+order under default, AVX2 and legacy instruction selection. The AVX2 64-to-32
+path was incorrectly selecting double-to-float conversion; restoring the native
+unpack/permute construction fixes the generated values. The same comparison
+also restored native unsigned permute metadata for 32-to-16 narrowing.
+
+Each native/managed primary pair checks 14,112 independently computed lanes
+and matches 54 raw phase slices and 18 complete instruction traces. These are
+selected integral narrowing results, not exhaustive SIMD or machine-byte parity.
+Evidence: `checkpoint.avx2IntegerNarrowing` and B437.
+
 ## 2026-09-28: Complete instruction comparison corrects TLS evidence
 
 The recent primary-JIT evidence now includes hexadecimal instruction IDs and
