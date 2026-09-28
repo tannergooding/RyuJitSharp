@@ -734,7 +734,7 @@
         }
       ]
     },
-    "nextAction": "Foreground returns to Windows x64, not ARM64 allocator activation. First verify the recorded B268 Counted loop-inversion clone-order gap against the later parent-first clone fixes in checkpoint clone-node-order evidence; identify the exact still-different constructor/clone operation before editing. If already resolved, close the stale backlog record and choose a concrete Windows production remainder reported by the parallel retirement lane rather than inventing optional target work. Native retirement lane 4b57b744-36f1-4e6e-8b76-94c1a87d6e02 continues after d1ac17a; collect reports and hand it this completed element/unary batch. ARM64 GetElement/SetElement/ordinary broadcast have no scalable native implementation; retain their gates. Broader ARM64 allocator/VN/mask work is not foreground Windows progress.",
+    "nextAction": "Continue Windows x64 foreground implementation, not ARM64 allocator activation. B268 is already resolved: windows-clone-gap/comparison.json establishes exact Counted post-inversion trees in preserved current-pin captures after the existing parent-first clone correction. Do not reopen or recapture it. Select a concrete Windows production remainder from the parallel retirement lane's next report; distinguish incomplete native paths from stale ledger entries before editing. Native retirement lane 4b57b744-36f1-4e6e-8b76-94c1a87d6e02 continues after d1ac17a and has received f8c0222; collect its next report from turn6. ARM64 GetElement/SetElement/ordinary broadcast have no scalable native implementation; retain their gates. Broader ARM64 allocator/VN/mask work is not foreground Windows progress.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
@@ -1392,6 +1392,13 @@
         "comparison": "artifacts\\clone-node-order\\comparison-4.json, reproduced by compare.py there with a fresh --output path. Native finally capture is current-pin native-finally-1; runtime lookup uses the matched native-matrix-v2 capture. Phase execution/status and entire post-phase tree slices match exactly; old managed trees fail comparison. Finally increment IDs are13..18 in preorder. Runtime lookup has matching56-byte instruction text.",
         "async": "FullOpts11bodies/6transforms, GCStress4 11/6, controlled Tier0 12/7; all34body sizes and emitted IN instruction lines plus transformation execution/status logs match native. Tier0 disables optional relocations and TieredPGO and retains one positive tail await.",
         "limits": "Finally remains45bytes with unchanged emitted instructions apart from the already-recorded native/managed static-handle description difference. Whole dumps differ, including B322. No raw-code-byte parity or full-collection-count claim. Native sources/index unchanged."
+      },
+      "countedCloneOrderClosure": {
+        "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+        "managedSource": "8a92330b84784aacd03440b130fe11db8a202689",
+        "comparison": "artifacts\\windows-clone-gap\\comparison.json; reproduce with python artifacts\\windows-clone-gap\\compare.py.",
+        "result": "B268 was a stale backlog disposition. Complete Counted post-inversion trees match exactly, including tree IDs and flags, in preserved current-pin native/managed aligned-loops-complete captures. The shared slice SHA256 is5ad55b2e732861532db3048e8e14a308b899f92fd28076ac7b4cb52d01d0a629.",
+        "limits": "No new compiler change or execution. Original older-pin managed capture remains unequal and untouched. The whole phase still differs at the independently diagnosed B322 profile-check tail; no whole-dump parity claim."
       },
       "inlineArgumentFaultFixture": {
         "nativeCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
