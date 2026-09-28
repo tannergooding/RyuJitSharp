@@ -441,11 +441,12 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
     [Test]
     public static void EvexBlendStoresTheExplicitMaskAndUsesNoRegisterImmediateByte(
         [Values(0, 1, 2, 3)] int kind,
-        [Values(INS_vblendmps, INS_vblendmpd, INS_vpblendmb, INS_vpblendmd, INS_vpblendmq, INS_vpblendmw)] instruction ins)
+        [Values(INS_vblendmps, INS_vblendmpd, INS_vpblendmb, INS_vpblendmd, INS_vpblendmq, INS_vpblendmw)] instruction ins,
+        [Values(REG_K1, REG_K4, REG_K7)] regNumber mask)
     {
         WithEmitter((compiler, emitter) =>
         {
-            EmitBlend(compiler, emitter, kind, ins, EA_64BYTE, REG_XMM3, REG_XMM1, REG_K7, 0);
+            EmitBlend(compiler, emitter, kind, ins, EA_64BYTE, REG_XMM3, REG_XMM1, mask, 0);
             var id = Last(emitter);
             Assert.That(CurrentCount(emitter), Is.EqualTo(1));
             Assert.That(id.idIns(), Is.EqualTo(ins));
@@ -453,16 +454,18 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
             Assert.That(id.idGetEvexAaaContext(), Is.Zero);
             if (kind == 3)
             {
-                Assert.That(id.idReg4(), Is.EqualTo(REG_K7));
+                Assert.That(id.idReg4(), Is.EqualTo(mask));
                 Assert.That(id.idCodeSize(), Is.EqualTo(6u));
                 Assert.That(id.NativeLogicalSize, Is.EqualTo(16));
             }
             else
             {
-                Assert.That(Constant(emitter, id), Is.EqualTo((nint)REG_K7));
+                Assert.That(Constant(emitter, id), Is.EqualTo((nint)mask));
                 Assert.That(id.idCodeSize(), Is.EqualTo(kind == 0 ? 7u : 11u));
                 Assert.That(id.NativeLogicalSize, Is.EqualTo(24));
             }
+            var prefix = AddEvexPrefix(emitter, id, 0, EA_64BYTE);
+            Assert.That((prefix >> 32) & 7, Is.EqualTo((ulong)(mask - REG_K0)));
             CheckAccounting(emitter);
         });
     }
@@ -823,6 +826,9 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetInsCns")]
     private static extern nint Constant(Emitter emitter, Emitter.instrDesc descriptor);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "AddEvexPrefix")]
+    private static extern ulong AddEvexPrefix(Emitter emitter, Emitter.instrDesc descriptor, ulong code, emitAttr size);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetInsAmdAny")]
     private static extern nint AddressDisplacement(Emitter emitter, Emitter.instrDesc descriptor);

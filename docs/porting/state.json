@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "evexMemoryBlendMasks": {
+      "scope": "B436: restore explicit mask encoding for address, static-field and stack blend sources.",
+      "mapping": "emitxarch.cpp AddEvexPrefix three IF_RWR_RRD_*RD_RRD cases -> Emitter.RegisterOutputEncoding.cs.",
+      "validation": "54memory cases fail before the fix;18register controls pass. Final emitter prefix/multioperand coverage370Debug/351Release.",
+      "execution": "Both primary JITs pass1264mixed Vector128/256/512 saturated lanes and match36raw slices/12complete traces. Original failing ToInt32_128 now matches all eight instruction byte sequences,48bytes, including mask byte0x19 instead of0x18.",
+      "sourceSnapshot": "b8ff552022c740ddc00f7485e4130890b4c28031",
+      "evidence": "artifacts/primary-vector-conversions/evidence.json",
+      "remaining": "Instruction-text equality alone did not catch this defect. Byte proof is limited to the original failing method; continue reduced-ISA packed conversion paths separately."
+    },
     "primaryNumericConversions": {
       "scope": "Windows AMD64 float/double to eight integral primitives, checked and unchecked; signed/unsigned32/64-bit integers to float/double.",
       "validation": "Default and AVX-disabled native/managed primary pairs each pass3264floating-cast checks with799expected overflows and936integer-rounding bit checks. Independent Python IEEE/integer expectations avoid double rounding. Each configuration matches120raw slices/40complete traces.",
@@ -649,7 +658,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Scalar checked/unchecked casts and exact integer rounding now match in default and legacy ISA configurations. Continue packed vector conversions and saturation. Native retirement worker runs continuously in parallel under the user's renewed instruction, carrying retained classifications forward.",
+      "parentScope": "B436 corrects actual EVEX mask bytes for memory blends; default packed conversion execution now matches. Continue reduced-ISA packed conversion paths. Native retirement worker continues larger evidence-based batches without re-auditing already established ports.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1044,7 +1053,7 @@
         }
       ]
     },
-    "nextAction": "Scalar numeric conversions pass4200checks per configuration and40bodies match120raw slices/40traces with default and AVX-disabled ISAs. Continue packed Vector128/256/512 float-to-int/uint and double-to-long/ulong conversion boundaries; reuse independent scalar IEEE expectations, verify each lane and actual vector lowering. Use primary-wide-integer/jit-1 sourcea14320c0 and compare-complete.py. Native retirement worker4b57b744 is active under continuous assignment after report55; collect numbered56+reports on notification without pausing its next routine batch. B153/D009, B365 and ARM64 foreground expansion deferred.",
+    "nextAction": "B436 fixes memory blend mask encoding; default packed conversion passes1264lanes, exact36raw slices/12traces and byte-exact original48-byte method. Next run primary-vector-conversions corpus with AVX disabled via primary-ssse3/capture.py --disable-avx using reference-2/sourceb8ff5520 and jit-1. Compare12wrapper bodies with compare-complete.py; distinguish hardware packed paths from correctly selected software helpers. Follow first discrepancy. Retirement worker4b57b744 continues until full catch-up in larger audit-trail-based batches; collect reports56+on notification. B153/D009, B365 and ARM64 foreground expansion deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

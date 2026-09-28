@@ -250,6 +250,36 @@ public partial class Emitter
         var maskReg = REG_NA;
         switch (id.idInsFmt())
         {
+            case IF_RWR_RRD_ARD_RRD:
+            {
+                assert(!id.idIsEvexAaaContextSet());
+                CnsVal cnsVal = default;
+                _ = emitGetInsAmdCns(id, ref cnsVal);
+
+                maskReg = decodeRegFromIval(cnsVal.cnsVal);
+                break;
+            }
+
+            case IF_RWR_RRD_MRD_RRD:
+            {
+                assert(!id.idIsEvexAaaContextSet());
+                CnsVal cnsVal = default;
+                emitGetInsDcmCns(id, ref cnsVal);
+
+                maskReg = decodeRegFromIval(cnsVal.cnsVal);
+                break;
+            }
+
+            case IF_RWR_RRD_SRD_RRD:
+            {
+                assert(!id.idIsEvexAaaContextSet());
+                CnsVal cnsVal = default;
+                emitGetInsCns(id, ref cnsVal);
+
+                maskReg = decodeRegFromIval(cnsVal.cnsVal);
+                break;
+            }
+
             case IF_RWR_RRD_RRD_RRD:
             {
                 assert(!id.idIsEvexAaaContextSet());
