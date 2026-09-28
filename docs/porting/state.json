@@ -16,6 +16,14 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "primaryAtomicExecution": {
+      "scope": "Windows AMD64 locked arithmetic and successful/failed compare-exchange value contracts.",
+      "mapping": "codegenxarch.cpp genCodeForLockAdd/genLockedInstructions/genCodeForCmpXchg -> CodeGen.Atomics.cs.",
+      "validation": "308checks across integer overflow, used/unused locked arithmetic, floating bit patterns and null/object identity. Both primary JITs match36raw slices/12complete instruction traces. Primitive operations emit lock/xadd/cmpxchg; reference operations retain the same runtime helper. No timeout or AltJIT.",
+      "sourceSnapshot": "8cbf96c2e6a0273f8c3c3338fb7eefe41c57e126",
+      "evidence": "artifacts/primary-atomics/evidence.json",
+      "remaining": "No concurrency-stress claim. Next bounded Windows boundary: wide integer multiplication/division and shifts."
+    },
     "completeInstructionAudit": {
       "scope": "B434: comparison tooling must match hexadecimal instruction IDs, including a-f, not only decimal digits.",
       "validation": "Independently counted all offset-bearing IN records and rechecked11capture pairs/140completed bodies/15800records per side; every complete instruction trace matches. This supplements, rather than rewrites, original B428-B433 and subsequent SSSE3/memmove/localloc captures.",
@@ -27,7 +35,7 @@
       "validation": "42allocations across0/1/4095/4096/4097/8192/65536bytes. Both primary JITs match nine raw slices/three complete instruction traces. Actual LCLHEAP, zero-push initialization and touch-before-subtract0x1000 probing are present; no timeout or AltJIT.",
       "sourceSnapshot": "8cbf96c2e6a0273f8c3c3338fb7eefe41c57e126",
       "evidence": "artifacts/primary-localloc/evidence.json",
-      "remaining": "Retain native other-target paths. Next bounded Windows boundary: locked arithmetic and compare-exchange primary execution."
+      "remaining": "Retain native other-target paths. The subsequent primaryAtomicExecution checkpoint covers locked operations."
     },
     "primaryMemmoveOverlap": {
       "scope": "Windows AMD64 constant-size memmove across scalar and SIMD boundaries, with overlap in both directions, identical addresses and disjoint ranges.",
@@ -615,7 +623,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Memmove and variable stack allocation primary boundaries match. Corrected hexadecimal instruction comparison confirms140completed bodies. Next bounded Windows boundary is locked arithmetic and compare-exchange; retain native other-target paths.",
+      "parentScope": "Locked arithmetic and compare-exchange primary boundaries match. Continue wide integer multiplication/division and shifts as the next bounded Windows execution surface, using independently computed expected values and complete instruction matching. Retain native other-target paths.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1010,7 +1018,7 @@
         }
       ]
     },
-    "nextAction": "Variable localloc verified42allocations, exact9raw slices/three complete instruction traces. B434 corrected comparator IN IDs to hexadecimal and rechecked11pairs/140bodies/15800records per side, all exact. Use artifacts/primary-jit-probe/compare-complete.py going forward. Next compare retained genLockedInstructions/genCodeForCmpXchg with managed CodeGen atomic implementation, then execute no-inline Interlocked int/long arithmetic and int/long/float/double/reference compare-exchange probes (success and failure, boundary bit patterns) under both primary JITs using8cbf96c2. Require actual atomic lowering and complete output comparison. Worker idle; B153/D009, B365 and ARM64 foreground expansion deferred.",
+    "nextAction": "Atomic boundary verified308checks and exact36raw slices/12complete traces. Continue retained genCodeForMulHi/division through no-inline UInt128/Int128 multiplication, division, remainder and shift probes. Generate bounded high/low-bit operands and expected values independently with Python integer arithmetic; include sign/shift boundaries without relying on managed BigInteger as oracle. Capture current8cbf96c2 primary JIT and pinned native, compare with artifacts/primary-jit-probe/compare-complete.py, and follow first discrepancy. Worker idle; B153/D009, B365 and ARM64 foreground expansion deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
