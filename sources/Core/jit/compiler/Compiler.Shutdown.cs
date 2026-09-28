@@ -45,6 +45,28 @@ public partial class Compiler
         }
 #endif
 
+#if COUNT_BASIC_BLOCKS
+        jitprintf("--------------------------------------------------\n");
+        jitprintf("Basic block count frequency table:\n");
+        jitprintf("--------------------------------------------------\n");
+        bbCntTable.dump(jitstdout());
+        jitprintf("--------------------------------------------------\n");
+
+        jitprintf("\n");
+
+        jitprintf("--------------------------------------------------\n");
+        jitprintf("IL method size frequency table for methods with a single basic block:\n");
+        jitprintf("--------------------------------------------------\n");
+        bbOneBBSizeTable.dump(jitstdout());
+        jitprintf("--------------------------------------------------\n");
+
+        jitprintf("--------------------------------------------------\n");
+        jitprintf("fgComputeReachabilitySets `while (change)` iterations:\n");
+        jitprintf("--------------------------------------------------\n");
+        computeReachabilitySetsIterationTable.dump(jitstdout());
+        jitprintf("--------------------------------------------------\n");
+#endif
+
 #if FEATURE_JIT_METHOD_PERF
         if (compJitTimeLogFilename != 0)
         {
@@ -74,6 +96,10 @@ public partial class Compiler
         {
             s_enregisterStats.Dump(jitstdout());
         }
+#endif
+
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+        DumpOnShutdown.DumpAll();
 #endif
     }
 

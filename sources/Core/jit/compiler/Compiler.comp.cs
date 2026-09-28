@@ -1410,11 +1410,11 @@ public partial class Compiler
         }
 
 #if COUNT_BASIC_BLOCKS
-        bbCntTable.record(fgBBcount);
+        bbCntTable.record(unchecked((uint)fgBBcount));
 
         if (fgBBcount == 1)
         {
-            bbOneBBSizeTable.record(methodInfo->ILCodeSize);
+            bbOneBBSizeTable.record(unchecked((uint)methodInfo->ILCodeSize));
         }
 #endif
 

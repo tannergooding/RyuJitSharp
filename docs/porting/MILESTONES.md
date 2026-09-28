@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Optional basic-block statistics completed
+
+The `COUNT_BASIC_BLOCKS` configuration now records block counts, single-block IL
+sizes and reachability convergence iterations, and emits their native histogram
+layouts during shutdown. Shared histogram support includes atomic counters,
+unsigned wraparound, the 64-counter limit and the overflow bucket.
+
+Enabled coverage passes 98 Debug and 46 Release cases; default-configuration
+controls pass 95 and 43. The two convergence regressions fail with the original
+recording omission. Statistics remain disabled by default; this is not new
+generated-code or native execution evidence. See B385 and
+`checkpoint.blockCountStatistics`.
+
 ## 2026-09-28: SIMD length support completed
 
 Both native SIMD-length overloads are implemented, including unsigned byte-size

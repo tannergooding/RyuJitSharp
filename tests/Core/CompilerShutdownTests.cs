@@ -16,6 +16,49 @@ internal static unsafe class CompilerShutdownTests
 {
     private static readonly string[] s_csvConfigurations = ["", "first.csv", "second.csv"];
 
+#if COUNT_BASIC_BLOCKS
+    [Test]
+    public static void ShutdownPrintsBlockStatisticsBeforeRegisteredDumps()
+    {
+        WithState(() => {
+            var entries = ShutdownEntries(null);
+            var saved = ((string?, Dumpable?)[])entries.Clone();
+            Array.Clear(entries);
+            using var output = new MemoryStream();
+            using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
+            s_jitstdout = writer;
+
+            try
+            {
+                _ = new DumpOnShutdown("Registered histogram", new Histogram([1, 0]));
+                _ = new DumpOnShutdown("Name only", null);
+                _ = new DumpOnShutdown(null, new Histogram([1, 0]));
+                Compiler.compShutdown();
+                writer.Flush();
+                var text = Encoding.UTF8.GetString(output.ToArray());
+                var countIndex = text.IndexOf("Basic block count frequency table:", StringComparison.Ordinal);
+                var sizeIndex = text.IndexOf("IL method size frequency table", StringComparison.Ordinal);
+                var iterationsIndex = text.IndexOf("fgComputeReachabilitySets `while (change)` iterations:", StringComparison.Ordinal);
+                var registeredIndex = text.IndexOf("Registered histogram", StringComparison.Ordinal);
+
+                Assert.That(countIndex, Is.GreaterThanOrEqualTo(0));
+                Assert.That(sizeIndex, Is.GreaterThan(countIndex));
+                Assert.That(iterationsIndex, Is.GreaterThan(sizeIndex));
+                Assert.That(registeredIndex, Is.GreaterThan(iterationsIndex));
+                Assert.That(text, Does.EndWith(
+                    "Registered histogram\n  (no data recorded)\n\nName only\n  (no data recorded)\n\n"));
+            }
+            finally
+            {
+                saved.CopyTo(entries, 0);
+            }
+        });
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_entries")]
+    private static extern ref (string? Name, Dumpable? Dumpable)[] ShutdownEntries(DumpOnShutdown? type);
+#endif
+
     [Test]
     public static void TimerTerminationUpdatesTheCallersAggregate()
     {

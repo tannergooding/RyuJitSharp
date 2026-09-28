@@ -16,6 +16,14 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "blockCountStatistics": {
+      "scope": "Complete optional COUNT_BASIC_BLOCKS support, including B385 reachability iterations, the existing importer record sites and ordered compiler shutdown reports. The configuration remains disabled by default.",
+      "mapping": "Pinned compiler.cpp:259-287,1519-1540,7064-7071 -> Globals.BlockStatistics.cs, Compiler.Shutdown.cs and Compiler.comp.cs; flowgraph.cpp:BlockReachabilitySets::Build -> BlockReachabilitySets.cs; jitshared histogram.h/cpp and dumpable.h -> matching managed directories; utils.cpp DumpOnShutdown -> utils/DumpOnShutdown.cs.",
+      "contract": "Preserve histogram bucket limits, unsigned counts, atomic updates, cumulative percentages and exact text. Reachability initializes its counter to1 and increments after every pass, including the final unchanged pass. Preserve the sixteen-slot shutdown registry and native optional-mode registration policy.",
+      "validation": "Full-analysis enabled area coverage passes98Debug/46Release, including all three COUNT_BASIC_BLOCKS-only cases. Default-configuration controls pass95Debug/43Release. Both B385 regressions fail with the histogram record omitted. Existing reachability results and shutdown ordering remain covered.",
+      "reproduction": "Enable the existing COUNT_BASIC_BLOCKS DefineConstants line in sources/Core/RyuJitSharp.csproj and run Core tests with filter HistogramTests|BlockWeightTests|CompilerShutdownTests|PhaseInvariantTests in Debug and Release. This run used an ignored CustomAfterMicrosoftCommonTargets import at artifacts/block-statistics/enable.targets to append the symbol without editing project defaults; logs and fresh TRX use block-statistics names.",
+      "limits": "Managed optional-statistics behavior and build coverage, not a fresh native-host execution or whole-pipeline parity claim. Other statistics switches remain separate."
+    },
     "simdLengthSupport": {
       "scope": "Complete both FEATURE_SIMD Compiler::getSIMDVectorLength overloads from pinned simd.cpp; the type-handle overload has no pinned native callers.",
       "mapping": "Compiler.cs preserves the public static unsigned-size overload and private type-handle overload. Recognition delegates to getBaseTypeAndSizeOfSimdType, including ISA/metadata checks and SIMD-use tracking.",
@@ -728,8 +736,8 @@
         "Raw target-block getters have no pinned callsites and remain unused support. emitCodeGetCookie remains because its managed helper is only declared under TARGET_AMD64."
       ],
       "remaining": "Continue the full already-completed-code cleanup, distinguishing unreconciled areas from genuine target/CFI/optional-statistics gaps. emitGenIG/emitSavIG retain architecture/statistics paths, genCreateTempLabel retains Unix x86, and genGetRegMask retains ARM floating support. No new default Windows emission gap was established; the earlier blanket claim is withdrawn. Complete bodies are not retained merely because unfinished native callers reference them. Notify the user when the full cleanup is done.",
-      "verification": "Latest collected native cleanup is252644817e7. Report82 restores the63-line SIMD length support removed by packet81: the unused type-handle overload has no complete managed equivalent. Report79's202-line classifier retirement remains valid. Native index/worktree and oracle tracked source/index were clean at the reported boundary. Retirement adds no parity evidence.",
-      "targetLedger": "Collected report83 covers291 overlapping records:268 implemented,6 partial,1 unported,14 unknown and2 not-applicable, not unique functions or a compiler-completion percentage. R001 closure is consumed through089b27f; compileMethod was already absent and adds no deletion. SIMD length support is now implemented by checkpoint.simdLengthSupport but awaits ledger consumption and retirement. Unknown file-only umbrellas retain explicit coverage boundaries from report80. Composed arithmetic or absent callers alone do not establish a whole-function port.",
+      "verification": "Latest collected native cleanup isc9d7744b77c. Report84 retires63lines of SIMD length support after direct whole-function implementation29f1705; report82's corrective restoration and superseded report81 remain historical. Native index/worktree and oracle tracked source/index were clean at the reported boundary. Retirement adds no parity evidence.",
+      "targetLedger": "Collected report84 covers292 overlapping records:270 implemented,5 partial,1 unported,14 unknown and2 not-applicable, not unique functions or a compiler-completion percentage. R001 and unused SIMD support are consumed through29f1705. B385/blockCountStatistics is newer and awaits consumption. Unknown file-only umbrellas retain explicit coverage boundaries from report80. Composed arithmetic or absent callers alone do not establish a whole-function port.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
       "policy": "Retire only reviewed complete implementations. Retain or explicitly identify unfinished shared/Windows paths and other-platform-only paths. Preserve the oracle and existing index distinctions; do not infer parity or percentages from deletion counts."
     },
@@ -796,7 +804,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Continue Windows implementation independently of cleanup. B438/B439 high-bit masks, B440 switch operand width and B441 unsigned scanner validation are closed. Parameter permutation execution matches but does not reproduce B439. Consume actionable Windows gaps from the target ledger while reconciling historical mapping prose with later completed checkpoints; keep native retirement separate.",
+      "parentScope": "Complete optional COUNT_BASIC_BLOCKS support as one area: native Histogram/Dumpable and shutdown registry, three block/IL/convergence histograms, existing import record sites, B385 iteration counting and ordered shutdown output. Validate the enabled Debug/Release builds with focused histogram, reachability and shutdown fixtures, then default-configuration controls before committing. Leave unrelated statistics switches, B392 hash-policy redesign, D009 disassembly and other-target expansion out of this batch. Native retirement remains separate.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1198,7 +1206,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Send committed simdLengthSupport to worker4b57b744 for restored whole-function retirement. Continue the concrete optional COUNT_BASIC_BLOCKS statistics closure, including B385 reachability convergence counts and existing unresolved bbCntTable/bbOneBBSizeTable consumers, using the pinned complete contract and existing histogram support. Do not restart B392 collection/hash-policy review or shared-state umbrella audits. Preserve B365/B394 upstream reports and native initialization quirks. B153/D009 and ARM64 foreground expansion remain deferred.",
+    "nextAction": "Send committed blockCountStatistics/B385 evidence to worker4b57b744 for complete-function retirement. Continue optional MEASURE_NOWAY closure: Compiler.RecordNowayAssert remains a no-op, and pinned compiler.cpp1078-1243 defines file/line keys, occurrence counts, descending report ordering and append-file output; first resolve the existing managed collection and sort mappings needed to preserve this contract. Do not restart B392 hash-stress review or broad shared-state audits. Preserve B365/B394 upstream reports. B153/D009 and ARM64 foreground expansion remain deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
@@ -9759,6 +9767,13 @@
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.lva.cs"],
       "reconciledCommit": null,
       "scope": "lvaGrabTemps descriptor initialization; B251."
+    },
+    {
+      "area": "block-count-statistics",
+      "native": ["src\\coreclr\\jit\\compiler.cpp", "src\\coreclr\\jit\\flowgraph.cpp", "src\\coreclr\\jit\\utils.cpp", "src\\coreclr\\jitshared\\histogram.h", "src\\coreclr\\jitshared\\histogram.cpp", "src\\coreclr\\jitshared\\dumpable.h"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Globals.BlockStatistics.cs", "sources\\Core\\jit\\compiler\\BlockReachabilitySets.cs", "sources\\Core\\jit\\compiler\\Compiler.Shutdown.cs", "sources\\Core\\jit\\compiler\\Compiler.comp.cs", "sources\\Core\\jit\\utils\\DumpOnShutdown.cs", "sources\\Core\\jitshared\\histogram\\Histogram.cs", "sources\\Core\\jitshared\\dumpable\\Dumpable.cs"],
+      "reconciledCommit": null,
+      "scope": "Complete COUNT_BASIC_BLOCKS path and required shared histogram/shutdown registry, not the other optional statistics configurations; see checkpoint.blockCountStatistics and B385."
     },
     {
       "area": "simd-recognition",

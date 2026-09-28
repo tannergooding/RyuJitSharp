@@ -195,6 +195,23 @@ internal static unsafe class BlockWeightTests
         });
     }
 
+#if COUNT_BASIC_BLOCKS
+    [TestCase(false, 2)]
+    [TestCase(true, 3)]
+    public static void ReachabilityRecordsNativeIterationCount(bool hasSuccessor, int expected)
+    {
+        WithCompiler(compiler => {
+            _ = CreateGraph(compiler, hasSuccessor ? [[1], []] : [[]]);
+            var before = HistogramTests.Counts(computeReachabilitySetsIterationTable)[expected - 1];
+
+            _ = BlockReachabilitySets.Build(compiler.fgComputeDfs());
+
+            Assert.That(HistogramTests.Counts(computeReachabilitySetsIterationTable)[expected - 1],
+                Is.EqualTo(unchecked(before + 1)));
+        });
+    }
+#endif
+
 #if DEBUG
     [Test]
     public static void DiagnosticsDistinguishUnreachableBlocksAndListReturns()
