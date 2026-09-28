@@ -110,8 +110,11 @@ public sealed partial class InlineContext
             };
         }
 
-        file.Flush();
-        file.BaseStream.Write(bytes.AsSpan(0, length));
+        lock (JitTextWriter.GetSyncRoot(file))
+        {
+            file.Flush();
+            file.BaseStream.Write(bytes.AsSpan(0, length));
+        }
     }
 #endif
 }

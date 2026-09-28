@@ -415,7 +415,10 @@ public sealed partial class LinearScan : IRegAlloc
 #if TRACK_LSRA_STATS
     public void dumpLsraStatsCsv(StreamWriter streamWriter)
     {
-        dumpLsraStatsCsvCore(streamWriter);
+        lock (JitTextWriter.GetSyncRoot(streamWriter))
+        {
+            dumpLsraStatsCsvCore(streamWriter);
+        }
     }
 #endif
 }

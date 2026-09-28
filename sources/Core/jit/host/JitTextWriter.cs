@@ -8,6 +8,8 @@ namespace RyuJitSharp;
 
 internal sealed class JitTextWriter : StreamWriter
 {
+    private readonly object _syncRoot = new();
+
     [SuppressMessage("Reliability", "CA2000", Justification = "The writer owns the file stream through its text-mode wrapper.")]
     public JitTextWriter(string path, bool append)
         : this(new FileStream(path, append ? FileMode.OpenOrCreate : FileMode.Create, FileAccess.Write, FileShare.ReadWrite),
@@ -26,6 +28,162 @@ internal sealed class JitTextWriter : StreamWriter
         if (append)
         {
             _ = BaseStream.Seek(0, SeekOrigin.End);
+        }
+    }
+
+    // CRT FILE locking covers the character buffer, not just the underlying stream.
+    // Raw-byte and position-dependent operations must use this same lock.
+    internal static object GetSyncRoot(StreamWriter writer) => writer is JitTextWriter jitWriter ? jitWriter._syncRoot : writer;
+
+    public override void Flush()
+    {
+        lock (_syncRoot)
+        {
+            base.Flush();
+        }
+    }
+
+    public override void Write(char value)
+    {
+        lock (_syncRoot)
+        {
+            base.Write(value);
+        }
+    }
+
+    public override void Write(char[]? buffer)
+    {
+        lock (_syncRoot)
+        {
+            base.Write(buffer);
+        }
+    }
+
+    public override void Write(char[] buffer, int index, int count)
+    {
+        lock (_syncRoot)
+        {
+            base.Write(buffer, index, count);
+        }
+    }
+
+    public override void Write(ReadOnlySpan<char> buffer)
+    {
+        lock (_syncRoot)
+        {
+            base.Write(buffer);
+        }
+    }
+
+    public override void Write(string? value)
+    {
+        lock (_syncRoot)
+        {
+            base.Write(value);
+        }
+    }
+
+    public override void Write(string format, object? arg0)
+    {
+        lock (_syncRoot)
+        {
+            base.Write(format, arg0);
+        }
+    }
+
+    public override void Write(string format, object? arg0, object? arg1)
+    {
+        lock (_syncRoot)
+        {
+            base.Write(format, arg0, arg1);
+        }
+    }
+
+    public override void Write(string format, object? arg0, object? arg1, object? arg2)
+    {
+        lock (_syncRoot)
+        {
+            base.Write(format, arg0, arg1, arg2);
+        }
+    }
+
+    public override void Write(string format, params object?[] arg)
+    {
+        lock (_syncRoot)
+        {
+            base.Write(format, arg);
+        }
+    }
+
+    public override void Write(string format, params ReadOnlySpan<object?> arg)
+    {
+        lock (_syncRoot)
+        {
+            base.Write(format, arg);
+        }
+    }
+
+    public override void WriteLine(string? value)
+    {
+        lock (_syncRoot)
+        {
+            base.WriteLine(value);
+        }
+    }
+
+    public override void WriteLine(ReadOnlySpan<char> buffer)
+    {
+        lock (_syncRoot)
+        {
+            base.WriteLine(buffer);
+        }
+    }
+
+    public override void WriteLine(string format, object? arg0)
+    {
+        lock (_syncRoot)
+        {
+            base.WriteLine(format, arg0);
+        }
+    }
+
+    public override void WriteLine(string format, object? arg0, object? arg1)
+    {
+        lock (_syncRoot)
+        {
+            base.WriteLine(format, arg0, arg1);
+        }
+    }
+
+    public override void WriteLine(string format, object? arg0, object? arg1, object? arg2)
+    {
+        lock (_syncRoot)
+        {
+            base.WriteLine(format, arg0, arg1, arg2);
+        }
+    }
+
+    public override void WriteLine(string format, params object?[] arg)
+    {
+        lock (_syncRoot)
+        {
+            base.WriteLine(format, arg);
+        }
+    }
+
+    public override void WriteLine(string format, params ReadOnlySpan<object?> arg)
+    {
+        lock (_syncRoot)
+        {
+            base.WriteLine(format, arg);
+        }
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        lock (_syncRoot)
+        {
+            base.Dispose(disposing);
         }
     }
 

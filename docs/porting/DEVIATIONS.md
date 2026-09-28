@@ -1661,6 +1661,14 @@ when needed. Before claiming concurrent compilation support, review shared/TLS
 state and validate parallel/reentrant compilation; the lock currently masks that
 dimension of behavior.
 
+B442 corrects one prerequisite: the published stdout writer had unsynchronized
+`StreamWriter` buffers. `JitTextWriter` now serializes synchronous writes, flush
+and disposal, including the shared flowgraph stderr writer. Inline-name raw bytes
+and LSRA CSV position checks use the same lock; timing CSV already has its own
+enclosing lock. The four-thread regression preserves all 512 records. This is
+diagnostic I/O coverage, not parallel/reentrant compiler validation; initialization,
+other shared state and TLS nesting still require review before removing the lock.
+
 ### R002: Windows dump line endings
 
 **Status:** output-path mismatch corrected by `JitTextWriter`, not waived as an
