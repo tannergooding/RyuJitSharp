@@ -1,6 +1,9 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using System.IO;
+using System.Text;
 using NUnit.Framework;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.LsraGlobals;
 
 namespace RyuJitSharp.UnitTests;
@@ -42,5 +45,30 @@ internal static class RegisterMaskTests
     {
         Assert.That(genMaxOneBit(mask), Is.EqualTo(maxOne));
         Assert.That(genExactlyOneBit(mask), Is.EqualTo(exactlyOne));
+    }
+
+    [TestCase(regMask.SRBM_NONE, "0000000000000000")]
+    [TestCase(regMask.SRBM_RAX, "0000000000000001")]
+    [TestCase(regMask.SRBM_XMM31, "8000000000000000")]
+    [TestCase(regMask.SRBM_XMM31 | regMask.SRBM_RAX, "8000000000000001")]
+    [TestCase((regMask)(-1), "FFFFFFFFFFFFFFFF")]
+    [NonParallelizable]
+    public static void RegisterMaskDiagnosticsPreserveUnsignedBits(regMask mask, string expected)
+    {
+        using var stream = new MemoryStream();
+        using var writer = new JitTextWriter(stream, leaveOpen: true);
+        var previous = s_jitstdout;
+        try
+        {
+            s_jitstdout = writer;
+            printRegMask(new regMaskTP(mask));
+            writer.Flush();
+        }
+        finally
+        {
+            s_jitstdout = previous;
+        }
+
+        Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo(expected));
     }
 }

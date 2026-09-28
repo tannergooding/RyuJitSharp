@@ -14,7 +14,7 @@ public static partial class Globals
     private static readonly CompositeFormat s_regMaskIntFormat = CompositeFormat.Parse(REG_MASK_INT_FMT);
 
     public static void printRegMask(regMaskTP mask) =>
-        jitprintf(string.Format(CultureInfo.InvariantCulture, s_regMaskAllFormat, (ulong)mask.Lower));
+        jitprintf(string.Format(CultureInfo.InvariantCulture, s_regMaskAllFormat, unchecked((ulong)mask.Lower)));
 
     public static void printRegMaskInt(regMaskTP mask)
     {
