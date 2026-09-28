@@ -16,6 +16,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: ARM64 rationalization
+
+ARM64 rationalization now dispatches comparison-mask reductions, scalar
+popcount/zero-count consumers, general most-significant-bit extraction and
+signature-dependent immediate handling. The signed division/shift subtraction
+rewrite produces remainder nodes with cleared value numbers and unchecked
+machine-width shift conversion. Managed target coverage passes 764 Debug/763
+Release cases, with 31 focused Debug cases after the final shift-boundary
+regressions. Allocation, emission and target execution remain separate.
+
 ## 2026-09-27: ARM64 block and switch lowering
 
 Block lowering resets indirection-pairing candidates and FFR state at each

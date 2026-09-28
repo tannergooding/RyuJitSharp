@@ -109,6 +109,12 @@ public sealed partial class Rationalizer
                     node.Flags &= ~(GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL);
                     return;
                 }
+#elif TARGET_ARM64
+                if (CanKeepHWIntrinsicImmediate(node, in signature))
+                {
+                    node.Flags &= ~(GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL);
+                    return;
+                }
 #else
                 throw new NotImplementedException("Target-specific hardware immediate rationalization is not ported.");
 #endif
@@ -149,9 +155,6 @@ public sealed partial class Rationalizer
     {
         var node = use.AsHWIntrinsic();
         assert(!node.IsUserCall);
-#if TARGET_ARM64
-        throw new NotImplementedException("ARM64 hardware rationalization requires mask-reduction rewrites.");
-#else
         switch (node.HWIntrinsicId)
         {
 #if TARGET_XARCH
@@ -173,7 +176,6 @@ public sealed partial class Rationalizer
                 break;
             }
         }
-#endif
     }
 
 #if TARGET_XARCH
@@ -482,6 +484,20 @@ public sealed partial class Rationalizer
         node.SimdSize = size;
         node.SimdBaseType = baseType;
         node.SetOp(1, first);
+#elif TARGET_ARM64
+        if (RewriteHWIntrinsicCmpMaskExtractMsb(ref use, parents))
+        {
+            return;
+        }
+
+        var node = use.AsHWIntrinsic();
+        if ((parents.Count > 1) && (IsPrimitivePopCount(GetParent(parents)) || IsZeroCount(GetParent(parents))) &&
+            IsHWIntrinsicCmpMaskExtractMsb(node, out _))
+        {
+            return;
+        }
+
+        RewriteHWIntrinsicExtractMsbArm64(node, parents, ref use);
 #else
         throw new NotImplementedException("Target-specific most-significant-bit rationalization is not ported.");
 #endif

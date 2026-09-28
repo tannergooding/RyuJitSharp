@@ -387,7 +387,53 @@ public sealed partial class Rationalizer : Phase
 #if TARGET_ARM64
     private void RewriteSubLshDiv(ref GenTree use)
     {
-        throw new NotImplementedException("ARM64 rationalization requires the target-specific rewrite closure.");
+        if (!CompilerInstance.opts.OptimizationEnabled)
+        {
+            return;
+        }
+
+        var node = use;
+        if (node.Oper is not GT_SUB)
+        {
+            return;
+        }
+
+        var operation = node.AsOp();
+        var left = operation.Op1;
+        var right = operation.Op2;
+        if ((node.Type is not (TYP_INT or TYP_LONG)) || (left.Oper is not GT_LCL_VAR) ||
+            (right.Oper is not GT_LSH))
+        {
+            return;
+        }
+
+        var shiftNode = right.AsOp();
+        var division = shiftNode.Op1;
+        var shift = shiftNode.Op2;
+        if ((division.Oper is not GT_DIV) || !shift.Oper.IsIntegralConst)
+        {
+            return;
+        }
+
+        var dividend = division.AsOp().Op1;
+        var divisor = division.AsOp().Op2;
+        if ((dividend.Oper is not GT_LCL_VAR) || !divisor.IsIntegralConstPow2 ||
+            (left.AsLclVar().LclNum != dividend.AsLclVar().LclNum))
+        {
+            return;
+        }
+
+        var shiftValue = unchecked((nuint)shift.AsIntConCommon().IntegralValue);
+        var divisorValue = unchecked((nuint)divisor.AsIntConCommon().IntegralValue);
+        if ((divisorValue >> unchecked((int)shiftValue)) == 1)
+        {
+            node.SetOper(GT_MOD);
+            operation.Op2 = divisor;
+            BlockRange.Remove(right);
+            BlockRange.Remove(division);
+            BlockRange.Remove(dividend);
+            BlockRange.Remove(shift);
+        }
     }
 #endif
 
@@ -551,8 +597,17 @@ public sealed partial class Rationalizer : Phase
             {
                 // Non-target intrinsics should have already been rewritten back into user calls.
                 assert(compiler.IsTargetIntrinsic(node.AsIntrinsic().IntrinsicName));
-#if TARGET_ARM64
-                throw new NotImplementedException("ARM64 intrinsic rationalization requires mask-reduction rewrites.");
+#if TARGET_ARM64 && FEATURE_HW_INTRINSICS
+                if ((node.AsIntrinsic().IntrinsicName is NI_PRIMITIVE_PopCount) &&
+                    RewriteHWIntrinsicCmpMaskExtractMsbPopCount(ref useEdge, parentStack))
+                {
+                    node = useEdge;
+                }
+                else if ((node.AsIntrinsic().IntrinsicName is NI_PRIMITIVE_TrailingZeroCount or NI_PRIMITIVE_LeadingZeroCount) &&
+                    RewriteHWIntrinsicCmpMaskExtractMsbZeroCount(ref useEdge, parentStack))
+                {
+                    node = useEdge;
+                }
 #endif
                 break;
             }
@@ -560,6 +615,13 @@ public sealed partial class Rationalizer : Phase
 #if FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
             {
+#if TARGET_ARM64
+                if (IsZeroCount(node) && RewriteHWIntrinsicCmpMaskExtractMsbZeroCount(ref useEdge, parentStack))
+                {
+                    node = useEdge;
+                    break;
+                }
+#endif
                 RewriteHWIntrinsic(ref useEdge, parentStack);
                 node = useEdge;
                 break;
