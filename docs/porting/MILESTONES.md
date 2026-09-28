@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Primary GC-stress and OSR controls match
+
+The existing allocation corpus completes under the primary managed JIT with
+GCStress=4 in both FullOpts and MinOpts. Its six selected bodies in each mode
+match native import/morph/cost trees and complete instructions.
+
+The strengthened OSR corpus also completes with actual Tier0-to-OSR transitions
+for both the hot loop and generic-context loop, preserving their once-only
+initialization checks. All six selected bodies match native trees and
+instructions, including both OSR entry variants. This uses the established
+TieredPGO-disabled configuration; broader tiered-PGO and runtime-suite results
+remain separate.
+
+Evidence: `checkpoint.primaryObjectGcStress` and `checkpoint.primaryOsr`.
+
 ## 2026-09-28: Primary EH, allocation and intrinsic controls match
 
 Primary-JIT execution now also completes the existing catch/finally,
