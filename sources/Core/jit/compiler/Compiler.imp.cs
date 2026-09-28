@@ -4086,14 +4086,14 @@ public partial class Compiler
 
                 var maskSize = readType.Size / 2;
 
-                if (!ConvertToLowerCase(cns[(byteOffset / 2)..], mask[..maskSize]))
+                if (!ConvertToLowerCase(cns.Slice(byteOffset / 2, maskSize), mask[..maskSize]))
                 {
                     // value contains non-ASCII chars, we can't proceed further
                     return null;
                 }
 
                 // 0x20 mask for the current chunk to convert it to lower case
-                var toLowerMask = gtNewGenericCon(readType, MemoryMarshal.AsBytes(mask));
+                var toLowerMask = gtNewGenericCon(readType, MemoryMarshal.AsBytes(mask[..maskSize]));
 
                 // loadedData is now "loadedData | toLowerMask"
                 loadedData = BitwiseOp(this, GT_OR, readType.ActualType, loadedData, toLowerMask);
@@ -4103,7 +4103,7 @@ public partial class Compiler
                 assert(cmpMode is StringComparison.Ordinal);
             }
 
-            var srcCns = gtNewGenericCon(readType, MemoryMarshal.AsBytes(cns)[byteOffset..]);
+            var srcCns = gtNewGenericCon(readType, MemoryMarshal.AsBytes(cns).Slice(byteOffset, readType.Size));
 
             // A small optimization: prefer X == Y over X ^ Y == 0 since
             // just one comparison is needed, and we can do it with a single load.
@@ -20882,7 +20882,7 @@ public partial class Compiler
         {
             fixed (char* pStr = str)
             {
-                cnsLength = info.compCompHnd->getStringLiteral(cnsStr.ScpHnd, cnsStr.SconCpx, pStr, str.Length, MaxPossibleUnrollSize);
+                cnsLength = info.compCompHnd->getStringLiteral(cnsStr.ScpHnd, cnsStr.SconCpx, pStr, str.Length);
             }
 
             if (cnsLength < 0)
@@ -20952,13 +20952,13 @@ public partial class Compiler
             {
                 var retExpr = op1.AsRetExpr();
                 assert(retExpr.InlineCandidate.Oper.IsCall);
-                retExpr.InlineCandidate = gtNewNothingNode();
+                retExpr.InlineCandidate.BashToNOP();
             }
             else if ((spanObj != op2) && (op2.Oper is GT_RET_EXPR))
             {
                 var retExpr = op2.AsRetExpr();
                 assert(retExpr.InlineCandidate.Oper.IsCall);
-                retExpr.InlineCandidate = gtNewNothingNode();
+                retExpr.InlineCandidate.BashToNOP();
             }
         }
 

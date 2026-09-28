@@ -2122,7 +2122,7 @@ public partial class Compiler
                                         compiler.impPopStack();
 
                                         // Bash the RET_EXPR's call to no-op since it's unused now
-                                        retExpr?.InlineCandidate = compiler.gtNewNothingNode();
+                                        retExpr?.InlineCandidate.BashToNOP();
 
                                         // Skip roundtrip and return the type handle directly
 
@@ -2417,7 +2417,22 @@ public partial class Compiler
                                     // drop get_CurrentThread() call
                                     compiler.impPopStack();
 
-                                    retExpr.InlineCandidate = compiler.gtNewNothingNode();
+                                    // Inline candidates are also roots in the import statement list.
+                                    var statement = compiler.impStmtList;
+
+                                    while ((statement is not null) && (statement.RootNode != call))
+                                    {
+                                        statement = statement.NextStmt;
+                                    }
+
+                                    if (statement is null)
+                                    {
+                                        throw new InvalidOperationException("Inline candidate call has no import statement.");
+                                    }
+
+                                    var nothing = compiler.gtNewNothingNode();
+                                    statement.RootNode = nothing;
+                                    retExpr.InlineCandidate = nothing;
                                     var tidCall = compiler.gtNewHelperCallNode(TYP_INT, CORINFO_HELP_GETCURRENTMANAGEDTHREADID);
                                     compiler.impConvertToUserCallAndMarkForInlining(tidCall);
 

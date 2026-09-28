@@ -10,6 +10,26 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class ImporterEffectsTests
 {
     [Test]
+    public static void ConstantStringComparisonUsesExactChunkWidths(
+        [Values("AbC", "AbC-d", "AbC-deF", "AbC-deFGh")] string value,
+        [Values(StringComparison.Ordinal, StringComparison.OrdinalIgnoreCase)] StringComparison comparison)
+    {
+        WithCompiler(compiler => {
+            compiler.opts.SetMinOpts(false);
+            compiler.lvaTable[0].Type = var_types.TYP_BYREF;
+            var data = compiler.gtNewLclvNode(var_types.TYP_BYREF, 0);
+            var characters = value.ToCharArray();
+
+            var result = compiler.impExpandHalfConstEquals(data, characters, 0, comparison)
+                ?? throw new AssertionException("ASCII comparison was not expanded.");
+
+            Assert.That(result.Type, Is.EqualTo(var_types.TYP_INT));
+            Assert.That(new string(characters),
+                Is.EqualTo(comparison == StringComparison.OrdinalIgnoreCase ? "abc-defgh"[..value.Length] : value));
+        });
+    }
+
+    [Test]
     public static void MultiplicationImportPreservesOverflowAndUnsignedFlags(
         [Values(OPCODE.CEE_MUL, OPCODE.CEE_MUL_OVF, OPCODE.CEE_MUL_OVF_UN)] OPCODE opcode,
         [Values(var_types.TYP_INT, var_types.TYP_LONG)] var_types type)
