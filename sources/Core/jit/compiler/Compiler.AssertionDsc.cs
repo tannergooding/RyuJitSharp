@@ -5,6 +5,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
@@ -479,15 +480,19 @@ public partial class Compiler
             GenTreeVecCon cns, ValueNum cnsVN, bool equals)
         {
             assert(varTypeIsSimd(cns.Type));
-            var size = cns.Type.Size;
+            // Own the active bytes: later node mutations must not change an assertion.
+            byte[] payload;
 #if TARGET_ARM64
             if (cns.Type is TYP_SIMD)
             {
-                throw new NotImplementedException("ARM64 scalable assertion constants are not yet ported.");
+                payload = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in cns.SimdScalableVal, 1)).ToArray();
             }
+            else
 #endif
-            // Own the active bytes: later node mutations must not change an assertion.
-            var payload = cns.SimdVal.AsSpan<byte>()[..size].ToArray();
+            {
+                payload = cns.SimdVal.AsSpan<byte>()[..cns.Type.Size].ToArray();
+            }
+
             return new(equals ? optAssertionKind.OAK_EQUAL : optAssertionKind.OAK_NOT_EQUAL,
                 ConstantOp1(comp, lclNum, vn), new(comp, optOp2Kind.O2K_CONST_VEC, ConstantVN(comp, cnsVN), simdValue: payload));
         }

@@ -4,6 +4,8 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using static RyuJitSharp.Compiler.optAssertionKind;
 using static RyuJitSharp.Compiler.optOp1Kind;
 using static RyuJitSharp.Compiler.optOp2Kind;
@@ -149,15 +151,26 @@ public partial class Compiler
                     return null;
                 }
 
+                int size = tree.Type.Size;
 #if TARGET_ARM64
                 if (tree.Type is TYP_SIMD)
                 {
-                    throw new NotImplementedException("Scalable vector assertion propagation is not yet ported.");
+                    size = Unsafe.SizeOf<simdscalable_t>();
                 }
 #endif
-                assert(tree.Type.Size == assertion.Op2.SimdSize);
+                assert(size == assertion.Op2.SimdSize);
                 var vector = gtNewVconNode(tree.Type);
-                assertion.Op2.SimdConstant.CopyTo(vector.SimdVal.AsSpan<byte>());
+#if TARGET_ARM64
+                if (tree.Type is TYP_SIMD)
+                {
+                    vector.SimdScalableVal = MemoryMarshal.Read<simdscalable_t>(assertion.Op2.SimdConstant);
+                }
+                else
+#endif
+                {
+                    assertion.Op2.SimdConstant.CopyTo(vector.SimdVal.AsSpan<byte>());
+                }
+
                 replacement = vector;
                 break;
             }
