@@ -16,13 +16,20 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sysvCallOrchestration": {
+      "scope": "AMD64 genCall, genCallPlaceRegArgs field-list/scalar arguments, genPutArgReg, getCallIndirectionCellReg, Debug tailcall epilog-register constraints and pending-label/alignment helpers.",
+      "mapping": "codegenxarch.cpp:5776-6021 and genPutArgReg -> CodeGen.Calls.cs/RegisterArguments.cs; codegencommon.cpp:genCallPlaceRegArgs/getCallIndirectionCellReg/genCheckTailCallEpilogRegisters -> CodeGen.CallArguments.cs/CallTargets.cs.",
+      "contracts": "Preserve argument/target GC roots until a fast-tailcall epilog consumes them, P/Invoke GC-boundary ordering, pending labels after calls but before result moves, and native multireg return order. Unmanaged Vector3 upper clearing remains on the second ABI register after copies. Windows vararg duplication stays Windows-only; SysV varargs fail before argument consumption.",
+      "validation": "Full-analysis SysVX64-related target coverage: 181 Debug/179 Release. Windows call controls: 118 Debug/106 Release. artifacts/sysv-call-recovery-{debug,release}/tst/{Debug,Release}/sysv-call-recovery-{debug,release}.trx and artifacts/arm64-local-windows-{debug,release}/tst/{Debug,Release}/sysv-call-recovery-windows-{debug,release}.trx.",
+      "remaining": "General machine generation/emission and final metadata orchestration remain Windows-gated. NativeAOT CFI and SysV varargs remain unsupported. No Linux generated-code execution/parity claim."
+    },
     "arm64LocalAllocationAndResolution": {
       "scope": "Internal tracked-local candidate/interval construction, block homes, local and minimal register resolution, multireg-call writeback, frame-stack marking and ARM64 entry scratch kills. Public DoRegisterAllocation remains gated.",
       "mapping": "lsrabuild.cpp:buildIntervals<true> -> LinearScan.LocalIntervalConstruction.cs; lsra.cpp:identifyCandidates/processBlockStartLocations/processBlockEndLocations/resolveLocalRef/resolveRegisters/writeRegisters/insertCopyOrReload -> corresponding LinearScan local/resolution partials; insertUpperVectorSave/Restore -> LocalResolutionDriverVectors.cs; resolveEdge -> EdgeResolutionParallelMoves.cs.",
       "corrections": "ARM64 upper saves use TYP_DOUBLE and spillAfter; memory restores use an assigned register and GTF_SPILLED. Integer cycles cannot select xarch GT_SWAP. Edge work sets use regMaskTP rather than a single register bank, preserving predicate-register destinations.",
       "validation": "Full-analysis unfiltered linux-arm64 target tests: 853 Debug/846 Release. Windows LSRA controls: 672 Debug/566 Release. artifacts/arm64-local-recovery-{debug,release}/tst/{Debug,Release}/arm64-local-final-{debug,release}.trx and artifacts/arm64-local-windows-{debug,release}/tst/{Debug,Release}/arm64-local-windows-{debug,release}.trx.",
       "regressions": "Arm64LinearScanLocalResolutionTests covers integer/floating/vector candidates, full local allocation with spill stress, entry parameter homes, multireg calls, minimal resolution, vector saves/restores, cycle scratch/spill choices and predicate moves. Prior helper captures retain the vector/cycle failures and two predicate destination failures under artifacts/arm64-local-recovery-release/tst/Release/arm64-{local,mask}-prior-release.trx.",
-      "remaining": "Public ARM64 allocation and generated-code execution/parity remain separate. Finish the saved SysV call packet directly; recover the uncollected native cleanup delta before advancing its ledger."
+      "remaining": "Public ARM64 allocation and generated-code execution/parity remain separate. SysV call integration is recorded under sysvCallOrchestration; recover the uncollected native cleanup delta before advancing its ledger."
     },
     "unsignedCheckedMultiply": {
       "scope": "B149: preserve CEE_MUL_OVF_UN signedness through MulOvf/MathOp2Ovf into MathOp2Flags, including type checking and overflow flags.",
@@ -39,7 +46,7 @@
       "mapping": "codegencommon.cpp return/exit helpers -> CodeGen.Returns.cs/ExitCode.cs; codegenxarch.cpp SIMD split/cookie helpers -> CodeGen.Returns.cs/GSCookieChecks.cs; common async transfers -> CodeGen.AsyncTransfers.cs; gentree.h indexed call spill flags -> GenTreeCall.cs and GenTree.RegisterSpills.cs.",
       "validation": "Full-analysis return-related SysV area: 151 Debug/150 Release. Final focused return/exit fixture: 26 Debug/25 Release, including all three SIMD source-register alias cases. Windows controls: 96 Debug/90 Release. artifacts/sysv-return-{debug,release}/tst/{Debug,Release}/sysv-return-final-{debug,release}.trx and sysv-return-integration-{debug,release}.trx; artifacts/sysv-return-win-{debug,release}/tst/{Debug,Release}/sysv-return-review-windows-{debug,release}.trx.",
       "contracts": "Field-list returns remain outside FEATURE_MULTIREG_RET; unsupported non-field-list paths retain unreached. Swift loads use one loop over the existing signed offset storage, retaining native bit patterns without a reinterpretation round trip.",
-      "remaining": "Continue genCall, argument placement and indirection/tailcall constraints. General generation/emission and final metadata orchestration remain Windows-gated. NativeAOT CFI remains explicitly unsupported; no Linux execution/parity claim."
+      "remaining": "genCall, argument placement and indirection/tailcall constraints are recorded under sysvCallOrchestration. General generation/emission and final metadata orchestration remain Windows-gated. NativeAOT CFI remains explicitly unsupported; no Linux execution/parity claim."
     },
     "arm64ConsecutiveAllocation": {
       "scope": "Consecutive candidate filtering, free/busy selection, spill ranking, sequence assignment and full-allocation traversal, including partial-vector restores and register-stress constraints.",
@@ -299,7 +306,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "B149 is committed dae1414; ARM64 internal local allocation/resolution has passed review and full-analysis target/Windows controls while the public allocator remains gated. Prior ordinary worker handles are unavailable. Parent now recovers the saved SysV call/argument WIP directly, then the uncollected native cleanup delta. Parent owns integration, shared documentation and C# commits; packets below are historical records, not active assignments.",
+      "parentScope": "B149 is committed dae1414 and ARM64 internal local allocation/resolution is committed e1d3365; public ARM64 allocation remains gated. The saved SysV call packet passed source review and full-analysis target/Windows controls. Prior ordinary worker handles are unavailable. Parent next recovers the uncollected native cleanup delta, then continues the concrete backend frontier. Parent owns integration, shared documentation and C# commits; packets below are historical records, not active assignments.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -694,7 +701,7 @@
         }
       ]
     },
-    "nextAction": "Continue without stopping at milestones. Finish the validated ARM64 local allocation/resolution commit, excluding the four saved SysV codegen files. Then directly recover CodeGen.CallArguments.cs, CallTargets.cs, codegenxarch/CodeGen.Calls.cs and RegisterArguments.cs: prior ordinary worker handles no longer resolve. Review native genCall/argument placement/indirection/tailcall constraints, add target coverage, preserve general generation/emission/metadata gates and commit the coherent packet. Native cleanup is clean at observed 8f39f4020bb1d4da7d70305c5396b2d34e5e853f, parent 33baf8ee; last collected report remains 4ec12e43. Reconcile that uncollected delta before advancing the ledger. Public ARM64 allocation and full native cleanup are not established.",
+    "nextAction": "Continue without stopping at milestones. Commit the validated SysV call packet (four codegen files, SysVX64CallOrchestrationTests and documentation), then recover native retirement directly: prior ordinary worker handles no longer resolve. Native cleanup is clean at observed 8f39f4020bb1d4da7d70305c5396b2d34e5e853f, parent 33baf8ee; last collected report remains 4ec12e43. Inspect that deletion-only delta and retained target/mode boundaries before advancing the ledger; preserve the oracle and recovery refs. Then resume the next ARM64/SysV backend dependency while keeping public allocator/generation/emission/metadata gates until their closure. Full native cleanup is not established.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

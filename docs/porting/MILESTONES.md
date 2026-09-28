@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: SysV call orchestration
+
+SysV AMD64 call generation now places scalar and multireg field-list arguments,
+preserves fast-tailcall argument and indirect-target roots through the epilog,
+and transfers scalar/multireg results to allocated registers. Indirection-cell
+selection, epilog-register checks, pending call labels and P/Invoke GC boundaries
+follow the native ordering. Windows-only floating-point vararg duplication stays
+Windows-only; unsupported SysV varargs reject before consuming arguments.
+
+Full-analysis related SysV coverage passes 181 Debug/179 Release cases, including
+null checks through RDI and unmanaged Vector3 return-copy/upper-clear ordering.
+Windows call controls pass 118 Debug/106 Release. General generation, emission
+and final metadata orchestration remain gated; this is not Linux execution or
+parity evidence.
+
 ## 2026-09-28: ARM64 local allocation and resolution
 
 ARM64 can now construct tracked-local intervals, allocate and resolve local

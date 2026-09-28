@@ -17,8 +17,8 @@ public sealed partial class CodeGen
 
     public regNumber getCallIndirectionCellReg(GenTreeCall call)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Call indirection-cell selection requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Call indirection-cell selection requires AMD64.");
 #else
         var result = REG_NA;
         switch (call.IndirectionCellArgKind)
@@ -64,8 +64,8 @@ public sealed partial class CodeGen
 #if DEBUG
     public void genCheckTailCallEpilogRegisters(GenTreeCall call)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Tailcall epilog-register verification requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Tailcall epilog-register verification requires AMD64.");
 #else
         if (!call.IsFastTailCall)
         {

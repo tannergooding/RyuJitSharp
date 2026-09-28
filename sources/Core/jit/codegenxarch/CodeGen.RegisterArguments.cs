@@ -9,14 +9,16 @@ public sealed partial class CodeGen
 {
     public void genPutArgReg(GenTreeUnOp tree)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Register argument generation requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Register argument generation requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_PUTARG_REG);
         var targetType = tree.Type;
         var targetReg = tree.RegNum;
+#if !UNIX_AMD64_ABI
         assert(targetType != TYP_STRUCT);
+#endif
 
         var operand = tree.Op1;
         _ = genConsumeReg(operand);

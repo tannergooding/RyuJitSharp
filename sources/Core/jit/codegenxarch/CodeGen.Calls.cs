@@ -9,8 +9,8 @@ public sealed partial class CodeGen
 {
     public unsafe void genCall(GenTreeCall call)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Call generation requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Call generation requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         genAlignStackBeforeCall(call);
@@ -126,16 +126,16 @@ public sealed partial class CodeGen
 
     private static void genAlignStackBeforeCall(GenTreeCall call)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Call stack alignment requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Call stack alignment requires AMD64.");
 #endif
-        // Native per-call alignment is Unix-x86-only; Windows AMD64 uses the fixed outgoing area.
+        // Native per-call alignment is Unix-x86-only; AMD64 uses a fixed outgoing area.
     }
 
     private static void genRemoveAlignmentAfterCall(GenTreeCall call, uint bias = 0)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Call stack realignment requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Call stack realignment requires AMD64.");
 #else
         assert(bias == 0);
 #endif
@@ -143,8 +143,8 @@ public sealed partial class CodeGen
 
     public unsafe void genDefinePendingCallLabel(GenTreeCall call)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Pending call labels require Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Pending call labels require AMD64.");
 #else
         if (genPendingCallLabel is null)
         {
