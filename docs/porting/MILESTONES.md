@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Standard and array primary-JIT execution match
+
+The existing standard and array/runtime-lookup corpora now also complete with the
+managed compiler as the primary JIT, including startup and teardown, without
+AltJIT. All 19 standard bodies and both array/lookup bodies have native-equal
+post-import, post-global-morph and post-cost trees and complete instruction
+streams. This extends the arithmetic scenario to synchronization, generic EH,
+P/Invoke and reverse P/Invoke, implicit-byref arguments, multidimensional arrays
+and generic type lookup. Whole dumps and the official runtime suite remain
+separate.
+
+Evidence: `checkpoint.primaryStandardAndArray` and the comparison reports under
+`artifacts/primary-standard` and `artifacts/primary-array`.
+
 ## 2026-09-28: Runtime method tree diagnostics match
 
 Early `isinst` expansion now preserves Windows native node-construction order,

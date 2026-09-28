@@ -16,6 +16,14 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "primaryStandardAndArray": {
+      "sourceCommit": "1a24fc6",
+      "scope": "Extend primary-JIT execution from checked arithmetic to the existing standard PortingCorpus and array/runtime-lookup corpus.",
+      "execution": "Both native/managed processes for both corpora exit0 without AltJIT or timeouts, with identical stdout/stderr. Standard output is empty; array output is42,17,4,3.",
+      "parity": "All19standard bodies and both array/lookup bodies have exact post-import, post-global-morph and post-cost trees and complete instruction streams. These include synchronization, generic catch, P/Invoke/reverse P/Invoke, local addresses, implicit-byref arguments, multidimensional array addressing and generic type lookup.",
+      "evidence": "artifacts/primary-standard/comparison-1.json and artifacts/primary-array/comparison-1.json. Reproduce with python artifacts/primary-standard/compare.py, or add artifacts/primary-array --expected-bodies 2. Per-corpus execution-reference-1 manifests identify the matching host, immutable JIT and corpus hashes.",
+      "limits": "Two additional existing corpora with runtime dependencies, not the official runtime suite, whole dumps or raw-code-byte parity."
+    },
     "runtimeTreeDiagnostics": {
       "scope": "B408 early isinst-QMARK node construction order and B411 struct-array INDEX_ADDR/ARR_ADDR type-name spacing.",
       "mapping": "importer.cpp:impCastClassOrIsInstToTree -> Compiler.imp.cs; gentree.cpp:gtDispNode -> Compiler.gt.cs.",
@@ -356,7 +364,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Windows x64 foreground: continue primary-JIT execution with the existing standard PortingCorpus after closing B403/B408/B411 runtime-method parity gaps. Use the current matching host and fresh JIT/reference captures, investigate the first concrete failure or mismatch, and retain the arithmetic primary control. B409 potential upstream behavior stays deferred. Native retirement independently continues substantive still-present mapped units; no ARM64 foreground expansion or broad runtime-suite gate.",
+      "parentScope": "Windows x64 foreground: continue primary-JIT execution with the existing GC-loop corpus after exact standard/array/runtime-method comparisons. Use the current matching host and fresh JIT/reference captures, investigate the first concrete failure or mismatch, and retain the established primary controls. B409 potential upstream behavior stays deferred. Native retirement independently continues substantive still-present mapped units; no ARM64 foreground expansion or broad runtime-suite gate.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -751,7 +759,7 @@
         }
       ]
     },
-    "nextAction": "Commit validated B408/B411 if still uncommitted, then capture the existing standard PortingCorpus under the primary managed JIT. Reuse the first configuration in artifacts/upstream-refresh-33baf8/shared-closure-managed-matrix-1/configurations.json, but create a fresh execution reference with artifacts/runtime-tree-diagnostics/jit/RyuJitSharp.dll and no stale output paths. Run primary native/managed captures with selector RyuJitSharp.PortingCorpus:* and compare output/exit status before investigating a bounded first failure. The arithmetic primary control remains a27check/exit0/no-AltJIT pass; invoker post-import and ManifestBuilder post-promotion trees/instructions now exactly match native. Collect retirement worker4b57b744-36f1-4e6e-8b76-94c1a87d6e02 after its next notification; report27 is integrated.",
+    "nextAction": "Run the gc-loops-fullopts-complete configuration from artifacts/upstream-refresh-33baf8/shared-closure-managed-matrix-1/configurations.json under the primary managed/native JIT. Create fresh artifacts/primary-gc-loops/execution-reference-1 with artifacts/runtime-tree-diagnostics/jit/RyuJitSharp.dll, then use primary-jit-probe/capture.py with selector RyuJitSharp.GcLoopCases:*. Compare process output/exit status and four selected method phase trees/instructions; investigate the first concrete divergence. Standard19 and array2 primary bodies already have exact import/morph/cost trees and instruction streams, with both processes exiting0; do not repeat those captures. Collect retirement worker4b57b744-36f1-4e6e-8b76-94c1a87d6e02 after its next notification; report27 is integrated.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
