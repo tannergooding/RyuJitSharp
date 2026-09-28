@@ -16,6 +16,13 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "ilScannerUnsignedBounds": {
+      "scope": "fgFindJumpTargets switch counts, switch table endpoints and short/long branch and leave destinations.",
+      "correction": "B441 restores pinned unsigned count validation and modular destination arithmetic before jump-target indexing. Native already rejects the malformed operands; this is a C# translation defect.",
+      "validation": "Twelve pre-fix regressions fail and twelve controls pass. All 24 boundary cases pass after correction within 100 Debug / 100 Release parser, inline-scan and error-contract tests.",
+      "evidence": "artifacts/primary-parameter-cycles/il-scan-unsigned-evidence.json",
+      "limits": "Managed contract and pinned-source evidence, not a new primary-execution parity claim or demonstrated out-of-bounds access."
+    },
     "primaryParameterPermutations": {
       "scope": "Float/double argument swaps, rotations and reversals through tail-position and ordinary-call source forms.",
       "execution": "Pinned native and managed compilers both pass 2048 exact independently calculated results; 66 raw phase slices and 22 complete instruction traces match.",
@@ -746,7 +753,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Continue Windows implementation independently of cleanup. B438/B439 high-bit mask defects and B440 large-switch operand-width overflow are closed. Parameter permutation execution matches but does not reproduce B439. Correct the discovered unsigned switch-count and branch-destination validation mismatch in fgFindJumpTargets, then consume actionable Windows gaps from the target ledger; keep native retirement separate.",
+      "parentScope": "Continue Windows implementation independently of cleanup. B438/B439 high-bit masks, B440 switch operand width and B441 unsigned scanner validation are closed. Parameter permutation execution matches but does not reproduce B439. Consume actionable Windows gaps from the target ledger while reconciling historical mapping prose with later completed checkpoints; keep native retirement separate.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1141,7 +1148,7 @@
         }
       ]
     },
-    "nextAction": "Restore pinned fgFindJumpTargets unsigned switch-count and branch-destination validation. Add bounded malformed-operand and valid-backward-branch controls, establish pre-fix failures, preserve BADCODE diagnostics, and run focused full-analysis Debug/Release parser coverage before committing. Parameter permutation evidence is complete without a B439 runtime reproduction. Worker4b57b744 reported native retirement193bd210156 and a287-record ledger at C#0fdc170b; integrate actionable Windows gaps after this parser correction. B153/D009, B365 and ARM64 foreground expansion remain deferred.",
+    "nextAction": "Reconcile stale sourceMap byte-output descriptions against the completed instruction-display/output checkpoints; B231 is already resolved and must not be counted as missing Windows implementation. Worker4b57b744 owns the matching ledger correction and evidence-driven classification of19 mapping-only unknown areas; collect its next result on notification, not by repeating its code review. Native retirement193bd210156 and the287-record baseline are collected. Continue concrete Windows gaps from the corrected report; preserve B153/D009, B365 and ARM64 foreground deferrals.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

@@ -5365,7 +5365,7 @@ public partial class Compiler
                             break;
                         }
 
-                        var jmpAddr = (IL_OFFSET)(codeAddr - codeBegp) + (sz + jmpDist);
+                        var jmpAddr = unchecked((uint)((codeAddr - codeBegp) + sz + jmpDist));
 
                         // Make sure target is reasonable
                         if (jmpAddr >= codeSize)
@@ -5374,7 +5374,7 @@ public partial class Compiler
                         }
 
                         // Mark the jump target
-                        jumpTarget[jmpAddr] = true;
+                        jumpTarget[(int)jmpAddr] = true;
                         break;
                     }
 
@@ -5387,7 +5387,7 @@ public partial class Compiler
                         }
 
                         // Read the number of cases
-                        var jmpCnt = BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(codeAddr, sizeof(int)));
+                        var jmpCnt = BinaryPrimitives.ReadUInt32LittleEndian(new ReadOnlySpan<byte>(codeAddr, sizeof(int)));
                         codeAddr += sizeof(int);
 
                         if (jmpCnt > (codeSize / sizeof(int)))
@@ -5396,7 +5396,7 @@ public partial class Compiler
                         }
 
                         // Find the end of the switch table
-                        var jmpBase = (IL_OFFSET)(codeAddr - codeBegp) + (jmpCnt * sizeof(int));
+                        var jmpBase = (uint)((codeAddr - codeBegp) + (jmpCnt * sizeof(int)));
 
                         // Make sure there is more code after the switch
                         if (jmpBase >= codeSize)
@@ -5405,12 +5405,13 @@ public partial class Compiler
                         }
 
                         // jmpBase is also the target of the default case, so mark it
-                        jumpTarget[jmpBase] = true;
+                        jumpTarget[(int)jmpBase] = true;
 
                         // Process table entries
                         while (jmpCnt > 0)
                         {
-                            var jmpAddr = jmpBase + BinaryPrimitives.ReadInt32LittleEndian(new ReadOnlySpan<byte>(codeAddr, sizeof(int)));
+                            var jmpAddr = unchecked(jmpBase + (uint)BinaryPrimitives.ReadInt32LittleEndian(
+                                new ReadOnlySpan<byte>(codeAddr, sizeof(int))));
                             codeAddr += sizeof(int);
 
                             if (jmpAddr >= codeSize)
@@ -5418,7 +5419,7 @@ public partial class Compiler
                                 BADCODE($"jump target out of range at offset {(IL_OFFSET)(codeAddr - codeBegp):X4}");
                             }
 
-                            jumpTarget[jmpAddr] = true;
+                            jumpTarget[(int)jmpAddr] = true;
                             jmpCnt--;
                         }
 

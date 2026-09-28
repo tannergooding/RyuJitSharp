@@ -61,6 +61,112 @@ internal static unsafe class FlowGraphDfsTests
         }
     }
 
+    [TestCase(0x2B, -2, 0)]
+    [TestCase(0x2B, 1, 3)]
+    [TestCase(0x2B, -3, -1)]
+    [TestCase(0x2B, 2, -1)]
+    [TestCase(0x2B, sbyte.MinValue, -1)]
+    [TestCase(0x2B, sbyte.MaxValue, -1)]
+    [TestCase(0x38, -5, 0)]
+    [TestCase(0x38, 1, 6)]
+    [TestCase(0x38, -6, -1)]
+    [TestCase(0x38, 2, -1)]
+    [TestCase(0x38, int.MinValue, -1)]
+    [TestCase(0x38, int.MaxValue, -1)]
+    [TestCase(0xDD, -6, -1)]
+    [TestCase(0xDE, -3, -1)]
+    public static void BranchScanPreservesUnsignedDestinationBounds(byte opcode, int displacement, int expectedTarget)
+    {
+        var operandSize = (opcode is 0x2B or 0xDE) ? sizeof(sbyte) : sizeof(int);
+        var il = new byte[operandSize + 3];
+        il[0] = opcode;
+        if (operandSize is sizeof(sbyte))
+        {
+            il[1] = unchecked((byte)displacement);
+        }
+        else
+        {
+            BinaryPrimitives.WriteInt32LittleEndian(il.AsSpan(1), displacement);
+        }
+        il[^1] = 0x2A;
+
+        AssertJumpTargetScan(il, expectedTarget);
+    }
+
+    [TestCase(0u, 6)]
+    [TestCase(1u, -1)]
+    [TestCase(0x80000000u, -1)]
+    [TestCase(uint.MaxValue, -1)]
+    public static void SwitchScanPreservesUnsignedCountBounds(uint count, int expectedTarget)
+    {
+        byte[] il = [0x16, 0x45, 0, 0, 0, 0, 0x2A];
+        BinaryPrimitives.WriteUInt32LittleEndian(il.AsSpan(2), count);
+
+        AssertJumpTargetScan(il, expectedTarget);
+    }
+
+    [TestCase(-10, 0)]
+    [TestCase(0, 10)]
+    [TestCase(-11, -1)]
+    [TestCase(1, -1)]
+    [TestCase(int.MinValue, -1)]
+    [TestCase(int.MaxValue, -1)]
+    public static void SwitchScanPreservesUnsignedDestinationBounds(int displacement, int expectedTarget)
+    {
+        byte[] il = [0x16, 0x45, 1, 0, 0, 0, 0, 0, 0, 0, 0x2A];
+        BinaryPrimitives.WriteInt32LittleEndian(il.AsSpan(6), displacement);
+
+        AssertJumpTargetScan(il, expectedTarget);
+    }
+
+    private static void AssertJumpTargetScan(byte[] il, int expectedTarget)
+    {
+        if (expectedTarget < 0)
+        {
+            var error = Assert.Throws<FatalJitException>(() => ScanJumpTargets(il));
+            Assert.That(error, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_BADCODE));
+        }
+        else
+        {
+            Assert.That(ScanJumpTargets(il)[expectedTarget], Is.True);
+        }
+    }
+
+    private static BitArray ScanJumpTargets(byte[] il)
+    {
+        var compiler = CreateCompiler();
+        compiler.compInlineContext = (InlineContext)RuntimeHelpers.GetUninitializedObject(typeof(InlineContext));
+        compiler.compInlineContext._ilSize = il.Length;
+        var methodInfo = new CORINFO_METHOD_INFO();
+        compiler.info.compMethodInfo = &methodInfo;
+        compiler.info.compIsStatic = true;
+        var flags = new JitFlags();
+        compiler.opts.jitFlags = &flags;
+#if DEBUG
+        using var jitTls = new JitTls(null);
+#endif
+        var previous = JitTls.Compiler;
+        JitTls.Compiler = compiler;
+#if DEBUG
+        JitTls.LogEnv.Compiler = compiler;
+#endif
+
+        try
+        {
+            var jumpTargets = new BitArray(il.Length);
+            fixed (byte* code = il)
+            {
+                compiler.fgFindJumpTargets(code, il.Length, jumpTargets, makeInlineObservations: false);
+            }
+
+            return jumpTargets;
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
