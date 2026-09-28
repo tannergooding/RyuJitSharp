@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Primary-JIT execution reaches application code
+
+The managed compiler can now take the primary-JIT role through Windows runtime
+startup and execute the arithmetic probe, rather than compiling only selected
+AltJIT methods. Intrinsic cancellation preserves shared call ownership, operation
+costs retain native-width arithmetic, and importer/EH/range/promotion corrections
+allow the required framework methods to compile.
+
+Complete instruction streams match the native event-provider callback,
+reflection invoker and manifest builder captures. Whole-tree and dump parity
+remain incomplete. Process teardown still fails while finding a loop insertion
+point in `AssemblyLoadContext.OnProcessExit`, so this is not yet a successful
+primary-JIT process run or runtime-suite result.
+
+Residual cleanup also removed complete forward-substitution, Boolean optimization
+and mask-local conversion units using their existing committed port mappings.
+
 ## 2026-09-28: Scalable element lookup and unary folding
 
 Scalable integral element lookup now follows native raw 64-bit arithmetic.

@@ -19,6 +19,38 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class PhysicalPromotionTests
 {
+    [TestCase(TYP_VOID)]
+    [TestCase(TYP_INT)]
+    public static void ConditionalTraversalDoesNotClassifyValuesWithoutReadBacks(var_types type)
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler => {
+            var block = BasicBlock.New(compiler, BBJ_RETURN);
+            compiler.fgFirstBB = compiler.fgLastBB = block;
+            var condition = compiler.gtNewBinaryNode(GT_EQ, TYP_INT,
+                compiler.gtNewIconNode(TYP_INT, 1), compiler.gtNewIconNode(TYP_INT, 0));
+            var thenTree = type is TYP_VOID ? compiler.gtNewNothingNode() : compiler.gtNewIconNode(TYP_INT, 2);
+            var elseTree = type is TYP_VOID ? compiler.gtNewNothingNode() : compiler.gtNewIconNode(TYP_INT, 3);
+            var colon = compiler.gtNewColonNode(type, thenTree, elseTree);
+            var qmark = compiler.gtNewQmarkNode(type, condition, colon);
+            var statement = compiler.gtNewStmt(qmark);
+            compiler.fgInsertStmtAtEnd(block, statement);
+            var aggregates = new Compiler.PhysicalPromotionAggregateInfoMap(compiler.lvaCount);
+            var liveness = new Compiler.PhysicalPromotionLiveness(compiler, aggregates);
+            var visitor = new Compiler.PhysicalPromotionReplaceVisitor(compiler, aggregates, liveness);
+            _ = visitor.StartBlock(block);
+            visitor.StartStatement(statement);
+
+            visitor.WalkTree(ref statement.RootNodeRef);
+
+            Assert.That(statement.RootNode, Is.SameAs(qmark));
+            Assert.That(qmark.Op1, Is.SameAs(condition));
+            Assert.That(qmark.Op2, Is.SameAs(colon));
+            Assert.That(colon.Op1, Is.SameAs(elseTree));
+            Assert.That(colon.Op2, Is.SameAs(thenTree));
+            Assert.That(qmark.Type, Is.EqualTo(type));
+        });
+    }
+
 #if DEBUG
     [Test]
     public static void AccessDumpsPreserveNativeCountersAndInducedMetrics()

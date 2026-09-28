@@ -78,8 +78,8 @@ public partial class Compiler
                 return WALK_CONTINUE;
             }
 
-            var readBackType = use.IsValue ? use.Type : TYP_VOID;
             var readBacks = replacer.InsertMidTreeReadBacks(use);
+            var readBackType = (readBacks is not null) && use.IsValue ? use.Type : TYP_VOID;
             if (use.Oper.IsStore)
             {
                 if (use.Type is TYP_STRUCT)
