@@ -111,7 +111,7 @@ public sealed partial class CodeGen
                 var available = tempCandidates & typeMask;
                 noway_assert(available.IsNonEmpty);
 
-                node.CopiedReg = (regNumber)BitOperations.TrailingZeroCount((ulong)available.Lower);
+                node.CopiedReg = (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)available.Lower));
                 busyRegs |= RegisterMask(node.CopiedReg);
                 var ins = ins_Copy(node.Reg, copyType);
                 _ = Emitter.emitIns_Mov(ins, copyType.EmitActualSize,

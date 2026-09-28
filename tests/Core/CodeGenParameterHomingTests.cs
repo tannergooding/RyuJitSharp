@@ -140,14 +140,23 @@ internal static class CodeGenParameterHomingTests
         }, minopts: false);
     }
 
-    [TestCase(TYP_LONG, REG_RAX, REG_RCX, REG_RDX, INS_mov, EA_8BYTE)]
-    [TestCase(TYP_DOUBLE, REG_XMM0, REG_XMM1, REG_XMM2, INS_movaps, EA_8BYTE)]
+    [TestCase(TYP_LONG, REG_RAX, REG_RCX, REG_RDX, INS_mov, EA_8BYTE, false)]
+    [TestCase(TYP_LONG, REG_RAX, REG_RCX, REG_RDX, INS_mov, EA_8BYTE, true)]
+    [TestCase(TYP_DOUBLE, REG_XMM0, REG_XMM1, REG_XMM2, INS_movaps, EA_8BYTE, false)]
+    [TestCase(TYP_DOUBLE, REG_XMM0, REG_XMM1, REG_XMM2, INS_movaps, EA_8BYTE, true)]
     public static void RegisterCycleUsesFreeScratchOfTheCorrectClassAndUpdatesZeroedContract(
-        var_types type, regNumber source, regNumber destination, regNumber scratch, instruction ins, emitAttr size)
+        var_types type, regNumber source, regNumber destination, regNumber scratch, instruction ins, emitAttr size,
+        bool highFloat)
     {
         CodeGenSpillVariableTests.WithCompiler(type, source, (compiler, codeGen, _) =>
         {
             InitializeModifiedRegisters(compiler, codeGen);
+            if (highFloat)
+            {
+                compiler.srbmFltCalleeTrash |= SRBM_HIGHFLOAT;
+                AllFloatRegisters(compiler) |= SRBM_HIGHFLOAT;
+                codeGen.CopyRegisterInfo();
+            }
             SetParameter(compiler, 0, source, type.Size);
             compiler.lvaTable[0].RegNum = destination;
             compiler.lvaTable[0].lvOnFrame = false;

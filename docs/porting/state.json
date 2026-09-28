@@ -16,6 +16,13 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "highRegisterMaskClosure": {
+      "scope": "B439: fixed-register extraction, single selection, counting and EVEX floating argument-homing cycles.",
+      "mapping": "codegencommon.cpp NodeInternalRegisters::Extract/GetSingle/Count and CodeGen::genHomeRegisterParams -> codegeninterface/NodeInternalRegisters*.cs and codegencommon/CodeGen.ParameterHoming.cs.",
+      "validation": "Three internal-mask regressions and one EVEX homing-cycle regression fail before their fixes; final full-analysis register/homing/frame coverage passes 176 Debug / 172 Release.",
+      "evidence": "artifacts/primary-outgoing-args/register-mask-closure-debug.log; register-mask-closure-release.log; internal-tests-before.log; homing-tests-before.log.",
+      "limits": "Managed contract coverage. Existing primary-outgoing-args/jit-1 predates these changes. Frame-finalization integer-only masks and callee-save masks cannot contain XMM31; EVEX high SIMD scratch candidates are already callee-trash and cannot enter the extra-callee-save branch."
+    },
     "primaryOutgoingArguments": {
       "scope": "Windows AMD64 calls with 4/8/64/520 mixed parameters and dynamic stack allocation; B438 high-bit register diagnostics.",
       "mapping": "compiler.hpp printRegMask -> compiler/Globals.RegisterDiagnostics.cs.",
@@ -23,7 +30,7 @@
       "sourceSnapshot": "5407042ece064f2ffdbf8015ed41b0a1bc06810a",
       "evidence": "artifacts/primary-outgoing-args/evidence.json",
       "sizingDisposition": "No Windows signed-size failure established: ushort signature argument counts and eight-byte Windows stack slots keep normal call sizing representable. This is not a proof of all other-target size contracts.",
-      "remaining": "Review high-bit mask extraction/counting in NodeInternalRegisters next; cleanup classification remains independent."
+      "remaining": "The subsequent highRegisterMaskClosure fixes internal-mask and homing-cycle overflow. Cleanup classification remains independent."
     },
     "primaryIntegerVectorDivision": {
       "scope": "Vector128/256/512 signed/unsigned 32/64-bit division, including exceptional lanes.",
@@ -709,7 +716,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Continue Windows implementation independently of cleanup. Large mixed-argument/stackalloc execution exposed and closed B438 high-bit register diagnostics. Next inspect the related NodeInternalRegisters extraction/counting conversions for signed-mask overflow. Worker owns target-ledger classification and native deletions; neither gates foreground work.",
+      "parentScope": "Continue Windows implementation independently of cleanup. B438 diagnostic and B439 internal-register/argument-homing high-bit overflow are closed. Continue bounded numeric SIMD execution to expose incomplete Windows paths while the worker owns target-ledger classification and native deletions; neither gates foreground work.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1104,7 +1111,7 @@
         }
       ]
     },
-    "nextAction": "Continue independent Windows work after B438: inspect NodeInternalRegisters.cs and NodeInternalRegisters.Count.cs checked casts from signed regMask to ulong, confirm legitimate high-register masks against the pinned native contract and reproduce/fix any overflow with focused tests. Large outgoing calls now pass36results and24slices/eighttraces. Current primary JIT is primary-outgoing-args/jit-1, source5407042e. Collect worker4b57b744's target-ledger baseline on notification without pausing foreground work. B153/D009, B365 and ARM64 foreground expansion remain deferred.",
+    "nextAction": "Continue independent Windows SIMD execution after B439: exercise fixed-width integral vector left/arithmetic/logical right shifts with boundary and out-of-range scalar counts against independently computed lanes, using a fresh current-source JIT. Reuse the established primary capture/comparison tools; investigate actual failures rather than adding broad infrastructure. Collect worker4b57b744's target-ledger baseline on notification without pausing foreground work. Existing primary-outgoing-args/jit-1 predates B439. B153/D009, B365 and ARM64 foreground expansion remain deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

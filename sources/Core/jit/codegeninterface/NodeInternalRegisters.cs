@@ -32,7 +32,7 @@ public partial struct NodeInternalRegisters
         var registers = _table[tree];
         var available = registers & mask;
         assert(available != RBM_NONE);
-        var lower = (ulong)available.Lower;
+        var lower = unchecked((ulong)available.Lower);
 #if HAS_MORE_THAN_64_REGISTERS
         var result = (regNumber)(lower != 0
             ? BitOperations.TrailingZeroCount(lower)
@@ -52,7 +52,7 @@ public partial struct NodeInternalRegisters
         assert(_table.ContainsKey(tree));
         var registers = _table[tree];
         var available = registers & mask;
-        var lower = (ulong)available.Lower;
+        var lower = unchecked((ulong)available.Lower);
 #if HAS_MORE_THAN_64_REGISTERS
         var upper = (ulong)available.Upper;
         assert((BitOperations.IsPow2(lower) && (upper == 0)) ||

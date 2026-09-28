@@ -20,7 +20,7 @@ public partial struct NodeInternalRegisters
         }
 
         var available = registers & mask;
-        var count = BitOperations.PopCount((ulong)available.Lower);
+        var count = BitOperations.PopCount(unchecked((ulong)available.Lower));
 #if HAS_MORE_THAN_64_REGISTERS
         count += BitOperations.PopCount((ulong)available.Upper);
 #endif

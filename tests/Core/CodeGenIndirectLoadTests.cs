@@ -179,6 +179,7 @@ internal static unsafe class CodeGenIndirectLoadTests
 
     [TestCase(REG_R8)]
     [TestCase(REG_XMM8)]
+    [TestCase(REG_XMM31)]
     [TestCase(REG_K1)]
     public static void SingleInternalRegisterSelectionPreservesBothBanks(regNumber reg)
     {
@@ -194,6 +195,48 @@ internal static unsafe class CodeGenIndirectLoadTests
 #else
             Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(selected | RBM_RDX));
 #endif
+        });
+    }
+
+    [TestCase(REG_R8)]
+    [TestCase(REG_XMM8)]
+    [TestCase(REG_XMM31)]
+    [TestCase(REG_K1)]
+    public static void InternalRegisterExtractionPreservesOrderAcrossBanks(regNumber reg)
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var tree = compiler.gtNewIconNode(TYP_INT, 0);
+            var selected = regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
+            codeGen.InternalRegisters.Add(tree, selected | RBM_RDX | RBM_K7);
+
+            Assert.That(codeGen.InternalRegisters.Extract(tree), Is.EqualTo(REG_RDX));
+            Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(selected | RBM_K7));
+            Assert.That(codeGen.InternalRegisters.Extract(tree, selected), Is.EqualTo(reg));
+            Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(RBM_K7));
+            Assert.That(codeGen.InternalRegisters.Extract(tree), Is.EqualTo(REG_K7));
+            Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(RBM_NONE));
+        });
+    }
+
+    [TestCase(REG_R8)]
+    [TestCase(REG_XMM8)]
+    [TestCase(REG_XMM31)]
+    [TestCase(REG_K1)]
+    public static void InternalRegisterCountPreservesBothBanksWithoutConsuming(regNumber reg)
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var tree = compiler.gtNewIconNode(TYP_INT, 0);
+            var selected = regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
+            var registers = selected | RBM_RDX | RBM_K7;
+            Assert.That(codeGen.InternalRegisters.Count(tree), Is.Zero);
+            codeGen.InternalRegisters.Add(tree, registers);
+
+            Assert.That(codeGen.InternalRegisters.Count(tree), Is.EqualTo(3u));
+            Assert.That(codeGen.InternalRegisters.Count(tree, selected), Is.EqualTo(1u));
+            Assert.That(codeGen.InternalRegisters.Count(tree, RBM_RAX), Is.Zero);
+            Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(registers));
         });
     }
 
