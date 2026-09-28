@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Primary EH, allocation and intrinsic controls match
+
+Primary-JIT execution now also completes the existing catch/finally,
+filter/nested-finally, object-allocation and hardware-intrinsic corpora. All 19
+selected bodies match native import, global-morph and operation-cost trees and
+complete instruction streams. Both EH programs report 11 Gen2/helper collections.
+The eight native/managed processes exit successfully with identical output.
+These are scoped controls, not whole-dump or official runtime-suite results.
+
+Evidence: `checkpoint.primaryEhObjectsAndHardware`; raw captures and comparisons
+are under `artifacts/primary-{eh,filters,objects,hardware}`.
+
 ## 2026-09-28: Primary runtime-async and GC-loop execution complete
 
 Box cleanup now retains the morph state of already-processed allocation/copy

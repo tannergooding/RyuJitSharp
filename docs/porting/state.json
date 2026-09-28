@@ -16,6 +16,14 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "primaryEhObjectsAndHardware": {
+      "sourceCommit": "7086df6",
+      "scope": "Existing catch/finally, filter/nested-finally, object-allocation and hardware-intrinsic corpora under primary native/managed JITs.",
+      "execution": "All eight processes exit0 without AltJIT or timeout, with identical stdout/stderr. EH and filter corpora each report11Gen2/11helper collections.",
+      "parity": "All19selected bodies (3EH,2filter,6object,8hardware) have exact native post-import, post-global-morph and post-cost trees and complete instruction streams.",
+      "evidence": "artifacts/primary-{eh,filters,objects,hardware}/comparison-1.json; reproduce using python artifacts/primary-eh/compare.py with the capture root and --expected-bodies3/2/6/8 respectively.",
+      "limits": "Scoped primary-JIT corpus results, not GCStress4, whole-dump parity, an exhaustive source-completion review or the official runtime suite."
+    },
     "boxCleanupAndPrimaryAsync": {
       "scope": "B412: preserve already-morphed box-allocation/copy NOP identity and fix the live owner of a narrowed struct source in gtTryRemoveBoxUpstreamEffects.",
       "mapping": "gentree.cpp:gtTryRemoveBoxUpstreamEffects -> Compiler.gt.cs, reusing GenTree.BashToNOP and the metadata-preserving GenTreeIndir constructor.",
@@ -381,7 +389,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Windows x64 foreground: continue primary-JIT execution with the existing EH corpus after GC-loop and runtime-async startup closure. Use the current matching host and fresh JIT/reference captures, investigate the first concrete failure or mismatch, and retain established primary controls. B409 potential upstream behavior and B413 dynamic TLS-index input differences remain scoped separately. Native retirement independently continues substantive still-present mapped units; no ARM64 foreground expansion or broad runtime-suite gate.",
+      "parentScope": "Windows x64 foreground: exercise the existing object-allocation corpus under primary JIT with GCStress4 after exact EH/filter/object/hardware controls. This probes managed GC metadata under runtime dependencies, not a broad runtime-suite gate or a new corpus matrix. Investigate the first concrete failure or mismatch. B409 potential upstream behavior and B413 dynamic TLS-index input differences remain separate. Native retirement continues substantive still-present mapped units; no ARM64 foreground expansion.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -776,7 +784,7 @@
         }
       ]
     },
-    "nextAction": "Commit validated B412 if still uncommitted, then run the existing eh-fullopts-complete configuration from artifacts/upstream-refresh-33baf8/shared-closure-managed-matrix-1/configurations.json under primary native/managed JIT. Use artifacts/box-cleanup/jit/RyuJitSharp.dll and fresh reference/capture directories. Compare output/exit and selected method trees/instructions, then fix the first concrete gap. Primary runtime async now exits0 with six transformed bodies instruction-equal; five adapters retain dynamic TLS-index/offset differences B413, not accepted parity. GC loops already pass four exact bodies and12Gen2/12helper collections. Retirement worker4b57b744-36f1-4e6e-8b76-94c1a87d6e02 report31 is integrated; give it the next substantive native packet after committing B412.",
+    "nextAction": "Run the existing objects-managed-fullopts-gcstress4 scenario under primary native/managed JIT using artifacts/box-cleanup/jit/RyuJitSharp.dll. Extend the local primary capture runner to explicitly set and record GCStress=4; its inherited-environment clearing must remain. Use a fresh primary-objects-gcstress4 reference/capture root and compare actual exit/output, not the runner's exit code. Follow a concrete failure; do not expand the matrix. Nineteen EH/filter/object/hardware primary bodies already have exact import/morph/cost trees and instruction streams at7086df6. Retirement worker4b57b744-36f1-4e6e-8b76-94c1a87d6e02 is processing its next packet; collect report32 only after notification.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
