@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Diagnostics;
 
 namespace RyuJitSharp;
@@ -93,6 +94,57 @@ public sealed partial class ValueNumStore
     [Conditional("DEBUG")]
     public static void ValidateValueNumStoreStatics()
     {
-        // TODO: Port ValueNumStore.ValidateValueNumStoreStatics
+#if DEBUG
+        var attributes = new VNFOpAttrib[(int)VNF_COUNT];
+        for (var oper = GT_NONE; oper < GT_COUNT; oper++)
+        {
+            var arity = oper.IsUnary ? 1 : oper.IsBinary ? 2 : (oper is GT_SELECT) ? 3 : 0;
+            attributes[(int)oper] = (VNFOpAttrib)((arity << VNFOA_ArityShift) & VNFOA_ArityMask);
+            if (oper.IsCommutative)
+            {
+                attributes[(int)oper] |= VNFOA_Commutative;
+            }
+        }
+
+        VNFuncExtensions.InitializeValidationAttributes(attributes);
+
+        ReadOnlySpan<genTreeOps> illegalOperators = [
+            GT_IND, GT_NULLCHECK, GT_QMARK, GT_COLON, GT_LOCKADD, GT_XADD, GT_XCHG,
+            GT_CMPXCHG, GT_LCLHEAP, GT_BOX, GT_XORR, GT_XAND, GT_STORE_LCL_VAR,
+            GT_STORE_LCL_FLD, GT_STOREIND, GT_STORE_BLK, GT_COMMA, GT_ARR_ADDR,
+            GT_BOUNDS_CHECK, GT_BLK, GT_INIT_VAL, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND,
+            GT_BITCAST, GT_NOP, GT_JTRUE, GT_RETURN, GT_RETURN_SUSPEND, GT_PATCHPOINT,
+            GT_PATCHPOINT_FORCED, GT_SWITCH, GT_RETFILT, GT_CKFINITE, GT_SWIFT_ERROR_RET,
+        ];
+
+        foreach (var oper in illegalOperators)
+        {
+            attributes[(int)oper] |= VNFOA_IllegalGenTreeOp;
+        }
+
+        for (var func = VNF_NONE; func < VNF_COUNT; func++)
+        {
+            assert(attributes[(int)func] == VNFuncExtensions.GetAttributes(func));
+        }
+#endif
     }
+
+#if DEBUG
+    internal static void SetValidationAttributes(Span<VNFOpAttrib> attributes, VNFunc func,
+        int arity, bool commute, bool knownNonNull)
+    {
+        if (commute)
+        {
+            attributes[(int)func] |= VNFOA_Commutative;
+        }
+        if (knownNonNull)
+        {
+            attributes[(int)func] |= VNFOA_KnownNonNull;
+        }
+        if (arity > 0)
+        {
+            attributes[(int)func] |= (VNFOpAttrib)((arity << VNFOA_ArityShift) & VNFOA_ArityMask);
+        }
+    }
+#endif
 }

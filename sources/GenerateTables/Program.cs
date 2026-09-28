@@ -3201,6 +3201,34 @@ public enum VNFunc
 
         _ = Directory.CreateDirectory(@"Outputs\jit\valuenum");
 
+        var validationBuilder = ProcessMacroBasedFile(@"Inputs\valuenumfuncs.h", "ValueNumFuncDef(", (builder, inputFile, line, prefix, parts) => {
+            if (line.Equals("#include \"hwintrinsiclist.h\"", StringComparison.Ordinal))
+            {
+                _ = builder.AppendLine("""
+        for (var id = NI_HW_INTRINSIC_START + 1; id < NI_HW_INTRINSIC_END; id++)
+        {
+            var func = VNF_HWI_INTRINSIC_START + (id - NI_HW_INTRINSIC_START);
+            var numArgs = HWIntrinsicInfo.lookupNumArgs(id);
+            ValueNumStore.SetValidationAttributes(attributes, func, numArgs == -1 ? -1 : numArgs + 1,
+                HWIntrinsicInfo.IsCommutative(id), knownNonNull: false);
+        }
+""");
+                return;
+            }
+
+            if (parts.Length != 4)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+            var arity = parts[1].AsSpan().Trim();
+            var commute = parts[2].AsSpan().Trim();
+            var knownNonNull = parts[3].AsSpan().Trim();
+            _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        ValueNumStore.SetValidationAttributes(attributes, VNF_{name}, {arity}, {commute}, {knownNonNull});");
+        });
+
         File.WriteAllText(@"Outputs\jit\valuenum\VNFuncExtensions.generated.cs", $$"""
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 //
@@ -3216,6 +3244,12 @@ public static partial class VNFuncExtensions
     private static readonly ValueNumStore.VNFOpAttrib[] s_attribs = [
 {{builder1}}        0, // VNF_Boundary
 {{builder2}}    ];
+
+#if DEBUG
+    internal static void InitializeValidationAttributes(Span<ValueNumStore.VNFOpAttrib> attributes)
+    {
+{{validationBuilder}}    }
+#endif
 }
 """);
     }

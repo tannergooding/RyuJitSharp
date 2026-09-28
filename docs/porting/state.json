@@ -19,10 +19,10 @@
     "planApprovedAt": "2026-09-22",
     "residualReconciliation": {
       "status": "in-progress",
-      "retirementCommit": "0130319288d10b511c9e6946add95f4ef6145f7f",
+      "retirementCommit": "6ff09c82faba4ce2fa352b0daa0fb245341d4385",
       "retirementBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
       "workflow": "User-directed: maintain one local native Remove ported code commit and amend it after larger source-area batches. Leave in-progress edits unstaged. Reuse completed port reviews/mappings and explicit NYIs; investigate only unclear boundaries. No routine recovery snapshots or helper-by-helper documentation cycles. Snapshot fields below describe retained historical recovery points, not the current continuation base.",
-      "reason": "The residual index was still byte-for-byte tree-equivalent to the upstream-refresh snapshot despite subsequent completed C# batches. Restore it as the remaining-work view before choosing further porting work.",
+      "reason": "Retirement lagged completed C# batches. Restore the native remaining-work view concurrently with continued Windows, ARM64 and Linux implementation; cleanup is not a prerequisite for further porting.",
       "startSnapshot": "9f4bab794f8fe339a6b46cb8336305cf80c804ee",
       "startIndexCommit": "4816a0d823a22b12e2f5de4686bba6201ff08a0b",
       "protectedRef": "refs/porting/snapshots/residual-reconcile-start-20260927",
@@ -52,7 +52,8 @@
         "Completed fixed-width SIMD broadcast/argument/evaluation/element helpers, SIMD metadata and NaN/negative-zero predicates; small-set/cache/fixed-point model support; exception/map/selector/memory/SIMD-type/cast/bitcast/zero-object dump helpers, function/map/reserved-name lookup and reserved-VN predicates, with associated declarations.",
         "Completed VN header cast encoding/static-attribute declarations, legality/comparison predicates, integral/object/binary-constant queries and math pairs; function/handle/bounds/cache models, scalar/fixed-vector constant maps, function interning maps, chunk accessors and fixed-vector storage specializations. Retain scalar extraction/coercion for B391.",
         "Complete remaining fgehopt.cpp and fgflow.cpp: empty/unreachable EH cleanup, finally cloning/validation/merging, ACD rekeying, try-region cloning/feasibility and predecessor removal. Completed block successor snapshots, dominance/SSA liveness, clone/empty/side-effect/unique-predecessor queries, variable sets, tail-call/entry-stack/count wrappers and associated declarations/models.",
-        "Completed block header memory masks/iteration, flag and raw-edge access, default initialization, weight/LIR/predecessor helpers and dominator link model; complete compiler.hpp regular/EH successor visitation and per-block complexity traversal. B393 debug helpers and unused/target support remain."
+        "Completed block header memory masks/iteration, flag and raw-edge access, default initialization, weight/LIR/predecessor helpers and dominator link model; complete compiler.hpp regular/EH successor visitation and per-block complexity traversal. B393 debug helpers and unused/target support remain.",
+        "Frontend closure: completed statement, inline, importer, block-splitting, SIMD and xarch rationalization bodies and declarations; 2662 deletion-only lines. Compiler utilities/funclets/arguments/DFS, morph phases/array cache, importer Swift/array/call helpers and the remaining xarch hardware importer: another 7070 deletion-only lines across six files. Unfinished target paths and unresolved/unused helpers remain."
       ],
       "remainingHelperTargets": [
         "helperexpansion.cpp now contains only the two TLS call transformations and ReadUtf8. All three are complete for Windows x64.",
@@ -73,7 +74,7 @@
       "remainingCseTargets": "B386: CSE_Heuristic.Initialize and PromotionCheck remain for x86 long stack homes, 32-bit register-pair counting, non-xarch frame thresholds and SMALL_CODE costs. Managed bodies use AMD64 initialization and xarch encoding costs; Windows AMD64 is complete. Pinned CSE_INTO_HANDLERS=0 and CSE_CONSTS=1 match the managed configuration.",
       "remainingAssertionTargets": "B387: assertionprop.cpp contains only restored optConstantAssertionProp; compiler.h retains CreateConstLclVarAssertion and descriptor support. Both managed paths explicitly reject ARM64 scalable constants; Windows AMD64 is complete. The earlier local-assertion retirement predates the current mixed-target retention policy; its absence was not evidence of target completion.",
       "remainingVnCompilerTargets": "Compiler.fgValueNumberHWIntrinsic and its declaration remain: xarch numbering is implemented, while managed code explicitly rejects other targets. Its evaluator dependencies retain B390's unverified WithElement signaling-NaN question.",
-      "remainingVnStoreSupport": "Constructor/chunk/scalable support remains; completed shared model/header helpers are retired. B388 retains VNOneForType, the empty managed ValidateValueNumStoreStatics counterpart and native RunTests, including its GenTreeOpToVNFunc/GenTreeOpIsLegalVNFunc support. B389 retains complete VNForMapSelectWork and its enabled trace macro for eight missing trace blocks. The declaration-only vnDumpFieldSeq has no pinned definition or callsites; direct field-sequence rendering exists in vnDump. ValueNumList/m_intConHandles have no pinned references outside their declarations and remain classified as unused legacy support, not mandatory phase work. These findings do not establish a Windows code-generation difference.",
+      "remainingVnStoreSupport": "Constructor/chunk/scalable support remains; completed shared model/header helpers are retired. B388/B389 are now implemented and validated; VNOneForType, ValidateValueNumStoreStatics, RunTests, VNForMapSelectWork and their associated native support await retirement with the next larger batch. B394 preserves an upstream self-test assertion, not a port gap. The declaration-only vnDumpFieldSeq has no pinned definition or callsites; direct rendering exists in vnDump. ValueNumList/m_intConHandles remain unused legacy support.",
       "remainingVnStoreTargets": [
         "Scalable constant storage/getters/broadcast, VNAllBitsForType, VNOneForSimdType and fixed/scalable mask conversions remain for unfinished target paths.",
         "Complete HW unary/binary/ternary and math unary/binary evaluators remain because managed entry bodies reject non-xarch targets.",
@@ -116,6 +117,14 @@
       "evidence": "artifacts/morph-stress/morph-stress-original-noops.trx, morph-stress-debug-final.trx and morph-stress-release-final.trx",
       "scope": "Managed Windows-x64 IR behavior; stress transformations are debug-only. No new native execution/parity claim."
     },
+    "vnDiagnosticClosure": {
+      "scope": "B388/B389: selector traces, scalar-one invariant, independent startup attribute validation and configured once-only VN/bitset component checks.",
+      "mapping": "valuenum.cpp:VNForMapSelectWork/VNOneForType/ValidateValueNumStoreStatics/RunTests -> ValueNumStore.Maps.cs/BinaryInterning.cs/ValueNumStore.cs/ComponentTests.cs; compiler.cpp:compDoComponentUnitTestsOnce -> Compiler.comp.cs; bitset.cpp:RunTests/TestSuite -> bitset/BitSetSupport.cs using the existing managed representation.",
+      "generation": "GenerateTables.Program emits independent validation metadata into VNFuncExtensions.generated.cs from the existing valuenumfuncs/hardware inputs; production attribute values are unchanged.",
+      "validation": "636 Debug / 582 Release Windows-x64 VN, bitset and lowering controls; full analysis, zero failures/skips. Seven verbose selector cases failed before the implementation, with seven quiet controls passing. Attribute corruption, scalar/SIMD invariant and once-only component gating have controlled-EE coverage.",
+      "evidence": "artifacts/vn-selector-traces/selector-traces-before.trx and vn-diagnostics-{debug,release}-complete.trx",
+      "limits": "B394 is an upstream stale self-test assertion and remains observable when component tests are enabled. No new whole-pipeline/native-execution parity claim."
+    },
     "windowsCompletionAssessment": {
       "status": "remaining-source-review",
       "assessment": "A working end-to-end Windows-x64 pipeline exists, but an exhaustive function/path-level remainder is not established. Retire the unverified 60-80 percent estimate rather than infer a remaining percentage from TODO counts.",
@@ -126,28 +135,30 @@
       "optionalSupport": [
         "Compiler.compJitStats is also empty in native when CALL_ARG_STATS is disabled, as it is in the current managed build.",
         "Compiler.RecordNowayAssert is unported under MEASURE_NOWAY, which is disabled in the current build.",
-        "Compiler.compDoComponentUnitTestsOnce and ValueNumStore.ValidateValueNumStoreStatics omit native debug component/self-consistency checks."
+        "Compiler.compDoComponentUnitTestsOnce and ValueNumStore.ValidateValueNumStoreStatics are implemented; B394 tracks the preserved native component-test inconsistency."
       ],
       "caution": "Current backend allocation/codegen/emitter exclusions checked in this pass target non-Windows or non-AMD64 configurations. Commented callback declarations and historical baseline gaps are not an inventory of missing Windows implementations."
     },
     "activeBatch": {
-      "scope": "Restore runtime-port as the remaining-work view by reconciling completed C# source/dependency areas into verified native deletions, preserving snapshots, staging and unfinished platform paths.",
+      "scope": "Continue Windows-x64 compiler implementation and Linux/ARM64 NYI closure concurrently with bulk native retirement. Use existing audit findings to choose implementation work and existing completed-function evidence to remove native remainders.",
       "status": "in-progress",
       "doneWhen": [
+        "Port B389 selector tracing at the native evaluation points, with exact verbose/quiet output regressions and unchanged existing map semantics.",
+        "Integrate delivered platform packets and continue their remaining NYI dependency areas; a bounded packet is not platform completion.",
         "Reconcile completed source/dependency areas into native retirement using existing integrated implementation reviews and scoped evidence, not symbol-name matches alone.",
         "Identify remaining Windows/shared work separately from mixed functions retained for unfinished target paths; check earlier residual coverage as well as the post-refresh queue.",
         "Amend the single local native cleanup commit after larger validated source-area batches, preserve the oracle and unrelated work, and consolidate sparse mapping/checkpoint updates at those boundaries."
       ],
       "validation": [
         "Verify exact deletion scope, retained incomplete paths, inherited staged content and unchanged tracked oracle source/index. Reuse established implementation evidence; native retirement does not change managed behavior.",
-        "When implementation resumes, use Windows-x64 build and relevant existing suites at the area boundary. Broad dump matrices and official primary-JIT runtime validation remain later gates."
+        "Run full-analysis Windows-x64 VN map/memory coverage in Debug and Release, plus focused Linux/ARM64 managed target coverage at their integration boundaries. Broad dump matrices and official primary-JIT runtime validation remain later gates."
       ],
       "deferred": [
-        "ARM64 hardware/mask rewrites belong to session 219ce0d3-6a41-4d0c-9b8a-c198b6f398b1. Immutable uncommitted handoff snapshot f94987ff235d5265976ed14f1a4dc01df84c3293 is protected by refs/porting/arm64-rewrites-handoff.",
-        "Linux x64 local-store/fast-tailcall dependency closure belongs to session c8e261dd-c529-4097-a33d-f545a86f1dac. Both lanes start at 6709deb and must not write the parent worktree or native trees.",
+        "ARM64 allocation/emission and real target execution remain separate from the active lowering block/switch closure. Preserve explicit NYIs until their dependencies are implemented.",
+        "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Windows x64 code completion first. Two fresh isolated Sol sessions own current Linux/ARM64 work; older parallelPackets entries below are historical completed packets, not active assignments.",
+      "parentScope": "Windows-x64 VN diagnostics in the foreground; independent coding agents continue ARM64 lowering and SysV-x64 backend NYIs. Native cleanup proceeds against committed implementation evidence only. Parent owns integration, shared documentation and C# commits; completed packets below are historical records, not active assignments.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -542,7 +553,7 @@
         }
       ]
     },
-    "nextAction": "Compiler porting continues concurrently with native retirement; cleanup must not block implementation. Integrate and validate delivered Linux e42864b53384c77e22daefbe743e77023f7a577e and ARM64 0c0d33f22a29cfc79133f93757071914b0cb27e5, then continue their recorded NYI frontiers rather than treating those packets as platform completion. Foreground: port B389 selector tracing in VNForMapSelectWork at its native evaluation points and run existing VN map coverage with trace regressions. A separate bounded lane reconciles completed native frontend areas using existing audit records; amend only the native Remove ported code commit, currently 0130319288d10b511c9e6946add95f4ef6145f7f. No routine recovery snapshots or repeated whole-function parity audits. Keep the oracle pinned and notify the user when the whole native cleanup is done.",
+    "nextAction": "Continue overnight without stopping at milestones; periodically check breadth and validation cadence. Windows foreground: B388/B389 VN diagnostic/invariant closure is complete; next resolve the retained impTryOptimizeAwaitAwaiter frontend boundary from the existing audit, porting its complete Windows path and callsite if genuinely missing, then continue recorded CFG debug closure. Delivered platform packets are integrated as cf97d03 and 197f409. Integrate completed ARM64 block/switch lowering and SysV call/emitter areas, then continue their rationalization and helper-codegen NYIs. Native cleanup runs concurrently against committed source; amend only its Remove ported code commit, last recorded at 6ff09c82faba4ce2fa352b0daa0fb245341d4385. After the VN commit, retire the completed B388/B389 native bodies with the next broad batch. No routine snapshots or per-helper validation/documentation cycles. Keep the oracle pinned and notify the user when full native cleanup is finished.",
     "arm64HardwareRewrites": {
       "scope": "ARM64 LowerHWIntrinsic, LowerCnsMask and their create, comparison, dot, select, FMA and FFR helpers; private general LowerNode dispatch for the inserted nodes.",
       "mapping": "lowerarmarch.cpp:992-1064,1395-2022,2069-2683,3745-3810,4237-4399 -> Lowering.Arm64HardwareIntrinsics.cs, Lowering.Arm64HardwareVectors.cs, Lowering.Arm64HardwareSupport.cs; lower.cpp:362-725,5069-5086 -> Lowering.Traversal.cs and Lowering.BlockTraversal.cs; simd.h:1926-2024 and hwintrinsicarm64.cpp:1669-1686 -> Globals.SveMaskPattern.cs and Compiler.Arm64Masks.cs.",

@@ -548,6 +548,8 @@ public partial class Compiler
         }
     }
 
+    private static bool s_didComponentUnitTests;
+
     /// <summary>Components used by the compiler may write unit test suites, and have them run within this method.</summary>
     /// <remarks>
     ///   <para>They will be run only once per process, and only in debug (Perhaps should be under the control of a DOTNET_ flag.)</para>
@@ -555,7 +557,17 @@ public partial class Compiler
     /// </remarks>
     public void compDoComponentUnitTestsOnce()
     {
-        // TODO: Port Compiler.compDoComponentUnitTestsOnce
+        if (JitConfig.RunComponentUnitTests == 0)
+        {
+            return;
+        }
+
+        if (!s_didComponentUnitTests)
+        {
+            s_didComponentUnitTests = true;
+            ValueNumStore.RunTests(this);
+            BitSetSupport.TestSuite(this);
+        }
     }
 #endif
 

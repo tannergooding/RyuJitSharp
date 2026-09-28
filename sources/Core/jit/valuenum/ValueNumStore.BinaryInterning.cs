@@ -194,13 +194,18 @@ public sealed partial class ValueNumStore
         return unchecked(chunk.BaseVN + offset);
     }
 
-    private ValueNum VNOneForType(var_types type) => type switch {
-        TYP_BYTE or TYP_UBYTE or TYP_SHORT or TYP_USHORT or TYP_INT or TYP_UINT => VNForIntCon(1),
-        TYP_LONG or TYP_ULONG => VNForLongCon(1),
-        TYP_FLOAT => VNForFloatCon(1.0f),
-        TYP_DOUBLE => VNForDoubleCon(1.0),
-        _ => NoVN,
-    };
+    private ValueNum VNOneForType(var_types type)
+    {
+        assert(!varTypeIsSimd(type));
+
+        return type switch {
+            TYP_BYTE or TYP_UBYTE or TYP_SHORT or TYP_USHORT or TYP_INT or TYP_UINT => VNForIntCon(1),
+            TYP_LONG or TYP_ULONG => VNForLongCon(1),
+            TYP_FLOAT => VNForFloatCon(1.0f),
+            TYP_DOUBLE => VNForDoubleCon(1.0),
+            _ => NoVN,
+        };
+    }
 
     private ValueNum VNAllBitsForType(var_types type, int elementCount)
     {

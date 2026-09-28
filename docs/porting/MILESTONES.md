@@ -16,6 +16,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: VN diagnostics and component checks
+
+Map selection now emits the native precise-store, physical-store and bitcast
+traces at their evaluation points. Startup reconstructs VN attributes
+independently from operator properties and generated function metadata.
+The scalar-one invariant and optional once-per-process VN/bitset component
+tests are implemented. The pinned component test's obsolete constant-first
+assertion is preserved and tracked as B394 rather than silently corrected.
+Windows-x64 VN, bitset and lowering controls pass 636 Debug/582 Release cases;
+this does not establish whole-pipeline or other-target execution parity.
+
 ## 2026-09-27: Pre-morph tree stress
 
 The debug local-field and 64-bit-result multiplication stress hooks now perform

@@ -2394,4 +2394,177 @@ public static partial class VNFuncExtensions
         ValueNumStore.GetOpAttribsForFunc(arity: 2, commute: true, knownNonNull: false), // VNF_MaxInt_UN
 #endif
     ];
+
+#if DEBUG
+    internal static void InitializeValidationAttributes(Span<ValueNumStore.VNFOpAttrib> attributes)
+    {
+        ValueNumStore.SetValidationAttributes(attributes, VNF_MemOpaque, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_MapSelect, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_MapStore, 4, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_MapPhysicalStore, 3, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_BitCast, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ZeroObj, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_PtrToLoc, 3, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_PtrToArrElem, 4, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_PtrToStatic, 3, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_MDArrLength, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_MDArrLowerBound, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_InitVal, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Cast, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_CastOvf, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_CastClass, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_IsInstanceOf, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ReadyToRunCastClass, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ReadyToRunIsInstanceOf, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_TypeHandleToRuntimeType, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_TypeHandleToRuntimeTypeHandle, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_LdElemA, 3, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ByrefExposedLoad, 3, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ByrefExposedLocalLoad, 4, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetRefanyVal, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetClassFromMethodParam, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetSyncFromClassHandle, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_LoopCloneChoiceAddr, 0, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ValWithExc, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ExcSetCons, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_NullPtrExc, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ArithmeticExc, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_OverflowExc, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ConvOverflowExc, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_DivideByZeroExc, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_IndexOutOfRangeExc, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_InvalidCastExc, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_R2RInvalidCastExc, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_NewArrOverflowExc, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_NewStringOverflowExc, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_DynamicClassInitExc, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ThreadClassInitExc, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_R2RClassInitExc, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ClassInitGenericExc, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_HelperOpaqueExc, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Abs, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Acos, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Acosh, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Asin, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Asinh, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Atan, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Atanh, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Atan2, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Cbrt, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Ceiling, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Cos, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Cosh, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Exp, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Floor, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ILogB, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Log, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Log2, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Log10, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Max, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_MaxMagnitude, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_MaxMagnitudeNumber, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_MaxNumber, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Min, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_MinMagnitude, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_MinMagnitudeNumber, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_MinNumber, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Pow, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_RoundDouble, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_RoundInt32, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_RoundSingle, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Sin, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Sinh, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Sqrt, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Tan, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Tanh, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Truncate, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_LeadingZeroCount, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_TrailingZeroCount, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_PopCount, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_SaturateToInt8, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_SaturateToInt16, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_SaturateToUInt8, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_SaturateToUInt16, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ObjGetType, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetGcstaticBase, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetNongcstaticBase, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetdynamicGcstaticBase, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetdynamicNongcstaticBase, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetdynamicGcstaticBaseNoctor, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetdynamicNongcstaticBaseNoctor, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ReadyToRunStaticBaseGC, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ReadyToRunStaticBaseNonGC, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ReadyToRunStaticBaseThread, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ReadyToRunStaticBaseThreadNoctor, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ReadyToRunStaticBaseThreadNonGC, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ReadyToRunGenericStaticBase, 2, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetpinnedGcstaticBase, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetpinnedNongcstaticBase, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetpinnedGcstaticBaseNoctor, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetpinnedNongcstaticBaseNoctor, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetGcthreadstaticBase, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetNongcthreadstaticBase, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetGcthreadstaticBaseNoctor, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetNongcthreadstaticBaseNoctor, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetdynamicGcthreadstaticBase, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetdynamicNongcthreadstaticBase, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetdynamicGcthreadstaticBaseNoctor, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetdynamicGcthreadstaticBaseNoctorOptimized, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetdynamicNongcthreadstaticBaseNoctor, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetdynamicNongcthreadstaticBaseNoctorOptimized, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetdynamicNongcthreadstaticBaseNoctorOptimized2, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetdynamicNongcthreadstaticBaseNoctorOptimized2NoJitOpt, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_RuntimeHandleMethod, 2, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_RuntimeHandleClass, 2, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ReadyToRunGenericHandle, 2, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GetStaticAddrTLS, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_VirtualFuncPtr, 3, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GVMLookupForSlot, 2, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ReadyToRunVirtualFuncPtr, 2, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_JitNew, 2, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_JitNewArr, 3, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_JitNewLclArr, 3, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_JitNewMdArr, 4, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_JitReadyToRunNew, 2, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_JitReadyToRunNewArr, 3, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_JitReadyToRunNewLclArr, 3, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_StrFastAllocate, 3, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Box, 3, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_BoxNullable, 3, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_InvariantLoad, 1, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_InvariantNonNullLoad, 1, false, true);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Unbox, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_Unbox_TypeTest, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_LT_UN, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_LE_UN, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GE_UN, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_GT_UN, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ADD_OVF, 2, true, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_SUB_OVF, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_MUL_OVF, 2, true, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_ADD_UN_OVF, 2, true, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_SUB_UN_OVF, 2, false, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_MUL_UN_OVF, 2, true, false);
+#if FEATURE_SIMD
+        ValueNumStore.SetValidationAttributes(attributes, VNF_SimdType, 2, false, false);
+#endif
+#if FEATURE_HW_INTRINSICS
+        ValueNumStore.SetValidationAttributes(attributes, VNF_HWI_INTRINSIC_START, -1, false, false);
+        for (var id = NI_HW_INTRINSIC_START + 1; id < NI_HW_INTRINSIC_END; id++)
+        {
+            var func = VNF_HWI_INTRINSIC_START + (id - NI_HW_INTRINSIC_START);
+            var numArgs = HWIntrinsicInfo.lookupNumArgs(id);
+            ValueNumStore.SetValidationAttributes(attributes, func, numArgs == -1 ? -1 : numArgs + 1,
+                HWIntrinsicInfo.IsCommutative(id), knownNonNull: false);
+        }
+        ValueNumStore.SetValidationAttributes(attributes, VNF_HWI_INTRINSIC_END, -1, false, false);
+#endif
+#if TARGET_RISCV64
+        ValueNumStore.SetValidationAttributes(attributes, VNF_MinInt, 2, true, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_MaxInt, 2, true, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_MinInt_UN, 2, true, false);
+        ValueNumStore.SetValidationAttributes(attributes, VNF_MaxInt_UN, 2, true, false);
+#endif
+    }
+#endif
 }

@@ -224,6 +224,120 @@ internal static unsafe class ValueNumMapTests
     }
 
 #if DEBUG
+    [Test]
+    public static void SelectorAxiomDiagnosticsMatchNativeEvaluationPoints(
+        [Values("precise-hit", "precise-miss", "physical-hit", "enclosing", "disjoint", "aliasing", "bitcast")] string operation,
+        [Values] bool verbose)
+    {
+        WithStore((compiler, store, blocks) =>
+        {
+            compiler.compCurBB = blocks[0];
+            MapSelectBudget(store) = 7;
+            var precise = operation.StartsWith("precise-", StringComparison.Ordinal);
+            var baseMap = store.VNForExpr(null, precise ? TYP_HEAP : TYP_STRUCT);
+            var index = store.VNForIntCon(4);
+            var value = store.VNForExpr(null, TYP_STRUCT);
+            var map = precise
+                ? store.VNForMapStore(baseMap, index, value)
+                : store.VNForMapPhysicalStore(baseMap, 4, 8, value);
+            uint offset = 4;
+            uint size = 8;
+            string expected;
+
+            switch (operation)
+            {
+                case "precise-hit":
+                {
+                    expected = $"      AX1: select([${baseMap:x}]store(${map:x}, ${index:x}, ${value:x}), ${index:x}) ==> ${value:x}.\n";
+                    break;
+                }
+
+                case "precise-miss":
+                {
+                    var storeIndex = index;
+                    index = store.VNForIntCon(5);
+                    expected = $"      AX2: ${index:x} != ${storeIndex:x} ==> select([${map:x}]store(${baseMap:x}, " +
+                        $"${storeIndex:x}, ${value:x}), ${index:x}) ==> select(${baseMap:x}, ${index:x}) remaining budget is 6.\n";
+                    break;
+                }
+
+                case "physical-hit":
+                {
+                    expected = $" ==> ${value:x}\n";
+                    break;
+                }
+
+                case "enclosing":
+                {
+                    offset = 6;
+                    size = 1;
+                    expected = " ==> enclosing, selecting inner, remaining budget is 6\n";
+                    break;
+                }
+
+                case "disjoint":
+                {
+                    offset = 12;
+                    size = 4;
+                    expected = " ==> disjoint, remaining budget is 6\n";
+                    break;
+                }
+
+                case "aliasing":
+                {
+                    offset = 10;
+                    size = 4;
+                    expected = " ==> aliasing!\n";
+                    break;
+                }
+
+                case "bitcast":
+                {
+                    map = store.VNForFunc(TYP_INT, VNFunc.VNF_BitCast, baseMap, store.VNForIntCon((int)TYP_INT));
+                    expected = $"      select(bitcast<struct>(${baseMap:x})) ==> select(${baseMap:x})\n";
+                    break;
+                }
+
+                default:
+                {
+                    throw new ArgumentOutOfRangeException(nameof(operation));
+                }
+            }
+
+            if (!precise && (operation != "bitcast"))
+            {
+                var printedMap = CodeGenLifeTransitionTests.Capture(() => compiler.vnPrint(map, 1));
+                var selector = size == 1 ? $"[{offset}]" : $"[{offset}:{offset + size - 1}]";
+                expected = $"      select({printedMap}, {selector})" + expected;
+            }
+
+            compiler.verbose = verbose;
+            var actual = CodeGenLifeTransitionTests.Capture(() =>
+            {
+                if (precise)
+                {
+                    _ = store.VNForMapSelect(VNK_Liberal, TYP_STRUCT, map, index);
+                }
+                else
+                {
+                    _ = store.VNForMapPhysicalSelect(VNK_Liberal, TYP_STRUCT, map, offset, size);
+                }
+            });
+
+            if (verbose)
+            {
+                Assert.That(actual, Does.StartWith(expected.Replace("\n", Environment.NewLine, StringComparison.Ordinal)));
+            }
+            else
+            {
+                Assert.That(actual, Is.Empty);
+            }
+        });
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_mapSelectBudget")]
+    private static extern ref int MapSelectBudget(ValueNumStore store);
+
     [TestCase(nameof(ValueNumStore.VNForMapStore), false)]
     [TestCase(nameof(ValueNumStore.VNForMapStore), true)]
     [TestCase(nameof(ValueNumStore.VNForMapSelect), false)]

@@ -220,12 +220,21 @@ public sealed partial class ValueNumStore
                         assert(MapIsPrecise(map));
                         if (funcApp.GetArg(1) == index)
                         {
+#if FEATURE_VN_TRACE_APPLY_SELECTORS
+                            JITDUMP($"      AX1: select([${funcApp.GetArg(0):x}]store(${map:x}, " +
+                                $"${funcApp.GetArg(1):x}, ${funcApp.GetArg(2):x}), ${index:x}) ==> ${funcApp.GetArg(2):x}.\n");
+#endif
                             _ = memoryDependencies.Add(funcApp.GetArg(0));
                             return funcApp.GetArg(2);
                         }
 
                         if (IsVNConstant(index) && IsVNConstant(funcApp.GetArg(1)))
                         {
+#if FEATURE_VN_TRACE_APPLY_SELECTORS
+                            JITDUMP($"      AX2: ${index:x} != ${funcApp.GetArg(1):x} ==> select([${map:x}]store(" +
+                                $"${funcApp.GetArg(0):x}, ${funcApp.GetArg(1):x}, ${funcApp.GetArg(2):x}), ${index:x}) ==> " +
+                                $"select(${funcApp.GetArg(0):x}, ${index:x}) remaining budget is {budget}.\n");
+#endif
                             map = funcApp.GetArg(0);
                             continue;
                         }
@@ -235,9 +244,22 @@ public sealed partial class ValueNumStore
                     case VNF_MapPhysicalStore:
                     {
                         assert(MapIsPhysical(map));
+#if DEBUG && FEATURE_VN_TRACE_APPLY_SELECTORS
+                        if (_compiler.verbose)
+                        {
+                            JITDUMP("      select(");
+                            _compiler.vnPrint(map, 1);
+                            JITDUMP(", ");
+                            DumpPhysicalSelector(index);
+                            JITDUMP(")");
+                        }
+#endif
                         var storeSelector = funcApp.GetArg(1);
                         if (index == storeSelector)
                         {
+#if FEATURE_VN_TRACE_APPLY_SELECTORS
+                            JITDUMP($" ==> ${funcApp.GetArg(2):x}\n");
+#endif
                             return funcApp.GetArg(2);
                         }
 
@@ -248,6 +270,9 @@ public sealed partial class ValueNumStore
 
                         if ((storeOffset <= selectOffset) && (selectEndOffset <= storeEndOffset))
                         {
+#if FEATURE_VN_TRACE_APPLY_SELECTORS
+                            JITDUMP($" ==> enclosing, selecting inner, remaining budget is {budget}\n");
+#endif
                             map = funcApp.GetArg(2);
                             index = EncodePhysicalSelector(unchecked(selectOffset - storeOffset), selectSize);
                             continue;
@@ -255,15 +280,25 @@ public sealed partial class ValueNumStore
 
                         if ((storeEndOffset <= selectOffset) || (selectEndOffset <= storeOffset))
                         {
+#if FEATURE_VN_TRACE_APPLY_SELECTORS
+                            JITDUMP($" ==> disjoint, remaining budget is {budget}\n");
+#endif
                             map = funcApp.GetArg(0);
                             continue;
                         }
+#if FEATURE_VN_TRACE_APPLY_SELECTORS
+                        JITDUMP(" ==> aliasing!\n");
+#endif
                         break;
                     }
 
                     case VNF_BitCast:
                     {
                         assert(MapIsPhysical(map));
+#if FEATURE_VN_TRACE_APPLY_SELECTORS
+                        JITDUMP($"      select(bitcast<{VNMapTypeName(TypeOfVN(funcApp.GetArg(0)))}>(${funcApp.GetArg(0):x})) " +
+                            $"==> select(${funcApp.GetArg(0):x})\n");
+#endif
                         map = funcApp.GetArg(0);
                         continue;
                     }
