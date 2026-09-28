@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: SysV final frame layout
+
+Final frame layout and `genFinalizeFrame` now support SysV argument homes,
+outgoing space, FP/SP offsets, alignment, OSR slot reuse and promoted fields.
+Profiler hooks reserve R14/R15 before counting callee saves. AMD64 Tier0 OSR
+unwind reconstruction, additional callee saves and GS-cookie initialization
+also support SysV.
+
+Full-analysis managed coverage passes 199 Debug/199 Release Linux-target cases
+and 208 Debug/193 Release Windows controls. Root prolog materialization remains
+gated while its remaining SysV dependencies are completed, including Vector3
+upper-bit clearing and the native varargs feature boundary. NativeAOT CFI
+remains explicitly unsupported. No Linux execution or parity claim is made.
+
 ## 2026-09-27: ARM64 register-reference construction
 
 ARM64 LSRA now constructs node references for scalar, memory, atomic, call and

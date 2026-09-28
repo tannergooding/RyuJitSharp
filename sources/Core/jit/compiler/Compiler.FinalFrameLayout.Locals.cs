@@ -33,8 +33,8 @@ public partial class Compiler
 
     public unsafe void lvaAssignVirtualFrameOffsetsToLocals()
     {
-#if (!TARGET_AMD64 || UNIX_AMD64_ABI) && !TARGET_ARM64
-        throw new FatalJitException(CORJIT_SKIPPED, "Local stack layout requires Windows AMD64 or ARM64.");
+#if !TARGET_AMD64 && !TARGET_ARM64
+        throw new FatalJitException(CORJIT_SKIPPED, "Local stack layout requires AMD64 or ARM64.");
 #else
         assert(codeGen is not null);
         var stkOffs = 0;
@@ -361,7 +361,7 @@ public partial class Compiler
 
         if (lvaOutgoingArgSpaceSize.Value > 0)
         {
-#if TARGET_AMD64
+#if WINDOWS_AMD64_ABI
             noway_assert(lvaOutgoingArgSpaceSize.Value >= 4 * TARGET_POINTER_SIZE);
 #endif
             noway_assert((lvaOutgoingArgSpaceSize.Value % TARGET_POINTER_SIZE) == 0);
@@ -413,8 +413,8 @@ public partial class Compiler
 
     public int lvaAllocLocalAndSetVirtualOffset(int lclNum, int size, int stkOffs)
     {
-#if (!TARGET_AMD64 || UNIX_AMD64_ABI) && !TARGET_ARM64
-        throw new FatalJitException(CORJIT_SKIPPED, "Local stack slot assignment requires Windows AMD64 or ARM64.");
+#if !TARGET_AMD64 && !TARGET_ARM64
+        throw new FatalJitException(CORJIT_SKIPPED, "Local stack slot assignment requires AMD64 or ARM64.");
 #else
         noway_assert(lclNum != BAD_VAR_NUM);
         ref var local = ref lvaGetDesc(lclNum);
@@ -479,8 +479,8 @@ public partial class Compiler
 
     public unsafe int lvaAllocAsyncContexts(int stkOffs)
     {
-#if (!TARGET_AMD64 || UNIX_AMD64_ABI) && !TARGET_ARM64
-        throw new FatalJitException(CORJIT_SKIPPED, "Async frame contexts require Windows AMD64 or ARM64.");
+#if !TARGET_AMD64 && !TARGET_ARM64
+        throw new FatalJitException(CORJIT_SKIPPED, "Async frame contexts require AMD64 or ARM64.");
 #else
         if (lvaResumedIndicator != BAD_VAR_NUM)
         {
@@ -528,8 +528,8 @@ public partial class Compiler
 
     public void lvaAlignFrame()
     {
-#if (!TARGET_AMD64 || UNIX_AMD64_ABI) && !TARGET_ARM64
-        throw new FatalJitException(CORJIT_SKIPPED, "Frame alignment requires Windows AMD64 or ARM64.");
+#if !TARGET_AMD64 && !TARGET_ARM64
+        throw new FatalJitException(CORJIT_SKIPPED, "Frame alignment requires AMD64 or ARM64.");
 #else
         assert(codeGen is not null);
         if ((compLclFrameSize % REGSIZE_BYTES) != 0)
@@ -552,8 +552,13 @@ public partial class Compiler
 #else
         var regPushedCountAligned = lvaIsCalleeSavedIntRegCountEven();
         var lclFrameSizeAligned = (compLclFrameSize % STACK_ALIGN) == 0;
+#if UNIX_AMD64_ABI
+        var stackNeedsAlignment = (compLclFrameSize != 0) || opts.compNeedToAlignFrame;
+#else
+        var stackNeedsAlignment = compLclFrameSize != 0;
+#endif
         if ((!codeGen.IsFramePointerUsed && (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)) ||
-            ((compLclFrameSize != 0) && (regPushedCountAligned == lclFrameSizeAligned)))
+            (stackNeedsAlignment && (regPushedCountAligned == lclFrameSizeAligned)))
         {
             lvaIncrementFrameSize(REGSIZE_BYTES);
         }
@@ -563,8 +568,8 @@ public partial class Compiler
 
     public int lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
     {
-#if (!TARGET_AMD64 || UNIX_AMD64_ABI) && !TARGET_ARM64
-        throw new FatalJitException(CORJIT_SKIPPED, "Spill temp frame layout requires Windows AMD64 or ARM64.");
+#if !TARGET_AMD64 && !TARGET_ARM64
+        throw new FatalJitException(CORJIT_SKIPPED, "Spill temp frame layout requires AMD64 or ARM64.");
 #else
         if (lvaDoneFrameLayout == FINAL_FRAME_LAYOUT)
         {

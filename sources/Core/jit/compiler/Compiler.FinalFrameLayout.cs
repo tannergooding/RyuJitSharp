@@ -24,7 +24,7 @@ public partial class Compiler
 
     public uint lvaFrameSize(FrameLayoutState curState)
     {
-#if (TARGET_AMD64 && !UNIX_AMD64_ABI) || TARGET_ARM64
+#if TARGET_AMD64 || TARGET_ARM64
         assert(curState < FINAL_FRAME_LAYOUT);
         assert(codeGen is not null);
         compCalleeRegsPushed = CNT_CALLEE_SAVED;
@@ -56,7 +56,7 @@ public partial class Compiler
 
         return (uint)compLclFrameSize + calleeSavedRegMaxSz;
 #else
-        throw new FatalJitException(CORJIT_SKIPPED, "Frame size estimation requires Windows AMD64 or ARM64.");
+        throw new FatalJitException(CORJIT_SKIPPED, "Frame size estimation requires AMD64 or ARM64.");
 #endif
     }
 
@@ -88,8 +88,8 @@ public partial class Compiler
 
     public void lvaAssignFrameOffsets(FrameLayoutState curState)
     {
-#if (!TARGET_AMD64 || UNIX_AMD64_ABI) && !TARGET_ARM64
-        throw new FatalJitException(CORJIT_SKIPPED, "Frame layout requires Windows AMD64 or ARM64.");
+#if !TARGET_AMD64 && !TARGET_ARM64
+        throw new FatalJitException(CORJIT_SKIPPED, "Frame layout requires AMD64 or ARM64.");
 #else
         noway_assert((lvaDoneFrameLayout < curState) || (curState == REGALLOC_FRAME_LAYOUT));
         lvaDoneFrameLayout = curState;
@@ -127,8 +127,8 @@ public partial class Compiler
 
     public void lvaAssignVirtualFrameOffsetsToArgs()
     {
-#if (!TARGET_AMD64 || UNIX_AMD64_ABI) && !TARGET_ARM64
-        throw new FatalJitException(CORJIT_SKIPPED, "Argument frame layout requires Windows AMD64 or ARM64.");
+#if !TARGET_AMD64 && !TARGET_ARM64
+        throw new FatalJitException(CORJIT_SKIPPED, "Argument frame layout requires AMD64 or ARM64.");
 #else
         for (var lclNum = 0; lclNum < info.compArgsCount; lclNum++)
         {
@@ -158,15 +158,15 @@ public partial class Compiler
 
     public bool lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(int lclNum, out int offset)
     {
-#if (!TARGET_AMD64 || UNIX_AMD64_ABI) && !TARGET_ARM64
-        throw new FatalJitException(CORJIT_SKIPPED, "Caller-allocated argument homes require Windows AMD64 or ARM64.");
+#if !TARGET_AMD64 && !TARGET_ARM64
+        throw new FatalJitException(CORJIT_SKIPPED, "Caller-allocated argument homes require AMD64 or ARM64.");
 #else
         ref readonly var abiInfo = ref lvaGetParameterAbiInfo(lclNum);
         foreach (var segment in abiInfo.Segments)
         {
             if (!segment.IsPassedOnStack)
             {
-#if TARGET_AMD64
+#if WINDOWS_AMD64_ABI
                 if (AbiPassingInformation.GetShadowSpaceCallerOffsetForReg(segment.Register, out offset))
                 {
                     return true;
@@ -196,8 +196,8 @@ public partial class Compiler
 
     public bool lvaParamHasLocalStackSpace(int lclNum)
     {
-#if (!TARGET_AMD64 || UNIX_AMD64_ABI) && !TARGET_ARM64
-        throw new FatalJitException(CORJIT_SKIPPED, "Parameter stack-home selection requires Windows AMD64 or ARM64.");
+#if !TARGET_AMD64 && !TARGET_ARM64
+        throw new FatalJitException(CORJIT_SKIPPED, "Parameter stack-home selection requires AMD64 or ARM64.");
 #else
         ref var dsc = ref lvaGetDesc(lclNum);
 #if SWIFT_SUPPORT
@@ -207,7 +207,7 @@ public partial class Compiler
             return true;
         }
 #endif
-#if TARGET_AMD64
+#if WINDOWS_AMD64_ABI
         var paramLclNum = dsc.lvIsStructField ? dsc.lvParentLcl : lclNum;
         return !lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(paramLclNum, out _);
 #else
@@ -220,8 +220,8 @@ public partial class Compiler
         Justification = "Native ARM64 relocation deltas remain zero on AMD64.")]
     public unsafe void lvaFixVirtualFrameOffsets()
     {
-#if (!TARGET_AMD64 || UNIX_AMD64_ABI) && !TARGET_ARM64
-        throw new FatalJitException(CORJIT_SKIPPED, "Final frame offsets require Windows AMD64 or ARM64.");
+#if !TARGET_AMD64 && !TARGET_ARM64
+        throw new FatalJitException(CORJIT_SKIPPED, "Final frame offsets require AMD64 or ARM64.");
 #else
         assert(codeGen is not null);
         var frameLocalsDelta = 0;
@@ -347,10 +347,14 @@ public partial class Compiler
 
     public void lvaAssignFrameOffsetsToPromotedStructs()
     {
-#if (!TARGET_AMD64 || UNIX_AMD64_ABI) && !TARGET_ARM64
-        throw new FatalJitException(CORJIT_SKIPPED, "Promoted struct frame offsets require Windows AMD64 or ARM64.");
+#if !TARGET_AMD64 && !TARGET_ARM64
+        throw new FatalJitException(CORJIT_SKIPPED, "Promoted struct frame offsets require AMD64 or ARM64.");
+#else
+#if UNIX_AMD64_ABI
+        var mustProcessParams = true;
 #else
         var mustProcessParams = opts.IsOSR || (info.compCallConv == CorInfoCallConvExtension.Swift);
+#endif
         for (var lclNum = 0; lclNum < lvaCount; lclNum++)
         {
             ref var dsc = ref lvaGetDesc(lclNum);

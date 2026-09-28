@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
+#if TARGET_AMD64
 using System.Numerics;
 #endif
 
@@ -13,8 +13,8 @@ public sealed partial class CodeGen
 {
     public unsafe void genOSRHandleTier0CalleeSavedRegistersAndFrame()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Tier0 OSR frame reconstruction requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Tier0 OSR frame reconstruction requires AMD64.");
 #else
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
         assert(_compiler.opts.IsOSR);
@@ -59,8 +59,8 @@ public sealed partial class CodeGen
 
     public unsafe void genOSRSaveRemainingCalleeSavedRegisters()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "OSR callee-save recording requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "OSR callee-save recording requires AMD64.");
 #else
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
         assert(_compiler.opts.IsOSR);

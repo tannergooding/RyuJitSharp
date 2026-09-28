@@ -9,8 +9,8 @@ public sealed partial class CodeGen
 {
     public unsafe void genSetGSSecurityCookie(regNumber initReg, ref bool initRegZeroed)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "GS-cookie initialization requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "GS-cookie initialization requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());

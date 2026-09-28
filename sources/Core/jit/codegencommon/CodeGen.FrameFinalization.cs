@@ -11,8 +11,8 @@ public sealed partial class CodeGen
 {
     public void genFinalizeFrame()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Frame finalization requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Frame finalization requires AMD64.");
 #else
         JITDUMP("Finalizing stack frame\n");
         assert(_compiler.RegisterAllocator is not null);
@@ -69,6 +69,12 @@ public sealed partial class CodeGen
             _regSet.rsSetRegsModified(regMaskTP.CreateFromRegNum(extraReg, extraReg.SingleTypeMask));
         }
 
+#if UNIX_AMD64_ABI
+        if (_compiler.compIsProfilerHookNeeded)
+        {
+            _regSet.rsSetRegsModified(new regMaskTP(SRBM_PROFILER_ENTER_ARG_0 | SRBM_PROFILER_ENTER_ARG_1));
+        }
+#endif
         noway_assert(!IsFramePointerUsed || !_regSet.rsRegsModified(framePointer));
 #if ETW_EBP_FRAMED
         noway_assert(!_regSet.rsRegsModified(framePointer));
