@@ -560,6 +560,12 @@
       ]
     },
     "nextAction": "Continue overnight without stopping at milestones; periodically check breadth and validation cadence. Windows foreground: B388/B389 VN diagnostic/invariant closure is complete; next resolve the retained impTryOptimizeAwaitAwaiter frontend boundary from the existing audit, porting its complete Windows path and callsite if genuinely missing, then continue recorded CFG debug closure. Delivered platform packets are integrated as cf97d03 and 197f409. Integrate completed ARM64 block/switch lowering and SysV call/emitter areas, then continue their rationalization and helper-codegen NYIs. Native cleanup runs concurrently against committed source; amend only its Remove ported code commit, last recorded at 6ff09c82faba4ce2fa352b0daa0fb245341d4385. After the VN commit, retire the completed B388/B389 native bodies with the next broad batch. No routine snapshots or per-helper validation/documentation cycles. Keep the oracle pinned and notify the user when full native cleanup is finished.",
+    "arm64BlockAndSwitchLowering": {
+      "scope": "ARM64 LowerBlock candidate/FFR initialization, LowerSwitch and TryLowerSwitchToBitTest.",
+      "mapping": "lower.cpp block/switch lowering -> Lowering.BlockTraversal.cs and Lowering.Switches.cs, preserving ARM64 shift/AND/branch construction.",
+      "validation": "737 Debug / 736 Release Linux-ARM64 managed target cases, full analysis and zero skips; artifacts/arm64-lowering. Windows lowering controls also pass in the 636 Debug / 582 Release VN-area run.",
+      "remaining": "DoPhase remains gated pending allocator/emitter dependencies; no ARM64 generated-code execution/parity claim."
+    },
     "arm64HardwareRewrites": {
       "scope": "ARM64 LowerHWIntrinsic, LowerCnsMask and their create, comparison, dot, select, FMA and FFR helpers; private general LowerNode dispatch for the inserted nodes.",
       "mapping": "lowerarmarch.cpp:992-1064,1395-2022,2069-2683,3745-3810,4237-4399 -> Lowering.Arm64HardwareIntrinsics.cs, Lowering.Arm64HardwareVectors.cs, Lowering.Arm64HardwareSupport.cs; lower.cpp:362-725,5069-5086 -> Lowering.Traversal.cs and Lowering.BlockTraversal.cs; simd.h:1926-2024 and hwintrinsicarm64.cpp:1669-1686 -> Globals.SveMaskPattern.cs and Compiler.Arm64Masks.cs.",
@@ -569,8 +575,8 @@
         "windowsX64Controls": "1062 Debug / 1054 Release hardware/bounds controls; arm64-hardware-win-x64-controls.trx and arm64-hardware-win-x64-release-controls.trx.",
         "coverage": "14 focused Debug cases exercise mask construction and conversion, vector create, equality, dot, conditional select, embedded masks, scalar FMA, FFR local ownership and atomic dispatch. All checks passed with zero skips and full analysis."
       },
-      "limits": "LowerBlock and DoPhase remain inactive; per-block indirection reset and FFR-trashed initialization, ARM64 switch lowering, allocation, emission and native execution parity are not established. Scalable mask representation remains explicitly unsupported. These results execute managed target tests on Windows x64, not ARM64 code.",
-      "nextAction": "Before ARM64 phase activation, reconcile LowerBlock block-indirection reset and initial FFR-trashed state, the remaining switch path and required allocator/emitter closure; keep Windows-x64 execution/parity work independent."
+      "limits": "LowerBlock initialization and ARM64 switches are now implemented in the subsequent block/switch area. DoPhase, allocator/emitter closure and target execution remain separate; scalable mask representation is still explicitly unsupported. These are managed target tests on Windows x64, not ARM64 code execution.",
+      "nextAction": "Continue remaining ARM64 rationalization and backend dependencies before phase activation; keep Windows-x64 execution/parity work independent."
     },
     "arm64HardwareContainment": {
       "scope": "Complete ARM64 hardware and bounds containment, with MOVI/MVNI byte-shift and doubleword-mask predicates, exact FMOV constants, comparison-zero rules and SVE embedded masking.",

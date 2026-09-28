@@ -2,6 +2,8 @@
 
 #if TARGET_ARM64
 using System;
+using System.Collections;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
@@ -230,6 +232,29 @@ internal static unsafe class Arm64IndirectionPairingTests
         });
     }
 
+    [Test]
+    public static void BlockTraversalResetsIndirectionCandidatesAndFfrState()
+    {
+        WithLowering(false, (compiler, lowering, block) => {
+            var first = Load(compiler, block, 0);
+            Assert.That(OptimizeForLdpStp(lowering, first), Is.False);
+            var candidates = typeof(Lowering)
+                .GetField("_blockIndirs", BindingFlags.Instance | BindingFlags.NonPublic)?
+                .GetValue(lowering) as ICollection ?? throw new AssertionException("Missing block candidates.");
+            Assert.That(candidates.Count, Is.EqualTo(1));
+
+            var next = BasicBlock.New(compiler, BBJ_RETURN);
+            next.MakeLir(null, null);
+            compiler.compCurBB = next;
+            LoweringFfrTrashed(lowering) = false;
+            LowerBlock(lowering, next);
+
+            Assert.That(candidates.Count, Is.Zero);
+            Assert.That(LoweringFfrTrashed(lowering), Is.True);
+            Assert.That(LoweringBlock(lowering), Is.SameAs(next));
+        });
+    }
+
     private static GenTree Address(Compiler compiler, BasicBlock block, int offset, int localNumber)
     {
         var local = compiler.gtNewLclvNode(compiler.lvaGetDesc(localNumber).Type, localNumber);
@@ -282,6 +307,12 @@ internal static unsafe class Arm64IndirectionPairingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_block")]
     private static extern ref BasicBlock? LoweringBlock(Lowering lowering);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_ffrTrashed")]
+    private static extern ref bool LoweringFfrTrashed(Lowering lowering);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerBlock")]
+    private static extern void LowerBlock(Lowering lowering, BasicBlock block);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "OptimizeForLdpStp")]
     private static extern bool OptimizeForLdpStp(Lowering lowering, GenTreeIndir indir);

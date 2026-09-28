@@ -11,7 +11,7 @@ public sealed partial class Lowering
 {
     private GenTree? LowerSwitch(GenTree node)
     {
-#if WINDOWS_AMD64_ABI
+#if WINDOWS_AMD64_ABI || TARGET_ARM64
         assert(node.Oper is GT_SWITCH);
         var compiler = CompilerInstance;
         var original = _block;
@@ -294,14 +294,14 @@ public sealed partial class Lowering
 
         return followingNode;
 #else
-        throw new NotImplementedException("Switch lowering outside Windows AMD64 is not ported.");
+        throw new NotImplementedException("Switch lowering is not ported for this target.");
 #endif
     }
 
     private bool TryLowerSwitchToBitTest(ReadOnlySpan<FlowEdge> jumpTable, int jumpCount, int targetCount,
         BasicBlock switchBlock, GenTree switchValue, double defaultLikelihood)
     {
-#if WINDOWS_AMD64_ABI
+#if WINDOWS_AMD64_ABI || TARGET_ARM64
         assert(jumpCount >= 2);
         assert(targetCount >= 2);
         assert(switchBlock.Kind is BBJ_SWITCH);
@@ -343,6 +343,7 @@ public sealed partial class Lowering
         // LowerSwitch eliminates the single non-default target case before
         // calling this helper, so both target edges must have been found.
         assert(case0Edge is not null);
+#if TARGET_XARCH
         if (~bitTable <= uint.MaxValue)
         {
             // Loading a 32-bit immediate zero-extends it on x64. Invert a table
@@ -350,6 +351,7 @@ public sealed partial class Lowering
             bitTable = ~bitTable;
             (case0Edge, case1Edge) = (case1Edge, case0Edge);
         }
+#endif
 
         var case0Block = case0Edge.DestinationBlock;
         var case1Block = case1Edge.DestinationBlock;
@@ -388,14 +390,25 @@ public sealed partial class Lowering
 
         var tableType = bitCount <= TYP_INT.Size * BITS_PER_BYTE ? TYP_INT : TYP_LONG;
         var table = CompilerInstance.gtNewIconNode(tableType, unchecked((nint)bitTable));
+#if TARGET_XARCH
         var bitTest = new GenTreeOp(GT_BT, TYP_VOID, table, switchValue);
         bitTest.Flags |= GTF_SET_FLAGS;
         var jump = CompilerInstance.gtNewCC(GT_JCC, TYP_VOID, new GenCondition(GenCondition.C));
         switchBlock.InsertAfter(switchValue, table, bitTest, jump);
+#else
+        var test = CompilerInstance.gtNewIconNode(tableType, 1);
+        var shift = new GenTreeOp(GT_RSZ, tableType, table, switchValue);
+        var one = CompilerInstance.gtNewIconNode(tableType, 1);
+        var and = new GenTreeOp(GT_AND, tableType, shift, one);
+        var compare = new GenTreeOp(GT_EQ, TYP_INT, and, test);
+        var branch = new GenTreeUnOp(GT_JTRUE, TYP_VOID, compare);
+        switchBlock.InsertAfter(switchValue, table, shift, test, one);
+        switchBlock.InsertAfter(one, and, compare, branch);
+#endif
 
         return true;
 #else
-        throw new NotImplementedException("Switch bit-test lowering outside Windows AMD64 is not ported.");
+        throw new NotImplementedException("Switch bit-test lowering is not ported for this target.");
 #endif
     }
 }

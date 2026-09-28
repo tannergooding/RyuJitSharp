@@ -9,11 +9,15 @@ public sealed partial class Lowering
 {
     private void LowerBlock(BasicBlock block)
     {
-#if WINDOWS_AMD64_ABI
+#if WINDOWS_AMD64_ABI || TARGET_ARM64
         var compiler = CompilerInstance;
         assert(block == compiler.compCurBB);
         assert(block.IsEmpty || block.IsLIR);
         _block = block;
+#if TARGET_ARM64
+        _blockIndirs.Clear();
+        _ffrTrashed = true;
+#endif
 
         // Insertions before the current node must already be lowered. The
         // returned successor can also replace or skip nodes in the original LIR.
@@ -27,7 +31,7 @@ public sealed partial class Lowering
         assert(CheckBlock(compiler, block));
 #endif
 #else
-        throw new System.NotImplementedException("Block lowering outside Windows AMD64 is not ported.");
+        throw new System.NotImplementedException("Block lowering is not ported for this target.");
 #endif
     }
 

@@ -16,6 +16,14 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: ARM64 block and switch lowering
+
+Block lowering resets indirection-pairing candidates and FFR state at each
+block boundary. Switches preserve index evaluation and select native ARM64
+shift/AND bit tests or jump tables, including 64-case tables. Managed ARM64
+coverage passes 737 Debug/736 Release cases. Full lowering-phase activation,
+allocation, emission and target execution remain separate.
+
 ## 2026-09-27: SysV call recording and emission
 
 SysV x64 calls preserve both return registers' GC types through instruction

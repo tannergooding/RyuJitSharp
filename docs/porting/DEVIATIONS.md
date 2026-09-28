@@ -1312,16 +1312,16 @@ managed target coverage. Pair reordering and loop store-to-load-forwarding
 checks are also implemented, preserving native distance/budget limits,
 alias checks and dataflow cleanup. Private load/store lowering now integrates
 these helpers with volatile floating bitcasts, positive-zero store retyping,
-mutable-object release stores and ARM64 coalescing/atomicity. Whole-block/phase
-dispatch and per-block candidate reset remain unintegrated. B380 tracks the
+mutable-object release stores and ARM64 coalescing/atomicity. Block traversal
+resets per-block pairing candidates; phase activation remains separate. B380 tracks the
 pinned volatile-load bitcast round trip without changing it.
 
 ARM64 hardware-intrinsic and mask rewrites now have a private node-dispatch path
 for inserted operations, including FFR stores and reloads after calls. Fixed-width
 true-mask construction uses the native predicate pattern; scalable constant
-storage remains an explicit implementation limitation. `LowerBlock` and `DoPhase`
-are not activated: block-indirection reset, initial FFR state, switch lowering,
-allocation and emission remain separate. Managed target tests do not establish
+storage remains an explicit implementation limitation. `LowerBlock` initializes
+FFR-trashed state, and switch lowering supports ARM64 bit tests and jump tables.
+`DoPhase`, allocation and emission remain separate. Managed target tests do not establish
 ARM64 execution or generated-code parity.
 
 Non-AMD64 `Emitter.RequireSupportedInstructionRecording`, `emitCheckIGList`
@@ -1423,8 +1423,8 @@ constraints, signed-only ordered comparisons with zero, MOVI/FMOV constant
 selection and SVE embedded-mask ownership. SVE conversion auxiliary widths and
 pairwise all-true-mask exceptions retain native behavior. Bounds containment
 prefers the index immediate and does not use xarch memory/register-optional
-forms. These private actions do not implement general hardware/mask rewrites,
-activate node/block/phase lowering or establish ARM64 execution parity.
+forms. Hardware/mask rewrites and node/block traversal are implemented separately;
+these managed checks do not establish phase activation or ARM64 execution parity.
 
 `Lowering.TryCreateAddrMode` implements xarch address folding and interference
 checks. Other targets throw `NotImplementedException` pending their volatile,
