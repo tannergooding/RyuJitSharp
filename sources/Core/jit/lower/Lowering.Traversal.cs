@@ -176,12 +176,8 @@ public sealed partial class Lowering
 #if FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
             {
-#if TARGET_XARCH
                 ContainCheckHWIntrinsic(node.AsHWIntrinsic());
                 break;
-#else
-                throw new NotImplementedException("ARM64 hardware-intrinsic containment is not ported.");
-#endif
             }
 #endif
         }

@@ -107,5 +107,63 @@ internal static class Arm64ImmediatePredicateTests
             Assert.That(Emitter.emitIns_valid_imm_for_fmov(Math.BitDecrement(1.0)), Is.False);
         });
     }
+
+    [TestCase(-128L, EA_1BYTE, true)]
+    [TestCase(255L, EA_1BYTE, true)]
+    [TestCase(-256L, EA_2BYTE, true)]
+    [TestCase(0x1200L, EA_2BYTE, true)]
+    [TestCase(0x12FFL, EA_2BYTE, true)]
+    [TestCase(0x1234L, EA_2BYTE, false)]
+    [TestCase(0x0012FFFFL, EA_4BYTE, true)]
+    [TestCase(0xFFFFED00L, EA_4BYTE, true)]
+    [TestCase(-4864L, EA_4BYTE, true)]
+    [TestCase(0x1200FFFFL, EA_4BYTE, false)]
+    [TestCase(0x00123400L, EA_4BYTE, false)]
+    [TestCase(0x12FFFFFFL, EA_4BYTE, true)]
+    [TestCase(0x00FF00FF00FF00FFL, EA_8BYTE, true)]
+    [TestCase(-1L, EA_8BYTE, true)]
+    [TestCase(0xFF01L, EA_8BYTE, false)]
+    [TestCase(long.MinValue, EA_8BYTE, false)]
+    public static void MoviPreservesLaneWidthAndComplementForms(long value, emitAttr size, bool expected)
+    {
+        Assert.That(Emitter.emitIns_valid_imm_for_movi(value, size), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public static void MoviAcceptsEveryEncodedByteAndDoublewordMask()
+    {
+        for (var immediate = 0; immediate < 256; immediate++)
+        {
+            Assert.That(Emitter.emitIns_valid_imm_for_movi(immediate, EA_1BYTE), Is.True);
+            foreach (var size in new[] { EA_2BYTE, EA_4BYTE })
+            {
+                var mask = size is EA_2BYTE ? 0xFFFFL : uint.MaxValue;
+                for (var shift = 0; shift < (int)size * 8; shift += 8)
+                {
+                    var value = (long)immediate << shift;
+                    Assert.That(Emitter.emitIns_valid_imm_for_movi(value, size), Is.True);
+                    Assert.That(Emitter.emitIns_valid_imm_for_movi(~value & mask, size), Is.True);
+                }
+            }
+
+            foreach (var shift in new[] { 8, 16 })
+            {
+                var value = ((long)immediate << shift) | ((1L << shift) - 1);
+                Assert.That(Emitter.emitIns_valid_imm_for_movi(value, EA_4BYTE), Is.True);
+                Assert.That(Emitter.emitIns_valid_imm_for_movi(~value & uint.MaxValue, EA_4BYTE), Is.True);
+            }
+
+            ulong doubleword = 0;
+            for (var index = 0; index < 8; index++)
+            {
+                if ((immediate & (1 << index)) != 0)
+                {
+                    doubleword |= 0xFFUL << (index * 8);
+                }
+            }
+
+            Assert.That(Emitter.emitIns_valid_imm_for_movi(unchecked((long)doubleword), EA_8BYTE), Is.True);
+        }
+    }
 }
 #endif

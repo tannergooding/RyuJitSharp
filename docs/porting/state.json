@@ -13,15 +13,15 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "Complete private ARM64 PInvoke and fast-tailcall transitions, including frame lifecycle, Swift error-consumer ordering, defensive argument copies and profiler hooks; reconcile CFG target policy while retaining its general-lowering boundary.",
-      "status": "completed",
+      "scope": "Complete ARM64 hardware-intrinsic and bounds-check containment, including immediate selection, zero comparisons, vector-move constants and SVE embedded-mask ownership, before enabling general node lowering.",
+      "status": "done",
       "doneWhen": [
-        "Reconcile whole PInvoke frame/call and fast-tailcall functions with pinned native ARM64 paths; retain explicit unsupported general morph/lowering dependencies.",
-        "Preserve Swift error-consumer adjacency after inserted epilogs, non-GC region boundaries, defensive-copy ownership and profiler-hook placement.",
-        "Validate reused cross-target transition fixtures and Windows-x64 controls, commit locally and continue. CFG ValidateAndCall still needs general LowerRange; do not enable general node/block/phase dispatch."
+        "Port complete lowerarmarch.cpp ContainCheckHWIntrinsic, ContainCheckBoundsChk and IsValidConstForMovImm, including the required emitter MOVI immediate predicate.",
+        "Preserve indexed/immediate operand positions, signed-only zero comparisons, SVE operation/auxiliary mask widths and zero-merge exclusions, with native flags and ownership.",
+        "Validate ARM64 target cases and affected Windows-x64 controls, commit locally and continue. General LowerHWIntrinsic/LowerCnsMask rewrites, LowerNode/LowerBlock/DoPhase and execution remain separate."
       ],
       "validation": [
-        "Full-analysis Linux/Windows ARM64 Debug/Release managed target suites with existing PInvoke-frame, PInvoke-call and fast-tailcall fixtures; focused Windows-x64 transition/CFG/call controls. Add Swift ordering coverage and verify native ARM64 return-trap containment.",
+        "Full-analysis Linux/Windows ARM64 Debug/Release managed target suites and Windows-x64 hardware-containment/bounds controls. Cover complete immediate families, zero/unsigned restrictions, MOVI/FMOV encoding boundaries and SVE containment legality.",
         "Reuse unaffected Windows execution evidence from prerequisite commit ee71808. No Linux or ARM64 execution host is available; managed target tests are not runtime parity."
       ],
       "deferred": [
@@ -423,7 +423,20 @@
         }
       ]
     },
-    "nextAction": "Private ARM64 call-transition batch is validated. Continue toward general ARM64 node dispatch: compare LowerNode in Lowering.Traversal.cs with pinned lower.cpp, identify its remaining target-specific action blockers, and record the next coherent dependency batch before editing. CFG validator, block-indirection splitting and field-list repacking remain blocked by general LowerRange; hardware/mask containment and per-block pairing/FFR initialization remain explicit prerequisites. Do not activate LowerBlock/DoPhase or publish without completing those dependencies.",
+    "nextAction": "Hardware/bounds containment is complete with ARM64 Debug/Release and Windows-x64 controls. Continue with whole ARM64 LowerHWIntrinsic and LowerCnsMask rewrites at lowerarmarch.cpp:992-1064,1458 onward; read their complete bodies and required helper closure before enabling the general node dispatcher. Previously identified dispatch gaps remain atomic cases, MUL_LONG, neg/not actions and FFR call invalidation. Preserve native per-block pairing/FFR initialization and keep LowerBlock/DoPhase inactive until dependencies are ready.",
+    "arm64HardwareContainment": {
+      "scope": "Complete ARM64 hardware and bounds containment, with MOVI/MVNI byte-shift and doubleword-mask predicates, exact FMOV constants, comparison-zero rules and SVE embedded masking.",
+      "mapping": "lowerarmarch.cpp:2033-2060,3805-4225 -> Lowering.Arm64HardwareContainment.cs and Lowering.BoundsChecks.cs; emitarm64.cpp:2451-2483,3113-3207 -> Emitter.ImmediatePredicates.cs. Shared ContainCheckNode now dispatches ARM64 hardware containment; bounds containment remains a separate LowerNode action, matching native.",
+      "validation": {
+        "linuxArm64": "718Debug/717Release: hardware-linux-arm64-debug-final.trx and hardware-linux-arm64-release-final.trx.",
+        "windowsArm64": "721Debug/720Release: hardware-win-arm64-debug-final.trx and hardware-win-arm64-release-final.trx.",
+        "windowsX64Controls": "135Debug/135Release: hardware-windows-debug.trx and hardware-windows-release.trx; hardware/scalar intrinsic, comparison and bounds fixtures.",
+        "coverage": "65 added cases cover immediate positions and dynamic operands, paired all-or-nothing immediates, gather shapes, signed/unsigned zero comparisons and swapping, MOVI/FMOV boundaries, all 256 doubleword masks and encoded bytes, SVE operation/auxiliary widths, repeated embedded checks and pairwise all-true-mask exceptions. Bounds tests preserve index-first choice without xarch memory/register-optional containment.",
+        "regression": "All ten immediate-family cases fail when the former ARM64 hardware guard is restored: hardware-negative-arm64.trx. All positive suites use the new dispatch.",
+        "artifacts": "artifacts\\parallel-port; full analysis, nonzero total=executed=passed and zero skips."
+      },
+      "limits": "Predicate and private containment behavior only. General LowerHWIntrinsic/LowerCnsMask rewriting, LowerNode/LowerBlock/DoPhase, allocator/emitter activation and ARM64 execution parity remain separate. Existing scalable-constant representation limitations are unchanged."
+    },
     "arm64CallTransitions": {
       "scope": "Private ARM64 PInvoke frame/call transitions, native Swift error-consumer adjacency, fast-tailcall defensive copies/non-GC regions/profiler hooks and CFG target policy.",
       "mapping": "lower.cpp:3043-3487,3617-3820,6755-7326 -> Lowering.ProfilerTailCalls.cs, Lowering.FastTailCalls.cs, Lowering.ControlFlowGuard.cs, Lowering.PInvokeFrames.cs and Lowering.PInvokeCalls.cs; gentree.h:5471-5476 -> GenTreeCall.HasSwiftErrorHandling.",

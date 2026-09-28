@@ -58,6 +58,34 @@ public partial class Emitter
         return false;
     }
 
+    public static bool emitIns_valid_imm_for_movi(long imm, emitAttr elementSize)
+    {
+        if (elementSize is EA_8BYTE)
+        {
+            var value = unchecked((ulong)imm);
+            while (value != 0)
+            {
+                var lowByte = value & 0xFF;
+                if ((lowByte != 0) && (lowByte != 0xFF))
+                {
+                    return false;
+                }
+
+                value >>= 8;
+            }
+
+            return true;
+        }
+
+        if (canEncodeByteShiftedImm(imm, elementSize, allowMsl: true))
+        {
+            return true;
+        }
+
+        var complemented = NOT_helper(imm, getBitWidth(elementSize));
+        return canEncodeByteShiftedImm(complemented, elementSize, allowMsl: true);
+    }
+
     public static bool emitIns_valid_imm_for_fmov(double immDbl)
     {
         if (canEncodeFloatImm8(immDbl))
@@ -153,6 +181,40 @@ public partial class Emitter
 
         var mask = ulong.MaxValue >> (int)(64 - width);
         return unchecked((long)(~unchecked((ulong)value) & mask));
+    }
+
+    private static bool canEncodeByteShiftedImm(long imm, emitAttr size, bool allowMsl)
+    {
+        var value = normalizeImm64(imm, size);
+        if (size is EA_1BYTE or EA_8BYTE)
+        {
+            assert(value < 0x100);
+            return true;
+        }
+
+        assert(size is EA_2BYTE or EA_4BYTE);
+        var width = size is EA_4BYTE ? 32 : 16;
+        var byteCount = width / BITS_PER_BYTE;
+        var mask = uint.MaxValue >> (32 - width);
+        for (var byteShift = 0; byteShift < byteCount; byteShift++)
+        {
+            var currentMask = 0xFFu << (byteShift * BITS_PER_BYTE);
+            var otherBits = value & (mask & ~currentMask);
+            if (otherBits == 0)
+            {
+                return true;
+            }
+
+            // MOVI/MVNI allow one-filled low bytes only in the 32-bit MSL forms.
+            if (allowMsl && (size is EA_4BYTE) &&
+                (((byteShift == 1) && (otherBits == 0xFF)) ||
+                 ((byteShift == 2) && (otherBits == 0xFFFF))))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool canEncodeHalfwordImm(long imm, emitAttr size)

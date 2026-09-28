@@ -1376,8 +1376,8 @@ Private casts, constant signed/unsigned division and power-of-two remainder now
 preserve ARM64 load-width restrictions, native magic-number selection and
 conditional-negate ownership. Their temporary-local dependencies include
 local-store target paths, odd-size call-result spilling and post-indexed
-pointer-update scheduling. Shared containment traversal is available but
-explicitly rejects ARM64 hardware intrinsics. Private block-memory lowering
+pointer-update scheduling. Shared containment traversal includes ARM64 hardware
+intrinsics. Private block-memory lowering
 now preserves zero-register initialization, atomic GC-zeroing loops,
 non-interruptible small stack copies and checked unrolled-address bounds.
 Local-to-block stores use the extracted native block-store action; small
@@ -1404,6 +1404,13 @@ and xarch-only constant cloning; its validate-and-call path still needs general
 `LowerRange`, so full CFG/phase activation remains separate. SysV x64 defensive
 copies still encounter unported common local-store lowering; the new backend
 fixture links apply only to ARM64 and do not claim that SysV capability.
+ARM64 hardware containment preserves immediate positions and paired-immediate
+constraints, signed-only ordered comparisons with zero, MOVI/FMOV constant
+selection and SVE embedded-mask ownership. SVE conversion auxiliary widths and
+pairwise all-true-mask exceptions retain native behavior. Bounds containment
+prefers the index immediate and does not use xarch memory/register-optional
+forms. These private actions do not implement general hardware/mask rewrites,
+activate node/block/phase lowering or establish ARM64 execution parity.
 
 `Lowering.TryCreateAddrMode` implements xarch address folding and interference
 checks. Other targets throw `NotImplementedException` pending their volatile,

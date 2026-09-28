@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: ARM64 hardware containment
+
+ARM64 containment now handles hardware immediate families, paired operands,
+zero comparisons and MOVI/FMOV constants. SVE conditional selects preserve
+embedded-operation ownership, mask/auxiliary element widths and zero-merge
+exceptions for unpredicated pairwise instructions. Bounds checks use native
+index-first immediate selection without xarch memory containment.
+
+The shared containment walker reaches these hardware actions. General hardware
+rewriting and node/block/phase activation remain separate; managed target
+coverage is not ARM64 generated-code execution evidence.
+
 ## 2026-09-27: ARM64 call transitions
 
 Private ARM64 PInvoke lowering now preserves frame initialization and links,
