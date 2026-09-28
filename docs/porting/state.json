@@ -18,10 +18,10 @@
       "startIndexCommit": "4816a0d823a22b12e2f5de4686bba6201ff08a0b",
       "protectedRef": "refs/porting/snapshots/residual-reconcile-start-20260927",
       "startTree": "59d3dbb096ebc96e66e006f75d77176444088d8c",
-      "latestSnapshot": "96c46aea6620558f6b68a488fabaf00d61fef093",
-      "latestIndexCommit": "dc4d32b7eaba0d150c1ab0a137e66eca68a2edc4",
-      "latestProtectedRef": "refs/porting/snapshots/residual-vn-map-interning-20260927",
-      "latestTree": "e58c707c617b6b043cef9cf2a7642c897092f033",
+      "latestSnapshot": "281f20382b884d4a208a2793e7a0ff2342ae4461",
+      "latestIndexCommit": "4cc910500a560684e2dfe587b6b749606d5c4ba2",
+      "latestProtectedRef": "refs/porting/snapshots/residual-vn-folding-memory-20260927",
+      "latestTree": "7f80c19f0eb3a99e786c7b0ac1073b357ee801c6",
       "startingState": "176 staged paths: one addition, 83 deletions and 92 modifications; no unstaged changes. Original staged content is protected independently of new retirement edits.",
       "retired": [
         "2e6b6e34: gtExtractSideEffectsFromUnusedNode and related declarations. gtExtractSideEffList's native body had already been removed; its former absence was not used as evidence of completion.",
@@ -38,7 +38,8 @@
         "Completed remaining assertion phase, VN folding, arithmetic/relational application, switch facts, forward dataflow and statement propagation, with descriptor queries, relation/equality helpers, non-constant factories, tables and declarations. Restore optConstantAssertionProp from the oracle and retain the generic factory/model support for B387.",
         "Complete VN copy propagation and SSA-definition model; completed VN compiler phase, reachability/loop/PHI/tree traversal, local/array/field/immutable memory access, memory SSA updates, scalar intrinsics, casts, calls, exceptions and annotation checks. Related cast/bitcast pair functions, int32 offset peeling and declarations retired.",
         "Completed VN scalar floating/integral evaluation and comparisons, target NaN helpers, operator mapping, exception sets/pairs, chunk selection, typed constant interning, host-sized constants and zero-object creation, with associated declarations.",
-        "Completed castclass/isinst, binary/ternary/quaternary interning, memory-PHI allocation/query/model, map-store/select wrappers, dependency caching, selector encoding and fixed-point membership support, with associated declarations and map predicates. Retain VNForMapSelectWork and restore its trace macro for B389."
+        "Completed castclass/isinst, binary/ternary/quaternary interning, memory-PHI allocation/query/model, map-store/select wrappers, dependency caching, selector encoding and fixed-point membership support, with associated declarations and map predicates. Retain VNForMapSelectWork and restore its trace macro for B389.",
+        "Completed constant evaluation/casts/bitcasts, folding policy, runtime type comparison, mathematical identities and related-relop tables; remaining function/expression pairs, target-sized integer wrapper, memory load/store/bitcast pairs, pointer extension and memory-loop/handle/relop/array-for-length queries, with associated declarations."
       ],
       "remainingHelperTargets": [
         "helperexpansion.cpp now contains only the two TLS call transformations and ReadUtf8. All three are complete for Windows x64.",
@@ -58,10 +59,10 @@
       "remainingInductionTargets": "inductionvariableopts.cpp retains StrengthReductionContext.CheckAdvancedCursors, FindUpdateInsertionPoint and FindPostUseUpdateInsertionPoint, plus their cursor/context shell. ARM64 address-mode scaling and post-indexed update placement remain explicitly unsupported in managed code; the post-use helper is unported. Windows AMD64 is complete.",
       "remainingCseTargets": "B386: CSE_Heuristic.Initialize and PromotionCheck remain for x86 long stack homes, 32-bit register-pair counting, non-xarch frame thresholds and SMALL_CODE costs. Managed bodies use AMD64 initialization and xarch encoding costs; Windows AMD64 is complete. Pinned CSE_INTO_HANDLERS=0 and CSE_CONSTS=1 match the managed configuration.",
       "remainingAssertionTargets": "B387: assertionprop.cpp contains only restored optConstantAssertionProp; compiler.h retains CreateConstLclVarAssertion and descriptor support. Both managed paths explicitly reject ARM64 scalable constants; Windows AMD64 is complete. The earlier local-assertion retirement predates the current mixed-target retention policy; its absence was not evidence of target completion.",
-      "remainingVnCompilerTargets": "Compiler.fgValueNumberHWIntrinsic and its declaration remain: xarch is complete, while managed code explicitly rejects other targets. ValueNumStore storage/arithmetic/maps/evaluators/diagnostics are the next reconciliation area, including known scalable constants and non-xarch intrinsic deferrals.",
+      "remainingVnCompilerTargets": "Compiler.fgValueNumberHWIntrinsic and its declaration remain: xarch is complete, while managed code explicitly rejects other targets. Store vector constants, HW/math evaluators, diagnostics and shared model/header closure remain to reconcile, including known scalable constants and non-xarch intrinsic deferrals.",
       "remainingVnStoreSupport": "Constructor/chunk and scalable constant support remain with the target-incomplete store. B388 retains VNOneForType for its missing managed SIMD invariant assertion, and RunTests for the unported RunComponentUnitTests path. B389 retains complete VNForMapSelectWork and restores its enabled trace macro: the algorithm is implemented, but eight native trace blocks are absent from C#. These findings do not establish a Windows code-generation difference.",
-      "remaining": "Reconcile VN vector constants, binary evaluation/folding, memory access, queries, diagnostics and shared model/header closure in valuenum.cpp/.h next. Retain scalable/target evaluator paths, B388 debug support and B389 default-enabled selector tracing. The post-refresh commit queue is not a completeness denominator.",
-      "verification": "VN map/interning retirement has 747 deletions and three restored trace-macro lines across exactly two files relative to 81c633f. This is intentionally not deletion-only. Delta whitespace check passes; inherited staging is preserved, with no unstaged changes. Oracle tracked source/index are unchanged. Hashes, exact spans and protected receipts are in artifacts/residual-reconciliation.",
+      "remaining": "Reconcile VN vector constants, HW/math evaluators, diagnostics and shared model/header closure in valuenum.cpp/.h next. Retain scalable/target evaluator paths, B388 debug support and B389 default-enabled selector tracing. The post-refresh commit queue is not a completeness denominator.",
+      "verification": "VN folding/memory/query retirement removes 2659 lines across exactly two files relative to 96c46ae, with zero additions. Delta whitespace check passes; inherited staging is preserved, with no unstaged changes. Oracle tracked source/index are unchanged. Hashes, exact spans and protected receipts are in artifacts/residual-reconciliation. Earlier assertion and trace-macro restorations remain explicitly non-deletion-only corrections.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
       "policy": "Retire only reviewed complete implementations. Retain or explicitly identify unfinished shared/Windows paths and other-platform-only paths. Preserve the oracle and existing index distinctions; do not infer parity or percentages from deletion counts."
     },
@@ -514,7 +515,7 @@
         }
       ]
     },
-    "nextAction": "Continue native residual reconciliation from protected staged snapshot 96c46aea6620558f6b68a488fabaf00d61fef093; do not reapply prior deletions. Map wrappers, interning and memory-PHI creation/query are retired. Next reconcile remaining vector constants, binary evaluation/folding, memory access, queries and diagnostics in valuenum.cpp/.h, including shared model/header closure. Retain complete VNForMapSelectWork and its restored enabled trace macro for B389, scalable/non-xarch evaluator bodies, constructor/chunk support, B388 debug support and B382-B387 paths. Preserve native staging and the oracle; use direct file tools and consolidated hidden process runners rather than focus-stealing PowerShell launches. Pending platform integration commits remain Linux e42864b53384c77e22daefbe743e77023f7a577e and ARM64 0c0d33f22a29cfc79133f93757071914b0cb27e5.",
+    "nextAction": "Continue native residual reconciliation from protected staged snapshot 281f20382b884d4a208a2793e7a0ff2342ae4461; do not reapply prior deletions. Binary folding, math identities, memory access and queries are retired. Next reconcile remaining vector constants, HW/math evaluators and diagnostics in valuenum.cpp/.h, including shared model/header closure. Retain complete VNForMapSelectWork and its restored enabled trace macro for B389, scalable/non-xarch evaluator bodies, constructor/chunk support, B388 debug support and B382-B387 paths. Preserve native staging and the oracle; use direct file tools and consolidated hidden process runners rather than focus-stealing PowerShell launches. Pending platform integration commits remain Linux e42864b53384c77e22daefbe743e77023f7a577e and ARM64 0c0d33f22a29cfc79133f93757071914b0cb27e5.",
     "arm64HardwareContainment": {
       "scope": "Complete ARM64 hardware and bounds containment, with MOVI/MVNI byte-shift and doubleword-mask predicates, exact FMOV constants, comparison-zero rules and SVE embedded masking.",
       "mapping": "lowerarmarch.cpp:2033-2060,3805-4225 -> Lowering.Arm64HardwareContainment.cs and Lowering.BoundsChecks.cs; emitarm64.cpp:2451-2483,3113-3207 -> Emitter.ImmediatePredicates.cs. Shared ContainCheckNode now dispatches ARM64 hardware containment; bounds containment remains a separate LowerNode action, matching native.",
@@ -7622,6 +7623,13 @@
       "reconciledCommit": null
     },
     {
+      "area": "vn-folding-memory-and-query-closure",
+      "native": ["src\\coreclr\\jit\\valuenum.cpp:EvalFuncForConstantArgs;EvalFuncForConstantFPArgs;EvalCastForConstantArgs;EvalBitCastForConstantArgs;VNEvalFoldTypeCompare;VNEvalCanFoldBinaryFunc;VNEvalShouldFold;EvalUsingMathIdentity;VNForLoad;VNForStore;VNForLoadStoreBitCast;ExtendPtrVN;LoopOfVN;IsVNObjHandle;IsVNTypeHandle;IsVNRelop;GetArrForLenVn", "src\\coreclr\\jit\\valuenum.h"],
+      "csharp": ["sources\\Core\\jit\\valuenum\\ValueNumStore.Binary*.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.MemoryAccess.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.PointerExtension.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.Pairs.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.Queries.cs", "sources\\Core\\jit\\rangecheck\\RangeCheck.Overflow.cs"],
+      "status": "Completed bodies, related-relop tables, remaining pair wrappers and associated declarations retired. Reused scoped folding/memory/query evidence and reviewed target-width casts, NaN/signed-zero identities, pair order, offset truncation and memory diagnostics. GetArrForLenVn is inlined into its sole caller, RangeCheck.GetArrLength. No new compiler behavior or parity result.",
+      "reconciledCommit": null
+    },
+    {
       "area": "vn-map-diagnostic-closure",
       "native": ["src\\coreclr\\jit\\valuenum.cpp:3219-3821,3840-3868,3961-3987,10954-11495,16325-16341", "src\\coreclr\\jit\\optimizer.cpp:4187-4255", "src\\coreclr\\jit\\valuenum.h:625-671,954-969,2193-2219"],
       "csharp": ["sources\\Core\\jit\\valuenum\\ValueNumStore.Maps.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.Diagnostics.cs", "sources\\Core\\jit\\compiler\\Compiler.VNLoopMemoryDependence.cs", "sources\\Core\\jit\\compiler\\Compiler.MemorySsa.cs", "sources\\Core\\jit\\compiler\\SsaMemDef.cs", "sources\\Core\\jit\\compiler\\Compiler.cs"],
@@ -7635,7 +7643,7 @@
       "csharp": ["sources\\Core\\jit\\valuenum\\VNMemoryPhiDef.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.Queries.cs", "sources\\Core\\jit\\valuenum\\ValueNumStore.Storage.cs", "sources\\Core\\jit\\valuenum\\Globals.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete native memory-PHI allocation/query and LoopOfVN using existing natural-loop maps. ReadOnlyMemory exposes copied SSA inputs. Memory-PHI allocation/query/model retired; LoopOfVN remains for query reconciliation. Subsequent compiler work activated VN; B389 separately records missing selector tracing, not a memory-PHI algorithm gap."
+      "status": "Complete native memory-PHI allocation/query and LoopOfVN using existing natural-loop maps. ReadOnlyMemory exposes copied SSA inputs. Memory-PHI allocation/query/model and LoopOfVN retired. Subsequent compiler work activated VN; B389 separately records missing selector tracing, not a memory-PHI algorithm gap."
     },
     {
       "area": "hardware-creation-fallback-and-metadata",
