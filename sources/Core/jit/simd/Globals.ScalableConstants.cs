@@ -5,12 +5,68 @@
 
 #if TARGET_ARM64 && FEATURE_SIMD
 using System;
+using System.Diagnostics;
 using static RyuJitSharp.SimdScalableKind;
 
 namespace RyuJitSharp;
 
 public static partial class Globals
 {
+    public static bool EvaluateSimdCvtScalableVectorToMask(
+        var_types baseType, ref simdmaskscalable_t result, in simdscalable_t value)
+    {
+        if (value.IsZero)
+        {
+            result.BaseType = baseType;
+            result.Index = 0;
+            return true;
+        }
+        if ((value.Kind != SimdScalableRepeated) || (baseType.Size != value.BaseType.Size))
+        {
+            return false;
+        }
+
+        result.BaseType = baseType;
+        result.Index = value.Index.u64[0] != 0 ? (byte)1 : (byte)0;
+
+        return true;
+    }
+
+    public static bool EvaluateSimdCvtScalableMaskToVector(
+        var_types baseType, ref simdscalable_t result, in simdmaskscalable_t value)
+    {
+        if (value.IsZero)
+        {
+            result.BaseType = baseType;
+            result.Kind = SimdScalableRepeated;
+            result.Index.u64[0] = 0;
+            result.Step.u64[0] = 0;
+            return true;
+        }
+        if (baseType.Size != value.BaseType.Size)
+        {
+            return false;
+        }
+        if (value.Index != 1)
+        {
+            assert(false);
+            return false;
+        }
+
+        result.BaseType = baseType;
+        result.Kind = SimdScalableRepeated;
+        result.Step.u64[0] = 0;
+        result.Index.u64[0] = baseType.Size switch {
+            1 => byte.MaxValue,
+            2 => ushort.MaxValue,
+            4 => uint.MaxValue,
+            8 => ulong.MaxValue,
+            _ => throw new UnreachableException(),
+        };
+
+        return true;
+    }
+
     public static bool TryEvaluateUnarySimdScalable(genTreeOps oper, bool scalar, var_types baseType,
         out simdscalable_t result, in simdscalable_t arg0)
     {

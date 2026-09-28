@@ -14,6 +14,22 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class MaskConversionTests
 {
+    [TestCase(0UL)]
+    [TestCase(0x8000_0000_0000_0000UL)]
+    [TestCase(ulong.MaxValue)]
+    public static void FixedValueWrapperPreservesMaskBitsAndHash(ulong bits)
+    {
+        simdmask_t mask = default;
+        mask.u64[0] = bits;
+        var value = simdmaskvalue_t.FromFixed(mask);
+        var expectedHash = mask.GetHashCode();
+        mask.u64[0] ^= 1;
+
+        Assert.That(value.Fixed.u64[0], Is.EqualTo(bits));
+        Assert.That(value.GetHashCode(), Is.EqualTo(expectedHash));
+        Assert.That(value, Is.Not.EqualTo(simdmaskvalue_t.FromFixed(mask)));
+    }
+
     [TestCase(1.0, true)]
     [TestCase(20.0, false)]
     [TestCase(30.0, false)]
