@@ -21144,7 +21144,10 @@ public partial class Compiler
             if (kind is StringComparisonKind.Equals)
             {
                 var refEqualityColon = gtNewColonNode(TYP_INT, gtNewTrue(), unrolled);
-                unrolled = gtNewQmarkNode(TYP_INT, gtNewBinaryNode(GT_EQ, TYP_INT, gtCloneExpr(varStrLcl), gtCloneExpr(cnsStr)), refEqualityColon);
+                var constantClone = gtCloneExpr(cnsStr);
+                var variableClone = gtCloneExpr(varStrLcl);
+                var refEquality = gtNewBinaryNode(GT_EQ, TYP_INT, variableClone, constantClone);
+                unrolled = gtNewQmarkNode(TYP_INT, refEquality, refEqualityColon);
             }
 
             impPopStack(argsCount);

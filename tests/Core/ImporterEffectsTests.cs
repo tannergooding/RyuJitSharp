@@ -109,6 +109,42 @@ internal static unsafe class ImporterEffectsTests
     }
 
     [Test]
+    public static void StringReferenceEqualityPreservesNativeCloneOrder(
+        [Values(false, true)] bool constantFirst,
+        [Values(false, true)] bool isStatic)
+    {
+        SsaLivenessTests.WithCompiler(2, compiler => {
+            compiler.opts.SetMinOpts(false);
+            compiler.compCurBB = new BasicBlock(null, null);
+            compiler.compCurBB.setBBProfileWeight(100);
+            compiler.lvaTable[0].Type = var_types.TYP_REF;
+            compiler.info.compMaxStack = 2;
+            compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
+            compiler.stackState.esStack = new StackEntry[2];
+            var value = compiler.gtNewLclvNode(var_types.TYP_REF, 0);
+            var literal = new GenTreeStrCon(Globals.EMPTY_STRING_SCON, null);
+            compiler.impPushOnStack(constantFirst ? literal : value, new typeInfo());
+            compiler.impPushOnStack(constantFirst ? value : literal, new typeInfo());
+            CORINFO_SIG_INFO signature = new() { numArgs = (ushort)(isStatic ? 2 : 1) };
+
+            var result = compiler.impUtf16StringComparison(Compiler.StringComparisonKind.Equals,
+                signature, isStatic ? CorInfoFlag.CORINFO_FLG_STATIC : 0);
+
+            Assert.That(result, Is.Not.Null);
+            Assert.That(compiler.stackState.esStackDepth, Is.Zero);
+            var statement = ImporterStatements(compiler) ?? throw new AssertionException("Missing string spill.");
+            var comparison = statement.NextStmt?.RootNode.AsLclVar().Data.AsQmark().Cond.AsOp()
+                ?? throw new AssertionException("Missing reference equality comparison.");
+            Assert.That(comparison.Oper, Is.EqualTo(genTreeOps.GT_EQ));
+            Assert.That(comparison.Op1.Oper, Is.EqualTo(genTreeOps.GT_LCL_VAR));
+            Assert.That(comparison.Op2.Oper, Is.EqualTo(genTreeOps.GT_CNS_STR));
+#if DEBUG
+            Assert.That(comparison.Op2.TreeId + 1, Is.EqualTo(comparison.Op1.TreeId));
+#endif
+        });
+    }
+
+    [Test]
     public static void ConstantStringComparisonUsesExactChunkWidths(
         [Values("AbC", "AbC-d", "AbC-deF", "AbC-deFGh")] string value,
         [Values(StringComparison.Ordinal, StringComparison.OrdinalIgnoreCase)] StringComparison comparison)
