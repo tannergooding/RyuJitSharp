@@ -16,6 +16,13 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "primaryParameterPermutations": {
+      "scope": "Float/double argument swaps, rotations and reversals through tail-position and ordinary-call source forms.",
+      "execution": "Pinned native and managed compilers both pass 2048 exact independently calculated results; 66 raw phase slices and 22 complete instruction traces match.",
+      "sourceSnapshot": "aacf581e8bfca4a5b0a51e99d9a244bdaaa6dfd6",
+      "evidence": "artifacts/primary-parameter-cycles/evidence.json",
+      "limits": "Not a primary-execution reproduction of B439: the pre-fix compiler also passes, and all 22 native prolog parameter interference graphs are acyclic. Tail-position source does not establish generated tailcalls. No production change or broader parity claim."
+    },
     "primaryVectorReductions": {
       "scope": "Integral Vector128/256/512 Sum and Dot for all signed/unsigned element widths, including overflowing lane products and accumulations.",
       "execution": "Default, AVX512-disabled and AVX-disabled native/managed primary pairs each verify 7272 independent modular results and match 144 raw phase slices/48 complete instruction traces.",
@@ -739,7 +746,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Continue Windows implementation independently of cleanup. B438/B439 high-bit mask defects and B440 large-switch operand-width overflow are closed. Continue bounded SIMD execution to expose incomplete Windows paths while the worker owns target-ledger classification and native deletions; neither gates foreground work.",
+      "parentScope": "Continue Windows implementation independently of cleanup. B438/B439 high-bit mask defects and B440 large-switch operand-width overflow are closed. Parameter permutation execution matches but does not reproduce B439. Correct the discovered unsigned switch-count and branch-destination validation mismatch in fgFindJumpTargets, then consume actionable Windows gaps from the target ledger; keep native retirement separate.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1134,7 +1141,7 @@
         }
       ]
     },
-    "nextAction": "Continue independent Windows execution after integral reductions: exercise cyclic floating parameter permutations through primary-JIT tail and normal calls to check B439 homing in actual code. Reuse primary-vector-shifts/jit-2 at source aacf581e and established capture/comparison tools; preserve old primary-outgoing-args/jit-1 if needed for pre-fix reproduction. Collect worker4b57b744's target-ledger baseline on notification without pausing foreground work. B153/D009, B365 and ARM64 foreground expansion remain deferred.",
+    "nextAction": "Restore pinned fgFindJumpTargets unsigned switch-count and branch-destination validation. Add bounded malformed-operand and valid-backward-branch controls, establish pre-fix failures, preserve BADCODE diagnostics, and run focused full-analysis Debug/Release parser coverage before committing. Parameter permutation evidence is complete without a B439 runtime reproduction. Worker4b57b744 reported native retirement193bd210156 and a287-record ledger at C#0fdc170b; integrate actionable Windows gaps after this parser correction. B153/D009, B365 and ARM64 foreground expansion remain deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
