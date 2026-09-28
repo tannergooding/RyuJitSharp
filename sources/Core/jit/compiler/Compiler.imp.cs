@@ -6069,7 +6069,7 @@ public partial class Compiler
 
                     if (addTree.Oper is GT_JTRUE)
                     {
-                        var compare = addTree.AsOp().Op1.AsOp();
+                        var compare = addTree.AsUnOp().Op1.AsOp();
                         assert(compare.Oper.IsCompare);
 
                         ref var compareOp1Ref = ref compare.Op1Ref;
@@ -6097,7 +6097,7 @@ public partial class Compiler
                     {
                         assert(addTree.Oper is GT_SWITCH);
 
-                        var valueRef = addTree.AsOp().Op1;
+                        ref var valueRef = ref addTree.AsUnOp().Op1Ref;
                         assert(genActualTypeIsIntOrI(valueRef.Type));
 
                         var lclNum = lvaGrabTemp(shortLifetime: true, "spill addStmt SWITCH");
@@ -8139,7 +8139,7 @@ public partial class Compiler
                         // of fgMorphCall() on the forms of tail call nodes that we assert.
                         if ((op1.Oper is GT_CAST) && !op1.HasOverflowCheck)
                         {
-                            op1 = op1.AsOp().Op1;
+                            op1 = op1.AsCast().Op1;
                         }
 
                         if (!op1.Oper.IsCall)
@@ -11999,7 +11999,7 @@ public partial class Compiler
             assert(node.Oper is GT_IND);
             tlAndN._num -= 100;
 
-            nodeTestData[node.AsOp().Op1] = tlAndN;
+            nodeTestData[node.AsIndir().Addr] = tlAndN;
             _ = nodeTestData.Remove(node);
         }
         else

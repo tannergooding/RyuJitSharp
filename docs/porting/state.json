@@ -16,6 +16,23 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "importerUnaryOperands": {
+      "scope": "B453 unary operand access in branch spills, discarded casts and hoist annotations; B454 switch spill replacement must update its owning operand slot.",
+      "mapping": "Pinned importer.cpp12730-12768 and8583-8586, importercalls.cpp2029-2080 -> Compiler.imp.cs impImportBlock, CEE_POP and impImportJitTestLabelMark.",
+      "status": "Validated; full-analysis focused tests pass199 Debug/179 Release. Fifteen Debug/twelve Release new contract cases reproduce10 Debug failures/five controls and one Release switch-slot failure/eleven controls before correction.",
+      "execution": "All17 remaining standalone array projects pass both primary JITs with positive Main compilations and identical exit100/stdout/stderr:16 under lcs/huge plus the root-level huge_struct.ilproj found by complete inventory. Original managed primary passes six then asserts on unary GT_JTRUE access while spilling huge_objref_d's shared stack temp. failure-dump-1 localizes the import; source-2/jit-2 provides the successful recapture.",
+      "source": "6c6d243f7b6c04bfaf18c5f38564e949c0bac174 archive plus Compiler.imp.cs overlay DDEAFA0DA542336ADC278377BBF6EB07626886DD45137B8E91956C98CA0975C7.",
+      "evidence": "artifacts/official-array-remaining/comparison-2.json verifies source/JIT identity, the16 lcs/huge outputs and final regression counts; root-project-1/result.json adds the seventeenth project. native-1, failed managed-1, failure-dump-1, source-2-overlay.json and managed-2 remain separate. Final Debug TRX is import-unary-final-2; Release is import-unary-final.",
+      "limits": "The switch owning-slot failure is established in Release IR, not yet a standalone generated-code repro. Eight lcs C# cases and misc/IndexingSideEffects are separately merged and excluded from the standalone selection."
+    },
+    "nativeMutationPause": {
+      "status": "Native source/index/branch mutations are paused after the worker amended its previous local commit despite the current ordinary-commit requirement. User was unavailable to approve history repair; no further branch rewrite was attempted.",
+      "originalHead": "b65c2dcf776f71701cb2a12a491e67fc57ddbb18",
+      "amendedHead": "bf77e6b6bba8b03e58b9bd2e6e1e89a1e535726a",
+      "originalRecoveryRef": "refs/porting/recovery/b65c2dcf-before-amend",
+      "delta": "Three lines removing the completed Range.TryGetUse declaration in lir.h. Original and amended commits share parent5962ff14. Nothing was pushed; original history is protected by a new recovery ref.",
+      "evidence": "artifacts/residual-reconciliation/native-amend-recovery-20260928.json records the command, identities and pending repair approval. Read-only family classification and parent C# work continue."
+    },
     "firstUseEdgeLookup": {
       "scope": "B452: complete native first-match operand-slot selection in GenTree.GetUseRefOrNullRef.",
       "mapping": "Pinned gentree.cpp8390-8568 TryGetUse -> GenTree.GetUseRefOrNullRef; LIR.Range.TryGetUse retains the returned reference. Specialized MultiOp use edges ignore reverse-execution flags, matching gentree.h6371-6376.",
@@ -807,8 +824,8 @@
         "Raw target-block getters have no pinned callsites and remain unused support. emitCodeGetCookie remains because its managed helper is only declared under TARGET_AMD64."
       ],
       "remaining": "Continue the full already-completed-code cleanup, distinguishing unreconciled areas from genuine target/CFI/optional-statistics gaps. emitGenIG/emitSavIG retain architecture/statistics paths, genCreateTempLabel retains Unix x86, and genGetRegMask retains ARM floating support. No new default Windows emission gap was established; the earlier blanket claim is withdrawn. Complete bodies are not retained merely because unfinished native callers reference them. Notify the user when the full cleanup is done.",
-      "verification": "Latest physical cleanup remainsb65c2dcf776. Reports89/92/93 retire55/18/28lines of emitted-size, throw-helper query and tree-constructor support. Reports94-101 consume committed deltas and refine named Windows family coverage without empty commits. Report99 retained the orphan LIR.TryGetUse declaration; firstUseEdgeLookup now resolves B452 for subsequent reconciliation. Native and pinned-oracle tracked source/index were clean at the collected boundaries. Retirement adds no parity evidence.",
-      "targetLedger": "Collected through report101, cursor a5c289a. Report100 consolidates reviewed trees/locals and block-initialization families under D001/D002 without promoting unreviewed definitions. Report101 consumes scoped B450/B451 initializer contracts separately from whole importers. Named production review boundaries include scalar/HWI morph drivers, non-HWI folding, argument materialization and call/tail-call morphing; managed counterparts are not demonstrated failures merely for lacking whole-function review. D009, R005, B392 and B446 remain separate optional gaps. The local ledger counts overlapping review records, not unique functions or compiler-completion percentages.",
+      "verification": "Current native HEAD is bf77e6b6 after report103's unauthorized amendment of b65c2dcf; see nativeMutationPause. The additional three-line deletion removes the B452-reviewed Range.TryGetUse declaration. Prior reports89/92/93 retire55/18/28lines of emitted-size, throw-helper query and tree-constructor support. Reports104-106 are read-only; source/index/branch mutations remain paused. Native and pinned-oracle tracked source/index are unchanged at the subsequent boundaries. Retirement adds no parity evidence.",
+      "targetLedger": "Collected through report106, last consumed C# commit6c6d243. Reports100/101 consolidate trees/locals, block-initialization and scoped B450/B451 evidence. Report103 resolves B452. Reports102/104-106 review the Windows fgMorphSmpOp driver and six typed constant folds without promoting their callees or other targets; the non-HWI folding family remains unknown for B455's first-user-argument distinction. Remaining production review boundaries include HWI morph drivers, argument materialization and call/tail-call morphing. D009, R005, B392 and B446 remain separate optional gaps. The local ledger counts overlapping review records, not unique functions or compiler-completion percentages.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
       "policy": "Retire only reviewed complete implementations. Retain or explicitly identify unfinished shared/Windows paths and other-platform-only paths. Preserve the oracle and existing index distinctions; do not infer parity or percentages from deletion counts."
     },
@@ -875,7 +892,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Continue official Windows-x64 primary execution with the Arrays/lcs standalone projects after the completed array-range/misc slices. Identify separately merged C# cases explicitly rather than treating standalone project enumeration as complete family coverage. Native worker independently consolidates simple-operator morph and non-HWI folding review boundaries; B452 first-edge lookup is validated.",
+      "parentScope": "Commit validated B453/B454 and the remaining17 standalone-array execution results, then resolve B455 first-user-argument selection in gtFoldTypeCompare against pinned native behavior. Keep normal Windows reachability separate from generic argument-selection semantics. Native mutations remain paused; read-only coverage reviews continue.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1277,7 +1294,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "B450/B451 are committed in a5c289a. B452 now passes119 Debug/119 Release with nine pre-fix failures/seven controls; native CheckLIR rejects the duplicate-value graphs, so no valid-Windows-LIR codegen defect is claimed. Commit the use-edge batch and send its delta to the retirement worker for the orphan declaration. Then build the pinned JIT/Methodical/Arrays/lcs standalone IL projects, capture both primary JITs using a fresh committed managed source publication, and compare positive entry compilations, exits and output. Inspect the separate merged C# cases before claiming broader lcs coverage. Reports100/101 are collected; worker owns simple-operator morph/non-HWI folding coverage.",
+    "nextAction": "B453/B454 are ready to commit:199 Debug/179 Release with10 Debug failures/five controls and one Release switch-slot failure/eleven controls before correction; all17 remaining standalone-array primary results match native in comparison-2.json and root-project-1/result.json. Commit Compiler.imp.cs, ImporterEffectsTests and related documentation, then resolve B455 in gtFoldTypeCompare using report104's first-user-argument finding. Reports102-106 are collected; fgMorphSmpOp and six typed folds are reviewed, with the non-HWI family remaining unknown for B455. Native source/index/branch mutations stay paused under nativeMutationPause; no history repair without explicit approval. Eight merged lcs C# tests and misc/IndexingSideEffects remain outside the completed59 standalone-array projects.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
@@ -9509,6 +9526,13 @@
       "native": ["src\\coreclr\\jit\\compiler.cpp", "src\\coreclr\\jit\\compiler.h", "src\\coreclr\\jit\\compiler.hpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.cs", "sources\\Core\\jit\\compiler\\Compiler.comp.cs"],
       "reconciledCommit": null
+    },
+    {
+      "area": "importer-unary-operands-and-exit-spills",
+      "native": ["src\\coreclr\\jit\\importer.cpp", "src\\coreclr\\jit\\importercalls.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.imp.cs"],
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+      "scope": "B453 JTRUE/SWITCH spill, discarded CAST and hoist-label IND operand access; B454 switch selector owning-slot replacement.15 Debug/12 Release contract cases,199 Debug/179 Release area coverage and17 matching official remaining-array primary results. Not a whole importer or generated-byte parity claim."
     },
     {
       "area": "first-matching-operand-edge",

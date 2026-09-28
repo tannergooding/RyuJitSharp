@@ -16,6 +16,26 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Remaining standalone array execution and importer spills
+
+Both primary JITs now pass the remaining 17 `JIT/Methodical/Arrays` standalone
+projects: two longest-common-subsequence tests and fifteen rank-32 array tests,
+including the separate root-level `huge_struct.ilproj`.
+Together with the earlier range and miscellaneous slices, all 59 standalone
+projects have matching native/managed execution results. Nine separately merged
+C# tests remain outside that coverage.
+
+The object-array case exposed unary branch access through the binary accessor.
+The same mismatch is corrected for switch spills, discarded casts and hoist
+annotations. Switch spilling also now updates the actual selector slot before
+its old stack temp is overwritten; the previous by-value assignment failed the
+Release IR regression. Ten Debug failures and one Release failure are corrected;
+final focused coverage passes 199 Debug and 179 Release cases.
+
+Entry compilations, exits and output match the pinned native baseline. This is
+bounded execution and IR-contract evidence, not full dump or generated-byte
+parity. See B453/B454.
+
 ## 2026-09-28: First matching operand edges
 
 Operand lookup now returns the first matching writable slot in PHI, field-list,

@@ -265,6 +265,229 @@ internal static unsafe class ImporterEffectsTests
         });
     }
 
+    [Test]
+    public static void ConditionalExitSpillsPreserveValuesBeforeReusingStackTemps(
+        [Values(0, 1, 2, 3)] int referencedOperands,
+        [Values(false, true)] bool byref)
+    {
+        WithCompiler(compiler => {
+            compiler.opts.SetMinOpts(true);
+            compiler.info.compMaxStack = 3;
+            compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
+            var type = byref ? var_types.TYP_BYREF : var_types.TYP_INT;
+            compiler.lvaTable[0].Type = type;
+            compiler.lvaTable[1].Type = type;
+            compiler.stackState.esStack = new StackEntry[3];
+            var retained = compiler.gtNewLclvNode(type, 1);
+            GenTree left = compiler.gtNewLclvNode(type, (referencedOperands & 1) != 0 ? 0 : 1);
+            GenTree right = (referencedOperands & 2) != 0
+                ? compiler.gtNewLclvNode(type, 0)
+                : compiler.gtNewIconNode(var_types.TYP_INT, 2);
+            if (byref)
+            {
+                left = compiler.gtNewIndir(var_types.TYP_INT, left);
+                if ((referencedOperands & 2) != 0)
+                {
+                    right = compiler.gtNewIndir(var_types.TYP_INT, right);
+                }
+            }
+            else if ((referencedOperands & 2) != 0)
+            {
+                right = new GenTreeUnOp(genTreeOps.GT_NEG, var_types.TYP_INT, right);
+            }
+
+            byte[] il = [(byte)OPCODE.CEE_BNE_UN_S, 1, (byte)OPCODE.CEE_NOP, (byte)OPCODE.CEE_NOP];
+            var block = new BasicBlock(null, null) { bbCodeOffsEnd = 2 };
+            var next = new BasicBlock(null, null) { bbCodeOffs = 2, bbCodeOffsEnd = 3 };
+            var target = new BasicBlock(null, null) { bbCodeOffs = 3, bbCodeOffsEnd = 4 };
+            block.Next = next;
+            next.Next = target;
+            block.SetCond(new FlowEdge(block, target, null), new FlowEdge(block, next, null));
+            block.EntryState = new EntryState {
+                esStackDepth = 3,
+                esStack = [new() { val = retained }, new() { val = left }, new() { val = right }],
+            };
+            PrepareImportedSuccessor(compiler, next, type);
+            PrepareImportedSuccessor(compiler, target, type);
+            compiler.fgFirstBB = block;
+            compiler.fgLastBB = target;
+
+            fixed (byte* code = il)
+            {
+                compiler.info.compCode = code;
+                compiler.info.compILCodeSize = il.Length;
+                compiler.impImportBlock(block);
+            }
+
+            var statement = block.FirstStmt ?? throw new AssertionException("Missing exit spills.");
+            var comparison = (block.LastStmt ?? throw new AssertionException("Missing conditional jump."))
+                .RootNode.AsUnOp().Op1.AsOp();
+            var nextTemp = 2;
+            GenTree[] original = [left, right];
+            GenTree[] actual = [comparison.Op1, comparison.Op2];
+            for (var i = 0; i < original.Length; i++)
+            {
+                if ((referencedOperands & (1 << i)) != 0)
+                {
+                    var store = statement.RootNode.AsLclVar();
+                    Assert.That(store.LclNum, Is.EqualTo(nextTemp));
+                    Assert.That(store.Data, Is.SameAs(original[i]));
+                    Assert.That(actual[i].AsLclVar().LclNum, Is.EqualTo(nextTemp));
+                    nextTemp++;
+                    statement = statement.NextStmt ?? throw new AssertionException("Missing stack spill.");
+                }
+                else
+                {
+                    Assert.That(actual[i], Is.SameAs(original[i]));
+                }
+            }
+
+            Assert.That(statement.RootNode.AsLclVar().LclNum, Is.Zero);
+            Assert.That(statement.RootNode.AsLclVar().Data, Is.SameAs(retained));
+            Assert.That(statement.NextStmt, Is.SameAs(block.LastStmt));
+            Assert.That(compiler.stackState.esStackDepth, Is.EqualTo(1));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void SwitchExitSpillsReplaceTheOwningValueSlot(bool referencesSpillTemp)
+    {
+        WithCompiler(compiler => {
+            compiler.opts.SetMinOpts(true);
+            compiler.info.compMaxStack = 2;
+            compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
+            compiler.lvaTable[0].Type = var_types.TYP_INT;
+            compiler.stackState.esStack = new StackEntry[2];
+            var retained = compiler.gtNewIconNode(var_types.TYP_INT, 7);
+            var selector = compiler.gtNewLclvNode(var_types.TYP_INT, referencesSpillTemp ? 0 : 1);
+            byte[] il = [(byte)OPCODE.CEE_SWITCH, 1, 0, 0, 0, 1, 0, 0, 0, (byte)OPCODE.CEE_NOP, (byte)OPCODE.CEE_NOP];
+            var block = new BasicBlock(null, null) { bbCodeOffsEnd = 9 };
+            var next = new BasicBlock(null, null) { bbCodeOffs = 9, bbCodeOffsEnd = 10 };
+            var target = new BasicBlock(null, null) { bbCodeOffs = 10, bbCodeOffsEnd = 11 };
+            block.Next = next;
+            next.Next = target;
+            FlowEdge[] edges = [new(block, target, null), new(block, next, null)];
+            var targets = new BBswtDesc(edges, [10, 9], hasDefault: true);
+            edges.CopyTo(targets.Cases);
+            block.SwitchTargets = targets;
+            block.EntryState = new EntryState {
+                esStackDepth = 2,
+                esStack = [new() { val = retained }, new() { val = selector }],
+            };
+            PrepareImportedSuccessor(compiler, next, var_types.TYP_INT);
+            PrepareImportedSuccessor(compiler, target, var_types.TYP_INT);
+            compiler.fgFirstBB = block;
+            compiler.fgLastBB = target;
+
+            fixed (byte* code = il)
+            {
+                compiler.info.compCode = code;
+                compiler.info.compILCodeSize = il.Length;
+                compiler.impImportBlock(block);
+            }
+
+            var statement = block.FirstStmt ?? throw new AssertionException("Missing exit spills.");
+            var actual = (block.LastStmt ?? throw new AssertionException("Missing switch.")).RootNode.AsUnOp().Op1;
+            if (referencesSpillTemp)
+            {
+                Assert.That(statement.RootNode.AsLclVar().LclNum, Is.EqualTo(2));
+                Assert.That(statement.RootNode.AsLclVar().Data, Is.SameAs(selector));
+                Assert.That(actual.AsLclVar().LclNum, Is.EqualTo(2));
+                statement = statement.NextStmt ?? throw new AssertionException("Missing stack spill.");
+            }
+            else
+            {
+                Assert.That(actual, Is.SameAs(selector));
+            }
+
+            Assert.That(statement.RootNode.AsLclVar().LclNum, Is.Zero);
+            Assert.That(statement.RootNode.AsLclVar().Data, Is.SameAs(retained));
+            Assert.That(statement.NextStmt, Is.SameAs(block.LastStmt));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void PopStripsOnlyNonOverflowingCastsAroundCalls(bool overflow)
+    {
+        WithCompiler(compiler => {
+            compiler.info.compMaxStack = 1;
+            compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
+            compiler.stackState.esStack = new StackEntry[1];
+            var block = new BasicBlock(null, null) { bbCodeOffsEnd = 1 };
+            compiler.fgFirstBB = compiler.compCurBB = block;
+            var call = compiler.gtNewCallNode(var_types.TYP_LONG, gtCallTypes.CT_USER_FUNC, null);
+            var cast = compiler.gtNewCastNode(var_types.TYP_INT, call, false, var_types.TYP_INT);
+            if (overflow)
+            {
+                cast.Flags |= GenTreeFlags.GTF_OVERFLOW | GenTreeFlags.GTF_EXCEPT;
+            }
+
+            compiler.impPushOnStack(cast, new typeInfo());
+            var code = (byte)OPCODE.CEE_POP;
+            compiler.info.compCode = &code;
+            compiler.info.compILCodeSize = 1;
+            compiler.impImportBlockCode(block);
+
+            var statement = ImporterStatements(compiler) ?? throw new AssertionException("Missing popped call.");
+            var root = statement.RootNode;
+            Assert.That(compiler.stackState.esStackDepth, Is.Zero);
+            Assert.That(statement.NextStmt, Is.Null);
+            if (overflow)
+            {
+                Assert.That(root.Oper, Is.EqualTo(genTreeOps.GT_COMMA));
+                Assert.That(root.AsOp().Op1, Is.SameAs(cast));
+                Assert.That(cast.Op1, Is.SameAs(call));
+            }
+            else
+            {
+                Assert.That(root, Is.SameAs(call));
+            }
+        });
+    }
+
+#if DEBUG
+    [TestCase(99)]
+    [TestCase(100)]
+    [TestCase(107)]
+    public static void LoopHoistAnnotationsSelectTheIndirectionAddress(int number)
+    {
+        WithCompiler(compiler => {
+            compiler.info.compMaxStack = 3;
+            compiler.stackState.esStack = new StackEntry[3];
+            compiler.lvaTable[0].Type = var_types.TYP_BYREF;
+            var address = compiler.gtNewLclvNode(var_types.TYP_BYREF, 0);
+            var load = compiler.gtNewIndir(var_types.TYP_INT, address);
+            compiler.NodeTestData[load] = new TestLabelAndNum { _tl = TestLabel.TL_VN, _num = 7 };
+            compiler.impPushOnStack(load, new typeInfo());
+            compiler.impPushOnStack(compiler.gtNewIconNode(var_types.TYP_INT, (int)TestLabel.TL_LoopHoist), new typeInfo());
+            compiler.impPushOnStack(compiler.gtNewIconNode(var_types.TYP_INT, number), new typeInfo());
+
+            var type = compiler.impImportJitTestLabelMark(3);
+
+            Assert.That(type, Is.EqualTo(var_types.TYP_INT));
+            Assert.That(compiler.stackState.esStackDepth, Is.EqualTo(1));
+            Assert.That(compiler.impStackTop().val, Is.SameAs(load));
+            Assert.That(compiler.NodeTestData.Count, Is.EqualTo(1));
+            var annotation = compiler.NodeTestData[number >= 100 ? address : load];
+            Assert.That(annotation._tl, Is.EqualTo(TestLabel.TL_LoopHoist));
+            Assert.That(annotation._num, Is.EqualTo((nint)(number >= 100 ? number - 100 : number)));
+        });
+    }
+#endif
+
+    private static void PrepareImportedSuccessor(Compiler compiler, BasicBlock block, var_types type)
+    {
+        block.bbRefs = 1;
+        block.bbStkTempsIn = 0;
+        block.SetFlags(BasicBlockFlags.BBF_IMPORTED);
+        block.EntryState = new EntryState {
+            esStackDepth = 1,
+            esStack = [new() { val = compiler.gtNewLclvNode(type, 0) }],
+        };
+    }
+
     [TestCase(false, var_types.TYP_INT)]
     [TestCase(true, var_types.TYP_INT)]
     [TestCase(false, Globals.TYP_I_IMPL)]
