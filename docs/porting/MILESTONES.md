@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: ARM64 scalable constant model
+
+Scalable vector values now have a standalone representation for repeated,
+sequence and scalar forms. Decoding preserves signed extension, unsigned-64
+immediate limits and floating-point payload bits; encoding predicates reproduce
+ARM64 repeated, sequence and scalar immediate constraints.
+
+Full-analysis model/metadata coverage passes 69 Debug/69 Release cases on the
+Windows-host ARM64 target. Tree storage and consumers, LSRA temporary selection
+and public allocator activation remain separate integration work. No ARM64
+generated-code execution or parity is claimed.
+
 ## 2026-09-28: Native remainder reconciliation
 
 The remaining-work view is reconciled through native cleanup commit `8f39f402`,
