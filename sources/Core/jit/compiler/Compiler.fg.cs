@@ -5014,8 +5014,8 @@ public partial class Compiler
 
         // If we didn't find a non-fall_through block, then insert at the last good block.
 
-        assert(goodBlk is not null);
         bestBlk ??= goodBlk;
+        assert(bestBlk is not null);
 
         return Done(bestBlk, insertingIntoFilter, startBlk, endBlk);
 

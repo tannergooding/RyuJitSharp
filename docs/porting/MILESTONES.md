@@ -16,6 +16,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Primary-JIT startup and teardown complete
+
+The arithmetic probe now completes as a primary-managed-JIT process, including
+runtime startup and shutdown, without AltJIT fallback. Loop insertion now accepts
+a selected preferred block even when no fallback was needed. The teardown
+method's complete post-loop trees and emitted instructions match native.
+
+This establishes one end-to-end Windows x64 primary-JIT scenario, not general
+runtime-suite coverage. Known address-folding and dump-order/formatting
+differences remain active port work.
+
 ## 2026-09-28: Primary-JIT execution reaches application code
 
 The managed compiler can now take the primary-JIT role through Windows runtime

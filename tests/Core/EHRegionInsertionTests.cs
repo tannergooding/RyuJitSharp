@@ -8,6 +8,31 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class EHRegionInsertionTests
 {
+    [TestCase(BBJ_RETURN)]
+    [TestCase(BBJ_ALWAYS)]
+    public static void InsertionSearchAcceptsEitherPreferredOrFallbackBlock(BBKinds kind)
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler =>
+        {
+            var candidate = BasicBlock.New(compiler, kind);
+            var end = BasicBlock.New(compiler, BBJ_RETURN);
+            candidate.Next = end;
+            end.Prev = candidate;
+            compiler.fgFirstBB = candidate;
+            compiler.fgLastBB = end;
+            if (kind is BBJ_ALWAYS)
+            {
+                candidate.SetKindAndTargetEdge(BBJ_ALWAYS, new FlowEdge(candidate, end, null));
+            }
+
+            var result = compiler.fgFindInsertPoint(0, true, candidate, end, null, null, false);
+
+            Assert.That(result, Is.SameAs(candidate));
+            Assert.That(candidate.Next, Is.SameAs(end));
+            Assert.That(end.Prev, Is.SameAs(candidate));
+        });
+    }
+
     [TestCase(true)]
     [TestCase(false)]
     public static void OutermostRegionPreservesTheIncomingKind(bool inTry)
