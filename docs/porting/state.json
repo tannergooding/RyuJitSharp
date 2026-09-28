@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "arrayInitializationCursor": {
+      "scope": "B449: advance impInitializeArrayIntrinsic's multidimensional argument walk from the current comma after consuming a lower-bound/length pair.",
+      "mapping": "Pinned importercalls.cpp multidimensional InitializeArray argument traversal -> Compiler.imp.cs impInitializeArrayIntrinsic.",
+      "contract": "Visit each dimension once; retain rank1 zero-bound SDArray layout selection, nonzero-bound MDArray offsets and the original constant-length/product checks.",
+      "validation": "Six explicit-bound cases fail before correction and three omitted-bound controls pass. Existing constructor import builds the test IR. Full-analysis importer/array morph/stack expansion coverage passes146Debug/143Release, including all nine rank1/2/3 and omitted/zero/negative-bound cases.",
+      "execution": "All21 miscellaneous-array projects, including priority1 cases, pass pinned native and fixed managed primary execution with exit100, positive entry compilations and identical stdout/stderr. Pre-fix managed execution passes12 then aborts in initializearray_r's optimized rank1 explicit-zero-bound constructor. comparison-2.json records the completed recapture.",
+      "source": "Immutable d92752732f75514bd9a1e76021802e3788e3526e export plus Compiler.imp.cs overlay FACEAF169EA40F6663F614B839DC2A1BB38DEABF45A2AAE8F100521C0394B849, containing committed B448 and the B449 cursor fix.",
+      "reproduction": "artifacts/official-array-misc contains source-3-overlay.json, the fresh jit-3 publication, preserved failing managed-1 and capture-cursor-fixed.py. Build from oracle root with priority1; retain the existing Core_Root. The four C# cases require positive TestEntryPoint traces, not wrapper Main alone.",
+      "limits": "Bounded standalone official execution, not the separate merged IndexingSideEffects test, whole dumps, generated-byte parity or the full runtime suite. Separate B450 unsigned-size and B451 indirect-token discrepancies remain outside this cursor correction."
+    },
     "importerComparisonTypes": {
       "scope": "B448: validate native-int/int32 comparisons using the operand types after widening, in both value and conditional-branch import.",
       "mapping": "Pinned importer.cpp8040-8057/8139-8152 -> Compiler.imp.cs local Cmp2Ops/Cmp2OpsAndBrAll helpers.",
@@ -697,7 +707,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "5962ff141de13725b265ce4a13d8ad1a9a6b114c",
+      "residualHead": "b65c2dcf776f71701cb2a12a491e67fc57ddbb18",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -778,8 +788,8 @@
         "Raw target-block getters have no pinned callsites and remain unused support. emitCodeGetCookie remains because its managed helper is only declared under TARGET_AMD64."
       ],
       "remaining": "Continue the full already-completed-code cleanup, distinguishing unreconciled areas from genuine target/CFI/optional-statistics gaps. emitGenIG/emitSavIG retain architecture/statistics paths, genCreateTempLabel retains Unix x86, and genGetRegMask retains ARM floating support. No new default Windows emission gap was established; the earlier blanket claim is withdrawn. Complete bodies are not retained merely because unfinished native callers reference them. Notify the user when the full cleanup is done.",
-      "verification": "Latest collected native cleanup is5962ff141de. Report89 retires55lines of emitted-size accessors/globals/declarations afterd9275273; mixed consumers remain. Reports90/91 classify named block/EH, flowgraph/inlining and morphing survivors without further deletion. Report92 resolves four ambiguous compiler.hpp helpers: retire18lines for fgIsThrowHlpBlk and its declaration, retain the Wasm funclet pair and x86 stack-depth lookup. Native index/worktree and oracle tracked source/index were clean at the reported boundary. Retirement adds no parity evidence.",
-      "targetLedger": "Through report92 the ledger covers304 overlapping records:284 implemented,2 partial,2 unported,14 unknown and2 not-applicable, not unique functions or a compiler-completion percentage. Committed deltas are consumed throughd9275273. Reports90/91 replace four umbrellas' generic remainder descriptions with named retained boundaries; try-aware RPO callers are Wasm-only. Report92 establishes no default Windows gap in its four inline helpers. D009, R005, B392 and B446 remain separate optional gaps; other disabled statistics switches are not implied complete.",
+      "verification": "Latest collected native cleanup isb65c2dcf776. Reports89/92/93 retire55lines of emitted-size support,18lines of fgIsThrowHlpBlk support and28lines for both gtNewOperNode overloads. gtFoldExpr remains for ARM64 hardware folding; Wasm funclet and x86 stack-depth helpers remain. Reports90/91/94-96 add bounded coverage/delta dispositions without empty commits. Native index/worktree and oracle tracked source/index were clean at the reported boundaries. Retirement adds no parity evidence.",
+      "targetLedger": "Report94 consumes12b5ed11 and records306 overlapping bounded reviews:286 implemented,2 partial,2 unported,14 unknown and2 not-applicable. Reports95/96 subsequently classify the named Windows block/EH, async-transformation and active LIR/rationalization families as implemented, without whole-file claims. Remaining concrete production review boundaries include fgMorphSmpOp/Optional and fgMorphHWIntrinsic/Required; existing managed counterparts are not demonstrated failures. D009, R005, B392 and B446 remain separate optional gaps. Records are not unique functions or a compiler-completion percentage.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
       "policy": "Retire only reviewed complete implementations. Retain or explicitly identify unfinished shared/Windows paths and other-platform-only paths. Preserve the oracle and existing index distinctions; do not infer parity or percentages from deletion counts."
     },
@@ -846,7 +856,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Continue bounded official Windows-x64 primary-JIT execution with JIT/Methodical/Arrays/misc after closing B448 and all21 array-range cases. Build from the pinned oracle root without replacing Core_Root; compare native and managed results, stopping at the first concrete failure for correction. Reuse the hash-verified fixed-source JIT while its inputs remain unchanged. Native worker independently resolves retained folding/construction definition coverage; optional and other-target gaps remain separate.",
+      "parentScope": "After B449's validated cursor correction and complete21-case miscellaneous-array primary execution, resolve B450 unsigned-size arithmetic and B451 indirect-field-token access in one bounded InitializeArray contract batch. Preserve checked native widths, argument-stack commit ordering and EE/layout ABI bit patterns. Reuse the constructor/initializer fixture and matching host; native worker independently refines named-family coverage.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1248,7 +1258,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "B448 is validated:111Debug/111Release unit cases and21 native+managed official array-range cases with identical output. Commit the comparison fix with this evidence, then build JIT/Methodical/Arrays/misc from the pinned oracle root using x64 checked skipnative skipgeneratelayout skiprestorepackages /p:LibrariesConfiguration=Release. Run its standalone projects with the preserved host and hash-verified jit-2 source/binary, using fresh capture manifests; follow the first actual failure. Reports89-92 are consolidated. Native worker owns gtFoldExpr and gtNewOperNode whole-definition ambiguity resolution, not importer execution.",
+    "nextAction": "B449 is validated with146Debug/143Release and all21 native+managed miscellaneous-array primary cases, identical output, in comparison-2.json. After committing that batch, resolve B450/B451 in impInitializeArrayIntrinsic: compare pinned S_UINT32/S_SIZE_T conversion/overflow rules, retain EE/layout ABI, and replace the GT_IND token's binary accessor with the correct unary accessor. Extend ImporterCallTests' new initializer fixture for indirect handles and size boundaries, reproducing failures before changes. Reports93-96 are consolidated; worker now resolves non-hwi-expression-folding/value-numbered-tree-constants coverage using existing reviews.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
@@ -9480,6 +9490,13 @@
       "native": ["src\\coreclr\\jit\\compiler.cpp", "src\\coreclr\\jit\\compiler.h", "src\\coreclr\\jit\\compiler.hpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.cs", "sources\\Core\\jit\\compiler\\Compiler.comp.cs"],
       "reconciledCommit": null
+    },
+    {
+      "area": "array-initialization-dimension-traversal",
+      "native": ["src\\coreclr\\jit\\importercalls.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.imp.cs"],
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+      "scope": "B449: multidimensional InitializeArray traversal advances from the current cursor after consuming an explicit lower bound. Six pre-fix failures/three controls,146Debug/143Release coverage and21 matching official miscellaneous-array primary results. B450 unsigned sizes and B451 indirect token recognition remain separate; this is not whole-function reconciliation."
     },
     {
       "area": "importer-comparison-widening",

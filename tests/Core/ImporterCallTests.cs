@@ -458,6 +458,111 @@ internal static unsafe class ImporterCallTests
         }
     }
 
+    [Test]
+    public static void ArrayInitializationConsumesEveryDimensionOnce(
+        [Values(1, 2, 3)] int rank,
+        [Values(null, 0, -7)] int? lowerBound)
+    {
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.Base.embedGenericHandle =
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, bool, CORINFO_METHOD_STRUCT_*, CORINFO_GENERICHANDLE_RESULT*, void>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, byte, CORINFO_METHOD_STRUCT_*, CORINFO_GENERICHANDLE_RESULT*, void>)&EmbedClassHandle;
+        vtable.Base.Base.getArrayRank = &GetArrayRank;
+        vtable.Base.Base.getChildType = &GetInitializedArrayElementType;
+        vtable.Base.Base.getArrayInitializationData = &GetArrayInitializationData;
+        var state = new ArrayInitialization { Interface = new ICorJitInfo { lpVtbl = &vtable } };
+#if DEBUG
+        using var jitTls = new JitTls(null);
+#endif
+        var previous = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+        var argumentCount = rank * (lowerBound.HasValue ? 2 : 1);
+        compiler.info = new Compiler.Info { compCompHnd = &state.Interface, compMaxStack = Math.Max(argumentCount, 2) };
+        compiler.lvaTable = [];
+        compiler.lvaNewObjArrayArgs = Globals.BAD_VAR_NUM;
+        compiler.compCurBB = new BasicBlock(null, null);
+        compiler.stackState.esStack = new StackEntry[compiler.info.compMaxStack];
+        JitTls.Compiler = compiler;
+
+        try
+        {
+            var elementCount = 1;
+            for (var dimension = 0; dimension < rank; dimension++)
+            {
+                if (lowerBound is int bound)
+                {
+                    compiler.impPushOnStack(compiler.gtNewIconNode(var_types.TYP_INT, bound), new typeInfo(var_types.TYP_INT));
+                }
+
+                var length = dimension + 2;
+                elementCount *= length;
+                compiler.impPushOnStack(compiler.gtNewIconNode(var_types.TYP_INT, length), new typeInfo(var_types.TYP_INT));
+            }
+
+            var token = new CORINFO_RESOLVED_TOKEN { hClass = (CORINFO_CLASS_STRUCT_*)&rank };
+            CORINFO_CALL_INFO callInfo = default;
+            callInfo.sig.numArgs = (ushort)argumentCount;
+            compiler.impImportNewObjArray(token, callInfo);
+            var allocation = compiler.impPopStack().val;
+            var arrayLocal = compiler.lvaGrabTemp(true, "array initialization");
+            compiler.lvaTable[arrayLocal].Type = var_types.TYP_REF;
+            LastImportedStatement(compiler) = compiler.gtNewStmt(compiler.gtNewStoreLclVarNode(arrayLocal, allocation));
+            compiler.impPushOnStack(compiler.gtNewLclvNode(var_types.TYP_REF, arrayLocal), new typeInfo(var_types.TYP_REF));
+            var field = compiler.gtNewIconHandleNode(0x2000, Globals.GTF_ICON_FIELD_HDL);
+            field.CompileTimeHandle = 0x2000;
+            var fieldHandle = compiler.gtNewHelperCallNode(Globals.TYP_I_IMPL,
+                CorInfoHelpFunc.CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD, field);
+            compiler.impPushOnStack(fieldHandle, new typeInfo());
+
+            var signature = new CORINFO_SIG_INFO { numArgs = 2 };
+            var result = compiler.impInitializeArrayIntrinsic(signature)
+                ?? throw new AssertionException("Constant array initialization was not expanded.");
+            var offset = result.AsBlk().Addr.AsOp().Op2.AsIntCon().IconValue;
+            var expectedOffset = rank == 1 && (!lowerBound.HasValue || lowerBound == 0)
+                ? Compiler.eeGetArrayDataOffset()
+                : Compiler.eeGetMDArrayDataOffset(rank);
+
+            Assert.That(result.Oper, Is.EqualTo(genTreeOps.GT_STORE_BLK));
+            Assert.That(state.Size, Is.EqualTo(elementCount * sizeof(short)));
+            Assert.That(state.Field, Is.EqualTo((nint)0x2000));
+            Assert.That(offset, Is.EqualTo((nint)expectedOffset));
+            Assert.That(compiler.stackState.esStackDepth, Is.Zero);
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
+    private struct ArrayInitialization
+    {
+        public ICorJitInfo Interface;
+        public int Size;
+        public nint Field;
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "impLastStmt")]
+    private static extern ref Statement? LastImportedStatement(Compiler compiler);
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoType GetInitializedArrayElementType(
+        ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type, CORINFO_CLASS_STRUCT_** child)
+    {
+        *child = null;
+        return CorInfoType.CORINFO_TYPE_SHORT;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void* GetArrayInitializationData(ICorJitInfo* self, CORINFO_FIELD_STRUCT_* field, int size)
+    {
+        var state = (ArrayInitialization*)self;
+        state->Size = size;
+        state->Field = (nint)field;
+        return (void*)0x4000;
+    }
+
     [TestCase(InfoAccessType.IAT_VALUE, false)]
     [TestCase(InfoAccessType.IAT_VALUE, true)]
     [TestCase(InfoAccessType.IAT_PVALUE, false)]

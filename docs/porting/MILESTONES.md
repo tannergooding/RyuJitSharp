@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Official miscellaneous-array execution
+
+All 21 standalone `JIT/Methodical/Arrays/misc` projects pass with both primary
+JITs, including priority-one GC finalization/resurrection and initialization
+cases. Exit codes and output match; C# cases require compilation of the actual
+`TestEntryPoint`, not just a wrapper.
+
+The optimized explicit-lower-bound initializer exposed B449: a stale comma
+alias made the importer revisit a dimension's length argument. The corrected
+walk advances from its current position and retains rank-one array layout
+selection. Six regression failures and three controls establish the defect;
+final focused coverage passes 146 Debug and 143 Release cases.
+
+This excludes the separately merged `IndexingSideEffects` test and full-suite
+or whole-dump parity. Adjacent unsigned-size and indirect-token findings are
+tracked separately as B450/B451.
+
 ## 2026-09-28: Official array-range execution and comparison import
 
 All 21 standalone `JIT/Methodical/Arrays/range` projects pass with the pinned

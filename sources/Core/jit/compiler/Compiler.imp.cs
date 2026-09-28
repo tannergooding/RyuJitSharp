@@ -13475,11 +13475,10 @@ public partial class Compiler
 
             var argIndex = 0;
             GenTree maybeComma;
-            GenTreeOp comma;
 
-            for (maybeComma = argsArg; MatchIsComma(maybeComma); maybeComma = comma.Op2)
+            for (maybeComma = argsArg; MatchIsComma(maybeComma); maybeComma = maybeComma.AsOp().Op2)
             {
-                comma = maybeComma.AsOp();
+                var comma = maybeComma.AsOp();
 
                 if (lowerBoundsSpecified)
                 {
