@@ -16,6 +16,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Unused-tree side-effect extraction
+
+Unused `GetType` expressions now reduce to a null check when needed and otherwise
+retain only receiver side effects. Extracted comma trees preserve execution order
+and compose liberal/conservative exception value numbers. Unused block loads use
+the existing replacement helper to retain native tree IDs and common metadata,
+while clearing operator-specific flags and value numbers under native bashing
+policy. This closes the remaining extraction implementation against the pinned
+native function; it does not establish whole-pipeline parity.
+
 ## 2026-09-27: ARM64 hardware containment
 
 ARM64 containment now handles hardware immediate families, paired operands,

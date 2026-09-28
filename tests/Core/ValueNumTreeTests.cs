@@ -18,6 +18,152 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ValueNumTreeTests
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void SideEffectExtractionPreservesExecutionOrderAndPairedExceptions(bool reverse)
+    {
+        WithStore((compiler, store) =>
+        {
+            var first = compiler.gtNewCallNode(TYP_INT, CT_USER_FUNC, null);
+            var second = compiler.gtNewCallNode(TYP_INT, CT_USER_FUNC, null);
+            var tail = compiler.gtNewCallNode(TYP_INT, CT_USER_FUNC, null);
+            GenTree[] nodes = [first, second, tail];
+            var exceptions = ValueNumStore.VNPForEmptyExcSet();
+
+            foreach (var node in nodes)
+            {
+                var normal = new ValueNumPair(store.VNForExpr(null, TYP_INT), store.VNForExpr(null, TYP_INT));
+                var nodeExceptions = new ValueNumPair(
+                    store.VNExcSetSingleton(store.VNForFunc(TYP_REF, VNF_OverflowExc, normal.Liberal)),
+                    store.VNExcSetSingleton(store.VNForFunc(TYP_REF, VNF_HelperOpaqueExc, normal.Conservative)));
+                node._vnPair = store.VNPWithExc(normal, nodeExceptions);
+                exceptions = store.VNPExcSetUnion(exceptions, nodeExceptions);
+            }
+
+            var expression = compiler.gtNewBinaryNode(GT_ADD, TYP_INT, first, second);
+            if (reverse)
+            {
+                expression.Flags |= GTF_REVERSE_OPS;
+            }
+
+            GenTree? list = tail;
+            compiler.gtExtractSideEffList(expression, ref list);
+
+            var result = list ?? throw new InvalidOperationException("Expected extracted side effects.");
+            Assert.That(result.Oper, Is.EqualTo(GT_COMMA));
+            var prefix = result.AsOp().Op1;
+            Assert.That(prefix.Oper, Is.EqualTo(GT_COMMA));
+            Assert.Multiple(() =>
+            {
+                Assert.That(prefix.AsOp().Op1, Is.SameAs(reverse ? second : first));
+                Assert.That(prefix.AsOp().Op2, Is.SameAs(reverse ? first : second));
+                Assert.That(result.AsOp().Op2, Is.SameAs(tail));
+                Assert.That(result._vnPair.BothDefined(), Is.True);
+                Assert.That(prefix._vnPair.BothDefined(), Is.True);
+            });
+            Assert.That(store.VNPNormalPair(result._vnPair), Is.EqualTo(store.VNPNormalPair(tail._vnPair)));
+            Assert.That(store.VNPExceptionSet(result._vnPair), Is.EqualTo(exceptions));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void SideEffectExtractionReducesUnusedGetTypeToItsNullCheck(bool numbered)
+    {
+        WithStore((compiler, store) =>
+        {
+            var receiver = compiler.gtNewZeroConNode(TYP_REF);
+            var intrinsic = new GenTreeIntrinsic(TYP_REF, receiver, NamedIntrinsic.NI_System_Object_GetType, null);
+            intrinsic.Flags |= GTF_EXCEPT;
+            var exceptions = new ValueNumPair(
+                store.VNExcSetSingleton(store.VNForFunc(TYP_REF, VNF_NullPtrExc, ValueNumStore.VNForNull())),
+                store.VNExcSetSingleton(store.VNForFunc(TYP_REF, VNF_HelperOpaqueExc, ValueNumStore.VNForNull())));
+            if (numbered)
+            {
+                intrinsic._vnPair = store.VNPWithExc(new ValueNumPair(
+                    store.VNForExpr(null, TYP_REF), store.VNForExpr(null, TYP_REF)), exceptions);
+            }
+            else
+            {
+                compiler.vnStore = null;
+            }
+
+            GenTree? list = null;
+            compiler.gtExtractSideEffList(intrinsic, ref list);
+
+            var result = list ?? throw new InvalidOperationException("Expected a null check.");
+            Assert.That(result.Oper, Is.EqualTo(GT_NULLCHECK));
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.AsIndir().Addr, Is.SameAs(receiver));
+                Assert.That(result.Flags & GTF_EXCEPT, Is.EqualTo(GTF_EXCEPT));
+                Assert.That(result._vnPair.BothDefined(), Is.EqualTo(numbered));
+                Assert.That(intrinsic.Oper, Is.EqualTo(GT_INTRINSIC));
+            });
+            if (numbered)
+            {
+                Assert.That(store.VNPNormalPair(result._vnPair), Is.EqualTo(ValueNumStore.VNPForVoid()));
+                Assert.That(store.VNPExceptionSet(result._vnPair), Is.EqualTo(exceptions));
+            }
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void SideEffectExtractionDropsNonNullGetTypeButRetainsReceiverEffects(bool faulting)
+    {
+        WithStore((compiler, store) =>
+        {
+            var address = compiler.gtNewZeroConNode(TYP_I_IMPL);
+            var receiver = compiler.gtNewIndir(TYP_REF, address,
+                GTF_IND_NONNULL | (faulting ? GTF_EMPTY : GTF_IND_NONFAULTING));
+            var intrinsic = new GenTreeIntrinsic(TYP_REF, receiver, NamedIntrinsic.NI_System_Object_GetType, null);
+            intrinsic.Flags |= GTF_EXCEPT;
+            GenTree? list = null;
+
+            compiler.gtExtractSideEffList(intrinsic, ref list);
+
+            Assert.That(list, faulting ? Is.SameAs(receiver) : Is.Null);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void SideEffectExtractionReplacesBlocksUsingNativeBashingPolicy(bool knownNonNull)
+    {
+        WithStore((compiler, store) =>
+        {
+            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            if (knownNonNull)
+            {
+                address.Flags |= GTF_ICON_CONST_PTR;
+            }
+
+            var block = new GenTreeBlk(TYP_STRUCT, address, compiler.typGetBlkLayout(16));
+            block.Flags |= GTF_IND_VOLATILE | GTF_ORDER_SIDEEFF | GTF_EXCEPT | GTF_MAKE_CSE;
+            block._vnPair.SetBoth(store.VNForExpr(null, TYP_STRUCT));
+            var expression = compiler.gtNewCommaNode(TYP_VOID, block, compiler.gtNewNothingNode());
+            GenTree? list = null;
+
+            compiler.gtExtractSideEffList(expression, ref list, GTF_SIDE_EFFECT | GTF_MAKE_CSE);
+
+            var result = list ?? throw new InvalidOperationException("Expected a block null check.");
+            Assert.That(result.Oper, Is.EqualTo(GT_NULLCHECK));
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.AsIndir().Addr, Is.SameAs(address));
+                Assert.That(result.Flags & GTF_IND_VOLATILE, Is.EqualTo(GTF_EMPTY));
+                Assert.That(result.Flags & GTF_MAKE_CSE, Is.EqualTo(GTF_MAKE_CSE));
+                Assert.That((result.Flags & GTF_EXCEPT) != 0, Is.EqualTo(!knownNonNull));
+                Assert.That(result._vnPair.BothDefined(), Is.False);
+                Assert.That(expression.Op1, Is.SameAs(result));
+#if DEBUG
+                Assert.That(result.TreeId, Is.EqualTo(block.TreeId));
+#endif
+            });
+        });
+    }
+
     [TestCase(GT_LT, false, false, VNF_LT)]
     [TestCase(GT_LT, true, false, VNF_LT_UN)]
     [TestCase(GT_GE, true, false, VNF_GE_UN)]

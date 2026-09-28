@@ -7,6 +7,41 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public GenTree? gtExtractSideEffectsFromUnusedNode(GenTree node)
+    {
+        if (node.Oper.IsBlk && !node.Oper.IsStoreBlk)
+        {
+#if DEBUG
+            JITDUMP($"Replace an unused BLK node [{node.TreeId:D6}] with a NULLCHECK\n");
+#endif
+            return gtChangeOperToNullCheck(node);
+        }
+
+        if ((node.Oper is GT_INTRINSIC) && (node.AsIntrinsic().IntrinsicName is NI_System_Object_GetType))
+        {
+            var obj = node.AsOp().Op1;
+            if (!fgAddrCouldBeNull(obj))
+            {
+                return null;
+            }
+
+#if DEBUG
+            JITDUMP($"Replace an unused GetType node [{node.TreeId:D6}] with a NULLCHECK\n");
+#endif
+            var vnPair = node._vnPair;
+            node = gtNewNullCheck(obj);
+            if ((vnStore is not null) && vnPair.BothDefined())
+            {
+                node._vnPair = vnStore.VNPWithExc(ValueNumStore.VNPForVoid(), vnStore.VNPExceptionSet(vnPair));
+            }
+            node.SetMorphed(this);
+
+            return node;
+        }
+
+        return node;
+    }
+
     private partial struct SideEffectExtractor : IGenTreeVisitor<SideEffectExtractor>
     {
         public static bool DoPreOrder => true;
@@ -40,20 +75,18 @@ public partial class Compiler
 
             if (compiler.gtNodeHasSideEffects(node, flags))
             {
-                if (node.Oper.IsBlk && !node.Oper.IsStoreBlk)
+                var sideEffect = compiler.gtExtractSideEffectsFromUnusedNode(node);
+                if (sideEffect is null)
                 {
-#if DEBUG
-                    JITDUMP($"Replace an unused BLK node [{node.TreeId:D6}] with a NULLCHECK\n");
-#endif
-
-                    var unOp = node.AsUnOp();
-                    node = compiler.gtNewNullCheck(unOp.Op1);
-
-                    node.SetIndirExceptionFlags(compiler);
-                    use = node;
+                    return WALK_CONTINUE;
                 }
 
-                Append(node);
+                if (node.Oper.IsBlk && !node.Oper.IsStoreBlk)
+                {
+                    use = sideEffect;
+                }
+
+                Append(sideEffect);
                 return WALK_SKIP_SUBTREES;
             }
 
@@ -119,13 +152,11 @@ public partial class Compiler
                 // invalidated the value numbers).
                 assert((result._vnPair.BothDefined() == node._vnPair.BothDefined()) || !compiler.fgGlobalMorph);
 
-                // TODO: Port SideEffectExtractor.Append once vnStore is ported
-                // // Set the ValueNumber 'gtVNPair' for the new GT_COMMA node
-                // if ((compiler.vnStore is not null) && result._vnPair.BothDefined() && node._vnPair.BothDefined())
-                // {
-                //     ValueNumPair op1Exceptions = compiler.vnStore.VNPExceptionSet(result._vnPair);
-                //     comma->gtVNPair = compiler.vnStore.VNPWithExc(node._vnPair, op1Exceptions);
-                // }
+                if ((compiler.vnStore is not null) && result._vnPair.BothDefined() && node._vnPair.BothDefined())
+                {
+                    var op1Exceptions = compiler.vnStore.VNPExceptionSet(result._vnPair);
+                    comma._vnPair = compiler.vnStore.VNPWithExc(node._vnPair, op1Exceptions);
+                }
 
                 node = comma;
             }

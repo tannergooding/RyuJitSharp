@@ -11,24 +11,38 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
-    "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
+    "workCadence": "User-directed: finish Windows x64 compiler code in the foreground; Linux x64 and ARM64 proceed in isolated background lanes. Choose whole type/feature/area batches, reuse existing port unit coverage, and build/run relevant checks at the integration boundary. Do not expand validation matrices or perform per-helper test/build/NativeAOT/corpus/documentation cycles. After code completion, automate oracle dump comparisons with explicit accepted non-semantic exclusions (including D001 arena statistics) and run the official runtime suite with the port as primary JIT, not AltJIT. Continue after milestones.",
+    "unusedTreeSideEffects": {
+      "status": "ported",
+      "nativeSource": "src/coreclr/jit/gentree.cpp at 33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+      "symbols": [
+        "Compiler::gtExtractSideEffectsFromUnusedNode",
+        "Compiler::gtExtractSideEffList and its SideEffectExtractor"
+      ],
+      "managedSource": "sources/Core/jit/compiler/Compiler.SideEffectExtractor.cs; public walker in Compiler.gt.cs",
+      "behavior": "Unused GetType retains only a required null check or receiver side effects. New comma nodes compose liberal/conservative exception VNs without changing execution order. BLK conversion uses the existing D002 replacement helper, preserving owning uses, common metadata and tree IDs while clearing operator flags/VNs according to native ChangeOper.",
+      "validation": "ValueNumTreeTests, ImporterEffectsTests and ScalarFoldingTests: 219 Debug / 215 Release, full analysis, no failures/skips. Six GetType/comma regression cases failed against the original implementation; final coverage also includes two native BLK-bashing policy cases.",
+      "evidence": "artifacts/side-effect-extraction/extraction-before.trx, extraction-debug-complete.trx and extraction-release-complete.trx",
+      "scope": "Managed Windows-x64 IR behavior. No new native execution or whole-pipeline parity claim."
+    },
     "activeBatch": {
-      "scope": "Complete ARM64 hardware-intrinsic and bounds-check containment, including immediate selection, zero comparisons, vector-move constants and SVE embedded-mask ownership, before enabling general node lowering.",
-      "status": "done",
+      "scope": "Complete Windows-x64 unused-tree side-effect extraction against pinned gentree.cpp: GetType null-check reduction, BLK replacement metadata, and paired exception-VN composition. Continue the actual Windows implementation frontier afterward.",
+      "status": "completed",
       "doneWhen": [
-        "Port complete lowerarmarch.cpp ContainCheckHWIntrinsic, ContainCheckBoundsChk and IsValidConstForMovImm, including the required emitter MOVI immediate predicate.",
-        "Preserve indexed/immediate operand positions, signed-only zero comparisons, SVE operation/auxiliary mask widths and zero-merge exclusions, with native flags and ownership.",
-        "Validate ARM64 target cases and affected Windows-x64 controls, commit locally and continue. General LowerHWIntrinsic/LowerCnsMask rewrites, LowerNode/LowerBlock/DoPhase and execution remain separate."
+        "Identify currently unported Windows-x64 functions and required conditional paths in source, separating real stubs from stale baseline ledgers and valid unsupported configurations.",
+        "Implement the next dependency-coherent area as complete native functions, using existing managed helpers and preserving ABI, ownership, ordering and numeric semantics.",
+        "Build and run relevant existing tests at the area boundary, commit locally and continue. Do not substitute additional corpus comparisons for completing code."
       ],
       "validation": [
-        "Full-analysis Linux/Windows ARM64 Debug/Release managed target suites and Windows-x64 hardware-containment/bounds controls. Cover complete immediate families, zero/unsigned restrictions, MOVI/FMOV encoding boundaries and SVE containment legality.",
-        "Reuse unaffected Windows execution evidence from prerequisite commit ee71808. No Linux or ARM64 execution host is available; managed target tests are not runtime parity."
+        "Windows-x64 build and relevant existing unit suites, plus focused regressions only when a concrete defect or adaptation requires them.",
+        "Defer broad dump matrices and official primary-JIT runtime-suite validation until code-port completion; retain established execution evidence without relabeling its scope."
       ],
       "deferred": [
-        "LowerNode/LowerBlock/DoPhase and general hardware-intrinsic dispatch remain inactive. Per-block pairing reset, FFR state, allocation and emission remain separate. Keep B375/B376/B378/B379/B380 deferred.",
-        "Whole-pipeline dump parity, native diagnostic quirks, timing R005 and allocation D001 remain explicit."
+        "ARM64 hardware/mask rewrites belong to session 219ce0d3-6a41-4d0c-9b8a-c198b6f398b1. Immutable uncommitted handoff snapshot f94987ff235d5265976ed14f1a4dc01df84c3293 is protected by refs/porting/arm64-rewrites-handoff.",
+        "Linux x64 local-store/fast-tailcall dependency closure belongs to session c8e261dd-c529-4097-a33d-f545a86f1dac. Both lanes start at 6709deb and must not write the parent worktree or native trees.",
+        "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "ARM64 prerequisites committed ee71808; allocator construction committed e5b30eb with189Debug/189Release target tests and23Debug/22Release Windows controls. All previous packets are collected; no worker or child response remains outstanding.",
+      "parentScope": "Windows x64 code completion first. Two fresh isolated Sol sessions own current Linux/ARM64 work; older parallelPackets entries below are historical completed packets, not active assignments.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -423,7 +437,7 @@
         }
       ]
     },
-    "nextAction": "Hardware/bounds containment is complete with ARM64 Debug/Release and Windows-x64 controls. Continue with whole ARM64 LowerHWIntrinsic and LowerCnsMask rewrites at lowerarmarch.cpp:992-1064,1458 onward; read their complete bodies and required helper closure before enabling the general node dispatcher. Previously identified dispatch gaps remain atomic cases, MUL_LONG, neg/not actions and FFR call invalidation. Preserve native per-block pairing/FFR initialization and keep LowerBlock/DoPhase inactive until dependencies are ready.",
+    "nextAction": "Unused-tree extraction is complete. Continue Windows-x64 source completion: resolve the fgStress64RsltMul/lvaStressLclFld commented declarations against actual pinned native bodies and managed stress callsites, then implement the next real missing executable area rather than counting stale declarations. Linux packet e42864b53384c77e22daefbe743e77023f7a577e is available for later shared-file integration review; ARM64 remains a separate lane. Do not replay completed object-allocation comparisons or replace foreground implementation with broader validation.",
     "arm64HardwareContainment": {
       "scope": "Complete ARM64 hardware and bounds containment, with MOVI/MVNI byte-shift and doubleword-mask predicates, exact FMOV constants, comparison-zero rules and SVE embedded masking.",
       "mapping": "lowerarmarch.cpp:2033-2060,3805-4225 -> Lowering.Arm64HardwareContainment.cs and Lowering.BoundsChecks.cs; emitarm64.cpp:2451-2483,3113-3207 -> Emitter.ImmediatePredicates.cs. Shared ContainCheckNode now dispatches ARM64 hardware containment; bounds containment remains a separate LowerNode action, matching native.",

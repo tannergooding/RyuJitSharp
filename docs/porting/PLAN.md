@@ -22,9 +22,10 @@ features a prerequisite. Keep remaining differences explicit rather than hiding
 them.
 
 Parallelize substantial work as bounded, non-overlapping feature or platform
-packets when dependencies and ownership allow. Windows x64 remains the first
-execution/parity baseline, but independent Linux x64 and other architecture work
-may proceed alongside it without waiting for every Windows diagnostic gap. Give
+packets when dependencies and ownership allow. Completing the Windows x64 code
+port is the foreground priority. Linux x64 and ARM64 work proceeds in isolated
+background lanes; it must not replace Windows implementation work in the
+foreground or make its progress depend on other-target integration. Give
 each packet explicit source ownership, scope, and a completion boundary; do not
 invent assignments or duplicate work. The coordinator owns dependency selection,
 shared JIT/EE and ABI contracts, cross-packet integration, and parity decisions.
@@ -44,9 +45,19 @@ not each helper that it depends on. Keep native-source review, ownership analysi
 and numeric-semantic care in the implementation loop; defer test authoring and
 validation runs to that completion boundary unless a concrete defect blocks
 progress. Unit tests remain valuable, especially given RyuJIT's limited unit
-coverage, but reaching code generation and establishing dump/disassembly parity
-is the immediate goal. Do not turn helper-level commits into repeated testing,
-capture and documentation cycles.
+coverage, but completing missing compiler code is the immediate goal. Reuse the
+port's existing unit coverage and add focused regressions for concrete defects
+rather than growing a new validation matrix for every ported area. Keep builds
+and relevant existing checks at coherent integration boundaries. Do not turn
+helper-level commits into repeated testing, capture and documentation cycles.
+
+After the Windows x64 code port is complete, automate broader oracle/port dump
+comparisons and run the official runtime test suite with the port as the primary
+JIT, not an AltJIT. Preserve raw dumps and explicitly enumerate comparison
+exclusions for accepted non-semantic differences such as D001 arena allocation
+counts and bytes. Do not normalize away compiler decisions, IR, phase ordering,
+or generated instructions. Selected-method AltJIT execution remains useful
+scoped evidence, not a substitute for that primary-JIT test-suite gate.
 
 Reuse the matching oracle product build and `Core_Root`. The native setup is
 `.\build.cmd -subset clr -config checked`, then
