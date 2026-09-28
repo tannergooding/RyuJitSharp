@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Complete instruction comparison corrects TLS evidence
+
+The recent primary-JIT evidence now includes hexadecimal instruction IDs and
+checks each scheduler stream against its reported count. Across 19 preserved
+capture pairs, 94 of 100 body comparisons match. Five known async-adapter TLS
+differences remain; the worker-thread naming method also has three TLS
+instructions that the old decimal-only selector omitted. Its earlier
+instruction-equality claim was incorrect. These operands preserve the EE's
+differing assigned slots, not a newly established compiler defect.
+
+The recheck preserves original execution status and missing Tier1 bodies; it
+does not rerun or relabel captures. Evidence: `checkpoint.completeInstructionRecheck`
+and B417.
+
 ## 2026-09-28: AMD64 Debug emitter payloads are available
 
 The native optional emitter-test dispatcher and all six AMD64 synthetic payloads
@@ -92,10 +106,10 @@ Box cleanup now retains the morph state of already-processed allocation/copy
 statements and updates the live statement when narrowing a struct source. The
 runtime-async corpus completes under the primary managed JIT, including
 thread-pool startup, suspension, exception handling and AsyncLocal context checks.
-The worker-thread naming method's complete 527-byte instruction stream and all
-six transformed async bodies match native. Five Task adapters retain dynamic
-thread-static index/offset differences, recorded separately rather than counted
-as instruction parity.
+All six transformed async bodies match native. Five Task adapters and the
+527-byte worker-thread naming method retain dynamic thread-static index/offset
+differences, recorded separately rather than counted as instruction parity.
+The naming-method correction comes from B417's complete instruction recheck.
 
 The existing GC-loop corpus also completes under both primary JITs, reports 12
 Gen2/helper collections, and matches native import/morph/cost trees and complete
