@@ -23,7 +23,8 @@
       "execution": "Both primary JITs pass1264mixed Vector128/256/512 saturated lanes and match36raw slices/12complete traces. Original failing ToInt32_128 now matches all eight instruction byte sequences,48bytes, including mask byte0x19 instead of0x18.",
       "sourceSnapshot": "b8ff552022c740ddc00f7485e4130890b4c28031",
       "evidence": "artifacts/primary-vector-conversions/evidence.json",
-      "remaining": "Instruction-text equality alone did not catch this defect. Byte proof is limited to the original failing method; continue reduced-ISA packed conversion paths separately."
+      "reducedIsaExecution": "AVX-disabled and AVX512-disabled pairs each pass1264lanes and match36raw slices/12complete traces. Actual legacy128-bit/VEX256-bit decomposition and scalar double-to-long paths verified. Evidence: artifacts/primary-vector-conversions/reduced-isa-evidence.json.",
+      "remaining": "Instruction-text equality alone did not catch this defect. Byte proof is limited to the original failing method; reduced-ISA execution is separately verified."
     },
     "primaryNumericConversions": {
       "scope": "Windows AMD64 float/double to eight integral primitives, checked and unchecked; signed/unsigned32/64-bit integers to float/double.",
@@ -658,7 +659,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "B436 corrects actual EVEX mask bytes for memory blends; default packed conversion execution now matches. Continue reduced-ISA packed conversion paths. Native retirement worker continues larger evidence-based batches without re-auditing already established ports.",
+      "parentScope": "Packed numeric conversion matches default, AVX2 and legacy paths after B436. Continue integral vector narrowing and lane-order/truncation boundaries. Native retirement worker continues larger evidence-based batches without re-auditing established ports.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1053,7 +1054,7 @@
         }
       ]
     },
-    "nextAction": "B436 fixes memory blend mask encoding; default packed conversion passes1264lanes, exact36raw slices/12traces and byte-exact original48-byte method. Next run primary-vector-conversions corpus with AVX disabled via primary-ssse3/capture.py --disable-avx using reference-2/sourceb8ff5520 and jit-1. Compare12wrapper bodies with compare-complete.py; distinguish hardware packed paths from correctly selected software helpers. Follow first discrepancy. Retirement worker4b57b744 continues until full catch-up in larger audit-trail-based batches; collect reports56+on notification. B153/D009, B365 and ARM64 foreground expansion deferred.",
+    "nextAction": "Packed numeric conversion now matches default, AVX512-disabled and AVX-disabled execution. Next execute Vector128/256/512.Narrow for signed/unsigned16->8,32->16,64->32 integral lanes, checking truncation and lower/upper source lane order with independent bit expectations. Use primary-vector-conversions/jit-1 sourceb8ff5520 and compare-complete.py. Capture default then AVX512-disabled as indicated by actual lowering. Retirement worker4b57b744 continues full catch-up in larger audit-trail-based batches; collect56+reports on notification. B153/D009, B365 and ARM64 foreground expansion deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
