@@ -16,6 +16,13 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "primaryIntegerWidening": {
+      "scope": "Vector128/256/512.WidenLower/WidenUpper signed/unsigned 8->16, 16->32 and 32->64 extension and source-half selection.",
+      "execution": "Default, AVX512-disabled and AVX-disabled primary pairs each verify 14112 independently computed lanes and match 108 raw phase slices/36 complete traces across 36 wrappers.",
+      "sourceSnapshot": "b29587b3a92c4cca695fe9640b7ecc0a7cab4701",
+      "evidence": "artifacts/primary-vector-widening/evidence.json",
+      "remaining": "Floating widening/narrowing remains a separate execution boundary. No production change or exhaustive SIMD claim."
+    },
     "avx2IntegerNarrowing": {
       "scope": "B437: restore signed/unsigned64->32 AVX2 narrowing and native unsigned permute metadata for32->16.",
       "mapping": "gentree.cpp Compiler::gtNewSimdNarrowNode256-bit integral cases -> Compiler.gt.cs gtNewSimdNarrowNode.",
@@ -668,7 +675,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "B437 restores AVX2 integer narrowing; integral narrow execution now matches default, AVX2 and legacy paths. Continue widening signed/unsigned lanes and lower/upper source selection. Native retirement worker continues larger evidence-based batches without re-auditing established ports.",
+      "parentScope": "Integral narrowing and widening match default, AVX2 and legacy execution after B437. Continue floating narrowing/widening at rounding, subnormal and signed-zero boundaries. Native retirement worker continues larger evidence-based batches without re-auditing established ports.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1063,7 +1070,7 @@
         }
       ]
     },
-    "nextAction": "B437 integral narrowing is complete:14112lanes per primary process, default/AVX2/legacy each54raw slices/18traces exact. Next execute Vector128/256/512.WidenLower/WidenUpper for signed/unsigned8->16,16->32,32->64, independently checking sign extension and selected source halves. Reuse primary-vector-narrowing/jit-2 sourceb29587b3 with fresh hashed corpus/reference; compare default and reduced-ISA lowerings using compare-complete.py. Retirement worker4b57b744 continues full catch-up in larger audit-trail-based batches; collect56+reports on notification. B153/D009, B365 and ARM64 foreground expansion deferred.",
+    "nextAction": "Integral widening now passes 14112 lanes per primary process; default/AVX2/legacy each match 108 raw slices/36 traces. Next execute Vector128/256/512 double->float Narrow and float->double WidenLower/WidenUpper, with independent IEEE rounding and source-half expectations covering finite boundaries, subnormals, infinities and signed zero. Reuse primary-vector-narrowing/jit-2 source b29587b3 with fresh hashed corpus/reference. Retirement worker4b57b744 continues full catch-up in larger audit-trail-based batches; collect56+reports on notification. B153/D009, B365 and ARM64 foreground expansion deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
