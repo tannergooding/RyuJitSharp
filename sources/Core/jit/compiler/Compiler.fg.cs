@@ -4266,7 +4266,7 @@ public partial class Compiler
 
                 var dscIdx = fgTryAddEHTableEntries(0, numEHEntries, deferAdding: true);
 
-                if (dscIdx is not -1)
+                if (dscIdx is -1)
                 {
                     compInlineResult.NoteFatal(InlineObservation.CALLSITE_EH_TABLE_FULL);
                 }

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.InlineObservation;
@@ -15,6 +16,66 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class InlineScanTests
 {
+    [TestCase(0)]
+    [TestCase(Globals.MAX_XCPTN_INDEX - 1)]
+    public static unsafe void AvailableEhCapacityPreservesTheCatchRejection(int existingClauses)
+    {
+#if DEBUG
+        using var jitTls = new JitTls(null);
+#endif
+        var previous = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var result = (InlineResult)RuntimeHelpers.GetUninitializedObject(typeof(InlineResult));
+        var policyField = typeof(InlineResult).GetField("_policy", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("InlineResult policy field was not found.");
+        policyField.SetValue(result, new RecordingPolicy(compiler));
+        compiler.compInlineResult = result;
+        compiler.impInlineInfo = new InlineInfo { InlineRoot = compiler, iciBlock = new BasicBlock(null, null) };
+        compiler.compHndBBtab = [];
+        compiler.compHndBBtabCount = (ushort)existingClauses;
+        compiler.opts.compInlineMethodsWithEH = true;
+        compiler.compInlineContext = (InlineContext)RuntimeHelpers.GetUninitializedObject(typeof(InlineContext));
+
+        byte[] il = [0x00, 0xDE, 0x03, 0x26, 0xDE, 0x00, 0x2A];
+        compiler.compInlineContext._ilSize = il.Length;
+        CORINFO_METHOD_INFO methodInfo = default;
+        compiler.info.compMethodInfo = &methodInfo;
+        compiler.info.compXcptnsCount = 1;
+        compiler.info.compILCodeSize = il.Length;
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.Base.Base.getEHinfo = &GetCatchClause;
+        ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+        compiler.info.compCompHnd = &jitInfo;
+        JitTls.Compiler = compiler;
+
+        try
+        {
+            fixed (byte* code = il)
+            {
+                compiler.info.compCode = code;
+                compiler.fgFindBasicBlocks();
+            }
+
+            Assert.That(result.Observation, Is.EqualTo(CALLEE_HAS_EH));
+            Assert.That(result.IsFailure, Is.True);
+            Assert.That(compiler.compHndBBtabCount, Is.EqualTo(existingClauses));
+            Assert.That(compiler.compHndBBtab, Is.Empty);
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static unsafe void GetCatchClause(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* method,
+        int index, CORINFO_EH_CLAUSE* clause)
+    {
+        *clause = new CORINFO_EH_CLAUSE { TryLength = 3, HandlerOffset = 3, HandlerLength = 3 };
+    }
+
     private static IEnumerable<TestCaseData> ConstantScanCases()
     {
         yield return ScanCase("literal-branch", [0x17, 0x2D, 0, 0x2A], 0, CALLSITE_FOLDABLE_BRANCH);
