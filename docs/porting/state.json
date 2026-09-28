@@ -13,6 +13,9 @@
     "planApprovedAt": "2026-09-22",
     "residualReconciliation": {
       "status": "in-progress",
+      "retirementCommit": "0130319288d10b511c9e6946add95f4ef6145f7f",
+      "retirementBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+      "workflow": "User-directed: maintain one local native Remove ported code commit and amend it after larger source-area batches. Leave in-progress edits unstaged. Reuse completed port reviews/mappings and explicit NYIs; investigate only unclear boundaries. No routine recovery snapshots or helper-by-helper documentation cycles. Snapshot fields below describe retained historical recovery points, not the current continuation base.",
       "reason": "The residual index was still byte-for-byte tree-equivalent to the upstream-refresh snapshot despite subsequent completed C# batches. Restore it as the remaining-work view before choosing further porting work.",
       "startSnapshot": "9f4bab794f8fe339a6b46cb8336305cf80c804ee",
       "startIndexCommit": "4816a0d823a22b12e2f5de4686bba6201ff08a0b",
@@ -42,7 +45,8 @@
         "Completed constant evaluation/casts/bitcasts, folding policy, runtime type comparison, mathematical identities and related-relop tables; remaining function/expression pairs, target-sized integer wrapper, memory load/store/bitcast pairs, pointer extension and memory-loop/handle/relop/array-for-length queries, with associated declarations.",
         "Completed fixed-width SIMD broadcast/argument/evaluation/element helpers, SIMD metadata and NaN/negative-zero predicates; small-set/cache/fixed-point model support; exception/map/selector/memory/SIMD-type/cast/bitcast/zero-object dump helpers, function/map/reserved-name lookup and reserved-VN predicates, with associated declarations.",
         "Completed VN header cast encoding/static-attribute declarations, legality/comparison predicates, integral/object/binary-constant queries and math pairs; function/handle/bounds/cache models, scalar/fixed-vector constant maps, function interning maps, chunk accessors and fixed-vector storage specializations. Retain scalar extraction/coercion for B391.",
-        "Complete remaining fgehopt.cpp and fgflow.cpp: empty/unreachable EH cleanup, finally cloning/validation/merging, ACD rekeying, try-region cloning/feasibility and predecessor removal. Completed block successor snapshots, dominance/SSA liveness, clone/empty/side-effect/unique-predecessor queries, variable sets, tail-call/entry-stack/count wrappers and associated declarations/models."
+        "Complete remaining fgehopt.cpp and fgflow.cpp: empty/unreachable EH cleanup, finally cloning/validation/merging, ACD rekeying, try-region cloning/feasibility and predecessor removal. Completed block successor snapshots, dominance/SSA liveness, clone/empty/side-effect/unique-predecessor queries, variable sets, tail-call/entry-stack/count wrappers and associated declarations/models.",
+        "Completed block header memory masks/iteration, flag and raw-edge access, default initialization, weight/LIR/predecessor helpers and dominator link model; complete compiler.hpp regular/EH successor visitation and per-block complexity traversal. B393 debug helpers and unused/target support remain."
       ],
       "remainingHelperTargets": [
         "helperexpansion.cpp now contains only the two TLS call transformations and ReadUtf8. All three are complete for Windows x64.",
@@ -75,10 +79,11 @@
         "block.cpp retains CanRemoveJumpToTarget for Wasm try/exnref-wrapper interval handling; managed Windows behavior is complete and Wasm fails explicitly.",
         "B392 retains the block-key hash helper for unresolved managed map hash-stress policy; predecessor shuffling is separately implemented.",
         "StatementCountExceeds has no pinned callsites and remains unused legacy support, not an identified mandatory phase gap.",
-        "Remaining block.h memory-kind/edge/block/range helpers and compiler.hpp support still need header closure."
+        "B393 retains edge visit-state assertions, unconditional DEBUG block membership and block-iterator mutation checks, with supporting range models.",
+        "Raw target-block getters and range ComplexityExceeds have no pinned callsites and remain unused support. emitCodeGetCookie remains because its managed helper is only declared under TARGET_AMD64."
       ],
-      "remaining": "EH/CFG implementation retirement is complete for the reviewed area. Next close remaining block.h helpers/models and related compiler.hpp implementations, retaining Wasm, hash-stress and unused legacy support, then continue the wider native remainder. The post-refresh commit queue is not a completeness denominator. Notify the user only when the full runtime-port cleanup is done.",
-      "verification": "EH/block retirement removes 3644 lines across exactly five files relative to 166e354, with zero additions; fgehopt.cpp and fgflow.cpp are fully retired. Delta whitespace check passes; inherited staging is preserved, with no unstaged changes. Oracle tracked source/index are unchanged. Hashes, exact spans and protected receipts are in artifacts/residual-reconciliation. Earlier assertion and trace-macro restorations remain explicitly non-deletion-only corrections.",
+      "remaining": "VN and EH/block areas are reconciled with explicit retained boundaries. Continue broader compiler inline/frontend source areas, using existing complete-function mappings and explicit NYIs instead of re-auditing every helper. Notify the user when the full runtime-port cleanup is done.",
+      "verification": "Native remainder consolidated into local commit 0130319 on the pinned source baseline; native tracked working tree/index are clean and oracle HEAD/source/index remain pinned. Latest block-header delta removed 459 lines from two files without additions. Earlier assertion and trace-macro restorations remain explicitly non-deletion-only corrections. Retirement does not add parity evidence.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
       "policy": "Retire only reviewed complete implementations. Retain or explicitly identify unfinished shared/Windows paths and other-platform-only paths. Preserve the oracle and existing index distinctions; do not infer parity or percentages from deletion counts."
     },
@@ -125,7 +130,7 @@
       "doneWhen": [
         "Reconcile completed source/dependency areas into native retirement using existing integrated implementation reviews and scoped evidence, not symbol-name matches alone.",
         "Identify remaining Windows/shared work separately from mixed functions retained for unfinished target paths; check earlier residual coverage as well as the post-refresh queue.",
-        "Protect native snapshots and staging, update sparse mappings and commit each coherent reconciliation group locally, then continue into the remaining compiler work."
+        "Amend the single local native cleanup commit after larger validated source-area batches, preserve the oracle and unrelated work, and consolidate sparse mapping/checkpoint updates at those boundaries."
       ],
       "validation": [
         "Verify exact deletion scope, retained incomplete paths, inherited staged content and unchanged tracked oracle source/index. Reuse established implementation evidence; native retirement does not change managed behavior.",
@@ -531,7 +536,7 @@
         }
       ]
     },
-    "nextAction": "Continue native residual reconciliation from protected staged snapshot aa8e6334d97530847237e04911e7d18c509ff996; do not reapply prior deletions. Complete fgehopt.cpp/fgflow.cpp and reviewed block implementations are retired. Next finish block.h memory-kind/edge/block/range helper closure and corresponding compiler.hpp support, then the wider remainder. Retain block.cpp's Wasm jump elision, B392 hash helper and unused StatementCountExceeds; VN B388-B391 and target/scalable boundaries remain. Preserve staging/oracle and use direct tools/consolidated hidden runners. Notify the user when the full runtime-port cleanup is done, not at a batch boundary. Pending platform integration commits remain Linux e42864b53384c77e22daefbe743e77023f7a577e and ARM64 0c0d33f22a29cfc79133f93757071914b0cb27e5.",
+    "nextAction": "Continue native residual reconciliation from local native cleanup commit 0130319288d10b511c9e6946add95f4ef6145f7f, not a historical snapshot. The user authorized amending this one Remove ported code commit after larger source-area batches; leave in-progress edits unstaged and stop routine snapshot/helper-by-helper maintenance. Next reconcile the wider compiler inline/frontend area, beginning with compiler.hpp utility/argument/SSA helpers and their existing C# mappings. Reuse completed function reviews and explicit NYIs, investigating only unclear boundaries. VN and EH/block areas are already classified; retain B388-B393, target paths and unused support without repeatedly scanning them. Keep the oracle pinned and notify the user when the whole runtime-port cleanup is done. Pending platform integration commits remain Linux e42864b53384c77e22daefbe743e77023f7a577e and ARM64 0c0d33f22a29cfc79133f93757071914b0cb27e5.",
     "arm64HardwareContainment": {
       "scope": "Complete ARM64 hardware and bounds containment, with MOVI/MVNI byte-shift and doubleword-mask predicates, exact FMOV constants, comparison-zero rules and SVE embedded masking.",
       "mapping": "lowerarmarch.cpp:2033-2060,3805-4225 -> Lowering.Arm64HardwareContainment.cs and Lowering.BoundsChecks.cs; emitarm64.cpp:2451-2483,3113-3207 -> Emitter.ImmediatePredicates.cs. Shared ContainCheckNode now dispatches ARM64 hardware containment; bounds containment remains a separate LowerNode action, matching native.",

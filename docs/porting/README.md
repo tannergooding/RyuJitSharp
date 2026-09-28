@@ -29,13 +29,19 @@ expected. Native source revisions match at completed synchronization checkpoints
 During synchronization, explicitly retain the old source revision and the target
 revision. A fetched upstream head is not automatically the port's new baseline.
 
-At each completed batch, remove reviewed, fully ported implementations and their
-associated declarations from `runtime-port`. Retain mixed-target bodies with
-unfinished paths, and record which targets remain so they are not repeatedly
-counted as Windows-x64 gaps. Reuse the completed implementation review and its
-scoped evidence; retirement is work tracking, not a new parity result. Verify
-the intended deletion-only delta, preserve unrelated staging, and protect the
-updated residual snapshot before recording the batch as finished.
+Retire completed source areas in large, coherent batches: remove fully ported
+functions and their associated declarations from `runtime-port`. Use the existing
+implementation reviews, mappings and explicit NYIs; investigate only unclear
+boundaries rather than repeating function-by-function parity review. Retain
+mixed-target bodies with unfinished paths and identify the remaining targets.
+Retirement is work tracking, not a new parity result.
+
+Keep one local `Remove ported code` commit on top of the native source pin and
+amend it as further source areas are retired. Leave in-progress edits unstaged;
+review the area delta before staging and amending. This amendment policy applies
+only to the native cleanup commit, not C# history or the oracle. Existing recovery
+refs remain available, but routine retirement does not need new snapshots or a
+separate documentation cycle for each helper.
 
 Before moving either baseline, preserve native and C# WIP, including untracked
 files and index state. Record immutable snapshot IDs and protect them with local
