@@ -83,7 +83,8 @@ public sealed partial class CodeGen
             foreach (ref readonly var segment in arg.AbiInfo.Segments)
             {
                 if (segment.IsPassedInRegister &&
-                    (trashedByEpilog & regMaskTP.CreateFromRegNum(segment.Register, segment.RegisterMask)).IsNonEmpty)
+                    (trashedByEpilog & regMaskTP.CreateFromRegNum(
+                        segment.Register, segment.Register.SingleTypeMask)).IsNonEmpty)
                 {
                     if (_compiler.verbose)
                     {

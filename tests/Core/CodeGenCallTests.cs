@@ -2,6 +2,7 @@
 
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.CorInfoHelpFunc;
 using static RyuJitSharp.GenTreeCallFlags;
@@ -20,6 +21,65 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class CodeGenCallTests
 {
+#if DEBUG
+    [TestCase(REG_RCX, true, false, 0)]
+    [TestCase(REG_RBX, true, false, 1)]
+    [TestCase(REG_XMM0, true, false, 0)]
+    [TestCase(REG_XMM3, true, false, 0)]
+    [TestCase(REG_XMM6, true, false, 1)]
+    [TestCase(REG_XMM8, true, false, 1)]
+    [TestCase(REG_XMM8, false, false, 0)]
+    [TestCase(REG_STK, true, false, 0)]
+    [TestCase(REG_R10, true, false, 0)]
+    [TestCase(REG_R10, true, true, 1)]
+    public static void TailCallEpilogChecksUseNativeRegisterPositions(
+        regNumber reg, bool tailCall, bool cookie, int expectedAssertions)
+    {
+        EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
+        {
+            if (cookie)
+            {
+                compiler.NeedsGSSecurityCookie = true;
+            }
+
+            var call = Call(TYP_VOID);
+            if (tailCall)
+            {
+                call._callMoreFlags |= GTF_CALL_M_TAILCALL;
+            }
+
+            var type = reg is >= REG_FP_FIRST and <= REG_FP_LAST ? TYP_DOUBLE : TYP_LONG;
+            var argument = call.Args.PushBack(NewCallArg.CreateForPrimitive(new GenTree(GT_NOP, type)));
+            var segment = reg == REG_STK
+                ? AbiPassingSegment.OnStack(0, 0, 8)
+                : AbiPassingSegment.InRegister(reg, 0, 8);
+            argument.AbiInfo = AbiPassingInformation.FromSegment(compiler, false, segment);
+
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.doAssert = &RecordEpilogAssertion;
+            var context = new EpilogAssertionContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
+            using var tls = new JitTls(&context.JitInfo);
+
+            codeGen.genCheckTailCallEpilogRegisters(call);
+
+            Assert.That(context.Assertions, Is.EqualTo(expectedAssertions));
+        });
+    }
+
+    private struct EpilogAssertionContext
+    {
+        public ICorJitInfo JitInfo;
+        public int Assertions;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int RecordEpilogAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
+    {
+        ((EpilogAssertionContext*)self)->Assertions++;
+        return 0;
+    }
+#endif
+
     [TestCase(TYP_INT, REG_RAX, REG_RAX)]
     [TestCase(TYP_INT, REG_RCX, REG_RAX)]
     [TestCase(TYP_LONG, REG_RBX, REG_RAX)]
