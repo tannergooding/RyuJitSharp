@@ -4,14 +4,21 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+#if UNIX_AMD64_ABI
+using static RyuJitSharp.GCInfo.GCtype;
+#endif
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64 && !UNIX_AMD64_ABI
+#if TARGET_AMD64
     private instrDesc emitNewInstrCallInd(int argCnt, nint disp, ReadOnlySpan<nint> GCvars,
-        regMaskTP gcrefRegs, regMaskTP byrefRegs, emitAttr retSize, bool hasAsyncRet)
+        regMaskTP gcrefRegs, regMaskTP byrefRegs, emitAttr retSize,
+#if UNIX_AMD64_ABI
+        emitAttr secondRetSize,
+#endif
+        bool hasAsyncRet)
     {
         assert(_compiler is not null);
         if (retSize == EA_UNKNOWN)
@@ -22,7 +29,11 @@ public partial class Emitter
         var large = !VarSetOps.IsEmpty(_compiler, GCvars) ||
             ((gcrefRegs & CallScratchRegisters) != RBM_NONE) || (byrefRegs != RBM_NONE) ||
             (disp < AM_DISP_MIN) || (disp > AM_DISP_MAX) || !instrDesc.fitsInSmallCns(argCnt) ||
-            (argCnt < 0) || hasAsyncRet;
+            (argCnt < 0) ||
+#if UNIX_AMD64_ABI
+            (EA_IS_GCREF(secondRetSize) || EA_IS_BYREF(secondRetSize)) ||
+#endif
+            hasAsyncRet;
 
         if (large)
         {
@@ -33,6 +44,9 @@ public partial class Emitter
             id.idcByrefRegs = byrefRegs;
             id.idcArgCnt = unchecked((uint)argCnt);
             id.idcDisp = disp;
+#if UNIX_AMD64_ABI
+            emitSetSecondRetRegGCType(id, secondRetSize);
+#endif
             id.hasAsyncContinuationRet(hasAsyncRet);
             return id;
         }
@@ -50,7 +64,11 @@ public partial class Emitter
     }
 
     private instrDesc emitNewInstrCallDir(int argCnt, ReadOnlySpan<nint> GCvars,
-        regMaskTP gcrefRegs, regMaskTP byrefRegs, emitAttr retSize, bool hasAsyncRet)
+        regMaskTP gcrefRegs, regMaskTP byrefRegs, emitAttr retSize,
+#if UNIX_AMD64_ABI
+        emitAttr secondRetSize,
+#endif
+        bool hasAsyncRet)
     {
         assert(_compiler is not null);
         if (retSize == EA_UNKNOWN)
@@ -60,7 +78,11 @@ public partial class Emitter
 
         var large = !VarSetOps.IsEmpty(_compiler, GCvars) ||
             ((gcrefRegs & CallScratchRegisters) != RBM_NONE) || (byrefRegs != RBM_NONE) ||
-            !instrDesc.fitsInSmallCns(argCnt) || (argCnt < 0) || hasAsyncRet;
+            !instrDesc.fitsInSmallCns(argCnt) || (argCnt < 0) ||
+#if UNIX_AMD64_ABI
+            (EA_IS_GCREF(secondRetSize) || EA_IS_BYREF(secondRetSize)) ||
+#endif
+            hasAsyncRet;
 
         if (large)
         {
@@ -71,6 +93,9 @@ public partial class Emitter
             id.idcByrefRegs = byrefRegs;
             id.idcDisp = 0;
             id.idcArgCnt = unchecked((uint)argCnt);
+#if UNIX_AMD64_ABI
+            emitSetSecondRetRegGCType(id, secondRetSize);
+#endif
             id.hasAsyncContinuationRet(hasAsyncRet);
             return id;
         }
@@ -84,6 +109,24 @@ public partial class Emitter
             return id;
         }
     }
+
+#if UNIX_AMD64_ABI
+    private static void emitSetSecondRetRegGCType(instrDescCGCA id, emitAttr secondRetSize)
+    {
+        if (EA_IS_GCREF(secondRetSize))
+        {
+            id.idSecondGCref(GCT_GCREF);
+        }
+        else if (EA_IS_BYREF(secondRetSize))
+        {
+            id.idSecondGCref(GCT_BYREF);
+        }
+        else
+        {
+            id.idSecondGCref(GCT_NONE);
+        }
+    }
+#endif
 
     private static void emitEncodeCallGCregs(regMaskTP gcRefRegs, instrDesc id)
     {

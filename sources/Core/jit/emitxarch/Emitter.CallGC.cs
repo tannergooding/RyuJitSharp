@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64 && !UNIX_AMD64_ABI
+#if TARGET_AMD64
     private regMaskTP CallScratchRegisters
     {
         get
@@ -72,14 +72,23 @@ public partial class Emitter
 
             case CORINFO_HELP_PROF_FCN_ENTER:
             {
+#if UNIX_AMD64_ABI
+                killMask = CallScratchRegisters & ~new regMaskTP(SRBM_ARG_REGS | SRBM_FLTARG_REGS);
+#else
                 killMask = CallScratchRegisters;
+#endif
                 break;
             }
 
             case CORINFO_HELP_PROF_FCN_LEAVE:
             case CORINFO_HELP_PROF_FCN_TAILCALL:
             {
+#if UNIX_AMD64_ABI
+                killMask = CallScratchRegisters & ~new regMaskTP(
+                    SRBM_FLOATRET | SRBM_INTRET | SRBM_FLOATRET_1 | SRBM_INTRET_1);
+#else
                 killMask = CallScratchRegisters & ~new regMaskTP(SRBM_FLOATRET | SRBM_INTRET);
+#endif
                 break;
             }
 

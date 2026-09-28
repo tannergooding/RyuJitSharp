@@ -11,7 +11,7 @@ public partial class Emitter
 {
     public unsafe void emitIns_Call(in EmitCallParams parameters)
     {
-#if TARGET_AMD64 && !UNIX_AMD64_ABI
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
         assert(_compiler is not null);
         var callType = parameters.callType;
@@ -55,9 +55,17 @@ public partial class Emitter
 
         var id = useInd
             ? emitNewInstrCallInd(argCnt, parameters.disp, parameters.ptrVars, gcrefRegs, byrefRegs,
-                parameters.retSize, parameters.hasAsyncRet)
+                parameters.retSize,
+#if UNIX_AMD64_ABI
+                parameters.secondRetSize,
+#endif
+                parameters.hasAsyncRet)
             : emitNewInstrCallDir(argCnt, parameters.ptrVars, gcrefRegs, byrefRegs,
-                parameters.retSize, parameters.hasAsyncRet);
+                parameters.retSize,
+#if UNIX_AMD64_ABI
+                parameters.secondRetSize,
+#endif
+                parameters.hasAsyncRet);
 
         if (parameters.retSize == EA_GCREF)
         {
@@ -67,6 +75,16 @@ public partial class Emitter
         {
             byrefRegs |= new regMaskTP(SRBM_INTRET);
         }
+#if UNIX_AMD64_ABI
+        if (parameters.secondRetSize == EA_GCREF)
+        {
+            gcrefRegs |= new regMaskTP(SRBM_RDX);
+        }
+        else if (parameters.secondRetSize == EA_BYREF)
+        {
+            byrefRegs |= new regMaskTP(SRBM_RDX);
+        }
+#endif
 
         VarSetOps.Assign(_compiler, ref emitThisGCrefVars, parameters.ptrVars);
         emitThisGCrefRegs = (regMask)gcrefRegs;
@@ -100,7 +118,7 @@ public partial class Emitter
             ulong code = insCodeMR(ins);
             if (parameters.isJump)
             {
-                // Windows epilog recognition requires REX.W on an indirect tail jump.
+                // The unwinder recognizes the REX.W-prefixed indirect tail jump as an epilog.
                 code = AddRexWPrefix(id, code);
             }
             size = emitInsSizeAM(id, code);
@@ -178,7 +196,7 @@ public partial class Emitter
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)size);
 #else
-        throw new FatalJitException(CORJIT_SKIPPED, "Call instruction recording is implemented only for Windows AMD64.");
+        throw new FatalJitException(CORJIT_SKIPPED, "Call instruction recording is implemented only for AMD64.");
 #endif
     }
 

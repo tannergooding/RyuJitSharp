@@ -14,7 +14,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
+#if TARGET_AMD64
     // These native-pointer tables share the emitter's lifetime. Retain their pinned
     // owners across EE callbacks, instruction issue, and later emitter queries.
     private AllocMemChunk[]? _emissionDataChunks;
@@ -90,8 +90,8 @@ public partial class Emitter
 #endif
         )
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Final instruction emission requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Final instruction emission requires AMD64.");
 #else
         var compiler = _compiler ?? throw new FatalJitException("Final instruction emission requires an active compiler.");
 #if DEBUG

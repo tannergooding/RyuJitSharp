@@ -16,6 +16,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: SysV call recording and emission
+
+SysV x64 calls preserve both return registers' GC types through instruction
+recording and output. Large descriptors represent the second GC return, while
+ordinary scalar returns retain the small form. Profiler helpers preserve the
+native SysV argument/return masks. Call and helper generation, GC handoff and
+final emission now use the implemented AMD64 paths. Managed SysV checks pass
+75 cases in each configuration, with 122 Debug/113 Release Windows controls;
+Linux generated-code execution remains unverified.
+
 ## 2026-09-27: VN diagnostics and component checks
 
 Map selection now emits the native precise-store, physical-store and bitcast

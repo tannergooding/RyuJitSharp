@@ -1292,9 +1292,12 @@ target masks. Other Swift targets report NYI and then terminate with
 The SysV x64 classifier, multireg return helpers and Swift argument/special-parameter
 helpers have Linux-target unit coverage on a Windows host. This does not establish
 Linux runtime support. Swift parameter classification in `lvaClassifyParameterAbi`
-and `Emitter.instrDescCGCA.NativeLogicalSize` under `UNIX_AMD64_ABI` still terminate
-with `CORJIT_SKIPPED`. The latter requires the native GC-type/async bitfield layout;
-the Windows descriptor size must not be reused without target layout proof.
+still terminates with `CORJIT_SKIPPED`. SysV call recording now includes the second
+return register's GC type and native helper kill masks. The large-call descriptor
+accounts for the shared GC-type/async bitfield allocation and retains the native
+72-byte AMD64 logical size. Call instruction/helper dispatch, current-GC handoff,
+instruction output and final emission have managed SysV coverage; broader Linux
+backend activation and generated-code execution remain separate.
 
 ARM64 target metadata, ABI classification, immediate predicates, fixed-width
 SIMD/mask queries, cross-platform intrinsic importing, FP/LR placement policy

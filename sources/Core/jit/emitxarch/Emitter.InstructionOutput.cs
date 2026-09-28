@@ -12,8 +12,8 @@ public partial class Emitter
 {
     public unsafe nuint emitOutputInstr(insGroup ig, instrDesc id, byte** dp)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Instruction output requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Instruction output requires AMD64.");
 #else
         assert(_compiler is not null);
         assert(emitCurIG is not null);
@@ -1164,6 +1164,20 @@ public partial class Emitter
         {
             byrefRegs |= new regMaskTP(SRBM_EAX);
         }
+#if UNIX_AMD64_ABI
+        if (id.idIsLargeCall())
+        {
+            var secondRetType = ((instrDescCGCA)id).idSecondGCref();
+            if (secondRetType == GCT_GCREF)
+            {
+                gcrefRegs |= new regMaskTP(SRBM_RDX);
+            }
+            else if (secondRetType == GCT_BYREF)
+            {
+                byrefRegs |= new regMaskTP(SRBM_RDX);
+            }
+        }
+#endif
         if (id.idIsLargeCall() && ((instrDescCGCA)id).hasAsyncContinuationRet())
         {
             gcrefRegs |= new regMaskTP(REG_ASYNC_CONTINUATION_RET.SingleTypeMask);

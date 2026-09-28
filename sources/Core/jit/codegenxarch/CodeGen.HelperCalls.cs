@@ -11,8 +11,8 @@ public sealed partial class CodeGen
     public unsafe void genEmitHelperCall(CorInfoHelpFunc helper, int argSize, emitAttr retSize,
         regNumber callTargetReg = REG_NA)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Helper-call generation requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Helper-call generation requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         var parameters = new EmitCallParams { callType = EC_FUNC_TOKEN };

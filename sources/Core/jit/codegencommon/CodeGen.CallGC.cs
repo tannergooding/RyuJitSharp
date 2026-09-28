@@ -9,8 +9,8 @@ public sealed partial class CodeGen
 {
     public void genEmitCallWithCurrentGC(ref EmitCallParams parameters)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Call generation with current GC state requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Call generation with current GC state requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         parameters.ptrVars = GCInfo.gcVarPtrSetCur;

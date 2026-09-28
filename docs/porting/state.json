@@ -16,6 +16,12 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sysvCallEmission": {
+      "scope": "SysV genCallInstruction/genEmitHelperCall, current-GC handoff, call allocation/recording/kill masks, second return GC type, instruction output and final emission.",
+      "mapping": "emitxarch.cpp/emit.h call descriptors and output -> Emitter.CallAllocation.cs/CallDisplacements.cs/CallGC.cs/CallInstructions.cs/InstructionOutput.cs; codegenxarch.cpp helper/call entry -> CodeGen.CallInstructions.cs/HelperCalls.cs; common GC handoff and Emitter.EmissionDriver.cs.",
+      "validation": "75 Debug / 75 Release Linux-target managed checks; Windows emitter controls 122 Debug / 113 Release. Full analysis, zero failures/skips; isolated absolute artifact roots under artifacts/sysv-emitter-lane and artifacts/sysv-emitter-windows.",
+      "remaining": "Helper-driven return traps, profiling and write-barrier codegen are the next SysV area. Native functions retain unported x86/other-target paths. No Linux generated-code execution/parity claim."
+    },
     "planApprovedAt": "2026-09-22",
     "residualReconciliation": {
       "status": "in-progress",

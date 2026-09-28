@@ -13,8 +13,8 @@ public sealed partial class CodeGen
 {
     public unsafe void genCallInstruction(GenTreeCall call)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Call-instruction generation requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Call-instruction generation requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         var parameters = new EmitCallParams();
