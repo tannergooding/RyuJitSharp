@@ -16,6 +16,14 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Shared frame support corrections
+
+Frame-location dumps now append padding after the location, matching native
+column layout. Boxed `ValueSize` equality recognizes `ValueSize` rather than
+recursively dispatching through `System.ValueType`; exact and symbolic sizes
+retain their typed equality and hash behavior. Frame and value-size coverage
+passes 44 Debug/39 Release cases.
+
 ## 2026-09-27: CFG debug invariants
 
 Flow-edge visitation now checks state transitions, and block-list iterators

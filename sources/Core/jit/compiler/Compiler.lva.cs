@@ -924,7 +924,7 @@ public partial class Compiler
 
         if (message.Length is not 0)
         {
-            jitprintf($"{new string(' ', int.Max(0, minLength - message.Length))}{message}");
+            jitprintf($"{message}{new string(' ', int.Max(0, minLength - message.Length))}");
         }
     }
 #endif

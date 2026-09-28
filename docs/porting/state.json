@@ -16,6 +16,12 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sharedFrameSupport": {
+      "scope": "B376 lvaDumpFrameLocation trailing padding and B378 boxed ValueSize equality.",
+      "mapping": "lclvars.cpp:lvaDumpFrameLocation -> Compiler.lva.cs; managed ValueSize.Equals(object) dispatches to existing typed equality.",
+      "validation": "44 Debug / 39 Release full-analysis ValueSizeTests, CompilerFinalFrameLayoutTests, CompilerRegallocFrameTests and CodeGenFrameFinalizationTests. artifacts/frame-support/frame-support-{debug,release}.trx.",
+      "limits": "Corrects managed equality and diagnostic placement; no new native execution/parity claim."
+    },
     "cfgDebugClosure": {
       "scope": "B393 edge visit transitions, unconditional DEBUG BasicBlock.Contains and current-block double-link invariants in both block-list enumerators.",
       "mapping": "block.h:681-691,1896-1907,1934-1963 -> FlowEdge.cs, BasicBlock.cs and BasicBlockSimpleList/BasicBlockRangeList.Enumerator.cs.",
@@ -584,7 +590,7 @@
         }
       ]
     },
-    "nextAction": "Continue overnight without stopping at milestones; periodically check breadth and validation cadence. Windows foreground: custom-awaiter import and B393 CFG invariants are complete; resolve recorded B376 frame-location diagnostic padding and B378 boxed ValueSize equality, then continue concrete Windows gaps identified by native cleanup. ARM64 continues optimizer range/CSE/induction target dependencies. SysV continues prolog/epilog and callee-save handling. Native cleanup runs concurrently against committed source; amend only its Remove ported code commit, last recorded at 702c6b0b10b5db531fa33d86948cdf2ef6b048f6. No routine snapshots or per-helper validation/documentation cycles. Keep the oracle pinned and notify the user when full native cleanup is finished.",
+    "nextAction": "Continue overnight without stopping at milestones; periodically check breadth and validation cadence. Windows foreground: B376/B378 shared frame support is complete; resolve recorded B390 WithElement float widening/narrowing using exact native/managed lane bits before deciding whether to change the evaluator. Integrate delivered ARM64 optimizer range/CSE/induction batch, then continue allocator target dependencies. SysV continues prolog/epilog and callee-save handling. Native cleanup runs concurrently against committed source; amend only its Remove ported code commit, last recorded at 702c6b0b10b5db531fa33d86948cdf2ef6b048f6. No routine snapshots or per-helper validation/documentation cycles. Keep the oracle pinned and notify the user when full native cleanup is finished.",
     "arm64BlockAndSwitchLowering": {
       "scope": "ARM64 LowerBlock candidate/FFR initialization, LowerSwitch and TryLowerSwitchToBitTest.",
       "mapping": "lower.cpp block/switch lowering -> Lowering.BlockTraversal.cs and Lowering.Switches.cs, preserving ARM64 shift/AND/branch construction.",

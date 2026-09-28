@@ -62,7 +62,7 @@ public readonly partial struct ValueSize : IEquatable<ValueSize>
 
     public static bool operator !=(ValueSize left, ValueSize right) => !(left == right);
 
-    public override bool Equals([NotNullWhen(true)] object? obj) => (obj is ValueType other) && Equals(other);
+    public override bool Equals([NotNullWhen(true)] object? obj) => (obj is ValueSize other) && Equals(other);
 
     public bool Equals(ValueSize other) => this == other;
 

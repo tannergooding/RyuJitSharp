@@ -13,6 +13,29 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class CompilerFinalFrameLayoutTests
 {
+#if DEBUG
+    [TestCase(false, 0, 0, "[rsp+0x00] ")]
+    [TestCase(false, 8, 11, "[rsp+0x08] ")]
+    [TestCase(false, 0x1234, 20, "[rsp+0x1234] ")]
+    [TestCase(true, -8, 20, "[rbp-0x08] ")]
+    [TestCase(true, -0x1234, -1, "[rbp-0x1234] ")]
+    public static void FrameLocationPaddingFollowsTheLocation(bool framePointer, int offset, int width, string location)
+    {
+        WithFrame((compiler, codeGen) =>
+        {
+            compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
+            compiler.lvaTable[0].StackOffset = offset;
+            compiler.lvaTable[0].lvFramePointerBased = framePointer;
+            codeGen.resetFramePointerUsedWritePhase();
+            codeGen.IsFramePointerUsed = framePointer;
+
+            var text = CodeGenLifeTransitionTests.Capture(() => compiler.lvaDumpFrameLocation(0, width));
+
+            Assert.That(text, Is.EqualTo(location.PadRight(int.Max(width, location.Length))));
+        });
+    }
+#endif
+
     [TestCase(Compiler.TENTATIVE_FRAME_LAYOUT, -20, -35, 15)]
     [TestCase(Compiler.FINAL_FRAME_LAYOUT, -20, -32, 12)]
     [TestCase(Compiler.FINAL_FRAME_LAYOUT, -24, -32, 8)]
