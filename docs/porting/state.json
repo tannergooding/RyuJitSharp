@@ -18,17 +18,22 @@
       "startIndexCommit": "4816a0d823a22b12e2f5de4686bba6201ff08a0b",
       "protectedRef": "refs/porting/snapshots/residual-reconcile-start-20260927",
       "startTree": "59d3dbb096ebc96e66e006f75d77176444088d8c",
-      "latestSnapshot": "3996c2b2a986e789789c6faf4edb1c100eeca26d",
-      "latestIndexCommit": "4402b24f0bac48f41cc199cdbf608f94479f1e7b",
-      "latestProtectedRef": "refs/porting/snapshots/residual-extraction-stress-20260927",
-      "latestTree": "4eaf9c5814eb3fe332c6b9e5a73e2d599dfb7e12",
+      "latestSnapshot": "5d9b0bc5662df36b43d37128bb387a093174ea01",
+      "latestIndexCommit": "96236ab14044a65a1a9230531f3bcb53c8885f00",
+      "latestProtectedRef": "refs/porting/snapshots/residual-helpers-flowgraph-20260927",
+      "latestTree": "e3bbd12cc40682dcd18f0090dc000a95944249ae",
       "startingState": "176 staged paths: one addition, 83 deletions and 92 modifications; no unstaged changes. Original staged content is protected independently of new retirement edits.",
       "retired": [
         "2e6b6e34: gtExtractSideEffectsFromUnusedNode and related declarations. gtExtractSideEffList's native body had already been removed; its former absence was not used as evidence of completion.",
-        "d1eb14d5: lvaStressLclFldPadding, lvaStressLclFldNode, lvaStressLclFld and StressLclFldVisitor; fgStress64RsltMul and Stress64RsltMulVisitor; associated declarations."
+        "d1eb14d5: lvaStressLclFldPadding, lvaStressLclFldNode, lvaStressLclFld and StressLclFldVisitor; fgStress64RsltMul and Stress64RsltMulVisitor; associated declarations.",
+        "Completed shared helper traversal/split/spill/flag support, runtime lookups, static initialization, stack arrays, late casts and TLS/VN public drivers; GC polls, ThreeOptLayout and its RPO/try-end support, cold-section selection and missing-block weights; associated declarations."
       ],
-      "remaining": "Reconcile the wider completed source/dependency areas, beginning with helper expansion and optimized flow-graph batches after 5aaefb76, then check earlier residual coverage. The 83 post-refresh commits are an initial navigation queue, not a completeness denominator.",
-      "verification": "First retirement changes only compiler.h, fgdiagnostic.cpp, gentree.cpp and lclvars.cpp, with zero added lines and 394 deleted lines relative to the protected starting tree. All other staged content is unchanged; no unstaged native changes remain. Tracked oracle source/index are unchanged; its pre-existing artifacts-206bf81 directory is untouched.",
+      "remainingHelperTargets": [
+        "helperexpansion.cpp now contains only the two TLS call transformations and ReadUtf8. All three are complete for Windows x64.",
+        "CoreCLR and NativeAOT TLS transformations remain for targets other than Windows x64. ReadUtf8 remains for non-AMD64 targets. Keep these mixed bodies until those paths are ported."
+      ],
+      "remaining": "Reconcile completed profile instrumentation/repair, head-tail merging and GDV resolution next, then the wider completed source/dependency areas and earlier residual coverage. The 83 post-refresh commits are an initial navigation queue, not a completeness denominator.",
+      "verification": "Helper/layout retirement removes 4031 lines across exactly eight files relative to 3996c2b, with no added lines under git diff --minimal. Exact hashed ranges and final file hashes are in artifacts/residual-reconciliation/helpers-flowgraph*.json. The preceding extraction/stress retirement removed 394 lines. Inherited staged content is preserved; no unstaged native changes remain. Oracle tracked source/index are unchanged.",
       "policy": "Retire only reviewed complete implementations. Retain or explicitly identify unfinished shared/Windows paths and other-platform-only paths. Preserve the oracle and existing index distinctions; do not infer parity or percentages from deletion counts."
     },
     "workCadence": "User-directed: finish Windows x64 compiler code in the foreground; Linux x64 and ARM64 proceed in isolated background lanes. Choose whole type/feature/area batches, reuse existing port unit coverage, and build/run relevant checks at the integration boundary. Do not expand validation matrices or perform per-helper test/build/NativeAOT/corpus/documentation cycles. After code completion, automate oracle dump comparisons with explicit accepted non-semantic exclusions (including D001 arena statistics) and run the official runtime suite with the port as primary JIT, not AltJIT. Continue after milestones.",
@@ -72,13 +77,13 @@
       "scope": "Restore runtime-port as the remaining-work view by reconciling completed C# source/dependency areas into verified native deletions, preserving snapshots, staging and unfinished platform paths.",
       "status": "in-progress",
       "doneWhen": [
-        "Identify currently unported Windows-x64 functions and required conditional paths in source, separating real stubs from stale baseline ledgers and valid unsupported configurations.",
-        "Implement the next dependency-coherent area as complete native functions, using existing managed helpers and preserving ABI, ownership, ordering and numeric semantics.",
-        "Build and run relevant existing tests at the area boundary, commit locally and continue. Do not substitute additional corpus comparisons for completing code."
+        "Reconcile completed source/dependency areas into native retirement using existing integrated implementation reviews and scoped evidence, not symbol-name matches alone.",
+        "Identify remaining Windows/shared work separately from mixed functions retained for unfinished target paths; check earlier residual coverage as well as the post-refresh queue.",
+        "Protect native snapshots and staging, update sparse mappings and commit each coherent reconciliation group locally, then continue into the remaining compiler work."
       ],
       "validation": [
-        "Windows-x64 build and relevant existing unit suites, plus focused regressions only when a concrete defect or adaptation requires them.",
-        "Defer broad dump matrices and official primary-JIT runtime-suite validation until code-port completion; retain established execution evidence without relabeling its scope."
+        "Verify exact deletion scope, retained incomplete paths, inherited staged content and unchanged tracked oracle source/index. Reuse established implementation evidence; native retirement does not change managed behavior.",
+        "When implementation resumes, use Windows-x64 build and relevant existing suites at the area boundary. Broad dump matrices and official primary-JIT runtime validation remain later gates."
       ],
       "deferred": [
         "ARM64 hardware/mask rewrites belong to session 219ce0d3-6a41-4d0c-9b8a-c198b6f398b1. Immutable uncommitted handoff snapshot f94987ff235d5265976ed14f1a4dc01df84c3293 is protected by refs/porting/arm64-rewrites-handoff.",
@@ -480,7 +485,7 @@
         }
       ]
     },
-    "nextAction": "Continue native residual reconciliation, not another search through C# placeholders. Completed unused-tree extraction and pre-morph stress are retired and staged in native snapshot 3996c2b2a986e789789c6faf4edb1c100eeca26d; the original state remains protected by 9f4bab794f8fe339a6b46cb8336305cf80c804ee. Next reconcile completed helper-expansion and flow-graph areas using existing commit/checkpoint evidence and pinned native bodies. Retain and classify unfinished target paths; the full remaining-work classification is not established yet. Pending platform integration commits remain Linux e42864b53384c77e22daefbe743e77023f7a577e and ARM64 0c0d33f22a29cfc79133f93757071914b0cb27e5.",
+    "nextAction": "Continue native residual reconciliation from protected staged snapshot 5d9b0bc5662df36b43d37128bb387a093174ea01; do not reapply prior deletions. Helper expansion and GC-poll/layout/cold/weight implementations are retired. The only remaining helperexpansion.cpp bodies are Windows-x64-complete TLS/ReadUtf8 transformations retained for other targets. Next retire reviewed complete profile instrumentation/repair from fgprofile.cpp and head-tail merging/GDV resolution from fgopt.cpp, with related declarations, then continue the wider and earlier residual coverage. Use existing integrated evidence rather than replaying corpora. Pending platform integration commits remain Linux e42864b53384c77e22daefbe743e77023f7a577e and ARM64 0c0d33f22a29cfc79133f93757071914b0cb27e5.",
     "arm64HardwareContainment": {
       "scope": "Complete ARM64 hardware and bounds containment, with MOVI/MVNI byte-shift and doubleword-mask predicates, exact FMOV constants, comparison-zero rules and SVE embedded masking.",
       "mapping": "lowerarmarch.cpp:2033-2060,3805-4225 -> Lowering.Arm64HardwareContainment.cs and Lowering.BoundsChecks.cs; emitarm64.cpp:2451-2483,3113-3207 -> Emitter.ImmediatePredicates.cs. Shared ContainCheckNode now dispatches ARM64 hardware containment; bounds containment remains a separate LowerNode action, matching native.",
@@ -7352,56 +7357,56 @@
       "area": "missing-block-weights",
       "native": ["src\\coreclr\\jit\\fgprofile.cpp:4371-4537"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.MissingBlockWeights.cs", "sources\\Core\\jit\\compiler\\Compiler.EHCleanup.Finally.cs:fgGetFinallyContinuation"],
-      "status": "Complete public weight driver and missing-weight propagation. Preserves predecessor/successor precedence, per-block profile protection, splitting-only handler rules and ten-pass limit. Existing native-equivalent continuation helper reused. Native source retained.",
+      "status": "Complete public weight driver and missing-weight propagation. Preserves predecessor/successor precedence, per-block profile protection, splitting-only handler rules and ten-pass limit. Existing native-equivalent continuation helper reused. Weight implementations and associated declaration retired from runtime-port.",
       "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     },
     {
       "area": "cold-section-selection",
       "native": ["src\\coreclr\\jit\\flowgraph.cpp:3282-3489", "src\\coreclr\\jit\\fgopt.cpp:4997-5041"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.ColdSectionSelection.cs"],
-      "status": "Complete public selection phase, funclet coldness predicate and code-size estimate. Preserves splitting/EH gates, stress mode, eight-byte thresholds, trailing suffix search and callfinally pairing. Existing allocation/unwind implementation reused; fake-split execution is not discontiguous allocation parity. Native source retained.",
+      "status": "Complete public selection phase, funclet coldness predicate and code-size estimate. Preserves splitting/EH gates, stress mode, eight-byte thresholds, trailing suffix search and callfinally pairing. Existing allocation/unwind implementation reused; fake-split execution is not discontiguous allocation parity. Selection/estimate implementations and associated declarations retired from runtime-port.",
       "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     },
     {
       "area": "optimized-block-layout",
       "native": ["src\\coreclr\\jit\\fgopt.cpp:3297-4282", "src\\coreclr\\jit\\compiler.hpp:5427-5500", "src\\coreclr\\jit\\jiteh.cpp:1338-1385", "src\\coreclr\\jit\\block.h:1309", "src\\coreclr\\jit\\priorityqueue.h"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.BlockLayout.cs", "sources\\Core\\jit\\compiler\\Compiler.ThreeOptLayout.cs", "sources\\Core\\jit\\lsra\\LinearScan.BlockOrder.cs", "sources\\Core\\jit\\block\\BasicBlock.cs", "sources\\Core\\jit\\block\\FlowEdge.cs"],
-      "status": "Complete native 3-opt public phase/class, shared loop-aware RPO, cold candidate threshold and try-end repair. Reuses existing profile DFS, its scratch array and FlowEdge visitation state. B319 cold-poll placement resolved; B307/B320 diagnostics remain. Native source retained.",
+      "status": "Complete native 3-opt public phase/class, shared loop-aware RPO, cold candidate threshold and try-end repair. Reuses existing profile DFS, its scratch array and FlowEdge visitation state. B319 cold-poll placement resolved; B307/B320 diagnostics remain. ThreeOptLayout, public driver, loop-aware RPO and try-end repair implementations and declarations retired from runtime-port.",
       "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     },
     {
       "area": "gc-poll-insertion",
       "native": ["src\\coreclr\\jit\\flowgraph.cpp:16-435"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.GCPolls.cs"],
-      "status": "Complete block scanning, public phase and callout/inline poll construction. Native selection, statement/debug sequencing, trap address indirection, EH, predecessor and profile contracts preserved. Eight positive phase slices and two no-change controls exact; input EH IDs and downstream layout remain B307/B319. Native source retained.",
+      "status": "Complete block scanning, public phase and callout/inline poll construction. Native selection, statement/debug sequencing, trap address indirection, EH, predecessor and profile contracts preserved. Eight positive phase slices and two no-change controls exact; input EH IDs remain B307, and subsequent layout work resolved B319. GC-poll implementations and associated declaration retired from runtime-port.",
       "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     },
     {
       "area": "late-cast-expansion",
       "native": ["src\\coreclr\\jit\\helperexpansion.cpp:1935-2779", "src\\coreclr\\jit\\importer.cpp:10683-10688", "src\\coreclr\\jit\\gentree.cpp:gtSetEvalOrder(GT_IND)"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.LateCastExpansion.cs", "sources\\Core\\jit\\compiler\\Compiler.imp.cs:CEE_UNBOX_ANY", "sources\\Core\\jit\\compiler\\Compiler.gt.cs:gtSetEvalOrder"],
-      "status": "Complete public phase, candidate selection and CFG/profile repair. Exact/speculative/profile/unknown-handle paths preserve native fallback contracts; B316/B317 prerequisites corrected. Six positive transformation/CFG/IR slices exact; array name diagnostics remain B301. Shared native source retained for remaining platform paths.",
+      "status": "Complete public phase, candidate selection and CFG/profile repair. Exact/speculative/profile/unknown-handle paths preserve native fallback contracts; B316/B317 prerequisites corrected. Six positive transformation/CFG/IR slices exact; array name diagnostics remain B301. Late-cast implementations, action enums and associated declaration retired from runtime-port.",
       "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     },
     {
       "area": "vn-intrinsic-expansion-and-literal-diagnostics",
       "native": ["src\\coreclr\\jit\\helperexpansion.cpp:1612-1932", "src\\coreclr\\jit\\eeinterface.cpp:709-731", "src\\coreclr\\jit\\compiler.cpp:10630-10648", "src\\coreclr\\jit\\importer.cpp:5340-5477", "src\\native\\minipal\\utf8.c"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.VNIntrinsicExpansion.cs", "sources\\Core\\jit\\compiler\\Compiler.ee.cs:eePrintStringLiteral", "sources\\Core\\jit\\compiler\\Compiler.imp.cs:impGetByRefResultType"],
-      "status": "Complete AMD64 ReadUtf8 dispatcher/transformation with native bounded conversion behavior, B313 byref-add assertions and B314 literal formatting. Positive constant-store metrics/runtime match; full incoming graph/code parity remains B315. Non-AMD64 explicit NYI; native mixed helper source retained.",
+      "status": "Complete AMD64 ReadUtf8 dispatcher/transformation with native bounded conversion behavior, B313 byref-add assertions and B314 literal formatting. Positive constant-store metrics/runtime match; full incoming graph/code parity remains B315. Public phase/dispatcher retired from runtime-port; ReadUtf8 body remains for non-AMD64 paths, not a Windows-x64 implementation gap.",
       "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     },
     {
       "area": "thread-local-expansion",
       "native": ["src\\coreclr\\jit\\helperexpansion.cpp:496-1219"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.ThreadLocalExpansion.cs"],
-      "status": "Complete public TLS phase and Windows x64 CoreCLR/NativeAOT algorithms. B310 ABI and B312 native allocation order preserved. Eight positive CoreCLR transformation/CFG/IR slices match; NativeAOT has structural, not runtime evidence. Other platform paths explicitly fail compilation. Shared native residual retained for remaining callers.",
+      "status": "Complete public TLS phase and Windows x64 CoreCLR/NativeAOT algorithms. B310 ABI and B312 native allocation order preserved. Eight positive CoreCLR transformation/CFG/IR slices match; NativeAOT has structural, not runtime evidence. Public driver retired from runtime-port. Both call transformations remain for targets other than Windows x64, whose paths explicitly fail compilation in the port.",
       "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     },
     {
       "area": "static-init-and-shared-helper-expansion",
       "native": ["src\\coreclr\\jit\\helperexpansion.cpp:11-78,1232-1603", "src\\coreclr\\jit\\fgbasic.cpp:4731-4761"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.HelperExpansion.cs", "sources\\Core\\jit\\compiler\\Compiler.StaticInitExpansion.cs"],
-      "status": "Complete static-init public phase and shared traversal/split/spill/flag support, including CoreCLR/NativeAOT guard layouts and native optimization/rare-block policies. Positive CoreCLR fullopts/GCStress transformations and CFGs match. Residual native shared region retained for remaining callers; TLS/VN packets inactive.",
+      "status": "Complete static-init public phase and shared traversal/split/spill/flag support, including CoreCLR/NativeAOT guard layouts and native optimization/rare-block policies. Positive CoreCLR fullopts/GCStress transformations and CFGs match. Implementations and associated declarations retired from runtime-port. TLS/VN phases were subsequently activated with their separately recorded target limits.",
       "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     },
     {
@@ -7415,7 +7420,7 @@
       "area": "runtime-lookup-expansion",
       "native": ["src\\coreclr\\jit\\helperexpansion.cpp:11-29,136-148,169-485,1232-1260,1276-1300", "src\\coreclr\\jit\\fgbasic.cpp:4731-4761", "src\\coreclr\\jit\\gentree.cpp:2447-2457"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.RuntimeLookupExpansion.cs", "sources\\Core\\jit\\compiler\\Compiler.HelperExpansion.cs"],
-      "status": "Complete WindowsAMD64 runtime-lookup production phase and direct split/spill/helper-scan closure. Selected shared-generic/combined execution and native-matching phase/CFG slices established. B307 IDs, diagnostics, code layout and broader runtime lookup coverage remain open.",
+      "status": "Complete WindowsAMD64 runtime-lookup production phase and direct split/spill/helper-scan closure. Selected shared-generic/combined execution and native-matching phase/CFG slices established. B307 IDs, diagnostics, code layout and broader runtime lookup coverage remain open. Helperexpansion/fgbasic implementations and associated declarations retired from runtime-port.",
       "reconciledCommit": null
     },
     {
@@ -7515,7 +7520,7 @@
       "csharp": ["sources\\Core\\jit\\objectalloc\\ObjectAllocator.cs", "sources\\Core\\jit\\compiler\\Compiler.StackArrayExpansion.cs", "sources\\Core\\jit\\compiler\\Compiler.MorphInitBlockHelper.cs", "sources\\Core\\jit\\gentree\\GenTree.cs:BashToZeroConst"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete orchestration, repeated stack-array expansion and block-op remorphing. Threaded zero/store replacements preserve identity and links. Selected native-host execution, not general parity."
+      "status": "Complete orchestration, repeated stack-array expansion and block-op remorphing. Threaded zero/store replacements preserve identity and links. Selected native-host execution, not general parity. Stack-array expansion implementations and associated declaration retired from runtime-port; objectalloc/morph support awaits residual reconciliation."
     },
     {
       "area": "hardware-dispatch-and-gs-protection",
