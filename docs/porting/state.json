@@ -18,23 +18,26 @@
       "startIndexCommit": "4816a0d823a22b12e2f5de4686bba6201ff08a0b",
       "protectedRef": "refs/porting/snapshots/residual-reconcile-start-20260927",
       "startTree": "59d3dbb096ebc96e66e006f75d77176444088d8c",
-      "latestSnapshot": "48503ca10fba4f5f5390a8dcb85d2b1297ed7081",
-      "latestIndexCommit": "9a2adeb41b71f847bf7eeed909398cd1fdda6c48",
-      "latestProtectedRef": "refs/porting/snapshots/residual-profile-merging-20260927",
-      "latestTree": "dd032475f222e505099bf2332c49ed24c752a26e",
+      "latestSnapshot": "f0f6432112e7e810f836e363de8f4c8a94963418",
+      "latestIndexCommit": "1f52475984eca0dd797143a42b5c29ccbbfea2d4",
+      "latestProtectedRef": "refs/porting/snapshots/residual-allocation-promotion-async-20260927",
+      "latestTree": "764acf4d4bcfd460387c8e8d61479cce34d238d9",
       "startingState": "176 staged paths: one addition, 83 deletions and 92 modifications; no unstaged changes. Original staged content is protected independently of new retirement edits.",
       "retired": [
         "2e6b6e34: gtExtractSideEffectsFromUnusedNode and related declarations. gtExtractSideEffList's native body had already been removed; its former absence was not used as evidence of completion.",
         "d1eb14d5: lvaStressLclFldPadding, lvaStressLclFldNode, lvaStressLclFld and StressLclFldVisitor; fgStress64RsltMul and Stress64RsltMulVisitor; associated declarations.",
         "Completed shared helper traversal/split/spill/flag support, runtime lookups, static initialization, stack arrays, late casts and TLS/VN public drivers; GC polls, ThreeOptLayout and its RPO/try-end support, cold-section selection and missing-block weights; associated declarations.",
-        "Remaining fgprofile.cpp: complete instrumentation classes/drivers and profile repair. Complete head-tail merging/helper closure and GDV resolution from fgopt.cpp, with associated declarations."
+        "Remaining fgprofile.cpp: complete instrumentation classes/drivers and profile repair. Complete head-tail merging/helper closure and GDV resolution from fgopt.cpp, with associated declarations.",
+        "Complete objectalloc.cpp/.h and async.cpp/.h/asyncanalysis.cpp; completed promotion.cpp/.h/promotionliveness.cpp and decomposition support. Retain DetermineRemainderStrategy and its result type for B382 target gates."
       ],
       "remainingHelperTargets": [
         "helperexpansion.cpp now contains only the two TLS call transformations and ReadUtf8. All three are complete for Windows x64.",
         "CoreCLR and NativeAOT TLS transformations remain for targets other than Windows x64. ReadUtf8 remains for non-AMD64 targets. Keep these mixed bodies until those paths are ported."
       ],
-      "remaining": "Reconcile completed object-allocation, physical-promotion and async areas next, then wider and earlier residual coverage including the older fgopt/flowgraph remainder. The 83 post-refresh commits are an initial navigation queue, not a completeness denominator.",
-      "verification": "Profile/merging retirement removes 3082 lines across exactly three files relative to 5d9b0bc, including the entire remaining fgprofile.cpp. Earlier helper/layout retirement removed 4031 lines; extraction/stress removed 394. Each delta is deletion-only under git diff --minimal. Hashed ranges and protected snapshot receipts are in artifacts/residual-reconciliation. Inherited staged content is preserved; no unstaged native changes remain. Oracle tracked source/index are unchanged.",
+      "remainingPromotionTargets": "B382: DetermineRemainderStrategy remains for 32-bit and SIMD-disabled target selection. Windows-x64 behavior is complete; do not count this retained body as a Windows gap.",
+      "remaining": "Reconcile reviewed range-check and loop-optimization areas and older fgopt/flowgraph support after committing the protected allocation/promotion/async group. The post-refresh commit queue is not a completeness denominator.",
+      "verification": "Allocation/promotion/async retirement removes 17729 lines across exactly ten files relative to 48503ca, retaining the complete target-incomplete remainder-selection function. Earlier groups removed 3082 profile/merging, 4031 helper/layout and 394 extraction/stress lines. Each delta is deletion-only under git diff --minimal. Hashed preimages, ranges and final snapshot receipts are in artifacts/residual-reconciliation. Inherited staging is preserved; no unstaged native changes remain. Oracle tracked source/index are unchanged.",
+      "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
       "policy": "Retire only reviewed complete implementations. Retain or explicitly identify unfinished shared/Windows paths and other-platform-only paths. Preserve the oracle and existing index distinctions; do not infer parity or percentages from deletion counts."
     },
     "workCadence": "User-directed: finish Windows x64 compiler code in the foreground; Linux x64 and ARM64 proceed in isolated background lanes. Choose whole type/feature/area batches, reuse existing port unit coverage, and build/run relevant checks at the integration boundary. Do not expand validation matrices or perform per-helper test/build/NativeAOT/corpus/documentation cycles. After code completion, automate oracle dump comparisons with explicit accepted non-semantic exclusions (including D001 arena statistics) and run the official runtime suite with the port as primary JIT, not AltJIT. Continue after milestones.",
@@ -486,7 +489,7 @@
         }
       ]
     },
-    "nextAction": "Continue native residual reconciliation from protected staged snapshot 48503ca10fba4f5f5390a8dcb85d2b1297ed7081; do not reapply prior deletions. fgprofile.cpp is fully retired; head-tail merging/GDV resolution and the preceding helper/layout groups are retired. Next reconcile completed object-allocation, physical-promotion and async source areas against their integrated reviews and mappings, then the wider/earlier residual coverage including older fgopt/flowgraph helpers. Keep the three remaining helperexpansion.cpp transformations for unfinished non-Windows-x64 TLS and non-AMD64 ReadUtf8 paths. Do not replay corpora solely for retirement. Pending platform integration commits remain Linux e42864b53384c77e22daefbe743e77023f7a577e and ARM64 0c0d33f22a29cfc79133f93757071914b0cb27e5.",
+    "nextAction": "Continue native residual reconciliation from protected staged snapshot f0f6432112e7e810f836e363de8f4c8a94963418; do not reapply prior deletions. Object allocation, async and completed physical-promotion implementations are retired. B382 retains DetermineRemainderStrategy for 32-bit/SIMD-disabled target gates; the three helperexpansion.cpp bodies remain for non-Windows-x64 TLS and non-AMD64 ReadUtf8. Next reconcile reviewed range-check/loop-optimization areas and older fgopt/flowgraph support using existing integrated evidence, preserving native staging and the oracle. Use direct file tools and consolidated hidden Git batches instead of repeated focus-stealing PowerShell launches. Pending platform integration commits remain Linux e42864b53384c77e22daefbe743e77023f7a577e and ARM64 0c0d33f22a29cfc79133f93757071914b0cb27e5.",
     "arm64HardwareContainment": {
       "scope": "Complete ARM64 hardware and bounds containment, with MOVI/MVNI byte-shift and doubleword-mask predicates, exact FMOV constants, comparison-zero rules and SVE embedded masking.",
       "mapping": "lowerarmarch.cpp:2033-2060,3805-4225 -> Lowering.Arm64HardwareContainment.cs and Lowering.BoundsChecks.cs; emitarm64.cpp:2451-2483,3113-3207 -> Emitter.ImmediatePredicates.cs. Shared ContainCheckNode now dispatches ARM64 hardware containment; bounds containment remains a separate LowerNode action, matching native.",
@@ -7239,7 +7242,7 @@
       "area": "async-state-machine-transformation",
       "native": ["src\\coreclr\\jit\\async.h:1-549", "src\\coreclr\\jit\\asyncanalysis.cpp:1-778", "src\\coreclr\\jit\\async.cpp:961-5282", "src\\coreclr\\jit\\gentree.cpp:1879-1907"],
       "csharp": ["sources\\Core\\jit\\async\\AsyncTransformation.Layout.cs", "sources\\Core\\jit\\compiler\\Compiler.AsyncTransformation.*.cs", "sources\\Core\\jit\\gentree\\CallArgs.AsyncTransformation.cs", "sources\\Core\\jit\\compiler\\Compiler.cs:TransformAsync"],
-      "status": "Complete Windows-x64 transformation closure: await analysis, continuation layout/reuse, normal/tail suspension, live-state persistence, context handling, resumption dispatch and EH. The public phase runs after rationalization and before lowering. Post-morph pseudoarguments are removed without resetting ABI state; offset replacement follows final LIR ownership. Existing operands retain sequence/cost metadata and helper-specific context spilling follows native. Final comparison-d5bb-1.json matches transformation logs/CFGs/continuation records and all transformed Tier0 instruction streams with optional relocations disabled. Input and adapter differences B336/B337 remain separate. Native sources retained.",
+      "status": "Complete Windows-x64 transformation closure: await analysis, continuation layout/reuse, normal/tail suspension, live-state persistence, context handling, resumption dispatch and EH. The public phase runs after rationalization and before lowering. Post-morph pseudoarguments are removed without resetting ABI state; offset replacement follows final LIR ownership. Existing operands retain sequence/cost metadata and helper-specific context spilling follows native. Final comparison-d5bb-1.json matches transformation logs/CFGs/continuation records and all transformed Tier0 instruction streams with optional relocations disabled. Input and adapter differences B336/B337 remain separate. Async implementation/header/analysis files retired from runtime-port; this does not extend target execution evidence.",
       "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     },
     {
@@ -7267,7 +7270,7 @@
       "area": "physical-promotion",
       "native": ["src\\coreclr\\jit\\promotion.cpp", "src\\coreclr\\jit\\promotion.h", "src\\coreclr\\jit\\promotionliveness.cpp", "src\\coreclr\\jit\\promotiondecomposition.cpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.PhysicalPromotion.Candidates.cs", "sources\\Core\\jit\\compiler\\Compiler.PhysicalPromotion.AddressExposure.cs", "sources\\Core\\jit\\compiler\\Compiler.PhysicalPromotion.Replacements.cs", "sources\\Core\\jit\\compiler\\Compiler.PhysicalPromotion.Driver.cs", "sources\\Core\\jit\\promotion"],
-      "status": "Complete candidate/access gathering, profitability, replacement and remainder liveness, block/statement rewrite, init/copy decomposition and public phase dispatch. Native order, weighted arithmetic, dynamic-init readbacks, target-width address wrapping and diagnostics retained. Source724f91c executes three positive UTF8 and nine unchanged struct controls with matching phase algorithms and instruction slices; positive post-phase IR also matches. B322 validation-tail diagnostics remain separate. Native sources retained.",
+      "status": "Complete Windows-x64 candidate/access gathering, profitability, replacement and remainder liveness, block/statement rewrite, init/copy decomposition and public phase dispatch. Native order, weighted arithmetic, dynamic-init readbacks, target-width address wrapping and diagnostics retained. Source724f91c executes three positive UTF8 and nine unchanged struct controls with matching phase algorithms and instruction slices; positive post-phase IR also matches. B322 validation-tail diagnostics remain separate. Completed native implementations retired; DetermineRemainderStrategy and its result type remain for B382's missing 32-bit/SIMD-disabled selection gates.",
       "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     },
     {
@@ -7337,7 +7340,7 @@
       "area": "gdv-guard-resolution",
       "native": ["src\\coreclr\\jit\\fgopt.cpp:fgResolveGDVs", "src\\coreclr\\jit\\objectalloc.cpp:ObjectAllocator::IsGuard"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.GdvResolution.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.CloneViability.cs:IsGuard", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.EscapeAnalysis.cs:GuardInfo"],
-      "status": "Complete public resolver with existing guard recognition exposed internally, unchanged. Preserves method/local gates, compile-time class identity, EQ/NE edge selection, predecessor mutation order, profile repair and throwing relop retention. Instrumentation-batch OSR ownership correction enables positive native-matching interface/virtual resolution, the unresolved control and all 15 hot-tier bodies. Resolver retired from runtime-port; shared guard recognition awaits objectalloc residual reconciliation.",
+      "status": "Complete public resolver with existing guard recognition exposed internally, unchanged. Preserves method/local gates, compile-time class identity, EQ/NE edge selection, predecessor mutation order, profile repair and throwing relop retention. Instrumentation-batch OSR ownership correction enables positive native-matching interface/virtual resolution, the unresolved control and all 15 hot-tier bodies. Resolver and shared objectalloc guard recognition retired from runtime-port.",
       "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     },
     {
@@ -7521,7 +7524,7 @@
       "csharp": ["sources\\Core\\jit\\objectalloc\\ObjectAllocator.cs", "sources\\Core\\jit\\compiler\\Compiler.StackArrayExpansion.cs", "sources\\Core\\jit\\compiler\\Compiler.MorphInitBlockHelper.cs", "sources\\Core\\jit\\gentree\\GenTree.cs:BashToZeroConst"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete orchestration, repeated stack-array expansion and block-op remorphing. Threaded zero/store replacements preserve identity and links. Selected native-host execution, not general parity. Stack-array expansion implementations and associated declaration retired from runtime-port; objectalloc/morph support awaits residual reconciliation."
+      "status": "Complete orchestration, repeated stack-array expansion and block-op remorphing. Threaded zero/store replacements preserve identity and links. Selected native-host execution, not general parity. Stack-array expansion and objectalloc implementations retired from runtime-port; shared morph support awaits residual reconciliation."
     },
     {
       "area": "hardware-dispatch-and-gs-protection",
@@ -7537,7 +7540,7 @@
       "csharp": ["sources\\Core\\jit\\objectalloc\\ObjectAllocator.CloneTransformation.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.AllocationMorphing.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.StackAllocation.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.UseRewriting.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete native clone/morph/use prerequisites, includingbase-onlyNOP identity andunaryguard correction. Production stack allocation waits for phaseorchestration andrealEEvalidation."
+      "status": "Complete native clone/morph/use prerequisites, including base-only NOP identity and unary-guard correction. Production activation and real EE-backed execution followed in 359fc79e and checkpoint.objectAllocationEvidence; 5aaefb76 reconciled upstream object-allocation changes. Objectalloc implementations/header retired from runtime-port."
     },
     {
       "area": "hardware-platform-import-and-simd-constructors",
@@ -7617,7 +7620,7 @@
       "csharp": ["sources\\Core\\jit\\objectalloc\\ObjectAllocator.AllocationAnalysis.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.AllocationViability.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.ParentAnalysis.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.GuardedAnalysis.cs", "sources\\Core\\jit\\compiler\\Compiler.EHCloneMutation.cs", "sources\\Core\\jit\\compiler\\Compiler.EHCloneMappedTargets.cs", "sources\\Core\\jit\\block\\BasicBlock.CloneState.cs", "sources\\Core\\jit\\block\\BasicBlock.Complexity.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete site/alias/guard analysis, stack viability and generic EH-region cloning. Shared complexity counting preserves native callback ordering and unsigned slack. Object transformations/morphing are mapped separately; phase orchestration and real execution still gate production."
+      "status": "Complete site/alias/guard analysis, stack viability and generic EH-region cloning. Shared complexity counting preserves native callback ordering and unsigned slack. Production activation and scoped real execution are recorded separately. Objectalloc implementations retired from runtime-port; shared EH/block/optimizer support awaits residual reconciliation."
     },
     {
       "area": "hardware-import-prerequisites",
@@ -7633,7 +7636,7 @@
       "csharp": ["sources\\Core\\jit\\objectalloc\\ObjectAllocator.EscapeAnalysis.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.CloneViability.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.CloneRegionAnalysis.cs", "sources\\Core\\jit\\compiler\\Compiler.EHCloneFeasibility.cs"],
       "sourceCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
       "reconciledCommit": null,
-      "status": "Complete escape closure and clone viability. Subsequent site/alias analysis and generic EH cloning are mapped separately; object-specific transformations and stack/heap morphing still gate production."
+      "status": "Complete escape closure and clone viability. Subsequent site/alias analysis, transformations and production activation are recorded separately. Objectalloc implementations/header retired from runtime-port; shared EH support awaits residual reconciliation."
     },
     {
       "area": "post-allocation-loop-alignment",
@@ -8933,7 +8936,7 @@
       "native": ["src\\coreclr\\jit\\objectalloc.cpp", "src\\coreclr\\jit\\objectalloc.h"],
       "csharp": ["sources\\Core\\jit\\objectalloc\\ObjectAllocator.AnalysisState.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.ConnectionGraph.cs"],
       "reconciledCommit": null,
-      "scope": "Complete tracked/index/mark/edge helpers, PrepareAnalysis, ComputeConnGraphClosure and ComputeStackObjectPointers; escape discovery, clone viability and enabled stack allocation remain unported."
+      "scope": "Complete tracked/index/mark/edge helpers, PrepareAnalysis, ComputeConnGraphClosure and ComputeStackObjectPointers. Subsequent escape discovery, clone viability and enabled stack allocation are integrated and mapped separately. Objectalloc implementations/header retired from runtime-port."
     },
     {
       "area": "ssa-verification",
