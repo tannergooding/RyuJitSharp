@@ -16,6 +16,14 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "primaryIntegerVectorDivision": {
+      "scope": "Vector128/256/512 signed/unsigned 32/64-bit division, including exceptional lanes.",
+      "execution": "Default, AVX512-disabled and AVX-disabled primary pairs verify 7828 independent quotients and 126 per-lane zero/overflow exceptions in separate corpora. Each pair matches 36 raw slices/12 complete traces; six pairs total.",
+      "selection": "32-bit division uses native packed-double conversion/division/truncation plus exception guards; 64-bit division expands to scalar idiv/div.",
+      "sourceSnapshot": "b29587b3a92c4cca695fe9640b7ecc0a7cab4701",
+      "evidence": "artifacts/primary-vector-division/evidence.json",
+      "remaining": "Mixed exception precedence, other element widths and broader runtime coverage remain separate. No production change was necessary."
+    },
     "primaryFloatingVectorWidths": {
       "scope": "Vector128/256/512 double->float Narrow and float->double WidenLower/WidenUpper.",
       "execution": "Default, AVX512-disabled and AVX-disabled primary pairs verify 8568 finite/infinity/signed-zero lanes plus 3472 quiet/signaling-NaN payload lanes in separate corpora. Each pair matches 27 raw slices/nine complete traces; six pairs total.",
@@ -682,7 +690,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Integral and floating width conversions match default, AVX2 and legacy execution, including NaN payloads. Continue integral vector division with independently computed quotients. Native retirement worker continues larger evidence-based batches without re-auditing established ports.",
+      "parentScope": "B437 and the integral/floating width and division execution boundaries are complete. Await the native retirement worker's next concrete residual report to reconcile the ledger and select remaining Windows/shared implementation work. The worker continues larger evidence-based batches without re-auditing established ports.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1077,7 +1085,7 @@
         }
       ]
     },
-    "nextAction": "Floating vector widths now match all six default/AVX2/legacy finite and NaN pairs: 8568 finite and 3472 NaN lanes per configuration. Next execute fixed-width signed/unsigned32/64-bit vector division, using nonzero divisors and representable quotients computed independently with integer arithmetic. Reuse primary-vector-narrowing/jit-2 source b29587b3 and fresh corpus/reference; inspect native lowering rather than assuming packed hardware division. Retirement worker4b57b744 continues full catch-up in larger audit-trail-based batches; collect56+reports on notification. B153/D009, B365 and ARM64 foreground expansion deferred.",
+    "nextAction": "The current Windows execution boundaries are complete through vector division (7828 quotients and 126 lane exceptions per configuration, six exact capture pairs). Collect native-retirement worker4b57b744 report56+ on notification, reconcile only its new receipts/accounting, and resume from its concrete remaining Windows/shared source boundary. Do not repeat the completed numeric corpora or restart a broad semantic audit. Worker continues until fully caught up in larger audit-trail-based batches. Current primary JIT is primary-vector-narrowing/jit-2, source b29587b3. B153/D009, B365 and ARM64 foreground expansion remain deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
