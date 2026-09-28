@@ -73,7 +73,7 @@ internal static unsafe class ControlFlowGuardLoweringTests
     }
 
     [Test]
-    public static void VirtualStubCellsRequireValidationRatherThanDispatch()
+    public static void VirtualStubCellsRespectTargetDispatcherRestrictions()
     {
         WithCompiler((compiler, block, lowering) => {
             var call = new GenTreeCall(TYP_VOID) {
@@ -81,7 +81,14 @@ internal static unsafe class ControlFlowGuardLoweringTests
                 Flags = GTF_CALL_VIRT_STUB,
             };
             Assert.That(call.IndirectionCellArgKind, Is.EqualTo(WellKnownArg.VirtualStubCell));
-            Assert.That(GetCFGCallKind(lowering, call), Is.EqualTo("ValidateAndCall"));
+#if DEBUG
+            var expected = TargetArchitecture.IsArm64 && (JitConfig.JitCFGUseDispatcher == 1)
+                ? "Dispatch"
+                : "ValidateAndCall";
+#else
+            const string expected = "ValidateAndCall";
+#endif
+            Assert.That(GetCFGCallKind(lowering, call), Is.EqualTo(expected));
         });
     }
 
@@ -91,15 +98,18 @@ internal static unsafe class ControlFlowGuardLoweringTests
         WithCompiler((compiler, block, lowering) => {
             var call = new GenTreeCall(TYP_VOID) { _callType = CT_INDIRECT };
 #if DEBUG
-            var expected = Globals.JitConfig.JitCFGUseDispatcher == 0 ? "ValidateAndCall" : "Dispatch";
+            var dispatch = (JitConfig.JitCFGUseDispatcher == 1) ||
+                ((JitConfig.JitCFGUseDispatcher != 0) && TargetArchitecture.IsX64);
 #else
-            const string expected = "Dispatch";
+            var dispatch = TargetArchitecture.IsX64;
 #endif
             Assert.That(call.IndirectionCellArgKind, Is.EqualTo(WellKnownArg.None));
-            Assert.That(GetCFGCallKind(lowering, call), Is.EqualTo(expected));
+            Assert.That(GetCFGCallKind(lowering, call), Is.EqualTo(dispatch ? "Dispatch" : "ValidateAndCall"));
         });
     }
 
+#if TARGET_AMD64 || DEBUG
+    // ARM64 dispatch is only selectable through the Debug policy override.
     [Test]
     public static void DispatchMovesTargetIntoItsRegisterArgumentAndRewritesTheCall()
     {
@@ -136,6 +146,7 @@ internal static unsafe class ControlFlowGuardLoweringTests
 #endif
         }));
     }
+#endif
 
     [Test]
     public static void LateTargetArgumentAppendsAfterExistingLateArguments()
@@ -175,6 +186,7 @@ internal static unsafe class ControlFlowGuardLoweringTests
         return method.Invoke(lowering, [call])?.ToString() ?? throw new InvalidOperationException();
     }
 
+#if TARGET_AMD64 || DEBUG
     private static void WithDispatchPolicy(Action action)
     {
 #if DEBUG
@@ -192,6 +204,7 @@ internal static unsafe class ControlFlowGuardLoweringTests
         action();
 #endif
     }
+#endif
 
     private static void WithCompiler(Action<Compiler, BasicBlock, Lowering> action)
     {

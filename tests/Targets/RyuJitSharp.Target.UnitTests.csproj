@@ -16,4 +16,11 @@
     <Compile Include="..\Core\SysVX64ClassifierTests.cs" Link="SysVX64ClassifierTests.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-arm64')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-arm64')))">
+    <Compile Include="..\Core\ControlFlowGuardLoweringTests.cs" Link="ControlFlowGuardLoweringTests.cs" />
+    <Compile Include="..\Core\FastTailCallLoweringTests.cs" Link="FastTailCallLoweringTests.cs" />
+    <Compile Include="..\Core\PInvokeCallLoweringTests.cs" Link="PInvokeCallLoweringTests.cs" />
+    <Compile Include="..\Core\PInvokeFrameLoweringTests.cs" Link="PInvokeFrameLoweringTests.cs" />
+  </ItemGroup>
+
 </Project>

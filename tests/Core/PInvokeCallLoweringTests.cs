@@ -154,7 +154,8 @@ internal static unsafe class PInvokeCallLoweringTests
                 {
                     returnTraps++;
                     Assert.That(beforeCall, Is.False);
-                    Assert.That(node.AsUnOp().Op1.IsContained, Is.True);
+                    Assert.That(node.AsUnOp().Op1.IsContained,
+                        Is.EqualTo(TargetArchitecture.IsX64 || TargetArchitecture.IsX86));
                 }
             }
             Assert.Multiple(() => {
@@ -168,6 +169,110 @@ internal static unsafe class PInvokeCallLoweringTests
             });
         });
     }
+
+    [Test]
+    public static void HelperTransitionsLowerTheBeginCallBeforeTheUnmanagedCall()
+    {
+        WithCompiler((compiler, block, lowering, ee) => {
+            compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_USE_PINVOKE_HELPERS);
+            var call = NewPInvokeCall();
+            block.InsertAtEnd(call);
+
+            _ = LowerNonvirtPinvokeCall(lowering, call);
+
+            GenTreeCall? begin = null;
+            GenTreeCall? end = null;
+            var beforeCall = true;
+            for (var node = block.FirstNode; node is not null; node = node.Next)
+            {
+                if (node == call)
+                {
+                    beforeCall = false;
+                }
+                if (node is GenTreeCall helper && helper.IsHelperCall(CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_BEGIN))
+                {
+                    Assert.That(beforeCall, Is.True);
+                    Assert.That(begin, Is.Null);
+                    begin = helper;
+                }
+                if (node is GenTreeCall endHelper && endHelper.IsHelperCall(CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_END))
+                {
+                    Assert.That(beforeCall, Is.False);
+                    Assert.That(end, Is.Null);
+                    end = endHelper;
+                }
+            }
+            Assert.That(begin, Is.Not.Null);
+            Assert.That(end, Is.Not.Null);
+            assert(begin is not null);
+            assert(end is not null);
+            Assert.That(begin.Args.Head?.Node.Oper, Is.EqualTo(GT_PUTARG_REG));
+            Assert.That((nint)begin._directCallAddress, Is.EqualTo((nint)0x1110));
+            Assert.That(end.Args.Head?.Node.Oper, Is.EqualTo(GT_LCL_ADDR));
+        });
+    }
+
+#if SWIFT_SUPPORT
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void SwiftErrorConsumerMovesBeforeThePInvokeEpilog(bool suppressTransition)
+    {
+        WithCompiler((compiler, block, lowering, ee) => {
+            var call = NewPInvokeCall();
+            call._unmgdCallConv = CorInfoCallConvExtension.Swift;
+            if (suppressTransition)
+            {
+                call._callMoreFlags |= GTF_CALL_M_SUPPRESS_GC_TRANSITION;
+            }
+            var errorArgument = compiler.gtNewIconNode(TYP_I_IMPL, 0);
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(errorArgument).WithWellKnownArg(WellKnownArg.SwiftError));
+            var separator = new GenTree(GT_NO_OP, TYP_VOID);
+            var error = new GenTree(GT_SWIFT_ERROR, TYP_I_IMPL);
+            var successor = new GenTree(GT_NO_OP, TYP_VOID);
+            block.InsertAtEnd(errorArgument);
+            block.InsertAtEnd(call);
+            block.InsertAtEnd(separator);
+            block.InsertAtEnd(error);
+            block.InsertAtEnd(successor);
+
+            _ = LowerNonvirtPinvokeCall(lowering, call);
+
+            Assert.That(call.Next, Is.SameAs(error));
+            Assert.That(error.Prev, Is.SameAs(call));
+            Assert.That(separator.Next, Is.SameAs(successor));
+            Assert.That(block.LastNode, Is.SameAs(successor));
+            if (suppressTransition)
+            {
+                Assert.That(error.Next, Is.SameAs(separator));
+            }
+            else
+            {
+                Assert.That(error.Next?.Oper, Is.EqualTo(GT_LCL_VAR));
+                Assert.That(error.Next?.AsLclVar().LclNum, Is.EqualTo(compiler.info.compLvFrameListRoot));
+            }
+        });
+    }
+
+    [TestCase(false, false, false)]
+    [TestCase(false, true, false)]
+    [TestCase(true, false, false)]
+    [TestCase(true, true, true)]
+    public static void SwiftErrorHandlingRequiresBothTheCallingConventionAndArgument(
+        bool swift, bool errorArgument, bool expected)
+    {
+        WithCompiler((compiler, block, lowering, ee) => {
+            var call = NewPInvokeCall();
+            call._unmgdCallConv = swift ? CorInfoCallConvExtension.Swift : CorInfoCallConvExtension.C;
+            if (errorArgument)
+            {
+                var value = compiler.gtNewIconNode(TYP_I_IMPL, 0);
+                _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(value).WithWellKnownArg(WellKnownArg.SwiftError));
+            }
+
+            Assert.That(call.HasSwiftErrorHandling, Is.EqualTo(expected));
+        });
+    }
+#endif
 
     private static GenTreeCall NewPInvokeCall()
     {
@@ -194,6 +299,7 @@ internal static unsafe class PInvokeCallLoweringTests
         vtable.Base.getAddrOfCaptureThreadGlobal = &GetCaptureGlobal;
         vtable.Base.embedMethodHandle = &EmbedMethodHandle;
         vtable.Base.getAddressOfPInvokeTarget = &GetPInvokeTarget;
+        vtable.Base.getHelperFtn = &GetHelperFtn;
         TargetEE ee = new() {
             Interface = new ICorJitInfo { lpVtbl = &vtable },
             Target = 0x5678,
@@ -225,6 +331,7 @@ internal static unsafe class PInvokeCallLoweringTests
         {
             var block = new BasicBlock(null, null);
             block.MakeLir(null, null);
+            compiler.compCurBB = block;
             var lowering = new Lowering(compiler, new LinearScan(compiler));
             LoweringBlock(lowering) = block;
             action(compiler, block, lowering, &ee);
@@ -272,6 +379,15 @@ internal static unsafe class PInvokeCallLoweringTests
     {
         *indirection = null;
         return method;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void* GetHelperFtn(ICorJitInfo* self, CorInfoHelpFunc helper,
+        CORINFO_CONST_LOOKUP* lookup, CORINFO_METHOD_STRUCT_** method)
+    {
+        lookup->accessType = InfoAccessType.IAT_VALUE;
+        lookup->addr = (void*)0x1110;
+        return lookup->addr;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]

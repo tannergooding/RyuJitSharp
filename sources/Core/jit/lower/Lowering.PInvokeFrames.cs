@@ -9,8 +9,8 @@ public sealed partial class Lowering
 {
     private unsafe void InsertPInvokeMethodProlog()
     {
-#if !TARGET_AMD64
-        throw new System.NotImplementedException("P/Invoke method prolog lowering outside AMD64 is not ported.");
+#if !TARGET_AMD64 && !TARGET_ARM64
+        throw new System.NotImplementedException("P/Invoke method prolog lowering is not ported for this target.");
 #else
         var compiler = CompilerInstance;
         noway_assert(compiler.info.compUnmanagedCallCountWithGCTransition != 0);
@@ -85,8 +85,8 @@ public sealed partial class Lowering
 
     private unsafe void InsertPInvokeMethodEpilog(BasicBlock returnBlock, GenTree? lastExpr)
     {
-#if !TARGET_AMD64
-        throw new System.NotImplementedException("P/Invoke method epilog lowering outside AMD64 is not ported.");
+#if !TARGET_AMD64 && !TARGET_ARM64
+        throw new System.NotImplementedException("P/Invoke method epilog lowering is not ported for this target.");
 #else
         var compiler = CompilerInstance;
         assert(returnBlock is not null);

@@ -1397,7 +1397,13 @@ HFA/struct result normalization. Windows split arguments preserve ABI segments,
 early/late links and local/field-list ownership, including spills when fields
 overlap the register/stack boundary. The complete block-indirection split source
 still needs inactive `LowerRange`; it is not an execution-supported path.
-PInvoke, CFG, fast-tailcall and full phase activation remain separate.
+Private PInvoke frame/call transitions and fast-tailcall lowering now support
+ARM64, including inline/helper GC transitions, Swift error-consumer adjacency,
+defensive copies and profiler hooks. CFG uses ARM64's validate-by-default policy
+and xarch-only constant cloning; its validate-and-call path still needs general
+`LowerRange`, so full CFG/phase activation remains separate. SysV x64 defensive
+copies still encounter unported common local-store lowering; the new backend
+fixture links apply only to ARM64 and do not claim that SysV capability.
 
 `Lowering.TryCreateAddrMode` implements xarch address folding and interference
 checks. Other targets throw `NotImplementedException` pending their volatile,

@@ -68,7 +68,7 @@ public sealed partial class Lowering
 
     private unsafe void LowerCFGCall(GenTreeCall call)
     {
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
         assert(!call.IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL));
         if (call.IsHelperCall(CORINFO_HELP_VALIDATE_INDIRECT_CALL))
         {
@@ -90,7 +90,11 @@ public sealed partial class Lowering
             var putArg = cellArg.Node.AsUnOp();
             var cellUse = new LIR.Use(BlockRange(), ref putArg.Op1Ref, putArg);
 
+#if TARGET_XARCH
             const bool cloneConsts = true;
+#else
+            const bool cloneConsts = false;
+#endif
             // Native allocates this first clone before selecting the final clone below.
             var cellClone = CloneCFGUse(ref cellUse, cloneConsts);
             if ((cellUse.Def().Oper is GT_LCL_VAR) || (cloneConsts && cellUse.Def().Oper.IsCnsIntOrI))
@@ -190,7 +194,7 @@ public sealed partial class Lowering
             }
         }
 #else
-        throw new NotImplementedException("Control-flow-guard lowering outside AMD64 is not ported.");
+        throw new NotImplementedException("Control-flow-guard lowering is not ported for this target.");
 #endif
     }
 }

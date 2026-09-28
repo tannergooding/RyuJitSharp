@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: ARM64 call transitions
+
+Private ARM64 PInvoke lowering now preserves frame initialization and links,
+inline/helper GC transitions and return-trap containment. Swift error-register
+consumers move immediately after their calls, ahead of inserted epilogs.
+Fast tailcalls preserve defensive argument copies, non-GC boundaries and
+profiler-hook placement, including copied local diagnostic metadata.
+
+CFG follows native ARM64 dispatcher policy and avoids duplicating constant
+stub-cell addresses. Its validate-and-call transformation still requires the
+inactive general dispatcher. These target-policy results are not ARM64
+generated-code execution evidence.
+
 ## 2026-09-27: ARM64 calls and split arguments
 
 Private ARM64 call lowering now preserves the VM-backed direct-call range

@@ -60,6 +60,61 @@ internal static unsafe class PInvokeFrameLoweringTests
 
     [TestCase(false)]
     [TestCase(true)]
+    public static void InlineMethodPrologInitializesFrameAndSavesStackAndFramePointers(bool isILStub)
+    {
+        WithCompiler((compiler, block, lowering, ee) => {
+            if (isILStub)
+            {
+                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_IL_STUB);
+            }
+            var original = new GenTree(GT_NO_OP, TYP_VOID);
+            block.InsertAtEnd(original);
+            InsertPInvokeMethodProlog(lowering);
+
+            var rootStores = 0;
+            var stackPointerStores = 0;
+            var framePointerStores = 0;
+            var frameLinks = 0;
+            for (var node = block.FirstNode; node != original; node = node.Next)
+            {
+                assert(node is not null);
+                if (node.Oper is GT_STORE_LCL_VAR)
+                {
+                    var store = node.AsLclVar();
+                    Assert.That(store.LclNum, Is.EqualTo(compiler.info.compLvFrameListRoot));
+                    Assert.That(store.Data.AsCall().IsHelperCall(CorInfoHelpFunc.CORINFO_HELP_INIT_PINVOKE_FRAME), Is.True);
+                    rootStores++;
+                }
+                if (node.Oper is GT_STORE_LCL_FLD)
+                {
+                    var store = node.AsLclFld();
+                    if (store.LclOffs == 48)
+                    {
+                        Assert.That(store.Data.AsPhysReg().SrcReg, Is.EqualTo(REG_SPBASE));
+                        stackPointerStores++;
+                    }
+                    if (store.LclOffs == 56)
+                    {
+                        Assert.That(store.Data.AsPhysReg().SrcReg, Is.EqualTo(REG_FPBASE));
+                        framePointerStores++;
+                    }
+                }
+                if (node.Oper is GT_STOREIND)
+                {
+                    Assert.That(node.AsStoreInd().Addr.AsAddrMode().Offset, Is.EqualTo(16));
+                    frameLinks++;
+                }
+            }
+            Assert.That(rootStores, Is.EqualTo(1));
+            Assert.That(stackPointerStores, Is.EqualTo(1));
+            Assert.That(framePointerStores, Is.EqualTo(1));
+            Assert.That(frameLinks, Is.EqualTo(isILStub ? 1 : 0));
+            Assert.That(block.LastNode, Is.SameAs(original));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
     public static void MethodExitPopsOnlyILStubFrameAfterReturnOperands(bool isILStub)
     {
         WithCompiler((compiler, block, lowering, ee) => {
@@ -162,6 +217,7 @@ internal static unsafe class PInvokeFrameLoweringTests
             var block = new BasicBlock(null, null);
             block.MakeLir(null, null);
             compiler.fgFirstBB = block;
+            compiler.compCurBB = block;
             var lowering = new Lowering(compiler, new LinearScan(compiler));
             LoweringBlock(lowering) = block;
             action(compiler, block, lowering, &ee);

@@ -709,6 +709,11 @@ public sealed class GenTreeCall : GenTree
 
     public bool NormalizesSmallTypesOnReturn => UnmanagedCallConv is CorInfoCallConvExtension.Managed;
 
+#if SWIFT_SUPPORT
+    public bool HasSwiftErrorHandling => (UnmanagedCallConv is CorInfoCallConvExtension.Swift) &&
+        (Args.FindWellKnownArg(WellKnownArg.SwiftError) is not null);
+#endif
+
     /// <summary>The return type handle of the call if it is a struct; always available</summary>
     public unsafe CORINFO_CLASS_HANDLE RetClsHnd
     {

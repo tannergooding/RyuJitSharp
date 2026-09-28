@@ -12,7 +12,7 @@ public sealed partial class Lowering
 {
     private void LowerFastTailCall(GenTreeCall call)
     {
-#if FEATURE_FASTTAILCALL && TARGET_AMD64
+#if FEATURE_FASTTAILCALL && (TARGET_AMD64 || TARGET_ARM64)
         var compiler = CompilerInstance;
         assert((compiler.info.compFlags & CORINFO_FLG_SYNCH) == 0);
         assert(!compiler.opts.IsReversePInvoke);
@@ -112,11 +112,11 @@ public sealed partial class Lowering
             InsertProfTailCallHook(call, startNonGCNode);
         }
 #else
-        throw new NotImplementedException("Fast tailcall lowering outside AMD64 with FEATURE_FASTTAILCALL is not ported.");
+        throw new NotImplementedException("Fast tailcall lowering is not ported for this target.");
 #endif
     }
 
-#if FEATURE_FASTTAILCALL && TARGET_AMD64
+#if FEATURE_FASTTAILCALL && (TARGET_AMD64 || TARGET_ARM64)
     private static GenTree FirstNode(GenTree first, GenTree second)
         => ReferenceEquals(LIR.LastNode(first, second), first) ? second : first;
 
@@ -166,6 +166,9 @@ public sealed partial class Lowering
                 ref var tmpDsc = ref compiler.lvaGetDesc(tmpLclNum);
                 tmpDsc.Type = tmpType;
                 tmpDsc.lvDoNotEnregister = callerArgDsc.lvDoNotEnregister;
+#if DEBUG
+                tmpDsc.DoNotEnregisterReason = callerArgDsc.DoNotEnregisterReason;
+#endif
 
                 var value = compiler.gtNewLclvNode(tmpType, lclNum);
                 if (tmpType is TYP_STRUCT)
@@ -178,7 +181,11 @@ public sealed partial class Lowering
                 var store = compiler.gtNewStoreLclVarNode(tmpLclNum, value);
                 BlockRange().InsertBefore(insertTempBefore, LIR.SeqTree(compiler, store));
                 ContainCheckRange(value, store);
+#if TARGET_ARM64
+                _ = LowerStoreLocCommon(store);
+#else
                 _ = LowerNode(store);
+#endif
             }
 
             local.LclNum = tmpLclNum;

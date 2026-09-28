@@ -13,15 +13,15 @@
     "planApprovedAt": "2026-09-22",
     "workCadence": "User-directed: choose coherent type/feature/area-sized batches representing meaningful progression points; elapsed time is not a completion criterion. Write tests alongside the area, then build and run at its integration boundary and address concrete failures together. Do not default to per-helper test/build/NativeAOT/corpus/documentation cycles or stop at milestones. Reuse established unaffected evidence. Earlier builds are for concrete blockers, not routine micro-checkpoints. After handoff preserve this granularity instead of restarting with small diagnostic/fixture chores.",
     "activeBatch": {
-      "scope": "Complete private ARM64 call-lowering target paths, including direct/control targets, ordinary register/stack argument placement, Windows varargs split arguments and struct/HFA call-result handling.",
+      "scope": "Complete private ARM64 PInvoke and fast-tailcall transitions, including frame lifecycle, Swift error-consumer ordering, defensive argument copies and profiler hooks; reconcile CFG target policy while retaining its general-lowering boundary.",
       "status": "completed",
       "doneWhen": [
-        "Reconcile LowerCall, LowerArg and LowerCallStruct with complete native ARM64 target paths and native empty call containment.",
-        "Port complete SplitArgumentBetweenRegistersAndStack for Windows ARM64 varargs; preserve field/local/indirection representations, evaluation order and ABI segment ownership.",
-        "Validate Linux/Windows ARM64 managed target cases and Windows-x64 controls, commit locally and continue. General LowerRange/LowerNode, memory intrinsics, PInvoke/CFG/fast-tailcall target dependencies remain separately scoped and explicitly unsupported where unported."
+        "Reconcile whole PInvoke frame/call and fast-tailcall functions with pinned native ARM64 paths; retain explicit unsupported general morph/lowering dependencies.",
+        "Preserve Swift error-consumer adjacency after inserted epilogs, non-GC region boundaries, defensive-copy ownership and profiler-hook placement.",
+        "Validate reused cross-target transition fixtures and Windows-x64 controls, commit locally and continue. CFG ValidateAndCall still needs general LowerRange; do not enable general node/block/phase dispatch."
       ],
       "validation": [
-        "Full-analysis Linux-ARM64 and Windows-ARM64 Debug/Release targeted suites plus Windows-x64 call/argument controls. Focus on call targets, HFA result retyping and register/stack split identity and ordering; do not use an ARM64 execution claim.",
+        "Full-analysis Linux/Windows ARM64 Debug/Release managed target suites with existing PInvoke-frame, PInvoke-call and fast-tailcall fixtures; focused Windows-x64 transition/CFG/call controls. Add Swift ordering coverage and verify native ARM64 return-trap containment.",
         "Reuse unaffected Windows execution evidence from prerequisite commit ee71808. No Linux or ARM64 execution host is available; managed target tests are not runtime parity."
       ],
       "deferred": [
@@ -423,7 +423,20 @@
         }
       ]
     },
-    "nextAction": "Private ARM64 call and split-argument batch is validated. Continue with the remaining call-transition dependency closure: inspect LowerNonvirtPinvokeCall, LowerFastTailCall and LowerCFGCall target guards and their native ARM64 paths, then record the concrete coherent batch before editing. Keep block-indirection splits and field-list repacking at their explicit inactive LowerRange/LowerNode boundary; do not enable LowerNode/LowerBlock/DoPhase or publish.",
+    "nextAction": "Private ARM64 call-transition batch is validated. Continue toward general ARM64 node dispatch: compare LowerNode in Lowering.Traversal.cs with pinned lower.cpp, identify its remaining target-specific action blockers, and record the next coherent dependency batch before editing. CFG validator, block-indirection splitting and field-list repacking remain blocked by general LowerRange; hardware/mask containment and per-block pairing/FFR initialization remain explicit prerequisites. Do not activate LowerBlock/DoPhase or publish without completing those dependencies.",
+    "arm64CallTransitions": {
+      "scope": "Private ARM64 PInvoke frame/call transitions, native Swift error-consumer adjacency, fast-tailcall defensive copies/non-GC regions/profiler hooks and CFG target policy.",
+      "mapping": "lower.cpp:3043-3487,3617-3820,6755-7326 -> Lowering.ProfilerTailCalls.cs, Lowering.FastTailCalls.cs, Lowering.ControlFlowGuard.cs, Lowering.PInvokeFrames.cs and Lowering.PInvokeCalls.cs; gentree.h:5471-5476 -> GenTreeCall.HasSwiftErrorHandling.",
+      "validation": {
+        "linuxArm64": "653Debug/652Release: transitions-linux-arm64-debug-3.trx and transitions-linux-arm64-release-2.trx.",
+        "windowsArm64": "656Debug/655Release: transitions-win-arm64-debug-2.trx and transitions-win-arm64-release-2.trx. The one-case configuration difference is the native Debug-only ARM64 CFG dispatcher override, not an ignored failure.",
+        "windowsX64Controls": "74Debug/74Release: transitions-windows-debug-1.trx and transitions-windows-release-1.trx; PInvoke frame/call, fast-tailcall, CFG, call-dispatch and return fixtures.",
+        "regression": "Both Swift consumer-adjacency cases fail without the native reordering block: transitions-swift-negative-arm64.trx. Positive target suites include the restored block, helper-based GC transitions, frame initialization/SP/FP stores and defensive-copy diagnostic metadata.",
+        "fixtureScope": "The four new backend fixture links in Targets are ARM64-only; their original Core inclusion remains unchanged. A broader SysV probe exposed the pre-existing LowerStoreLocCommon NYI for defensive copies. The unchanged SysV target scope retains 102Debug/102Release: transitions-linux-x64-debug-2.trx and transitions-linux-x64-release-2.trx; this is not SysV tailcall coverage.",
+        "artifacts": "artifacts\\parallel-port; full analysis, nonzero complete positive runs with zero skips."
+      },
+      "limits": "CFG ValidateAndCall still reaches inactive general LowerRange/LowerNode; only target policy, direct/validator exclusions and Debug dispatcher transformation are exercised. General ARM64 node/block/phase dispatch, hardware/mask lowering, allocation/emission and generated-code execution remain unverified."
+    },
     "arm64CallsArguments": {
       "scope": "Private LowerCall, LowerArg and LowerCallStruct ARM64 entrypoints, native empty call containment and complete split-argument transformation source.",
       "mapping": "lower.cpp:1693-1910,2779-3005,6105-6200 -> Lowering.SplitArguments.cs, Lowering.CallArguments.cs, Lowering.CallLowering.cs and Lowering.StructCalls.cs; lowerarmarch.cpp:39-42,2699 -> Lowering.Calls.cs and Lowering.CallLowering.cs. instr.cpp:1885-1893 supplies the unconditional ARM64 call-range policy, with VM relocation stubs.",

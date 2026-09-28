@@ -76,7 +76,11 @@ public sealed partial class Lowering
             var helper = compiler.gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_JIT_PINVOKE_BEGIN, frameAddress);
             _ = compiler.fgMorphTree(helper);
             BlockRange().InsertBefore(insertionPoint, LIR.SeqTree(compiler, helper));
+#if TARGET_ARM64
+            _ = LowerCall(helper);
+#else
             _ = LowerNode(helper);
+#endif
             return;
         }
 
@@ -167,8 +171,8 @@ public sealed partial class Lowering
 
     private unsafe GenTree? LowerNonvirtPinvokeCall(GenTreeCall call)
     {
-#if !TARGET_AMD64
-        throw new NotImplementedException("Nonvirtual P/Invoke lowering outside AMD64 is not ported.");
+#if !TARGET_AMD64 && !TARGET_ARM64
+        throw new NotImplementedException("Nonvirtual P/Invoke lowering is not ported for this target.");
 #else
         var compiler = CompilerInstance;
         var needsTransition = !call.IsSuppressGCTransition;
@@ -239,6 +243,25 @@ public sealed partial class Lowering
         {
             InsertPInvokeCallEpilog(call);
         }
+
+#if SWIFT_SUPPORT
+        if (call.HasSwiftErrorHandling)
+        {
+            var swiftError = call.Next;
+            while ((swiftError is not null) && (swiftError.Oper is not GT_SWIFT_ERROR))
+            {
+                swiftError = swiftError.Next;
+            }
+            assert(swiftError is not null);
+            if (swiftError is null)
+            {
+                throw new InvalidOperationException("Swift call has no error-register consumer.");
+            }
+
+            BlockRange().Remove(swiftError);
+            BlockRange().InsertAfter(call, swiftError);
+        }
+#endif
         return result;
 #endif
     }

@@ -1,6 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_FASTTAILCALL && TARGET_AMD64
+#if FEATURE_FASTTAILCALL && (TARGET_AMD64 || TARGET_ARM64)
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -90,6 +90,7 @@ internal static unsafe class FastTailCallLoweringTests
             compiler.lvaTable = [new LclVarDsc(), new LclVarDsc(), new LclVarDsc()];
             compiler.lvaTable[0].Type = TYP_INT;
             compiler.lvaTable[0].lvIsParam = true;
+            compiler.lvaSetVarDoNotEnregister(0, DoNotEnregisterReason.LocalField);
             compiler.lvaParameterPassingInfo = [
                 AbiPassingInformation.FromSegment(compiler, false, AbiPassingSegment.OnStack(32, 0, 8)),
             ];
@@ -108,6 +109,10 @@ internal static unsafe class FastTailCallLoweringTests
             LowerFastTailCall(lowering, call);
 
             Assert.That(compiler.lvaCount, Is.EqualTo(2));
+            Assert.That(compiler.lvaTable[1].lvDoNotEnregister, Is.True);
+#if DEBUG
+            Assert.That(compiler.lvaTable[1].DoNotEnregisterReason, Is.EqualTo(DoNotEnregisterReason.LocalField));
+#endif
             Assert.That(laterUse.LclNum, Is.EqualTo(1));
             var savedValue = block.FirstNode!.AsLclVar();
             var store = savedValue.Next!.AsLclVarCommon();
