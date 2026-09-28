@@ -5,6 +5,7 @@
 
 using System;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
@@ -922,17 +923,18 @@ public sealed partial class ValueNumStore
                     var index = GetConstantInt32(arg1VN);
                     if ((uint)index < (uint)GenTreeVecCon.ElementCount(type.Size, baseType))
                     {
+                        if (varTypeIsFloating(baseType))
+                        {
+                            var element = baseType is TYP_FLOAT ? GetConstantSingle(arg2VN) : GetConstantDouble(arg2VN);
+                            return EvaluateSimdWithElementFloating(type, baseType, arg0VN, index, element);
+                        }
+
                         var vector = GetConstantSimd(arg0VN);
                         var result = new byte[type.Size];
                         vector.AsSpan<byte>()[..type.Size].CopyTo(result);
-                        var scalar = baseType is TYP_FLOAT
-                            ? VNForFloatCon(GetConstantSingle(arg2VN))
-                            : baseType is TYP_DOUBLE ? VNForDoubleCon(GetConstantDouble(arg2VN)) : arg2VN;
                         var value = baseType switch {
-                            TYP_FLOAT => BitConverter.GetBytes(GetConstantSingle(scalar)),
-                            TYP_DOUBLE => BitConverter.GetBytes(GetConstantDouble(scalar)),
-                            TYP_LONG or TYP_ULONG => BitConverter.GetBytes(GetConstantInt64(scalar)),
-                            _ => BitConverter.GetBytes(GetConstantInt32(scalar)),
+                            TYP_LONG or TYP_ULONG => BitConverter.GetBytes(GetConstantInt64(arg2VN)),
+                            _ => BitConverter.GetBytes(GetConstantInt32(arg2VN)),
                         };
                         value.AsSpan(0, baseType.Size).CopyTo(result.AsSpan(index * baseType.Size));
                         return VNForGenericCon(type, result);
@@ -968,6 +970,26 @@ public sealed partial class ValueNumStore
 
         return VNForFunc(type, func, arg0VN, arg1VN, arg2VN, resultTypeVN);
 #endif
+    }
+
+    // Keep the native double-valued call boundary: collapsing float -> double -> float
+    // to a copy would skip signaling-NaN quieting.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private ValueNum EvaluateSimdWithElementFloating(var_types simdType, var_types baseType,
+        ValueNum vectorVN, int index, double value)
+    {
+        assert(varTypeIsFloating(baseType));
+        assert(IsVNConstant(vectorVN));
+        assert(simdType == TypeOfVN(vectorVN));
+        assert((uint)index < (uint)GenTreeVecCon.ElementCount(simdType.Size, baseType));
+
+        var vector = GetConstantSimd(vectorVN);
+        var result = new byte[simdType.Size];
+        vector.AsSpan<byte>()[..simdType.Size].CopyTo(result);
+        var element = baseType is TYP_FLOAT ? BitConverter.GetBytes((float)value) : BitConverter.GetBytes(value);
+        element.CopyTo(result, index * baseType.Size);
+
+        return VNForGenericCon(simdType, result);
     }
 #endif
 #endif

@@ -253,6 +253,64 @@ internal static unsafe class ValueNumIntrinsicEvaluationTests
         });
     }
 
+    [TestCase(0x00000000u, 0x00000000u)]
+    [TestCase(0x80000000u, 0x80000000u)]
+    [TestCase(0x00000001u, 0x00000001u)]
+    [TestCase(0x80000001u, 0x80000001u)]
+    [TestCase(0x3F800000u, 0x3F800000u)]
+    [TestCase(0x7F800000u, 0x7F800000u)]
+    [TestCase(0xFF800000u, 0xFF800000u)]
+    [TestCase(0x7F800001u, 0x7FC00001u)]
+    [TestCase(0xFF800001u, 0xFFC00001u)]
+    [TestCase(0x7FA12345u, 0x7FE12345u)]
+    [TestCase(0xFFA12345u, 0xFFE12345u)]
+    [TestCase(0x7FC12345u, 0x7FC12345u)]
+    [TestCase(0xFFC12345u, 0xFFC12345u)]
+    public static void WithElementSinglePreservesNativeWideningAndNarrowing(uint input, uint expected)
+    {
+        WithStore(store => {
+            foreach (var type in new[] { TYP_SIMD8, TYP_SIMD12, TYP_SIMD16, TYP_SIMD32, TYP_SIMD64 })
+            {
+                AssertWithElementBits(store, type, TYP_FLOAT, BitConverter.GetBytes(input), BitConverter.GetBytes(expected));
+            }
+        });
+    }
+
+    [TestCase(0x0000000000000000ul)]
+    [TestCase(0x8000000000000000ul)]
+    [TestCase(0x7FF0000000000001ul)]
+    [TestCase(0xFFF0000000000001ul)]
+    [TestCase(0x7FF8123456789ABCul)]
+    [TestCase(0xFFF8123456789ABCul)]
+    public static void WithElementDoubleDoesNotIntroduceAConversion(ulong bits)
+    {
+        WithStore(store => {
+            var bytes = BitConverter.GetBytes(bits);
+            foreach (var type in new[] { TYP_SIMD16, TYP_SIMD32, TYP_SIMD64 })
+            {
+                AssertWithElementBits(store, type, TYP_DOUBLE, bytes, bytes);
+            }
+        });
+    }
+
+    private static void AssertWithElementBits(ValueNumStore store, var_types type, var_types baseType,
+        byte[] input, byte[] expectedElement)
+    {
+        var expected = new byte[type.Size];
+        expected.AsSpan().Fill(0xA5);
+        var vector = store.VNForGenericCon(type, expected);
+        var element = store.VNForGenericCon(baseType, input);
+        const int index = 1;
+        expectedElement.CopyTo(expected, index * baseType.Size);
+        var tree = new GenTreeHWIntrinsic(type, NI_Vector_WithElement, baseType, (byte)type.Size,
+            new GenTreeVecCon(type), new GenTreeLclVar(TYP_INT, 0), new GenTreeLclVar(baseType, 1));
+
+        var result = store.EvalHWIntrinsicFunTernary(tree, VNFunc.VNF_HWI_Vector_WithElement,
+            vector, store.VNForIntCon(index), element, store.VNForSimdType(type.Size, baseType));
+
+        Assert.That(store.GetConstantSimd(result).AsSpan<byte>()[..type.Size].ToArray(), Is.EqualTo(expected), $"{type}");
+    }
+
     private static void WithStore(Action<ValueNumStore> action, bool aot = false)
     {
 #if DEBUG

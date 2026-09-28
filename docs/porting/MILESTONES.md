@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: WithElement floating conversion semantics
+
+Constant float lane replacement now preserves native float-to-double-to-float
+conversion, including signaling-NaN quieting without changing sign or payload.
+A non-inlined double-valued helper prevents the managed JIT from eliminating
+the round trip. Double lanes remain bit-preserving, and untouched vector lanes
+are unchanged. Intrinsic VN coverage passes 40 Debug/40 Release cases, including
+four cases that fail with the original copy or optimized source casts.
+
+The pinned Checked `valuenum.cpp.obj` retains `CVTSS2SD` and `CVTPD2PS`.
+An MSVC `/O2 /fp:precise /arch:SSE4.2` probe using `_mm_cvtss_sd` followed by
+`_mm_cvtpd_ps` confirms the expected raw bits for the inputs in
+`ValueNumIntrinsicEvaluationTests.WithElementSinglePreservesNativeWideningAndNarrowing`.
+This is instruction-level native evidence plus managed evaluator coverage, not
+execution of the complete native VN helper or new generated-code parity.
+
 ## 2026-09-27: ARM64 optimizer target policies
 
 Range analysis now recognizes ARM64 leading-zero/sign-count bounds. CSE uses
