@@ -1138,7 +1138,6 @@ public partial class Compiler
                     var lclFld = tree.AsLclFld();
                     lclFld.Flags |= GTF_VAR_MOREUSES;
 
-                    assert(lclFld.Layout is not null);
                     copy = new GenTreeLclFld(
                         lclFld.Type,
                         lclFld.LclNum,

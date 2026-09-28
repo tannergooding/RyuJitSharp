@@ -16,6 +16,14 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "scalarFieldCloning": {
+      "scope": "B431: remove the unconditional layout assertion from GT_STORE_LCL_FLD cloning; retain GenTreeLclFld.Layout's struct-only invariant.",
+      "mapping": "gentree.cpp gtCloneExpr GT_STORE_LCL_FLD -> Compiler.gt.cs local gtCloneUnary helper. The separate gtCloneLclFld load helper was already correct.",
+      "validation": "Six scalar-store regression cases fail before the fix. Final clone/liveness coverage passes 45 Debug/45 Release, including 14 new scalar/struct load/store cases. Direct primary AssemblyName parsing verifies four versions and matches three raw tree slices and one instruction trace, without timeout or AltJIT.",
+      "sourceSnapshot": "65b0b3e4a5e0d49cd4c4b30ecab9eec5230b2894",
+      "evidence": "artifacts/primary-assembly-name/evidence.json",
+      "remaining": "Expand direct AssemblyName parser execution to attribute/escaping and invalid-input paths. No whole-dump or official-suite claim."
+    },
     "simdShiftMasks": {
       "scope": "B430: native scalar all-bits storage, logical constant qword mask shifts and side-effect refresh after variable-count rewriting.",
       "mapping": "gentree.cpp gtNewAllBitsSetConNode and xarch shift branch of gtNewSimdBinOpNode -> Compiler.gt.cs.",
@@ -23,7 +31,7 @@
       "validation": "545 Debug/541 Release full-analysis cases. Corrected primary JIT passes908lane checks with actual AVX512 disabled and matches21raw phase slices/seven instruction traces. The38-case pinned operand-order corpus now matches all117raw slices/39instruction traces. No normalization, timeout or AltJIT.",
       "sourceSnapshot": "744ead45e34a154259c38e8394fff237566ef241",
       "evidence": "artifacts/primary-simd-shifts/evidence.json. The pin's disabling control is DOTNET_EnableAVX512=0, confirmed by AVX512F=False.",
-      "remaining": "B431 scalar-local-field cloning assertion during exception reporting remains a distinct primary failure. No whole-dump, official-suite or exhaustive Windows claim."
+      "remaining": "The subsequent scalarFieldCloning checkpoint closes B431. No whole-dump, official-suite or exhaustive Windows claim."
     },
     "vectorMemoryAddressCasts": {
       "scope": "B429: use the unary cast representation when vector loads/stores unwrap byref address casts.",
@@ -563,7 +571,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "B430 is validated and its raw arithmetic/operand-order comparisons match. Continue B431: reproduce primary compilation of AssemblyNameParser.TryParseVersion directly, then compare gtCloneLclFld's scalar-versus-struct layout handling with the pinned oracle. Fix the complete clone contract and validate the original parser failure without relying on an unrelated arithmetic exception. Worker idle; keep target/backend expansions separate.",
+      "parentScope": "B431 is validated with direct parser execution and raw tree/instruction equality. Expand that concrete primary boundary to AssemblyNameParser attribute/escaping and invalid-input paths using pinned library test cases. Worker idle; keep target/backend expansions separate.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -958,7 +966,7 @@
         }
       ]
     },
-    "nextAction": "B430 is verified:545Debug/541Release,908primary arithmetic lane checks, exact21tree slices/seven traces plus all117slices/39traces for the operand-order corpus. Next B431: inspect Compiler.gt.cs gtCloneLclFld near1141 against native gentree.cpp. Primary compilation of System.Reflection.AssemblyNameParser.TryParseVersion aborted during Clone loops at lclFld.Layout is not null; original evidence artifacts/primary-simd-shifts/before-2/managed-1. Build a small direct AssemblyName parsing probe using the existing primary corpus pattern and current744ead45 JIT, so reproduction does not depend on an arithmetic failure. Preserve scalar field offsets/types/SSA/debug identity while requiring layouts only where native does; use existing clone fixtures and fresh primary evidence, then commit. Worker idle; B153/D009, B365 and ARM64 foreground expansion deferred.",
+    "nextAction": "B431 is verified:45Debug/45Release, direct four-version parser primary execution, exact three raw slices/one instruction trace. Expand AssemblyNameParser execution to attributes, escaping and invalid-input handling using pinned library test cases, in a fresh corpus directory without altering B431 anchors. Select System.Reflection.AssemblyNameParser:* and inspect actual target exit codes/completed bodies; use the current65b0b3e4 JIT. Follow the first concrete discrepancy, or record the verified boundary if equal. Worker idle; B153/D009, B365 and ARM64 foreground expansion deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

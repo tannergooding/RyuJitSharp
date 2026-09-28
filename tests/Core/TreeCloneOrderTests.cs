@@ -1,6 +1,8 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.GenTreeFlags;
@@ -11,6 +13,82 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class TreeCloneOrderTests
 {
+    private static int s_assertionCount;
+
+    [Test]
+    public static void LocalFieldClonesPreserveOptionalLayout(
+        [Values(TYP_INT, TYP_LONG, TYP_FLOAT, TYP_DOUBLE, TYP_REF, TYP_BYREF, TYP_STRUCT)] var_types type,
+        [Values(false, true)] bool store)
+    {
+        SsaLivenessTests.WithCompiler(2, compiler => {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.doAssert = &RecordAssertion;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+#if DEBUG
+            using var tls = new JitTls(&jitInfo);
+            JitTls.LogEnv.Compiler = compiler;
+            compiler.info.compFullName = nameof(LocalFieldClonesPreserveOptionalLayout);
+#endif
+            JitTls.Compiler = compiler;
+            s_assertionCount = 0;
+            var layout = type is TYP_STRUCT ? new ClassLayout(16) : null;
+            GenTreeLclFld original;
+            if (store)
+            {
+                GenTree value = type is TYP_STRUCT
+                    ? new GenTreeLclFld(GT_LCL_FLD, type, 1, 0, layout)
+                    : new GenTreeLclVar(type, 1);
+                original = new GenTreeLclFld(type, 0, 4, value, layout);
+            }
+            else
+            {
+                original = new GenTreeLclFld(GT_LCL_FLD, type, 0, 4, layout) {
+                    SsaNum = 7,
+                };
+            }
+            original.Flags |= GTF_DONT_CSE;
+            original._vnPair = new ValueNumPair(123, 456);
+            original.SetCosts(7, 11);
+#if DEBUG
+            var nextId = compiler.compGenTreeID;
+#endif
+
+            var copy = compiler.gtCloneExpr(original).AsLclFld();
+
+            Assert.That(copy, Is.Not.SameAs(original));
+            Assert.That(copy.Oper, Is.EqualTo(original.Oper));
+            Assert.That(copy.Type, Is.EqualTo(type));
+            Assert.That(copy.LclNum, Is.EqualTo(0));
+            Assert.That(copy.LclOffs, Is.EqualTo(4));
+            Assert.That(copy.Layout, Is.SameAs(layout));
+            Assert.That(copy.SsaNum, Is.EqualTo(original.SsaNum));
+            Assert.That(copy.Flags, Is.EqualTo(original.Flags));
+            Assert.That(copy.Flags & GTF_VAR_MOREUSES, Is.EqualTo(GTF_VAR_MOREUSES));
+            Assert.That(copy._vnPair, Is.EqualTo(original._vnPair));
+            Assert.That(copy.CostEx, Is.EqualTo(7));
+            Assert.That(copy.CostSz, Is.EqualTo(11));
+            Assert.That(s_assertionCount, Is.Zero);
+#if DEBUG
+            Assert.That(copy.TreeId, Is.EqualTo(nextId));
+#endif
+            if (store)
+            {
+                Assert.That(copy.Data, Is.Not.SameAs(original.Data));
+                Assert.That(copy.Data.Type, Is.EqualTo(type));
+#if DEBUG
+                Assert.That(copy.Data.TreeId, Is.EqualTo(nextId + 1));
+#endif
+            }
+        });
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
+    {
+        s_assertionCount++;
+        return 0;
+    }
+
     [TestCase(false, false, TYP_INT)]
     [TestCase(false, true, TYP_INT)]
     [TestCase(true, false, TYP_INT)]
