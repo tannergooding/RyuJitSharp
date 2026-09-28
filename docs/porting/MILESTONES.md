@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Primary class profiling and selected value profiling execute
+
+Interface and virtual dispatch now run with actual class-profile probes under
+the managed primary JIT. All five selected Tier0 instruction streams match
+native. The profiled callers' morph/cost trees differ only at their raw
+profile-buffer addresses; these remain visible rather than normalized away.
+
+The corrected JIT also executes both optimized Copy/Equal value-probe bodies
+through the established selected-method path, with native-equal probe counts
+and instruction streams. This does not close the separate primary-JIT timing
+boundary: that fixed-duration program still exits before the selected managed
+instrumented Tier1 bodies appear.
+
+Evidence: `checkpoint.primaryClassProfiles` and `checkpoint.primaryPgoImport`.
+
 ## 2026-09-28: Primary tiered-PGO startup no longer crashes
 
 Profile-guided call specialization now rebinds the selected argument edge rather
