@@ -16,6 +16,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Native remainder reconciliation
+
+The remaining-work view is reconciled through native cleanup commit `8f39f402`,
+covering another 28 JIT files and 4690 removed lines of completed ABI, lowering,
+LSRA, emitter and codegen support. Six restored lines preserve the complete
+retained `LowerCFGCall` switch; that function matches the pinned oracle.
+The residual tree is clean atop the pin and the oracle source remains unchanged.
+Mixed-target/mode functions and unclassified backend areas remain; this is
+source-work tracking, not a new execution or parity result.
+
 ## 2026-09-28: SysV call orchestration
 
 SysV AMD64 call generation now places scalar and multireg field-list arguments,
