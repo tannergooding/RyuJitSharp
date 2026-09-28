@@ -16,7 +16,7 @@ public sealed partial class LinearScan
             throw new FatalJitException("Minimal interval construction cannot run with enregistered locals.");
         }
 
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
         JITDUMP("\nbuildIntervals ========\n");
         buildPhysRegRecords();
 
@@ -42,7 +42,9 @@ public sealed partial class LinearScan
         resetRegStateMinimal();
         identifyCandidatesMinimal();
         setFrameType();
+#if TARGET_AMD64
         _lowGprRegs = _availableIntRegs & SRBM_LOWINT;
+#endif
 
 #if DEBUG
         if (VERBOSE)
@@ -130,9 +132,26 @@ public sealed partial class LinearScan
 
             if (_compiler.compShouldPoisonFrame() && (block == _compiler.fgFirstBB))
             {
+#if TARGET_ARM64
+                var poisonKills = _compiler.compHelperCallKillSet(CORINFO_HELP_NATIVE_MEMSET);
+                poisonKills |= regMaskTP.CreateFromRegNum(REG_SCRATCH, genSingleTypeRegMask(REG_SCRATCH));
+                _ = addKillForRegs(poisonKills, _referenceBuildLocation + 1);
+#else
                 _ = addKillForRegs(RBM_EDI | RBM_ECX | RBM_EAX, _referenceBuildLocation + 1);
+#endif
                 _referenceBuildLocation += 2;
             }
+
+#if TARGET_ARM64
+            if (_compiler.compUsesUnknownSizeFrame && (block == _compiler.fgFirstBB))
+            {
+                var frameKills = regMaskTP.CreateFromRegNum(REG_SCRATCH, genSingleTypeRegMask(REG_SCRATCH));
+                frameKills |= regMaskTP.CreateFromRegNum(REG_SCRATCH_V, genSingleTypeRegMask(REG_SCRATCH_V));
+                frameKills |= regMaskTP.CreateFromRegNum(REG_SCRATCH_P, genSingleTypeRegMask(REG_SCRATCH_P));
+                _ = addKillForRegs(frameKills, _referenceBuildLocation + 1);
+                _referenceBuildLocation += 2;
+            }
+#endif
 
             foreach (var node in block)
             {

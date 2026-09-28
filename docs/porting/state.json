@@ -622,7 +622,17 @@
         }
       ]
     },
-    "nextAction": "Continue without stopping at milestones. SysV incoming-parameter homing is integrated; next complete final frame layout/genFinalizeFrame and their root-prolog dependency closure before enabling materialization. Keep B395 NativeAOT CFI rejection. ARM64 allocator packet remains incomplete and unstaged; existing agent continues buildNode/hardware requirements/traversal before integration. Native cleanup continues to a full already-completed-code cleanup boundary, retaining genuine target/mode gaps but not complete bodies merely referenced by unfinished callers. Last collected cleanup commit 51acbd970aede4b17d4262dfcf13bc37c940056f; preserve oracle/recovery refs and notify the user when full cleanup is established.",
+    "nextAction": "Continue without stopping at milestones. ARM64 construction is integrated with exact reference ordering, intrinsic constraints, contained block addresses and GS-cookie call dependencies. Continue consecutive-register selection/assignment and the remaining allocation/resolution dependency closure with the existing agent; preserve the allocation gate until complete. SysV agent continues final frame layout/genFinalizeFrame and root-prolog dependencies; retain B395 NativeAOT CFI rejection. Native cleanup continues to a full already-completed-code cleanup boundary, retaining genuine target/mode gaps but not complete bodies merely referenced by unfinished callers. Last collected cleanup commit 51acbd970aede4b17d4262dfcf13bc37c940056f; preserve oracle/recovery refs and notify the user when full cleanup is established.",
+    "arm64AllocatorConstruction": {
+      "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
+      "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
+      "validation": {
+        "linuxArm64": "810 Debug/809 Release unfiltered managed target cases, host RID win-x64 and target RID linux-arm64, full analysis; artifacts/arm64-allocator/tst/{Debug,Release}, final TRX timestamps 22_45_38 and 22_46_40.",
+        "windowsControls": "758 Debug/652 Release with FullyQualifiedName~LinearScan|FullyQualifiedName~HWIntrinsic, full analysis; artifacts/arm64-allocator-windows/tst/{Debug,Release}, final TRX timestamps 22_45_43 and 22_46_41.",
+        "coverage": "Thirty construction fixture cases include CKFINITE reference ordering, contained block bases, indexed/predicate constraints, consecutive definitions, embedded FMA, dynamic immediates, call kills and GS-cookie tailcall scratch exclusion. All selected tests executed and passed."
+      },
+      "remaining": "Consecutive-register selection/assignment, full allocation and resolution remain gated. Scalable vector constant encoding and ARM64 async-continuation return-register handling fail explicitly. No ARM64 cookie emission or target execution/parity claim."
+    },
     "arm64BlockAndSwitchLowering": {
       "scope": "ARM64 LowerBlock candidate/FFR initialization, LowerSwitch and TryLowerSwitchToBitTest.",
       "mapping": "lower.cpp block/switch lowering -> Lowering.BlockTraversal.cs and Lowering.Switches.cs, preserving ARM64 shift/AND/branch construction.",

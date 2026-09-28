@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: ARM64 register-reference construction
+
+ARM64 LSRA now constructs node references for scalar, memory, atomic, call and
+hardware-intrinsic operations, including consecutive vector-register chains,
+partial-vector restores, predicate restrictions and embedded masked operations.
+Call constraints preserve predicate kills and reserve the native GS-cookie
+scratch registers for fast tailcalls. Reference ordering and contained block
+address handling follow the pinned native builders.
+
+The unfiltered Linux-ARM64 managed target suite passes 810 Debug/809 Release
+cases; Windows LSRA/hardware-intrinsic controls pass 758 Debug/652 Release.
+These are construction and cross-target policy checks, not ARM64 execution.
+Consecutive-register selection/assignment, allocation and resolution remain
+gated. Scalable vector constants and the undefined ARM64 async-continuation
+return register remain explicit failures; cookie emission is not enabled.
+
 ## 2026-09-27: SysV incoming-parameter homing
 
 Register and stack argument homing now handles SysV segments, including the

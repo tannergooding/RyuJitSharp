@@ -175,6 +175,147 @@ public sealed partial class LinearScan
         buildInternalRegisterUses();
         buildKills(block, getKillSetForBlockStore(block));
         return useCount;
+#elif TARGET_ARM64
+        var destinationAddress = block.Addr;
+        var source = block.Data;
+        var size = block.Size;
+        GenTree? sourceAddressOrFill = null;
+
+        if (block.IsInitBlkOp)
+        {
+            if (source.Oper is GT_INIT_VAL)
+            {
+                assert(source.IsContained);
+                source = source.AsUnOp().Op1;
+            }
+
+            sourceAddressOrFill = source;
+            switch (block._kind)
+            {
+                case GenTreeBlk.BlkOpKindUnroll:
+                {
+                    if (destinationAddress.IsContained)
+                    {
+                        _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
+                    }
+
+                    if (size > 16)
+                    {
+                        _ = buildInternalFloatRegisterDefForNode(block, internalFloatRegCandidates());
+                    }
+
+                    break;
+                }
+
+                case GenTreeBlk.BlkOpKindLoop:
+                {
+                    _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
+                    break;
+                }
+
+                default:
+                {
+                    throw new FatalJitException($"Unsupported ARM64 initialization block kind {block._kind}.");
+                }
+            }
+        }
+        else
+        {
+            if (source.Oper is GT_IND)
+            {
+                assert(source.IsContained);
+                sourceAddressOrFill = source.AsIndir().Addr;
+            }
+
+            switch (block._kind)
+            {
+                case GenTreeBlk.BlkOpKindUnroll:
+                {
+                    _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
+                    if (size >= (2 * REGSIZE_BYTES))
+                    {
+                        _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
+                    }
+
+                    if (size >= 32)
+                    {
+                        _ = buildInternalFloatRegisterDefForNode(block, internalFloatRegCandidates());
+                        _ = buildInternalFloatRegisterDefForNode(block, internalFloatRegCandidates());
+                    }
+
+                    var sourceIsLocal = source.Oper is GT_LCL_VAR or GT_LCL_FLD ||
+                        ((sourceAddressOrFill is not null) && (sourceAddressOrFill.Oper is GT_LCL_ADDR));
+                    var destinationIsLocal = destinationAddress.Oper is GT_LCL_ADDR;
+                    if ((sourceIsLocal || (sourceAddressOrFill?.IsContained is true)) &&
+                        (destinationIsLocal || destinationAddress.IsContained))
+                    {
+                        _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
+                    }
+
+                    break;
+                }
+
+                case GenTreeBlk.BlkOpKindUnrollMemmove:
+                {
+                    assert(size > 0);
+                    if (size >= 16)
+                    {
+                        var registerCount = (size + 15) / 16;
+                        for (var index = 0; index < registerCount; index++)
+                        {
+                            _ = buildInternalFloatRegisterDefForNode(block, internalFloatRegCandidates());
+                        }
+                    }
+                    else
+                    {
+                        var registerCount = uint.IsPow2(size) ? 1 : 2;
+                        for (var index = 0; index < registerCount; index++)
+                        {
+                            _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
+                        }
+                    }
+
+                    break;
+                }
+
+                default:
+                {
+                    throw new FatalJitException($"Unsupported ARM64 copy block kind {block._kind}.");
+                }
+            }
+        }
+
+        var useCount = 0;
+        if (!destinationAddress.IsContained)
+        {
+            _ = buildUse(destinationAddress);
+            useCount++;
+        }
+        else if (destinationAddress.Oper.IsAddrMode)
+        {
+            var baseAddress = destinationAddress.AsAddrMode().BaseAddress
+                ?? throw new FatalJitException("Contained ARM64 block destination requires a base address.");
+            useCount += buildAddrUses(baseAddress);
+        }
+
+        if (sourceAddressOrFill is not null)
+        {
+            if (!sourceAddressOrFill.IsContained)
+            {
+                _ = buildUse(sourceAddressOrFill);
+                useCount++;
+            }
+            else if (sourceAddressOrFill.Oper.IsAddrMode)
+            {
+                var baseAddress = sourceAddressOrFill.AsAddrMode().BaseAddress
+                    ?? throw new FatalJitException("Contained ARM64 block source requires a base address.");
+                useCount += buildAddrUses(baseAddress);
+            }
+        }
+
+        buildInternalRegisterUses();
+        buildKills(block, getKillSetForBlockStore(block));
+        return useCount;
 #else
         NYI("LinearScan.buildBlockStore outside AMD64");
         throw new FatalJitException("LinearScan.buildBlockStore outside AMD64.");
@@ -249,6 +390,55 @@ public sealed partial class LinearScan
         }
 
         var sourceCount = buildOperandUses(source);
+        buildInternalRegisterUses();
+        return sourceCount;
+#elif TARGET_ARM64
+        var source = argument.Op1;
+        var sourceCount = 0;
+        if (source.Type is TYP_STRUCT)
+        {
+            if (source.Oper is GT_FIELD_LIST)
+            {
+                assert(source.IsContained);
+                foreach (var field in source.AsFieldList().Uses)
+                {
+                    _ = buildUse(field.Node);
+                    sourceCount++;
+#if FEATURE_SIMD
+                    if (field.Type is TYP_SIMD12)
+                    {
+                        _ = buildInternalIntRegisterDefForNode(field.Node, _availableIntRegs);
+                    }
+#endif
+                }
+            }
+            else
+            {
+                _ = buildInternalIntRegisterDefForNode(argument, _availableIntRegs);
+                _ = buildInternalIntRegisterDefForNode(argument, _availableIntRegs);
+                assert(source.IsContained);
+                if (source.Oper is GT_BLK)
+                {
+                    sourceCount = buildOperandUses(source.AsBlk().Addr);
+                }
+                else
+                {
+                    assert(source.Oper is GT_LCL_VAR or GT_LCL_FLD);
+                }
+            }
+        }
+        else
+        {
+            assert(!source.IsContained);
+            sourceCount = buildOperandUses(source);
+#if FEATURE_SIMD
+            if (compAppleArm64Abi() && (argument.StackByteSize is 12))
+            {
+                _ = buildInternalIntRegisterDefForNode(argument, _availableIntRegs);
+            }
+#endif
+        }
+
         buildInternalRegisterUses();
         return sourceCount;
 #else

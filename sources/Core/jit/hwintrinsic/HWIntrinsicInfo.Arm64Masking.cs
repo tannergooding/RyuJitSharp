@@ -14,6 +14,21 @@ public readonly partial struct HWIntrinsicInfo
     public static bool IsEmbeddedMaskedOperation(NamedIntrinsic id) =>
         (lookupFlags(id) & HW_Flag_EmbeddedMaskedOperation) != 0;
 
+    public static bool IsExplicitMaskedOperation(NamedIntrinsic id) =>
+        (lookupFlags(id) & HW_Flag_ExplicitMaskedOperation) != 0;
+
+    public static bool IsOptionalEmbeddedMaskedOperation(NamedIntrinsic id) =>
+        (lookupFlags(id) & HW_Flag_OptionalEmbeddedMaskedOperation) != 0;
+
+    public static bool IsLowMaskedOperation(NamedIntrinsic id) =>
+        (lookupFlags(id) & HW_Flag_LowMaskedOperation) != 0;
+
+    public static bool IsLowVectorOperation(NamedIntrinsic id) =>
+        (lookupFlags(id) & HW_Flag_LowVectorOperation) != 0;
+
+    public static bool NeedsConsecutiveRegisters(NamedIntrinsic id) =>
+        (lookupFlags(id) & HW_Flag_NeedsConsecutiveRegisters) != 0;
+
     public static bool IsZeroingMaskedOperation(NamedIntrinsic id) =>
         (lookupFlags(id) & HW_Flag_ZeroingMaskedOperation) != 0;
 

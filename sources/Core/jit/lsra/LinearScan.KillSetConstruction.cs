@@ -10,7 +10,7 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp;
 
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
 public sealed partial class LinearScan
 {
     private regMaskTP getKillSetForStoreInd(GenTreeStoreInd tree)
@@ -37,6 +37,7 @@ public sealed partial class LinearScan
         return _compiler.compHelperCallKillSet(helper);
     }
 
+#if TARGET_AMD64
     private regMaskTP getKillSetForShiftRotate(GenTreeOp shiftNode)
     {
         assert(shiftNode.Oper.IsShiftOrRotate);
@@ -72,6 +73,7 @@ public sealed partial class LinearScan
             ? new regMaskTP(SRBM_RAX | SRBM_RDX)
             : new regMaskTP(SRBM_NONE);
     }
+#endif
 
     private regMaskTP getKillSetForCall(GenTreeCall call)
     {
@@ -84,10 +86,15 @@ public sealed partial class LinearScan
         if (!_needToKillFloatRegisters)
         {
             assert(!_compiler.compFloatingPointUsed || !_enregisterLocalVars);
+#if TARGET_ARM64
+            killMask = removeRegisterSets(killMask, SRBM_NONE, SRBM_FLT_CALLEE_TRASH,
+                SRBM_NONE);
+#else
             var codeGen = _compiler.codeGen
                 ?? throw new FatalJitException("Call kill-set construction requires initialized CodeGen.");
             killMask = removeRegisterSets(killMask, SRBM_NONE, codeGen.SRBM_FLT_CALLEE_TRASH,
                 codeGen.SRBM_MSK_CALLEE_TRASH);
+#endif
         }
 
         if (call.IsVirtualStub)
@@ -140,7 +147,7 @@ public sealed partial class LinearScan
             ? _compiler.compHelperCallKillSet(CORINFO_HELP_PROF_FCN_TAILCALL)
             : new regMaskTP(SRBM_NONE);
 
-#if DEBUG
+#if DEBUG && (TARGET_AMD64 || TARGET_ARM64)
     private regMaskTP getKillSetForNode(GenTree tree)
     {
         var killMask = new regMaskTP(SRBM_NONE);
@@ -151,11 +158,13 @@ public sealed partial class LinearScan
             case GT_RSZ:
             case GT_ROL:
             case GT_ROR:
+#if TARGET_AMD64
 #if TARGET_X86
             case GT_LSH_HI:
             case GT_RSH_LO:
 #endif
                 killMask = getKillSetForShiftRotate(tree.AsOp());
+#endif
                 break;
 
             case GT_MUL:
@@ -163,14 +172,18 @@ public sealed partial class LinearScan
 #if !TARGET_64BIT || TARGET_ARM64
             case GT_MUL_LONG:
 #endif
+#if TARGET_AMD64
                 killMask = getKillSetForMul(tree.AsOp());
+#endif
                 break;
 
             case GT_MOD:
             case GT_DIV:
             case GT_UMOD:
             case GT_UDIV:
+#if TARGET_AMD64
                 killMask = getKillSetForModDiv(tree.AsOp());
+#endif
                 break;
 
             case GT_STORE_BLK:
@@ -226,6 +239,9 @@ public sealed partial class LinearScan
 
     private regMaskTP getCalleeTrashKillMask()
     {
+#if TARGET_ARM64
+        return SRBM_CALLEE_TRASH;
+#else
         var codeGen = _compiler.codeGen
             ?? throw new FatalJitException("Call kill-set construction requires initialized CodeGen.");
 #if HAS_MORE_THAN_64_REGISTERS
@@ -234,6 +250,7 @@ public sealed partial class LinearScan
 #else
         return new regMaskTP(codeGen.SRBM_INT_CALLEE_TRASH | codeGen.SRBM_FLT_CALLEE_TRASH |
             codeGen.SRBM_MSK_CALLEE_TRASH);
+#endif
 #endif
     }
 

@@ -36,6 +36,11 @@ public sealed partial class LinearScan
         buildInternalRegisterUses();
         _ = buildDef(cast, SRBM_NONE);
         return srcCount;
+#elif TARGET_ARM64
+        var sourceCount = buildCastUses(cast, SRBM_NONE);
+        buildInternalRegisterUses();
+        _ = buildDef(cast, SRBM_NONE);
+        return sourceCount;
 #else
         NYI("LinearScan.buildCast outside AMD64");
         throw new FatalJitException("LinearScan.buildCast outside AMD64.");
@@ -136,6 +141,55 @@ public sealed partial class LinearScan
 
         _ = buildDef(tree, SRBM_NONE);
         return srcCount;
+#elif TARGET_ARM64
+        var intrinsic = tree.AsIntrinsic();
+        var operand = intrinsic.Op1;
+        int sourceCount;
+        switch (intrinsic.IntrinsicName)
+        {
+            case NI_System_Math_Abs:
+            case NI_System_Math_Ceiling:
+            case NI_System_Math_Floor:
+            case NI_System_Math_Truncate:
+            case NI_System_Math_Round:
+            case NI_System_Math_Sqrt:
+            {
+                assert(varTypeIsFloating(operand.Type) && (operand.Type == tree.Type));
+                _ = buildUse(operand);
+                sourceCount = 1;
+                break;
+            }
+
+            case NI_PRIMITIVE_PopCount:
+            {
+                assert(varTypeIsIntegral(operand.Type));
+                if (!_compiler.compOpportunisticallyDependsOn(InstructionSet_Cssc))
+                {
+                    _ = buildInternalFloatRegisterDefForNode(tree, _availableFloatRegs);
+                }
+
+                _ = buildUse(operand);
+                buildInternalRegisterUses();
+                sourceCount = 1;
+                break;
+            }
+
+            case NI_PRIMITIVE_TrailingZeroCount:
+            {
+                assert(varTypeIsIntegral(operand.Type));
+                _ = buildUse(operand);
+                sourceCount = 1;
+                break;
+            }
+
+            default:
+            {
+                throw new FatalJitException($"Unsupported ARM64 scalar intrinsic {intrinsic.IntrinsicName}.");
+            }
+        }
+
+        _ = buildDef(tree, SRBM_NONE);
+        return sourceCount;
 #else
         NYI("LinearScan.buildIntrinsic outside AMD64");
         throw new FatalJitException("LinearScan.buildIntrinsic outside AMD64.");
@@ -233,6 +287,15 @@ public sealed partial class LinearScan
 
         _ = buildDef(select, SRBM_NONE);
         return srcCount;
+#elif TARGET_ARM64
+        assert(select.Oper is GT_SELECT or GT_SELECTCC);
+        var sourceCount = select.Oper is GT_SELECT
+            ? buildOperandUses(select.AsConditional().Cond)
+            : 0;
+        sourceCount += buildOperandUses(select.Op1);
+        sourceCount += buildOperandUses(select.Op2);
+        _ = buildDef(select, SRBM_NONE);
+        return sourceCount;
 #else
         NYI("LinearScan.buildSelect outside AMD64");
         throw new FatalJitException("LinearScan.buildSelect outside AMD64.");

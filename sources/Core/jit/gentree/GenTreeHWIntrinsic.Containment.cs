@@ -5,9 +5,10 @@
 
 namespace RyuJitSharp;
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
+#if FEATURE_HW_INTRINSICS && (TARGET_XARCH || TARGET_ARM64)
 public sealed partial class GenTreeHWIntrinsic
 {
+#if TARGET_XARCH
     public bool OperIsVectorFusedMultiplyOp => HWIntrinsicId is
         NI_AVX2_MultiplyAdd or NI_AVX2_MultiplyAddNegated or NI_AVX2_MultiplyAddNegatedScalar or
         NI_AVX2_MultiplyAddScalar or NI_AVX2_MultiplySubtract or NI_AVX2_MultiplySubtractNegated or
@@ -16,11 +17,16 @@ public sealed partial class GenTreeHWIntrinsic
         NI_AVX512_FusedMultiplyAddNegatedScalar or NI_AVX512_FusedMultiplyAddScalar or
         NI_AVX512_FusedMultiplySubtract or NI_AVX512_FusedMultiplySubtractNegated or
         NI_AVX512_FusedMultiplySubtractNegatedScalar or NI_AVX512_FusedMultiplySubtractScalar;
+#endif
 
     public int GetResultOpNumForRmwIntrinsic(GenTree? user, GenTree op1, GenTree op2, GenTree op3)
     {
+#if TARGET_XARCH
         assert(HWIntrinsicInfo.IsFmaIntrinsic(HWIntrinsicId) || HWIntrinsicInfo.IsPermuteVar2x(HWIntrinsicId) ||
             HWIntrinsicId is NI_AVX512_TernaryLogic);
+#else
+        assert(HWIntrinsicInfo.IsFmaIntrinsic(HWIntrinsicId));
+#endif
 
         if (user?.Oper is GT_STORE_LCL_VAR)
         {
@@ -55,6 +61,7 @@ public sealed partial class GenTreeHWIntrinsic
         return 0;
     }
 
+#if TARGET_XARCH
     public bool IsEmbeddedBroadcastCompatibleHWIntrinsic(Compiler compiler)
     {
         var id = HWIntrinsicId;
@@ -79,5 +86,6 @@ public sealed partial class GenTreeHWIntrinsic
 
         return true;
     }
+#endif
 }
 #endif

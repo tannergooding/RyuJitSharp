@@ -136,6 +136,8 @@ public sealed partial class CodeGen : ICodeGen
         return RBM_R9;
 #elif TARGET_X86
         return tailCall || _compiler.compIsAsync ? RBM_ESI : RBM_ECX;
+#elif TARGET_ARM64
+        return new regMaskTP(SRBM_GSCOOKIE_TMP);
 #else
         NYI("CodeGen.genGetGSCookieTempRegs outside xarch");
         throw new FatalJitException("CodeGen.genGetGSCookieTempRegs outside xarch.");

@@ -44,6 +44,38 @@ public sealed partial class LinearScan
             _ = buildDef(indirection, SRBM_NONE);
         }
         return srcCount;
+#elif TARGET_ARM64
+        assert(indirection.Type is not TYP_STRUCT);
+        var address = indirection.Addr;
+        if (address.IsContained && (address.Oper is GT_LEA))
+        {
+            var mode = address.AsAddrMode();
+            var accessType = indirection.Oper is GT_STOREIND
+                ? indirection.AsStoreInd().Data.Type
+                : indirection.Type;
+            if ((mode.HasIndex && (mode.Offset != 0)) ||
+                !Emitter.emitIns_valid_imm_for_ldst_offset(mode.Offset, (emitAttr)accessType.Size))
+            {
+                _ = buildInternalIntRegisterDefForNode(indirection, _availableIntRegs);
+            }
+        }
+
+#if FEATURE_SIMD
+        if (indirection.Type is TYP_SIMD12)
+        {
+            assert(!address.IsContained);
+            _ = buildInternalIntRegisterDefForNode(indirection, _availableIntRegs);
+        }
+#endif
+
+        var sourceCount = buildIndirUses(indirection, SRBM_NONE);
+        buildInternalRegisterUses();
+        if (indirection.Oper is not (GT_STOREIND or GT_NULLCHECK))
+        {
+            _ = buildDef(indirection, SRBM_NONE);
+        }
+
+        return sourceCount;
 #else
         NYI("LinearScan.buildIndir outside AMD64");
         throw new FatalJitException("LinearScan.buildIndir outside AMD64.");
@@ -60,6 +92,15 @@ public sealed partial class LinearScan
             _ = buildDef(tree, SRBM_NONE);
         }
         return srcCount;
+#elif TARGET_ARM64
+        assert(tree.Oper.IsCompare || tree.Oper is GT_CMP or GT_TEST or GT_CCMP or GT_JCMP or GT_JTEST);
+        var sourceCount = buildCmpOperands(tree);
+        if (tree.Type is not TYP_VOID)
+        {
+            _ = buildDef(tree, SRBM_NONE);
+        }
+
+        return sourceCount;
 #else
         NYI("LinearScan.buildCmp outside AMD64");
         throw new FatalJitException("LinearScan.buildCmp outside AMD64.");
@@ -86,6 +127,8 @@ public sealed partial class LinearScan
         var srcCount = buildOperandUses(op1, op1Candidates);
         srcCount += buildOperandUses(op2, op2Candidates);
         return srcCount;
+#elif TARGET_ARM64
+        return buildBinaryUses(tree.AsOp());
 #else
         NYI("LinearScan.buildCmpOperands outside AMD64");
         throw new FatalJitException("LinearScan.buildCmpOperands outside AMD64.");
@@ -119,6 +162,33 @@ public sealed partial class LinearScan
         buildInternalRegisterUses();
         _ = buildDef(tree, SRBM_NONE);
         return srcCount;
+#elif TARGET_ARM64
+        var size = tree.AsUnOp().Op1;
+        var sourceCount = size.IsContainedIntOrIImmed ? 0 : 1;
+        if (sourceCount == 0)
+        {
+            var alignedSize = unchecked(((nuint)size.AsIntCon().IconValue + (STACK_ALIGN - 1u)) &
+                ~(nuint)(STACK_ALIGN - 1u));
+            if (alignedSize >= _compiler.eeGetPageSize())
+            {
+                _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
+                _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
+            }
+        }
+        else if (!_compiler.info.compInitMem)
+        {
+            _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
+            _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
+        }
+
+        if (!size.IsContained)
+        {
+            _ = buildUse(size);
+        }
+
+        buildInternalRegisterUses();
+        _ = buildDef(tree, SRBM_NONE);
+        return sourceCount;
 #else
         NYI("LinearScan.buildLclHeap outside AMD64");
         throw new FatalJitException("LinearScan.buildLclHeap outside AMD64.");

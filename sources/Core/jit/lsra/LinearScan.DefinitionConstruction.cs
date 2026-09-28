@@ -85,7 +85,7 @@ public sealed partial class LinearScan
 
     private void buildKills(GenTree tree, regMaskTP killMask)
     {
-#if DEBUG && TARGET_AMD64
+#if DEBUG && (TARGET_AMD64 || TARGET_ARM64)
         assert(killMask == getKillSetForNode(tree));
 #endif
         var killLocation = _referenceBuildLocation + 1;

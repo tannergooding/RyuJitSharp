@@ -33,7 +33,54 @@ public partial class Compiler
         return false;
     }
 
-#if TARGET_AMD64
+#if TARGET_ARM64
+    public regMaskTP compHelperCallKillSet(CorInfoHelpFunc helper)
+    {
+        switch (helper)
+        {
+            case CORINFO_HELP_ASSIGN_REF:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF:
+            {
+                return new regMaskTP(SRBM_CALLEE_TRASH_WRITEBARRIER);
+            }
+
+            case CORINFO_HELP_PROF_FCN_ENTER:
+            case CORINFO_HELP_PROF_FCN_LEAVE:
+            case CORINFO_HELP_PROF_FCN_TAILCALL:
+            {
+                return new regMaskTP(
+                    (SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH) &
+                    ~(SRBM_ARG_REGS | SRBM_ARG_RET_BUFF | SRBM_FLTARG_REGS | SRBM_FP),
+                    SRBM_MSK_CALLEE_TRASH);
+            }
+
+            case CORINFO_HELP_STOP_FOR_GC:
+            {
+                return SRBM_STOP_FOR_GC_TRASH;
+            }
+
+            case CORINFO_HELP_INIT_PINVOKE_FRAME:
+            {
+                return SRBM_INIT_PINVOKE_FRAME_TRASH;
+            }
+
+            case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
+            {
+                return new regMaskTP(SRBM_VALIDATE_INDIRECT_CALL_TRASH);
+            }
+
+            case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
+            {
+                return SRBM_INTERFACELOOKUP_FOR_SLOT_TRASH;
+            }
+
+            default:
+            {
+                return SRBM_CALLEE_TRASH;
+            }
+        }
+    }
+#elif TARGET_AMD64
     public regMaskTP compHelperCallKillSet(CorInfoHelpFunc helper)
     {
         switch (helper)

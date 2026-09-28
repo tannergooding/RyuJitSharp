@@ -56,7 +56,7 @@ public sealed partial class LinearScan
 
     private void buildRefPositionsForNode(GenTree tree, LsraLocation currentLocation)
     {
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
 #if DEBUG
         if (VERBOSE)
         {
@@ -67,6 +67,9 @@ public sealed partial class LinearScan
 
         if (tree.IsContained)
         {
+#if TARGET_ARM64
+            assert(!isCandidateLocalRef(tree));
+#else
             if (tree.Oper.IsLocal && ((tree.Flags & GTF_VAR_DEATH) != 0))
             {
                 ref var local = ref _compiler.lvaGetDesc(tree.AsLclVarCommon().LclNum);
@@ -78,6 +81,7 @@ public sealed partial class LinearScan
                     updatePreferencesOfDyingLocal(getIntervalForLocalVar(varIndex));
                 }
             }
+#endif
             JITDUMP("Contained\n");
             return;
         }
@@ -119,6 +123,19 @@ public sealed partial class LinearScan
                 {
                     minimumRegisterCount++;
                 }
+#if TARGET_ARM64
+                else if (reference.needsConsecutive)
+                {
+                    assert(reference.refType is RefType.RefTypeUpperVectorRestore);
+                    minimumRegisterCount++;
+                }
+#endif
+#endif
+#if TARGET_ARM64
+                if (reference.needsConsecutive)
+                {
+                    _consecutiveRegistersLocation = reference.nodeLocation;
+                }
 #endif
                 if (reference.getInterval().isSpecialPutArg)
                 {
@@ -146,8 +163,13 @@ public sealed partial class LinearScan
                     var interval = reference.getInterval();
                     var previousCandidates = reference.registerAssignment;
                     var calleeSaved = calleeSaveRegs(interval.registerType);
-                    reference.registerAssignment = getConstrainedRegMask(
-                        reference, interval.registerType, previousCandidates, calleeSaved, minimumForReference);
+#if TARGET_ARM64
+                    if (!reference.isLiveAtConsecutiveRegistersLoc(_consecutiveRegistersLocation))
+#endif
+                    {
+                        reference.registerAssignment = getConstrainedRegMask(
+                            reference, interval.registerType, previousCandidates, calleeSaved, minimumForReference);
+                    }
 
                     if ((reference.registerAssignment != previousCandidates) &&
                         (reference.refType is RefType.RefTypeUse) && !interval.isLocalVar)

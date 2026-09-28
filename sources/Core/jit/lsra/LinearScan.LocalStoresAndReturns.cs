@@ -53,7 +53,7 @@ public sealed partial class LinearScan
 
     private int buildMultiRegStoreLoc(GenTreeLclVar store)
     {
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
         var source = store.Op1;
         var destinationCount = store.GetFieldCount(_compiler);
         var sourceCount = (int)destinationCount;
@@ -105,7 +105,7 @@ public sealed partial class LinearScan
 
     private int buildStoreLoc(GenTreeLclVarCommon store)
     {
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
         var source = store.Op1;
         ref var local = ref _compiler.lvaGetDesc(store.LclNum);
         if (store.IsMultiRegLclVar)
@@ -116,7 +116,11 @@ public sealed partial class LinearScan
 #if FEATURE_SIMD
         if (varTypeIsSimd(store.Type) && !source.IsVectorZero && (store.Type is TYP_SIMD12))
         {
+#if TARGET_ARM64
+            _ = buildInternalIntRegisterDefForNode(store, _availableIntRegs);
+#else
             _ = buildInternalFloatRegisterDefForNode(store, _availableFloatRegs);
+#endif
         }
 #endif
 
@@ -167,7 +171,7 @@ public sealed partial class LinearScan
 
     private int buildReturn(GenTree tree)
     {
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
         var value = tree.Oper is GT_SWIFT_ERROR_RET
             ? tree.AsOp().Op2
             : tree.AsUnOp().Op1;
@@ -175,6 +179,13 @@ public sealed partial class LinearScan
         if ((tree.Type is not TYP_VOID) && !value.IsContained)
         {
 #if FEATURE_MULTIREG_RET
+#if TARGET_ARM64
+            if (varTypeIsSimd(tree.Type) && !value.IsMultiRegLclVar)
+            {
+                _ = buildUse(value, SRBM_DOUBLERET);
+                return 1;
+            }
+#endif
             if (varTypeIsStruct(tree.Type))
             {
                 if ((value.Oper is GT_LCL_VAR) && !value.IsMultiRegLclVar)

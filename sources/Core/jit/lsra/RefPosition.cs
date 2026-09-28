@@ -183,6 +183,31 @@ public sealed partial class RefPosition
 
 #if TARGET_ARM64
     public bool isFirstRefPositionOfConsecutiveRegisters() => needsConsecutive && (regCount != 0);
+
+#if DEBUG
+    public bool isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveLocation)
+    {
+        if (needsConsecutive)
+        {
+            return true;
+        }
+
+        var atConsecutiveLocation = consecutiveLocation == nodeLocation;
+        var treeNeedsConsecutive = (treeNode?.Oper is GT_HWINTRINSIC) &&
+            HWIntrinsicInfo.NeedsConsecutiveRegisters(treeNode.AsHWIntrinsic().HWIntrinsicId);
+        if (refType is RefType.RefTypeDef)
+        {
+            return treeNeedsConsecutive;
+        }
+        if (refType is RefType.RefTypeUse)
+        {
+            return isIntervalRef() && getInterval().isInternal
+                ? treeNeedsConsecutive
+                : atConsecutiveLocation;
+        }
+        return refType is RefType.RefTypeUpperVectorRestore && atConsecutiveLocation;
+    }
+#endif
 #endif
 
     public bool IsExtraUpperVectorSave()
