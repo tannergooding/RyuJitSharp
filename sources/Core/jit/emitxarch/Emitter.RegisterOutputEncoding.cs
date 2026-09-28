@@ -293,19 +293,29 @@ public partial class Emitter
         }
         if (TakesRex2Prefix(id))
         {
+            assert(IsRex2EncodableInstruction(id.idIns()));
             return code | 0xD50400000000UL;
         }
         return code | 0x4400000000UL;
     }
 
+    private ulong AddEvexRPrimePrefix(ulong code)
+    {
+        assert((UseEvexEncodings || UsePromotedEvexEncodings) && hasEvexPrefix(code));
+
+        return code & 0xFFEFFFFFFFFFFFFFUL;
+    }
+
     private unsafe uint insEncodeReg345(instrDesc id, regNumber reg, emitAttr size, ulong* code)
     {
         assert(reg < REG_STK);
+        assert(code is not null || !IsExtendedReg(reg));
+
         if (IsExtendedReg(reg))
         {
             if (isHighSimdReg(reg))
             {
-                *code &= 0xFFEFFFFFFFFFFFFFUL;
+                *code = AddEvexRPrimePrefix(*code);
             }
             if (((uint)AbsRegNumber(reg) & 8) != 0)
             {
@@ -320,16 +330,20 @@ public partial class Emitter
                 }
                 else if (hasEvexPrefix(*code))
                 {
-                    *code &= 0xFFEFFFFFFFFFFFFFUL;
+                    *code = AddEvexRPrimePrefix(*code);
                 }
             }
         }
-        else if (EA_SIZE(size) == EA_1BYTE && reg > REG_RBX)
+        else if ((EA_SIZE(size) == EA_1BYTE) && (reg > REG_RBX) && (code is not null))
         {
             *code = hasRex2Prefix(*code) || hasEvexPrefix(*code) ? *code
                 : AddRexPrefix(id.idIns(), *code);
         }
-        return RegEncoding(reg) << 3;
+
+        var regBits = RegEncoding(reg);
+        assert(regBits < 8);
+
+        return regBits << 3;
     }
 
     private ulong insEncodeReg3456(instrDesc id, regNumber reg, emitAttr size, ulong code)

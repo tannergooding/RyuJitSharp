@@ -6,6 +6,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.emitAttr;
@@ -16,6 +17,59 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterPrefixTests
 {
+    [TestCase(REG_RAX, EA_1BYTE, 0u)]
+    [TestCase(REG_RBX, EA_1BYTE, 24u)]
+    [TestCase(REG_RBP, EA_1BYTE, 40u)]
+    [TestCase(REG_RDI, EA_1BYTE, 56u)]
+    [TestCase(REG_RBP, EA_8BYTE, 40u)]
+    [TestCase(REG_RDI, EA_8BYTE, 56u)]
+    public static void UnextendedRegisterFieldsAllowOmittedOpcodeStorage(regNumber reg, emitAttr size, uint expected)
+    {
+        var emitter = CreateEmitter();
+        var descriptor = CreateDescriptor(INS_mov, IF_RWR_RRD, size);
+
+        Assert.That(EncodeRegisterField(emitter, descriptor, reg, size, null), Is.EqualTo(expected));
+    }
+
+#if DEBUG
+    [TestCase(false, false, 0x62FFFFFFFFFFFFFFUL, 1)]
+    [TestCase(true, false, 0x62FFFFFFFFFFFFFFUL, 0)]
+    [TestCase(false, true, 0x62FFFFFFFFFFFFFFUL, 0)]
+    [TestCase(true, false, 0xC4FFFFFFFFFFFFUL, 1)]
+    [TestCase(true, false, 0UL, 1)]
+    public static void HighSimdRegisterFieldsRequireEnabledEvexPrefix(
+        bool evex, bool promotedEvex, ulong code, int expectedAssertions)
+    {
+        var emitter = CreateEmitter();
+        emitter.UseVexEncodings = true;
+        emitter.UseEvexEncodings = evex;
+        emitter.UsePromotedEvexEncodings = promotedEvex;
+        var descriptor = CreateDescriptor(INS_addps, IF_RWR_RRD, EA_16BYTE);
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.doAssert = &RecordAssertion;
+        var context = new AssertionContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
+        using var tls = new JitTls(&context.JitInfo);
+
+        var expectedCode = code & 0xFFEFFFFFFFFFFFFFUL;
+        Assert.That(EncodeRegisterField(emitter, descriptor, REG_XMM16, EA_16BYTE, &code), Is.Zero);
+        Assert.That(code, Is.EqualTo(expectedCode));
+        Assert.That(context.Assertions, Is.EqualTo(expectedAssertions));
+    }
+
+    private struct AssertionContext
+    {
+        public ICorJitInfo JitInfo;
+        public int Assertions;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
+    {
+        ((AssertionContext*)self)->Assertions++;
+        return 0;
+    }
+#endif
+
     [Test]
     public static void AddressModeAndRegisterUnionPreserveNativeBitWidths()
     {
@@ -213,6 +267,10 @@ internal static unsafe class EmitterPrefixTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "TakesEvexPrefix")]
     private static extern bool TakesEvex(Emitter emitter, Emitter.instrDesc descriptor);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "insEncodeReg345")]
+    private static extern uint EncodeRegisterField(
+        Emitter emitter, Emitter.instrDesc descriptor, regNumber reg, emitAttr size, ulong* code);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "TakesRex2Prefix")]
     private static extern bool TakesRex2(Emitter emitter, Emitter.instrDesc descriptor);
