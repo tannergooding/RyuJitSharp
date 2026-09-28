@@ -17,9 +17,9 @@ public sealed partial class LinearScan
 
     private static readonly string[] s_resolveTypeName = ["Split", "Join", "Critical", "SharedCritical"];
 
-    private void requireWindowsAmd64EdgeResolution()
+    private void requireLocalEdgeResolution()
     {
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
+#if (TARGET_AMD64 && WINDOWS_AMD64_ABI) || TARGET_ARM64
         if (!_enregisterLocalVars || !_blockSequencingDone ||
             (_inVarToRegMaps is null) || (_outVarToRegMaps is null) ||
             (_splitOrSpilledVars is null))
@@ -27,13 +27,13 @@ public sealed partial class LinearScan
             throw new FatalJitException("LSRA edge resolution requires allocated local maps and block sequence.");
         }
 #else
-        throw new FatalJitException("LSRA edge resolution is not implemented outside Windows AMD64.");
+        throw new FatalJitException("LSRA edge resolution is not implemented outside Windows AMD64/ARM64.");
 #endif
     }
 
     private void resolveEdges()
     {
-        requireWindowsAmd64EdgeResolution();
+        requireLocalEdgeResolution();
         JITDUMP("RESOLVING EDGES\n");
         VarSetOps.IntersectionD(_compiler, _resolutionCandidateVars, _splitOrSpilledVars!);
         if (VarSetOps.IsEmpty(_compiler, _resolutionCandidateVars))

@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: ARM64 local allocation and resolution
+
+ARM64 can now construct tracked-local intervals, allocate and resolve local
+homes, write multireg call results, and resolve minimal temporary references.
+Entry-frame kills include native poisoning and unknown-size-frame scratch
+registers. Upper-vector saves use double-register temporaries and ARM64's
+explicit spill/reload flags; integer edge cycles use scratch registers or
+stack spills rather than xarch swaps. Edge move sets retain both register banks,
+including predicate-register destinations.
+
+Full-analysis managed target coverage passes 853 Debug/846 Release cases;
+Windows LSRA controls pass 672 Debug/566 Release. Focused regressions cover
+local spills, parameter homes, upper-vector transfers, edge cycles and predicate
+moves. The public allocator remains gated pending whole-pipeline dependency
+closure; these results do not establish ARM64 generated-code execution or parity.
+
 ## 2026-09-28: Unsigned checked multiplication
 
 The importer now preserves `mul.ovf.un` signedness through its arithmetic

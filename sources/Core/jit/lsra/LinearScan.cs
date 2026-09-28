@@ -355,7 +355,11 @@ public sealed partial class LinearScan : IRegAlloc
 #endif
 
         initVarRegMaps();
-        if (_enregisterLocalVars || _compiler.opts.OptimizationEnabled)
+        if (_enregisterLocalVars || _compiler.opts.OptimizationEnabled
+#if TARGET_ARM64
+            || _compiler.info.compNeedsConsecutiveRegisters
+#endif
+        )
         {
             allocateRegisters();
         }

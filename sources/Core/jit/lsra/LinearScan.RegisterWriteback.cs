@@ -9,7 +9,7 @@ public partial class LinearScan
 {
     private void writeRegisters(RefPosition currentRefPosition, GenTree tree)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
+#if !((TARGET_AMD64 && WINDOWS_AMD64_ABI) || TARGET_ARM64)
         throw new FatalJitException("LSRA register writeback is not ported for this target.");
 #else
         var reg = currentRefPosition.assignedReg();
@@ -34,8 +34,13 @@ public partial class LinearScan
         }
         else
         {
-            // The remaining native case is a multi-register call. Windows AMD64 disables
-            // FEATURE_MULTIREG_RET and permits only one call return register.
+#if FEATURE_MULTIREG_RET && TARGET_ARM64
+            if (tree.Oper is GT_CALL && tree.AsCall().HasMultiRegRetVal)
+            {
+                tree.AsCall().SetRegNumByIdx(reg, checked((byte)regIdx));
+                return;
+            }
+#endif
             throw new FatalJitException("Unsupported multi-register LSRA writeback node.");
         }
 #endif
@@ -43,7 +48,7 @@ public partial class LinearScan
 
     private void insertCopyOrReload(BasicBlock block, GenTree tree, uint multiRegIdx, RefPosition refPosition)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
+#if !((TARGET_AMD64 && WINDOWS_AMD64_ABI) || TARGET_ARM64)
         throw new FatalJitException("LSRA copy or reload insertion is not ported for this target.");
 #else
         var foundUse = block.TryGetUse(tree, out var treeUse);

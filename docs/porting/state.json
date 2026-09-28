@@ -16,6 +16,14 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "arm64LocalAllocationAndResolution": {
+      "scope": "Internal tracked-local candidate/interval construction, block homes, local and minimal register resolution, multireg-call writeback, frame-stack marking and ARM64 entry scratch kills. Public DoRegisterAllocation remains gated.",
+      "mapping": "lsrabuild.cpp:buildIntervals<true> -> LinearScan.LocalIntervalConstruction.cs; lsra.cpp:identifyCandidates/processBlockStartLocations/processBlockEndLocations/resolveLocalRef/resolveRegisters/writeRegisters/insertCopyOrReload -> corresponding LinearScan local/resolution partials; insertUpperVectorSave/Restore -> LocalResolutionDriverVectors.cs; resolveEdge -> EdgeResolutionParallelMoves.cs.",
+      "corrections": "ARM64 upper saves use TYP_DOUBLE and spillAfter; memory restores use an assigned register and GTF_SPILLED. Integer cycles cannot select xarch GT_SWAP. Edge work sets use regMaskTP rather than a single register bank, preserving predicate-register destinations.",
+      "validation": "Full-analysis unfiltered linux-arm64 target tests: 853 Debug/846 Release. Windows LSRA controls: 672 Debug/566 Release. artifacts/arm64-local-recovery-{debug,release}/tst/{Debug,Release}/arm64-local-final-{debug,release}.trx and artifacts/arm64-local-windows-{debug,release}/tst/{Debug,Release}/arm64-local-windows-{debug,release}.trx.",
+      "regressions": "Arm64LinearScanLocalResolutionTests covers integer/floating/vector candidates, full local allocation with spill stress, entry parameter homes, multireg calls, minimal resolution, vector saves/restores, cycle scratch/spill choices and predicate moves. Prior helper captures retain the vector/cycle failures and two predicate destination failures under artifacts/arm64-local-recovery-release/tst/Release/arm64-{local,mask}-prior-release.trx.",
+      "remaining": "Public ARM64 allocation and generated-code execution/parity remain separate. Finish the saved SysV call packet directly; recover the uncollected native cleanup delta before advancing its ledger."
+    },
     "unsignedCheckedMultiply": {
       "scope": "B149: preserve CEE_MUL_OVF_UN signedness through MulOvf/MathOp2Ovf into MathOp2Flags, including type checking and overflow flags.",
       "mapping": "importer.cpp:7641-7784 -> Compiler.imp.cs local arithmetic helpers.",
@@ -38,7 +46,7 @@
       "mapping": "lsraarm64.cpp:79-585 -> LinearScan.Arm64ConsecutiveAllocation.cs; lsra.cpp selection/allocation/stress and upper-vector save policy -> LinearScan.RegisterSelection*.cs, RegisterAllocation.cs, AllocationTraversal.cs and SelectorHelpers.cs.",
       "validation": "Full-analysis unfiltered Linux-ARM64 target coverage: 829 Debug/825 Release; Windows LSRA/HWI controls: 758 Debug/652 Release. Final maintained fixture after assertion-case additions: 51 Debug/46 Release. Exact files are artifacts/arm64-consecutive-final-{debug,release}/tst/{Debug,Release}/arm64-consecutive-final-{debug,release}.trx; artifacts/arm64-consecutive-final-windows-{debug,release}/tst/{Debug,Release}/arm64-consecutive-windows-{debug,release}.trx; artifacts/arm64-consecutive-review-{debug,release}/tst/{Debug,Release}/arm64-fixed-conflict-maintained-{debug,release}.trx.",
       "regressions": "Prior predecessor preference and upper-restore suppression fail two cases with four controls in artifacts/arm64-consecutive-negative/run/tst/Debug/arm64-negative-controls-debug.trx. The maintained all-conflicting stress cases fail prior masking with three controls in maintained-prior/tst/Debug/arm64-maintained-prior-conflicts.trx beneath the same negative root. Controlled EE callbacks observe the intended assertion and CORJIT_SKIPPED, not an incidental null dereference.",
-      "remaining": "Local-interval construction, register resolution and minimal-path consecutive allocation remain gated; DoRegisterAllocation is not activated. B398 preserves native source-level wrap quirks. Managed policy coverage is not ARM64 execution/parity."
+      "remaining": "Internal local-interval construction and resolution are recorded under arm64LocalAllocationAndResolution. DoRegisterAllocation remains gated, including public minimal-path consecutive allocation. B398 preserves native source-level wrap quirks. Managed policy coverage is not ARM64 execution/parity."
     },
     "windowsSharedClosureValidation": {
       "scope": "Refresh Windows-x64 regression coverage after shared CFG, LIR and EH closure.",
@@ -291,7 +299,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "B149 arithmetic-import correction is validated. Recover the ARM64 local-interval/resolution WIP left by the failed agent before activating any allocator phase; preserve its unstaged files and validate the whole dependency area. SysV call dependencies and native retirement continue independently. Parent owns integration, shared documentation and C# commits; packets below are historical records, not active assignments.",
+      "parentScope": "B149 is committed dae1414; ARM64 internal local allocation/resolution has passed review and full-analysis target/Windows controls while the public allocator remains gated. Prior ordinary worker handles are unavailable. Parent now recovers the saved SysV call/argument WIP directly, then the uncollected native cleanup delta. Parent owns integration, shared documentation and C# commits; packets below are historical records, not active assignments.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -686,7 +694,7 @@
         }
       ]
     },
-    "nextAction": "Continue without stopping at milestones. B149 unsigned checked multiplication is fixed and validated against native. ARM64 agent deaf133f failed with DNS/model transport error after leaving local-interval/resolution WIP; parent must inspect that explicit LSRA/test delta, recover its latest validation logs, and finish/review it directly. Keep public allocation gated until every dependency is complete. SysV agent continues genCall, argument placement and target constraints after d30a195a; general generation/emission/metadata gates remain. Native cleanup continues classification; last collected report 4ec12e43 and observed subsequent 9443437ad59281e2c2e820eec42764245f736266 retain the source pin as parent. Collect the native report before advancing the ledger; full cleanup is not established.",
+    "nextAction": "Continue without stopping at milestones. Finish the validated ARM64 local allocation/resolution commit, excluding the four saved SysV codegen files. Then directly recover CodeGen.CallArguments.cs, CallTargets.cs, codegenxarch/CodeGen.Calls.cs and RegisterArguments.cs: prior ordinary worker handles no longer resolve. Review native genCall/argument placement/indirection/tailcall constraints, add target coverage, preserve general generation/emission/metadata gates and commit the coherent packet. Native cleanup is clean at observed 8f39f4020bb1d4da7d70305c5396b2d34e5e853f, parent 33baf8ee; last collected report remains 4ec12e43. Reconcile that uncollected delta before advancing the ledger. Public ARM64 allocation and full native cleanup are not established.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

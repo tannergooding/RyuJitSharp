@@ -11,7 +11,7 @@ public sealed partial class LinearScan
 
     private void identifyCandidatesWithLocals()
     {
-#if WINDOWS_AMD64_ABI
+#if (TARGET_AMD64 && WINDOWS_AMD64_ABI) || TARGET_ARM64
         assert(_enregisterLocalVars);
         assert(_compiler.lvaCount != 0);
         VarSetOps.AssignNoCopy(_compiler, ref _registerCandidateVars, VarSetOps.MakeEmpty(_compiler));
@@ -208,7 +208,7 @@ public sealed partial class LinearScan
         }
 #else
         throw new FatalJitException(CORJIT_SKIPPED,
-            "Local register-candidate construction outside Windows AMD64 is not implemented.");
+            "Local register-candidate construction outside Windows AMD64/ARM64 is not implemented.");
 #endif
     }
 

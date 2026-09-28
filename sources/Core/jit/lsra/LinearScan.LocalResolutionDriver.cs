@@ -9,7 +9,7 @@ public sealed partial class LinearScan
 {
     internal void resolveRegistersWithLocals()
     {
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
+#if (TARGET_AMD64 && WINDOWS_AMD64_ABI) || TARGET_ARM64
         if (!_enregisterLocalVars)
         {
             throw new FatalJitException("Local register resolution requires enregistered locals.");
@@ -242,10 +242,12 @@ public sealed partial class LinearScan
                 }
                 else if (reference.spillAfter || reference.nextRefPosition?.moveReg == true)
                 {
+#if TARGET_XARCH
                     if (varTypeIsSimd(tree.Type))
                     {
                         setContainsAVXFlags((uint)tree.Type.Size);
                     }
+#endif
 
                     if (reference.spillAfter)
                     {
@@ -298,6 +300,7 @@ public sealed partial class LinearScan
                     }
                 }
 
+#if TARGET_XARCH
                 if (varTypeIsSimd(tree.Type) && tree.Oper.IsLocalStore && (tree.RegNum is not REG_NA))
                 {
                     var source = tree.AsLclVarCommon().Data;
@@ -306,6 +309,7 @@ public sealed partial class LinearScan
                         setContainsAVXFlags((uint)tree.Type.Size);
                     }
                 }
+#endif
             }
 
             processBlockEndLocations(block);
@@ -331,7 +335,7 @@ public sealed partial class LinearScan
         _compiler.raMarkStkVars();
         recordMaxSpill();
 #else
-        throw new FatalJitException("Local register resolution is not implemented outside Windows AMD64.");
+        throw new FatalJitException("Local register resolution is not implemented outside Windows AMD64/ARM64.");
 #endif
     }
 }

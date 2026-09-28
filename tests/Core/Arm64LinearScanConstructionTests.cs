@@ -950,7 +950,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_availableRegCount")]
     private static extern ref int AvailableRegCount(LinearScan allocator);
 
-    private static void WithCompiler(
+    internal static void WithCompiler(
         bool debugEnC, bool hasPatchpoint, Action<Compiler, CodeGen> action,
         bool minOpts = true, bool captureAssertions = false)
     {

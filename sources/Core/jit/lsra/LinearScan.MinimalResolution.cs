@@ -18,7 +18,7 @@ public sealed partial class LinearScan
             throw new FatalJitException("Minimal register resolution cannot run with enregistered locals.");
         }
 
-#if TARGET_AMD64 && !UNIX_AMD64_ABI
+#if (TARGET_AMD64 && WINDOWS_AMD64_ABI) || TARGET_ARM64
         var referenceIndex = 0;
         assert((refPositions.Count == 0) ||
             (refPositions[0].refType is not RefType.RefTypeParamDef and not RefType.RefTypeZeroInit));
@@ -195,8 +195,8 @@ public sealed partial class LinearScan
         _compiler.raMarkStkVars();
         recordMaxSpill();
 #else
-        NYI("LinearScan.resolveRegistersMinimal outside Windows AMD64");
-        throw new FatalJitException("LinearScan.resolveRegistersMinimal outside Windows AMD64.");
+        NYI("LinearScan.resolveRegistersMinimal outside Windows AMD64/ARM64");
+        throw new FatalJitException("LinearScan.resolveRegistersMinimal outside Windows AMD64/ARM64.");
 #endif
     }
 }

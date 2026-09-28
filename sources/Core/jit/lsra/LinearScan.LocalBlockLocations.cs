@@ -7,21 +7,21 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-    private void requireWindowsAmd64BlockLocations()
+    private void requireLocalBlockLocations()
     {
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
+#if (TARGET_AMD64 && WINDOWS_AMD64_ABI) || TARGET_ARM64
         if (!_enregisterLocalVars)
         {
             throw new FatalJitException("Local block locations require enregistered locals.");
         }
 #else
-        throw new FatalJitException("Local block locations are not implemented outside Windows AMD64.");
+        throw new FatalJitException("Local block locations are not implemented outside Windows AMD64/ARM64.");
 #endif
     }
 
     private void processBlockEndAllocationWithLocals(BasicBlock currentBlock)
     {
-        requireWindowsAmd64BlockLocations();
+        requireLocalBlockLocations();
         markBlockVisited(currentBlock);
         processBlockEndLocations(currentBlock);
 
@@ -35,7 +35,7 @@ public sealed partial class LinearScan
 
     private void processBlockEndLocations(BasicBlock currentBlock)
     {
-        requireWindowsAmd64BlockLocations();
+        requireLocalBlockLocations();
         assert(currentBlock.bbNum == _currentBlockNumber);
         var outMap = getOutVarToRegMap(_currentBlockNumber)
             ?? throw new FatalJitException("Block locations require an outgoing variable map.");
@@ -69,7 +69,7 @@ public sealed partial class LinearScan
 
     private void processBlockStartLocations(BasicBlock currentBlock)
     {
-        requireWindowsAmd64BlockLocations();
+        requireLocalBlockLocations();
         var blockInfo = _blockInfo
             ?? throw new FatalJitException("Block locations require initialized LSRA block information.");
         var predecessorNumber = blockInfo[currentBlock.bbNum].predBBNum;

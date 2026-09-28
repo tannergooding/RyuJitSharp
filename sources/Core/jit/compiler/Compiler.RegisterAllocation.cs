@@ -9,7 +9,7 @@ public partial class Compiler
 {
     internal void raMarkStkVars()
     {
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
         assert(codeGen is not null);
         for (var localNumber = 0; localNumber < lvaCount; localNumber++)
         {
@@ -74,8 +74,8 @@ public partial class Compiler
 #endif
         }
 #else
-        NYI("Compiler.raMarkStkVars outside AMD64");
-        throw new FatalJitException("Compiler.raMarkStkVars outside AMD64.");
+        NYI("Compiler.raMarkStkVars outside AMD64/ARM64");
+        throw new FatalJitException("Compiler.raMarkStkVars outside AMD64/ARM64.");
 #endif
     }
 }

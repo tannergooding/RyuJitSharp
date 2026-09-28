@@ -31,13 +31,21 @@ public sealed partial class LinearScan
         ref var local = ref _compiler.lvaGetDesc(checked((int)localInterval.varNum));
         assert(Compiler.varTypeNeedsPartialCalleeSave(local.GetRegisterType()));
         var spillReg = reference.assignedReg();
+#if TARGET_ARM64
+        var spillToMemory = reference.spillAfter;
+        assert(spillReg != REG_NA);
+        const var_types saveType = TYP_DOUBLE;
+#else
+        var spillToMemory = spillReg == REG_NA;
         assert(!reference.spillAfter);
+        const var_types saveType = TYP_SIMD16;
+#endif
         var source = _compiler.gtNewLclvNode(local.Type, checked((int)localInterval.varNum));
         source.RegNum = localReg;
 #if DEBUG
         source._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
 #endif
-        var save = new GenTreeIntrinsic(TYP_SIMD16, source, NI_SIMD_UpperSave, methodHandle: null)
+        var save = new GenTreeIntrinsic(saveType, source, NI_SIMD_UpperSave, methodHandle: null)
         {
             RegNum = spillReg,
 #if FEATURE_READYTORUN
@@ -47,7 +55,7 @@ public sealed partial class LinearScan
 #if DEBUG
         save._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
 #endif
-        if (spillReg == REG_NA)
+        if (spillToMemory)
         {
             save.Flags |= GTF_SPILL;
             upper.physReg = REG_NA;
@@ -89,8 +97,15 @@ public sealed partial class LinearScan
         var restoreReg = upper.physReg;
         if (restoreReg == REG_NA)
         {
-            assert(localInterval.isSpilled && reference.assignedReg() == REG_NA);
+            assert(localInterval.isSpilled);
+#if TARGET_ARM64
+            restore.Flags |= GTF_SPILLED;
+            assert(reference.assignedReg() != REG_NA);
+            restoreReg = reference.assignedReg();
+#else
+            assert(reference.assignedReg() == REG_NA);
             restore.Flags |= GTF_NOREG_AT_USE;
+#endif
         }
         restore.RegNum = restoreReg;
 

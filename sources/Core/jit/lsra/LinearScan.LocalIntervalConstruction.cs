@@ -9,7 +9,7 @@ public sealed partial class LinearScan
 {
     private void buildIntervalsWithLocals()
     {
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
+#if (TARGET_AMD64 && WINDOWS_AMD64_ABI) || TARGET_ARM64
         if (!_enregisterLocalVars)
         {
             throw new FatalJitException("Local interval construction requires enregistered locals.");
@@ -40,7 +40,9 @@ public sealed partial class LinearScan
         resetRegStateWithLocals();
         identifyCandidatesWithLocals();
         setFrameType();
+#if TARGET_XARCH
         _lowGprRegs = _availableIntRegs & SRBM_LOWINT;
+#endif
 
 #if DEBUG
         if (VERBOSE)
@@ -229,9 +231,26 @@ public sealed partial class LinearScan
 
             if (_compiler.compShouldPoisonFrame() && (block == _compiler.fgFirstBB))
             {
+#if TARGET_ARM64
+                var poisonKills = _compiler.compHelperCallKillSet(CORINFO_HELP_NATIVE_MEMSET);
+                poisonKills |= regMaskTP.CreateFromRegNum(REG_SCRATCH, genSingleTypeRegMask(REG_SCRATCH));
+                _ = addKillForRegs(poisonKills, _referenceBuildLocation + 1);
+#else
                 _ = addKillForRegs(RBM_EDI | RBM_ECX | RBM_EAX, _referenceBuildLocation + 1);
+#endif
                 _referenceBuildLocation += 2;
             }
+
+#if TARGET_ARM64
+            if (_compiler.compUsesUnknownSizeFrame && (block == _compiler.fgFirstBB))
+            {
+                var frameKills = regMaskTP.CreateFromRegNum(REG_SCRATCH, genSingleTypeRegMask(REG_SCRATCH));
+                frameKills |= regMaskTP.CreateFromRegNum(REG_SCRATCH_V, genSingleTypeRegMask(REG_SCRATCH_V));
+                frameKills |= regMaskTP.CreateFromRegNum(REG_SCRATCH_P, genSingleTypeRegMask(REG_SCRATCH_P));
+                _ = addKillForRegs(frameKills, _referenceBuildLocation + 1);
+                _referenceBuildLocation += 2;
+            }
+#endif
 
             // Two locations per node keep definitions separate from operand uses.
             foreach (var node in block)
@@ -469,7 +488,7 @@ public sealed partial class LinearScan
         validateIntervals();
 #endif
 #else
-        throw new FatalJitException("Local interval construction is not implemented outside Windows AMD64.");
+        throw new FatalJitException("Local interval construction is not implemented outside Windows AMD64/ARM64.");
 #endif
     }
 

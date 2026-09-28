@@ -10,23 +10,30 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-    private static regNumber firstResolutionRegister(SingleTypeRegSet registers)
+    private static regNumber firstResolutionRegister(regMaskTP registers)
     {
-        assert(registers != SRBM_NONE);
-        return (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)registers));
+        assert(registers.IsNonEmpty);
+#if HAS_MORE_THAN_64_REGISTERS
+        if (registers.Lower == SRBM_NONE)
+        {
+            return (regNumber)(64 + BitOperations.TrailingZeroCount(unchecked((ulong)registers.Upper)));
+        }
+#endif
+
+        return (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)registers.Lower));
     }
 
-    private static regNumber popResolutionRegister(ref SingleTypeRegSet registers)
+    private static regNumber popResolutionRegister(ref regMaskTP registers)
     {
         var register = firstResolutionRegister(registers);
-        registers &= ~genSingleTypeRegMask(register);
+        registers &= ~regMaskTP.CreateFromRegNum(register, genSingleTypeRegMask(register));
         return register;
     }
 
     private void resolveEdge(BasicBlock fromBlock, BasicBlock? toBlock, ResolveType resolveType,
         VARSET_TP liveSet, regMaskTP terminatorConsumedRegs)
     {
-        requireWindowsAmd64EdgeResolution();
+        requireLocalEdgeResolution();
         var fromMap = getOutVarToRegMap(checked((uint)fromBlock.bbNum))
             ?? throw new FatalJitException("Resolution requires a predecessor outgoing map.");
         var toMap = (resolveType is ResolveType.ResolveSharedCritical
@@ -71,9 +78,9 @@ public sealed partial class LinearScan
             floatTemp = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT, liveSet, terminatorConsumedRegs);
         }
 
-        var targetsToDo = SRBM_NONE;
-        var targetsReady = SRBM_NONE;
-        var targetsFromStack = SRBM_NONE;
+        var targetsToDo = RBM_NONE;
+        var targetsReady = RBM_NONE;
+        var targetsFromStack = RBM_NONE;
         // `source` never changes: `location` tracks where each original
         // register's value resides as moves or swaps break dependency cycles.
         var location = new regNumber[(int)REG_COUNT];
@@ -135,7 +142,7 @@ public sealed partial class LinearScan
             if (from == REG_STK)
             {
                 stackToRegIntervals[(int)to] = interval;
-                targetsFromStack |= genSingleTypeRegMask(to);
+                targetsFromStack |= regMaskTP.CreateFromRegNum(to, genSingleTypeRegMask(to));
             }
             else if (to == REG_STK)
             {
@@ -148,30 +155,30 @@ public sealed partial class LinearScan
                 location[(int)from] = from;
                 source[(int)to] = from;
                 sourceIntervals[(int)from] = interval;
-                targetsToDo |= genSingleTypeRegMask(to);
+                targetsToDo |= regMaskTP.CreateFromRegNum(to, genSingleTypeRegMask(to));
             }
             return true;
         });
 
         var targetCandidates = targetsToDo;
-        while (targetCandidates != SRBM_NONE)
+        while (targetCandidates.IsNonEmpty)
         {
             var target = popResolutionRegister(ref targetCandidates);
             if (location[(int)target] == REG_NA)
             {
-                targetsReady |= genSingleTypeRegMask(target);
+                targetsReady |= regMaskTP.CreateFromRegNum(target, genSingleTypeRegMask(target));
             }
         }
 
         // Register-to-stack moves above free their sources. Execute ready
-        // register moves first; a remaining cycle uses XCHG for GPRs without
+        // register moves first; a remaining cycle uses XCHG for xarch GPRs without
         // a scratch register, or spills one member before loading it last.
-        while (targetsToDo != SRBM_NONE)
+        while (targetsToDo.IsNonEmpty)
         {
-            while (targetsReady != SRBM_NONE)
+            while (targetsReady.IsNonEmpty)
             {
                 var target = popResolutionRegister(ref targetsReady);
-                targetsToDo &= ~genSingleTypeRegMask(target);
+                targetsToDo &= ~regMaskTP.CreateFromRegNum(target, genSingleTypeRegMask(target));
                 assert(location[(int)target] != target);
                 var original = source[(int)target];
                 assert((uint)original < (uint)REG_COUNT);
@@ -185,18 +192,18 @@ public sealed partial class LinearScan
                 location[(int)original] = REG_NA;
 
                 if (from == original && source[(int)from] != REG_NA &&
-                    (targetsFromStack & genSingleTypeRegMask(from)) == SRBM_NONE)
+                    !targetsFromStack.IsSet(from))
                 {
-                    targetsReady |= genSingleTypeRegMask(from);
+                    targetsReady |= regMaskTP.CreateFromRegNum(from, genSingleTypeRegMask(from));
                 }
             }
-            if (targetsToDo == SRBM_NONE)
+            if (targetsToDo.IsEmpty)
             {
                 break;
             }
 
             var targetReg = firstResolutionRegister(targetsToDo);
-            var targetMask = genSingleTypeRegMask(targetReg);
+            var targetMask = regMaskTP.CreateFromRegNum(targetReg, genSingleTypeRegMask(targetReg));
             var sourceReg = source[(int)targetReg];
             var fromReg = location[(int)sourceReg];
             if (targetReg == fromReg)
@@ -207,7 +214,11 @@ public sealed partial class LinearScan
 
             var isFloat = genIsValidFloatReg(targetReg);
             var tempReg = isFloat ? floatTemp : intTemp;
+#if TARGET_XARCH
             var useSwap = !isFloat && tempReg == REG_NA;
+#else
+            const bool useSwap = false;
+#endif
             if (useSwap || tempReg == REG_NA)
             {
                 var otherTargetReg = REG_NA;
@@ -216,13 +227,13 @@ public sealed partial class LinearScan
                     otherTargetReg = fromReg;
                     if (useSwap)
                     {
-                        targetsToDo &= ~genSingleTypeRegMask(fromReg);
+                        targetsToDo &= ~regMaskTP.CreateFromRegNum(fromReg, genSingleTypeRegMask(fromReg));
                     }
                 }
                 else
                 {
                     var mask = targetsToDo;
-                    while (mask != SRBM_NONE && otherTargetReg == REG_NA)
+                    while (mask.IsNonEmpty && otherTargetReg == REG_NA)
                     {
                         var next = popResolutionRegister(ref mask);
                         if (location[(int)source[(int)next]] == targetReg)
@@ -253,9 +264,9 @@ public sealed partial class LinearScan
                     addResolution(block, insertionPoint, displaced, REG_STK, targetReg,
                         fromBlock, toBlock, s_resolveTypeName[(int)resolveType]);
                     location[(int)source[(int)otherTargetReg]] = REG_STK;
-                    targetsFromStack |= genSingleTypeRegMask(otherTargetReg);
+                    targetsFromStack |= regMaskTP.CreateFromRegNum(otherTargetReg, genSingleTypeRegMask(otherTargetReg));
                     stackToRegIntervals[(int)otherTargetReg] = displaced;
-                    targetsToDo &= ~genSingleTypeRegMask(otherTargetReg);
+                    targetsToDo &= ~regMaskTP.CreateFromRegNum(otherTargetReg, genSingleTypeRegMask(otherTargetReg));
 
                     var moved = sourceIntervals[(int)sourceReg]
                         ?? throw new FatalJitException("Cycle resolution requires a source interval.");
@@ -264,7 +275,7 @@ public sealed partial class LinearScan
                     location[(int)sourceReg] = REG_NA;
                     if (source[(int)fromReg] != REG_NA && fromReg != otherTargetReg)
                     {
-                        targetsReady |= genSingleTypeRegMask(fromReg);
+                        targetsReady |= regMaskTP.CreateFromRegNum(fromReg, genSingleTypeRegMask(fromReg));
                     }
                 }
                 targetsToDo &= ~targetMask;
@@ -282,7 +293,7 @@ public sealed partial class LinearScan
             }
         }
 
-        while (targetsFromStack != SRBM_NONE)
+        while (targetsFromStack.IsNonEmpty)
         {
             var target = popResolutionRegister(ref targetsFromStack);
             var interval = stackToRegIntervals[(int)target]
