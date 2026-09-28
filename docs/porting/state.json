@@ -16,6 +16,13 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "localClassDiagnosticGating": {
+      "scope": "B031: restore native JITDUMP argument gating for lvaSetClass and lvaUpdateClass, without changing the global formatter.",
+      "contracts": "Disabled Debug dumps make no eeGetClassName/SPMI trap queries. Enabled diagnostics retain native text, pointer formatting, spacing and ordering; class-handle and exactness updates still occur independently of verbosity. Release already removes the diagnostics and remains unchanged.",
+      "validation": "93 Debug/80 Release local-dump, post-import cleanup, GDV-resolution and call-folding cases pass with full analysis. The old compiler fails both disabled-dump cases (one/two unexpected EE trap calls); both enabled-output controls pass. Four final cases verify query counts, exact output including unavailable metadata, and stored class/exactness.",
+      "evidence": "artifacts/class-diagnostic-gating/evidence.json and before.log/debug.log/release.log; TRX files under operation-costs. Reproduce CompilerLocalDumpTests, PostImportCleanupTests, GdvResolutionTests and CallFoldingTests with the established Core test command.",
+      "limits": "These two local-class functions only, not global lazy-formatting coverage. No throughput measurement, NativeAOT recapture or new runtime parity claim."
+    },
     "amd64RegisterPrefixContracts": {
       "scope": "B418: restore native AddRexRPrefix and AddEvexRPrimePrefix Debug contracts and the complete AMD64 insEncodeReg345 nullable-opcode behavior.",
       "contracts": "REX2 register-prefix selection asserts opcode eligibility. Both high-SIMD and extended-GPR EVEX register fields use the shared R-prime helper with enabled-EVEX and prefix assertions. A null opcode pointer is valid for unextended registers, including byte registers; extended registers require storage. Preserve the three-bit register-field assertion and existing masks. Companion insEncodeReg012 already had these pointer guards.",
@@ -453,7 +460,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "D007, B417 and the B418 AMD64 prefix contracts are implemented and validated. Continue the concrete B031 Windows/shared diagnostic-side-effect finding: determine whether lvaSetClass still queries EE class names when verbose is false, and restore the native guarded call if so. Bound this to the named function and its focused local/class metadata fixtures; no global interpolated-string redesign or new execution matrix. D009 remains separately blocked on approval of an exact variadic callback ABI solution. Native retirement continues independently.",
+      "parentScope": "The local-class B031 guard correction is validated alongside the earlier D007/B417/B418 work. Continue the concrete B142 string-literal diagnostic finding: compare eePrintStringLiteral with the pinned native function, determine whether the recorded quote omission still exists, and restore its complete printing/truncation/unavailable-metadata contract if needed. Reuse diagnostic fixtures; no global formatting redesign, new corpus matrix or D009 callback bridge. Native retirement continues independently.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -848,7 +855,7 @@
         }
       ]
     },
-    "nextAction": "Commit B418's prefix/null-opcode contracts and notify retirement of the two complete AMD64-only prefix helpers; insEncodeReg345 retains non-AMD64 policy. Then inspect Compiler.lvaSetClass and native lclvars.cpp for B031's eager eeGetClassName query under JITDUMP. If still present, reproduce a no-verbose unexpected EE query, preserve the full native function and enabled diagnostic, and validate/commit the bounded fix. Do not reopen global formatting design or the deferred D009 callback bridge. Retirement through48 is consolidated:25353removed/403restored, native5f8b1b1baee38ffcf913067aa14360914846568e.",
+    "nextAction": "Commit B031's lvaSetClass/lvaUpdateClass guards (93Debug/80Release; old disabled cases fail and enabled text matches). Then inspect Compiler.eePrintStringLiteral against the pin for B142's quote omission; check existing correction evidence before changing code, and keep the completion boundary to the whole literal printer with focused diagnostic tests. Global formatting redesign and D009's variadic callback bridge remain deferred. Retirement through48 is consolidated:25353removed/403restored, native5f8b1b1baee38ffcf913067aa14360914846568e.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
@@ -7567,6 +7574,13 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "local-class-diagnostic-gating",
+      "native": ["src\\coreclr\\jit\\lclvars.cpp:2733-2762,2822-2884", "src\\coreclr\\jit\\jit.h:580-584"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.lva.cs:lvaSetClass,lvaUpdateClass"],
+      "sourceCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+      "status": "Native verbose guards preserve disabled-query behavior and enabled local-class diagnostic text. This does not change global JITDUMP argument evaluation."
+    },
     {
       "area": "amd64-register-prefix-contracts",
       "native": ["src\\coreclr\\jit\\emitxarch.cpp:2975-2996,3081-3089,4688-4739"],
