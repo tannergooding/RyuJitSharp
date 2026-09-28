@@ -3025,7 +3025,7 @@ public partial class Compiler
 
         if (maybeFieldTokenNode.Oper is GT_IND)
         {
-            maybeFieldTokenNode = maybeFieldTokenNode.AsOp().Op1;
+            maybeFieldTokenNode = maybeFieldTokenNode.AsIndir().Addr;
         }
 
         // Check for constant
@@ -13281,7 +13281,7 @@ public partial class Compiler
 
         if (maybeFieldTokenNode.Oper is GT_IND)
         {
-            maybeFieldTokenNode = maybeFieldTokenNode.AsOp().Op1;
+            maybeFieldTokenNode = maybeFieldTokenNode.AsIndir().Addr;
         }
 
         // Check for constant
@@ -13408,6 +13408,8 @@ public partial class Compiler
 
         var rank = 0;
         var numElements = 0;
+        // Native S_UINT32 carries overflow through the walk and the element-type query.
+        var numElementsOverflow = false;
 
         if (isMDArray)
         {
@@ -13512,9 +13514,11 @@ public partial class Compiler
                     return null;
                 }
 
-                if (!CheckedOps.TryMul(numElements, (int)(lengthNode.AsIntCon().IconValue), out numElements))
+                var length = lengthNode.AsIntCon().IconValue;
+                if ((length < 0) || ((nuint)length > uint.MaxValue) ||
+                    !CheckedOps.TryMulUns(numElements, unchecked((int)length), out numElements))
                 {
-                    return null;
+                    numElementsOverflow = true;
                 }
 
                 argIndex++;
@@ -13557,7 +13561,9 @@ public partial class Compiler
                 return null;
             }
 
-            numElements = (int)(arrayLengthNode.AsIntCon().IconVal);
+            var length = arrayLengthNode.AsIntCon().IconValue;
+            numElementsOverflow = (length < 0) || ((nuint)length > uint.MaxValue);
+            numElements = unchecked((int)length);
 
             if (!info.compCompHnd->isSDArray(arrayClsHnd))
             {
@@ -13580,7 +13586,7 @@ public partial class Compiler
 
         var elemSize = elementType.Size;
 
-        if (!CheckedOps.TryMul(elemSize, numElements, out var size))
+        if (numElementsOverflow || !CheckedOps.TryMulUns(elemSize, numElements, out var size))
         {
             return null;
         }
@@ -13603,7 +13609,7 @@ public partial class Compiler
 
         impPopStack(2);
 
-        var blkSize = size;
+        var blkSize = unchecked((uint)size);
         int dataOffset;
 
         if (isMDArray)

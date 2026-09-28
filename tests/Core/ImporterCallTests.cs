@@ -461,7 +461,42 @@ internal static unsafe class ImporterCallTests
     [Test]
     public static void ArrayInitializationConsumesEveryDimensionOnce(
         [Values(1, 2, 3)] int rank,
-        [Values(null, 0, -7)] int? lowerBound)
+        [Values(null, 0, -7)] int? lowerBound,
+        [Values(false, true)] bool indirectField)
+    {
+        var lengths = new long[rank];
+        uint expectedSize = sizeof(short);
+        for (var dimension = 0; dimension < rank; dimension++)
+        {
+            lengths[dimension] = dimension + 2;
+            expectedSize *= (uint)lengths[dimension];
+        }
+
+        VerifyArrayInitialization(lengths, lowerBound, false, CorInfoType.CORINFO_TYPE_SHORT, indirectField, expectedSize);
+    }
+
+    [TestCase(true, CorInfoType.CORINFO_TYPE_UBYTE, new long[] { 0 }, -1L)]
+    [TestCase(true, CorInfoType.CORINFO_TYPE_UBYTE, new long[] { -1 }, -1L)]
+    [TestCase(true, CorInfoType.CORINFO_TYPE_UBYTE, new long[] { 0x7FFFFFFF }, 0x7FFFFFFFL)]
+    [TestCase(true, CorInfoType.CORINFO_TYPE_UBYTE, new long[] { 0x80000000 }, 0x80000000L)]
+    [TestCase(true, CorInfoType.CORINFO_TYPE_UBYTE, new long[] { 0xFFFFFFFF }, 0xFFFFFFFFL)]
+    [TestCase(true, CorInfoType.CORINFO_TYPE_UBYTE, new long[] { 0x100000001 }, -1L)]
+    [TestCase(true, CorInfoType.CORINFO_TYPE_SHORT, new long[] { 0x40000000 }, 0x80000000L)]
+    [TestCase(true, CorInfoType.CORINFO_TYPE_SHORT, new long[] { 0x80000000 }, -1L)]
+    [TestCase(false, CorInfoType.CORINFO_TYPE_SHORT, new long[] { 32768, 32768 }, 0x80000000L)]
+    [TestCase(false, CorInfoType.CORINFO_TYPE_UBYTE, new long[] { 65536, 65535 }, 0xFFFF0000L)]
+    [TestCase(false, CorInfoType.CORINFO_TYPE_UBYTE, new long[] { 65536, 65536 }, -1L)]
+    [TestCase(false, CorInfoType.CORINFO_TYPE_UBYTE, new long[] { 65536, 65536, 0 }, -1L)]
+    [TestCase(false, CorInfoType.CORINFO_TYPE_UBYTE, new long[] { -1, 0 }, -1L)]
+    public static void ArrayInitializationPreservesUnsignedSizes(
+        bool isSzArray, CorInfoType elementType, long[] lengths, long expectedSize)
+    {
+        VerifyArrayInitialization(lengths, null, isSzArray, elementType, false,
+            expectedSize < 0 ? null : checked((uint)expectedSize));
+    }
+
+    private static void VerifyArrayInitialization(
+        long[] lengths, int? lowerBound, bool isSzArray, CorInfoType elementType, bool indirectField, uint? expectedSize)
     {
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.embedGenericHandle =
@@ -470,7 +505,8 @@ internal static unsafe class ImporterCallTests
         vtable.Base.Base.getArrayRank = &GetArrayRank;
         vtable.Base.Base.getChildType = &GetInitializedArrayElementType;
         vtable.Base.Base.getArrayInitializationData = &GetArrayInitializationData;
-        var state = new ArrayInitialization { Interface = new ICorJitInfo { lpVtbl = &vtable } };
+        vtable.Base.Base.isSDArray = &IsInitializedSDArray;
+        var state = new ArrayInitialization { Interface = new ICorJitInfo { lpVtbl = &vtable }, ElementType = elementType };
 #if DEBUG
         using var jitTls = new JitTls(null);
 #endif
@@ -478,6 +514,7 @@ internal static unsafe class ImporterCallTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
+        var rank = lengths.Length;
         var argumentCount = rank * (lowerBound.HasValue ? 2 : 1);
         compiler.info = new Compiler.Info { compCompHnd = &state.Interface, compMaxStack = Math.Max(argumentCount, 2) };
         compiler.lvaTable = [];
@@ -488,47 +525,74 @@ internal static unsafe class ImporterCallTests
 
         try
         {
-            var elementCount = 1;
-            for (var dimension = 0; dimension < rank; dimension++)
+            GenTree allocation;
+            if (isSzArray)
             {
-                if (lowerBound is int bound)
+                var call = compiler.gtNewHelperCallNode(var_types.TYP_REF, CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT,
+                    compiler.gtNewIconNode(Globals.TYP_I_IMPL, (nint)(&rank)),
+                    compiler.gtNewIconNode(Globals.TYP_I_IMPL, checked((nint)lengths[0])));
+                call._compileTimeHelperArgumentHandle = (CORINFO_GENERIC_STRUCT_*)&rank;
+                allocation = call;
+            }
+            else
+            {
+                for (var dimension = 0; dimension < rank; dimension++)
                 {
-                    compiler.impPushOnStack(compiler.gtNewIconNode(var_types.TYP_INT, bound), new typeInfo(var_types.TYP_INT));
+                    if (lowerBound is int bound)
+                    {
+                        compiler.impPushOnStack(compiler.gtNewIconNode(var_types.TYP_INT, bound), new typeInfo(var_types.TYP_INT));
+                    }
+
+                    var length = checked((int)lengths[dimension]);
+                    compiler.impPushOnStack(compiler.gtNewIconNode(var_types.TYP_INT, length), new typeInfo(var_types.TYP_INT));
                 }
 
-                var length = dimension + 2;
-                elementCount *= length;
-                compiler.impPushOnStack(compiler.gtNewIconNode(var_types.TYP_INT, length), new typeInfo(var_types.TYP_INT));
+                var token = new CORINFO_RESOLVED_TOKEN { hClass = (CORINFO_CLASS_STRUCT_*)&rank };
+                CORINFO_CALL_INFO callInfo = default;
+                callInfo.sig.numArgs = (ushort)argumentCount;
+                compiler.impImportNewObjArray(token, callInfo);
+                allocation = compiler.impPopStack().val;
             }
 
-            var token = new CORINFO_RESOLVED_TOKEN { hClass = (CORINFO_CLASS_STRUCT_*)&rank };
-            CORINFO_CALL_INFO callInfo = default;
-            callInfo.sig.numArgs = (ushort)argumentCount;
-            compiler.impImportNewObjArray(token, callInfo);
-            var allocation = compiler.impPopStack().val;
             var arrayLocal = compiler.lvaGrabTemp(true, "array initialization");
             compiler.lvaTable[arrayLocal].Type = var_types.TYP_REF;
             LastImportedStatement(compiler) = compiler.gtNewStmt(compiler.gtNewStoreLclVarNode(arrayLocal, allocation));
+
             compiler.impPushOnStack(compiler.gtNewLclvNode(var_types.TYP_REF, arrayLocal), new typeInfo(var_types.TYP_REF));
             var field = compiler.gtNewIconHandleNode(0x2000, Globals.GTF_ICON_FIELD_HDL);
             field.CompileTimeHandle = 0x2000;
+            GenTree fieldArgument = indirectField ? compiler.gtNewIndir(Globals.TYP_I_IMPL, field) : field;
             var fieldHandle = compiler.gtNewHelperCallNode(Globals.TYP_I_IMPL,
-                CorInfoHelpFunc.CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD, field);
+                CorInfoHelpFunc.CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD, fieldArgument);
             compiler.impPushOnStack(fieldHandle, new typeInfo());
 
             var signature = new CORINFO_SIG_INFO { numArgs = 2 };
-            var result = compiler.impInitializeArrayIntrinsic(signature)
-                ?? throw new AssertionException("Constant array initialization was not expanded.");
-            var offset = result.AsBlk().Addr.AsOp().Op2.AsIntCon().IconValue;
-            var expectedOffset = rank == 1 && (!lowerBound.HasValue || lowerBound == 0)
-                ? Compiler.eeGetArrayDataOffset()
-                : Compiler.eeGetMDArrayDataOffset(rank);
+            var result = compiler.impInitializeArrayIntrinsic(signature);
+            Assert.That(state.ChildTypeQueries, Is.EqualTo(1));
 
-            Assert.That(result.Oper, Is.EqualTo(genTreeOps.GT_STORE_BLK));
-            Assert.That(state.Size, Is.EqualTo(elementCount * sizeof(short)));
-            Assert.That(state.Field, Is.EqualTo((nint)0x2000));
-            Assert.That(offset, Is.EqualTo((nint)expectedOffset));
-            Assert.That(compiler.stackState.esStackDepth, Is.Zero);
+            if (expectedSize is uint size)
+            {
+                var store = result?.AsBlk() ?? throw new AssertionException("Constant array initialization was not expanded.");
+                var offset = store.Addr.AsOp().Op2.AsIntCon().IconValue;
+                var expectedOffset = isSzArray || (rank == 1 && (!lowerBound.HasValue || lowerBound == 0))
+                    ? Compiler.eeGetArrayDataOffset()
+                    : Compiler.eeGetMDArrayDataOffset(rank);
+
+                Assert.That(store.Oper, Is.EqualTo(genTreeOps.GT_STORE_BLK));
+                Assert.That(store.Size, Is.EqualTo(size));
+                Assert.That(unchecked((uint)state.Size), Is.EqualTo(size));
+                Assert.That(state.Field, Is.EqualTo((nint)0x2000));
+                Assert.That(state.InitializationQueries, Is.EqualTo(1));
+                Assert.That(offset, Is.EqualTo((nint)expectedOffset));
+                Assert.That(compiler.stackState.esStackDepth, Is.Zero);
+            }
+            else
+            {
+                Assert.That(result, Is.Null);
+                Assert.That(state.InitializationQueries, Is.Zero);
+                Assert.That(compiler.stackState.esStackDepth, Is.EqualTo(2));
+                Assert.That(compiler.impStackTop().val, Is.SameAs(fieldHandle));
+            }
         }
         finally
         {
@@ -536,11 +600,70 @@ internal static unsafe class ImporterCallTests
         }
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void SpanInitializationRecognizesFieldHandlesBeforeRejectingTheElementType(bool indirectField)
+    {
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.Base.Base.getFieldType = &GetInitializedFieldType;
+        vtable.Base.Base.getTypeForPrimitiveValueClass = &RejectSpanElementType;
+        var state = new ArrayInitialization { Interface = new ICorJitInfo { lpVtbl = &vtable } };
+#if DEBUG
+        using var jitTls = new JitTls(null);
+#endif
+        var previous = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+        compiler.info = new Compiler.Info { compCompHnd = &state.Interface, compMaxStack = 1 };
+        compiler.compCurBB = new BasicBlock(null, null);
+        compiler.stackState.esStack = new StackEntry[1];
+        JitTls.Compiler = compiler;
+        try
+        {
+            var field = compiler.gtNewIconHandleNode(0x2000, Globals.GTF_ICON_FIELD_HDL);
+            field.CompileTimeHandle = 0x2000;
+            GenTree argument = indirectField ? compiler.gtNewIndir(Globals.TYP_I_IMPL, field) : field;
+            var handle = compiler.gtNewHelperCallNode(Globals.TYP_I_IMPL,
+                CorInfoHelpFunc.CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD, argument);
+            compiler.impPushOnStack(handle, new typeInfo());
+            var elementType = (CORINFO_CLASS_STRUCT_*)0x3000;
+            var signature = new CORINFO_SIG_INFO { numArgs = 1 };
+            signature.sigInst.methInstCount = 1;
+            signature.sigInst.methInst = &elementType;
+
+            Assert.That(compiler.impCreateSpanIntrinsic(signature), Is.Null);
+            Assert.That(state.Field, Is.EqualTo((nint)0x2000));
+            Assert.That(compiler.stackState.esStackDepth, Is.EqualTo(1));
+            Assert.That(compiler.impStackTop().val, Is.SameAs(handle));
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoType GetInitializedFieldType(
+        ICorJitInfo* self, CORINFO_FIELD_STRUCT_* field, CORINFO_CLASS_STRUCT_** fieldClass, CORINFO_CLASS_STRUCT_* parent)
+    {
+        ((ArrayInitialization*)self)->Field = (nint)field;
+        *fieldClass = null;
+        return CorInfoType.CORINFO_TYPE_SHORT;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoType RejectSpanElementType(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type)
+        => CorInfoType.CORINFO_TYPE_UNDEF;
+
     private struct ArrayInitialization
     {
         public ICorJitInfo Interface;
         public int Size;
         public nint Field;
+        public CorInfoType ElementType;
+        public int ChildTypeQueries;
+        public int InitializationQueries;
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "impLastStmt")]
@@ -551,8 +674,13 @@ internal static unsafe class ImporterCallTests
         ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type, CORINFO_CLASS_STRUCT_** child)
     {
         *child = null;
-        return CorInfoType.CORINFO_TYPE_SHORT;
+        var state = (ArrayInitialization*)self;
+        state->ChildTypeQueries++;
+        return state->ElementType;
     }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte IsInitializedSDArray(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => 1;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static void* GetArrayInitializationData(ICorJitInfo* self, CORINFO_FIELD_STRUCT_* field, int size)
@@ -560,6 +688,7 @@ internal static unsafe class ImporterCallTests
         var state = (ArrayInitialization*)self;
         state->Size = size;
         state->Field = (nint)field;
+        state->InitializationQueries++;
         return (void*)0x4000;
     }
 

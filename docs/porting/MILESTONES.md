@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Array initializer numeric and field-token contracts
+
+Array initialization now preserves native unsigned32 element and byte counts,
+rejects invalid host-sized narrowing, and carries overflow through the original
+element-type query. Existing EE argument bits and unsigned block layouts are
+unchanged. Both array and span intrinsic importers recognize indirect field
+tokens through the correct unary-node accessor.
+
+Twenty regressions fail before correction; final focused coverage passes
+170 Debug and 167 Release cases. Thirteen boundary results match the pinned
+native safe-integer implementation, and all four official initializer projects
+retain matching primary-JIT execution and output. Large-size cases validate IR
+and callback contracts without allocating large arrays. See B450/B451.
+
 ## 2026-09-28: Official miscellaneous-array execution
 
 All 21 standalone `JIT/Methodical/Arrays/misc` projects pass with both primary
