@@ -16,13 +16,21 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "ssse3ClassRecognition": {
+      "scope": "B433: recognize Ssse3 as X86Base, including nested X64, without changing hardware support gating.",
+      "mapping": "hwintrinsicxarch.cpp lookupInstructionSet -> Compiler.imp.cs; recursive lookupIsa handles Ssse3.X64.",
+      "validation": "Two positive lookup failures before the fix; final prerequisite/dispatch/initialization coverage passes526Debug/522Release including24new cases. Expanded parser passes117primary checks with all21raw phase slices/seven instruction traces equal. TryParsePKT restores scalar/vector dispatch and matches native327bytes.",
+      "sourceSnapshot": "8cbf96c2e6a0273f8c3c3338fb7eefe41c57e126",
+      "evidence": "artifacts/primary-assembly-parser/ssse3-evidence.json",
+      "remaining": "Execute direct SSSE3 facade arithmetic/shuffle paths now reachable through corrected recognition. No whole-dump or official-suite claim."
+    },
     "stringReferenceCloneOrder": {
       "scope": "B432: allocate the string constant clone before the variable clone in reference-equality expansion, retaining operand order.",
       "mapping": "importervectorization.cpp impUtf16StringComparison -> Compiler.imp.cs.",
       "validation": "Four new Debug failures before the fix; final importer/clone coverage passes 99 Debug/99 Release. Expanded parser corpus verifies117checks under both primary JITs. All seven import trees match;19of21selected phase slices and six of seven instruction traces match.",
       "sourceSnapshot": "fde8c2639dc460b002ed647a4cd57dc5f1ed0b8c",
       "evidence": "artifacts/primary-assembly-parser/order-evidence.json",
-      "remaining": "B433: TryParsePKT omits the native HexConverter vector-decode branch during inlining/morph. Native327bytes versus managed265bytes; not an accepted deviation."
+      "remaining": "The subsequent ssse3ClassRecognition checkpoint closes B433 and restores all selected parser tree/instruction comparisons."
     },
     "scalarFieldCloning": {
       "scope": "B431: remove the unconditional layout assertion from GT_STORE_LCL_FLD cloning; retain GenTreeLclFld.Layout's struct-only invariant.",
@@ -579,7 +587,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "B432 closes string-reference allocation-order differences. Continue B433: TryParsePKT imports match but its inlined HexConverter body loses the vector-decode branch during morph; establish the first differing SIMD-support decision and restore native behavior. Worker idle; keep target/backend expansions separate.",
+      "parentScope": "B433 closes the missing Ssse3 mapping and the parser boundary now matches all selected trees/instructions. Execute direct SSSE3 facade arithmetic/shuffle paths using pinned runtime tests, with actual support checked rather than allowing a skipped body. Worker idle; keep target/backend expansions separate.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -974,7 +982,7 @@
         }
       ]
     },
-    "nextAction": "B432 verified:99Debug/99Release and117primary parser checks; all seven import trees match, but B433 TryParsePKT differs after inlining/morph (native327bytes, managed265bytes). Inspect the HexConverter.TryDecodeFromUtf16 inline body and its SIMD support checks in artifacts/primary-assembly-parser/after-order paired jitdump.txt; native retains scalar/vector dispatch, managed only scalar. Locate the first different decision against the pinned oracle, add a focused regression, recapture with fde8c263 baseline/reference-2, and commit the correction. Worker idle; B153/D009, B365 and ARM64 foreground expansion deferred.",
+    "nextAction": "B433 verified:526Debug/522Release,117primary parser checks, exact21raw slices/seven traces. Next execute direct Ssse3 facade arithmetic/shuffle operations now reachable through corrected class recognition. Inspect pinned src/tests/JIT/HardwareIntrinsics/X86 Ssse3 tests for a bounded linked-source or adapted corpus; require actual support and nonzero lane checks, then compare selected no-inline probe bodies with the current8cbf96c2 JIT. Follow first concrete failure; do not rescan inventories or refresh upstream. Worker idle; B153/D009, B365 and ARM64 foreground expansion deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

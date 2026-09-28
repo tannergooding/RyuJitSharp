@@ -23456,7 +23456,7 @@ public partial class Compiler
         else if (NameEquals(className, "Popcnt"u8) || NameEquals(className, "Sse"u8) ||
                  NameEquals(className, "Sse2"u8) || NameEquals(className, "Sse3"u8) ||
                  NameEquals(className, "Sse41"u8) || NameEquals(className, "Sse42"u8) ||
-                 NameEquals(className, "X86Base"u8))
+                 NameEquals(className, "Ssse3"u8) || NameEquals(className, "X86Base"u8))
         {
             return InstructionSet_X86Base;
         }

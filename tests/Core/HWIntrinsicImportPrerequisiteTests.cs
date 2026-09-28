@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.CorInfoType;
 using static RyuJitSharp.CorInfoTypeWithMod;
@@ -23,6 +24,43 @@ internal static unsafe class HWIntrinsicImportPrerequisiteTests
         [CORINFO_TYPE_UINT, CORINFO_TYPE_NATIVEUINT, CORINFO_TYPE_UBYTE, CORINFO_TYPE_CLASS];
     private static readonly List<nuint> s_signatureQueries = [];
     private static int s_signatureNextCalls;
+
+    [Test]
+    public static void BaselineXarchClassesResolveTheirInstructionSet(
+        [Values("Popcnt", "Sse", "Sse2", "Sse3", "Ssse3", "Sse41", "Sse42", "X86Base")] string name,
+        [Values(false, true)] bool x64)
+    {
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var className = Encoding.UTF8.GetBytes(name);
+
+        var isa = x64
+            ? LookupIsa(compiler, "X64"u8, className, default)
+            : LookupIsa(compiler, className, default, default);
+
+        Assert.That(isa, Is.EqualTo(x64
+            ? CORINFO_InstructionSet.InstructionSet_X86Base_X64
+            : CORINFO_InstructionSet.InstructionSet_X86Base));
+    }
+
+    [Test]
+    public static void BaselineXarchClassLookupRejectsUnrecognizedNames(
+        [Values("ssse3", "Ssse", "Ssse3Extra", "Sse43")] string name,
+        [Values(false, true)] bool x64)
+    {
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var className = Encoding.UTF8.GetBytes(name);
+        var isa = x64
+            ? LookupIsa(compiler, "X64"u8, className, default)
+            : LookupIsa(compiler, className, default, default);
+
+        Assert.That(isa, Is.EqualTo(x64
+            ? CORINFO_InstructionSet.InstructionSet_NONE
+            : CORINFO_InstructionSet.InstructionSet_ILLEGAL));
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "lookupIsa")]
+    private static extern CORINFO_InstructionSet LookupIsa(
+        Compiler compiler, ReadOnlySpan<byte> className, ReadOnlySpan<byte> innerClassName, ReadOnlySpan<byte> outerClassName);
 
     [TestCase(0)]
     [TestCase(1)]
