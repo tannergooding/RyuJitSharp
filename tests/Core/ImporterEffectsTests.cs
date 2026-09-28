@@ -10,6 +10,36 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class ImporterEffectsTests
 {
     [Test]
+    public static void StructArgumentNormalizationSinksCommaIntoTheBlockAddress(
+        [Values(var_types.TYP_BYREF, Globals.TYP_I_IMPL)] var_types addressType,
+        [Values(false, true)] bool withCall)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Type = addressType;
+            var address = compiler.gtNewLclvNode(addressType, 0);
+            var layout = new ClassLayout(8);
+            var block = compiler.gtNewBlkIndir(address, layout);
+            Assert.That(compiler.impNormStructVal(block, Compiler.CHECK_SPILL_ALL), Is.SameAs(block));
+
+            var effect = withCall
+                ? compiler.gtNewCallNode(var_types.TYP_VOID, gtCallTypes.CT_USER_FUNC, null)
+                : compiler.gtNewNothingNode();
+            var comma = compiler.gtNewCommaNode(var_types.TYP_STRUCT, effect, block);
+
+            var result = compiler.impNormStructVal(comma, Compiler.CHECK_SPILL_ALL);
+
+            Assert.That(result, Is.SameAs(block));
+            Assert.That(block.Type, Is.EqualTo(var_types.TYP_STRUCT));
+            Assert.That(block.Layout, Is.SameAs(layout));
+            Assert.That(block.Addr, Is.SameAs(comma));
+            Assert.That(comma.Type, Is.EqualTo(addressType));
+            Assert.That(comma.Op1, Is.SameAs(effect));
+            Assert.That(comma.Op2, Is.SameAs(address));
+            Assert.That((block.Flags & GenTreeFlags.GTF_CALL) != 0, Is.EqualTo(withCall));
+        });
+    }
+
+    [Test]
     public static void ConstantStringComparisonUsesExactChunkWidths(
         [Values("AbC", "AbC-d", "AbC-deF", "AbC-deFGh")] string value,
         [Values(StringComparison.Ordinal, StringComparison.OrdinalIgnoreCase)] StringComparison comparison)

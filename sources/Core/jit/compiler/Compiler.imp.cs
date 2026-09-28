@@ -15619,7 +15619,7 @@ public partial class Compiler
                     // In case of a chained GT_COMMA case, we sink the last
                     // GT_COMMA below the blockNode addr.
 
-                    var blockNodeAddr = blockNode.AsOp().Op1;
+                    var blockNodeAddr = blockNode.AsBlk().Addr;
                     assert(blockNodeAddr.Type is TYP_BYREF or TYP_I_IMPL);
 
                     var commaNode = parent.AsOp();
@@ -15627,7 +15627,7 @@ public partial class Compiler
                     commaNode.Type = blockNodeAddr.Type;
                     commaNode.Op2 = blockNodeAddr;
 
-                    blockNode.AsOp().Op1 = commaNode;
+                    blockNode.AsBlk().Addr = commaNode;
                     blockNode.AddAllEffectsFlags(commaNode);
 
                     if (parent == structVal)
