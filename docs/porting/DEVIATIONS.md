@@ -1370,6 +1370,14 @@ sets. Patchpoints do not apply the AMD64-only floating-register restriction.
 Managed Linux-ARM64 target tests cover construction and interval preferences;
 this does not activate ARM64 register allocation or establish runtime parity.
 
+Consecutive-register candidate filtering, spill ranking, sequence assignment
+and full-allocation traversal now have managed ARM64 coverage. Fixed-reference
+conflicts remain excluded during stress recovery, and partial-vector restores
+retain their ARM64 allocation behavior. Local-interval construction, resolution
+and minimal-path consecutive allocation remain gated, as does the public
+allocation phase. B398 records preserved native wrap-mask quirks; there is no
+ARM64 execution/parity claim.
+
 `Lowering.IsCallTargetInRange` implements the xarch policy. Other targets report
 NYI and terminate with `fatal(CORJIT_IMPLLIMITATION)` pending their call-target
 range checks; the shared direct-call lowering body remains in the native tree.

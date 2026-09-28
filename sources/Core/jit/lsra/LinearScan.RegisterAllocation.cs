@@ -106,9 +106,19 @@ public sealed partial class LinearScan
     private regNumber allocateReg(Interval currentInterval, RefPosition reference) =>
         allocateReg(currentInterval, reference, out _);
 
-    private regNumber allocateReg(Interval currentInterval, RefPosition reference, out RegisterScore score)
+    private regNumber allocateReg(Interval currentInterval, RefPosition reference, out RegisterScore score) =>
+        allocateReg(currentInterval, reference, out score, false);
+
+#if TARGET_ARM64
+    private regNumber allocateReg(Interval currentInterval, RefPosition reference, bool needsConsecutiveRegisters) =>
+        allocateReg(currentInterval, reference, out _, needsConsecutiveRegisters);
+#endif
+
+    private regNumber allocateReg(
+        Interval currentInterval, RefPosition reference, out RegisterScore score,
+        bool needsConsecutiveRegisters)
     {
-        var bit = _regSelector.select(currentInterval, reference, out score);
+        var bit = _regSelector.select(currentInterval, reference, out score, needsConsecutiveRegisters);
         if (bit == SRBM_NONE)
         {
             return REG_NA;
@@ -151,7 +161,9 @@ public sealed partial class LinearScan
         return register;
     }
 
-    private regNumber assignCopyReg(RefPosition reference)
+    private regNumber assignCopyReg(RefPosition reference) => assignCopyReg(reference, false);
+
+    private regNumber assignCopyReg(RefPosition reference, bool needsConsecutiveRegisters)
     {
         var interval = reference.getInterval();
         assert(interval.isActive);
@@ -165,7 +177,7 @@ public sealed partial class LinearScan
 
         try
         {
-            var register = allocateReg(interval, reference, out var score);
+            var register = allocateReg(interval, reference, out var score, needsConsecutiveRegisters);
             assert(register != REG_NA);
             interval.relatedInterval = related;
             dumpCopyRegisterEvent(reference, register, score);

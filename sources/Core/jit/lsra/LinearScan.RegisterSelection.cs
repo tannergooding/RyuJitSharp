@@ -753,37 +753,63 @@ public sealed partial class LinearScan
                 spillCandidates ^= candidateBit;
 
                 var regRecord = _linearScan.getRegisterRecord(regNum);
+#if TARGET_ARM64
+                var assignedInterval = regRecord.assignedInterval;
+                var recentRefPosition = assignedInterval?.recentRefPosition;
+#else
                 var assignedInterval = regRecord.assignedInterval
                     ?? throw new FatalJitException("Spill-cost selection requires each busy candidate to have an assigned interval.");
                 var recentRefPosition = assignedInterval.recentRefPosition;
+#endif
                 var currentSpillWeight = 0.0;
 
-                if (_linearScan.getNextIntervalRef(regNum, _regType) == thisLocation)
-                {
-                    var nextIntervalRef = assignedInterval.getNextRefPosition()
-                        ?? throw new FatalJitException("A current next-interval location must have a reference.");
-
-                    if (!nextIntervalRef.RegOptional())
-                    {
-                        continue;
-                    }
-                }
-
-                if (!_linearScan.isSpillCandidate(CurrentInterval, CurrentRefPosition, regRecord))
+#if TARGET_ARM64
+                if (recentRefPosition is not null &&
+                    _linearScan.isRefPositionActive(recentRefPosition, thisLocation) &&
+                    recentRefPosition.needsConsecutive)
                 {
                     continue;
                 }
-
-                if (recentRefPosition is not null)
+                if (assignedInterval is not null)
                 {
-                    var reloadRefPosition = assignedInterval.getNextRefPosition();
-                    if (reloadRefPosition is not null &&
-                        recentRefPosition.RegOptional() &&
-                        !(assignedInterval.isLocalVar && recentRefPosition.IsActualRef()))
+#endif
+                    if (_linearScan.getNextIntervalRef(regNum, _regType) == thisLocation)
                     {
-                        currentSpillWeight = _linearScan.getWeight(reloadRefPosition);
+                        var nextIntervalRef = assignedInterval.getNextRefPosition()
+                            ?? throw new FatalJitException("A current next-interval location must have a reference.");
+
+                        if (!nextIntervalRef.RegOptional())
+                        {
+                            continue;
+                        }
                     }
+
+                    if (!_linearScan.isSpillCandidate(CurrentInterval, CurrentRefPosition, regRecord))
+                    {
+                        continue;
+                    }
+
+                    if (recentRefPosition is not null)
+                    {
+                        var reloadRefPosition = assignedInterval.getNextRefPosition();
+                        if (reloadRefPosition is not null)
+                        {
+                            if (recentRefPosition.RegOptional() &&
+                                !(assignedInterval.isLocalVar && recentRefPosition.IsActualRef()))
+                            {
+                                currentSpillWeight = _linearScan.getWeight(reloadRefPosition);
+                            }
+#if TARGET_ARM64
+                            else if (reloadRefPosition.needsConsecutive)
+                            {
+                                currentSpillWeight = _linearScan.getWeight(reloadRefPosition) * 10;
+                            }
+#endif
+                        }
+                    }
+#if TARGET_ARM64
                 }
+#endif
 
                 if (currentSpillWeight == 0)
                 {

@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: ARM64 consecutive-register allocation
+
+ARM64 LSRA now filters and ranks consecutive register sequences, assigns
+wrapped vector-register groups and handles their copies/spills in full
+allocation traversal. Stress recovery retains fixed-register exclusions;
+upper-vector restores do not inherit xarch's stack-only suppression.
+Native predecessor arithmetic and recorded wrap quirks remain unchanged.
+
+Full-analysis target coverage passes 829 Debug/825 Release cases and Windows
+LSRA/HWI controls pass 758 Debug/652 Release. Final focused coverage passes
+51 Debug/46 Release, with discriminating prior-behavior failures for all three
+review corrections. Local-interval construction, resolution and the minimal
+consecutive path remain separate; the public allocation phase stays gated.
+This is managed target coverage, not ARM64 execution.
+
 ## 2026-09-28: Windows shared-closure execution
 
 After the shared CFG, LIR and EH work, the unfiltered Windows Core suite passes

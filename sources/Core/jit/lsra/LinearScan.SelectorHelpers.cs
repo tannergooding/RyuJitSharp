@@ -86,6 +86,68 @@ public sealed partial class LinearScan
         }
 
         return mask;
+#elif TARGET_ARM64
+        if (refPosition is not null &&
+            refPosition.isLiveAtConsecutiveRegistersLoc(_consecutiveRegistersLocation))
+        {
+            return mask;
+        }
+
+        var limit = _lsraStressMask & 0x3;
+        if (limit == 0)
+        {
+            return mask;
+        }
+
+        var count = refPosition?.minRegCandidateCount ?? 1;
+        switch (limit)
+        {
+            case 1:
+            {
+                if (!_compiler.opts.compDbgEnC)
+                {
+                    mask = getConstrainedRegMask(refPosition, registerType, mask,
+                        calleeSaveRegs(registerType), count);
+                }
+                break;
+            }
+            case 2:
+            {
+                var trash = regType(registerType) switch
+                {
+                    TYP_INT => SRBM_INT_CALLEE_TRASH,
+                    TYP_FLOAT or TYP_DOUBLE => SRBM_FLT_CALLEE_TRASH,
+                    TYP_MASK => SRBM_MSK_CALLEE_TRASH,
+                    _ => throw new FatalJitException("Unsupported ARM64 LSRA stress register type."),
+                };
+                mask = getConstrainedRegMask(refPosition, registerType, mask, trash, count);
+                break;
+            }
+            case 3:
+            {
+                var smallInt = SRBM_R0 | SRBM_R1 | SRBM_R2 | SRBM_R19 | SRBM_R20;
+                var smallFloat = SRBM_V0 | SRBM_V1 | SRBM_V2 | SRBM_V8 | SRBM_V9;
+                var small = regType(registerType) switch
+                {
+                    TYP_INT => smallInt,
+                    TYP_FLOAT or TYP_DOUBLE => smallFloat,
+                    TYP_MASK => SRBM_NONE,
+                    _ => throw new FatalJitException("Unsupported ARM64 LSRA stress register type."),
+                };
+                if ((mask & small) != SRBM_NONE)
+                {
+                    mask = getConstrainedRegMask(refPosition, registerType, mask, small, count);
+                }
+                break;
+            }
+        }
+
+        if (refPosition is not null && refPosition.isFixedRegRef)
+        {
+            mask |= refPosition.registerAssignment;
+        }
+
+        return mask;
 #else
         NYI("LSRA stress register limiting outside AMD64");
         fatal(CORJIT_IMPLLIMITATION);

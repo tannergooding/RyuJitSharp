@@ -3,10 +3,15 @@
 #if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
+#if DEBUG
+using System.Runtime.InteropServices;
+#endif
 using NUnit.Framework;
 using static RyuJitSharp.CorInfoHelpFunc;
 using static RyuJitSharp.GenTreeCallFlags;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.BBKinds;
+using static RyuJitSharp.RefCountState;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.gtCallTypes;
@@ -275,6 +280,408 @@ internal static unsafe class Arm64LinearScanConstructionTests
         });
     }
 
+    [TestCase(SRBM_V0 | SRBM_V1 | SRBM_V2 | SRBM_V4, 2u, SRBM_V0 | SRBM_V1,
+        SRBM_V0 | SRBM_V1 | SRBM_V2)]
+    [TestCase(SRBM_V0 | SRBM_V31, 2u, SRBM_V31, SRBM_V0 | SRBM_V31)]
+    [TestCase(SRBM_V0 | SRBM_V1 | SRBM_V30 | SRBM_V31, 3u, SRBM_V30 | SRBM_V31,
+        SRBM_V0 | SRBM_V1 | SRBM_V30 | SRBM_V31)]
+    [TestCase(SRBM_V0 | SRBM_V1 | SRBM_V2 | SRBM_V29 | SRBM_V30 | SRBM_V31, 4u,
+        SRBM_V29 | SRBM_V30 | SRBM_V31,
+        SRBM_V0 | SRBM_V29 | SRBM_V30 | SRBM_V31)]
+    [TestCase(SRBM_V0 | SRBM_V2 | SRBM_V4, 2u, SRBM_NONE, SRBM_NONE)]
+    public static void ConsecutiveCandidateStartsStayInFloatBank(
+        regMask candidates, uint count, regMask starts, regMask all)
+    {
+        WithCompiler(false, false, (compiler, _) => {
+            var allocator = new LinearScan(compiler);
+            Assert.That(FilterConsecutiveCandidates(allocator, candidates, count, out var covered),
+                Is.EqualTo(starts));
+            Assert.That(covered, Is.EqualTo(all));
+        });
+    }
+
+    [TestCase(REG_V0, SRBM_V0 | SRBM_V31)]
+    [TestCase(REG_V1, SRBM_V0)]
+    public static void ConsecutiveReuseUsesNativePredecessorBit(
+        regNumber assignedNext, regMask expected)
+    {
+        WithCompiler(false, false, (compiler, _) => {
+            compiler.compFloatingPointUsed = true;
+            compiler.info.compNeedsConsecutiveRegisters = true;
+            var allocator = new LinearScan(compiler);
+            var address = new GenTreeIntCon(TYP_I_IMPL, 0x1000);
+            var load = new GenTreeHWIntrinsic(
+                TYP_STRUCT, NI_AdvSimd_Arm64_Load2xVector128, TYP_INT, 16, address);
+            Assert.That(BuildNode(allocator, address), Is.Zero);
+            Assert.That(BuildNode(allocator, load), Is.EqualTo(1));
+            var definitions = allocator.refPositions.FindAll(position =>
+                position.treeNode == load && position.refType is RefType.RefTypeDef);
+            var next = definitions[1].getInterval();
+            var assignedRegister = allocator.physRegs[(int)assignedNext];
+            assignedRegister.init(assignedNext);
+            next.assignedReg = assignedRegister;
+            next.isActive = true;
+
+            var candidates = SRBM_V0 | SRBM_V1 | SRBM_V31;
+            Assert.That(GetConsecutiveCandidates(allocator, candidates, definitions[0], out var busy),
+                Is.EqualTo(expected));
+            Assert.That(busy, Is.EqualTo(SRBM_NONE));
+        });
+    }
+
+    [Test]
+    public static void ConsecutiveAssignmentWrapsAndReservesWholeSequence()
+    {
+        WithCompiler(false, false, (compiler, codeGen) => {
+            compiler.compFloatingPointUsed = true;
+            compiler.info.compNeedsConsecutiveRegisters = true;
+            var allocator = new LinearScan(compiler);
+            var address = new GenTreeIntCon(TYP_I_IMPL, 0x1000);
+            var load = new GenTreeHWIntrinsic(
+                TYP_STRUCT, NI_AdvSimd_Arm64_Load2xVector128, TYP_INT, 16, address);
+            _ = BuildNode(allocator, address);
+            _ = BuildNode(allocator, load);
+            var definitions = allocator.refPositions.FindAll(
+                position => position.treeNode == load && position.refType is RefType.RefTypeDef);
+            var first = definitions[0];
+            var second = definitions[1];
+            first.registerAssignment = SRBM_V31;
+
+            Assert.That(CanAssignNext(allocator, first, REG_V31), Is.True);
+            AssignConsecutive(allocator, first, REG_V31);
+            Assert.Multiple(() => {
+                Assert.That(second.registerAssignment, Is.EqualTo(SRBM_V0));
+                Assert.That(ConsecutiveInUse(allocator), Is.EqualTo(SRBM_V31 | SRBM_V0));
+            });
+        });
+    }
+
+    [Test]
+    public static void PartiallySpilledRestoreExcludesEntireConsecutiveSequence()
+    {
+        WithCompiler(false, false, (compiler, _) => {
+            compiler.compFloatingPointUsed = true;
+            compiler.info.compNeedsConsecutiveRegisters = true;
+            var allocator = new LinearScan(compiler);
+            var address = new GenTreeIntCon(TYP_I_IMPL, 0x1000);
+            var load = new GenTreeHWIntrinsic(
+                TYP_STRUCT, NI_AdvSimd_Arm64_Load2xVector128, TYP_INT, 16, address);
+            Assert.That(BuildNode(allocator, address), Is.Zero);
+            Assert.That(BuildNode(allocator, load), Is.EqualTo(1));
+            var definitions = allocator.refPositions.FindAll(position =>
+                position.treeNode == load && position.refType is RefType.RefTypeDef);
+            var first = definitions[0];
+            var second = definitions[1];
+            var local = NewInterval(allocator, TYP_SIMD16);
+            local.isPartiallySpilled = true;
+            var upper = NewInterval(allocator, TYP_SIMD16);
+            upper.isUpperVector = true;
+            upper.relatedInterval = local;
+            var restore = allocator.newRefPosition(upper, 1, RefType.RefTypeUpperVectorRestore,
+                load, SRBM_V31 | SRBM_V0 | SRBM_V3);
+            restore.needsConsecutive = true;
+            NextConsecutiveMap(allocator)[first] = restore;
+            NextConsecutiveMap(allocator)[restore] = second;
+            first.registerAssignment = SRBM_V31;
+
+            AssignConsecutive(allocator, first, REG_V31);
+            Assert.Multiple(() => {
+                Assert.That(restore.registerAssignment, Is.EqualTo(SRBM_V3));
+                Assert.That(second.registerAssignment, Is.EqualTo(SRBM_V0));
+            });
+        });
+    }
+
+    [Test]
+    public static void BusyNextRegisterCanBeKeptOnlyByItsAssignedInterval()
+    {
+        WithCompiler(false, false, (compiler, _) => {
+            compiler.compFloatingPointUsed = true;
+            compiler.info.compNeedsConsecutiveRegisters = true;
+            var allocator = new LinearScan(compiler);
+            var address = new GenTreeIntCon(TYP_I_IMPL, 0x1000);
+            var load = new GenTreeHWIntrinsic(
+                TYP_STRUCT, NI_AdvSimd_Arm64_Load2xVector128, TYP_INT, 16, address);
+            Assert.That(BuildNode(allocator, address), Is.Zero);
+            Assert.That(BuildNode(allocator, load), Is.EqualTo(1));
+            var definitions = allocator.refPositions.FindAll(position =>
+                position.treeNode == load && position.refType is RefType.RefTypeDef);
+            var nextInterval = definitions[1].getInterval();
+            var register = allocator.physRegs[(int)REG_V0];
+            register.init(REG_V0);
+            nextInterval.assignedReg = register;
+            nextInterval.isActive = true;
+            register.assignedInterval = nextInterval;
+
+            Assert.That(CanAssignNext(allocator, definitions[0], REG_V31), Is.True);
+            InUse(allocator) = new regMaskTP(SRBM_V0);
+            Assert.That(CanAssignNext(allocator, definitions[0], REG_V31), Is.False);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void FullAllocationAssignsWrappedDefinitionsAndClearsReservation(bool spillNextRegister)
+    {
+        WithCompiler(false, false, (compiler, codeGen) => {
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = true;
+            compiler.fgSafeFlowEdgeCreation = true;
+#endif
+            compiler.lvaRefCountState = RCS_NORMAL;
+            compiler.compFloatingPointUsed = true;
+            compiler.info.compNeedsConsecutiveRegisters = true;
+            compiler.fgPredsComputed = true;
+            var block = BasicBlock.New(compiler, BBJ_RETURN);
+            block.bbRefs = 1;
+            compiler.fgFirstBB = block;
+            compiler.fgLastBB = block;
+            compiler.fgBBcount = 1;
+            compiler.fgBBNumMax = block.bbNum;
+            codeGen.RegSet.rsClearRegsModified();
+
+            var allocator = new LinearScan(compiler);
+            BuildPhysRegRecords(allocator);
+            SetBlockSequence(allocator);
+            CurrentBlockNumber(allocator) = (uint)block.bbNum;
+            _ = allocator.newRefPosition(null, 0, RefType.RefTypeBB, null, SRBM_NONE);
+            RefPosition? occupiedDefinition = null;
+            RefPosition? occupiedUse = null;
+            Interval? occupied = null;
+            if (spillNextRegister)
+            {
+                occupied = NewInterval(allocator, TYP_SIMD16);
+                occupiedDefinition = allocator.newRefPosition(occupied, 1, RefType.RefTypeDef,
+                    new GenTreeVecCon(TYP_SIMD16), SRBM_V0);
+            }
+            var firstInterval = NewInterval(allocator, TYP_SIMD16);
+            var secondInterval = NewInterval(allocator, TYP_SIMD16);
+            var address = new GenTreeIntCon(TYP_I_IMPL, 0x1000);
+            var first = allocator.newRefPosition(
+                firstInterval, 2, RefType.RefTypeDef, address, SRBM_V31 | SRBM_V0);
+            var second = allocator.newRefPosition(
+                secondInterval, 2, RefType.RefTypeDef, address, SRBM_V0 | SRBM_V1);
+            first.needsConsecutive = true;
+            first.regCount = 2;
+            second.needsConsecutive = true;
+            NextConsecutiveMap(allocator)[first] = second;
+            NextConsecutiveMap(allocator)[second] = null;
+            if (occupied is not null)
+            {
+                occupiedUse = allocator.newRefPosition(occupied, 4, RefType.RefTypeUse,
+                    new GenTreeVecCon(TYP_SIMD16), SRBM_V0);
+            }
+            var lastInterval = NewInterval(allocator, TYP_INT);
+            var last = allocator.newRefPosition(lastInterval, 6, RefType.RefTypeDef,
+                new GenTreeIntCon(TYP_INT, 1), SRBM_R0);
+
+            AllocateRegisters(allocator);
+            Assert.Multiple(() => {
+                Assert.That(first.registerAssignment, Is.EqualTo(SRBM_V31));
+                Assert.That(second.registerAssignment, Is.EqualTo(SRBM_V0));
+                Assert.That(last.registerAssignment, Is.EqualTo(SRBM_R0));
+                Assert.That(ConsecutiveInUse(allocator), Is.EqualTo(SRBM_NONE));
+                if (spillNextRegister)
+                {
+                    Assert.That(occupiedDefinition?.spillAfter, Is.True);
+                    Assert.That(occupiedUse?.reload, Is.True);
+                }
+            });
+        });
+    }
+
+    [Test]
+    public static void FullAllocationAssignsPartiallySpilledUpperVectorRestore()
+    {
+        WithCompiler(false, false, (compiler, codeGen) => {
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = true;
+            compiler.fgSafeFlowEdgeCreation = true;
+#endif
+            compiler.lvaRefCountState = RCS_NORMAL;
+            compiler.compFloatingPointUsed = true;
+            compiler.fgPredsComputed = true;
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_SIMD16 }];
+            compiler.lvaCount = 1;
+            var block = BasicBlock.New(compiler, BBJ_RETURN);
+            block.bbRefs = 1;
+            compiler.fgFirstBB = block;
+            compiler.fgLastBB = block;
+            compiler.fgBBcount = 1;
+            compiler.fgBBNumMax = block.bbNum;
+            codeGen.RegSet.rsClearRegsModified();
+
+            var allocator = new LinearScan(compiler);
+            BuildPhysRegRecords(allocator);
+            SetBlockSequence(allocator);
+            CurrentBlockNumber(allocator) = (uint)block.bbNum;
+            _ = allocator.newRefPosition(null, 0, RefType.RefTypeBB, null, SRBM_NONE);
+            var local = NewInterval(allocator, TYP_SIMD16);
+            local.isLocalVar = true;
+            local.varNum = 0;
+            local.physReg = REG_V0;
+            local.isPartiallySpilled = true;
+            var upper = NewInterval(allocator, TYP_DOUBLE);
+            upper.isUpperVector = true;
+            upper.relatedInterval = local;
+            var restore = allocator.newRefPosition(upper, 2, RefType.RefTypeUpperVectorRestore,
+                new GenTreeVecCon(TYP_SIMD16), SRBM_V3);
+            restore.setRegOptional(true);
+
+            AllocateRegisters(allocator);
+            Assert.Multiple(() => {
+                Assert.That(restore.registerAssignment, Is.EqualTo(SRBM_V3));
+                Assert.That(upper.physReg, Is.EqualTo(REG_V3));
+                Assert.That(upper.assignedReg, Is.SameAs(allocator.physRegs[(int)REG_V3]));
+                Assert.That(local.isPartiallySpilled, Is.False);
+            });
+        });
+    }
+
+    [Test]
+    public static void BusyConsecutiveCandidatesRetainLeastSpillTies()
+    {
+        WithCompiler(false, false, (compiler, codeGen) => {
+            compiler.compFloatingPointUsed = true;
+            compiler.info.compNeedsConsecutiveRegisters = true;
+            var allocator = new LinearScan(compiler);
+            var address = new GenTreeIntCon(TYP_I_IMPL, 0x1000);
+            var load = new GenTreeHWIntrinsic(
+                TYP_STRUCT, NI_AdvSimd_Arm64_Load2xVector128, TYP_INT, 16, address);
+            _ = BuildNode(allocator, address);
+            _ = BuildNode(allocator, load);
+            var first = allocator.refPositions.Find(position =>
+                position.treeNode == load && position.refType is RefType.RefTypeDef &&
+                position.regCount == 2) ?? throw new AssertionException("Missing first vector definition.");
+
+            SetRegInUse(allocator, REG_V1, TYP_FLOAT);
+            SetRegInUse(allocator, REG_V2, TYP_FLOAT);
+            Assert.That(GetConsecutiveCandidates(allocator, SRBM_V0 | SRBM_V1 | SRBM_V2 | SRBM_V3,
+                first, out var busy), Is.EqualTo(SRBM_NONE));
+            Assert.That(busy, Is.EqualTo(SRBM_V0 | SRBM_V2));
+        });
+    }
+
+    [TestCase(SRBM_V31 | SRBM_V0, SRBM_V31)]
+    [TestCase(SRBM_V0 | SRBM_V1 | SRBM_V2, SRBM_V0)]
+    public static void AllocatorSelectsOnlyCompleteFreeSequences(regMask candidates, regMask expected)
+    {
+        WithCompiler(false, false, (compiler, codeGen) => {
+            compiler.compFloatingPointUsed = true;
+            compiler.info.compNeedsConsecutiveRegisters = true;
+            codeGen.RegSet.rsClearRegsModified();
+            var allocator = new LinearScan(compiler);
+            BlockInfo(allocator) = [new LsraBlockInfo()];
+            for (var register = REG_V0; register <= REG_V31; register++)
+            {
+                allocator.physRegs[(int)register].init(register);
+            }
+            var address = new GenTreeIntCon(TYP_I_IMPL, 0x1000);
+            var load = new GenTreeHWIntrinsic(
+                TYP_STRUCT, NI_AdvSimd_Arm64_Load2xVector128, TYP_INT, 16, address);
+            Assert.That(BuildNode(allocator, address), Is.Zero);
+            Assert.That(BuildNode(allocator, load), Is.EqualTo(1));
+            var first = allocator.refPositions.Find(position =>
+                position.treeNode == load && position.regCount == 2)
+                ?? throw new AssertionException("Missing consecutive first reference.");
+            first.registerAssignment = candidates;
+
+            Assert.That(GetConsecutiveCandidates(allocator, candidates, first, out _) & expected,
+                Is.EqualTo(expected));
+            Assert.That(first.isFixedRegRef, Is.False);
+            var selected = AllocateConsecutive(allocator, first.getInterval(), first, true);
+            Assert.Multiple(() => {
+                Assert.That(selected, Is.EqualTo(expected == SRBM_V31 ? REG_V31 : REG_V0));
+                Assert.That(first.registerAssignment, Is.EqualTo(expected));
+            });
+        }, minOpts: false);
+    }
+
+#if DEBUG
+    [TestCase(false, false)]
+    [TestCase(true, false)]
+    [TestCase(false, true)]
+    [TestCase(true, true)]
+    public static void ConsecutiveStressFallbackExcludesFixedConflicts(
+        bool delayRegFree, bool hasAvailablePair)
+    {
+        WithCompiler(false, false, (compiler, codeGen) => {
+            compiler.compFloatingPointUsed = true;
+            compiler.info.compNeedsConsecutiveRegisters = true;
+            codeGen.RegSet.rsClearRegsModified();
+            var allocator = new LinearScan(compiler);
+            BlockInfo(allocator) = [new LsraBlockInfo()];
+            for (var register = REG_V0; register <= REG_V31; register++)
+            {
+                allocator.physRegs[(int)register].init(register);
+            }
+
+            var address = new GenTreeIntCon(TYP_I_IMPL, 0x1000);
+            var load = new GenTreeHWIntrinsic(
+                TYP_STRUCT, NI_AdvSimd_Arm64_Load2xVector128, TYP_INT, 16, address);
+            Assert.That(BuildNode(allocator, address), Is.Zero);
+            Assert.That(BuildNode(allocator, load), Is.EqualTo(1));
+            var first = allocator.refPositions.Find(position =>
+                position.treeNode == load && position.regCount == 2)
+                ?? throw new AssertionException("Missing consecutive first reference.");
+            first.registerAssignment = hasAvailablePair
+                ? SRBM_V0 | SRBM_V1 | SRBM_V2 | SRBM_V3 | SRBM_V4
+                : SRBM_V0 | SRBM_V1 | SRBM_V2;
+            first.delayRegFree = delayRegFree;
+            StressMask(allocator) = 3;
+            InUse(allocator) = new regMaskTP(SRBM_V2);
+
+            FixedLow(allocator) = SRBM_V0 | SRBM_V1;
+            var nextFixed = NextFixed(allocator);
+            nextFixed[(int)REG_V0] = first.nodeLocation;
+            nextFixed[(int)REG_V1] = unchecked(first.nodeLocation + (delayRegFree ? 1u : 0u));
+
+            if (hasAvailablePair)
+            {
+                Assert.That(AllocateConsecutive(allocator, first.getInterval(), first, true), Is.EqualTo(REG_V3));
+                Assert.That(first.registerAssignment, Is.EqualTo(SRBM_V3));
+            }
+            else
+            {
+                var exception = Assert.Throws<FatalJitException>(
+                    () => AllocateConsecutive(allocator, first.getInterval(), first, true));
+                Assert.That(exception, Has.Property(nameof(FatalJitException.Result))
+                    .EqualTo(CorJitResult.CORJIT_SKIPPED));
+                Assert.That(s_assertions, Has.Count.EqualTo(1));
+                Assert.That(s_assertions[0], Does.Contain("starts != SRBM_NONE"));
+            }
+        }, captureAssertions: !hasAvailablePair);
+    }
+
+    [Test]
+    public static void RegisterStressPreservesConsecutiveAndPredicateBanks()
+    {
+        WithCompiler(false, false, (compiler, _) => {
+            compiler.compFloatingPointUsed = true;
+            compiler.info.compNeedsConsecutiveRegisters = true;
+            var allocator = new LinearScan(compiler);
+            StressMask(allocator) = 3;
+            var address = new GenTreeIntCon(TYP_I_IMPL, 0x1000);
+            var load = new GenTreeHWIntrinsic(
+                TYP_STRUCT, NI_AdvSimd_Arm64_Load2xVector128, TYP_INT, 16, address);
+            Assert.That(BuildNode(allocator, address), Is.Zero);
+            Assert.That(BuildNode(allocator, load), Is.EqualTo(1));
+            var first = allocator.refPositions.Find(position =>
+                position.treeNode == load && position.regCount == 2)
+                ?? throw new AssertionException("Missing consecutive first reference.");
+
+            Assert.Multiple(() => {
+                Assert.That(StressLimit(allocator, null, TYP_FLOAT, SRBM_V0 | SRBM_V1 | SRBM_V10),
+                    Is.EqualTo(SRBM_V0 | SRBM_V1));
+                Assert.That(StressLimit(allocator, first, TYP_FLOAT, SRBM_V0 | SRBM_V1 | SRBM_V10),
+                    Is.EqualTo(SRBM_V0 | SRBM_V1 | SRBM_V10));
+                Assert.That(StressLimit(allocator, null, TYP_MASK, SRBM_P0 | SRBM_P8),
+                    Is.EqualTo(SRBM_P0 | SRBM_P8));
+            });
+        });
+    }
+#endif
+
     [Test]
     public static void ScalableIntrinsicBuildsMaskDefinition()
     {
@@ -442,6 +849,81 @@ internal static unsafe class Arm64LinearScanConstructionTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "getNextConsecutiveRefPosition")]
     private static extern RefPosition? NextConsecutive(LinearScan allocator, RefPosition position);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_nextConsecutiveRefPositions")]
+    private static extern ref System.Collections.Generic.Dictionary<RefPosition, RefPosition?>
+        NextConsecutiveMap(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "filterConsecutiveCandidates")]
+    private static extern regMask FilterConsecutiveCandidates(
+        LinearScan allocator, regMask candidates, uint count, out regMask allCandidates);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "getConsecutiveCandidates")]
+    private static extern regMask GetConsecutiveCandidates(
+        LinearScan allocator, regMask candidates, RefPosition first, out regMask busy);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "canAssignNextConsecutiveRegisters")]
+    private static extern bool CanAssignNext(LinearScan allocator, RefPosition first, regNumber register);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "assignConsecutiveRegisters")]
+    private static extern void AssignConsecutive(LinearScan allocator, RefPosition first, regNumber register);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "setRegInUse")]
+    private static extern void SetRegInUse(LinearScan allocator, regNumber register, var_types type);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_consecutiveRegsInUseThisLocation")]
+    private static extern ref regMask ConsecutiveInUse(LinearScan allocator);
+
+#if DEBUG
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_fixedRegsLow")]
+    private static extern ref regMask FixedLow(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_nextFixedRef")]
+    private static extern ref uint[] NextFixed(LinearScan allocator);
+#endif
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_blockInfo")]
+    private static extern ref LsraBlockInfo[]? BlockInfo(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regsInUseThisLocation")]
+    private static extern ref regMaskTP InUse(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "allocateReg")]
+    private static extern regNumber AllocateConsecutive(
+        LinearScan allocator, Interval interval, RefPosition reference, bool needsConsecutive);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "allocateRegisters")]
+    private static extern void AllocateRegisters(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildPhysRegRecords")]
+    private static extern void BuildPhysRegRecords(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "setBlockSequence")]
+    private static extern void SetBlockSequence(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_currentBlockNumber")]
+    private static extern ref uint CurrentBlockNumber(LinearScan allocator);
+
+#if DEBUG
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
+    private static extern ref int StressMask(LinearScan allocator);
+
+    private static readonly System.Collections.Generic.List<string> s_assertions = [];
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
+    {
+        s_assertions.Add(Marshal.PtrToStringUTF8((nint)expression) ?? "");
+        return 0;
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_altJitSkipOnAssert")]
+    private static extern ref int AltJitSkipOnAssert(ref JitConfigValues config);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "stressLimitRegs")]
+    private static extern regMask StressLimit(
+        LinearScan allocator, RefPosition? reference, var_types type, regMask mask);
+#endif
+
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "getArm64IntrinsicCandidates")]
     private static extern regMask IntrinsicCandidates(LinearScan allocator,
         GenTreeHWIntrinsic intrinsic, int operandNumber, HWIntrinsicCategory category);
@@ -468,16 +950,28 @@ internal static unsafe class Arm64LinearScanConstructionTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_availableRegCount")]
     private static extern ref int AvailableRegCount(LinearScan allocator);
 
-    private static void WithCompiler(bool debugEnC, bool hasPatchpoint, Action<Compiler, CodeGen> action)
+    private static void WithCompiler(
+        bool debugEnC, bool hasPatchpoint, Action<Compiler, CodeGen> action,
+        bool minOpts = true, bool captureAssertions = false)
     {
 #if DEBUG
-        using var tls = new JitTls(null);
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.doAssert = &RecordAssertion;
+        ICorJitInfo ee = new() { lpVtbl = &vtable };
+        using var tls = new JitTls(captureAssertions ? &ee : null);
+        var previousConfig = JitConfig;
+        if (captureAssertions)
+        {
+            JitConfig = new JitConfigValues();
+            AltJitSkipOnAssert(ref JitConfig) = 1;
+            s_assertions.Clear();
+        }
 #endif
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.opts.SetMinOpts(minOpts);
         compiler.opts.compDbgEnC = debugEnC;
 #if DEBUG
         compiler.info.compFullName = nameof(Arm64LinearScanConstructionTests);
@@ -486,6 +980,12 @@ internal static unsafe class Arm64LinearScanConstructionTests
         {
             flags.Set(JitFlags.JIT_FLAG_DEBUG_EnC);
         }
+#if DEBUG
+        if (captureAssertions)
+        {
+            flags.Set(JitFlags.JIT_FLAG_ALT_JIT);
+        }
+#endif
 
         JitTls.Compiler = compiler;
         try
@@ -498,6 +998,12 @@ internal static unsafe class Arm64LinearScanConstructionTests
         finally
         {
             JitTls.Compiler = previous;
+#if DEBUG
+            if (captureAssertions)
+            {
+                JitConfig = previousConfig;
+            }
+#endif
         }
     }
 }

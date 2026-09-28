@@ -9,7 +9,7 @@ public sealed partial class LinearScan
 {
     private void allocateRegisters()
     {
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
+#if (TARGET_AMD64 && WINDOWS_AMD64_ABI) || TARGET_ARM64
         JITDUMP("*************** In LinearScan::allocateRegisters()\n");
 #if DEBUG
         if (VERBOSE)
@@ -82,6 +82,9 @@ public sealed partial class LinearScan
         var copyRegistersToFree = RBM_NONE;
         _regsInUseThisLocation = RBM_NONE;
         _regsInUseNextLocation = RBM_NONE;
+#if TARGET_ARM64
+        _consecutiveRegsInUseThisLocation = SRBM_NONE;
+#endif
         RefPosition? lastAllocatedRefPosition = null;
         var handledBlockEnd = false;
 
@@ -131,6 +134,9 @@ public sealed partial class LinearScan
             _currentAllocationLocation = location;
             if (location > previousLocation)
             {
+#if TARGET_ARM64
+                _consecutiveRegsInUseThisLocation = SRBM_NONE;
+#endif
                 makeRegsAvailable(copyRegistersToFree);
                 copyRegistersToFree = RBM_NONE;
                 _regsInUseThisLocation = _regsInUseNextLocation;
@@ -155,6 +161,19 @@ public sealed partial class LinearScan
             }
             previousLocation = location;
 
+#if TARGET_ARM64 && DEBUG
+            if (_compiler.info.compNeedsConsecutiveRegisters)
+            {
+                if (reference.needsConsecutive)
+                {
+                    _consecutiveRegistersLocation = location;
+                }
+                else if (_consecutiveRegistersLocation < location)
+                {
+                    _consecutiveRegistersLocation = MinLocation;
+                }
+            }
+#endif
             var referent = reference.referent;
             var refType = reference.refType;
             RefPosition? previousReference = null;
@@ -272,6 +291,9 @@ public sealed partial class LinearScan
 
             var assignedRegister = interval.physReg;
             var allocate = true;
+#if TARGET_ARM64
+            var needsConsecutive = _compiler.info.compNeedsConsecutiveRegisters && reference.needsConsecutive;
+#endif
 #if DEBUG
             var didDump = false;
 #endif
@@ -380,11 +402,13 @@ public sealed partial class LinearScan
                         assert(!extraSave);
                         allocate = false;
                     }
+#if TARGET_XARCH
                     else if (localInterval.registerType is TYP_SIMD64)
                     {
                         allocate = false;
                         localInterval.isPartiallySpilled = true;
                     }
+#endif
                     else
                     {
                         localInterval.isPartiallySpilled = true;
@@ -576,30 +600,97 @@ public sealed partial class LinearScan
                 }
                 else if ((assignedBit & reference.registerAssignment) != SRBM_NONE)
                 {
-                    reference.registerAssignment = assignedBit;
-                    if (!interval.isActive)
+#if TARGET_ARM64
+                    if (needsConsecutive && reference.isFirstRefPositionOfConsecutiveRegisters())
                     {
-                        if (refType is RefType.RefTypeDummyDef)
+                        if (canAssignNextConsecutiveRegisters(reference, assignedRegister))
                         {
-                            interval.isActive = true;
-                            assert(ReferenceEquals(register.assignedInterval, interval));
+                            reference.registerAssignment = assignedBit;
+#if DEBUG
+                            dumpFullAllocationEvent(FullAllocationEvent.KEPT_ALLOCATION,
+                                reference, interval, assignedRegister);
+#endif
+                            assignConsecutiveRegisters(reference, assignedRegister);
                         }
                         else
                         {
-                            reference.reload = true;
+                            var copy = assignCopyReg(reference, true);
+                            assignConsecutiveRegisters(reference, copy);
+                            if (copy != assignedRegister)
+                            {
+                                lastAllocatedRefPosition = reference;
+                                var copyBit = genSingleTypeRegMask(copy);
+                                var oldBit = (assignedBit & _consecutiveRegsInUseThisLocation) != SRBM_NONE
+                                    ? SRBM_NONE : assignedBit;
+                                updateRegsFreeBusyState(reference, interval.registerType, oldBit | copyBit,
+                                    ref registersToFree, ref delayedRegistersToFree, interval, assignedRegister);
+                                if (!reference.lastUse)
+                                {
+                                    copyRegistersToFree |= createRegisterMask(copyBit, interval.registerType);
+                                }
+                                if (!interval.isLocalVar)
+                                {
+                                    reference.moveReg = true;
+                                    reference.copyReg = false;
+                                }
+                                clearNextIntervalRef(copy, interval.registerType);
+                                clearSpillCost(copy, interval.registerType);
+                                updateNextIntervalRef(assignedRegister, interval);
+                                updateSpillCost(assignedRegister, interval);
+                            }
+                            else
+                            {
+                                reference.copyReg = false;
+                                reference.registerAssignment = assignedBit;
+                            }
+                            continue;
                         }
                     }
-#if DEBUG
-                    dumpFullAllocationEvent(FullAllocationEvent.KEPT_ALLOCATION,
-                        reference, interval, assignedRegister);
+                    else
 #endif
+                    {
+                        reference.registerAssignment = assignedBit;
+                        if (!interval.isActive)
+                        {
+                            if (refType is RefType.RefTypeDummyDef)
+                            {
+                                interval.isActive = true;
+                                assert(ReferenceEquals(register.assignedInterval, interval));
+                            }
+                            else
+                            {
+                                reference.reload = true;
+                            }
+                        }
+#if DEBUG
+                        dumpFullAllocationEvent(FullAllocationEvent.KEPT_ALLOCATION,
+                            reference, interval, assignedRegister);
+#endif
+                    }
                 }
                 else if (!RefTypeIsDef(refType))
                 {
+#if TARGET_ARM64
+                    var copyRegister = assignCopyReg(
+                        reference, needsConsecutive && refType is RefType.RefTypeUse);
+#else
                     var copyRegister = assignCopyReg(reference);
+#endif
                     lastAllocatedRefPosition = reference;
                     var copyMask = genSingleTypeRegMask(copyRegister);
+#if TARGET_ARM64
+                    if (needsConsecutive && reference.isFirstRefPositionOfConsecutiveRegisters())
+                    {
+                        assignConsecutiveRegisters(reference, copyRegister);
+                    }
+#endif
                     var originalMask = genSingleTypeRegMask(assignedRegister);
+#if TARGET_ARM64
+                    if (needsConsecutive && (_consecutiveRegsInUseThisLocation & originalMask) != SRBM_NONE)
+                    {
+                        originalMask = SRBM_NONE;
+                    }
+#endif
                     updateRegsFreeBusyState(reference, interval.registerType, originalMask | copyMask,
                         ref registersToFree, ref delayedRegistersToFree, interval, assignedRegister);
                     if (!reference.lastUse)
@@ -632,6 +723,31 @@ public sealed partial class LinearScan
                 }
             }
 
+#if TARGET_ARM64
+            if (needsConsecutive)
+            {
+                if (reference.isFirstRefPositionOfConsecutiveRegisters())
+                {
+                    if (assignedRegister != REG_NA &&
+                        !canAssignNextConsecutiveRegisters(reference, assignedRegister))
+                    {
+                        assignedRegister = REG_NA;
+                        reference.registerAssignment = allRegs(interval.registerType);
+                    }
+                }
+                else if (refType is RefType.RefTypeUse)
+                {
+                    if (assignedBit == reference.registerAssignment)
+                    {
+                        allocate = false;
+                    }
+                    else
+                    {
+                        assignedRegister = REG_NA;
+                    }
+                }
+            }
+#endif
             if (assignedRegister == REG_NA)
             {
                 if (reference.RegOptional())
@@ -645,9 +761,10 @@ public sealed partial class LinearScan
                     {
                         allocate = false;
                     }
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE && TARGET_XARCH
                     if ((refType is RefType.RefTypeUpperVectorRestore) && (interval.physReg == REG_NA))
                     {
+                        assert(reference.regOptional);
                         allocate = false;
                     }
 #endif
@@ -667,7 +784,19 @@ public sealed partial class LinearScan
                     {
                         unassignPhysReg(assigned, (RefPosition?)null);
                     }
+#if TARGET_ARM64
+                    assignedRegister = allocateReg(
+                        interval, reference, out var selectionScore, needsConsecutive);
+#else
                     assignedRegister = allocateReg(interval, reference, out var selectionScore);
+#endif
+#if TARGET_ARM64
+                    if (needsConsecutive && reference.isFirstRefPositionOfConsecutiveRegisters() &&
+                        assignedRegister != REG_NA)
+                    {
+                        assignConsecutiveRegisters(reference, assignedRegister);
+                    }
+#endif
 #if DEBUG
                     if (assignedRegister != REG_NA)
                     {
@@ -803,7 +932,16 @@ public sealed partial class LinearScan
 #endif
     }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE && TARGET_AMD64
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE && TARGET_ARM64
+    private bool canSkipUpperVectorSave(RefPosition reference, Interval localInterval)
+    {
+        assert(reference.refType is RefType.RefTypeUpperVectorSave);
+        return localInterval.physReg is not REG_NA &&
+            reference.treeNode?.Oper is GT_PROF_HOOK &&
+            !getKillSetForProfilerHook().IsSet(localInterval.physReg) &&
+            !new regMaskTP(SRBM_FLT_CALLEE_SAVED).IsSet(localInterval.physReg);
+    }
+#elif FEATURE_PARTIAL_SIMD_CALLEE_SAVE && TARGET_AMD64
     private static bool canSkipUpperVectorSave(RefPosition reference, Interval localInterval)
     {
         assert(reference.refType is RefType.RefTypeUpperVectorSave);

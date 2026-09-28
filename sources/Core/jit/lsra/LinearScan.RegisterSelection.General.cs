@@ -10,10 +10,18 @@ public sealed partial class LinearScan
     private sealed partial class RegisterSelection
     {
         internal SingleTypeRegSet select(
-            Interval currentInterval, RefPosition refPosition, out RegisterScore selectionScore)
+            Interval currentInterval, RefPosition refPosition, out RegisterScore selectionScore) =>
+            select(currentInterval, refPosition, out selectionScore, false);
+
+        internal SingleTypeRegSet select(
+            Interval currentInterval, RefPosition refPosition, out RegisterScore selectionScore,
+            bool needsConsecutiveRegisters)
         {
             selectionScore = RegisterScore.NONE;
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
+#if (TARGET_AMD64 && WINDOWS_AMD64_ABI) || TARGET_ARM64
+#if TARGET_ARM64
+            assert(!needsConsecutiveRegisters || refPosition.needsConsecutive);
+#endif
             reset(currentInterval, refPosition);
 
             if (RefTypeIsDef(refPosition.refType))
@@ -160,11 +168,17 @@ public sealed partial class LinearScan
                 }
             }
 
+#if DEBUG && TARGET_ARM64
+            var inUseOrBusyRegsMask = SRBM_NONE;
+#endif
             if (!_found)
             {
                 var busy = (_linearScan._regsBusyUntilKill | _linearScan._regsInUseThisLocation)
                     .GetRegSetForType(_regType);
                 _candidates &= ~busy;
+#if DEBUG && TARGET_ARM64
+                inUseOrBusyRegsMask |= busy;
+#endif
                 var conflicts = _candidates;
 #if HAS_MORE_THAN_64_REGISTERS
                 conflicts &= varTypeIsMask(_regType) ? _linearScan._fixedRegsHigh : _linearScan._fixedRegsLow;
@@ -181,6 +195,9 @@ public sealed partial class LinearScan
                         (refPosition.delayRegFree && location == unchecked(refPosition.nodeLocation + 1)))
                     {
                         _candidates &= ~bit;
+#if DEBUG && TARGET_ARM64
+                        inUseOrBusyRegsMask |= bit;
+#endif
                     }
                 }
                 _candidates |= fixedRegMask;
@@ -192,10 +209,17 @@ public sealed partial class LinearScan
                 _prevRegBit = genSingleTypeRegMask(previousRegister.regNum);
                 if (previousRegister.assignedInterval == currentInterval && (_candidates & _prevRegBit) != SRBM_NONE)
                 {
-                    _candidates = _prevRegBit;
-                    _found = true;
+#if TARGET_ARM64
+                    if (!needsConsecutiveRegisters)
+                    {
+#endif
+                        _candidates = _prevRegBit;
+                        _found = true;
 #if DEBUG
-                    selectionScore = RegisterScore.THIS_ASSIGNED;
+                        selectionScore = RegisterScore.THIS_ASSIGNED;
+#endif
+#if TARGET_ARM64
+                    }
 #endif
                 }
             }
@@ -204,14 +228,71 @@ public sealed partial class LinearScan
                 _prevRegBit = SRBM_NONE;
             }
 
-            if (!_found && _candidates == SRBM_NONE)
+            if (!_found && !needsConsecutiveRegisters && _candidates == SRBM_NONE)
             {
                 assert(refPosition.RegOptional());
                 currentInterval.assignedReg = null;
                 return SRBM_NONE;
             }
 
-            _freeCandidates = _linearScan.getFreeCandidates(_candidates, _regType);
+#if TARGET_ARM64
+            if (needsConsecutiveRegisters)
+            {
+                if (refPosition.isFirstRefPositionOfConsecutiveRegisters())
+                {
+                    _freeCandidates = _linearScan.getConsecutiveCandidates(
+                        _candidates, refPosition, out var busyCandidates);
+                    if (_freeCandidates == SRBM_NONE)
+                    {
+                        _candidates = busyCandidates;
+                    }
+                    else
+                    {
+                        assert(busyCandidates == SRBM_NONE);
+                    }
+                }
+                else
+                {
+                    assert(refPosition.refType is RefType.RefTypeUpperVectorRestore ||
+                        genMaxOneBit(_candidates));
+                    _freeCandidates = _candidates & _linearScan._availableRegs[(int)regType(_regType)];
+                }
+
+                if (_freeCandidates == SRBM_NONE && _candidates == SRBM_NONE)
+                {
+#if DEBUG
+                    if ((_linearScan._lsraStressMask & 0x3) != 0 &&
+                        refPosition.isFirstRefPositionOfConsecutiveRegisters())
+                    {
+                        var available = (refPosition.registerAssignment & ~inUseOrBusyRegsMask) &
+                            _linearScan._availableFloatRegs;
+                        var starts = _linearScan.filterConsecutiveCandidates(
+                            available, refPosition.regCount, out _);
+                        assert(starts != SRBM_NONE);
+                        if (starts != SRBM_NONE)
+                        {
+                            var firstRegister = System.Numerics.BitOperations.TrailingZeroCount(
+                                unchecked((ulong)starts));
+                            _candidates |= unchecked((SingleTypeRegSet)(
+                                ((1UL << refPosition.regCount) - 1) << firstRegister));
+                        }
+                    }
+#endif
+#if DEBUG
+                    if (_candidates == SRBM_NONE)
+                    {
+                        throw new FatalJitException("Insufficient consecutive register candidates.");
+                    }
+#else
+                    throw new FatalJitException("Insufficient consecutive register candidates.");
+#endif
+                }
+            }
+            else
+#endif
+            {
+                _freeCandidates = _linearScan.getFreeCandidates(_candidates, _regType);
+            }
             if (_freeCandidates == SRBM_NONE)
             {
                 if (!refPosition.IsActualRef())
