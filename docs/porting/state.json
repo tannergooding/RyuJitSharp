@@ -18,10 +18,10 @@
       "startIndexCommit": "4816a0d823a22b12e2f5de4686bba6201ff08a0b",
       "protectedRef": "refs/porting/snapshots/residual-reconcile-start-20260927",
       "startTree": "59d3dbb096ebc96e66e006f75d77176444088d8c",
-      "latestSnapshot": "b69b3c33106e178a2dfa158c3305fd78d17c0994",
-      "latestIndexCommit": "353bd3c54277455d68220a10d65f1851cb690b54",
-      "latestProtectedRef": "refs/porting/snapshots/residual-range-checks-20260927",
-      "latestTree": "ed9bcb5df78328708f4e94299cc13099b4542220",
+      "latestSnapshot": "cc2f0da9e4b7959fd8e67ffe645802591170d707",
+      "latestIndexCommit": "138fe90d0ec4c9b402dd5a7906507f5ca07e165c",
+      "latestProtectedRef": "refs/porting/snapshots/residual-loops-flowgraph-20260927",
+      "latestTree": "2267c21ec22e730d4a144dd4bca13cd4db54d968",
       "startingState": "176 staged paths: one addition, 83 deletions and 92 modifications; no unstaged changes. Original staged content is protected independently of new retirement edits.",
       "retired": [
         "2e6b6e34: gtExtractSideEffectsFromUnusedNode and related declarations. gtExtractSideEffList's native body had already been removed; its former absence was not used as evidence of completion.",
@@ -29,7 +29,8 @@
         "Completed shared helper traversal/split/spill/flag support, runtime lookups, static initialization, stack arrays, late casts and TLS/VN public drivers; GC polls, ThreeOptLayout and its RPO/try-end support, cold-section selection and missing-block weights; associated declarations.",
         "Remaining fgprofile.cpp: complete instrumentation classes/drivers and profile repair. Complete head-tail merging/helper closure and GDV resolution from fgopt.cpp, with associated declarations.",
         "Complete objectalloc.cpp/.h and async.cpp/.h/asyncanalysis.cpp; completed promotion.cpp/.h/promotionliveness.cpp and decomposition support. Retain DetermineRemainderStrategy and its result type for B382 target gates.",
-        "Complete range-check cloning, completed range-analysis/elimination/Limit/Range definitions and range-check removal helpers. Retain GetRangeFromAssertionsWorker and its declaration for B383 ARM64 intrinsic bounds."
+        "Complete range-check cloning, completed range-analysis/elimination/Limit/Range definitions and range-check removal helpers. Retain GetRangeFromAssertionsWorker and its declaration for B383 ARM64 intrinsic bounds.",
+        "Remaining completed optimizer.cpp and fgopt.cpp implementations, natural-loop definition/iteration/duplication/predicate/accessor support in flowgraph.cpp and associated models/declarations. Retain optCheckPreds for B384."
       ],
       "remainingHelperTargets": [
         "helperexpansion.cpp now contains only the two TLS call transformations and ReadUtf8. All three are complete for Windows x64.",
@@ -37,8 +38,9 @@
       ],
       "remainingPromotionTargets": "B382: DetermineRemainderStrategy remains for 32-bit and SIMD-disabled target selection. Windows-x64 behavior is complete; do not count this retained body as a Windows gap.",
       "remainingRangeTargets": "B383: GetRangeFromAssertionsWorker remains for three ARM64 leading-zero/sign-count intrinsic bounds. Windows-x64 behavior is complete; the native declaration remains with it.",
-      "remaining": "Reconcile reviewed loop-optimization areas and older fgopt/flowgraph support next. The post-refresh commit queue is not a completeness denominator.",
-      "verification": "Range retirement removes 3933 lines across exactly six files relative to f0f6432, retaining the complete ARM64-incomplete assertion worker and declaration. Earlier groups removed 17729 allocation/promotion/async, 3082 profile/merging, 4031 helper/layout and 394 extraction/stress lines. Each delta is deletion-only under git diff --minimal. Hashed preimages, ranges and protected snapshot receipts are in artifacts/residual-reconciliation. Inherited staging is preserved; no unstaged native changes remain. Oracle tracked source/index are unchanged.",
+      "remainingOptimizerSupport": "B384: optimizer.cpp now contains only optCheckPreds, an unported DEBUG-only predecessor verifier with no callsites found in the pinned native tree. This is legacy debug support, not an identified mandatory phase gap.",
+      "remaining": "Reconcile remaining dominator/DFS/SCC/EH graph support in flowgraph.cpp and its declarations next. The post-refresh commit queue is not a completeness denominator.",
+      "verification": "Loop/CFG retirement removes 10644 lines across exactly four files relative to b69b3c3, retaining the complete legacy debug verifier and declaration. Earlier groups removed 3933 range-check, 17729 allocation/promotion/async, 3082 profile/merging, 4031 helper/layout and 394 extraction/stress lines. Each delta is deletion-only under git diff --minimal. Hashed preimages, ranges and protected snapshot receipts are in artifacts/residual-reconciliation. Inherited staging is preserved; no unstaged native changes remain. Oracle tracked source/index are unchanged.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
       "policy": "Retire only reviewed complete implementations. Retain or explicitly identify unfinished shared/Windows paths and other-platform-only paths. Preserve the oracle and existing index distinctions; do not infer parity or percentages from deletion counts."
     },
@@ -491,7 +493,7 @@
         }
       ]
     },
-    "nextAction": "Continue native residual reconciliation from protected staged snapshot b69b3c33106e178a2dfa158c3305fd78d17c0994; do not reapply prior deletions. Range-check cloning and completed range analysis/removal are retired; B383 retains the assertion worker for ARM64 intrinsic bounds. Next reconcile loop inversion/unrolling/hoisting and completed flow-optimization areas in optimizer.cpp, fgopt.cpp and flowgraph.cpp using existing integrated reviews. Retain B382 promotion target gates and the three mixed TLS/ReadUtf8 helpers. Preserve native staging and the oracle; use direct file tools and consolidated hidden process runners rather than focus-stealing PowerShell launches. Pending platform integration commits remain Linux e42864b53384c77e22daefbe743e77023f7a577e and ARM64 0c0d33f22a29cfc79133f93757071914b0cb27e5.",
+    "nextAction": "Continue native residual reconciliation from protected staged snapshot cc2f0da9e4b7959fd8e67ffe645802591170d707; do not reapply prior deletions. Loop/CFG implementations and natural-loop support are retired; optimizer.cpp retains only B384 optCheckPreds. Next reconcile remaining flowgraph.cpp dominator/DFS/SCC/EH support, starting with FlowGraphDominatorTree.IntersectDom/Compute and their existing managed mappings; retain unfinished funclet/platform paths. Retain B382 promotion gates, B383 ARM64 range bounds and the three mixed TLS/ReadUtf8 helpers. Preserve native staging and the oracle; use direct file tools and consolidated hidden process runners rather than focus-stealing PowerShell launches. Pending platform integration commits remain Linux e42864b53384c77e22daefbe743e77023f7a577e and ARM64 0c0d33f22a29cfc79133f93757071914b0cb27e5.",
     "arm64HardwareContainment": {
       "scope": "Complete ARM64 hardware and bounds containment, with MOVI/MVNI byte-shift and doubleword-mask predicates, exact FMOV constants, comparison-zero rules and SVE embedded masking.",
       "mapping": "lowerarmarch.cpp:2033-2060,3805-4225 -> Lowering.Arm64HardwareContainment.cs and Lowering.BoundsChecks.cs; emitarm64.cpp:2451-2483,3113-3207 -> Emitter.ImmediatePredicates.cs. Shared ContainCheckNode now dispatches ARM64 hardware containment; bounds containment remains a separate LowerNode action, matching native.",
@@ -7489,7 +7491,7 @@
       "area": "flow-optimization-phases",
       "native": ["src\\coreclr\\jit\\optimizer.cpp:2366-2455", "src\\coreclr\\jit\\fgopt.cpp:2575-2853,2984-3281", "src\\coreclr\\jit\\gentree.cpp:3863-3921"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.FlowOptimization.cs", "sources\\Core\\jit\\compiler\\Compiler.RarelyRunBlocks.cs", "sources\\Core\\jit\\compiler\\Compiler.FlowGraphBranchOptimization.cs", "sources\\Core\\jit\\compiler\\Compiler.gt.cs:gtTryReverseCond/gtReverseCond"],
-      "status": "Complete early/pre-layout/post-layout phases and native prerequisite closure; selected execution and positive native phase comparisons established. Broader code/dump parity remains open.",
+      "status": "Complete early/pre-layout/post-layout phases and native prerequisite closure; selected execution and positive native phase comparisons established. Broader code/dump parity remains open. Completed optimizer.cpp/fgopt.cpp implementations and associated declarations retired from runtime-port.",
       "reconciledCommit": null
     },
     {
@@ -7510,7 +7512,7 @@
       "area": "loop-hoisting",
       "native": ["src\\coreclr\\jit\\optimizer.cpp:3595-4045,4048-4169,4258-4290,4352-5045,5253-5286", "src\\coreclr\\jit\\compiler.h:7650-7734"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.LoopHoisting.Driver.cs", "sources\\Core\\jit\\compiler\\Compiler.LoopHoisting.Context.cs", "sources\\Core\\jit\\compiler\\Compiler.LoopHoisting.Candidates.cs", "sources\\Core\\jit\\compiler\\Compiler.LoopHoisting.Visitor.cs"],
-      "status": "Complete production phase. Selected native hoists and downstream weighted uses match; broader dump/code parity remains open.",
+      "status": "Complete production phase. Selected native hoists and downstream weighted uses match; broader dump/code parity remains open. Native hoisting implementation, context and declarations retired from runtime-port.",
       "reconciledCommit": null
     },
     {
@@ -8587,7 +8589,13 @@
       "native": ["src\\coreclr\\jit\\flowgraph.cpp", "src\\coreclr\\jit\\compiler.h", "src\\coreclr\\jit\\compiler.hpp", "src\\coreclr\\jit\\optimizer.cpp", "src\\coreclr\\jit\\fgopt.cpp", "src\\coreclr\\jit\\fgbasic.cpp", "src\\coreclr\\jit\\jiteh.cpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\FlowGraphNaturalLoop.cs", "sources\\Core\\jit\\compiler\\FlowGraphNaturalLoops.cs", "sources\\Core\\jit\\compiler\\Compiler.LoopDiscovery.cs", "sources\\Core\\jit\\compiler\\Compiler.LoopDiscovery.EH.cs", "sources\\Core\\jit\\compiler\\Compiler.BlockWeights.cs", "sources\\Core\\jit\\compiler\\BlockReachabilitySets.cs"],
       "reconciledCommit": null,
-      "scope": "Natural-loop analysis plus complete discovery/compaction/canonicalization phase, direct EH helpers, block weights and dense reachability. Profile repair and other loop optimizations remain separate."
+      "scope": "Natural-loop analysis plus complete discovery/compaction/canonicalization phase, direct EH helpers, block weights and dense reachability. Profile repair and other loop optimizations remain separate. Completed optimizer/natural-loop implementation and model/declaration closure retired from runtime-port; other graph support remains independently tracked."
+    },
+    {
+      "area": "legacy-predecessor-debug-verifier",
+      "native": ["src\\coreclr\\jit\\optimizer.cpp:Compiler::optCheckPreds", "src\\coreclr\\jit\\compiler.h:Compiler::optCheckPreds"],
+      "csharp": [],
+      "status": "B384: unported DEBUG-only helper retained in runtime-port. Pinned native tree contains its definition/declaration but no callsites; not an identified mandatory phase gap."
     },
     {
       "area": "trees-and-locals",
