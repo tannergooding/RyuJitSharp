@@ -79,7 +79,8 @@ public partial class Compiler
 #if TARGET_ARM64 && DEBUG
                 if (JitConfig.JitUseScalableVectorT != 0)
                 {
-                    throw new NotImplementedException("Scalable mask tree storage is not yet ported.");
+                    tree._vnPair.SetBoth(vnStore.VNForSimdMaskScalableCon(tree.AsMskCon().SimdScalableMaskVal));
+                    break;
                 }
 #endif
                 tree._vnPair.SetBoth(vnStore.VNForSimdMaskCon(tree.AsMskCon().SimdMaskVal));

@@ -37,9 +37,12 @@ public partial class Compiler
 #if TARGET_ARM64
             case TYP_SIMD:
             {
-                NYI("ARM64 scalable vector-to-mask constant folding");
-                fatal(CORJIT_IMPLLIMITATION);
-                return tree;
+                if (!EvaluateSimdCvtScalableVectorToMask(tree.SimdBaseType, ref mskCon.SimdScalableMaskVal,
+                    vecCon.SimdScalableVal))
+                {
+                    return tree;
+                }
+                break;
             }
 #endif
 

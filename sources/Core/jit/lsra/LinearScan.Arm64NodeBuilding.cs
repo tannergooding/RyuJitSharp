@@ -203,7 +203,14 @@ public sealed partial class LinearScan
             case GT_CNS_MSK:
             {
                 var mask = tree.AsMskCon();
-                if (!mask.IsAllBitsSet && !mask.IsZero)
+                var maskBaseType = TYP_BYTE;
+#if DEBUG
+                if (JitConfig.JitUseScalableVectorT != 0)
+                {
+                    maskBaseType = mask.SimdScalableMaskVal.BaseType;
+                }
+#endif
+                if (!mask.IsAllBitsSetForType(maskBaseType) && !mask.IsZero)
                 {
                     _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
                     buildInternalRegisterUses();

@@ -4,6 +4,8 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if FEATURE_MASKED_HW_INTRINSICS
+using System.Runtime.CompilerServices;
+
 namespace RyuJitSharp;
 
 public sealed class GenTreeMskCon : GenTree
@@ -14,25 +16,31 @@ public sealed class GenTreeMskCon : GenTree
         : base(GT_CNS_MSK, TYP_MASK)
     {
         _simdMaskVal = simdMaskVal;
+#if TARGET_ARM64
+        assert(Unsafe.SizeOf<simdmaskscalable_t>() <= Unsafe.SizeOf<simdmask_t>());
+#endif
     }
 
-    public bool IsAllBitsSet
+    public bool IsAllBitsSet => IsAllBitsSetForType(TYP_BYTE);
+
+    public bool IsAllBitsSetForType(var_types simdBaseType)
     {
-        get
-        {
 #if TARGET_ARM64 && DEBUG
-            if (JitConfig.JitUseScalableVectorT != 0)
-            {
-                NYI("ARM64 scalable mask constant all-bits query");
-                fatal(CORJIT_IMPLLIMITATION);
-            }
+        if (JitConfig.JitUseScalableVectorT != 0)
+        {
+            return SimdScalableMaskVal.IsAllBitsSet(simdBaseType);
+        }
 #endif
 
-            return _simdMaskVal.IsAllBitsSet;
-        }
+        return _simdMaskVal.IsAllBitsSet;
     }
 
     public ref simdmask_t SimdMaskVal => ref _simdMaskVal;
+
+#if TARGET_ARM64
+    // Native overlays the two byte-sized scalable fields on the eight-byte mask payload.
+    public ref simdmaskscalable_t SimdScalableMaskVal => ref Unsafe.As<simdmask_t, simdmaskscalable_t>(ref _simdMaskVal);
+#endif
 
     public bool IsZero
     {
@@ -41,8 +49,7 @@ public sealed class GenTreeMskCon : GenTree
 #if TARGET_ARM64 && DEBUG
             if (JitConfig.JitUseScalableVectorT != 0)
             {
-                NYI("ARM64 scalable mask constant zero query");
-                fatal(CORJIT_IMPLLIMITATION);
+                return SimdScalableMaskVal.IsZero;
             }
 #endif
 
@@ -69,8 +76,7 @@ public sealed class GenTreeMskCon : GenTree
 #if TARGET_ARM64 && DEBUG
         if (JitConfig.JitUseScalableVectorT != 0)
         {
-            NYI("ARM64 scalable mask constant comparison");
-            fatal(CORJIT_IMPLLIMITATION);
+            return left.SimdScalableMaskVal == right.SimdScalableMaskVal;
         }
 #endif
 
@@ -86,8 +92,7 @@ public sealed class GenTreeMskCon : GenTree
 #if DEBUG
         if (JitConfig.JitUseScalableVectorT != 0)
         {
-            NYI("ARM64 scalable mask constant pattern evaluation");
-            fatal(CORJIT_IMPLLIMITATION);
+            return (SimdScalableMaskVal.Index == 1) && (SimdScalableMaskVal.BaseType.Size <= simdBaseType.Size);
         }
 #endif
 

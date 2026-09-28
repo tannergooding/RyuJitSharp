@@ -24,7 +24,7 @@ public partial class Compiler
 #if DEBUG
         if (JitConfig.JitUseScalableVectorT != 0)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "ARM64 scalable true masks require scalable representation.");
+            return gtNewMskConNode(TYP_MASK, simdBaseType, true);
         }
 #endif
 
@@ -32,6 +32,18 @@ public partial class Compiler
         var found = EvaluateSimdPatternToMask<simd16_t>(simdBaseType, ref mask.SimdMaskVal, SveMaskPattern.SveMaskPatternAll);
         assert(found);
         return mask;
+    }
+
+    public GenTreeMskCon gtNewSimdFalseMaskByteNode()
+    {
+#if DEBUG
+        if (JitConfig.JitUseScalableVectorT != 0)
+        {
+            return gtNewMskConNode(TYP_MASK, TYP_BYTE, false);
+        }
+#endif
+
+        return gtNewMskConNode(simdmask_t.Zero);
     }
 }
 #endif

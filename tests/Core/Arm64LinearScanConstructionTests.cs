@@ -181,6 +181,27 @@ internal static unsafe class Arm64LinearScanConstructionTests
         });
     }
 
+#if DEBUG
+    [TestCase(TYP_BYTE, false)]
+    [TestCase(TYP_BYTE, true)]
+    [TestCase(TYP_LONG, false)]
+    [TestCase(TYP_LONG, true)]
+    public static void ScalableMasksNeedNoConstantScratch(var_types type, bool index)
+    {
+        WithCompiler(false, false, (compiler, _) => {
+            Arm64ScalableMaskValueNumTests.SetScalableConfiguration(true);
+            compiler.compFloatingPointUsed = true;
+            var allocator = new LinearScan(compiler);
+            var mask = compiler.gtNewMskConNode(TYP_MASK, type, index);
+
+            Assert.That(BuildNode(allocator, mask), Is.Zero);
+            Assert.That(allocator.intervals.FindAll(interval => interval.isInternal), Is.Empty);
+            Assert.That(allocator.intervals.FindAll(interval => interval.isConstant), Has.Count.EqualTo(1));
+            Assert.That(s_assertions, Is.Empty);
+        }, captureAssertions: true);
+    }
+#endif
+
     [Test]
     public static void ReferenceTraversalBuildsArm64NodeDefinitions()
     {

@@ -139,14 +139,17 @@ internal static class Arm64ScalableMaskValueNumTests
     }
 
     [Test]
-    public static void ScalableTreeNumberingKeepsItsUnportedRepresentationGate()
+    public static void ScalableTreeNumberingUsesTheScalablePayload()
     {
         CSELiveAcrossCallCostTests.WithCompiler(compiler => {
             SetScalableConfiguration(true);
             compiler.vnStore = new ValueNumStore(compiler);
-            var tree = new GenTreeMskCon(simdmask_t.Zero);
+            var tree = compiler.gtNewMskConNode(TYP_MASK, TYP_LONG, true);
+            compiler.fgValueNumberTreeConst(tree);
 
-            _ = Assert.Throws<NotImplementedException>(() => compiler.fgValueNumberTreeConst(tree));
+            Assert.That(tree._vnPair.BothEqual(), Is.True);
+            Assert.That(compiler.vnStore.GetConstantSimdMaskScalable(tree._vnPair.Liberal),
+                Is.EqualTo(tree.SimdScalableMaskVal));
         });
     }
 
@@ -179,7 +182,7 @@ internal static class Arm64ScalableMaskValueNumTests
         });
     }
 
-    private static void SetScalableConfiguration(bool enabled)
+    internal static void SetScalableConfiguration(bool enabled)
     {
         object config = JitConfig;
         var field = typeof(JitConfigValues).GetField("_jitUseScalableVectorT", BindingFlags.NonPublic | BindingFlags.Instance)
