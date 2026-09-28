@@ -34,6 +34,13 @@
       "evidence": "artifacts/primary-gdv/comparison-1.json and native-1/managed-1 captures, with execution-reference-2 input hashes. Reproduce capture.py --value-profile --eager-profile with selector RyuJitSharp.GDVCases:*; primary-eh/compare.py --expected-bodies 5 compares the bodies. Exact environment is recorded in each manifest.",
       "limits": "Actual primary class-probe execution, not hot-tier guarded-devirtualization or raw whole-dump parity. Selected optimized-value evidence remains separately scoped in primaryPgoImport."
     },
+    "dynamicTlsInputBoundary": {
+      "scope": "B413: establish ownership of the differing primary-async TLS operands without changing compiler constants or hiding raw differences.",
+      "nativeRepeat": "A second native primary run uses identical binary hashes and settings except the output path. All eleven instruction streams match the first native run. The five adapters retain GC TLS indices 3/4, versus 5/6 in the preserved box-cleanup managed capture; six transformed async bodies still match.",
+      "sourceBoundary": "At the pin, vm/jitinterface.cpp:1286-1315 getThreadLocalFieldInfo calls MethodTable::EnsureTlsIndexAllocated and returns GCTlsIndex.GetIndexOffset. vm/methodtable.cpp:3974-4012 delegates allocation to GetTLSIndexForThreadStatic; vm/threadstatics.cpp:698-790 serializes allocation and increments g_NextNonCollectibleTlsSlot. Native importer.cpp:4235-4254 and managed Compiler.imp.cs:12669-12687 pass that EE result to fgGetStaticsCCtorHelper unchanged. Compiler.fg.cs:7296-7302 creates the integer helper argument directly; TLS expansion multiplies that supplied index by TARGET_POINTER_SIZE.",
+      "evidence": "artifacts/dynamic-tls-inputs/native-repeat-1/manifest.json and repeat-comparison-2.json; compare.py checks completed bodies, input hashes, settings and raw instruction streams against primary-async/native-1 and box-cleanup/managed-async-1.",
+      "disposition": "The differing slots are EE-assigned inputs, not constants chosen by the TLS expansion algorithm. No compiler change is justified by this comparison. The specific earlier allocations/query ordering responsible for the two-slot shift remain unidentified; two stable native runs do not establish universal determinism. Raw adapter instruction and thread-name tree differences remain open parity boundaries."
+    },
     "primaryOsr": {
       "sourceCommit": "7086df6",
       "execution": "Both primary native/managed processes exit0 with the strengthened OSR corpus verifying hot-loop totals, generic context and once-only initialization.",
@@ -421,7 +428,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Windows x64 foreground: PGO-import crash closure, selected optimized-value recapture and primary class-probe execution are complete. Investigate the concrete B413 dynamic-TLS input mismatch next: compare repeated native async captures before changing compiler behavior, then trace the relevant EE query contract if needed. Complete when the allocation-order/input boundary is established or a demonstrated compiler defect is fixed with focused evidence. Preserve raw mismatches; no broad matrix, normalizing constants or ARM64 foreground expansion. B409 remains separate; native retirement continues substantive mapped units.",
+      "parentScope": "Windows x64 foreground: PGO-import crash closure, selected optimized-value recapture and primary class-probe execution are complete. B413's EE sequential-slot ownership is established; the native repeat is identical and no compiler change is justified, while the earlier allocation order remains unknown. Continue from actual Windows/shared production boundaries in the native remainder, distinguishing mixed-target retention from missing default paths. Preserve raw mismatches; no broad matrix, normalizing constants or ARM64 foreground expansion. B409 remains separate; native retirement continues substantive mapped units.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -816,7 +823,7 @@
         }
       ]
     },
-    "nextAction": "Commit the selected-value and primary-class evidence update if still uncommitted. Then follow B413: read box-cleanup capture manifests/comparators, capture one fresh native primary async control with identical inputs/settings and compare its actual dynamic TLS indices with the existing native run. Trace the relevant EE allocation/query boundary only if repetition does not explain the mismatch; do not normalize constants or claim parity from size equality. PGO evidence is complete within its recorded scope, so do not rerun the timing-limited primary value-profile capture. Native reports through39 are integrated (21170removed/403restored lines); worker report40 is running.",
+    "nextAction": "Commit the bounded B413 input-ownership evidence if uncommitted; no compiler modification or repeated TLS/value-profile captures are needed. Collect native-retirement worker4b57b744-36f1-4e6e-8b76-94c1a87d6e02 report40 after notification. It was explicitly asked to identify a concrete Windows/shared production gap already encountered in the retained remainder, separate from mixed-target bodies or unclassified status; follow that named boundary before expanding validation. Reports through39 are integrated (21170removed/403restored lines).",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
