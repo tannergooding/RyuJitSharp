@@ -10,8 +10,8 @@ public sealed partial class CodeGen
 {
     public unsafe void genProfilingEnterCallback(regNumber initReg, ref bool initRegZeroed)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Profiler enter callbacks require Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Profiler enter callbacks require AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
@@ -22,8 +22,8 @@ public sealed partial class CodeGen
             return;
         }
 
-        // The callback uses the outgoing argument area, and the incoming argument registers
-        // must be preserved in their homes across the call.
+#if WINDOWS_AMD64_ABI
+        // Windows requires homing and reloading incoming register arguments around the callback.
         noway_assert(_compiler.lvaOutgoingArgSpaceVar != BAD_VAR_NUM);
         noway_assert(_compiler.lvaOutgoingArgSpaceSize.Value >= 4 * REGSIZE_BYTES);
 
@@ -56,25 +56,35 @@ public sealed partial class CodeGen
                 Emitter.emitIns_S_R(storeIns, storeType.EmitSize, argReg, varNum, 0);
             }
         }
+#endif
 
-        // RCX = ProfilerMethHnd, RDX = caller's SP.
+#if UNIX_AMD64_ABI
+        const regNumber profilerArg0 = REG_PROFILER_ENTER_ARG_0;
+        const regNumber profilerArg1 = REG_PROFILER_ENTER_ARG_1;
+#else
+        const regNumber profilerArg0 = REG_ARG_0;
+        const regNumber profilerArg1 = REG_ARG_1;
+#endif
         if (_compiler.compProfilerMethHndIndirected)
         {
             // AOT profiler handles are accessed through a relocated pointer.
-            Emitter.emitIns_R_AI(INS_mov, EA_PTRSIZE | EA_DSP_RELOC_FLG, REG_ARG_0,
+            Emitter.emitIns_R_AI(INS_mov, EA_PTRSIZE | EA_DSP_RELOC_FLG, profilerArg0,
                 unchecked((nint)_compiler.compProfilerMethHnd));
         }
         else
         {
-            instGen_Set_Reg_To_Imm(EA_8BYTE, REG_ARG_0, unchecked((nint)_compiler.compProfilerMethHnd));
+            instGen_Set_Reg_To_Imm(EA_8BYTE, profilerArg0, unchecked((nint)_compiler.compProfilerMethHnd));
         }
 
         noway_assert(_compiler.lvaOutgoingArgSpaceVar != BAD_VAR_NUM);
         // The final frame layout makes the caller's SP offset available here. Its offset
         // relative to the frame pointer is negative, so negate it to form the address.
         var callerSPOffset = _compiler.lvaToCallerSPRelativeOffset(0, IsFramePointerUsed);
-        Emitter.emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_ARG_1, genFramePointerReg(), -callerSPOffset);
+        Emitter.emitIns_R_AR(INS_lea, EA_PTRSIZE, profilerArg1, genFramePointerReg(), -callerSPOffset);
 
+#if UNIX_AMD64_ABI
+        genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER, 0, EA_UNKNOWN, REG_DEFAULT_PROFILER_CALL_TARGET);
+#else
         genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER, 0, EA_UNKNOWN);
 
         // TODO-AMD64-CQ: Consider combining this reload with prolog argument placement,
@@ -111,11 +121,13 @@ public sealed partial class CodeGen
                 inst_Mov(TYP_LONG, intArgReg, argReg, canSkip: false, size: loadType.EmitActualSize);
             }
         }
+#endif
 
         // The helper call or its argument setup may have overwritten the prolog's zero register.
         var initMask = regMaskTP.CreateFromRegNum(initReg, initReg.SingleTypeMask);
         if ((_compiler.compHelperCallKillSet(CORINFO_HELP_PROF_FCN_ENTER) & initMask).IsNonEmpty
-            || (initMask & new regMaskTP(SRBM_ARG_0 | SRBM_ARG_1)).IsNonEmpty)
+            || (initMask & regMaskTP.CreateFromRegNum(profilerArg0, profilerArg0.SingleTypeMask)).IsNonEmpty
+            || (initMask & regMaskTP.CreateFromRegNum(profilerArg1, profilerArg1.SingleTypeMask)).IsNonEmpty)
         {
             initRegZeroed = false;
         }

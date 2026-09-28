@@ -10,8 +10,8 @@ public sealed partial class CodeGen
 {
     public unsafe void genProfilingLeaveCallback(CorInfoHelpFunc helper)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Profiler leave callbacks require Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Profiler leave callbacks require AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(helper is CORINFO_HELP_PROF_FCN_LEAVE or CORINFO_HELP_PROF_FCN_TAILCALL);
@@ -21,6 +21,7 @@ public sealed partial class CodeGen
         }
 
         _compiler.info.compProfilerCallback = true;
+#if WINDOWS_AMD64_ABI
         noway_assert(_compiler.lvaOutgoingArgSpaceVar != BAD_VAR_NUM);
         noway_assert(_compiler.lvaOutgoingArgSpaceSize.Value >= 4 * REGSIZE_BYTES);
         if (_compiler.lvaKeepAliveAndReportThis() && _compiler.lvaGetDesc(_compiler.info.compThisArg).lvIsInReg)
@@ -29,6 +30,7 @@ public sealed partial class CodeGen
             var trash = Emitter.emitGetGCRegsKilledByNoGCCall(CORINFO_HELP_PROF_FCN_LEAVE);
             noway_assert((trash & new regMaskTP(thisReg.SingleTypeMask)).IsEmpty);
         }
+#endif
 
         // The helper preserves return registers, including GC roots, while inspecting the result.
         if (_compiler.compProfilerMethHndIndirected)
@@ -53,7 +55,11 @@ public sealed partial class CodeGen
             Emitter.emitIns_R_S(INS_lea, EA_PTRSIZE, REG_ARG_1, 0, 0);
         }
 
+#if UNIX_AMD64_ABI
+        genEmitHelperCall(helper, 0, EA_UNKNOWN, REG_DEFAULT_PROFILER_CALL_TARGET);
+#else
         genEmitHelperCall(helper, 0, EA_UNKNOWN, REG_ARG_2);
+#endif
 #endif
     }
 

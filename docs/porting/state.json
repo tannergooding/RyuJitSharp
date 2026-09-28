@@ -16,6 +16,12 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sysvHelperCodeGeneration": {
+      "scope": "Return traps, profiler enter/leave/tailcall callbacks and write barriers, with register consumption/reloads and caller-SP offset dependencies.",
+      "mapping": "codegenxarch.cpp -> CodeGen.ReturnTraps.cs/Profiling.cs/ProfilingEntry.cs; codegencommon.cpp -> CodeGen.WriteBarriers.cs; codegenlinear.cpp -> CodeGen.ConsumeRegisters.cs/UnspillRegisters.cs; lclvars.cpp -> Compiler.FrameOffsets.cs.",
+      "validation": "148 Debug / 148 Release Linux-target managed cases, 292 Debug / 274 Release Windows controls; final callback assertion recording passes all 15 focused SysV helper cases in Debug.",
+      "remaining": "SysV prolog/epilog frame setup and callee-save handling; no Linux generated-code execution/parity claim."
+    },
     "customAwaiterImport": {
       "scope": "Complete impTryOptimizeAwaitAwaiter and its optimized intrinsic callsite after impPopCallArgs, before other hidden arguments.",
       "mapping": "importercalls.cpp:132-238 and 1058-1063 -> Compiler.AsyncAwaiterOptimization.cs and Compiler.ImportCallHelper.cs.",
@@ -572,7 +578,7 @@
         }
       ]
     },
-    "nextAction": "Continue overnight without stopping at milestones; periodically check breadth and validation cadence. Windows foreground: custom-awaiter importer is complete; restore B393 FlowEdge visit-state, BasicBlock membership and range-iterator link invariants as one CFG debug-support area. ARM64 block/switch and rationalization are integrated; continue optimizer range/CSE/induction target dependencies. SysV helper-driven return traps, profiling and write barriers await final assertion-callback test review, then continue prolog/epilog and callee-save handling. Native cleanup runs concurrently against committed source; amend only its Remove ported code commit, last recorded at 702c6b0b10b5db531fa33d86948cdf2ef6b048f6, including B388/B389 retirement. No routine snapshots or per-helper validation/documentation cycles. Keep the oracle pinned and notify the user when full native cleanup is finished.",
+    "nextAction": "Continue overnight without stopping at milestones; periodically check breadth and validation cadence. Windows foreground: custom-awaiter importer is complete; restore B393 FlowEdge visit-state, BasicBlock membership and range-iterator link invariants as one CFG debug-support area. ARM64 block/switch and rationalization are integrated; continue optimizer range/CSE/induction target dependencies. SysV helper-driven return traps, profiling and write barriers are integrated; continue prolog/epilog and callee-save handling. Native cleanup runs concurrently against committed source; amend only its Remove ported code commit, last recorded at 702c6b0b10b5db531fa33d86948cdf2ef6b048f6, including B388/B389 retirement. No routine snapshots or per-helper validation/documentation cycles. Keep the oracle pinned and notify the user when full native cleanup is finished.",
     "arm64BlockAndSwitchLowering": {
       "scope": "ARM64 LowerBlock candidate/FFR initialization, LowerSwitch and TryLowerSwitchToBitTest.",
       "mapping": "lower.cpp block/switch lowering -> Lowering.BlockTraversal.cs and Lowering.Switches.cs, preserving ARM64 shift/AND/branch construction.",

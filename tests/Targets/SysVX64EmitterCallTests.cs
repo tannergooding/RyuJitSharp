@@ -222,7 +222,7 @@ internal static unsafe class SysVX64EmitterCallTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmMskCalleeTrash")]
     private static extern ref regMask MaskTrash(Compiler compiler);
 
-    private static void WithEmitter(Action<Compiler, Emitter> action)
+    internal static void WithEmitter(Action<Compiler, Emitter> action)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -240,7 +240,7 @@ internal static unsafe class SysVX64EmitterCallTests
         compiler.lvaTrackedCount = 1;
         compiler.lvaTrackedCountInSizeTUnits = 1;
         compiler.lvaTrackedToVarNum = [0];
-        compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
+        compiler.lvaDoneFrameLayout = Compiler.INITIAL_FRAME_LAYOUT;
         compiler.compCurBB = new BasicBlock(null, null);
         JitTls.Compiler = compiler;
 
@@ -248,6 +248,11 @@ internal static unsafe class SysVX64EmitterCallTests
         {
             var codeGen = new CodeGen(compiler);
             compiler.codeGen = codeGen;
+            codeGen.RegSet.rsClearRegsModified();
+            compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+            compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
+            codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
             codeGen.Emitter.emitBegFN(true
@@ -268,5 +273,8 @@ internal static unsafe class SysVX64EmitterCallTests
             JitTls.Compiler = previous;
         }
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
+    private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
 }
 #endif

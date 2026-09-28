@@ -80,8 +80,8 @@ public sealed partial class CodeGen
 
     public regNumber genConsumeReg(GenTree tree, byte multiRegIndex)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Indexed register consumption outside Windows AMD64 is not implemented.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Indexed register consumption outside AMD64 is not implemented.");
 #else
         var reg = tree.GetRegByIndex(multiRegIndex);
         if (tree.Oper is GT_COPY)
@@ -141,8 +141,8 @@ public sealed partial class CodeGen
 
     public regNumber genConsumeReg(GenTree tree)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Register consumption outside Windows AMD64 is not implemented.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Register consumption outside AMD64 is not implemented.");
 #else
         if (tree.Oper is GT_COPY)
         {

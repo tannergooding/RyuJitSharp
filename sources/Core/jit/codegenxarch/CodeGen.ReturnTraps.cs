@@ -9,8 +9,8 @@ public sealed partial class CodeGen
 {
     public void genCodeForReturnTrap(GenTreeUnOp tree)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Return-trap generation requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Return-trap generation requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper == GT_RETURNTRAP);

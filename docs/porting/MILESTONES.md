@@ -16,6 +16,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: SysV helper-driven code generation
+
+SysV x64 now generates return traps, checked/unchecked write barriers and
+profiler enter/leave/tailcall callbacks, including register consumption,
+reload and caller-SP offset dependencies. Profiler entry uses R14/R15 without
+Windows argument homing; return GC registers remain live across callbacks.
+Managed SysV coverage passes 148 cases in each configuration, with 292
+Debug/274 Release Windows controls. Prolog/epilog frame setup and callee-save
+handling are next; Linux generated-code execution remains unverified.
+
 ## 2026-09-27: Custom-awaiter importer optimization
 
 Optimized `AwaitAwaiter` and `UnsafeAwaitAwaiter` imports now request the EE
