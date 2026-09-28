@@ -489,7 +489,9 @@ public sealed partial class CodeGen
 
         return (local.LclNum, REG_NA, REG_NA, 1, local.LclOffs);
     }
+#endif
 
+#if TARGET_AMD64
     private instruction simdUnalignedMovIns()
     {
         // Legacy MOVUPS is shorter; VEX MOVDQU has broader port availability

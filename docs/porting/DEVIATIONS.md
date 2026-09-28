@@ -1299,6 +1299,15 @@ accounts for the shared GC-type/async bitfield allocation and retains the native
 instruction output and final emission have managed SysV coverage; broader Linux
 backend activation and generated-code execution remain separate.
 
+SysV AMD64 frame allocation/probing, callee saves, stack initialization,
+root/OSR epilogs, funclet frames and CoreCLR unwind metadata are implemented.
+Incoming-parameter homing still gates root prolog materialization.
+Unix AMD64 with `CORINFO_NATIVEAOT_ABI` requires CFI unwind metadata, which
+remains unported (B395). All public unwind recording, reservation and publication
+entries terminate with `CORJIT_SKIPPED` before changing unwind state in that
+mode, rather than substituting the CoreCLR format. Eleven rejection cases
+cover these boundaries in both Debug and Release.
+
 ARM64 target metadata, ABI classification, immediate predicates, fixed-width
 SIMD/mask queries, cross-platform intrinsic importing, FP/LR placement policy
 and two-register GC return layouts now compile and have managed unit coverage

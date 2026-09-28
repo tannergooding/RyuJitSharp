@@ -12,8 +12,8 @@ public sealed partial class CodeGen
 {
     public void genPushCalleeSavedRegisters(regNumber initReg, ref bool initRegZeroed)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Callee-save pushes require Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Callee-save pushes require AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
@@ -65,8 +65,8 @@ public sealed partial class CodeGen
 
     public void genPushCalleeSavedRegistersFromMaskAPX(regMaskTP pushRegs)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "APX callee-save pushes require Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "APX callee-save pushes require AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert((_compiler.funCurrentFunc().funKind == FuncKind.FUNC_ROOT) && !_compiler.opts.IsOSR);
@@ -109,8 +109,8 @@ public sealed partial class CodeGen
 
     public void genPreserveCalleeSavedFltRegs()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Floating callee-save recording requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Floating callee-save recording requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         var mask = new regMaskTP(_compiler.compCalleeFPRegsSavedMask);
@@ -141,8 +141,8 @@ public sealed partial class CodeGen
 
     public void genRestoreCalleeSavedFltRegs()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Floating callee-save restoration requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Floating callee-save restoration requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         var mask = new regMaskTP(_compiler.compCalleeFPRegsSavedMask);

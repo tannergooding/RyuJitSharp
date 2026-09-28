@@ -11,12 +11,26 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
+#if TARGET_AMD64
     private const int Amd64UnwindCodeStorageSize = 4 + (0xFF * 2);
     private const byte UWOP_PUSH_NONVOL = 0;
     private const byte UWOP_ALLOC_LARGE = 1;
     private const byte UWOP_ALLOC_SMALL = 2;
     private const byte UWOP_SET_FPREG = 3;
+#if UNIX_AMD64_ABI
+    private const byte UWOP_SET_FPREG_LARGE = 11;
+#endif
+
+    private void RequireSupportedUnwindFormat()
+    {
+#if UNIX_AMD64_ABI
+        if (IsTargetAbi(CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI))
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "NativeAOT CFI unwind recording is not implemented for Unix AMD64.");
+        }
+#endif
+    }
+
     private const byte UWOP_SAVE_NONVOL = 4;
     private const byte UWOP_SAVE_NONVOL_FAR = 5;
     private const byte UWOP_SAVE_XMM128 = 8;
@@ -24,6 +38,7 @@ public partial class Compiler
 
     public void unwindBegProlog()
     {
+        RequireSupportedUnwindFormat();
         noway_assert(!compGeneratingUnwindProlog);
         compGeneratingUnwindProlog = true;
         unwindBegPrologWindows();
@@ -56,6 +71,7 @@ public partial class Compiler
 
     public void unwindEndProlog()
     {
+        RequireSupportedUnwindFormat();
         noway_assert(codeGen?.Emitter.emitGeneratingPrologOrFuncletProlog() == true);
         noway_assert(compGeneratingUnwindProlog);
         compGeneratingUnwindProlog = false;
@@ -63,6 +79,7 @@ public partial class Compiler
 
     public void unwindBegEpilog()
     {
+        RequireSupportedUnwindFormat();
         noway_assert(codeGen?.Emitter.emitGeneratingEpilogOrFuncletEpilog() == true);
         noway_assert(!compGeneratingUnwindEpilog);
         compGeneratingUnwindEpilog = true;
@@ -70,6 +87,7 @@ public partial class Compiler
 
     public void unwindEndEpilog()
     {
+        RequireSupportedUnwindFormat();
         noway_assert(codeGen?.Emitter.emitGeneratingEpilogOrFuncletEpilog() == true);
         noway_assert(compGeneratingUnwindEpilog);
         compGeneratingUnwindEpilog = false;
@@ -77,11 +95,13 @@ public partial class Compiler
 
     public void unwindPush(regNumber reg)
     {
+        RequireSupportedUnwindFormat();
         unwindPushWindows(reg);
     }
 
     public void unwindPush2(regNumber reg1, regNumber reg2)
     {
+        RequireSupportedUnwindFormat();
         unwindPush2Windows(reg1, reg2);
     }
 
@@ -114,6 +134,7 @@ public partial class Compiler
 
     public void unwindAllocStack(uint size)
     {
+        RequireSupportedUnwindFormat();
         unwindAllocStackWindows(size);
     }
 
@@ -152,6 +173,7 @@ public partial class Compiler
 
     public void unwindSetFrameReg(regNumber reg, uint offset)
     {
+        RequireSupportedUnwindFormat();
         unwindSetFrameRegWindows(reg, offset);
     }
 
@@ -159,10 +181,24 @@ public partial class Compiler
     {
         ref var func = ref UnwindCurrentProlog();
         var cbProlog = unwindGetCurrentOffset(in func);
+#if UNIX_AMD64_ABI
+        noway_assert(offset % 16 == 0);
+#else
         noway_assert(offset <= 240 && offset % 16 == 0);
+#endif
         noway_assert(genIsValidIntReg(reg) && (uint)reg <= 15);
 
         func.unwindHeader.FrameRegister = (byte)reg;
+#if UNIX_AMD64_ABI
+        if (offset > 240)
+        {
+            var largeCode = UnwindReserveCode(ref func, 4);
+            BinaryPrimitives.WriteUInt32LittleEndian(UnwindCodes(in func).AsSpan(largeCode + 2, 4), offset / 16);
+            UnwindWriteCode(ref func, largeCode, cbProlog, UWOP_SET_FPREG_LARGE, 0);
+            func.unwindHeader.FrameOffset = 15;
+            return;
+        }
+#endif
         var code = UnwindReserveCode(ref func, 0);
         UnwindWriteCode(ref func, code, cbProlog, UWOP_SET_FPREG, 0);
         func.unwindHeader.FrameOffset = (byte)(offset / 16);
@@ -170,6 +206,7 @@ public partial class Compiler
 
     public void unwindSaveReg(regNumber reg, uint offset)
     {
+        RequireSupportedUnwindFormat();
         unwindSaveRegWindows(reg, offset);
     }
 

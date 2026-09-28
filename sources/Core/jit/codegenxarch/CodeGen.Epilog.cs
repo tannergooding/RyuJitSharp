@@ -12,8 +12,8 @@ public sealed partial class CodeGen
 {
     public unsafe void genPopCalleeSavedRegisters(bool jmpEpilog = false)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Callee-save restoration requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Callee-save restoration requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(Emitter.emitGeneratingEpilogOrFuncletEpilog());
@@ -42,8 +42,8 @@ public sealed partial class CodeGen
 
     public uint genPopCalleeSavedRegistersFromMask(regMaskTP popRegs)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Callee-save restoration requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Callee-save restoration requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         var count = 0u;
@@ -61,6 +61,7 @@ public sealed partial class CodeGen
             count++;
             Emitter.emitIns_R(INS_pop, EA_PTRSIZE, REG_RBP, options);
         }
+#if WINDOWS_AMD64_ABI
         if ((popRegs & RBM_RSI).IsNonEmpty)
         {
             count++;
@@ -71,6 +72,7 @@ public sealed partial class CodeGen
             count++;
             Emitter.emitIns_R(INS_pop, EA_PTRSIZE, REG_RDI, options);
         }
+#endif
 
         var highRegs = popRegs & (RBM_R12 | RBM_R13 | RBM_R14 | RBM_R15);
         while (highRegs.IsNonEmpty)
@@ -87,8 +89,8 @@ public sealed partial class CodeGen
 
     public uint genPopCalleeSavedRegistersFromMaskAPX(regMaskTP popRegs)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "APX callee-save restoration requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "APX callee-save restoration requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert((_compiler.funCurrentFunc().funKind == FuncKind.FUNC_ROOT) && !_compiler.opts.IsOSR);
@@ -139,8 +141,8 @@ public sealed partial class CodeGen
 
     public unsafe void genFnEpilog(BasicBlock block)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Root epilog generation requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Root epilog generation requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         VarSetOps.Assign(_compiler, ref GCInfo.gcVarPtrSetCur, Emitter.InitGCrefVars);

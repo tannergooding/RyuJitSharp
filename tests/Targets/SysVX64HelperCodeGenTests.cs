@@ -189,7 +189,7 @@ internal static unsafe class SysVX64HelperCodeGenTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compProfilerHookNeeded")]
     private static extern ref bool ProfilerHookNeeded(Compiler compiler);
 
-    private sealed class HelperCallbacks : IDisposable
+    internal sealed class HelperCallbacks : IDisposable
     {
         private readonly ICorJitInfo.Vtbl<ICorJitInfo>* _vtbl;
         private readonly ICorJitInfo* _jitInfo;

@@ -16,6 +16,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: SysV frame and unwind support
+
+SysV AMD64 now supports frame allocation/probing, callee-save recording and
+restoration, stack initialization, root/OSR epilogs and funclet frames. CoreCLR
+unwind recording/publication includes Unix's large frame-pointer-offset opcode.
+NativeAOT CFI mode explicitly rejects recording, reservation and publication
+before changing unwind state; it cannot silently receive CoreCLR-format data.
+The native descending callee-save order is unchanged.
+
+Linux-target managed coverage passes 174 Debug/174 Release cases, including
+11 CFI rejection cases; Windows controls pass 193 Debug/178 Release. Root
+prolog materialization still awaits SysV incoming-parameter homing. These are
+Windows-host managed results, not Linux execution or generated-code parity.
+
+Native retirement also incorporated completed SSA construction/renaming,
+IR diagnostics, SysV classification, optimizer policies, tree liveness,
+floating WithElement and CFG query support. Broader backend reconciliation
+and mixed-target/CFI paths remain; retirement is not additional parity evidence.
+
 ## 2026-09-27: Remaining shared CFG queries
 
 The legacy predecessor verifier now checks block-list membership and the native

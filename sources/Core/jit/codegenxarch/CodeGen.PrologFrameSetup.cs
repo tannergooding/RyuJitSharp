@@ -9,8 +9,8 @@ public sealed partial class CodeGen
 {
     public void genEstablishFramePointer(int delta, bool reportUnwindData)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Prolog frame-pointer setup requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Prolog frame-pointer setup requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
@@ -32,8 +32,8 @@ public sealed partial class CodeGen
 
     public void genAllocLclFrame(uint frameSize, regNumber initReg, ref bool initRegZeroed, regMaskTP maskArgRegsLiveIn)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Prolog stack allocation requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Prolog stack allocation requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());

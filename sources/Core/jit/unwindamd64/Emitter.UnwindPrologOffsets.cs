@@ -9,8 +9,8 @@ public partial class Emitter
 {
     public uint emitGetCurrentCodeOffsetFrom(insGroup? group)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Prolog unwind offsets require Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Prolog unwind offsets require AMD64.");
 #else
         group ??= emitGetFirstPrologIG();
         noway_assert((group.igFlags & InsGroupFlags.OutOfOrderHead) != 0);

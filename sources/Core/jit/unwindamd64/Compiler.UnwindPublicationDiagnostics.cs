@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG && TARGET_AMD64 && WINDOWS_AMD64_ABI
+#if DEBUG && TARGET_AMD64
 using System;
 using System.Buffers.Binary;
 
@@ -111,6 +111,21 @@ public partial class Compiler
                     jitprintf($"    CodeOffset: 0x{codeOffset:X2} UnwindOp: UWOP_SET_FPREG ({op})       OpInfo: Unused ({opInfo})\n");
                     break;
                 }
+#if UNIX_AMD64_ABI
+                case UWOP_SET_FPREG_LARGE:
+                {
+                    jitprintf($"    CodeOffset: 0x{codeOffset:X2} UnwindOp: UWOP_SET_FPREG_LARGE ({op}) OpInfo: Unused ({opInfo})\n");
+                    index++;
+                    var offset = BinaryPrimitives.ReadUInt32LittleEndian(bytes.Slice(4 + (index * 2)));
+                    jitprintf($"      Scaled Offset: {offset} * 16 = {unchecked(offset * 16)} = 0x{unchecked(offset * 16):X8}\n");
+                    if ((offset & 0xF0000000) != 0)
+                    {
+                        jitprintf("      Illegal unscaled offset: too large\n");
+                    }
+                    index++;
+                    break;
+                }
+#endif
                 case UWOP_SAVE_NONVOL:
                 case UWOP_SAVE_XMM128:
                 {

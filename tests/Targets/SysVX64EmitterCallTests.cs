@@ -241,6 +241,7 @@ internal static unsafe class SysVX64EmitterCallTests
         compiler.lvaTrackedCountInSizeTUnits = 1;
         compiler.lvaTrackedToVarNum = [0];
         compiler.lvaDoneFrameLayout = Compiler.INITIAL_FRAME_LAYOUT;
+        compiler.lvaSwiftErrorArg = BAD_VAR_NUM;
         compiler.compCurBB = new BasicBlock(null, null);
         JitTls.Compiler = compiler;
 

@@ -27,8 +27,8 @@ public sealed partial class CodeGen
 
     public void genCheckUseBlockInit()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Prolog initialization planning requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Prolog initialization planning requires AMD64.");
 #else
         assert(!Emitter.emitGeneratingPrologOrFuncletProlog());
         uint initStkLclCnt = 0;

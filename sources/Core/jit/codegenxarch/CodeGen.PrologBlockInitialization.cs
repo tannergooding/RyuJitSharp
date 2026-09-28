@@ -19,8 +19,8 @@ public sealed partial class CodeGen
 
     public void genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, ref bool initRegZeroed)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Prolog block initialization requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Prolog block initialization requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
@@ -60,8 +60,12 @@ public sealed partial class CodeGen
         }
         else
         {
+#if UNIX_AMD64_ABI
+            var zeroSimdReg = REG_XMM8;
+#else
             // Windows AMD64's first non-argument, caller-saved SIMD register is XMM4.
             var zeroSimdReg = REG_XMM4;
+#endif
             int alignedLclHi;
             int alignmentHiBlkSize;
             if ((blkSize < 2 * XMM_REGSIZE_BYTES) || (untrLclLo == alignedLclLo))

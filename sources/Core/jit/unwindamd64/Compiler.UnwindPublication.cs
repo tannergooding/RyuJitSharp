@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
+#if TARGET_AMD64
 using System;
 using System.Runtime.InteropServices;
 #endif
@@ -12,9 +12,10 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
+#if TARGET_AMD64
     public void unwindReserve()
     {
+        RequireSupportedUnwindFormat();
         var emitter = codeGen?.Emitter ?? throw new InvalidOperationException("An emitter is required to reserve unwind information.");
         assert(!emitter.emitGeneratingPrologOrFuncletProlog());
         assert(!emitter.emitGeneratingEpilogOrFuncletEpilog());
@@ -86,6 +87,7 @@ public partial class Compiler
 
     public unsafe void unwindEmit(void* pHotCode, void* pColdCode)
     {
+        RequireSupportedUnwindFormat();
         var emitter = codeGen?.Emitter ?? throw new InvalidOperationException("An emitter is required to publish unwind information.");
         assert(!emitter.emitGeneratingPrologOrFuncletProlog());
         assert(!emitter.emitGeneratingEpilogOrFuncletEpilog());

@@ -16,8 +16,8 @@ public sealed partial class CodeGen
 
     public void genFuncletProlog(BasicBlock block)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Funclet prologs require Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Funclet prologs require AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
 #if DEBUG
@@ -46,8 +46,8 @@ public sealed partial class CodeGen
 
     public void genFuncletEpilog(BasicBlock block)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Funclet epilogs require Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Funclet epilogs require AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
 #if DEBUG
@@ -64,8 +64,8 @@ public sealed partial class CodeGen
 
     public void genCaptureFuncletPrologEpilogInfo()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Funclet frame capture requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Funclet frame capture requires AMD64.");
 #else
         if (_compiler.compHndBBtabCount == 0)
         {
@@ -77,7 +77,9 @@ public sealed partial class CodeGen
         noway_assert(_compiler.lvaOutgoingArgSpaceSize.Value >= 0);
         var outgoing = unchecked((uint)_compiler.lvaOutgoingArgSpaceSize.Value);
         assert(outgoing % REGSIZE_BYTES == 0);
+#if WINDOWS_AMD64_ABI
         assert(outgoing == 0 || outgoing >= 4 * REGSIZE_BYTES);
+#endif
 
         var totalFrameSize = REGSIZE_BYTES + outgoing;
         var padding = (16 - (totalFrameSize % 16)) % 16;
