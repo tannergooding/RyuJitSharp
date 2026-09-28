@@ -16,13 +16,26 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "completeInstructionAudit": {
+      "scope": "B434: comparison tooling must match hexadecimal instruction IDs, including a-f, not only decimal digits.",
+      "validation": "Independently counted all offset-bearing IN records and rechecked11capture pairs/140completed bodies/15800records per side; every complete instruction trace matches. This supplements, rather than rewrites, original B428-B433 and subsequent SSSE3/memmove/localloc captures.",
+      "evidence": "artifacts/primary-jit-probe/hex-instruction-audit-1.json pins dump/script hashes. Use compare-complete.py for future paired comparisons; audit-instruction-records.py reproduces the consolidated instruction check.",
+      "remaining": "Counts include repeated offset-bearing emitter listings when present. No machine-byte or whole-dump claim; older captures outside these11pairs have not been re-audited."
+    },
+    "primaryLocallocExecution": {
+      "scope": "Variable stackalloc across page-size boundaries with initialized and SkipLocalsInit methods plus a non-inline consumer.",
+      "validation": "42allocations across0/1/4095/4096/4097/8192/65536bytes. Both primary JITs match nine raw slices/three complete instruction traces. Actual LCLHEAP, zero-push initialization and touch-before-subtract0x1000 probing are present; no timeout or AltJIT.",
+      "sourceSnapshot": "8cbf96c2e6a0273f8c3c3338fb7eefe41c57e126",
+      "evidence": "artifacts/primary-localloc/evidence.json",
+      "remaining": "Retain native other-target paths. Next bounded Windows boundary: locked arithmetic and compare-exchange primary execution."
+    },
     "primaryMemmoveOverlap": {
       "scope": "Windows AMD64 constant-size memmove across scalar and SIMD boundaries, with overlap in both directions, identical addresses and disjoint ranges.",
       "mapping": "codegenxarch.cpp genCodeForMemmove -> CodeGen.BlockMemory.cs.",
       "validation": "15constant sizes and nine displacements verify135copies/69120bytes per primary JIT. All15bodies select STORE_BLK(Memmove), and all45raw phase slices/15instruction traces match. Captures cover scalar/xmm/ymm/zmm paths; no timeout or AltJIT.",
       "sourceSnapshot": "8cbf96c2e6a0273f8c3c3338fb7eefe41c57e126",
       "evidence": "artifacts/primary-memmove/evidence.json",
-      "remaining": "Native function remains retained for other-target gaps. Next Windows boundary is variable localloc and stack probing around page-size boundaries."
+      "remaining": "Native function remains retained for other-target gaps. The subsequent primaryLocallocExecution checkpoint covers variable stack allocation."
     },
     "primarySsse3Execution": {
       "scope": "Direct SSSE3 arithmetic/shuffle execution with AVX enabled and disabled after B433.",
@@ -602,7 +615,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Retained genCodeForMemmove is implemented for Windows AMD64 and now directly verified with135overlapping/disjoint copies; preserve its source for other-target gaps. Next bounded Windows execution boundary is genLclHeap/stack probing for variable allocations around page boundaries.",
+      "parentScope": "Memmove and variable stack allocation primary boundaries match. Corrected hexadecimal instruction comparison confirms140completed bodies. Next bounded Windows boundary is locked arithmetic and compare-exchange; retain native other-target paths.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -997,7 +1010,7 @@
         }
       ]
     },
-    "nextAction": "Memmove primary boundary verified:135copies/69120bytes, all15STORE_BLK(Memmove) bodies and exact45raw slices/15traces. Continue retained genLclHeap and genStackPointerDynamicAdjustmentWithProbe: compare managed implementation with pinned source, then run no-inline variable stackalloc probes across0/1/4095/4096/4097/8192/65536bytes with initialized and SkipLocalsInit paths, writing every byte before reading the uninitialized path. Require actual localloc/stack-probe selection and compare primary output with current8cbf96c2 JIT. Follow first concrete failure; preserve non-Windows native residual. Worker idle; B153/D009, B365 and ARM64 foreground expansion deferred.",
+    "nextAction": "Variable localloc verified42allocations, exact9raw slices/three complete instruction traces. B434 corrected comparator IN IDs to hexadecimal and rechecked11pairs/140bodies/15800records per side, all exact. Use artifacts/primary-jit-probe/compare-complete.py going forward. Next compare retained genLockedInstructions/genCodeForCmpXchg with managed CodeGen atomic implementation, then execute no-inline Interlocked int/long arithmetic and int/long/float/double/reference compare-exchange probes (success and failure, boundary bit patterns) under both primary JITs using8cbf96c2. Require actual atomic lowering and complete output comparison. Worker idle; B153/D009, B365 and ARM64 foreground expansion deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
