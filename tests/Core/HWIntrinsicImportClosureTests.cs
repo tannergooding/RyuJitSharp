@@ -253,6 +253,72 @@ internal static unsafe class HWIntrinsicImportClosureTests
         });
     }
 
+    [TestCase(TYP_BYTE, 255L)]
+    [TestCase(TYP_UBYTE, 255L)]
+    [TestCase(TYP_SHORT, 65535L)]
+    [TestCase(TYP_USHORT, 65535L)]
+    [TestCase(TYP_INT, -1L)]
+    [TestCase(TYP_UINT, -1L)]
+    [TestCase(TYP_LONG, -1L)]
+    [TestCase(TYP_ULONG, -1L)]
+    public static void ScalarAllBitsSetUsesNativeStorage(var_types type, long expected)
+    {
+        WithImporter(compiler => {
+            var constant = compiler.gtNewAllBitsSetConNode(type);
+            Assert.That(constant.Type, Is.EqualTo(type.Size == 8 ? TYP_LONG : TYP_INT));
+            Assert.That(constant.AsIntConCommon().IntegralValue, Is.EqualTo(expected));
+        });
+    }
+
+    [TestCase(0)]
+    [TestCase(1)]
+    [TestCase(31)]
+    [TestCase(63)]
+    [TestCase(64)]
+    [TestCase(-1)]
+    public static void EmulatedLongArithmeticShiftUsesLogicalMask(int count)
+    {
+        WithImporter(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_SIMD16 }];
+            compiler.lvaCount = 1;
+            var vector = new GenTreeLclVar(TYP_SIMD16, 0);
+            var shift = compiler.gtNewSimdBinOpNode(genTreeOps.GT_RSH, TYP_SIMD16, vector,
+                compiler.gtNewIconNode(TYP_INT, count), TYP_LONG, 16).AsHWIntrinsic();
+
+            Assert.That(shift.HWIntrinsicId, Is.EqualTo(NI_Vector_ConditionalSelect));
+            var mask = shift.GetOp(1).AsVecCon();
+            var expected = ulong.MaxValue >> (count & 63);
+            Assert.That(mask.SimdVal.u64[0], Is.EqualTo(expected));
+            Assert.That(mask.SimdVal.u64[1], Is.EqualTo(expected));
+        });
+    }
+
+    [Test]
+    public static void EmulatedByteArithmeticShiftMovesCountExceptionsToMask()
+    {
+        WithImporter(compiler => {
+            compiler.lvaTable = [
+                new LclVarDsc { Type = TYP_SIMD16 },
+                new LclVarDsc { Type = TYP_BYREF },
+            ];
+            compiler.lvaCount = 2;
+            var vector = new GenTreeLclVar(TYP_SIMD16, 0);
+            var count = new GenTreeIndir(genTreeOps.GT_IND, TYP_INT, new GenTreeLclVar(TYP_BYREF, 1)) {
+                Flags = GenTreeFlags.GTF_EXCEPT | GenTreeFlags.GTF_GLOB_REF,
+            };
+            var select = compiler.gtNewSimdBinOpNode(genTreeOps.GT_RSH, TYP_SIMD16,
+                vector, count, TYP_BYTE, 16).AsHWIntrinsic();
+            var shift = select.GetOp(2).AsHWIntrinsic();
+            var scalarCount = shift.GetOp(2).AsHWIntrinsic();
+
+            Assert.That(select.HWIntrinsicId, Is.EqualTo(NI_Vector_ConditionalSelect));
+            Assert.That(scalarCount.HWIntrinsicId, Is.EqualTo(NI_Vector_CreateScalar));
+            Assert.That(scalarCount.Flags & GenTreeFlags.GTF_EXCEPT, Is.EqualTo(GenTreeFlags.GTF_EMPTY));
+            Assert.That(shift.Flags & GenTreeFlags.GTF_EXCEPT, Is.EqualTo(GenTreeFlags.GTF_EMPTY));
+            Assert.That(select.GetOp(1).Flags & GenTreeFlags.GTF_EXCEPT, Is.EqualTo(GenTreeFlags.GTF_EXCEPT));
+        });
+    }
+
     private static void WithImporter(Action<Compiler> test)
     {
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;

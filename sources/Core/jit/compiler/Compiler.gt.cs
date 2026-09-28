@@ -8173,24 +8173,20 @@ public partial class Compiler
 
         switch (type)
         {
+            case TYP_BYTE:
             case TYP_UBYTE:
             {
                 return gtNewIconNode(TYP_INT, 0xFF);
             }
 
+            case TYP_SHORT:
             case TYP_USHORT:
             {
                 return gtNewIconNode(TYP_INT, 0xFFFF);
             }
 
-            case TYP_UINT:
-            {
-                return gtNewIconNode(TYP_INT, unchecked((nint)(0xFFFF_FFFF)));
-            }
-
-            case TYP_BYTE:
-            case TYP_SHORT:
             case TYP_INT:
+            case TYP_UINT:
             {
                 return gtNewIconNode(TYP_INT, -1);
             }
@@ -9775,7 +9771,7 @@ public partial class Compiler
                     }
                     else
                     {
-                        var mask = -1L >> shiftCount;
+                        var mask = unchecked((long)(ulong.MaxValue >> shiftCount));
                         maskAmountOp = gtNewLconNode(mask);
                     }
                 }
@@ -9797,6 +9793,7 @@ public partial class Compiler
                         op2Op1Ref = tmp;
                     }
 
+                    gtUpdateNodeSideEffects(op2);
                     maskAmountOp = gtNewBinaryNode(instrOp, simdBaseType.ActualType, gtNewAllBitsSetConNode(simdBaseType), shiftCountDup);
                 }
 

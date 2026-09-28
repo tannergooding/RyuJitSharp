@@ -16,13 +16,22 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "simdShiftMasks": {
+      "scope": "B430: native scalar all-bits storage, logical constant qword mask shifts and side-effect refresh after variable-count rewriting.",
+      "mapping": "gentree.cpp gtNewAllBitsSetConNode and xarch shift branch of gtNewSimdBinOpNode -> Compiler.gt.cs.",
+      "reproduction": "Eight original unit failures and primary generated-code result48instead of-16 for signed-byte right shift by three. Initial logical-shift import also exposed missing flags.",
+      "validation": "545 Debug/541 Release full-analysis cases. Corrected primary JIT passes908lane checks with actual AVX512 disabled and matches21raw phase slices/seven instruction traces. The38-case pinned operand-order corpus now matches all117raw slices/39instruction traces. No normalization, timeout or AltJIT.",
+      "sourceSnapshot": "744ead45e34a154259c38e8394fff237566ef241",
+      "evidence": "artifacts/primary-simd-shifts/evidence.json. The pin's disabling control is DOTNET_EnableAVX512=0, confirmed by AVX512F=False.",
+      "remaining": "B431 scalar-local-field cloning assertion during exception reporting remains a distinct primary failure. No whole-dump, official-suite or exhaustive Windows claim."
+    },
     "vectorMemoryAddressCasts": {
       "scope": "B429: use the unary cast representation when vector loads/stores unwrap byref address casts.",
       "mapping": "hwintrinsic.cpp vector load/store branches -> Compiler.HWIntrinsicImportXplat.cs. Both sites now use AsCast().CastOp; non-byref casts, offsets and operand ordering are unchanged.",
       "validation": "61 Debug/61 Release full-analysis import cases, including ten new address-cast cases. Pinned Runtime_134334/Runtime_133718 corpus completes all38upstream cases under native and corrected managed primary JITs with matching stdout and no timeout/AltJIT. The previously failing shared-object store/arithmetic methods match selected raw trees/instructions.",
       "sourceSnapshot": "d34c1f637f56c3e8235e85cedca071646696767b",
       "evidence": "artifacts/primary-operand-order/cast-evidence.json;39completed selected bodies,114of117raw phase slices and38of39instruction traces match.",
-      "remaining": "B430 variable-byte-shift mismatch remains active. The original short Runtime_133718 selector omitted namespace-qualified dumps; final comparison uses Runtime_133718.Runtime_133718."
+      "remaining": "The B430 shift discrepancy is subsequently closed under simdShiftMasks. The original short Runtime_133718 selector omitted namespace-qualified dumps; corrected comparisons use Runtime_133718.Runtime_133718."
     },
     "primaryUpstreamRegressionModes": {
       "scope": "Extend the B428 four-input primary execution boundary to MinOpts and GCStress4, using the unchanged validated source snapshot and host/corpus hashes.",
@@ -554,7 +563,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "B429 vector address-cast crash is fixed and all38upstream cases execute under both primary JITs. Continue B430: Runtime_133718.ShiftRight has native mask255 versus managed-1 and stale CreateScalar/ShiftRightLogical exception flags. Reconcile the complete variable-byte-shift construction, add successful arithmetic coverage beyond the upstream exception-only calls, then recapture the same39-body raw comparison. No ID/flag normalization or new accepted deviation. Worker idle.",
+      "parentScope": "B430 is validated and its raw arithmetic/operand-order comparisons match. Continue B431: reproduce primary compilation of AssemblyNameParser.TryParseVersion directly, then compare gtCloneLclFld's scalar-versus-struct layout handling with the pinned oracle. Fix the complete clone contract and validate the original parser failure without relying on an unrelated arithmetic exception. Worker idle; keep target/backend expansions separate.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -949,7 +958,7 @@
         }
       ]
     },
-    "nextAction": "B429 is validated:61Debug/61Release, all38operand-order cases execute with identical stdout. Continue B430 from artifacts/primary-operand-order/after/method-17-Importation.diff and method-17-instructions.diff: gtNewSimdBinOpNode's variable signed-byte right shift emits mask-1 instead of native255 and retains extra exception flags on CreateScalar/ShiftRightLogical after replacing the count operand. Locate this branch in Compiler.gt.cs against pinned gentree.cpp; port its complete construction, test real successful variable-byte arithmetic and flag propagation, then publish/recapture with the namespace-qualified selector. Current comparison has39completed bodies:114of117raw phase slices and38of39instruction traces match. Do not accept the remaining mismatch merely because exception-only upstream tests pass. Worker idle; B153/D009, B365 and ARM64 foreground expansion deferred.",
+    "nextAction": "B430 is verified:545Debug/541Release,908primary arithmetic lane checks, exact21tree slices/seven traces plus all117slices/39traces for the operand-order corpus. Next B431: inspect Compiler.gt.cs gtCloneLclFld near1141 against native gentree.cpp. Primary compilation of System.Reflection.AssemblyNameParser.TryParseVersion aborted during Clone loops at lclFld.Layout is not null; original evidence artifacts/primary-simd-shifts/before-2/managed-1. Build a small direct AssemblyName parsing probe using the existing primary corpus pattern and current744ead45 JIT, so reproduction does not depend on an arithmetic failure. Preserve scalar field offsets/types/SSA/debug identity while requiring layouts only where native does; use existing clone fixtures and fresh primary evidence, then commit. Worker idle; B153/D009, B365 and ARM64 foreground expansion deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
