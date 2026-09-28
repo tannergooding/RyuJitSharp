@@ -141,6 +141,46 @@ internal static unsafe class Arm64LinearScanConstructionTests
         });
     }
 
+    [TestCase(SimdScalableKind.SimdScalableRepeated, TYP_INT, 0UL, 0UL, 0)]
+    [TestCase(SimdScalableKind.SimdScalableRepeated, TYP_INT, 0xFFFF_FFFFUL, 0UL, 0)]
+    [TestCase(SimdScalableKind.SimdScalableRepeated, TYP_INT, 127UL, 0UL, 0)]
+    [TestCase(SimdScalableKind.SimdScalableRepeated, TYP_INT, 128UL, 0UL, 1)]
+    [TestCase(SimdScalableKind.SimdScalableRepeated, TYP_INT, 256UL, 0UL, 0)]
+    [TestCase(SimdScalableKind.SimdScalableRepeated, TYP_ULONG, 0x8000_0000_0000_0000UL, 0UL, 1)]
+    [TestCase(SimdScalableKind.SimdScalableRepeated, TYP_FLOAT, 0x3F80_0000UL, 0UL, 0)]
+    [TestCase(SimdScalableKind.SimdScalableRepeated, TYP_FLOAT, 0x8000_0000UL, 0UL, 1)]
+    [TestCase(SimdScalableKind.SimdScalableSequence, TYP_INT, 0UL, 0UL, 0)]
+    [TestCase(SimdScalableKind.SimdScalableSequence, TYP_INT, 15UL, 15UL, 0)]
+    [TestCase(SimdScalableKind.SimdScalableSequence, TYP_INT, 16UL, 15UL, 1)]
+    [TestCase(SimdScalableKind.SimdScalableSequence, TYP_INT, 15UL, 16UL, 1)]
+    [TestCase(SimdScalableKind.SimdScalableSequence, TYP_INT, 16UL, 16UL, 2)]
+    [TestCase(SimdScalableKind.SimdScalableSequence, TYP_LONG, 0xFFFF_FFFF_FFFF_FFF0UL, 15UL, 0)]
+    [TestCase(SimdScalableKind.SimdScalableSequence, TYP_LONG, 0xFFFF_FFFF_FFFF_FFEFUL, 0UL, 1)]
+    [TestCase(SimdScalableKind.SimdScalableScalar, TYP_INT, 0UL, 0UL, 0)]
+    [TestCase(SimdScalableKind.SimdScalableScalar, TYP_INT, 1UL, 0UL, 1)]
+    [TestCase(SimdScalableKind.SimdScalableScalar, TYP_DOUBLE, 0x3FF0_0000_0000_0000UL, 0UL, 0)]
+    [TestCase(SimdScalableKind.SimdScalableScalar, TYP_DOUBLE, 0x8000_0000_0000_0000UL, 0UL, 1)]
+    public static void ScalableConstantsReserveOnlyTheRequiredIntegerTemporaries(
+        SimdScalableKind kind, var_types baseType, ulong index, ulong step, int temporaries)
+    {
+        WithCompiler(false, false, (compiler, _) => {
+            compiler.compFloatingPointUsed = true;
+            var allocator = new LinearScan(compiler);
+            var node = compiler.gtNewSimdVconNode(TYP_SIMD, baseType, kind, index, step);
+
+            Assert.That(BuildNode(allocator, node), Is.Zero);
+            Assert.That(allocator.intervals.FindAll(interval => interval.isInternal), Has.Count.EqualTo(temporaries));
+            var definitions = allocator.refPositions.FindAll(position =>
+                position.refType == RefType.RefTypeDef && !position.getInterval().isInternal);
+            Assert.That(definitions, Has.Count.EqualTo(1));
+            Assert.That(definitions[0].getInterval().isConstant, Is.True);
+            Assert.That(definitions[0].treeNode, Is.SameAs(node));
+            Assert.That(allocator.refPositions.FindAll(position =>
+                position.refType == RefType.RefTypeUse && position.getInterval().isInternal),
+                Has.Count.EqualTo(temporaries));
+        });
+    }
+
     [Test]
     public static void ReferenceTraversalBuildsArm64NodeDefinitions()
     {

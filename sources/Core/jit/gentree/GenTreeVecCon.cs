@@ -14,6 +14,9 @@ namespace RyuJitSharp;
 public sealed class GenTreeVecCon : GenTree
 {
     private simd_t _simdVal;
+#if TARGET_ARM64
+    private simdscalable_t _simdScalableVal = simdscalable_t.Zero;
+#endif
 
     public GenTreeVecCon(var_types type)
         : base(GT_CNS_VEC, type)
@@ -23,14 +26,14 @@ public sealed class GenTreeVecCon : GenTree
 
 #if TARGET_ARM64
     [SuppressMessage("Design", "CA1065:Do not raise exceptions in unexpected locations",
-        Justification = "Unsupported scalable constants must terminate compilation instead of using fixed-size bits.")]
+        Justification = "Invalid SIMD types must terminate compilation.")]
 #endif
     public bool IsAllBitsSet => Type switch {
         TYP_SIMD8 => _simdVal.v64[0].IsAllBitsSet,
         TYP_SIMD12 => _simdVal.v64[0].IsAllBitsSet && (_simdVal.u32[2] == uint.MaxValue),
 #if TARGET_ARM64
         TYP_SIMD16 => _simdVal.IsAllBitsSet,
-        TYP_SIMD => throw new FatalJitException(CORJIT_IMPLLIMITATION, "ARM64 scalable vector constants require scalable representation."),
+        TYP_SIMD => _simdScalableVal.IsAllBitsSet,
 #else
         TYP_SIMD16 => _simdVal.v128[0].IsAllBitsSet,
 #endif
@@ -47,14 +50,14 @@ public sealed class GenTreeVecCon : GenTree
 
 #if TARGET_ARM64
     [SuppressMessage("Design", "CA1065:Do not raise exceptions in unexpected locations",
-        Justification = "Unsupported scalable constants must terminate compilation instead of using fixed-size bits.")]
+        Justification = "Invalid SIMD types must terminate compilation.")]
 #endif
     public bool IsZero => Type switch {
         TYP_SIMD8 => _simdVal.v64[0].IsZero,
         TYP_SIMD12 => _simdVal.v64[0].IsZero && (_simdVal.u32[2] == 0),
 #if TARGET_ARM64
         TYP_SIMD16 => _simdVal.IsZero,
-        TYP_SIMD => throw new FatalJitException(CORJIT_IMPLLIMITATION, "ARM64 scalable vector constants require scalable representation."),
+        TYP_SIMD => _simdScalableVal.IsZero,
 #else
         TYP_SIMD16 => _simdVal.v128[0].IsZero,
 #endif
@@ -69,7 +72,31 @@ public sealed class GenTreeVecCon : GenTree
 #endif
     };
 
-    public ref simd_t SimdVal => ref _simdVal;
+#if TARGET_ARM64
+    [SuppressMessage("Design", "CA1065:Do not raise exceptions in unexpected locations",
+        Justification = "Fixed-width consumers must not silently read scalable constants as SIMD16.")]
+#endif
+    public ref simd_t SimdVal
+    {
+        get
+        {
+            RequireFixedSize();
+
+            return ref _simdVal;
+        }
+    }
+
+#if TARGET_ARM64
+    public ref simdscalable_t SimdScalableVal
+    {
+        get
+        {
+            assert(Type == TYP_SIMD);
+
+            return ref _simdScalableVal;
+        }
+    }
+#endif
 
     public static bool Equals(GenTreeVecCon left, GenTreeVecCon right)
     {
@@ -95,9 +122,7 @@ public sealed class GenTreeVecCon : GenTree
 #if TARGET_ARM64
             case TYP_SIMD:
             {
-                NYI("ARM64 scalable vector constant comparison");
-                fatal(CORJIT_IMPLLIMITATION);
-                return false;
+                return left._simdScalableVal == right._simdScalableVal;
             }
 #endif
 
@@ -113,6 +138,23 @@ public sealed class GenTreeVecCon : GenTree
     public static int ElementCount(int simdSize, var_types simdBaseType)
     {
         return simdSize / simdBaseType.Size;
+    }
+
+    private void RequireFixedSize()
+    {
+#if TARGET_ARM64
+        if (Type == TYP_SIMD)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "This vector operation requires fixed-width constant storage.");
+        }
+#endif
+    }
+
+    private int GetFixedElementCount(var_types simdBaseType)
+    {
+        RequireFixedSize();
+
+        return ElementCount(Type.Size, simdBaseType);
     }
 
 #if FEATURE_HW_INTRINSICS
@@ -270,6 +312,9 @@ public sealed class GenTreeVecCon : GenTree
 
     public void EvaluateBinaryInPlace(genTreeOps oper, bool scalar, var_types baseType, GenTreeVecCon other)
     {
+        RequireFixedSize();
+        other.RequireFixedSize();
+
         switch (Type)
         {
             case TYP_SIMD8:
@@ -339,7 +384,7 @@ public sealed class GenTreeVecCon : GenTree
     /// <param name="scalar">the value to broadcast as part of the evaluation</param>
     public void EvaluateBroadcastInPlace(var_types simdBaseType, double scalar)
     {
-        var elementCount = ElementCount(Type.Size, simdBaseType);
+        var elementCount = GetFixedElementCount(simdBaseType);
 
         switch (simdBaseType)
         {
@@ -368,7 +413,7 @@ public sealed class GenTreeVecCon : GenTree
     /// <param name="scalar">the value to broadcast as part of the evaluation</param>
     public void EvaluateBroadcastInPlace(var_types simdBaseType, long scalar)
     {
-        var elementCount = ElementCount(Type.Size, simdBaseType);
+        var elementCount = GetFixedElementCount(simdBaseType);
 
         switch (simdBaseType)
         {
@@ -430,7 +475,7 @@ public sealed class GenTreeVecCon : GenTree
 
     public double GetElementFloating(var_types simdBaseType, int index)
     {
-        var elementCount = ElementCount(Type.Size, simdBaseType);
+        var elementCount = GetFixedElementCount(simdBaseType);
 
         switch (simdBaseType)
         {
@@ -454,7 +499,7 @@ public sealed class GenTreeVecCon : GenTree
 
     public long GetElementIntegral(var_types simdBaseType, int index)
     {
-        var elementCount = ElementCount(Type.Size, simdBaseType);
+        var elementCount = GetFixedElementCount(simdBaseType);
 
         switch (simdBaseType)
         {
@@ -504,7 +549,7 @@ public sealed class GenTreeVecCon : GenTree
 
     public bool IsBroadcast(var_types simdBaseType)
     {
-        var elementCount = ElementCount(Type.Size, simdBaseType);
+        var elementCount = GetFixedElementCount(simdBaseType);
 
         switch (simdBaseType)
         {
@@ -565,7 +610,7 @@ public sealed class GenTreeVecCon : GenTree
 
     public bool IsNaN(var_types simdBaseType)
     {
-        var elementCount = ElementCount(Type.Size, simdBaseType);
+        var elementCount = GetFixedElementCount(simdBaseType);
 
         for (var i = 0; i < elementCount; i++)
         {
@@ -582,7 +627,7 @@ public sealed class GenTreeVecCon : GenTree
     public bool ContainsNaN(var_types simdBaseType)
     {
         assert(varTypeIsFloating(simdBaseType));
-        var elementCount = ElementCount(Type.Size, simdBaseType);
+        var elementCount = GetFixedElementCount(simdBaseType);
 
         for (var i = 0; i < elementCount; i++)
         {
@@ -597,7 +642,7 @@ public sealed class GenTreeVecCon : GenTree
 
     public bool IsNegativeZero(var_types simdBaseType)
     {
-        var elementCount = ElementCount(Type.Size, simdBaseType);
+        var elementCount = GetFixedElementCount(simdBaseType);
 
         for (var i = 0; i < elementCount; i++)
         {
@@ -614,7 +659,7 @@ public sealed class GenTreeVecCon : GenTree
     public bool ContainsNegativeZero(var_types simdBaseType)
     {
         assert(varTypeIsFloating(simdBaseType));
-        var elementCount = ElementCount(Type.Size, simdBaseType);
+        var elementCount = GetFixedElementCount(simdBaseType);
 
         for (var i = 0; i < elementCount; i++)
         {
@@ -632,7 +677,7 @@ public sealed class GenTreeVecCon : GenTree
     public bool ContainsPositiveZero(var_types simdBaseType)
     {
         assert(varTypeIsFloating(simdBaseType));
-        var elementCount = ElementCount(Type.Size, simdBaseType);
+        var elementCount = GetFixedElementCount(simdBaseType);
 
         for (var i = 0; i < elementCount; i++)
         {
@@ -652,7 +697,7 @@ public sealed class GenTreeVecCon : GenTree
     {
         assert(varTypeIsFloating(simdBaseType));
 
-        var elementCount = ElementCount(Type.Size, simdBaseType);
+        var elementCount = GetFixedElementCount(simdBaseType);
         var result = default(simd_t);
 
         switch (simdBaseType)
@@ -699,7 +744,7 @@ public sealed class GenTreeVecCon : GenTree
 
     public void SetElementFloating(var_types simdBaseType, int index, double value)
     {
-        var elementCount = ElementCount(Type.Size, simdBaseType);
+        var elementCount = GetFixedElementCount(simdBaseType);
 
         switch (simdBaseType)
         {
@@ -725,7 +770,7 @@ public sealed class GenTreeVecCon : GenTree
 
     public void SetElementIntegral(var_types simdBaseType, int index, long value)
     {
-        var elementCount = ElementCount(Type.Size, simdBaseType);
+        var elementCount = GetFixedElementCount(simdBaseType);
 
         switch (simdBaseType)
         {

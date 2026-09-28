@@ -16,12 +16,19 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "arm64ScalableConstantIntegration": {
+      "scope": "GenTreeVecCon scalable payload, zero/all-bits/equality queries, cloning, masked factory operands, zero/all-ones/byte-pattern construction, debug hashing and complete ARM64 GT_CNS_VEC LSRA temporary selection.",
+      "mapping": "gentree.h vector query/equality branches and gentree.cpp scalable factory/clone/hash branches -> GenTreeVecCon.cs, Compiler.gt.cs and Compiler.gt.Hash.cs; lsraarm64.cpp:744-815 -> LinearScan.Arm64NodeBuilding.cs.",
+      "contracts": "Fixed storage access cannot read scalable values. Unported element/folding consumers fail explicitly rather than using a fixed SIMD16 payload. LSRA independently reserves sequence index/step integer temporaries and marks the one vector definition constant; zero/all-ones and encodable forms need no scratch.",
+      "validation": "Full-analysis linux-arm64 target model/metadata/node-construction coverage: 160 Debug/154 Release. Windows fixed-vector/tree/VN/codegen controls: 290 Debug/286 Release. artifacts/arm64-local-recovery-{debug,release}/tst/{Debug,Release}/arm64-scalable-tree-{debug,release}.trx and artifacts/arm64-local-windows-{debug,release}/tst/{Debug,Release}/arm64-scalable-windows-{debug,release}.trx.",
+      "remaining": "Scalable constant dumps, element operations/folding, VN/assertion storage and scalable masks remain explicit limitations. Public ARM64 allocation and generated-code execution/parity remain gated. Native retirement must use the committed batch, not these managed tests as full target evidence."
+    },
     "arm64ScalableConstantModel": {
       "scope": "simdscalable_t value semantics and complete Arm64SimdScalableConstInfo decoding and encoding predicates.",
       "mapping": "simd.h:2238-2328/2630-2845 and simd.cpp:IsAllBitsSet -> simd/SimdScalableKind.cs, simdscalable_t.cs and Arm64SimdScalableConstInfo.cs. Native index/step unions reuse simd8_t.",
       "contracts": "Raw-bit zero/all-ones/equality, signed element extension, independent unsigned-64 immediate overflow, exact floating payloads, signed-eight-bit repeated/shifted forms and independent signed-five-bit sequence operands. Scalar integral constants have no immediate form.",
       "validation": "Full-analysis linux-arm64 target model/metadata coverage: 69 Debug/69 Release, executed on Windows x64. artifacts/arm64-local-recovery-{debug,release}/tst/{Debug,Release}/arm64-scalable-model-{debug,release}.trx.",
-      "remaining": "Standalone representation and encoding support only. GenTreeVecCon storage/consumers and LSRA scalable temporary selection remain to integrate; public allocator and generated-code execution/parity remain gated."
+      "remaining": "Tree storage/query/factory/hash and LSRA integration are recorded under arm64ScalableConstantIntegration. Other scalable consumers, public allocator and generated-code execution/parity remain gated."
     },
     "sysvCallOrchestration": {
       "scope": "AMD64 genCall, genCallPlaceRegArgs field-list/scalar arguments, genPutArgReg, getCallIndirectionCellReg, Debug tailcall epilog-register constraints and pending-label/alignment helpers.",
@@ -172,9 +179,11 @@
     "planApprovedAt": "2026-09-22",
     "residualReconciliation": {
       "status": "in-progress",
-      "retirementCommit": "8f39f4020bb1d4da7d70305c5396b2d34e5e853f",
+      "retirementCommit": "ec9d37b6ea460e565b5c596eaea5f39b867c1846",
       "retirementBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
       "recoveredBoundary": "Reviewed 4ec12e43..8f39f402: 28 native JIT paths, 4690 deletions and six restored LowerCFGCall switch-tail lines. The retained whole LowerCFGCall matches the intact oracle. Residual source/index are clean; the cleanup commit retains the pin as its sole parent. Oracle tracked source/index are clean at the pin. All 112 current refs/porting refs remain present; the recorded reconciliation-start and EH/block snapshot anchors still resolve to their recorded IDs.",
+      "latestSweep": "ec9d37b6 retires 785 lines across lsraarm64.cpp/lsra.h and simd.h/simd.cpp: six complete consecutive-register helpers/declarations, Arm64SimdScalableConstInfo and simdscalable_t::IsAllBitsSet. Exact spans, mappings and recent-commit dispositions are in artifacts/residual-reconciliation/native-catchup-20260928.json and its manifest/applied receipt. Source/index clean at collection; oracle tracked source/index unchanged. Full removal catch-up is not established.",
+      "incrementalPolicy": "A parallel retirement lane records each completed C# batch as retired, retained with concrete incomplete paths, or awaiting review. Fully ported standalone support need not remain solely because unported consumers reference it; the residual is not buildable and the intact oracle retains reference source.",
       "workflow": "User-directed: maintain one local native Remove ported code commit and amend it after larger source-area batches. Leave in-progress edits unstaged. Reuse completed port reviews/mappings and explicit NYIs; investigate only unclear boundaries. No routine recovery snapshots or helper-by-helper documentation cycles. Snapshot fields below describe retained historical recovery points, not the current continuation base.",
       "reason": "Retirement lagged completed C# batches. Restore the native remaining-work view concurrently with continued Windows, ARM64 and Linux implementation; cleanup is not a prerequisite for further porting.",
       "startSnapshot": "9f4bab794f8fe339a6b46cb8336305cf80c804ee",
@@ -315,7 +324,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "B149 is committed dae1414, ARM64 internal local allocation/resolution e1d3365 and SysV call orchestration ba97fbbf. Native retirement is reconciled through 8f39f402 without new native edits; full cleanup remains incomplete. Continue ARM64 LSRA's scalable-constant encoding dependency before public allocator activation. Floating remainder is already explicitly NYI in pinned native and is not a missing translation. Parent owns implementation, integration, shared documentation and C# commits; packets below are historical records, not active assignments.",
+      "parentScope": "B149 is committed dae1414, ARM64 internal local allocation/resolution e1d3365, SysV call orchestration ba97fbbf and standalone scalable model 20c26159. Scalable tree storage/query/factory/hash and LSRA temporary selection are integrated; remaining scalable consumers and public allocator stay gated. Parallel native retirement has advanced through ec9d37b6 and continues; full cleanup remains incomplete. Floating remainder is explicitly NYI in pinned native, not a translation gap. Parent owns implementation, integration, shared documentation and C# commits; packets below are historical records, not active assignments.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -710,7 +719,7 @@
         }
       ]
     },
-    "nextAction": "Continue without stopping at milestones. Standalone simdscalable_t/Arm64SimdScalableConstInfo model and encoding predicates are implemented. Integrate GenTreeVecCon scalable storage and necessary query/equality/clone/constructor/hash/dump consumers without fixed-byte fallbacks; leave unfinished VN/folding paths explicitly gated. Then wire lsraarm64.cpp:GT_CNS_VEC repeated/sequence/scalar temp selection into LinearScan.Arm64NodeBuilding.cs with focused target coverage. Floating remainder is explicitly NYI in pinned lsraarm64.cpp:1000, not a translation gap. Before public DoRegisterAllocation activation, preserve its consecutive-reference-map initialization and native allocation-mode ordering and finish dependency review. General generation/emission/metadata gates and full native cleanup remain open. Native retirement ledger is committed bfd4d42 through 8f39f402. Do not contact old app-native sessions or reuse unavailable worker handles.",
+    "nextAction": "Continue without stopping at milestones. Scalable model, tree storage/query/clone/factory/hash and ARM64 LSRA repeated/sequence/scalar temporary selection are integrated. Next port gentree.cpp:gtDispConst's complete scalable branch, preserving modular integer sequence arithmetic and native alternate-form floating formatting; then close the required scalable element/folding consumers rather than reading fixed bytes. VN/assertion storage and masks remain explicit limitations. Before public DoRegisterAllocation activation preserve consecutive-reference-map initialization and native allocation-mode ordering. Native retirement lane 4b57b744-36f1-4e6e-8b76-94c1a87d6e02 continues a second sweep after ec9d37b6; collect its new report and hand it each newly committed batch. Do not contact archived app-native sessions or reuse unavailable old worker handles. General generation/emission/metadata gates and full native cleanup remain open.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

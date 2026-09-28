@@ -541,6 +541,14 @@ public partial class Compiler
     public GenTreeVecCon gtCloneCnsVec(GenTreeVecCon vecCon)
     {
         var vecConClone = gtNewVconNode(vecCon.Type);
+#if TARGET_ARM64
+        if (vecCon.Type == TYP_SIMD)
+        {
+            vecConClone.SimdScalableVal = vecCon.SimdScalableVal;
+
+            return vecConClone;
+        }
+#endif
         vecConClone.SimdVal = vecCon.SimdVal;
         return vecConClone;
     }
@@ -1756,6 +1764,13 @@ public partial class Compiler
                     {
                         jitprintf($"<0x{vecCon.SimdVal.u64[0]:x16}, 0x{vecCon.SimdVal.u64[1]:x16}, 0x{vecCon.SimdVal.u64[2]:x16}, 0x{vecCon.SimdVal.u64[3]:x16}, 0x{vecCon.SimdVal.u64[4]:x16}, 0x{vecCon.SimdVal.u64[5]:x16}, 0x{vecCon.SimdVal.u64[6]:x16}, 0x{vecCon.SimdVal.u64[7]:x16}>");
                         break;
+                    }
+#endif
+
+#if TARGET_ARM64
+                    case TYP_SIMD:
+                    {
+                        throw new FatalJitException(CORJIT_IMPLLIMITATION, "ARM64 scalable vector constant dumps are not yet ported.");
                     }
 #endif
 
@@ -8017,6 +8032,12 @@ public partial class Compiler
 
     public GenTree gtNewAllBitsSetConNode(var_types type)
     {
+#if TARGET_ARM64
+        if (type == TYP_SIMD)
+        {
+            return gtNewSimdVconNode(type, TYP_BYTE, SimdScalableKind.SimdScalableRepeated, 0xFF);
+        }
+#endif
 #if FEATURE_SIMD
         if (varTypeIsSimd(type))
         {
@@ -13277,6 +13298,31 @@ public partial class Compiler
     {
         return new GenTreeVecCon(type);
     }
+
+#if TARGET_ARM64
+    public GenTreeVecCon gtNewSimdVconNode(
+        var_types type, var_types baseType, SimdScalableKind kind, ulong index, ulong step = 0)
+    {
+        assert(type == TYP_SIMD);
+        assert(!varTypeIsSimd(baseType));
+
+        var node = new GenTreeVecCon(type);
+        ref var value = ref node.SimdScalableVal;
+        value.BaseType = baseType;
+        value.Kind = kind;
+        var elementMask = baseType.Size switch {
+            1 => 0xFFUL,
+            2 => 0xFFFFUL,
+            4 => 0xFFFF_FFFFUL,
+            8 => ulong.MaxValue,
+            _ => throw new FatalJitException("Invalid scalable constant element size."),
+        };
+        value.Index.u64[0] = index & elementMask;
+        value.Step.u64[0] = step & elementMask;
+
+        return node;
+    }
+#endif
 #endif
 
     /// <summary>Create an unthreaded helper-call replacement, preserving the source's value numbers and logical identity.</summary>
@@ -13444,7 +13490,7 @@ public partial class Compiler
 #if TARGET_ARM64
             case TYP_SIMD:
             {
-                throw new NotImplementedException("Scalable SIMD constant construction is not yet ported.");
+                return gtNewSimdVconNode(type, TYP_BYTE, SimdScalableKind.SimdScalableRepeated, pattern);
             }
 #endif
 #endif
@@ -13458,6 +13504,12 @@ public partial class Compiler
 
     public GenTree gtNewZeroConNode(var_types type)
     {
+#if TARGET_ARM64
+        if (type == TYP_SIMD)
+        {
+            return gtNewSimdVconNode(type, TYP_BYTE, SimdScalableKind.SimdScalableRepeated, 0);
+        }
+#endif
 #if FEATURE_SIMD
         if (varTypeIsSimd(type))
         {

@@ -16,6 +16,24 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Scalable IR and allocator constants
+
+ARM64 scalable constants now preserve their payload through queries, equality,
+cloning, zero/all-ones/byte-pattern factories and debug hashing. LSRA reserves
+zero, one or two integer temporaries according to repeated, sequence or scalar
+encoding constraints. Fixed-vector consumers explicitly reject unsupported
+scalable operations instead of reading unrelated fixed-size storage.
+
+Full-analysis coverage passes 160 Debug/154 Release managed ARM64 target cases
+and 290 Debug/286 Release Windows controls. Scalable constant dumps, element
+operations/folding, VN/assertion storage and masks remain incomplete; public
+allocation and ARM64 generated-code execution/parity remain gated.
+
+Parallel native cleanup advanced to `ec9d37b6`, retiring 785 lines of complete
+consecutive-register allocation and scalable encoding support. New commits now
+receive explicit retirement dispositions; mixed-path and unreviewed remainders
+are distinguished. Removal is still not fully caught up.
+
 ## 2026-09-28: ARM64 scalable constant model
 
 Scalable vector values now have a standalone representation for repeated,

@@ -134,11 +134,63 @@ public sealed partial class LinearScan
                 {
                     if (tree.Type is TYP_SIMD)
                     {
-                        throw new FatalJitException("ARM64 scalable vector constant encoding is not implemented in LSRA.");
-                    }
+                        ref var value = ref vector.SimdScalableVal;
+                        var info = Arm64SimdScalableConstInfo.Decode(value);
 
-                    _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
-                    buildInternalRegisterUses();
+                        switch (value.Kind)
+                        {
+                            case SimdScalableKind.SimdScalableRepeated:
+                            {
+                                if (!info.CanEncodeRepeated(value))
+                                {
+                                    _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
+                                    buildInternalRegisterUses();
+                                }
+                                break;
+                            }
+
+                            case SimdScalableKind.SimdScalableSequence:
+                            {
+                                var indexNeedsReg = info.IndexNeedsSequenceReg();
+                                var stepNeedsReg = info.StepNeedsSequenceReg();
+
+                                if (indexNeedsReg)
+                                {
+                                    _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
+                                }
+                                if (stepNeedsReg)
+                                {
+                                    _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
+                                }
+                                if (indexNeedsReg || stepNeedsReg)
+                                {
+                                    buildInternalRegisterUses();
+                                }
+                                break;
+                            }
+
+                            case SimdScalableKind.SimdScalableScalar:
+                            {
+                                if (!info.CanEncodeScalar(value, info.baseType.EmitActualSize))
+                                {
+                                    _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
+                                    buildInternalRegisterUses();
+                                }
+                                break;
+                            }
+
+                            default:
+                            {
+                                unreached();
+                                throw new FatalJitException("Unexpected ARM64 scalable vector constant kind.");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
+                        buildInternalRegisterUses();
+                    }
                 }
                 sourceCount = 0;
                 assert(destinationCount == 1);

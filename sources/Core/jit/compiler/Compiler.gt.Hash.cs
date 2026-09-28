@@ -81,13 +81,20 @@ public partial class Compiler
 #if FEATURE_SIMD
                         case GT_CNS_VEC:
                         {
+                            var vector = tree.AsVecCon();
 #if TARGET_ARM64
                             if (tree.Type is TYP_SIMD)
                             {
-                                throw new NotImplementedException("Scalable-vector constant hashing requires scalable storage.");
+                                ref var simdValue = ref vector.SimdScalableVal;
+                                add = genTreeHashAdd((uint)add, (uint)simdValue.Kind);
+                                add = genTreeHashAdd((uint)add, (uint)simdValue.BaseType);
+                                add = genTreeHashAdd((uint)add, simdValue.Index.u32[0]);
+                                add = genTreeHashAdd((uint)add, simdValue.Index.u32[1]);
+                                add = genTreeHashAdd((uint)add, simdValue.Step.u32[0]);
+                                add = genTreeHashAdd((uint)add, simdValue.Step.u32[1]);
+                                break;
                             }
 #endif
-                            var vector = tree.AsVecCon();
                             for (var index = tree.Type.Size / sizeof(uint); index > 0; index--)
                             {
                                 add = genTreeHashAdd((uint)add, vector.SimdVal.u32[index - 1]);

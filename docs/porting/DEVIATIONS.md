@@ -1338,8 +1338,10 @@ pinned volatile-load bitcast round trip without changing it.
 
 ARM64 hardware-intrinsic and mask rewrites now have a private node-dispatch path
 for inserted operations, including FFR stores and reloads after calls. Fixed-width
-true-mask construction uses the native predicate pattern; scalable constant
-storage remains an explicit implementation limitation. `LowerBlock` initializes
+true-mask construction uses the native predicate pattern. Scalable vector constants
+now have separate storage, factories, queries, cloning, debug hashing and LSRA
+temporary selection; scalable masks, VN/assertion storage, element/folding operations
+and constant dumps remain explicit limitations. `LowerBlock` initializes
 FFR-trashed state, and switch lowering supports ARM64 bit tests and jump tables.
 `DoPhase`, allocation and emission remain separate. Managed target tests do not establish
 ARM64 execution or generated-code parity.
@@ -1506,18 +1508,17 @@ currently supports only Windows, using the native performance-counter, OS-thread
 and process inputs. It explicitly throws on other hosts. Explicitly seeded
 initialization is portable; no unseeded cross-host sequence equivalence is claimed.
 
-`GenTreeVecCon.Equals` defers `TARGET_ARM64`'s `TYP_SIMD` scalable storage.
-`GenTreeMskCon.Equals` likewise defers the scalable-mask branch selected by
-`TARGET_ARM64 && DEBUG` and `JitUseScalableVectorT`. Both report NYI and then
-call the nonreturning `fatal(CORJIT_IMPLLIMITATION)` path, even if NYI reporting
-itself returns. Fixed-width comparisons are implemented; the native vector/mask
-equality bodies remain in the residual tree as the scalable-storage reference.
-Windows-x64 comparisons are covered; ARM64 builds/execution remain unverified.
+`GenTreeVecCon.Equals` supports `TARGET_ARM64`'s `TYP_SIMD` scalable payload,
+including native cross-kind/type zero equality and otherwise exact operand bits.
+`GenTreeMskCon.Equals` still defers the scalable-mask branch selected by
+`TARGET_ARM64 && DEBUG` and `JitUseScalableVectorT`, reporting NYI followed by
+the nonreturning `fatal(CORJIT_IMPLLIMITATION)` path. Fixed-width and scalable-vector
+comparisons have managed target coverage, not ARM64 generated-code execution.
 
-`Compiler.gtNewConWithPattern` implements scalar and fixed-width vector byte
-patterns. Its `TARGET_ARM64` / `TYP_SIMD` branch throws `NotImplementedException`
-until scalable-vector constant construction is ported. The native factory and
-declaration remain in the residual tree as that branch's reference.
+`Compiler.gtNewConWithPattern` implements scalar, fixed-width and ARM64 scalable
+vector byte patterns. Scalable zero/all-ones factories and cloning likewise
+preserve the separate payload. Fixed-byte access and unported element/folding
+consumers reject scalable values instead of treating them as SIMD16.
 
 `CallArgs.AddFinalArgsAndDetermineAbiInfo` implements outgoing argument
 classification and non-standard argument insertion for Windows x64. Its Wasm
@@ -1528,9 +1529,9 @@ than continuing with an unsupported ABI. Other target-specific register rules
 are source-ported, not execution-validated. Classification is not argument
 evaluation/scheduling and does not activate call morphing.
 
-`Compiler.gtHashValue` explicitly throws for ARM64 scalable-vector constants
-pending their representation support. Its native body remains in the residual
-tree as the deferred branch's reference.
+`Compiler.gtHashValue` includes ARM64 scalable kind, base type and index/step
+words in native order. Scalable `gtDispConst` still throws pending its sequence
+and alternate-form floating rendering; no scalable dump parity is claimed.
 
 `Rationalizer.RewriteHWIntrinsic`, scalar intrinsic handling in `RewriteNode`,
 and `RewriteSubLshDiv` explicitly throw for their unported ARM64 mask-reduction

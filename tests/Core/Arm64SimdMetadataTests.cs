@@ -101,9 +101,106 @@ internal static class Arm64SimdMetadataTests
     {
         var node = new GenTreeVecCon(TYP_SIMD);
 
-        _ = Assert.Throws<FatalJitException>(() => _ = node.IsZero);
-        _ = Assert.Throws<FatalJitException>(() => _ = node.IsAllBitsSet);
+        Assert.That(node.IsZero, Is.True);
+        Assert.That(node.IsAllBitsSet, Is.False);
+        node.SimdScalableVal = simdscalable_t.AllBitsSet;
+        Assert.That(node.IsZero, Is.False);
+        Assert.That(node.IsAllBitsSet, Is.True);
+        _ = Assert.Throws<FatalJitException>(() => _ = node.SimdVal);
     }
+
+    [TestCase(TYP_BYTE, 0xFFUL)]
+    [TestCase(TYP_SHORT, 0xFFFFUL)]
+    [TestCase(TYP_INT, 0xFFFF_FFFFUL)]
+    [TestCase(TYP_ULONG, ulong.MaxValue)]
+    public static void ScalableConstructionMasksBothOperandsAndClonePreservesThePayload(var_types baseType, ulong mask)
+    {
+        var compiler = JitTls.Compiler ?? throw new AssertionException("The fixture compiler is not initialized.");
+        var node = compiler.gtNewSimdVconNode(
+            TYP_SIMD, baseType, SimdScalableKind.SimdScalableSequence, ulong.MaxValue, ulong.MaxValue - 1);
+        var clone = compiler.gtCloneCnsVec(node);
+
+        Assert.That(node.SimdScalableVal.Index.u64[0], Is.EqualTo(mask));
+        Assert.That(node.SimdScalableVal.Step.u64[0], Is.EqualTo(mask - 1));
+        Assert.That(GenTreeVecCon.Equals(node, clone), Is.True);
+        clone.SimdScalableVal.Step.u64[0] = 0;
+        Assert.That(GenTreeVecCon.Equals(node, clone), Is.False);
+        Assert.That(node.SimdScalableVal.Step.u64[0], Is.EqualTo(mask - 1));
+    }
+
+    [TestCase((byte)0)]
+    [TestCase((byte)0x3C)]
+    [TestCase(byte.MaxValue)]
+    public static void ScalableConstantFactoriesUseRepeatedBytePatterns(byte pattern)
+    {
+        var compiler = JitTls.Compiler ?? throw new AssertionException("The fixture compiler is not initialized.");
+        var constant = compiler.gtNewConWithPattern(TYP_SIMD, pattern)
+            ?? throw new AssertionException("The scalable pattern factory returned no constant.");
+        var node = constant.AsVecCon();
+
+        Assert.That(node.SimdScalableVal.BaseType, Is.EqualTo(TYP_BYTE));
+        Assert.That(node.SimdScalableVal.Kind, Is.EqualTo(SimdScalableKind.SimdScalableRepeated));
+        Assert.That(node.SimdScalableVal.Index.u64[0], Is.EqualTo(pattern));
+        Assert.That(node.SimdScalableVal.Step.u64[0], Is.Zero);
+        Assert.That(compiler.gtNewZeroConNode(TYP_SIMD).AsVecCon().IsZero, Is.True);
+        Assert.That(compiler.gtNewAllBitsSetConNode(TYP_SIMD).AsVecCon().IsAllBitsSet, Is.True);
+    }
+
+    [TestCase(nameof(GenTreeVecCon.EvaluateBinaryInPlace))]
+    [TestCase(nameof(GenTreeVecCon.EvaluateBroadcastInPlace))]
+    [TestCase(nameof(GenTreeVecCon.GetElementIntegral))]
+    [TestCase(nameof(GenTreeVecCon.GetElementFloating))]
+    [TestCase(nameof(GenTreeVecCon.SetElementIntegral))]
+    [TestCase(nameof(GenTreeVecCon.SetElementFloating))]
+    [TestCase(nameof(GenTreeVecCon.IsBroadcast))]
+    [TestCase(nameof(GenTreeVecCon.IsNaN))]
+    [TestCase(nameof(GenTreeVecCon.IsNegativeZero))]
+    [TestCase(nameof(GenTreeVecCon.ContainsNaN))]
+    [TestCase(nameof(GenTreeVecCon.ContainsPositiveZero))]
+    [TestCase(nameof(GenTreeVecCon.ContainsNegativeZero))]
+    [TestCase(nameof(GenTreeVecCon.GetFloatingZeroMask))]
+    public static void UnportedScalableConsumersFailBeforeReadingFixedWidthStorage(string name)
+    {
+        var node = new GenTreeVecCon(TYP_SIMD);
+        TestDelegate operation = name switch {
+            nameof(GenTreeVecCon.EvaluateBinaryInPlace) => () => node.EvaluateBinaryInPlace(genTreeOps.GT_ADD, false, TYP_FLOAT, node),
+            nameof(GenTreeVecCon.EvaluateBroadcastInPlace) => () => node.EvaluateBroadcastInPlace(TYP_FLOAT, 1.0),
+            nameof(GenTreeVecCon.GetElementIntegral) => () => _ = node.GetElementIntegral(TYP_INT, 0),
+            nameof(GenTreeVecCon.GetElementFloating) => () => _ = node.GetElementFloating(TYP_FLOAT, 0),
+            nameof(GenTreeVecCon.SetElementIntegral) => () => node.SetElementIntegral(TYP_INT, 0, 1),
+            nameof(GenTreeVecCon.SetElementFloating) => () => node.SetElementFloating(TYP_FLOAT, 0, 1.0),
+            nameof(GenTreeVecCon.IsBroadcast) => () => _ = node.IsBroadcast(TYP_FLOAT),
+            nameof(GenTreeVecCon.IsNaN) => () => _ = node.IsNaN(TYP_FLOAT),
+            nameof(GenTreeVecCon.IsNegativeZero) => () => _ = node.IsNegativeZero(TYP_FLOAT),
+            nameof(GenTreeVecCon.ContainsNaN) => () => _ = node.ContainsNaN(TYP_FLOAT),
+            nameof(GenTreeVecCon.ContainsPositiveZero) => () => _ = node.ContainsPositiveZero(TYP_FLOAT),
+            nameof(GenTreeVecCon.ContainsNegativeZero) => () => _ = node.ContainsNegativeZero(TYP_FLOAT),
+            nameof(GenTreeVecCon.GetFloatingZeroMask) => () => _ = node.GetFloatingZeroMask(TYP_FLOAT, false),
+            _ => throw new AssertionException("Unknown scalable consumer."),
+        };
+
+        _ = Assert.Throws<FatalJitException>(operation);
+    }
+
+#if DEBUG
+    [Test]
+    public static unsafe void ScalableHashCombinesBothOperandWordsInNativeOrder()
+    {
+        var compiler = JitTls.Compiler ?? throw new AssertionException("The fixture compiler is not initialized.");
+        var node = compiler.gtNewSimdVconNode(
+            TYP_SIMD, TYP_ULONG, SimdScalableKind.SimdScalableSequence, 0x1234_5678_90AB_CDEF, 0xFEDC_BA09_8765_4321);
+        uint payloadHash = 0;
+        foreach (var word in new uint[] { (uint)SimdScalableKind.SimdScalableSequence, (uint)TYP_ULONG,
+            0x90AB_CDEF, 0x1234_5678, 0x8765_4321, 0xFEDC_BA09 })
+        {
+            payloadHash = unchecked((payloadHash + (payloadHash / 2)) ^ word);
+        }
+        var operatorHash = (uint)genTreeOps.GT_CNS_VEC;
+        var expectedHash = unchecked((operatorHash + (operatorHash / 2)) ^ payloadHash);
+
+        Assert.That(compiler.gtHashValue(node), Is.EqualTo(expectedHash));
+    }
+#endif
 
     [TestCase(TYP_BYTE, 0xffffUL)]
     [TestCase(TYP_UBYTE, 0xffffUL)]
