@@ -16,6 +16,13 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "primaryVectorShuffle": {
+      "scope": "Variable and constant Shuffle for Vector128/256/512 integral and floating elements; invalid-index zeroing and cross-subvector selection.",
+      "execution": "Default, AVX512-disabled and AVX-disabled primary pairs each verify 8988 integral lanes and a separate 2484 raw-bit floating lanes. Each integral pair matches 144 slices/48 traces; each floating pair matches 36 slices/12 traces. Floating cases preserve signed zero, subnormal and quiet/signaling NaN payload bits.",
+      "sourceSnapshot": "aacf581e8bfca4a5b0a51e99d9a244bdaaa6dfd6",
+      "evidence": "artifacts/primary-vector-shuffle/evidence.json",
+      "limits": "No production correction needed. Selected phase trees and recorded instructions, not whole dumps, machine-byte equality or official runtime-suite parity."
+    },
     "primaryVectorShifts": {
       "scope": "Vector128/256/512 shifts for all eight signed/unsigned integral element types, including negative and oversized scalar counts; B440 switch operand-width closure.",
       "mapping": "fgbasic.cpp Compiler::fgMakeBasicBlocks -> compiler/Compiler.fg.cs.",
@@ -1120,7 +1127,7 @@
         }
       ]
     },
-    "nextAction": "Continue independent Windows SIMD execution after B440: exercise fixed-width integral Shuffle with in-range and out-of-range indices, independently checking lane selection and zeroing across subvector boundaries. Reuse primary-vector-shifts/jit-2 at source aacf581e and the established capture/comparison tools; investigate actual failures rather than adding broad infrastructure. Collect worker4b57b744's target-ledger baseline on notification without pausing foreground work. B153/D009, B365 and ARM64 foreground expansion remain deferred.",
+    "nextAction": "Continue independent Windows SIMD execution after complete integral/floating Shuffle checks: exercise integral Sum and Dot at all fixed widths with overflowing lane products and sums, independently checking native modular arithmetic. Reuse primary-vector-shifts/jit-2 at source aacf581e and established capture/comparison tools; investigate actual failures rather than adding broad infrastructure. Collect worker4b57b744's target-ledger baseline on notification without pausing foreground work. B153/D009, B365 and ARM64 foreground expansion remain deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
