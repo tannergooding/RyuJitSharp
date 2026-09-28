@@ -16,6 +16,12 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "primaryUpstreamRegressionModes": {
+      "scope": "Extend the B428 four-input primary execution boundary to MinOpts and GCStress4, using the unchanged validated source snapshot and host/corpus hashes.",
+      "validation": "Both configurations complete 18 selected bodies per primary JIT, with all 54 raw phase-tree slices and 18 emitted instruction traces equal in each pair. All selected MinOpts bodies report opts.MinOpts()==true. GCStress4 observes 3256 native and 3043 managed collections; positive counts are retained observations, not equality claims. Semantic stdout matches and stderr is empty.",
+      "evidence": "artifacts/primary-upstream-regressions/modes-evidence.json; reproduce with capture.py --minopts or --gc-stress 4 and reference-2/manifest.json. Existing compare.py handles MinOpts; compare-stress.py checks the exact output shape and records collection counts separately.",
+      "remaining": "No whole-dump, official-suite or exhaustive Windows claim. B365 forced-spill failures remain separate."
+    },
     "primaryUpstreamRegressionNegation": {
       "scope": "B428: floating SIMD negation construction-order parity, exposed by primary execution of four pinned upstream regression inputs with scoped entrypoints.",
       "mapping": "gentree.cpp:30738 gtNewSimdUnOpNode -> Compiler.gt.cs. Restore scalar negative-zero construction followed by gtNewSimdCreateBroadcastNode; no diagnostic normalization or instruction-selection change.",
@@ -540,7 +546,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "B428 fixes the floating-negation logical-ID discrepancy found by primary execution. Continue the same pinned upstream regression corpus under MinOpts and GCStress4 using the validated jit-2 snapshot and existing primary runner; verify actual completion and compare supported raw slices/instructions, following the first concrete mismatch rather than expanding name inventories. Keep official-suite/whole-dump claims and B365 native forced-spill failures separate. Report55 consolidated; worker idle.",
+      "parentScope": "The existing four-input primary corpus matches under optimized, MinOpts and GCStress4. Next execute the pinned Runtime_134334 and Runtime_133718 operand-order regression inputs, selected from the oracle's latest regression commits fd53e564dc6 and 2f56ca5b839. Reuse the simple linked-source corpus project and primary runner; invoke the actual upstream Fact/Theory cases, preserve source/dependency hashes, capture native and managed primary output, then follow the first concrete failure. No upstream refresh or new test framework. Worker idle.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -935,7 +941,7 @@
         }
       ]
     },
-    "nextAction": "B428 verified: 51 Debug/51 Release and corrected primary execution matches 54 raw tree slices/18 instruction traces, no ID normalization. Continue existing corpus-built-3 under MinOpts and GCStress4: artifacts/primary-jit-probe/capture.py native/managed artifacts/primary-upstream-regressions/<configuration>/native-1 or managed-1 --reference artifacts/primary-upstream-regressions/reference-2/manifest.json --selector 'Runtime_133583:* Runtime_133518:* Runtime_133523:* Runtime_133521:*' plus --minopts or --gc-stress 4. Jit-2 is immutable snapshot 6dd0c18643c1ec4212042698162d14c96a4c4b7c with the verified source fix. Verify process/body completion, then compare appropriate phases/instructions; do not normalize diagnostic IDs or conflate GC collection counts with semantic output. Report55 consolidated: 27793 removed/403 restored; worker idle. Keep B153/D009, B365 forced-spill assertions and ARM64 foreground expansion deferred.",
+    "nextAction": "Primary MinOpts and GCStress4 each match 54 raw tree slices/18 instruction traces with successful actual execution; evidence artifacts/primary-upstream-regressions/modes-evidence.json. Next create a fresh small linked-source corpus for pinned src/tests/JIT/Regression_ro_2/Runtime_134334.cs and Runtime_133718.cs under artifacts/primary-operand-order. The former has three public Facts; the latter has35Fact/Theory invocations from the public cases read through line185 (check remaining public cases before finalizing the driver). Reuse existing upstream-regressions project references and the primary capture runner; do not copy/edit native test source or introduce reflection/test-framework infrastructure. Build the corpus, anchor exact source/dependency hashes to the pin, run native and managed primary using validated jit-2/source6dd0c18643c1ec4212042698162d14c96a4c4b7c, and follow the first concrete failure/mismatch. No upstream resynchronization. Worker idle; B153/D009, B365 forced-spill assertions and ARM64 foreground expansion stay deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
