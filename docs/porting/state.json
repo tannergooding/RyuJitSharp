@@ -16,12 +16,20 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "primaryMemmoveOverlap": {
+      "scope": "Windows AMD64 constant-size memmove across scalar and SIMD boundaries, with overlap in both directions, identical addresses and disjoint ranges.",
+      "mapping": "codegenxarch.cpp genCodeForMemmove -> CodeGen.BlockMemory.cs.",
+      "validation": "15constant sizes and nine displacements verify135copies/69120bytes per primary JIT. All15bodies select STORE_BLK(Memmove), and all45raw phase slices/15instruction traces match. Captures cover scalar/xmm/ymm/zmm paths; no timeout or AltJIT.",
+      "sourceSnapshot": "8cbf96c2e6a0273f8c3c3338fb7eefe41c57e126",
+      "evidence": "artifacts/primary-memmove/evidence.json",
+      "remaining": "Native function remains retained for other-target gaps. Next Windows boundary is variable localloc and stack probing around page-size boundaries."
+    },
     "primarySsse3Execution": {
       "scope": "Direct SSSE3 arithmetic/shuffle execution with AVX enabled and disabled after B433.",
       "validation": "4204lane checks per configuration under both primary JITs. Each pair matches21raw phase slices/seven instruction traces. Explicit SSSE3/X64 support is true; legacy runs emit pshufb/palignr/pabsb/phaddsw/pmaddubsw instead of VEX forms. No timeout, AltJIT or skipped execution.",
       "sourceSnapshot": "8cbf96c2e6a0273f8c3c3338fb7eefe41c57e126",
       "evidence": "artifacts/primary-ssse3/evidence.json",
-      "remaining": "Next bounded Windows source boundary: direct overlapping memmove execution. Native genCodeForMemmove remains retained because managed code explicitly excludes non-Windows AMD64."
+      "remaining": "The subsequent primaryMemmoveOverlap checkpoint verifies direct overlapping copies. Native genCodeForMemmove remains retained because managed code explicitly excludes non-Windows AMD64."
     },
     "ssse3ClassRecognition": {
       "scope": "B433: recognize Ssse3 as X86Base, including nested X64, without changing hardware support gating.",
@@ -594,7 +602,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Direct SSSE3 primary execution matches both encoding modes. Retained genCodeForMemmove is implemented for Windows AMD64 but not other native AMD64 targets; preserve its residual source. Next verify its scalar/SIMD load-before-store overlap contract via constant-size primary execution rather than treating retained code as an absent Windows port.",
+      "parentScope": "Retained genCodeForMemmove is implemented for Windows AMD64 and now directly verified with135overlapping/disjoint copies; preserve its source for other-target gaps. Next bounded Windows execution boundary is genLclHeap/stack probing for variable allocations around page boundaries.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -989,7 +997,7 @@
         }
       ]
     },
-    "nextAction": "Direct SSSE3 primary corpus verifies4204lanes and exact21slices/seven traces per AVX-enabled/disabled mode. Next bounded Windows source boundary is genCodeForMemmove: native residual codegenxarch.cpp2642 and managed CodeGen.BlockMemory.cs73 agree on capturing all source registers before stores; managed intentionally excludes non-Windows targets, so retain native source. Build constant-size no-inline Span<byte>.CopyTo probes at scalar/SIMD boundaries with same-buffer overlap in both directions, compare against snapshot copies, and capture primary trees/instructions with current8cbf96c2 JIT. Confirm actual unrolled memmove selection; follow first concrete failure. Worker idle; B153/D009, B365 and ARM64 foreground expansion deferred.",
+    "nextAction": "Memmove primary boundary verified:135copies/69120bytes, all15STORE_BLK(Memmove) bodies and exact45raw slices/15traces. Continue retained genLclHeap and genStackPointerDynamicAdjustmentWithProbe: compare managed implementation with pinned source, then run no-inline variable stackalloc probes across0/1/4095/4096/4097/8192/65536bytes with initialized and SkipLocalsInit paths, writing every byte before reading the uninitialized path. Require actual localloc/stack-probe selection and compare primary output with current8cbf96c2 JIT. Follow first concrete failure; preserve non-Windows native residual. Worker idle; B153/D009, B365 and ARM64 foreground expansion deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
