@@ -16,12 +16,20 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "primaryNumericConversions": {
+      "scope": "Windows AMD64 float/double to eight integral primitives, checked and unchecked; signed/unsigned32/64-bit integers to float/double.",
+      "validation": "Default and AVX-disabled native/managed primary pairs each pass3264floating-cast checks with799expected overflows and936integer-rounding bit checks. Independent Python IEEE/integer expectations avoid double rounding. Each configuration matches120raw slices/40complete traces.",
+      "selection": "Actual VEX/EVEX and legacy paths verified. Small unchecked casts clamp; checked casts retain EE overflow helpers. Unsigned64-to-float uses direct vcvtusi2ss by default and sticky-bit cvtsi2ss/addss fallback without AVX.",
+      "sourceSnapshot": "a14320c0050db478282d1c441d958f7996853f3c",
+      "evidence": ["artifacts/primary-float-casts/evidence.json", "artifacts/primary-int-float/evidence.json"],
+      "remaining": "Default rounding mode only. Next bounded Windows boundary: packed vector float/integer conversions and saturation."
+    },
     "primaryDivRemExecution": {
       "scope": "Direct32/64-bit signed/unsigned X86Base.DivRem and native-sized aliases on Windows AMD64.",
       "validation": "648independent Python-oracle operand cases,1944quotient/remainder component checks. Both primary processes match18raw slices/sixcomplete traces; all six bodies emit div/idiv using EDX:EAX or RDX:RAX. Quotients are constrained to representable instruction range.",
       "sourceSnapshot": "a14320c0050db478282d1c441d958f7996853f3c",
       "evidence": "artifacts/primary-divrem/evidence.json",
-      "remaining": "No divide-error exception or other-target claim. Next bounded Windows boundary: checked/unchecked floating-to-integral conversions."
+      "remaining": "No divide-error exception or other-target claim. The subsequent primaryNumericConversions checkpoint covers scalar casts."
     },
     "structIntrinsicLayouts": {
       "scope": "B435: supply the missing derived layout method that caused infinite base redispatch during BigMul import.",
@@ -641,7 +649,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Wide arithmetic and direct DivRem now match with both tuple components consumed. Next execute checked/unchecked floating-to-integral conversions across rounding, range, infinity and NaN boundaries. Preserve retained other-target paths.",
+      "parentScope": "Scalar checked/unchecked casts and exact integer rounding now match in default and legacy ISA configurations. Continue packed vector conversions and saturation. Native retirement worker runs continuously in parallel under the user's renewed instruction, carrying retained classifications forward.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1036,7 +1044,7 @@
         }
       ]
     },
-    "nextAction": "Direct DivRem verifies1944components and sixexact bodies usinga14320c0. Next read CodeGen.FloatingCasts.cs and corresponding pinned casts/lowering contracts; execute no-inline checked/unchecked float/double-to-int/uint/long/ulong probes across fractions, boundaries, signed zero, infinity and NaN. Establish exact pinned unchecked semantics before generating expectations. Use primary-wide-integer/jit-1 and compare-complete.py, follow first discrepancy. Worker idle; B153/D009, B365 and ARM64 foreground expansion deferred.",
+    "nextAction": "Scalar numeric conversions pass4200checks per configuration and40bodies match120raw slices/40traces with default and AVX-disabled ISAs. Continue packed Vector128/256/512 float-to-int/uint and double-to-long/ulong conversion boundaries; reuse independent scalar IEEE expectations, verify each lane and actual vector lowering. Use primary-wide-integer/jit-1 sourcea14320c0 and compare-complete.py. Native retirement worker4b57b744 is active under continuous assignment after report55; collect numbered56+reports on notification without pausing its next routine batch. B153/D009, B365 and ARM64 foreground expansion deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
