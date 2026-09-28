@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
+#if TARGET_AMD64
 using System.Numerics;
 #endif
 
@@ -13,8 +13,8 @@ public sealed partial class CodeGen
 {
     public void genHomeRegisterParams(regNumber initReg, ref bool initRegStillZeroed)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Incoming parameter homing requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Incoming parameter homing requires AMD64.");
 #else
 #if DEBUG
         if (_verbose)
@@ -139,8 +139,14 @@ public sealed partial class CodeGen
             {
                 if (edge.DestOffset != 0)
                 {
-                    // Windows AMD64 never inserts partial incoming registers into a destination.
+#if UNIX_AMD64_ABI
+                    noway_assert(edge.DestOffset == 8);
+                    assert(genIsValidFloatReg(node.Reg));
+                    var sourceReg = edge.From.CopiedReg != REG_NA ? edge.From.CopiedReg : edge.From.Reg;
+                    Emitter.emitIns_R_R_I(INS_shufpd, EA_16BYTE, node.Reg, sourceReg, 0);
+#else
                     noway_assert(false, "Insertion into register is not supported");
+#endif
                 }
             }
 
@@ -156,8 +162,8 @@ public sealed partial class CodeGen
 
     public void genEnregisterIncomingStackArgs()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Incoming stack argument enregistration requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Incoming stack argument enregistration requires AMD64.");
 #else
 #if DEBUG
         if (_verbose)
@@ -189,7 +195,7 @@ public sealed partial class CodeGen
 #endif
     }
 
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
+#if TARGET_AMD64
     private static regMaskTP RegisterMask(regNumber reg)
     {
         return regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);

@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: SysV incoming-parameter homing
+
+Register and stack argument homing now handles SysV segments, including the
+native upper-eightbyte SIMD shuffle and register-cycle scratch preservation.
+Generic-context reporting and OSR Tier0 local loading are also enabled.
+Root prolog materialization remains gated on final frame layout and
+`genFinalizeFrame`; two cases confirm rejection before recording unwind data
+or instructions. Coverage passes 184 Debug/184 Release Linux-target managed
+cases and 221 Debug/206 Release Windows controls. No Linux execution or parity
+claim is made.
+
+Native retirement also removed the completed block-list verifier and supporting
+checks, label/register-life helpers, funclet updates and AMD64 funclet/Windows
+unwind workers. Mixed-target emitter storage and mixed-format CFI dispatch,
+reservation and publication remain.
+
 ## 2026-09-27: SysV frame and unwind support
 
 SysV AMD64 now supports frame allocation/probing, callee-save recording and

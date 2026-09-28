@@ -334,7 +334,7 @@ internal static class SysVX64FrameCodeGenTests
         });
     }
 
-    private static void WithProlog(Action<Compiler, CodeGen> action)
+    internal static void WithProlog(Action<Compiler, CodeGen> action, bool minopts = true)
     {
         SysVX64EmitterCallTests.WithEmitter((compiler, emitter) =>
         {
@@ -353,7 +353,7 @@ internal static class SysVX64FrameCodeGenTests
             var group = emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");
             group.igFlags |= InsGroupFlags.Prolog | InsGroupFlags.OutOfOrderHead;
             action(compiler, codeGen);
-        });
+        }, minopts);
     }
 
     private static List<Emitter.instrDesc> Descriptors(CodeGen codeGen)

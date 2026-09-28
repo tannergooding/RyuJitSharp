@@ -9,8 +9,8 @@ public sealed partial class CodeGen
 {
     public unsafe void genEnregisterOSRArgsAndLocals(regNumber initReg, ref bool initRegZeroed)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "OSR argument and local enregistration requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "OSR argument and local enregistration requires AMD64.");
 #else
         assert(_compiler.opts.IsOSR);
         var patchpoint = _compiler.info.compPatchpointInfo;
@@ -79,11 +79,10 @@ public sealed partial class CodeGen
 
     public void genHomeStackPartOfSplitParameter(regNumber initReg, ref bool initRegStillZeroed)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Split-parameter stack homing requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Split-parameter stack homing requires AMD64.");
 #else
-        // The native Windows AMD64 branch is empty: register homes already
-        // form contiguous space with incoming stack arguments.
+        // Native AMD64 has no split-parameter stack homing; only RISC-V and LoongArch need it.
 #endif
     }
 }

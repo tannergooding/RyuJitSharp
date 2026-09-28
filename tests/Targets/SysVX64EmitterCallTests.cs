@@ -222,7 +222,7 @@ internal static unsafe class SysVX64EmitterCallTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmMskCalleeTrash")]
     private static extern ref regMask MaskTrash(Compiler compiler);
 
-    internal static void WithEmitter(Action<Compiler, Emitter> action)
+    internal static void WithEmitter(Action<Compiler, Emitter> action, bool minopts = true)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -231,7 +231,7 @@ internal static unsafe class SysVX64EmitterCallTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.opts.SetMinOpts(minopts);
         compiler.eeInfoInitialized = true;
         compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
         compiler.info.compMatchedVM = true;

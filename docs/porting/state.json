@@ -16,11 +16,17 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sysvParameterHoming": {
+      "scope": "SysV register/stack parameter homing, upper-eightbyte SIMD insertion, register-cycle scratch handling, generic-context reporting and OSR Tier0 local loading.",
+      "mapping": "codegencommon.cpp -> CodeGen.ParameterHoming.cs/ParameterHomingGraph.cs/OSRParameterHoming.cs/FrameInitialization.cs/PrologInitialization.cs; codegenxarch.cpp -> CodeGen.JmpArguments.cs; compiler.h OSR offset accessor -> Compiler.FinalFrameLayout.Locals.cs.",
+      "validation": "184 Debug / 184 Release full-analysis Linux-x64 managed target cases; 221 Debug / 206 Release Windows controls. artifacts/sysv-homing-lane/tst/{Debug,Release}/sysv-homing-target-{debug,release}.trx and artifacts/sysv-homing-windows/tst/{Debug,Release}/sysv-homing-windows-{debug,release}.trx.",
+      "remaining": "Root prolog materialization remains explicitly gated pending SysV final frame layout and genFinalizeFrame. Two rejection cases confirm no unwind/instruction recording. B395 CFI remains separate; no Linux execution or parity claim."
+    },
     "sysvFrameCodeGeneration": {
       "scope": "AMD64 SysV frame allocation/probing, integer callee saves, stack initialization, root/OSR epilogs, funclet frames and CoreCLR-format unwind recording/publication.",
       "mapping": "codegenxarch.cpp/codegencommon.cpp -> CodeGen.PrologFrameSetup.cs/CalleeSaveRecording.cs/Epilog.cs/FuncletPrologEpilog.cs/PrologBlockInitialization.cs/FrameInitialization.cs/PrologInitialization.cs; unwindamd64.cpp -> Compiler.PrologRecording.cs/UnwindPublication.cs/UnwindPublicationDiagnostics.cs and Emitter.UnwindPrologOffsets.cs.",
       "validation": "174 Debug / 174 Release full-analysis Windows-host Linux-x64 managed target cases; 193 Debug / 178 Release Windows controls. artifacts/sysv-frame-lane/tst/{Debug,Release}/sysv-frame-target-{debug,release}.trx and artifacts/sysv-frame-windows/tst/{Debug,Release}/sysv-frame-windows-{debug,release}.trx.",
-      "remaining": "Root prolog materialization remains gated on SysV incoming-parameter homing. B395 NativeAOT CFI is explicitly rejected before unwind state changes or reservation/publication, with 11 rejection cases. No Linux execution/parity claim."
+      "remaining": "Incoming-parameter homing is now integrated; root prolog materialization still awaits final frame layout and genFinalizeFrame. B395 NativeAOT CFI is explicitly rejected before unwind state changes or reservation/publication, with 11 rejection cases. No Linux execution/parity claim."
     },
     "cfgQuerySupport": {
       "scope": "B384 optCheckPreds; fgIsBlockCold, fgMoreThanOneReturnBlock, BasicBlock.StatementCountExceeds and BasicBlockRangeList.ComplexityExceeds.",
@@ -81,7 +87,7 @@
     "planApprovedAt": "2026-09-22",
     "residualReconciliation": {
       "status": "in-progress",
-      "retirementCommit": "fc99e2ab9b3cb14c13bc843c80c45db74f1845e3",
+      "retirementCommit": "51acbd970aede4b17d4262dfcf13bc37c940056f",
       "retirementBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
       "workflow": "User-directed: maintain one local native Remove ported code commit and amend it after larger source-area batches. Leave in-progress edits unstaged. Reuse completed port reviews/mappings and explicit NYIs; investigate only unclear boundaries. No routine recovery snapshots or helper-by-helper documentation cycles. Snapshot fields below describe retained historical recovery points, not the current continuation base.",
       "reason": "Retirement lagged completed C# batches. Restore the native remaining-work view concurrently with continued Windows, ARM64 and Linux implementation; cleanup is not a prerequisite for further porting.",
@@ -116,7 +122,8 @@
         "Complete remaining fgehopt.cpp and fgflow.cpp: empty/unreachable EH cleanup, finally cloning/validation/merging, ACD rekeying, try-region cloning/feasibility and predecessor removal. Completed block successor snapshots, dominance/SSA liveness, clone/empty/side-effect/unique-predecessor queries, variable sets, tail-call/entry-stack/count wrappers and associated declarations/models.",
         "Completed block header memory masks/iteration, flag and raw-edge access, default initialization, weight/LIR/predecessor helpers and dominator link model; complete compiler.hpp regular/EH successor visitation and per-block complexity traversal. B393 debug helpers and unused/target support remain.",
         "Frontend closure: completed statement, inline, importer, block-splitting, SIMD and xarch rationalization bodies and declarations; 2662 deletion-only lines. Compiler utilities/funclets/arguments/DFS, morph phases/array cache, importer Swift/array/call helpers and the remaining xarch hardware importer: another 7070 deletion-only lines across six files. Unfinished target paths and unresolved/unused helpers remain.",
-        "Completed SSA construction/renaming/incremental SSA/verification, IR link/type/flag/uniqueness/phase checks, SysV classifier support, tree-liveness and GC initialization, three-opt heap support, B390 floating WithElement helper, and remaining cold/return/statement-count CFG queries. Keep fgDebugCheckBlockLinks for the unreconciled block-list verifier and shared models still needed by unfinished callers."
+        "Completed SSA construction/renaming/incremental SSA/verification, IR link/type/flag/uniqueness/phase checks, SysV classifier support, tree-liveness and GC initialization, three-opt heap support, B390 floating WithElement helper, and remaining cold/return/statement-count CFG queries.",
+        "Completed BBPredsChecker/fgDebugCheckBBlist/fgDebugCheckBlockLinks, label/register-life helpers, funclet updates, xarch scheduling/APX-PPX predicates, AMD64 funclet frame/prolog/epilog bodies and Windows-format unwind recording workers/dump. Mixed-format dispatch, reservation, publication and CFI remain."
       ],
       "remainingHelperTargets": [
         "helperexpansion.cpp now contains only the two TLS call transformations and ReadUtf8. All three are complete for Windows x64.",
@@ -148,11 +155,11 @@
         "block.cpp retains CanRemoveJumpToTarget for Wasm try/exnref-wrapper interval handling; managed Windows behavior is complete and Wasm fails explicitly.",
         "B392 retains the block-key hash helper for unresolved managed map hash-stress policy; predecessor shuffling is separately implemented.",
         "StatementCountExceeds and its declaration are retired. Range ComplexityExceeds was already absent before this batch; that absence was not used as port evidence. Both managed queries preserve native cutoff/accumulation without new callsites.",
-        "B393 edge visit-state assertions, unconditional DEBUG block membership and block-iterator mutation checks are complete and await the next broad retirement batch.",
+        "B393 edge visit-state assertions, unconditional DEBUG block membership and block-iterator mutation support are retired.",
         "Raw target-block getters have no pinned callsites and remain unused support. emitCodeGetCookie remains because its managed helper is only declared under TARGET_AMD64."
       ],
-      "remaining": "Continue unreconciled block-list diagnostics and broader backend/emitter support with their callers/models. Distinguish retained complete support from actual unfinished target paths and report concrete Windows-enabled gaps. SysV frame packet is integrated, but mixed-format unwind wrappers retain B395 CFI. Notify the user only when full already-completed-code cleanup is done.",
-      "verification": "Latest collected native cleanup is fc99e2ab on the pinned source baseline. Four consolidated batches removed 6269 lines without additions; native index/worktree and oracle tracked source/index were clean at reported boundaries, with all 107 recovery snapshots unchanged. Earlier assertion/trace-macro restorations remain explicit non-deletion-only corrections. Retirement adds no parity evidence.",
+      "remaining": "Continue the full already-completed-code cleanup, distinguishing unreconciled areas from genuine target/CFI/optional-statistics gaps. emitGenIG/emitSavIG retain architecture/statistics paths, genCreateTempLabel retains Unix x86, and genGetRegMask retains ARM floating support. No new default Windows emission gap was established; the earlier blanket claim is withdrawn. Complete bodies are not retained merely because unfinished native callers reference them. Notify the user when the full cleanup is done.",
+      "verification": "Latest collected native cleanup is 51acbd97 on the pinned source baseline. The latest diagnostic and frame/backend batches deleted 1702 lines and added one conditional-directive replacement preserving surviving x86 funclets. Native index/worktree and oracle tracked source/index were clean at reported boundaries, with all 107 recovery snapshots unchanged. Earlier assertion/trace-macro restorations remain explicit non-deletion-only corrections. Retirement adds no parity evidence.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
       "policy": "Retire only reviewed complete implementations. Retain or explicitly identify unfinished shared/Windows paths and other-platform-only paths. Preserve the oracle and existing index distinctions; do not infer parity or percentages from deletion counts."
     },
@@ -220,7 +227,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Shared CFG support and SysV CoreCLR frame/unwind integration are complete. Continue concrete Windows/shared gaps from broad residual reconciliation while coding agents close ARM64 allocator and SysV incoming-parameter/prolog dependencies. Native cleanup uses committed evidence only. Parent owns integration, shared documentation and C# commits; packets below are historical records, not active assignments.",
+      "parentScope": "Shared CFG support and SysV frame/unwind/parameter-homing integration are complete. Continue concrete Windows/shared gaps from broad residual reconciliation while coding agents close ARM64 allocator and SysV final-frame/root-prolog dependencies. Native cleanup uses committed evidence only. Parent owns integration, shared documentation and C# commits; packets below are historical records, not active assignments.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -615,7 +622,7 @@
         }
       ]
     },
-    "nextAction": "Continue without stopping at milestones. SysV CoreCLR frame/unwind packet is integrated with explicit B395 NativeAOT CFI rejection and unchanged native callee-save walk; continue incoming-parameter homing/root-prolog dependencies. ARM64 allocator packet remains incomplete and unstaged; existing agent continues buildNode/hardware requirements/traversal before integration. Native cleanup continues block-list diagnostic and broader backend/emitter reconciliation, with concrete Windows gaps required rather than historical blanket limitations. Last collected cleanup commit fc99e2ab9b3cb14c13bc843c80c45db74f1845e3; amend only that native cleanup commit, preserve oracle/recovery refs, and notify the user when full already-completed-code cleanup is finished.",
+    "nextAction": "Continue without stopping at milestones. SysV incoming-parameter homing is integrated; next complete final frame layout/genFinalizeFrame and their root-prolog dependency closure before enabling materialization. Keep B395 NativeAOT CFI rejection. ARM64 allocator packet remains incomplete and unstaged; existing agent continues buildNode/hardware requirements/traversal before integration. Native cleanup continues to a full already-completed-code cleanup boundary, retaining genuine target/mode gaps but not complete bodies merely referenced by unfinished callers. Last collected cleanup commit 51acbd970aede4b17d4262dfcf13bc37c940056f; preserve oracle/recovery refs and notify the user when full cleanup is established.",
     "arm64BlockAndSwitchLowering": {
       "scope": "ARM64 LowerBlock candidate/FFR initialization, LowerSwitch and TryLowerSwitchToBitTest.",
       "mapping": "lower.cpp block/switch lowering -> Lowering.BlockTraversal.cs and Lowering.Switches.cs, preserving ARM64 shift/AND/branch construction.",

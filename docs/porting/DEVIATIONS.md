@@ -1301,7 +1301,9 @@ backend activation and generated-code execution remain separate.
 
 SysV AMD64 frame allocation/probing, callee saves, stack initialization,
 root/OSR epilogs, funclet frames and CoreCLR unwind metadata are implemented.
-Incoming-parameter homing still gates root prolog materialization.
+Register/stack parameter homing, SIMD segment insertion, generic-context
+reporting and OSR Tier0 local loading are implemented. Final frame layout
+and `genFinalizeFrame` still gate root prolog materialization.
 Unix AMD64 with `CORINFO_NATIVEAOT_ABI` requires CFI unwind metadata, which
 remains unported (B395). All public unwind recording, reservation and publication
 entries terminate with `CORJIT_SKIPPED` before changing unwind state in that

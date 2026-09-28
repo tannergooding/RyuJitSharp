@@ -145,8 +145,8 @@ public sealed partial class CodeGen
 
     public var_types genParamStackType(in LclVarDsc descriptor, in AbiPassingSegment segment)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Parameter stack type selection requires Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Parameter stack type selection requires AMD64.");
 #else
         assert(segment.IsPassedInRegister);
         switch (descriptor.Type)

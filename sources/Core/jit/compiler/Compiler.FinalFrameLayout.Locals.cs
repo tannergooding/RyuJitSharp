@@ -617,8 +617,8 @@ public partial class Compiler
 
     public unsafe int lvaOSRLocalTier0FrameOffset(int varNum)
     {
-#if (!TARGET_AMD64 || UNIX_AMD64_ABI) && !TARGET_ARM64
-        throw new FatalJitException(CORJIT_SKIPPED, "OSR local frame offsets require Windows AMD64 or ARM64.");
+#if !TARGET_AMD64 && !TARGET_ARM64
+        throw new FatalJitException(CORJIT_SKIPPED, "OSR local frame offsets require AMD64 or ARM64.");
 #else
         assert(lvaIsOSRLocal(varNum));
         assert(info.compPatchpointInfo is not null);
