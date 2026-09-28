@@ -1647,34 +1647,37 @@ is not used as a success-shaped approximation (B241).
 
 ### R001: Temporary serialization for debugging
 
-`sources/Core/jit/ee_il_dll/CILJit.cs`, `compileMethod`, uses a process-local
-static lock around compilation. The corresponding native entry is in
-`src/coreclr/jit/ee_il_dll.cpp`.
+**Status:** removed after shared-state review and primary-JIT parallel/reentrant
+execution. `CILJit.compileMethod` now follows the native entry without a global
+compilation lock; this was a debugging aid, not a required execution policy.
 
-**Status:** confirmed temporary debugging aid, not a permanent concurrency design
-or evidence that serialization is required for correctness.
+B442 synchronizes the shared diagnostic writer's character buffers, raw
+inline-name bytes and LSRA CSV operations while preserving native text-mode
+semantics. B443 removes the Debug TLS finalizer, which incorrectly restored a
+terminated worker's outer compiler on the finalizer thread. Deterministic scope
+disposal preserves native stack lifetime; normal and exceptional nested scopes
+are covered on four threads.
 
-The host can invoke the AltJit concurrently from multiple JIT threads. The lock
-was added to keep those invocations from running in parallel while debugging.
-It may be removed, excluded, or replaced with a more suitable debugging mechanism
-when needed. Before claiming concurrent compilation support, review shared/TLS
-state and validate parallel/reentrant compilation; the lock currently masks that
-dimension of behavior.
+Timing CSV, timing summaries, inline XML and replay reads retain their existing
+locks. Lazy configuration lists, component-test initialization and optional
+diagnostic counters retain the pinned native policies; their unsynchronized
+initialization patterns are not silently redesigned in the port. This review
+and the bounded executions below do not establish race freedom for every optional
+configuration or diagnostic mode.
 
-B442 corrects one prerequisite: the published stdout writer had unsynchronized
-`StreamWriter` buffers. `JitTextWriter` now serializes synchronous writes, flush
-and disposal, including the shared flowgraph stderr writer. Inline-name raw bytes
-and LSRA CSV position checks use the same lock; timing CSV already has its own
-enclosing lock. The four-thread regression preserves all 512 records. This is
-diagnostic I/O coverage, not parallel/reentrant compiler validation; initialization,
-other shared state and TLS nesting still require review before removing the lock.
+Pinned native and unlocked managed primary JITs each prepare 32 cold methods on
+eight threads, execute 512 independently calculated results and show eight
+simultaneously active compilations in their function traces. The same-source
+serialized control shows one. A separate deferred-assembly probe JIT-compiles its
+resolver while importing the outer method on the same thread; native, locked and
+unlocked compilers all preserve the nested trace and result 120.
 
-B443 removes an incorrect GC finalizer from the Debug TLS scope. An abandoned
-nested scope on a terminated thread demonstrably installed its outer compiler in
-the finalizer thread's TLS. Native stack destruction corresponds to deterministic
-`Dispose`, not GC finalization. Normal and exceptional nested scope restoration
-is covered on four threads; shared compiler state and full compilation reentrancy
-remain outside that coverage.
+The tested unlocked NativeAOT source is `45c49ea` plus only the entry-lock removal,
+verified against 1,784 compiler/build inputs; its entry file matches the integrated
+source byte-for-byte. Full-analysis controls pass 182 Debug / 47 Release.
+`artifacts/compilation-concurrency/compiler-evidence.json` records the inputs,
+capture commands and limits. These are execution and overlap results, not
+whole-dump, machine-byte or exhaustive runtime parity.
 
 ### R002: Windows dump line endings
 

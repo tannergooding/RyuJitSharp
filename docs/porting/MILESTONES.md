@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Concurrent and reentrant primary compilation
+
+The managed entry no longer serializes all compilations for debugging. Shared
+diagnostic buffers are synchronized, and Debug TLS cleanup now stays on the
+owning thread rather than running from a GC finalizer.
+
+Pinned native and managed primary JITs each execute 512 independently calculated
+results from 32 cold methods prepared by eight workers. Function traces show
+eight overlapping compilations, compared with one in the same-source locked
+control. Both compilers also execute a same-thread assembly-resolution callback
+whose method is JIT-compiled while the outer method is still being imported.
+
+This closes the temporary serialization limitation, not every optional-mode
+race or whole-runtime parity question. Evidence: `checkpoint.compilerConcurrency`,
+B002, B442/B443 and R001.
+
 ## 2026-09-28: Integral narrowing executes across x64 ISA levels
 
 Vector128/256/512 integral narrowing now preserves truncation and source-lane

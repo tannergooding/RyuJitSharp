@@ -16,12 +16,22 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "compilerConcurrency": {
+      "scope": "R001/B002: remove the temporary process-wide compileMethod lock after B442 shared-writer and B443 Debug TLS corrections.",
+      "sharedStateReview": "Fresh Compiler instances and thread-local nested restoration remain per compilation. Timing CSV/summary, inline XML and replay-read locks are preserved. Config arrays publish fully built local arrays. Native-style lazy initialization and optional counter quirks remain unchanged, not silently fixed as port-only behavior.",
+      "source": "45c49ea6e9c777e1041007772d77b08dd4270211 plus only sources/Core/jit/ee_il_dll/CILJit.cs lock removal; 1784 source/build inputs verified. Tested entry SHA256 ddf80a6201865616bcdfd39d5ba908cc24798d5f3e06c66b66f7181857423a8f matches the integrated file.",
+      "parallelExecution": "Pinned native and unlocked managed primary compilers each complete32 cold methods/512 independent arithmetic results on8 workers with8 overlapping compilations. Same-source locked control completes the same results with maximum overlap1. No AltJIT/fallback or timeout.",
+      "reentrantExecution": "Pinned native, locked and unlocked primary compilers each JIT-compile Resolve while Outer is being imported; the assembly-resolution callback executes on the preparing thread and result120 is verified.",
+      "validation": "Full-analysis shared-state/TLS/writer/configuration/error/timing/inline controls pass182Debug/47Release.",
+      "evidence": "artifacts/compilation-concurrency/compiler-evidence.json",
+      "limits": "Bounded Windows-x64 parallel and reentrant execution, not exhaustive optional-mode race freedom, whole dumps, machine-byte parity or throughput measurements."
+    },
     "diagnosticWriterConcurrency": {
-      "scope": "B442/R001 prerequisite: synchronous JitTextWriter character buffers, raw inline-name output and LSRA CSV header/rows; compilation serialization is unchanged.",
+      "scope": "B442/R001 prerequisite: synchronous JitTextWriter character buffers, raw inline-name output and LSRA CSV header/rows; subsequent lock removal is recorded in compilerConcurrency.",
       "correction": "Lock every synchronous StreamWriter write override, Flush and Dispose on a shared per-writer monitor. Raw-byte and position-dependent operations reuse that monitor. Existing StreamWriter signatures, newline translation, append behavior and ownership are preserved; no generic TextWriter substitution.",
       "validation": "Original four-thread shared-stdout test fails with corrupted StreamWriter flush/disposal state. Final test preserves 512 complete uniquely identified records across string/span/formatted/line calls. Full-analysis diagnostics selection passes 288 Debug / 109 Release, including an override-coverage guard and existing output contracts.",
       "evidence": "artifacts/compilation-concurrency/writer-evidence.json",
-      "limits": "Synchronous native-style diagnostic I/O only, not asynchronous stream I/O or complete compiler concurrency. Shared initialization and TLS/reentrancy review remain before removing the compileMethod lock."
+      "limits": "Synchronous native-style diagnostic I/O only, not asynchronous stream I/O or complete compiler concurrency. The separate compilerConcurrency entry records subsequent primary execution."
     },
     "jitTlsScopeLifetime": {
       "scope": "B443/R001 prerequisite: Debug JitTls deterministic stack restoration and managed finalizer-thread isolation.",
@@ -710,8 +720,8 @@
         "Raw target-block getters have no pinned callsites and remain unused support. emitCodeGetCookie remains because its managed helper is only declared under TARGET_AMD64."
       ],
       "remaining": "Continue the full already-completed-code cleanup, distinguishing unreconciled areas from genuine target/CFI/optional-statistics gaps. emitGenIG/emitSavIG retain architecture/statistics paths, genCreateTempLabel retains Unix x86, and genGetRegMask retains ARM floating support. No new default Windows emission gap was established; the earlier blanket claim is withdrawn. Complete bodies are not retained merely because unfinished native callers reference them. Notify the user when the full cleanup is done.",
-      "verification": "Latest collected native cleanup is c77ff6d72b2 on the pinned source baseline. Report79 retires five fully covered hardware-intrinsic classifier definitions and declarations (202 lines), retaining the adjacent GetLayout/SVE boundary. Native index/worktree and oracle tracked source/index were clean at that reported boundary. Earlier diagnostic/frame batches and assertion/trace-macro restorations retain their recorded receipts. Retirement adds no parity evidence.",
-      "targetLedger": "Collected report79 covers290 overlapping records:267 implemented,6 partial,1 unported,15 unknown and1 not-applicable, not unique functions or a compiler-completion percentage. Allocation-beyond-minopts and the three previously unlinked helper families now consume their existing scoped evidence. All15 remaining unknowns are file-only umbrellas, not demonstrated Windows gaps; overlap alone does not prove whole-family completion. Worker owns their bounded classification and native retirement.",
+      "verification": "Latest collected native cleanup is252644817e7. Report82 restores the63-line SIMD length support removed by packet81: the unused type-handle overload has no complete managed equivalent. Report79's202-line classifier retirement remains valid. Native index/worktree and oracle tracked source/index were clean at the reported boundary. Retirement adds no parity evidence.",
+      "targetLedger": "Collected report82 covers291 overlapping records:267 implemented,7 partial,1 unported,14 unknown and2 not-applicable, not unique functions or a compiler-completion percentage. SIMD recognition is partial native-source coverage because an unused type-handle helper is untranslated, not a demonstrated reachable Windows gap. Unknown file-only umbrellas retain explicit coverage boundaries from report80. Composed arithmetic or absent callers do not establish a whole-function port. R001 closure is newer than the worker's consumed cursor.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
       "policy": "Retire only reviewed complete implementations. Retain or explicitly identify unfinished shared/Windows paths and other-platform-only paths. Preserve the oracle and existing index distinctions; do not infer parity or percentages from deletion counts."
     },
@@ -750,8 +760,7 @@
       "status": "remaining-source-review",
       "assessment": "A working end-to-end Windows-x64 pipeline exists, but an exhaustive function/path-level remainder is not established. Retire the unverified 60-80 percent estimate rather than infer a remaining percentage from TODO counts.",
       "openPlatformBoundaries": [
-        "D009/B241: requested CoreDisTools late disassembly still fails explicitly. An exact solution for native variadic print callbacks requires approval; the buffered approximation is not accepted.",
-        "R001: CILJit.compileMethod still serializes all compilations through a static lock. Parallel/reentrant compilation and shared/TLS state remain to be reviewed before removing this debugging aid."
+        "D009/B241: requested CoreDisTools late disassembly still fails explicitly. An exact solution for native variadic print callbacks requires approval; the buffered approximation is not accepted."
       ],
       "optionalSupport": [
         "Compiler.compJitStats is also empty in native when CALL_ARG_STATS is disabled, as it is in the current managed build.",
@@ -1181,7 +1190,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Continue R001 at Compiler.comp.cs shared initialization gates and ConfigMethodRange/ConfigIntArray/ConfigDoubleArray publication. The pinned native ConfigMethodRange::EnsureInit is also unsynchronized, so distinguish upstream issues for maintainer reports from C#-only defects instead of silently changing algorithms. B442 writer and B443 Debug TLS lifetime prerequisites are complete; retain compileMethod serialization until shared-state and actual parallel/reentrant compilation are validated. Worker4b57b744 consumed b24f1465 in report80; its next bounded family is simd-recognition, not another overlap-only umbrella sweep. Native HEAD remains c77ff6d72b2. B153/D009 and ARM64 foreground expansion remain deferred.",
+    "nextAction": "Send committed B443/R001 evidence to worker4b57b744 for ledger consumption, then close the concrete untranslated getSIMDVectorLength(typeHnd) support restored by report82 at native252644817e7 using the pinned whole-function contract and existing SIMD type-recognition tests. This is unused support, not a discovered reachable Windows codegen bug. Do not repeat shared-state or overlap-only umbrella audits. Preserve B365/B394 upstream reports and native initialization quirks. B153/D009 and ARM64 foreground expansion remain deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
