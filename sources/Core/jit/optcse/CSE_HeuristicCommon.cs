@@ -161,7 +161,12 @@ public abstract partial class CSE_HeuristicCommon
                     return false;
                 }
 #elif TARGET_ARM64
-                throw new System.NotImplementedException("CSE_HeuristicCommon.CanConsiderTree ARM64 intrinsic categories");
+                if (category is not (HW_Category_SIMD or HW_Category_SIMDByIndexedElement or
+                    HW_Category_ShiftLeftByImmediate or HW_Category_ShiftRightByImmediate or
+                    HW_Category_Scalar or HW_Category_Helper))
+                {
+                    return false;
+                }
 #else
                 throw new System.NotImplementedException("CSE_HeuristicCommon.CanConsiderTree target intrinsic categories");
 #endif

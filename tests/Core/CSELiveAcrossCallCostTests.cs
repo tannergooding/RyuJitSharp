@@ -97,7 +97,7 @@ internal static unsafe class CSELiveAcrossCallCostTests
         return heuristic.PromotionCheck(candidate);
     }
 
-    private static void WithCompiler(Action<Compiler> action)
+    internal static void WithCompiler(Action<Compiler> action)
     {
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
