@@ -16,6 +16,15 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Windows shared-closure execution
+
+After the shared CFG, LIR and EH work, the unfiltered Windows Core suite passes
+12348 Debug/11111 Release cases with full analysis and no skipped tests.
+A fresh NativeAOT JIT from committed source `8a92330`, excluding platform WIP,
+also passes the established 29-configuration/143-body execution baseline on
+the matching pinned host, with expected runtime outputs and no fallback.
+This refreshes execution coverage, not whole-dump or instruction-stream parity.
+
 ## 2026-09-27: SysV root prolog materialization
 
 SysV AMD64 now materializes root prologs and reserved prologs/epilogs, including

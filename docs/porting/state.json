@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "windowsSharedClosureValidation": {
+      "scope": "Refresh Windows-x64 regression coverage after shared CFG, LIR and EH closure.",
+      "managedTests": "Full-analysis unfiltered Core suite: 12348 Debug/11111 Release, all executed with zero failures/skips. artifacts/lir-closuretst/Debug/shared-closure-core-debug.trx and artifacts/lir-closure-releasetst/Release/shared-closure-core-release.trx.",
+      "sourceCommit": "8a92330b84784aacd03440b130fe11db8a202689",
+      "execution": "Fresh full-analysis Windows NativeAOT JIT built from an immutable git archive, excluding active platform WIP. The 29-configuration/143-body managed execution baseline passes with expected outputs and no fallback. CoreCLR and native JIT product versions both identify pin 33baf8ee337b20dd0f184b69a6f09be92850bf9e.",
+      "evidence": "artifacts/windows-shared-closure/publish-with-msvc.log and execution.log; artifacts/upstream-refresh-33baf8/shared-closure-managed-matrix-1/results.json and per-configuration manifests/dumps.",
+      "jitSha256": "D28C6EEF36FC7DA91571D64C5CC1FB228F0CFE1B4659369CE8B6110F201B147A",
+      "limits": "Execution regression coverage, not a fresh whole-dump, instruction-stream or other-target parity result."
+    },
     "sysvRootProlog": {
       "scope": "Enable SysV AMD64 root prologs and reserved prolog/epilog materialization, including stack/register Vector3 upper-lane clearing before parameter homing. Reject Unix varargs and NativeAOT CFI before mutation.",
       "mapping": "codegencommon.cpp:genFnProlog/genGeneratePrologsAndEpilogs -> CodeGen.Prolog.cs; codegenxarch.cpp:genClearStackVec3ArgUpperBits -> CodeGen.StackVectorArguments.cs; simdcodegenxarch.cpp:genSimd12UpperClear -> CodeGen.Calls.cs.",
@@ -258,7 +267,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Shared CFG support and SysV frame/unwind/parameter-homing integration are complete. Continue concrete Windows/shared gaps from broad residual reconciliation while coding agents close ARM64 allocator and SysV final-frame/root-prolog dependencies. Native cleanup uses committed evidence only. Parent owns integration, shared documentation and C# commits; packets below are historical records, not active assignments.",
+      "parentScope": "Shared LIR/EH support and SysV frame/unwind/root-prolog integration are complete. Continue concrete Windows/shared gaps and fresh execution validation while integrating ARM64 allocation corrections and SysV return/method-exit support. Native cleanup uses committed evidence only. Parent owns integration, shared documentation and C# commits; packets below are historical records, not active assignments.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -653,7 +662,7 @@
         }
       ]
     },
-    "nextAction": "Continue without stopping at milestones. SysV root-prolog/materialization is integrated; continue SysV return and method-exit generation while retaining general generation/emission/publication gates. Collect and review ARM64 consecutive-register selection/assignment and remaining allocation/resolution dependencies; preserve the allocation gate until complete. Native cleanup continues classifying genuinely unreconciled backend bodies by targeted source comparison, without repeating behavior/parity validation. Last collected cleanup commit 4ec12e43e91582c3ea727a7f3dd3bf8ef53e9c6c; preserve oracle/recovery refs and notify the user only when full cleanup is established.",
+    "nextAction": "Continue without stopping at milestones. ARM64 allocation corrections are reviewed and 829 Debug/825 Release target plus 758 Debug/652 Release Windows counts verified. Negative controls discriminate predecessor and upper-restore fixes, but the original stress test also passed prior code. Existing ARM64 agent must add a maintained all-conflicting-candidates test using controlled assertion callbacks, prove it fails prior code, and rerun the focused fixture before the seven-file packet/B398 commit. Keep public allocation gated pending local intervals, resolution and minimal consecutive allocation. Fresh Windows 8a92330 execution passes 29 configurations/143 bodies; full Core 12348 Debug/11111 Release is recorded. SysV return/exit packet is reviewed pending FEATURE_MULTIREG_RET guard restoration, native Swift offset narrowing/shared loop, and three SIMD source-alias cases with final focused controls; general phase gates stay. Native cleanup continues classification; last collected report 4ec12e43, observed subsequent 9443437ad59281e2c2e820eec42764245f736266 is 2705 deletion-only lines across 21 JIT paths with unchanged oracle. Collect its report before advancing the ledger; full cleanup is not established.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
