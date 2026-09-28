@@ -284,11 +284,6 @@ public partial class Compiler
     /// <summary>Variable with arguments for new MD array helper</summary>
     public int lvaNewObjArrayArgs = BAD_VAR_NUM;
 
-#if DEBUG
-    // TODO: Port Compiler.lvaStressLclFldCB
-    // public static unsafe fgWalkPreFn lvaStressLclFldCB;
-#endif
-
     /// <summary>LclVar number</summary>
     public int lvaGSSecurityCookie = BAD_VAR_NUM;
 
@@ -3043,11 +3038,6 @@ public partial class Compiler
     }
 
 #if DEBUG
-    public void lvaStressLclFld()
-    {
-        // TODO: Port Compiler.lvaStressLclFld
-    }
-
     /// <summary>Query the information for the given struct handle.</summary>
     /// <param name="structHandle">The handle for the struct type we're querying.</param>
     /// <param name="level">How many more levels to recurse.</param>

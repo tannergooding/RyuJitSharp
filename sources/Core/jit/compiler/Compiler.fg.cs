@@ -2176,11 +2176,6 @@ public partial class Compiler
     /// <remarks>These are the value numbers under the "liberal" interpretation of memory values; the "conservative" interpretation needs no VN, since every access of memory yields an unknown value.</remarks>
     public InlineArrayMemoryKindCount<ValueNum> fgCurMemoryVN;
 
-#if DEBUG
-    // TODO: Port Compiler.fgStress64RsltMulCB
-    // public static unsafe fgWalkPreFn fgStress64RsltMulCB;
-#endif
-
     /// <summary>Table of pointers to the BBs</summary>
     protected BasicBlock[] fgBBs = [];
 
@@ -3762,9 +3757,6 @@ public partial class Compiler
         // Snapshot for diagnostics only; never dereference or retain the address across a GC.
         return FMT_PTR((void*)Unsafe.As<FlowEdge, nint>(ref edge));
     }
-
-    // TODO: Port fgStress64RsltMul
-    public void fgStress64RsltMul() { }
 
 #endif
 

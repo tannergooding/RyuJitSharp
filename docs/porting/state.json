@@ -25,9 +25,28 @@
       "evidence": "artifacts/side-effect-extraction/extraction-before.trx, extraction-debug-complete.trx and extraction-release-complete.trx",
       "scope": "Managed Windows-x64 IR behavior. No new native execution or whole-pipeline parity claim."
     },
+    "preMorphTreeStress": {
+      "status": "ported",
+      "nativeSource": "src/coreclr/jit/lclvars.cpp:6984-7255 and fgdiagnostic.cpp:2565-2628 at 33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+      "managedSource": "sources/Core/jit/compiler/Compiler.TreeStress.cs; existing public callsites in Compiler.comp.cs",
+      "behavior": "Complete lvaStressLclFldPadding/Node/two-pass walker and fgStress64RsltMul visitor/walker. Preserve native stress selection, local exclusions, GC-aware padded layouts, partial stores, D002 owning-use replacements and widening-cast anti-fold flags.",
+      "validation": "260 Debug / 228 Release across MorphStressTests and existing stress, local-threading, scalar-folding, VN-tree and importer-effects suites; full analysis, no failures/skips. Restoring the two original empty public hooks produced 19 failures and four controls in the 23-case debug regression fixture.",
+      "evidence": "artifacts/morph-stress/morph-stress-original-noops.trx, morph-stress-debug-final.trx and morph-stress-release-final.trx",
+      "scope": "Managed Windows-x64 IR behavior; stress transformations are debug-only. No new native execution/parity claim."
+    },
+    "windowsCompletionAssessment": {
+      "status": "remaining-source-review",
+      "assessment": "A working end-to-end Windows-x64 pipeline exists, but an exhaustive function/path-level remainder is not established. Retire the unverified 60-80 percent estimate rather than infer a remaining percentage from TODO counts.",
+      "confirmedStubs": [
+        "Compiler.compJitStats",
+        "Compiler.RecordNowayAssert",
+        "Compiler.compDoComponentUnitTestsOnce"
+      ],
+      "caution": "Current backend allocation/codegen/emitter exclusions checked in this pass target non-Windows or non-AMD64 configurations. Commented callback declarations and historical baseline gaps are not an inventory of missing Windows implementations."
+    },
     "activeBatch": {
-      "scope": "Complete Windows-x64 unused-tree side-effect extraction against pinned gentree.cpp: GetType null-check reduction, BLK replacement metadata, and paired exception-VN composition. Continue the actual Windows implementation frontier afterward.",
-      "status": "completed",
+      "scope": "Complete the two active-but-empty pre-global-morph stress transforms: lvaStressLclFld and fgStress64RsltMul. Preserve two-pass local eligibility, padded GC-aware layouts, owning uses, multiplication casts and native stress selection.",
+      "status": "done",
       "doneWhen": [
         "Identify currently unported Windows-x64 functions and required conditional paths in source, separating real stubs from stale baseline ledgers and valid unsupported configurations.",
         "Implement the next dependency-coherent area as complete native functions, using existing managed helpers and preserving ABI, ownership, ordering and numeric semantics.",
@@ -437,7 +456,7 @@
         }
       ]
     },
-    "nextAction": "Unused-tree extraction is complete. Continue Windows-x64 source completion: resolve the fgStress64RsltMul/lvaStressLclFld commented declarations against actual pinned native bodies and managed stress callsites, then implement the next real missing executable area rather than counting stale declarations. Linux packet e42864b53384c77e22daefbe743e77023f7a577e is available for later shared-file integration review; ARM64 remains a separate lane. Do not replay completed object-allocation comparisons or replace foreground implementation with broader validation.",
+    "nextAction": "Pre-morph tree stress is complete. Continue the Windows-specific source remainder review at compJitStats, RecordNowayAssert and compDoComponentUnitTestsOnce; establish their pinned native contracts and distinguish diagnostic/self-test work from missing compiler behavior. Do not claim an exhaustive list or a completion percentage. Completed background packets awaiting shared-file integration review are Linux e42864b53384c77e22daefbe743e77023f7a577e and ARM64 0c0d33f22a29cfc79133f93757071914b0cb27e5; preserve the Windows-first cursor.",
     "arm64HardwareContainment": {
       "scope": "Complete ARM64 hardware and bounds containment, with MOVI/MVNI byte-shift and doubleword-mask predicates, exact FMOV constants, comparison-zero rules and SVE embedded masking.",
       "mapping": "lowerarmarch.cpp:2033-2060,3805-4225 -> Lowering.Arm64HardwareContainment.cs and Lowering.BoundsChecks.cs; emitarm64.cpp:2451-2483,3113-3207 -> Emitter.ImmediatePredicates.cs. Shared ContainCheckNode now dispatches ARM64 hardware containment; bounds containment remains a separate LowerNode action, matching native.",

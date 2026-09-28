@@ -16,6 +16,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: Pre-morph tree stress
+
+The debug local-field and 64-bit-result multiplication stress hooks now perform
+their native transformations instead of returning without work. Local-field
+stress first excludes unsuitable locals across every use, then builds padded
+custom layouts with aligned GC slots and rewrites loads/stores through the
+existing typed-node replacement model. Multiplication stress widens eligible
+unchecked integer products and prevents narrowing from undoing the stress.
+Both retain native selection and traversal policies.
+
 ## 2026-09-27: Unused-tree side-effect extraction
 
 Unused `GetType` expressions now reduce to a null check when needed and otherwise
