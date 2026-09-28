@@ -16,6 +16,13 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "arm64ScalableValueNumbers": {
+      "scope": "B421: scalable-vector VN chunk storage, interning, typed access, zero/all-bits construction, tree constant numbering and constant diagnostics.",
+      "mapping": "valuenum.cpp:VNForSimdScalableCon/GetConstantSimdScalable/VNZeroForType/VNAllBitsForType/vnDump and valuenum.h:SimdScalablePrimitiveKeyFuncs -> ValueNumStore.Storage.cs/Constants.cs/BinaryInterning.cs/Diagnostics.cs using the existing simdscalable_t value model; fgValueNumberTreeConst -> Compiler.vn.Constants.cs.",
+      "contracts": "Dictionary keys, chunk payloads and returned values are independent value copies. All zero encodings share the first interned payload; nonzero base type, kind, index and step retain raw-bit identity. Diagnostics use wrapping unsigned 64-bit sequence arithmetic, not element-width or floating arithmetic. Fixed-vector access cannot interpret scalable storage.",
+      "validation": "Four existing-entry regressions fail at the original NYIs. Full-analysis Linux-ARM64 managed-target selection passes 73 Debug/68 Release: 24/19 new VN cases and 49/49 existing model cases. Windows fixed-vector, tree, binary and map controls pass 208 Debug/186 Release. Evidence and reproduction: artifacts/arm64-scalable-vn/evidence.json.",
+      "remaining": "Scalable assertion propagation, broadcast/unary VN evaluation and scalable mask representation/storage remain separate. ARM64 intrinsic VN evaluation, allocation/emission and real target execution are not activated; these are managed-target results, not generated-code parity."
+    },
     "arm64IntrinsicCseEligibility": {
       "scope": "B420: complete the ARM64 category branch of CSE_HeuristicCommon.CanConsiderTree.",
       "contracts": "Admit native SIMD, SIMDByIndexedElement, ShiftLeftByImmediate, ShiftRightByImmediate, Scalar and Helper categories. Preserve all shared cost, side-effect, struct-return, memory-operation and value-number exclusions and the existing xarch policy.",
@@ -481,7 +488,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "B420 ARM64 CSE category eligibility is complete. Continue ARM64 scalable constant prerequisites: inspect the committed standalone scalable-vector representation and native VN constant interning/access before implementing the missing vector VN storage path. Keep scalable masks separate if their model is still missing; do not change fixed-vector behavior, activate ARM64 allocation/emission, or expand into B153 x86 repairs. Retirement through 51 remains consolidated.",
+      "parentScope": "B421 scalable-vector VN storage, tree numbering and diagnostics are complete. Continue scalable assertion propagation: inspect Compiler.ap.Locals.cs TYP_SIMD NYI and Compiler.ap.VNFolding.cs constant construction against the pinned oracle, including assertion payload ownership. Keep scalable masks, ARM64 intrinsic VN evaluation and public allocation/emission gated. Do not expand into B153 x86 repairs. Retirement through 51 remains consolidated.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -876,7 +883,7 @@
         }
       ]
     },
-    "nextAction": "B420 is complete: 19 Debug/19 Release Linux-ARM64 target cases and 40 Debug/24 Release Windows controls. Next inspect ValueNumStore.Storage.cs/Constants.cs TYP_SIMD NYIs against native VNForSimdScalableCon and the committed standalone scalable-vector model. Establish storage ownership, equality/hash and typed-access contracts before editing; implement a coherent scalable-vector VN batch while retaining explicit mask limitations if their model is missing. B153 still blocks x86 classifiers; no x86 compiler changes. D009 remains deferred. Native retirement through 51: 25920 removed/403 restored, 956d6b51616e6e75b7572f8b5bbb57bdb5e5d10f.",
+    "nextAction": "B421 scalable-vector VN storage is complete: 73 Debug/68 Release Linux-ARM64 target cases and 208 Debug/186 Release Windows controls. Next inspect the scalable local-assertion NYI in Compiler.ap.Locals.cs and the missing TYP_SIMD constant construction in Compiler.ap.VNFolding.cs against native assertionprop.cpp; establish assertion payload ownership and implement the complete scalable-vector branches. Keep scalable masks and ARM64 intrinsic VN evaluation/allocation/emission gated. B153 still blocks x86 classifiers; no x86 compiler changes. D009 remains deferred. Native retirement through 51: 25920 removed/403 restored, 956d6b51616e6e75b7572f8b5bbb57bdb5e5d10f.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

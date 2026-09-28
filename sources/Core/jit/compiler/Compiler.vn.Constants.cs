@@ -69,7 +69,8 @@ public partial class Compiler
 #if TARGET_ARM64
             case TYP_SIMD:
             {
-                throw new NotImplementedException("Scalable VN constant storage is not yet ported.");
+                tree._vnPair.SetBoth(vnStore.VNForSimdScalableCon(tree.AsVecCon().SimdScalableVal));
+                break;
             }
 #endif
 #if FEATURE_MASKED_HW_INTRINSICS

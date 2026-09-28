@@ -220,7 +220,7 @@ public sealed partial class ValueNumStore
             TYP_SIMD32 => VNForSimd32Con(simd32_t.AllBitsSet),
             TYP_SIMD64 => VNForSimd64Con(simd64_t.AllBitsSet),
 #elif TARGET_ARM64
-            TYP_SIMD => throw new System.NotImplementedException("Scalable VN all-bits constant storage is not yet ported."),
+            TYP_SIMD => VNForSimdScalableCon(simdscalable_t.AllBitsSet),
 #endif
 #if FEATURE_MASKED_HW_INTRINSICS
             TYP_MASK => VNForSimdMaskCon(simdmask_t.AllBitsSet(elementCount)),

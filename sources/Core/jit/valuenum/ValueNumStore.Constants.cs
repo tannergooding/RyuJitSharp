@@ -61,6 +61,8 @@ public sealed partial class ValueNumStore
 #if TARGET_XARCH
     private Dictionary<simd32_t, ValueNum>? _simd32CnsMap;
     private Dictionary<simd64_t, ValueNum>? _simd64CnsMap;
+#elif TARGET_ARM64
+    private Dictionary<simdscalable_t, ValueNum>? _simdScalableCnsMap;
 #endif
 #if FEATURE_MASKED_HW_INTRINSICS
     private Dictionary<simdmask_t, ValueNum>? _simdMaskCnsMap;
@@ -76,6 +78,9 @@ public sealed partial class ValueNumStore
     public ValueNum VNForSimd32Con(in simd32_t value) => VnForConst(value, value, _simd32CnsMap ??= [], TYP_SIMD32);
 
     public ValueNum VNForSimd64Con(in simd64_t value) => VnForConst(value, value, _simd64CnsMap ??= [], TYP_SIMD64);
+#elif TARGET_ARM64
+    public ValueNum VNForSimdScalableCon(in simdscalable_t value)
+        => VnForConst(value, value, _simdScalableCnsMap ??= [], TYP_SIMD);
 #endif
 
 #if FEATURE_MASKED_HW_INTRINSICS
@@ -98,6 +103,8 @@ public sealed partial class ValueNumStore
     public simd32_t GetConstantSimd32(ValueNum vn) => GetVectorConstant<simd32_t>(vn, TYP_SIMD32);
 
     public simd64_t GetConstantSimd64(ValueNum vn) => GetVectorConstant<simd64_t>(vn, TYP_SIMD64);
+#elif TARGET_ARM64
+    public simdscalable_t GetConstantSimdScalable(ValueNum vn) => GetVectorConstant<simdscalable_t>(vn, TYP_SIMD);
 #endif
 
 #if FEATURE_MASKED_HW_INTRINSICS
@@ -152,7 +159,7 @@ public sealed partial class ValueNumStore
         TYP_SIMD32 => VNForSimd32Con(simd32_t.Zero),
         TYP_SIMD64 => VNForSimd64Con(simd64_t.Zero),
 #elif TARGET_ARM64
-        TYP_SIMD => throw new NotImplementedException("Scalable VN constant storage is not yet ported."),
+        TYP_SIMD => VNForSimdScalableCon(simdscalable_t.Zero),
 #endif
 #if FEATURE_MASKED_HW_INTRINSICS
         TYP_MASK => VNForSimdMaskCon(simdmask_t.Zero),

@@ -302,7 +302,40 @@ public sealed partial class ValueNumStore
 #elif TARGET_ARM64
             case TYP_SIMD:
             {
-                throw new NotImplementedException("ARM64 scalable SIMD VN diagnostics require scalable VN storage.");
+                var value = GetConstantSimdScalable(vn);
+                var index = value.Index.u64[0];
+                jitprintf($"SimdScalableCns[{value.BaseType.Name,-6} ");
+
+                switch (value.Kind)
+                {
+                    case SimdScalableKind.SimdScalableRepeated:
+                    {
+                        jitprintf($"0x{index:x16}, 0x{index:x16}, 0x{index:x16}...]");
+                        break;
+                    }
+
+                    case SimdScalableKind.SimdScalableSequence:
+                    {
+                        jitprintf($"0x{index:x16}, ");
+                        index = unchecked(index + value.Step.u64[0]);
+                        jitprintf($"0x{index:x16}, ");
+                        index = unchecked(index + value.Step.u64[0]);
+                        jitprintf($"0x{index:x16}...]");
+                        break;
+                    }
+
+                    case SimdScalableKind.SimdScalableScalar:
+                    {
+                        jitprintf($"0x{index:x16}, 0x0, 0x0...]");
+                        break;
+                    }
+
+                    default:
+                    {
+                        throw new FatalJitException("Unexpected scalable SIMD constant kind.");
+                    }
+                }
+                break;
             }
 #endif
 #if FEATURE_MASKED_HW_INTRINSICS

@@ -86,7 +86,7 @@ public sealed partial class ValueNumStore
                     TYP_SIMD32 => new simd32_t[ChunkSize],
                     TYP_SIMD64 => new simd64_t[ChunkSize],
 #elif TARGET_ARM64
-                    TYP_SIMD => throw new NotImplementedException("Scalable VN constant storage is not yet ported."),
+                    TYP_SIMD => new simdscalable_t[ChunkSize],
 #endif
 #if FEATURE_MASKED_HW_INTRINSICS
 #if TARGET_ARM64
