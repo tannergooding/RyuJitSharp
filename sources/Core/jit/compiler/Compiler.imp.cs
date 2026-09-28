@@ -10850,19 +10850,19 @@ public partial class Compiler
                 uns = false;
             }
 
-            var op1Type = op1.Type;
-            var op2Type = op2.Type;
-
 #if TARGET_64BIT
-            if (varTypeIsI(op1Type) && genActualTypeIsInt(op2Type))
+            if (varTypeIsI(op1.Type) && genActualTypeIsInt(op2.Type))
             {
                 op2 = compiler.impImplicitIorI4Cast(op2, TYP_I_IMPL);
             }
-            else if (varTypeIsI(op2Type) && genActualTypeIsInt(op1Type))
+            else if (varTypeIsI(op2.Type) && genActualTypeIsInt(op1.Type))
             {
                 op1 = compiler.impImplicitIorI4Cast(op1, TYP_I_IMPL);
             }
 #endif
+
+            var op1Type = op1.Type;
+            var op2Type = op2.Type;
 
             compiler.assertImp((op1Type.ActualType == op2Type.ActualType) || (varTypeIsI(op1Type) && varTypeIsI(op2Type)) || (varTypeIsFloating(op1Type) && varTypeIsFloating(op2Type)));
 
@@ -10892,20 +10892,20 @@ public partial class Compiler
             var op2 = compiler.impPopStack().val;
             var op1 = compiler.impPopStack().val;
 
-            var op1Type = op1.Type;
-            var op2Type = op2.Type;
-
 #if TARGET_64BIT
             // TODO-Review: this differs in the extending behavior from plain relop import. Why?
-            if ((op1Type is TYP_I_IMPL) && genActualTypeIsInt(op2Type))
+            if ((op1.Type is TYP_I_IMPL) && genActualTypeIsInt(op2.Type))
             {
                 op2 = compiler.impImplicitIorI4Cast(op2, TYP_I_IMPL, uns);
             }
-            else if ((op2Type is TYP_I_IMPL) && genActualTypeIsInt(op1Type))
+            else if ((op2.Type is TYP_I_IMPL) && genActualTypeIsInt(op1.Type))
             {
                 op1 = compiler.impImplicitIorI4Cast(op1, TYP_I_IMPL, uns);
             }
 #endif
+
+            var op1Type = op1.Type;
+            var op2Type = op2.Type;
 
             compiler.assertImp(
                 (op1Type.ActualType == op2Type.ActualType) || (varTypeIsI(op1Type) && varTypeIsI(op2Type)) || (varTypeIsFloating(op1Type) && varTypeIsFloating(op2Type)),

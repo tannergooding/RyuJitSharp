@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "importerComparisonTypes": {
+      "scope": "B448: validate native-int/int32 comparisons using the operand types after widening, in both value and conditional-branch import.",
+      "mapping": "Pinned importer.cpp8040-8057/8139-8152 -> Compiler.imp.cs local Cmp2Ops/Cmp2OpsAndBrAll helpers.",
+      "contract": "Preserve the native signed extension for plain comparisons and unsigned-controlled extension for branch comparisons. Keep the original type assertion and mixed-floating handling.",
+      "validation": "All16 mixed-width operand-order/opcode regressions fail in Debug before correction; six multiplication controls pass. Full-analysis ImporterEffectsTests, InlineScanTests and UnboxImportTests pass111Debug/111Release after correction.",
+      "execution": "Pinned native and fixed managed primary each pass all21 official JIT/Methodical/Arrays/range projects with exit100, positive entry compilations and identical stdout/stderr. Pre-fix managed primary aborts on Float64_Range1.try_index's conv.i/int32 ceq. comparison-2.json records the complete result.",
+      "source": "Immutable d92752732f75514bd9a1e76021802e3788e3526e export plus only Compiler.imp.cs overlay E3830D997CA989BF6F06F0813F046E7E6F645BF43073BCC7387BD9EDA50CFD81.",
+      "reproduction": "artifacts/official-array-range/capture.py preserves the original source/JIT run. capture-fixed.py validates source-2-overlay.json and host hashes before running each official DLL with jit-2/RyuJitSharp.dll as primary JIT. NativeAOT source/output and both captures remain separate.",
+      "limits": "The reproduced defect is Debug assertion validation of valid IL, not an established Release miscompilation. The official slice runs a Debug managed JIT with both optimized and debug IL inputs. No whole-dump, generated-byte or full-suite parity claim."
+    },
     "emittedSizeStatistics": {
       "scope": "Complete Windows-x64 DISPLAY_SIZES emitted IL/code/GC statistics and B447's enabled-build failure. The option remains disabled by default.",
       "mapping": "emit.h3956-3959 -> Emitter.ConstantData.cs; compiler.cpp size globals/startup/shutdown -> Globals.CodeSizeStatistics.cs, Compiler.comp.cs and Compiler.Shutdown.cs; gcencode.cpp4018-4029 -> GCInfo.HeaderEncoding.cs. Existing CodeGen.MetadataPhase.cs owns post-publication accumulation.",
@@ -677,17 +687,17 @@
     "residualReconciliation": {
       "status": "in-progress",
       "windowsX64Classification": {
-        "status": "baseline-requested",
+        "status": "baseline-recorded",
         "ledger": "artifacts/residual-reconciliation/windows-x64-ledger.json",
         "owner": "4b57b744-36f1-4e6e-8b76-94c1a87d6e02",
         "policy": "Classify Windows-x64 implementation independently of whole-target retirement. Seed bounded area/family rows from existing receipts, reviews, mappings, NYIs and C# commits; consume subsequent changes from a recorded commit cursor. Reopen only relevant changed or ambiguous boundaries.",
         "statuses": ["implemented", "partial", "unported", "unknown", "not-applicable"],
         "firstDeliverable": "Consolidated scoped baseline with evidence revisions, counts by Windows status, explicit counting unit and unknown coverage, concrete Windows gaps, other-target blockers and separate retirement dispositions. Do not wait for exhaustive whole-target eligibility or completed deletion.",
         "scheduling": "Prioritize unknown Windows/shared areas and actionable Windows gaps. Carry known other-target-only blockers forward; group existing area-level evidence rather than repeating per-function audits. Batch physical retirement separately.",
-        "limits": "Ledger path is assigned, not yet a collected baseline. No current Windows completion count or percentage is established. Implementation classification is not runtime parity."
+        "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "711cdfc48d9c67409d93562de96e801759ce6d27",
+      "residualHead": "5962ff141de13725b265ce4a13d8ad1a9a6b114c",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -745,7 +755,7 @@
         "fgIsBlockCold and fgMoreThanOneReturnBlock native bodies/declarations are retired.",
         "fgAddSwiftErrorReturns: retain for Swift-enabled targets; Windows x64 does not define SWIFT_SUPPORT.",
         "fgCreateFunclets: AMD64 is complete; retain other architecture/Wasm paths rejected by the managed phase entry.",
-        "B385: BlockReachabilitySets.Build retains missing optional COUNT_BASIC_BLOCKS iteration statistics; the default reachability algorithm is complete.",
+        "B385 optional COUNT_BASIC_BLOCKS iteration statistics are complete; see checkpoint.blockCountStatistics. Default reachability behavior is unchanged.",
         "FlowGraphTryRegion/FlowGraphTryRegions: unported Wasm support; native construction callsites are confined to fgwasm.cpp. Generic try-aware RPO remains in compiler.hpp."
       ],
       "remainingInductionTargets": "ARM64 address-mode scaling, post-use placement and latest-statement selection are complete; corresponding native bodies and obsolete support are retired.",
@@ -768,8 +778,8 @@
         "Raw target-block getters have no pinned callsites and remain unused support. emitCodeGetCookie remains because its managed helper is only declared under TARGET_AMD64."
       ],
       "remaining": "Continue the full already-completed-code cleanup, distinguishing unreconciled areas from genuine target/CFI/optional-statistics gaps. emitGenIG/emitSavIG retain architecture/statistics paths, genCreateTempLabel retains Unix x86, and genGetRegMask retains ARM floating support. No new default Windows emission gap was established; the earlier blanket claim is withdrawn. Complete bodies are not retained merely because unfinished native callers reference them. Notify the user when the full cleanup is done.",
-      "verification": "Latest collected native cleanup isc58f7c723d8. Report88 retires108lines of complete Counter/NodeCounts types, definitions and orphaned includes afterb4e735b. Mixed consumers remain. Native index/worktree and oracle tracked source/index were clean at the reported boundary. Retirement adds no parity evidence.",
-      "targetLedger": "Collected report88 covers301 overlapping records:281 implemented,2 partial,2 unported,14 unknown and2 not-applicable, not unique functions or a compiler-completion percentage. Shared counters are consumed throughb4e735b; emittedSizeStatistics is newer and awaits consumption. D009, R005, B392 and B446 remain separately bounded optional gaps. Unknown file-only umbrellas retain explicit coverage boundaries from report80; other disabled statistics switches are not implied complete.",
+      "verification": "Latest collected native cleanup is5962ff141de. Report89 retires55lines of emitted-size accessors/globals/declarations afterd9275273; mixed consumers remain. Reports90/91 classify named block/EH, flowgraph/inlining and morphing survivors without further deletion. Report92 resolves four ambiguous compiler.hpp helpers: retire18lines for fgIsThrowHlpBlk and its declaration, retain the Wasm funclet pair and x86 stack-depth lookup. Native index/worktree and oracle tracked source/index were clean at the reported boundary. Retirement adds no parity evidence.",
+      "targetLedger": "Through report92 the ledger covers304 overlapping records:284 implemented,2 partial,2 unported,14 unknown and2 not-applicable, not unique functions or a compiler-completion percentage. Committed deltas are consumed throughd9275273. Reports90/91 replace four umbrellas' generic remainder descriptions with named retained boundaries; try-aware RPO callers are Wasm-only. Report92 establishes no default Windows gap in its four inline helpers. D009, R005, B392 and B446 remain separate optional gaps; other disabled statistics switches are not implied complete.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
       "policy": "Retire only reviewed complete implementations. Retain or explicitly identify unfinished shared/Windows paths and other-platform-only paths. Preserve the oracle and existing index distinctions; do not infer parity or percentages from deletion counts."
     },
@@ -836,7 +846,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Complete DISPLAY_SIZES emitted IL/code/GC size counters and native-order shutdown output. Preserve host-sized arithmetic, native unsigned32 printf truncation, GC interruptibility counters and existing output-publication recording. Validate enabled Debug/Release reports and actual managed metadata publication, then default controls before committing. Keep JIT32 GC header/map recording and DOUBLE_ALIGN within their existing unsupported target boundaries; do not fabricate managed object sizes or repair B446's stale upstream collector.",
+      "parentScope": "Continue bounded official Windows-x64 primary-JIT execution with JIT/Methodical/Arrays/misc after closing B448 and all21 array-range cases. Build from the pinned oracle root without replacing Core_Root; compare native and managed results, stopping at the first concrete failure for correction. Reuse the hash-verified fixed-source JIT while its inputs remain unchanged. Native worker independently resolves retained folding/construction definition coverage; optional and other-target gaps remain separate.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1238,7 +1248,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Send committed emittedSizeStatistics/B447 to worker4b57b744 for scoped retirement. Resolve the compiler-driver unknown boundary using existing committed phase reviews and mappings, starting with compCompileHelper/compCompileAfterInit and their remaining default Windows-x64 dispatch paths. Identify a concrete missing default-path symbol before opening another implementation batch; distinguish disabled statistics and other-target retention rather than treating either as default Windows work. Do not restart synchronization or broad shared-state audits. B446, native allocation-size accounting, B392, B153/D009 and ARM64 foreground expansion remain deferred.",
+    "nextAction": "B448 is validated:111Debug/111Release unit cases and21 native+managed official array-range cases with identical output. Commit the comparison fix with this evidence, then build JIT/Methodical/Arrays/misc from the pinned oracle root using x64 checked skipnative skipgeneratelayout skiprestorepackages /p:LibrariesConfiguration=Release. Run its standalone projects with the preserved host and hash-verified jit-2 source/binary, using fresh capture manifests; follow the first actual failure. Reports89-92 are consolidated. Native worker owns gtFoldExpr and gtNewOperNode whole-definition ambiguity resolution, not importer execution.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
@@ -9470,6 +9480,13 @@
       "native": ["src\\coreclr\\jit\\compiler.cpp", "src\\coreclr\\jit\\compiler.h", "src\\coreclr\\jit\\compiler.hpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.cs", "sources\\Core\\jit\\compiler\\Compiler.comp.cs"],
       "reconciledCommit": null
+    },
+    {
+      "area": "importer-comparison-widening",
+      "native": ["src\\coreclr\\jit\\importer.cpp"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.imp.cs"],
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+      "scope": "B448: Cmp2Ops/Cmp2OpsAndBrAll validate current node types after native-int widening, preserving plain signed and branch unsigned extension rules.16 pre-fix Debug failures;111Debug/111Release importer controls;21 official array-range cases pass both primary compilers with identical output. This does not reconcile all importer paths."
     },
     {
       "area": "importer",

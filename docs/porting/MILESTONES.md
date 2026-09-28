@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Official array-range execution and comparison import
+
+All 21 standalone `JIT/Methodical/Arrays/range` projects pass with the pinned
+native and managed primary JITs, with matching output and positive entry
+compilations. The first managed run exposed B448: comparison import checked
+cached operand types from before native-int widening and rejected valid IL.
+
+Both value and branch import now validate the widened operands while preserving
+their distinct native extension rules. Sixteen regressions reproduce the old
+Debug assertion; focused coverage passes 111 Debug and 111 Release cases.
+This is a bounded official execution result, not full-suite or whole-dump parity.
+See `checkpoint.importerComparisonTypes`.
+
 ## 2026-09-28: Emitted-code size statistics completed
 
 The optional Windows-x64 `DISPLAY_SIZES` mode now builds and reports emitted

@@ -203,6 +203,68 @@ internal static unsafe class ImporterEffectsTests
         });
     }
 
+    [Test]
+    public static void NativeIntegerComparisonsValidateTheWidenedOperands(
+        [Values(OPCODE.CEE_CEQ, OPCODE.CEE_CGT, OPCODE.CEE_CGT_UN, OPCODE.CEE_CLT, OPCODE.CEE_CLT_UN,
+            OPCODE.CEE_BEQ_S, OPCODE.CEE_BGT_UN_S, OPCODE.CEE_BLT_S)] OPCODE opcode,
+        [Values(false, true)] bool nativeFirst)
+    {
+        WithCompiler(compiler => {
+            compiler.opts.SetMinOpts(true);
+            compiler.info.compMaxStack = 2;
+            compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
+            compiler.stackState.esStack = new StackEntry[2];
+            compiler.lvaTable[0].Type = nativeFirst ? Globals.TYP_I_IMPL : var_types.TYP_INT;
+            compiler.lvaTable[1].Type = nativeFirst ? var_types.TYP_INT : Globals.TYP_I_IMPL;
+            var left = compiler.gtNewLclvNode(compiler.lvaTable[0].Type, 0);
+            var right = compiler.gtNewLclvNode(compiler.lvaTable[1].Type, 1);
+            compiler.impPushOnStack(left, new typeInfo());
+            compiler.impPushOnStack(right, new typeInfo());
+
+            var branch = opcode < OPCODE.CEE_ARGLIST;
+            byte[] il = branch
+                ? [(byte)opcode, 1, (byte)OPCODE.CEE_NOP, (byte)OPCODE.CEE_NOP]
+                : [0xFE, (byte)(opcode - OPCODE.CEE_ARGLIST)];
+            var block = new BasicBlock(null, null) { bbCodeOffsEnd = 2 };
+            compiler.fgFirstBB = compiler.compCurBB = block;
+            if (branch)
+            {
+                var next = new BasicBlock(null, null) { bbCodeOffs = 2, bbCodeOffsEnd = 3 };
+                var target = new BasicBlock(null, null) { bbCodeOffs = 3, bbCodeOffsEnd = 4 };
+                block.Next = next;
+                next.Next = target;
+                block.SetCond(new FlowEdge(block, target, null), new FlowEdge(block, next, null));
+            }
+
+            fixed (byte* code = il)
+            {
+                compiler.info.compCode = code;
+                compiler.info.compILCodeSize = il.Length;
+                compiler.impImportBlockCode(block);
+            }
+
+            var comparison = branch
+                ? (ImporterStatements(compiler) ?? throw new AssertionException("Missing conditional jump."))
+                    .RootNode.AsUnOp().Op1.AsOp()
+                : compiler.impStackTop().val.AsOp();
+            var expectedOper = opcode switch {
+                OPCODE.CEE_CEQ or OPCODE.CEE_BEQ_S => genTreeOps.GT_EQ,
+                OPCODE.CEE_CGT or OPCODE.CEE_CGT_UN or OPCODE.CEE_BGT_UN_S => genTreeOps.GT_GT,
+                _ => genTreeOps.GT_LT,
+            };
+            var unsigned = opcode is OPCODE.CEE_CGT_UN or OPCODE.CEE_CLT_UN or OPCODE.CEE_BGT_UN_S;
+            var widened = (nativeFirst ? comparison.Op2 : comparison.Op1).AsCast();
+
+            Assert.That(compiler.stackState.esStackDepth, Is.EqualTo(branch ? 0 : 1));
+            Assert.That(comparison.Oper, Is.EqualTo(expectedOper));
+            Assert.That(comparison.Op1.Type, Is.EqualTo(Globals.TYP_I_IMPL));
+            Assert.That(comparison.Op2.Type, Is.EqualTo(Globals.TYP_I_IMPL));
+            Assert.That(comparison.IsUnsigned, Is.EqualTo(unsigned));
+            Assert.That(widened.Op1, Is.SameAs(nativeFirst ? right : left));
+            Assert.That(widened.IsUnsigned, Is.EqualTo(branch && unsigned));
+        });
+    }
+
     [TestCase(false, var_types.TYP_INT)]
     [TestCase(true, var_types.TYP_INT)]
     [TestCase(false, Globals.TYP_I_IMPL)]
