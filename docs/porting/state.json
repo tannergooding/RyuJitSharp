@@ -18,22 +18,23 @@
       "startIndexCommit": "4816a0d823a22b12e2f5de4686bba6201ff08a0b",
       "protectedRef": "refs/porting/snapshots/residual-reconcile-start-20260927",
       "startTree": "59d3dbb096ebc96e66e006f75d77176444088d8c",
-      "latestSnapshot": "5d9b0bc5662df36b43d37128bb387a093174ea01",
-      "latestIndexCommit": "96236ab14044a65a1a9230531f3bcb53c8885f00",
-      "latestProtectedRef": "refs/porting/snapshots/residual-helpers-flowgraph-20260927",
-      "latestTree": "e3bbd12cc40682dcd18f0090dc000a95944249ae",
+      "latestSnapshot": "48503ca10fba4f5f5390a8dcb85d2b1297ed7081",
+      "latestIndexCommit": "9a2adeb41b71f847bf7eeed909398cd1fdda6c48",
+      "latestProtectedRef": "refs/porting/snapshots/residual-profile-merging-20260927",
+      "latestTree": "dd032475f222e505099bf2332c49ed24c752a26e",
       "startingState": "176 staged paths: one addition, 83 deletions and 92 modifications; no unstaged changes. Original staged content is protected independently of new retirement edits.",
       "retired": [
         "2e6b6e34: gtExtractSideEffectsFromUnusedNode and related declarations. gtExtractSideEffList's native body had already been removed; its former absence was not used as evidence of completion.",
         "d1eb14d5: lvaStressLclFldPadding, lvaStressLclFldNode, lvaStressLclFld and StressLclFldVisitor; fgStress64RsltMul and Stress64RsltMulVisitor; associated declarations.",
-        "Completed shared helper traversal/split/spill/flag support, runtime lookups, static initialization, stack arrays, late casts and TLS/VN public drivers; GC polls, ThreeOptLayout and its RPO/try-end support, cold-section selection and missing-block weights; associated declarations."
+        "Completed shared helper traversal/split/spill/flag support, runtime lookups, static initialization, stack arrays, late casts and TLS/VN public drivers; GC polls, ThreeOptLayout and its RPO/try-end support, cold-section selection and missing-block weights; associated declarations.",
+        "Remaining fgprofile.cpp: complete instrumentation classes/drivers and profile repair. Complete head-tail merging/helper closure and GDV resolution from fgopt.cpp, with associated declarations."
       ],
       "remainingHelperTargets": [
         "helperexpansion.cpp now contains only the two TLS call transformations and ReadUtf8. All three are complete for Windows x64.",
         "CoreCLR and NativeAOT TLS transformations remain for targets other than Windows x64. ReadUtf8 remains for non-AMD64 targets. Keep these mixed bodies until those paths are ported."
       ],
-      "remaining": "Reconcile completed profile instrumentation/repair, head-tail merging and GDV resolution next, then the wider completed source/dependency areas and earlier residual coverage. The 83 post-refresh commits are an initial navigation queue, not a completeness denominator.",
-      "verification": "Helper/layout retirement removes 4031 lines across exactly eight files relative to 3996c2b, with no added lines under git diff --minimal. Exact hashed ranges and final file hashes are in artifacts/residual-reconciliation/helpers-flowgraph*.json. The preceding extraction/stress retirement removed 394 lines. Inherited staged content is preserved; no unstaged native changes remain. Oracle tracked source/index are unchanged.",
+      "remaining": "Reconcile completed object-allocation, physical-promotion and async areas next, then wider and earlier residual coverage including the older fgopt/flowgraph remainder. The 83 post-refresh commits are an initial navigation queue, not a completeness denominator.",
+      "verification": "Profile/merging retirement removes 3082 lines across exactly three files relative to 5d9b0bc, including the entire remaining fgprofile.cpp. Earlier helper/layout retirement removed 4031 lines; extraction/stress removed 394. Each delta is deletion-only under git diff --minimal. Hashed ranges and protected snapshot receipts are in artifacts/residual-reconciliation. Inherited staged content is preserved; no unstaged native changes remain. Oracle tracked source/index are unchanged.",
       "policy": "Retire only reviewed complete implementations. Retain or explicitly identify unfinished shared/Windows paths and other-platform-only paths. Preserve the oracle and existing index distinctions; do not infer parity or percentages from deletion counts."
     },
     "workCadence": "User-directed: finish Windows x64 compiler code in the foreground; Linux x64 and ARM64 proceed in isolated background lanes. Choose whole type/feature/area batches, reuse existing port unit coverage, and build/run relevant checks at the integration boundary. Do not expand validation matrices or perform per-helper test/build/NativeAOT/corpus/documentation cycles. After code completion, automate oracle dump comparisons with explicit accepted non-semantic exclusions (including D001 arena statistics) and run the official runtime suite with the port as primary JIT, not AltJIT. Continue after milestones.",
@@ -485,7 +486,7 @@
         }
       ]
     },
-    "nextAction": "Continue native residual reconciliation from protected staged snapshot 5d9b0bc5662df36b43d37128bb387a093174ea01; do not reapply prior deletions. Helper expansion and GC-poll/layout/cold/weight implementations are retired. The only remaining helperexpansion.cpp bodies are Windows-x64-complete TLS/ReadUtf8 transformations retained for other targets. Next retire reviewed complete profile instrumentation/repair from fgprofile.cpp and head-tail merging/GDV resolution from fgopt.cpp, with related declarations, then continue the wider and earlier residual coverage. Use existing integrated evidence rather than replaying corpora. Pending platform integration commits remain Linux e42864b53384c77e22daefbe743e77023f7a577e and ARM64 0c0d33f22a29cfc79133f93757071914b0cb27e5.",
+    "nextAction": "Continue native residual reconciliation from protected staged snapshot 48503ca10fba4f5f5390a8dcb85d2b1297ed7081; do not reapply prior deletions. fgprofile.cpp is fully retired; head-tail merging/GDV resolution and the preceding helper/layout groups are retired. Next reconcile completed object-allocation, physical-promotion and async source areas against their integrated reviews and mappings, then the wider/earlier residual coverage including older fgopt/flowgraph helpers. Keep the three remaining helperexpansion.cpp transformations for unfinished non-Windows-x64 TLS and non-AMD64 ReadUtf8 paths. Do not replay corpora solely for retirement. Pending platform integration commits remain Linux e42864b53384c77e22daefbe743e77023f7a577e and ARM64 0c0d33f22a29cfc79133f93757071914b0cb27e5.",
     "arm64HardwareContainment": {
       "scope": "Complete ARM64 hardware and bounds containment, with MOVI/MVNI byte-shift and doubleword-mask predicates, exact FMOV constants, comparison-zero rules and SVE embedded masking.",
       "mapping": "lowerarmarch.cpp:2033-2060,3805-4225 -> Lowering.Arm64HardwareContainment.cs and Lowering.BoundsChecks.cs; emitarm64.cpp:2451-2483,3113-3207 -> Emitter.ImmediatePredicates.cs. Shared ContainCheckNode now dispatches ARM64 hardware containment; bounds containment remains a separate LowerNode action, matching native.",
@@ -7301,7 +7302,7 @@
       "area": "profile-instrumentation",
       "native": ["src\\coreclr\\jit\\fgprofile.cpp:350-780", "src\\coreclr\\jit\\fgprofile.cpp:1192-2893"],
       "csharp": ["sources\\Core\\jit\\fgprofile\\Instrumentor.cs", "sources\\Core\\jit\\fgprofile\\BlockCountInstrumentor.cs", "sources\\Core\\jit\\fgprofile\\EfficientEdgeCountInstrumentor.cs", "sources\\Core\\jit\\fgprofile\\HistogramInstrumentors.cs", "sources\\Core\\jit\\compiler\\Compiler.Instrumentation.cs"],
-      "status": "Complete preparation, block/efficient-edge counters, handle/value histograms and core/inline-return dispatch. Sparse probes use an instrumentor-owned block dictionary while preserving native linked-list head insertion and traversal order; BasicBlock.bbSparseProbeList remains unchanged. The schema span is pinned only during the EE allocation callback; the returned profile buffer remains EE-owned. Debug synthesized-count conversions preserve pinned MSVC x64 results separately for narrow and wide counters. Positive counter/class/value instrumentation and emitted instruction slices match native under actual execution. Native source retained.",
+      "status": "Complete preparation, block/efficient-edge counters, handle/value histograms and core/inline-return dispatch. Sparse probes use an instrumentor-owned block dictionary while preserving native linked-list head insertion and traversal order; BasicBlock.bbSparseProbeList remains unchanged. The schema span is pinned only during the EE allocation callback; the returned profile buffer remains EE-owned. Debug synthesized-count conversions preserve pinned MSVC x64 results separately for narrow and wide counters. Positive counter/class/value instrumentation and emitted instruction slices match native under actual execution. Instrumentation definitions and forward declaration retired from runtime-port; fgprofile.cpp has no remaining implementation.",
       "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     },
     {
@@ -7336,14 +7337,14 @@
       "area": "gdv-guard-resolution",
       "native": ["src\\coreclr\\jit\\fgopt.cpp:fgResolveGDVs", "src\\coreclr\\jit\\objectalloc.cpp:ObjectAllocator::IsGuard"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.GdvResolution.cs", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.CloneViability.cs:IsGuard", "sources\\Core\\jit\\objectalloc\\ObjectAllocator.EscapeAnalysis.cs:GuardInfo"],
-      "status": "Complete public resolver with existing guard recognition exposed internally, unchanged. Preserves method/local gates, compile-time class identity, EQ/NE edge selection, predecessor mutation order, profile repair and throwing relop retention. Instrumentation-batch OSR ownership correction enables positive native-matching interface/virtual resolution, the unresolved control and all 15 hot-tier bodies. Native source retained.",
+      "status": "Complete public resolver with existing guard recognition exposed internally, unchanged. Preserves method/local gates, compile-time class identity, EQ/NE edge selection, predecessor mutation order, profile repair and throwing relop retention. Instrumentation-batch OSR ownership correction enables positive native-matching interface/virtual resolution, the unresolved control and all 15 hot-tier bodies. Resolver retired from runtime-port; shared guard recognition awaits objectalloc residual reconciliation.",
       "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     },
     {
       "area": "profile-repair-phase",
       "native": ["src\\coreclr\\jit\\fgprofile.cpp:fgRepairProfile"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.fg.cs:fgRepairProfile", "sources\\Core\\jit\\fgprofilesynthesis\\ProfileSynthesis.cs:Run"],
-      "status": "Complete public phase with profile/consistency gates and RetainLikelihoods dispatch. Reuses existing synthesis algorithms unchanged; no guarantee of convergence is added. Native source retained.",
+      "status": "Complete public phase with profile/consistency gates and RetainLikelihoods dispatch. Reuses existing synthesis algorithms unchanged; no guarantee of convergence is added. Driver retired from runtime-port with the remaining fgprofile.cpp.",
       "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     },
     {
@@ -7455,7 +7456,7 @@
       "area": "head-tail-merging",
       "native": ["src\\coreclr\\jit\\fgopt.cpp:5101-5635,5638-5739,5743-5770,5832-5969", "src\\coreclr\\jit\\arraystack.h:79-83,225-233"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.HeadTailMerge.cs", "sources\\Core\\jit\\compiler\\Compiler.HeadTailMerge.Head.cs"],
-      "status": "Complete early/late production phase and helper closure, reusing existing gtTreeContainsTailCall. Native positive shared-return/SSA/CSE shape comparison and selected execution established; broader parity remains open.",
+      "status": "Complete early/late production phase and helper closure, reusing existing gtTreeContainsTailCall. Native positive shared-return/SSA/CSE shape comparison and selected execution established; broader parity remains open. Merge implementations and associated declarations retired from runtime-port.",
       "reconciledCommit": null
     },
     {
