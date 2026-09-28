@@ -9,8 +9,8 @@ public sealed partial class CodeGen
 {
     public void genExitCode(BasicBlock block)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI || EMITTER_STATS
-        throw new FatalJitException(CORJIT_SKIPPED, "Method exit generation requires Windows AMD64 without emitter allocation statistics.");
+#if !TARGET_AMD64 || EMITTER_STATS
+        throw new FatalJitException(CORJIT_SKIPPED, "Method exit generation requires AMD64 without emitter allocation statistics.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         // Epilog mappings deliberately allow duplicate locations.

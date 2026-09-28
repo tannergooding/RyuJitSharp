@@ -9,7 +9,13 @@ public partial class GenTree
 {
     public var_types GetRegTypeByIndex(int regIndex)
     {
-#if TARGET_AMD64 && !UNIX_AMD64_ABI
+#if TARGET_AMD64
+#if FEATURE_MULTIREG_RET
+        if (IsMultiRegCall)
+        {
+            return AsCall().ReturnTypeDesc.GetReturnRegType(checked((byte)regIndex));
+        }
+#endif
 #if FEATURE_HW_INTRINSICS
         if (Oper.IsHWIntrinsic)
         {
@@ -31,13 +37,19 @@ public partial class GenTree
 
         throw new FatalJitException("Invalid node type for GetRegTypeByIndex.");
 #else
-        throw new FatalJitException(CORJIT_SKIPPED, "Indexed register types outside Windows AMD64 are not implemented.");
+        throw new FatalJitException(CORJIT_SKIPPED, "Indexed register types outside AMD64 are not implemented.");
 #endif
     }
 
     public GenTreeFlags GetRegSpillFlagByIdx(int regIndex)
     {
-#if TARGET_AMD64 && !UNIX_AMD64_ABI
+#if TARGET_AMD64
+#if FEATURE_MULTIREG_RET
+        if (IsMultiRegCall)
+        {
+            return AsCall().GetRegSpillFlagByIdx(checked((byte)regIndex));
+        }
+#endif
 #if FEATURE_HW_INTRINSICS
         if (Oper.IsHWIntrinsic)
         {
@@ -51,13 +63,20 @@ public partial class GenTree
 
         throw new FatalJitException("Invalid node type for GetRegSpillFlagByIdx.");
 #else
-        throw new FatalJitException(CORJIT_SKIPPED, "Indexed register spill flags outside Windows AMD64 are not implemented.");
+        throw new FatalJitException(CORJIT_SKIPPED, "Indexed register spill flags outside AMD64 are not implemented.");
 #endif
     }
 
     public void SetRegSpillFlagByIdx(GenTreeFlags flags, int regIndex)
     {
-#if TARGET_AMD64 && !UNIX_AMD64_ABI
+#if TARGET_AMD64
+#if FEATURE_MULTIREG_RET
+        if (IsMultiRegCall)
+        {
+            AsCall().SetRegSpillFlagByIdx(flags, checked((byte)regIndex));
+            return;
+        }
+#endif
 #if FEATURE_HW_INTRINSICS
         if (Oper.IsHWIntrinsic)
         {
@@ -74,8 +93,8 @@ public partial class GenTree
         assert(false, "Invalid node type for SetRegSpillFlagByIdx");
         throw new FatalJitException("Invalid node type for indexed register spill flags.");
 #else
-        NYI("GenTree.SetRegSpillFlagByIdx outside Windows AMD64");
-        throw new FatalJitException("GenTree.SetRegSpillFlagByIdx outside Windows AMD64.");
+        NYI("GenTree.SetRegSpillFlagByIdx outside AMD64");
+        throw new FatalJitException("GenTree.SetRegSpillFlagByIdx outside AMD64.");
 #endif
     }
 }

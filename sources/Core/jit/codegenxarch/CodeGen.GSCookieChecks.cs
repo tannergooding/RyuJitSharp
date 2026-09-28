@@ -11,8 +11,8 @@ public sealed partial class CodeGen
 {
     public unsafe void genEmitGSCookieCheck(bool tailCall)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "GS-cookie checks require Windows AMD64.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "GS-cookie checks require AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         noway_assert((_compiler.gsGlobalSecurityCookieAddr != null) || (_compiler.gsGlobalSecurityCookieVal != 0));

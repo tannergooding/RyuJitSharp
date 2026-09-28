@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: SysV return and method-exit generation
+
+SysV AMD64 returns now support scalar, field-list, multireg, SIMD and stack-home
+values, including Swift error/offset handling and async continuation transfers.
+Return GC roots are restored before profiler callbacks; method exits record
+mappings, check cookies and reserve epilogs. Register-copy/production and
+indexed call-spill metadata dependencies are included.
+
+Full-analysis return-related coverage passes 151 Debug/150 Release SysV cases;
+the final return/exit fixture passes 26 Debug/25 Release, including all SIMD
+source-register alias cases. Windows controls pass 96 Debug/90 Release.
+Call orchestration and broader generation/metadata activation remain separate,
+and these managed checks do not establish Linux execution or parity.
+
 ## 2026-09-28: ARM64 consecutive-register allocation
 
 ARM64 LSRA now filters and ranks consecutive register sequences, assigns

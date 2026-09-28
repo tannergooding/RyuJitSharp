@@ -1309,6 +1309,10 @@ Unix varargs remain unsupported, matching `compFeatureVarArg`; root entries
 reject them before changing instruction/unwind state. General machine-code
 generation/emission orchestration and final metadata publication remain
 Windows-gated.
+SysV return/exit helpers now cover scalar and multireg values, SIMD splitting,
+Swift lowered offsets/error returns, async continuations, return GC roots,
+cookie checks and epilog reservation. Call orchestration and argument placement
+remain separate from the previously completed call-instruction emitter.
 Unix AMD64 with `CORINFO_NATIVEAOT_ABI` requires CFI unwind metadata, which
 remains unported (B395). All public unwind recording, reservation and publication
 entries terminate with `CORJIT_SKIPPED` before changing unwind state in that

@@ -846,6 +846,15 @@ public sealed class GenTreeCall : GenTree
 #endif
     }
 
+#if FEATURE_MULTIREG_RET
+    public GenTreeFlags GetRegSpillFlagByIdx(byte index) => GetMultiRegSpillFlagsByIdx(_spillFlags, index);
+
+    public void SetRegSpillFlagByIdx(GenTreeFlags flags, byte index)
+    {
+        _spillFlags = SetMultiRegSpillFlagsByIdx(_spillFlags, flags, index);
+    }
+#endif
+
     public InlineCandidateInfo GetGdvCandidateInfo(byte index)
     {
         assert(index < _inlineInfoCount);

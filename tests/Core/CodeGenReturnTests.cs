@@ -80,7 +80,7 @@ internal static unsafe class CodeGenReturnTests
             var fields = new GenTreeFieldList();
             fields.AddField(compiler, source, 0, type);
             var tree = new GenTreeUnOp(GT_RETURN, TYP_STRUCT, fields);
-            Assert.That(CodeGen.isStructReturn(tree), Is.True);
+            Assert.That(codeGen.isStructReturn(tree), Is.True);
 
             codeGen.genReturn(tree);
 

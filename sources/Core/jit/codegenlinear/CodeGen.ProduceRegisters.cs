@@ -26,8 +26,8 @@ public sealed partial class CodeGen
 
     public void genProduceReg(GenTree tree)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Register production outside Windows AMD64 is not implemented.");
+#if !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Register production outside AMD64 is not implemented.");
 #else
 #if DEBUG
         assert((tree._debugFlags & GTF_DEBUG_NODE_CG_PRODUCED) == 0);

@@ -204,6 +204,14 @@ public sealed partial class CodeGen
                 break;
             }
 
+#if SWIFT_SUPPORT
+            case GT_SWIFT_ERROR_RET:
+            {
+                genSwiftErrorReturn(tree);
+                break;
+            }
+#endif
+
             case GT_PATCHPOINT:
             case GT_PATCHPOINT_FORCED:
             {
