@@ -928,15 +928,21 @@ public partial class Compiler
     {
         JITDUMP($"Considering guarded devirtualization at IL offset {ilOffset} (0x{ilOffset:x})\n");
 
+        if (call.IsGenericVirtual(this))
+        {
+            JITDUMP("Generic virtual methods are not supported by guarded devirtualization, sorry.\n");
+            return;
+        }
+
         var hasPgoData = true;
 
-        Unsafe.SkipInit(out InlineArrayMaxGdvTypeChecks<nint> inlineLikelyClasses);
+        InlineArrayMaxGdvTypeChecks<nint> inlineLikelyClasses = default;
         var likelyClasses = (Span<nint>)(inlineLikelyClasses);
 
-        Unsafe.SkipInit(out InlineArrayMaxGdvTypeChecks<nint> inlineLikelyMethods);
+        InlineArrayMaxGdvTypeChecks<nint> inlineLikelyMethods = default;
         var likelyMethods = (Span<nint>)(inlineLikelyMethods);
 
-        Unsafe.SkipInit(out InlineArrayMaxGdvTypeChecks<int> inlineLikelihoods);
+        InlineArrayMaxGdvTypeChecks<int> inlineLikelihoods = default;
         var likelihoods = (Span<int>)(inlineLikelihoods);
 
         var originalContext = contextHandle;
@@ -3584,7 +3590,7 @@ public partial class Compiler
                     if (i == argNum)
                     {
                         // Record the reference to the argument we're going to replace.
-                        argRef = node;
+                        argRef = ref node;
                         argClone = cloned;
                     }
                 }

@@ -16,6 +16,139 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CallFoldingTests
 {
+    private static int s_gdvClassQueries;
+    private static int s_gdvMethodQueries;
+
+    [Test]
+    public static void MethodOnlyProfileDoesNotQueryAnUninitializedClassGuess()
+    {
+        WithCompiler("Type", "Other", (compiler, call) =>
+        {
+            var previousMaxTypeChecks = GdvMaxTypeChecks(ref JitConfig);
+            GdvMaxTypeChecks(ref JitConfig) = 1;
+            compiler.fgPgoMethodProfiles = 1;
+            var method = (nint)call._callMethHnd;
+            ICorJitInfo.PgoInstrumentationSchema schema = new() {
+                ILOffset = 12,
+                Count = 1,
+                Other = 100,
+                InstrumentationKind = ICorJitInfo.PgoInstrumentationKind.GetLikelyMethod,
+            };
+            call._callMoreFlags |= GTF_CALL_M_DELEGATE_INV;
+            call._inlineContext = (InlineContext)RuntimeHelpers.GetUninitializedObject(typeof(InlineContext));
+            call._inlineContext.PgoInfo = new PgoInfo {
+                PgoData = (byte*)&method,
+                PgoSchema = &schema,
+                PgoSchemaCount = 1,
+            };
+            s_gdvClassQueries = 0;
+            s_gdvMethodQueries = 0;
+            CORINFO_CONTEXT_STRUCT_* context = null;
+
+            try
+            {
+                compiler.considerGuardedDevirtualization(call, 12, false, call._callMethHnd, null, ref context);
+            }
+            finally
+            {
+                GdvMaxTypeChecks(ref JitConfig) = previousMaxTypeChecks;
+            }
+
+            Assert.That(s_gdvClassQueries, Is.Zero);
+            Assert.That(s_gdvMethodQueries, Is.EqualTo(1));
+            Assert.That(call.InlineCandidatesCount, Is.Zero);
+        });
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitGuardedDevirtualizationMaxTypeChecks")]
+    private static extern ref int GdvMaxTypeChecks(ref JitConfigValues config);
+
+#if DEBUG
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_VIRTUAL_FUNC_PTR)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_GVMLOOKUP_FOR_SLOT)]
+    [TestCase(CorInfoHelpFunc.CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR)]
+    public static void GenericVirtualCallsAreRejectedBeforeGuardedDevirtualization(CorInfoHelpFunc helper)
+    {
+        WithCompiler("Type", "Other", (compiler, call) =>
+        {
+            compiler.verbose = true;
+            call._callType = gtCallTypes.CT_INDIRECT;
+            call._controlExpr = compiler.gtNewHelperCallNode(TYP_I_IMPL, helper);
+            var output = CodeGenLifeTransitionTests.Capture(() =>
+            {
+                CORINFO_CONTEXT_STRUCT_* context = null;
+                compiler.considerGuardedDevirtualization(call, 12, false, null, null, ref context);
+            });
+
+            Assert.That(output, Does.Contain("Generic virtual methods are not supported by guarded devirtualization, sorry."));
+            Assert.That(output, Does.Not.Contain("Not guessing; no PGO"));
+            Assert.That(call.InlineCandidatesCount, Is.Zero);
+        });
+    }
+#endif
+
+    [Test]
+    public static void ProfiledLengthSpecializesTheOwnedArgumentAndPreservesFallback(
+        [Values("Memmove", "SequenceEqual")] string method,
+        [Values(false, true)] bool inlineCandidate,
+        [Values(false, true)] bool constantLength)
+    {
+        WithCompiler("SpanHelpers", method, (compiler, call) =>
+        {
+            compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_BBOPT);
+            compiler.lvaTable[0].Type = TYP_I_IMPL;
+            var data = stackalloc nint[4] { 8, 8, 8, 8 };
+            var schema = stackalloc ICorJitInfo.PgoInstrumentationSchema[2] {
+                new() { ILOffset = 12, Count = 1, InstrumentationKind = ICorJitInfo.PgoInstrumentationKind.ValueHistogramLongCount },
+                new() { ILOffset = 12, Count = 4, InstrumentationKind = ICorJitInfo.PgoInstrumentationKind.ValueHistogram },
+            };
+            compiler.fgPgoData = (byte*)data;
+            compiler.fgPgoSchema = schema;
+            compiler.fgPgoSchemaCount = 2;
+            call.Type = method == "Memmove" ? TYP_VOID : TYP_INT;
+            GenTree length = constantLength ? compiler.gtNewIconNode(TYP_I_IMPL, 8)
+                : compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_I_IMPL, 123))
+                .WithWellKnownArg(WellKnownArg.InstParam));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_BYREF, 16)));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_BYREF, 32)));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(length));
+            if (inlineCandidate)
+            {
+                call.SingleInlineCandidateInfo = new InlineCandidateInfo();
+            }
+
+            var result = compiler.impDuplicateWithProfiledArg(call, 12);
+
+            if (constantLength)
+            {
+                Assert.That(result, Is.SameAs(call));
+                Assert.That(call.Args.GetUserArgByIndex(2)?.Node, Is.SameAs(length));
+                Assert.That(call.IsInlineCandidate, Is.EqualTo(inlineCandidate));
+                return;
+            }
+
+            Assert.That(result.Oper, Is.EqualTo(GT_QMARK));
+            var condition = result.AsQmark().Cond.AsOp();
+            var branches = result.AsQmark().Op2.AsColon();
+            Assert.That(condition.Oper, Is.EqualTo(GT_EQ));
+            Assert.That(condition.Op1, Is.SameAs(length));
+            Assert.That(condition.Op2?.IsIntegralConst(8), Is.True);
+            Assert.That(branches.ThenNode, Is.SameAs(call));
+            Assert.That(call.IsInlineCandidate, Is.False);
+            Assert.That(call.Args.GetUserArgByIndex(2)?.Node.IsIntegralConst(8), Is.True);
+            Assert.That(call.Args.GetUserArgByIndex(2)?.Node, Is.Not.SameAs(condition.Op2));
+
+            var fallback = branches.ElseNode.AsCall();
+            Assert.That(fallback.IsInlineCandidate, Is.False);
+            Assert.That(fallback.Args.GetUserArgByIndex(2)?.Node.Oper, Is.EqualTo(GT_LCL_VAR));
+            Assert.That(fallback.Args.GetUserArgByIndex(2)?.Node.AsLclVar().LclNum, Is.Zero);
+            Assert.That(fallback.Args.GetUserArgByIndex(2)?.Node, Is.Not.SameAs(length));
+            Assert.That(call.Args.GetArgByIndex(0)?.Node.IsIntegralConst(123), Is.True);
+            Assert.That(fallback.Args.GetArgByIndex(0)?.Node.IsIntegralConst(123), Is.True);
+        });
+    }
+
     [Test]
     public static void BoxRemovalPreservesStatementIdentityAndMorphState(
         [Values(false, true)] bool morphed, [Values(false, true)] bool sourceEffects)
@@ -250,6 +383,8 @@ internal static unsafe class CallFoldingTests
             vtable.Base.Base.getTypeForPrimitiveValueClass = &GetUnderlyingType;
             vtable.Base.Base.isEnum = &IsEnum;
             vtable.Base.Base.getExactClasses = &GetExactClasses;
+            vtable.Base.Base.getClassAttribs = &GetGdvClassAttributes;
+            vtable.Base.Base.getMethodAttribs = &GetGdvMethodAttributes;
             vtable.Base.Base.isExactType =
                 (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, byte>)&IsExactType;
             ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
@@ -306,6 +441,20 @@ internal static unsafe class CallFoldingTests
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte IsExactType(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => 0;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoFlag GetGdvClassAttributes(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type)
+    {
+        s_gdvClassQueries++;
+        return CorInfoFlag.CORINFO_FLG_ABSTRACT;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoFlag GetGdvMethodAttributes(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* method)
+    {
+        s_gdvMethodQueries++;
+        return CorInfoFlag.CORINFO_FLG_STATIC;
+    }
 
     private struct MethodMetadata
     {

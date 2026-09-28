@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Primary tiered-PGO startup no longer crashes
+
+Profile-guided call specialization now rebinds the selected argument edge rather
+than writing through a null managed reference. Guarded devirtualization restores
+native zero-initialized guesses and the generic-virtual exclusion, preventing
+method-only profiles from passing garbage class handles to the EE.
+
+The existing value-profile program now completes with the managed primary JIT.
+Its two common Tier0 bodies match native trees and instructions. The native run
+also reaches instrumented Tier1 bodies that the managed run does not reach before
+this fixed-duration corpus exits; those absent bodies are not parity passes.
+Focused regressions and the precise runtime boundary are recorded in
+`checkpoint.primaryPgoImport` and `artifacts/primary-value-profile`.
+
 ## 2026-09-28: Primary GC-stress and OSR controls match
 
 The existing allocation corpus completes under the primary managed JIT with
