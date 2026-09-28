@@ -16,6 +16,24 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-27: LIR operand ranges and dummy-use copies
+
+`GetRangeOfOperandTrees` now implements the distinct native operand-only range
+query, excluding the root and effects outside the operand span while retaining
+closure reporting and clearing traversal marks. No new callsites were added.
+
+Dummy `LIR.Use` copies now keep independent definitions, matching native copy
+assignment. An explicit discriminator replaces the interior self-reference
+that C# struct copies retained; ordinary uses still share the actual operand
+edge. Three copy/spill regressions fail before the correction, with three
+default/real-use controls. Full-analysis LIR, lowering and rationalization
+coverage passes 1000 Debug/988 Release cases.
+
+Native retirement is consolidated through `4ec12e43`, including completed
+ARM64 reference construction, AMD64 OSR helpers, and further frontend, EH,
+register/GC, lowering and emitter support. The broad remaining-code cleanup
+is still in progress; retained target gaps are not Windows production gaps.
+
 ## 2026-09-27: Promoted-field frame diagnostics
 
 Dependent promoted-field frame diagnostics now preserve native `%u` formatting

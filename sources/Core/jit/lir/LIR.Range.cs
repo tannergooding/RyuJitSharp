@@ -251,6 +251,31 @@ public partial class LIR
         }
 #endif
 
+        /// <summary>Computes the subrange containing the operand trees, excluding the root.</summary>
+        /// <param name="root">The node whose operand trees are included.</param>
+        /// <param name="isClosed">Whether the range contains only nodes from the operand trees.</param>
+        /// <param name="sideEffects">The side effects contained in the returned range.</param>
+        /// <returns>The computed subrange, or an empty range when the root has no operands.</returns>
+        public ReadOnlyRange GetRangeOfOperandTrees(GenTree root, out bool isClosed, out GenTreeFlags sideEffects)
+        {
+            var markCount = 0;
+            _ = root.VisitOperands(operand =>
+            {
+                operand._lirFlags |= Flags.Mark;
+                markCount++;
+                return GenTree.VisitResult.Continue;
+            });
+
+            if (markCount == 0)
+            {
+                isClosed = true;
+                sideEffects = GTF_EMPTY;
+                return new ReadOnlyRange(null, null);
+            }
+
+            return GetMarkedRange(root, out isClosed, out sideEffects, markCount);
+        }
+
         /// <summary>Inserts a node after another node in this range.</summary>
         /// <param name="insertionPoint">The node after which `node` will be inserted. If non-null, must be part of this range. If null, insert at the beginning of the range.</param>
         /// <param name="node">The node to insert. Must not be part of any range.</param>

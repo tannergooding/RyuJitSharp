@@ -21,6 +21,7 @@ public partial class LIR
         private Range _range;
         private ref GenTree _edge;
         private GenTree _user;
+        private bool _isDummyUse;
 
         /// <summary>Constructs a use &lt;-&gt; def edge given the range that contains the use and the def, the use -&gt; def edge, and the user.</summary>
         /// <param name="range">The range that contains the use and the def.</param>
@@ -31,6 +32,7 @@ public partial class LIR
             _range = range;
             _edge = ref edge;
             _user = user;
+            _isDummyUse = false;
 
             AssertIsValid();
         }
@@ -47,7 +49,9 @@ public partial class LIR
         {
             dummyUse._range = range;
             dummyUse._user = node;
-            dummyUse._edge = ref dummyUse._user;
+            // A self-reference would still point into the original after a struct copy.
+            dummyUse._edge = ref Unsafe.NullRef<GenTree>();
+            dummyUse._isDummyUse = true;
 
             assert(dummyUse.IsInitialized());
         }
@@ -57,7 +61,7 @@ public partial class LIR
         public readonly GenTree Def()
         {
             assert(IsInitialized());
-            return _edge;
+            return IsDummyUse() ? _user : _edge;
         }
 
         /// <summary>Returns the node that uses the def for this use.</summary>
@@ -71,7 +75,8 @@ public partial class LIR
 
         /// <summary>Returns true if the use is minimally valid; false otherwise.</summary>
         /// <returns></returns>
-        public readonly bool IsInitialized() => (_range is not null) && (_user is not null) && !Unsafe.IsNullRef(ref _edge);
+        public readonly bool IsInitialized()
+            => (_range is not null) && (_user is not null) && (IsDummyUse() || !Unsafe.IsNullRef(ref _edge));
 
         /// <summary>DEBUG function to assert on many validity conditions.</summary>
         /// <returns></returns>
@@ -80,8 +85,9 @@ public partial class LIR
         {
 #if DEBUG
             assert(IsInitialized());
+            assert(!IsDummyUse());
             assert(_range.Contains(_user));
-            assert(_edge is not null);
+            assert(Def() is not null);
             assert(Unsafe.AreSame(in _user.GetUseRefOrNullRef(Def()), in _edge));
 #endif
         }
@@ -89,7 +95,7 @@ public partial class LIR
         /// <summary>Indicates whether or not a use is a dummy use.</summary>
         /// <returns>true if this use is a dummy use; false otherwise.</returns>
         /// <remarks>This method must be called before attempting to call the User(): for dummy uses, the user is the same node as the def.</remarks>
-        public readonly bool IsDummyUse() => Unsafe.AreSame(in _edge, in _user);
+        public readonly bool IsDummyUse() => _isDummyUse;
 
         /// <summary>Changes the use to point to a new value.</summary>
         /// <param name="replacement">The replacement node.</param>
@@ -149,7 +155,7 @@ public partial class LIR
             }
             else
             {
-                _edge = replacement;
+                _user = replacement;
             }
         }
 
@@ -207,10 +213,10 @@ public partial class LIR
 #if DEBUG
             assert(IsInitialized());
             assert(_range.Contains(_user));
-            assert(_range.Contains(_edge));
+            assert(_range.Contains(Def()));
 #endif
 
-            var node = _edge;
+            var node = Def();
 
             if (lclNum == BAD_VAR_NUM)
             {

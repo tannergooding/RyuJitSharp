@@ -16,6 +16,12 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "lirOperandRangesAndUses": {
+      "scope": "GetRangeOfOperandTrees and B397 dummy-use value semantics. Operand-only ranges reuse GetMarkedRange without changing GetTreeRange or adding callsites. Dummy copies keep independent node values; real uses retain shared operand edges.",
+      "mapping": "lir.cpp:GetRangeOfOperandTrees -> LIR.Range.cs; native Use copy constructor/assignment and dummy access/replacement -> LIR.Use.cs explicit dummy discriminator.",
+      "validation": "Three original dummy-copy failures and three default/real-use controls. Final full-analysis LIR/lowering/rationalization selection passes 1000 Debug/988 Release. artifacts/lir-closure/tst/Debug/lir-use-before.trx and lir-closure-debug-2.trx; artifacts/lir-closure-release/tst/Release/lir-closure-release-2.trx. Six operand-range cases cover root/effect exclusion, gaps, empty/unary trees and mark cleanup.",
+      "limits": "Managed semantic coverage against the native source contract, not new target execution or whole-pipeline parity."
+    },
     "promotedFieldFrameDiagnostics": {
       "scope": "B396: preserve native unsigned formatting of dependent promoted-field parent/net stack offsets without changing stored signed offsets.",
       "mapping": "lclvars.cpp:lvaAssignFrameOffsetsToPromotedStructs -> Compiler.FinalFrameLayout.cs.",
@@ -99,7 +105,7 @@
     "planApprovedAt": "2026-09-22",
     "residualReconciliation": {
       "status": "in-progress",
-      "retirementCommit": "51acbd970aede4b17d4262dfcf13bc37c940056f",
+      "retirementCommit": "4ec12e43e91582c3ea727a7f3dd3bf8ef53e9c6c",
       "retirementBaseCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
       "workflow": "User-directed: maintain one local native Remove ported code commit and amend it after larger source-area batches. Leave in-progress edits unstaged. Reuse completed port reviews/mappings and explicit NYIs; investigate only unclear boundaries. No routine recovery snapshots or helper-by-helper documentation cycles. Snapshot fields below describe retained historical recovery points, not the current continuation base.",
       "reason": "Retirement lagged completed C# batches. Restore the native remaining-work view concurrently with continued Windows, ARM64 and Linux implementation; cleanup is not a prerequisite for further porting.",
@@ -135,7 +141,8 @@
         "Completed block header memory masks/iteration, flag and raw-edge access, default initialization, weight/LIR/predecessor helpers and dominator link model; complete compiler.hpp regular/EH successor visitation and per-block complexity traversal. B393 debug helpers and unused/target support remain.",
         "Frontend closure: completed statement, inline, importer, block-splitting, SIMD and xarch rationalization bodies and declarations; 2662 deletion-only lines. Compiler utilities/funclets/arguments/DFS, morph phases/array cache, importer Swift/array/call helpers and the remaining xarch hardware importer: another 7070 deletion-only lines across six files. Unfinished target paths and unresolved/unused helpers remain.",
         "Completed SSA construction/renaming/incremental SSA/verification, IR link/type/flag/uniqueness/phase checks, SysV classifier support, tree-liveness and GC initialization, three-opt heap support, B390 floating WithElement helper, and remaining cold/return/statement-count CFG queries.",
-        "Completed BBPredsChecker/fgDebugCheckBBlist/fgDebugCheckBlockLinks, label/register-life helpers, funclet updates, xarch scheduling/APX-PPX predicates, AMD64 funclet frame/prolog/epilog bodies and Windows-format unwind recording workers/dump. Mixed-format dispatch, reservation, publication and CFI remain."
+        "Completed BBPredsChecker/fgDebugCheckBBlist/fgDebugCheckBlockLinks, label/register-life helpers, funclet updates, xarch scheduling/APX-PPX predicates, AMD64 funclet frame/prolog/epilog bodies and Windows-format unwind recording workers/dump. Mixed-format dispatch, reservation, publication and CFI remain.",
+        "Completed switch recognition/local unpinning, optional inline policies, GS/if-conversion support, EH verification/CFG regions, variable/scope locations, LIR support, emitter locations/groups and local addressing; ARM64 hardware-intrinsic/consecutive reference construction and allocator interval/block-entry support; AMD64 OSR frame/save helpers, relocation predicates, register/GC bookkeeping and xarch store/rotate lowering. Consolidated through 4ec12e43; genuine mixed-target/mode bodies and unclassified backend areas remain."
       ],
       "remainingHelperTargets": [
         "helperexpansion.cpp now contains only the two TLS call transformations and ReadUtf8. All three are complete for Windows x64.",
@@ -634,7 +641,7 @@
         }
       ]
     },
-    "nextAction": "Continue without stopping at milestones. ARM64 agent continues consecutive-register selection/assignment and remaining allocation/resolution dependencies; preserve the allocation gate until complete. SysV final frame layout/genFinalizeFrame is integrated. Next close root prolog/materialization dependencies: genClearStackVec3ArgUpperBits and the native varargs feature boundary (compFeatureVarArg is false on Unix), then enable only supported paths. Retain B395 NativeAOT CFI rejection. Native cleanup continues to a full already-completed-code cleanup boundary, retaining genuine target/mode gaps but not complete bodies merely referenced by unfinished callers. Last collected cleanup commit 51acbd970aede4b17d4262dfcf13bc37c940056f; preserve oracle/recovery refs and notify the user when full cleanup is established.",
+    "nextAction": "Continue without stopping at milestones. Parent LIR operand-range and dummy-copy questions are resolved; next reconcile fgGetNestingLevel and ehTrueEnclosingTryIndexIL against the pinned oracle without inventing callsites. ARM64 agent continues consecutive-register selection/assignment and remaining allocation/resolution dependencies; preserve the allocation gate until complete. SysV agent closes root prolog/materialization dependencies, including Vector3 upper-bit clearing and the existing varargs feature boundary; retain B395 NativeAOT CFI rejection. Native cleanup continues classifying genuinely unreconciled backend bodies by targeted source comparison, without repeating behavior/parity validation. Last collected cleanup commit 4ec12e43e91582c3ea727a7f3dd3bf8ef53e9c6c; preserve oracle/recovery refs and notify the user only when full cleanup is established.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
