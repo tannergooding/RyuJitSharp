@@ -11,6 +11,26 @@
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
     "planApprovedAt": "2026-09-22",
+    "residualReconciliation": {
+      "status": "in-progress",
+      "reason": "The residual index was still byte-for-byte tree-equivalent to the upstream-refresh snapshot despite subsequent completed C# batches. Restore it as the remaining-work view before choosing further porting work.",
+      "startSnapshot": "9f4bab794f8fe339a6b46cb8336305cf80c804ee",
+      "startIndexCommit": "4816a0d823a22b12e2f5de4686bba6201ff08a0b",
+      "protectedRef": "refs/porting/snapshots/residual-reconcile-start-20260927",
+      "startTree": "59d3dbb096ebc96e66e006f75d77176444088d8c",
+      "latestSnapshot": "3996c2b2a986e789789c6faf4edb1c100eeca26d",
+      "latestIndexCommit": "4402b24f0bac48f41cc199cdbf608f94479f1e7b",
+      "latestProtectedRef": "refs/porting/snapshots/residual-extraction-stress-20260927",
+      "latestTree": "4eaf9c5814eb3fe332c6b9e5a73e2d599dfb7e12",
+      "startingState": "176 staged paths: one addition, 83 deletions and 92 modifications; no unstaged changes. Original staged content is protected independently of new retirement edits.",
+      "retired": [
+        "2e6b6e34: gtExtractSideEffectsFromUnusedNode and related declarations. gtExtractSideEffList's native body had already been removed; its former absence was not used as evidence of completion.",
+        "d1eb14d5: lvaStressLclFldPadding, lvaStressLclFldNode, lvaStressLclFld and StressLclFldVisitor; fgStress64RsltMul and Stress64RsltMulVisitor; associated declarations."
+      ],
+      "remaining": "Reconcile the wider completed source/dependency areas, beginning with helper expansion and optimized flow-graph batches after 5aaefb76, then check earlier residual coverage. The 83 post-refresh commits are an initial navigation queue, not a completeness denominator.",
+      "verification": "First retirement changes only compiler.h, fgdiagnostic.cpp, gentree.cpp and lclvars.cpp, with zero added lines and 394 deleted lines relative to the protected starting tree. All other staged content is unchanged; no unstaged native changes remain. Tracked oracle source/index are unchanged; its pre-existing artifacts-206bf81 directory is untouched.",
+      "policy": "Retire only reviewed complete implementations. Retain or explicitly identify unfinished shared/Windows paths and other-platform-only paths. Preserve the oracle and existing index distinctions; do not infer parity or percentages from deletion counts."
+    },
     "workCadence": "User-directed: finish Windows x64 compiler code in the foreground; Linux x64 and ARM64 proceed in isolated background lanes. Choose whole type/feature/area batches, reuse existing port unit coverage, and build/run relevant checks at the integration boundary. Do not expand validation matrices or perform per-helper test/build/NativeAOT/corpus/documentation cycles. After code completion, automate oracle dump comparisons with explicit accepted non-semantic exclusions (including D001 arena statistics) and run the official runtime suite with the port as primary JIT, not AltJIT. Continue after milestones.",
     "unusedTreeSideEffects": {
       "status": "ported",
@@ -37,16 +57,20 @@
     "windowsCompletionAssessment": {
       "status": "remaining-source-review",
       "assessment": "A working end-to-end Windows-x64 pipeline exists, but an exhaustive function/path-level remainder is not established. Retire the unverified 60-80 percent estimate rather than infer a remaining percentage from TODO counts.",
-      "confirmedStubs": [
-        "Compiler.compJitStats",
-        "Compiler.RecordNowayAssert",
-        "Compiler.compDoComponentUnitTestsOnce"
+      "openPlatformBoundaries": [
+        "D009/B241: requested CoreDisTools late disassembly still fails explicitly. An exact solution for native variadic print callbacks requires approval; the buffered approximation is not accepted.",
+        "R001: CILJit.compileMethod still serializes all compilations through a static lock. Parallel/reentrant compilation and shared/TLS state remain to be reviewed before removing this debugging aid."
+      ],
+      "optionalSupport": [
+        "Compiler.compJitStats is also empty in native when CALL_ARG_STATS is disabled, as it is in the current managed build.",
+        "Compiler.RecordNowayAssert is unported under MEASURE_NOWAY, which is disabled in the current build.",
+        "Compiler.compDoComponentUnitTestsOnce and ValueNumStore.ValidateValueNumStoreStatics omit native debug component/self-consistency checks."
       ],
       "caution": "Current backend allocation/codegen/emitter exclusions checked in this pass target non-Windows or non-AMD64 configurations. Commented callback declarations and historical baseline gaps are not an inventory of missing Windows implementations."
     },
     "activeBatch": {
-      "scope": "Complete the two active-but-empty pre-global-morph stress transforms: lvaStressLclFld and fgStress64RsltMul. Preserve two-pass local eligibility, padded GC-aware layouts, owning uses, multiplication casts and native stress selection.",
-      "status": "done",
+      "scope": "Restore runtime-port as the remaining-work view by reconciling completed C# source/dependency areas into verified native deletions, preserving snapshots, staging and unfinished platform paths.",
+      "status": "in-progress",
       "doneWhen": [
         "Identify currently unported Windows-x64 functions and required conditional paths in source, separating real stubs from stale baseline ledgers and valid unsupported configurations.",
         "Implement the next dependency-coherent area as complete native functions, using existing managed helpers and preserving ABI, ownership, ordering and numeric semantics.",
@@ -456,7 +480,7 @@
         }
       ]
     },
-    "nextAction": "Pre-morph tree stress is complete. Continue the Windows-specific source remainder review at compJitStats, RecordNowayAssert and compDoComponentUnitTestsOnce; establish their pinned native contracts and distinguish diagnostic/self-test work from missing compiler behavior. Do not claim an exhaustive list or a completion percentage. Completed background packets awaiting shared-file integration review are Linux e42864b53384c77e22daefbe743e77023f7a577e and ARM64 0c0d33f22a29cfc79133f93757071914b0cb27e5; preserve the Windows-first cursor.",
+    "nextAction": "Continue native residual reconciliation, not another search through C# placeholders. Completed unused-tree extraction and pre-morph stress are retired and staged in native snapshot 3996c2b2a986e789789c6faf4edb1c100eeca26d; the original state remains protected by 9f4bab794f8fe339a6b46cb8336305cf80c804ee. Next reconcile completed helper-expansion and flow-graph areas using existing commit/checkpoint evidence and pinned native bodies. Retain and classify unfinished target paths; the full remaining-work classification is not established yet. Pending platform integration commits remain Linux e42864b53384c77e22daefbe743e77023f7a577e and ARM64 0c0d33f22a29cfc79133f93757071914b0cb27e5.",
     "arm64HardwareContainment": {
       "scope": "Complete ARM64 hardware and bounds containment, with MOVI/MVNI byte-shift and doubleword-mask predicates, exact FMOV constants, comparison-zero rules and SVE embedded masking.",
       "mapping": "lowerarmarch.cpp:2033-2060,3805-4225 -> Lowering.Arm64HardwareContainment.cs and Lowering.BoundsChecks.cs; emitarm64.cpp:2451-2483,3113-3207 -> Emitter.ImmediatePredicates.cs. Shared ContainCheckNode now dispatches ARM64 hardware containment; bounds containment remains a separate LowerNode action, matching native.",
