@@ -24,7 +24,7 @@ public partial class Compiler
             }
         }
 
-        if (varTypeIsIntegral(tree.Type))
+        if (varTypeIsIntegralOrI(tree.Type))
         {
             var oldOperation = tree.Oper;
             var optimized = fgMorphCommutative(tree);

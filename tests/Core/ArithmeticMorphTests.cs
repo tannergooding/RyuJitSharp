@@ -318,6 +318,38 @@ internal static unsafe class ArithmeticMorphTests
         });
     }
 
+    [TestCase(TYP_REF)]
+    [TestCase(TYP_BYREF)]
+    [TestCase(TYP_I_IMPL)]
+    public static void MorphReassociatesAddressOffsetsAndPreservesFieldSequence(var_types baseType)
+    {
+        WithCompiler(compiler =>
+        {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.isFieldStatic = &IsInstanceFieldStatic;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+            compiler.lvaTable[1].Type = baseType;
+            var type = varTypeIsGC(baseType) ? TYP_BYREF : TYP_I_IMPL;
+            var field = (CORINFO_FIELD_STRUCT_*)0x1000;
+            var local = compiler.gtNewLclvNode(baseType, 1);
+            var constant = compiler.gtNewIconNode(TYP_I_IMPL, 8);
+            constant.FieldSeq = compiler.FieldSeqStore.Create(field, 8, FieldSeq.FieldKind.Instance);
+            var inner = compiler.gtNewBinaryNode(GT_ADD, type, local, constant);
+            var outer = compiler.gtNewBinaryNode(GT_ADD, type, inner, compiler.gtNewIconNode(TYP_I_IMPL, -8));
+
+            var result = compiler.fgMorphTree(outer);
+
+            Assert.That(result, Is.SameAs(inner));
+            Assert.That(result.Type, Is.EqualTo(type));
+            Assert.That(result.AsOp().Op1, Is.SameAs(local));
+            Assert.That(result.AsOp().Op2, Is.SameAs(constant));
+            Assert.That(constant.IconValue, Is.EqualTo((nint)0));
+            Assert.That(constant.FieldSeq,
+                Is.SameAs(compiler.FieldSeqStore.Create(field, 8, FieldSeq.FieldKind.Instance)));
+        });
+    }
+
     [TestCase(true, false, false, true)]
     [TestCase(true, true, false, true)]
     [TestCase(false, true, false, false)]
@@ -755,6 +787,9 @@ internal static unsafe class ArithmeticMorphTests
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte IsFieldStatic(ICorJitInfo* info, CORINFO_FIELD_STRUCT_* handle) => 1;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte IsInstanceFieldStatic(ICorJitInfo* info, CORINFO_FIELD_STRUCT_* handle) => 0;
 
     private static void WithCompiler(Action<Compiler> action, bool minOpts = false)
     {

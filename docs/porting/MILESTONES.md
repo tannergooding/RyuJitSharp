@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Monitor address-folding parity restored
+
+The arithmetic dispatcher now includes byref types in constant reassociation,
+matching native. `Monitor.Enter` folds its opposing field offsets while retaining
+the field annotation; post-global-morph and post-cost trees, including node IDs,
+and the complete 150-byte instruction stream now match native exactly. The prior
+managed body was 153 bytes. The primary arithmetic process still completes all
+27 checks and exits successfully without AltJIT. This is scoped method parity,
+not a whole-dump or runtime-suite result.
+
+Evidence: `checkpoint.addressConstantReassociation` and
+`artifacts/address-folding/comparison-1.json`.
+
 ## 2026-09-28: Primary-JIT startup and teardown complete
 
 The arithmetic probe now completes as a primary-managed-JIT process, including
