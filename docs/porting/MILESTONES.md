@@ -16,6 +16,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Emitted-code size statistics completed
+
+The optional Windows-x64 `DISPLAY_SIZES` mode now builds and reports emitted
+IL, native code/data and GC-information totals, including interruptible and
+non-interruptible method counts. It preserves native unsigned arithmetic,
+formatting and shutdown order.
+
+These are emitted payload sizes, not estimates of managed compiler-object
+allocations. Native JIT32 header/map recording remains a separate target boundary.
+The option stays disabled by default; see `checkpoint.emittedSizeStatistics`.
+
 ## 2026-09-28: Shared diagnostic counters completed
 
 Optional scalar and node counters preserve signed64 output, atomic32 recording,

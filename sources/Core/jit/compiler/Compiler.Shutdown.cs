@@ -71,6 +71,52 @@ public partial class Compiler
         jitprintf("--------------------------------------------------\n");
 #endif
 
+#if DISPLAY_SIZES
+        unchecked
+        {
+            if ((grossVMsize != 0) && (grossNCsize != 0))
+            {
+                jitprintf("\n");
+                jitprintf("--------------------------------------\n");
+                jitprintf("Function and GC info size stats\n");
+                jitprintf("--------------------------------------\n");
+
+                // Native accumulates size_t values but prints them through unsigned32 %u fields.
+                jitprintf($"[{(uint)grossVMsize,7} VM, {(uint)grossNCsize,8} {Target.TgtCpuName,6} " +
+                    $"{(uint)(100 * grossNCsize / grossVMsize),4}%] Total (excluding GC info)\n");
+                jitprintf($"[{(uint)grossVMsize,7} VM, {(uint)totalNCsize,8} {Target.TgtCpuName,6} " +
+                    $"{(uint)(100 * totalNCsize / grossVMsize),4}%] Total (including GC info)\n");
+
+                if ((gcHeaderISize != 0) || (gcHeaderNSize != 0))
+                {
+                    jitprintf("\n");
+                    jitprintf($"GC tables   : [{(uint)(gcHeaderISize + gcPtrMapISize),7}I,{(uint)(gcHeaderNSize + gcPtrMapNSize),7}N] " +
+                        $"{(uint)(totalNCsize - grossNCsize),7} byt  ({(uint)(100 * (totalNCsize - grossNCsize) / grossVMsize)}% of IL, " +
+                        $"{(uint)(100 * (totalNCsize - grossNCsize) / grossNCsize)}% of {Target.TgtCpuName}).\n");
+                    jitprintf($"GC headers  : [{(uint)gcHeaderISize,7}I,{(uint)gcHeaderNSize,7}N] {(uint)(gcHeaderISize + gcHeaderNSize),7} byt, " +
+                        $"[{formatFloat((float)gcHeaderISize / (genMethodICnt + 0.001), "F1"),4}I," +
+                        $"{formatFloat((float)gcHeaderNSize / (genMethodNCnt + 0.001), "F1"),4}N] " +
+                        $"{formatFloat((float)(gcHeaderISize + gcHeaderNSize) / genMethodCnt, "F1"),4} byt/meth\n");
+                    jitprintf($"GC ptr maps : [{(uint)gcPtrMapISize,7}I,{(uint)gcPtrMapNSize,7}N] {(uint)(gcPtrMapISize + gcPtrMapNSize),7} byt, " +
+                        $"[{formatFloat((float)gcPtrMapISize / (genMethodICnt + 0.001), "F1"),4}I," +
+                        $"{formatFloat((float)gcPtrMapNSize / (genMethodNCnt + 0.001), "F1"),4}N] " +
+                        $"{formatFloat((float)(gcPtrMapISize + gcPtrMapNSize) / genMethodCnt, "F1"),4} byt/meth\n");
+                }
+                else
+                {
+                    jitprintf("\n");
+                    jitprintf($"GC tables   take up {(uint)(totalNCsize - grossNCsize)} bytes " +
+                        $"({(uint)(100 * (totalNCsize - grossNCsize) / grossVMsize)}% of instr, " +
+                        $"{(uint)(100 * (totalNCsize - grossNCsize) / grossNCsize)}% of {Target.TgtCpuName,6} code).\n");
+                }
+
+#if DEBUG && DOUBLE_ALIGN
+                jitprintf($"{(uint)s_lvaDoubleAlignedProcsCount} out of {genMethodCnt} methods generated with double-aligned stack\n");
+#endif
+            }
+        }
+#endif
+
 #if FEATURE_JIT_METHOD_PERF
         if (compJitTimeLogFilename != 0)
         {
@@ -99,6 +145,19 @@ public partial class Compiler
         if (JitConfig.JitEnregStats != 0)
         {
             s_enregisterStats.Dump(jitstdout());
+        }
+#endif
+
+#if DISPLAY_SIZES
+        if (genMethodCnt != 0)
+        {
+            jitprintf("\n");
+            jitprintf($"A total of {genMethodCnt,6} methods compiled");
+            if ((genMethodICnt != 0) || (genMethodNCnt != 0))
+            {
+                jitprintf($" ({genMethodICnt} interruptible, {genMethodNCnt} non-interruptible)");
+            }
+            jitprintf(".\n");
         }
 #endif
 

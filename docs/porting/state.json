@@ -16,6 +16,14 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "emittedSizeStatistics": {
+      "scope": "Complete Windows-x64 DISPLAY_SIZES emitted IL/code/GC statistics and B447's enabled-build failure. The option remains disabled by default.",
+      "mapping": "emit.h3956-3959 -> Emitter.ConstantData.cs; compiler.cpp size globals/startup/shutdown -> Globals.CodeSizeStatistics.cs, Compiler.comp.cs and Compiler.Shutdown.cs; gcencode.cpp4018-4029 -> GCInfo.HeaderEncoding.cs. Existing CodeGen.MetadataPhase.cs owns post-publication accumulation.",
+      "contract": "Host-sized unsigned totals and multiplication wrap before division; native unsigned32 printf fields retain low32-bit truncation. GC interruptibility counters wrap as unsigned32. Reporting preserves aggregate/header-map branches, float-to-double averages, method summary and startup reset boundaries. Emitted sizes are not managed allocation sizes.",
+      "validation": "Original enabled Release build fails CS1061 for emitDataSize. Six Release header/publication regressions fail with the original recording omission restored. Enabled area coverage passes80Debug/75Release, including actual managed machine/metadata publication and unsigned wrap boundaries. Four statistics modes combined pass225Debug/174Release; default controls pass184Debug/133Release.",
+      "reproduction": "Use artifacts/emitted-size-statistics/enable.targets or combined.targets with CustomAfterMicrosoftCommonTargets and the existing operation-costs build roots. Emitted-size TRX/logs retain baseline, missing-recording, enabled, combined and default runs.",
+      "limits": "No new native-host execution or whole-pipeline parity. JIT32 GC header/map producers remain unsupported; seeded counters cover their shared report branch only. DOUBLE_ALIGN output remains outside Windows-x64 validation. Other statistics modes and native optional-counter synchronization policies are unchanged."
+    },
     "sharedDiagnosticCounters": {
       "scope": "Complete Counter and NodeCounts shared optional diagnostic types. Their other statistics consumers remain separate.",
       "mapping": "compiler.hpp305-351/utils.cpp1094-1146 -> utils/Counter.cs and utils/NodeCounts.cs; gentree.cpp opcode-name guards -> gentreeopsdef/genTreeOpsExtensions.cs and GenerateTables/Program.cs.",
@@ -760,8 +768,8 @@
         "Raw target-block getters have no pinned callsites and remain unused support. emitCodeGetCookie remains because its managed helper is only declared under TARGET_AMD64."
       ],
       "remaining": "Continue the full already-completed-code cleanup, distinguishing unreconciled areas from genuine target/CFI/optional-statistics gaps. emitGenIG/emitSavIG retain architecture/statistics paths, genCreateTempLabel retains Unix x86, and genGetRegMask retains ARM floating support. No new default Windows emission gap was established; the earlier blanket claim is withdrawn. Complete bodies are not retained merely because unfinished native callers reference them. Notify the user when the full cleanup is done.",
-      "verification": "Latest collected native cleanup is6d6a31dcdd7. Report87 retires16lines of complete MEASURE_FATAL counter declarations after5c9a10c. Native error.cpp was already absent and supplies no new retirement or parity evidence. Mixed shutdown/statistics dispatchers remain. Native index/worktree and oracle tracked source/index were clean at the reported boundary.",
-      "targetLedger": "Collected report87 covers298 overlapping records:279 implemented,2 partial,1 unported,14 unknown and2 not-applicable, not unique functions or a compiler-completion percentage. B445 is consumed through5c9a10c; sharedDiagnosticCounters is newer and awaits consumption. D009, R005 and B392 remain separate known optional gaps. Unknown file-only umbrellas retain explicit coverage boundaries from report80; other disabled statistics switches are not implied complete.",
+      "verification": "Latest collected native cleanup isc58f7c723d8. Report88 retires108lines of complete Counter/NodeCounts types, definitions and orphaned includes afterb4e735b. Mixed consumers remain. Native index/worktree and oracle tracked source/index were clean at the reported boundary. Retirement adds no parity evidence.",
+      "targetLedger": "Collected report88 covers301 overlapping records:281 implemented,2 partial,2 unported,14 unknown and2 not-applicable, not unique functions or a compiler-completion percentage. Shared counters are consumed throughb4e735b; emittedSizeStatistics is newer and awaits consumption. D009, R005, B392 and B446 remain separately bounded optional gaps. Unknown file-only umbrellas retain explicit coverage boundaries from report80; other disabled statistics switches are not implied complete.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
       "policy": "Retire only reviewed complete implementations. Retain or explicitly identify unfinished shared/Windows paths and other-platform-only paths. Preserve the oracle and existing index distinctions; do not infer parity or percentages from deletion counts."
     },
@@ -828,7 +836,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Complete retained shared Counter/NodeCounts types using Dumpable, atomic32 node counts, native unsigned descending/opcode tie sorting and native opcode labels. Reuse the existing histogram capture and enabled statistics controls; validate Debug/Release and default builds before committing. This closes shared diagnostic support, not the deferred native/managed allocation-size accounting required by COUNT_AST_OPERS and MEASURE_NODE_SIZE.",
+      "parentScope": "Complete DISPLAY_SIZES emitted IL/code/GC size counters and native-order shutdown output. Preserve host-sized arithmetic, native unsigned32 printf truncation, GC interruptibility counters and existing output-publication recording. Validate enabled Debug/Release reports and actual managed metadata publication, then default controls before committing. Keep JIT32 GC header/map recording and DOUBLE_ALIGN within their existing unsupported target boundaries; do not fabricate managed object sizes or repair B446's stale upstream collector.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1230,7 +1238,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Send committed sharedDiagnosticCounters to worker4b57b744 for complete-type retirement. Continue DISPLAY_SIZES emitted-code statistics: trace compiler.cpp startup/shutdown, codegencommon.cpp2716-2718 recording and GC-encoder counters against the existing managed output-size fields, then implement and validate the whole supported mode. These are emitted IL/code/GC sizes, not managed object-size estimates. Retain native JIT32-only accounting limits. B446's stale CALL_ARG_STATS collector and COUNT_AST_OPERS/MEASURE_NODE_SIZE allocation accounting remain separate; do not fabricate native sizes or silently repair upstream algorithms. B392, B153/D009 and ARM64 foreground expansion remain deferred.",
+    "nextAction": "Send committed emittedSizeStatistics/B447 to worker4b57b744 for scoped retirement. Resolve the compiler-driver unknown boundary using existing committed phase reviews and mappings, starting with compCompileHelper/compCompileAfterInit and their remaining default Windows-x64 dispatch paths. Identify a concrete missing default-path symbol before opening another implementation batch; distinguish disabled statistics and other-target retention rather than treating either as default Windows work. Do not restart synchronization or broad shared-state audits. B446, native allocation-size accounting, B392, B153/D009 and ARM64 foreground expansion remain deferred.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
@@ -9791,6 +9799,13 @@
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.lva.cs"],
       "reconciledCommit": null,
       "scope": "lvaGrabTemps descriptor initialization; B251."
+    },
+    {
+      "area": "emitted-size-statistics",
+      "native": ["src\\coreclr\\jit\\compiler.cpp", "src\\coreclr\\jit\\codegencommon.cpp", "src\\coreclr\\jit\\gcencode.cpp", "src\\coreclr\\jit\\emit.h"],
+      "csharp": ["sources\\Core\\jit\\compiler\\Compiler.Shutdown.cs", "sources\\Core\\jit\\compiler\\Compiler.CompilationFinish.cs", "sources\\Core\\jit\\codegencommon\\Globals.CodeSizeStatistics.cs", "sources\\Core\\jit\\codegencommon\\CodeGen.MetadataPhase.cs", "sources\\Core\\jit\\gcencode\\GCInfo.HeaderEncoding.cs", "sources\\Core\\jit\\emit\\Emitter.ConstantData.cs"],
+      "reconciledCommit": null,
+      "scope": "Complete supported Windows-x64 DISPLAY_SIZES mode, not mixed compiler dispatcher or other-target GC-encoder completion. See checkpoint.emittedSizeStatistics and B447."
     },
     {
       "area": "shared-diagnostic-counters",

@@ -15,6 +15,7 @@ internal static unsafe class EmitterConstantDataTests
     {
         WithEmitter((_, emitter) =>
         {
+            Assert.That(emitter.emitDataSize(), Is.Zero);
             byte[] input = [1, 2, 3, 4];
             Assert.That(emitter.emitDataConst(input, 1, TYP_INT), Is.Zero);
             input[0] = 9;
@@ -35,6 +36,7 @@ internal static unsafe class EmitterConstantDataTests
             Assert.That(emitter.emitConsDsc.dsdLast, Is.SameAs(third));
             Assert.That(third.dsNext, Is.Null);
             Assert.That(emitter.emitConsDsc.dsdOffs, Is.EqualTo(28));
+            Assert.That(emitter.emitDataSize(), Is.EqualTo(28));
 #if DEBUG
             Assert.That(emitter.emitDataSecCur, Is.Null);
 #else

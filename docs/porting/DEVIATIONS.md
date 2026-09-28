@@ -31,6 +31,10 @@ column reads the same root-thread delta at its own reporting point; native uses
 arena allocation rather than arena usage for that column. B352's twelve checked compilations compare all
 71 neighboring metric lines exactly while recording both allocation values.
 
+Optional `DISPLAY_SIZES` totals measure emitted IL, code/data and GC payloads,
+not managed compiler allocations. They retain native arithmetic and diagnostic
+formatting and are not covered by the allocation-statistics exclusion.
+
 Expression cloning constructs simple nodes and hardware intrinsics before their
 operand clones, preserving native logical IDs despite managed allocation.
 Array-element, compare-exchange and select nodes retain their distinct native

@@ -13,6 +13,8 @@ public partial class Compiler
 {
 #if DEBUG || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || DISPLAY_SIZES || CALL_ARG_STATS
     internal static uint genMethodCnt;
+    internal static uint genMethodICnt;
+    internal static uint genMethodNCnt;
 #endif
 
 #if DEBUG

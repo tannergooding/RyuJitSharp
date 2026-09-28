@@ -11,5 +11,9 @@ public static partial class Globals
     public static nuint grossVMsize;
     public static nuint grossNCsize;
     public static nuint totalNCsize;
+    public static nuint gcHeaderISize;
+    public static nuint gcPtrMapISize;
+    public static nuint gcHeaderNSize;
+    public static nuint gcPtrMapNSize;
 }
 #endif

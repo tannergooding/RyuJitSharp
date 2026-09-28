@@ -18,6 +18,37 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class GcInfoTableEncodingTests
 {
+#if DISPLAY_SIZES
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void HeaderRecordsInterruptibilityWithUnsignedWrap(bool interruptible)
+    {
+        var counts = (Compiler.genMethodICnt, Compiler.genMethodNCnt);
+        try
+        {
+            Compiler.genMethodICnt = interruptible ? uint.MaxValue : 7;
+            Compiler.genMethodNCnt = interruptible ? 7 : uint.MaxValue;
+            CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
+            {
+                compiler.lvaOutgoingArgSpaceSize.Value = 32;
+                codeGen.Interruptible = interruptible;
+                ICorJitInfo jitInfo = default;
+                CORINFO_METHOD_INFO method = default;
+                using var encoder = new GcInfoEncoder(&jitInfo, &method);
+
+                codeGen.GCInfo.gcInfoBlockHdrSave(encoder, 20, 2);
+
+                Assert.That(Compiler.genMethodICnt, Is.EqualTo(interruptible ? 0U : 7U));
+                Assert.That(Compiler.genMethodNCnt, Is.EqualTo(interruptible ? 7U : 0U));
+            }, minopts: false);
+        }
+        finally
+        {
+            (Compiler.genMethodICnt, Compiler.genMethodNCnt) = counts;
+        }
+    }
+#endif
+
     [Test]
     public static void HeaderPublishesCodeLengthFrameVarargsAndOutgoingArea()
     {

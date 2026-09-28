@@ -10,6 +10,11 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    public uint emitDataSize()
+    {
+        return emitConsDsc.dsdOffs;
+    }
+
     public uint emitDataGenBeg(uint size, uint alignment, var_types dataType)
     {
         assert(emitDataSecCur is null);

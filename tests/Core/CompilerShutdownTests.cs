@@ -16,6 +16,107 @@ internal static unsafe class CompilerShutdownTests
 {
     private static readonly string[] s_csvConfigurations = ["", "first.csv", "second.csv"];
 
+#if DISPLAY_SIZES
+    [TestCase(100UL, 200UL, 280UL, 200U, 280U, 80U, 40U)]
+    [TestCase(0x100000064UL, 0x1000000C8UL, 0x100000118UL, 100U, 100U, 0U, 0U)]
+    [TestCase(1UL, 0x8000000000000000UL, 0x8000000000000000UL, 0U, 0U, 0U, 0U)]
+    public static void CodeSizeReportPreservesNativeWidthsAndPercentageArithmetic(
+        ulong ilSize, ulong codeSize, ulong totalSize, uint codePercent, uint totalPercent, uint gcIlPercent, uint gcCodePercent)
+    {
+        WithState(() => {
+            grossVMsize = (nuint)ilSize;
+            grossNCsize = (nuint)codeSize;
+            totalNCsize = (nuint)totalSize;
+            var output = CaptureSizeReport();
+            var expected =
+                "\n--------------------------------------\n" +
+                "Function and GC info size stats\n" +
+                "--------------------------------------\n" +
+                $"[{unchecked((uint)ilSize),7} VM, {unchecked((uint)codeSize),8} {Target.TgtCpuName,6} {codePercent,4}%] Total (excluding GC info)\n" +
+                $"[{unchecked((uint)ilSize),7} VM, {unchecked((uint)totalSize),8} {Target.TgtCpuName,6} {totalPercent,4}%] Total (including GC info)\n" +
+                $"\nGC tables   take up {unchecked((uint)(totalSize - codeSize))} bytes " +
+                $"({gcIlPercent}% of instr, {gcCodePercent}% of {Target.TgtCpuName,6} code).\n";
+
+            Assert.That(output, Does.Contain(expected));
+            Assert.That(output, Does.Contain("\nA total of      1 methods compiled.\n"));
+        });
+    }
+
+    [TestCase(0U, 100U)]
+    [TestCase(100U, 0U)]
+    public static void CodeSizeReportRequiresBothInputAndOutput(uint ilSize, uint codeSize)
+    {
+        WithState(() => {
+            grossVMsize = ilSize;
+            grossNCsize = codeSize;
+            var output = CaptureSizeReport();
+
+            Assert.That(output, Does.Not.Contain("Function and GC info size stats"));
+            Assert.That(output, Does.Contain("\nA total of      1 methods compiled.\n"));
+        });
+    }
+
+    [Test]
+    public static void CodeSizeReportPreservesHeaderMapBreakdownAndMethodCounts()
+    {
+        WithState(() => {
+            grossVMsize = 100;
+            grossNCsize = 200;
+            totalNCsize = 280;
+            gcHeaderISize = 40;
+            gcHeaderNSize = 20;
+            gcPtrMapISize = 12;
+            gcPtrMapNSize = 8;
+            Compiler.genMethodCnt = 4;
+            Compiler.genMethodICnt = 3;
+            Compiler.genMethodNCnt = 1;
+            var output = CaptureSizeReport();
+
+            Assert.That(output, Does.Contain(
+                $"\nGC tables   : [     52I,     28N]      80 byt  (80% of IL, 40% of {Target.TgtCpuName}).\n" +
+                "GC headers  : [     40I,     20N]      60 byt, [13.3I,20.0N] 15.0 byt/meth\n" +
+                "GC ptr maps : [     12I,      8N]      20 byt, [ 4.0I, 8.0N]  5.0 byt/meth\n"));
+            Assert.That(output, Does.Contain("\nA total of      4 methods compiled (3 interruptible, 1 non-interruptible).\n"));
+        });
+    }
+
+    [Test]
+    public static void CodeSizeStartupResetsOnlyNativeCodeTotals()
+    {
+        WithState(() => {
+            grossVMsize = grossNCsize = totalNCsize = 17;
+            gcHeaderISize = gcHeaderNSize = gcPtrMapISize = gcPtrMapNSize = 19;
+            Compiler.genMethodICnt = Compiler.genMethodNCnt = 23;
+
+            Compiler.compStartup();
+
+            Assert.That((grossVMsize, grossNCsize, totalNCsize), Is.EqualTo(((nuint)0, (nuint)0, (nuint)0)));
+            Assert.That((gcHeaderISize, gcHeaderNSize, gcPtrMapISize, gcPtrMapNSize),
+                Is.EqualTo(((nuint)19, (nuint)19, (nuint)19, (nuint)19)));
+            Assert.That((Compiler.genMethodICnt, Compiler.genMethodNCnt), Is.EqualTo((23U, 23U)));
+        });
+    }
+
+    private static string CaptureSizeReport()
+    {
+        using var output = new MemoryStream();
+        using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
+        var previous = s_jitstdout;
+        try
+        {
+            s_jitstdout = writer;
+            Compiler.compShutdown();
+            writer.Flush();
+        }
+        finally
+        {
+            s_jitstdout = previous;
+        }
+
+        return Encoding.UTF8.GetString(output.ToArray());
+    }
+#endif
+
 #if MEASURE_FATAL
     [Test]
     public static void FatalCountersPreserveResultsAndReportNativeLabels()
@@ -382,13 +483,21 @@ internal static unsafe class CompilerShutdownTests
         var summary = CompTimeSummaryInfo.s_compTimeSummary;
         var alt = AltAssemblies(null);
         var altInitialized = AltInitialized(null);
+#if DEBUG || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || DISPLAY_SIZES || CALL_ARG_STATS
+        var methodCount = Compiler.genMethodCnt;
+        Compiler.genMethodCnt = 1;
+#endif
+#if DISPLAY_SIZES
+        var sizeStatistics = (grossVMsize, grossNCsize, totalNCsize, gcHeaderISize, gcHeaderNSize,
+            gcPtrMapISize, gcPtrMapNSize, Compiler.genMethodICnt, Compiler.genMethodNCnt);
+        grossVMsize = grossNCsize = totalNCsize = gcHeaderISize = gcHeaderNSize = gcPtrMapISize = gcPtrMapNSize = 0;
+        Compiler.genMethodICnt = Compiler.genMethodNCnt = 0;
+#endif
 #if DEBUG
         var dump = DumpAssemblies(null);
         var dumpInitialized = DumpInitialized(null);
-        var methodCount = Compiler.genMethodCnt;
         var xmlHeader = XmlHeader(null);
         var enreg = Compiler.s_enregisterStats;
-        Compiler.genMethodCnt = 1;
         XmlHeader(null) = false;
         Compiler.s_enregisterStats = default;
 #endif
@@ -409,10 +518,16 @@ internal static unsafe class CompilerShutdownTests
             CompTimeSummaryInfo.s_compTimeSummary = summary;
             AltAssemblies(null) = alt;
             AltInitialized(null) = altInitialized;
+#if DEBUG || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || DISPLAY_SIZES || CALL_ARG_STATS
+            Compiler.genMethodCnt = methodCount;
+#endif
+#if DISPLAY_SIZES
+            (grossVMsize, grossNCsize, totalNCsize, gcHeaderISize, gcHeaderNSize,
+                gcPtrMapISize, gcPtrMapNSize, Compiler.genMethodICnt, Compiler.genMethodNCnt) = sizeStatistics;
+#endif
 #if DEBUG
             DumpAssemblies(null) = dump;
             DumpInitialized(null) = dumpInitialized;
-            Compiler.genMethodCnt = methodCount;
             XmlHeader(null) = xmlHeader;
             Compiler.s_enregisterStats = enreg;
 #endif

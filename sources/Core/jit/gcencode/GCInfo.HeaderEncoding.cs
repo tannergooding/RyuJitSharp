@@ -89,6 +89,16 @@ public partial struct GCInfo
         }
 
         encoder.SetSizeOfStackOutgoingAndScratchArea(unchecked((uint)compiler.lvaOutgoingArgSpaceSize.Value));
+#if DISPLAY_SIZES
+        if (_codeGen.Interruptible)
+        {
+            Compiler.genMethodICnt = unchecked(Compiler.genMethodICnt + 1);
+        }
+        else
+        {
+            Compiler.genMethodNCnt = unchecked(Compiler.genMethodNCnt + 1);
+        }
+#endif
 #endif
     }
 }
