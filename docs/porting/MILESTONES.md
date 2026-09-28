@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: First matching operand edges
+
+Operand lookup now returns the first matching writable slot in PHI, field-list,
+array-index, hardware and call argument containers. It preserves native control
+expression precedence, per-argument early/late ordering and hardware storage
+order even when execution order is reversed.
+
+Nine cases fail before correction; 119 Debug and 119 Release use-edge/LIR cases
+pass afterward. Native LIR validation rejects multiply-used value nodes, so this
+closes B452's generic lookup contract without claiming a valid Windows LIR
+miscompilation or new execution parity.
+
 ## 2026-09-28: Array initializer numeric and field-token contracts
 
 Array initialization now preserves native unsigned32 element and byte counts,

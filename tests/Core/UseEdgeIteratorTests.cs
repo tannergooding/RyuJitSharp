@@ -607,6 +607,133 @@ internal static unsafe class UseEdgeIteratorTests
         });
     }
 
+    [TestCase("phi", false)]
+    [TestCase("phi", true)]
+    [TestCase("fields", false)]
+    [TestCase("fields", true)]
+    [TestCase("array", false)]
+    [TestCase("array", true)]
+    [TestCase("intrinsic", false)]
+    [TestCase("intrinsic", true)]
+    [TestCase("reverse-intrinsic", false)]
+    [TestCase("reverse-intrinsic", true)]
+    public static void UseLookupReturnsTheFirstMatchingOperandSlot(string shape, bool repeated)
+    {
+        WithCompiler(compiler => {
+            GenTree first = compiler.gtNewIconNode(TYP_INT, 1);
+            var second = repeated ? first : compiler.gtNewIconNode(TYP_INT, 2);
+            GenTree replacement = compiler.gtNewIconNode(TYP_INT, 3);
+            GenTree tree;
+            Func<(GenTree First, GenTree Second)> getOperands;
+
+            switch (shape)
+            {
+                case "phi":
+                {
+                    var predecessor = new BasicBlock(null, null);
+                    first = new GenTreePhiArg(TYP_INT, 0, 1, predecessor);
+                    second = repeated ? first : new GenTreePhiArg(TYP_INT, 0, 2, predecessor);
+                    replacement = new GenTreePhiArg(TYP_INT, 0, 3, predecessor);
+                    var secondUse = new GenTreePhi.Use(second);
+                    var firstUse = new GenTreePhi.Use(first, secondUse);
+                    tree = new GenTreePhi(TYP_INT) { FirstUse = firstUse };
+                    getOperands = () => (firstUse.Node, secondUse.Node);
+                    break;
+                }
+
+                case "fields":
+                {
+                    var fields = new GenTreeFieldList();
+                    fields.AddField(compiler, first, 0, TYP_INT);
+                    fields.AddField(compiler, second, 4, TYP_INT);
+                    tree = fields;
+                    var firstUse = fields.Uses.Head ?? throw new InvalidOperationException("Missing first field.");
+                    var secondUse = firstUse.Next ?? throw new InvalidOperationException("Missing second field.");
+                    getOperands = () => (firstUse.Node, secondUse.Node);
+                    break;
+                }
+
+                case "array":
+                {
+                    var array = new GenTreeArrElem(TYP_BYREF, compiler.gtNewIconNode(TYP_REF, 0), 4, [first, second]);
+                    tree = array;
+                    getOperands = () => (array.ArrInds[0], array.ArrInds[1]);
+                    break;
+                }
+
+                case "intrinsic":
+                case "reverse-intrinsic":
+                {
+                    var intrinsic = new GenTreeHWIntrinsic(TYP_SIMD16, NamedIntrinsic.NI_Vector_Create, TYP_INT, 16, [first, second]) {
+                        IsReverseOp = shape == "reverse-intrinsic",
+                    };
+                    tree = intrinsic;
+                    getOperands = () => (intrinsic.Operands[0], intrinsic.Operands[1]);
+                    break;
+                }
+
+                default:
+                {
+                    throw new ArgumentOutOfRangeException(nameof(shape));
+                }
+            }
+
+            ref var edge = ref tree.GetUseRefOrNullRef(first);
+            Assert.That(Unsafe.IsNullRef(in edge), Is.False);
+            edge = replacement;
+            var operands = getOperands();
+            Assert.That(operands.First, Is.SameAs(replacement));
+            Assert.That(operands.Second, Is.SameAs(second));
+
+            if (!repeated)
+            {
+                ref var secondEdge = ref tree.GetUseRefOrNullRef(second);
+                Assert.That(Unsafe.IsNullRef(in secondEdge), Is.False);
+                secondEdge = first;
+                operands = getOperands();
+                Assert.That(operands.First, Is.SameAs(replacement));
+                Assert.That(operands.Second, Is.SameAs(first));
+            }
+
+            var missing = compiler.gtNewIconNode(TYP_INT, 4);
+            Assert.That(Unsafe.IsNullRef(in tree.GetUseRefOrNullRef(missing)), Is.True);
+            Assert.That(Unsafe.IsNullRef(in missing.GetUseRefOrNullRef(missing)), Is.True);
+        });
+    }
+
+    [TestCase(false, false, false)]
+    [TestCase(false, true, false)]
+    [TestCase(true, false, false)]
+    [TestCase(true, true, false)]
+    [TestCase(false, false, true)]
+    [TestCase(true, true, true)]
+    public static void CallUseLookupPreservesControlAndArgumentSlotPrecedence(bool firstLate, bool secondLate, bool control)
+    {
+        WithCompiler(compiler => {
+            var value = compiler.gtNewIconNode(TYP_INT, 1);
+            var replacement = compiler.gtNewIconNode(TYP_INT, 2);
+            var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            var first = call.Args.PushBack(NewCallArg.CreateForPrimitive(value));
+            var second = call.Args.PushBack(NewCallArg.CreateForPrimitive(value));
+            first.LateNode = value;
+            first.EarlyNode = firstLate ? null : value;
+            second.LateNode = secondLate ? value : null;
+            second.EarlyNode = secondLate ? null : value;
+            call.ControlExpr = control ? value : null;
+            ref var expected = ref (control ? ref call.ControlExprRef : ref (firstLate ? ref first.LateNodeRef : ref first.EarlyNodeRef));
+
+            ref var edge = ref call.GetUseRefOrNullRef(value);
+            Assert.That(Unsafe.AreSame(in edge, in expected), Is.True);
+            edge = replacement;
+            Assert.That(expected, Is.SameAs(replacement));
+            Assert.That(second.Node, Is.SameAs(value));
+            Assert.That(first.LateNode, Is.SameAs(!control && firstLate ? replacement : value));
+            Assert.That(first.EarlyNode, Is.SameAs(firstLate ? null : control ? value : replacement));
+            var missing = compiler.gtNewIconNode(TYP_INT, 3);
+            Assert.That(Unsafe.IsNullRef(in call.GetUseRefOrNullRef(missing)), Is.True);
+        });
+    }
+
     [Test]
     public static void RestoredLirUtilitiesFindUsesAndValidateLinks()
     {

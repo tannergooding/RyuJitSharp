@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "firstUseEdgeLookup": {
+      "scope": "B452: complete native first-match operand-slot selection in GenTree.GetUseRefOrNullRef.",
+      "mapping": "Pinned gentree.cpp8390-8568 TryGetUse -> GenTree.GetUseRefOrNullRef; LIR.Range.TryGetUse retains the returned reference. Specialized MultiOp use edges ignore reverse-execution flags, matching gentree.h6371-6376.",
+      "contract": "Stop on the first matching PHI, field-list, array-index, hardware or call argument slot. Preserve control-expression precedence and early-before-late ordering within each call argument, distinct from execution-order enumeration.",
+      "validation": "Nine regression failures and seven passing controls before correction. Full-analysis UseEdgeIteratorTests/LirUseTests/LirRangeEnumerationTests/LirBlockSplittingTests pass119 Debug/119 Release, including all16 new operand-slot cases and actual reference replacement.",
+      "lirBoundary": "Pinned lir.h documents single-use values; lir.cpp1649-1678 CheckLIR rejects multiply-used value nodes. The repeated-operand tests establish the generic helper contract, not reachability in valid Windows LIR or a demonstrated generated-code defect.",
+      "evidence": "artifacts/first-use-edges/evidence.json and first-use-before/final TRX preserve the regression matrix and scoped review.",
+      "limits": "No new primary execution or full LIR/dump/code parity. The retained native query declaration can now be reconciled against this completed lookup review."
+    },
     "arrayInitializationContracts": {
       "scope": "B450 unsigned checked InitializeArray counts and B451 indirect field-token recognition in both InitializeArray and CreateSpan.",
       "mapping": "Pinned importercalls.cpp impInitializeArrayIntrinsic/impCreateSpanIntrinsic and inc/safemath.h -> Compiler.imp.cs, reusing CheckedOps.TryMulUns and unsigned block layouts.",
@@ -798,8 +807,8 @@
         "Raw target-block getters have no pinned callsites and remain unused support. emitCodeGetCookie remains because its managed helper is only declared under TARGET_AMD64."
       ],
       "remaining": "Continue the full already-completed-code cleanup, distinguishing unreconciled areas from genuine target/CFI/optional-statistics gaps. emitGenIG/emitSavIG retain architecture/statistics paths, genCreateTempLabel retains Unix x86, and genGetRegMask retains ARM floating support. No new default Windows emission gap was established; the earlier blanket claim is withdrawn. Complete bodies are not retained merely because unfinished native callers reference them. Notify the user when the full cleanup is done.",
-      "verification": "Latest physical cleanup remainsb65c2dcf776. Reports89/92/93 retire55/18/28lines of emitted-size, throw-helper query and tree-constructor support. Reports94-99 consume committed deltas and refine named Windows family coverage without empty commits. Report99 retains the orphan LIR.TryGetUse declaration for B452's unresolved first/last-edge contract. Native and pinned-oracle tracked source/index were clean at the collected boundaries. Retirement adds no parity evidence.",
-      "targetLedger": "Through report99,307 overlapping reviews:290 implemented,2 partial,2 unported,11 unknown,2 not-applicable; cursor5af2bae. Named Windows block/EH, async-transformation and VN tree-constant families are covered. Active LIR/rationalization reviews remain valid, but B452 reopens whole-query equivalence. Named production review boundaries include scalar/HWI morph drivers, non-HWI folding, argument materialization and call/tail-call morphing; managed counterparts are not demonstrated failures merely for lacking whole-function review. D009, R005, B392 and B446 remain separate optional gaps. Counts are not unique functions or compiler-completion percentages.",
+      "verification": "Latest physical cleanup remainsb65c2dcf776. Reports89/92/93 retire55/18/28lines of emitted-size, throw-helper query and tree-constructor support. Reports94-101 consume committed deltas and refine named Windows family coverage without empty commits. Report99 retained the orphan LIR.TryGetUse declaration; firstUseEdgeLookup now resolves B452 for subsequent reconciliation. Native and pinned-oracle tracked source/index were clean at the collected boundaries. Retirement adds no parity evidence.",
+      "targetLedger": "Collected through report101, cursor a5c289a. Report100 consolidates reviewed trees/locals and block-initialization families under D001/D002 without promoting unreviewed definitions. Report101 consumes scoped B450/B451 initializer contracts separately from whole importers. Named production review boundaries include scalar/HWI morph drivers, non-HWI folding, argument materialization and call/tail-call morphing; managed counterparts are not demonstrated failures merely for lacking whole-function review. D009, R005, B392 and B446 remain separate optional gaps. The local ledger counts overlapping review records, not unique functions or compiler-completion percentages.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
       "policy": "Retire only reviewed complete implementations. Retain or explicitly identify unfinished shared/Windows paths and other-platform-only paths. Preserve the oracle and existing index distinctions; do not infer parity or percentages from deletion counts."
     },
@@ -866,7 +875,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Close B452's concrete use-edge selection discrepancy in GenTree.GetUseRefOrNullRef/LIR.TryGetUse, preserving native first-match behavior across repeated-operand containers. Distinguish the generic query contract from whether a valid Windows LIR graph reaches duplicates. Reuse existing use-edge/LIR tests; native worker independently consolidates trees/locals and block-initialization family coverage.",
+      "parentScope": "Continue official Windows-x64 primary execution with the Arrays/lcs standalone projects after the completed array-range/misc slices. Identify separately merged C# cases explicitly rather than treating standalone project enumeration as complete family coverage. Native worker independently consolidates simple-operator morph and non-HWI folding review boundaries; B452 first-edge lookup is validated.",
       "parallelPackets": [
         {
           "scope": "Complete native async state-machine transformation, including all Windows-x64 normal/tail-await and continuation paths.",
@@ -1268,7 +1277,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "B450/B451 pass170Debug/167Release,13 native safemath boundaries and four matching official primary InitializeArray cases. Commit the validated batch, then resolve B452 from native report99: GenTree.GetUseRefOrNullRef2097-2251 returns the last matching edge in several operand containers, whereas pinned gentree.cpp8390-8568 returns the first; LIR.Range.TryGetUse634-661 exposes that reference. Add first-edge replacement regressions covering affected containers, preserve native traversal/early exit and inspect the valid-LIR uniqueness invariant without broadening into a whole LIR audit. Reports97-99 are collected/consolidated. Worker owns trees-and-locals/block-initialization family classification, excluding these use queries.",
+    "nextAction": "B450/B451 are committed in a5c289a. B452 now passes119 Debug/119 Release with nine pre-fix failures/seven controls; native CheckLIR rejects the duplicate-value graphs, so no valid-Windows-LIR codegen defect is claimed. Commit the use-edge batch and send its delta to the retirement worker for the orphan declaration. Then build the pinned JIT/Methodical/Arrays/lcs standalone IL projects, capture both primary JITs using a fresh committed managed source publication, and compare positive entry compilations, exits and output. Inspect the separate merged C# cases before claiming broader lcs coverage. Reports100/101 are collected; worker owns simple-operator morph/non-HWI folding coverage.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
@@ -9500,6 +9509,13 @@
       "native": ["src\\coreclr\\jit\\compiler.cpp", "src\\coreclr\\jit\\compiler.h", "src\\coreclr\\jit\\compiler.hpp"],
       "csharp": ["sources\\Core\\jit\\compiler\\Compiler.cs", "sources\\Core\\jit\\compiler\\Compiler.comp.cs"],
       "reconciledCommit": null
+    },
+    {
+      "area": "first-matching-operand-edge",
+      "native": ["src\\coreclr\\jit\\gentree.cpp", "src\\coreclr\\jit\\gentree.h", "src\\coreclr\\jit\\lir.cpp"],
+      "csharp": ["sources\\Core\\jit\\gentree\\GenTree.cs", "sources\\Core\\jit\\lir\\LIR.Range.cs"],
+      "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+      "scope": "Complete GenTree::TryGetUse/GetUseRefOrNullRef operand matching and unchanged Range.TryGetUse forwarding. B452 first-slot correction has nine pre-fix failures/seven controls and119 Debug/119 Release use-edge/LIR cases. Duplicate value operands are excluded by native CheckLIR; this is generic lookup equivalence, not demonstrated Windows generated-code impact or whole LIR parity."
     },
     {
       "area": "array-initialization-dimension-traversal",

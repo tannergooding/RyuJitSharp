@@ -2090,7 +2090,7 @@ public partial class GenTree
         return REG_NA;
     }
 
-    /// <summary>Get the use edge for an operand of this tree.</summary>
+    /// <summary>Get the first matching use edge for an operand of this tree.</summary>
     /// <param name="def">the node to find the use for</param>
     /// <returns>On success, the use edge for <paramref name="def" />, in which case it can be used to replace <paramref name="def" /> with another node; otherwise a <c>null</c> reference.</returns>
 #nullable disable
@@ -2112,6 +2112,7 @@ public partial class GenTree
                             if (def == phiUse.Node)
                             {
                                 use = ref phiUse.NodeRef;
+                                break;
                             }
                         }
                         break;
@@ -2168,6 +2169,7 @@ public partial class GenTree
                             if (def == multiOpUse)
                             {
                                 use = ref multiOpUse;
+                                break;
                             }
                         }
                         break;
@@ -2191,6 +2193,7 @@ public partial class GenTree
                                 if (def == arrInd)
                                 {
                                     use = ref arrInd;
+                                    break;
                                 }
                             }
                         }
@@ -2212,10 +2215,12 @@ public partial class GenTree
                                 if (def == arg.EarlyNode)
                                 {
                                     use = ref arg.EarlyNodeRef;
+                                    break;
                                 }
                                 else if (def == arg.LateNode)
                                 {
                                     use = ref arg.LateNodeRef;
+                                    break;
                                 }
                             }
                         }
@@ -2229,6 +2234,7 @@ public partial class GenTree
                             if (def == fieldListUse.Node)
                             {
                                 use = ref fieldListUse.NodeRef;
+                                break;
                             }
                         }
                         break;
