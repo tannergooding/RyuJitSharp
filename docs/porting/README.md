@@ -36,12 +36,37 @@ boundaries rather than repeating function-by-function parity review. Retain
 mixed-target bodies with unfinished paths and identify the remaining targets.
 Retirement is work tracking, not a new parity result.
 
-Keep one local `Remove ported code` commit on top of the native source pin and
-amend it as further source areas are retired. Leave in-progress edits unstaged;
-review the area delta before staging and amending. This amendment policy applies
-only to the native cleanup commit, not C# history or the oracle. Existing recovery
-refs remain available, but routine retirement does not need new snapshots or a
-separate documentation cycle for each helper.
+Track Windows-x64 implementation status separately from whole-function retirement
+eligibility. A mixed function retained only for unfinished x86 or ARM paths is not
+Windows-x64 implementation work. Conversely, a removed native definition is not
+proof that its managed implementation is complete.
+
+Drive reconciliation from committed port reviews, mappings, explicit NYIs and
+C# commit deltas, not repeated file-by-file semantic audits. Keep a durable local
+ledger of bounded source areas or function families with native/managed mappings,
+evidence revisions, Windows-x64 status (`implemented`, `partial`, `unported`,
+`unknown` or `not-applicable`), concrete missing behavior, other-target blockers,
+and a separate retirement disposition. `implemented` describes the reviewed
+implementation scope, not exhaustive execution parity. Group definitions when
+the same existing review covers them; do not manufacture per-function reviews
+for an already reviewed area.
+
+Seed the ledger from existing receipts and reviews, then consume C# changes from
+a recorded commit cursor. Revisit classified areas only when relevant source,
+evidence or target conditions change. Prioritize unknown Windows/shared areas
+and actionable Windows gaps; carry known other-target-only blockers forward.
+Use bounded inspection for ambiguous evidence and retain `unknown` when it does
+not settle the question. Report the inventory scope, coverage and counting unit;
+do not turn classified-family counts or remaining native lines into a percentage
+of the compiler completed.
+
+Publish a consolidated baseline and incremental gap reports without waiting for
+all native deletions or whole-target classifications. Batch safe deletions across
+completed source families, validating exact spans and preserved unfinished paths.
+Use ordinary native-only commits for new batches; do not amend existing history
+without explicit authorization. Preserve unrelated staged/unstaged work. Existing
+recovery refs remain available, but routine retirement does not need new snapshots,
+runtime reruns or a separate documentation cycle for each helper.
 
 Before moving either baseline, preserve native and C# WIP, including untracked
 files and index state. Record immutable snapshot IDs and protect them with local
