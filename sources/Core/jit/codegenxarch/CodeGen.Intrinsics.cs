@@ -10,9 +10,6 @@ public sealed partial class CodeGen
 {
     public void genCkfinite(GenTree tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Finite-check generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper == GT_CKFINITE);
         var operand = tree.AsUnOp().Op1;
@@ -24,6 +21,7 @@ public sealed partial class CodeGen
         _ = genConsumeReg(operand);
 
         var sourceReg = operand.RegNum;
+#if TARGET_AMD64
         var targetIntType = targetType == TYP_FLOAT ? TYP_INT : TYP_LONG;
         inst_Mov(targetIntType, tempReg, sourceReg, canSkip: false, targetType.EmitActualSize);
         if (targetType == TYP_DOUBLE)
@@ -35,16 +33,43 @@ public sealed partial class CodeGen
         inst_RV_IV(INS_cmp, tempReg, expMask, EA_4BYTE);
         genJumpToThrowHlpBlk(EJ_je, SCK_ARITH_EXCPN);
         inst_Mov(targetType, targetReg, operand.RegNum, canSkip: true);
+#else
+        // On x86, shuffle the high half of a double into the low half to extract
+        // its exponent without reserving another SIMD register.
+        regNumber copySourceReg;
+        if (targetType == TYP_DOUBLE)
+        {
+            inst_Mov(targetType, targetReg, sourceReg, canSkip: true);
+            Emitter.emitIns_SIMD_R_R_R_I(INS_shufps, EA_16BYTE, targetReg, targetReg, targetReg,
+                unchecked((sbyte)0xB1), INS_OPTS_NONE);
+            copySourceReg = targetReg;
+        }
+        else
+        {
+            copySourceReg = sourceReg;
+        }
+
+        inst_Mov(TYP_INT, tempReg, copySourceReg, canSkip: false, TYP_FLOAT.EmitActualSize);
+        inst_RV_IV(INS_and, tempReg, expMask, EA_4BYTE);
+        inst_RV_IV(INS_cmp, tempReg, expMask, EA_4BYTE);
+        genJumpToThrowHlpBlk(EJ_je, SCK_ARITH_EXCPN);
+
+        if ((targetType == TYP_DOUBLE) && (targetReg == sourceReg))
+        {
+            Emitter.emitIns_SIMD_R_R_R_I(INS_shufps, EA_16BYTE, targetReg, targetReg, targetReg,
+                unchecked((sbyte)0xB1), INS_OPTS_NONE);
+        }
+        else
+        {
+            inst_Mov(targetType, targetReg, sourceReg, canSkip: true);
+        }
+#endif
 
         genProduceReg(tree);
-#endif
     }
 
     public void genIntrinsicRoundOp(GenTreeOp tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Scalar rounding intrinsic generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper == GT_INTRINSIC);
         var source = tree.Op1;
@@ -93,14 +118,10 @@ public sealed partial class CodeGen
 
         var isRMW = !_compiler.canUseVexEncoding();
         inst_RV_RV_TT_IV(ins, size, targetReg, targetReg, source, immediate, isRMW, INS_OPTS_NONE);
-#endif
     }
 
     public void genIntrinsic(GenTreeIntrinsic tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Intrinsic generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         switch (tree.IntrinsicName)
         {
@@ -155,7 +176,6 @@ public sealed partial class CodeGen
         }
 
         genProduceReg(tree);
-#endif
     }
 }
 #endif

@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch scalar intrinsic closure
+
+Finite checks now include the x86 double-lane shuffle and restoration path;
+floating bitwise, rounding and intrinsic dispatch preserve their complete
+xarch bodies and file-level target boundaries. Four definitions and two
+xarch-only declarations retire 324 native lines in `006835cc`.
+
+Windows controls pass 153 Debug/148 Release. Focused Linux controls pass 42
+cases on both immutable sides; broader runs retain the same 27 independent
+spill/throw-helper failures on their earlier source baseline. X86 retains
+14 existing build errors, so its new cases remain unexecuted.
+Evidence: `artifacts/xarch-scalar-intrinsics-910f48f` and corresponding
+retirement records. No new generated-code parity claim.
+
 ## 2026-09-29: Shared LSRA return and write-barrier builders
 
 Return and write-barrier reference building preserves 32-bit long returns,

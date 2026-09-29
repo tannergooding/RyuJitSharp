@@ -38,9 +38,6 @@ public sealed partial class CodeGen
 
     public unsafe void genIntrinsicBitwiseOp(GenTree tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Floating bitwise intrinsic generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         var targetReg = tree.RegNum;
         var operand = tree.AsUnOp().Op1;
@@ -77,7 +74,6 @@ public sealed partial class CodeGen
         var handle = Emitter.emitBlkConst(bytes, 16, tree.Type);
 #endif
         Emitter.emitIns_SIMD_R_R_C(ins, EA_16BYTE, targetReg, operandReg, handle, 0, INS_OPTS_NONE);
-#endif
     }
 }
 #endif

@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "xarchScalarIntrinsicClosure": {
+      "scope": "Whole genCkfinite, genIntrinsicBitwiseOp, genIntrinsicRoundOp and genIntrinsic preserve x86 double-lane shuffle/restoration and xarch floating bitwise/rounding dispatch. Existing file-level TARGET_XARCH boundaries remain intact.",
+      "validation": "Windows153 Debug/148 Release pass;42 focused Linux cases pass on both immutable sides. Broader Linux runs each retain the same27 separate spill/throw-helper failures. Supported-target selected source is unchanged.",
+      "retirement": "Four definitions and two xarch-only declarations with their headings;324 native lines. Ckfinite/Intrinsic declarations remain for independent other-target definitions.",
+      "nativeBefore": "3240bd59c19784b8329be8cf55fd854f361f3f3d",
+      "nativeAfter": "006835ccf5f3b0b74b90aa5fc92dca1e53b7b1fd",
+      "evidence": "artifacts/xarch-scalar-intrinsics-910f48f; artifacts/residual-reconciliation/xarch-scalar-intrinsics proposed/reanchored-component/combined/applied/verification.",
+      "limits": "X86 retains14 identical existing build errors; new x86 cases did not execute. The broader Linux snapshots precede the separately committed shared spill repair. No x86 execution or generated-code parity claim."
+    },
     "sharedLsraReturnAndWriteBarrier": {
       "scope": "Whole BuildReturn, getKillSetForStoreInd and BuildGCWriteBarrier preserve 32-bit long returns, target return masks, x86 optimized barrier constraints and native Wasm empty masks.",
       "validation": "Windows53 Debug/52 Release and Linux-target23 Debug/23 Release pass; ARM64 source build passes. The corrected single-register struct-return fixture also passes with unchanged a12cc63 production source.",
@@ -1721,7 +1730,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Integrate the ready shared LSRA return/write-barrier and xarch scalar-intrinsic packets, then continue the retained multi-register local-store boundary exposed by15 Linux failures. Shared spill retirement and its xarch-boundary repair are complete; keep13 Wasm WIP frozen and preserve explicit native target boundaries.",
+      "parentScope": "Continue whole retained genMultiRegStoreToLocal and the xarch genMultiRegStoreToSIMDLocal definition exposed by15 Linux failures. Preserve Swift/LoongArch64/RISC-V field offsets,32-bit debug bounds and SIMD packing; retain the independent ARM SIMD helper. Validate focused Windows/Linux controls and exact retirement together, prioritizing ready integration and preserving13 Wasm WIP.",
       "wholeFunctionRepairLanes": [
         {
           "scope": "Whole retained xarch scalar/atomic codegen families.",
@@ -1736,16 +1745,16 @@
           "status": "struct call/return packet accepted; continue retained LowerRet and single-register call storage"
         },
         {
-          "scope": "Whole shared return and adjacent memory/write-barrier builders, including the existing Linux return-fixture discrepancy.",
+          "scope": "Whole retained shared kill-set family after return/write-barrier closure.",
           "owner": "bf8933b0-1d43-49d4-9d3e-91c4322f5215",
           "files": "LSRA partials and focused fixtures.",
-          "status": "three-function return/write-barrier packet accepted; refill after commit"
+          "status": "return/write-barrier packet committed dc98c84; getKillSetForNode/Call/ShiftRotate family active"
         },
         {
-          "scope": "Whole load/store instruction selectors required by parent ARM64 reload controls.",
+          "scope": "Whole retained xarch SIMD/hardware codegen families.",
           "owner": "a9254d85-a0d4-46d4-a852-87eef8c242fb",
           "files": "Instruction and emitter partials with dedicated fixtures; exclude parent register helpers and shared GenTree queries.",
-          "status": "load/store selectors and Wasm preprocessor supplement accepted; refill after shared-register commit"
+          "status": "four-function scalar intrinsic packet accepted; refill after commit; parent owns multi-register SIMD local storage"
         }
       ],
       "parallelPackets": [
@@ -2149,7 +2158,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Shared spills/B467 and shared LSRA return/write-barrier retirement are accepted through native3240bd59; do not reapply. Scalar-intrinsic packet review/evidence verification is complete, but its unapplied manifest still uses c966d60e: reprepare against3240bd59 before retirement and commit. Refill the existing LSRA worker, then continue retained genMultiRegStoreToLocal and its SIMD helper behind15 broader Linux failures. B continues return/storage dispatch and A distinct scalar/control work. Preserve14x86 blockers,13Wasm and no publication.",
+    "nextAction": "Scalar-intrinsic retirement accepted through native006835cc; do not reapply. Refill the existing HW worker with a distinct retained family. Parent next translates whole genMultiRegStoreToLocal (missing Swift/RISC-V/LoongArch offsets and32-bit debug bounds) and xarch genMultiRegStoreToSIMDLocal; preserve the independent ARM helper. Existing15 Linux failures anchor the old control. LSRA kill sets, B return/storage dispatch and A floating-cast/control family remain active. Preserve14x86 blockers,13Wasm and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
