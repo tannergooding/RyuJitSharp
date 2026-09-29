@@ -13,8 +13,8 @@ public partial class Emitter
     public void emitIns_SIMD_R_R_R_A(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op2Reg, GenTreeIndir indir, insOpts instOptions)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
 #else
         RequireSupportedInstructionRecording();
         assert(Is3OpRmwInstruction(ins));
@@ -29,8 +29,8 @@ public partial class Emitter
     public unsafe void emitIns_SIMD_R_R_R_C(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op2Reg, CORINFO_FIELD_HANDLE fldHnd, int offs, insOpts instOptions)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
 #else
         RequireSupportedInstructionRecording();
         assert(Is3OpRmwInstruction(ins));
@@ -45,8 +45,8 @@ public partial class Emitter
     public void emitIns_SIMD_R_R_R_S(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op2Reg, int varx, int offs, insOpts instOptions)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
 #else
         RequireSupportedInstructionRecording();
         assert(Is3OpRmwInstruction(ins));
@@ -61,8 +61,8 @@ public partial class Emitter
     public void emitIns_SIMD_R_R_R_R(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op2Reg, regNumber op3Reg, insOpts instOptions)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
 #else
         RequireSupportedInstructionRecording();
         if (Is3OpRmwInstruction(ins))
@@ -132,8 +132,8 @@ public partial class Emitter
     public void emitIns_SIMD_R_R_A_R(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op3Reg, GenTreeIndir indir, insOpts instOptions)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
 #else
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding())
@@ -184,8 +184,8 @@ public partial class Emitter
     public unsafe void emitIns_SIMD_R_R_C_R(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op3Reg, CORINFO_FIELD_HANDLE fldHnd, int offs, insOpts instOptions)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
 #else
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding())
@@ -236,8 +236,8 @@ public partial class Emitter
     public void emitIns_SIMD_R_R_S_R(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op3Reg, int varx, int offs, insOpts instOptions)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
 #else
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding())
@@ -288,8 +288,8 @@ public partial class Emitter
     public void emitIns_SIMD_R_R_R_A_I(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op2Reg, GenTreeIndir indir, int ival, insOpts instOptions)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
 #else
         RequireSupportedInstructionRecording();
         assert(UseSimdEncoding());
@@ -301,8 +301,8 @@ public partial class Emitter
     public unsafe void emitIns_SIMD_R_R_R_C_I(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op2Reg, CORINFO_FIELD_HANDLE fldHnd, int offs, int ival, insOpts instOptions)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
 #else
         RequireSupportedInstructionRecording();
         assert(UseSimdEncoding());
@@ -314,8 +314,8 @@ public partial class Emitter
     public void emitIns_SIMD_R_R_R_S_I(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op2Reg, int varx, int offs, int ival, insOpts instOptions)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
 #else
         RequireSupportedInstructionRecording();
         assert(UseSimdEncoding());
@@ -327,8 +327,8 @@ public partial class Emitter
     public void emitIns_SIMD_R_R_R_R_I(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op2Reg, regNumber op3Reg, int ival, insOpts instOptions)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
 #else
         RequireSupportedInstructionRecording();
         assert(UseSimdEncoding());

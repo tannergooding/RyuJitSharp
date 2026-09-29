@@ -7,6 +7,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+#if !TARGET_ARM64
     public void emitIns_I(instruction ins, emitAttr attr, nint val)
     {
 #if !TARGET_XARCH
@@ -70,6 +71,7 @@ public partial class Emitter
 #endif
 #endif
     }
+#endif
 
 #if TARGET_X86
     private void emitAdjustStackDepthPushPop(instruction ins)

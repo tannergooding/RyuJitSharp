@@ -146,38 +146,6 @@ public partial class Emitter
 #endif
     }
 
-    public unsafe void emitIns_R_R_C(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
-        CORINFO_FIELD_HANDLE fldHnd, int offs, insOpts instOptions = INS_OPTS_NONE)
-    {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Two-register static-field instruction recording requires AMD64.");
-#else
-        RequireSupportedInstructionRecording();
-        assert(IsSimdInstruction(ins));
-        assert(IsThreeOperandAVXInstruction(ins));
-
-        if (!jitStaticFldIsGlobAddr(fldHnd))
-        {
-            attr |= EA_DSP_RELOC_FLG;
-        }
-
-        var id = emitNewInstrDsp(attr, offs);
-        id.idIns(ins);
-        id.idInsFmt((ins == INS_mulx) ? IF_RWR_RWR_MRD : emitInsModeFormat(ins, IF_RRD_RRD_MRD));
-        id.idReg1(reg1);
-        id.idReg2(reg2);
-        id.idAddr().iiaFieldHnd = fldHnd;
-
-        SetEvexBroadcastIfNeeded(id, instOptions);
-        SetEvexEmbMaskIfNeeded(id, instOptions);
-        var sz = emitInsSizeCV(id, insCodeRM(ins));
-        id.idCodeSize(sz);
-
-        dispIns(id);
-        emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
-    }
-
     public unsafe void emitIns_SIMD_R_R_C(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg,
         CORINFO_FIELD_HANDLE fldHnd, int offs, insOpts instOptions)
     {

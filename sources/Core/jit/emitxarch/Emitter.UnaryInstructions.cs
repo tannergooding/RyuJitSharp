@@ -9,6 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+#if !TARGET_ARM64
     public void emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts instOptions = INS_OPTS_NONE)
     {
 #if !TARGET_XARCH
@@ -92,6 +93,7 @@ public partial class Emitter
 #endif
 #endif
     }
+#endif
 
     public void emitIns_BASE_R_R(instruction ins, emitAttr attr, regNumber op1Reg, regNumber op2Reg)
     {

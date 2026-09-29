@@ -9,6 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+#if !TARGET_ARM64
     public void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, nint val,
         insOpts instOptions = INS_OPTS_NONE
 #if DEBUG
@@ -177,6 +178,7 @@ public partial class Emitter
         // Native emitAdjustStackDepth is empty with AMD64's FEATURE_FIXED_OUT_ARGS.
 #endif
     }
+#endif
 
     public void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         insOpts instOptions = INS_OPTS_NONE)

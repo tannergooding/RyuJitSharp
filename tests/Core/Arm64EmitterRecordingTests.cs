@@ -72,6 +72,117 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(descriptor.idCodeSize(), Is.EqualTo(4u));
     }
 
+    [TestCase(0)]
+    [TestCase(65535)]
+    public static void ImmediateBreakpointRecordingPreservesTheConstant(int immediate)
+    {
+        var emitter = CreateEmitter();
+        emitter.emitIns_I(INS_brk, EA_8BYTE, immediate);
+        var descriptor = LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
+        Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_SI_0A));
+        Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)immediate));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [TestCase(INS_br, REG_R0, IF_BR_1A)]
+    [TestCase(INS_ret, REG_LR, IF_BR_1A)]
+    [TestCase(INS_dczva, REG_R2, IF_SR_1A)]
+    [TestCase(INS_autiza, REG_R3, IF_PC_1A)]
+    [TestCase(INS_autizb, REG_R4, IF_PC_1A)]
+    [TestCase(INS_paciza, REG_R5, IF_PC_1A)]
+    [TestCase(INS_pacizb, REG_R6, IF_PC_1A)]
+    [TestCase(INS_xpacd, REG_R7, IF_PC_1A)]
+    [TestCase(INS_xpaci, REG_R8, IF_PC_1A)]
+    [TestCase(INS_mrs_tpid0, REG_R9, IF_SR_1A)]
+    public static void UnaryRecordingPreservesNativeFormats(instruction ins, regNumber reg, Emitter.insFormat format)
+    {
+        var emitter = CreateEmitter();
+        emitter.emitIns_R(ins, EA_8BYTE, reg);
+        var descriptor = LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
+        Assert.That(descriptor.idInsFmt(), Is.EqualTo(format));
+        Assert.That(descriptor.idReg1(), Is.EqualTo(reg));
+        Assert.That(descriptor.idIsSmallDsc(), Is.True);
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [TestCase(INS_movk, EA_8BYTE, 65535L, INS_movk, IF_DI_1B, 65535L, INS_OPTS_NONE)]
+    [TestCase(INS_movn, EA_4BYTE, 1L, INS_movn, IF_DI_1B, 1L, INS_OPTS_NONE)]
+    [TestCase(INS_movz, EA_8BYTE, 0L, INS_movz, IF_DI_1B, 0L, INS_OPTS_NONE)]
+    [TestCase(INS_mov, EA_8BYTE, 0x12340000L, INS_mov, IF_DI_1B, 0x11234L, INS_OPTS_NONE)]
+    [TestCase(INS_mov, EA_8BYTE, -65536L, INS_movn, IF_DI_1B, 65535L, INS_OPTS_NONE)]
+    [TestCase(INS_mov, EA_8BYTE, 0x00ff00ff00ff00ffL, INS_mov, IF_DI_1D, 39L, INS_OPTS_NONE)]
+    [TestCase(INS_tst, EA_8BYTE, 255L, INS_tst, IF_DI_1C, 4103L, INS_OPTS_NONE)]
+    [TestCase(INS_tst, EA_4BYTE, 0x00ff00ffL, INS_tst, IF_DI_1C, 39L, INS_OPTS_NONE)]
+    [TestCase(INS_tst, EA_8BYTE, unchecked((long)0xff00ff00ff00ff00UL), INS_tst, IF_DI_1C, 551L, INS_OPTS_NONE)]
+    [TestCase(INS_cmp, EA_8BYTE, -4095L, INS_cmn, IF_DI_1A, 4095L, INS_OPTS_NONE)]
+    [TestCase(INS_cmn, EA_4BYTE, -4096L, INS_cmp, IF_DI_1A, 1L, INS_OPTS_LSL12)]
+    [TestCase(INS_cmp, EA_8BYTE, 0xfff000L, INS_cmp, IF_DI_1A, 4095L, INS_OPTS_LSL12)]
+    public static void RegisterImmediateRecordingUsesNativeEncodingPreference(
+        instruction ins, emitAttr size, long immediate, instruction expectedIns,
+        Emitter.insFormat format, long encoded, insOpts option)
+    {
+        var emitter = CreateEmitter();
+        emitter.emitIns_R_I(ins, size, REG_R0, (nint)immediate);
+        var descriptor = LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
+        Assert.That(descriptor.idIns(), Is.EqualTo(expectedIns));
+        Assert.That(descriptor.idInsFmt(), Is.EqualTo(format));
+        Assert.That(descriptor.idInsOpt(), Is.EqualTo(option));
+        Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)encoded));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [TestCase(INS_movi, EA_8BYTE, INS_OPTS_NONE, unchecked((long)0xff00ff00ff00ff00UL), INS_movi, 170L, INS_OPTS_1D)]
+    [TestCase(INS_movi, EA_16BYTE, INS_OPTS_4S, 0x1200L, INS_movi, 274L, INS_OPTS_4S)]
+    [TestCase(INS_movi, EA_16BYTE, INS_OPTS_4S, 0x12ffL, INS_movi, 1298L, INS_OPTS_4S)]
+    [TestCase(INS_movi, EA_16BYTE, INS_OPTS_4S, -0x1201L, INS_mvni, 274L, INS_OPTS_4S)]
+    [TestCase(INS_orr, EA_16BYTE, INS_OPTS_4S, 0x1200L, INS_orr, 274L, INS_OPTS_4S)]
+    [TestCase(INS_bic, EA_16BYTE, INS_OPTS_8H, 0x1200L, INS_bic, 274L, INS_OPTS_8H)]
+    [TestCase(INS_mvni, EA_16BYTE, INS_OPTS_4S, 0x12ffffL, INS_mvni, 1554L, INS_OPTS_4S)]
+    public static void VectorImmediateRecordingPreservesShiftAndComplementSelection(
+        instruction ins, emitAttr size, insOpts option, long immediate, instruction expectedIns,
+        long encoded, insOpts expectedOption)
+    {
+        var emitter = CreateEmitter();
+        emitter.emitIns_R_I(ins, size, REG_V0, (nint)immediate, option);
+        var descriptor = LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
+        Assert.That(descriptor.idIns(), Is.EqualTo(expectedIns));
+        Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_DV_1B));
+        Assert.That(descriptor.idInsOpt(), Is.EqualTo(expectedOption));
+        Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)encoded));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [TestCase(0, "ARM64 SVE immediate-only instruction recording is not ported.")]
+    [TestCase(1, "ARM64 SVE single-register instruction recording is not ported.")]
+    [TestCase(2, "ARM64 SVE register-immediate instruction recording is not ported.")]
+    public static void UnsupportedFormsReachTheirSeparateSveRecorders(int form, string message)
+    {
+        var emitter = CreateEmitter();
+        var error = Assert.Throws<FatalJitException>(() =>
+        {
+            switch (form)
+            {
+                case 0:
+                {
+                    emitter.emitIns_I(INS_nop, EA_8BYTE, 0);
+                    break;
+                }
+                case 1:
+                {
+                    emitter.emitIns_R(INS_nop, EA_8BYTE, REG_R0);
+                    break;
+                }
+                default:
+                {
+                    emitter.emitIns_R_I(INS_nop, EA_8BYTE, REG_R0, 0);
+                    break;
+                }
+            }
+        });
+        Assert.That(error, Has.Message.EqualTo(message));
+        Assert.That(GroupSize(emitter), Is.Zero);
+    }
+
 #if DEBUG
     [TestCase(false)]
     [TestCase(true)]

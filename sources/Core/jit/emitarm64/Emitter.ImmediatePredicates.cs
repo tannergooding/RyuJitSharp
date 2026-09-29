@@ -6,7 +6,7 @@
 #if TARGET_ARM64
 namespace RyuJitSharp;
 
-public partial class Emitter
+public unsafe partial class Emitter
 {
     public static bool emitIns_valid_imm_for_unscaled_ldst_offset(long imm)
     {
@@ -183,41 +183,73 @@ public partial class Emitter
         return unchecked((long)(~unchecked((ulong)value) & mask));
     }
 
-    private static bool canEncodeByteShiftedImm(long imm, emitAttr size, bool allowMsl)
+    private static bool canEncodeByteShiftedImm(long imm, emitAttr size, bool allowMsl, byteShiftedImm* wbBSI = null)
     {
+        var canEncode = false;
+        var onesShift = false;
+        uint bySh = 0;
+        uint imm8 = 0;
         var value = normalizeImm64(imm, size);
         if (size is EA_1BYTE or EA_8BYTE)
         {
-            assert(value < 0x100);
-            return true;
+            imm8 = unchecked((uint)value);
+            assert(imm8 < 0x100);
+            canEncode = true;
+        }
+        else
+        {
+            assert(size is EA_2BYTE or EA_4BYTE);
+            var width = size is EA_4BYTE ? 32 : 16;
+            var byteCount = width / BITS_PER_BYTE;
+            var mask = uint.MaxValue >> (32 - width);
+            for (bySh = 0; bySh < byteCount; bySh++)
+            {
+                var currentMask = 0xFFu << ((int)bySh * BITS_PER_BYTE);
+                var otherBits = unchecked((int)(value & (mask & ~currentMask)));
+                if (otherBits == 0)
+                {
+                    canEncode = true;
+                }
+
+                // MOVI/MVNI allow one-filled low bytes only in the 32-bit MSL forms.
+                if (allowMsl && (size == EA_4BYTE))
+                {
+                    if ((bySh == 1) && (otherBits == 0xFF))
+                    {
+                        canEncode = true;
+                        onesShift = true;
+                    }
+                    else if ((bySh == 2) && (otherBits == 0xFFFF))
+                    {
+                        canEncode = true;
+                        onesShift = true;
+                    }
+                }
+                if (canEncode)
+                {
+                    imm8 = (uint)((value & currentMask) >> ((int)bySh * BITS_PER_BYTE)) & 0xFF;
+                    break;
+                }
+            }
         }
 
-        assert(size is EA_2BYTE or EA_4BYTE);
-        var width = size is EA_4BYTE ? 32 : 16;
-        var byteCount = width / BITS_PER_BYTE;
-        var mask = uint.MaxValue >> (32 - width);
-        for (var byteShift = 0; byteShift < byteCount; byteShift++)
+        if (canEncode)
         {
-            var currentMask = 0xFFu << (byteShift * BITS_PER_BYTE);
-            var otherBits = value & (mask & ~currentMask);
-            if (otherBits == 0)
+            if (wbBSI != null)
             {
-                return true;
+                wbBSI->immOnes = onesShift ? 1u : 0u;
+                wbBSI->immBY = bySh;
+                wbBSI->immVal = imm8;
+                assert(value == emitDecodeByteShiftedImm(*wbBSI, size));
             }
 
-            // MOVI/MVNI allow one-filled low bytes only in the 32-bit MSL forms.
-            if (allowMsl && (size is EA_4BYTE) &&
-                (((byteShift == 1) && (otherBits == 0xFF)) ||
-                 ((byteShift == 2) && (otherBits == 0xFFFF))))
-            {
-                return true;
-            }
+            return true;
         }
 
         return false;
     }
 
-    private static bool canEncodeHalfwordImm(long imm, emitAttr size)
+    private static bool canEncodeHalfwordImm(long imm, emitAttr size, halfwordImm* wbHWI = null)
     {
         assert((size == EA_4BYTE) || (size == EA_8BYTE));
 
@@ -233,6 +265,14 @@ public partial class Emitter
 
             if ((value & checkBits) == 0)
             {
+                if (wbHWI != null)
+                {
+                    var val = ((value & curMask) >> (hw * 16)) & 0xFFFF;
+                    wbHWI->immHW = (uint)hw;
+                    wbHWI->immVal = (uint)val;
+                    assert(value == unchecked((ulong)emitDecodeHalfwordImm(*wbHWI, size)));
+                }
+
                 return true;
             }
         }
@@ -255,7 +295,7 @@ public partial class Emitter
         return result;
     }
 
-    private static bool canEncodeBitMaskImm(long imm, emitAttr size)
+    private static bool canEncodeBitMaskImm(long imm, emitAttr size, bitMaskImm* wbBMI = null)
     {
         var immWidth = getBitWidth(size);
         var maxLen = size switch
@@ -301,15 +341,45 @@ public partial class Emitter
                 var elemRorXor = elemVal ^ elemRor;
                 var bitCount = 0;
                 var oneBit = 1UL;
+                var R = (uint)elemWidth;
+                uint S = 0;
+                var incr = -1;
 
                 for (var bitNum = 0; bitNum < elemWidth; bitNum++)
                 {
+                    if (incr == -1)
+                    {
+                        R--;
+                    }
+                    if (bitCount == 1)
+                    {
+                        S = unchecked(S + (uint)incr);
+                    }
+
                     if ((oneBit & elemRorXor) != 0)
                     {
                         bitCount++;
-                        if (bitCount > 2)
+                        if (bitCount == 1)
                         {
-                            return false;
+                            var toZeros = (oneBit & elemVal) != 0;
+                            if (toZeros)
+                            {
+                                S = (uint)elemWidth;
+                                incr = -1;
+                            }
+                            else
+                            {
+                                S = 0;
+                                incr = 1;
+                            }
+                        }
+                        else
+                        {
+                            incr = 0;
+                            if (bitCount > 2)
+                            {
+                                return false;
+                            }
                         }
                     }
 
@@ -320,6 +390,29 @@ public partial class Emitter
                 if (bitCount != 2)
                 {
                     return false;
+                }
+
+                assert(S > 0);
+                assert(S < elemWidth);
+                assert(R < elemWidth);
+                if (wbBMI != null)
+                {
+                    S--;
+                    if (len == 6)
+                    {
+                        wbBMI->immN = 1;
+                    }
+                    else
+                    {
+                        wbBMI->immN = 0;
+                        // Above S-1, complement the unused bits and leave the
+                        // element-width marker clear (emitarm64.cpp N:R:S encoding).
+                        var upperBitsOfS = (uint)(64 - (1 << (len + 1)));
+                        S |= upperBitsOfS;
+                    }
+                    wbBMI->immR = R;
+                    wbBMI->immS = S;
+                    assert(value == unchecked((ulong)emitDecodeBitMaskImm(*wbBMI, size)));
                 }
 
                 return true;

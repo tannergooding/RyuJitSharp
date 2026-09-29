@@ -38,66 +38,6 @@ public partial class Emitter
 #endif
     }
 
-    public unsafe void emitIns_R_R_C_R(instruction ins, emitAttr attr, regNumber targetReg,
-        regNumber op1Reg, regNumber op3Reg, CORINFO_FIELD_HANDLE fldHnd, int offs, insOpts instOptions)
-    {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD blend recording requires AMD64.");
-#else
-        RequireSupportedInstructionRecording();
-        assert(isAvxBlendv(ins) || isAvx512Blendv(ins));
-        assert(UseSimdEncoding());
-        if (!jitStaticFldIsGlobAddr(fldHnd))
-        {
-            attr |= EA_DSP_RELOC_FLG;
-        }
-
-        var ival = encodeRegAsIval(op3Reg);
-        var id = emitNewInstrCnsDsp(attr, ival, offs);
-        id.idIns(ins);
-        id.idReg1(targetReg);
-        id.idReg2(op1Reg);
-        id.idInsFmt(IF_RWR_RRD_MRD_RRD);
-        id.idAddr().iiaFieldHnd = fldHnd;
-
-        SetEvexBroadcastIfNeeded(id, instOptions);
-        SetEvexEmbMaskIfNeeded(id, instOptions);
-        var sz = emitInsSizeCV(id, insCodeRM(ins), ival);
-        id.idCodeSize(sz);
-
-        dispIns(id);
-        emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
-    }
-
-    public void emitIns_R_R_S_R(instruction ins, emitAttr attr, regNumber targetReg,
-        regNumber op1Reg, regNumber op3Reg, int varx, int offs, insOpts instOptions)
-    {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD blend recording requires AMD64.");
-#else
-        RequireSupportedInstructionRecording();
-        assert(isAvxBlendv(ins) || isAvx512Blendv(ins));
-        assert(UseSimdEncoding());
-
-        var ival = encodeRegAsIval(op3Reg);
-        var id = emitNewInstrCns(attr, ival);
-        id.idIns(ins);
-        id.idReg1(targetReg);
-        id.idReg2(op1Reg);
-        id.idInsFmt(IF_RWR_RRD_SRD_RRD);
-        id.idAddr().iiaLclVar.initLclVarAddr(varx, unchecked((uint)offs));
-
-        SetEvexBroadcastIfNeeded(id, instOptions);
-        SetEvexEmbMaskIfNeeded(id, instOptions);
-        var sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs, ival);
-        id.idCodeSize(sz);
-
-        dispIns(id);
-        emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
-    }
-
     public void emitIns_R_R_R_R(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber reg1, regNumber reg2, regNumber reg3, insOpts instOptions)
     {
@@ -191,14 +131,6 @@ public partial class Emitter
         return ins is INS_blendvps or INS_blendvpd or INS_pblendvb;
     }
 
-    private static sbyte encodeRegAsIval(regNumber opReg)
-    {
-        assert(((opReg >= REG_XMM0) && (opReg <= REG_XMM15)) || isMaskReg(opReg));
-        var ival = (nint)opReg;
-        assert((ival >= 0) && (ival <= 0xFF));
-
-        return unchecked((sbyte)ival);
-    }
 #endif
 }
 #endif

@@ -16,6 +16,27 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Immediate and multioperand recording
+
+ARM64 immediate, unary and register-immediate recording now builds descriptors
+instead of stopping at xarch-only guards. Bitmask, halfword and byte-shifted
+encoders preserve their optional native writebacks and packed aliases, including
+MOV/MOVN preference, replicated masks, vector LSL/MSL forms and negative-compare
+reversal. Separate SVE recorder fallbacks still terminate explicitly.
+
+Six xarch multi-register memory recorders and eleven SIMD multioperand wrappers
+retain their full x86 paths, operand ordering, relocation and encoding options.
+The combined full-analysis Windows overlay passes 644 Debug/605 Release.
+ARM64 recording/predicate controls pass 213/199, with all 31 identical old-source
+positive cases failing at the former recording guards. Linux-x64 wrapper controls
+pass 331 Debug; existing x86 build blockers still prevent x86 execution.
+
+Thirty-one complete functions, three packed unions and one enum retire 1,934
+native lines in `783ff54d`. These are translation and managed contract results,
+not new target machine-code parity. Evidence is in
+`artifacts/arm64-immediate-recording` and the recording integration/component
+records under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: ARM64 register and option descriptors
 
 Third/fourth-register access is shared across xarch and ARM targets. ARM64
