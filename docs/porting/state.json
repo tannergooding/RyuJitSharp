@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "xarchIntegerAndFloatingComparisonClosure": {
+      "scope": "Whole genCompareFloat/genCompareInt, including x86 byte-register eligibility for narrow TEST immediates. Preserve independent flag-reuse and emitter dependencies.",
+      "validation": "Windows66 Debug/65 Release and Linux63 Debug pass. X86 retains14 existing parser-overlaid source errors; its new byte-register cases remain unexecuted.",
+      "retirement": "Two complete definitions and headings;175 native lines. Shared declarations remain because codegenwasm.cpp retains its independent comparison definitions.",
+      "nativeBefore": "d4db3e8d6a9f950b15d87a282f58424091720353",
+      "nativeAfter": "d5045551e7cc4a75337e2c9c0242cac9b3968aae",
+      "evidence": "artifacts/xarch-compare-float-int-6c96f10; artifacts/residual-reconciliation/xarch-compare-float-int proposed/combined/applied/verification.",
+      "limits": "AMD64 flag-only, relational, NaN and bit-test controls are not x86 execution or generated-code parity."
+    },
     "sharedSwitchAndMemoryComparisonLowering": {
       "scope": "Whole LowerSwitch, TryLowerSwitchToBitTest and LowerCallMemcmp. Preserve Wasm degenerate/br_table handling, ARM32 and RISC-V switch decisions, and ARM64 scalar comparison/AND versus SIMD XOR/OR lowering.",
       "validation": "Switch Windows27 Debug/23 Release and repaired-baseline Linux27 Debug/23 Release pass; six identical old Linux cases fail at target guards. Memcmp Windows old/final25 per configuration pass; ARM64 final3 per configuration pass and all three old cases fail.",
@@ -2063,7 +2072,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Shared switch/memcmp closure accepted through natived4db3e8d; do not reapply. Finish parent register/GenTree integration:54 ARM64 cases currently50pass/fourfail at ins_Load's non-xarch guard; HW lane supplies whole load/store selectors. Rerun the combined ARM64 controls with those exact overlays, preserve earlier failures and retire the complete helper definitions/declarations. A handles integer/float comparison, B resumes a retained shared lowering family, LSRA shared builders. Preserve14x86 blockers,13Wasm, oracle-plus-one and no publication.",
+    "nextAction": "Integer/float comparisons accepted through natived5045551; do not reapply. Integrate ready LSRA local-store builders after its declaration/heading supplement; do not retain shared declarations just because native callers remain. Finish parent register/GenTree integration:54 ARM64 cases currently50pass/fourfail at ins_Load; HW lane supplies whole load/store selectors. Parent Windows controls190 Debug/185 Release pass. Rerun exact combined ARM64 overlays, preserve earlier failures and retire complete definitions/declarations. B handles shared call lowering; refill accepted lanes. Preserve14x86 blockers,13Wasm, oracle-plus-one and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

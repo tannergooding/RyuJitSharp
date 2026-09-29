@@ -12,7 +12,9 @@ public sealed partial class CodeGen
 {
     public void genCodeForCompare(GenTreeOp tree)
     {
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(tree.Oper.IsCompare || (tree.Oper is GT_CMP or GT_TEST or GT_BT));
         if (varTypeIsFloating(tree.Op1.Type))
         {
@@ -26,10 +28,9 @@ public sealed partial class CodeGen
 
     public void genCompareFloat(GenTreeOp tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Floating comparison generation requires AMD64.");
-#else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(tree.Oper.IsCompare || (tree.Oper is GT_CMP));
         var op1 = tree.Op1;
         var op2 = tree.Op2;
@@ -68,15 +69,13 @@ public sealed partial class CodeGen
             inst_SETCC(condition, tree.Type, targetReg);
             genProduceReg(tree);
         }
-#endif
     }
 
     public void genCompareInt(GenTreeOp tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Integer comparison generation requires AMD64.");
-#else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(tree.Oper.IsCompare || (tree.Oper is GT_CMP or GT_TEST or GT_BT));
         var op1 = tree.Op1;
         var op2 = tree.Op2;
@@ -94,8 +93,12 @@ public sealed partial class CodeGen
             ins = INS_test;
 
             // TEST has no full-width form with a sign-extended byte immediate.
-            // A byte-sized mask can instead use a byte-sized TEST.
-            if (op2.Oper.IsCnsIntOrI && FitsIn(TYP_UBYTE, op2.AsIntCon().IconValue))
+            // A byte-sized mask can instead use a byte-sized TEST when the register is byte-addressable.
+            if (
+#if TARGET_X86
+                (!op1.IsUsedFromReg || op1.RegNum is REG_EAX or REG_ECX or REG_EDX or REG_EBX) &&
+#endif
+                op2.Oper.IsCnsIntOrI && FitsIn(TYP_UBYTE, op2.AsIntCon().IconValue))
             {
                 size = EA_1BYTE;
             }
@@ -156,7 +159,6 @@ public sealed partial class CodeGen
             inst_SETCC(GenCondition.FromIntegralRelop(tree), tree.Type, targetReg);
             genProduceReg(tree);
         }
-#endif
     }
 
     public bool genCanAvoidEmittingCompareAgainstZero(GenTree tree, emitAttr opSize)

@@ -18,6 +18,70 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class CodeGenComparisonTests
 {
+    [TestCase(TYP_FLOAT, INS_ucomiss)]
+    [TestCase(TYP_DOUBLE, INS_ucomisd)]
+    public static void FlagOnlyFloatingComparisonsEmitNoBooleanResult(var_types type, instruction expected)
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var first = compiler.gtNewDconNode(type, 1);
+            first.RegNum = REG_XMM0;
+            var second = compiler.gtNewDconNode(type, 2);
+            second.RegNum = REG_XMM1;
+            var tree = new GenTreeOp(GT_CMP, TYP_VOID, first, second) { RegNum = REG_NA };
+            codeGen.genConsumeOperands(tree);
+
+            codeGen.genCompareFloat(tree);
+
+            Assert.That(Descriptors(codeGen).Select(id => id.idIns()), Is.EqualTo((instruction[])[expected]));
+        });
+    }
+
+    [Test]
+    public static void FlagOnlyIntegralComparisonEmitsNoBooleanResult()
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var tree = new GenTreeOp(GT_CMP, TYP_VOID,
+                Register(compiler, TYP_INT, REG_RAX), Register(compiler, TYP_INT, REG_RCX))
+            {
+                RegNum = REG_NA,
+            };
+            codeGen.genConsumeOperands(tree);
+
+            codeGen.genCompareInt(tree);
+
+            Assert.That(Descriptors(codeGen).Select(id => id.idIns()), Is.EqualTo((instruction[])[INS_cmp]));
+        });
+    }
+
+#if TARGET_X86
+    [TestCase(REG_EAX, EA_1BYTE)]
+    [TestCase(REG_ECX, EA_1BYTE)]
+    [TestCase(REG_EDX, EA_1BYTE)]
+    [TestCase(REG_EBX, EA_1BYTE)]
+    [TestCase(REG_ESI, EA_4BYTE)]
+    [TestCase(REG_EDI, EA_4BYTE)]
+    public static void X86TestMasksRequireAByteAddressableRegister(regNumber valueReg, emitAttr expectedSize)
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var mask = compiler.gtNewIconNode(TYP_INT, 127);
+            mask.IsContained = true;
+            var tree = new GenTreeOp(GT_TEST, TYP_VOID, Register(compiler, TYP_INT, valueReg), mask)
+            {
+                RegNum = REG_NA,
+            };
+            codeGen.genConsumeOperands(tree);
+
+            codeGen.genCompareInt(tree);
+
+            Assert.That(Descriptors(codeGen).Select(id => id.idIns()), Is.EqualTo((instruction[])[INS_test]));
+            Assert.That(Descriptors(codeGen)[0].idOpSize(), Is.EqualTo(expectedSize));
+        });
+    }
+#endif
+
     [TestCase(GT_LT, false, INS_setl)]
     [TestCase(GT_LT, true, INS_setb)]
     [TestCase(GT_GE, false, INS_setge)]

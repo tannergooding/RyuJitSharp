@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Integer and floating comparison closure
+
+Whole xarch comparison helpers preserve x86's byte-addressable-register
+restriction for narrow `TEST` immediates. Two definitions and headings retire
+175 native lines in `d5045551`; shared declarations remain for the separate
+Wasm comparison implementations.
+
+Windows controls pass 66 Debug/65 Release and Linux passes 63 Debug, covering
+flag-only comparisons alongside relational, NaN and bit-test cases. X86 retains
+14 existing build errors, so its new byte-register cases remain unexecuted.
+Evidence: `artifacts/xarch-compare-float-int-6c96f10` and the corresponding
+retirement records. No generated-code parity claim.
+
 ## 2026-09-29: Shared switch and memory-comparison lowering
 
 Whole switch/bit-test lowering restores Unix/x86 paths, Wasm's degenerate-switch
