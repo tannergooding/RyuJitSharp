@@ -9,8 +9,8 @@ public sealed partial class CodeGen
 {
     public void genCallFinally(BasicBlock block)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Finally-call generation requires Windows AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Finally-call generation requires xarch.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(block.Kind == BBJ_CALLFINALLY);
@@ -24,7 +24,7 @@ public sealed partial class CodeGen
             // its EH region for unwind lookup, including at the end of the code.
             if ((nextBlock is null) || !BasicBlock.sameEHRegion(block, nextBlock))
             {
-                instGen(INS_int3);
+                instGen(INS_BREAKPOINT);
             }
         }
         else
@@ -55,8 +55,8 @@ public sealed partial class CodeGen
 
     public void genEHCatchRet(BasicBlock block)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Catch-return generation requires Windows AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Catch-return generation requires xarch.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         Emitter.emitIns_R_L(INS_lea, EA_PTRSIZE | EA_DSP_RELOC_FLG, block.Target, REG_INTRET);

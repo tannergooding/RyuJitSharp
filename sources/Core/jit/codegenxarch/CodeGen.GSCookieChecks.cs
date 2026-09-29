@@ -11,8 +11,8 @@ public sealed partial class CodeGen
 {
     public unsafe void genEmitGSCookieCheck(bool tailCall)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "GS-cookie checks require AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "GS-cookie checks require xarch.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         noway_assert((_compiler.gsGlobalSecurityCookieAddr != null) || (_compiler.gsGlobalSecurityCookieVal != 0));
@@ -37,6 +37,7 @@ public sealed partial class CodeGen
         var cookie = _compiler.gsGlobalSecurityCookieVal;
         if (_compiler.gsGlobalSecurityCookieAddr == null)
         {
+#if TARGET_AMD64
             // CMP r/m64 sign-extends its imm32; an unsigned 32-bit fit is not enough.
             if (unchecked((int)cookie) != cookie)
             {
@@ -44,8 +45,11 @@ public sealed partial class CodeGen
                 Emitter.emitIns_S_R(INS_cmp, EA_PTRSIZE, regGSCheck, _compiler.lvaGSSecurityCookie, 0);
             }
             else
+#endif
             {
+#if TARGET_AMD64
                 assert(unchecked((int)cookie) == cookie);
+#endif
                 Emitter.emitIns_S_I(INS_cmp, EA_PTRSIZE, _compiler.lvaGSSecurityCookie, 0, unchecked((int)cookie));
             }
         }

@@ -9,8 +9,8 @@ public sealed partial class CodeGen
 {
     public unsafe void genSetGSSecurityCookie(regNumber initReg, ref bool initRegZeroed)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "GS-cookie initialization requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "GS-cookie initialization requires xarch.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
@@ -29,6 +29,7 @@ public sealed partial class CodeGen
         {
             var cookie = _compiler.gsGlobalSecurityCookieVal;
             noway_assert(cookie != 0);
+#if TARGET_AMD64
             if (unchecked((int)cookie) != cookie)
             {
                 instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, cookie);
@@ -36,17 +37,17 @@ public sealed partial class CodeGen
                 initRegZeroed = false;
             }
             else
+#endif
             {
                 Emitter.emitIns_S_I(INS_mov, EA_PTRSIZE, _compiler.lvaGSSecurityCookie, 0, unchecked((int)cookie));
             }
         }
         else
         {
-            // Only RAX can encode an absolute address when RIP-relative addressing is unavailable.
-            Emitter.emitIns_R_AI(INS_mov, EA_PTRSIZE | EA_DSP_RELOC_FLG, REG_RAX, (nint)_compiler.gsGlobalSecurityCookieAddr);
-            _regSet.verifyRegUsed(REG_RAX);
-            Emitter.emitIns_S_R(INS_mov, EA_PTRSIZE, REG_RAX, _compiler.lvaGSSecurityCookie, 0);
-            if (initReg == REG_RAX)
+            Emitter.emitIns_R_AI(INS_mov, EA_PTRSIZE | EA_DSP_RELOC_FLG, REG_EAX, (nint)_compiler.gsGlobalSecurityCookieAddr);
+            _regSet.verifyRegUsed(REG_EAX);
+            Emitter.emitIns_S_R(INS_mov, EA_PTRSIZE, REG_EAX, _compiler.lvaGSSecurityCookie, 0);
+            if (initReg == REG_EAX)
             {
                 initRegZeroed = false;
             }

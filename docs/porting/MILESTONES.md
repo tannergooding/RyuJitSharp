@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch cookie and EH code generation
+
+Security-cookie initialization/checking now retain their native x86 paths, and
+finally-call/catch-return generation no longer rejects non-Windows xarch.
+Four whole definitions retire 186 lines in `b30154f4`. Separate x86 immediate
+materialization, helper-call and instruction-recording dependencies remain.
+
+Windows controls pass 88 Debug/81 Release; Linux-target controls pass 35, with
+18 EH cases failing against the unchanged baseline. ARM64 source compiles.
+X86 remains blocked by the same 14 baseline diagnostics. These are managed
+contract controls, not target execution parity. Evidence:
+`artifacts/xarch-general-codegen-f527abe` and the general-codegen proposal and
+retirement receipts under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Complete xarch SIMD code generation
 
 All eleven retained SIMD functions now preserve their x86 branches, including
