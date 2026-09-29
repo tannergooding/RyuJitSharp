@@ -422,12 +422,15 @@ public unsafe partial class Emitter
         return false;
     }
 
-    private static bool canEncodeFloatImm8(double immDbl)
+    private static bool canEncodeFloatImm8(double immDbl, floatImm8* wbFPI = null)
     {
+        var canEncode = false;
         var val = immDbl;
+        var sign = 0;
         if (val < 0.0)
         {
             val = -val;
+            sign = 1;
         }
 
         var exp = 0;
@@ -451,11 +454,21 @@ public unsafe partial class Emitter
         {
             if (val == (double)ival)
             {
-                return true;
+                canEncode = true;
+                if (wbFPI != null)
+                {
+                    ival -= 16;
+                    assert((ival >= 0) && (ival <= 15));
+                    wbFPI->immSign = (uint)sign;
+                    wbFPI->immExp = (uint)(exp ^ 4);
+                    wbFPI->immMant = (uint)ival;
+                    var imm8 = wbFPI->immFPIVal;
+                    assert((imm8 >= 0) && (imm8 <= 0xff));
+                }
             }
         }
 
-        return false;
+        return canEncode;
     }
 }
 #endif

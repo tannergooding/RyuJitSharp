@@ -16,6 +16,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: ARM64 floating-immediate recording
+
+Scalar/vector FMOV and zero-compare recording now preserve the native floating
+immediate encoding. The encoder returns its packed sign/exponent/mantissa fields,
+and the matching decoder is translated. Both signs of zero remain valid for
+floating compares, while FMOV retains its exact representability restrictions.
+
+Full-analysis ARM64 controls pass 180 Debug/166 Release, including every byte
+encoding across five scalar/vector arrangements (1,280 descriptor records).
+Nine old-source cases fail at the absent recorder API. Exact pinned native
+helpers independently round-trip all 256 encodings and reject eight invalid
+values in Debug and optimized probes. This is scoped algorithm evidence, not
+ARM64 machine-code parity.
+
+Three functions and one packed union retire 195 lines in native `0278fa5c`.
+The SVE floating recorder remains a separate terminating dependency. Evidence
+is in `artifacts/arm64-floating-immediate` and the floating integration records
+under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Immediate and multioperand recording
 
 ARM64 immediate, unary and register-immediate recording now builds descriptors

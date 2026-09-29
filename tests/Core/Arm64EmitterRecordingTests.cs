@@ -183,6 +183,65 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(GroupSize(emitter), Is.Zero);
     }
 
+    [TestCase(EA_4BYTE, INS_OPTS_NONE, IF_DV_1A)]
+    [TestCase(EA_8BYTE, INS_OPTS_NONE, IF_DV_1A)]
+    [TestCase(EA_8BYTE, INS_OPTS_2S, IF_DV_1B)]
+    [TestCase(EA_16BYTE, INS_OPTS_4S, IF_DV_1B)]
+    [TestCase(EA_16BYTE, INS_OPTS_2D, IF_DV_1B)]
+    public static void FloatingImmediateRecordingCoversEveryEncoding(
+        emitAttr size, insOpts option, Emitter.insFormat format)
+    {
+        for (var encoded = 0; encoded <= 255; encoded++)
+        {
+            // ARM64 imm8 has sign:exponent:mantissa fields of widths 1:3:4.
+            // The exponent toggles its top bit; the significand is 16..31.
+            var exponent = ((encoded >> 4) & 7) ^ 4;
+            var value = Math.ScaleB(16 + (encoded & 15), exponent - 7);
+            if ((encoded & 128) != 0)
+            {
+                value = -value;
+            }
+
+            var emitter = CreateEmitter();
+            RecordFloat(emitter, INS_fmov, size, REG_V0, value, option);
+            var descriptor = LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
+            Assert.That(descriptor.idInsFmt(), Is.EqualTo(format));
+            Assert.That(descriptor.idOpSize(), Is.EqualTo(size));
+            Assert.That(descriptor.idInsOpt(), Is.EqualTo(option));
+            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)encoded));
+            Assert.That(GroupSize(emitter), Is.EqualTo(4));
+        }
+    }
+
+    [TestCase(INS_fcmp, 0UL)]
+    [TestCase(INS_fcmp, 0x8000000000000000UL)]
+    [TestCase(INS_fcmpe, 0UL)]
+    [TestCase(INS_fcmpe, 0x8000000000000000UL)]
+    public static void FloatingCompareRecordingAcceptsBothZeroSigns(instruction ins, ulong bits)
+    {
+        var emitter = CreateEmitter();
+        RecordFloat(emitter, ins, EA_8BYTE, REG_V0, BitConverter.UInt64BitsToDouble(bits), INS_OPTS_NONE);
+        var descriptor = LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
+        Assert.That(descriptor.idIns(), Is.EqualTo(ins));
+        Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_DV_1C));
+        Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)0));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [Test]
+    public static void FloatingFallbackRetainsItsSeparateSveRecorder()
+    {
+        var emitter = CreateEmitter();
+        var error = Assert.Throws<FatalJitException>(() =>
+            RecordFloat(emitter, INS_nop, EA_8BYTE, REG_V0, 1.0, INS_OPTS_NONE));
+        Assert.That(error, Has.Message.EqualTo("ARM64 SVE floating-immediate instruction recording is not ported."));
+        Assert.That(GroupSize(emitter), Is.Zero);
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_F")]
+    private static extern void RecordFloat(Emitter emitter, instruction ins, emitAttr attr,
+        regNumber reg, double immDbl, insOpts opt);
+
 #if DEBUG
     [TestCase(false)]
     [TestCase(true)]
