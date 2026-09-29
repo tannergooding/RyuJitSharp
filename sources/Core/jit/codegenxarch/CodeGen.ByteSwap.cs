@@ -10,9 +10,6 @@ public sealed partial class CodeGen
 {
     public void genCodeForBswap(GenTree tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Byte-swap node generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_BSWAP or GT_BSWAP16);
         var targetReg = tree.RegNum;
@@ -34,6 +31,8 @@ public sealed partial class CodeGen
         }
         else
         {
+            var ins = INS_movbe;
+#if TARGET_AMD64
             var needsEvex = false;
             if (Emitter.IsExtendedGPReg(targetReg))
             {
@@ -52,7 +51,8 @@ public sealed partial class CodeGen
                 }
             }
 
-            var ins = needsEvex ? INS_movbe_apx : INS_movbe;
+            ins = needsEvex ? INS_movbe_apx : INS_movbe;
+#endif
             _ = Emitter.emitInsBinary(ins, operand.Type.EmitSize, tree, operand);
         }
 
@@ -62,7 +62,6 @@ public sealed partial class CodeGen
         }
 
         genProduceReg(tree);
-#endif
     }
 }
 #endif

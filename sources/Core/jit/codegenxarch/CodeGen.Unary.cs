@@ -14,9 +14,6 @@ public sealed partial class CodeGen
 {
     public void genCodeForNegNot(GenTreeUnOp tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Unary node generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_NEG or GT_NOT);
         var targetReg = tree.RegNum;
@@ -37,7 +34,6 @@ public sealed partial class CodeGen
         }
 
         genProduceReg(tree);
-#endif
     }
 
     public unsafe void genIntrinsicBitwiseOp(GenTree tree)

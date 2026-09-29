@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch unary, byte-swap and scalar operations
+
+Negation/not, byte swap, saturating increment and bit modification retain their
+whole xarch paths. Four definitions retire 155 lines in `a30146a8`. Floating
+bitwise operations and high/widening multiplication remain separate work; the
+latter needs the shared second-result-register contract completed.
+
+Windows controls pass 98 Debug/95 Release. Focused Linux controls pass 65,
+including ten increment/bit-operation cases that fail on unchanged source.
+Two broader spill cases remain blocked by the independent `rsSpillTree`
+dependency. ARM64 source builds; x86 retains 14 baseline errors. Evidence:
+`artifacts/xarch-scalar-f87562b` and its proposal/retirement receipts.
+
 ## 2026-09-29: Xarch block-store requirements and RMW last use
 
 Block-store construction preserves native x86 byte-register requirements,

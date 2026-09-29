@@ -9,8 +9,8 @@ public sealed partial class CodeGen
 {
     public void genCodeForIncSaturate(GenTree tree)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Saturating increment generation requires Windows AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Saturating increment generation requires xarch.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         var targetReg = tree.RegNum;
@@ -28,8 +28,8 @@ public sealed partial class CodeGen
 
     public void genCodeForBitOp(GenTreeOp tree)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Bit modification generation requires Windows AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Bit modification generation requires xarch.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_BIT_SET or GT_BIT_CLEAR or GT_BIT_INVERT);
