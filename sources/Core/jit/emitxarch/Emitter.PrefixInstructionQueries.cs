@@ -46,7 +46,7 @@ public partial class Emitter
 #if TARGET_AMD64
         return UsePromotedEvexEncodings && (prefixFlags(ins) & INS_FLAGS_ApxEvexMask) != 0;
 #else
-        throw new FatalJitException(CORJIT_SKIPPED, "APX prefix decisions require AMD64.");
+        return false;
 #endif
     }
 

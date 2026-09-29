@@ -12,6 +12,10 @@ public partial class Emitter
     private const InsGroupFlags IGF_PROPAGATE_MASK =
         InsGroupFlags.Prolog | InsGroupFlags.Epilog | InsGroupFlags.FuncletProlog | InsGroupFlags.FuncletEpilog;
 
+#if EMITTER_STATS
+    private static uint emitTotalIGcnt;
+#endif
+
     private insGroup emitAllocAndLinkIG()
     {
         var ig = emitAllocIG();
@@ -29,6 +33,14 @@ public partial class Emitter
     {
         insGroup ig = new();
 
+#if EMITTER_STATS
+        var size = emitNativeIGSize();
+        emitTotMemAlloc = unchecked(emitTotMemAlloc + size);
+        emitTotalIGcnt = unchecked(emitTotalIGcnt + 1);
+        emitTotalIGsize = unchecked(emitTotalIGsize + size);
+        emitSizeMethod = unchecked(emitSizeMethod + size);
+#endif
+
 #if DEBUG
         ig.igSelf = ig;
         ig.igDataSize = 0;
@@ -38,6 +50,25 @@ public partial class Emitter
 
         return ig;
     }
+
+#if EMITTER_STATS
+    private static nuint emitNativeIGSize()
+    {
+#if (TARGET_AMD64 || TARGET_ARM64) && FEATURE_LOOP_ALIGN && EMIT_TRACK_STACK_DEPTH && REGMASK_BITS_64 && !EMIT_BACKWARDS_NAVIGATION
+        // emit.h insGroup: the Debug jitstd::list holds five pointer-sized words; the remaining
+        // fields occupy 96 bytes in Debug and 56 bytes in Release (72 with late disassembly).
+#if DEBUG
+        return 136;
+#elif LATE_DISASM
+        return 72;
+#else
+        return 56;
+#endif
+#else
+        throw new FatalJitException(CORJIT_SKIPPED, "Native instruction-group size is not yet ported for these emitter statistics.");
+#endif
+    }
+#endif
 
     private void emitInitIG(insGroup ig)
     {
@@ -66,7 +97,7 @@ public partial class Emitter
         ig.igGCregs = regMask.SRBM_NONE;
         ig.igInsCnt = 0;
 
-#if TARGET_XARCH
+#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
         ig.igLastIns = null;
 #endif
 
@@ -88,7 +119,7 @@ public partial class Emitter
         ig.igNext = insertAfterIG.igNext;
         insertAfterIG.igNext = ig;
 
-#if TARGET_XARCH
+#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
         ig.igPrev = insertAfterIG;
         ig.igNext?.igPrev = ig;
 #endif

@@ -84,14 +84,94 @@ public partial class Emitter
         return 1;
     }
 
+    public static bool IsCTEST(instruction ins) => false;
+
+    public bool Is4ByteSSEInstruction(instruction ins)
+    {
+        return !UseVexEncodings && EncodedBySSE38orSSE3A(ins);
+    }
+
+    public uint emitGetEvexPrefixSize(instrDesc id)
+    {
+        assert(IsEvexEncodableInstruction(id.idIns()));
+        return 4;
+    }
+
     public uint emitGetAdjustedSize(instrDesc id, ulong code)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 emitGetAdjustedSize is not ported.");
+    {
+        var ins = id.idIns();
+        uint adjustedSize = 0;
+
+        if (IsSimdVexOrEvexEncodableInstruction(ins))
+        {
+            uint prefixAdjustedSize;
+
+            if (TakesEvexPrefix(id))
+            {
+                prefixAdjustedSize = emitGetEvexPrefixSize(id);
+                assert(prefixAdjustedSize == 4);
+            }
+            else
+            {
+                assert(IsVexEncodableInstruction(ins));
+                prefixAdjustedSize = emitGetVexPrefixSize(id);
+                assert(prefixAdjustedSize is 2 or 3);
+            }
+
+            assert(prefixAdjustedSize != 0);
+            prefixAdjustedSize--;
+            var check = (byte)((code >> 24) & 0xFF);
+
+            if (check != 0)
+            {
+                var sizePrefix = (byte)((code >> 16) & 0xFF);
+
+                if ((sizePrefix != 0) && isPrefix(sizePrefix))
+                {
+                    prefixAdjustedSize--;
+                }
+            }
+
+            adjustedSize = prefixAdjustedSize;
+        }
+        else if (Is4ByteSSEInstruction(ins))
+        {
+            adjustedSize++;
+        }
+        else
+        {
+            if (ins == INS_crc32)
+            {
+                adjustedSize++;
+            }
+
+            var attr = id.idOpSize();
+            if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx) && !IsSimdInstruction(ins))
+            {
+                adjustedSize++;
+            }
+        }
+
+        return adjustedSize;
+    }
 
     public uint emitInsSize(instrDesc id, ulong code, bool includeRexPrefixSize)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 emitInsSize is not ported.");
+    {
+        return ((code & 0xFF000000) != 0) ? 4u : ((code & 0x00FF0000) != 0) ? 3u : 2u;
+    }
 
     public static bool ImmCanUseSByteEncoding(instruction ins, nint val)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 ImmCanUseSByteEncoding is not ported.");
+    {
+        var targetVal = unchecked((int)val);
+
+        if (targetVal != val)
+        {
+            return false;
+        }
+
+        return (unchecked((sbyte)targetVal) == targetVal) &&
+            (ins != INS_mov) && (ins != INS_test) && !IsCTEST(ins);
+    }
 
     private void dispIns(instrDesc id)
         => throw new FatalJitException(CORJIT_SKIPPED, "x86 dispIns is not ported.");

@@ -60,7 +60,7 @@ public partial class Emitter
         }
         return false;
 #else
-        throw new FatalJitException(CORJIT_SKIPPED, "High SIMD register prefixes require AMD64.");
+        return false;
 #endif
     }
 
@@ -83,7 +83,7 @@ public partial class Emitter
         }
         return false;
 #else
-        throw new FatalJitException(CORJIT_SKIPPED, "Extended general purpose register prefixes require AMD64.");
+        return false;
 #endif
     }
 

@@ -7,15 +7,16 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+#if EMITTER_STATS
+    private static uint emitTotalIGmcnt;
+#endif
+
     public void emitBegFN(bool hasFramePtr
 #if DEBUG
         , bool chkAlign
 #endif
         )
     {
-#if !TARGET_AMD64 || EMITTER_STATS
-        throw new FatalJitException(CORJIT_SKIPPED, "Method-emitter initialization requires AMD64 without emitter allocation statistics.");
-#else
         assert(_compiler is not null);
         emitCurIGfreeBase = null;
         emitIGbuffSize = 0;
@@ -33,10 +34,17 @@ public partial class Emitter
         emitPrologEndPos.Init();
         emitEpilogSize = 0;
         emitEpilogCnt = 0;
+#if TARGET_XARCH
         emitExitSeqBegLoc.Init();
         emitExitSeqSize = int.MaxValue;
+#endif
         emitPlaceholderList = null;
         emitPlaceholderLast = null;
+
+#if JIT32_GCENCODER
+        emitEpilogList = null;
+        emitEpilogLast = null;
+#endif
 
         emitJumpList = null;
         emitJumpLast = null;
@@ -82,6 +90,18 @@ public partial class Emitter
         emitCurCodeOffset = 0;
         emitFirstColdIG = null;
         emitTotalCodeSize = 0;
+
+#if TARGET_LOONGARCH64
+        emitCounts_INS_OPTS_J = 0;
+#endif
+
+#if EMITTER_STATS
+        emitTotalIGmcnt = unchecked(emitTotalIGmcnt + 1);
+        emitSizeMethod = 0;
+        emitCurPrologInsCnt = 0;
+        emitCurPrologIGSize = 0;
+#endif
+
         emitInsCount = 0;
         emitCurStackLvl = 0;
 
@@ -97,13 +117,20 @@ public partial class Emitter
         ig.igFlags |= InsGroupFlags.Prolog | InsGroupFlags.OutOfOrderHead;
         emitLastIns = null;
         emitLastInsIG = null;
+
+#if TARGET_ARMARCH
+        emitLastMemBarrier = null;
+#endif
+
         ig.igNext = null;
+
+#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
         emitLastInsFullSize = 0;
         ig.igPrev = null;
+#endif
 
         emitNewIG();
         assert(emitCurIG is not null);
         emitCurIG.igFlags &= ~IGF_PROPAGATE_MASK;
-#endif
     }
 }

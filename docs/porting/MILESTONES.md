@@ -16,6 +16,30 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Method initialization and sizing closure
+
+Method entry now retains native target-specific resets, backward navigation
+and method-local statistics initialization. Group allocation accounts for the
+supported native x64/ARM64 layouts rather than managed object sizes; unsupported
+layouts terminate explicitly. The xarch sizing/prefix family now includes
+complete instruction-size adjustment, signed-byte immediate restrictions and
+EVEX/REX2 decisions.
+
+Integrated full-analysis Windows checks pass 204 Debug/183 Release. Scoped
+ARM64 checks pass three cases per configuration, statistics one per configuration,
+and ARM64 statistics/backward-navigation three Debug cases each. Both new ARM64
+frame-pointer cases fail at the original method-entry stub on `15354a9`, then
+pass after restoration. Independent x86 declarations still prevent that target's
+fixture execution; there is no x86 compilation or generated-code parity claim.
+
+Twelve definitions retire 575 body lines, with five own comment/blank lines and
+35 associated declaration lines: 615 total in `2a41b4dd`. Thirteen declarations
+complete cleanup for the preceding accepted static-field packets, not additional
+implementation. Native remains the sole oracle child. General allocation,
+statistics reporting and static-field output dependencies remain separate.
+Evidence: `artifacts/residual-reconciliation/emitter-init-prefix-combined-20260929.json`
+and its applied receipt.
+
 ## 2026-09-28: Group transitions and static-field recording
 
 Group preparation and transitions now retain the native target buffer sizes,

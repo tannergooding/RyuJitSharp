@@ -14,9 +14,6 @@ public partial class Emitter
 
     internal bool TakesEvexPrefix(instrDesc id)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "EVEX prefix decisions require AMD64.");
-#else
         var ins = id.idIns();
         if (!IsEvexEncodableInstruction(ins))
         {
@@ -125,14 +122,11 @@ public partial class Emitter
             }
         }
         return false;
-#endif
     }
 
     private bool TakesRex2Prefix(instrDesc id)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "REX2 prefix decisions require AMD64.");
-#else
+#if TARGET_AMD64
         var ins = id.idIns();
         if (!IsRex2EncodableInstruction(ins) || TakesEvexPrefix(id))
         {
@@ -152,6 +146,8 @@ public partial class Emitter
             return ins is not (INS_i_jmp or INS_tail_i_jmp);
         }
 #endif
+        return false;
+#else
         return false;
 #endif
     }

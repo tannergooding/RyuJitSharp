@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 #if TARGET_X86
+using System;
 using NUnit.Framework;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
@@ -39,6 +40,27 @@ internal static class X86EmitterStaticFieldDependencyTests
     {
         Assert.That(Emitter.IsExtendedReg(reg), Is.False);
         Assert.That(Emitter.IsExtendedReg(reg, attr), Is.False);
+    }
+
+    [TestCase(INS_add, -128L, true)]
+    [TestCase(INS_add, 127L, true)]
+    [TestCase(INS_add, -129L, false)]
+    [TestCase(INS_add, 128L, false)]
+    [TestCase(INS_mov, 1L, false)]
+    [TestCase(INS_test, 1L, false)]
+    public static void SignedByteImmediateRequiresTargetWidthAndAnEncodableInstruction(
+        instruction ins, long value, bool expected)
+    {
+        Assert.That(Emitter.ImmCanUseSByteEncoding(ins, unchecked((nint)value)), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public static void CrossTargetImmediateMustFitX86Width()
+    {
+        if (IntPtr.Size == 8)
+        {
+            Assert.That(Emitter.ImmCanUseSByteEncoding(INS_add, unchecked((nint)0x1_0000_007FL)), Is.False);
+        }
     }
 }
 #endif
