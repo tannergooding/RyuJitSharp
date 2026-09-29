@@ -20,6 +20,20 @@ public partial class Globals
 
     public const int ROOT_FUNC_IDX = 0;
 
+#if TARGET_XARCH
+    public const instruction INS_BREAKPOINT = INS_int3;
+#elif TARGET_ARM
+    public const instruction INS_BREAKPOINT = INS_bkpt;
+#elif TARGET_ARM64
+    public const instruction INS_BREAKPOINT = INS_brk;
+#elif TARGET_LOONGARCH64
+    public const instruction INS_BREAKPOINT = INS_break;
+#elif TARGET_RISCV64
+    public const instruction INS_BREAKPOINT = INS_ebreak;
+#elif TARGET_WASM
+    public const instruction INS_BREAKPOINT = INS_unreachable;
+#endif
+
     public static int genMapIntRegNumToRegArgNum(regNumber regNum, CorInfoCallConvExtension callConv)
     {
 #if TARGET_AMD64 || TARGET_ARM64

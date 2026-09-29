@@ -225,12 +225,6 @@ public partial class Emitter
         id.idjShort = true;
     }
 
-    private static insGroup? emitCodeGetCookie(BasicBlock block)
-    {
-        assert(block is not null);
-        return block.bbEmitCookie;
-    }
-
     private void appendToCurIG(instrDesc id)
     {
         emitCurIGsize = unchecked(emitCurIGsize + (int)id.idCodeSize());

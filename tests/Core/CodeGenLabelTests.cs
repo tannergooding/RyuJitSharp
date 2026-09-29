@@ -12,6 +12,16 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class CodeGenLabelTests
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void EmitterCookiesPreserveUnboundAndBoundGroups(bool bound)
+    {
+        var group = bound ? new insGroup() : null;
+        var block = new BasicBlock(null, null) { bbEmitCookie = group };
+
+        Assert.That(GetEmitterCookie(null, block), Is.SameAs(group));
+    }
+
     [TestCase(false, 0u)]
     [TestCase(false, 12u)]
     [TestCase(true, 24u)]
@@ -238,4 +248,7 @@ internal static unsafe class CodeGenLabelTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "genStackLevel")]
     private static extern ref uint StackLevel(CodeGen codeGen);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitCodeGetCookie")]
+    private static extern insGroup? GetEmitterCookie(Emitter? emitter, BasicBlock block);
 }

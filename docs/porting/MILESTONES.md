@@ -16,6 +16,32 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Lifecycle, label contexts and register/immediate output
+
+Prolog/epilog and placeholder lifecycle retains target-specific stack and GC
+bookkeeping, including placeholder statistics and unsigned JIT32 offset
+calculations. Ordinary and inline labels now retain their non-AMD64 paths;
+cookie lookup and call/NoGC descriptor contexts are target-neutral. Label padding
+selects the native target breakpoint rather than an x86-only opcode. Register
+and immediate byte output retains its x86 compact forms, widths and relocations.
+
+Integrated Windows checks pass 182 Debug/174 Release. ARM64 label/cookie checks
+pass 27 per configuration; lifecycle checks pass seven, or eight with statistics.
+Scoped Windows lifecycle statistics checks pass 41 Debug/38 Release. Identical
+old-source fixtures fail at the original target guards or missing methods.
+ARM64 padding and prolog/epilog cases reaching retained recording/codegen
+dependencies establish those boundaries, not generated instruction execution.
+The x86 fixture bypasses unported recording entrypoints but remains unexecuted
+while independent target build blockers remain.
+
+Twenty-six complete definitions retire 1,734 body lines, with 139 own
+heading/comment/guard lines, 33 declarations and six constants: 1,912 total in
+`0dcfd18e`, still the sole oracle child. The cookie getter's native body was
+already absent; its remaining declaration adds no new body credit. General
+statistics, x86 epilog-list encoding and distinct target dependencies remain.
+Evidence: `artifacts/residual-reconciliation/lifecycle-label-output-combined-20260929.json`
+and its applied receipt.
+
 ## 2026-09-29: Allocation, static layouts and address/stack output
 
 Emitter allocation now retains target and statistics paths while preserving

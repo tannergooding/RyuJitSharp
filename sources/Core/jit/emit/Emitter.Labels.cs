@@ -7,11 +7,14 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    private static insGroup? emitCodeGetCookie(BasicBlock block)
+    {
+        assert(block is not null);
+        return block.bbEmitCookie;
+    }
+
     public insGroup emitAddLabel(VARSET_TP gcVars, regMaskTP gcRefRegs, regMaskTP byrefRegs, BasicBlock? prevBlock = null)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Label recording outside AMD64 is not implemented.");
-#else
         assert(_compiler is not null);
         var currIGWasNonEmpty = emitCurIGnonEmpty();
         if (prevBlock is not null)
@@ -27,7 +30,7 @@ public partial class Emitter
                 {
                     if (prevBlock.Kind is BBJ_THROW)
                     {
-                        emitIns(INS_int3);
+                        emitIns(INS_BREAKPOINT);
                     }
                     else
                     {
@@ -86,14 +89,10 @@ public partial class Emitter
         }
 #endif
         return emitCurIG;
-#endif
     }
 
     public insGroup emitAddInlineLabel()
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Inline label recording outside AMD64 is not implemented.");
-#else
         if (emitCurIGnonEmpty())
         {
             emitNxtIG(extend: true);
@@ -101,7 +100,6 @@ public partial class Emitter
 
         assert(emitCurIG is not null);
         return emitCurIG;
-#endif
     }
 
     public void emitSetFirstColdIGCookie(insGroup cookie)
@@ -109,10 +107,16 @@ public partial class Emitter
         emitFirstColdIG = cookie;
     }
 
-#if TARGET_AMD64
     private bool emitLastInsIsCallWithGC()
     {
         return (emitLastIns is not null) && emitLastIns.idIsCall() && !emitLastIns.idIsNoGC();
+    }
+
+#if !TARGET_XARCH
+    public void emitIns(instruction ins)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED,
+            $"Zero-operand instruction recording outside xarch is not ported ({ins}).");
     }
 #endif
 }

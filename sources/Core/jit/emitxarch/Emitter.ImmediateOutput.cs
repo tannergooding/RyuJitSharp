@@ -18,13 +18,13 @@ public partial class Emitter
 
     public unsafe byte* emitOutputRI(byte* dst, instrDesc id)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Register-immediate output requires AMD64.");
-#else
         var size = id.idOpSize();
         var ins = id.idIns();
         var reg = id.idReg1();
         var val = emitGetInsCns(id);
+#if TARGET_X86
+        val = unchecked((int)val);
+#endif
         var valInByte = ImmCanUseSByteEncoding(ins, val);
         assert(!id.idHasReg2());
         assert(ins != INS_bt);
@@ -81,11 +81,13 @@ public partial class Emitter
             {
                 dst += emitOutputLong(dst, (long)val);
             }
+#if TARGET_AMD64
             else
             {
                 assert(size == EA_PTRSIZE);
                 dst += emitOutputSizeT(dst, (long)val);
             }
+#endif
             if (id.idIsCnsReloc())
             {
                 assert(_compiler is not null);
@@ -150,10 +152,12 @@ public partial class Emitter
                 {
                     code = insEncodeMIreg(id, reg, size,
                         AddX86PrefixIfNeeded(id, (ulong)insCodeMI(ins), size));
+#if TARGET_AMD64
                     if (ins >= INS_imul_08 && ins <= INS_imul_31)
                     {
                         _ = insEncodeReg345(id, inst3opImulReg(ins), size, &code);
                     }
+#endif
                 }
             }
 
@@ -180,11 +184,13 @@ public partial class Emitter
                     break;
                 }
 
+#if TARGET_AMD64
                 case EA_8BYTE:
                 {
                     code = AddRexWPrefix(id, code) | 1;
                     break;
                 }
+#endif
 
                 default:
                 {
@@ -219,7 +225,9 @@ public partial class Emitter
                     }
 
                     case EA_4BYTE:
+#if TARGET_AMD64
                     case EA_8BYTE:
+#endif
                     {
                         dst += emitOutputLong(dst, (long)val);
                         break;
@@ -311,21 +319,22 @@ public partial class Emitter
             }
         }
         return dst;
-#endif
     }
 
     public unsafe byte* emitOutputIV(byte* dst, instrDesc id)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Immediate-only output requires AMD64.");
-#else
         var ins = id.idIns();
         var size = id.idOpSize();
         var val = emitGetInsCns(id);
+#if TARGET_X86
+        val = unchecked((int)val);
+#endif
         var valInByte = unchecked((sbyte)val) == val;
         assert(!IsSSEInstruction(ins));
         assert(!IsSimdVexOrEvexEncodableInstruction(ins));
+#if TARGET_AMD64
         noway_assert(size < EA_8BYTE || (unchecked((int)val) == val && !id.idIsCnsReloc()));
+#endif
         if (id.idIsCnsReloc())
         {
             valInByte = false;
@@ -401,6 +410,5 @@ public partial class Emitter
         }
         assert(ins == INS_push || id.idGCref() == GCT_NONE);
         return dst;
-#endif
     }
 }

@@ -11,17 +11,21 @@ public partial class Emitter
 {
     private const int MAX_PLACEHOLDER_IG_SIZE = 256;
 
+#if EMITTER_STATS
+    private static uint emitTotalPhIGcnt;
+#endif
+
     public void emitCreatePlaceholderIG(insGroupPlaceholderType igType, BasicBlock block, VARSET_TP gcVars,
         regMaskTP gcRefRegs, regMaskTP byrefRegs, bool last)
     {
-#if !TARGET_AMD64 || EMITTER_STATS
-        throw new FatalJitException(CORJIT_SKIPPED, "Placeholder groups require AMD64 without emitter allocation statistics.");
-#else
         assert(_compiler is not null);
+        assert(block is not null);
         var extend = igType is IGPT_EPILOG or IGPT_FUNCLET_EPILOG;
         if (extend)
         {
+#if TARGET_AMD64
             emitOutputPreEpilogNOP();
+#endif
         }
 
         if (emitCurIGnonEmpty())
@@ -55,6 +59,10 @@ public partial class Emitter
         VarSetOps.Assign(_compiler, ref data.igPhPrevGCrefVars, emitPrevGCrefVars);
         VarSetOps.Assign(_compiler, ref data.igPhInitGCrefVars, emitInitGCrefVars);
         placeholder.igPhData = data;
+
+#if EMITTER_STATS
+        emitTotalPhIGcnt = unchecked(emitTotalPhIGcnt + 1);
+#endif
 
         if (igType == IGPT_EPILOG)
         {
@@ -129,7 +137,6 @@ public partial class Emitter
             jitprintf("*************** After placeholder IG creation\n");
             emitDispIGlist(displayInstructions: false);
         }
-#endif
 #endif
     }
 

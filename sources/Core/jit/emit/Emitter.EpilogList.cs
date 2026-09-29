@@ -6,10 +6,12 @@
 #if JIT32_GCENCODER
 namespace RyuJitSharp;
 
-public partial class emitter
+public partial class Emitter
 {
     protected sealed class EpilogList
     {
+        public EpilogList? elNext;
+        public emitLocation elLoc;
     }
 }
 #endif

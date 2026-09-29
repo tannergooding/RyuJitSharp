@@ -19,6 +19,7 @@ public partial class Emitter
         private bool _idLargeCns;
         private bool _idLargeDsp;
         private bool _idCall;
+        private byte _idCustomBits;
 #if TARGET_XARCH
         private uint _idScaledPrevOffset;
 #endif
@@ -111,6 +112,18 @@ public partial class Emitter
         public void idSetIsCall()
         {
             _idCall = true;
+        }
+
+        public bool idIsNoGC()
+        {
+            assert(!IsSimdInstruction(idIns()));
+            return (_idCustomBits & 4) != 0;
+        }
+
+        public void idSetIsNoGC(bool value)
+        {
+            assert(!IsSimdInstruction(idIns()));
+            _idCustomBits = (byte)((_idCustomBits & ~4) | (value ? 4 : 0));
         }
 
         public bool idIsLargeCall()

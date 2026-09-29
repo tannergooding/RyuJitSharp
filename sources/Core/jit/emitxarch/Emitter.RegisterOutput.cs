@@ -12,9 +12,6 @@ public partial class Emitter
 {
     public unsafe byte* emitOutputR(byte* dst, instrDesc id)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Register output requires AMD64.");
-#else
         var ins = id.idIns();
         var reg = id.idReg1();
         var size = id.idOpSize();
@@ -28,6 +25,19 @@ public partial class Emitter
             case INS_inc:
             case INS_dec:
             {
+#if TARGET_X86
+                if (size != EA_1BYTE)
+                {
+                    if (size == EA_2BYTE)
+                    {
+                        dst += emitOutputByte(dst, 0x66);
+                    }
+
+                    dst += emitOutputByte(dst, unchecked((long)((ulong)insCodeRR(ins)
+                        | insEncodeReg012(id, reg, size, null))));
+                    break;
+                }
+#endif
                 ins = (instruction)(ins + 1);
                 if (size == EA_2BYTE && !TakesEvexPrefix(id))
                 {
@@ -127,6 +137,7 @@ public partial class Emitter
                 break;
             }
 
+#if TARGET_AMD64
             case INS_seto_apx:
             case INS_setno_apx:
             case INS_setb_apx:
@@ -152,6 +163,7 @@ public partial class Emitter
                 dst += emitOutputWord(dst, unchecked((long)(code & 0xFFFF)));
                 break;
             }
+#endif
 
             default:
             {
@@ -228,14 +240,10 @@ public partial class Emitter
         }
 
         return dst;
-#endif
     }
 
     public unsafe byte* emitOutputRR(byte* dst, instrDesc id)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Register-pair output requires AMD64.");
-#else
         var ins = id.idIns();
         var reg1 = id.idReg1();
         var reg2 = id.idReg2();
@@ -275,20 +283,28 @@ public partial class Emitter
             assert(hasCodeRM(ins) && !hasCodeMI(ins) && !hasCodeMR(ins));
             code = AddX86PrefixIfNeeded(id, (ulong)insCodeRM(ins), size);
             code = insEncodeRMreg(id, code) | (size == EA_2BYTE ? 1UL : 0);
+#if TARGET_AMD64
             assert(size < EA_4BYTE || insIsCMOV(ins));
             if (size == EA_8BYTE || ins == INS_movsx)
             {
                 code = AddRexWPrefix(id, code);
             }
+#endif
         }
+#if TARGET_AMD64
         else if (ins == INS_movsxd)
         {
             assert(hasCodeRM(ins) && !hasCodeMI(ins) && !hasCodeMR(ins));
             code = AddX86PrefixIfNeeded(id, (ulong)insCodeRM(ins), size);
             code = AddRexWPrefix(id, insEncodeRMreg(id, code));
         }
-        else if (ins is INS_bsf or INS_bsr or INS_crc32 or INS_lzcnt or INS_popcnt or INS_tzcnt or
-            INS_lzcnt_apx or INS_tzcnt_apx or INS_popcnt_apx or INS_crc32_apx)
+#endif
+#if FEATURE_HW_INTRINSICS
+        else if (ins is INS_bsf or INS_bsr or INS_crc32 or INS_lzcnt or INS_popcnt or INS_tzcnt
+#if TARGET_AMD64
+            or INS_lzcnt_apx or INS_tzcnt_apx or INS_popcnt_apx or INS_crc32_apx
+#endif
+            )
         {
             assert(hasCodeRM(ins) && !hasCodeMI(ins) && !hasCodeMR(ins));
             code = AddX86PrefixIfNeeded(id, (ulong)insCodeRM(ins), size);
@@ -297,10 +313,12 @@ public partial class Emitter
             {
                 code |= 0x0100;
             }
+#if TARGET_AMD64
             if (ins == INS_crc32_apx && size > EA_1BYTE)
             {
                 code |= 1;
             }
+#endif
             if (size == EA_2BYTE)
             {
                 if (!TakesEvexPrefix(id))
@@ -318,6 +336,8 @@ public partial class Emitter
                 code = AddRexWPrefix(id, code);
             }
         }
+#endif
+#if TARGET_AMD64
         else if (ins is INS_push2 or INS_pop2)
         {
             assert(size == EA_PTRSIZE && TakesEvexPrefix(id));
@@ -325,6 +345,7 @@ public partial class Emitter
             assert(id.idIsApxPpxContextSet());
             code = AddRexWPrefix(id, code);
         }
+#endif
         else
         {
             assert(!TakesSimdPrefix(id) || TakesEvexPrefix(id));
@@ -338,8 +359,13 @@ public partial class Emitter
             {
                 case EA_1BYTE:
                 {
+#if TARGET_X86
+                    noway_assert(reg1 <= REG_EBX);
+                    noway_assert(reg2 <= REG_EBX);
+#else
                     noway_assert(reg1.IsIntReg);
                     noway_assert(reg2.IsIntReg);
+#endif
                     break;
                 }
 
@@ -363,11 +389,13 @@ public partial class Emitter
 
                 case EA_4BYTE:
                 {
+#if TARGET_AMD64
                     if (TakesEvexPrefix(id))
                     {
                         assert(hasEvexPrefix(code));
                         assert((code & 0x10000000000UL) == 0);
                     }
+#endif
                     if (!IsCFCMOV(ins))
                     {
                         code |= 1;
@@ -375,6 +403,7 @@ public partial class Emitter
                     break;
                 }
 
+#if TARGET_AMD64
                 case EA_8BYTE:
                 {
                     if (ins != INS_xor || reg1 != reg2)
@@ -391,6 +420,7 @@ public partial class Emitter
                     }
                     break;
                 }
+#endif
 
                 default:
                 {
@@ -500,7 +530,6 @@ public partial class Emitter
             }
         }
         return dst;
-#endif
     }
 
     public unsafe byte* emitOutputRRR(byte* dst, instrDesc id)

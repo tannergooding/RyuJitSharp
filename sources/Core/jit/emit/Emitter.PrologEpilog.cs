@@ -24,7 +24,6 @@ public partial class Emitter
 
     public void emitGeneratePrologEpilog()
     {
-        RequireSupportedInstructionRecording();
 #if DEBUG
         var prologCount = 0;
         var epilogCount = 0;
@@ -104,7 +103,6 @@ public partial class Emitter
 
     public void emitStartPrologEpilogGeneration()
     {
-        RequireSupportedInstructionRecording();
         if (emitCurIG is not null)
         {
             _ = emitSavIG(emitAdd: false);
@@ -135,7 +133,6 @@ public partial class Emitter
 
     public void emitBegProlog()
     {
-        RequireSupportedInstructionRecording();
         assert(_compiler is not null);
 #if EMIT_TRACK_STACK_DEPTH
         emitCntStackDepth = 0;
@@ -178,7 +175,6 @@ public partial class Emitter
 
     private void emitBegPrologEpilog(insGroup placeholder)
     {
-        RequireSupportedInstructionRecording();
         assert(_compiler is not null);
         assert((placeholder.igFlags & InsGroupFlags.Placeholder) != 0);
         if (emitCurIGnonEmpty())
@@ -230,20 +226,45 @@ public partial class Emitter
 
     public void emitBegFnEpilog(insGroup placeholder)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Epilog materialization requires AMD64.");
-#else
         emitEpilogCnt++;
         emitBegPrologEpilog(placeholder);
+
+#if JIT32_GCENCODER
+        var epilog = new EpilogList();
+        if (emitEpilogLast is not null)
+        {
+            emitEpilogLast.elNext = epilog;
+        }
+        else
+        {
+            emitEpilogList = epilog;
+        }
+
+        emitEpilogLast = epilog;
 #endif
     }
 
     public void emitEndFnEpilog()
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Epilog materialization requires AMD64.");
-#else
         emitEndPrologEpilog();
+
+#if JIT32_GCENCODER
+        assert(emitEpilogLast is not null);
+        var epilogBegin = emitEpilogLast.elLoc.CodeOffset(this);
+        var exitSequenceBegin = emitExitSeqBegLoc.CodeOffset(this);
+        var epilogSize = unchecked(exitSequenceBegin - epilogBegin);
+        assert((emitEpilogSize == 0) || (unchecked((uint)emitEpilogSize) == epilogSize));
+        emitEpilogSize = unchecked((int)epilogSize);
+
+        assert(emitCurIG is not null);
+        var epilogEnd = emitCodeOffset(emitCurIG, emitCurOffset());
+        assert(exitSequenceBegin != epilogEnd);
+        var exitSequenceSize = unchecked(epilogEnd - exitSequenceBegin);
+        if (exitSequenceSize < unchecked((uint)emitExitSeqSize))
+        {
+            assert((emitEpilogCnt == 1) || (unchecked((uint)emitExitSeqSize - exitSequenceSize) <= 5u));
+            emitExitSeqSize = unchecked((int)exitSequenceSize);
+        }
 #endif
     }
 
@@ -266,6 +287,25 @@ public partial class Emitter
     {
         emitEndPrologEpilog();
     }
+
+#if JIT32_GCENCODER
+    public void emitStartEpilog()
+    {
+        assert(emitEpilogLast is not null);
+        emitEpilogLast.elLoc.CaptureLocation(this);
+    }
+
+    public bool emitHasEpilogEnd()
+    {
+        if (emitEpilogCnt == 1)
+        {
+            assert(emitIGlast is not null);
+            return (emitIGlast.igFlags & InsGroupFlags.Epilog) != 0;
+        }
+
+        return false;
+    }
+#endif
 
 #if TARGET_XARCH
     public void emitStartExitSeq()
