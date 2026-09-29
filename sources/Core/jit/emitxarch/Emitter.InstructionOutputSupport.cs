@@ -15,7 +15,11 @@ public partial class Emitter
 
     private static bool isLowSimdReg(regNumber reg)
     {
-        return reg >= REG_XMM0 && reg <= REG_XMM15;
+#if TARGET_AMD64
+        return (reg >= REG_XMM0) && (reg <= REG_XMM15);
+#else
+        return (reg >= REG_XMM0) && (reg <= REG_XMM7);
+#endif
     }
 
     private static ulong insEncodeMRreg(instrDesc id, ulong code)

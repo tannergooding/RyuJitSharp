@@ -10,7 +10,7 @@ public partial class Emitter
 {
     private static sbyte encodeRegAsIval(regNumber opReg)
     {
-        assert(((opReg >= REG_XMM0) && (opReg <= REG_XMM15)) || isMaskReg(opReg));
+        assert(isLowSimdReg(opReg) || isMaskReg(opReg));
         var ival = (nint)opReg;
         assert((ival >= 0) && (ival <= 0xFF));
 

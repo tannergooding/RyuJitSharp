@@ -11,7 +11,14 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private static regNumber decodeRegFromIval(nint value) => (regNumber)unchecked((byte)value);
+    private static regNumber decodeRegFromIval(nint value)
+    {
+        assert((value >= -128) && (value <= 127));
+        var opReg = unchecked((regNumber)value);
+        assert(isLowSimdReg(opReg) || isMaskReg(opReg));
+
+        return opReg;
+    }
 
     private void emitDispRegisterPair(instrDesc id, ref emitAttr attr)
     {

@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
-#if TARGET_AMD64
+#if TARGET_XARCH
     public static regNumber AbsRegNumber(regNumber reg)
     {
         assert(reg < REG_STK);
@@ -23,16 +23,25 @@ public static partial class Globals
         return reg;
     }
 
+    public static bool IsXMMReg(regNumber reg)
+    {
+#if TARGET_AMD64
+        return (reg >= REG_XMM0) && (reg <= REG_XMM31);
+#else
+        return (reg >= REG_XMM0) && (reg <= REG_XMM7);
+#endif
+    }
+
+    public static uint HighAwareRegEncoding(regNumber reg)
+    {
+        assert(((uint)REG_XMM0 & 0x7) == 0);
+        return (uint)AbsRegNumber(reg) & 0xF;
+    }
+
     public static uint RegEncoding(regNumber reg)
     {
         assert(((uint)REG_XMM0 & 0x7) == 0);
         return (uint)AbsRegNumber(reg) & 0x7;
-    }
-#elif TARGET_X86
-    public static uint RegEncoding(regNumber reg)
-    {
-        assert(reg < REG_STK);
-        return (uint)reg & 7;
     }
 #endif
 }

@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Close the xarch emitter residual source
+
+The seven remaining free register helpers now preserve native decode assertions,
+x86 register bounds and shared absolute/opcode encodings. Register naming and
+EVEX encoding use the native helper algorithms. The existing displacement
+relocation constant is accounted for too: the remaining 585-line
+`emitxarch.cpp`, mostly comments and guards after earlier batches, is deleted
+in `b38c1f34`.
+
+Windows controls pass 484 Debug/417 Release; Linux-target controls pass 21.
+Six identical old controls fail on the missing decode assertions. X86 retains
+the same 14 baseline compile errors. This closes the residual file, not all
+emitter dependencies or generated-code parity. Evidence:
+`artifacts/xarch-register-helper-closure` and
+`artifacts/residual-reconciliation/register-helpers-whole-file-20260929.json`.
+
 ## 2026-09-29: Restore the SIMD upper-clear target boundary
 
 The SIMD completion batch accidentally exposed `genSimd12UpperClear` to ARM64,

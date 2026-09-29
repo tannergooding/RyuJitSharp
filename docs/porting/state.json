@@ -16,6 +16,17 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "xarchEmitterResidualClosure": {
+      "scope": "Complete the seven remaining free register helpers and account for the existing displacement-relocation constant in emitxarch.cpp.",
+      "changes": "Restore decode immediate-range/register-class assertions, x86 low-SIMD bounds, and whole shared absolute/register encodings. Register naming and EVEX encoding use the native IsXMMReg and HighAwareRegEncoding helpers.",
+      "validation": "Full-analysis Windows484 Debug/417 Release and Linux-target21 pass. All six identical old decode-assertion controls fail. Old/final x86 builds retain14 identical baseline errors.",
+      "retirement": "Seven definitions and one constant; delete the remaining585-line emitxarch.cpp, including comment/guard scaffolding. Native bodies match the pin, and no other executable residual content remains in that file.",
+      "nativeBefore": "4962ffef9ef8b57cdff0639dda03eb7b7acae569",
+      "nativeAfter": "b38c1f34cde66c5763ecb6cd3bda829614174f7e",
+      "mapping": "Free helpers map to Globals.RegisterEncoding and the existing Emitter register/display partials. RELOC_DISP32 remains in Emitter.ImmediateOutput; AMD64 and64-bit conditions are equivalent inside native TARGET_XARCH.",
+      "evidence": "artifacts/xarch-register-helper-closure final-windows-2, old-windows-2, final-linux and old/final-x86; artifacts/residual-reconciliation/register-helpers-whole-file-20260929.json and integrate-register-helpers.py.",
+      "limits": "Closing this residual file is not whole-emitter execution coverage or generated-code parity; independently tracked dependencies and other emitter sources remain."
+    },
     "xarchMemoryRegisterConstruction": {
       "scope": "Whole BuildLclHeap and BuildIndir, preserving x86 counter and byte-register requirements and RMW address operands.",
       "validation": "Old/final Windows26 Debug/26 Release pass; identical parser-overlaid x86 builds retain14 baseline errors, so four new x86 cases remain unexecuted.",
@@ -1252,7 +1263,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "4962ffef9ef8b57cdff0639dda03eb7b7acae569",
+      "residualHead": "b38c1f34cde66c5763ecb6cd3bda829614174f7e",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -1819,7 +1830,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "SIMD target-guard repair restores ARM64 Debug/Release compilation. Parent completes seven remaining emitxarch.cpp helpers: Windows484D417R pass, six old decode-assertion controls fail, Linux/x86 checks continue under artifacts/xarch-register-helper-closure; then hash-verify and delete the entire585-line residual file. A's xarch-immediate-helper-proposed-20260929.json is ready (2 definitions/127 lines). B is adding failing-old assertion controls for its1355-line LowerHWIntrinsic proposal; LSRA and HW lanes continue. Preserve14 x86 blockers,13 Wasm WIP, oracle-plus-one and no publication.",
+    "nextAction": "emitxarch.cpp closure accepted at nativeb38c1f34:7 functions plus1 constant/585 lines, entire residual file deleted;484D417R/21Linux and six failing-old assertion controls. Do not reapply. Parent next integrates xarch-immediate-helper-proposed-20260929.json (2 definitions/127 lines,90D84R/46 focusedLinux); its source/span hashes remain unchanged. B is adding failing-old assertion controls for1355-line LowerHWIntrinsic; LSRA and HW workers continue. SIMD ARM64 guard is already repaired in cd16cba. Preserve14 x86 blockers,13 Wasm WIP, oracle-plus-one and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

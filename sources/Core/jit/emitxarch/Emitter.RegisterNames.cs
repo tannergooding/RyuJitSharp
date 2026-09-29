@@ -31,7 +31,7 @@ public partial class Emitter
         {
             case EA_64BYTE:
             {
-                if (reg.IsFltReg)
+                if (IsXMMReg(reg))
                 {
                     return emitZMMregName(reg);
                 }
@@ -40,7 +40,7 @@ public partial class Emitter
 
             case EA_32BYTE:
             {
-                if (reg.IsFltReg)
+                if (IsXMMReg(reg))
                 {
                     return emitYMMregName(reg);
                 }
@@ -50,7 +50,7 @@ public partial class Emitter
             case EA_16BYTE:
             case EA_8BYTE:
             {
-                if (reg.IsFltReg)
+                if (IsXMMReg(reg))
                 {
                     return emitXMMregName(reg);
                 }
@@ -59,7 +59,7 @@ public partial class Emitter
 
             case EA_4BYTE:
             {
-                if (reg.IsFltReg)
+                if (IsXMMReg(reg))
                 {
                     return emitXMMregName(reg);
                 }
@@ -72,7 +72,7 @@ public partial class Emitter
 
             case EA_2BYTE:
             {
-                if (reg.IsFltReg)
+                if (IsXMMReg(reg))
                 {
                     return emitXMMregName(reg);
                 }

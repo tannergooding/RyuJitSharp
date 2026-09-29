@@ -424,7 +424,7 @@ public partial class Emitter
         {
             if (TakesEvexPrefix(id) && hasEvexPrefix(code))
             {
-                bits = (uint)AbsRegNumber(reg) & 0xF;
+                bits = HighAwareRegEncoding(reg);
                 if (isHighSimdReg(reg) || (isHighGPReg(reg) && IsBMIInstruction(ins)))
                 {
                     code &= 0xFFFFFFF7FFFFFFFFUL;
@@ -436,7 +436,7 @@ public partial class Emitter
             return code ^ (bits << 35);
         }
         assert(TakesEvexPrefix(id) && hasEvexPrefix(code));
-        bits = (uint)AbsRegNumber(reg) & 0xF;
+        bits = HighAwareRegEncoding(reg);
         if (isHighGPReg(reg))
         {
             code &= 0xFFFFFFF7FFFFFFFFUL;
