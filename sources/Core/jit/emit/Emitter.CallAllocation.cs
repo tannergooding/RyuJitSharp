@@ -4,7 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-#if UNIX_AMD64_ABI
+#if MULTIREG_HAS_SECOND_GC_RET
 using static RyuJitSharp.GCInfo.GCtype;
 #endif
 
@@ -12,7 +12,11 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
+#if !TARGET_WASM
+#if EMITTER_STATS
+    private static uint emitTotalIDescCGCACnt;
+#endif
+
 #if TARGET_X86
     private regMaskTP CallScratchRegisters
     {
@@ -23,14 +27,19 @@ public partial class Emitter
                 _compiler.SRBM_INT_CALLEE_TRASH | _compiler.SRBM_FLT_CALLEE_TRASH, _compiler.SRBM_MSK_CALLEE_TRASH);
         }
     }
+#endif
 
     private instrDescCGCA emitAllocInstrCGCA(emitAttr attr)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 large-call descriptor allocation is not ported.");
+    {
+#if EMITTER_STATS
+        emitTotalIDescCGCACnt = unchecked(emitTotalIDescCGCACnt + 1);
 #endif
+        return emitAllocAnyInstr<instrDescCGCA>(unchecked((nuint)instrDescCGCA.NativeSize), attr);
+    }
 
     private instrDesc emitNewInstrCallInd(int argCnt, nint disp, ReadOnlySpan<nint> GCvars,
         regMaskTP gcrefRegs, regMaskTP byrefRegs, emitAttr retSize,
-#if UNIX_AMD64_ABI
+#if MULTIREG_HAS_SECOND_GC_RET
         emitAttr secondRetSize,
 #endif
         bool hasAsyncRet)
@@ -41,29 +50,27 @@ public partial class Emitter
             retSize = EA_PTRSIZE;
         }
 
-        var large = !VarSetOps.IsEmpty(_compiler, GCvars) ||
-            ((gcrefRegs & CallScratchRegisters) != RBM_NONE) || (byrefRegs != RBM_NONE) ||
-            (disp < AM_DISP_MIN) || (disp > AM_DISP_MAX) || !instrDesc.fitsInSmallCns(argCnt) ||
-            (argCnt < 0) ||
-#if UNIX_AMD64_ABI
+        var gcRefRegsInScratch = (gcrefRegs & RBM_CALLEE_TRASH) != RBM_NONE;
+        var large = !VarSetOps.IsEmpty(_compiler, GCvars) || gcRefRegsInScratch || (byrefRegs != RBM_NONE) ||
+#if TARGET_XARCH
+            (disp < AM_DISP_MIN) || (disp > AM_DISP_MAX) ||
+#endif
+            (argCnt > ID_MAX_SMALL_CNS) || (argCnt < 0) ||
+#if MULTIREG_HAS_SECOND_GC_RET
             (EA_IS_GCREF(secondRetSize) || EA_IS_BYREF(secondRetSize)) ||
 #endif
             hasAsyncRet;
 
         if (large)
         {
-#if TARGET_X86
             var id = emitAllocInstrCGCA(retSize);
-#else
-            var id = emitAllocAnyInstr<instrDescCGCA>(72, retSize);
-#endif
             id.idSetIsLargeCall();
             VarSetOps.Assign(_compiler, ref id.idcGCvars, GCvars);
             id.idcGcrefRegs = gcrefRegs;
             id.idcByrefRegs = byrefRegs;
             id.idcArgCnt = unchecked((uint)argCnt);
             id.idcDisp = disp;
-#if UNIX_AMD64_ABI
+#if MULTIREG_HAS_SECOND_GC_RET
             emitSetSecondRetRegGCType(id, secondRetSize);
 #endif
             id.hasAsyncContinuationRet(hasAsyncRet);
@@ -74,9 +81,11 @@ public partial class Emitter
             var id = emitNewInstrCns(retSize, argCnt);
             assert(!id.idIsLargeCns());
             id.idSetIsCall();
+#if TARGET_XARCH
             id.idAddr().iiaAddrMode.amDisp = (int)disp;
             assert(id.idAddr().iiaAddrMode.amDisp == disp);
-            assert((gcrefRegs & CallScratchRegisters) == RBM_NONE);
+#endif
+            assert((gcrefRegs & RBM_CALLEE_TRASH) == RBM_NONE);
             emitEncodeCallGCregs(gcrefRegs, id);
             return id;
         }
@@ -84,7 +93,7 @@ public partial class Emitter
 
     private instrDesc emitNewInstrCallDir(int argCnt, ReadOnlySpan<nint> GCvars,
         regMaskTP gcrefRegs, regMaskTP byrefRegs, emitAttr retSize,
-#if UNIX_AMD64_ABI
+#if MULTIREG_HAS_SECOND_GC_RET
         emitAttr secondRetSize,
 #endif
         bool hasAsyncRet)
@@ -95,28 +104,24 @@ public partial class Emitter
             retSize = EA_PTRSIZE;
         }
 
-        var large = !VarSetOps.IsEmpty(_compiler, GCvars) ||
-            ((gcrefRegs & CallScratchRegisters) != RBM_NONE) || (byrefRegs != RBM_NONE) ||
-            !instrDesc.fitsInSmallCns(argCnt) || (argCnt < 0) ||
-#if UNIX_AMD64_ABI
+        var gcRefRegsInScratch = (gcrefRegs & RBM_CALLEE_TRASH) != RBM_NONE;
+        var large = !VarSetOps.IsEmpty(_compiler, GCvars) || gcRefRegsInScratch || (byrefRegs != RBM_NONE) ||
+            (argCnt > ID_MAX_SMALL_CNS) || (argCnt < 0) ||
+#if MULTIREG_HAS_SECOND_GC_RET
             (EA_IS_GCREF(secondRetSize) || EA_IS_BYREF(secondRetSize)) ||
 #endif
             hasAsyncRet;
 
         if (large)
         {
-#if TARGET_X86
             var id = emitAllocInstrCGCA(retSize);
-#else
-            var id = emitAllocAnyInstr<instrDescCGCA>(72, retSize);
-#endif
             id.idSetIsLargeCall();
             VarSetOps.Assign(_compiler, ref id.idcGCvars, GCvars);
             id.idcGcrefRegs = gcrefRegs;
             id.idcByrefRegs = byrefRegs;
             id.idcDisp = 0;
             id.idcArgCnt = unchecked((uint)argCnt);
-#if UNIX_AMD64_ABI
+#if MULTIREG_HAS_SECOND_GC_RET
             emitSetSecondRetRegGCType(id, secondRetSize);
 #endif
             id.hasAsyncContinuationRet(hasAsyncRet);
@@ -127,13 +132,13 @@ public partial class Emitter
             var id = emitNewInstrCns(retSize, argCnt);
             assert(!id.idIsLargeCns());
             id.idSetIsCall();
-            assert((gcrefRegs & CallScratchRegisters) == RBM_NONE);
+            assert((gcrefRegs & RBM_CALLEE_TRASH) == RBM_NONE);
             emitEncodeCallGCregs(gcrefRegs, id);
             return id;
         }
     }
 
-#if UNIX_AMD64_ABI
+#if MULTIREG_HAS_SECOND_GC_RET
     private static void emitSetSecondRetRegGCType(instrDescCGCA id, emitAttr secondRetSize)
     {
         if (EA_IS_GCREF(secondRetSize))
@@ -148,114 +153,6 @@ public partial class Emitter
         {
             id.idSecondGCref(GCT_NONE);
         }
-    }
-#endif
-
-    private static void emitEncodeCallGCregs(regMaskTP gcRefRegs, instrDesc id)
-    {
-#if TARGET_X86
-        var regs = gcRefRegs.Lower;
-        uint encoded = 0;
-        if ((regs & SRBM_ESI) != 0)
-        {
-            encoded |= 1;
-        }
-        if ((regs & SRBM_EDI) != 0)
-        {
-            encoded |= 2;
-        }
-        if ((regs & SRBM_EBX) != 0)
-        {
-            encoded |= 4;
-        }
-
-        id.idReg1((regNumber)encoded);
-#else
-        var regs = gcRefRegs.Lower;
-        uint reg1 = 0;
-        uint reg2 = 0;
-
-        if ((regs & SRBM_ESI) != 0)
-        {
-            reg1 |= 1;
-        }
-        if ((regs & SRBM_EDI) != 0)
-        {
-            reg1 |= 2;
-        }
-        if ((regs & SRBM_EBX) != 0)
-        {
-            reg1 |= 4;
-        }
-        if ((regs & SRBM_EBP) != 0)
-        {
-            reg1 |= 8;
-        }
-
-        if ((regs & SRBM_R12) != 0)
-        {
-            reg2 |= 1;
-        }
-        if ((regs & SRBM_R13) != 0)
-        {
-            reg2 |= 2;
-        }
-        if ((regs & SRBM_R14) != 0)
-        {
-            reg2 |= 4;
-        }
-        if ((regs & SRBM_R15) != 0)
-        {
-            reg2 |= 8;
-        }
-
-        id.idReg1((regNumber)reg1);
-        id.idReg2((regNumber)reg2);
-#endif
-    }
-
-#if TARGET_AMD64
-    private static uint emitDecodeCallGCregs(instrDesc id)
-    {
-        var reg1 = (uint)id.idReg1();
-        var reg2 = (uint)id.idReg2();
-        var regs = SRBM_NONE;
-
-        if ((reg1 & 1) != 0)
-        {
-            regs |= SRBM_ESI;
-        }
-        if ((reg1 & 2) != 0)
-        {
-            regs |= SRBM_EDI;
-        }
-        if ((reg1 & 4) != 0)
-        {
-            regs |= SRBM_EBX;
-        }
-        if ((reg1 & 8) != 0)
-        {
-            regs |= SRBM_EBP;
-        }
-
-        if ((reg2 & 1) != 0)
-        {
-            regs |= SRBM_R12;
-        }
-        if ((reg2 & 2) != 0)
-        {
-            regs |= SRBM_R13;
-        }
-        if ((reg2 & 4) != 0)
-        {
-            regs |= SRBM_R14;
-        }
-        if ((reg2 & 8) != 0)
-        {
-            regs |= SRBM_R15;
-        }
-
-        return (uint)regs;
     }
 #endif
 #endif

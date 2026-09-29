@@ -65,6 +65,7 @@ public partial class Emitter
 
     private regMaskTP RBM_CALLEE_TRASH_NOGC => RBM_CALLEE_TRASH;
 #elif TARGET_ARM64
+    private static regMaskTP RBM_CALLEE_TRASH => SRBM_CALLEE_TRASH;
     private static regMaskTP RBM_ALLINT => new(SRBM_ALLINT);
     private static regMaskTP RBM_CALLEE_SAVED => new(SRBM_CALLEE_SAVED);
     private static regMaskTP RBM_INTERFACELOOKUP_FOR_SLOT_TRASH => SRBM_INTERFACELOOKUP_FOR_SLOT_TRASH;
@@ -76,6 +77,11 @@ public partial class Emitter
     private static regMaskTP RBM_VALIDATE_INDIRECT_CALL_TRASH => new(SRBM_VALIDATE_INDIRECT_CALL_TRASH);
     private static regMaskTP RBM_CALLEE_TRASH_NOGC => new(SRBM_CALLEE_TRASH_NOGC);
 #else
+#if TARGET_X86
+    private regMaskTP RBM_CALLEE_TRASH => CallScratchRegisters;
+#else
+    private static regMaskTP RBM_CALLEE_TRASH => MissingNoGCCallMask(nameof(RBM_CALLEE_TRASH));
+#endif
     private static regMaskTP RBM_ALLINT => MissingNoGCCallMask(nameof(RBM_ALLINT));
     private static regMaskTP RBM_CALLEE_SAVED => MissingNoGCCallMask(nameof(RBM_CALLEE_SAVED));
     private static regMaskTP RBM_CALLEE_GCTRASH_WRITEBARRIER

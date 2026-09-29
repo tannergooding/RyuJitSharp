@@ -16,6 +16,26 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Common call allocation and GC-register encoding
+
+Direct and indirect call allocation now preserve the complete target conditions,
+including second-register GC returns, xarch-only displacement selection and
+fat-call allocation statistics. Both compact GC-register codecs retain every
+fixed-register target mapping. Descriptor constants use the native target/host
+width formula, and register setters preserve their native bitfield widths.
+
+Final full-analysis controls pass Windows 282 Debug/276 Release and ARM64 with
+emitter statistics 109/100. Four identical old argument-count cases fail at the
+former ARM64 guard. The complete codec statement sequences also match pinned
+native after explicit representation adaptations.
+
+Eleven complete definitions retire 589 lines in native `7cc9d4e1`. Large-call
+layouts outside Windows-host AMD64/ARM64 and separately unported scratch masks
+remain terminating dependencies; this is not machine-code execution evidence.
+Exact snapshots and codec proof are in `artifacts/call-allocation-packet`;
+the retirement manifest, applied receipt and reconstruction are in
+`artifacts/residual-reconciliation/call-allocation-*-20260929.json`.
+
 ## 2026-09-29: Xarch move analysis and static recording
 
 Accumulator sign-extension folding, redundant-move analysis and push/pop

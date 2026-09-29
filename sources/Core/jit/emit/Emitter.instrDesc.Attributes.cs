@@ -82,12 +82,8 @@ public partial class Emitter
 
         public void idReg1(regNumber reg)
         {
-#if TARGET_AMD64
             _idReg1 = (regNumber)((uint)reg & ((1u << REGNUM_BITS) - 1));
             assert(reg == _idReg1);
-#else
-            throw new FatalJitException(CORJIT_SKIPPED, "Instruction register fields outside AMD64 are not implemented.");
-#endif
         }
 
         public regNumber idReg2()
@@ -97,12 +93,8 @@ public partial class Emitter
 
         public void idReg2(regNumber reg)
         {
-#if TARGET_AMD64
             _idReg2 = (regNumber)((uint)reg & ((1u << REGNUM_BITS) - 1));
             assert(reg == _idReg2);
-#else
-            throw new FatalJitException(CORJIT_SKIPPED, "Instruction register fields outside AMD64 are not implemented.");
-#endif
         }
 
         public bool idIsCnsReloc()

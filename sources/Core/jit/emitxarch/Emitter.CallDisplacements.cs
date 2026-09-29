@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH || TARGET_ARM64
+#if !TARGET_WASM
     protected sealed class instrDescCGCA : instrDesc
     {
         public VARSET_TP idcGCvars = [];
@@ -36,13 +36,15 @@ public partial class Emitter
         // bitfield allocation for the SysV second-return GC type and async bit.
         // Both AMD64 layouts round to the same eight-byte boundary.
 #if TARGET_AMD64
-        public override int NativeLogicalSize => 72;
+        internal static int NativeSize => 72;
 #elif TARGET_ARM64
-        public override int NativeLogicalSize => Arm64CallDescriptorSize();
+        internal static int NativeSize => Arm64CallDescriptorSize();
 #else
-        public override int NativeLogicalSize
-            => throw new System.PlatformNotSupportedException("The x86 call descriptor layout is not yet ported.");
+        internal static int NativeSize
+            => throw new System.PlatformNotSupportedException("The call descriptor layout is not yet ported for this target.");
 #endif
+
+        public override int NativeLogicalSize => NativeSize;
 
         public bool hasAsyncContinuationRet()
         {

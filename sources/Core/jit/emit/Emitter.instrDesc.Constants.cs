@@ -9,43 +9,57 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    // emit.h:932-1007: small constants fill the remainder of the second
+    // descriptor word after target flags, relocation and predecessor bits.
+#if TARGET_ARM
+    private const int ID_EXTRA_BITFIELD_BITS = 16;
+#elif TARGET_ARM64
+    private const int ID_EXTRA_BITFIELD_BITS = 23;
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+    private const int ID_EXTRA_BITFIELD_BITS = 14;
+#elif TARGET_X86
+    private const int ID_EXTRA_BITFIELD_BITS = 18;
+#elif TARGET_AMD64
+    private const int ID_EXTRA_BITFIELD_BITS = 20;
+#elif TARGET_WASM
+    private const int ID_EXTRA_BITFIELD_BITS = -4;
+#else
+#error Unsupported or unset target architecture
+#endif
+
+#if TARGET_XARCH && HOST_64BIT
+    private const int ID_EXTRA_PREV_OFFSET_BITS = 5;
+#elif TARGET_XARCH
+    private const int ID_EXTRA_PREV_OFFSET_BITS = 4;
+#else
+    private const int ID_EXTRA_PREV_OFFSET_BITS = 0;
+#endif
+
+    private const int ID_EXTRA_RELOC_BITS = 2;
+    private const int ID_EXTRA_BITS = ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS;
+    private const int ID_BIT_SMALL_CNS = ID_EXTRA_BITS <= 0 ? 30 : 32 - ID_EXTRA_BITS;
+    private const int ID_MIN_SMALL_CNS = -(1 << (ID_BIT_SMALL_CNS - 1));
+    private const int ID_MAX_SMALL_CNS = (1 << (ID_BIT_SMALL_CNS - 1)) - 1;
+
     public abstract partial class instrDesc
     {
-        // emit.h:932-1007: AMD64 uses 20 extra flag bits, two relocation bits,
-        // and five backwards-navigation bits, leaving five signed constant bits.
-        private const int ID_BIT_SMALL_CNS = 5;
-        private const int ID_MIN_SMALL_CNS = -(1 << (ID_BIT_SMALL_CNS - 1));
-        private const int ID_MAX_SMALL_CNS = (1 << (ID_BIT_SMALL_CNS - 1)) - 1;
-
         private int _idSmallCns;
 
         public static bool fitsInSmallCns(nint value)
         {
-#if TARGET_AMD64
             return (value >= ID_MIN_SMALL_CNS) && (value <= ID_MAX_SMALL_CNS);
-#else
-            throw new PlatformNotSupportedException("Small instruction constants are not yet ported for this target.");
-#endif
         }
 
         public int idSmallCns()
         {
-#if TARGET_AMD64
             return _idSmallCns;
-#else
-            throw new PlatformNotSupportedException("Small instruction constants are not yet ported for this target.");
-#endif
         }
 
         public void idSmallCns(nint value)
         {
-#if TARGET_AMD64
             assert(fitsInSmallCns(value));
             _idSmallCns = unchecked((int)value << (32 - ID_BIT_SMALL_CNS)) >> (32 - ID_BIT_SMALL_CNS);
             assert(value == idSmallCns());
-#else
-            throw new PlatformNotSupportedException("Small instruction constants are not yet ported for this target.");
-#endif
         }
 
         public void idSetIsSmallDsp()
