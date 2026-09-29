@@ -9,12 +9,20 @@ public partial class Emitter
 {
     public void emitIns_I(instruction ins, emitAttr attr, nint val)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Immediate-only instruction recording requires Windows AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Immediate-only instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
+#if TARGET_X86
+        var valInByte = unchecked((sbyte)val) == unchecked((int)val);
+#else
         var valInByte = unchecked((sbyte)val) == val;
+#endif
+#if TARGET_AMD64
         noway_assert((EA_SIZE(attr) < EA_8BYTE) || !EA_IS_CNS_RELOC(attr));
+#endif
 
         if (EA_IS_CNS_RELOC(attr))
         {
@@ -57,7 +65,14 @@ public partial class Emitter
         id.idCodeSize(size);
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)size);
-        // Native emitAdjustStackDepthPushPop is empty with AMD64's FEATURE_FIXED_OUT_ARGS.
+#if TARGET_X86
+        emitAdjustStackDepthPushPop(ins);
+#endif
 #endif
     }
+
+#if TARGET_X86
+    private void emitAdjustStackDepthPushPop(instruction ins)
+        => throw new FatalJitException(CORJIT_SKIPPED, "x86 push/pop stack-depth accounting is not ported.");
+#endif
 }

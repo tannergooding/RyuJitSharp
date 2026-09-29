@@ -62,14 +62,8 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void ZeroOperandRecordingPreservesFormatsAndDiagnosticOrdering(instruction ins, Emitter.insFormat format)
     {
         var emitter = CreateEmitter();
-#if DEBUG
-        var error = Assert.Throws<FatalJitException>(() => emitter.emitIns(ins));
-        Assert.That(error, Has.Message.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-        Assert.That(GroupSize(emitter), Is.Zero);
-#else
         emitter.emitIns(ins);
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
-#endif
         var descriptor = LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
         Assert.That(descriptor.idIns(), Is.EqualTo(ins));
         Assert.That(descriptor.idInsFmt(), Is.EqualTo(format));
@@ -77,6 +71,70 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(descriptor.idIsSmallDsc(), Is.True);
         Assert.That(descriptor.idCodeSize(), Is.EqualTo(4u));
     }
+
+#if DEBUG
+    [TestCase(IF_BI_1A, EA_4BYTE, REG_LR, REG_R0)]
+    [TestCase(IF_BR_1A, EA_8BYTE, REG_R0, REG_R0)]
+    [TestCase(IF_DR_2A, EA_8BYTE, REG_ZR, REG_R0)]
+    [TestCase(IF_DR_2G, EA_8BYTE, REG_ZR, REG_ZR)]
+    [TestCase(IF_DV_1C, EA_4BYTE, REG_V31, REG_R0)]
+    [TestCase(IF_DV_2G, EA_2BYTE, REG_V0, REG_V31)]
+    [TestCase(IF_PC_2A, EA_8BYTE, REG_LR, REG_ZR)]
+    [TestCase(IF_SR_1A, EA_8BYTE, REG_R0, REG_R0)]
+    public static void SanityChecksAcceptNativeRegisterClasses(
+        Emitter.insFormat format, emitAttr size, regNumber reg1, regNumber reg2)
+    {
+        var descriptor = RecordingEmitter.Basic(INS_nop, format);
+        descriptor.idOpSize(size);
+        Register1(descriptor) = reg1;
+        Register2(descriptor) = reg2;
+        CheckSanity(CreateEmitter(), descriptor);
+    }
+
+    [Test]
+    public static void SveFormatsRetainTheirSeparateSanityDependency()
+    {
+        var descriptor = RecordingEmitter.Basic(INS_ldr, IF_EN5A);
+        var error = Assert.Throws<FatalJitException>(() => CheckSanity(CreateEmitter(), descriptor));
+        Assert.That(error, Has.Message.EqualTo("ARM64 SVE instruction sanity checking is not ported."));
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsSanityCheck")]
+    private static extern void CheckSanity(Emitter emitter, Emitter.instrDesc descriptor);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_idReg2")]
+    private static extern ref regNumber Register2(Emitter.instrDesc descriptor);
+#endif
+
+    [TestCase(-1, EA_4BYTE, false)]
+    [TestCase(0, EA_4BYTE, true)]
+    [TestCase(31, EA_4BYTE, true)]
+    [TestCase(32, EA_4BYTE, false)]
+    [TestCase(63, EA_8BYTE, true)]
+    [TestCase(64, EA_8BYTE, false)]
+    public static void ImmediateShiftBoundsUseOperandWidth(int shift, emitAttr size, bool expected)
+    {
+        Assert.That(IsValidImmShift(null, shift, size), Is.EqualTo(expected));
+    }
+
+    [TestCase(-1, true, false)]
+    [TestCase(0, true, true)]
+    [TestCase(63, true, true)]
+    [TestCase(64, true, true)]
+    [TestCase(65, true, false)]
+    [TestCase(0, false, true)]
+    [TestCase(63, false, true)]
+    [TestCase(64, false, false)]
+    public static void VectorShiftsPreserveNativeInclusiveRightBound(int shift, bool right, bool expected)
+    {
+        Assert.That(IsValidVectorShift(null, shift, EA_8BYTE, right), Is.EqualTo(expected));
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "isValidImmShift")]
+    private static extern bool IsValidImmShift(Emitter? emitter, nint shift, emitAttr size);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "isValidVectorShiftAmount")]
+    private static extern bool IsValidVectorShift(Emitter? emitter, nint shift, emitAttr size, bool right);
 
     [TestCase(IF_LARGEADR, REG_R0, 8u)]
     [TestCase(IF_LARGEJMP, REG_R0, 8u)]
@@ -138,7 +196,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(GroupSize(emitter), Is.EqualTo(12));
     }
 
-#if EMITTER_STATS && !DEBUG
+#if EMITTER_STATS
     [Test]
     public static void RecordingIncrementsTheInstructionFormatCounter()
     {

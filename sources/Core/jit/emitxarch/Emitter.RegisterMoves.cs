@@ -12,23 +12,39 @@ public partial class Emitter
     public bool emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg,
         bool canSkip, bool useApxNdd = false)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Register move recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Register move recording requires xarch.");
 #else
-        RequireSupportedInstructionRecording();
         assert(IsMovInstruction(ins));
+#if TARGET_AMD64
+        RequireSupportedInstructionRecording();
+#endif
 #if DEBUG
         switch (ins)
         {
-            case INS_mov or INS_movsx or INS_movzx or INS_movsxd:
+            case INS_mov or INS_movsx or INS_movzx:
             {
                 assert(dstReg.IsIntReg && srcReg.IsIntReg);
                 break;
             }
 
+#if TARGET_AMD64
+            case INS_movsxd:
+            {
+                assert(dstReg.IsIntReg && srcReg.IsIntReg);
+                break;
+            }
+#endif
+
             case INS_movapd or INS_movaps or INS_movdqa32 or INS_vmovdqa64 or INS_movdqu32 or
                 INS_vmovdqu8 or INS_vmovdqu16 or INS_vmovdqu64 or INS_movsd_simd or INS_movss or
-                INS_vmovsh or INS_movupd or INS_movups or INS_movq:
+                INS_vmovsh or INS_movupd or INS_movups:
+            {
+                assert(dstReg.IsFltReg && srcReg.IsFltReg);
+                break;
+            }
+
+            case INS_movq:
             {
                 assert(dstReg.IsFltReg && srcReg.IsFltReg);
                 break;
@@ -74,11 +90,13 @@ public partial class Emitter
             return false;
         }
 
+#if TARGET_AMD64
         if (useApxNdd)
         {
             // The move is required, but its APX NDD-aware caller will handle it.
             return true;
         }
+#endif
 
         var id = emitNewInstrSmall(attr);
         id.idIns(ins);
@@ -247,5 +265,12 @@ public partial class Emitter
 
         return false;
     }
+#elif TARGET_X86
+    public bool EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, regNumber src)
+        => throw new FatalJitException(CORJIT_SKIPPED, "x86 accumulator sign-extension move elision is not ported.");
+
+    public bool IsRedundantMov(instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src,
+        bool canIgnoreSideEffects)
+        => throw new FatalJitException(CORJIT_SKIPPED, "x86 redundant move analysis is not ported.");
 #endif
 }

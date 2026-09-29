@@ -16,6 +16,32 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: ARM64 instruction sanity and xarch simple recording
+
+The complete ARM64 Debug instruction checker and its immediate, register,
+arrangement and conversion predicates are translated. Zero-operand recording
+now completes its Debug validation instead of stopping at the architecture
+guard. Separate SVE, descriptor and reserved-register dependencies still
+terminate explicitly; this does not establish ARM64 machine-code execution.
+
+Both xarch zero-operand overloads, immediate-only, unary and move recording
+retain their x86 paths. The immediate-only entry also supports Unix AMD64.
+Unported x86 stack-depth and move-elision helpers remain separate dependencies;
+existing independent syntax errors still block x86 compilation.
+
+The exact combined overlay passes full-analysis Windows 132 Debug/122 Release
+and ARM64 with emitter statistics 98/89. Identical old-source controls fail
+all 17 Debug zero-operand cases at the previous sanity guard. Unix immediate
+recording passes 2/2, with both old Debug cases failing at its previous guard.
+The checker also preserves the pinned statement sequence and all 107 ordered
+case labels, including helper evaluation and native shift-bound behavior.
+
+Forty-four complete definitions retire 1,588 lines in native `8a3441f2`, still
+the sole oracle child. The shared sanity declaration and distinct unported
+helpers remain. Evidence is in `artifacts/arm64-sanity-packet` and
+`artifacts/residual-reconciliation/sanity-simple-recording-combined-20260929.json`
+with its applied receipt.
+
 ## 2026-09-29: Register recording and no-GC call preservation
 
 Four xarch register recorders, three sizing overloads and their K/EVEX/APX

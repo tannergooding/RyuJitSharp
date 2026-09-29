@@ -31,16 +31,18 @@ public partial class Emitter
 
     public void emitIns(instruction ins)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Zero-operand instruction recording outside AMD64 is not implemented.");
-#else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         var id = emitNewInstr(EA_4BYTE);
         var code = insCodeMR(ins);
-        assert(ins is INS_cdq or INS_int3 or INS_lock or INS_leave or INS_movsb or INS_movsd or INS_movsq
-            or INS_nop or INS_r_movsb or INS_r_movsd or INS_r_movsq or INS_r_stosb or INS_r_stosd or INS_r_stosq
-            or INS_ret or INS_sahf or INS_stosb or INS_stosd or INS_stosq or INS_vzeroupper or INS_lfence
-            or INS_mfence or INS_sfence or INS_pause or INS_serialize);
+        assert(ins is INS_cdq or INS_int3 or INS_lock or INS_leave or INS_movsb or INS_movsd
+            or INS_nop or INS_r_movsb or INS_r_movsd or INS_r_stosb or INS_r_stosd or INS_ret
+            or INS_sahf or INS_stosb or INS_stosd
+#if TARGET_AMD64
+            or INS_movsq or INS_r_movsq or INS_r_stosq or INS_stosq
+#endif
+            or INS_vzeroupper or INS_lfence or INS_mfence or INS_sfence or INS_pause or INS_serialize);
         assert(!hasRexPrefix(code));
 
         uint size;
@@ -69,15 +71,13 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)size);
-#endif
     }
 
     public void emitIns(instruction ins, emitAttr attr)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Size-dependent zero-operand instruction recording outside AMD64 is not implemented.");
-#else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         var id = emitNewInstr(attr);
         var code = insCodeMR(ins);
         assert(ins is INS_cdq or INS_cwde);
@@ -95,7 +95,6 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)size);
-#endif
     }
 }
 #endif

@@ -11,10 +11,12 @@ public partial class Emitter
 {
     public void emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Single-register instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Single-register instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         var size = EA_SIZE(attr);
         assert(size <= EA_PTRSIZE);
         noway_assert(emitVerifyEncodable(ins, size, reg));
@@ -30,8 +32,12 @@ public partial class Emitter
         {
             case INS_inc or INS_dec:
             {
+#if TARGET_AMD64
                 // x64 has no one-byte opcode: that encoding is the REX prefix.
                 sz = 2;
+#else
+                sz = size == EA_1BYTE ? 2u : 1u;
+#endif
                 break;
             }
 
@@ -57,6 +63,7 @@ public partial class Emitter
                     assert((INS_seto + 0xF) == INS_setg);
                     assert(attr == EA_1BYTE);
                     assert((insEncodeMRreg(id, reg, attr, insCodeMR(ins)) & 0x00FF0000) != 0);
+                    size = attr;
                     sz = 3;
                 }
                 else
@@ -80,7 +87,9 @@ public partial class Emitter
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
 
-        // Native emitAdjustStackDepthPushPop is empty with AMD64's FEATURE_FIXED_OUT_ARGS.
+#if TARGET_X86
+        emitAdjustStackDepthPushPop(ins);
+#endif
 #endif
     }
 
