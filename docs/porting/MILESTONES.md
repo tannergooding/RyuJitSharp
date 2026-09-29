@@ -16,6 +16,29 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Group transitions and static-field recording
+
+Group preparation and transitions now retain the native target buffer sizes,
+reset/GC behavior and optional allocation/extension statistics. Static-field
+store recording retains its x86 size restriction and EAX addressing case;
+distinct unported x86 helpers remain typed terminating dependencies.
+
+The combined packet passes 189 Debug/174 Release integrated Windows cases.
+Scoped ARM64 and statistics checks pass three and five cases respectively in
+each configuration. Both new ARM64 transition cases fail at the original
+whole-target stub on `9d035f9` in Debug and Release, then pass after restoration.
+The x86 baseline and repaired builds have the same seventeen
+independent declaration/type errors after identical parser overlays; neither is
+an x86 compilation or execution pass. LoongArch64 also remains blocked by
+unrelated hardware-intrinsic platform directives.
+
+Eight complete definitions plus associated declarations/comments retire 266
+native lines in `c6188147`, with no duplicate-cleanup credit. Native remains the
+sole child of the pinned oracle. General allocation, method-entry reset and
+the unported x86 helper bodies remain visible in the residual.
+Evidence: `artifacts/residual-reconciliation/emitter-recording-combined-20260928.json`
+and its applied receipt.
+
 ## 2026-09-28: Runtime vector length and type-size utilities
 
 Runtime `Vector<T>` length now uses the known compile-time width or the native

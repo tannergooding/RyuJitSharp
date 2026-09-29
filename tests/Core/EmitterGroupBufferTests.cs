@@ -44,6 +44,64 @@ internal static unsafe class EmitterGroupBufferTests
 #endif
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void TransitionRetainsBufferAndUpdatesGcStartOnlyForNonExtension(bool extend)
+    {
+        var emitter = CreateEmitter();
+        var previous = new insGroup { igFlags = InsGroupFlags.Prolog };
+        FirstGroup(emitter) = previous;
+        LastGroup(emitter) = previous;
+        NextGroupNumber(emitter) = 1;
+        NoGc(emitter) = true;
+        Prepare(emitter, previous);
+        var buffer = Buffer(emitter);
+        ThisVars(emitter)[0] = 4;
+        ThisRefs(emitter) = SRBM_RAX;
+        ThisByrefs(emitter) = SRBM_RCX;
+        ForceNewGroup(emitter) = true;
+
+        Transition(emitter, extend);
+
+        var current = emitter.emitCurIG ?? throw new AssertionException("The transition did not create an instruction group.");
+        Assert.That(previous.igNext, Is.SameAs(current));
+        Assert.That(LastGroup(emitter), Is.SameAs(current));
+        Assert.That(current.igPrev, Is.SameAs(previous));
+        Assert.That(current.igFlags & InsGroupFlags.Prolog, Is.EqualTo(InsGroupFlags.Prolog));
+        Assert.That(current.igFlags & InsGroupFlags.NoGCInterrupt, Is.EqualTo(InsGroupFlags.NoGCInterrupt));
+        Assert.That(current.igFlags & InsGroupFlags.Extend, Is.EqualTo(extend ? InsGroupFlags.Extend : InsGroupFlags.None));
+        Assert.That(InitVars(emitter)[0], Is.EqualTo(extend ? (nint)0 : (nint)4));
+        Assert.That(InitRefs(emitter), Is.EqualTo(extend ? SRBM_NONE : SRBM_RAX));
+        Assert.That(InitByrefs(emitter), Is.EqualTo(extend ? SRBM_NONE : SRBM_RCX));
+        Assert.That(Buffer(emitter), Is.SameAs(buffer));
+        Assert.That(Used(emitter), Is.EqualTo((nuint)0));
+        Assert.That(ForceNewGroup(emitter), Is.False);
+        Assert.That(NextGroupNumber(emitter), Is.EqualTo(2));
+    }
+
+    [Test]
+    public static void GroupBufferAndLastInstructionQueriesFollowTheirRespectiveState()
+    {
+        var emitter = CreateEmitter();
+        Assert.That(emitter.emitCurIGnonEmpty(), Is.False);
+        Assert.That(HasLastInstruction(emitter), Is.False);
+
+        Prepare(emitter, new insGroup());
+        AddDescriptor(emitter, DescriptorFactory.Basic(), 1);
+
+        Assert.That(emitter.emitCurIGnonEmpty(), Is.True);
+        Assert.That(HasLastInstruction(emitter), Is.True);
+
+        _ = Save(emitter, false);
+
+        Assert.That(emitter.emitCurIGnonEmpty(), Is.False);
+        Assert.That(HasLastInstruction(emitter), Is.True);
+
+        LastInstruction(emitter) = null;
+        LastInstructionGroup(emitter) = null;
+        Assert.That(HasLastInstruction(emitter), Is.False);
+    }
+
     [TestCase(1)]
     [TestCase(65)]
     public static void SavingCopiesGcSetsAndRetainsNativeHeaderWidths(int trackedCount)
@@ -428,6 +486,24 @@ internal static unsafe class EmitterGroupBufferTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitSavIG")]
     private static extern insGroup Save(Emitter emitter, bool overflow);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNxtIG")]
+    private static extern void Transition(Emitter emitter, bool extend);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitHasLastIns")]
+    private static extern bool HasLastInstruction(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
+    private static extern ref insGroup? FirstGroup(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlast")]
+    private static extern ref insGroup? LastGroup(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitNxtIGnum")]
+    private static extern ref int NextGroupNumber(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitForceNewIG")]
+    private static extern ref bool ForceNewGroup(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc> Buffer(Emitter emitter);

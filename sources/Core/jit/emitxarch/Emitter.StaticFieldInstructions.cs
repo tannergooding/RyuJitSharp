@@ -11,17 +11,23 @@ public partial class Emitter
 {
     public unsafe void emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, regNumber reg, int offs)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Static-field register stores require AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Static-field register stores require xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         if (!jitStaticFldIsGlobAddr(fldHnd))
         {
             attr |= EA_DSP_RELOC_FLG;
         }
 
         var size = EA_SIZE(attr);
+#if TARGET_X86
+        assert(size <= EA_8BYTE);
+#else
         assert(size <= EA_PTRSIZE);
+#endif
         noway_assert(emitVerifyEncodable(ins, size, reg));
 
         var id = emitNewInstrDsp(attr, offs);
@@ -29,7 +35,27 @@ public partial class Emitter
         id.idIns(ins);
         id.idInsFmt(fmt);
         id.idReg1(reg);
-        var sz = emitInsSizeCV(id, insCodeMR(ins));
+        uint sz;
+#if TARGET_X86
+        if ((ins == INS_mov) && (reg == REG_EAX))
+        {
+            sz = 1 + TARGET_POINTER_SIZE;
+
+            if (size == EA_2BYTE)
+            {
+                sz++;
+            }
+
+            if (TakesRexWPrefix(id) || IsExtendedReg(reg, attr))
+            {
+                sz += emitGetRexPrefixSize(id, ins);
+            }
+        }
+        else
+#endif
+        {
+            sz = emitInsSizeCV(id, insCodeMR(ins));
+        }
 
         if ((fldHnd == FLD_GLOBAL_FS) || (fldHnd == FLD_GLOBAL_GS))
         {

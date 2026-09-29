@@ -7,7 +7,10 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
+#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+    private const int SC_IG_BUFFER_NUM_SMALL_DESCS = 0;
+    private const int SC_IG_BUFFER_NUM_LARGE_DESCS = 200;
+#else
     private const int SC_IG_BUFFER_NUM_SMALL_DESCS = 14;
     private const int SC_IG_BUFFER_NUM_LARGE_DESCS = 50;
 #endif
@@ -21,13 +24,12 @@ public partial class Emitter
     private static uint emitTotalIGptrs;
     private static uint emitTotalIGicnt;
     private static nuint emitTotalIGsize;
+    private static uint emitTotalIGExtend;
+    private static nuint emitTotMemAlloc;
 #endif
 
     private void emitGenIG(insGroup ig)
     {
-#if !TARGET_AMD64 || EMITTER_STATS
-        throw new FatalJitException(CORJIT_SKIPPED, "Instruction-group storage requires AMD64 without emitter allocation statistics.");
-#else
         emitCurIG = ig;
 
 #if EMIT_TRACK_STACK_DEPTH
@@ -57,19 +59,20 @@ public partial class Emitter
                 + (SC_IG_BUFFER_NUM_LARGE_DESCS * (INSTR_DESC_SIZE + _debugInfoSize)));
             emitCurIGfreeBase = [];
             emitCurIGfreeEndp = emitIGbuffSize;
+#if EMITTER_STATS
+            emitTotMemAlloc = unchecked(emitTotMemAlloc + emitIGbuffSize);
+#endif
         }
 
         emitCurIGfreeBase.Clear();
         emitCurIGfreeNext = 0;
+#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
         emitLastInsFullSize = 0;
 #endif
     }
 
     private void emitNewIG()
     {
-#if !TARGET_AMD64 || EMITTER_STATS
-        throw new FatalJitException(CORJIT_SKIPPED, "Instruction-group storage requires AMD64 without emitter allocation statistics.");
-#else
         var ig = emitAllocAndLinkIG();
         emitGenIG(ig);
 
@@ -81,7 +84,6 @@ public partial class Emitter
             jitprintf("Created:\n      ");
             emitDispIG(ig, displayFunc: false, displayInstructions: false, displayLocation: false);
         }
-#endif
 #endif
     }
 
@@ -113,6 +115,9 @@ public partial class Emitter
         if (extend)
         {
             emitCurIG.igFlags |= InsGroupFlags.Extend;
+#if EMITTER_STATS
+            emitTotalIGExtend = unchecked(emitTotalIGExtend + 1);
+#endif
         }
 
         emitForceNewIG = false;

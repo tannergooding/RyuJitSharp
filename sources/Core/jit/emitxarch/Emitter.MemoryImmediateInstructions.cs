@@ -12,10 +12,12 @@ public partial class Emitter
     public unsafe void emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs, int val,
         insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Static-field immediate instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Static-field immediate instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         if (!jitStaticFldIsGlobAddr(fldHnd))
         {
             attr |= EA_DSP_RELOC_FLG;
@@ -54,10 +56,12 @@ public partial class Emitter
     public unsafe void emitIns_C_R_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs,
         regNumber reg, int ival)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Static-field register-immediate instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Static-field register-immediate instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         assert(IsSimdInstruction(ins));
         assert(reg != REG_NA);
         if (!jitStaticFldIsGlobAddr(fldHnd))
