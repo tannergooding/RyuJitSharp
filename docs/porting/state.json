@@ -16,6 +16,18 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "nativeHistoryConsolidation": {
+      "oraclePin": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+      "previousHead": "366e9f52b10025ec6243bf4c6e8d24525a3a8d21",
+      "consolidatedHead": "76786160c7d8ea163e383ec717f9ec6225d39b8d",
+      "previousCommitsAboveOracle": 32,
+      "commitsAboveOracle": 1,
+      "preservedTree": "b5c6022a6cc9baa90a6900ab9a3a7ed5cf4079e9",
+      "recoveryRef": "refs/porting/recovery/366e9f52-before-oracle-consolidation",
+      "verification": "Exact native tree and index bytes preserved; residual worktree/index clean. Oracle and managed HEAD/tree/index unchanged by consolidation. No reset, checkout or publication.",
+      "policy": "Amend the single consolidated native Remove ported code commit for subsequent accepted retirements/restorations; do not append cleanup commits. Its sole parent remains the pinned oracle. Reverify stale worker manifests against the current native HEAD before mutation.",
+      "evidence": "artifacts/native-history/oracle-plus-one-20260928.json"
+    },
     "hardwareFoldingBody": {
       "scope": "Complete gtFoldExprHWIntrinsic own xarch/ARM64/masked branches, preserving native dependency calls and existing Windows behavior.",
       "mapping": "Pinned gentree.cpp35373-37408 -> Compiler.gt.HardwareIntrinsicFolding.cs; ARM64 scalable constant factory overload -> Compiler.gt.cs.",
@@ -782,7 +794,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "366e9f52b10025ec6243bf4c6e8d24525a3a8d21",
+      "residualHead": "76786160c7d8ea163e383ec717f9ec6225d39b8d",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -864,7 +876,7 @@
         "Raw target-block getters have no pinned callsites and remain unused support. emitCodeGetCookie remains because its managed helper is only declared under TARGET_AMD64."
       ],
       "remaining": "Continue the full already-completed-code cleanup, distinguishing unreconciled areas from genuine target/CFI/optional-statistics gaps. emitGenIG/emitSavIG retain architecture/statistics paths, genCreateTempLabel retains Unix x86, and genGetRegMask retains ARM floating support. No new default Windows emission gap was established; the earlier blanket claim is withdrawn. Complete bodies are not retained merely because unfinished native callers reference them. Notify the user when the full cleanup is done.",
-      "verification": "Native HEAD366e9f52 retires the now-completed gtFoldExprHWIntrinsic body/comment/declaration:2046 removed lines relative to7ac5d5b5, with both unported ARM64 dependencies retained. The earlier dispatcher repair/restoration receipt remains historical evidence, not current unfinished-helper status. Native and pinned-oracle tracked source/index are clean; recovery ref remains unchanged. Authorized consolidated amendment only. Retirement adds no parity evidence.",
+      "verification": "Native76786160 preserves the exact366e9f52 residual tree while consolidating32 commits above the oracle into one. The366e9f52 retirement receipt remains valid historical evidence:2046 helper/comment/declaration lines removed relative to7ac5d5b5, with both unported ARM64 dependencies retained. Native/oracle source and indexes were unchanged by consolidation; old history is protected by refs/porting/recovery/366e9f52-before-oracle-consolidation. Subsequent native work must amend the single oracle-child commit. Retirement adds no parity evidence.",
       "targetLedger": "Historical ledger collected through report108, consuming e0d198a for B455 without reopening unrelated rows. Report107's suspected copy-omission VN mismatch B456 is dismissed: GenTreeLclFld -> GenTreeLclVarCommon -> GenTreeUnOp source-aware construction explicitly clears both VNs after the root metadata copy. No production correction is needed. The reviewed materialization bodies are already absent. Existing call-driver review uncertainty is not a new untranslated-definition queue; stop recurring audits. Repair concrete residual partials and track only their stub/exception boundaries. D009, R005, B392 and B446 remain separately recorded optional gaps.",
       "retirementQueue": "A bounded existing-evidence pass found no immediately eligible bulk retirement: strongly reviewed definitions were already absent, surviving return helpers lack whole-target review, and gtFoldExpr retains an ARM64 path. artifacts/residual-reconciliation/bulk-retirement-candidates-20260928.json records the inspected scope and native snapshot. Stop duplicate sweeps of these candidates; prioritize unresolved Windows/shared contracts separately from mixed-target retirement. This is not repository-wide catch-up completion.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",

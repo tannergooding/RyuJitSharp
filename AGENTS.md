@@ -37,6 +37,10 @@ checkpoint, and load only the relevant sections of the
   translated definitions in C# and keep them absent from the residual; update
   still-unported definitions and retain new definitions for porting. Do not
   restore completed bodies merely to resolve modify/delete conflicts.
+- Keep the residual native branch at the pinned oracle plus one consolidated
+  `Remove ported code` commit. Amend that native commit for accepted retirements
+  and restorations; do not append new cleanup commits. Preserve recovery refs
+  when consolidating history. This authorization does not cover C# amendments.
 - Keep the mapping sparse. Conventionally, `src/coreclr/jit/<stem>.{h,cpp}`
   maps to `sources/Core/jit/<stem>/`; `Compiler` partials span several native
   files. Verify symbol matches, and record non-obvious mappings for active work.

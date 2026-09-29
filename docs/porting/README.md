@@ -54,8 +54,13 @@ become periodic scans of already-absent definitions. Revisit translated code for
 an actual upstream change, defect, test failure or concrete unresolved exception.
 
 Batch the native edits for a coherent translation change, verifying exact spans
-and preserved unfinished definitions. Use ordinary native-only commits unless
-amending a consolidated deletion-tracking commit is explicitly authorized.
+and preserved unfinished definitions. Keep the residual native branch at the
+pinned oracle plus exactly one `Remove ported code` commit. The user has authorized
+amending that consolidated native commit for accepted retirements and restorations;
+do not append separate cleanup commits. Its sole parent must remain the current
+oracle pin at completed synchronization boundaries. Preserve the old history with
+a recovery ref before consolidation, and verify that consolidation preserves the
+exact tree and index. This does not authorize rewriting C# history or publication.
 Preserve unrelated staged/unstaged work and existing recovery refs. Retirement
 does not need its own runtime rerun, routine snapshot or helper-by-helper
 documentation cycle. Do not infer execution coverage or compiler-completion
