@@ -12,9 +12,6 @@ public sealed partial class CodeGen
 {
     public void genCodeForJTrue(GenTreeUnOp jtrue)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Boolean branch generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         var block = _compiler.compCurBB;
         assert(block is not null);
@@ -29,14 +26,10 @@ public sealed partial class CodeGen
         {
             inst_JMP(EJ_jmp, falseTarget);
         }
-#endif
     }
 
     public static instruction JumpKindToCmov(emitJumpKind condition)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Conditional-move mapping requires AMD64.");
-#else
         ReadOnlySpan<instruction> table = [
             INS_none, INS_none, INS_cmovo, INS_cmovno, INS_cmovb, INS_cmovae, INS_cmove, INS_cmovne,
             INS_cmovbe, INS_cmova, INS_cmovs, INS_cmovns, INS_cmovp, INS_cmovnp, INS_cmovl, INS_cmovge,
@@ -45,14 +38,10 @@ public sealed partial class CodeGen
         assert(unchecked((uint)condition) < (uint)table.Length);
 
         return table[(int)condition];
-#endif
     }
 
     public void genCodeForSelect(GenTreeOp select)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Conditional selection generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(select.Oper is GT_SELECT or GT_SELECTCC);
         if (select.Oper is GT_SELECT)
@@ -115,7 +104,6 @@ public sealed partial class CodeGen
         }
 
         genProduceReg(select);
-#endif
     }
 }
 #endif

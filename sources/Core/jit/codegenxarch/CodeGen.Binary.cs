@@ -163,11 +163,16 @@ public sealed partial class CodeGen
 
     public void inst_JMP(emitJumpKind jump, BasicBlock target, bool isRemovableJmpCandidate = false)
     {
-#if TARGET_AMD64
-        Emitter.emitIns_J(RyuJitSharp.Emitter.emitJumpKindToIns(jump), target, false, isRemovableJmpCandidate);
+#if DEBUG && !FEATURE_FIXED_OUT_ARGS
+#if UNIX_X86_ABI
+        assert((unchecked((uint)target.bbTgtStkDepth * sizeof(int)) == genStackLevel - curNestedAlignment) ||
+            IsFramePointerUsed);
 #else
-        throw new FatalJitException(CORJIT_SKIPPED, "Jump generation requires AMD64.");
+        assert((unchecked((uint)target.bbTgtStkDepth * sizeof(int)) == genStackLevel) ||
+            IsFramePointerUsed);
 #endif
+#endif
+        Emitter.emitIns_J(RyuJitSharp.Emitter.emitJumpKindToIns(jump), target, false, isRemovableJmpCandidate);
     }
 }
 #endif

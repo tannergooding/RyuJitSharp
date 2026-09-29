@@ -16,6 +16,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch conditional codegen
+
+Four complete JTrue/conditional-move/select/jump definitions retire 183 native
+lines in `694ccb44`, including the x86 stack-depth assertion. Shared declarations
+and condition maps remain; the surviving ARM64 guard comment is corrected.
+Windows old/final controls pass 20 Debug/19 Release and Linux passes 20 Debug.
+ARM64 source compilation passes; x86 retains 14 baseline errors and its new
+branch is unexecuted. Evidence: `artifacts/xarch-conditional-c635bcd` and the
+`xarch-conditional` retirement records under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Xarch hardware-intrinsic dispatcher closure
 
 The base-family routines preserve Unix/x86 entry, x86 scalar creation and
