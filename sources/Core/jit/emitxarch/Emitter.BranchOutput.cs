@@ -9,7 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
+#if TARGET_XARCH
     private unsafe byte* emitOffsetToPtr(uint offset)
     {
         if (offset < emitTotalHotCodeSize)
@@ -36,16 +36,16 @@ public partial class Emitter
 
     public unsafe byte* emitOutputLJ(insGroup ig, byte* dst, instrDesc i)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Label output requires Windows AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Label output requires xarch.");
 #else
         var id = i as instrDescJmp ?? throw new FatalJitException("Label output requires a jump descriptor.");
         var compiler = _compiler ?? throw new FatalJitException("Label output requires an active compiler.");
         var ins = id.idIns();
         var relAddr = true;
         bool jmp;
-        long ssz;
-        long lsz;
+        nuint ssz;
+        nuint lsz;
 
         assert(!IsSSEInstruction(ins));
         assert(!IsSimdVexOrEvexEncodableInstruction(ins));
@@ -105,10 +105,10 @@ public partial class Emitter
             srcAddr = null;
         }
 
-        var distVal = dstAddr - srcAddr;
+        var distVal = unchecked((nint)(dstAddr - srcAddr));
         if (dstOffs <= srcOffs)
         {
-            if (jmp && distVal - ssz >= JMP_DIST_SMALL_MAX_NEG)
+            if (jmp && unchecked((nuint)distVal - ssz) >= unchecked((nuint)JMP_DIST_SMALL_MAX_NEG))
             {
                 emitSetShortJump(id);
             }
@@ -128,7 +128,7 @@ public partial class Emitter
                 IMPL_LIMITATION("Method is too large");
             }
 
-            if (jmp && distVal - ssz <= JMP_DIST_SMALL_MAX_POS)
+            if (jmp && unchecked((nuint)distVal - ssz) <= (nuint)JMP_DIST_SMALL_MAX_POS)
             {
                 emitSetShortJump(id);
             }
@@ -136,7 +136,7 @@ public partial class Emitter
 
         if (relAddr)
         {
-            distVal -= id.idjShort ? ssz : lsz;
+            distVal = unchecked((nint)((nuint)distVal - (id.idjShort ? ssz : lsz)));
         }
 
         if (id.idjShort)

@@ -9,9 +9,6 @@ public partial class Emitter
 {
     public uint emitGetCurrentCodeOffsetFrom(insGroup? group)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Prolog unwind offsets require AMD64.");
-#else
         group ??= emitGetFirstPrologIG();
         noway_assert((group.igFlags & InsGroupFlags.OutOfOrderHead) != 0);
 
@@ -22,14 +19,12 @@ public partial class Emitter
         while (current != emitCurIG)
         {
             noway_assert(current is not null);
-            offset = checked(offset + current.igSize);
+            offset = unchecked(offset + current.igSize);
             current = current.igNext;
         }
 
         noway_assert(current is not null && (current.igFlags & kind) == kind);
-        noway_assert(emitCurIGsize >= 0);
 
-        return checked(offset + (uint)emitCurIGsize);
-#endif
+        return unchecked(offset + (uint)emitCurIGsize);
     }
 }

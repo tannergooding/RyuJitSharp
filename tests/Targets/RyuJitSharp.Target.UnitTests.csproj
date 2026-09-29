@@ -29,6 +29,7 @@
 
   <ItemGroup Condition="'$(RyuJitTargetRuntimeIdentifier)' == 'linux-x64' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'linux-x64')">
     <Compile Include="..\Core\SysVX64LocalStoreLoweringTests.cs" Link="SysVX64LocalStoreLoweringTests.cs" />
+    <Compile Include="..\Core\LinuxX64EmitterBranchPaddingTests.cs" Link="LinuxX64EmitterBranchPaddingTests.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(RyuJitTargetRuntimeIdentifier)' == 'win-x86' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'win-x86')">
@@ -37,6 +38,7 @@
     <Compile Include="..\Core\X86EmitterAddressStackOutputTests.cs" Link="X86EmitterAddressStackOutputTests.cs" />
     <Compile Include="..\Core\X86EmitterRegisterImmediateOutputTests.cs" Link="X86EmitterRegisterImmediateOutputTests.cs" />
     <Compile Include="..\Core\X86EmitterInstructionDispatchTests.cs" Link="X86EmitterInstructionDispatchTests.cs" />
+    <Compile Include="..\Core\X86EmitterPaddingOutputTests.cs" Link="X86EmitterPaddingOutputTests.cs" />
   </ItemGroup>
 
 </Project>

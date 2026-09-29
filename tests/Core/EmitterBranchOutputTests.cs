@@ -159,6 +159,38 @@ internal static unsafe class EmitterBranchOutputTests
     }
 
     [Test]
+    public static void BackwardCrossRegionJumpWithReversedPhysicalBuffersStaysLong()
+    {
+        WithEmitter((_, emitter) =>
+        {
+            var target = emitter.emitCurIG ?? throw new AssertionException("Missing hot target group.");
+            emitter.emitIns_Nop(15);
+            emitter.emitIns_Nop(1);
+            var source = emitter.emitAddInlineLabel();
+            Assert.That(target.igOffs, Is.EqualTo(0u));
+            Assert.That(source.igOffs, Is.EqualTo(16u));
+            var descriptor = View.BackwardCrossRegionJump(source, target);
+
+            var buffer = stackalloc byte[96];
+            new Span<byte>(buffer, 96).Fill(0xA5);
+            emitter.emitCodeBlock = buffer + 64;
+            emitter.emitTotalHotCodeSize = 16;
+            emitter.emitColdCodeBlock = buffer;
+            emitter.emitTotalColdCodeSize = 16;
+            emitter.emitSetFirstColdIGCookie(source);
+#if DEBUG
+            emitter.emitIssuing = true;
+#endif
+            var end = emitter.emitOutputLJ(source, buffer, descriptor);
+
+            Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
+                Is.EqualTo(Convert.FromHexString("E93B000000")));
+            Assert.That(buffer[5], Is.EqualTo(0xA5));
+            Assert.That(View.IsShort(descriptor), Is.False);
+        });
+    }
+
+    [Test]
     public static void ForwardJumpRecordsAdjustedTargetOffsetAndFuturePatchSite()
     {
         WithEmitter((_, emitter) =>
@@ -444,6 +476,20 @@ internal static unsafe class EmitterBranchOutputTests
 
     private abstract class View(CodeGen codeGen) : Emitter(codeGen)
     {
+        public static instrDesc BackwardCrossRegionJump(insGroup source, insGroup target)
+        {
+            var descriptor = new instrDescJmp();
+            descriptor.idIns(INS_jmp);
+            descriptor.idInsFmt(IF_LABEL);
+            descriptor.idCodeSize(5);
+            descriptor.idjIG = source;
+            descriptor.idjTargetIG = target;
+            descriptor.idSetIsBound();
+            return descriptor;
+        }
+
+        public static bool IsShort(instrDesc descriptor) => ((instrDescJmp)descriptor).idjShort;
+
         public static instrDesc LabelMov(insGroup source, insGroup target, int local, uint offset)
         {
             var descriptor = new instrDescLbl();

@@ -9,7 +9,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
     // Native gcinfo.h encodes pointer properties in the low two stack-offset bits.
     private const uint byref_OFFSET_FLAG = 1;
     private const uint OFFSET_MASK = 3;
@@ -118,7 +117,13 @@ public partial class Emitter
                     }
                     if (!isTracked)
                     {
+#if DOUBLE_ALIGN
+                        assert(!emitContTrkPtrLcls ||
+                            ((_compiler.rpFrameType == FrameType.FT_DOUBLE_ALIGN_FRAME) && (varNum >= 0) &&
+                            _compiler.lvaTable[varNum].lvFramePointerBased));
+#else
                         assert(!emitContTrkPtrLcls);
+#endif
                         return;
                     }
                 }
@@ -171,5 +176,4 @@ public partial class Emitter
             }
         }
     }
-#endif
 }

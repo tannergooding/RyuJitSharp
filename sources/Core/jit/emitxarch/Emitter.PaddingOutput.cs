@@ -9,8 +9,11 @@ public partial class Emitter
 {
     public unsafe byte* emitOutputData16(byte* dst)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Data-size prefix output requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Data-size prefix output requires xarch.");
+#elif TARGET_X86
+        // Native x86 data16 output does not emit a prefix.
+        return dst;
 #else
         var dstRW = unchecked(dst + writeableOffset);
         *dstRW++ = 0x66;
@@ -20,11 +23,21 @@ public partial class Emitter
 
     public unsafe byte* emitOutputNOP(byte* dst, nuint nBytes)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "NOP output requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "NOP output requires xarch.");
 #else
         assert(nBytes <= 15);
         var dstRW = unchecked(dst + writeableOffset);
+#if TARGET_X86
+        // Native's x86 switch has no case above 15 in release builds.
+        if (nBytes <= 15)
+        {
+            for (nuint i = 0; i < nBytes; i++)
+            {
+                *dstRW++ = 0x90;
+            }
+        }
+#else
         switch (nBytes)
         {
             case 0:
@@ -129,6 +142,7 @@ public partial class Emitter
                 return emitOutputNOP(emitOutputNOP(dst, 7), 8);
             }
         }
+#endif
         return unchecked(dstRW - writeableOffset);
 #endif
     }
@@ -136,8 +150,8 @@ public partial class Emitter
 #if FEATURE_LOOP_ALIGN
     public unsafe byte* emitOutputAlign(insGroup ig, instrDesc id, byte* dst)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Loop-alignment output requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Loop-alignment output requires xarch.");
 #else
         var alignInstr = id as instrDescAlign
             ?? throw new FatalJitException("Loop alignment requires an alignment descriptor.");
@@ -179,12 +193,18 @@ public partial class Emitter
         if (compiler.compStressCompile(Compiler.compStressArea.STRESS_EMITTER, 50)
             && alignInstr.isPlacedAfterJmp && paddingToAdd >= 1)
         {
-            dst += emitOutputByte(dst, unchecked((long)insCodeMR(INS_int3)));
+            dst += emitOutputByte(dst, unchecked((long)insCodeMR(INS_BREAKPOINT)));
             paddingToAdd--;
         }
 #endif
         return emitOutputNOP(dst, paddingToAdd);
 #endif
     }
+#endif
+
+#if TARGET_X86 && FEATURE_LOOP_ALIGN && DEBUG
+    private uint emitCalculatePaddingForLoopAlignment(insGroup loopHeadIG, uint offset,
+        bool isAlignAdjusted, insGroup containingIG, insGroup loopHeadPredIG)
+        => throw new FatalJitException(CORJIT_SKIPPED, "x86 loop-alignment padding calculation is not ported.");
 #endif
 }

@@ -172,8 +172,5 @@ public partial class Emitter
         return (unchecked((sbyte)targetVal) == targetVal) &&
             (ins != INS_mov) && (ins != INS_test) && !IsCTEST(ins);
     }
-
-    private void dispIns(instrDesc id)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 dispIns is not ported.");
 }
 #endif

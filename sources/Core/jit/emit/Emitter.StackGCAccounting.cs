@@ -10,13 +10,11 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
     private static bool emitStackNeedsGC(GCInfo.GCtype type)
     {
         assert(type is GCT_NONE or GCT_GCREF or GCT_BYREF);
         return type is GCT_GCREF or GCT_BYREF;
     }
-#endif
 
 #if EMIT_TRACK_STACK_DEPTH && TARGET_AMD64
     private const int MAX_SIMPLE_STK_DEPTH = sizeof(uint) * 8;

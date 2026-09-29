@@ -105,6 +105,39 @@ internal static unsafe class EmitterLocationTests
         Assert.That(end.CodeOffset(emitter), Is.EqualTo(2u));
     }
 
+    [TestCase(5u, 6u)]
+    [TestCase(uint.MaxValue, 0u)]
+    public static void PrologOffsetsPreserveNativeUnsignedArithmetic(uint currentSize, uint expected)
+    {
+        var emitter = CreateEmitter();
+        var prolog = FirstGroup(emitter) ?? throw new AssertionException("Missing prolog group.");
+        var current = emitter.emitCurIG ?? throw new AssertionException("Missing current group.");
+        prolog.igSize = 1;
+        current.igFlags |= InsGroupFlags.Prolog;
+        CodeSize(emitter) = unchecked((int)currentSize);
+
+        Assert.That(emitter.emitGetCurrentCodeOffsetFrom(null), Is.EqualTo(expected));
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void AdvancingDescriptorsPreservesOwnershipAndTheEndPosition(bool saved)
+    {
+        var emitter = CreateEmitter();
+        var first = Append(emitter, 2);
+        var second = Append(emitter, 3);
+        if (saved)
+        {
+            _ = Save(emitter, false);
+        }
+
+        var cursor = first;
+        Advance(emitter, ref cursor, (nuint)first.NativeLogicalSize);
+        Assert.That(cursor, Is.SameAs(second));
+        Advance(emitter, ref cursor, (nuint)second.NativeLogicalSize);
+        Assert.That(cursor, Is.Null);
+    }
+
     [Test]
     public static void PreviousInstructionChecksOnlyTheAdjacentGroup()
     {
@@ -203,4 +236,10 @@ internal static unsafe class EmitterLocationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNxtIG")]
     private static extern void NextGroup(Emitter emitter, bool extend);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
+    private static extern ref insGroup? FirstGroup(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitAdvanceInstrDesc")]
+    private static extern void Advance(Emitter emitter, ref Emitter.instrDesc? descriptor, nuint size);
 }

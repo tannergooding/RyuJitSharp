@@ -12,20 +12,34 @@ public partial class Emitter
 {
     public unsafe void emitRecordGCcall(byte* codePos, byte callInstrSize)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "GC call output requires Windows AMD64.");
-#else
 #if DEBUG
         assert(emitIssuing);
 #endif
         assert(!emitFullGCinfo);
         var offs = emitCurCodeOffs(codePos);
 
+#if JIT32_GCENCODER
+        var regs = new regMaskTP(emitThisGCrefRegs | emitThisByrefRegs) & ~new regMaskTP(SRBM_INTRET);
+        if (regs.IntRegSet == SRBM_NONE)
+        {
+#if EMIT_TRACK_STACK_DEPTH
+            if (emitCurStackLvl == 0)
+            {
+                return;
+            }
+#endif
+            if (emitSimpleStkUsed ? u1.emitSimpleStkMask == 0 : u2.emitGcArgTrackCnt == 0)
+            {
+                return;
+            }
+        }
+#endif
+
 #if DEBUG
         var compiler = _compiler ?? throw new FatalJitException("GC call output requires an active compiler.");
         if (compiler.verbose)
         {
-            jitprintf($"; Call at {unchecked(offs - callInstrSize):X4} [stk={emitCurStackLvl}], GCvars=");
+            jitprintf($"; Call at {unchecked(offs - callInstrSize):X4} [stk={unchecked((uint)emitCurStackLvl)}], GCvars=");
             emitDispVarSet();
             jitprintf(", gcrefRegs=");
             printRegMaskInt(new regMaskTP(emitThisGCrefRegs));
@@ -38,7 +52,9 @@ public partial class Emitter
 #endif
 
 #if EMIT_TRACK_STACK_DEPTH
-        noway_assert((uint)emitCurStackLvl / sizeof(uint) <= ushort.MaxValue);
+#if !UNIX_AMD64_ABI
+        noway_assert(unchecked((uint)emitCurStackLvl) / sizeof(uint) <= ushort.MaxValue);
+#endif
 #endif
 
         if (emitSimpleStkUsed)
@@ -73,10 +89,9 @@ public partial class Emitter
             }
         }
         assert(gcArgs == argCount);
-#endif
     }
 
-#if DEBUG && TARGET_AMD64
+#if DEBUG
     private string emitGetFrameReg()
     {
         return emitHasFramePtr ? STR_FPBASE : STR_SPBASE;

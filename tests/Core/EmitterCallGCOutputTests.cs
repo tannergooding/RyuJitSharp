@@ -1,8 +1,10 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.GCInfo.rpdArgType_t;
@@ -15,6 +17,70 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class EmitterCallGCOutputTests
 {
     private delegate void EmitterTest(Compiler compiler, Emitter emitter, byte* buffer);
+
+#if TARGET_AMD64
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ColdCodeOffsetsFollowBothNowayPolicies(bool minopts)
+    {
+        WithEmitter((_, emitter, _) =>
+        {
+            emitter.emitCodeBlock = (byte*)0x2000;
+            emitter.emitTotalHotCodeSize = 0x40;
+            emitter.emitColdCodeBlock = (byte*)0x1000;
+            // A wrapped synthetic bound admits a 64-bit cold distance without backing memory.
+            emitter.emitTotalColdCodeSize = -0x2000;
+            FirstColdGroup(emitter) = new insGroup();
+            var address = (byte*)0x1_0000_2000;
+
+            if (minopts)
+            {
+                Assert.That(CurrentCodeOffset(emitter, address), Is.EqualTo(0x1040u));
+            }
+            else
+            {
+                var failure = Assert.Catch(() => CurrentCodeOffset(emitter, address));
+                Assert.That(failure is FatalJitException { Result: CorJitResult.CORJIT_RECOVERABLEERROR }, Is.True);
+            }
+        }, minopts: minopts);
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitFirstColdIG")]
+    private static extern ref insGroup? FirstColdGroup(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitCurCodeOffs")]
+    private static extern uint CurrentCodeOffset(Emitter emitter, byte* address);
+#endif
+
+#if DEBUG && EMIT_TRACK_STACK_DEPTH && !UNIX_AMD64_ABI
+    [Test]
+    [NonParallelizable]
+    public static void VerboseCallPrintsNativeUnsignedStackBitsBeforeSizeValidation()
+    {
+        WithEmitter((compiler, emitter, buffer) =>
+        {
+            var previous = Globals.s_jitstdout;
+            using var stream = new MemoryStream();
+            using var output = new StreamWriter(stream, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
+            try
+            {
+                Globals.s_jitstdout = output;
+                compiler.verbose = true;
+                emitter.emitSimpleStkUsed = true;
+                emitter.emitCurStackLvl = -4;
+
+                var failure = Assert.Catch(() => emitter.emitRecordGCcall(buffer + 8, 5));
+                Assert.That(Encoding.UTF8.GetString(stream.ToArray()),
+                    Does.Contain("; Call at 0003 [stk=4294967292], GCvars="));
+                Assert.That(failure is FatalJitException { Result: CorJitResult.CORJIT_RECOVERABLEERROR }, Is.True);
+            }
+            finally
+            {
+                Globals.s_jitstdout = previous;
+            }
+        }, minopts: false);
+    }
+#endif
 
     [Test]
     public static void PartialMapUsesCompactMasksAndRecordsEvenEmptyCalls()
@@ -247,7 +313,7 @@ internal static unsafe class EmitterCallGCOutputTests
         }, fullPtrMap: true);
     }
 
-    private static void WithEmitter(EmitterTest test, bool fullPtrMap = false)
+    private static void WithEmitter(EmitterTest test, bool fullPtrMap = false, bool minopts = true)
     {
         CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
         {
@@ -260,7 +326,7 @@ internal static unsafe class EmitterCallGCOutputTests
             emitter.emitIssuing = true;
 #endif
             test(compiler, emitter, buffer);
-        });
+        }, minopts: minopts);
     }
 
     private static object CallList(ref GCInfo info)

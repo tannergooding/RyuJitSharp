@@ -16,6 +16,41 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: GC tracking, branch output and descriptor locations
+
+GC live-set and call tracking retain their JIT32/general-encoder and Unix paths.
+ARM64 now records stack-slot lifetimes, register death-before-birth transitions
+and call descriptors. Shared descriptor traversal preserves active/saved storage,
+empty groups and captured end positions; location queries include ARM64
+replacement instructions that moved into the next group.
+
+Branch output preserves native host-width signed displacement storage and
+unsigned jump-size arithmetic. A backward logical jump can have a positive
+physical displacement when hot/cold buffers are reversed; it now remains long
+rather than being incorrectly shortened. Prolog offsets preserve unsigned
+wrapping, call diagnostics print unsigned stack-level bits, and location/offset
+failures retain native recoverable-error and MinOpts continuation policies.
+
+Combined full-analysis checks pass Windows 231 Debug/209 Release, ARM64 13/13
+and Linux-target 2/2, without exclusions or skips. The final offset-truncation
+delta passes a focused 10 Debug/9 Release call-output suite. Identical old-source
+controls expose the prior guards, arithmetic, diagnostics and recovery failures.
+A file-local disabled-GC compilation control also catches the misplaced method
+brace; it is not evidence of full no-GC or Wasm support.
+
+Thirty-one complete definitions and associated scaffolding retire 1,777 native
+lines in `2c4db8b0`, still the sole oracle child. Non-AMD64 descriptor sizes and
+unwind-NOP encoders remain explicit dependencies: ARM64 traversal across
+one-descriptor groups works, while within-group advancement reaches sizing.
+x86 still has independent declaration/type blockers; duplicate declarations
+were removed without claiming x86 execution. No new runtime or GC-encoding
+parity is claimed.
+
+Evidence: `artifacts/emitter-gc-branch-location-integrated` and
+`artifacts/residual-reconciliation/gc-branch-location-combined-20260929.json`,
+its applied receipt and the final-verification receipt. Component proposals
+retain the focused old-source controls.
+
 ## 2026-09-29: GC bookkeeping, output dispatch and ARM64 recording
 
 Frame/NoGC/epilog bookkeeping and the three-register/main output dispatchers

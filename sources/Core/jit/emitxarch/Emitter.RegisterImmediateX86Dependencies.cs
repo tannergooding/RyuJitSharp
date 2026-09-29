@@ -66,12 +66,6 @@ public partial class Emitter
     private ulong AddRex2Prefix(instruction ins, ulong code)
         => throw new FatalJitException(CORJIT_SKIPPED, "x86 REX2 prefix encoding is not ported.");
 
-    private unsafe void emitGCregDeadUpd(regNumber reg, byte* dst)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 register GC death tracking is not ported.");
-
-    private unsafe void emitGCregLiveUpd(GCInfo.GCtype gcType, regNumber reg, byte* dst)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 register GC liveness tracking is not ported.");
-
     private unsafe void emitHandleGCrefRegs(byte* dst, instrDesc id)
         => throw new FatalJitException(CORJIT_SKIPPED, "x86 register-pair GC tracking is not ported.");
 

@@ -214,7 +214,7 @@ public partial class Emitter
 #endif
     }
 
-#if TARGET_AMD64
+#if TARGET_XARCH
     private static void emitSetShortJump(instrDescJmp id)
     {
         if (id.idjKeepLong)

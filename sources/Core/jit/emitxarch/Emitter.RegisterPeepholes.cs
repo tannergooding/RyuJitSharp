@@ -17,7 +17,9 @@ public partial class Emitter
         PEEPHOLE_ABORT,
         PEEPHOLE_CONTINUE,
     }
+#endif
 
+#if TARGET_XARCH
     private bool emitGetLastIns(out insGroup? group, out instrDesc? descriptor)
     {
         for (var ig = emitIGlast; ig is not null; ig = ig.igPrev)
@@ -77,7 +79,9 @@ public partial class Emitter
 
         return false;
     }
+#endif
 
+#if TARGET_AMD64
     private void emitPeepholeIterateLastInstrs(Func<instrDesc, emitPeepholeResult> action)
     {
         assert(emitCanPeepholeLastIns());

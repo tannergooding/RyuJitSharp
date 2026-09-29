@@ -25,9 +25,6 @@ public partial class Emitter
 
     public uint emitCodeOffset(insGroup ig, uint codePos)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Final emitter-location offsets outside AMD64 are not implemented.");
-#else
         var number = emitGetInsNumFromCodePos(codePos);
 #if DEBUG
         assert(ig.igSelf == ig);
@@ -42,6 +39,14 @@ public partial class Emitter
         {
             offset = ig.igSize;
         }
+#if TARGET_ARM64
+        else if (((ig.igFlags & InsGroupFlags.HasRemovedInstruction) != 0) && (number == ig.igInsCnt + 1u))
+        {
+            // A replacement instruction may have moved into a new group when this one was full.
+            assert(ig.igNext is not null);
+            return unchecked(ig.igNext.igOffs + emitFindOffset(ig.igNext, 1));
+        }
+#endif
         else if ((ig.igFlags & InsGroupFlags.UpdatedInstructionSize) != 0)
         {
             offset = emitFindOffset(ig, number);
@@ -53,7 +58,6 @@ public partial class Emitter
         }
 
         return unchecked(ig.igOffs + offset);
-#endif
     }
 
     private static uint emitFindOffset(insGroup ig, uint insNum)

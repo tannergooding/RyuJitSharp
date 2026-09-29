@@ -10,7 +10,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
     private unsafe void emitUpdateLiveGCvars(VARSET_TP vars, byte* addr)
     {
         assert(_compiler is not null);
@@ -113,5 +112,4 @@ public partial class Emitter
         assert((emitThisGCrefRegs & emitThisByrefRegs) == SRBM_NONE);
 #endif
     }
-#endif
 }

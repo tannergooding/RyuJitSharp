@@ -64,7 +64,11 @@ public partial class Emitter
         public void idSetPrevSize(uint previousSize)
         {
             assert((previousSize % 4) == 0);
+#if HOST_64BIT
             _idScaledPrevOffset = (previousSize / 4) & 0x1F;
+#else
+            _idScaledPrevOffset = (previousSize / 4) & 0xF;
+#endif
             assert(idPrevSize() == previousSize);
         }
 #elif TARGET_ARM64
