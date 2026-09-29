@@ -35,5 +35,8 @@ public sealed partial class CodeGen
         return false;
 #endif
     }
+#elif TARGET_ARM
+    public static bool instIsFP(instruction ins)
+        => throw new FatalJitException(CORJIT_SKIPPED, "ARM floating-point instruction classification is not ported.");
 #endif
 }

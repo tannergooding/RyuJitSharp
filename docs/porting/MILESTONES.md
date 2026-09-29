@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Common constant and descriptor-flag access
+
+Instruction constant access now preserves the complete native target flow,
+including the ARM-only frame-address path. ARM64 reads compact and full-width
+constants instead of stopping at its Debug stub. TLS, relocation, local-variable
+and frame-base flag accessors preserve native behavior and the existing xarch
+TLS/custom-bit alias.
+
+Full-analysis controls pass Windows 409 Debug/402 Release and ARM64 69/57.
+Seven old-source constant cases fail at the former guard; positive immediate
+sanity checks now execute. Twelve native definitions retire 90 lines in
+`0cd74028`. ARM FP classification, ARM64 extra-register access and SVE sanity
+remain separate dependencies. Evidence is in `artifacts/descriptor-access-packet`
+and the descriptor-access retirement records under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Common peephole eligibility and xarch classification
 
 Move and side-effect classification and the complete Debug relocation checker

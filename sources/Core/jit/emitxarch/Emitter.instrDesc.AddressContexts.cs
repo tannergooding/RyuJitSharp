@@ -21,18 +21,6 @@ public partial class Emitter
             assert(!IsSimdInstruction(idIns()));
             _idCustomBits |= 8;
         }
-
-        public bool idIsTlsGD()
-        {
-            assert(!IsSimdInstruction(idIns()));
-            return (_idCustomBits & 2) != 0;
-        }
-
-        public void idSetTlsGD()
-        {
-            assert(!IsSimdInstruction(idIns()));
-            _idCustomBits |= 2;
-        }
     }
 #endif
 }

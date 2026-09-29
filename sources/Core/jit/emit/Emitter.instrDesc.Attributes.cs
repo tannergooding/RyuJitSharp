@@ -18,6 +18,15 @@ public partial class Emitter
         private bool _idCnsReloc;
         private bool _idDspReloc;
         private bool _idBound;
+#if !TARGET_XARCH
+        private bool _idTlsGD;
+#endif
+#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+        private bool _idLclVar;
+#endif
+#if TARGET_ARM
+        private bool _idLclFPBase;
+#endif
 #if TARGET_ARMARCH
         private insOpts _idInsOpt;
 #endif
@@ -122,5 +131,54 @@ public partial class Emitter
             _idCnsReloc = EA_IS_CNS_RELOC(attr);
             _idDspReloc = EA_IS_DSP_RELOC(attr);
         }
+
+        public bool idIsReloc()
+        {
+            return idIsDspReloc() || idIsCnsReloc();
+        }
+
+        public bool idIsTlsGD()
+        {
+            assert(!IsSimdInstruction(idIns()));
+#if TARGET_XARCH
+            return (_idCustomBits & 2) != 0;
+#else
+            return _idTlsGD;
+#endif
+        }
+
+        public void idSetTlsGD()
+        {
+            assert(!IsSimdInstruction(idIns()));
+#if TARGET_XARCH
+            _idCustomBits |= 2;
+#else
+            _idTlsGD = true;
+#endif
+        }
+
+#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+        public bool idIsLclVar()
+        {
+            return _idLclVar;
+        }
+
+        public void idSetIsLclVar()
+        {
+            _idLclVar = true;
+        }
+#endif
+
+#if TARGET_ARM
+        public bool idIsLclFPBase()
+        {
+            return _idLclFPBase;
+        }
+
+        public void idSetIsLclFPBase()
+        {
+            _idLclFPBase = true;
+        }
+#endif
     }
 }

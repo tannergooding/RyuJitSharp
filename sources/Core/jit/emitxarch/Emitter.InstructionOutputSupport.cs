@@ -8,11 +8,6 @@ namespace RyuJitSharp;
 public partial class Emitter
 {
 #if TARGET_XARCH
-    internal static nint emitGetInsSC(instrDesc id)
-    {
-        return id.idIsLargeCns() ? ((instrDescCns)id).idcCnsVal : id.idSmallCns();
-    }
-
     private static bool IsAvx512OnlyInstruction(instruction ins)
     {
         return ins >= FIRST_AVX512_INSTRUCTION && ins <= LAST_AVX512_INSTRUCTION;

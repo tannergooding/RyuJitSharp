@@ -20,23 +20,11 @@ public partial class Emitter
     }
 
 #if DEBUG
-    private static nint emitGetInsSC(instrDesc id)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 instruction constant access is not ported.");
-
     private static void emitInsSveSanityCheck(instrDesc id)
         => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SVE instruction sanity checking is not ported.");
 
     public abstract partial class instrDesc
     {
-        public bool idIsTlsGD()
-            => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 TLS descriptor flags are not ported.");
-
-        public bool idIsLclVar()
-            => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 local-variable descriptor flags are not ported.");
-
-        public bool idIsReloc()
-            => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 relocation descriptor flags are not ported.");
-
         public regNumber idReg3()
             => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 third-register descriptor access is not ported.");
 
