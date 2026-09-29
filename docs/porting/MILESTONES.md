@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Native-width address folding
+
+Address-mode construction now preserves the native signed-32 candidate guards
+before accumulating constants. Array-index scales, shifts and products retain
+native width and wrapping behavior rather than narrowing to32 bits or throwing
+in checked builds. Fifty new boundary cases pass alongside existing address and
+arithmetic lowering coverage:190 Debug/190 Release with full analysis.
+
+The pinned native merged-array runners pass all41 selected variants. The managed
+primary JIT now compiles `TimeZoneInfo.TransitionTimeToDateTime`, which previously
+aborted with overflow. Execution advances through all eight d1 lcs test-pass
+messages, then fails while compiling the runner's number-formatting dependency
+in SSA dead-store removal (B459), before final result XML. This is not a completed
+managed merged-runner pass or dump/code parity. The isolated source/JIT identity
+and reproduction evidence are in `artifacts/official-array-merged`.
+
 ## 2026-09-28: Whole-function folding dispatch and native work-list repair
 
 Expression folding now retains the native hardware-intrinsic dispatch on all

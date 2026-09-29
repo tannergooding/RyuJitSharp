@@ -143,7 +143,7 @@ public partial class Compiler
 
         if (mul.Oper is GT_LSH)
         {
-            scale = 1 << (int)(scale);
+            scale = (nint)1 << unchecked((int)scale);
         }
 
         index = mul.Op1;
@@ -158,7 +158,7 @@ public partial class Compiler
                 // When index->gtOper is GT_MUL and index->AsOp()->gtOp2->gtOper is GT_CNS_INT (i.e. * 5),
                 //     we can bump up the scale from 4 to 5*4, and then change index to index->AsOp()->gtOp1.
                 // Otherwise, we cannot optimize it. We will simply keep the original scale and index.
-                scale *= maybeIntCon.AsIntCon().IconValue;
+                scale = unchecked(scale * maybeIntCon.AsIntCon().IconValue);
                 index = index.AsOp().Op1;
             }
         }

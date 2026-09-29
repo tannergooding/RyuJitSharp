@@ -584,12 +584,12 @@ public sealed partial class CodeGen : ICodeGen
 
             // Check for an addition of a constant
 
-            if (op2.Oper.IsCnsIntOrI)
+            if (op2.IsIntCnsFitsInI32)
             {
                 var op2IntCon = op2.AsIntCon();
-                var newCns = cns + op2IntCon.IconValue;
+                var newCns = unchecked(cns + op2IntCon.IconValue);
 
-                if (op2IntCon.FitsInI32 && op2IntCon.ImmedValCanBeFolded(_compiler, addr.Oper) && (op2.Type is not TYP_REF) && FitsInI32(newCns))
+                if (op2IntCon.ImmedValCanBeFolded(_compiler, addr.Oper) && (op2.Type is not TYP_REF) && FitsInI32(newCns))
                 {
                     cns = newCns;
 
@@ -701,7 +701,7 @@ public sealed partial class CodeGen : ICodeGen
                     if (add.Op2.IsIntCnsFitsInI32)
                     {
                         var addConst = add.Op2.AsIntCon();
-                        var newCns = cns + addConst.IconValue;
+                        var newCns = unchecked(cns + addConst.IconValue);
 
                         if (addConst.ImmedValCanBeFolded(_compiler, GT_ADD) && FitsInI32(newCns))
                         {
@@ -799,10 +799,10 @@ public sealed partial class CodeGen : ICodeGen
                     var add = op2.AsOp();
                     var maybeIntCon = add.Op2;
 
-                    if (maybeIntCon.Oper.IsCnsIntOrI)
+                    if (maybeIntCon.IsIntCnsFitsInI32)
                     {
                         var addConst = maybeIntCon.AsIntCon();
-                        var newCns = cns + addConst.IconValue;
+                        var newCns = unchecked(cns + addConst.IconValue);
 
                         if (addConst.ImmedValCanBeFolded(_compiler, GT_ADD) && FitsInI32(newCns))
                         {
@@ -905,7 +905,7 @@ public sealed partial class CodeGen : ICodeGen
             {
                 // By default, assume index is rv2 and indexScale is mul (or 1 if mul is zero)
                 var index = rv2;
-                var indexScale = (mul == 0) ? 1 : mul;
+                nint indexScale = (mul == 0) ? 1 : mul;
 
                 if (rv2.Oper is GT_MUL or GT_LSH)
                 {
@@ -914,7 +914,7 @@ public sealed partial class CodeGen : ICodeGen
 
                     if (maybeIntCon.Oper.IsCnsIntOrI)
                     {
-                        indexScale *= (int)(_compiler.optGetArrayRefScaleAndIndex(rv2Op, out index, bRngChk: false));
+                        indexScale = unchecked(indexScale * _compiler.optGetArrayRefScaleAndIndex(rv2Op, out index, bRngChk: false));
                     }
                 }
 
@@ -924,14 +924,14 @@ public sealed partial class CodeGen : ICodeGen
                     mul = 0;
                     rv2 = null;
                 }
-                else if (index.Oper.IsCnsIntOrI)
+                else if (index.IsIntCnsFitsInI32)
                 {
                     var indexConst = index.AsIntCon();
 
                     if (!indexConst.ImmedValNeedsReloc(_compiler))
                     {
-                        var constantIndex = indexConst.IconValue * indexScale;
-                        var newCns = cns + constantIndex;
+                        var constantIndex = unchecked(indexConst.IconValue * indexScale);
+                        var newCns = unchecked(cns + constantIndex);
 
                         if (constantIndex == 0)
                         {

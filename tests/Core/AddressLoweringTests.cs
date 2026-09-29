@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -11,6 +12,116 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class AddressLoweringTests
 {
     private static CorInfoReloc s_relocHint;
+
+    private static IEnumerable<TestCaseData> DisplacementCandidates()
+    {
+        (long Value, int Offset, bool Fold)[] candidates = [
+            (long.MaxValue, 1, false),
+            (long.MinValue, -1, false),
+            (2147483648L, -1, false),
+            (-2147483649L, 1, false),
+            (2147483646L, 1, true),
+            (-2147483647L, -1, true),
+        ];
+
+        foreach (var (value, offset, fold) in candidates)
+        {
+            for (var position = 0; position < 3; position++)
+            {
+                yield return new TestCaseData(position, value, offset, fold, false);
+                yield return new TestCaseData(position, value, offset, fold, true);
+            }
+        }
+    }
+
+    [TestCaseSource(nameof(DisplacementCandidates))]
+    public static void DisplacementCandidatesMustFitBeforeAccumulation(
+        int position, long value, int offset, bool fold, bool foldIndex)
+    {
+        WithCompiler(compiler => {
+            var codeGen = new CodeGen(compiler);
+            var baseAddress = compiler.gtNewLclvNode(var_types.TYP_LONG, 0);
+            var index = compiler.gtNewLclvNode(var_types.TYP_LONG, 1);
+            var constant = compiler.gtNewIconNode(var_types.TYP_LONG, (nint)value);
+            GenTree first = baseAddress;
+            GenTree second = constant;
+
+            if (position == 1)
+            {
+                first = new GenTreeOp(genTreeOps.GT_ADD, var_types.TYP_LONG, baseAddress, constant);
+                second = index;
+            }
+            else if (position == 2)
+            {
+                second = new GenTreeOp(genTreeOps.GT_ADD, var_types.TYP_LONG, index, constant);
+            }
+
+            var inner = new GenTreeOp(genTreeOps.GT_ADD, var_types.TYP_LONG, first, second);
+            var displacement = compiler.gtNewIconNode(var_types.TYP_LONG, offset);
+            var address = new GenTreeOp(genTreeOps.GT_ADD, var_types.TYP_LONG, inner, displacement);
+
+            Assert.That(codeGen.genCreateAddrMode(address, foldIndex, 0,
+                out var reverse, out var actualBase, out var actualIndex, out var scale, out var actualOffset), Is.True);
+            Assert.That(reverse, Is.False);
+            Assert.That(actualBase, Is.SameAs(fold ? baseAddress : first));
+            Assert.That(actualIndex, fold ? position == 0 ? Is.Null : Is.SameAs(index) : Is.SameAs(second));
+            Assert.That(scale, Is.Zero);
+            Assert.That(actualOffset, Is.EqualTo(fold ? (nint)(value + offset) : offset));
+        });
+    }
+
+    [TestCase(2147483648L, 1, true, false, 0L)]
+    [TestCase(4294967296L, 1, true, false, 0L)]
+    [TestCase(-4294967296L, 1, true, false, 0L)]
+    [TestCase(4294967296L, 0, true, true, 0L)]
+    [TestCase(2147483647L, 1, true, true, 2147483647L)]
+    [TestCase(4294967296L, 1, false, false, 0L)]
+    [TestCase(long.MaxValue, 2, true, true, -2L)]
+    [TestCase(long.MinValue, 2, true, true, 0L)]
+    public static void ConstantIndexFoldingPreservesNativeScaleWidth(
+        long scaleValue, int indexValue, bool constantIndex, bool folded, long expectedOffset)
+    {
+        WithCompiler(compiler => {
+            var codeGen = new CodeGen(compiler);
+            var baseAddress = compiler.gtNewLclvNode(var_types.TYP_LONG, 0);
+            GenTree index = constantIndex
+                ? compiler.gtNewIconNode(var_types.TYP_LONG, indexValue)
+                : compiler.gtNewLclvNode(var_types.TYP_LONG, 1);
+            var multiplier = compiler.gtNewIconNode(var_types.TYP_LONG, (nint)scaleValue);
+            var product = new GenTreeOp(genTreeOps.GT_MUL, var_types.TYP_LONG, index, multiplier);
+            var address = new GenTreeOp(genTreeOps.GT_ADD, var_types.TYP_LONG, baseAddress, product);
+
+            Assert.That(codeGen.genCreateAddrMode(address, true, 0,
+                out var reverse, out var actualBase, out var actualIndex, out var scale, out var offset), Is.True);
+            Assert.That(reverse, Is.False);
+            Assert.That(actualBase, Is.SameAs(baseAddress));
+            Assert.That(actualIndex, folded ? Is.Null : Is.SameAs(product));
+            Assert.That(scale, Is.Zero);
+            Assert.That(offset, Is.EqualTo((nint)expectedOffset));
+        });
+    }
+
+    [TestCase(genTreeOps.GT_LSH, 31L, 1L, 2147483648L)]
+    [TestCase(genTreeOps.GT_LSH, 32L, 1L, 4294967296L)]
+    [TestCase(genTreeOps.GT_LSH, 63L, 1L, long.MinValue)]
+    [TestCase(genTreeOps.GT_MUL, long.MaxValue, 2L, -2L)]
+    [TestCase(genTreeOps.GT_MUL, long.MinValue, 2L, 0L)]
+    [TestCase(genTreeOps.GT_MUL, 2L, 4294967296L, 8589934592L)]
+    public static void ArrayReferenceScaleUsesNativeWidth(
+        genTreeOps oper, long outerValue, long innerValue, long expectedScale)
+    {
+        WithCompiler(compiler => {
+            var index = compiler.gtNewLclvNode(var_types.TYP_LONG, 1);
+            var innerConstant = compiler.gtNewIconNode(var_types.TYP_LONG, (nint)innerValue);
+            var inner = new GenTreeOp(genTreeOps.GT_MUL, var_types.TYP_LONG, index, innerConstant);
+            var outerConstant = compiler.gtNewIconNode(var_types.TYP_LONG, (nint)outerValue);
+            var outer = new GenTreeOp(oper, var_types.TYP_LONG, inner, outerConstant);
+
+            Assert.That(compiler.optGetArrayRefScaleAndIndex(outer, out var actualIndex, false),
+                Is.EqualTo((nint)expectedScale));
+            Assert.That(actualIndex, Is.SameAs(index));
+        });
+    }
 
     [TestCase(false)]
     [TestCase(true)]

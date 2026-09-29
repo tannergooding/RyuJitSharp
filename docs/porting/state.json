@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "addressModeNativeWidth": {
+      "scope": "B458: preserve signed-32 candidate guards and native-sized scale/shift/wrapping arithmetic in CodeGen.genCreateAddrMode and Compiler.optGetArrayRefScaleAndIndex.",
+      "mapping": "Pinned codegencommon.cpp genCreateAddrMode -> CodeGen.cs; optimizer.cpp5701-5736 -> Compiler.opt.cs. Both native definitions were already retired.",
+      "validation": "Full-analysis address/arithmetic controls pass190 Debug/190 Release, including all50 new boundary cases. Earlier guard-only baselines fail6 Debug/2 Release of18; index-folding baselines fail11 Debug/6 Release of44; scale extraction fails5 of6 Debug cases before correction.",
+      "execution": "Pinned native merged arrays pass41 variants. Isolated327ca87 plus the three-file address repair now completes the original TimeZoneInfo.TransitionTimeToDateTime compilation and reaches eight d1 lcs test-pass messages; primary execution then fails in Grisu3.TryDigitGenShortest SSA dead-store removal before final result XML.",
+      "source": "artifacts/official-array-merged/scope-address-complete.json records the327ca87 archive, exact CodeGen.cs/Compiler.opt.cs/AddressLoweringTests.cs overlays and native JIT SHA25620cc122b3f0d7206fe36b3ba3a837713dce7ca2753bdfc682b5685ebaf176c65. Worker folding/Wasm WIP is excluded.",
+      "evidence": "artifacts/official-array-merged/address-evidence.json; native-2 and managed-address-complete-1 manifests, logs and traces.",
+      "remaining": "B459 optVNReplaceDeadStore defining-block invariant in System.Number+Grisu3.TryDigitGenShortest. No completed managed merged-runner pass or generated-code/dump parity is claimed."
+    },
     "foldingDispatchRestoration": {
       "managedCommit": "8f134a319364a2141cb2d0081671223419ed711d",
       "nativeCommit": "7ac5d5b569f5e3e0d050187e417fc48a91df0f9d",
@@ -910,7 +919,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Dispatcher8f134a3/native7ac5d5b5 boundary is complete. Integrate remaining helper/CallArgs repairs and resolve shared declarations. Wasm parser repairs and a typed classifier stub are WIP; a bounded declaration batch clears the first73 errors but exposes246 broader diagnostics. The Wasm fixture has not run, and the caller remains uncommitted/native until its completion boundary is established. B456 is closed as a false positive. Five official Methodical merged runners are built;11 array sources/41 variants await primary execution after structural repairs.",
+      "parentScope": "Dispatcher8f134a3/native7ac5d5b5 boundary is complete. Hardware-fold helper source review is accepted; its owner is finishing fresh Windows checks and exact native retirement, preserving two deferred dependencies. The isolated327ca87 Wasm packet passes70 Debug/68 Release Windows call-argument controls but still has108 broader target diagnostics; its fixture has not run and it remains uncommitted/native. Do not expand this into backend algorithms. B458 address-width repair is verified independently; native merged arrays pass41 variants, while managed execution advances to the separate B459 SSA dead-store failure.",
       "wholeFunctionRepairLanes": [
         {
           "scope": "Whole gtFoldExprHWIntrinsic body at pinned gentree.cpp35373-37408, retaining all own inline target branches and stubbing only separate missing dependencies. Completed gtFoldExpr dispatcher/native boundary is recorded separately.",
@@ -1326,7 +1335,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Continue the active gtFoldExprHWIntrinsic whole-body translation and CallArgs Wasm compilation-closure lanes; collect their concrete packets after completion notifications. gtFoldExpr is already committed8f134a3 and retired in native7ac5d5b5; do not repeat that boundary. Wasm currently stops at246 shared diagnostics after the parser/classifier/declaration repairs (artifacts/lane-b-evidence/wasm-after-lane-b-final.log), with no target fixture execution yet. Resolve typed declaration/guard blockers, not backend functionality or fabricated ABI constants; preserve incomplete WIP. Accept/commit coherent verified repairs, then retire exact completed definitions. Do not reopen B456 or coverage sweeps. Official merged-array execution remains queued with its built41-variant scope.",
+    "nextAction": "Collect the accepted gtFoldExprHWIntrinsic packet's fresh Windows checks and authorized exact native-retirement receipt, then commit its source/tests and sparse dependency boundary; retain native GetMaskVariant/NarrowAndDuplicateSimdLong. Wasm packet is collected with108 broader target diagnostics and no target fixture execution (artifacts/lane-b-evidence/overlay-327ca87-validation.json); preserve WIP without a backend expansion. Commit the verified B458 address-width repair before tracing B459 optVNReplaceDeadStore ownership in System.Number+Grisu3.TryDigitGenShortest. Reproduce via official-array-merged/capture.py managed <fresh-output> --scope scope-address-complete.json; original address overflow is resolved, but no completed managed merged-array run yet. Do not reopen B456 or recurring coverage sweeps.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
