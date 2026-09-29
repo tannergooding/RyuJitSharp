@@ -16,6 +16,17 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "arm64RegisterDescriptors": {
+      "scope": "Whole xarch/ARM third/fourth-register access, ARM64 second-result GC type and shared option-bit access, SVE pattern/prefetch aliases, and both complete SVE enum definitions.",
+      "mapping": "Common register access moved from emitxarch/Emitter.instrDesc.Registers.cs to emit/Emitter.instrDesc.Registers.cs; ARM64 aliases reside in emitarm64/Emitter.instrDesc.RegisterOptions.cs.",
+      "validation": "Full-analysis Windows135Debug/129Release and ARM64112Debug/95Release. Five identical old-source cases fail at the former third/fourth-register guards. Scoped MSVC Debug/optimized probes each verify131072 combinations of the exact pinned data members.",
+      "layout": "ARM64 preserves the local/SVE word at byte0 and register word at byte4: shared bit0, second-GC bits1-2, reg3 bits3-9 and reg4 bits10-16. Prefetch truncates to seven bits and aliases reg4; tiny descriptor shift access avoids tail storage.",
+      "retirement": "Twenty-two complete methods and two enums,167 exact deletions; separate LoongArch64/RISC-V64 accessors and unfinished union helpers remain native.",
+      "nativeBefore": "1b1674981c90b9292caf77d2fa6a52781512cf66",
+      "nativeAfter": "b02951eb3752b92ae2e685f70cb0cca02f74ecc0",
+      "limits": "No descriptor logical-size or local-address encoding change. ARM32 register translation is unexecuted; SVE sanity and general ARM64 recording/output remain separate. Data-member layout proof and managed target tests are not ARM64 machine-code parity.",
+      "evidence": "artifacts/arm64-descriptor-registers retains exact snapshots, commands, hashes, TRXs and native layout probes. artifacts/residual-reconciliation/register-descriptor-proposed-20260929.json and combined/applied/verification records prove exact pinned methods and enum values."
+    },
     "xarchStackSizingAndEvexCompression": {
       "scope": "Whole emitInsSizeSVCalcDisp, both emitInsSizeSV overloads, IsSSEOrAVXInstruction, GetInputSizeInBytes and TryEvexCompressDisp8Byte.",
       "validation": "Full-analysis stack/recording controls pass Windows241Debug/225Release; compression controls pass53Debug/53Release and Linux-x64 target53Debug. ARM64 builds. Old/new x86 builds retain their independently documented parser/semantic blockers; three new x86 compression cases remain unexecuted.",
@@ -1027,7 +1038,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "1b1674981c90b9292caf77d2fa6a52781512cf66",
+      "residualHead": "b02951eb3752b92ae2e685f70cb0cca02f74ecc0",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -1160,12 +1171,12 @@
       "caution": "Current backend allocation/codegen/emitter exclusions checked in this pass target non-Windows or non-AMD64 configurations. Commented callback declarations and historical baseline gaps are not an inventory of missing Windows implementations."
     },
     "activeBatch": {
-      "scope": "Continue retained xarch stack/local sizing in lane A and EVEX displacement compression/tuple metadata in lane B. Parent owns ARM64 descriptor register/union fields and shared integration. Preserve whole native target paths and managed descriptor ownership.",
+      "scope": "Continue whole xarch multi-register memory recording in lane A and SIMD multioperand wrappers in lane B. Parent owns ARM64 immediate/unary recording and shared integration. Preserve whole native target paths and managed descriptor ownership.",
       "status": "in-progress",
       "doneWhen": [
-        "Complete retained stack/local sizing bodies, preserving native target conditionals and explicit separate dependencies.",
-        "Complete retained xarch EVEX displacement compression and directly coupled tuple metadata without changing encoding or relocation semantics.",
-        "Complete ARM64 third/fourth-register and directly coupled descriptor-union fields, proving native bit offsets and preserving local-address, GC and shared-flag aliases.",
+        "Complete retained multi-register memory recording bodies and directly coupled sizing, preserving native target conditionals and explicit separate dependencies.",
+        "Complete retained SIMD multioperand wrappers without changing encoding, operand ordering or relocation semantics.",
+        "Complete whole ARM64 immediate/unary recorder definitions and directly required descriptor dependencies; retain named terminating helpers for separately unported recorder forms.",
         "Resolve shared declaration/signature/guard conflicts centrally; preserve existing Windows behavior and compilability of affected target paths.",
         "Commit validated C# repairs with sparse dependency/exception records, then retire the exact completed native definitions in the same batch through the consolidated amended cleanup commit. Retain unported helper bodies."
       ],
@@ -1178,19 +1189,19 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Complete ARM64 descriptor register/union access and own shared declaration/guard integration. Integrate independent recording/sizing packets promptly; preserve native oracle-plus-one and all13 unrelated Wasm WIP files. Reuse completed sanity, size, GC and call evidence rather than repeating it for retirement.",
+      "parentScope": "Complete ARM64 emitIns_I, emitIns_R and emitIns_R_I and own shared declaration/guard integration. Integrate independent xarch packets promptly; preserve native oracle-plus-one and all13 unrelated Wasm WIP files. Reuse completed descriptor/sizing/GC evidence rather than repeating it for retirement.",
       "wholeFunctionRepairLanes": [
         {
-          "scope": "Whole retained EmitMovsxAsCwde, IsRedundantMov and emitAdjustStackDepthPushPop, with directly required helper dependencies.",
+          "scope": "Whole retained multi-register memory recorders, including R_R_C/S, R_R_C_I/S_I and R_R_C_R/S_R, with directly required sizing dependencies.",
           "owner": "4b57b744-36f1-4e6e-8b76-94c1a87d6e02",
-          "files": "Xarch move-analysis and stack-depth partials plus focused fixtures. No common call-allocation, address/static recording or descriptor-layout edits.",
-          "status": "accepted three-definition move/stack-depth packet; retained classification/peephole helpers are the next boundary"
+          "files": "Emitter.MultiRegisterInstructions.cs, MultiRegisterInstructionSizes.cs, dedicated dependency partial and focused fixtures. No SIMD wrapper, common or ARM64 descriptor edits.",
+          "status": "active at managed5e8a941; stack sizing accepted"
         },
         {
-          "scope": "Whole retained xarch address/static recording family, selected by native definitions and existing managed counterparts; preserve target, relocation and size branches.",
+          "scope": "Whole retained xarch SIMD multioperand wrapper family; preserve target, relocation, size and operand-order branches.",
           "owner": "b2253a3d-d101-444e-9c56-d631eb5b274b",
-          "files": "Xarch address/static recording partials and focused fixtures. Parent owns call allocation; lane A owns move/stack-depth helpers. No Wasm WIP edits.",
-          "status": "accepted two-definition static recording packet; register/address recording remains"
+          "files": "Emitter.SimdMultioperandInstructions.cs, dedicated dependency partial and focused fixtures. Lane A owns underlying multiregister recorders; parent owns common and ARM64 contracts. No Wasm WIP edits.",
+          "status": "active at managed5e8a941; EVEX compression accepted"
         }
       ],
       "parallelPackets": [
@@ -1594,7 +1605,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Stack sizing and EVEX compression are accepted together at native1b167498:6 definitions/452 exact deletions. Never reapply prior retirements. Parent ARM64 register/union changes now pass Windows135D129R and ARM64112D95R; all five old-source controls fail at the previous register-access guards. Scoped MSVC Debug/optimized layout probes each cover131072 combinations and establish byte4 register storage with shifts3/10, preserving the byte0 SVE/local overlay. Prepare/apply the exact22-function/two-enum retirement after final pinned-source comparison, update evidence and commit the moved Registers path explicitly. Then continue remaining descriptor/sanity dependencies. Reuse lanes A/B for whole multi-register recording and SIMD wrapper families, respectively. Preserve separate SVE sanity and unrelated Wasm WIP, oracle-plus-one and no publication.",
+    "nextAction": "ARM64 register/union access is accepted at nativeb02951eb:22 complete methods/two enums/167 exact deletions, Windows135D129R and ARM64112D95R, five genuine old-guard failures and scoped layout proof. Never reapply completed retirements. Parent next reads whole emitIns_I, emitIns_R and emitIns_R_I in pinned emitarm64.cpp and their existing managed declarations, then ports the recorder family with full native dispatch and terminating separate dependencies. Lanes A/B continue multi-register memory recording and SIMD wrappers at managed5e8a941; collect coherent packets promptly. Preserve separate SVE sanity and unrelated Wasm WIP, oracle-plus-one and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

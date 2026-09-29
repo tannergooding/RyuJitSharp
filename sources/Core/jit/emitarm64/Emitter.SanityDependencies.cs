@@ -23,14 +23,6 @@ public partial class Emitter
     private static void emitInsSveSanityCheck(instrDesc id)
         => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SVE instruction sanity checking is not ported.");
 
-    public abstract partial class instrDesc
-    {
-        public regNumber idReg3()
-            => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 third-register descriptor access is not ported.");
-
-        public regNumber idReg4()
-            => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 fourth-register descriptor access is not ported.");
-    }
 #endif
 }
 #endif

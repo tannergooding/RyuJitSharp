@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: ARM64 register and option descriptors
+
+Third/fourth-register access is shared across xarch and ARM targets. ARM64
+preserves the local/SVE word and its separate packed register word, including
+second-result GC typing and the scaled/merging/vector-length bit aliases.
+SVE pattern and prefetch enums retain all native values; prefetch aliases the
+seven-bit fourth register. Tiny-descriptor shift access avoids tail storage.
+
+Scoped native data-member probes verify 131,072 combinations in Debug and
+optimized builds. Full-analysis controls pass Windows 135 Debug/129 Release and
+ARM64 112/95; five identical old-source cases fail at the former register guards.
+Twenty-two methods and two enums retire 167 lines in native `b02951eb`.
+ARM32 execution, SVE sanity and ARM64 machine-code parity remain unestablished.
+Evidence is in `artifacts/arm64-descriptor-registers` and the register-descriptor
+retirement records under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Stack sizing and EVEX displacement compression
 
 Stack-variable sizing and EVEX displacement compression now retain their whole

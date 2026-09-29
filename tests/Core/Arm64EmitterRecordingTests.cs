@@ -73,6 +73,31 @@ internal static unsafe class Arm64EmitterRecordingTests
     }
 
 #if DEBUG
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ExtraRegisterAccessReadsNativeWord(bool fourth)
+    {
+        var descriptor = RecordingEmitter.Basic(INS_nop, IF_DR_4A);
+        Unsafe.As<Emitter.instrDesc.idAddrUnion, ulong>(ref descriptor.idAddr()) =
+            ((ulong)REG_R19 << 35) | ((ulong)REG_R28 << 42);
+        Assert.That(fourth ? descriptor.idReg4() : descriptor.idReg3(), Is.EqualTo(fourth ? REG_R28 : REG_R19));
+    }
+
+    [TestCase(IF_DR_3A, REG_R2, REG_R3)]
+    [TestCase(IF_DR_3B, REG_LR, REG_R0)]
+    [TestCase(IF_DR_4A, REG_R0, REG_LR)]
+    public static void SanityChecksUseThirdAndFourthRegisters(
+        Emitter.insFormat format, regNumber third, regNumber fourth)
+    {
+        var descriptor = RecordingEmitter.Basic(INS_nop, format);
+        descriptor.idOpSize(EA_8BYTE);
+        descriptor.idReg1(REG_R0);
+        descriptor.idReg2(REG_R1);
+        Unsafe.As<Emitter.instrDesc.idAddrUnion, ulong>(ref descriptor.idAddr()) =
+            ((ulong)third << 35) | ((ulong)fourth << 42);
+        CheckSanity(CreateEmitter(), descriptor);
+    }
+
     [TestCase(IF_BI_1A, EA_4BYTE, REG_LR, REG_R0)]
     [TestCase(IF_BR_1A, EA_8BYTE, REG_R0, REG_R0)]
     [TestCase(IF_DR_2A, EA_8BYTE, REG_ZR, REG_R0)]

@@ -26,10 +26,20 @@ public partial class Emitter
 #if TARGET_XARCH
             [FieldOffset(0)]
             public emitAddrMode iiaAddrMode;
+#endif
 
+#if TARGET_XARCH || TARGET_ARM
             [FieldOffset(0)]
             internal uint iiaRegisterBits;
+#elif TARGET_ARM64
+            [FieldOffset(4)]
+            internal uint iiaRegisterBits;
 
+            [FieldOffset(0)]
+            internal insSvePattern iiaSvePattern;
+#endif
+
+#if TARGET_XARCH
             [FieldOffset(0)]
             public bool iiaSecRel;
 #endif
