@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sharedLsraKillSetHelpers": {
+      "scope": "Whole multiply, divide/modulo, block-store, hardware-intrinsic, return and profiler-hook kill-set helpers preserve native zero masks on non-xarch targets, x86 multiply-long classification and ARM void-return profiler kills. Replaces the former dependent terminating declarations with their complete native bodies.",
+      "validation": "Full-analysis ARM64 target controls80 Debug/65 Release and Windows controls75 Debug/74 Release pass. Five additional ARM64 arithmetic cases preserve native no-fixed-register behavior. With at most two compiler commands active, sampled available physical memory stays above37GiB.",
+      "retirement": "Six definitions with headings, their declarations and the now-orphaned declaration heading;164 native lines.",
+      "nativeBefore": "b735522c122633220015676e82a0c2bbf30948e5",
+      "nativeAfter": "1c56e6d4227f493c8fe90cfff74ebbab1043f1c2",
+      "evidence": "artifacts/lsra-killset-helpers-fc74a22; artifacts/residual-reconciliation/lsra-killset-helpers component/combined/applied/verification.",
+      "limits": "These are preservation and whole-translation controls, not old-failing regressions. X86 and ARM32 execution remain unverified behind independent target prerequisites; no target generated-code parity claim."
+    },
     "sharedLsraKillSetConstruction": {
       "scope": "Whole getKillSetForShiftRotate, getKillSetForCall and debug getKillSetForNode preserve shared dispatch, x86 FP-call temporaries, ARM virtual-stub registers and Swift error kills.",
       "correction": "B468 removes ARM64 predicate kills as well as floating kills when floating kills are unnecessary. The earlier production implementation and direct/dispatcher fixtures incorrectly retained the predicate bank.",
@@ -1778,7 +1787,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Shared multi-register local storage is complete. Prioritize ready LSRA kill-set and lowering packet integration, then continue retained shared backend dependencies. Preserve independent ARM SIMD helper,13 Wasm WIP and centrally owned native retirement.",
+      "parentScope": "Shared multi-register stores and the complete shared kill-set family are accepted. Integrate recovered lowering and scalar throw-helper packets, then resume adjacent retained backend families. Maintain at most two compiler-heavy commands with memory monitoring, immutable owned-only snapshots,13 frozen Wasm files and centrally owned native retirement.",
       "wholeFunctionRepairLanes": [
         {
           "scope": "Whole retained xarch scalar/atomic codegen families.",
@@ -1790,13 +1799,13 @@
           "scope": "Retained shared call-result and return lowering after call/argument dispatch closure.",
           "owner": "41f2570d-eb35-4a4b-92d7-1b2d0a3df242",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "replacement worker recovering three-partial lowering packet and missing acceptance checks; currently owns the single validation slot"
+          "status": "replacement worker validating final v5 preservation control in second monitored slot; other final Windows/Linux/ARM64 controls pass"
         },
         {
           "scope": "Whole retained shared kill-set family after return/write-barrier closure.",
           "owner": "bf8933b0-1d43-49d4-9d3e-91c4322f5215",
           "files": "LSRA partials and focused fixtures.",
-          "status": "parent accepted corrected shared kill-set packet; B468 verified against old source; former worker instance remains unavailable"
+          "status": "parent accepted dispatcher and six-helper closure; B468 verified; former worker instance remains unavailable"
         },
         {
           "scope": "Whole retained xarch SIMD/hardware codegen families.",
@@ -2206,7 +2215,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Corrected LSRA kill-set retirement consolidated at nativeb735522c; do not reapply. Finish its managed commit with B468. Recovered lowering worker41f2570d owns the single validation slot for its node-owner correction and ARM64 coalescing gate; prior live-worktree ARM64 failure was concurrent scalar interference, not baseline debt. Scalar worker4126f755 is source-ready, awaiting next validation slot. Both use immutable owned-only snapshots. Multi-register stores are committedc84e404. Recovery profiling/evidence is in artifacts/power-recovery-20260929/recovery.json; do not rerun completed controls or disable analyzers. Preserve13Wasm and no publication.",
+    "nextAction": "Six shared kill-set helpers validated80D/65R ARM64 and75D/74R Windows; native retirement consolidated1c56e6d4. Finish managed helper commit, then accept final lowering v5 control and scalar throw-helper packet. The alleged stale owner was disproved: LIR.Range.ReplaceNode already updates the owning use; redundant assignment removed and new test is a preservation control. Lowering worker41f2570d uses second monitored build slot and scalar4126f755 first; no third compiler command. All13Wasm files remain frozen. Recovery profiling is in artifacts/power-recovery-20260929/recovery.json. No publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

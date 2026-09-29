@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Shared LSRA kill-set helper closure
+
+The six remaining arithmetic, block, intrinsic and profiler kill-set helpers
+retain their complete native target branches, including x86 multiply-long
+classification and ARM void-return profiler kills. Their bodies, headings and
+declarations retire 164 native lines in `1c56e6d4`.
+
+Full-analysis Windows controls pass 75 Debug/74 Release and ARM64 target
+controls pass 80 Debug/65 Release. Five additional arithmetic cases preserve
+ARM64's native no-fixed-register masks. These are preservation controls,
+not old-failing regressions or target generated-code parity. Evidence:
+`artifacts/lsra-killset-helpers-fc74a22` and corresponding retirement records.
+
 ## 2026-09-29: Shared LSRA kill-set construction
 
 Shift/rotate, call and debug node kill-set construction retain the native

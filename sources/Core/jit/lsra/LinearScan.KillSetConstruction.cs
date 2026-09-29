@@ -49,10 +49,10 @@ public sealed partial class LinearScan
         return killMask;
     }
 
-#if TARGET_AMD64
     private regMaskTP getKillSetForMul(GenTreeOp mulNode)
     {
-        assert(mulNode.Oper is GT_MUL or GT_MULHI);
+#if TARGET_XARCH
+        assert(mulNode.Oper.IsMul);
         if (mulNode.Oper is not GT_MUL)
         {
             if (mulNode.IsUnsigned && _compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2))
@@ -68,16 +68,22 @@ public sealed partial class LinearScan
         return mulNode.IsUnsigned && mulNode.HasOverflowCheckEx
             ? new regMaskTP(SRBM_RAX | SRBM_RDX)
             : new regMaskTP(SRBM_NONE);
+#else
+        return new regMaskTP(SRBM_NONE);
+#endif
     }
 
     private static regMaskTP getKillSetForModDiv(GenTreeOp node)
     {
+#if TARGET_XARCH
         assert(node.Oper is GT_MOD or GT_DIV or GT_UMOD or GT_UDIV);
         return varTypeUsesIntReg(node.Type)
             ? new regMaskTP(SRBM_RAX | SRBM_RDX)
             : new regMaskTP(SRBM_NONE);
-    }
+#else
+        return new regMaskTP(SRBM_NONE);
 #endif
+    }
 
     private regMaskTP getKillSetForCall(GenTreeCall call)
     {
@@ -144,24 +150,29 @@ public sealed partial class LinearScan
         return killMask;
     }
 
-#if TARGET_AMD64 || TARGET_ARM64
     private static regMaskTP getKillSetForBlockStore(GenTreeBlk blockNode)
     {
         assert(blockNode.Oper.IsStoreBlk);
+        // Remaining block-store forms do not clobber fixed registers; helper
+        // calls account for their own kills.
         return new regMaskTP(SRBM_NONE);
     }
 
+#if FEATURE_HW_INTRINSICS
     private static regMaskTP getKillSetForHWIntrinsic(GenTreeHWIntrinsic node)
     {
         var killMask = new regMaskTP(SRBM_NONE);
 #if TARGET_XARCH
         if (node.HWIntrinsicId is NI_X86Base_MaskMove)
         {
+            // A fixed address use alone does not reserve implicit EDI when
+            // conflicting definitions cause LSRA to reassign that address.
             killMask = new regMaskTP(LsraGlobals.genSingleTypeRegMask(REG_EDI));
         }
 #endif
         return killMask;
     }
+#endif
 
     private regMaskTP getKillSetForReturn(GenTree returnNode)
     {
@@ -170,14 +181,20 @@ public sealed partial class LinearScan
             return new regMaskTP(SRBM_NONE);
         }
 
-        return _compiler.compHelperCallKillSet(CORINFO_HELP_PROF_FCN_LEAVE);
+        var killSet = _compiler.compHelperCallKillSet(CORINFO_HELP_PROF_FCN_LEAVE);
+#if TARGET_ARM
+        if (returnNode.Type is TYP_VOID)
+        {
+            killSet |= new regMaskTP(SRBM_R0);
+        }
+#endif
+        return killSet;
     }
 
     private regMaskTP getKillSetForProfilerHook()
         => _compiler.compIsProfilerHookNeeded
             ? _compiler.compHelperCallKillSet(CORINFO_HELP_PROF_FCN_TAILCALL)
             : new regMaskTP(SRBM_NONE);
-#endif
 
 #if DEBUG
     private regMaskTP getKillSetForNode(GenTree tree)
@@ -259,50 +276,6 @@ public sealed partial class LinearScan
 
         return killMask;
     }
-#endif
-
-#if DEBUG && !TARGET_AMD64
-    private static regMaskTP getKillSetForMul(GenTreeOp tree)
-    {
-#if TARGET_ARM64
-        return new regMaskTP(SRBM_NONE);
-#else
-        throw new FatalJitException("The multiply kill-set helper is not ported for this target.");
-#endif
-    }
-
-    private static regMaskTP getKillSetForModDiv(GenTreeOp tree)
-    {
-#if TARGET_ARM64
-        return new regMaskTP(SRBM_NONE);
-#else
-        throw new FatalJitException("The division kill-set helper is not ported for this target.");
-#endif
-    }
-#endif
-
-#if DEBUG && !TARGET_AMD64 && !TARGET_ARM64
-    private static regMaskTP getKillSetForBlockStore(GenTreeBlk tree)
-    {
-        throw new FatalJitException("The block-store kill-set helper is not ported for this target.");
-    }
-
-    private regMaskTP getKillSetForReturn(GenTree tree)
-    {
-        throw new FatalJitException("The profiler return kill-set helper is not ported for this target.");
-    }
-
-    private regMaskTP getKillSetForProfilerHook()
-    {
-        throw new FatalJitException("The profiler hook kill-set helper is not ported for this target.");
-    }
-
-#if FEATURE_HW_INTRINSICS
-    private static regMaskTP getKillSetForHWIntrinsic(GenTreeHWIntrinsic tree)
-    {
-        throw new FatalJitException("The hardware-intrinsic kill-set helper is not ported for this target.");
-    }
-#endif
 #endif
 
     private regMaskTP getCalleeTrashKillMask()

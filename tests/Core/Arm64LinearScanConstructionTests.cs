@@ -87,6 +87,22 @@ internal static unsafe class Arm64LinearScanConstructionTests
     }
 
 #if DEBUG
+    [TestCase(GT_MULHI)]
+    [TestCase(GT_MUL_LONG)]
+    [TestCase(GT_MOD)]
+    [TestCase(GT_UMOD)]
+    [TestCase(GT_UDIV)]
+    public static void DebugArithmeticKillSetsDoNotReserveFixedRegisters(genTreeOps operation)
+    {
+        WithCompiler(false, false, (compiler, _) => {
+            var allocator = new LinearScan(compiler);
+            var value = compiler.gtNewIconNode(TYP_INT, 3);
+            var arithmetic = new GenTreeOp(operation, TYP_INT, value, value);
+
+            Assert.That(GetKillSetForNode(allocator, arithmetic), Is.EqualTo(new regMaskTP(SRBM_NONE)));
+        });
+    }
+
     [Test]
     public static void DebugKillSetDispatcherPreservesArm64ShiftAndCallMasks()
     {
