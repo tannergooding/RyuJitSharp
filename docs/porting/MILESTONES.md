@@ -16,6 +16,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch constant generation
+
+Three whole scalar/vector/mask constant-generation overloads retire 310 native
+lines in `eff075a1`, preserving relocation and x86 paths. The shared scalar
+declaration stays for other targets. Windows controls pass 71 Debug/67 Release,
+Linux passes 71 Debug, and ARM64 source compilation passes. X86 retains 14
+baseline errors and independent recording dependencies. Evidence:
+`artifacts/xarch-constants-db8d8e4` and the `xarch-constants` retirement records;
+no new generated-code parity is claimed.
+
 ## 2026-09-29: Xarch lowering file closure
 
 Restoring the x86 virtual-stub call-containment path closes the final two

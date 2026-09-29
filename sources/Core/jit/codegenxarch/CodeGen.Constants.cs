@@ -11,9 +11,6 @@ public sealed partial class CodeGen
 #if FEATURE_SIMD
     public void genSetRegToConst(regNumber targetReg, var_types targetType, in simd_t value)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD constant materialization requires AMD64.");
-#else
         var emit = Emitter;
         emit.RequireSupportedInstructionRecording();
         var attr = targetType.EmitSize;
@@ -156,15 +153,11 @@ public sealed partial class CodeGen
                 break;
             }
         }
-#endif
     }
 
 #if FEATURE_MASKED_HW_INTRINSICS
     public unsafe void genSetRegToConst(regNumber targetReg, var_types targetType, in simdmask_t value)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Mask constant materialization requires AMD64.");
-#else
         var emit = Emitter;
         emit.RequireSupportedInstructionRecording();
         assert(varTypeIsMask(targetType));
@@ -183,16 +176,12 @@ public sealed partial class CodeGen
             var handle = emit.emitSimdMaskConst(value);
             emit.emitIns_R_C(ins_Load(targetType), attr, targetReg, handle, 0);
         }
-#endif
     }
 #endif
 #endif
 
     public unsafe void genSetRegToConst(regNumber targetReg, var_types targetType, GenTree tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Constant materialization requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         switch (tree.Oper)
         {
@@ -290,7 +279,6 @@ public sealed partial class CodeGen
                 break;
             }
         }
-#endif
     }
 }
 #endif
