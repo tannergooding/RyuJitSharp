@@ -247,6 +247,27 @@ internal static class CodeGenAvxFamilyTests
         });
     }
 
+    [Test]
+    public static void PermuteDirectlyConsumesOperandsAndProducesTheIndexDestination()
+    {
+        WithHardware((_, codeGen) =>
+        {
+            var node = new GenTreeHWIntrinsic(TYP_SIMD16, NI_AVX512_PermuteVar4x32x2, TYP_INT, 16,
+                Vector(REG_XMM1), Vector(REG_XMM2), Vector(REG_XMM3))
+            {
+                RegNum = REG_XMM2,
+            };
+
+            codeGen.genPermuteVar2x(node, INS_OPTS_NONE);
+
+            var descriptor = Descriptors(codeGen)[^1];
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_vpermi2d));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_XMM2));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_XMM1));
+            AssertProduced(node);
+        });
+    }
+
     [TestCase(false, TYP_INT, TYP_INT, TYP_SIMD16, INS_vpgatherdd, EA_16BYTE)]
     [TestCase(false, TYP_FLOAT, TYP_LONG, TYP_SIMD32, INS_vgatherqps, EA_32BYTE)]
     [TestCase(false, TYP_INT, TYP_LONG, TYP_SIMD32, INS_vpgatherqd, EA_32BYTE)]
@@ -324,6 +345,27 @@ internal static class CodeGenAvxFamilyTests
                 Assert.That(descriptors[2].idIns(), Is.EqualTo(INS_kshiftrb));
                 Assert.That(InstructionConstant(codeGen.Emitter, descriptors[1]), Is.EqualTo((nint)(8 - (size / baseType.Size))));
                 Assert.That(InstructionConstant(codeGen.Emitter, descriptors[2]), Is.EqualTo((nint)(8 - (size / baseType.Size))));
+            }
+        });
+    }
+
+    [TestCase(2, 6)]
+    [TestCase(4, 4)]
+    public static void ClearUnusedMaskBitsShiftsByTheComplementOfTheLiveLaneCount(int count, int shift)
+    {
+        WithHardware((_, codeGen) =>
+        {
+            codeGen.ClearUnusedMaskBits(REG_K1, (uint)count);
+
+            var descriptors = Descriptors(codeGen);
+            Assert.That(descriptors, Has.Count.EqualTo(2));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_kshiftlb));
+            Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_kshiftrb));
+            foreach (var descriptor in descriptors)
+            {
+                Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_8BYTE));
+                Assert.That(descriptor.idReg1(), Is.EqualTo(REG_K1));
+                Assert.That(InstructionConstant(codeGen.Emitter, descriptor), Is.EqualTo((nint)shift));
             }
         });
     }

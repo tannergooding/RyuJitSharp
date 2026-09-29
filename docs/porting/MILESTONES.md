@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Whole xarch AVX-family code generation
+
+AVX-family generation, FMA, two-source permutation and mask-lane clearing now
+retain their complete xarch paths instead of rejecting Unix AMD64 or x86 at
+entry. Native operand ordering, FMA forms, destination selection and mask shifts
+are preserved. Four definitions and their declarations retire 1,258 lines in
+`4a007f25`; separate HW dispatchers and recording dependencies remain.
+
+Focused Windows controls pass 28 Debug/28 Release and Linux controls pass 28;
+all 28 identical old Linux controls fail. The combined integration snapshot
+passes 280 Debug/267 Release Windows controls and ARM64 source builds in both
+configurations. X86 still has 14 baseline errors. These are managed controls,
+not generated-code parity. Evidence: `artifacts/hwintrinsic-avx-packet`,
+`artifacts/xarch-shared-writeback-integration` and their integration records.
+
 ## 2026-09-29: Xarch stack-argument register requirements
 
 Whole `BuildPutArgStk` now includes x86 field-list packing, byte-register

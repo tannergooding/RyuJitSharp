@@ -10,8 +10,8 @@ public sealed partial class CodeGen
 #if FEATURE_HW_INTRINSICS
     public void genFmaIntrinsic(GenTreeHWIntrinsic node, insOpts instOptions)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "FMA generation requires Windows AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "FMA generation requires xarch.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         var intrinsicId = node.HWIntrinsicId;
@@ -94,8 +94,8 @@ public sealed partial class CodeGen
 
     public void genPermuteVar2x(GenTreeHWIntrinsic node, insOpts instOptions)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "PermuteVar2x generation requires Windows AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "PermuteVar2x generation requires xarch.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         var intrinsicId = node.HWIntrinsicId;

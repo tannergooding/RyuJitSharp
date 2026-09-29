@@ -10,8 +10,8 @@ public sealed partial class CodeGen
 #if FEATURE_HW_INTRINSICS
     public void genAvxFamilyIntrinsic(GenTreeHWIntrinsic node, insOpts instOptions)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "AVX family generation requires Windows AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "AVX family generation requires xarch.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         var intrinsicId = node.HWIntrinsicId;

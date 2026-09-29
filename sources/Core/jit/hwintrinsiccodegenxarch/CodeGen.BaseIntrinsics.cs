@@ -478,16 +478,12 @@ public sealed partial class CodeGen
 
     public void ClearUnusedMaskBits(regNumber maskReg, uint count)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Mask lane clearing requires Windows AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(count is 2 or 4);
         assert(maskReg.IsMskReg);
 
         Emitter.emitIns_R_R_I(INS_kshiftlb, EA_8BYTE, maskReg, maskReg, unchecked((sbyte)(8 - count)));
         Emitter.emitIns_R_R_I(INS_kshiftrb, EA_8BYTE, maskReg, maskReg, unchecked((sbyte)(8 - count)));
-#endif
     }
 }
 #endif
