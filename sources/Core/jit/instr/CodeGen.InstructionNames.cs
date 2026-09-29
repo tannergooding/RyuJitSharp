@@ -253,6 +253,9 @@ public sealed partial class CodeGen
         }
         return insName;
     }
+#else
+    public string genInsDisplayName(global::RyuJitSharp.Emitter.instrDesc id)
+        => throw new FatalJitException(CORJIT_SKIPPED, "x86 CodeGen::genInsDisplayName is not ported.");
 #endif
 }
 #endif

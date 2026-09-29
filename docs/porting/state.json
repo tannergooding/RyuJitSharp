@@ -16,6 +16,17 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "xarchInstructionDisplay": {
+      "scope": "Whole xarch emitDispIns and fifteen register-name, operand, hex, embedded-option and constant-display helpers.",
+      "mapping": "The managed register-pair/name partials extract inline emitDispIns logic; that logic is complete before caller retirement. emitDisplayName delegates to standalone CodeGen::genInsDisplayName, whose x86 body remains a terminating dependency.",
+      "validation": "Combined full-analysis Windows200Debug/149Release. Components pass143D106R and87D43R; focused Linux-target102 and10 cases. Three old EVEX-mask assertion cases fail and three tuple-ratio controls already pass. ARM64 source builds. Parser-overlaid old/final x86 retain the same14 unrelated errors.",
+      "coverage": "All120 native instruction-format labels, register/operand widths, address and static/frame text, hex columns, embedded masking/rounding/broadcast, EVEX-mask and tuple-size assertions, and AMD64-only movsxd guarding.",
+      "retirement": "Sixteen definitions and twelve xarch-only declarations;2255 exact native deletions.",
+      "nativeBefore": "541759eb154801879ada1d8992a868fbab959cdd",
+      "nativeAfter": "310849413ab44e601b845538f01a48194c2f4df1",
+      "limits": "X86 execution and standalone instruction-name generation remain unverified. Broader Linux-target fixtures retain Windows-callee-save and host-newline expectations; only focused passing controls are claimed. Shared declarations remain for other targets. No new native dump or generated-code parity claim.",
+      "evidence": "artifacts/xarch-display-integration, xarch-diagnostic-7fc3084 and xarch-display-inline-7fc3084; artifacts/residual-reconciliation/prepare-display-integration.py, display-combined/applied/verification-20260929.json and xarch-display-ins-superseding-20260929.json."
+    },
     "arm64ImmediateMaterialization": {
       "scope": "Whole ARM64 immediate/base-plus-immediate materializers, all-target zero materialization and relocatable ADR/ADRP address recording.",
       "mapping": "instr.cpp::CodeGen::instGen_Set_Reg_To_Zero maps to sources/Core/jit/codegen/CodeGen.ZeroImmediate.cs; ARM flags-aware immediate recording is a separately terminating declaration.",
@@ -1172,7 +1183,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "541759eb154801879ada1d8992a868fbab959cdd",
+      "residualHead": "310849413ab44e601b845538f01a48194c2f4df1",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -1305,11 +1316,11 @@
       "caution": "Current backend allocation/codegen/emitter exclusions checked in this pass target non-Windows or non-AMD64 configurations. Commented callback declarations and historical baseline gaps are not an inventory of missing Windows implementations."
     },
     "activeBatch": {
-      "scope": "Continue retained xarch register/operand display helpers in lane A and whole instruction display in lane B. Parent owns ARM64 constant-node materialization after completing immediate and relocatable-address recording. Preserve whole target paths and diagnostic text.",
+      "scope": "Continue retained xarch instruction-name/stack diagnostics and execution-cost functions after accepting whole instruction display. Parent owns ARM64 constant-node materialization and direct recording dependencies. Preserve whole target paths and diagnostic text.",
       "status": "in-progress",
       "doneWhen": [
-        "Complete retained xarch register-name and operand/hex/embedded-option display helpers with native target branches, formatting and pointer-width semantics.",
-        "Complete the whole retained xarch emitDispIns body and directly coupled dependencies without truncating format cases or changing diagnostic text.",
+        "Complete retained instruction-name and stack-diagnostic functions with whole native target branches and formatting.",
+        "Complete retained xarch execution-cost functions and directly coupled support without truncating instruction cases or changing numeric semantics.",
         "Complete whole ARM64 CodeGen::genSetRegToConst and directly coupled support, preserving numeric bits, instruction selection and separately tracked unported dependencies.",
         "Resolve shared declaration/signature/guard conflicts centrally; preserve existing Windows behavior and compilability of affected target paths.",
         "Commit validated C# repairs with sparse dependency/exception records, then retire the exact completed native definitions in the same batch through the consolidated amended cleanup commit. Retain unported helper bodies."
@@ -1739,7 +1750,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "ARM64 materialization is accepted at native541759eb:4defs210lines,657D628R and Windows99D93R; do not reapply. A's xarch-diagnostic-helpers proposal is ready/frozen (15defs887lines). B's initial xarch-display-ins proposal (1def1368lines) is NOT accepted: B is closing missing register-pair/name logic if it is extracted inline native code, rather than treating that as a standalone helper dependency. Collect its superseding handoff and integrate combined exact sources. Parent next reads/ports whole pinned CodeGen::genSetRegToConst and direct dependencies. Preserve B461/B462, Linux/x86 gaps,13 Wasm WIP files, oracle-plus-one and no publication.",
+    "nextAction": "Xarch display helpers and B's superseding inline closure are accepted at native31084941:16defs2255lines,200D149R; do not reapply. Reuse A for retained instruction-name/stack diagnostics and B for retained xarch execution-cost functions. Parent has read whole CodeGen::genSetRegToConst and resolved scalable decoder, vector/mask and constant-pool APIs; implement all branches next, with exact ARM64 emitIns_R_C and SVE recorder signatures. Native emitIns_R_C is a small directly coupled recorder and should be included. Preserve B461/B462, Linux/x86 gaps,13 Wasm WIP files, oracle-plus-one and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

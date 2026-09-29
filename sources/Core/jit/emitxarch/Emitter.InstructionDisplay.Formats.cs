@@ -16,9 +16,6 @@ public partial class Emitter
     public unsafe void emitDispIns(instrDesc id, bool isNew, bool doffs, bool asmfm,
         uint offset = 0, byte* code = null, nuint size = 0, insGroup? ig = null)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "x86 instruction display is not implemented.");
-#else
         var compiler = _compiler ?? throw new FatalJitException("Instruction display requires an active compiler.");
         var ins = id.idIns();
         var debug = id.idDebugOnlyInfo();
@@ -26,7 +23,8 @@ public partial class Emitter
 #if DEBUG
         if (compiler.verbose)
         {
-            jitprintf($"IN{debug?.idNum ?? 0:x4}: ");
+            var info = debug ?? throw new FatalJitException("Instruction display requires descriptor debug information.");
+            jitprintf($"IN{info.idNum:x4}: ");
         }
 #endif
         if (!isNew && !asmfm)
@@ -42,12 +40,15 @@ public partial class Emitter
             emitDispInsHex(id, unchecked(code + writeableOffset), size);
         }
 
+#if TARGET_AMD64
         if (IsApxNfEncodableInstruction(ins) && id.idIsEvexNfContextSet())
         {
             jitprintf("{nf}    ");
         }
+#endif
         var mnemonic = emitDisplayName(id);
         jitprintf($" {mnemonic,-9}");
+#if TARGET_AMD64
         if (IsCCMP(ins) || IsCTEST(ins))
         {
             var dfv = id.idGetEvexDFV();
@@ -70,6 +71,7 @@ public partial class Emitter
             }
             jitprintf($"{{dfv={flags.TrimEnd(',')}}}    ");
         }
+#endif
         if (mnemonic.Length >= 9)
         {
             jitprintf(" ");
@@ -90,17 +92,21 @@ public partial class Emitter
         };
         if ((ins == INS_lea) && (id.idGCref() is not (GCT_GCREF or GCT_BYREF)))
         {
+#if TARGET_AMD64
             assert(attr is EA_4BYTE or EA_8BYTE);
+#else
+            assert(attr == EA_4BYTE);
+#endif
             sizeName = "";
         }
 
         if (instrHasImplicitRegPairDest(ins))
         {
-            jitprintf($"{emitRegName(REG_EDX, attr)}:{emitRegName(REG_EAX, attr)}, ");
+            jitprintf($"{emitRegName(REG_EDX, id.idOpSize())}:{emitRegName(REG_EAX, id.idOpSize())}, ");
         }
         else if (instrIs3opImul(ins))
         {
-            jitprintf($"{emitRegName(inst3opImulReg(ins), attr)}, ");
+            jitprintf($"{emitRegName(inst3opImulReg(ins), id.idOpSize())}, ");
         }
 
         var format = id.idInsFmt();
@@ -179,7 +185,7 @@ public partial class Emitter
         {
             Reg(1);
             Mask();
-            if (ins is INS_bextr or INS_bzhi or INS_sarx or INS_shlx or INS_shrx)
+            if (!constant && ins is (INS_bextr or INS_bzhi or INS_sarx or INS_shlx or INS_shrx))
             {
                 jitprintf(", ");
                 Mem();
@@ -228,13 +234,20 @@ public partial class Emitter
                     emitDispAddrMode(id);
                     emitDispShift(ins);
                 }
-                if (ins is INS_call or INS_tail_i_jmp && debug is not null && debug.idMemCookie != 0)
+                if (ins is INS_call or INS_tail_i_jmp)
                 {
-                    if (id.idIsCallRegPtr())
+                    assert(format == IF_ARD);
+
+                    if (debug is not null && debug.idMemCookie != 0)
                     {
-                        jitprintf(" ; ");
+                        assert(debug.idMemCookie != 0);
+
+                        if (id.idIsCallRegPtr())
+                        {
+                            jitprintf(" ; ");
+                        }
+                        jitprintf(compiler.eeGetMethodFullName((CORINFO_METHOD_HANDLE)debug.idMemCookie));
                     }
-                    jitprintf(compiler.eeGetMethodFullName((CORINFO_METHOD_HANDLE)debug.idMemCookie));
                 }
                 break;
             }
@@ -249,7 +262,14 @@ public partial class Emitter
             case IF_RWR_MRD:
             case IF_RRW_MRD:
             {
-                if (ins == INS_movsxd || ins is INS_movsx or INS_movzx)
+#if TARGET_AMD64
+                if (ins == INS_movsxd)
+                {
+                    attr = EA_8BYTE;
+                }
+                else
+#endif
+                if (ins is INS_movsx or INS_movzx)
                 {
                     attr = EA_PTRSIZE;
                 }
@@ -370,6 +390,8 @@ public partial class Emitter
             case IF_RWR_RRD_SRD_RRD:
             case IF_RWR_RRD_MRD_RRD:
             {
+                Reg(1);
+
                 CnsVal regVal = default;
                 if (id.idHasMemGen())
                 {
@@ -384,7 +406,6 @@ public partial class Emitter
                     emitGetInsCns(id, ref regVal);
                 }
                 var third = decodeRegFromIval(regVal.cnsVal);
-                Reg(1);
                 if (third.IsMskReg)
                 {
                     emitDispMask(id, third);
@@ -466,7 +487,19 @@ public partial class Emitter
             case IF_MRW:
             {
                 assert(!IsSimdEvexEncodableInstruction(ins));
+#if !FEATURE_FIXED_OUT_ARGS
+                if (ins == INS_pop)
+                {
+                    emitCurStackLvl = unchecked((int)(unchecked((uint)emitCurStackLvl) - sizeof(int)));
+                }
+#endif
                 Mem();
+#if !FEATURE_FIXED_OUT_ARGS
+                if (ins == INS_pop)
+                {
+                    emitCurStackLvl = unchecked((int)(unchecked((uint)emitCurStackLvl) + sizeof(int)));
+                }
+#endif
                 emitDispShift(ins);
                 break;
             }
@@ -475,6 +508,7 @@ public partial class Emitter
             case IF_SWR_RRD_CNS:
             case IF_SRW_RRD_CNS:
             {
+                assert(IsSSEOrAVXInstruction(ins));
                 MemReg(1, constant: true);
                 break;
             }
@@ -493,6 +527,8 @@ public partial class Emitter
             case IF_RRW_RRD_RRD:
             case IF_RWR_RWR_RRD:
             {
+                assert(IsSimdVexOrEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
+                assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins) || IsApxExtendedEvexInstruction(ins));
                 Reg(1);
                 Mask();
                 var second = id.idReg2();
@@ -509,6 +545,13 @@ public partial class Emitter
             }
 
             case IF_RWR_RRD_RRD_CNS:
+            {
+                assert(IsSimdVexOrEvexEncodableInstruction(ins));
+                assert(IsThreeOperandAVXInstruction(ins));
+                emitDispRegisterConstant(id, format, ref attr);
+                break;
+            }
+
             case IF_RRD_RRD_CNS:
             case IF_RWR_RRD_CNS:
             case IF_RRW_RRD_CNS:
@@ -519,6 +562,8 @@ public partial class Emitter
 
             case IF_RWR_RRD_RRD_RRD:
             {
+                assert(IsSimdVexOrEvexEncodableInstruction(ins));
+                assert(UseVexEncodings);
                 Reg(1);
                 var fourth = id.idReg4();
                 if (fourth.IsMskReg)
@@ -559,6 +604,7 @@ public partial class Emitter
 
             case IF_RWR_RRD_SHF:
             {
+                assert(IsApxExtendedEvexInstruction(ins));
                 Reg(1);
                 jitprintf(", ");
                 Reg(2);
@@ -596,9 +642,11 @@ public partial class Emitter
                 }
                 else if (ins == INS_mov)
                 {
-                    assert(id is instrDescLbl);
-                    emitDispFrameRef(id.idAddr().iiaLclVar.lvaVarNum(),
-                        unchecked((int)id.idAddr().iiaLclVar.lvaOffset()), 0, asmfm);
+                    assert(format == IF_SWR_LABEL);
+                    var label = id as instrDescLbl
+                        ?? throw new FatalJitException("Move label requires a label descriptor.");
+                    emitDispFrameRef(label.idAddr().iiaLclVar.lvaVarNum(),
+                        unchecked((int)label.idAddr().iiaLclVar.lvaOffset()), 0, asmfm);
                     jitprintf(", ");
                 }
                 var jump = (instrDescJmp)id;
@@ -624,12 +672,13 @@ public partial class Emitter
             case IF_METHPTR:
             {
                 assert(!IsSimdEvexEncodableInstruction(ins));
+                var methodName = compiler.eeGetMethodFullName((CORINFO_METHOD_HANDLE)(debug?.idMemCookie ?? 0));
 
                 if (format == IF_METHPTR)
                 {
                     jitprintf("[");
                 }
-                jitprintf(compiler.eeGetMethodFullName((CORINFO_METHOD_HANDLE)(debug?.idMemCookie ?? 0)));
+                jitprintf(methodName);
                 if (format == IF_METHPTR)
                 {
                     jitprintf("]");
@@ -657,7 +706,9 @@ public partial class Emitter
 
             default:
             {
-                throw new FatalJitException($"Unexpected instruction format: {format}.");
+                jitprintf($"unexpected format {emitIfName(format)}");
+                assert(false, "unexpectedFormat");
+                break;
             }
         }
 
@@ -668,7 +719,6 @@ public partial class Emitter
         }
 #endif
         jitprintf("\n");
-#endif
     }
 }
 #endif

@@ -33,16 +33,19 @@ public partial class Emitter
             {
                 case INS_pmovmskb:
                 {
+                    assert(!id.idIsEvexAaaContextSet());
                     targetAttr = EA_4BYTE;
                     break;
                 }
 
+#if TARGET_AMD64
                 case INS_movsxd:
                 {
                     targetAttr = EA_8BYTE;
                     sourceAttr = EA_4BYTE;
                     break;
                 }
+#endif
 
                 case INS_movsx:
                 case INS_movzx:
@@ -75,6 +78,7 @@ public partial class Emitter
                 var width = (emitAttr)Math.Max(16, EA_SIZE_IN_BYTES(attr) / divisor);
                 if (inputSize < maskElemSize)
                 {
+                    assert(inputSize == maskElemSize / divisor);
                     sourceAttr = width;
                 }
                 else
@@ -88,6 +92,7 @@ public partial class Emitter
             {
                 if (ins is INS_cvtsi2ss32 or INS_cvtsi2sd32 or INS_cvtsi2ss64 or INS_cvtsi2sd64)
                 {
+                    assert(!id.idIsEvexAaaContextSet());
                     targetAttr = EA_16BYTE;
                 }
                 else if (ins is INS_cvttsd2si32 or INS_cvttsd2si64 or INS_cvtsd2si32 or INS_cvtsd2si64
@@ -97,6 +102,7 @@ public partial class Emitter
                     or INS_vcvttsd2sis32 or INS_vcvttsd2sis64 or INS_vcvttss2sis32 or INS_vcvttss2sis64
                     or INS_vcvttsd2usis32 or INS_vcvttsd2usis64 or INS_vcvttss2usis32 or INS_vcvttss2usis64)
                 {
+                    assert(!id.idIsEvexAaaContextSet());
                     sourceAttr = EA_16BYTE;
                 }
                 else if (ins is INS_vpbroadcastb_gpr or INS_vpbroadcastd_gpr or INS_vpbroadcastw_gpr)

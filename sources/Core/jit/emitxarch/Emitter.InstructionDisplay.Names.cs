@@ -8,13 +8,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
     private string emitDisplayName(instrDesc id) => codeGen.genInsDisplayName(id);
-
-#else
-    private string emitDisplayName(instrDesc id) =>
-        throw new FatalJitException(CORJIT_SKIPPED, "x86 instruction-display mnemonic port is not implemented.");
-#endif
 
     private static string emitSizeString(emitAttr attr) => attr switch
     {

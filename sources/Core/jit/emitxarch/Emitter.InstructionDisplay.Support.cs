@@ -49,7 +49,11 @@ public partial class Emitter
                 jitprintf(" ");
             }
             var address = compiler.lvaFrameAddress(variable, out var fpBased) + displacement;
-            jitprintf(fpBased ? "rbp" : "rsp");
+#if TARGET_X86
+            jitprintf(fpBased ? "ebp" : "esp");
+#else
+            jitprintf(fpBased ? STR_FPBASE : STR_SPBASE);
+#endif
             if (address < 0)
             {
                 jitprintf($"-0x{-address:X2}");
@@ -58,6 +62,12 @@ public partial class Emitter
             {
                 jitprintf($"+0x{address:X2}");
             }
+#if !FEATURE_FIXED_OUT_ARGS
+            if (!fpBased && emitCurStackLvl != 0)
+            {
+                jitprintf($"+0x{unchecked((uint)emitCurStackLvl):X2}");
+            }
+#endif
         }
         jitprintf("]");
 
@@ -89,6 +99,9 @@ public partial class Emitter
     private unsafe void emitDispClsVar(CORINFO_FIELD_HANDLE field, nint offset, bool reloc)
     {
         var compiler = _compiler ?? throw new FatalJitException("Static reference display requires an active compiler.");
+#if TARGET_X86
+        offset = unchecked((int)offset);
+#endif
         if (compiler.opts.disDiffable && ((offset >> 20) is not 0 and not -1))
         {
             offset = unchecked((nint)0xD1FFAB1E);

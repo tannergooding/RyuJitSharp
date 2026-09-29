@@ -14,19 +14,28 @@ public partial class Emitter
     public void emitDispReloc(nint value)
     {
         var compiler = _compiler ?? throw new FatalJitException("Instruction display requires an active compiler.");
-        jitprintf(compiler.opts.disAsm && compiler.opts.disDiffable
-            ? "(reloc)"
-            : $"(reloc 0x{unchecked((nuint)compiler.dspOffset(value)):x})");
+        if (compiler.opts.disAsm && compiler.opts.disDiffable)
+        {
+            jitprintf("(reloc)");
+        }
+        else
+        {
+#if TARGET_X86
+            jitprintf($"(reloc 0x{unchecked((uint)compiler.dspOffset(value)):x})");
+#else
+            jitprintf($"(reloc 0x{unchecked((nuint)compiler.dspOffset(value)):x})");
+#endif
+        }
     }
 
     public void emitDispAddrMode(instrDesc id)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "x86 address-mode display is not implemented.");
-#else
         var compiler = _compiler ?? throw new FatalJitException("Address-mode display requires an active compiler.");
         var ins = id.idIns();
         var disp = ins is INS_call or INS_tail_i_jmp ? emitGetInsCIdisp(id) : emitGetInsAmdAny(id);
+#if TARGET_X86
+        disp = unchecked((int)disp);
+#endif
         var address = id.idAddr().iiaAddrMode;
         var separated = false;
         var frameRef = false;
@@ -93,7 +102,12 @@ public partial class Emitter
             }
             else
             {
-                jitprintf($"-0x{unchecked((nuint)(-disp)).ToString($"X{width}", CultureInfo.InvariantCulture)}");
+#if TARGET_X86
+                var magnitude = unchecked((uint)-disp);
+#else
+                var magnitude = unchecked((nuint)(-disp));
+#endif
+                jitprintf($"-0x{magnitude.ToString($"X{width}", CultureInfo.InvariantCulture)}");
             }
         }
         else if (!separated)
@@ -102,7 +116,6 @@ public partial class Emitter
         }
 
         jitprintf("]");
-#endif
     }
 
     public void emitDispShift(instruction ins, int count = 0)
@@ -160,9 +173,14 @@ public partial class Emitter
         {
             jitprintf($"{code[i]:X2}");
         }
-        if (size < 10)
+#if TARGET_X86
+        const int digits = 6;
+#else
+        const int digits = 10;
+#endif
+        if (size < (nuint)digits)
         {
-            jitprintf(new string(' ', checked((int)(2 * (10 - size)))));
+            jitprintf(new string(' ', checked((int)(2 * ((nuint)digits - size)))));
         }
     }
 
@@ -252,6 +270,9 @@ public partial class Emitter
 
         var compiler = _compiler ?? throw new FatalJitException("Instruction display requires an active compiler.");
         var val = constant.cnsVal;
+#if TARGET_X86
+        val = unchecked((int)val);
+#endif
         if (compiler.opts.disDiffable && ((val >> 18) is not 0 and not -1))
         {
             val = unchecked((nint)0xD1FFAB1E);
@@ -262,11 +283,19 @@ public partial class Emitter
         }
         else if (val > 0 || val < -0xFFFFFF)
         {
+#if TARGET_X86
+            jitprintf($"0x{unchecked((uint)val):X}");
+#else
             jitprintf($"0x{unchecked((nuint)val):X}");
+#endif
         }
         else
         {
+#if TARGET_X86
+            jitprintf($"-0x{unchecked((uint)-val):X}");
+#else
             jitprintf($"-0x{unchecked((nuint)(-val)):X}");
+#endif
         }
 
         var debug = id.idDebugOnlyInfo();

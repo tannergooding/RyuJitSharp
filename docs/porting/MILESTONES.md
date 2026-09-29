@@ -16,6 +16,26 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch instruction and operand diagnostics
+
+Instruction display retains all 120 native format labels and the whole x86/AMD64
+control flow. Register-pair formatting now preserves EVEX-mask and tuple-size
+assertions and the AMD64-only `movsxd` case. Register names, addresses, frame and
+static operands, hex columns and embedded options retain native formatting.
+The standalone x86 instruction-name dependency remains explicit and unported;
+incomplete inline logic is not treated as a separate dependency.
+
+Combined full-analysis Windows controls pass 200 Debug/149 Release. Focused
+Linux-target controls pass 102 helper and 10 format cases. Broader Linux fixtures
+still have host-newline and Windows-callee-save assumptions. Old/final x86 builds
+with identical parser overlays retain the same 14 unrelated errors; no x86
+execution is claimed.
+
+Sixteen definitions and twelve declarations retire 2,255 native lines in
+`31084941`. Evidence is in `artifacts/xarch-display-integration` and its component
+packets. Shared declarations remain for other targets. These contract checks do
+not establish new native dump or generated-code parity.
+
 ## 2026-09-29: Immediate and relocatable-address materialization
 
 ARM64 constants now preserve native MOVN/MOVZ selection, halfword skipping,
