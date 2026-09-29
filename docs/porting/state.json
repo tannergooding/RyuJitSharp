@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "xarchAtomicAndBarrierClosure": {
+      "scope": "Whole lock-add, locked exchange/update, compare-exchange and memory-barrier generation restores non-Windows xarch reachability while preserving instruction ordering, implicit locks, small-result extension and diagnostics.",
+      "validation": "Windows and Linux each pass43 Debug/40 Release. All24 selected old Linux cases fail at the former target guards; the identical selector passes24 on the unchanged final Debug binary.",
+      "retirement": "Four definitions and the xarch-only lock-add declaration block;224 native lines. Shared declarations remain for independent ARM/ARM64/LoongArch64/RISC-V implementations.",
+      "nativeBefore": "e8c18c569829698fd7f57778413471c3a1f0bbd8",
+      "nativeAfter": "0fe483da022a5513a26e07b596d04ddfd01131ce",
+      "evidence": "artifacts/xarch-atomics-f2ed014; artifacts/residual-reconciliation/xarch-atomic-scalar proposal/reanchored-component/combined/applied/verification.",
+      "limits": "X86 retains14 existing build errors; no x86 execution or target generated-code parity claim."
+    },
     "sharedRegisterProductionCopiesAndSelectors": {
       "scope": "Whole register production, local reload, both copy overloads, three GenTree indexed-register queries and load/store selectors preserve native target branches and GC/location ordering.",
       "mapping": "CodeGenInterface::ins_Load/ins_Store map to CodeGen.LoadSelection.cs/StoreSelection.cs; other definitions follow their native-stem partials.",
@@ -1688,7 +1697,7 @@
           "scope": "Whole retained xarch scalar/atomic codegen families.",
           "owner": "4b57b744-36f1-4e6e-8b76-94c1a87d6e02",
           "files": "Scalar/atomic CodeGen partials and focused fixtures; parent owns shared register helpers and both ARM64 register fixtures.",
-          "status": "four-function atomic packet ready fromf2ed014; GenTree and flag reuse accepted"
+          "status": "four-function atomic packet accepted; refill after commit"
         },
         {
           "scope": "Retained shared call-result and return lowering after call/argument dispatch closure.",
@@ -2110,7 +2119,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Shared register/copy/selector integration accepted through nativee8c18c5; do not reapply. Integrate A's ready four-function atomic packet (224 lines; header requires reanchoring), then continue parent rsSpillTree/spillReg/reloadReg/genSpillLocal boundary. Existing Linux spill regression already captured: all three old cases fail. B and LSRA continue shared return families; refill HW lane after selector acceptance. Preserve14x86 blockers,13Wasm, oracle-plus-one and no publication.",
+    "nextAction": "Atomic/barrier closure accepted through native0fe483d; do not reapply. Continue parent rsSpillTree/spillReg/reloadReg/genSpillLocal boundary, replacing invented target exclusions with native fixed-register/non-Wasm boundaries. Add focused ARM64 spill controls using established frame setup; existing Linux spill regression is captured with all three old cases failing. B and LSRA continue shared return families; HW continues SIMD codegen. Refill A after commit. Preserve14x86 blockers,13Wasm, oracle-plus-one and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

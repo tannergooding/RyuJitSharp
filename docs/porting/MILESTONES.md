@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch atomics and memory barriers
+
+Whole lock-add, atomic exchange/update, compare-exchange and memory-barrier
+generation now retain non-Windows xarch paths. Four definitions and the
+xarch-only lock-add declaration block retire 224 native lines in `0fe483d`;
+declarations with independent other-target implementations remain.
+
+Windows and Linux each pass 43 Debug/40 Release. All 24 selected old Linux cases
+fail at the former guards; the same selection passes on the final Debug binary.
+Coverage preserves implicit exchange locks, unused/used results, narrow-result
+extension and full versus load/store barriers. X86 retains 14 existing build
+errors. Evidence: `artifacts/xarch-atomics-f2ed014` and corresponding retirement
+records. These target controls are not generated-code parity.
+
 ## 2026-09-29: Shared register copies, reloads and selectors
 
 Register production, local reloads, both copy overloads, indexed GenTree queries
