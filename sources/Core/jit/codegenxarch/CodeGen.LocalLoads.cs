@@ -81,28 +81,20 @@ public sealed partial class CodeGen
 #if FEATURE_SIMD
     public void genLoadLclTypeSimd12(GenTreeLclVarCommon tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 local generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_LCL_FLD or GT_LCL_VAR);
         genEmitLoadLclTypeSimd12(tree.RegNum, tree.LclNum, tree.LclOffs);
         genProduceReg(tree);
-#endif
     }
 
     public void genEmitLoadLclTypeSimd12(regNumber targetReg, int lclNum, uint offset)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 stack loads require AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         Emitter.emitIns_R_S(INS_movsd_simd, EA_8BYTE, targetReg, lclNum, unchecked((int)offset));
 
         // Insert the upper float in lane 2 (0x20) and zero lane 3 (0x08).
         Emitter.emitIns_SIMD_R_R_S_I(INS_insertps, EA_16BYTE, targetReg, targetReg, lclNum,
             unchecked((int)(offset + 8)), 0x28, INS_OPTS_NONE);
-#endif
     }
 #endif
 }

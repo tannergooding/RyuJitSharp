@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "xarchSimdCodeGeneration": {
+      "scope": "All eleven retained simdcodegenxarch.cpp functions, including x86 SIMD12 loads, stores, stack arguments and upper-lane operations.",
+      "validation": "Combined current-source Windows controls pass18 Debug/18 Release. Original Unix regressions fail10/10 before translation and pass10/10 afterward; the six additional x86-path controls preserve8/8 Windows and Unix results. Old/final x86 compilation retains14 identical baseline errors.",
+      "retirement": "Delete the complete465-line simdcodegenxarch.cpp and22 declaration lines; eleven definitions and declarations. General stack-argument dispatch and seven hardware-intrinsic codegen definitions remain native.",
+      "nativeBefore": "76a2525c86b61b5ca1aa6a01ed465d083ecce954",
+      "nativeAfter": "d7b27c72dd32d6e41c13f16838adc921fdfbf607",
+      "evidence": "artifacts/simdcodegenxarch-packet, artifacts/simdcodegenxarch-integrated and artifacts/residual-reconciliation/simdcodegenxarch-combined-superseding-20260929.json; simd-codegen-header-combined/applied/verification and simd-codegen-whole-file-verification receipts.",
+      "limits": "Whole-function translation and managed descriptor controls, not x86 execution or whole-pipeline generated-code parity."
+    },
     "xarchScalarRegisterConstruction": {
       "scope": "Whole BuildShiftRotate, BuildModDiv and BuildMul, including x86 long shifts, long-dividend modulo and widening multiply.",
       "validation": "Old and final full-analysis Windows controls pass 22 Debug / 22 Release. Identical parser-overlaid x86 builds retain the same 14 baseline errors; six new x86 cases remain unexecuted.",
@@ -1215,7 +1224,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "76a2525c86b61b5ca1aa6a01ed465d083ecce954",
+      "residualHead": "d7b27c72dd32d6e41c13f16838adc921fdfbf607",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -1366,7 +1375,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Immediate materialization is accepted. Integrate the ready15-function xarch helper packet only with B's completed whole emitDispIns extraction closure; retain standalone native dependencies but not missing inline logic hidden in managed helpers. Parent next reads and ports whole ARM64 CodeGen::genSetRegToConst with directly coupled support. Preserve native constant semantics and all13 Wasm WIP files.",
+      "parentScope": "Integrate ready xarch packets, preserving whole-function review and focused evidence rather than starting another audit. SIMD and scalar LSRA are accepted. General cookie/EH codegen and LowerCast are ready next; retain their genuine helper dependencies. Keep four independent implementation lanes and parent ownership of shared contracts, generators, native mutations and13 Wasm WIP files.",
       "wholeFunctionRepairLanes": [
         {
           "scope": "Whole retained xarch emitRegName, emitXMMregName, emitYMMregName, emitZMMregName and operand/display helpers preceding emitDispIns.",
@@ -1782,7 +1791,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "LSRA scalar packet accepted at native76a2525c:3 definitions/282 lines,22D22R, unchanged14 x86 blockers; do not reapply. Reassign bf8933b0 to the next coherent retained LSRA family. Parent next integrates simdcodegenxarch-combined-superseding-20260929.json:all11 functions, whole465-line file plus22 header lines. Verify hashes/evidence and use apply_patch for whole-file deletion, not an empty-file span retirement. A/B are active on general codegen/lowering; SIMD-owned codegenxarch paths are IndirectLoads, LocalStores, LocalLoads and Calls partials and remain excluded from A. Preserve13 Wasm WIP, oracle-plus-one and no publication.",
+    "nextAction": "SIMD accepted at natived7b27c72:11 functions/487 lines, complete file deleted, combined18D18R; do not reapply. Reassign a9254d85 to retained hardware-intrinsic codegen. Parent next integrates xarch-general-codegen-proposed-20260929.json (4 definitions/186 lines,88D81R,35Linux including18 failing-old EH cases), then xarch-lowercast-proposed-20260929.json (1 definition/495 lines,24D24R/24Linux). Native codegenxarch.cpp/lowerxarch.cpp anchors remain unchanged. LSRA worker continues next family. Preserve14 x86 blockers,13 Wasm WIP, oracle-plus-one and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

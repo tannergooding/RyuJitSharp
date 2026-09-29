@@ -10,9 +10,6 @@ public sealed partial class CodeGen
 {
     public void genStoreIndTypeSimd12(GenTreeStoreInd tree)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 indirect stores require Windows AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_STOREIND);
         assert(GCInfo.gcIsWriteBarrierCandidate(tree) == GCInfo.WriteBarrierForm.WBF_NoBarrier);
@@ -55,7 +52,6 @@ public sealed partial class CodeGen
             var store = new GenTreeStoreInd(TYP_SIMD16, addr, data) { RegNum = REG_NA };
             Emitter.emitIns_A_R_I(INS_extractps, EA_16BYTE, store, dataReg, 2);
         }
-#endif
     }
 }
 #endif

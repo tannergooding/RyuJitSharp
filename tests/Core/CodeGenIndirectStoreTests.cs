@@ -253,6 +253,28 @@ internal static unsafe class CodeGenIndirectStoreTests
         });
     }
 
+    [Test]
+    public static void Simd12IndirectStoreRecordsBothWidthsOnXarch([Values(false, true)] bool zero)
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var address = Register(compiler, TYP_BYREF, REG_RAX);
+            var data = new GenTreeVecCon(TYP_SIMD12) { RegNum = REG_XMM1 };
+            data.SimdVal.u32[0] = zero ? 0u : 1u;
+            var store = new GenTreeStoreInd(TYP_SIMD12, address, data);
+
+            codeGen.genStoreIndTypeSimd12(store);
+
+            var descriptors = Descriptors(codeGen);
+            Assert.That(descriptors, Has.Count.EqualTo(2));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_movsd_simd));
+            Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_8BYTE));
+            Assert.That(descriptors[1].idIns(), Is.EqualTo(zero ? INS_movss : INS_extractps));
+            Assert.That(descriptors[1].idOpSize(), Is.EqualTo(zero ? EA_4BYTE : EA_16BYTE));
+            Assert.That(store.Addr.AsAddrMode().Offset, Is.EqualTo(8));
+        });
+    }
+
     [TestCase(NI_X86Base_ConvertToInt32, TYP_INT, 16, TYP_INT, INS_movd32, EA_4BYTE)]
     [TestCase(NI_X86Base_X64_ConvertToInt64, TYP_LONG, 16, TYP_LONG, INS_movd64, EA_8BYTE)]
     [TestCase(NI_AVX512_ConvertToVector128Byte, TYP_INT, 16, TYP_SIMD16, INS_vpmovdb, EA_16BYTE)]

@@ -45,9 +45,6 @@ public sealed partial class CodeGen
 #if FEATURE_SIMD
     public void genLoadIndTypeSimd12(GenTreeIndir tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 indirect reads require AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_IND);
         var addr = tree.Addr;
@@ -85,7 +82,6 @@ public sealed partial class CodeGen
         Emitter.emitIns_SIMD_R_R_A_I(INS_insertps, EA_16BYTE, targetReg, targetReg, indir, 0x28,
             INS_OPTS_NONE);
         genProduceReg(tree);
-#endif
     }
 #endif
 

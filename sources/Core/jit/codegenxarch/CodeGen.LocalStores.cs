@@ -170,9 +170,6 @@ public sealed partial class CodeGen
 #if FEATURE_SIMD
     public void genStoreLclTypeSimd12(GenTreeLclVarCommon tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 local stores require AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_STORE_LCL_FLD or GT_STORE_LCL_VAR);
         var offset = tree.LclOffs;
@@ -195,14 +192,10 @@ public sealed partial class CodeGen
         }
 
         genUpdateLifeStore(tree, targetReg, ref varDsc);
-#endif
     }
 
     public void genEmitStoreLclTypeSimd12(GenTree store, int lclNum, uint offset)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 stack stores require AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(store.Oper.IsLocalStore || (store.Oper is GT_STOREIND));
         var data = store.Data;
@@ -217,7 +210,6 @@ public sealed partial class CodeGen
         {
             Emitter.emitIns_S_R_I(INS_extractps, EA_16BYTE, lclNum, unchecked((int)(offset + 8)), dataReg, 2);
         }
-#endif
     }
 #endif
 }

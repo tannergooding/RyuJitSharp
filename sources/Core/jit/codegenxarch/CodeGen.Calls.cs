@@ -179,16 +179,12 @@ public sealed partial class CodeGen
 #if FEATURE_SIMD
     public void genSimd12UpperClear(regNumber targetReg)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 upper clearing requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(genIsValidFloatReg(targetReg));
 
         // INSERTPS selects element 3 as source/destination (0xF0), then zeros that lane (0x08).
         Emitter.emitIns_SIMD_R_R_R_I(INS_insertps, EA_16BYTE, targetReg, targetReg, targetReg,
             unchecked((sbyte)0xF8), INS_OPTS_NONE);
-#endif
     }
 #endif
 }

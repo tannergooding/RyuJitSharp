@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Complete xarch SIMD code generation
+
+All eleven retained SIMD functions now preserve their x86 branches, including
+SIMD12 indirect/local loads and stores, stack arguments, upper-lane saves/restores
+and clearing. Unix AMD64 no longer hits the inappropriate Windows-only guards.
+The native `simdcodegenxarch.cpp` is deleted, with its eleven declarations:
+487 lines retired in `d7b27c72`.
+
+Combined Windows controls pass 18 Debug/18 Release. The first Unix regression
+set changes from ten failures to ten passes; eight additional unchanged-path
+controls pass on both Windows and Unix targets. Fourteen existing x86 compilation
+errors still prevent execution. General argument dispatch and the seven retained
+HW intrinsic codegen definitions are independent remaining work. Evidence:
+`artifacts/simdcodegenxarch-packet`, `artifacts/simdcodegenxarch-integrated` and
+the superseding proposal and whole-file receipt under
+`artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Xarch scalar register construction
 
 Shift/rotate, modulo/divide and multiply builders now retain their x86 long-value

@@ -9,8 +9,8 @@ public sealed partial class CodeGen
 {
     public void genSimdUpperSave(GenTreeIntrinsic node)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI || !FEATURE_SIMD
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD upper-lane saves require Windows AMD64 SIMD support.");
+#if !TARGET_XARCH || !FEATURE_SIMD
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD upper-lane saves require xarch SIMD support.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(node.IntrinsicName == NI_SIMD_UpperSave);
@@ -48,8 +48,8 @@ public sealed partial class CodeGen
 
     public void genSimdUpperRestore(GenTreeIntrinsic node)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI || !FEATURE_SIMD
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD upper-lane restores require Windows AMD64 SIMD support.");
+#if !TARGET_XARCH || !FEATURE_SIMD
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD upper-lane restores require xarch SIMD support.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(node.IntrinsicName == NI_SIMD_UpperRestore);
