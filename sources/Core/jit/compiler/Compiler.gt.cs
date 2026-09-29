@@ -13468,6 +13468,14 @@ public partial class Compiler
     }
 
 #if TARGET_ARM64
+    public GenTreeVecCon gtNewSimdVconNode(var_types type, in simdscalable_t value)
+    {
+        assert(type == TYP_SIMD);
+
+        var node = new GenTreeVecCon(type) { SimdScalableVal = value };
+        return node;
+    }
+
     public GenTreeVecCon gtNewSimdVconNode(
         var_types type, var_types baseType, SimdScalableKind kind, ulong index, ulong step = 0)
     {

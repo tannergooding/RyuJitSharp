@@ -16,15 +16,30 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Complete hardware-folding body and native retirement
+
+`gtFoldExprHWIntrinsic` now preserves its complete native target control flow
+instead of replacing ARM64 with a whole-helper exception. This includes scalar
+bit operations, vector constants, scalable mask conversion and conditional
+selection. Two separate ARM64 dependencies still terminate explicitly:
+`GetMaskVariant` and `NarrowAndDuplicateSimdLong`.
+
+Full-analysis target checks pass 15 Debug/15 Release ARM64 cases and fresh Windows
+folding controls pass 637 Debug/629 Release. The completed 2,036-line native helper
+is retired with its leading comment and declaration: 2,046 removed lines in native
+commit `366e9f52`. Both unimplemented dependency definitions remain in the residual.
+This is whole-function translation and focused contract evidence, not ARM64
+execution or a compiler-completion percentage.
+
 ## 2026-09-28: Native-width address folding
 
 Address-mode construction now preserves the native signed-32 candidate guards
 before accumulating constants. Array-index scales, shifts and products retain
-native width and wrapping behavior rather than narrowing to32 bits or throwing
+native width and wrapping behavior rather than narrowing to 32 bits or throwing
 in checked builds. Fifty new boundary cases pass alongside existing address and
-arithmetic lowering coverage:190 Debug/190 Release with full analysis.
+arithmetic lowering coverage: 190 Debug/190 Release with full analysis.
 
-The pinned native merged-array runners pass all41 selected variants. The managed
+The pinned native merged-array runners pass all 41 selected variants. The managed
 primary JIT now compiles `TimeZoneInfo.TransitionTimeToDateTime`, which previously
 aborted with overflow. Execution advances through all eight d1 lcs test-pass
 messages, then fails while compiling the runner's number-formatting dependency
