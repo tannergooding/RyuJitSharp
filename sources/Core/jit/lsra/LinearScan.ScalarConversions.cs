@@ -9,7 +9,7 @@ public sealed partial class LinearScan
 {
     private int buildCast(GenTreeCast cast)
     {
-#if TARGET_AMD64
+#if TARGET_XARCH
         var source = cast.CastOp;
         var sourceType = source.Type;
         var castType = cast.CastType;
@@ -21,6 +21,14 @@ public sealed partial class LinearScan
         }
 
         var candidates = SRBM_NONE;
+#if TARGET_X86
+        if (varTypeIsByte(castType))
+        {
+            candidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+        }
+
+        assert(!varTypeIsLong(sourceType) || (source.Oper is GT_LONG && source.IsContained));
+#else
         if (cast.HasOverflowCheckEx && varTypeIsLong(sourceType) && varTypeIsInt(castType))
         {
             _ = buildInternalIntRegisterDefForNode(cast, _availableIntRegs);
@@ -31,10 +39,14 @@ public sealed partial class LinearScan
         {
             candidates = forceLowGprForApx(cast, candidates, true);
         }
+#endif
 
         var srcCount = buildCastUses(cast, candidates);
         buildInternalRegisterUses();
-        _ = buildDef(cast, SRBM_NONE);
+#if TARGET_AMD64
+        candidates = SRBM_NONE;
+#endif
+        _ = buildDef(cast, candidates);
         return srcCount;
 #elif TARGET_ARM64
         var sourceCount = buildCastUses(cast, SRBM_NONE);
@@ -66,7 +78,7 @@ public sealed partial class LinearScan
 
     private int buildIntrinsic(GenTree tree)
     {
-#if TARGET_AMD64
+#if TARGET_XARCH
         var intrinsic = tree.AsIntrinsic();
         var operand = intrinsic.Op1;
         assert(varTypeIsFloating(operand.Type));
@@ -198,7 +210,7 @@ public sealed partial class LinearScan
 
     private int buildSelect(GenTreeOp select)
     {
-#if TARGET_AMD64
+#if TARGET_XARCH
         var srcCount = 0;
         if (select.Oper is GT_SELECT)
         {

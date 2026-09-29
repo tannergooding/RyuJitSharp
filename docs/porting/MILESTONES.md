@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch scalar and select register requirements
+
+Select, scalar intrinsic and cast builders now retain their x86 branches,
+including select interference rules, intrinsic-mask temporaries, byte-register
+constraints and contained long operands. Three whole definitions retire
+275 lines in `83a45ef5`; shared declarations and other-target definitions remain.
+
+Old and final Windows controls pass 25 Debug/25 Release. X86 retains the same
+14 first-pass errors, so its three new cases remain unexecuted. Evidence:
+`artifacts/lsra-xarch-scalar-selection-20260929-784ed0b` and its proposal and
+retirement receipts.
+
 ## 2026-09-29: Element and dot-product retirement catch-up
 
 Four existing whole translations cover element extraction/insertion and

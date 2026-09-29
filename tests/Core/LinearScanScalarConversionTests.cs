@@ -18,6 +18,7 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanScalarConversionTests
 {
+#if !TARGET_X86
     [Test]
     public static void LongToIntCastPreferencesTheSource()
     {
@@ -127,6 +128,47 @@ internal static unsafe class LinearScanScalarConversionTests
                     (reference.refType is RefType.RefTypeDef) && reference.getInterval().isInternal), Is.Empty);
         });
     }
+#else
+    [TestCase(TYP_BYTE)]
+    [TestCase(TYP_UBYTE)]
+    public static void NarrowingByteCastRestrictsSourceAndDestination(var_types castType)
+    {
+        WithAllocator((compiler, allocator) => {
+            var source = compiler.gtNewIconNode(TYP_INT, 17);
+            ReferenceBuildLocation(allocator) = 2;
+            var sourceDef = BuildDef(allocator, source, SRBM_NONE, 0);
+            var cast = new GenTreeCast(TYP_INT, source, false, castType);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildCast(allocator, cast), Is.EqualTo(1));
+            var byteRegisters = AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+            Assert.That(sourceDef.nextRefPosition?.registerAssignment, Is.EqualTo(byteRegisters));
+            Assert.That(allocator.refPositions[^1].registerAssignment, Is.EqualTo(byteRegisters));
+        });
+    }
+
+    [Test]
+    public static void ContainedLongCastConsumesBothHalfOperands()
+    {
+        WithAllocator((compiler, allocator) => {
+            var low = compiler.gtNewIconNode(TYP_INT, 17);
+            var high = compiler.gtNewIconNode(TYP_INT, 23);
+            ReferenceBuildLocation(allocator) = 2;
+            var lowDef = BuildDef(allocator, low, SRBM_NONE, 0);
+            var highDef = BuildDef(allocator, high, SRBM_NONE, 0);
+            var source = new GenTreeOp(GT_LONG, TYP_LONG, low, high);
+            source.IsContained = true;
+            var cast = new GenTreeCast(TYP_INT, source, false, TYP_INT);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildCast(allocator, cast), Is.EqualTo(2));
+            Assert.That(lowDef.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
+            Assert.That(highDef.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
+            Assert.That(TargetPreferredUse(allocator), Is.Null);
+            Assert.That(allocator.refPositions[^1].treeNode, Is.SameAs(cast));
+        });
+    }
+#endif
 
     [TestCase(NI_System_Math_Abs, true)]
     [TestCase(NI_System_Math_Ceiling, false)]
