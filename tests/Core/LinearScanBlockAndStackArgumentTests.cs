@@ -384,6 +384,66 @@ internal static unsafe class LinearScanBlockAndStackArgumentTests
         });
     }
 
+#if TARGET_X86
+    [TestCase(7, true)]
+    [TestCase(8, false)]
+    public static void X86OddInitializationRestrictsFillToByteRegisters(int size, bool needsByteRegister)
+    {
+        WithAllocator((compiler, allocator) => {
+            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            var fill = compiler.gtNewIconNode(TYP_INT, 0x5A);
+            ReferenceBuildLocation(allocator) = 2;
+            _ = BuildDef(allocator, address, SRBM_NONE, 0);
+            var fillDef = BuildDef(allocator, fill, SRBM_NONE, 0);
+            var init = new GenTreeUnOp(GT_INIT_VAL, TYP_INT, fill) { IsContained = true };
+            var block = new GenTreeBlk(TYP_STRUCT, address, init, new ClassLayout(size)) {
+                _kind = GenTreeBlk.BlkOpKindUnroll,
+            };
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildBlockStore(allocator, block), Is.EqualTo(2));
+            Assert.That(fillDef.nextRefPosition?.registerAssignment, Is.EqualTo(needsByteRegister
+                ? SRBM_EAX | SRBM_ECX | SRBM_EDX | SRBM_EBX
+                : AvailableIntRegs(allocator)));
+        });
+    }
+
+    [Test]
+    public static void X86OddCopyWithFourAddressUsesReservesRaxForItsByteTemporary()
+    {
+        WithAllocator((compiler, allocator) => {
+            var destinationBase = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            var destinationIndex = compiler.gtNewIconNode(TYP_I_IMPL, 2);
+            var sourceBase = compiler.gtNewIconNode(TYP_I_IMPL, 0x2000);
+            var sourceIndex = compiler.gtNewIconNode(TYP_I_IMPL, 3);
+            ReferenceBuildLocation(allocator) = 2;
+            _ = BuildDef(allocator, destinationBase, SRBM_NONE, 0);
+            _ = BuildDef(allocator, destinationIndex, SRBM_NONE, 0);
+            _ = BuildDef(allocator, sourceBase, SRBM_NONE, 0);
+            _ = BuildDef(allocator, sourceIndex, SRBM_NONE, 0);
+
+            var destination = new GenTreeAddrMode(TYP_I_IMPL, destinationBase, destinationIndex, 1, 0) {
+                IsContained = true,
+            };
+            var sourceAddress = new GenTreeAddrMode(TYP_I_IMPL, sourceBase, sourceIndex, 1, 0) {
+                IsContained = true,
+            };
+            var source = compiler.gtNewIndir(TYP_STRUCT, sourceAddress);
+            source.IsContained = true;
+            var block = new GenTreeBlk(TYP_STRUCT, destination, source, new ClassLayout(17)) {
+                _kind = GenTreeBlk.BlkOpKindUnroll,
+            };
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildBlockStore(allocator, block), Is.EqualTo(4));
+            var internalDefinition = InternalDefinitions(allocator, block, TYP_INT);
+            Assert.That(internalDefinition, Has.Count.EqualTo(1));
+            Assert.That(internalDefinition[0].registerAssignment, Is.EqualTo(SRBM_RAX));
+            Assert.That(internalDefinition[0].nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_RAX));
+        });
+    }
+#endif
+
     private static System.Collections.Generic.List<RefPosition> InternalDefinitions(
         LinearScan allocator, GenTree tree, var_types? type = null)
         => allocator.refPositions.FindAll(reference =>

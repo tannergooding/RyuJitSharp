@@ -220,7 +220,7 @@ internal static unsafe class LinearScanMemoryAndComparisonTests
     }
 
     [Test]
-    public static void X86RmwAddressLastUseDependencyTerminatesUntilItsHelperIsPorted()
+    public static void X86RmwAddressUsesPreserveTheirNonMemoryOperand()
     {
         WithAllocator((compiler, allocator) => {
             var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
@@ -239,10 +239,37 @@ internal static unsafe class LinearScanMemoryAndComparisonTests
             };
             ReferenceBuildLocation(allocator) = 4;
 
-            Assert.That(() => BuildIndir(allocator, store),
-                Throws.TypeOf<FatalJitException>().With.Message.Contains("CheckAndMoveRMWLastUse"));
+            Assert.That(BuildIndir(allocator, store), Is.EqualTo(2));
+            Assert.That(allocator.refPositions.Exists(reference =>
+                ReferenceEquals(reference.treeNode, value) && reference.refType is RefType.RefTypeUse), Is.True);
         });
     }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void RmwLastUseTransfersOnlyFromAContainedLastUse(bool lastUse)
+    {
+        WithAllocator((compiler, allocator) => {
+            var from = new GenTreeLclVar(TYP_INT, 0) { IsContained = true };
+            var to = new GenTreeLclVar(TYP_INT, 0);
+            if (lastUse)
+            {
+                from.Flags |= GTF_VAR_DEATH;
+            }
+
+            CheckAndMoveRMWLastUse(allocator, from, to);
+
+            Assert.That((from.Flags & GTF_VAR_DEATH) != 0, Is.False);
+            Assert.That((to.Flags & GTF_VAR_DEATH) != 0, Is.EqualTo(lastUse));
+            CheckAndMoveRMWLastUse(allocator, null, to);
+            Assert.That((to.Flags & GTF_VAR_DEATH) != 0, Is.EqualTo(lastUse));
+        });
+    }
+#endif
+
+#if TARGET_X86
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "checkAndMoveRMWLastUse")]
+    private static extern void CheckAndMoveRMWLastUse(LinearScan allocator, GenTree? fromTree, GenTree? toTree);
 #endif
 
     private static void AssertHeapDefinitions(LinearScan allocator, GenTree heap, bool needsTemporary)

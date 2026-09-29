@@ -9,12 +9,16 @@ public sealed partial class LinearScan
 {
     private int buildBlockStore(GenTreeBlk block)
     {
-#if TARGET_AMD64
+#if TARGET_XARCH
         var destinationAddress = block.Addr;
         var source = block.Data;
         var size = block.Size;
         GenTree? sourceAddressOrFill = null;
         var sourceCandidates = SRBM_NONE;
+#if TARGET_X86
+        RefPosition? internalIntDef = null;
+        var internalIsByte = false;
+#endif
 
         if (block.IsInitBlkOp)
         {
@@ -60,6 +64,12 @@ public sealed partial class LinearScan
                             : (uint)_compiler.roundDownSimdSize(size));
                     }
 
+#if TARGET_X86
+                    if ((size & 1) != 0)
+                    {
+                        sourceCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+                    }
+#endif
                     break;
                 }
 
@@ -99,7 +109,17 @@ public sealed partial class LinearScan
                     if ((remainder > 0) &&
                         ((registerSize == 0) || (uint.IsPow2(remainder) && (remainder <= REGSIZE_BYTES))))
                     {
-                        _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
+                        var registerCandidates = _availableIntRegs;
+#if TARGET_X86
+                        if ((size & 1) != 0)
+                        {
+                            registerCandidates &= ~RBM_NON_BYTE_REGS.GetIntRegSet();
+                            internalIsByte = true;
+                        }
+                        internalIntDef = buildInternalIntRegisterDefForNode(block, registerCandidates);
+#else
+                        _ = buildInternalIntRegisterDefForNode(block, registerCandidates);
+#endif
                     }
 
                     break;
@@ -107,6 +127,9 @@ public sealed partial class LinearScan
 
                 case GenTreeBlk.BlkOpKindUnrollMemmove:
                 {
+#if TARGET_X86
+                    assert(false, "TARGET_POINTER_SIZE == 8");
+#endif
                     assert(size > 0);
                     var simdSize = (uint)_compiler.roundDownSimdSize(size);
                     if ((size >= simdSize) && (simdSize > 0))
@@ -171,6 +194,21 @@ public sealed partial class LinearScan
                     forceLowGprForApxIfNeeded(sourceAddressOrFill, SRBM_NONE, _evexIsSupported));
             }
         }
+
+#if TARGET_X86
+        // x86 has four byte registers; four incoming address uses can otherwise occupy them all.
+        assert((useCount < 4) || !block.IsInitBlkOp);
+        if (internalIsByte && (useCount >= 4))
+        {
+            if (internalIntDef is null)
+            {
+                noway_assert(false, "An x86 byte block store requires an internal integer definition.");
+                throw new FatalJitException("An x86 byte block store requires an internal integer definition.");
+            }
+
+            internalIntDef.registerAssignment = SRBM_RAX;
+        }
+#endif
 
         buildInternalRegisterUses();
         buildKills(block, getKillSetForBlockStore(block));
@@ -317,8 +355,8 @@ public sealed partial class LinearScan
         buildKills(block, getKillSetForBlockStore(block));
         return useCount;
 #else
-        NYI("LinearScan.buildBlockStore outside AMD64");
-        throw new FatalJitException("LinearScan.buildBlockStore outside AMD64.");
+        NYI("LinearScan.buildBlockStore outside xarch and ARM64");
+        throw new FatalJitException("LinearScan.buildBlockStore outside xarch and ARM64.");
 #endif
     }
 

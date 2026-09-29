@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch block-store requirements and RMW last use
+
+Block-store construction preserves native x86 byte-register requirements,
+including the fixed accumulator temporary for high-pressure odd-sized copies.
+The standalone RMW helper now transfers last-use flags between matching locals,
+replacing the dependency retained by the earlier indirection batch. Two whole
+definitions retire 258 lines in `1e1ddea2`.
+
+Old and final Windows controls pass 63 Debug/63 Release. X86 retains the same
+14 baseline errors and its native unfinished-memmove assertion; no x86 execution
+is claimed. Evidence: `artifacts/lsra-xarch-rmw-block-20260929` and its proposal
+and retirement receipts under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Whole xarch hardware-intrinsic lowering dispatcher
 
 The complete `LowerHWIntrinsic` dispatcher retains its native transformations,

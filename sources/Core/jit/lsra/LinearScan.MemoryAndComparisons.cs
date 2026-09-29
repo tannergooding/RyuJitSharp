@@ -138,7 +138,21 @@ public sealed partial class LinearScan
 #if TARGET_X86
     private void checkAndMoveRMWLastUse(GenTree? fromTree, GenTree? toTree)
     {
-        throw new FatalJitException("LSRA CheckAndMoveRMWLastUse in lsra.h has not been ported.");
+        if ((fromTree is null) || (fromTree.Oper is not GT_LCL_VAR) ||
+            ((fromTree.Flags & GTF_VAR_DEATH) == 0))
+        {
+            return;
+        }
+
+        if (!fromTree.IsContained || (toTree is null) || (toTree.Oper is not GT_LCL_VAR) ||
+            (fromTree.AsLclVarCommon().LclNum != toTree.AsLclVarCommon().LclNum))
+        {
+            assert(false, "Unmatched RMW indirections");
+            return;
+        }
+
+        fromTree.Flags &= ~GTF_VAR_DEATH;
+        toTree.Flags |= GTF_VAR_DEATH;
     }
 #endif
 
