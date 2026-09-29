@@ -16,6 +16,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Runtime type comparison argument selection
+
+Type comparison folding now selects and counts user arguments, matching the
+pinned native contract when special arguments precede a type handle. Coverage
+includes handle/null, handle/handle and handle/GetType comparisons in both
+operand orders, preserving EE query handles, comparison flags and object null
+checks. Twelve failures and twelve controls in each configuration become 24
+passing cases; broader folding coverage passes 306 Debug and 299 Release cases.
+Normal Windows reachability of the special-argument prefix remains unestablished;
+this is contract evidence, not a generated-code failure or parity claim. See B455.
+
 ## 2026-09-28: Remaining standalone array execution and importer spills
 
 Both primary JITs now pass the remaining 17 `JIT/Methodical/Arrays` standalone

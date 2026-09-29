@@ -5209,7 +5209,7 @@ public partial class Compiler
         {
             var call = (op1Kind is TPK_Handle) ? op1 : op2;
 
-            var callArg = call.AsCall().Args.GetArgByIndex(0);
+            var callArg = call.AsCall().Args.GetUserArgByIndex(0);
             assert(callArg is not null);
 
             var handle = callArg.Node;
@@ -5225,10 +5225,10 @@ public partial class Compiler
         if ((op1Kind is TPK_Handle) && (op2Kind is TPK_Handle))
         {
             JITDUMP("Optimizing compare of types-from-handles to instead compare handles\n");
-            assert((op1.AsCall().Args.CountArgs() is 1) && (op2.AsCall().Args.CountArgs() is 1));
+            assert((op1.AsCall().Args.CountUserArgs() is 1) && (op2.AsCall().Args.CountUserArgs() is 1));
 
-            var op1CallArg = op1.AsCall().Args.GetArgByIndex(0);
-            var op2CallArg = op2.AsCall().Args.GetArgByIndex(0);
+            var op1CallArg = op1.AsCall().Args.GetUserArgByIndex(0);
+            var op2CallArg = op2.AsCall().Args.GetUserArgByIndex(0);
 
             assert((op1CallArg is not null) && (op2CallArg is not null));
 
@@ -5336,7 +5336,7 @@ public partial class Compiler
             var opOther = (op1Kind is TPK_Handle) ? op2 : op1;
 
             // Tunnel through the handle operand to get at the class handle involved.
-            var callArg = opHandle.AsCall().Args.GetArgByIndex(0);
+            var callArg = opHandle.AsCall().Args.GetUserArgByIndex(0);
             assert(callArg is not null);
 
             var opHandleArgument = callArg.Node;

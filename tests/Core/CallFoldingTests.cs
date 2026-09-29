@@ -18,6 +18,81 @@ internal static unsafe class CallFoldingTests
 {
     private static int s_gdvClassQueries;
     private static int s_gdvMethodQueries;
+    private static (nint First, nint Second) s_comparedTypes;
+    private static nint s_exactClass;
+
+    [Test]
+    public static void TypeComparisonsUseTheUserHandleArgument(
+        [Values("Null", "Handle", "GetType")] string otherKind,
+        [Values(GT_EQ, GT_NE)] genTreeOps oper,
+        [Values(false, true)] bool reversed,
+        [Values(false, true)] bool specialArgument)
+    {
+        WithCompiler("Object", "GetType", (compiler, getType) =>
+        {
+            compiler.lvaTable[1].Type = TYP_I_IMPL;
+            var obj = compiler.gtNewLclvNode(TYP_REF, 0);
+            getType.Type = TYP_REF;
+            _ = getType.Args.PushBack(NewCallArg.CreateForPrimitive(obj).WithWellKnownArg(WellKnownArg.ThisPointer));
+            var fromHandle = NewRuntimeType(compiler, 0x1000, specialArgument);
+            GenTree other = otherKind switch {
+                "Null" => compiler.gtNewNull(),
+                "Handle" => NewRuntimeType(compiler, 0x2000, specialArgument),
+                "GetType" => getType,
+                _ => throw new ArgumentOutOfRangeException(nameof(otherKind)),
+            };
+            var tree = compiler.gtNewBinaryNode(oper, TYP_INT,
+                reversed ? other : fromHandle, reversed ? fromHandle : other);
+            tree.Flags |= GTF_RELOP_JMP_USED | GTF_DONT_CSE | GTF_UNSIGNED;
+            s_comparedTypes = default;
+            s_exactClass = 0;
+
+            var result = compiler.gtFoldTypeCompare(tree.AsOp());
+
+            if (otherKind == "Handle")
+            {
+                Assert.That(result.Oper, Is.EqualTo(oper));
+                Assert.That(result.AsOp().Op1,
+                    Is.SameAs((reversed ? other.AsCall() : fromHandle).Args.GetUserArgByIndex(0)?.Node));
+                Assert.That(result.AsOp().Op2,
+                    Is.SameAs((reversed ? fromHandle : other.AsCall()).Args.GetUserArgByIndex(0)?.Node));
+                Assert.That(s_comparedTypes, Is.EqualTo(reversed
+                    ? ((nint)0x2000, (nint)0x1000) : ((nint)0x1000, (nint)0x2000)));
+                Assert.That(result.Flags & (GTF_RELOP_JMP_USED | GTF_DONT_CSE | GTF_UNSIGNED | GTF_CALL),
+                    Is.EqualTo(GTF_RELOP_JMP_USED | GTF_DONT_CSE));
+            }
+            else
+            {
+                if (otherKind == "GetType")
+                {
+                    Assert.That(s_exactClass, Is.EqualTo((nint)0x1000));
+                    Assert.That(result.Oper, Is.EqualTo(GT_COMMA));
+                    Assert.That(result.AsOp().Op1.Oper, Is.EqualTo(GT_NULLCHECK));
+                    Assert.That(result.AsOp().Op1.AsUnOp().Op1, Is.SameAs(obj));
+                    result = result.AsOp().Op2;
+                }
+
+                Assert.That(result.IsIntegralConst(oper == GT_EQ ? 0 : 1), Is.True);
+                Assert.That(s_comparedTypes, Is.EqualTo(((nint)0, (nint)0)));
+            }
+        });
+    }
+
+    private static GenTreeCall NewRuntimeType(Compiler compiler, nint handle, bool specialArgument)
+    {
+        var type = compiler.gtNewIconHandleNode(handle, GTF_ICON_CLASS_HDL);
+        type.CompileTimeHandle = handle;
+        var call = compiler.gtNewHelperCallNode(TYP_REF, CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE);
+        if (specialArgument)
+        {
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_I_IMPL, 1))
+                .WithWellKnownArg(WellKnownArg.InstParam));
+        }
+
+        _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(type));
+
+        return call;
+    }
 
     [Test]
     public static void MethodOnlyProfileDoesNotQueryAnUninitializedClassGuess()
@@ -383,13 +458,15 @@ internal static unsafe class CallFoldingTests
             vtable.Base.Base.getTypeForPrimitiveValueClass = &GetUnderlyingType;
             vtable.Base.Base.isEnum = &IsEnum;
             vtable.Base.Base.getExactClasses = &GetExactClasses;
+            vtable.Base.Base.compareTypesForEquality = &CompareTypesForEquality;
             vtable.Base.Base.getClassAttribs = &GetGdvClassAttributes;
             vtable.Base.Base.getMethodAttribs = &GetGdvMethodAttributes;
             vtable.Base.Base.isExactType =
                 (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, byte>)&IsExactType;
             ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
 #if DEBUG
-            using var tls = new JitTls(&jitInfo);
+            vtable.Base.Base.runWithSPMIErrorTrap = &InstructionRecordingTestSupport.UnavailableMethodMetadata;
+            using var tls = new JitTls(null);
 #endif
             var previous = JitTls.Compiler;
             var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -437,7 +514,20 @@ internal static unsafe class CallFoldingTests
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int GetExactClasses(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type, int count, CORINFO_CLASS_STRUCT_** classes)
-        => 0;
+    {
+        s_exactClass = (nint)type;
+
+        return 0;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static TypeCompareState CompareTypesForEquality(ICorJitInfo* self,
+        CORINFO_CLASS_STRUCT_* first, CORINFO_CLASS_STRUCT_* second)
+    {
+        s_comparedTypes = ((nint)first, (nint)second);
+
+        return TypeCompareState.May;
+    }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte IsExactType(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => 0;
