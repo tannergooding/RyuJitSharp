@@ -16,6 +16,28 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterStaticFieldInstructionTests
 {
+    [TestCase(EA_OFFSET, IF_MRD_OFF, 9u, false)]
+    [TestCase(EA_8BYTE, IF_MRD, 6u, true)]
+    public static void UnaryStaticAddressesPreserveOffsetEncodingAndRelocation(
+        emitAttr attr, Emitter.insFormat format, uint size, bool relocatable)
+    {
+        WithEmitter((_, emitter) =>
+        {
+            var field = Compiler.eeFindJitDataOffs(64);
+            emitter.emitIns_C(INS_push, attr, field, -16);
+            var id = Last(emitter);
+
+            Assert.That(id.idIns(), Is.EqualTo(INS_push));
+            Assert.That(id.idInsFmt(), Is.EqualTo(format));
+            Assert.That((nuint)id.idAddr().iiaFieldHnd, Is.EqualTo((nuint)field));
+            Assert.That(id.idIsDspReloc(), Is.EqualTo(relocatable));
+            Assert.That(Displacement(emitter, id), Is.EqualTo((nint)(-16)));
+            Assert.That(id.idCodeSize(), Is.EqualTo(size));
+            Assert.That(CurrentSize(emitter), Is.EqualTo((int)size));
+            Assert.That(CurrentCount(emitter), Is.EqualTo(1));
+        });
+    }
+
     [TestCase(INS_mov, EA_1BYTE, REG_RSP, IF_MWR_RRD, 7u)]
     [TestCase(INS_mov, EA_8BYTE, REG_R16, IF_MWR_RRD, 8u)]
     [TestCase(INS_xchg, EA_8BYTE, REG_RAX, IF_MRW_RRW, 7u)]

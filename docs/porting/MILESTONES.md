@@ -16,6 +16,24 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch move analysis and static recording
+
+Accumulator sign-extension folding, redundant-move analysis and push/pop
+stack-depth accounting now retain their x86 bodies. Static unary and
+register-address recording also preserve x86 sizing and Unix AMD64 paths.
+Separate x86 classification and peephole helpers remain explicit dependencies.
+
+Focused full-analysis Windows controls pass 101 Debug/95 Release for move/unary
+behavior and 49/45 for static recording. The two Unix static-recording cases
+pass in both configurations and fail at the old guard on the previous source.
+ARM64 builds remain valid; preexisting x86 diagnostics still prevent execution.
+
+Five complete definitions retire 354 lines in native `5825cada`. Already-absent
+static store/immediate recorders are not counted again. The independent packet
+excludes ongoing common call-allocation work. Evidence:
+`artifacts/residual-reconciliation/move-static-combined-20260929.json`, its
+applied receipt, verification and component proposals.
+
 ## 2026-09-29: ARM64 instruction sanity and xarch simple recording
 
 The complete ARM64 Debug instruction checker and its immediate, register,

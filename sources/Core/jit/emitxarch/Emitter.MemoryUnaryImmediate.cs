@@ -11,10 +11,12 @@ public partial class Emitter
 {
     public unsafe void emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Single static-field instruction recording requires Windows AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Single static-field instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         if (!jitStaticFldIsGlobAddr(fldHnd))
         {
             attr |= EA_DSP_RELOC_FLG;
@@ -47,6 +49,9 @@ public partial class Emitter
         id.idCodeSize(size);
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)size);
+#if TARGET_X86
+        emitAdjustStackDepthPushPop(ins);
+#endif
 #endif
     }
 

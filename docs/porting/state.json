@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "moveAnalysisAndStaticRecording": {
+      "scope": "Whole xarch EmitMovsxAsCwde, IsRedundantMov, emitAdjustStackDepthPushPop, emitIns_C and emitIns_R_C.",
+      "validation": "Focused full-analysis move/unary controls pass101D95R; static-address controls pass49D45R. Newly reachable Unix AMD64 static recording passes2D2R, with both identical old Debug cases failing at the old guard. Independent ARM64 builds pass; old/new x86 diagnostics remain blocked before execution.",
+      "retirement": "Five definitions and their associated declarations/headings,354 pure deletions. The already-absent emitIns_C_R and emitIns_C_I are not counted again.",
+      "nativeBefore": "8a3441f265bf95d4e1387c4030176edcf23c15ce",
+      "nativeAfter": "5825cada9142e520c59db447b0e1b50436ce916c",
+      "limits": "x86 move classification, side-effect classification and last-instruction peephole eligibility remain terminating helper dependencies. The native fixed-outgoing-argument no-op and separate stack-depth adjustment remain. Parent call-allocation WIP is excluded.",
+      "evidence": "artifacts/residual-reconciliation/move-static-combined-20260929.json, applied receipt and move-static-verification-20260929.json; component proposals retain exact immutable snapshots, source hashes, commands and TRXs."
+    },
     "instructionSanityAndSimpleRecording": {
       "scope": "Complete ARM64 Debug sanity dispatcher,27 inline predicates and11 option/immediate validators; both xarch zero-operand overloads plus immediate, unary and move recorders.",
       "mapping": "ARM64 emitInsSanityCheck maps to emitarm64/Emitter.InstructionSanity.cs; its simple and option predicates reside in InstructionValidation.cs, SanityDependencies.cs and OptionImmediateValidation.cs. The native condFlagsImm low condition nibble is represented directly; its valid upper condition is13.",
@@ -953,7 +962,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "8a3441f265bf95d4e1387c4030176edcf23c15ce",
+      "residualHead": "5825cada9142e520c59db447b0e1b50436ce916c",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -1110,13 +1119,13 @@
           "scope": "Whole retained EmitMovsxAsCwde, IsRedundantMov and emitAdjustStackDepthPushPop, with directly required helper dependencies.",
           "owner": "4b57b744-36f1-4e6e-8b76-94c1a87d6e02",
           "files": "Xarch move-analysis and stack-depth partials plus focused fixtures. No common call-allocation, address/static recording or descriptor-layout edits.",
-          "status": "next after accepted five-definition simple/move recorder packet"
+          "status": "accepted three-definition move/stack-depth packet; retained classification/peephole helpers are the next boundary"
         },
         {
           "scope": "Whole retained xarch address/static recording family, selected by native definitions and existing managed counterparts; preserve target, relocation and size branches.",
           "owner": "b2253a3d-d101-444e-9c56-d631eb5b274b",
           "files": "Xarch address/static recording partials and focused fixtures. Parent owns call allocation; lane A owns move/stack-depth helpers. No Wasm WIP edits.",
-          "status": "next after accepted eleven-definition ARM64 option/immediate validator packet"
+          "status": "accepted two-definition static recording packet; register/address recording remains"
         }
       ],
       "parallelPackets": [
@@ -1520,7 +1529,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "The complete ARM64 sanity/validator and xarch simple/move batch is accepted: native8a3441f2 includes1588 verified deletions, combined Windows132D122R and ARM64 statistics98D89R. Never reapply this or the prior624-line retirement. Continue the residual work list with xarch move-elision/stack-depth helpers in lane A, xarch address/static recording in lane B, and common call-descriptor allocation in the parent. Check non-xarch declaration guards before handing off widened xarch bodies; reuse unchanged target evidence. Preserve separate descriptor/SVE dependencies, all13 Wasm WIP files and oracle-plus-one. No publication or milestone stop.",
+    "nextAction": "The independent move/static packet is accepted at native5825cada:354 verified deletions, with unchanged parent call-allocation WIP excluded. Never reapply prior retirements. Parent has moved CallAllocation.cs to emit/, translated both complete emitinl.h GC-mask codecs, widened native small-constant/register fields and second-GC-return handling, and restored fat-call allocation counting. Windows-v2 call controls pass; arm64-v4-stats Debug passes19 cases and Release was running. Read its completion, review codec translation, retain exact old-call-guard4 failures, validate final own hashes and retire complete dependency-coherent allocation functions. Fixture input now supplies the valid one-word empty variable set. Keep ready independent packets moving; preserve13 Wasm WIP files, separate unsupported layouts/SVE dependencies and oracle-plus-one. No publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

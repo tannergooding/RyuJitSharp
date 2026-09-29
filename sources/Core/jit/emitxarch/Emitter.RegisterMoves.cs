@@ -112,17 +112,19 @@ public partial class Emitter
 #endif
     }
 
-#if TARGET_AMD64
+#if TARGET_XARCH
     public bool EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, regNumber src)
     {
         if ((src == REG_EAX) && (src == dst))
         {
             // movsxd rax,eax and movsx eax,ax have shorter accumulator forms.
+#if TARGET_64BIT
             if ((ins == INS_movsxd) && (size == EA_4BYTE))
             {
                 emitIns(INS_cwde, EA_8BYTE);
                 return true;
             }
+#endif
 
             if ((ins == INS_movsx) && (size == EA_2BYTE))
             {
@@ -173,6 +175,7 @@ public partial class Emitter
                 return true;
             }
 
+#if TARGET_64BIT
             switch (ins)
             {
                 case INS_movzx:
@@ -225,6 +228,7 @@ public partial class Emitter
                     break;
                 }
             }
+#endif
         }
 
         if (!emitCanPeepholeLastIns())
@@ -265,12 +269,16 @@ public partial class Emitter
 
         return false;
     }
-#elif TARGET_X86
-    public bool EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, regNumber src)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 accumulator sign-extension move elision is not ported.");
+#endif
 
-    public bool IsRedundantMov(instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src,
-        bool canIgnoreSideEffects)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 redundant move analysis is not ported.");
+#if TARGET_X86
+    public static bool IsMovInstruction(instruction ins)
+        => throw new FatalJitException(CORJIT_SKIPPED, "x86 move instruction classification is not ported.");
+
+    public bool HasSideEffect(instruction ins, emitAttr size)
+        => throw new FatalJitException(CORJIT_SKIPPED, "x86 move side-effect classification is not ported.");
+
+    private bool emitCanPeepholeLastIns()
+        => throw new FatalJitException(CORJIT_SKIPPED, "x86 last-instruction peephole eligibility is not ported.");
 #endif
 }

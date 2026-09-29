@@ -73,10 +73,12 @@ public partial class Emitter
     public unsafe void emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO_FIELD_HANDLE fldHnd,
         int offs, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Static-field register instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Static-field register instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         if (!jitStaticFldIsGlobAddr(fldHnd))
         {
             attr |= EA_DSP_RELOC_FLG;
@@ -108,10 +110,23 @@ public partial class Emitter
             id.idInsFmt(fmt);
             id.idReg1(reg);
 
-            SetEvexBroadcastIfNeeded(id, instOptions);
-            SetEvexEmbMaskIfNeeded(id, instOptions);
-            SetEvexDFVIfNeeded(id, instOptions);
-            sz = emitInsSizeCV(id, insCodeRM(ins));
+#if TARGET_X86
+            if ((ins == INS_mov) && (reg == REG_EAX))
+            {
+                sz = 1 + TARGET_POINTER_SIZE;
+                if (size == EA_2BYTE)
+                {
+                    sz++;
+                }
+            }
+            else
+#endif
+            {
+                SetEvexBroadcastIfNeeded(id, instOptions);
+                SetEvexEmbMaskIfNeeded(id, instOptions);
+                SetEvexDFVIfNeeded(id, instOptions);
+                sz = emitInsSizeCV(id, insCodeRM(ins));
+            }
 
             if (fldHnd == FLD_GLOBAL_FS)
             {

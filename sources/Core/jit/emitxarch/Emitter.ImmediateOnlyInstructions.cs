@@ -73,6 +73,24 @@ public partial class Emitter
 
 #if TARGET_X86
     private void emitAdjustStackDepthPushPop(instruction ins)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 push/pop stack-depth accounting is not ported.");
+    {
+        if (ins == INS_push)
+        {
+            emitCurStackLvl = unchecked((int)(unchecked((uint)emitCurStackLvl) +
+                unchecked((uint)emitCntStackDepth)));
+
+            if (unchecked((uint)emitMaxStackDepth) < unchecked((uint)emitCurStackLvl))
+            {
+                JITDUMP($"Upping emitMaxStackDepth from {emitMaxStackDepth} to {emitCurStackLvl}\n");
+                emitMaxStackDepth = emitCurStackLvl;
+            }
+        }
+        else if (ins == INS_pop)
+        {
+            emitCurStackLvl = unchecked((int)(unchecked((uint)emitCurStackLvl) -
+                unchecked((uint)emitCntStackDepth)));
+            assert(unchecked((int)emitCurStackLvl) >= 0);
+        }
+    }
 #endif
 }
