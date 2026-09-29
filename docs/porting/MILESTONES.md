@@ -16,6 +16,33 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: ARM64 folding dependencies and intrinsic-layout retirement
+
+The folding helper's two retained dependencies are now implemented: all twelve
+SVE mask mappings, and narrowing/saturation/duplication for all ten element types
+at both 8- and 16-byte SIMD widths. Intrinsic aggregate-layout dispatch also
+retains all native cases; its SVE cases call a terminating runtime-vector-length
+dependency rather than replacing the caller branch with NYI.
+
+Combined full-analysis ARM64 checks pass 72 Debug/72 Release. The reviewed
+definitions and declaration remove 183 native lines; a separately identified
+duplicate layout body/comment removes another 81 lines. Native `59f2f2d4` remains
+exactly one commit above the pinned oracle. Runtime vector-length resolution stays
+visible in the residual, and no ARM64 generated-code execution is claimed.
+
+## 2026-09-28: All remaining merged-array variants execute
+
+Both primary JITs pass all 41 selected merged-array variants from eleven sources
+across the five official Methodical runners. Captures verify identical assembly
+and host hashes, selected test identities, passing result XML, exit100, positive
+selected-body compilation and no NYI completions. This supplements the earlier
+59 standalone array-project results; it is regular runtime execution evidence,
+not phase-dump or generated-code parity.
+
+The managed compiler is the immutable `447f6b3` snapshot plus the SSA ownership
+correction, not a build containing later ARM64/Wasm work. Reproduction and exact
+identities are in `artifacts/official-array-merged/comparison-ssa-owner.json`.
+
 ## 2026-09-28: SSA dead-store ownership after statement removal
 
 VN-based dead-store removal no longer assumes that an SSA definition's original

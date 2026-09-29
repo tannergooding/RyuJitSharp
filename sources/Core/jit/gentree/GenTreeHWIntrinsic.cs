@@ -100,10 +100,18 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
             }
 
             case NI_Sve_Load2xVectorAndUnzip:
+            {
+                return compiler.typGetBlkLayout(unchecked(compiler.getRuntimeVectorTByteLength() * 2u));
+            }
+
             case NI_Sve_Load3xVectorAndUnzip:
+            {
+                return compiler.typGetBlkLayout(unchecked(compiler.getRuntimeVectorTByteLength() * 3u));
+            }
+
             case NI_Sve_Load4xVectorAndUnzip:
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "SVE aggregate layouts require runtime Vector<T> length resolution.");
+                return compiler.typGetBlkLayout(unchecked(compiler.getRuntimeVectorTByteLength() * 4u));
             }
 #endif
 

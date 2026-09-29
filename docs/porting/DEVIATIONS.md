@@ -1543,9 +1543,14 @@ The whole `gtFoldExprHWIntrinsic` body now preserves its xarch, ARM64 and masked
 branches, including scalar/vector constants, mask conversion and conditional
 selection. Both the dispatcher and folding helper are retired from the residual.
 ARM64 `HWIntrinsicInfo.GetMaskVariant` and `Compiler.NarrowAndDuplicateSimdLong`
-remain typed `NotImplementedException` dependencies; their native definitions
-remain. Target fixtures establish selected folds and dependency termination, not
-ARM64 generated-code execution.
+are implemented and retired, including the complete mask mapping and both SIMD
+widths with native saturation/duplication behavior. Target fixtures establish
+selected folds, not ARM64 generated-code execution.
+
+`GenTreeHWIntrinsic.GetLayout` now preserves its complete fixed and SVE aggregate
+layout dispatch and is retired. SVE cases call the typed, terminating
+`Compiler.getRuntimeVectorTByteLength` dependency; that native helper remains.
+The fixed-size cases and SVE dependency boundary have managed target coverage.
 
 `CallArgs.AddFinalArgsAndDetermineAbiInfo` implements outgoing argument
 classification and non-standard argument insertion for Windows x64. Its Wasm

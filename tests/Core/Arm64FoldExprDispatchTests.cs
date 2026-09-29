@@ -182,8 +182,45 @@ internal static unsafe class Arm64FoldExprDispatchTests
         });
     }
 
+    [TestCase(NI_Sve_And, NI_Sve_And_Predicates)]
+    [TestCase(NI_Sve_BitwiseClear, NI_Sve_BitwiseClear_Predicates)]
+    [TestCase(NI_Sve_Xor, NI_Sve_Xor_Predicates)]
+    [TestCase(NI_Sve_Or, NI_Sve_Or_Predicates)]
+    [TestCase(NI_Sve_ZipHigh, NI_Sve_ZipHigh_Predicates)]
+    [TestCase(NI_Sve_ZipLow, NI_Sve_ZipLow_Predicates)]
+    [TestCase(NI_Sve_UnzipOdd, NI_Sve_UnzipOdd_Predicates)]
+    [TestCase(NI_Sve_UnzipEven, NI_Sve_UnzipEven_Predicates)]
+    [TestCase(NI_Sve_TransposeEven, NI_Sve_TransposeEven_Predicates)]
+    [TestCase(NI_Sve_TransposeOdd, NI_Sve_TransposeOdd_Predicates)]
+    [TestCase(NI_Sve_ReverseElement, NI_Sve_ReverseElement_Predicates)]
+    [TestCase(NI_Sve_ConditionalSelect, NI_Sve_ConditionalSelect_Predicates)]
+    public static void MaskVariantMatchesNativeMapping(NamedIntrinsic intrinsic, NamedIntrinsic expected)
+    {
+        Assert.That(HWIntrinsicInfo.GetMaskVariant(intrinsic), Is.EqualTo(expected));
+    }
+
     [Test]
-    public static void UnportedAllMaskVariantTerminatesAtCallee()
+    public static void SveAndConvertsVectorOperandsToPredicateOperands()
+    {
+        WithCompiler(compiler =>
+        {
+            var firstMask = compiler.gtNewMskConNode(TYP_MASK, TYP_INT, true);
+            var secondMask = compiler.gtNewMskConNode(TYP_MASK, TYP_INT, false);
+            var first = compiler.gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, firstMask, TYP_INT, 16);
+            var second = compiler.gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, secondMask, TYP_INT, 16);
+            var intrinsic = new GenTreeHWIntrinsic(TYP_SIMD16, NI_Sve_And, TYP_INT, 16, first, second);
+
+            var result = compiler.gtFoldExpr(intrinsic);
+            Assert.That(result.AsHWIntrinsic().HWIntrinsicId, Is.EqualTo(NI_Sve_ConvertMaskToVector));
+            Assert.That(result.AsHWIntrinsic().GetOp(1), Is.SameAs(intrinsic));
+            Assert.That(intrinsic.HWIntrinsicId, Is.EqualTo(NI_Sve_And_Predicates));
+            Assert.That(intrinsic.GetOp(1), Is.SameAs(firstMask));
+            Assert.That(intrinsic.GetOp(2), Is.SameAs(secondMask));
+        });
+    }
+
+    [Test]
+    public static void SveAndWithoutConvertibleOperandsKeepsOriginal()
     {
         WithCompiler(compiler =>
         {
@@ -191,12 +228,72 @@ internal static unsafe class Arm64FoldExprDispatchTests
             var second = new GenTreeLclVar(TYP_SIMD16, 1);
             var intrinsic = new GenTreeHWIntrinsic(TYP_SIMD16, NI_Sve_And, TYP_INT, 16, first, second);
 
-            _ = Assert.Throws<NotImplementedException>(() => compiler.gtFoldExpr(intrinsic));
+            Assert.That(compiler.gtFoldExpr(intrinsic), Is.SameAs(intrinsic));
+            Assert.That(intrinsic.HWIntrinsicId, Is.EqualTo(NI_Sve_And));
         });
     }
 
     [Test]
-    public static void UnportedWideShiftNarrowingTerminatesAtCallee()
+    public static void SveConditionalSelectPreservesPredicateWhenRewritingVectors()
+    {
+        WithCompiler(compiler =>
+        {
+            var condition = new GenTreeLclVar(TYP_MASK, 0);
+            var firstMask = compiler.gtNewMskConNode(TYP_MASK, TYP_INT, true);
+            var secondMask = compiler.gtNewMskConNode(TYP_MASK, TYP_INT, false);
+            var first = compiler.gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, firstMask, TYP_INT, 16);
+            var second = compiler.gtNewSimdCvtMaskToVectorNode(TYP_SIMD16, secondMask, TYP_INT, 16);
+            var intrinsic = new GenTreeHWIntrinsic(TYP_SIMD16, NI_Sve_ConditionalSelect,
+                TYP_INT, 16, condition, first, second);
+
+            var result = compiler.gtFoldExpr(intrinsic);
+            Assert.That(result.AsHWIntrinsic().HWIntrinsicId, Is.EqualTo(NI_Sve_ConvertMaskToVector));
+            Assert.That(result.AsHWIntrinsic().GetOp(1), Is.SameAs(intrinsic));
+            Assert.That(intrinsic.HWIntrinsicId, Is.EqualTo(NI_Sve_ConditionalSelect_Predicates));
+            Assert.That(intrinsic.GetOp(1), Is.SameAs(condition));
+            Assert.That(intrinsic.GetOp(2), Is.SameAs(firstMask));
+            Assert.That(intrinsic.GetOp(3), Is.SameAs(secondMask));
+        });
+    }
+
+    [TestCase(TYP_BYTE)]
+    [TestCase(TYP_UBYTE)]
+    [TestCase(TYP_SHORT)]
+    [TestCase(TYP_USHORT)]
+    [TestCase(TYP_FLOAT)]
+    [TestCase(TYP_INT)]
+    [TestCase(TYP_UINT)]
+    [TestCase(TYP_DOUBLE)]
+    [TestCase(TYP_LONG)]
+    [TestCase(TYP_ULONG)]
+    public static void WideShiftNarrowingSaturatesAndDuplicatesEachSourceWord(var_types baseType)
+    {
+        var elementSize = (int)baseType.Size;
+        var maximum = elementSize == sizeof(ulong) ? ulong.MaxValue : (1UL << (elementSize * 8)) - 1;
+
+        simd16_t input = default;
+        input.u64[0] = maximum - 1;
+        input.u64[1] = elementSize == sizeof(ulong) ? maximum : maximum + 1;
+        var result = Compiler.NarrowAndDuplicateSimdLong(baseType, input);
+        AssertNarrowedElements(result, elementSize, maximum - 1, maximum);
+
+        input.u64[0] = 0;
+        input.u64[1] = 1;
+        result = Compiler.NarrowAndDuplicateSimdLong(baseType, input);
+        AssertNarrowedElements(result, elementSize, 0, 1);
+
+        simd8_t shortInput = default;
+        shortInput.u64[0] = elementSize == sizeof(ulong) ? maximum : maximum + 1;
+        var shortResult = Compiler.NarrowAndDuplicateSimdLong(baseType, shortInput);
+        Assert.That(shortResult.u64[0], Is.EqualTo(ulong.MaxValue));
+
+        shortInput.u64[0] = 0;
+        shortResult = Compiler.NarrowAndDuplicateSimdLong(baseType, shortInput);
+        Assert.That(shortResult.u64[0], Is.Zero);
+    }
+
+    [Test]
+    public static void WideShiftNarrowingFoldsIntoVector()
     {
         WithCompiler(compiler =>
         {
@@ -210,8 +307,30 @@ internal static unsafe class Arm64FoldExprDispatchTests
                 AuxiliaryType = TYP_ULONG,
             };
 
-            _ = Assert.Throws<NotImplementedException>(() => compiler.gtFoldExpr(intrinsic));
+            var result = compiler.gtFoldExpr(intrinsic);
+            Assert.That(result, Is.SameAs(value));
+            Assert.That(result.AsVecCon().SimdVal.i32[0], Is.EqualTo(4));
+            Assert.That(result.AsVecCon().SimdVal.i32[1], Is.Zero);
         });
+    }
+
+    private static void AssertNarrowedElements(in simd16_t result, int elementSize,
+        ulong expectedFirst, ulong expectedSecond)
+    {
+        var elementCount = 16 / elementSize;
+        for (var index = 0; index < elementCount; index++)
+        {
+            var actual = elementSize switch
+            {
+                1 => result.u8[index],
+                2 => result.u16[index],
+                4 => result.u32[index],
+                8 => result.u64[index],
+                _ => throw new InvalidOperationException(),
+            };
+            Assert.That(actual, Is.EqualTo(index < elementCount / 2 ? expectedFirst : expectedSecond),
+                $"element {index}, width {elementSize}");
+        }
     }
 
     private static void WithCompiler(Action<Compiler> action, bool tier0Disabled = false)

@@ -7,6 +7,9 @@
 using System;
 using System.Buffers.Binary;
 using System.Numerics;
+#if TARGET_ARM64
+using System.Runtime.InteropServices;
+#endif
 using System.Runtime.Intrinsics.X86;
 
 namespace RyuJitSharp;
@@ -2033,9 +2036,65 @@ public partial class Compiler
         return resultNode;
     }
 #if TARGET_ARM64
-    private static simd16_t NarrowAndDuplicateSimdLong(var_types baseType, in simd16_t value)
+    internal static TSimd NarrowAndDuplicateSimdLong<TSimd>(var_types baseType, in TSimd value)
+        where TSimd : unmanaged
     {
-        throw new NotImplementedException("ARM64 wide-element SIMD shift narrowing is not ported.");
+        TSimd result = default;
+        var source = value;
+        var sourceWords = MemoryMarshal.Cast<TSimd, ulong>(MemoryMarshal.CreateReadOnlySpan(ref source, 1));
+        var destination = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref result, 1));
+
+        switch (baseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            {
+                for (var index = 0; index < destination.Length; index++)
+                {
+                    destination[index] = (byte)Math.Min(sourceWords[index / 8], byte.MaxValue);
+                }
+                break;
+            }
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+            {
+                var elements = MemoryMarshal.Cast<byte, ushort>(destination);
+                for (var index = 0; index < elements.Length; index++)
+                {
+                    elements[index] = (ushort)Math.Min(sourceWords[index / 4], ushort.MaxValue);
+                }
+                break;
+            }
+
+            case TYP_FLOAT:
+            case TYP_INT:
+            case TYP_UINT:
+            {
+                var elements = MemoryMarshal.Cast<byte, uint>(destination);
+                for (var index = 0; index < elements.Length; index++)
+                {
+                    elements[index] = (uint)Math.Min(sourceWords[index / 2], uint.MaxValue);
+                }
+                break;
+            }
+
+            case TYP_DOUBLE:
+            case TYP_LONG:
+            case TYP_ULONG:
+            {
+                result = value;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                throw new System.Diagnostics.UnreachableException();
+            }
+        }
+
+        return result;
     }
 
     private static uint ReverseArm64Bits(uint value)
@@ -2062,7 +2121,24 @@ public readonly partial struct HWIntrinsicInfo
 {
     public static NamedIntrinsic GetMaskVariant(NamedIntrinsic id)
     {
-        throw new NotImplementedException("ARM64 all-mask intrinsic variants are not ported.");
+        assert((lookupFlags(id) & HW_Flag_HasAllMaskVariant) != 0);
+
+        return id switch
+        {
+            NI_Sve_And => NI_Sve_And_Predicates,
+            NI_Sve_BitwiseClear => NI_Sve_BitwiseClear_Predicates,
+            NI_Sve_Xor => NI_Sve_Xor_Predicates,
+            NI_Sve_Or => NI_Sve_Or_Predicates,
+            NI_Sve_ZipHigh => NI_Sve_ZipHigh_Predicates,
+            NI_Sve_ZipLow => NI_Sve_ZipLow_Predicates,
+            NI_Sve_UnzipOdd => NI_Sve_UnzipOdd_Predicates,
+            NI_Sve_UnzipEven => NI_Sve_UnzipEven_Predicates,
+            NI_Sve_TransposeEven => NI_Sve_TransposeEven_Predicates,
+            NI_Sve_TransposeOdd => NI_Sve_TransposeOdd_Predicates,
+            NI_Sve_ReverseElement => NI_Sve_ReverseElement_Predicates,
+            NI_Sve_ConditionalSelect => NI_Sve_ConditionalSelect_Predicates,
+            _ => throw new System.Diagnostics.UnreachableException(),
+        };
     }
 }
 #endif

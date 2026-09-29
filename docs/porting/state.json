@@ -16,15 +16,35 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "arm64FoldingLayoutClosure": {
+      "scope": "Complete GetMaskVariant, both NarrowAndDuplicateSimdLong templates, and all GenTreeHWIntrinsic.GetLayout target branches.",
+      "validation": "Combined full-analysis ARM64 target checks pass72 Debug/72 Release. Fresh Windows controls from the accepted packets pass637 Debug/629 Release folding and6 Debug/6 Release layout cases.",
+      "remainingDependency": "Compiler.getRuntimeVectorTByteLength is a typed terminating ARM64 stub; native compiler.h definition retained. Other unrelated residual helpers are untouched.",
+      "nativeBefore": "76786160c7d8ea163e383ec717f9ec6225d39b8d",
+      "nativeAfter": "59f2f2d419a1824e5b0b337ddedb8795254a8847",
+      "retirement": "183 implementation/comment/declaration lines plus81 separately classified duplicate layout text/comment lines =264 removed. One amended commit above oracle33baf8ee; native worktree/index clean, oracle/recovery ref unchanged.",
+      "evidence": "artifacts/residual-reconciliation/hwfold-dependencies-evidence-20260928.json, hwfold-layout-combined-applied-20260928.json and artifacts/lane-b435-validation.json; integrated arm64-fold-layout-integrated.trx.",
+      "limits": "Host-side target contracts, not ARM64 generated-code execution."
+    },
+    "officialMergedArrays": {
+      "nativePin": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+      "sources": 11,
+      "variants": 41,
+      "runnerGroups": 13,
+      "status": "All selected native and managed primary runs pass, with identical assembly/host hashes and selected test identities, exit100, passing official result XML, positive body compilation and no NYI completions.",
+      "managedSource": "447f6b3 snapshot plus exact SSA ownership source/test overlays; scope-ssa-owner.json records hashes. Native JIT SHA2560f9a57e0c56764cb3f873e7c977fcfce7d0ff741d1cb82120c7d95c0863b0c67.",
+      "evidence": "artifacts/official-array-merged/comparison-ssa-owner.json; native-2 and managed-ssa-owner-1 manifests/logs/traces.",
+      "limits": "Runtime test execution only. Timing/stdout metadata, phase dumps and generated code are not compared. Does not include later ARM64/Wasm packets."
+    },
     "ssaDeadStoreOwnership": {
       "scope": "B459: optVNReplaceDeadStore must not assume that the original SSA defining block still owns the node after statement removal/movement.",
       "mapping": "Pinned optimizer.cpp6015-6147 optVNBasedDeadStoreRemoval in-place retagging -> Compiler.VNDeadStoreRemoval.cs owning-use replacement.",
       "cause": "Grisu3.TryDigitGenShortest IV optimization removes STMT00138/store000732 fromBB60 while its SSA descriptor remains. Native can retag this detached node; managed replacement previously threw.",
       "validation": "Four regression cases fail in both configurations before correction; full-analysis DSE/SSA/induction checks pass42 Debug/40 Release. Cases verify movement/removal, threaded/unthreaded IR, retained VNs, cleared DefNode and native NOP allocation count.",
-      "execution": "The original Grisu3.TryDigitGenShortest now compiles; the official Methodical_d1 lcs runner completes all eight selected cases with positive body compilation and final result XML. Remaining merged groups continue separately.",
+      "execution": "The original Grisu3.TryDigitGenShortest now compiles; the first8-case d1 lcs runner completes, and subsequent capture closes all41 merged variants as recorded in officialMergedArrays.",
       "source": "Isolated447f6b3 plus Compiler.VNDeadStoreRemoval.cs and VNDeadStoreRemovalTests.cs overlays; source/JIT hashes in artifacts/official-array-merged/scope-ssa-owner.json. Active ARM64/Wasm worker packets excluded.",
       "evidence": "artifacts/official-array-merged/ssa-owner-evidence.json, managed-ssa-dump-1 and managed-ssa-owner-1.",
-      "limits": "No full41-variant managed result or dump/generated-code parity claimed."
+      "limits": "No dump/generated-code parity claimed; full41-variant runtime execution is recorded separately in officialMergedArrays."
     },
     "nativeHistoryConsolidation": {
       "oraclePin": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
@@ -41,10 +61,8 @@
     "hardwareFoldingBody": {
       "scope": "Complete gtFoldExprHWIntrinsic own xarch/ARM64/masked branches, preserving native dependency calls and existing Windows behavior.",
       "mapping": "Pinned gentree.cpp35373-37408 -> Compiler.gt.HardwareIntrinsicFolding.cs; ARM64 scalable constant factory overload -> Compiler.gt.cs.",
-      "remainingDependencies": [
-        "TARGET_ARM64 HWIntrinsicInfo.GetMaskVariant(NamedIntrinsic): typed terminating stub; native implementation retained.",
-        "TARGET_ARM64 Compiler.NarrowAndDuplicateSimdLong(var_types, in simd16_t): typed terminating stub; native simd.h definition retained."
-      ],
+      "remainingDependencies": [],
+      "dependencyClosure": "The two original ARM64 stubs are now implemented and retired; see arm64FoldingLayoutClosure.",
       "validation": "Full-analysis ARM64 target15 Debug/15 Release; fresh Windows Core folding637 Debug/629 Release. Scalar/vector/mask/scalable conversion and explicit dependency-termination cases; no ARM64 generated-code execution.",
       "nativeBefore": "7ac5d5b569f5e3e0d050187e417fc48a91df0f9d",
       "nativeAfter": "366e9f52b10025ec6243bf4c6e8d24525a3a8d21",
@@ -58,7 +76,7 @@
       "execution": "Pinned native merged arrays pass41 variants. Isolated327ca87 plus the three-file address repair now completes the original TimeZoneInfo.TransitionTimeToDateTime compilation and reaches eight d1 lcs test-pass messages; primary execution then fails in Grisu3.TryDigitGenShortest SSA dead-store removal before final result XML.",
       "source": "artifacts/official-array-merged/scope-address-complete.json records the327ca87 archive, exact CodeGen.cs/Compiler.opt.cs/AddressLoweringTests.cs overlays and native JIT SHA25620cc122b3f0d7206fe36b3ba3a837713dce7ca2753bdfc682b5685ebaf176c65. Worker folding/Wasm WIP is excluded.",
       "evidence": "artifacts/official-array-merged/address-evidence.json; native-2 and managed-address-complete-1 manifests, logs and traces.",
-      "remaining": "B459 optVNReplaceDeadStore defining-block invariant in System.Number+Grisu3.TryDigitGenShortest. No completed managed merged-runner pass or generated-code/dump parity is claimed."
+      "remaining": "The subsequent B459 ownership failure is resolved; officialMergedArrays records the completed41-variant runtime capture. No generated-code/dump parity is claimed."
     },
     "foldingDispatchRestoration": {
       "managedCommit": "8f134a319364a2141cb2d0081671223419ed711d",
@@ -804,7 +822,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "76786160c7d8ea163e383ec717f9ec6225d39b8d",
+      "residualHead": "59f2f2d419a1824e5b0b337ddedb8795254a8847",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -886,7 +904,7 @@
         "Raw target-block getters have no pinned callsites and remain unused support. emitCodeGetCookie remains because its managed helper is only declared under TARGET_AMD64."
       ],
       "remaining": "Continue the full already-completed-code cleanup, distinguishing unreconciled areas from genuine target/CFI/optional-statistics gaps. emitGenIG/emitSavIG retain architecture/statistics paths, genCreateTempLabel retains Unix x86, and genGetRegMask retains ARM floating support. No new default Windows emission gap was established; the earlier blanket claim is withdrawn. Complete bodies are not retained merely because unfinished native callers reference them. Notify the user when the full cleanup is done.",
-      "verification": "Native76786160 preserves the exact366e9f52 residual tree while consolidating32 commits above the oracle into one. The366e9f52 retirement receipt remains valid historical evidence:2046 helper/comment/declaration lines removed relative to7ac5d5b5, with both unported ARM64 dependencies retained. Native/oracle source and indexes were unchanged by consolidation; old history is protected by refs/porting/recovery/366e9f52-before-oracle-consolidation. Subsequent native work must amend the single oracle-child commit. Retirement adds no parity evidence.",
+      "verification": "Native59f2f2d4 amends the single oracle-child commit, removing264 lines for the accepted folding dependency/layout packet:183 implementation/comment/declaration plus81 duplicate-text/comment cleanup. The oracle remains its sole parent; old pre-consolidation history is protected by refs/porting/recovery/366e9f52-before-oracle-consolidation. Runtime-vector-length support remains native. Native worktree/index clean; oracle unchanged. Retirement adds no parity evidence.",
       "targetLedger": "Historical ledger collected through report108, consuming e0d198a for B455 without reopening unrelated rows. Report107's suspected copy-omission VN mismatch B456 is dismissed: GenTreeLclFld -> GenTreeLclVarCommon -> GenTreeUnOp source-aware construction explicitly clears both VNs after the root metadata copy. No production correction is needed. The reviewed materialization bodies are already absent. Existing call-driver review uncertainty is not a new untranslated-definition queue; stop recurring audits. Repair concrete residual partials and track only their stub/exception boundaries. D009, R005, B392 and B446 remain separately recorded optional gaps.",
       "retirementQueue": "A bounded existing-evidence pass found no immediately eligible bulk retirement: strongly reviewed definitions were already absent, surviving return helpers lack whole-target review, and gtFoldExpr retains an ARM64 path. artifacts/residual-reconciliation/bulk-retirement-candidates-20260928.json records the inspected scope and native snapshot. Stop duplicate sweeps of these candidates; prioritize unresolved Windows/shared contracts separately from mixed-target retirement. This is not repository-wide catch-up completion.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
@@ -954,7 +972,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Dispatcher and whole hardware-fold helper are accepted and retired; native366e9f52 preserves the two remaining ARM64 dependencies. Fresh helper controls pass637 Debug/629 Release Windows and15 Debug/15 Release ARM64. The isolated327ca87 Wasm packet passes70 Debug/68 Release Windows call-argument controls but still has108 broader target diagnostics; its fixture has not run and it remains uncommitted/native. Do not expand this into backend algorithms. B458 address-width repair is committed d8f318e; native merged arrays pass41 variants, while managed execution advances to the separate B459 SSA dead-store failure.",
+      "parentScope": "Dispatcher, whole hardware-fold helper, its two deferred dependencies and intrinsic layout caller are accepted and retired through native59f2f2d4; only the layout runtime-vector-length helper remains a typed dependency. Combined ARM64 checks pass72 per configuration. The isolated327ca87 Wasm packet passes70 Debug/68 Release Windows call-argument controls but still has108 wider target diagnostics; fixture unexecuted and WIP/native caller retained. No backend expansion. B458 d8f318e and B459 d488e78 close the primary array frontiers; all41 merged variants now pass both JITs.",
       "wholeFunctionRepairLanes": [
         {
           "scope": "Whole gtFoldExprHWIntrinsic body at pinned gentree.cpp35373-37408, retaining all own inline target branches and stubbing only separate missing dependencies. Completed gtFoldExpr dispatcher/native boundary is recorded separately.",
@@ -1370,7 +1388,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Collect the approved combined ARM64 dependency/layout retirement receipt from lane A:264 lines,183 implementation/declaration and81 duplicate-text/comment cleanup, amended onto the single oracle-child native commit. Integrated ARM64 checks pass72 Debug/72 Release; then commit the accepted two-helper/GetLayout C# packets and sparse runtime-vector-length stub boundary. B459 SSA ownership correction is verified:42 Debug/40 Release and a completed8-case primary d1 lcs runner; remaining primary capture is arrays-ssa-owner with immutable scope-ssa-owner.json. Read completion rather than rerunning it. Wasm WIP remains blocked by108 broader target diagnostics; preserve it without backend expansion. Do not reopen completed callers or recurring coverage sweeps.",
+    "nextAction": "Combined ARM64 dependency/layout packet is accepted and retired in native59f2f2d4, with72 Debug/72 Release integrated target cases. Continue at the retained getRuntimeVectorTByteLength dependency and bounded remaining whole-function repairs, not another caller audit. B459 is committed d488e78; all41 native/managed merged-array variants now pass with immutable evidence in official-array-merged/comparison-ssa-owner.json. Do not rerun this completed boundary. Wasm WIP remains blocked by108 broader target diagnostics; preserve it without backend expansion. Future native batches amend the sole oracle-child commit.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
