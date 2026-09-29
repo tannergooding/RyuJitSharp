@@ -14,9 +14,6 @@ public sealed partial class CodeGen
 #endif
         )
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Integer immediate materialization outside AMD64 is not implemented.");
-#else
         assert(!genIsValidFloatReg(reg));
         var origAttr = size;
 
@@ -67,7 +64,6 @@ public sealed partial class CodeGen
         }
 
         _regSet.verifyRegUsed(reg);
-#endif
     }
 
 #if TARGET_AMD64

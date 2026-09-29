@@ -70,6 +70,7 @@ internal static unsafe class CodeGenHelperCallTests
         });
     }
 
+#if TARGET_AMD64
     [TestCase(0L, true)]
     [TestCase(2147483647L, true)]
     [TestCase(2147483648L, false)]
@@ -89,6 +90,16 @@ internal static unsafe class CodeGenHelperCallTests
             Assert.That(codeGen.genCodeIndirAddrNeedsReloc(bits), Is.True);
         });
     }
+#elif TARGET_X86
+    [TestCase(0U)]
+    [TestCase(0x7FFFFFFFU)]
+    [TestCase(0x80000000U)]
+    [TestCase(uint.MaxValue)]
+    public static void X86IndirectAddressesFitZeroRelativeDisplacements(uint address)
+    {
+        Assert.That(CodeGen.genCodeIndirAddrCanBeEncodedAsZeroRelOffset(address), Is.True);
+    }
+#endif
 
     [Test]
     public static void CurrentGcStateIsCapturedWithoutReplacingTheCallParameters()

@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch immediate materialization and helper calls
+
+Immediate materialization and helper-call generation preserve their x86 paths,
+including PC-relative helper selection and target-width address checks, while
+retaining the AMD64 register fallback. Two complete definitions retire 127 lines
+in `0a241073`; call/GC emission and x86 instruction recording remain independent
+dependencies.
+
+Windows controls pass 90 Debug/84 Release. The focused Linux controls pass 46;
+the broader return-location fixture has one SIMD16 failure reproduced on the
+unchanged baseline. X86 still has 14 baseline errors. The ARM64 error reported
+with this packet was the SIMD target-guard regression already repaired in
+`cd16cba`, not an immediate/helper-call regression. Evidence:
+`artifacts/xarch-immediate-helper-a196428` and its proposal/retirement receipts.
+
 ## 2026-09-29: Close the xarch emitter residual source
 
 The seven remaining free register helpers now preserve native decode assertions,

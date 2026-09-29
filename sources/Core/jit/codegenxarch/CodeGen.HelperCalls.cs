@@ -11,9 +11,6 @@ public sealed partial class CodeGen
     public unsafe void genEmitHelperCall(CorInfoHelpFunc helper, int argSize, emitAttr retSize,
         regNumber callTargetReg = REG_NA)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Helper-call generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         var parameters = new EmitCallParams { callType = EC_FUNC_TOKEN };
         var helperFunction = _compiler.compGetHelperFtn(helper);
@@ -39,6 +36,7 @@ public sealed partial class CodeGen
             }
             else
             {
+#if TARGET_AMD64
                 if (callTargetReg == REG_NA)
                 {
                     callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET;
@@ -50,6 +48,7 @@ public sealed partial class CodeGen
                     var targetMask = regMaskTP.CreateFromRegNum(callTargetReg, callTargetReg.SingleTypeMask);
                     noway_assert((targetMask & _regSet.GetMaskVars()) == RBM_NONE);
                 }
+#endif
 
                 instGen_Set_Reg_To_Imm(EA_PTRSIZE | EA_CNS_RELOC_FLG, callTargetReg, unchecked((nint)address));
                 parameters.ireg = callTargetReg;
@@ -62,7 +61,6 @@ public sealed partial class CodeGen
         parameters.retSize = retSize;
         genEmitCallWithCurrentGC(ref parameters);
         _regSet.verifyRegistersUsed(killMask);
-#endif
     }
 
     public bool genCodeIndirAddrCanBeEncodedAsPCRelOffset(nuint address)
@@ -76,7 +74,11 @@ public sealed partial class CodeGen
 
     public static bool genCodeIndirAddrCanBeEncodedAsZeroRelOffset(nuint address)
     {
+#if TARGET_X86
+        return true;
+#else
         return FitsInI32(unchecked((nint)address));
+#endif
     }
 
     public bool genCodeIndirAddrNeedsReloc(nuint address)
