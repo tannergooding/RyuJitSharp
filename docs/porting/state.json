@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "xarchMemoryRegisterConstruction": {
+      "scope": "Whole BuildLclHeap and BuildIndir, preserving x86 counter and byte-register requirements and RMW address operands.",
+      "validation": "Old/final Windows26 Debug/26 Release pass; identical parser-overlaid x86 builds retain14 baseline errors, so four new x86 cases remain unexecuted.",
+      "retirement": "Two definitions;137 native lines. The separate lsra.h CheckAndMoveRMWLastUse helper remains native and explicitly terminating in C#.",
+      "nativeBefore": "b4e56280afd6c6e4051805a0e9d9488b46fedd66",
+      "nativeAfter": "4962ffef9ef8b57cdff0639dda03eb7b7acae569",
+      "evidence": "artifacts/lsra-xarch-memory-20260929 and artifacts/residual-reconciliation/lsra-xarch-memory-proposed-20260929.json; xarch-lsra-memory-combined/applied/verification receipts.",
+      "limits": "No x86 execution or RMW last-use-helper completion claim."
+    },
     "xarchCastLowering": {
       "scope": "Whole LowerCast, including x86 unsigned-int-to-floating and floating-to-uint expansion, target-width constants, LIR replacement/order and helper calls.",
       "validation": "Full-analysis Windows24 Debug/24 Release and Linux-target24 controls pass; old Windows Debug also24. Four new x86 cases remain unexecuted behind the same14 old/final parser-overlaid diagnostics.",
@@ -1242,7 +1251,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "b4e56280afd6c6e4051805a0e9d9488b46fedd66",
+      "residualHead": "4962ffef9ef8b57cdff0639dda03eb7b7acae569",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -1809,7 +1818,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "LowerCast accepted at nativeb4e56280:1 definition/495 lines,24D24R/24Linux; do not reapply. Reassign B to its next retained lowering family. A/general codegen, bf8933b0/LSRA and a9254d85/HW codegen already continue their next packets. All ready packets are integrated; parent owns shared blockers and next handoff integration, not another retirement audit or ARM64 family. Preserve14 x86 blockers,13 Wasm WIP, oracle-plus-one and no publication.",
+    "nextAction": "LSRA memory accepted at native4962ffef:2 definitions/137 lines,26D26R; do not reapply. Reassign bf8933b0 next family with ownership of its retained last-use helper. Parent immediately validates the SIMD genSimd12UpperClear TARGET_XARCH guard repair: f4f4501 accidentally exposed INS_insertps on ARM64. Parent's seven remaining emitxarch.cpp helpers are translated and Windows controls running in artifacts/xarch-register-helper-closure; six old decode-assertion regressions fail as expected. A's xarch-immediate-helper-proposed-20260929.json is ready (2 definitions/127 lines). B and HW lane continue. Preserve14 x86 blockers,13 Wasm WIP, oracle-plus-one and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

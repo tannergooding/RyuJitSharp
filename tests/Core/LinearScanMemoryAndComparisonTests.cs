@@ -182,6 +182,69 @@ internal static unsafe class LinearScanMemoryAndComparisonTests
         });
     }
 
+#if TARGET_X86
+    [TestCase(TYP_BYTE)]
+    [TestCase(TYP_UBYTE)]
+    public static void ByteStoresRequireByteAddressableSourceRegisters(var_types type)
+    {
+        WithAllocator((compiler, allocator) => {
+            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            var data = compiler.gtNewIconNode(type, 23);
+            ReferenceBuildLocation(allocator) = 2;
+            _ = BuildDef(allocator, address, SRBM_NONE, 0);
+            var dataDef = BuildDef(allocator, data, SRBM_NONE, 0);
+            var store = new GenTreeStoreInd(type, address, data);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildIndir(allocator, store), Is.EqualTo(2));
+            Assert.That(dataDef.nextRefPosition?.registerAssignment,
+                Is.EqualTo(SRBM_EAX | SRBM_ECX | SRBM_EDX | SRBM_EBX));
+            Assert.That(allocator.refPositions.Exists(reference =>
+                ReferenceEquals(reference.treeNode, store) && reference.refType is RefType.RefTypeDef), Is.False);
+        });
+    }
+
+    [Test]
+    public static void X86ConstantLocalHeapAlwaysReservesACounterRegister()
+    {
+        WithAllocator((compiler, allocator) => {
+            compiler.eeInfo.osPageSize = 4096;
+            var size = compiler.gtNewIconNode(TYP_I_IMPL, 16);
+            size.IsContained = true;
+            var heap = new GenTreeUnOp(GT_LCLHEAP, TYP_I_IMPL, size);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildLclHeap(allocator, heap), Is.Zero);
+            AssertHeapDefinitions(allocator, heap, true);
+        });
+    }
+
+    [Test]
+    public static void X86RmwAddressLastUseDependencyTerminatesUntilItsHelperIsPorted()
+    {
+        WithAllocator((compiler, allocator) => {
+            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            var containedAddress = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            containedAddress.IsContained = true;
+            var memory = compiler.gtNewIndir(TYP_INT, containedAddress);
+            memory.IsContained = true;
+            var value = compiler.gtNewIconNode(TYP_INT, 7);
+            ReferenceBuildLocation(allocator) = 2;
+            _ = BuildDef(allocator, address, SRBM_NONE, 0);
+            _ = BuildDef(allocator, value, SRBM_NONE, 0);
+            var source = compiler.gtNewBinaryNode(GT_ADD, TYP_INT, memory, value);
+            source.IsContained = true;
+            var store = new GenTreeStoreInd(TYP_INT, address, source) {
+                RmwStatus = STOREIND_RMW_DST_IS_OP1,
+            };
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(() => BuildIndir(allocator, store),
+                Throws.TypeOf<FatalJitException>().With.Message.Contains("CheckAndMoveRMWLastUse"));
+        });
+    }
+#endif
+
     private static void AssertHeapDefinitions(LinearScan allocator, GenTree heap, bool needsTemporary)
     {
         var temporaries = allocator.refPositions.FindAll(reference =>

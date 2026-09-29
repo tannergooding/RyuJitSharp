@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch memory register construction
+
+Local-heap and indirection builders retain native x86 counter-register and
+byte-register constraints, both RMW memory-operand positions and base/index
+last-use-helper calls. Two definitions retire 137 lines in `4962ffef`.
+The separate `CheckAndMoveRMWLastUse` helper remains native and terminating
+in the managed x86 path.
+
+Old and final Windows controls pass 26 Debug/26 Release. Four new x86 cases
+remain unexecuted behind the same 14 baseline build errors. Evidence:
+`artifacts/lsra-xarch-memory-20260929` and the memory proposal and retirement
+receipts under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Whole xarch cast lowering
 
 `LowerCast` now includes the native x86 unsigned-int/floating conversion paths,

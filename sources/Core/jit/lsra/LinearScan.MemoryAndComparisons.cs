@@ -9,34 +9,87 @@ public sealed partial class LinearScan
 {
     private int buildIndir(GenTreeIndir indirection)
     {
-#if TARGET_AMD64
+#if TARGET_XARCH
         assert(indirection.Type is not TYP_STRUCT);
         var useCandidates = SRBM_NONE;
+#if TARGET_AMD64
         if (varTypeUsesIntReg(indirection.Addr.Type))
         {
             useCandidates = forceLowGprForApxIfNeeded(indirection.Addr, useCandidates, _evexIsSupported);
         }
+#endif
 
         var srcCount = buildIndirUses(indirection, useCandidates);
         if (indirection.Oper is GT_STOREIND)
         {
             var source = indirection.Data;
-            if (indirection.AsStoreInd().RmwStatus is STOREIND_RMW_DST_IS_OP1 or STOREIND_RMW_DST_IS_OP2)
+            var store = indirection.AsStoreInd();
+            if (store.IsRMWMemoryOp)
             {
                 // Contained shifts and rotates have not yet had their fixed-register requirements built.
                 assert(source.IsContained && source.Oper.IsRmwMemOp);
-                srcCount += source.Oper.IsShiftOrRotate
-                    ? buildShiftRotate(source)
-                    : buildBinaryUses(source.AsUnOp());
+                if (source.Oper.IsShiftOrRotate)
+                {
+                    srcCount += buildShiftRotate(source);
+                }
+                else
+                {
+                    var sourceCandidates = SRBM_NONE;
+#if TARGET_X86
+                    GenTree? nonMemorySource = null;
+                    GenTreeIndir? otherIndirection = null;
+
+                    if (store.IsRMWDstOp1)
+                    {
+                        otherIndirection = source.AsUnOp().Op1.AsIndir();
+                        if (source.Oper.IsBinary)
+                        {
+                            nonMemorySource = source.AsOp().Op2;
+                        }
+                    }
+                    else if (store.IsRMWDstOp2)
+                    {
+                        otherIndirection = source.AsOp().Op2.AsIndir();
+                        nonMemorySource = source.AsOp().Op1;
+                    }
+
+                    if ((nonMemorySource is not null) && !nonMemorySource.IsContained && varTypeIsByte(indirection.Type))
+                    {
+                        sourceCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+                    }
+
+                    if (otherIndirection is not null)
+                    {
+                        checkAndMoveRMWLastUse(otherIndirection.Base, indirection.Base);
+                        checkAndMoveRMWLastUse(otherIndirection.Index, indirection.Index);
+                    }
+#endif
+                    srcCount += buildBinaryUses(source.AsUnOp(), sourceCandidates);
+                }
             }
             else
             {
-                srcCount += buildOperandUses(source);
+#if TARGET_X86
+                if (varTypeIsByte(indirection.Type) && !source.IsContained)
+                {
+                    _ = buildUse(source, _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet());
+                    srcCount++;
+                }
+                else
+#endif
+                {
+                    srcCount += buildOperandUses(source);
+                }
             }
         }
 
 #if FEATURE_SIMD
         buildInternalRegisterUses();
+#endif
+
+#if TARGET_X86
+        // target.h defines four byte-register candidates on x86: EAX, ECX, EDX, and EBX.
+        assert(srcCount <= 4);
 #endif
 
         if (indirection.Oper is not GT_STOREIND)
@@ -77,10 +130,17 @@ public sealed partial class LinearScan
 
         return sourceCount;
 #else
-        NYI("LinearScan.buildIndir outside AMD64");
-        throw new FatalJitException("LinearScan.buildIndir outside AMD64.");
+        NYI("LinearScan.buildIndir outside xarch and ARM64");
+        throw new FatalJitException("LinearScan.buildIndir outside xarch and ARM64.");
 #endif
     }
+
+#if TARGET_X86
+    private void checkAndMoveRMWLastUse(GenTree? fromTree, GenTree? toTree)
+    {
+        throw new FatalJitException("LSRA CheckAndMoveRMWLastUse in lsra.h has not been ported.");
+    }
+#endif
 
     private int buildCmp(GenTree tree)
     {
@@ -137,18 +197,22 @@ public sealed partial class LinearScan
 
     private int buildLclHeap(GenTree tree)
     {
-#if TARGET_AMD64
+#if TARGET_XARCH
         var srcCount = 1;
         var size = tree.AsUnOp().Op1;
         if (size.Oper.IsCnsIntOrI && size.IsContained)
         {
             srcCount = 0;
+#if TARGET_X86
+            _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
+#else
             var alignedSize = unchecked(((nuint)size.AsIntCon().IconValue + (STACK_ALIGN - 1u)) &
                 ~(nuint)(STACK_ALIGN - 1u));
             if (alignedSize >= _compiler.eeGetPageSize())
             {
                 _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
             }
+#endif
         }
         else
         {
@@ -190,8 +254,8 @@ public sealed partial class LinearScan
         _ = buildDef(tree, SRBM_NONE);
         return sourceCount;
 #else
-        NYI("LinearScan.buildLclHeap outside AMD64");
-        throw new FatalJitException("LinearScan.buildLclHeap outside AMD64.");
+        NYI("LinearScan.buildLclHeap outside xarch and ARM64");
+        throw new FatalJitException("LinearScan.buildLclHeap outside xarch and ARM64.");
 #endif
     }
 }
