@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch stack-argument register requirements
+
+Whole `BuildPutArgStk` now includes x86 field-list packing, byte-register
+constraints, SIMD12 temporaries, odd-sized struct unrolls and push/rep handling.
+The 157-line definition retires in `0166db8c`; its shared declaration and
+other-target implementations remain.
+
+Old and final Windows controls pass 37 Debug/37 Release. X86 retains the same
+14 first-pass errors, so the added x86 cases are not execution evidence.
+Evidence: `artifacts/lsra-xarch-stack-argument-20260929` and its proposal and
+retirement receipts under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Xarch comparison, selection and construction lowering
 
 Four whole intrinsic helpers preserve comparison, conditional selection,

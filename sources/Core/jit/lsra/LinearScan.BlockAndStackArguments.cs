@@ -362,20 +362,57 @@ public sealed partial class LinearScan
 
     private int buildPutArgStk(GenTreePutArgStk argument)
     {
-#if TARGET_AMD64
+#if TARGET_XARCH
         var source = argument.Op1;
         if (source.Oper is GT_FIELD_LIST)
         {
             assert(source.IsContained);
             var fields = source.AsFieldList();
+#if FEATURE_SIMD
             RefPosition? simdTemp = null;
+#endif
+#if TARGET_X86
+            RefPosition? intTemp = null;
+            var previousOffset = unchecked((uint)argument.StackByteSize);
+#endif
 
             foreach (var field in fields.Uses)
             {
+#if TARGET_X86
+                assert(field.Type is not TYP_LONG);
+#endif
+#if FEATURE_SIMD
                 if ((field.Type is TYP_SIMD12) && (simdTemp is null))
                 {
                     simdTemp = buildInternalFloatRegisterDefForNode(argument, _availableFloatRegs);
                 }
+#endif
+#if TARGET_X86
+                var fieldNode = field.Node;
+                var fieldOffset = (uint)field.Offset;
+                if (varTypeIsIntegralOrI(fieldNode.Type))
+                {
+                    assert(fieldNode.Type.Size <= TARGET_POINTER_SIZE);
+                    var canStoreFullSlot = ((fieldOffset % 4) == 0) &&
+                        (unchecked(previousOffset - fieldOffset) >= 4);
+                    var canLoadFullSlot = (fieldNode.Type.Size == TARGET_POINTER_SIZE) ||
+                        (fieldNode.Oper.IsLocalRead && (fieldNode.Type.Size >= field.Type.Size));
+
+                    if ((!canStoreFullSlot || !canLoadFullSlot) && (intTemp is null))
+                    {
+                        intTemp = buildInternalIntRegisterDefForNode(argument, _availableIntRegs);
+                    }
+
+                    if (!canStoreFullSlot && varTypeIsByte(field.Type))
+                    {
+                        var byteTemp = intTemp
+                            ?? throw new FatalJitException("A partial x86 field store requires an internal register.");
+                        byteTemp.registerAssignment &= _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+                    }
+                }
+
+                previousOffset = fieldOffset;
+#endif
             }
 
             var fieldCount = 0;
@@ -390,6 +427,15 @@ public sealed partial class LinearScan
 
         if (source.Type is not TYP_STRUCT)
         {
+#if FEATURE_SIMD && TARGET_X86
+            if (argument.IsSimd12)
+            {
+                _ = buildInternalFloatRegisterDefForNode(argument, internalFloatRegCandidates());
+                _ = buildUse(source);
+                buildInternalRegisterUses();
+                return 1;
+            }
+#endif
             return buildOperandUses(source);
         }
 
@@ -400,10 +446,21 @@ public sealed partial class LinearScan
             {
                 if ((loadSize % XMM_REGSIZE_BYTES) != 0)
                 {
-                    _ = buildInternalIntRegisterDefForNode(argument, _availableIntRegs);
+                    var candidates = _availableIntRegs;
+#if TARGET_X86
+                    if ((loadSize & 1) != 0)
+                    {
+                        candidates &= ~RBM_NON_BYTE_REGS.GetIntRegSet();
+                    }
+#endif
+                    _ = buildInternalIntRegisterDefForNode(argument, candidates);
                 }
 
+#if TARGET_X86
+                if (loadSize >= 8)
+#else
                 if (loadSize >= XMM_REGSIZE_BYTES)
+#endif
                 {
                     _ = buildInternalFloatRegisterDefForNode(argument, internalFloatRegCandidates());
                     setContainsAVXFlags();
@@ -413,7 +470,9 @@ public sealed partial class LinearScan
             }
 
             case GenTreePutArgStk.Kind.RepInstr:
+#if !TARGET_X86
             case GenTreePutArgStk.Kind.PartialRepInstr:
+#endif
             {
                 _ = buildInternalIntRegisterDefForNode(argument, SRBM_RDI);
                 _ = buildInternalIntRegisterDefForNode(argument, SRBM_RCX);
@@ -421,6 +480,12 @@ public sealed partial class LinearScan
                 break;
             }
 
+#if TARGET_X86
+            case GenTreePutArgStk.Kind.Push:
+            {
+                break;
+            }
+#endif
             default:
             {
                 throw new FatalJitException($"Unsupported stack argument kind {argument._kind}.");
@@ -429,6 +494,9 @@ public sealed partial class LinearScan
 
         var sourceCount = buildOperandUses(source);
         buildInternalRegisterUses();
+#if TARGET_X86
+        assert(sourceCount < 4);
+#endif
         return sourceCount;
 #elif TARGET_ARM64
         var source = argument.Op1;
@@ -480,8 +548,8 @@ public sealed partial class LinearScan
         buildInternalRegisterUses();
         return sourceCount;
 #else
-        NYI("LinearScan.buildPutArgStk outside AMD64");
-        throw new FatalJitException("LinearScan.buildPutArgStk outside AMD64.");
+        NYI("LinearScan.buildPutArgStk outside xarch and ARM64");
+        throw new FatalJitException("LinearScan.buildPutArgStk outside xarch and ARM64.");
 #endif
     }
 }

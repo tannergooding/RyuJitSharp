@@ -295,12 +295,20 @@ internal static unsafe class LinearScanBlockAndStackArgumentTests
         });
     }
 
+#if TARGET_X86
+    [TestCase(GenTreePutArgStk.Kind.Unroll, 8, 8, false, 1, 1)]
+    [TestCase(GenTreePutArgStk.Kind.Unroll, 16, 16, false, 0, 1)]
+    [TestCase(GenTreePutArgStk.Kind.Unroll, 20, 17, false, 1, 1)]
+    [TestCase(GenTreePutArgStk.Kind.RepInstr, 24, 24, false, 3, 0)]
+    [TestCase(GenTreePutArgStk.Kind.Push, 8, 8, false, 0, 0)]
+#else
     [TestCase(GenTreePutArgStk.Kind.Unroll, 8, 8, false, 1, 0)]
     [TestCase(GenTreePutArgStk.Kind.Unroll, 16, 16, false, 0, 1)]
     [TestCase(GenTreePutArgStk.Kind.Unroll, 24, 17, true, 1, 1)]
     [TestCase(GenTreePutArgStk.Kind.Unroll, 32, 32, true, 0, 1)]
     [TestCase(GenTreePutArgStk.Kind.RepInstr, 24, 24, false, 3, 0)]
     [TestCase(GenTreePutArgStk.Kind.PartialRepInstr, 24, 17, true, 3, 0)]
+#endif
     public static void StructStackArgumentsReserveNativeTempsAndConsumeTheSourceAddress(
         GenTreePutArgStk.Kind kind, int stackSize, int loadSize, bool incomingArea, int integerTemps, int floatTemps)
     {
@@ -385,6 +393,50 @@ internal static unsafe class LinearScanBlockAndStackArgumentTests
     }
 
 #if TARGET_X86
+    [TestCase(3, TYP_BYTE, true)]
+    [TestCase(4, TYP_INT, false)]
+    public static void X86FieldListReservesAnIntegerTemporaryForPartialSlots(
+        ushort offset, var_types fieldType, bool needsByteRegister)
+    {
+        WithAllocator((compiler, allocator) => {
+            var value = compiler.gtNewIconNode(TYP_INT, 42);
+            ReferenceBuildLocation(allocator) = 2;
+            var valueDef = BuildDef(allocator, value, SRBM_NONE, 0);
+            var fields = new GenTreeFieldList();
+            fields.AddFieldLIR(compiler, value, offset, fieldType);
+            var putArg = new GenTreePutArgStk(TYP_VOID, fields, null, 0, 8, false);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildPutArgStk(allocator, putArg), Is.EqualTo(1));
+            Assert.That(valueDef.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
+            var definitions = InternalDefinitions(allocator, putArg, TYP_INT);
+            Assert.That(definitions, Has.Count.EqualTo(needsByteRegister ? 1 : 0));
+            if (needsByteRegister)
+            {
+                Assert.That(definitions[0].registerAssignment,
+                    Is.EqualTo(SRBM_EAX | SRBM_ECX | SRBM_EDX | SRBM_EBX));
+            }
+        });
+    }
+
+#if FEATURE_SIMD
+    [Test]
+    public static void X86ScalarSimd12StackArgumentReservesFloatTemporary()
+    {
+        WithAllocator((compiler, allocator) => {
+            var value = new GenTreeVecCon(TYP_SIMD16);
+            ReferenceBuildLocation(allocator) = 2;
+            var valueDef = BuildDef(allocator, value, SRBM_NONE, 0);
+            var putArg = new GenTreePutArgStk(TYP_VOID, value, null, 0, 12, false);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildPutArgStk(allocator, putArg), Is.EqualTo(1));
+            Assert.That(valueDef.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
+            Assert.That(InternalDefinitions(allocator, putArg, TYP_FLOAT), Has.Count.EqualTo(1));
+        });
+    }
+#endif
+
     [TestCase(7, true)]
     [TestCase(8, false)]
     public static void X86OddInitializationRestrictsFillToByteRegisters(int size, bool needsByteRegister)
