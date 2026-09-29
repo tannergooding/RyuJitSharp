@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
@@ -165,25 +166,8 @@ internal static unsafe class Arm64RegisterCopyTests
     {
         WithRegisterLife((compiler, codeGen) =>
         {
-            compiler.lvaCount = 1;
-            compiler.lvaTrackedToVarNum = [0];
-            compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
-            compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
-            compiler.lvaTable = [new LclVarDsc
-            {
-                Type = TYP_REF,
-                RegNum = REG_STK,
-                lvTracked = true,
-                lvLRACandidate = true,
-                lvOnFrame = true,
-                lvFramePointerBased = true,
-                StackOffset = -16,
-            }];
-            codeGen.IsFramePointerRequired = true;
-            codeGen.IsFramePointerUsed = true;
-            codeGen.initializeVariableLiveKeeper();
+            var local = PrepareLocal(compiler, codeGen, TYP_REF);
             VarSetOps.AddElemD(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0);
-            var local = compiler.gtNewLclvNode(TYP_REF, 0).AsLclVar();
 
             codeGen.genUnspillLocal(0, TYP_REF, local, REG_R0, reSpill, lastUse);
 
@@ -195,6 +179,104 @@ internal static unsafe class Arm64RegisterCopyTests
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_ldr));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R0));
         });
+    }
+
+    [TestCase(false, false, 4)]
+    [TestCase(false, true, 0)]
+    [TestCase(true, false, 4)]
+    [TestCase(true, true, 4)]
+    public static void LocalSpillPreservesWriteThroughRules(bool definition, bool writeThrough, int expectedSize)
+    {
+        WithRegisterLife((compiler, codeGen) =>
+        {
+            var local = PrepareLocal(compiler, codeGen, TYP_REF);
+            compiler.lvaTable[0].RegNum = REG_R0;
+            compiler.lvaTable[0].lvSpillAtSingleDef = writeThrough;
+            local.RegNum = REG_R0;
+            local.Flags = GTF_SPILL | (definition ? GTF_VAR_DEF : GTF_EMPTY);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_R0, TYP_REF);
+
+            codeGen.genSpillLocal(0, TYP_REF, local, REG_R0);
+
+            Assert.That(GroupSize(codeGen.Emitter), Is.EqualTo(expectedSize));
+            if (expectedSize != 0)
+            {
+                var descriptor = LastInstruction(codeGen.Emitter) ?? throw new AssertionException("Missing local spill.");
+                Assert.That(descriptor.idIns(), Is.EqualTo(INS_str));
+                Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R0));
+                Assert.That(descriptor.idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
+            }
+        });
+    }
+
+    [TestCase(TYP_INT, REG_R0, EA_4BYTE)]
+    [TestCase(TYP_REF, REG_R0, EA_8BYTE)]
+    [TestCase(TYP_BYREF, REG_R0, EA_8BYTE)]
+    [TestCase(TYP_FLOAT, REG_V0, EA_4BYTE)]
+    [TestCase(TYP_DOUBLE, REG_V0, EA_8BYTE)]
+    public static void TreeSpillAndReloadPreserveTypeAndRecycleTheTemporary(
+        var_types type, regNumber reg, emitAttr size)
+    {
+        WithRegisterLife((compiler, codeGen) =>
+        {
+            _ = PrepareLocal(compiler, codeGen, TYP_INT);
+            codeGen.RegSet.tmpBeginPreAllocateTemps();
+            codeGen.RegSet.tmpPreAllocateTemps(type, 1);
+            var temp = codeGen.RegSet.tmpGetTemp(type);
+            temp.tdTempOffs = -32;
+            codeGen.RegSet.tmpRlsTemp(temp);
+            GenTree value = varTypeIsFloating(type)
+                ? compiler.gtNewDconNode(type, 0)
+                : compiler.gtNewIconNode(type, 0);
+            value.RegNum = reg;
+            value.Flags |= GTF_SPILL;
+
+            codeGen.RegSet.rsSpillTree(reg, value);
+
+            Assert.That(value.Flags & (GTF_SPILL | GTF_SPILLED), Is.EqualTo(GTF_SPILLED));
+            var store = LastInstruction(codeGen.Emitter) ?? throw new AssertionException("Missing temporary spill.");
+            Assert.That(store.idIns(), Is.EqualTo(INS_str));
+            Assert.That(store.idOpSize(), Is.EqualTo(size));
+            Assert.That(store.idReg1(), Is.EqualTo(reg));
+            var spilled = codeGen.RegSet.rsUnspillInPlace(value, reg);
+            Assert.That(spilled, Is.SameAs(temp));
+
+            codeGen.reloadReg(type, spilled, reg);
+
+            var load = LastInstruction(codeGen.Emitter) ?? throw new AssertionException("Missing temporary reload.");
+            Assert.That(load.idIns(), Is.EqualTo(INS_ldr));
+            Assert.That(load.idOpSize(), Is.EqualTo(size));
+            Assert.That(load.idReg1(), Is.EqualTo(reg));
+            Assert.That(value.Flags & GTF_SPILLED, Is.EqualTo(GTF_EMPTY));
+            codeGen.RegSet.tmpRlsTemp(spilled);
+            var recycled = codeGen.RegSet.tmpGetTemp(type);
+            Assert.That(recycled, Is.SameAs(temp));
+            codeGen.RegSet.tmpRlsTemp(recycled);
+            codeGen.RegSet.rsSpillBeg();
+        });
+    }
+
+    private static GenTreeLclVar PrepareLocal(Compiler compiler, CodeGen codeGen, var_types type)
+    {
+        compiler.lvaCount = 1;
+        compiler.lvaTrackedToVarNum = [0];
+        compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
+        compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
+        compiler.lvaTable = [new LclVarDsc
+        {
+            Type = type,
+            RegNum = REG_STK,
+            lvTracked = true,
+            lvLRACandidate = true,
+            lvOnFrame = true,
+            lvFramePointerBased = true,
+            StackOffset = -16,
+        }];
+        codeGen.IsFramePointerRequired = true;
+        codeGen.IsFramePointerUsed = true;
+        codeGen.initializeVariableLiveKeeper();
+
+        return compiler.gtNewLclvNode(type, 0).AsLclVar();
     }
 
     private static regMaskTP Mask(regNumber reg) => regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);

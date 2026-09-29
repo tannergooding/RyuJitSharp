@@ -163,6 +163,9 @@ public sealed partial class CodeGen
 
     public bool genCanAvoidEmittingCompareAgainstZero(GenTree tree, emitAttr opSize)
     {
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Comparison flag reuse requires xarch.");
+#else
 #if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
 #endif
@@ -224,6 +227,7 @@ public sealed partial class CodeGen
         }
 
         return false;
+#endif
     }
 
     public static GenTree? genTryFindFlagsConsumer(GenTree producer, out GenCondition condition)

@@ -28,8 +28,8 @@ public partial struct RegSet
 
     public void rsSpillTree(regNumber reg, GenTree tree, byte regIndex = 0)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Tree spills outside Windows AMD64 are not implemented.");
+#if !HAS_FIXED_REGISTER_SET
+        throw new FatalJitException(CORJIT_SKIPPED, "Tree spills require a fixed register set.");
 #else
         var isMultiRegTree = false;
         var treeType = tree.Type;

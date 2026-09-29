@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sharedRegisterSpills": {
+      "scope": "Whole RegSet.rsSpillTree, spillReg, reloadReg and genSpillLocal retain native fixed-register/non-Wasm boundaries, descriptor ownership, typed memory operations and write-through behavior.",
+      "validation": "Windows83 Debug/81 Release and ARM6463 Debug/63 Release pass. All nine identical old ARM64 cases fail at the intended spill guards; both snapshots contain the same explicit xarch-boundary prerequisite repair. Linux56 focused controls pass on the unchanged broader-run binary; three old Linux spill cases fail at the original guard.",
+      "retirement": "Four definitions with headings/declarations and the now-empty non-Wasm block;193 native lines. Associated orphaned register-production comments are included.",
+      "nativeBefore": "db6214efcde435d1ab4e25d208efd7df61f8eec9",
+      "nativeAfter": "c966d60ef0f16fd7a26f8bce4c20cf5468877732",
+      "integration": "B467 repairs the ARM64 compilation regression introduced by the recent atomic translation, restoring enclosing TARGET_XARCH boundaries and the analogous flag-reuse boundary. Exact byte comparison preserves all original xarch bodies; no repeat retirement credit.",
+      "evidence": "artifacts/shared-register-spills; artifacts/shared-register-spills-arm64 final-3/old-3; artifacts/residual-reconciliation/shared-spill component/combined/applied/verification and xarch-boundary-repair-proof-20260929.json.",
+      "limits": "Broader Linux controls remain68/83 with15 failures at the separately retained genMultiRegStoreToLocal guard. Earlier ARM64 build failures remain recorded. No other-target execution or generated-code parity claim."
+    },
     "sharedStructCallAndReturnLowering": {
       "scope": "Whole LowerCallStruct, LowerRetStruct and already translated LowerRetSingleRegStructLclVar preserve SysV single-register returns, ARM HFA conditions, narrow loads and Wasm zero-constant retyping through owning-use-aware LIR replacement.",
       "validation": "Old/final Windows43 Debug/43 Release pass. Both direct Linux cases fail at old guards and pass final. Paired ARM64 core builds pass; Wasm remains blocked by identical baseline syntax errors.",
@@ -1701,7 +1711,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Continue the shared spill boundary: whole RegSet.rsSpillTree, CodeGenInterface.spillReg/reloadReg and CodeGen.genSpillLocal. Preserve HAS_FIXED_REGISTER_SET/non-Wasm boundaries, spill descriptor ownership, GC/location ordering and target store widths. Three existing Linux spill/reload cases fail on immutable a12cc63 at the Windows-only tree-spill guard. Complete focused Windows/ARM64/Linux controls and exact retirement together; prioritize ready packet integration and keep13 Wasm WIP frozen.",
+      "parentScope": "Integrate the ready shared LSRA return/write-barrier and xarch scalar-intrinsic packets, then continue the retained multi-register local-store boundary exposed by15 Linux failures. Shared spill retirement and its xarch-boundary repair are complete; keep13 Wasm WIP frozen and preserve explicit native target boundaries.",
       "wholeFunctionRepairLanes": [
         {
           "scope": "Whole retained xarch scalar/atomic codegen families.",
@@ -2129,7 +2139,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Struct call/return retirement accepted through nativedb6214e; do not reapply. Parent spill batch is uncommitted: Windows83 Debug/81 Release pass; Linux56 focused controls pass on unchanged binary, while broader68/83 retains15 independent genMultiRegStoreToLocal failures. ARM64 first runs expose a recent atomic translation regression: restore TARGET_XARCH boundaries in Atomics.cs and the analogous flag-reuse helper, then collect final-3/old-3 spill runs with these explicit identical prerequisite overlays. Finish four spill definitions/declarations with the repair and no duplicate atomic retirement credit. B continues retained return/storage dispatch, LSRA return builders, A scalar codegen and HW SIMD. Preserve14x86 blockers,13Wasm and no publication.",
+    "nextAction": "Shared spills and B467 target-boundary repair are validated; native retirement is complete through c966d60e. Do not reapply. Integrate ready lsra-shared-return-writebarrier-proposed-20260929.json and xarch-scalar-intrinsics-proposed-20260929.json, reviewing whole source and actual enclosing target boundaries. Then continue the retained genMultiRegStoreToLocal family behind15 broader Linux failures. B continues return/storage dispatch and A its distinct scalar/control family. Preserve14x86 blockers,13Wasm and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

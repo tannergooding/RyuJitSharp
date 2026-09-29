@@ -524,6 +524,8 @@ existing deviation entries rather than maintaining competing descriptions.
 
 | B466 | Variable-range constructor remains target-gated after native retirement | The shared `VariableLiveKeeper` constructor still rejected non-AMD64 targets even though its complete native definition was already absent from the residual. ARM64 local reload controls exposed the stale guard. | Restore the pinned shared constructor, retaining its existing conditional fields and initialization. | Fixed with shared register/copy/selector integration. ARM64 zero/nonzero range initialization and local reload controls pass; no additional native retirement credit. Evidence: `artifacts/shared-local-copy` and `shared-register` integration records. |
 
+| B467 | Recent atomic translation lost its enclosing xarch boundary | Removing Windows/AMD64 exclusions in `fd47f2f` also exposed xarch opcodes and registers to ARM64 compilation; source folder names do not exclude target compilation. | Preserve the native enclosing target boundary when widening inner platform guards. Restore the four atomic boundaries and the analogous flag-reuse boundary. | Fixed with shared spill integration. Exact byte comparison preserves every xarch body; ARM64 compiles and passes 63 Debug/63 Release. This was a new port regression, not an upstream defect or pre-existing ARM64 blocker. No additional retirement credit. Evidence: `artifacts/shared-register-spills-arm64` and `xarch-boundary-repair-proof-20260929.json`. |
+
 Larger module decomposition and broad unit-test infrastructure belong to the
 post-port phase. Add concrete candidates here as evidence appears, rather than
 preemptively planning a redesign of every compiler subsystem.

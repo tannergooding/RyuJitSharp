@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Shared register spilling
+
+Tree and local spilling now preserve the native fixed-register/non-Wasm
+boundaries, temporary ownership, typed loads/stores and local write-through
+rules. Four definitions and their declarations retire 193 lines in `c966d60e`.
+
+Windows controls pass 83 Debug/81 Release; ARM64 passes 63 Debug/63 Release.
+All nine identical old ARM64 cases fail at the intended guards. Linux focused
+controls pass 56 cases; the broader 68/83 result retains 15 separate
+multi-register local-store failures. This integration also repairs the recent
+atomic ARM64 compilation regression by restoring xarch boundaries (B467);
+the original xarch bodies are byte-identical and receive no retirement credit.
+Evidence: `artifacts/shared-register-spills`, `shared-register-spills-arm64`
+and the `shared-spill` retirement and boundary-repair records. These are
+host-side target controls, not generated-code parity.
+
 ## 2026-09-29: Shared struct call and return lowering
 
 Struct call/return lowering preserves SysV single-register results, ARM HFA

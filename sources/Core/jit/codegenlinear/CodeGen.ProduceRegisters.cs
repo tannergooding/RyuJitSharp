@@ -9,8 +9,8 @@ public sealed partial class CodeGen
 {
     public void genSpillLocal(int varNum, var_types type, GenTreeLclVar lclNode, regNumber regNum)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Local spills outside AMD64 are not implemented.");
+#if TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "Register-local spills are not supported on Wasm.");
 #else
         ref var varDsc = ref _compiler.lvaGetDesc(varNum);
         assert(!varDsc.lvNormalizeOnStore || (type == varDsc.GetStackSlotHomeType()));

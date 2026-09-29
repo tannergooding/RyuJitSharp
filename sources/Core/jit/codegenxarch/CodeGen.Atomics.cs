@@ -9,6 +9,9 @@ public sealed partial class CodeGen
 {
     public void genCodeForLockAdd(GenTreeOp node)
     {
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Locked addition generation outside xarch is not implemented.");
+#else
 #if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
 #endif
@@ -43,10 +46,14 @@ public sealed partial class CodeGen
         {
             Emitter.emitIns_AR_R(INS_add, size, data.RegNum, addr.RegNum, 0, INS_OPTS_EVEX_NoApxPromotion);
         }
+#endif
     }
 
     public void genLockedInstructions(GenTreeOp node)
     {
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Locked instruction generation outside xarch is not implemented.");
+#else
 #if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
 #endif
@@ -103,10 +110,14 @@ public sealed partial class CodeGen
             Emitter.emitIns_Mov(mov, size, node.RegNum, node.RegNum, canSkip: false);
         }
         genProduceReg(node);
+#endif
     }
 
     public void genCodeForCmpXchg(GenTreeCmpXchg tree)
     {
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Compare-exchange generation outside xarch is not implemented.");
+#else
 #if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
 #endif
@@ -138,10 +149,14 @@ public sealed partial class CodeGen
             inst_Mov(targetType, targetReg, REG_RAX, canSkip: true);
         }
         genProduceReg(tree);
+#endif
     }
 
     public void instGen_MemoryBarrier(BarrierKind barrierKind)
     {
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Memory barrier generation outside xarch is not implemented.");
+#else
 #if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
 #endif
@@ -157,5 +172,6 @@ public sealed partial class CodeGen
             instGen(INS_lock);
             Emitter.emitIns_I_AR(INS_or, EA_4BYTE, 0, REG_SPBASE, 0, INS_OPTS_EVEX_NoApxPromotion);
         }
+#endif
     }
 }
