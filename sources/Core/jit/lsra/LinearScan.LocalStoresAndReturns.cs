@@ -35,7 +35,14 @@ public sealed partial class LinearScan
             }
         }
 
-        var candidates = allRegs(local.GetRegisterType());
+        var registerType = local.GetRegisterType();
+        var candidates = allRegs(registerType);
+#if TARGET_X86
+        if (varTypeIsByte(registerType))
+        {
+            candidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+        }
+#endif
         var definition = newRefPosition(interval, _referenceBuildLocation + 1,
             RefType.RefTypeDef, store, candidates, checked((uint)index));
         if (interval.isWriteThru)
@@ -53,7 +60,6 @@ public sealed partial class LinearScan
 
     private int buildMultiRegStoreLoc(GenTreeLclVar store)
     {
-#if TARGET_AMD64 || TARGET_ARM64
         var source = store.Op1;
         var destinationCount = store.GetFieldCount(_compiler);
         var sourceCount = (int)destinationCount;
@@ -84,7 +90,14 @@ public sealed partial class LinearScan
             RefPosition? singleUse = null;
             if (multiRegSource)
             {
-                singleUse = buildUse(source, SRBM_NONE, index);
+                var sourceCandidates = SRBM_NONE;
+#if TARGET_X86
+                if (varTypeIsByte(field.Type))
+                {
+                    sourceCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+                }
+#endif
+                singleUse = buildUse(source, sourceCandidates, index);
             }
 
             assert(field.lvLRACandidate);
@@ -97,15 +110,10 @@ public sealed partial class LinearScan
         }
 
         return sourceCount;
-#else
-        NYI("LinearScan.buildMultiRegStoreLoc outside AMD64");
-        throw new FatalJitException("LinearScan.buildMultiRegStoreLoc outside AMD64.");
-#endif
     }
 
     private int buildStoreLoc(GenTreeLclVarCommon store)
     {
-#if TARGET_AMD64 || TARGET_ARM64
         var source = store.Op1;
         ref var local = ref _compiler.lvaGetDesc(store.LclNum);
         if (store.IsMultiRegLclVar)
@@ -143,17 +151,45 @@ public sealed partial class LinearScan
             assert(regType(singleUse.getInterval().registerType) == registerType);
             sourceCount = 1;
         }
+#if TARGET_32BIT
+        else if (varTypeIsLong(source.Type))
+        {
+            assert(source.Oper is GT_LONG);
+            assert(source.IsContained && !source.AsOp().Op1.IsContained && !source.AsOp().Op2.IsContained);
+            sourceCount = buildBinaryUses(source.AsOp());
+            assert(sourceCount == 2);
+        }
+#endif
         else if (source.IsContained)
         {
             sourceCount = 0;
         }
         else
         {
-            singleUse = buildUse(source);
+            var sourceCandidates = SRBM_NONE;
+#if TARGET_X86
+            if (varTypeIsByte(local.GetRegisterType(store)))
+            {
+                sourceCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+            }
+#endif
+            singleUse = buildUse(source, sourceCandidates);
             sourceCount = 1;
         }
 
-#if FEATURE_SIMD
+#if TARGET_ARM
+        if ((store.Oper is GT_STORE_LCL_FLD) && store.AsLclFld().IsOffsetMisaligned)
+        {
+            _ = buildInternalIntRegisterDefForNode(store, _availableIntRegs);
+            _ = buildInternalIntRegisterDefForNode(store, _availableIntRegs);
+            if (store.Type is TYP_DOUBLE)
+            {
+                _ = buildInternalIntRegisterDefForNode(store, _availableIntRegs);
+            }
+        }
+#endif
+
+#if FEATURE_SIMD || TARGET_ARM
         buildInternalRegisterUses();
 #endif
 
@@ -163,10 +199,6 @@ public sealed partial class LinearScan
         }
 
         return sourceCount;
-#else
-        NYI("LinearScan.buildStoreLoc outside AMD64");
-        throw new FatalJitException("LinearScan.buildStoreLoc outside AMD64.");
-#endif
     }
 
     private int buildReturn(GenTree tree)

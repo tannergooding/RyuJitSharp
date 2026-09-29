@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Shared LSRA local stores
+
+Three whole local-store builders preserve x86 byte-register constraints,
+32-bit long halves and ARM misaligned-field temporaries. Removing invented
+whole-function target guards also restores their shared LoongArch64/RISC-V64
+source paths. Definitions, headings and declarations retire 269 native lines
+in `3c88ed4`.
+
+Windows controls pass 23 Debug/23 Release; Linux store controls pass 21 Debug.
+The broader Linux run remains 21/22 because a separate retained return-path
+fixture expects one source but gets zero. Guard-corrected Windows/Linux focused
+controls each pass four cases. X86's four new cases remain blocked by 14 existing
+errors; ARM, LoongArch64 and RISC-V builds fail earlier in unrelated shared
+sources, so those bodies are not claimed compiled or executed. Evidence:
+`artifacts/lsra-shared-store-20260929-a143b50`, its guard supplement and the
+`lsra-local-store` retirement records. No generated-code parity claim.
+
 ## 2026-09-29: Xarch flag reuse
 
 Whole zero/sign flag reuse and consumer discovery preserve condition mutation,

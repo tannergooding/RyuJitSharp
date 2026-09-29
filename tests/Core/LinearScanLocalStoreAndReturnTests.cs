@@ -17,6 +17,89 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanLocalStoreAndReturnTests
 {
+#if TARGET_X86
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ByteLocalStoreConstrainsSourceAndCandidateDefinition(bool candidate)
+    {
+        WithAllocator((compiler, allocator) => {
+            SetLocals(compiler, allocator,
+                new LclVarDsc { Type = TYP_BYTE, _varIndex = 0,
+                    lvTracked = candidate, lvLRACandidate = candidate });
+            var source = compiler.gtNewIconNode(TYP_INT, 42);
+            ReferenceBuildLocation(allocator) = 2;
+            var sourceDef = BuildDef(allocator, source, SRBM_NONE, 0);
+            var store = new GenTreeLclVar(TYP_BYTE, 0, source);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildStoreLoc(allocator, store), Is.EqualTo(1));
+            var byteRegisters = AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+            Assert.That(sourceDef.nextRefPosition?.registerAssignment, Is.EqualTo(byteRegisters));
+            if (candidate)
+            {
+                Assert.That(allocator.localVarIntervals![0]?.lastRefPosition?.registerAssignment,
+                    Is.EqualTo(byteRegisters));
+            }
+            else
+            {
+                Assert.That(allocator.refPositions.FindAll(reference => reference.treeNode == store), Is.Empty);
+            }
+        });
+    }
+
+    [Test]
+    public static void ContainedLongLocalStoreConsumesBothHalves()
+    {
+        WithAllocator((compiler, allocator) => {
+            SetLocals(compiler, allocator, new LclVarDsc { Type = TYP_LONG });
+            var low = compiler.gtNewIconNode(TYP_INT, 17);
+            var high = compiler.gtNewIconNode(TYP_INT, 23);
+            ReferenceBuildLocation(allocator) = 2;
+            var lowDef = BuildDef(allocator, low, SRBM_NONE, 0);
+            var highDef = BuildDef(allocator, high, SRBM_NONE, 0);
+            var source = new GenTreeOp(GT_LONG, TYP_LONG, low, high) { IsContained = true };
+            var store = new GenTreeLclVar(TYP_LONG, 0, source);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildStoreLoc(allocator, store), Is.EqualTo(2));
+            Assert.That(lowDef.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
+            Assert.That(highDef.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
+        });
+    }
+
+    [Test]
+    public static void MultiRegisterLocalStoreRestrictsItsByteField()
+    {
+        WithAllocator((compiler, allocator) => {
+            compiler.lvaEnregMultiRegVars = true;
+            var layout = new ClassLayout(8);
+            SetLocals(compiler, allocator,
+                new LclVarDsc { Type = TYP_STRUCT, Layout = layout, lvPromoted = true,
+                    lvFieldLclStart = 1, lvFieldCnt = 2 },
+                new LclVarDsc { Type = TYP_BYTE, _varIndex = 0, lvTracked = true, lvLRACandidate = true },
+                new LclVarDsc { Type = TYP_INT, _varIndex = 1, lvTracked = true, lvLRACandidate = true },
+                new LclVarDsc { Type = TYP_STRUCT, Layout = layout, lvPromoted = true,
+                    lvFieldLclStart = 4, lvFieldCnt = 2 },
+                new LclVarDsc { Type = TYP_BYTE, _varIndex = 2, lvTracked = true, lvLRACandidate = true },
+                new LclVarDsc { Type = TYP_INT, _varIndex = 3, lvTracked = true, lvLRACandidate = true });
+            var source = new GenTreeLclVar(TYP_STRUCT, 3);
+            source.SetMultiReg();
+            var store = new GenTreeLclVar(TYP_STRUCT, 0, source);
+            store.SetMultiReg();
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildStoreLoc(allocator, store), Is.EqualTo(2));
+            var byteRegisters = AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+            Assert.That(allocator.localVarIntervals![2]?.lastRefPosition?.registerAssignment,
+                Is.EqualTo(byteRegisters));
+            Assert.That(allocator.localVarIntervals[0]?.lastRefPosition?.registerAssignment,
+                Is.EqualTo(byteRegisters));
+            Assert.That(allocator.localVarIntervals[3]?.lastRefPosition?.registerAssignment,
+                Is.EqualTo(AvailableIntRegs(allocator)));
+        });
+    }
+#endif
+
     [TestCase(false)]
     [TestCase(true)]
     public static void CandidateLocalStoreTracksLivenessAndSourcePreference(bool lastUse)

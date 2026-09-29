@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sharedLsraLocalStores": {
+      "scope": "Whole BuildStoreLocDef, BuildMultiRegStoreLoc and BuildStoreLoc preserve x86 byte-register masks, 32-bit long halves, ARM misaligned-field temporaries and shared per-field liveness.",
+      "validation": "Windows23 Debug/23 Release pass; Linux store-only21 Debug pass using the unchanged broader-run binary. Corrected shared guards pass four focused controls on Windows and Linux each; exact source comparison proves only the two invented whole-function guards and their NYI alternatives were removed.",
+      "retirement": "Three definitions with headings and all associated declarations;269 exact native lines.",
+      "nativeBefore": "25f2429431699507c5bd716cbe88ca8acdecd51d",
+      "nativeAfter": "3c88ed47c982fdd59327cc746a9bf8b0906a95f9",
+      "evidence": "artifacts/lsra-shared-store-20260929-a143b50 and lsra-shared-store-guard-supplement-20260929; artifacts/residual-reconciliation/lsra-shared-local-stores proposal/supplements and lsra-local-store combined/applied/verification.",
+      "limits": "Initial broader Linux run remains21/22: SingleRegisterStructLocalReturnUsesTheIntegerAbiRegister expected one source but got zero in the separate retained return path. Four new x86 cases remain unexecuted behind14 existing errors. ARM/LoongArch64/RISC-V builds stop at independent parser/platform blockers before these bodies are checked; no compilation or execution claim for them. No generated-code parity claim."
+    },
     "xarchFlagReuseClosure": {
       "scope": "Whole genCanAvoidEmittingCompareAgainstZero and genTryFindFlagsConsumer preserve zero/sign reuse, condition mutation, resolution-node skips and first-consumer ordering.",
       "validation": "Windows38 Debug/35 Release and Linux38 Debug pass, including exact native diagnostic text. X86 retains14 existing build errors; its non-register early-return case remains unexecuted.",
@@ -2090,7 +2099,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Flag reuse accepted through native25f2429; do not reapply. LSRA local-store evidence and guard-only correction verified: reanchor prepared269-line integration to current native HEAD, retire and commit. Parent register/GenTree/selectors pass76 ARM64 Debug/Release and218/213 Windows controls; HW lane checks selector Wasm unreachable fallback before final integration. Retire nine definitions and their declarations together; VariableLiveKeeper constructor correction receives no extra credit. B continues shared call/return lowering. Refill accepted lanes without growing the integration queue. Preserve14x86 blockers,13Wasm, oracle-plus-one and no publication.",
+    "nextAction": "LSRA local stores accepted through native3c88ed4; do not reapply. Parent register/GenTree/selectors pass76 ARM64 Debug/Release and218/213 Windows controls; collect HW selector Wasm-fallback correction, prove unchanged validated target branches and combine exact components. Recompute parent header spans after flag-reuse retirement, and retire nine definitions plus their declarations; VariableLiveKeeper constructor correction receives no extra credit. A continues scalar/atomic codegen, B shared call/return lowering; refill LSRA after commit. Preserve14x86 blockers,13Wasm, oracle-plus-one and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
