@@ -795,9 +795,6 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
 
-    [TestCase(INS_add, "three-register/immediate")]
-    [TestCase(INS_and, "three-register/immediate")]
-    [TestCase(INS_ldp, "three-register/immediate")]
     [TestCase(INS_nop, "SVE three-register")]
     public static void ThreeRegisterDependenciesRemainExplicit(instruction ins, string dependency)
     {
@@ -879,6 +876,271 @@ internal static unsafe class Arm64EmitterRecordingTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_R")]
     private static extern void RecordRegistersWithFlags(Emitter emitter, instruction ins, emitAttr size,
         regNumber reg1, regNumber reg2, insFlags flags);
+
+    [TestCase(INS_extr, EA_8BYTE, false, 63, INS_OPTS_NONE, IF_DR_3E)]
+    [TestCase(INS_and, EA_8BYTE, false, 0, INS_OPTS_NONE, IF_DR_3A)]
+    [TestCase(INS_orr, EA_4BYTE, false, 31, INS_OPTS_ROR, IF_DR_3B)]
+    [TestCase(INS_fmul, EA_16BYTE, true, 3, INS_OPTS_4S, IF_DV_3BI)]
+    [TestCase(INS_fmla, EA_8BYTE, true, 1, INS_OPTS_NONE, IF_DV_3DI)]
+    [TestCase(INS_fmls, EA_4BYTE, true, 3, INS_OPTS_NONE, IF_DV_3DI)]
+    [TestCase(INS_fmulx, EA_16BYTE, true, 1, INS_OPTS_2D, IF_DV_3BI)]
+    [TestCase(INS_mul, EA_16BYTE, true, 7, INS_OPTS_8H, IF_DV_3AI)]
+    [TestCase(INS_mla, EA_8BYTE, true, 3, INS_OPTS_2S, IF_DV_3AI)]
+    [TestCase(INS_mls, EA_16BYTE, true, 3, INS_OPTS_4S, IF_DV_3AI)]
+    [TestCase(INS_add, EA_8BYTE, false, 4, INS_OPTS_UXTW, IF_DR_3C)]
+    [TestCase(INS_sub, EA_8BYTE, false, 63, INS_OPTS_LSL, IF_DR_3B)]
+    [TestCase(INS_adds, EA_4BYTE, false, 0, INS_OPTS_NONE, IF_DR_3A)]
+    [TestCase(INS_subs, EA_8BYTE, false, 4, INS_OPTS_SXTX, IF_DR_3C)]
+    [TestCase(INS_ext, EA_16BYTE, true, 15, INS_OPTS_16B, IF_DV_3G)]
+    [TestCase(INS_smlal, EA_8BYTE, true, 7, INS_OPTS_4H, IF_DV_3AI)]
+    [TestCase(INS_umull, EA_8BYTE, true, 3, INS_OPTS_2S, IF_DV_3AI)]
+    [TestCase(INS_sqdmlal, EA_8BYTE, true, 7, INS_OPTS_4H, IF_DV_3AI)]
+    [TestCase(INS_sqdmull, EA_2BYTE, true, 7, INS_OPTS_NONE, IF_DV_3EI)]
+    [TestCase(INS_sqdmulh, EA_16BYTE, true, 7, INS_OPTS_8H, IF_DV_3AI)]
+    [TestCase(INS_sqrdmlah, EA_4BYTE, true, 3, INS_OPTS_NONE, IF_DV_3EI)]
+    [TestCase(INS_smlal2, EA_16BYTE, true, 7, INS_OPTS_8H, IF_DV_3AI)]
+    [TestCase(INS_sqdmull2, EA_16BYTE, true, 3, INS_OPTS_4S, IF_DV_3AI)]
+    [TestCase(INS_sdot, EA_8BYTE, true, 3, INS_OPTS_2S, IF_DV_3AI)]
+    [TestCase(INS_udot, EA_16BYTE, true, 3, INS_OPTS_4S, IF_DV_3AI)]
+    [TestCase(INS_xar, EA_16BYTE, true, 63, INS_OPTS_2D, IF_DV_3I)]
+    public static void ThreeImmediateRecordingPreservesNativeFormats(instruction ins, emitAttr size,
+        bool vector, int imm, insOpts opt, Emitter.insFormat format)
+    {
+        var emitter = CreateEmitter();
+        var reg1 = vector ? REG_V19 : REG_R19;
+        var reg2 = vector ? REG_V20 : REG_R20;
+        var reg3 = vector ? (opt is INS_OPTS_8H or INS_OPTS_4H || size == EA_2BYTE ? REG_V15 : REG_V31) : REG_R21;
+        RecordThreeImmediate(emitter, ins, size, reg1, reg2, reg3, imm, opt, EA_UNKNOWN, INS_SCALABLE_OPTS_NONE);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No three-register/immediate instruction was recorded.");
+        Assert.That(id.idIns(), Is.EqualTo(ins));
+        Assert.That(id.idInsFmt(), Is.EqualTo(format));
+        Assert.That(id.idOpSize(), Is.EqualTo(size));
+        Assert.That(id.idInsOpt(), Is.EqualTo(opt));
+        Assert.That(id.idReg1(), Is.EqualTo(reg1));
+        Assert.That(id.idReg2(), Is.EqualTo(reg2));
+        Assert.That(id.idReg3(), Is.EqualTo(reg3));
+        Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)imm));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [TestCase(INS_ldp, EA_8BYTE, false, -512, INS_OPTS_PRE_INDEX, -64)]
+    [TestCase(INS_stp, EA_8BYTE, false, 504, INS_OPTS_POST_INDEX, 63)]
+    [TestCase(INS_ldnp, EA_4BYTE, false, 252, INS_OPTS_NONE, 63)]
+    [TestCase(INS_stnp, EA_4BYTE, false, -256, INS_OPTS_NONE, -64)]
+    [TestCase(INS_ldpsw, EA_8BYTE, false, -256, INS_OPTS_NONE, -64)]
+    [TestCase(INS_ldp, EA_16BYTE, true, 1008, INS_OPTS_NONE, 63)]
+    [TestCase(INS_stp, EA_16BYTE, true, -1024, INS_OPTS_NONE, -64)]
+    [TestCase(INS_ldp, EA_8BYTE, false, 0, INS_OPTS_NONE, 0)]
+    public static void ThreeImmediatePairsPreserveScaleAndSecondGcType(instruction ins, emitAttr size,
+        bool vector, int imm, insOpts opt, int scaled)
+    {
+        var emitter = CreateEmitter();
+        RecordThreeImmediate(emitter, ins, size, vector ? REG_V19 : REG_R19,
+            vector ? REG_V20 : REG_R20, REG_SPBASE, imm, opt, vector ? EA_UNKNOWN : EA_BYREF, INS_SCALABLE_OPTS_NONE);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No load/store pair was recorded.");
+        Assert.That(id.idInsFmt(), Is.EqualTo(imm == 0 ? IF_LS_3B : IF_LS_3C));
+        Assert.That(id.idReg3(), Is.EqualTo(REG_ZR));
+        Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)scaled));
+        Assert.That(id.idGCrefReg2(), Is.EqualTo(vector ? GCInfo.GCtype.GCT_NONE : GCInfo.GCtype.GCT_BYREF));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [TestCase(INS_add)]
+    [TestCase(INS_sub)]
+    [TestCase(INS_adds)]
+    [TestCase(INS_subs)]
+    public static void ThreeImmediateSpSourceSelectsExtendedEncoding(instruction ins)
+    {
+        var emitter = CreateEmitter();
+        RecordThreeImmediate(emitter, ins, EA_8BYTE, REG_R19, REG_SPBASE, REG_R20, 0,
+            INS_OPTS_NONE, EA_UNKNOWN, INS_SCALABLE_OPTS_NONE);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No SP arithmetic was recorded.");
+        Assert.That(id.idInsFmt(), Is.EqualTo(IF_DR_3C));
+        Assert.That(id.idInsOpt(), Is.EqualTo(INS_OPTS_LSL));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_ZR));
+    }
+
+    [TestCase(INS_ld1)]
+    [TestCase(INS_st4)]
+    public static void ThreeImmediateStructuresPreservePostIndex(instruction ins)
+    {
+        var emitter = CreateEmitter();
+        RecordThreeImmediate(emitter, ins, EA_2BYTE, REG_V19, REG_SPBASE, REG_R20, 7,
+            INS_OPTS_POST_INDEX, EA_UNKNOWN, INS_SCALABLE_OPTS_NONE);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No indexed structure was recorded.");
+        Assert.That(id.idInsFmt(), Is.EqualTo(IF_LS_3G));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_ZR));
+        Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)7));
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ThreeImmediateRmwPreservesCopyBeforeShift(bool sameSource)
+    {
+        var emitter = CreateEmitter();
+        RecordThreeImmediate(emitter, INS_sli, EA_16BYTE, REG_V19, sameSource ? REG_V19 : REG_V20,
+            REG_V21, 7, INS_OPTS_16B, EA_UNKNOWN, INS_SCALABLE_OPTS_NONE);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No RMW shift was recorded.");
+        Assert.That(id.idIns(), Is.EqualTo(INS_sli));
+        Assert.That(id.idReg1(), Is.EqualTo(REG_V19));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_V21));
+        Assert.That(GroupSize(emitter), Is.EqualTo(sameSource ? 4 : 8));
+    }
+
+    [TestCase(INS_add, IF_DR_3A)]
+    [TestCase(INS_and, IF_DR_3A)]
+    [TestCase(INS_ldp, IF_LS_3B)]
+    public static void ThreeImmediateDependenciesNowRecord(instruction ins, Emitter.insFormat format)
+    {
+        var emitter = CreateEmitter();
+        RecordThree(emitter, ins, EA_8BYTE, REG_R19, REG_R20, REG_R21, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No forwarded instruction was recorded.");
+        Assert.That(id.idInsFmt(), Is.EqualTo(format));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [TestCase(3, 4, EA_GCREF)]
+    [TestCase(3, -1, EA_BYREF)]
+    [TestCase(-1, 4, EA_8BYTE)]
+    [TestCase(-1, -1, EA_8BYTE)]
+    public static void LocalPairRecordingPreservesAddressesAndGc(int first, int second, emitAttr attr2)
+    {
+        var emitter = CreateEmitter();
+        RecordLocalPair(emitter, INS_ldp, EA_GCREF, attr2, REG_R19, REG_R20, REG_SPBASE,
+            16, first, second, 24, 40
+#if DEBUG
+            , 101, 202
+#endif
+            );
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No local pair was recorded.");
+        Assert.That(id.idInsFmt(), Is.EqualTo(IF_LS_3C));
+        Assert.That(id.idReg3(), Is.EqualTo(REG_ZR));
+        Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)2));
+        Assert.That(id.idIsLclVarPair(), Is.EqualTo(first != -1 && second != -1));
+        Assert.That(id.idIsLclVar(), Is.EqualTo(first != -1 || second != -1));
+        Assert.That(id.idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
+        Assert.That(id.idGCrefReg2(), Is.EqualTo(attr2 == EA_GCREF ? GCInfo.GCtype.GCT_GCREF :
+            attr2 == EA_BYREF ? GCInfo.GCtype.GCT_BYREF : GCInfo.GCtype.GCT_NONE));
+        if (first != -1 || second != -1)
+        {
+            Assert.That(id.idAddr().iiaLclVar.lvaVarNum(), Is.EqualTo(first != -1 ? first : second));
+            Assert.That(id.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(first != -1 ? 24 : 40));
+        }
+        if (first != -1 && second != -1)
+        {
+            ref var address = ref SecondLocal(null, id);
+            Assert.That(address.lvaVarNum(), Is.EqualTo(second));
+            Assert.That(address.lvaOffset(), Is.EqualTo(40));
+        }
+#if DEBUG
+        var debugInfo = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing local-reference metadata.");
+        Assert.That(debugInfo.idVarRefOffs, Is.EqualTo(101));
+        Assert.That(debugInfo.idVarRefOffs2, Is.EqualTo(202));
+#endif
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [TestCase(0L)]
+    [TestCase(-1L)]
+    [TestCase(long.MaxValue)]
+    [TestCase(long.MinValue)]
+    public static void LocalPairAllocationPreservesConstantAndSecondLocal(long constant)
+    {
+        var emitter = CreateEmitter();
+        var id = AllocateLocalPair(emitter, EA_8BYTE, (nint)constant);
+        Assert.That(id.idIsLclVarPair(), Is.True);
+        Assert.That(id.idIsLargeCns(), Is.EqualTo(!Emitter.instrDesc.fitsInSmallCns((nint)constant)));
+        Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)constant));
+        ref var address = ref SecondLocal(null, id);
+        address.initLclVarAddr(40000, 128);
+        Assert.That(SecondLocal(null, id).lvaVarNum(), Is.EqualTo(40000));
+        Assert.That(SecondLocal(null, id).lvaOffset(), Is.EqualTo(128));
+        Assert.That(LastInstruction(emitter), Is.SameAs(id));
+    }
+
+    [TestCase(0, 0)]
+    [TestCase(-1024, -64)]
+    public static void LocalPairRecordingPreservesVectorScale(int imm, int scaled)
+    {
+        var emitter = CreateEmitter();
+        RecordLocalPair(emitter, INS_stp, EA_16BYTE, EA_16BYTE, REG_V19, REG_V20, REG_SPBASE,
+            imm, 3, 4, 0, 16
+#if DEBUG
+            , 0, 16
+#endif
+            );
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No vector local pair was recorded.");
+        Assert.That(id.idInsFmt(), Is.EqualTo(imm == 0 ? IF_LS_3B : IF_LS_3C));
+        Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)scaled));
+        Assert.That(id.idReg1(), Is.EqualTo(REG_V19));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_V20));
+        Assert.That(id.idGCrefReg2(), Is.EqualTo(GCInfo.GCtype.GCT_NONE));
+        Assert.That(id.idIsLclVarPair(), Is.True);
+    }
+
+#if DEBUG
+    [TestCase(INS_mul, EA_16BYTE, INS_OPTS_8H)]
+    [TestCase(INS_smlal, EA_8BYTE, INS_OPTS_4H)]
+    [TestCase(INS_sqdmull, EA_2BYTE, INS_OPTS_NONE)]
+    [TestCase(INS_sqdmulh, EA_16BYTE, INS_OPTS_8H)]
+    [TestCase(INS_smlal2, EA_16BYTE, INS_OPTS_8H)]
+    public static void IndexedHalfwordRejectsUnencodableRegister(instruction ins, emitAttr size, insOpts opt)
+    {
+        var emitter = CreateEmitter();
+        var error = Assert.Catch(() => RecordThreeImmediate(emitter, ins, size,
+            REG_V19, REG_V20, REG_V16, 0, opt, EA_UNKNOWN, INS_SCALABLE_OPTS_NONE));
+        if (ins == INS_mul)
+        {
+            Assert.That(error, Is.TypeOf<FatalJitException>());
+        }
+        else
+        {
+            Assert.That(error, Has.Message.Contains("Invalid reg3"));
+        }
+        Assert.That(GroupSize(emitter), Is.Zero);
+    }
+
+    [TestCase(INS_ldp, REG_R19, REG_R19, REG_R21, 8, INS_OPTS_NONE, "reg1 != reg2")]
+    [TestCase(INS_stp, REG_R19, REG_R20, REG_R19, 8, INS_OPTS_PRE_INDEX, "reg1 != reg3")]
+    [TestCase(INS_ldpsw, REG_R19, REG_R20, REG_R21, 256, INS_OPTS_NONE, "Instruction cannot be encoded")]
+    public static void ImmediatePairRejectsReservedEncoding(instruction ins, regNumber reg1,
+        regNumber reg2, regNumber reg3, int imm, insOpts opt, string condition)
+    {
+        var emitter = CreateEmitter();
+        var error = Assert.Catch(() => RecordThreeImmediate(emitter, ins, EA_8BYTE,
+            reg1, reg2, reg3, imm, opt, EA_UNKNOWN, INS_SCALABLE_OPTS_NONE));
+        Assert.That(error, Has.Message.Contains(condition));
+        Assert.That(GroupSize(emitter), Is.Zero);
+    }
+#endif
+
+    [Test]
+    public static void ImmediateSveDependencyRemainsExplicit()
+    {
+        var emitter = CreateEmitter();
+        var error = Assert.Throws<FatalJitException>(() => RecordThreeImmediate(emitter, INS_nop,
+            EA_8BYTE, REG_R19, REG_R20, REG_R21, 0, INS_OPTS_NONE, EA_UNKNOWN, INS_SCALABLE_OPTS_NONE));
+        Assert.That(error, Has.Message.Contains("SVE three-register/immediate"));
+        Assert.That(GroupSize(emitter), Is.Zero);
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_R_R_I")]
+    private static extern void RecordThreeImmediate(Emitter emitter, instruction ins, emitAttr size,
+        regNumber reg1, regNumber reg2, regNumber reg3, nint imm, insOpts opt, emitAttr attrReg2, insScalableOpts sopt);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_R_R_I_LdStPair")]
+    private static extern void RecordLocalPair(Emitter emitter, instruction ins, emitAttr size, emitAttr size2,
+        regNumber reg1, regNumber reg2, regNumber reg3, nint imm, int var1, int var2, int offs1, int offs2
+#if DEBUG
+        , uint var1RefsOffs, uint var2RefsOffs
+#endif
+        );
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNewInstrLclVarPair")]
+    private static extern Emitter.instrDesc AllocateLocalPair(Emitter emitter, emitAttr attr, nint cns);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitGetLclVarPairLclVar2")]
+    private static extern ref emitLclVarAddr SecondLocal(Emitter? emitter, Emitter.instrDesc id);
 
     [TestCase(0L, 1, true)]
     [TestCase(-1L, 1, true)]

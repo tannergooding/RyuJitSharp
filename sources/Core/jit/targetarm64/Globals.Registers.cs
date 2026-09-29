@@ -24,6 +24,10 @@ public static partial class Globals
     public const regNumber FIRST_FP_ARGREG = REG_V0;
     public const regNumber LAST_FP_ARGREG = REG_V15;
 
+    public const regMask SRBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS =
+        SRBM_V0 | SRBM_V1 | SRBM_V2 | SRBM_V3 | SRBM_V4 | SRBM_V5 | SRBM_V6 | SRBM_V7 |
+        SRBM_V8 | SRBM_V9 | SRBM_V10 | SRBM_V11 | SRBM_V12 | SRBM_V13 | SRBM_V14 | SRBM_V15;
+
     public const regNumber REG_PREDICATE_FIRST = REG_P0;
     public const regNumber REG_PREDICATE_LAST = REG_P15;
     public const regNumber REG_PREDICATE_LOW_LAST = REG_P7;

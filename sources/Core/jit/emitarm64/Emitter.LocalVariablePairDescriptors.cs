@@ -8,6 +8,54 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    private instrDescLclVarPair emitAllocInstrLclVarPair(emitAttr attr)
+    {
+        var result = emitAllocAnyInstr<instrDescLclVarPair>(DescriptorSizes.LocalVarPair, attr);
+        result.idSetIsLclVarPair();
+
+        return result;
+    }
+
+    private instrDescLclVarPairCns emitAllocInstrLclVarPairCns(emitAttr attr, nint cns)
+    {
+        var result = emitAllocAnyInstr<instrDescLclVarPairCns>(DescriptorSizes.LocalVarPairConstant, attr);
+        result.idSetIsLargeCns();
+        result.idSetIsLclVarPair();
+        result.idcCnsVal = cns;
+
+        return result;
+    }
+
+    private instrDesc emitNewInstrLclVarPair(emitAttr attr, nint cns)
+    {
+        if (instrDesc.fitsInSmallCns(cns))
+        {
+            var id = emitAllocInstrLclVarPair(attr);
+            id.idSmallCns(cns);
+
+            return id;
+        }
+        else
+        {
+            var id = emitAllocInstrLclVarPairCns(attr, cns);
+
+            return id;
+        }
+    }
+
+    private static ref emitLclVarAddr emitGetLclVarPairLclVar2(instrDesc id)
+    {
+        assert(id.idIsLclVarPair());
+        if (id.idIsLargeCns())
+        {
+            return ref ((instrDescLclVarPairCns)id).iiaLclVar2;
+        }
+        else
+        {
+            return ref ((instrDescLclVarPair)id).iiaLclVar2;
+        }
+    }
+
     public abstract partial class instrDesc
     {
         private bool _idLclVarPair;

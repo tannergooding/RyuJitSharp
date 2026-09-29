@@ -5,6 +5,7 @@
 
 #if TARGET_ARM64
 using static RyuJitSharp.Emitter.insFormat;
+using static RyuJitSharp.GCInfo.GCtype;
 
 namespace RyuJitSharp;
 
@@ -787,7 +788,499 @@ public partial class Emitter
     public void emitIns_R_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         regNumber reg3, nint imm, insOpts opt = INS_OPTS_NONE, emitAttr attrReg2 = EA_UNKNOWN,
         insScalableOpts sopt = insScalableOpts.INS_SCALABLE_OPTS_NONE)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 three-register/immediate recording is not ported.");
+    {
+        var size = EA_SIZE(attr);
+        emitAttr elemsize;
+        var fmt = IF_NONE;
+        var isLdSt = false;
+        var isSIMD = false;
+        var isAddSub = false;
+        var setFlags = false;
+        var scale = 0;
+
+        switch (ins)
+        {
+            case INS_ins:
+            case INS_rshrn2:
+            case INS_shrn2:
+            case INS_sli:
+            case INS_sqrshrn2:
+            case INS_sqrshrun2:
+            case INS_sqshrn2:
+            case INS_sqshrun2:
+            case INS_sri:
+            case INS_srsra:
+            case INS_ssra:
+            case INS_uqrshrn2:
+            case INS_uqshrn2:
+            case INS_ursra:
+            case INS_usra:
+            {
+                // RMW instructions copy the destination before applying the operation.
+                emitIns_Mov(INS_mov, attr, reg1, reg2, canSkip: true);
+                emitIns_R_R_I(ins, attr, reg1, reg3, imm, opt, sopt);
+                return;
+            }
+
+            case INS_extr:
+            {
+                assert(insOptsNone(opt));
+                assert(isValidGeneralDatasize(size));
+                assert(isGeneralRegister(reg1));
+                assert(isGeneralRegister(reg2));
+                assert(isGeneralRegister(reg3));
+                assert(isValidImmShift(imm, size));
+                fmt = IF_DR_3E;
+                break;
+            }
+
+            case INS_and:
+            case INS_ands:
+            case INS_eor:
+            case INS_orr:
+            case INS_bic:
+            case INS_bics:
+            case INS_eon:
+            case INS_orn:
+            {
+                assert(isValidGeneralDatasize(size));
+                assert(isGeneralRegister(reg1));
+                assert(isGeneralRegister(reg2));
+                assert(isGeneralRegister(reg3));
+                assert(isValidImmShift(imm, size));
+                if (imm == 0)
+                {
+                    assert(insOptsNone(opt)); // Zero immediate means no shift kind.
+                    fmt = IF_DR_3A;
+                }
+                else
+                {
+                    assert(insOptsAnyShift(opt));
+                    fmt = IF_DR_3B;
+                }
+                break;
+            }
+
+            case INS_fmul:
+            case INS_fmla:
+            case INS_fmls:
+            case INS_fmulx:
+            {
+                assert(isVectorRegister(reg1));
+                assert(isVectorRegister(reg2));
+                assert(isVectorRegister(reg3));
+                if (insOptsAnyArrangement(opt))
+                {
+                    assert(isValidVectorDatasize(size));
+                    assert(isValidArrangement(size, opt));
+                    elemsize = optGetElemsize(opt);
+                    assert(isValidVectorElemsizeFloat(elemsize));
+                    assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+                    assert(opt != INS_OPTS_1D); // Reserved encoding.
+                    fmt = IF_DV_3BI;
+                }
+                else
+                {
+                    assert(insOptsNone(opt));
+                    assert(isValidScalarDatasize(size));
+                    elemsize = size;
+                    assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+                    fmt = IF_DV_3DI;
+                }
+                break;
+            }
+
+            case INS_mul:
+            case INS_mla:
+            case INS_mls:
+            {
+                assert(isVectorRegister(reg1));
+                assert(isVectorRegister(reg2));
+                assert(isVectorRegister(reg3));
+                assert(insOptsAnyArrangement(opt));
+                assert(isValidVectorDatasize(size));
+                assert(isValidArrangement(size, opt));
+                elemsize = optGetElemsize(opt);
+                assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+                assert((elemsize == EA_2BYTE) || (elemsize == EA_4BYTE));
+                // Halfword indexed forms only encode V0-V15 for the element source.
+                if ((elemsize == EA_2BYTE) && ((reg3.SingleTypeMask & SRBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS) == 0))
+                {
+                    noway_assert(false, "Invalid reg3");
+                }
+                fmt = IF_DV_3AI;
+                break;
+            }
+
+            case INS_add:
+            case INS_sub:
+            {
+                setFlags = false;
+                isAddSub = true;
+                break;
+            }
+
+            case INS_adds:
+            case INS_subs:
+            {
+                setFlags = true;
+                isAddSub = true;
+                break;
+            }
+
+            case INS_ldpsw:
+            {
+                scale = 2;
+                isLdSt = true;
+                break;
+            }
+
+            case INS_ldnp:
+            case INS_stnp:
+            {
+                assert(insOptsNone(opt)); // Non-temporal pairs cannot use pre/post indexing.
+                goto case INS_ldp;
+            }
+
+            case INS_ldp:
+            case INS_stp:
+            {
+                if (isVectorRegister(reg1))
+                {
+                    scale = (int)NaturalScale_helper(size);
+                    isSIMD = true;
+                }
+                else
+                {
+                    scale = (size == EA_8BYTE) ? 3 : 2;
+                }
+                isLdSt = true;
+                fmt = IF_LS_3C;
+                break;
+            }
+
+            case INS_ld1:
+            case INS_ld2:
+            case INS_ld3:
+            case INS_ld4:
+            case INS_st1:
+            case INS_st2:
+            case INS_st3:
+            case INS_st4:
+            {
+                assert(isVectorRegister(reg1));
+                assert(isGeneralRegisterOrSP(reg2));
+                assert(isGeneralRegister(reg3));
+                assert(insOptsPostIndex(opt));
+                elemsize = size;
+                assert(isValidVectorElemsize(elemsize));
+                assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+
+                // Single-structure access post-indexed by a register.
+                reg2 = encodingSPtoZR(reg2);
+                fmt = IF_LS_3G;
+                break;
+            }
+
+            case INS_ext:
+            {
+                assert(isVectorRegister(reg1));
+                assert(isVectorRegister(reg2));
+                assert(isVectorRegister(reg3));
+                assert(isValidVectorDatasize(size));
+                assert(isValidArrangement(size, opt));
+                assert((opt == INS_OPTS_8B) || (opt == INS_OPTS_16B));
+                assert(isValidVectorIndex(size, EA_1BYTE, imm));
+                fmt = IF_DV_3G;
+                break;
+            }
+
+            case INS_smlal:
+            case INS_smlsl:
+            case INS_smull:
+            case INS_umlal:
+            case INS_umlsl:
+            case INS_umull:
+            {
+                assert(isVectorRegister(reg1));
+                assert(isVectorRegister(reg2));
+                assert(isVectorRegister(reg3));
+                assert(size == EA_8BYTE);
+                assert((opt == INS_OPTS_4H) || (opt == INS_OPTS_2S));
+                elemsize = optGetElemsize(opt);
+                if ((elemsize == EA_2BYTE) && ((reg3.SingleTypeMask & SRBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS) == 0))
+                {
+                    assert(false, "Invalid reg3");
+                }
+                assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+                fmt = IF_DV_3AI;
+                break;
+            }
+
+            case INS_sqdmlal:
+            case INS_sqdmlsl:
+            case INS_sqdmull:
+            {
+                assert(isVectorRegister(reg1));
+                assert(isVectorRegister(reg2));
+                assert(isVectorRegister(reg3));
+                if (insOptsAnyArrangement(opt))
+                {
+                    assert(size == EA_8BYTE);
+                    assert((opt == INS_OPTS_4H) || (opt == INS_OPTS_2S));
+                    elemsize = optGetElemsize(opt);
+                    fmt = IF_DV_3AI;
+                }
+                else
+                {
+                    assert(insOptsNone(opt));
+                    assert((size == EA_2BYTE) || (size == EA_4BYTE));
+                    elemsize = size;
+                    fmt = IF_DV_3EI;
+                }
+                if ((elemsize == EA_2BYTE) && ((reg3.SingleTypeMask & SRBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS) == 0))
+                {
+                    assert(false, "Invalid reg3");
+                }
+                assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+                break;
+            }
+
+            case INS_sqdmulh:
+            case INS_sqrdmlah:
+            case INS_sqrdmlsh:
+            case INS_sqrdmulh:
+            {
+                assert(isVectorRegister(reg1));
+                assert(isVectorRegister(reg2));
+                assert(isVectorRegister(reg3));
+                if (insOptsAnyArrangement(opt))
+                {
+                    assert(isValidVectorDatasize(size));
+                    elemsize = optGetElemsize(opt);
+                    assert((elemsize == EA_2BYTE) || (elemsize == EA_4BYTE));
+                    fmt = IF_DV_3AI;
+                }
+                else
+                {
+                    assert(insOptsNone(opt));
+                    assert((size == EA_2BYTE) || (size == EA_4BYTE));
+                    elemsize = size;
+                    fmt = IF_DV_3EI;
+                }
+                if ((elemsize == EA_2BYTE) && ((reg3.SingleTypeMask & SRBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS) == 0))
+                {
+                    assert(false, "Invalid reg3");
+                }
+                assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+                break;
+            }
+
+            case INS_smlal2:
+            case INS_smlsl2:
+            case INS_smull2:
+            case INS_sqdmlal2:
+            case INS_sqdmlsl2:
+            case INS_sqdmull2:
+            case INS_umlal2:
+            case INS_umlsl2:
+            case INS_umull2:
+            {
+                assert(isVectorRegister(reg1));
+                assert(isVectorRegister(reg2));
+                assert(isVectorRegister(reg3));
+                assert(size == EA_16BYTE);
+                assert((opt == INS_OPTS_8H) || (opt == INS_OPTS_4S));
+                elemsize = optGetElemsize(opt);
+                assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
+                if ((elemsize == EA_2BYTE) && ((reg3.SingleTypeMask & SRBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS) == 0))
+                {
+                    assert(false, "Invalid reg3");
+                }
+                fmt = IF_DV_3AI;
+                break;
+            }
+
+            case INS_sdot:
+            case INS_udot:
+            {
+                assert(isVectorRegister(reg1));
+                assert(isVectorRegister(reg2));
+                assert(isVectorRegister(reg3));
+                assert(((size == EA_8BYTE) && (opt == INS_OPTS_2S)) || ((size == EA_16BYTE) && (opt == INS_OPTS_4S)));
+                assert(isValidVectorIndex(EA_16BYTE, EA_4BYTE, imm));
+                fmt = IF_DV_3AI;
+                break;
+            }
+
+            case INS_xar:
+            {
+                assert(size == EA_16BYTE);
+                assert(opt == INS_OPTS_2D);
+                assert(isVectorRegister(reg1));
+                assert(isVectorRegister(reg2));
+                assert(isVectorRegister(reg3));
+                assert(isValidUimm(imm, 6));
+                fmt = IF_DV_3I;
+                break;
+            }
+
+            default:
+            {
+                emitInsSve_R_R_R_I(ins, attr, reg1, reg2, reg3, imm, opt, sopt);
+                return;
+            }
+        }
+
+        assert(insScalableOptsNone(sopt));
+        if (isLdSt)
+        {
+            assert(!isAddSub);
+            assert(isGeneralRegisterOrSP(reg3));
+            assert(insOptsNone(opt) || insOptsIndexed(opt));
+            if (isSIMD)
+            {
+                assert(isValidVectorLSPDatasize(size));
+                assert(isVectorRegister(reg1));
+                assert(isVectorRegister(reg2));
+                assert((scale >= 2) && (scale <= 4));
+            }
+            else
+            {
+                assert(isValidGeneralDatasize(size));
+                assert(isGeneralRegisterOrZR(reg1));
+                assert(isGeneralRegisterOrZR(reg2));
+                assert((scale == 2) || (scale == 3));
+            }
+
+            // Load destinations must differ; indexed pairs cannot overwrite their base.
+            if (emitInsIsLoad(ins))
+            {
+                assert(reg1 != reg2);
+            }
+            if (insOptsIndexed(opt))
+            {
+                assert(reg1 != reg3);
+                assert(reg2 != reg3);
+            }
+            reg3 = encodingSPtoZR(reg3);
+
+            nint mask = (1 << scale) - 1;
+            if (imm == 0)
+            {
+                assert(insOptsNone(opt));
+                fmt = IF_LS_3B;
+            }
+            else
+            {
+                if ((imm & mask) == 0)
+                {
+                    imm >>= scale;
+                    if ((imm >= -64) && (imm <= 63))
+                    {
+                        fmt = IF_LS_3C;
+                    }
+                }
+#if DEBUG
+                if (fmt != IF_LS_3C)
+                {
+                    assert(false, "Instruction cannot be encoded: IF_LS_3C");
+                }
+#endif
+            }
+        }
+        else if (isAddSub)
+        {
+            var reg2IsSP = reg2 == REG_SP;
+            assert(!isLdSt);
+            assert(isValidGeneralDatasize(size));
+            assert(isGeneralRegister(reg3));
+
+            // Flag-setting and shifted forms cannot encode SP in the destination.
+            if (setFlags || insOptsAluShift(opt))
+            {
+                assert(isGeneralRegisterOrZR(reg1));
+            }
+            else
+            {
+                assert(isGeneralRegisterOrSP(reg1));
+                reg1 = encodingSPtoZR(reg1);
+            }
+            if (insOptsAluShift(opt))
+            {
+                assert(isGeneralRegister(reg2));
+            }
+            else
+            {
+                assert(isGeneralRegisterOrSP(reg2));
+                reg2 = encodingSPtoZR(reg2);
+            }
+
+            if (insOptsAnyExtend(opt))
+            {
+                assert((imm >= 0) && (imm <= 4));
+                fmt = IF_DR_3C;
+            }
+            else if (insOptsAluShift(opt))
+            {
+                assert(isValidImmShift(imm, size) && (imm != 0));
+                fmt = IF_DR_3B;
+            }
+            else if (imm == 0)
+            {
+                assert(insOptsNone(opt));
+                if (reg2IsSP)
+                {
+                    // SP as the first source requires the extended form with LSL zero.
+                    opt = INS_OPTS_LSL;
+                    fmt = IF_DR_3C;
+                }
+                else
+                {
+                    fmt = IF_DR_3A;
+                }
+            }
+            else
+            {
+                assert(false, "Instruction cannot be encoded: Add/Sub IF_DR_3A");
+            }
+        }
+        assert(fmt != IF_NONE);
+
+        var id = emitNewInstrCns(attr, imm);
+        id.idIns(ins);
+        id.idInsFmt(fmt);
+        id.idInsOpt(opt);
+        id.idReg1(reg1);
+        id.idReg2(reg2);
+        id.idReg3(reg3);
+
+        id.idGCrefReg2(GCT_NONE);
+        if (attrReg2 != EA_UNKNOWN)
+        {
+            assert((fmt == IF_LS_3B) || (fmt == IF_LS_3C));
+            if (EA_IS_GCREF(attrReg2))
+            {
+                id.idGCrefReg2(GCT_GCREF);
+            }
+            else if (EA_IS_BYREF(attrReg2))
+            {
+                id.idGCrefReg2(GCT_BYREF);
+            }
+        }
+
+        dispIns(id);
+        appendToCurIG(id);
+    }
+
+    private static bool insScalableOptsNone(insScalableOpts sopt)
+    {
+        return sopt == insScalableOpts.INS_SCALABLE_OPTS_NONE;
+    }
+
+    private static void emitInsSve_R_R_R_I(instruction ins, emitAttr attr, regNumber reg1,
+        regNumber reg2, regNumber reg3, nint imm, insOpts opt, insScalableOpts sopt)
+        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SVE three-register/immediate recording is not ported.");
 
     public void emitIns_R_R_R_Ext(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         regNumber reg3, insOpts opt = INS_OPTS_NONE, int shiftAmount = -1)

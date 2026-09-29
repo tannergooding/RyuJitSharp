@@ -16,6 +16,27 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Three-register immediates and paired locals
+
+ARM64 three-register/immediate recording now preserves all 74 native instruction
+cases, including indexed vector elements, shifted/extended arithmetic, SP
+encoding, RMW copies and scaled load/store pairs. Local-pair recording preserves
+both local addresses, independent GC types and debug reference offsets. Its
+small/large constant descriptors use the shared allocation and ownership rules.
+
+Full-analysis ARM64 controls pass 512 Debug/490 Release. All 55 identical selected
+positive cases fail against the unchanged baseline. Boundary controls cover
+indexed-halfword register restrictions, signed pair offsets and reserved
+encodings. Native optional arguments and assertion distinctions are preserved.
+Allocation counters/histograms retain the existing D001 representation policy;
+no allocation-statistics equality or ARM64 machine-code parity is claimed.
+
+Eight definitions, their declarations and the indexed-halfword register mask
+retire 722 native lines in `33f25165`. SVE recording remains a separate terminating
+dependency with its native body retained. Evidence is in
+`artifacts/arm64-three-immediate-recording` and the corresponding final
+integration records under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Tree operands and GC-register handling
 
 Seven xarch tree-level load/store/binary/RMW/base dispatchers now preserve their

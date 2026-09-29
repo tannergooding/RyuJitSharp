@@ -17,6 +17,16 @@ public partial class Emitter
         return s_instructionFormats[(int)ins];
     }
 
+    private bool emitInsIsLoad(instruction ins)
+    {
+        if ((uint)ins < (uint)CodeGen.instInfo.Length)
+        {
+            return (CodeGen.instInfo[(int)ins] & CodeGen.LD) != 0;
+        }
+
+        return false;
+    }
+
     private bool emitInsIsLoadOrStore(instruction ins)
     {
         if ((uint)ins < (uint)CodeGen.instInfo.Length)
