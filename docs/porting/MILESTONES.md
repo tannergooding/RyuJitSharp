@@ -39,6 +39,14 @@ the unported x86 helper bodies remain visible in the residual.
 Evidence: `artifacts/residual-reconciliation/emitter-recording-combined-20260928.json`
 and its applied receipt.
 
+The next dependency packet completes ten register-restriction, static-field
+sizing and prefix helpers, retiring another 311 definition lines in `bf2ee593`.
+Windows baseline/final controls remain 176 Debug/155 Release. The x86 fixture is
+linked with the correct target symbol, but the existing declaration errors still
+prevent compilation and execution. Remaining instruction-size, EVEX/REX2 and
+diagnostic/output dependencies stay explicit. Evidence:
+`artifacts/residual-reconciliation/xarch-static-field-dependencies-proposed-20260928.json`.
+
 ## 2026-09-28: Runtime vector length and type-size utilities
 
 Runtime `Vector<T>` length now uses the known compile-time width or the native

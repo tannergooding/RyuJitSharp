@@ -24,7 +24,8 @@
       "nativeBefore": "53af680ba0078ac7fba4c368b6c7b3c61b62350f",
       "nativeAfter": "c6188147016f4d8bb48326561febd818f1c4ce6e",
       "retirement": "Eight definitions:247 definition lines, three declarations and sixteen own comment/blank lines =266 total, no duplicate cleanup. Sole parent remains the pinned oracle, count above oracle one; native index/worktree clean.",
-      "dependencies": "Retain general allocator/method-entry reset/reporting and x86 emitVerifyEncodable, both emitInsSizeCV overloads, emitGetRexPrefixSize, IsExtendedReg overloads, TakesRexWPrefix, dispIns and emitOutputCV. Distinct unported x86 helpers terminate through typed stubs; no success fallback.",
+      "dependencyClosure": "Ten complete register-restriction/static-field sizing/prefix definitions are now retired:311 definition lines in bf2ee593f11d76857b0e04dacbe52ecc86104b21. Full-analysis Windows baseline/final176D155R unchanged. The x86 fixture is linked and TARGET_X86 is verified after GetRyuJitCompileConstants, but the same17 independent target errors prevent its execution. Evidence: xarch-static-field-dependencies-proposed-20260928.json and applied receipt under artifacts/residual-reconciliation.",
+      "dependencies": "Retain general allocator/method-entry reset/reporting and x86 emitGetAdjustedSize, emitInsSize, ImmCanUseSByteEncoding, TakesEvexPrefix, TakesRex2Prefix, dispIns and emitOutputCV. Distinct unported helpers terminate through typed stubs; no success fallback.",
       "limits": "x86 baseline/final share17 unrelated declaration/type errors after identical parser overlays. No x86 compilation or execution pass. LoongArch64 remains blocked by unrelated hardware-intrinsic #error directives. No ARM64 generated-code parity.",
       "evidence": "artifacts/residual-reconciliation/emitter-recording-combined-20260928.json and emitter-recording-combined-applied-20260928.json; component manifests emit-group-transitions-pending-20260928.json and static-field-store-recording-proposed-20260928.json; artifacts/emitter-recording-integrated."
     },
@@ -857,7 +858,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "c6188147016f4d8bb48326561febd818f1c4ce6e",
+      "residualHead": "bf2ee593f11d76857b0e04dacbe52ecc86104b21",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -939,7 +940,7 @@
         "Raw target-block getters have no pinned callsites and remain unused support. emitCodeGetCookie remains because its managed helper is only declared under TARGET_AMD64."
       ],
       "remaining": "Continue whole-function translation/retirement from the residual, not recurring audits. Group saving/preparation/transitions and B426 static-field store callers are complete; retain their distinct unported dependencies. genCreateTempLabel retains Unix x86 and genGetRegMask retains ARM floating support. No new default Windows emission gap was established. Notify the user when full cleanup is done.",
-      "verification": "Nativec6188147 amends the single oracle-child commit, removing266 lines for combined group transitions/static-field recording after the152-line utility and353-line save batches. The oracle remains its sole parent and count above oracle is one; native index/worktree clean. Retirement adds no parity evidence.",
+      "verification": "Nativebf2ee593 amends the sole oracle-child commit, removing311 definition lines for ten static-field sizing/register/prefix helpers after the combined266-line recording batch. Parent remains33baf8ee, count above oracle one; native index/worktree clean. Retirement adds no target compilation or parity evidence.",
       "targetLedger": "Historical ledger collected through report108, consuming e0d198a for B455 without reopening unrelated rows. Report107's suspected copy-omission VN mismatch B456 is dismissed: GenTreeLclFld -> GenTreeLclVarCommon -> GenTreeUnOp source-aware construction explicitly clears both VNs after the root metadata copy. No production correction is needed. The reviewed materialization bodies are already absent. Existing call-driver review uncertainty is not a new untranslated-definition queue; stop recurring audits. Repair concrete residual partials and track only their stub/exception boundaries. D009, R005, B392 and B446 remain separately recorded optional gaps.",
       "retirementQueue": "A bounded existing-evidence pass found no immediately eligible bulk retirement: strongly reviewed definitions were already absent, surviving return helpers lack whole-target review, and gtFoldExpr retains an ARM64 path. artifacts/residual-reconciliation/bulk-retirement-candidates-20260928.json records the inspected scope and native snapshot. Stop duplicate sweeps of these candidates; prioritize unresolved Windows/shared contracts separately from mixed-target retirement. This is not repository-wide catch-up completion.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
@@ -990,7 +991,7 @@
       "caution": "Current backend allocation/codegen/emitter exclusions checked in this pass target non-Windows or non-AMD64 configurations. Commented callback declarations and historical baseline gaps are not an inventory of missing Windows implementations."
     },
     "activeBatch": {
-      "scope": "After complete group transitions and static-field callers, continue method-entry initialization/statistics reset in lane A and retained static-field sizing/encodability/prefix dependencies in lane B. Consolidate evidence and retirement by source/dependency area, with old-source controls up front for newly executable paths. No recurring audit or general backend expansion.",
+      "scope": "Continue method-entry initialization/statistics reset in lane A and remaining static-field instruction-size/EVEX/REX2 dependencies in lane B. The first ten sizing/register/prefix definitions are complete. Consolidate evidence and retirement by source/dependency area, with old-source controls up front for newly executable paths. No recurring audit or general backend expansion.",
       "status": "in-progress",
       "doneWhen": [
         "Complete retained emitBegFN own target/statistics paths and narrow required initialization support, preserving descriptor ownership and Windows behavior; leave method exit/encoding/reporting separate.",
@@ -1013,13 +1014,13 @@
           "scope": "Whole emitBegFN method initialization, required statistics/reset declarations and directly coupled allocation support; stop before method exit, encoding and general reporting.",
           "owner": "4b57b744-36f1-4e6e-8b76-94c1a87d6e02",
           "files": "Emitter.MethodInitialization.cs and narrow initialization support/fixtures; coordinate any shared emitter declarations with the prefix/sizing lane.",
-          "status": "next: group preparation/transition predecessor is complete and retired in c6188147"
+          "status": "in-progress: method initialization/reset packet owns its focused old-stub and final controls"
         },
         {
-          "scope": "Retained static-field dependency family: emitVerifyEncodable, both emitInsSizeCV overloads, emitGetRexPrefixSize and related extended-register/prefix helpers; keep unrelated diagnostics and output separate.",
+          "scope": "Remaining static-field instruction-size/prefix dependencies: emitGetAdjustedSize, emitInsSize, ImmCanUseSByteEncoding, TakesEvexPrefix and TakesRex2Prefix. Keep unrelated diagnostics/output and target-baseline declaration closure separate.",
           "owner": "b2253a3d-d101-444e-9c56-d631eb5b274b",
           "files": "Existing xarch sizing/prefix/encodability partials, StaticFieldX86Dependencies and focused fixtures; no initialization/group-buffer or Wasm WIP edits.",
-          "status": "next: three static-field callers complete and retired in c6188147; independent x86 declaration/type build failures remain recorded"
+          "status": "next: ten predecessor dependency definitions complete and retired in bf2ee593; independent x86 declaration/type build failures remain recorded"
         }
       ],
       "parallelPackets": [
@@ -1423,7 +1424,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Continue emitBegFN initialization/reset in lane A and static-field sizing/encodability/prefix dependencies in lane B after the completed combined emitter source/test/docs batch. Its eight definitions are retired in c6188147, with integrated Windows189D174R and confirmed old-stub ARM64 failures; do not reapply its manifests or rerun its checks. Record x86/LoongArch64 baseline build gaps separately, not as target success. Preserve Wasm WIP; no recurring audits or publication.",
+    "nextAction": "Collect lane A's emitBegFN initialization/reset packet when complete. Continue lane B through the remaining instruction-size/EVEX/REX2 helper family after the accepted ten-definition source batch;311 lines already retired in nativebf2ee593, so do not reapply its manifest. Reuse Windows176D155R and known x86 baseline evidence. The x86 fixture link is staged separately from preserved Wasm project edits. No recurring audits or publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

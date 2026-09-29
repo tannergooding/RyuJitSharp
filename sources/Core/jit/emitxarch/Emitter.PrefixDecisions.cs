@@ -158,9 +158,12 @@ public partial class Emitter
 
     private bool TakesRexWPrefix(instrDesc id)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "REX.W prefix decisions require AMD64.");
-#else
+#if TARGET_X86
+        if (!UseVexEncodings)
+        {
+            return false;
+        }
+#endif
         var ins = id.idIns();
         var attr = id.idOpSize();
 
@@ -205,6 +208,7 @@ public partial class Emitter
         }
 
         assert(!IsSimdInstruction(ins));
+#if TARGET_AMD64
         if (ins == INS_movsx)
         {
             return true;
@@ -216,6 +220,8 @@ public partial class Emitter
         return ins is not (INS_push or INS_pop or INS_movq or INS_movzx or INS_push_hide or
             INS_pop_hide or INS_ret or INS_call or INS_tail_i_jmp) &&
             !(ins >= INS_i_jmp && ins <= INS_l_jg);
+#else
+        return false;
 #endif
     }
 

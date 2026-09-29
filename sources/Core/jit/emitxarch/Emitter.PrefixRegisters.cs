@@ -19,7 +19,7 @@ public partial class Emitter
 #if TARGET_AMD64
         return (reg >= REG_R8 && reg <= REG_R31) || (reg >= REG_XMM8 && reg <= REG_XMM31);
 #else
-        throw new FatalJitException(CORJIT_SKIPPED, "Extended register prefixes require AMD64.");
+        return false;
 #endif
     }
 
@@ -38,7 +38,7 @@ public partial class Emitter
         }
         return false;
 #else
-        throw new FatalJitException(CORJIT_SKIPPED, "Extended general purpose register prefixes require AMD64.");
+        return false;
 #endif
     }
 

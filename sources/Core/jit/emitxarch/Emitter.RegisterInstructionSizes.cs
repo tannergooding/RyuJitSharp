@@ -7,13 +7,40 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
+#if TARGET_XARCH
     public static bool emitVerifyEncodable(instruction ins, emitAttr size, regNumber reg1, regNumber reg2 = REG_NA)
     {
+#if TARGET_X86
+        if (size != EA_1BYTE)
+        {
+            return true;
+        }
+
+        if ((ins is not (INS_movsx or INS_movzx)
+#if FEATURE_HW_INTRINSICS
+            and not INS_crc32
+#endif
+            ) && !IsX86ByteRegister(reg1))
+        {
+            return false;
+        }
+
+        if ((reg2 != REG_NA) && !IsX86ByteRegister(reg2))
+        {
+            return false;
+        }
+
+        return true;
+#else
         // CPU_HAS_BYTE_REGS is zero on AMD64: every GPR has a byte encoding.
         return true;
+#endif
     }
 
+#if TARGET_X86
+    private static bool IsX86ByteRegister(regNumber reg) => reg is REG_EAX or REG_ECX or REG_EDX or REG_EBX;
+#endif
+#if TARGET_AMD64
     public static bool instrIs3opImul(instruction ins) => (ins >= INS_imul_AX) && (ins <= INS_imul_31);
 
     public static bool instrIsExtendedReg3opImul(instruction ins) => (ins >= INS_imul_08) && (ins <= INS_imul_31);
@@ -91,5 +118,6 @@ public partial class Emitter
 
         return sz;
     }
+#endif
 #endif
 }

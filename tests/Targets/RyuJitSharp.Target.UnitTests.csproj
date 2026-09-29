@@ -30,4 +30,8 @@
     <Compile Include="..\Core\SysVX64LocalStoreLoweringTests.cs" Link="SysVX64LocalStoreLoweringTests.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(RyuJitTargetRuntimeIdentifier)' == 'win-x86' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'win-x86')">
+    <Compile Include="..\Core\X86EmitterStaticFieldDependencyTests.cs" Link="X86EmitterStaticFieldDependencyTests.cs" />
+  </ItemGroup>
+
 </Project>
