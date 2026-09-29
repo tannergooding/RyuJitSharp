@@ -9,10 +9,12 @@ public sealed partial class CodeGen
 {
     public void genFloatToFloatCast(GenTree treeNode)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Floating casts outside Windows AMD64 are not implemented.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Floating casts outside xarch are not implemented.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(treeNode.Oper is GT_CAST);
         assert(!treeNode.HasOverflowCheck);
         var cast = treeNode.AsCast();
@@ -54,10 +56,12 @@ public sealed partial class CodeGen
 
     public void genIntToFloatCast(GenTree treeNode)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Integral-to-floating casts outside Windows AMD64 are not implemented.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Integral-to-floating casts outside xarch are not implemented.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(treeNode.Oper is GT_CAST);
         assert(!treeNode.HasOverflowCheck);
         var cast = treeNode.AsCast();

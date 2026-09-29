@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "xarchFloatingCastClosure": {
+      "scope": "Whole genFloatToFloatCast and genIntToFloatCast preserve width conversion, merge operands, dependency clearing and unsigned-long correction while restoring non-Windows xarch reachability and retaining non-xarch terminating boundaries.",
+      "validation": "Windows71 Debug/69 Release pass; Linux supported controls68 Debug/66 Release pass. All24 selected old Linux cases fail at the former guards and pass on final source. ARM64 source build passes with explicitly recorded prerequisite overlays, all now committed.",
+      "retirement": "Two complete definitions and headings;186 native lines. Shared declarations remain for independent other-target definitions.",
+      "nativeBefore": "006835ccf5f3b0b74b90aa5fc92dca1e53b7b1fd",
+      "nativeAfter": "15c47e9bfc5f75c3f1c24c46868d39aeab37e373",
+      "evidence": "artifacts/xarch-floating-casts-fd47f2f; artifacts/residual-reconciliation/xarch-floating-casts proposed/combined/applied/verification.",
+      "limits": "Broader historical Linux controls retain three tree-spill failures on their pre-spill-repair baseline; x86 retains14 identical build errors. The proposal's original adjacent-genCkfinite retention note is superseded by the preceding scalar-intrinsic retirement. No x86 execution or generated-code parity claim."
+    },
     "xarchScalarIntrinsicClosure": {
       "scope": "Whole genCkfinite, genIntrinsicBitwiseOp, genIntrinsicRoundOp and genIntrinsic preserve x86 double-lane shuffle/restoration and xarch floating bitwise/rounding dispatch. Existing file-level TARGET_XARCH boundaries remain intact.",
       "validation": "Windows153 Debug/148 Release pass;42 focused Linux cases pass on both immutable sides. Broader Linux runs each retain the same27 separate spill/throw-helper failures. Supported-target selected source is unchanged.",
@@ -1736,7 +1745,7 @@
           "scope": "Whole retained xarch scalar/atomic codegen families.",
           "owner": "4b57b744-36f1-4e6e-8b76-94c1a87d6e02",
           "files": "Scalar/atomic CodeGen partials and focused fixtures; parent owns shared register helpers and both ARM64 register fixtures.",
-          "status": "atomic packet accepted; distinct floating-cast/control family active"
+          "status": "floating-cast packet accepted; refill next distinct scalar/control family after commit"
         },
         {
           "scope": "Retained shared call-result and return lowering after call/argument dispatch closure.",
@@ -2158,7 +2167,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Scalar-intrinsic retirement accepted through native006835cc; do not reapply. Refill the existing HW worker with a distinct retained family. Parent next translates whole genMultiRegStoreToLocal (missing Swift/RISC-V/LoongArch offsets and32-bit debug bounds) and xarch genMultiRegStoreToSIMDLocal; preserve the independent ARM helper. Existing15 Linux failures anchor the old control. LSRA kill sets, B return/storage dispatch and A floating-cast/control family remain active. Preserve14x86 blockers,13Wasm and no publication.",
+    "nextAction": "Floating casts accepted through native15c47e9b; do not reapply. Refill A's distinct scalar/control lane. Parent now implements whole genMultiRegStoreToLocal (native non-Wasm boundary, missing Swift/RISC-V/LoongArch offsets and32-bit debug bounds) and the xarch SIMD-local helper; preserve independent ARM helper and existing Windows unsupported-path rejection. Existing15 Linux failures anchor the old control; add supported SysV SIMD packing cases. HW SIMD and LSRA kill sets continue, B return/storage dispatch remains active. Preserve14x86 blockers,13Wasm and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch floating casts
+
+Floating-width and integer-to-floating casts retain their whole xarch
+algorithms outside Windows AMD64, including unsigned-long correction and
+dependency clearing. Two definitions and headings retire 186 native lines
+in `15c47e9b`; independent other-target definitions and declarations remain.
+
+Windows controls pass 71 Debug/69 Release, and supported Linux controls
+68 Debug/66 Release. All 24 selected old Linux cases fail at the former guards
+and pass after translation. ARM64 compiles with explicitly recorded, now
+committed prerequisite overlays. The three broader Linux spill failures and
+14 x86 build errors remain qualified on those historical snapshots.
+Evidence: `artifacts/xarch-floating-casts-fd47f2f` and retirement records;
+these are not new generated-code parity results.
+
 ## 2026-09-29: Xarch scalar intrinsic closure
 
 Finite checks now include the x86 double-lane shuffle and restoration path;
