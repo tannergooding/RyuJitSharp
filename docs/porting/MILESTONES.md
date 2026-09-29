@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Complete instruction-group saving
+
+`emitSavIG` now retains its ARM barrier reset, optional native-width statistics,
+xarch-only removable-jump marking and conditional backward navigation instead
+of rejecting every non-AMD64 or statistics-enabled configuration. The established
+managed descriptor storage and saved-reference representation is unchanged.
+
+Focused full-analysis checks pass 23 Windows cases and one ARM64 save-contract
+case per configuration, plus one statistics-enabled case per configuration.
+The Release Windows/statistics builds exclude unrelated untracked utility-test
+WIP, not emitter tests. The complete native definition, comment and declaration
+retire 353 lines in `857083f7`, still the sole child of the pinned oracle.
+Group initialization and static statistics reporting remain explicit dependencies;
+no generated ARM64 execution is claimed. Exact source hashes, results and removal
+spans are recorded in `artifacts/residual-reconciliation/emit-sav-ig-pending-20260928.json`
+and `emit-sav-ig-applied-20260928.json`.
+
 ## 2026-09-28: ARM64 folding dependencies and intrinsic-layout retirement
 
 The folding helper's two retained dependencies are now implemented: all twelve

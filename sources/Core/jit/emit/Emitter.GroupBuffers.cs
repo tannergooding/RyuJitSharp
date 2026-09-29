@@ -12,6 +12,17 @@ public partial class Emitter
     private const int SC_IG_BUFFER_NUM_LARGE_DESCS = 50;
 #endif
 
+#if EMITTER_STATS
+    private static nuint emitSizeMethod;
+    private static uint emitCurPrologInsCnt;
+    private static nuint emitCurPrologIGSize;
+    private static uint emitMaxPrologInsCnt;
+    private static nuint emitMaxPrologIGSize;
+    private static uint emitTotalIGptrs;
+    private static uint emitTotalIGicnt;
+    private static nuint emitTotalIGsize;
+#endif
+
     private void emitGenIG(insGroup ig)
     {
 #if !TARGET_AMD64 || EMITTER_STATS
@@ -112,15 +123,16 @@ public partial class Emitter
 
     private insGroup emitSavIG(bool emitAdd)
     {
-#if !TARGET_AMD64 || EMITTER_STATS
-        throw new FatalJitException(CORJIT_SKIPPED, "Instruction-group storage requires AMD64 without emitter allocation statistics.");
-#else
         assert(_compiler is not null);
         assert(emitCurIG is not null);
         assert(emitCurIGfreeBase is not null);
         assert(emitCurIGfreeNext <= emitCurIGfreeEndp);
 
         var ig = emitCurIG;
+#if TARGET_ARMARCH
+        emitLastMemBarrier = null;
+#endif
+
         var sz = emitCurIGfreeNext;
         var alignmentMask = (nuint)(nint.Size - 1);
         var gs = (sz + alignmentMask) & ~alignmentMask;
@@ -130,6 +142,9 @@ public partial class Emitter
             if (emitForceStoreGCState || !VarSetOps.Equal(_compiler, emitPrevGCrefVars, emitInitGCrefVars))
             {
                 ig.igFlags |= InsGroupFlags.GCVars;
+#if EMITTER_STATS
+                emitTotalIGptrs = unchecked(emitTotalIGptrs + 1);
+#endif
                 gs += (nuint)nint.Size;
             }
 
@@ -172,6 +187,27 @@ public partial class Emitter
 
         emitCurCodeOffset = unchecked(emitCurCodeOffset + emitCurIGsize);
         assert((emitCurCodeOffset & (CODE_ALIGN - 1)) == 0);
+
+#if EMITTER_STATS
+        emitTotalIGicnt = unchecked(emitTotalIGicnt + (uint)emitCurIGinsCnt);
+        emitTotalIGsize = unchecked(emitTotalIGsize + sz);
+        emitSizeMethod = unchecked(emitSizeMethod + sz);
+
+        if (emitIGisInProlog(ig))
+        {
+            emitCurPrologInsCnt = unchecked(emitCurPrologInsCnt + (uint)emitCurIGinsCnt);
+            emitCurPrologIGSize = unchecked(emitCurPrologIGSize + sz);
+
+            if (emitCurPrologInsCnt > emitMaxPrologInsCnt)
+            {
+                emitMaxPrologInsCnt = emitCurPrologInsCnt;
+            }
+            if (emitCurPrologIGSize > emitMaxPrologIGSize)
+            {
+                emitMaxPrologIGSize = emitCurPrologIGSize;
+            }
+        }
+#endif
 
         if ((ig.igFlags & InsGroupFlags.Extend) == 0)
         {
@@ -303,21 +339,24 @@ public partial class Emitter
         {
             assert(emitLastInsIG == emitCurIG);
 
+#if TARGET_XARCH
             if (emitLastIns.idIns() == INS_jmp)
             {
                 ig.igFlags |= InsGroupFlags.HasRemovableJump;
             }
+#endif
 
             emitLastIns = emitSavedDescriptor(ig, emitLastIns, sz);
             emitLastInsIG = ig;
+#if EMIT_BACKWARDS_NAVIGATION
             ig.igLastIns = emitLastIns;
+#endif
         }
 
         emitCurIGfreeBase.Clear();
         emitCurIGfreeNext = 0;
 
         return ig;
-#endif
     }
 
     private static T emitSavedDescriptor<T>(insGroup ig, T descriptor, nuint size)

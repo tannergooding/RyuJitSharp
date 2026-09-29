@@ -191,7 +191,11 @@ internal static unsafe class EmitterGroupBufferTests
         Assert.That(group.igStorageSize, Is.EqualTo((nuint)(expectedCapacity + sizeof(uint))));
         Assert.That(group.igData![0].StorageOffset, Is.EqualTo((nuint)prefix));
         Assert.That(group.igData[14].StorageOffset, Is.EqualTo((nuint)((14 * (8 + prefix)) + prefix)));
+#if EMIT_BACKWARDS_NAVIGATION
         Assert.That(group.igLastIns, Is.SameAs(group.igData[^1]));
+#else
+        Assert.That(group.igLastIns, Is.Null);
+#endif
         Assert.That(CodeOffset(emitter), Is.EqualTo(64));
         Assert.That(Buffer(emitter), Is.Empty);
     }
@@ -238,7 +242,11 @@ internal static unsafe class EmitterGroupBufferTests
         Assert.That(DescriptorFactory.LastAlign(emitter), Is.SameAs(thirdAlign));
         Assert.That(DescriptorFactory.LastAlignGroup(emitter), Is.SameAs(secondAlign));
         Assert.That(DescriptorFactory.PendingAlign(emitter), Is.Null);
+#if EMIT_BACKWARDS_NAVIGATION
         Assert.That(secondGroup.igLastIns, Is.SameAs(thirdJump));
+#else
+        Assert.That(secondGroup.igLastIns, Is.Null);
+#endif
         Assert.That(LastInstruction(emitter), Is.SameAs(thirdJump));
         Assert.That(LastInstructionGroup(emitter), Is.SameAs(secondGroup));
         Assert.That(thirdJump.StorageGroup, Is.SameAs(secondGroup));
