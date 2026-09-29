@@ -17,7 +17,8 @@ public sealed partial class Lowering
         assert(intrinsicId is NI_Vector_op_Equality or NI_Vector_op_Inequality);
         assert(varTypeIsSimd(simdType));
         assert(varTypeIsArithmetic(baseType));
-        assert(size != 0 && node.Type is TYP_INT);
+        assert(size != 0);
+        assert(node.Type is TYP_INT);
         assert(cmpOp is GT_EQ or GT_NE);
 
         var first = node.GetOp(1);
@@ -40,11 +41,13 @@ public sealed partial class Lowering
             var skipReplacement = false;
             if (second.IsVectorAllBitsSet)
             {
+                assert(second.IsVectorAllBitsSet);
                 condition = new GenCondition(cmpOp is GT_EQ ? GenCondition.C : GenCondition.NC);
                 skipReplacement = true;
             }
             else if (first is GenTreeHWIntrinsic operation && operation.Operands.Length == 2)
             {
+                assert(second.IsVectorZero);
                 var nestedFirst = operation.GetOp(1);
                 var nestedSecond = operation.GetOp(2);
                 assert(!nestedFirst.IsContained);
@@ -78,7 +81,15 @@ public sealed partial class Lowering
                 node.SetOp(2, second);
             }
 
-            LowerHWIntrinsicCC(node, size is 32 ? NI_AVX_PTEST : NI_X86Base_PTEST, condition);
+            if (size is 32)
+            {
+                LowerHWIntrinsicCC(node, NI_AVX_PTEST, condition);
+            }
+            else
+            {
+                assert(size is 16);
+                LowerHWIntrinsicCC(node, NI_X86Base_PTEST, condition);
+            }
             return LowerNode(node);
         }
 
@@ -108,6 +119,10 @@ public sealed partial class Lowering
             {
                 comparisonType = baseType;
                 extractType = TYP_UBYTE;
+                if (size is not 32)
+                {
+                    assert(size is 16);
+                }
                 comparison = size is 32 ? NI_AVX2_CompareEqual : NI_X86Base_CompareEqual;
                 extract = size is 32 ? NI_AVX2_MoveMask : NI_X86Base_MoveMask;
                 expectedMask = size is 32 ? -1 : 0xFFFF;
@@ -119,6 +134,10 @@ public sealed partial class Lowering
             {
                 comparisonType = baseType;
                 extractType = baseType;
+                if (size is not 32)
+                {
+                    assert(size is 16);
+                }
                 comparison = size is 32 ? NI_AVX_CompareEqual : NI_X86Base_CompareEqual;
                 extract = size is 32 ? NI_AVX_MoveMask : NI_X86Base_MoveMask;
                 expectedMask = baseType is TYP_FLOAT

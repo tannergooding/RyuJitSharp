@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch comparison, selection and construction lowering
+
+Four whole intrinsic helpers preserve comparison, conditional selection,
+ternary logic and vector construction. Native diagnostics are restored, and
+the conditional-select Debug assertion no longer reports an AVX dependency.
+Normal downstream AVX lowering still reports its legitimate dependency.
+Four definitions and one xarch-only declaration retire 2,018 lines in
+`81f0e045`; shared declarations and separate element/containment helpers remain.
+
+Windows controls pass 125 Debug/124 Release; Linux controls pass 125 Debug.
+The identical old fixture fails only the new ISA-notification regression.
+X86 retains 14 baseline errors; no x86 execution or generated-code parity is
+claimed. Evidence: `artifacts/xarch-intrinsic-helpers-134f10e` and the proposal
+and retirement receipts under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Shared call GC capture and return reporting
 
 The whole shared call routine now preserves non-AMD64 control flow: fixed-register

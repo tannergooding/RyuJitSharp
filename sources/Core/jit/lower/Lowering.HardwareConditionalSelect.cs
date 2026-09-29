@@ -64,7 +64,7 @@ public sealed partial class Lowering
                 if (varTypeIsFloating(simdBaseType))
                 {
 #if DEBUG
-                    assert(compiler.compSupportsHWIntrinsic(InstructionSet_AVX));
+                    assert(compiler.compIsaSupportedDebugOnly(InstructionSet_AVX));
 #endif
                     blendId = NI_AVX_BlendVariable;
                 }

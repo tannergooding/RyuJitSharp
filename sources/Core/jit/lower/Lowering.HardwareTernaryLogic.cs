@@ -57,12 +57,14 @@ public sealed partial class Lowering
                         selectTrue = op1;
                         if (info.Oper2Use is TernaryLogicUseFlags.B)
                         {
+                            assert(info.Oper3Use is TernaryLogicUseFlags.C);
                             selectFalse = op2;
                             condition = op3;
                         }
                         else
                         {
                             assert(info.Oper2Use is TernaryLogicUseFlags.C);
+                            assert(info.Oper3Use is TernaryLogicUseFlags.B);
                             selectFalse = op3;
                             condition = op2;
                         }
@@ -72,12 +74,14 @@ public sealed partial class Lowering
                         selectTrue = op2;
                         if (info.Oper2Use is TernaryLogicUseFlags.A)
                         {
+                            assert(info.Oper3Use is TernaryLogicUseFlags.C);
                             selectFalse = op1;
                             condition = op3;
                         }
                         else
                         {
                             assert(info.Oper2Use is TernaryLogicUseFlags.C);
+                            assert(info.Oper3Use is TernaryLogicUseFlags.A);
                             selectFalse = op3;
                             condition = op1;
                         }
@@ -88,12 +92,14 @@ public sealed partial class Lowering
                         selectTrue = op3;
                         if (info.Oper2Use is TernaryLogicUseFlags.A)
                         {
+                            assert(info.Oper3Use is TernaryLogicUseFlags.B);
                             selectFalse = op1;
                             condition = op2;
                         }
                         else
                         {
                             assert(info.Oper2Use is TernaryLogicUseFlags.B);
+                            assert(info.Oper3Use is TernaryLogicUseFlags.A);
                             selectFalse = op2;
                             condition = op1;
                         }
@@ -208,6 +214,7 @@ public sealed partial class Lowering
                     op1 = node.GetOp(1);
                     op2 = node.GetOp(2);
                     op3 = node.GetOp(3);
+                    assert(ReferenceEquals(op4, node.GetOp(4)));
                     GenTree? replacement = null;
 
                     switch (useFlags)
@@ -217,10 +224,15 @@ public sealed partial class Lowering
                             op1.IsUnusedValue = true;
                             op2.IsUnusedValue = true;
                             op3.IsUnusedValue = true;
-                            replacement = control is 0
-                                ? CompilerInstance.gtNewZeroConNode(simdType)
-                                : CompilerInstance.gtNewAllBitsSetConNode(simdType);
-                            assert(control is 0 or 0xFF);
+                            if (control is 0)
+                            {
+                                replacement = CompilerInstance.gtNewZeroConNode(simdType);
+                            }
+                            else
+                            {
+                                assert(control is 0xFF);
+                                replacement = CompilerInstance.gtNewAllBitsSetConNode(simdType);
+                            }
                             BlockRange().InsertBefore(node, replacement);
                             break;
                         }

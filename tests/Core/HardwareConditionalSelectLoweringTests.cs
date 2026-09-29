@@ -3,6 +3,9 @@
 #if FEATURE_HW_INTRINSICS && TARGET_XARCH
 using System;
 using System.Runtime.CompilerServices;
+#if DEBUG
+using System.Runtime.InteropServices;
+#endif
 using NUnit.Framework;
 using static RyuJitSharp.CORINFO_InstructionSet;
 using static RyuJitSharp.genTreeOps;
@@ -141,6 +144,64 @@ internal static unsafe class HardwareConditionalSelectLoweringTests
         }, supportsAvx512: false);
     }
 
+#if DEBUG
+    [Test]
+    public static void Vector256FloatingBlendDoesNotReportAvxFromDebugAssertion()
+    {
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.Base.notifyInstructionSetUsage =
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool, byte>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte, byte>)&RecordIsaUsage;
+        var context = new IsaContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
+
+        WithCompiler(compiler => {
+            compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_AVX);
+            compiler.lvaTable[0].Type = TYP_SIMD32;
+            compiler.lvaTable[1].Type = TYP_SIMD32;
+            var condition = new GenTreeVecCon(TYP_SIMD32);
+            condition.SimdVal.i32[0] = -1;
+            var whenTrue = compiler.gtNewLclvNode(TYP_SIMD32, 0);
+            var whenFalse = compiler.gtNewLclvNode(TYP_SIMD32, 1);
+            var node = new GenTreeHWIntrinsic(TYP_SIMD32, NI_Vector_ConditionalSelect,
+                TYP_FLOAT, 32, condition, whenTrue, whenFalse);
+            var consumer = new GenTreeUnOp(GT_NEG, TYP_SIMD32, node);
+            var block = NewBlock(condition, whenTrue, whenFalse, node, consumer);
+
+            _ = LowerHWIntrinsicCndSel(NewLowering(compiler, block), node);
+
+            Assert.That(consumer.Op1.AsHWIntrinsic().HWIntrinsicId, Is.EqualTo(NI_AVX_BlendVariable));
+        }, supportsAvx512: false, jitInfo: &context.JitInfo);
+
+        Assert.That(context.AvxNotifications, Is.EqualTo(1));
+        Assert.That(context.AssertionAvxNotifications, Is.Zero);
+    }
+
+    private struct IsaContext
+    {
+        public ICorJitInfo JitInfo;
+        public int AvxNotifications;
+        public int AssertionAvxNotifications;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte RecordIsaUsage(ICorJitInfo* self, CORINFO_InstructionSet isa,
+        byte supported, byte preserveNegativeDependency)
+    {
+        if (isa is InstructionSet_AVX)
+        {
+            var context = (IsaContext*)self;
+            context->AvxNotifications++;
+            // The emitted blend reports AVX later; the debug assertion must not report it.
+            if (Environment.StackTrace.Contains(nameof(Compiler.compSupportsHWIntrinsic),
+                StringComparison.Ordinal))
+            {
+                context->AssertionAvxNotifications++;
+            }
+        }
+        return supported;
+    }
+#endif
+
     private static GenTreeHWIntrinsic ConditionalSelect(GenTree condition, GenTree whenTrue, GenTree whenFalse)
         => new(TYP_SIMD16, NI_Vector_ConditionalSelect, TYP_INT, 16, condition, whenTrue, whenFalse);
 
@@ -171,7 +232,8 @@ internal static unsafe class HardwareConditionalSelectLoweringTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerHWIntrinsicCndSel")]
     private static extern GenTree? LowerHWIntrinsicCndSel(Lowering lowering, GenTreeHWIntrinsic node);
 
-    private static void WithCompiler(Action<Compiler> action, bool supportsAvx512 = true)
+    private static void WithCompiler(Action<Compiler> action, bool supportsAvx512 = true,
+        ICorJitInfo* jitInfo = null)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -181,6 +243,7 @@ internal static unsafe class HardwareConditionalSelectLoweringTests
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(true);
+        compiler.info.compCompHnd = jitInfo;
         if (supportsAvx512)
         {
             compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_AVX512);
