@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sharedLsraReturnAndWriteBarrier": {
+      "scope": "Whole BuildReturn, getKillSetForStoreInd and BuildGCWriteBarrier preserve 32-bit long returns, target return masks, x86 optimized barrier constraints and native Wasm empty masks.",
+      "validation": "Windows53 Debug/52 Release and Linux-target23 Debug/23 Release pass; ARM64 source build passes. The corrected single-register struct-return fixture also passes with unchanged a12cc63 production source.",
+      "retirement": "Three definitions with headings and all three declarations;251 native lines.",
+      "nativeBefore": "c966d60ef0f16fd7a26f8bce4c20cf5468877732",
+      "nativeAfter": "3240bd59c19784b8329be8cf55fd854f361f3f3d",
+      "fixtureCorrection": "The earlier Linux failure used TYP_STRUCT for a return normalized to TYP_LONG before LSRA. Correct the node type without weakening the source-count or register assertions; this was a fixture defect, not a production return-algorithm defect.",
+      "evidence": "artifacts/lsra-shared-return-writebarrier-ready-20260929-a12cc63 and preserved earlier runs; artifacts/residual-reconciliation/lsra-shared-return-writebarrier proposal and xarch-lsra-return combined/applied/verification.",
+      "limits": "X86 retains14 existing build errors, so its new long-return and optimized-barrier cases did not execute. ARM/LoongArch64/RISC-V builds remain independently blocked; preserved Wasm WIP was not used. No generated-code parity claim."
+    },
     "sharedRegisterSpills": {
       "scope": "Whole RegSet.rsSpillTree, spillReg, reloadReg and genSpillLocal retain native fixed-register/non-Wasm boundaries, descriptor ownership, typed memory operations and write-through behavior.",
       "validation": "Windows83 Debug/81 Release and ARM6463 Debug/63 Release pass. All nine identical old ARM64 cases fail at the intended spill guards; both snapshots contain the same explicit xarch-boundary prerequisite repair. Linux56 focused controls pass on the unchanged broader-run binary; three old Linux spill cases fail at the original guard.",
@@ -1717,7 +1727,7 @@
           "scope": "Whole retained xarch scalar/atomic codegen families.",
           "owner": "4b57b744-36f1-4e6e-8b76-94c1a87d6e02",
           "files": "Scalar/atomic CodeGen partials and focused fixtures; parent owns shared register helpers and both ARM64 register fixtures.",
-          "status": "four-function atomic packet accepted; refill after commit"
+          "status": "atomic packet accepted; distinct floating-cast/control family active"
         },
         {
           "scope": "Retained shared call-result and return lowering after call/argument dispatch closure.",
@@ -1729,7 +1739,7 @@
           "scope": "Whole shared return and adjacent memory/write-barrier builders, including the existing Linux return-fixture discrepancy.",
           "owner": "bf8933b0-1d43-49d4-9d3e-91c4322f5215",
           "files": "LSRA partials and focused fixtures.",
-          "status": "local stores accepted; return family active aftera12cc63"
+          "status": "three-function return/write-barrier packet accepted; refill after commit"
         },
         {
           "scope": "Whole load/store instruction selectors required by parent ARM64 reload controls.",
@@ -2139,7 +2149,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Shared spills and B467 target-boundary repair are validated; native retirement is complete through c966d60e. Do not reapply. Integrate ready lsra-shared-return-writebarrier-proposed-20260929.json and xarch-scalar-intrinsics-proposed-20260929.json, reviewing whole source and actual enclosing target boundaries. Then continue the retained genMultiRegStoreToLocal family behind15 broader Linux failures. B continues return/storage dispatch and A its distinct scalar/control family. Preserve14x86 blockers,13Wasm and no publication.",
+    "nextAction": "Shared spills/B467 and shared LSRA return/write-barrier retirement are accepted through native3240bd59; do not reapply. Scalar-intrinsic packet review/evidence verification is complete, but its unapplied manifest still uses c966d60e: reprepare against3240bd59 before retirement and commit. Refill the existing LSRA worker, then continue retained genMultiRegStoreToLocal and its SIMD helper behind15 broader Linux failures. B continues return/storage dispatch and A distinct scalar/control work. Preserve14x86 blockers,13Wasm and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Shared LSRA return and write-barrier builders
+
+Return and write-barrier reference building preserves 32-bit long returns,
+target return registers, x86 optimized-barrier constraints and native Wasm
+empty masks. Three whole definitions and their declarations retire 251 lines
+in `3240bd59`.
+
+Windows controls pass 53 Debug/52 Release, Linux-target controls 23 in each
+configuration, and ARM64 source compilation succeeds. The earlier Linux
+struct-return failure was a fixture type mismatch: correcting the normalized
+return type also passes on unchanged production source. X86 retains 14 existing
+build errors; other blocked targets and unexecuted branches remain qualified.
+Evidence: `artifacts/lsra-shared-return-writebarrier-ready-20260929-a12cc63`
+and the `xarch-lsra-return` retirement records. No generated-code parity claim.
+
 ## 2026-09-29: Shared register spilling
 
 Tree and local spilling now preserve the native fixed-register/non-Wasm

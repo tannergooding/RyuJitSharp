@@ -10,7 +10,6 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp;
 
-#if TARGET_AMD64 || TARGET_ARM64
 public sealed partial class LinearScan
 {
     private regMaskTP getKillSetForStoreInd(GenTreeStoreInd tree)
@@ -37,6 +36,7 @@ public sealed partial class LinearScan
         return _compiler.compHelperCallKillSet(helper);
     }
 
+#if TARGET_AMD64 || TARGET_ARM64
 #if TARGET_AMD64
     private regMaskTP getKillSetForShiftRotate(GenTreeOp shiftNode)
     {
@@ -264,5 +264,5 @@ public sealed partial class LinearScan
         return new regMaskTP(killMask.Lower & ~(intRegisters | floatRegisters | maskRegisters));
 #endif
     }
-}
 #endif
+}

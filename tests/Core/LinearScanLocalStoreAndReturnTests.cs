@@ -364,6 +364,28 @@ internal static unsafe class LinearScanLocalStoreAndReturnTests
         });
     }
 
+#if TARGET_X86
+    [Test]
+    public static void ContainedLongReturnConsumesBothAbiRegisters()
+    {
+        WithAllocator((compiler, allocator) => {
+            InitializeReturnDescriptor(compiler, TYP_LONG);
+            var low = compiler.gtNewIconNode(TYP_INT, 17);
+            var high = compiler.gtNewIconNode(TYP_INT, 23);
+            ReferenceBuildLocation(allocator) = 2;
+            var lowDef = BuildDef(allocator, low, SRBM_NONE, 0);
+            var highDef = BuildDef(allocator, high, SRBM_NONE, 0);
+            var pair = new GenTreeOp(GT_LONG, TYP_LONG, low, high) { IsContained = true };
+            var ret = new GenTreeUnOp(GT_RETURN, TYP_LONG, pair);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildReturn(allocator, ret), Is.EqualTo(2));
+            Assert.That(lowDef.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_EAX));
+            Assert.That(highDef.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_EDX));
+        });
+    }
+#endif
+
     [Test]
     public static void SwiftErrorReturnUsesItsSecondOperandAsTheReturnValue()
     {
@@ -414,7 +436,8 @@ internal static unsafe class LinearScanLocalStoreAndReturnTests
             var source = new GenTreeLclVar(TYP_STRUCT, 0);
             ReferenceBuildLocation(allocator) = 2;
             var definition = BuildDef(allocator, source, SRBM_NONE, 0);
-            var ret = new GenTreeUnOp(GT_RETURN, TYP_STRUCT, source);
+            // Single-register struct returns are normalized to the register type before LSRA.
+            var ret = new GenTreeUnOp(GT_RETURN, TYP_LONG, source);
             ReferenceBuildLocation(allocator) = 4;
 
             Assert.That(BuildReturn(allocator, ret), Is.EqualTo(1));

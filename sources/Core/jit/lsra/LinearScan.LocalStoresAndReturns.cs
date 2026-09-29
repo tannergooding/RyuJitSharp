@@ -203,10 +203,30 @@ public sealed partial class LinearScan
 
     private int buildReturn(GenTree tree)
     {
-#if TARGET_AMD64 || TARGET_ARM64
         var value = tree.Oper is GT_SWIFT_ERROR_RET
             ? tree.AsOp().Op2
             : tree.AsUnOp().Op1;
+
+#if !TARGET_64BIT
+        if (tree.Type is TYP_LONG)
+        {
+            assert(value.Oper is GT_LONG && value.IsContained);
+            var pair = value.AsOp();
+#if TARGET_X86
+            _ = buildUse(pair.Op1, SRBM_EAX);
+            _ = buildUse(pair.Op2, SRBM_EDX);
+#elif TARGET_ARM
+            _ = buildUse(pair.Op1, genSingleTypeRegMask(REG_R0));
+            _ = buildUse(pair.Op2, genSingleTypeRegMask(REG_R1));
+#elif TARGET_WASM
+            _ = buildUse(pair.Op1, SRBM_NONE);
+            _ = buildUse(pair.Op2, SRBM_NONE);
+#else
+            throw new FatalJitException("The 32-bit long return-register contract is not available on this target.");
+#endif
+            return 2;
+        }
+#endif
 
         if ((tree.Type is not TYP_VOID) && !value.IsContained)
         {
@@ -286,6 +306,35 @@ public sealed partial class LinearScan
             else
 #endif
             {
+#if TARGET_X86
+                var candidates = tree.Type switch
+                {
+                    TYP_FLOAT or TYP_DOUBLE => SRBM_NONE,
+                    TYP_LONG => SRBM_EAX | SRBM_EDX,
+                    _ => SRBM_EAX,
+                };
+#elif TARGET_ARM
+                var candidates = tree.Type switch
+                {
+                    TYP_FLOAT or TYP_DOUBLE => genSingleTypeRegMask(REG_F0),
+                    TYP_LONG => genSingleTypeRegMask(REG_R0) | genSingleTypeRegMask(REG_R1),
+                    _ => genSingleTypeRegMask(REG_R0),
+                };
+#elif TARGET_LOONGARCH64
+                var candidates = tree.Type switch
+                {
+                    TYP_FLOAT or TYP_DOUBLE => genSingleTypeRegMask(REG_F0),
+                    _ => genSingleTypeRegMask(REG_A0),
+                };
+#elif TARGET_RISCV64
+                var candidates = tree.Type switch
+                {
+                    TYP_FLOAT or TYP_DOUBLE => genSingleTypeRegMask(REG_FA0),
+                    _ => genSingleTypeRegMask(REG_A0),
+                };
+#elif TARGET_WASM
+                var candidates = SRBM_NONE;
+#elif TARGET_AMD64 || TARGET_ARM64
                 var candidates = tree.Type switch
                 {
                     TYP_FLOAT => SRBM_FLOATRET,
@@ -293,6 +342,9 @@ public sealed partial class LinearScan
                     TYP_LONG => SRBM_LNGRET,
                     _ => SRBM_INTRET,
                 };
+#else
+                throw new FatalJitException("The return-register contract is not available on this target.");
+#endif
                 _ = buildUse(value, candidates);
                 return 1;
             }
@@ -325,9 +377,5 @@ public sealed partial class LinearScan
         }
 
         return 0;
-#else
-        NYI("LinearScan.buildReturn outside AMD64");
-        throw new FatalJitException("LinearScan.buildReturn outside AMD64.");
-#endif
     }
 }

@@ -69,6 +69,30 @@ internal static unsafe class LinearScanCallBuildingTests
             Assert.That(addressDef.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_EAX));
         });
     }
+
+#if NOGC_WRITE_BARRIERS
+    [Test]
+    public static void OptimizedWriteBarrierUsesEdxAndItsSourceRegisterSet()
+    {
+        WithAllocator((compiler, allocator) => {
+            var address = compiler.gtNewIconNode(TYP_BYREF, 0x1000);
+            var source = compiler.gtNewIconNode(TYP_REF, 0x2000);
+            ReferenceBuildLocation(allocator) = 2;
+            var addressDef = BuildDef(allocator, address, SRBM_NONE, 0);
+            var sourceDef = BuildDef(allocator, source, SRBM_NONE, 0);
+            var store = new GenTreeStoreInd(TYP_REF, address, source);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildGCWriteBarrier(allocator, store), Is.EqualTo(2));
+            Assert.That(addressDef.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_EDX));
+            Assert.That(sourceDef.nextRefPosition?.registerAssignment,
+                Is.EqualTo(SRBM_EAX | SRBM_ECX | SRBM_EBX | SRBM_ESI | SRBM_EDI));
+            Assert.That(allocator.refPositions.Exists(reference =>
+                reference.refType is RefType.RefTypeKill && reference.nodeLocation == 5 &&
+                reference.getKilledRegisters() == new regMaskTP(SRBM_EDX)), Is.True);
+        });
+    }
+#endif
 #else
     [TestCase(TYP_VOID, SRBM_NONE)]
     [TestCase(TYP_INT, SRBM_INTRET)]

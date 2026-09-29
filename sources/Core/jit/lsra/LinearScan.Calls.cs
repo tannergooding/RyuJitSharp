@@ -312,19 +312,48 @@ public sealed partial class LinearScan
 
     private int buildGCWriteBarrier(GenTree tree)
     {
-#if TARGET_AMD64 || TARGET_ARM64
         var addr = tree.AsStoreInd().Addr;
         var src = tree.AsStoreInd().Data;
         assert(!addr.IsContained && !src.IsContained);
-        _ = buildUse(addr, SRBM_WRITE_BARRIER_DST);
-        _ = buildUse(src, SRBM_WRITE_BARRIER_SRC);
+#if TARGET_X86
+        var addrCandidates = SRBM_ECX;
+        var srcCandidates = SRBM_EDX;
+#elif TARGET_ARM
+        var addrCandidates = genSingleTypeRegMask(REG_R0);
+        var srcCandidates = genSingleTypeRegMask(REG_R1);
+#elif TARGET_LOONGARCH64
+        var addrCandidates = genSingleTypeRegMask(REG_T6);
+        var srcCandidates = genSingleTypeRegMask(REG_T7);
+#elif TARGET_RISCV64
+        var addrCandidates = genSingleTypeRegMask(REG_T3);
+        var srcCandidates = genSingleTypeRegMask(REG_T4);
+#elif TARGET_WASM
+        var addrCandidates = SRBM_NONE;
+        var srcCandidates = SRBM_NONE;
+#elif TARGET_AMD64 || TARGET_ARM64
+        var addrCandidates = SRBM_WRITE_BARRIER_DST;
+        var srcCandidates = SRBM_WRITE_BARRIER_SRC;
+#else
+        throw new FatalJitException("The write-barrier register contract is not available on this target.");
+#endif
+
+#if TARGET_X86 && NOGC_WRITE_BARRIERS
+        var codeGen = _compiler.codeGen
+            ?? throw new FatalJitException("Optimized write barriers require initialized CodeGen.");
+        var form = codeGen.GCInfo.gcIsWriteBarrierCandidate(tree.AsStoreInd());
+        if (codeGen.genUseOptimizedWriteBarriers(form))
+        {
+            addrCandidates = SRBM_EDX;
+            srcCandidates = SRBM_EAX | SRBM_ECX | SRBM_EBX | SRBM_ESI | SRBM_EDI;
+        }
+#endif
+
+        _ = buildUse(addr, addrCandidates);
+        _ = buildUse(src, srcCandidates);
 
         var killMask = getKillSetForStoreInd(tree.AsStoreInd());
         _ = buildKillPositionsForNode(tree, _referenceBuildLocation + 1, killMask);
         return 2;
-#else
-        throw new FatalJitException("LSRA write-barrier reference building is not implemented outside AMD64.");
-#endif
     }
 
     private void markSwiftErrorBusyForCall(GenTreeCall call)
