@@ -97,11 +97,21 @@ internal static unsafe class Arm64EmitterLabelTests
         LastInstruction(emitter) = descriptor;
         LastInstructionGroup(emitter) = emitter.emitCurIG;
 
+#if DEBUG
         var exception = Assert.Throws<FatalJitException>(() =>
             emitter.emitAddLabel(VarSetOps.MakeEmpty(compiler), new((regMask)1), default, previous));
 
         Assert.That(exception, Has.Message.EqualTo(
-            $"Zero-operand instruction recording outside xarch is not ported ({expected})."));
+            "Instruction sanity checking outside AMD64 is not ported."));
+        Assert.That(LastInstruction(emitter)?.idIns(), Is.EqualTo(expected));
+#else
+        var oldGroup = emitter.emitCurIG ?? throw new AssertionException("No current instruction group.");
+        var label = emitter.emitAddLabel(VarSetOps.MakeEmpty(compiler), new((regMask)1), default, previous);
+        Assert.That(label, Is.Not.SameAs(oldGroup));
+        Assert.That(oldGroup.igData, Has.Length.EqualTo(1));
+        Assert.That(oldGroup.igData![0].idIns(), Is.EqualTo(expected));
+        Assert.That(oldGroup.igSize, Is.EqualTo(4));
+#endif
     }
 
     private static (Compiler Compiler, LabelEmitter Emitter) CreateEmitter()

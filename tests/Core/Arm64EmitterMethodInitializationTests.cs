@@ -47,14 +47,14 @@ internal static unsafe class Arm64EmitterMethodInitializationTests
     }
 
     [Test]
-    public static void AllocatingDescriptorReachesTheUnportedArm64OperandSizeDependency()
+    public static void AllocatingDescriptorRecordsOperandSizeAndInstructionCount()
     {
         var emitter = CreateEmitter();
         Begin(emitter, false);
 
-        var error = Assert.Throws<FatalJitException>(() => emitter.AllocateBasic());
-        Assert.That(error!.Message, Does.Contain("Instruction operand-size fields outside AMD64"));
-        Assert.That(InstructionsInGroup(emitter), Is.Zero);
+        var descriptor = emitter.AllocateBasic();
+        Assert.That(descriptor.idOpSize(), Is.EqualTo(emitAttr.EA_4BYTE));
+        Assert.That(InstructionsInGroup(emitter), Is.EqualTo(1));
     }
 
     private static TestEmitter CreateEmitter()

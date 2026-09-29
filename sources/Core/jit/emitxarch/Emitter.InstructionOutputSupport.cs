@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
+#if TARGET_XARCH
     internal static nint emitGetInsSC(instrDesc id)
     {
         return id.idIsLargeCns() ? ((instrDescCns)id).idcCnsVal : id.idSmallCns();
@@ -59,7 +59,11 @@ public partial class Emitter
         assert(!id.idIsLargeDsp());
         assert(!id.idIsLargeCns());
         var cns = emitGetInsCns(id);
+#if TARGET_X86
+        assert(unchecked((int)cns) == cns);
+#else
         assert(unchecked((uint)cns) == unchecked((nuint)cns));
+#endif
 
         return unchecked((uint)cns);
     }

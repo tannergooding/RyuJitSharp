@@ -12,8 +12,8 @@ public partial class Emitter
 {
     public unsafe nuint emitOutputInstr(insGroup ig, instrDesc id, byte** dp)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Instruction output requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Instruction output requires xarch.");
 #else
         assert(_compiler is not null);
         assert(emitCurIG is not null);
@@ -80,12 +80,14 @@ public partial class Emitter
                 }
                 assert(id.idGCref() == GCT_NONE);
                 code = insCodeMR(ins);
+#if TARGET_AMD64
                 code = AddX86PrefixIfNeeded(id, code, EA_4BYTE);
                 if ((ins is INS_cdq or INS_cwde) && TakesRexWPrefix(id))
                 {
                     code = AddRexWPrefix(id, code);
                 }
                 dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, ref code);
+#endif
                 if ((code & 0xFF000000) != 0)
                 {
                     dst += emitOutputWord(dst, (long)(code >> 16));
@@ -125,12 +127,14 @@ public partial class Emitter
                     assert(id.idIsBound());
                     dst = emitOutputLJ(ig, dst, id);
                 }
+#if TARGET_AMD64
                 else if (jmp.idjIsAfterCallBeforeEpilog)
                 {
                     assert(id.idCodeSize() == 1);
                     dst = emitOutputNOP(dst, 1);
                     convertedJmpToNop = true;
                 }
+#endif
                 else
                 {
                     assert(jmp.idjIsRemovableJmpCandidate);
@@ -181,16 +185,24 @@ public partial class Emitter
                     if (id.idIsDspReloc())
                     {
                         dst += emitOutputWord(dst, (long)(code | 0x0500));
+#if TARGET_AMD64
                         dst += emitOutputLong(dst, 0);
+#else
+                        dst += emitOutputLong(dst, (nint)addr);
+#endif
                         emitRecordRelocation(dst - sizeof(int), addr, RELOC_DISP32);
                     }
                     else
                     {
+#if TARGET_X86
+                        dst += emitOutputWord(dst, (long)(code | 0x0500));
+#else
                         noway_assert(!_compiler.opts.compReloc);
                         noway_assert(codeGen.genAddrRelocTypeHint((nuint)addr) != CorInfoReloc.RELATIVE32);
                         noway_assert(unchecked((int)(nint)addr) == (nint)addr);
                         dst += emitOutputWord(dst, (long)(code | 0x0400));
                         dst += emitOutputByte(dst, 0x25);
+#endif
                         dst += emitOutputLong(dst, unchecked((int)(nint)addr));
                     }
                     goto DONE_CALL;
@@ -215,8 +227,12 @@ public partial class Emitter
                         dst += emitOutputByte(dst, (long)callCode);
                     }
                 }
+#if TARGET_AMD64
                 assert(id.idIsDspReloc());
                 dst += emitOutputLong(dst, 0);
+#else
+                dst += emitOutputLong(dst, addr - (dst + sizeof(int)));
+#endif
                 if (id.idIsDspReloc())
                 {
                     emitRecordRelocation(dst - sizeof(int), addr, CorInfoReloc.RELATIVE32);
@@ -369,12 +385,14 @@ public partial class Emitter
                             code |= 1;
                             break;
                         }
+#if TARGET_AMD64
                         case EA_8BYTE:
                         {
                             code = AddRexWPrefix(id, code);
                             code |= 1;
                             break;
                         }
+#endif
                         default:
                         {
                             throw new FatalJitException("Unexpected APX immediate operand size.");
@@ -402,8 +420,10 @@ public partial class Emitter
                                 dst += emitOutputWord(dst, val);
                                 break;
                             }
-                            case EA_4BYTE:
+#if TARGET_AMD64
                             case EA_8BYTE:
+#endif
+                            case EA_4BYTE:
                             {
                                 dst += emitOutputLong(dst, val);
                                 break;
@@ -703,7 +723,13 @@ public partial class Emitter
                 assert(ins != INS_pop_hide);
                 if (ins == INS_pop)
                 {
+#if !FEATURE_FIXED_OUT_ARGS
+                    emitCurStackLvl -= sizeof(int);
+#endif
                     dst = emitOutputSV(dst, id, insCodeMR(ins), null);
+#if !FEATURE_FIXED_OUT_ARGS
+                    emitCurStackLvl += sizeof(int);
+#endif
                     break;
                 }
                 dst = emitCodeWithInstructionSize(dst, emitOutputSV(dst, id, insCodeMR(ins), null), &callInstrSize);
@@ -1219,7 +1245,49 @@ public partial class Emitter
 #endif
 
     DONE_OUTPUT:
+#if TARGET_AMD64
         assert((ins == INS_jmp && id.idIns() == INS_nop) || sz == emitSizeOfInsDsc(id));
+#else
+        assert(sz == emitSizeOfInsDsc(id));
+#endif
+#if !FEATURE_FIXED_OUT_ARGS
+        var updateStackLevel = !emitIGisInProlog(ig) && !emitIGisInEpilog(ig);
+        updateStackLevel = updateStackLevel && !emitIGisInFuncletProlog(ig) && !emitIGisInFuncletEpilog(ig);
+        if (updateStackLevel)
+        {
+            switch (ins)
+            {
+                case INS_push:
+                {
+                    emitStackPush(dst, id.idGCref());
+                    break;
+                }
+                case INS_pop:
+                {
+                    emitStackPop(dst, false, 0);
+                    break;
+                }
+                case INS_sub:
+                {
+                    if (id.idInsFmt() == IF_RRW_CNS && id.idReg1() == REG_ESP)
+                    {
+                        assert(unchecked((uint)emitGetInsSC(id)) < uint.MaxValue);
+                        emitStackPushN(dst, unchecked((uint)(emitGetInsSC(id) / TARGET_POINTER_SIZE)));
+                    }
+                    break;
+                }
+                case INS_add:
+                {
+                    if (id.idInsFmt() == IF_RRW_CNS && id.idReg1() == REG_ESP)
+                    {
+                        assert(unchecked((uint)emitGetInsSC(id)) < uint.MaxValue);
+                        emitStackPop(dst, false, 0, unchecked((uint)(emitGetInsSC(id) / TARGET_POINTER_SIZE)));
+                    }
+                    break;
+                }
+            }
+        }
+#endif
         assert(emitCurStackLvl >= 0);
         assert(*dp != dst || emitInstHasNoCode(id));
 #if DEBUG
@@ -1229,6 +1297,7 @@ public partial class Emitter
 #endif
         if (display && (!emitJmpInstHasNoCode(id) || convertedJmpToNop))
         {
+#if TARGET_AMD64
             if (convertedJmpToNop)
             {
                 id.idIns(INS_nop);
@@ -1244,6 +1313,7 @@ public partial class Emitter
                 }
             }
             else
+#endif
             {
                 emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (nuint)(dst - *dp), ig);
             }

@@ -12,6 +12,9 @@ public partial class Emitter
 {
     public unsafe byte* emitOutputR(byte* dst, instrDesc id)
     {
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Register output requires xarch.");
+#else
         var ins = id.idIns();
         var reg = id.idReg1();
         var size = id.idOpSize();
@@ -240,10 +243,14 @@ public partial class Emitter
         }
 
         return dst;
+#endif
     }
 
     public unsafe byte* emitOutputRR(byte* dst, instrDesc id)
     {
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Register-pair output requires xarch.");
+#else
         var ins = id.idIns();
         var reg1 = id.idReg1();
         var reg2 = id.idReg2();
@@ -530,12 +537,13 @@ public partial class Emitter
             }
         }
         return dst;
+#endif
     }
 
     public unsafe byte* emitOutputRRR(byte* dst, instrDesc id)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Three-register output requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Three-register output requires xarch.");
 #else
         var ins = id.idIns();
         assert(IsSimdVexOrEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
@@ -570,6 +578,7 @@ public partial class Emitter
                     break;
                 }
 
+#if TARGET_AMD64
                 case EA_8BYTE:
                 {
                     code = AddRexWPrefix(id, code);
@@ -579,6 +588,7 @@ public partial class Emitter
                     }
                     break;
                 }
+#endif
 
                 default:
                 {

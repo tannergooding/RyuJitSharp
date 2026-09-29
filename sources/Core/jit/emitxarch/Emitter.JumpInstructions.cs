@@ -225,9 +225,5 @@ public partial class Emitter
         id.idjShort = true;
     }
 
-    private void appendToCurIG(instrDesc id)
-    {
-        emitCurIGsize = unchecked(emitCurIGsize + (int)id.idCodeSize());
-    }
 #endif
 }

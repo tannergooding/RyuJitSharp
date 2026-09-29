@@ -18,6 +18,9 @@ public partial class Emitter
         private bool _idCnsReloc;
         private bool _idDspReloc;
         private bool _idBound;
+#if TARGET_ARMARCH
+        private insOpts _idInsOpt;
+#endif
 
         public bool idIsBound()
         {
@@ -38,12 +41,29 @@ public partial class Emitter
 
         public void idOpSize(emitAttr size)
         {
-#if TARGET_AMD64
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
             _idOpSize = (opSize)((uint)emitEncodeSize(size) & 7);
 #else
-            throw new FatalJitException(CORJIT_SKIPPED, "Instruction operand-size fields outside AMD64 are not implemented.");
+            _idOpSize = (opSize)((uint)emitEncodeSize(size) & 3);
 #endif
         }
+
+#if TARGET_ARMARCH
+        public insOpts idInsOpt()
+        {
+            return _idInsOpt;
+        }
+
+        public void idInsOpt(insOpts options)
+        {
+#if TARGET_ARM64
+            _idInsOpt = (insOpts)((uint)options & 0x3F);
+#else
+            _idInsOpt = (insOpts)((uint)options & 7);
+#endif
+            assert(options == _idInsOpt);
+        }
+#endif
 
         internal GCtype idGCref()
         {

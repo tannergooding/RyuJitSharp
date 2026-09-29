@@ -1238,6 +1238,15 @@ public sealed partial class CodeGen
             }
         });
 
+        var arm64FlagsBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
+            if (inputFile.Equals(@"Inputs\instrsarm64.h", StringComparison.Ordinal)
+                || inputFile.Equals(@"Inputs\instrsarm64sve.h", StringComparison.Ordinal))
+            {
+                var flags = string.Join(" | ", parts[2].Split('|', StringSplitOptions.TrimEntries));
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {flags}, // {parts[0].Trim()}");
+            }
+        });
+
         var latencyBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
             if (inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
             {
@@ -1333,14 +1342,26 @@ public sealed partial class CodeGen
     internal static ReadOnlySpan<insFlags> instInfo => [
 {{flagsBuilder}}
     ];
+#elif TARGET_ARM64
+    internal const byte LD = 1;
+    internal const byte ST = 2;
+    private const byte CMP = 4;
+    private const byte RSH = 8;
+    private const byte WID = 16;
+    private const byte LNG = 32;
+    private const byte NRW = 64;
+    private const byte WR2 = 128;
+
+    internal static ReadOnlySpan<byte> instInfo => [
+{{arm64FlagsBuilder}}
+    ];
 #endif
 }
 """);
     }
 
-    private static void GenerateInstructionFormats()
+    private static string[] ReadInstructionFormatLines(string formatInput)
     {
-        const string formatInput = @"Inputs\emitfmtsxarch.h";
         var lines = File.ReadAllLines(formatInput);
         var firstFormat = Array.FindIndex(lines, line => line.TrimStart().StartsWith("IF_DEF(", StringComparison.Ordinal));
         var lastFormat = Array.FindLastIndex(lines, line => line.TrimStart().StartsWith("IF_DEF(", StringComparison.Ordinal));
@@ -1351,17 +1372,34 @@ public sealed partial class CodeGen
 
         // The native header also contains DEFINE_ID_OPS/DEFINE_IS_OPS include modes.
         // Process the format-list region, retaining any conditional paths within it.
-        var formatLines = lines.AsSpan(firstFormat, lastFormat - firstFormat + 1);
-        var formatBuilder = ProcessMacroBasedFile(formatInput, formatLines, ["IF_DEF("],
-            (builder, inputFile, line, prefix, parts) =>
-            {
-                if (parts.Length != 3)
-                {
-                    throw new InvalidDataException($"Invalid line format: '{line}'");
-                }
+        return lines[firstFormat..(lastFormat + 1)];
+    }
 
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        IF_{parts[0].Trim()},");
-            });
+    private static void AppendInstructionFormat(StringBuilder builder, string inputFile, string line,
+        string prefix, string[] parts)
+    {
+        if (parts.Length != 3)
+        {
+            throw new InvalidDataException($"Invalid line format: '{line}'");
+        }
+
+        _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        IF_{parts[0].Trim()},");
+    }
+
+    private static void GenerateInstructionFormats()
+    {
+        const string formatInput = @"Inputs\emitfmtsxarch.h";
+        var formatLines = ReadInstructionFormatLines(formatInput);
+        var formatBuilder = ProcessMacroBasedFile(formatInput, formatLines, ["IF_DEF("],
+            AppendInstructionFormat);
+        var arm64FormatBuilder = new StringBuilder();
+        string[] arm64Inputs = [@"Inputs\emitfmtsarm64.h", @"Inputs\emitfmtsarm64sve.h"];
+        foreach (var input in arm64Inputs)
+        {
+            _ = arm64FormatBuilder.Append(ProcessMacroBasedFile(input, ReadInstructionFormatLines(input),
+                ["IF_DEF("], AppendInstructionFormat));
+        }
+
         var operandBuilder = ProcessMacroBasedFile(formatInput, formatLines, ["IF_DEF("],
             (builder, inputFile, line, prefix, parts) => _ = builder.AppendLine(CultureInfo.InvariantCulture,
                 $"        (byte)ID_OP_{parts[2].Trim()}, // IF_{parts[0].Trim()}"));
@@ -1377,6 +1415,15 @@ public sealed partial class CodeGen
             {
                 _ = builder.AppendLine(CultureInfo.InvariantCulture,
                     $"        (byte){parts[2].Trim()}, // INS_{parts[0].Trim()}");
+            }
+        });
+
+        var arm64InstructionFormats = ProcessInstrs((builder, inputFile, line, prefix, parts) =>
+        {
+            if (inputFile.Equals(@"Inputs\instrsarm64.h", StringComparison.Ordinal)
+                || inputFile.Equals(@"Inputs\instrsarm64sve.h", StringComparison.Ordinal))
+            {
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {parts[3].Trim()}, // {parts[0].Trim()}");
             }
         });
 
@@ -1396,7 +1443,8 @@ public partial class Emitter
     public enum insFormat : uint
     {
 #if TARGET_XARCH
-{{formatBuilder}}#endif
+{{formatBuilder}}#elif TARGET_ARM64
+{{arm64FormatBuilder}}#endif
         IF_COUNT,
     }
 
@@ -1435,6 +1483,28 @@ public partial class Emitter
         GenerateNativeEnum(formatInput, "IS_INFO", @"Outputs\jit\emit\IS_INFO.generated.cs", isFlags: true);
         GenerateNativeEnum(@"Inputs\instr.h", "insUpdateModes",
             @"Outputs\jit\instr\insUpdateModes.generated.cs", isFlags: false);
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\emitarm64");
+        File.WriteAllText(@"Outputs\jit\emitarm64\Emitter.InstructionFormats.generated.cs", $$"""
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+using static RyuJitSharp.Emitter.insFormat;
+
+namespace RyuJitSharp;
+
+public partial class Emitter
+{
+#if TARGET_ARM64
+    private static ReadOnlySpan<insFormat> s_instructionFormats => [
+{{arm64InstructionFormats}}
+    ];
+#endif
+}
+""");
     }
 
     private static void GenerateInstructionOpcodes()

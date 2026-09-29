@@ -9,13 +9,13 @@ public partial class Emitter
 {
     public abstract partial class instrDesc
     {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
         private insFormat _idInsFmt;
 #endif
 
         public insFormat idInsFmt()
         {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
             return _idInsFmt;
 #else
             throw new FatalJitException(CORJIT_SKIPPED, "Instruction descriptor formats outside xarch are not implemented.");
@@ -28,6 +28,11 @@ public partial class Emitter
             assert((uint)insFormat.IF_COUNT <= 128);
             assert(insFmt < insFormat.IF_COUNT);
             _idInsFmt = (insFormat)((uint)insFmt & 0x7F);
+#elif TARGET_ARM64
+            assert((uint)insFormat.IF_COUNT <= 1024);
+            noway_assert(insFmt != insFormat.IF_NONE);
+            assert(insFmt < insFormat.IF_COUNT);
+            _idInsFmt = (insFormat)((uint)insFmt & 0x3FF);
 #else
             throw new FatalJitException(CORJIT_SKIPPED, "Instruction descriptor formats outside xarch are not implemented.");
 #endif

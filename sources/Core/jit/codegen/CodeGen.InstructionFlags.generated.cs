@@ -1210,5 +1210,1236 @@ public sealed partial class CodeGen
 #endif
 
     ];
+#elif TARGET_ARM64
+    internal const byte LD = 1;
+    internal const byte ST = 2;
+    private const byte CMP = 4;
+    private const byte RSH = 8;
+    private const byte WID = 16;
+    private const byte LNG = 32;
+    private const byte NRW = 64;
+    private const byte WR2 = 128;
+
+    internal static ReadOnlySpan<byte> instInfo => [
+#if TARGET_XARCH
+#if !TARGET_XARCH
+#error Unexpected target type
+#endif
+#if TARGET_AMD64
+#endif
+#if TARGET_AMD64
+#endif
+#if TARGET_AMD64
+#endif
+#if TARGET_AMD64
+#endif
+#if TARGET_AMD64
+#endif
+#if TARGET_AMD64
+#endif
+#if TARGET_AMD64
+#endif
+#if TARGET_AMD64
+#endif
+#if TARGET_AMD64
+#endif
+#if TARGET_AMD64
+#endif
+#if TARGET_X86
+#endif
+#elif TARGET_ARM
+#if !TARGET_ARM
+#error Unexpected target type
+#endif
+#if FEATURE_PLI_INSTRUCTION
+#endif
+#if FEATURE_ITINSTRUCTION
+#endif
+#elif TARGET_ARM64
+#if !TARGET_ARM64
+#error Unexpected target type
+#endif
+        0, // invalid
+        0, // mov
+        0, // add
+        0, // sub
+        LD, // ld1
+        LD, // ld2
+        LD, // ld3
+        LD, // ld4
+        LD, // st1
+        ST, // st2
+        ST, // st3
+        ST, // st4
+        LD, // ldr
+        LD, // ldrsw
+        0, // fmov
+        0, // orr
+        LD, // ldrb
+        LD, // ldrh
+        LD, // ldrsb
+        LD, // ldrsh
+        ST, // str
+        ST, // strb
+        ST, // strh
+        0, // adds
+        0, // subs
+        CMP, // cmp
+        CMP, // cmn
+        0, // fmul
+        0, // fmulx
+        0, // and
+        0, // eor
+        0, // bic
+        0, // neg
+        0, // cmeq
+        0, // cmge
+        0, // cmgt
+        0, // fcmeq
+        0, // fcmge
+        0, // fcmgt
+        0, // sqshl
+        0, // uqshl
+        LNG, // sqdmlal
+        LNG, // sqdmlsl
+        0, // sqdmulh
+        LNG, // sqdmull
+        0, // sqrdmlah
+        0, // sqrdmlsh
+        0, // sqrdmulh
+        0, // ands
+        0, // tst
+        0, // orn
+        0, // dup
+        0, // fmla
+        0, // fmls
+        0, // fcvtas
+        0, // fcvtau
+        0, // fcvtms
+        0, // fcvtmu
+        0, // fcvtns
+        0, // fcvtnu
+        0, // fcvtps
+        0, // fcvtpu
+        0, // fcvtzs
+        0, // fcvtzu
+        0, // scvtf
+        0, // ucvtf
+        0, // mul
+        LNG, // smull
+        LNG, // umull
+        0, // mvn
+        LD, // ld1_2regs
+        LD, // ld1_3regs
+        LD, // ld1_4regs
+        ST, // st1_2regs
+        ST, // st1_3regs
+        ST, // st1_4regs
+        LD, // ld1r
+        LD, // ld2r
+        LD, // ld3r
+        LD, // ld4r
+        0, // negs
+        0, // bics
+        0, // eon
+        0, // lsl
+        0, // lsr
+        0, // asr
+        0, // ror
+        LD, // ldp
+        LD, // ldpsw
+        ST, // stp
+        LD, // ldnp
+        ST, // stnp
+        CMP, // ccmp
+        CMP, // ccmn
+        0, // ins
+        0, // fadd
+        0, // fsub
+        0, // fdiv
+        0, // fmax
+        0, // fmaxnm
+        0, // fmin
+        0, // fminnm
+        0, // fabd
+        0, // facge
+        0, // facgt
+        0, // frecps
+        0, // frsqrts
+        0, // fcmp
+        0, // fcmpe
+        0, // fabs
+        0, // fcmle
+        0, // fcmlt
+        NRW, // fcvtxn
+        0, // fneg
+        0, // frecpe
+        0, // frintn
+        0, // frintp
+        0, // frintm
+        0, // frintz
+        0, // frinta
+        0, // frintx
+        0, // frinti
+        0, // frsqrte
+        0, // fsqrt
+        0, // abs
+        0, // cmle
+        0, // cmlt
+        0, // sqabs
+        0, // sqneg
+        NRW, // sqxtn
+        NRW, // sqxtun
+        0, // suqadd
+        0, // usqadd
+        NRW, // uqxtn
+        0, // cls
+        0, // clz
+        0, // rbit
+        0, // cnt
+        0, // rev16
+        0, // rev32
+        0, // mla
+        0, // mls
+        LNG, // smlal
+        LNG, // smlal2
+        LNG, // smlsl
+        LNG, // smlsl2
+        LNG, // smull2
+        LNG, // sqdmlal2
+        LNG, // sqdmlsl2
+        LNG, // sqdmull2
+        0, // sdot
+        0, // udot
+        LNG, // umlal
+        LNG, // umlal2
+        LNG, // umlsl
+        LNG, // umlsl2
+        LNG, // umull2
+        RSH, // sshr
+        RSH, // ssra
+        RSH, // srshr
+        RSH, // srsra
+        0, // shl
+        RSH, // ushr
+        RSH, // usra
+        RSH, // urshr
+        RSH, // ursra
+        RSH, // sri
+        0, // sli
+        0, // sqshlu
+        RSH | NRW, // sqrshrn
+        RSH | NRW, // sqrshrun
+        RSH | NRW, // sqshrn
+        RSH | NRW, // sqshrun
+        RSH | NRW, // uqrshrn
+        RSH | NRW, // uqshrn
+        0, // cmhi
+        0, // cmhs
+        0, // cmtst
+        0, // sqadd
+        0, // sqrshl
+        0, // sqsub
+        0, // srshl
+        0, // sshl
+        0, // uqadd
+        0, // uqrshl
+        0, // uqsub
+        0, // urshl
+        0, // ushl
+        0, // faddp
+        0, // fmaxnmp
+        0, // fmaxp
+        0, // fminnmp
+        0, // fminp
+        0, // addp
+        LD, // ldar
+        LD, // ldarb
+        LD, // ldarh
+        LD, // ldapr
+        LD, // ldaprb
+        LD, // ldaprh
+        LD, // ldxr
+        LD, // ldxrb
+        LD, // ldxrh
+        LD, // ldaxr
+        LD, // ldaxrb
+        LD, // ldaxrh
+        LD, // ldur
+        LD, // ldurb
+        LD, // ldurh
+        LD, // ldursb
+        LD, // ldursh
+        LD, // ldursw
+        LD, // ldapur
+        LD, // ldapurb
+        LD, // ldapurh
+        ST, // stlr
+        ST, // stlrb
+        ST, // stlrh
+        ST, // stxr
+        ST, // stxrb
+        ST, // stxrh
+        ST, // stlxr
+        ST, // stlxrb
+        ST, // stlxrh
+        ST, // stur
+        ST, // sturb
+        ST, // sturh
+        ST, // stlur
+        ST, // stlurb
+        ST, // stlurh
+        LD | ST, // casb
+        LD | ST, // casab
+        LD | ST, // casalb
+        LD | ST, // caslb
+        LD | ST, // cash
+        LD | ST, // casah
+        LD | ST, // casalh
+        LD | ST, // caslh
+        LD | ST, // cas
+        LD | ST, // casa
+        LD | ST, // casal
+        LD | ST, // casl
+        WR2 | LD | ST, // ldaddb
+        WR2 | LD | ST, // ldaddab
+        WR2 | LD | ST, // ldaddalb
+        WR2 | LD | ST, // ldaddlb
+        WR2 | LD | ST, // ldaddh
+        WR2 | LD | ST, // ldaddah
+        WR2 | LD | ST, // ldaddalh
+        WR2 | LD | ST, // ldaddlh
+        WR2 | LD | ST, // ldadd
+        WR2 | LD | ST, // ldadda
+        WR2 | LD | ST, // ldaddal
+        WR2 | LD | ST, // ldclral
+        WR2 | LD | ST, // ldsetal
+        WR2 | LD | ST, // ldaddl
+        WR2 | ST, // staddb
+        WR2 | ST, // staddlb
+        WR2 | ST, // staddh
+        WR2 | ST, // staddlh
+        WR2 | ST, // stadd
+        WR2 | ST, // staddl
+        WR2 | LD | ST, // swpb
+        WR2 | LD | ST, // swpab
+        WR2 | LD | ST, // swpalb
+        WR2 | LD | ST, // swplb
+        WR2 | LD | ST, // swph
+        WR2 | LD | ST, // swpah
+        WR2 | LD | ST, // swpalh
+        WR2 | LD | ST, // swplh
+        WR2 | LD | ST, // swp
+        WR2 | LD | ST, // swpa
+        WR2 | LD | ST, // swpal
+        WR2 | LD | ST, // swpl
+        0, // adr
+        0, // adrp
+        0, // b
+        0, // b_tail
+        0, // bl_local
+        0, // bl
+        0, // br
+        0, // br_tail
+        0, // blr
+        0, // ret
+        0, // retaa
+        0, // retab
+        0, // beq
+        0, // bne
+        0, // bhs
+        0, // blo
+        0, // bmi
+        0, // bpl
+        0, // bvs
+        0, // bvc
+        0, // bhi
+        0, // bls
+        0, // bge
+        0, // blt
+        0, // bgt
+        0, // ble
+        0, // cbz
+        0, // cbnz
+        0, // tbz
+        0, // tbnz
+        0, // movk
+        0, // movn
+        0, // movz
+        0, // csel
+        0, // csinc
+        0, // csinv
+        0, // csneg
+        0, // cinc
+        0, // cinv
+        0, // cneg
+        0, // cset
+        0, // csetm
+        0, // aese
+        0, // aesd
+        0, // aesmc
+        0, // aesimc
+        0, // rev
+        0, // rev64
+        0, // adc
+        0, // adcs
+        0, // sbc
+        0, // sbcs
+        0, // udiv
+        0, // sdiv
+        0, // mneg
+        0, // madd
+        0, // msub
+        0, // smaddl
+        0, // smnegl
+        0, // smsubl
+        0, // smulh
+        0, // umaddl
+        0, // umnegl
+        0, // umsubl
+        0, // umulh
+        0, // extr
+        0, // lslv
+        0, // lsrv
+        0, // asrv
+        0, // rorv
+        0, // crc32b
+        0, // crc32h
+        0, // crc32w
+        0, // crc32x
+        0, // crc32cb
+        0, // crc32ch
+        0, // crc32cw
+        0, // crc32cx
+        0, // sha1c
+        0, // sha1m
+        0, // sha1p
+        0, // sha1h
+        0, // sha1su0
+        0, // sha1su1
+        0, // sha256h
+        0, // sha256h2
+        0, // sha256su0
+        0, // sha256su1
+        0, // ext
+        0, // sbfm
+        0, // bfm
+        0, // ubfm
+        0, // sbfiz
+        0, // bfi
+        0, // ubfiz
+        0, // sbfx
+        0, // bfxil
+        0, // ubfx
+        0, // sxtb
+        0, // sxth
+        0, // sxtw
+        0, // uxtb
+        0, // uxth
+        0, // autia1716
+        0, // autiasp
+        0, // autib1716
+        0, // autibsp
+        0, // autibz
+        0, // autiaz
+        0, // pacia1716
+        0, // paciasp
+        0, // pacib1716
+        0, // pacibsp
+        0, // pacibz
+        0, // paciaz
+        0, // xpaclri
+        0, // autiza
+        0, // autizb
+        0, // paciza
+        0, // pacizb
+        0, // xpacd
+        0, // xpaci
+        0, // autia
+        0, // autib
+        0, // pacia
+        0, // pacib
+        0, // nop
+        0, // yield
+        0, // brk
+        0, // dsb
+        0, // dmb
+        0, // isb
+        0, // dczva
+        0, // mrs_tpid0
+        0, // umov
+        0, // smov
+        0, // movi
+        0, // mvni
+        0, // urecpe
+        0, // ursqrte
+        0, // bsl
+        0, // bit
+        0, // bif
+        0, // addv
+        0, // ctz
+        0, // not
+        LNG, // saddlv
+        0, // smaxv
+        0, // sminv
+        0, // uaddlv
+        0, // umaxv
+        0, // uminv
+        0, // fmaxnmv
+        0, // fmaxv
+        0, // fminnmv
+        0, // fminv
+        0, // uzp1
+        0, // uzp2
+        0, // zip1
+        0, // zip2
+        0, // trn1
+        0, // trn2
+        NRW, // sqxtn2
+        NRW, // sqxtun2
+        NRW, // uqxtn2
+        NRW, // xtn
+        NRW, // xtn2
+        0, // fnmul
+        0, // fmadd
+        0, // fmsub
+        0, // fnmadd
+        0, // fnmsub
+        0, // fcvt
+        0, // pmul
+        0, // saba
+        0, // sabd
+        0, // smax
+        0, // smaxp
+        0, // smin
+        0, // sminp
+        0, // uaba
+        0, // uabd
+        0, // umax
+        0, // umaxp
+        0, // umin
+        0, // uminp
+        LNG, // fcvtl
+        LNG, // fcvtl2
+        NRW, // fcvtn
+        NRW, // fcvtn2
+        NRW, // fcvtxn2
+        0, // frecpx
+        NRW, // addhn
+        NRW, // addhn2
+        LNG, // pmull
+        LNG, // pmull2
+        NRW, // raddhn
+        NRW, // raddhn2
+        NRW, // rsubhn
+        NRW, // rsubhn2
+        LNG, // sabal
+        LNG, // sabal2
+        LNG, // sabdl
+        LNG, // sabdl2
+        LNG, // sadalp
+        LNG, // saddl
+        LNG, // saddl2
+        LNG, // saddlp
+        WID, // saddw
+        WID, // saddw2
+        0, // shadd
+        0, // shsub
+        0, // srhadd
+        LNG, // ssubl
+        LNG, // ssubl2
+        WID, // ssubw
+        WID, // ssubw2
+        NRW, // subhn
+        NRW, // subhn2
+        LNG, // uabal
+        LNG, // uabal2
+        LNG, // uabdl
+        LNG, // uabdl2
+        LNG, // uadalp
+        LNG, // uaddl
+        LNG, // uaddl2
+        LNG, // uaddlp
+        WID, // uaddw
+        WID, // uaddw2
+        0, // uhadd
+        0, // uhsub
+        0, // urhadd
+        LNG, // usubl
+        LNG, // usubl2
+        WID, // usubw
+        WID, // usubw2
+        LNG, // shll
+        LNG, // shll2
+        LNG, // sshll
+        LNG, // sshll2
+        LNG, // ushll
+        LNG, // ushll2
+        RSH | NRW, // shrn
+        RSH | NRW, // shrn2
+        RSH | NRW, // rshrn
+        RSH | NRW, // rshrn2
+        RSH | NRW, // sqrshrn2
+        RSH | NRW, // sqrshrun2
+        RSH | NRW, // sqshrn2
+        RSH | NRW, // sqshrun2
+        RSH | NRW, // uqrshrn2
+        RSH | NRW, // uqshrn2
+        LNG, // sxtl
+        LNG, // sxtl2
+        LNG, // uxtl
+        LNG, // uxtl2
+        0, // tbl
+        0, // tbl_2regs
+        0, // tbl_3regs
+        0, // tbl_4regs
+        0, // tbx
+        0, // tbx_2regs
+        0, // tbx_3regs
+        0, // tbx_4regs
+#if FEATURE_LOOP_ALIGN
+        0, // align
+#endif
+        0, // eor3
+        0, // bcax
+        0, // sm3ss1
+        0, // sha512h
+        0, // sha512h2
+        0, // sha512su1
+        0, // rax1
+        0, // sm3partw1
+        0, // sm3partw2
+        0, // sm4ekey
+        0, // xar
+        0, // sha512su0
+        0, // sm4e
+#if !TARGET_ARM64
+#error Unexpected target type
+#endif
+        0, // invalid
+        0, // mov
+        ST, // st1w
+        LD, // ld1sh
+        LD, // ld1h
+        LD, // ld1w
+        LD, // ld1d
+        ST, // st1h
+        ST, // st1d
+        0, // pmov
+        LD, // ldff1sh
+        LD, // ldff1w
+        LD, // ldff1h
+        LD, // ld1sw
+        0, // mul
+        0, // fdot
+        LD, // ld1sb
+        LD, // ld1b
+        0, // prfb
+        0, // prfd
+        0, // prfh
+        0, // prfw
+        LD, // ldff1d
+        LD, // ldff1sw
+        ST, // st1b
+        RSH, // asr
+        0, // lsl
+        RSH, // lsr
+        0, // fmul
+        0, // sdot
+        0, // udot
+        LD, // ldff1sb
+        LD, // ldff1b
+        0, // and
+        0, // bic
+        0, // eor
+        0, // orr
+        0, // fmov
+        0, // sqdmulh
+        0, // sqrdmulh
+        0, // sqrdmlah
+        0, // sqrdmlsh
+        0, // mla
+        0, // mls
+        0, // fmlalb
+        0, // fmlalt
+        0, // index
+        0, // cpy
+        LD, // ldnt1b
+        LD, // ldnt1h
+        LD, // ldnt1w
+        ST, // stnt1b
+        ST, // stnt1h
+        ST, // stnt1w
+        0, // add
+        0, // sub
+        0, // adr
+        0, // dup
+        0, // trn1
+        0, // trn2
+        0, // uzp1
+        0, // uzp2
+        0, // zip1
+        0, // zip2
+        0, // sqadd
+        0, // sqsub
+        0, // uqadd
+        0, // uqsub
+        0, // fmla
+        0, // fmls
+        0, // luti4
+        0, // fadd
+        0, // fsub
+        0, // clasta
+        0, // clastb
+        CMP, // cmpeq
+        CMP, // cmpge
+        CMP, // cmpgt
+        CMP, // cmple
+        CMP, // cmplt
+        CMP, // cmpne
+        CMP, // cmphi
+        CMP, // cmphs
+        CMP, // cmplo
+        CMP, // cmpls
+        0, // whilege
+        0, // whilegt
+        0, // whilehi
+        0, // whilehs
+        0, // whilele
+        0, // whilelo
+        0, // whilels
+        0, // whilelt
+        0, // cdot
+        0, // cmla
+        0, // sqrdcmlah
+        0, // smlalb
+        0, // smlalt
+        0, // smlslb
+        0, // smlslt
+        0, // umlalb
+        0, // umlalt
+        0, // umlslb
+        0, // umlslt
+        0, // sqdmlalb
+        0, // sqdmlalt
+        0, // sqdmlslb
+        0, // sqdmlslt
+        0, // smullb
+        0, // smullt
+        0, // umullb
+        0, // umullt
+        0, // sqdmullb
+        0, // sqdmullt
+        0, // bfmul
+        LD, // ldnt1d
+        ST, // stnt1d
+        LD, // ldr
+        ST, // str
+        0, // smax
+        0, // smin
+        0, // umax
+        0, // umin
+        0, // addpt
+        0, // subpt
+        0, // rev
+        0, // smulh
+        0, // umulh
+        0, // orn
+        0, // ext
+        0, // sqshl
+        0, // uqshl
+        CMP, // fcmeq
+        CMP, // fcmge
+        CMP, // fcmgt
+        CMP, // fcmle
+        CMP, // fcmlt
+        CMP, // fcmne
+        0, // tbl
+        0, // luti2
+        0, // fmax
+        0, // fmaxnm
+        0, // fmin
+        0, // fminnm
+        0, // fsubr
+        0, // usdot
+        0, // fcmla
+        0, // bfdot
+        0, // fmlallbb
+        0, // fmlallbt
+        0, // fmlalltb
+        0, // fmlalltt
+        0, // not
+        0, // subr
+        0, // movprfx
+        0, // decd
+        0, // dech
+        0, // decw
+        0, // incd
+        0, // inch
+        0, // incw
+        0, // sqdecd
+        0, // sqdech
+        0, // sqdecw
+        0, // sqincd
+        0, // sqinch
+        0, // sqincw
+        0, // uqdecd
+        0, // uqdech
+        0, // uqdecw
+        0, // uqincd
+        0, // uqinch
+        0, // uqincw
+        0, // insr
+        0, // lasta
+        0, // lastb
+        0, // splice
+        0, // sel
+        0, // movs
+        0, // ptrue
+        0, // rdffr
+        0, // cntp
+        0, // decp
+        0, // incp
+        0, // sqdecp
+        0, // sqincp
+        0, // uqdecp
+        0, // uqincp
+        0, // pext
+        0, // pmullb
+        0, // pmullt
+        0, // fcvtnt
+        0, // bfmla
+        0, // bfmls
+        0, // bfmlalb
+        0, // bfmlalt
+        0, // bfmlslb
+        0, // bfmlslt
+        0, // fmlslb
+        0, // fmlslt
+        0, // bfadd
+        0, // bfsub
+        LD, // ldnt1sb
+        LD, // ldnt1sh
+        LD, // ld1rob
+        LD, // ld1rod
+        LD, // ld1roh
+        LD, // ld1row
+        LD, // ld1rqb
+        LD, // ld1rqd
+        LD, // ld1rqh
+        LD, // ld1rqw
+        LD, // ld2q
+        LD, // ld3q
+        LD, // ld4q
+        LD, // ld2b
+        LD, // ld2d
+        LD, // ld2h
+        LD, // ld2w
+        LD, // ld3b
+        LD, // ld3d
+        LD, // ld3h
+        LD, // ld3w
+        LD, // ld4b
+        LD, // ld4d
+        LD, // ld4h
+        LD, // ld4w
+        ST, // st2b
+        ST, // st2d
+        ST, // st2h
+        ST, // st2w
+        ST, // st3b
+        ST, // st3d
+        ST, // st3h
+        ST, // st3w
+        ST, // st4b
+        ST, // st4d
+        ST, // st4h
+        ST, // st4w
+        ST, // st2q
+        ST, // st3q
+        ST, // st4q
+        0, // abs
+        0, // neg
+        0, // sxtb
+        0, // sxth
+        0, // sxtw
+        0, // uxtb
+        0, // uxth
+        0, // uxtw
+        0, // ands
+        0, // bics
+        0, // eors
+        0, // nand
+        0, // nands
+        0, // nor
+        0, // nors
+        0, // nots
+        0, // orns
+        0, // orrs
+        0, // rbit
+        0, // revb
+        0, // revh
+        0, // revw
+        0, // cls
+        0, // clz
+        0, // cnot
+        0, // cnt
+        0, // fabs
+        0, // fneg
+        0, // sdiv
+        0, // sdivr
+        0, // udiv
+        0, // udivr
+        0, // eon
+        0, // smaxv
+        0, // sminv
+        0, // umaxv
+        0, // uminv
+        0, // faddv
+        0, // fmaxnmv
+        0, // fmaxv
+        0, // fminnmv
+        0, // fminv
+        0, // addp
+        0, // smaxp
+        0, // sminp
+        0, // umaxp
+        0, // uminp
+        0, // faddp
+        0, // fmaxnmp
+        0, // fmaxp
+        0, // fminnmp
+        0, // fminp
+        RSH, // srsra
+        RSH, // ssra
+        RSH, // ursra
+        RSH, // usra
+        RSH, // asrd
+        0, // sqshlu
+        RSH, // srshr
+        RSH, // urshr
+        RSH, // sqrshrn
+        RSH, // sqrshrun
+        RSH, // uqrshrn
+        0, // sli
+        RSH, // sri
+        0, // sqrshl
+        0, // sqrshlr
+        0, // sqshlr
+        0, // srshl
+        0, // srshlr
+        0, // uqrshl
+        0, // uqrshlr
+        0, // uqshlr
+        0, // urshl
+        0, // urshlr
+        0, // fabd
+        0, // famax
+        0, // famin
+        0, // fdiv
+        0, // fdivr
+        0, // fmulx
+        0, // fscale
+        0, // frecps
+        0, // frsqrts
+        0, // ftsmul
+        CMP, // facge
+        CMP, // facgt
+        CMP, // facle
+        CMP, // faclt
+        CMP, // fcmuo
+        0, // sqsubr
+        0, // suqadd
+        0, // uqsubr
+        0, // usqadd
+        0, // sqabs
+        0, // sqneg
+        0, // urecpe
+        0, // ursqrte
+        0, // frecpe
+        0, // frsqrte
+        0, // frecpx
+        0, // fsqrt
+        0, // tbx
+        0, // shadd
+        0, // shsub
+        0, // shsubr
+        0, // srhadd
+        0, // uhadd
+        0, // uhsub
+        0, // uhsubr
+        0, // urhadd
+        0, // sabd
+        0, // uabd
+        0, // saba
+        0, // uaba
+        0, // pmul
+        0, // bcax
+        0, // bsl
+        0, // bsl1n
+        0, // bsl2n
+        0, // eor3
+        0, // nbsl
+        0, // bfcvtn
+        NRW, // fcvtn
+        0, // fcvtnb
+        0, // fcadd
+        0, // smmla
+        0, // ummla
+        0, // usmmla
+        0, // bfmmla
+        LNG, // sadalp
+        LNG, // uadalp
+        0, // frinta
+        0, // frinti
+        0, // frintm
+        0, // frintn
+        0, // frintp
+        0, // frintx
+        0, // frintz
+        0, // sudot
+        0, // aesd
+        0, // aese
+        0, // sm4e
+        0, // aesimc
+        0, // aesmc
+        0, // rax1
+        0, // sm4ekey
+        0, // xar
+        0, // andv
+        0, // eorv
+        0, // orv
+        0, // andqv
+        0, // eorqv
+        0, // orqv
+        0, // saddv
+        0, // uaddv
+        0, // addqv
+        0, // smaxqv
+        0, // sminqv
+        0, // umaxqv
+        0, // uminqv
+        RSH, // asrr
+        RSH, // lslr
+        RSH, // lsrr
+        0, // mad
+        0, // msb
+        0, // addpl
+        0, // addvl
+        0, // rdvl
+        0, // fexpa
+        0, // ftssel
+        0, // cntb
+        0, // cntd
+        0, // cnth
+        0, // cntw
+        0, // decb
+        0, // incb
+        0, // sqdecb
+        0, // sqincb
+        0, // uqdecb
+        0, // uqincb
+        0, // dupm
+        0, // fcpy
+        0, // dupq
+        0, // extq
+        0, // tbxq
+        0, // sunpkhi
+        0, // sunpklo
+        0, // uunpkhi
+        0, // uunpklo
+        0, // punpkhi
+        0, // punpklo
+        0, // compact
+        0, // revd
+        0, // brkpa
+        0, // brkpas
+        0, // brkpb
+        0, // brkpbs
+        0, // brka
+        0, // brkb
+        0, // brkas
+        0, // brkbs
+        0, // brkn
+        0, // brkns
+        0, // pfirst
+        0, // ptrues
+        0, // pnext
+        0, // rdffrs
+        0, // ptest
+        0, // pfalse
+        0, // setffr
+        0, // wrffr
+        0, // ctermeq
+        0, // ctermne
+        0, // whilerw
+        0, // whilewr
+        0, // psel
+        0, // fdup
+        0, // sqdmlalbt
+        0, // sqdmlslbt
+        0, // sclamp
+        0, // uclamp
+        0, // mlapt
+        0, // madpt
+        0, // tblq
+        0, // uzpq1
+        0, // uzpq2
+        0, // zipq1
+        0, // zipq2
+        0, // sabdlb
+        0, // sabdlt
+        0, // saddlb
+        0, // saddlt
+        0, // ssublb
+        0, // ssublt
+        0, // uabdlb
+        0, // uabdlt
+        0, // uaddlb
+        0, // uaddlt
+        0, // usublb
+        0, // usublt
+        0, // saddwb
+        0, // saddwt
+        0, // ssubwb
+        0, // ssubwt
+        0, // uaddwb
+        0, // uaddwt
+        0, // usubwb
+        0, // usubwt
+        0, // eorbt
+        0, // eortb
+        0, // bdep
+        0, // bext
+        0, // bgrp
+        0, // sshllb
+        0, // sshllt
+        0, // ushllb
+        0, // ushllt
+        0, // saddlbt
+        0, // ssublbt
+        0, // ssubltb
+        0, // cadd
+        0, // sqcadd
+        0, // sabalb
+        0, // sabalt
+        0, // uabalb
+        0, // uabalt
+        0, // adclb
+        0, // adclt
+        0, // sbclb
+        0, // sbclt
+        0, // sqcvtn
+        0, // sqcvtun
+        0, // uqcvtn
+        0, // rshrnb
+        0, // rshrnt
+        0, // shrnb
+        0, // shrnt
+        0, // sqrshrnb
+        0, // sqrshrnt
+        0, // sqrshrunb
+        0, // sqrshrunt
+        0, // sqshrnb
+        0, // sqshrnt
+        0, // sqshrunb
+        0, // sqshrunt
+        0, // uqrshrnb
+        0, // uqrshrnt
+        0, // uqshrnb
+        0, // uqshrnt
+        0, // addhnb
+        0, // addhnt
+        0, // raddhnb
+        0, // raddhnt
+        0, // rsubhnb
+        0, // rsubhnt
+        0, // subhnb
+        0, // subhnt
+        0, // sqxtnb
+        0, // sqxtnt
+        0, // sqxtunb
+        0, // sqxtunt
+        0, // uqxtnb
+        0, // uqxtnt
+        0, // match
+        0, // nmatch
+        0, // histseg
+        0, // histcnt
+        0, // bfcvtnt
+        0, // fcvtlt
+        0, // fcvtxnt
+        0, // faddqv
+        0, // fmaxnmqv
+        0, // fmaxqv
+        0, // fminnmqv
+        0, // fminqv
+        0, // fclamp
+        0, // bfclamp
+        0, // fmmla
+        0, // bf1cvt
+        0, // bf1cvtlt
+        0, // bf2cvt
+        0, // bf2cvtlt
+        0, // f1cvt
+        0, // f1cvtlt
+        0, // f2cvt
+        0, // f2cvtlt
+        0, // fadda
+        0, // bfmax
+        0, // bfmaxnm
+        0, // bfmin
+        0, // bfminnm
+        0, // ftmad
+        0, // bfcvt
+        0, // fcvt
+        0, // fcvtx
+        0, // flogb
+        0, // fcvtzs
+        0, // fcvtzu
+        0, // scvtf
+        0, // ucvtf
+        0, // fnmla
+        0, // fnmls
+        0, // fmad
+        0, // fmsb
+        0, // fnmad
+        0, // fnmsb
+        LD, // ld1rb
+        LD, // ld1rd
+        LD, // ld1rsw
+        LD, // ld1rh
+        LD, // ld1rsb
+        LD, // ld1rsh
+        LD, // ld1rw
+        LD, // ldnf1b
+        LD, // ldnf1d
+        LD, // ldnf1sw
+        LD, // ldnf1h
+        LD, // ldnf1sb
+        LD, // ldnf1sh
+        LD, // ldnf1w
+        LD, // ld1q
+        LD, // ldnt1sw
+        ST, // st1q
+#elif TARGET_LOONGARCH64
+#if !TARGET_LOONGARCH64
+#error Unexpected target type
+#endif
+#if FEATURE_SIMD
+#endif
+#elif TARGET_RISCV64
+#if !TARGET_RISCV64
+#error Unexpected target type
+#endif
+#elif TARGET_WASM
+#if !TARGET_WASM
+#error Unexpected target type
+#endif
+#else
+#error Unsupported or unset target architecture
+#endif
+
+    ];
 #endif
 }

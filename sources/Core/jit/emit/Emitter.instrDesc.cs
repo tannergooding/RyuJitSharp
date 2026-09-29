@@ -67,6 +67,44 @@ public partial class Emitter
             _idScaledPrevOffset = (previousSize / 4) & 0x1F;
             assert(idPrevSize() == previousSize);
         }
+#elif TARGET_ARM64
+        public bool idIsEmptyAlign()
+        {
+            return (idIns() == INS_align) && (idInsOpt() == INS_OPTS_NONE);
+        }
+
+        public uint idCodeSize()
+        {
+            uint size = 4;
+            switch (idInsFmt())
+            {
+                case insFormat.IF_LARGEADR:
+                case insFormat.IF_LARGEJMP:
+                {
+                    // adrp + add, or a conditional branch followed by an unconditional branch.
+                    size = 8;
+                    break;
+                }
+
+                case insFormat.IF_LARGELDC:
+                {
+                    // Vectors need adrp + ldr + fmov (or adrp + add + ld1); scalars need adrp + ldr.
+                    size = idReg1() is >= REG_V0 and <= REG_V31 ? 12u : 8u;
+                    break;
+                }
+
+                case insFormat.IF_SN_0A:
+                {
+                    if (idIsEmptyAlign())
+                    {
+                        size = 0;
+                    }
+                    break;
+                }
+            }
+
+            return size;
+        }
 #else
         public uint idCodeSize()
         {

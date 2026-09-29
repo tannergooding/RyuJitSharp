@@ -18,6 +18,9 @@ public partial class Emitter
 
     public unsafe byte* emitOutputRI(byte* dst, instrDesc id)
     {
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Register-immediate output requires xarch.");
+#else
         var size = id.idOpSize();
         var ins = id.idIns();
         var reg = id.idReg1();
@@ -319,10 +322,14 @@ public partial class Emitter
             }
         }
         return dst;
+#endif
     }
 
     public unsafe byte* emitOutputIV(byte* dst, instrDesc id)
     {
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Immediate output requires xarch.");
+#else
         var ins = id.idIns();
         var size = id.idOpSize();
         var val = emitGetInsCns(id);
@@ -410,5 +417,6 @@ public partial class Emitter
         }
         assert(ins == INS_push || id.idGCref() == GCT_NONE);
         return dst;
+#endif
     }
 }

@@ -88,32 +88,6 @@ public partial class Emitter
         assert(_compiler is not null);
     }
 
-    private unsafe void dispIns(instrDesc id)
-    {
-#if DEBUG
-        RequireSupportedInstructionRecording();
-        emitInsSanityCheck(id);
-        assert(_compiler is not null);
-        if (_compiler.opts.dspCode)
-        {
-            emitDispIns(id, true, false, false);
-        }
-
-#if EMIT_TRACK_STACK_DEPTH
-        assert(unchecked((int)emitCurStackLvl) >= 0);
-#endif
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        assert(debugInfo.idSize == (nuint)emitSizeOfInsDsc(id));
-#endif
-#if EMITTER_STATS
-        emitIFcounts[(int)id.idInsFmt()] = unchecked(emitIFcounts[(int)id.idInsFmt()] + 1);
-#endif
-    }
-
-#if EMITTER_STATS
-    private static readonly uint[] emitIFcounts = new uint[(int)IF_COUNT];
-#endif
 #endif
 }
 #endif

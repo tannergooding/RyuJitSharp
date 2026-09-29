@@ -268,6 +268,11 @@ public partial class Emitter
 #endif
     }
 
+    public uint emitGetEpilogCnt()
+    {
+        return unchecked((uint)emitEpilogCnt);
+    }
+
     public void emitBegFuncletProlog(insGroup placeholder)
     {
         emitBegPrologEpilog(placeholder);
@@ -317,7 +322,6 @@ public partial class Emitter
 
     public void emitSetFrameRangeGCRs(int offsLo, int offsHi)
     {
-        RequireSupportedInstructionRecording();
         assert(emitGeneratingPrologOrFuncletProlog());
         assert(offsHi > offsLo);
 #if DEBUG
@@ -333,7 +337,36 @@ public partial class Emitter
             }
             else
             {
+#if TARGET_ARM && PROFILING_SUPPORTED
+                if (!_compiler.compIsProfilerHookNeeded())
+                {
+#endif
+#if TARGET_AMD64
                 jitprintf($"-{unchecked(-offsLo):X4} ... {offsHi:X4}\n");
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+                if (offsHi < 0)
+                {
+                    jitprintf($"-{unchecked(-offsLo):X4} ... -{unchecked(-offsHi):X4}\n");
+                }
+                else
+                {
+                    jitprintf($"-{unchecked(-offsLo):X4} ... {offsHi:X4}\n");
+                }
+#else
+                jitprintf($"-{unchecked(-offsLo):X4} ... -{unchecked(-offsHi):X4}\n");
+                assert(offsHi <= 0);
+#endif
+#if TARGET_ARM && PROFILING_SUPPORTED
+                }
+                else if (offsHi < 0)
+                {
+                    jitprintf($"-{unchecked(-offsLo):X4} ... -{unchecked(-offsHi):X4}\n");
+                }
+                else
+                {
+                    jitprintf($"-{unchecked(-offsLo):X4} ... {offsHi:X4}\n");
+                }
+#endif
             }
         }
 #endif
@@ -343,5 +376,10 @@ public partial class Emitter
         emitGCrFrameOffsMin = offsLo;
         emitGCrFrameOffsMax = offsHi;
         emitGCrFrameOffsCnt = (offsHi - offsLo) / TARGET_POINTER_SIZE;
+    }
+
+    public bool emitIsWithinFrameRangeGCRs(int offs)
+    {
+        return (offs >= emitGCrFrameOffsMin) && (offs < emitGCrFrameOffsMax);
     }
 }

@@ -16,6 +16,37 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: GC bookkeeping, output dispatch and ARM64 recording
+
+Frame/NoGC/epilog bookkeeping and the three-register/main output dispatchers
+retain their whole target paths. ARM64 zero-operand recording now preserves
+authentication/return formats, native operand/option/format widths, code sizes
+and memory-barrier tracking. Release label padding records the required nop or
+breakpoint and advances instruction groups. Debug still terminates at the
+separate unported sanity checker; this is not ARM64 machine-code execution.
+
+Pinned table inputs and their generator now produce ARM64 and SVE metadata.
+Independent native macro expansion verifies all 599 format ordinals and 1,158
+instruction names, formats and info bytes, including loop alignment and excluding
+synthetic `lea`. Native flags are preserved, not reinterpreted.
+
+Integrated Windows checks pass 187 Debug/174 Release with and without statistics.
+Unexcluded ARM64 checks pass 78 per configuration, or 83 Debug/84 Release with
+statistics. Three identical old allocation/label cases fail per configuration
+at the prior target guards. The integration also repairs missing non-xarch guards
+in the preceding register/immediate packet; earlier ARM64 component checks
+predated that integration or explicitly excluded those files. No such exclusion
+is used in the accepted combined build. x86 fixtures remain unexecuted behind
+independent declaration/type errors.
+
+Twenty-two complete definitions, the instruction-info table/constants and their
+associated scaffolding retire 2,486 lines in `af6f32b5`, still the sole oracle
+child. Distinct sanity/display/traversal helpers, ARM32 memory classification,
+other-target format accessors and header operand-category modes remain native.
+Evidence: `artifacts/residual-reconciliation/bookkeeping-dispatch-arm64-combined-20260929.json`
+and its applied receipt; `artifacts/arm64-recording-packet` contains the native
+metadata probe and exact integration/negative-control evidence.
+
 ## 2026-09-29: Lifecycle, label contexts and register/immediate output
 
 Prolog/epilog and placeholder lifecycle retains target-specific stack and GC

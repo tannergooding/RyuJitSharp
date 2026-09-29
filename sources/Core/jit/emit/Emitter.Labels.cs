@@ -112,7 +112,7 @@ public partial class Emitter
         return (emitLastIns is not null) && emitLastIns.idIsCall() && !emitLastIns.idIsNoGC();
     }
 
-#if !TARGET_XARCH
+#if !TARGET_XARCH && !TARGET_ARM64
     public void emitIns(instruction ins)
     {
         throw new FatalJitException(CORJIT_SKIPPED,

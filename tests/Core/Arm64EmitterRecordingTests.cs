@@ -1,0 +1,213 @@
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+
+#if TARGET_ARM64
+using System;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+using System.Text;
+using NUnit.Framework;
+using static RyuJitSharp.Emitter.insFormat;
+using static RyuJitSharp.emitAttr;
+using static RyuJitSharp.instruction;
+using static RyuJitSharp.insOpts;
+using static RyuJitSharp.regNumber;
+
+namespace RyuJitSharp.UnitTests;
+
+[NonParallelizable]
+internal static unsafe class Arm64EmitterRecordingTests
+{
+    [Test]
+    public static void GeneratedMetadataMatchesPinnedNativeTables()
+    {
+        var formats = Formats(null);
+        var flags = Flags(null);
+        Assert.That((int)IF_COUNT, Is.EqualTo(599));
+        Assert.That(formats.Length, Is.EqualTo(1158));
+        Assert.That(flags.Length, Is.EqualTo(formats.Length));
+        Assert.That((int)INS_lea, Is.EqualTo(formats.Length));
+        var rows = new StringBuilder();
+        for (var index = 0; index < (int)IF_COUNT; index++)
+        {
+            _ = rows.Append(FormattableString.Invariant($"F {index} {(Emitter.insFormat)index}\n"));
+        }
+        for (var index = 0; index < formats.Length; index++)
+        {
+            _ = rows.Append(FormattableString.Invariant($"I {index} {(instruction)index} {(uint)formats[index]} {flags[index]}\n"));
+        }
+
+        // Native macro expansion of emitfmtsarm64{,sve}.h and instrsarm64{,sve}.h
+        // at 33baf8ee337b20dd0f184b69a6f09be92850bf9e, with FEATURE_LOOP_ALIGN.
+        Assert.That(Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(rows.ToString()))),
+            Is.EqualTo("bcb51ded8b656135816235dc66868ac85a812c2cee5ec70239b7fef278ce6f35"));
+    }
+
+    [TestCase(INS_nop, IF_SN_0A)]
+    [TestCase(INS_brk, IF_SI_0A)]
+    [TestCase(INS_autia1716, IF_PC_0A)]
+    [TestCase(INS_autiasp, IF_PC_0A)]
+    [TestCase(INS_autiaz, IF_PC_0A)]
+    [TestCase(INS_autib1716, IF_PC_0A)]
+    [TestCase(INS_autibsp, IF_PC_0A)]
+    [TestCase(INS_autibz, IF_PC_0A)]
+    [TestCase(INS_pacia1716, IF_PC_0A)]
+    [TestCase(INS_paciasp, IF_PC_0A)]
+    [TestCase(INS_paciaz, IF_PC_0A)]
+    [TestCase(INS_pacib1716, IF_PC_0A)]
+    [TestCase(INS_pacibsp, IF_PC_0A)]
+    [TestCase(INS_pacibz, IF_PC_0A)]
+    [TestCase(INS_xpaclri, IF_PC_0A)]
+    [TestCase(INS_retaa, IF_BR_0A)]
+    [TestCase(INS_retab, IF_BR_0A)]
+    public static void ZeroOperandRecordingPreservesFormatsAndDiagnosticOrdering(instruction ins, Emitter.insFormat format)
+    {
+        var emitter = CreateEmitter();
+#if DEBUG
+        var error = Assert.Throws<FatalJitException>(() => emitter.emitIns(ins));
+        Assert.That(error, Has.Message.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
+        Assert.That(GroupSize(emitter), Is.Zero);
+#else
+        emitter.emitIns(ins);
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+#endif
+        var descriptor = LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
+        Assert.That(descriptor.idIns(), Is.EqualTo(ins));
+        Assert.That(descriptor.idInsFmt(), Is.EqualTo(format));
+        Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_8BYTE));
+        Assert.That(descriptor.idIsSmallDsc(), Is.True);
+        Assert.That(descriptor.idCodeSize(), Is.EqualTo(4u));
+    }
+
+    [TestCase(IF_LARGEADR, REG_R0, 8u)]
+    [TestCase(IF_LARGEJMP, REG_R0, 8u)]
+    [TestCase(IF_LARGELDC, REG_R0, 8u)]
+    [TestCase(IF_LARGELDC, REG_V0, 12u)]
+    [TestCase(IF_LARGELDC, REG_V31, 12u)]
+    [TestCase(IF_SN_0A, REG_R0, 4u)]
+    public static void DescriptorCodeSizesFollowFormatAndRegisterClass(Emitter.insFormat format, regNumber reg, uint size)
+    {
+        var descriptor = RecordingEmitter.Basic(INS_nop, format);
+        Register1(descriptor) = reg;
+        Assert.That(descriptor.idCodeSize(), Is.EqualTo(size));
+    }
+
+    [Test]
+    public static void DescriptorFieldsPreserveArm64Widths()
+    {
+        var format = IF_COUNT - 1;
+        var descriptor = RecordingEmitter.Basic(INS_nop, format);
+        descriptor.idInsOpt((insOpts)63);
+        descriptor.idOpSize(EA_16BYTE);
+        Assert.That(descriptor.idInsFmt(), Is.EqualTo(format));
+        Assert.That(descriptor.idInsOpt(), Is.EqualTo((insOpts)63));
+        Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_16BYTE));
+    }
+
+    [Test]
+    public static void EmptyAlignmentConsumesNoCodeBytes()
+    {
+        var descriptor = RecordingEmitter.Basic(INS_align, IF_SN_0A);
+        descriptor.idInsOpt(INS_OPTS_NONE);
+        Assert.That(descriptor.idIsEmptyAlign(), Is.True);
+        Assert.That(descriptor.idCodeSize(), Is.Zero);
+        descriptor.idInsOpt((insOpts)1);
+        Assert.That(descriptor.idIsEmptyAlign(), Is.False);
+        Assert.That(descriptor.idCodeSize(), Is.EqualTo(4u));
+    }
+
+    [TestCase(INS_ldr, true)]
+    [TestCase(INS_str, true)]
+    [TestCase(INS_nop, false)]
+    [TestCase(INS_lea, false)]
+    public static void MemoryClassificationIncludesSyntheticInstructionBoundary(instruction ins, bool expected)
+    {
+        Assert.That(IsMemory(CreateEmitter(), ins), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public static void AppendingPreservesBarriersUntilMemoryIsAccessed()
+    {
+        var emitter = CreateEmitter();
+        var barrier = RecordingEmitter.Basic(INS_dmb, IF_SI_0B);
+        Append(emitter, barrier);
+        Assert.That(LastBarrier(emitter), Is.SameAs(barrier));
+        Append(emitter, RecordingEmitter.Basic(INS_nop, IF_SN_0A));
+        Assert.That(LastBarrier(emitter), Is.SameAs(barrier));
+        Append(emitter, RecordingEmitter.Basic(INS_ldr, IF_EN5A));
+        Assert.That(LastBarrier(emitter), Is.Null);
+        Assert.That(GroupSize(emitter), Is.EqualTo(12));
+    }
+
+#if EMITTER_STATS && !DEBUG
+    [Test]
+    public static void RecordingIncrementsTheInstructionFormatCounter()
+    {
+        var counts = FormatCounts(null);
+        var before = counts[(int)IF_SN_0A];
+        try
+        {
+            CreateEmitter().emitIns(INS_nop);
+            Assert.That(counts[(int)IF_SN_0A], Is.EqualTo(unchecked(before + 1)));
+        }
+        finally
+        {
+            counts[(int)IF_SN_0A] = before;
+        }
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitIFcounts")]
+    private static extern ref uint[] FormatCounts(Emitter? emitter);
+#endif
+
+    private static RecordingEmitter CreateEmitter()
+    {
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        compiler.lvaTrackedCount = 1;
+        compiler.lvaTrackedCountInSizeTUnits = 1;
+        var emitter = new RecordingEmitter(new CodeGen(compiler));
+        emitter.emitBegCG(compiler, default);
+        emitter.Init();
+        emitter.emitBegFN(false
+#if DEBUG
+            , true
+#endif
+            );
+        return emitter;
+    }
+
+    private sealed class RecordingEmitter(CodeGen codeGen) : Emitter(codeGen)
+    {
+        public static instrDesc Basic(instruction ins, insFormat format)
+        {
+            var descriptor = new instrDescBasic();
+            descriptor.idIns(ins);
+            descriptor.idInsFmt(format);
+            return descriptor;
+        }
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_idReg1")]
+    private static extern ref regNumber Register1(Emitter.instrDesc descriptor);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]
+    private static extern ref Emitter.instrDesc? LastInstruction(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastMemBarrier")]
+    private static extern ref Emitter.instrDesc? LastBarrier(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGsize")]
+    private static extern ref int GroupSize(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "appendToCurIG")]
+    private static extern void Append(Emitter emitter, Emitter.instrDesc descriptor);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsLoadOrStore")]
+    private static extern bool IsMemory(Emitter emitter, instruction ins);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_s_instructionFormats")]
+    private static extern ReadOnlySpan<Emitter.insFormat> Formats(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_instInfo")]
+    private static extern ReadOnlySpan<byte> Flags(CodeGen? codeGen);
+}
+#endif

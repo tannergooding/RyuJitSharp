@@ -36,6 +36,7 @@
     <Compile Include="..\Core\X86EmitterStaticOutputTests.cs" Link="X86EmitterStaticOutputTests.cs" />
     <Compile Include="..\Core\X86EmitterAddressStackOutputTests.cs" Link="X86EmitterAddressStackOutputTests.cs" />
     <Compile Include="..\Core\X86EmitterRegisterImmediateOutputTests.cs" Link="X86EmitterRegisterImmediateOutputTests.cs" />
+    <Compile Include="..\Core\X86EmitterInstructionDispatchTests.cs" Link="X86EmitterInstructionDispatchTests.cs" />
   </ItemGroup>
 
 </Project>
