@@ -81,10 +81,35 @@ internal static unsafe class Arm64LinearScanConstructionTests
 
             var expected = killFloatRegisters
                 ? SRBM_CALLEE_TRASH
-                : new regMaskTP(SRBM_INT_CALLEE_TRASH, SRBM_MSK_CALLEE_TRASH);
+                : new regMaskTP(SRBM_INT_CALLEE_TRASH);
             Assert.That(GetKillSetForCall(allocator, new GenTreeCall(TYP_VOID)), Is.EqualTo(expected));
         });
     }
+
+#if DEBUG
+    [Test]
+    public static void DebugKillSetDispatcherPreservesArm64ShiftAndCallMasks()
+    {
+        WithCompiler(false, false, (compiler, _) => {
+            var allocator = new LinearScan(compiler);
+            var value = compiler.gtNewIconNode(TYP_INT, 3);
+            var shift = new GenTreeOp(GT_LSH, TYP_INT, value, value);
+            var multiply = new GenTreeOp(GT_MUL, TYP_INT, value, value);
+            var divide = new GenTreeOp(GT_DIV, TYP_INT, value, value);
+            var call = new GenTreeCall(TYP_VOID);
+
+            Assert.Multiple(() => {
+                Assert.That(GetKillSetForNode(allocator, shift), Is.EqualTo(new regMaskTP(SRBM_NONE)));
+                Assert.That(GetKillSetForNode(allocator, multiply), Is.EqualTo(new regMaskTP(SRBM_NONE)));
+                Assert.That(GetKillSetForNode(allocator, divide), Is.EqualTo(new regMaskTP(SRBM_NONE)));
+                Assert.That(GetKillSetForNode(allocator, call),
+                    Is.EqualTo(new regMaskTP(SRBM_INT_CALLEE_TRASH)));
+                Assert.That(GetKillSetForNode(allocator, new GenTreeUnOp(GT_RETURNTRAP, TYP_INT, value)),
+                    Is.EqualTo(compiler.compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC)));
+            });
+        });
+    }
+#endif
 
     [TestCase(false)]
     [TestCase(true)]
@@ -995,6 +1020,11 @@ internal static unsafe class Arm64LinearScanConstructionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "getKillSetForCall")]
     private static extern regMaskTP GetKillSetForCall(LinearScan allocator, GenTreeCall call);
+
+#if DEBUG
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "getKillSetForNode")]
+    private static extern regMaskTP GetKillSetForNode(LinearScan allocator, GenTree tree);
+#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_needToKillFloatRegisters")]
     private static extern ref bool NeedToKillFloatRegisters(LinearScan allocator);

@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Shared LSRA kill-set construction
+
+Shift/rotate, call and debug node kill-set construction retain the native
+target branches and dependent helper calls. Acceptance review also corrected
+an ARM64 port defect: calls without floating-register kills must remove the
+predicate bank too (B468). Three definitions and their declarations retire
+198 native lines in `b735522c`; independent helper bodies remain.
+
+Corrected ARM64 controls pass 75 Debug/65 Release. Identical old-source
+controls fail both no-floating-use call-mask expectations, passing 1/3.
+Windows 53 Debug/52 Release and Linux 26 Debug/25 Release remain applicable
+because the correction changes only ARM64-selected text. X86 retains 14
+baseline diagnostics. Evidence: `artifacts/lsra-killset-correction-c84e404`
+and the `lsra-shared-killset` retirement records. No new generated-code parity
+claim.
+
 ## 2026-09-29: Shared multi-register local storage
 
 Multi-register local stores preserve field-by-field liveness, Swift and

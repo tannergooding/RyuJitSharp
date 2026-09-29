@@ -36,16 +36,20 @@ public sealed partial class LinearScan
         return _compiler.compHelperCallKillSet(helper);
     }
 
-#if TARGET_AMD64 || TARGET_ARM64
-#if TARGET_AMD64
-    private regMaskTP getKillSetForShiftRotate(GenTreeOp shiftNode)
+    private static regMaskTP getKillSetForShiftRotate(GenTreeOp shiftNode)
     {
+        var killMask = new regMaskTP(SRBM_NONE);
+#if TARGET_XARCH
         assert(shiftNode.Oper.IsShiftOrRotate);
-        return shiftNode.Op2.IsContained
-            ? new regMaskTP(SRBM_NONE)
-            : new regMaskTP(SRBM_RCX);
+        if (!shiftNode.Op2.IsContained)
+        {
+            killMask = new regMaskTP(SRBM_RCX);
+        }
+#endif
+        return killMask;
     }
 
+#if TARGET_AMD64
     private regMaskTP getKillSetForMul(GenTreeOp mulNode)
     {
         assert(mulNode.Oper is GT_MUL or GT_MULHI);
@@ -78,6 +82,19 @@ public sealed partial class LinearScan
     private regMaskTP getKillSetForCall(GenTreeCall call)
     {
         var killMask = getCalleeTrashKillMask();
+#if TARGET_X86
+        if (_compiler.compFloatingPointUsed)
+        {
+            if (call.Type is TYP_DOUBLE)
+            {
+                _needDoubleTmpForFPCall = true;
+            }
+            else if (call.Type is TYP_FLOAT)
+            {
+                _needFloatTmpForFPCall = true;
+            }
+        }
+#endif
         if (call.IsHelperCall())
         {
             killMask = _compiler.compHelperCallKillSet(call.HelperNum);
@@ -88,25 +105,38 @@ public sealed partial class LinearScan
             assert(!_compiler.compFloatingPointUsed || !_enregisterLocalVars);
 #if TARGET_ARM64
             killMask = removeRegisterSets(killMask, SRBM_NONE, SRBM_FLT_CALLEE_TRASH,
-                SRBM_NONE);
+                SRBM_MSK_CALLEE_TRASH);
 #else
             var codeGen = _compiler.codeGen
                 ?? throw new FatalJitException("Call kill-set construction requires initialized CodeGen.");
+#if TARGET_XARCH
             killMask = removeRegisterSets(killMask, SRBM_NONE, codeGen.SRBM_FLT_CALLEE_TRASH,
                 codeGen.SRBM_MSK_CALLEE_TRASH);
+#else
+            killMask = removeRegisterSets(killMask, SRBM_NONE, codeGen.SRBM_FLT_CALLEE_TRASH,
+                SRBM_NONE);
+#endif
 #endif
         }
 
+#if TARGET_ARM
+        if (call.IsVirtualStub)
+        {
+            var virtualStubParamInfo = _compiler.virtualStubParamInfo
+                ?? throw new FatalJitException("Virtual-stub calls require initialized register metadata.");
+            killMask |= virtualStubParamInfo.RegMask;
+        }
+#else
         if (call.IsVirtualStub)
         {
             var virtualStubParamInfo = _compiler.virtualStubParamInfo
                 ?? throw new FatalJitException("Virtual-stub calls require initialized register metadata.");
             assert((killMask & virtualStubParamInfo.RegMask) == virtualStubParamInfo.RegMask);
         }
+#endif
 
 #if SWIFT_SUPPORT
-        if ((call.UnmanagedCallConv is CorInfoCallConvExtension.Swift) &&
-            (call.Args.FindWellKnownArg(WellKnownArg.SwiftError) is not null))
+        if (call.HasSwiftErrorHandling)
         {
             killMask |= new regMaskTP(SRBM_SWIFT_ERROR);
         }
@@ -114,6 +144,7 @@ public sealed partial class LinearScan
         return killMask;
     }
 
+#if TARGET_AMD64 || TARGET_ARM64
     private static regMaskTP getKillSetForBlockStore(GenTreeBlk blockNode)
     {
         assert(blockNode.Oper.IsStoreBlk);
@@ -146,8 +177,9 @@ public sealed partial class LinearScan
         => _compiler.compIsProfilerHookNeeded
             ? _compiler.compHelperCallKillSet(CORINFO_HELP_PROF_FCN_TAILCALL)
             : new regMaskTP(SRBM_NONE);
+#endif
 
-#if DEBUG && (TARGET_AMD64 || TARGET_ARM64)
+#if DEBUG
     private regMaskTP getKillSetForNode(GenTree tree)
     {
         var killMask = new regMaskTP(SRBM_NONE);
@@ -158,13 +190,11 @@ public sealed partial class LinearScan
             case GT_RSZ:
             case GT_ROL:
             case GT_ROR:
-#if TARGET_AMD64
 #if TARGET_X86
             case GT_LSH_HI:
             case GT_RSH_LO:
 #endif
                 killMask = getKillSetForShiftRotate(tree.AsOp());
-#endif
                 break;
 
             case GT_MUL:
@@ -172,18 +202,14 @@ public sealed partial class LinearScan
 #if !TARGET_64BIT || TARGET_ARM64
             case GT_MUL_LONG:
 #endif
-#if TARGET_AMD64
                 killMask = getKillSetForMul(tree.AsOp());
-#endif
                 break;
 
             case GT_MOD:
             case GT_DIV:
             case GT_UMOD:
             case GT_UDIV:
-#if TARGET_AMD64
                 killMask = getKillSetForModDiv(tree.AsOp());
-#endif
                 break;
 
             case GT_STORE_BLK:
@@ -204,9 +230,7 @@ public sealed partial class LinearScan
 
 #if PROFILING_SUPPORTED
             case GT_RETURN:
-#if SWIFT_SUPPORT
             case GT_SWIFT_ERROR_RET:
-#endif
                 killMask = getKillSetForReturn(tree);
                 break;
 
@@ -237,6 +261,50 @@ public sealed partial class LinearScan
     }
 #endif
 
+#if DEBUG && !TARGET_AMD64
+    private static regMaskTP getKillSetForMul(GenTreeOp tree)
+    {
+#if TARGET_ARM64
+        return new regMaskTP(SRBM_NONE);
+#else
+        throw new FatalJitException("The multiply kill-set helper is not ported for this target.");
+#endif
+    }
+
+    private static regMaskTP getKillSetForModDiv(GenTreeOp tree)
+    {
+#if TARGET_ARM64
+        return new regMaskTP(SRBM_NONE);
+#else
+        throw new FatalJitException("The division kill-set helper is not ported for this target.");
+#endif
+    }
+#endif
+
+#if DEBUG && !TARGET_AMD64 && !TARGET_ARM64
+    private static regMaskTP getKillSetForBlockStore(GenTreeBlk tree)
+    {
+        throw new FatalJitException("The block-store kill-set helper is not ported for this target.");
+    }
+
+    private regMaskTP getKillSetForReturn(GenTree tree)
+    {
+        throw new FatalJitException("The profiler return kill-set helper is not ported for this target.");
+    }
+
+    private regMaskTP getKillSetForProfilerHook()
+    {
+        throw new FatalJitException("The profiler hook kill-set helper is not ported for this target.");
+    }
+
+#if FEATURE_HW_INTRINSICS
+    private static regMaskTP getKillSetForHWIntrinsic(GenTreeHWIntrinsic tree)
+    {
+        throw new FatalJitException("The hardware-intrinsic kill-set helper is not ported for this target.");
+    }
+#endif
+#endif
+
     private regMaskTP getCalleeTrashKillMask()
     {
 #if TARGET_ARM64
@@ -264,5 +332,4 @@ public sealed partial class LinearScan
         return new regMaskTP(killMask.Lower & ~(intRegisters | floatRegisters | maskRegisters));
 #endif
     }
-#endif
 }

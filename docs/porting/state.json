@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sharedLsraKillSetConstruction": {
+      "scope": "Whole getKillSetForShiftRotate, getKillSetForCall and debug getKillSetForNode preserve shared dispatch, x86 FP-call temporaries, ARM virtual-stub registers and Swift error kills.",
+      "correction": "B468 removes ARM64 predicate kills as well as floating kills when floating kills are unnecessary. The earlier production implementation and direct/dispatcher fixtures incorrectly retained the predicate bank.",
+      "validation": "Corrected ARM64 target class passes75 Debug/65 Release; identical old Debug fixtures pass1/3, with both no-FP call-mask expectations failing. Original Windows53 Debug/52 Release and Linux26 Debug/25 Release remain applicable: exact source comparison confines the correction to TARGET_ARM64 and its wholly ARM64 fixture.",
+      "retirement": "Three definitions, their headings/guards and associated declarations;198 native lines. Independent multiply/divide/block/profiler/intrinsic helpers remain native.",
+      "nativeBefore": "0d914d38ef964196af672abfd14344b14611c4a8",
+      "nativeAfter": "b735522c122633220015676e82a0c2bbf30948e5",
+      "evidence": "artifacts/lsra-killset-correction-c84e404; preserved lsra-shared-killset-final-20260929-dc98c84 evidence; artifacts/residual-reconciliation/lsra-shared-killset corrected-component/combined/applied/verification.",
+      "limits": "X86 retains14 identical baseline diagnostic identities. Earlier broader Linux and intermediate ARM64 failures remain preserved and qualified. Previous ARM64 preservation tests did not establish native predicate-mask fidelity. No target generated-code parity claim."
+    },
     "sharedMultiRegisterLocalStorage": {
       "scope": "Whole genMultiRegStoreToLocal and xarch genMultiRegStoreToSIMDLocal preserve sequential field liveness, Swift/LoongArch64/RISC-V offsets, 32-bit bounds and SIMD packing with destination/source aliasing.",
       "mapping": "Both definitions map to codegencommon/CodeGen.MultiRegisterStores.cs, including the xarch SIMD helper. The independent ARM SIMD helper and shared declaration remain native.",
@@ -1609,7 +1619,7 @@
       "windowsX64Classification": {
         "status": "baseline-recorded",
         "ledger": "artifacts/residual-reconciliation/windows-x64-ledger.json",
-        "owner": "4b57b744-36f1-4e6e-8b76-94c1a87d6e02",
+        "owner": "4126f755-f5b6-49bc-b68d-a80815468a7d",
         "policy": "Classify Windows-x64 implementation independently of whole-target retirement. Seed bounded area/family rows from existing receipts, reviews, mappings, NYIs and C# commits; consume subsequent changes from a recorded commit cursor. Reopen only relevant changed or ambiguous boundaries.",
         "statuses": ["implemented", "partial", "unported", "unknown", "not-applicable"],
         "firstDeliverable": "Consolidated scoped baseline with evidence revisions, counts by Windows status, explicit counting unit and unknown coverage, concrete Windows gaps, other-target blockers and separate retirement dispositions. Do not wait for exhaustive whole-target eligibility or completed deletion.",
@@ -1774,25 +1784,25 @@
           "scope": "Whole retained xarch scalar/atomic codegen families.",
           "owner": "4b57b744-36f1-4e6e-8b76-94c1a87d6e02",
           "files": "Scalar/atomic CodeGen partials and focused fixtures; parent owns shared register helpers and both ARM64 register fixtures.",
-          "status": "integer-cast packet accepted with SIMD returns; refill next distinct scalar/control family"
+          "status": "replacement worker recovering preserved throw-helper edits; source work only until parent grants the single validation slot"
         },
         {
           "scope": "Retained shared call-result and return lowering after call/argument dispatch closure.",
-          "owner": "b2253a3d-d101-444e-9c56-d631eb5b274b",
+          "owner": "41f2570d-eb35-4a4b-92d7-1b2d0a3df242",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "LowerRet and single-register call storage committed; LowerRetFieldList/SpillStructCallResult active"
+          "status": "replacement worker recovering three-partial lowering packet and missing acceptance checks; currently owns the single validation slot"
         },
         {
           "scope": "Whole retained shared kill-set family after return/write-barrier closure.",
           "owner": "bf8933b0-1d43-49d4-9d3e-91c4322f5215",
           "files": "LSRA partials and focused fixtures.",
-          "status": "getKillSetForNode/Call/ShiftRotate packet ready for integration review"
+          "status": "parent accepted corrected shared kill-set packet; B468 verified against old source; former worker instance remains unavailable"
         },
         {
           "scope": "Whole retained xarch SIMD/hardware codegen families.",
           "owner": "a9254d85-a0d4-46d4-a852-87eef8c242fb",
           "files": "Instruction and emitter partials with dedicated fixtures; exclude parent register helpers and shared GenTree queries.",
-          "status": "SIMD/x87 return packet accepted with integer casts; refill next retained SIMD family; parent owns multi-register SIMD local storage"
+          "status": "worker instance lost in outage; SIMD/x87 returns committed with integer casts; no newer packet found"
         }
       ],
       "parallelPackets": [
@@ -2196,7 +2206,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Multi-register storage retirement committed at native0d914d38; do not reapply. Finish its managed commit, then review/integrate ready LSRA getKillSetForNode/Call/ShiftRotate packet. A continues throw-helper codegen, HW continues retained SIMD codegen, and B continues field-list return/struct spill lowering. Preserve13Wasm, existing14x86 blockers and no publication.",
+    "nextAction": "Corrected LSRA kill-set retirement consolidated at nativeb735522c; do not reapply. Finish its managed commit with B468. Recovered lowering worker41f2570d owns the single validation slot for its node-owner correction and ARM64 coalescing gate; prior live-worktree ARM64 failure was concurrent scalar interference, not baseline debt. Scalar worker4126f755 is source-ready, awaiting next validation slot. Both use immutable owned-only snapshots. Multi-register stores are committedc84e404. Recovery profiling/evidence is in artifacts/power-recovery-20260929/recovery.json; do not rerun completed controls or disable analyzers. Preserve13Wasm and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
