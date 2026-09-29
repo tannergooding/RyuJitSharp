@@ -164,9 +164,6 @@ public partial class Emitter
 
     public unsafe CORINFO_FIELD_HANDLE emitFltOrDblConst(double constValue, emitAttr attr)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Floating constant-data materialization outside AMD64 is not implemented.");
-#else
         assert(_compiler is not null);
         assert(attr is EA_4BYTE or EA_8BYTE);
         var cnsSize = attr == EA_4BYTE ? sizeof(float) : sizeof(double);
@@ -175,7 +172,7 @@ public partial class Emitter
 
         if (attr == EA_4BYTE)
         {
-            var value = (float)constValue;
+            var value = FloatingPointUtils.convertToSingle(constValue);
             MemoryMarshal.Write(data, in value);
             dataType = TYP_FLOAT;
         }
@@ -186,13 +183,15 @@ public partial class Emitter
         }
 
         var cnsAlign = (uint)cnsSize;
+#if TARGET_XARCH
         if (_compiler.compCodeOpt == Compiler.SMALL_CODE)
         {
             cnsAlign = dataSection.MIN_DATA_ALIGN;
         }
+#endif
 
         var cnum = emitDataConst(data, cnsAlign, dataType);
+
         return Compiler.eeFindJitDataOffs(cnum);
-#endif
     }
 }

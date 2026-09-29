@@ -16,6 +16,17 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "arm64ConstantNodes": {
+      "scope": "Whole ARM64 genSetRegToConst, constant-address recording and scalable element-option mapping; shared floating constant data, TLS-handle classification and double-to-single conversion.",
+      "mapping": "FloatingPointUtils::convertToSingle maps native HOST_RISCV64 to the actual managed process architecture, independently of the compiler target. The SVE move-option enum and seven terminating recorder signatures preserve native defaults.",
+      "validation": "Full-analysis ARM64 recording controls: 630 Debug / 600 Release on the integrated xarch name/cost baseline. Shared Windows controls: 115 Debug / 114 Release. All 50 identical old controls fail at missing methods.",
+      "coverage": "Scalar signed zero and NaN payloads, immediate versus pool selection, fixed-vector broadcast order and SIMD12 physical padding, scalable load/extraction order before recorder dependencies, masks, relocation-dependent GC attributes, TLS deferral, cold/relocatable binding and jump-list links.",
+      "retirement": "Six definitions, one enum and four declarations; 576 exact native deletions.",
+      "nativeBefore": "82af7a2ac7f1bcab115a2c7ec45d6e6ac3b98c82",
+      "nativeAfter": "1273a804509144f4b58eb486bbcdd5fffe8504fd",
+      "limits": "SVE recorders remain explicit dependencies with native bodies retained. No ARM64 generated-code parity or RISC-V-host execution claim. The common genSetRegToConst declaration remains for other target bodies.",
+      "evidence": "artifacts/arm64-constant-nodes final-integrated, old-integrated and windows-1; artifacts/residual-reconciliation/prepare-constant-node-integration.py and constant-nodes-combined/applied/verification-20260929.json."
+    },
     "xarchNamesAndExecutionCosts": {
       "scope": "Whole shared instruction display-name dispatch, xarch stack-level/jump/no-code/CCMP classifiers, memory-operation classification and execution characteristics.",
       "mapping": "The two generator template guards and maintained jump/cost outputs now cover xarch. Non-xarch genInsDisplayName retains the standalone, terminating genInsName dependency.",
@@ -1194,7 +1205,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "82af7a2ac7f1bcab115a2c7ec45d6e6ac3b98c82",
+      "residualHead": "1273a804509144f4b58eb486bbcdd5fffe8504fd",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -1327,12 +1338,12 @@
       "caution": "Current backend allocation/codegen/emitter exclusions checked in this pass target non-Windows or non-AMD64 configurations. Commented callback declarations and historical baseline gaps are not an inventory of missing Windows implementations."
     },
     "activeBatch": {
-      "scope": "Four independent xarch lanes cover retained codegen, lowering, LSRA and SIMD/hardware codegen definitions. Parent finishes the already validated ARM64 constant-node packet and owns shared contracts, generator integration and native mutations.",
+      "scope": "Four independent xarch lanes cover retained codegen, lowering, LSRA and SIMD/hardware codegen definitions. Parent prioritizes integration and the Windows-x64 remainder after completing ARM64 constant-node materialization; shared contracts, generators and native mutations remain centrally owned.",
       "status": "in-progress",
       "doneWhen": [
         "Complete dependency-coherent retained xarch codegen and lowering families with whole native target branches; distinguish real omissions from retirement lag.",
         "Complete retained xarch scalar LSRA and SIMD codegen families, preserving x86 paths and tracking separate helper dependencies.",
-        "Complete whole ARM64 CodeGen::genSetRegToConst and directly coupled support, preserving numeric bits, instruction selection and separately tracked unported dependencies.",
+        "Integrate each validated xarch packet before assigning its lane another family; keep native retirement coupled to whole-function translation and preserve separately tracked helper dependencies.",
         "Resolve shared declaration/signature/guard conflicts centrally; preserve existing Windows behavior and compilability of affected target paths.",
         "Commit validated C# repairs with sparse dependency/exception records, then retire the exact completed native definitions in the same batch through the consolidated amended cleanup commit. Retain unported helper bodies."
       ],
@@ -1761,7 +1772,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Xarch name/jump/cost packets accepted at native82af7a2a:11defs1708lines,316D249R, combined generator verified; do not reapply. Reassign existing A/B workers to retained codegenxarch/lowerxarch families, excluding SIMD-specific codegen partials owned by a9254d85. LSRA bf8933b0's three-function282-line proposal is ready. SIMD a9254d85 is extending its five-function packet to all six remaining SIMD12 definitions in codegenxarch partials. Parent ARM64 constant-node sources pass final-9 and windows-1; all50 old controls fail. Finish exact source/native proof, retirement and local commit, then integrate LSRA. Preserve B461/B462,14 x86 baseline errors,13 Wasm WIP files and no publication.",
+    "nextAction": "ARM64 constant nodes accepted at native1273a804:6 definitions plus1 enum/576 lines,630D600R and shared Windows115D114R;50 identical old controls fail. Do not reapply. Parent next integrates ready lsra-xarch-scalar-proposed-20260929.json (3 definitions/282 lines), normalizing its nativeFile/ownedManagedFiles shape for existing integration tooling. A/B are active on codegenxarch/lowerxarch from f527abe; exclude six SIMD12 helpers owned by a9254d85, which is extending its first SIMD packet. Keep four xarch lanes productive and prioritize accepted-packet integration over another parent ARM64 family. Preserve14 x86 baseline errors,13 Wasm WIP files, oracle-plus-one and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

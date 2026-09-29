@@ -16,6 +16,29 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: ARM64 constant-node materialization
+
+Constant-node generation now retains the complete scalar, fixed-vector,
+scalable-vector and mask dispatch. Scalar signed zero and NaN payloads survive
+constant-pool selection; fixed-vector broadcasts retain native width precedence
+and SIMD12 padding decisions. Scalable paths retain register extraction and pool
+load ordering before their still-unported SVE recorders.
+
+Constant-address recording preserves cold/relocatable long forms and ordinary
+jump-list binding. Shared floating data retains target-specific alignment, and
+double-to-single conversion preserves the native RISC-V-host NaN rule. TLS
+deferral and relocation-dependent GC attributes retain native behavior.
+
+Full-analysis ARM64 recording controls pass 630 Debug/600 Release, including the
+committed xarch name/cost changes; shared Windows controls pass 115/114. All 50
+identical old controls fail at missing methods. Six definitions, one enum and
+four declarations retire 576 native lines in `1273a804`.
+
+SVE recorders remain explicit dependencies, not successful no-ops. No ARM64
+generated-code parity or RISC-V-host execution is claimed. Evidence is in
+`artifacts/arm64-constant-nodes` and its integration records under
+`artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Xarch names, jump classification and execution costs
 
 Shared instruction display-name dispatch preserves its target paths; non-xarch

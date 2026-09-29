@@ -11,11 +11,11 @@ public partial class Emitter
     private static void emitInsSve_I(instruction ins, emitAttr attr, nint imm)
         => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SVE immediate-only instruction recording is not ported.");
 
-    private static void emitInsSve_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt)
+    public void emitInsSve_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt = INS_OPTS_NONE)
         => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SVE single-register instruction recording is not ported.");
 
-    private static void emitInsSve_R_I(instruction ins, emitAttr attr, regNumber reg, nint imm,
-        insOpts opt, insScalableOpts sopt)
+    public void emitInsSve_R_I(instruction ins, emitAttr attr, regNumber reg, nint imm,
+        insOpts opt = INS_OPTS_NONE, insScalableOpts sopt = insScalableOpts.INS_SCALABLE_OPTS_NONE)
         => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SVE register-immediate instruction recording is not ported.");
 }
 #endif

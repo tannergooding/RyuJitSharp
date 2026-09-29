@@ -2392,6 +2392,17 @@ public partial class GenTree
 
     public bool IsIconHandle() => _oper.IsCnsIntOrI && AsIntCon().IsIconHandle();
 
+    public bool IsTlsIconHandle()
+    {
+        if (IsIconHandle())
+        {
+            const GenTreeFlags tlsFlags = GTF_ICON_TLSGD_OFFSET | GTF_ICON_TLS_HDL;
+            return (Flags & tlsFlags) == tlsFlags;
+        }
+
+        return false;
+    }
+
     public bool IsNotGcDef()
     {
         if (IsIntegralConst(0) || Oper is GT_LCL_ADDR or GT_LCLHEAP)

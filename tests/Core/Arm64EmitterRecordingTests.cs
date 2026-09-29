@@ -2111,6 +2111,278 @@ internal static unsafe class Arm64EmitterRecordingTests
     }
 #endif
 
+    [TestCase(var_types.TYP_FLOAT, 0UL, INS_movi)]
+    [TestCase(var_types.TYP_DOUBLE, 0UL, INS_movi)]
+    [TestCase(var_types.TYP_FLOAT, 0x3FF8000000000000UL, INS_fmov)]
+    [TestCase(var_types.TYP_DOUBLE, 0x3FF8000000000000UL, INS_fmov)]
+    [TestCase(var_types.TYP_FLOAT, 0x8000000000000000UL, INS_ldr)]
+    [TestCase(var_types.TYP_DOUBLE, 0x8000000000000000UL, INS_ldr)]
+    [TestCase(var_types.TYP_FLOAT, 0x7FF8123400000000UL, INS_ldr)]
+    [TestCase(var_types.TYP_DOUBLE, 0x7FF8123400000000UL, INS_ldr)]
+    public static void ConstantNodeFloatingPreservesBitsAndInstructionSelection(
+        var_types type, ulong bits, instruction expected)
+    {
+#if DEBUG
+        using var tls = new JitTls(null);
+#endif
+        var emitter = CreateConstantEmitter();
+        var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
+        var value = BitConverter.UInt64BitsToDouble(bits);
+        var tree = compiler.gtNewDconNode(type, value);
+        var codeGen = EmitterCodeGen(emitter);
+        codeGen.InternalRegisters.Add(tree, new regMaskTP(REG_R3.SingleTypeMask));
+        compiler.opts.compCodeOpt = Compiler.SMALL_CODE;
+        RecordConstantNode(codeGen, REG_V2, type, tree);
+
+        var descriptor = LastInstruction(emitter) ?? throw new AssertionException("Missing constant.");
+        Assert.That(descriptor.idIns(), Is.EqualTo(expected));
+        Assert.That(descriptor.idReg1(), Is.EqualTo(REG_V2));
+        if (expected == INS_ldr)
+        {
+            var section = emitter.emitConsDsc.dsdList ?? throw new AssertionException("Missing constant data.");
+            Assert.That(section.dsSize, Is.EqualTo(type.Size));
+            Assert.That(section.dsAlignment, Is.EqualTo(type.Size));
+            Assert.That(section.dsDataType, Is.EqualTo(type));
+            Assert.That(section.Data, Is.EqualTo(type == var_types.TYP_FLOAT
+                ? BitConverter.GetBytes((float)value) : BitConverter.GetBytes(value)));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R3));
+            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_LARGELDC));
+        }
+        else
+        {
+            Assert.That(emitter.emitConsDsc.dsdList, Is.Null);
+        }
+    }
+
+    [TestCase(var_types.TYP_SIMD8, 0u, INS_movi, INS_OPTS_2S)]
+    [TestCase(var_types.TYP_SIMD12, 0u, INS_movi, INS_OPTS_4S)]
+    [TestCase(var_types.TYP_SIMD16, uint.MaxValue, INS_mvni, INS_OPTS_4S)]
+    [TestCase(var_types.TYP_SIMD8, uint.MaxValue, INS_mvni, INS_OPTS_2S)]
+    [TestCase(var_types.TYP_SIMD16, 0x12000000u, INS_movi, INS_OPTS_4S)]
+    [TestCase(var_types.TYP_SIMD16, 0x12001200u, INS_movi, INS_OPTS_8H)]
+    [TestCase(var_types.TYP_SIMD16, 0x12121212u, INS_movi, INS_OPTS_16B)]
+    [TestCase(var_types.TYP_SIMD8, 0x12000000u, INS_movi, INS_OPTS_2S)]
+    [TestCase(var_types.TYP_SIMD8, 0x12001200u, INS_movi, INS_OPTS_4H)]
+    [TestCase(var_types.TYP_SIMD8, 0x12121212u, INS_movi, INS_OPTS_8B)]
+    public static void ConstantNodeVectorsPreserveBroadcastOrder(
+        var_types type, uint bits, instruction expected, insOpts option)
+    {
+#if DEBUG
+        using var tls = new JitTls(null);
+#endif
+        var emitter = CreateConstantEmitter();
+        var tree = new GenTreeVecCon(type) { RegNum = REG_V3 };
+        tree.SimdVal.AsSpan<uint>().Fill(bits);
+        var targetType = type == var_types.TYP_SIMD12 ? var_types.TYP_SIMD16 : type;
+        RecordConstantNode(EmitterCodeGen(emitter), REG_V2, targetType, tree);
+
+        var descriptor = LastInstruction(emitter) ?? throw new AssertionException("Missing vector constant.");
+        Assert.That(descriptor.idIns(), Is.EqualTo(expected));
+        Assert.That(descriptor.idInsOpt(), Is.EqualTo(option));
+        Assert.That(descriptor.idReg1(), Is.EqualTo(REG_V2));
+        Assert.That(emitter.emitConsDsc.dsdList, Is.Null);
+    }
+
+    [TestCase(var_types.TYP_SIMD8)]
+    [TestCase(var_types.TYP_SIMD12)]
+    [TestCase(var_types.TYP_SIMD16)]
+    public static void ConstantNodeVectorPoolPreservesThePhysicalPayload(var_types type)
+    {
+#if DEBUG
+        using var tls = new JitTls(null);
+#endif
+        var emitter = CreateConstantEmitter();
+        var tree = new GenTreeVecCon(type);
+        tree.SimdVal.AsSpan<uint>().Fill(0x12);
+        tree.SimdVal.u32[type == var_types.TYP_SIMD8 ? 1 : 3] = 0x13;
+        var codeGen = EmitterCodeGen(emitter);
+        codeGen.InternalRegisters.Add(tree, new regMaskTP(REG_R3.SingleTypeMask));
+        var targetType = type == var_types.TYP_SIMD8 ? type : var_types.TYP_SIMD16;
+        RecordConstantNode(codeGen, REG_V2, targetType, tree);
+
+        var section = emitter.emitConsDsc.dsdList ?? throw new AssertionException("Missing vector data.");
+        Assert.That(section.Data, Is.EqualTo(tree.SimdVal.AsSpan<byte>()[..(int)targetType.Size].ToArray()));
+        Assert.That(section.dsAlignment, Is.EqualTo(targetType.Size));
+        Assert.That(section.dsDataType, Is.EqualTo(targetType));
+        var descriptor = LastInstruction(emitter) ?? throw new AssertionException("Missing vector load.");
+        Assert.That(descriptor.idIns(), Is.EqualTo(INS_ldr));
+        Assert.That(descriptor.idReg1(), Is.EqualTo(REG_V2));
+        Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R3));
+    }
+
+    [TestCase(var_types.TYP_INT, 0L, false, GCInfo.GCtype.GCT_NONE)]
+    [TestCase(var_types.TYP_LONG, 0x12345678L, false, GCInfo.GCtype.GCT_NONE)]
+    [TestCase(var_types.TYP_BYREF, 0x12345678L, false, GCInfo.GCtype.GCT_NONE)]
+    [TestCase(var_types.TYP_REF, 0L, false, GCInfo.GCtype.GCT_NONE)]
+    [TestCase(var_types.TYP_BYREF, 0x12345678L, true, GCInfo.GCtype.GCT_BYREF)]
+    [TestCase(var_types.TYP_REF, 0L, true, GCInfo.GCtype.GCT_GCREF)]
+    public static void ConstantNodeIntegersPreserveTypeAndModifiedRegister(
+        var_types type, long value, bool reloc, GCInfo.GCtype gcType)
+    {
+#if DEBUG
+        using var tls = new JitTls(null);
+#endif
+        var emitter = CreateConstantEmitter();
+        var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
+        compiler.opts.compReloc = reloc;
+        var tree = new GenTreeIntCon(type, (nint)value);
+        var codeGen = EmitterCodeGen(emitter);
+        RecordConstantNode(codeGen, REG_R4, type, tree);
+        var descriptor = LastInstruction(emitter) ?? throw new AssertionException("Missing integer constant.");
+        Assert.That(descriptor.idGCref(), Is.EqualTo(gcType));
+        Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R4));
+        Assert.That((codeGen.RegSet.rsGetModifiedRegsMask() & new regMaskTP(REG_R4.SingleTypeMask)) != RBM_NONE, Is.True);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ConstantNodeTlsDeferralRequiresRelocation(bool reloc)
+    {
+#if DEBUG
+        using var tls = new JitTls(null);
+#endif
+        var emitter = CreateConstantEmitter();
+        var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
+        compiler.opts.compReloc = reloc;
+        var tree = new GenTreeIntCon(TYP_I_IMPL, 0x1234) {
+            Flags = GTF_ICON_TLS_HDL | GTF_ICON_TLSGD_OFFSET,
+        };
+        RecordConstantNode(EmitterCodeGen(emitter), REG_R4, TYP_I_IMPL, tree);
+        Assert.That(CurrentInstructions(emitter), Has.Count.EqualTo(reloc ? 0 : 1));
+    }
+
+    [TestCase(false, false, false)]
+    [TestCase(true, false, false)]
+    [TestCase(false, true, false)]
+#if DEBUG
+    [TestCase(false, false, true)]
+#endif
+    public static void ConstantNodeAddressRecordingPreservesBindingAndJumpLinks(
+        bool cold, bool reloc, bool forceLong)
+    {
+#if DEBUG
+        using var tls = new JitTls(null);
+#endif
+        var emitter = CreateConstantEmitter();
+        var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
+        var block = compiler.compCurBB ?? throw new AssertionException("Missing block.");
+        if (cold)
+        {
+            compiler.fgFirstColdBlock = block;
+            block.SetFlags(BasicBlockFlags.BBF_COLD);
+        }
+        if (reloc)
+        {
+            compiler.compCurBB = null;
+        }
+#if DEBUG
+        compiler.opts.compLongAddress = forceLong;
+#endif
+        emitter.emitIns(INS_nop);
+        var handle = Compiler.eeFindJitDataOffs(64);
+        RecordConstantAddress(emitter, INS_ldr, EA_8BYTE | (reloc ? EA_DSP_RELOC_FLG : 0),
+            REG_R4, REG_R4, handle, 4);
+        var keepLong = cold || reloc || forceLong;
+        RecordingEmitter.CheckConstantAddress(emitter, keepLong, reloc, (nint)handle);
+    }
+
+    [TestCase(SimdScalableKind.SimdScalableRepeated, 0, 0, 0, "register-immediate")]
+    [TestCase(SimdScalableKind.SimdScalableRepeated, -1, 0, 0, "register-immediate")]
+    [TestCase(SimdScalableKind.SimdScalableRepeated, 127, 0, 0, "register-immediate")]
+    [TestCase(SimdScalableKind.SimdScalableRepeated, 0x12345678, 0, 1, "two-register")]
+    [TestCase(SimdScalableKind.SimdScalableSequence, 1, 2, 0, "two-immediate")]
+    [TestCase(SimdScalableKind.SimdScalableSequence, 1, 64, 1, "two-register/immediate")]
+    [TestCase(SimdScalableKind.SimdScalableSequence, 32, 2, 1, "two-register/immediate")]
+    [TestCase(SimdScalableKind.SimdScalableSequence, 32, 64, 2, "three-register")]
+    [TestCase(SimdScalableKind.SimdScalableScalar, 32, 0, 0, "register-immediate")]
+    public static void ConstantNodeScalablePreservesLoadsBeforeItsExplicitDependency(
+        SimdScalableKind kind, int index, int step, int loads, string dependency)
+    {
+#if DEBUG
+        using var tls = new JitTls(null);
+#endif
+        var emitter = CreateConstantEmitter();
+        var tree = new GenTreeVecCon(var_types.TYP_SIMD);
+        tree.SimdScalableVal.BaseType = var_types.TYP_INT;
+        tree.SimdScalableVal.Kind = kind;
+        tree.SimdScalableVal.Index.i32[0] = index;
+        tree.SimdScalableVal.Step.i32[0] = step;
+        var codeGen = EmitterCodeGen(emitter);
+        codeGen.InternalRegisters.Add(tree, new regMaskTP(REG_R3.SingleTypeMask | REG_R5.SingleTypeMask));
+
+        Assert.That(() => RecordConstantNode(codeGen, REG_V2, var_types.TYP_SIMD, tree),
+            Throws.TypeOf<FatalJitException>().With.Message.Contains(dependency));
+        var instructions = CurrentInstructions(emitter);
+        Assert.That(instructions, Has.Count.EqualTo(loads));
+        var section = emitter.emitConsDsc.dsdList;
+        for (var i = 0; i < loads; i++)
+        {
+            Assert.That(section, Is.Not.Null);
+            var data = section ?? throw new AssertionException("Missing scalable constant data.");
+            var expected = kind == SimdScalableKind.SimdScalableRepeated || index > 15 ? index : step;
+            if (i != 0)
+            {
+                expected = step;
+            }
+            Assert.That(BitConverter.ToInt64(data.Data), Is.EqualTo((long)expected));
+            Assert.That(data.dsSize, Is.EqualTo(8));
+            Assert.That(data.dsDataType, Is.EqualTo(var_types.TYP_LONG));
+            Assert.That(instructions[i].idReg1(), Is.EqualTo(i == 0 ? REG_R3 : REG_R5));
+            Assert.That(instructions[i].idReg2(), Is.EqualTo(instructions[i].idReg1()));
+            section = data.dsNext;
+        }
+    }
+
+    [TestCase(0UL, "single-register")]
+    [TestCase(1UL, "register-pattern")]
+    [TestCase(0xFFFFUL, "register-pattern")]
+    public static void ConstantNodeMasksReachTheirExplicitRecordingDependency(ulong bits, string dependency)
+    {
+#if DEBUG
+        using var tls = new JitTls(null);
+#endif
+        var emitter = CreateConstantEmitter();
+        simdmask_t value = default;
+        value.u64[0] = bits;
+        var tree = new GenTreeMskCon(value);
+        Assert.That(() => RecordConstantNode(EmitterCodeGen(emitter), REG_P1, var_types.TYP_MASK, tree),
+            Throws.TypeOf<FatalJitException>().With.Message.Contains(dependency));
+        Assert.That(CurrentInstructions(emitter), Is.Empty);
+    }
+
+    [TestCase(EA_1BYTE, INS_OPTS_SCALABLE_B)]
+    [TestCase(EA_2BYTE, INS_OPTS_SCALABLE_H)]
+    [TestCase(EA_4BYTE, INS_OPTS_SCALABLE_S)]
+    [TestCase(EA_8BYTE, INS_OPTS_SCALABLE_D)]
+    [TestCase(EA_16BYTE, INS_OPTS_SCALABLE_Q)]
+    public static void ConstantNodeScalableOptionsPreserveElementWidths(emitAttr size, insOpts expected)
+    {
+        Assert.That(ScalableOption(null, size), Is.EqualTo(expected));
+    }
+
+    private static RecordingEmitter CreateConstantEmitter()
+    {
+        var emitter = CreateEmitter();
+        var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
+#if DEBUG
+        JitTls.Compiler = compiler;
+#endif
+        compiler.eeInfoInitialized = true;
+        compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
+        compiler.compCurBB = new BasicBlock(null, null);
+        return emitter;
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genSetRegToConst")]
+    private static extern void RecordConstantNode(CodeGen codeGen, regNumber reg, var_types type, GenTree tree);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_C")]
+    private static extern void RecordConstantAddress(Emitter emitter, instruction ins, emitAttr attr,
+        regNumber reg, regNumber addrReg, CORINFO_FIELD_STRUCT_* handle, int offset);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "optGetSveInsOpt")]
+    private static extern insOpts ScalableOption(Emitter? emitter, emitAttr size);
+
     private static RecordingEmitter CreateLocalStackEmitter(int offset, bool fpBased)
     {
         var emitter = CreateEmitter();
@@ -2189,6 +2461,31 @@ internal static unsafe class Arm64EmitterRecordingTests
 
     private sealed class RecordingEmitter(CodeGen codeGen) : Emitter(codeGen)
     {
+        public static void CheckConstantAddress(Emitter emitter, bool keepLong, bool reloc, nint handle)
+        {
+            var descriptor = (instrDescJmp)(LastInstruction(emitter) ??
+                throw new AssertionException("Missing constant address."));
+            Assert.That(descriptor.idIsBound(), Is.True);
+            Assert.That(descriptor.idjKeepLong, Is.EqualTo(keepLong));
+            Assert.That(descriptor.idjShort, Is.False);
+            Assert.That(descriptor.idSmallCns(), Is.EqualTo(4));
+            Assert.That((nint)descriptor.idAddr().iiaFieldHnd, Is.EqualTo(handle));
+            Assert.That(descriptor.idIsDspReloc(), Is.EqualTo(reloc));
+            if (keepLong)
+            {
+                Assert.That(CurrentJumpList(emitter), Is.Null);
+            }
+            else
+            {
+                Assert.That(CurrentJumpList(emitter), Is.SameAs(descriptor));
+                Assert.That(descriptor.idjIG, Is.Not.Null);
+                Assert.That(descriptor.idjOffs, Is.EqualTo(4u));
+            }
+        }
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGjmpList")]
+        private static extern ref instrDescJmp? CurrentJumpList(Emitter emitter);
+
         public static instrDesc Basic(instruction ins, insFormat format)
         {
             var descriptor = new instrDescBasic();

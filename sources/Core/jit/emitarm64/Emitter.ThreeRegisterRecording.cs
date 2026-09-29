@@ -1374,8 +1374,10 @@ public partial class Emitter
         appendToCurIG(id);
     }
 
-    private static void emitInsSve_R_R_R(instruction ins, emitAttr attr, regNumber reg1,
-        regNumber reg2, regNumber reg3, insOpts opt, insScalableOpts sopt)
+    public void emitInsSve_R_R_R(instruction ins, emitAttr attr, regNumber reg1,
+        regNumber reg2, regNumber reg3, insOpts opt = INS_OPTS_NONE,
+        insScalableOpts sopt = insScalableOpts.INS_SCALABLE_OPTS_NONE,
+        insSveMovOpts mopt = insSveMovOpts.INS_SVE_MOV_OPTS_UNPRED)
         => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SVE three-register recording is not ported.");
 }
 #endif

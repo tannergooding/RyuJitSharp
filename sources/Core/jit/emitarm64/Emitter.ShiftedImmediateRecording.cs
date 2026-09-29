@@ -119,8 +119,8 @@ public partial class Emitter
         appendToCurIG(id);
     }
 
-    private static void emitInsSve_R_I_I(instruction ins, emitAttr attr, regNumber reg,
-        nint imm1, nint imm2, insOpts opt)
+    public void emitInsSve_R_I_I(instruction ins, emitAttr attr, regNumber reg,
+        nint imm1, nint imm2, insOpts opt = INS_OPTS_NONE)
         => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SVE register/two-immediate instruction recording is not ported.");
 }
 #endif
