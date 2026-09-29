@@ -19,6 +19,30 @@ public static partial class regNumberExtensions
         }
 
 #if HAS_FIXED_REGISTER_SET
+        public regMaskTP GetFloatMask(var_types type = TYP_DOUBLE)
+        {
+            return new regMaskTP(regNum.GetSingleTypeFloatMask(type));
+        }
+
+        public regMask GetSingleTypeFloatMask(var_types type = TYP_DOUBLE)
+        {
+            assert(regNum.IsFltReg);
+#if TARGET_ARM
+            assert(type is TYP_DOUBLE ? ((regNum - REG_F0) % 2) == 0 : type is TYP_FLOAT or TYP_STRUCT);
+            assert(regNum is >= REG_F0 and <= REG_F31);
+#endif
+            var mask = regNum.SingleTypeMask;
+
+#if TARGET_ARM
+            if (type is TYP_DOUBLE)
+            {
+                mask |= (regNum + 1).SingleTypeMask;
+            }
+#endif
+
+            return mask;
+        }
+
         public bool IsFltReg => regNum is >= REG_FP_FIRST and <= REG_FP_LAST;
 
         public bool IsIntReg => regNum is >= REG_INT_FIRST and <= REG_INT_LAST;

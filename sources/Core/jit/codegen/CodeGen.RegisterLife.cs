@@ -25,12 +25,15 @@ public sealed partial class CodeGen
     {
         assert(local.lvIsInReg);
         var reg = local.RegNum;
-#if TARGET_ARM
         if (reg.IsFltReg)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM floating register-variable masks are not implemented.");
-        }
+#if TARGET_ARM
+            return reg.GetFloatMask(local.GetRegisterType());
+#else
+            return reg.GetFloatMask();
 #endif
+        }
+
         return regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
     }
 

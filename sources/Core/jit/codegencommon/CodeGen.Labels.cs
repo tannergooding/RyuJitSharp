@@ -7,11 +7,12 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+#if UNIX_X86_ABI
+    private uint curNestedAlignment { get; set; }
+#endif
+
     public BasicBlock genCreateTempLabel()
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Temporary code-generation labels require AMD64.");
-#else
 #if DEBUG
         _compiler.fgSafeBasicBlockCreation = true;
 #endif
@@ -27,11 +28,14 @@ public sealed partial class CodeGen
         assert(_compiler.compCurBB is not null);
         block.CopyFlags(_compiler.compCurBB, BBF_COLD);
 #if DEBUG
+#if UNIX_X86_ABI
+        block.bbTgtStkDepth = unchecked((int)((genStackLevel - curNestedAlignment) / sizeof(int)));
+#else
         block.bbTgtStkDepth = unchecked((int)(genStackLevel / sizeof(int)));
+#endif
 #endif
 
         return block;
-#endif
     }
 
     private void genLogLabel(BasicBlock block)

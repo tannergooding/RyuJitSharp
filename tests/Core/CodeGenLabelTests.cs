@@ -12,6 +12,55 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class CodeGenLabelTests
 {
+    [TestCase(false, 0u)]
+    [TestCase(false, 12u)]
+    [TestCase(true, 24u)]
+    public static void TemporaryLabelsPreserveColdnessAndStackDepth(bool cold, uint stackLevel)
+    {
+        WithCompiler((compiler, codeGen) => {
+            var block = CreateBlocks(compiler, BBJ_RETURN)[0];
+            if (cold)
+            {
+                block.SetFlags(BBF_COLD);
+            }
+            compiler.compCurBB = block;
+            StackLevel(codeGen) = stackLevel;
+
+            var label = codeGen.genCreateTempLabel();
+
+            Assert.That(label, Is.Not.SameAs(block));
+            Assert.That(label.HasFlag(BBF_HAS_LABEL), Is.True);
+            Assert.That(label.HasFlag(BBF_COLD), Is.EqualTo(cold));
+            Assert.That(compiler.fgFirstBB, Is.SameAs(block));
+            Assert.That(compiler.fgLastBB, Is.SameAs(block));
+#if DEBUG
+            Assert.That(compiler.fgSafeBasicBlockCreation, Is.False);
+            Assert.That(label.bbTgtStkDepth, Is.EqualTo(stackLevel / sizeof(int)));
+#endif
+        });
+    }
+
+    [TestCase(var_types.TYP_INT)]
+    [TestCase(var_types.TYP_FLOAT)]
+    [TestCase(var_types.TYP_DOUBLE)]
+    public static void LocalRegisterMasksRespectRegisterType(var_types type)
+    {
+        WithCompiler((compiler, codeGen) => {
+            var reg = type is var_types.TYP_INT ? REG_INT_FIRST : REG_FP_FIRST;
+            var local = new LclVarDsc { Type = type, RegNum = reg, lvLRACandidate = true };
+            var expected = reg.SingleTypeMask;
+#if TARGET_ARM
+            if (type is var_types.TYP_DOUBLE)
+            {
+                expected |= (reg + 1).SingleTypeMask;
+            }
+#endif
+
+            Assert.That(codeGen.genGetRegMask(in local),
+                Is.EqualTo(regMaskTP.CreateFromRegNum(reg, expected)));
+        });
+    }
+
     [TestCase(BBJ_ALWAYS, false, false)]
     [TestCase(BBJ_ALWAYS, true, true)]
     [TestCase(BBJ_EHCATCHRET, false, true)]
@@ -186,4 +235,7 @@ internal static unsafe class CodeGenLabelTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genMarkLabelsForCodegen")]
     private static extern void MarkLabels(CodeGen codeGen);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "genStackLevel")]
+    private static extern ref uint StackLevel(CodeGen codeGen);
 }

@@ -13,9 +13,6 @@ public partial class Emitter
 {
     public unsafe byte* emitOutputCV(byte* dst, instrDesc id, ulong code, CnsVal* addc)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Static-variable byte output requires Windows AMD64.");
-#else
         assert(id.idHasMemGen());
 
         var size = id.idOpSize();
@@ -23,6 +20,7 @@ public partial class Emitter
         var ins = id.idIns();
         var fldh = id.idAddr().iiaFieldHnd;
         var offs = emitGetInsDsp(id);
+        var isMoffset = false;
 
         if (fldh == FLD_GLOBAL_FS)
         {
@@ -51,6 +49,26 @@ public partial class Emitter
                 opsz = 1;
             }
         }
+#if TARGET_X86
+        else if (ins == INS_mov && id.idReg1() == REG_EAX)
+        {
+            var fmt = id.idInsFmt();
+            if (fmt == IF_RWR_MRD)
+            {
+                assert(code == ((ulong)insCodeRM(ins) |
+                    ((ulong)insEncodeReg345(id, REG_EAX, EA_PTRSIZE, null) << 8) | 0x0500));
+                code = (code & ~0xFFFFFFFFUL) | 0xA0;
+                isMoffset = true;
+            }
+            else if (fmt == IF_MWR_RRD)
+            {
+                assert(code == ((ulong)insCodeMR(ins) |
+                    ((ulong)insEncodeReg345(id, REG_EAX, EA_PTRSIZE, null) << 8) | 0x0500));
+                code = (code & ~0xFFFFFFFFUL) | 0xA2;
+                isMoffset = true;
+            }
+        }
+#endif
 
         if (EncodedBySSE38orSSE3A(ins) || ins == INS_crc32)
         {
@@ -148,12 +166,21 @@ public partial class Emitter
                 }
 
                 case EA_4BYTE:
+#if TARGET_AMD64
                 case EA_8BYTE:
+#endif
                 {
                     code |= 1;
                     break;
                 }
 
+#if TARGET_X86
+                case EA_8BYTE:
+                {
+                    code |= 4;
+                    break;
+                }
+#endif
                 default:
                 {
                     throw new FatalJitException("Unexpected static operand size.");
@@ -164,7 +191,7 @@ public partial class Emitter
         dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, ref code);
         if (code != 0)
         {
-            if (id.idInsFmt() is IF_MRD_OFF or IF_RWR_MRD_OFF)
+            if (id.idInsFmt() is IF_MRD_OFF or IF_RWR_MRD_OFF || isMoffset)
             {
                 dst += emitOutputByte(dst, unchecked((long)code));
             }
@@ -186,9 +213,9 @@ public partial class Emitter
             addr = emitDataOffsetToPtr((uint)dataOffset);
 
 #if DEBUG
+            var byteSize = EA_SIZE_IN_BYTES(emitGetMemOpSize(id, false));
             if (emitChkAlign && ins != INS_lea)
             {
-                var byteSize = EA_SIZE_IN_BYTES(emitGetMemOpSize(id, false));
                 var compiler = _compiler ?? throw new FatalJitException("An initialized compiler is required for static output.");
                 var alignment = compiler.compCodeOpt == Compiler.SMALL_CODE ? 4 : byteSize;
                 assert(((nuint)addr % (uint)alignment) == 0);
@@ -202,58 +229,80 @@ public partial class Emitter
         }
 
         var target = unchecked(addr + (long)offs);
-        var addlDelta = 0;
-        if (addc is not null)
+        if (!isMoffset)
         {
-            var cval = addc->cnsVal;
-            noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
-            switch (opsz)
+            var addlDelta = 0;
+#if TARGET_AMD64
+            if (addc is not null)
             {
-                case 0:
-                case 4:
-                case 8:
+                var cval = addc->cnsVal;
+                noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
+                switch (opsz)
                 {
-                    addlDelta = -4;
-                    break;
-                }
+                    case 0:
+                    case 4:
+                    case 8:
+                    {
+                        addlDelta = -4;
+                        break;
+                    }
 
-                case 2:
-                {
-                    addlDelta = -2;
-                    break;
-                }
+                    case 2:
+                    {
+                        addlDelta = -2;
+                        break;
+                    }
 
-                case 1:
-                {
-                    addlDelta = -1;
-                    break;
-                }
+                    case 1:
+                    {
+                        addlDelta = -1;
+                        break;
+                    }
 
-                default:
-                {
-                    throw new FatalJitException("Unexpected static immediate size.");
+                    default:
+                    {
+                        throw new FatalJitException("Unexpected static immediate size.");
+                    }
                 }
             }
-        }
+#endif
 
-        if (id.idIsDspReloc())
-        {
-            dst += emitOutputLong(dst, 0);
+#if TARGET_AMD64
+            if (id.idIsDspReloc())
+            {
+                dst += emitOutputLong(dst, 0);
+            }
+            else
+            {
+                dst += emitOutputLong(dst, (long)(nint)target);
+            }
+#else
+            dst += emitOutputLong(dst, unchecked((int)(nint)target));
+#endif
+
+            if (id.idIsDspReloc())
+            {
+                emitRecordRelocation(dst - sizeof(int), target, RELOC_DISP32, addlDelta);
+            }
         }
+#if TARGET_X86
         else
         {
-            dst += emitOutputLong(dst, (long)(nint)target);
-        }
+            dst += emitOutputSizeT(dst, (long)(nint)target);
 
-        if (id.idIsDspReloc())
-        {
-            emitRecordRelocation(dst - sizeof(int), target, RELOC_DISP32, addlDelta);
+            if (id.idIsDspReloc())
+            {
+                emitRecordRelocation(dst - TARGET_POINTER_SIZE, target, CorInfoReloc.DIRECT);
+            }
         }
+#endif
 
         if (addc is not null)
         {
             var cval = addc->cnsVal;
+#if TARGET_AMD64
             noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
+#endif
             switch (opsz)
             {
                 case 0:
@@ -367,7 +416,23 @@ public partial class Emitter
         }
 
         return dst;
-#endif
     }
+
+#if TARGET_X86
+    private static ulong AddRexWPrefix(instrDesc id, ulong code)
+    {
+        if (hasEvexPrefix(code))
+        {
+            return code | 0x0000800000000000UL;
+        }
+
+        if (hasVexPrefix(code))
+        {
+            return code | 0x00008000000000UL;
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED, "REX.W without a VEX/EVEX prefix is unavailable on x86.");
+    }
+#endif
 }
 #endif

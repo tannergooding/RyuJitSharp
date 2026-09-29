@@ -16,6 +16,28 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Static-field output and CodeGen target helpers
+
+Static-field output now retains its Unix AMD64 and x86 paths, including absolute
+accumulator addresses, width selection, displacement/immediate ordering and
+relocations. Temporary labels no longer reject non-AMD64 targets and retain the
+Unix-x86 nested-alignment adjustment. Local-register masks preserve ARM
+double-register pairs through the translated floating-mask helpers.
+
+Integrated Windows checks pass 197 Debug/193 Release; ARM64 label/mask checks
+pass 19 per configuration and Linux-x64 static-output checks pass five per
+configuration. Identical old-source fixtures fail at the original target guards:
+three ARM64 label cases in both configurations and five Linux output cases in
+Debug. ARM32/Unix-x86 builds remain blocked by preexisting parser/platform
+errors, and the separate x86 output fixture remains blocked by its known
+declaration errors. No target runtime or generated-code parity is inferred.
+
+Five complete definitions retire 549 body lines and five associated declaration
+lines in `01edbed9`, still the sole oracle child. Distinct x86 data-offset,
+unprefixed REX.W, alignment-mutating and other backend dependencies remain.
+Evidence: `artifacts/residual-reconciliation/static-output-codegen-combined-20260929.json`
+and its applied receipt.
+
 ## 2026-09-29: Method initialization and sizing closure
 
 Method entry now retains native target-specific resets, backward navigation

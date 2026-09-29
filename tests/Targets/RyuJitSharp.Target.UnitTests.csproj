@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-arm64')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-arm64')))">
+    <Compile Include="..\Core\CodeGenLabelTests.cs" Link="CodeGenLabelTests.cs" />
     <Compile Include="..\Core\ControlFlowGuardLoweringTests.cs" Link="ControlFlowGuardLoweringTests.cs" />
     <Compile Include="..\Core\PInvokeCallLoweringTests.cs" Link="PInvokeCallLoweringTests.cs" />
     <Compile Include="..\Core\PInvokeFrameLoweringTests.cs" Link="PInvokeFrameLoweringTests.cs" />
@@ -32,6 +33,7 @@
 
   <ItemGroup Condition="'$(RyuJitTargetRuntimeIdentifier)' == 'win-x86' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'win-x86')">
     <Compile Include="..\Core\X86EmitterStaticFieldDependencyTests.cs" Link="X86EmitterStaticFieldDependencyTests.cs" />
+    <Compile Include="..\Core\X86EmitterStaticOutputTests.cs" Link="X86EmitterStaticOutputTests.cs" />
   </ItemGroup>
 
 </Project>
