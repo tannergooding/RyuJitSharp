@@ -134,8 +134,11 @@ internal static unsafe class LinearScanDefinitionConstructionTests
 #endif
     }
 
-    [Test]
-    public static void FloatRegisterKillSavesTrackedLargeVectorLocalsFromBlockLiveness()
+    [TestCase(false)]
+#if DEBUG
+    [TestCase(true)]
+#endif
+    public static void FloatRegisterKillSavesTrackedLargeVectorLocalsFromBlockLiveness(bool missingBlockLiveness)
     {
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         WithAllocator((compiler, allocator) => {
@@ -152,7 +155,7 @@ internal static unsafe class LinearScanDefinitionConstructionTests
             compiler.fgSafeBasicBlockCreation = true;
 #endif
             var block = BasicBlock.New(compiler, BBJ_ALWAYS);
-            block.bbLiveIn = [1];
+            block.bbLiveIn = [missingBlockLiveness ? 0 : 1];
             block.bbVarDef = [0];
             compiler.compCurBB = block;
 
@@ -169,8 +172,25 @@ internal static unsafe class LinearScanDefinitionConstructionTests
 
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
             var floatKillSet = GetKillSetForCall(allocator, call);
+#if DEBUG
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.doAssert = &RecordAssertion;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            using var tls = new JitTls(&jitInfo);
+            s_assertExpression = null;
+#endif
             BuildKills(allocator, call, floatKillSet);
 
+#if DEBUG
+            if (missingBlockLiveness)
+            {
+                Assert.That(s_assertExpression, Does.Contain("VarSetOps.IsSubset"));
+                Assert.That(localInterval.isPartiallySpilled, Is.False);
+                return;
+            }
+
+            Assert.That(s_assertExpression, Is.Null);
+#endif
             Assert.That(localInterval.isPartiallySpilled, Is.True);
             var upperInterval = allocator.intervals.Find(interval => interval.IsUpperVector())
                 ?? throw new AssertionException("The candidate local has no upper-vector interval.");
@@ -183,6 +203,21 @@ internal static unsafe class LinearScanDefinitionConstructionTests
         }, enregisterLocalVars: true);
 #endif
     }
+
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+    [TestCase(4, TYP_INT)]
+    [TestCase(8, TYP_LONG)]
+    public static void StructLocalUpperVectorTypeUsesTheDescriptor(int size, var_types registerType)
+    {
+        WithAllocator((compiler, allocator) => {
+            compiler.lvaTable = [new() { Type = TYP_STRUCT, Layout = new ClassLayout((uint)size) }];
+            compiler.lvaCount = 1;
+            var local = compiler.gtNewLclvNode(TYP_STRUCT, 0);
+
+            Assert.That(GetUpperVectorTemporaryType(allocator, local), Is.EqualTo(registerType));
+        });
+    }
+#endif
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE && WINDOWS_AMD64_ABI
     [Test]
@@ -451,6 +486,17 @@ internal static unsafe class LinearScanDefinitionConstructionTests
             JitTls.Compiler = previous;
         }
     }
+
+#if DEBUG
+    private static string? s_assertExpression;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int RecordAssertion(ICorJitInfo* info, byte* filePath, int lineNumber, byte* expression)
+    {
+        s_assertExpression = Marshal.PtrToStringUTF8((nint)expression);
+        return 0;
+    }
+#endif
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE && WINDOWS_AMD64_ABI
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]

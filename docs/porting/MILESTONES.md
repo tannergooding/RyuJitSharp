@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Local-candidate and upper-vector construction
+
+The two candidate checks and three upper-vector interval/save/restore builders
+retain their whole native bodies. The save builder now restores the omitted
+Debug block-liveness subset diagnostic (B470), and struct-local classification
+uses the native descriptor overload. Five definitions, declarations and their
+feature enclosure retire 314 lines in `93423e1a`.
+
+Full-analysis Windows controls pass 80 Debug/76 Release across five construction
+fixtures. Old-source controls pass 3/4, failing only the missing diagnostic;
+normalized struct-local classifications are preservation cases, not newly found
+behavioral bugs. Evidence: `artifacts/lsra-local-vector-construction-0860136-v3`.
+No generated-code divergence or other-target execution is claimed.
+
 ## 2026-09-29: Whole xarch shift generation
 
 Scalar, split-long and read-modify-write shifts retain their whole x86/AMD64

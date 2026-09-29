@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "localAndUpperVectorConstructionClosure": {
+      "scope": "Whole candidate/multireg containment checks and upper-vector interval/save/restore construction. Restores the native Debug invariant that live large vectors occur in the current block's live-in/definitions; uses the native descriptor register-type overload for struct-local classification.",
+      "validation": "Full-analysis Windows80 Debug/76 Release pass across definition, local-candidate, node, reference and local-interval construction fixtures. Old-source controls pass3/4: only the missing liveness diagnostic fails. Two normalized struct-local classification cases preserve existing behavior.",
+      "retirement": "Five definitions, feature enclosure, headings and declarations;314 native lines. Previously retired getUpperVectorInterval remains absent; each remaining function was individually matched to the pin before retiring the shared enclosure.",
+      "nativeBefore": "4a79d03184ba7c490f97650f3fdde1958d21e765",
+      "nativeAfter": "93423e1ae28ac6a5477df6857b0e81fe2b7219a9",
+      "evidence": "artifacts/lsra-local-vector-construction-0860136-v3 and corresponding local-vector-construction retirement records.",
+      "limits": "B470 restores a Debug diagnostic, not demonstrated generated-code divergence. Other-target execution and generated-code parity are not established."
+    },
     "xarchShiftClosure": {
       "scope": "Whole genCodeForShift, x86 genCodeForShiftLong and genCodeForShiftRMW preserve target branches, count conversion, operand moves and instruction ordering.",
       "validation": "Full-analysis Windows415 Debug/399 Release and Linux350 Debug/337 Release preservation controls pass. Old Linux shifts39/39 pass; broad old/final Linux runs have exactly the same63 failures at the separately retained indirect-store guard.",
@@ -2243,7 +2252,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Shift native retirement consolidated4a79d031; finish its managed commit. Parent construction validation shell205 uses first slot and fresh0860136-v3 snapshots: old4 cases pass3/fail1 on omitted subset diagnostic; normalized struct-local cases are preservation, not old-failing bugs. Earlier mismatched-type fixture attempts violated gtNewLclvNode normalization and remain recorded as invalid test setup. Collect final Windows D/R across five fixtures, then prepare-local-vector-construction.py with actual native HEAD and retire five whole helpers. Scalar4126f755 may continue indirect-load/store source work but has no compiler slot until parent releases it. Lowering41f2570d owns complete local/indirect coalescing in second slot. All13Wasm files remain frozen; no publication.",
+    "nextAction": "Shifts committed9e4b720. Local/upper-vector construction accepted80D/76R with one old-failing native diagnostic; five-definition native retirement consolidated93423e1a. Finish managed construction commit, then parent continues retained whole buildRefPositionsForNode. Scalar4126f755 owns indirect loads/stores and first monitored compiler slot; lowering41f2570d owns complete local/indirect coalescing and second. Parent performs integration/source work only until a slot is released. Preserve13Wasm; no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

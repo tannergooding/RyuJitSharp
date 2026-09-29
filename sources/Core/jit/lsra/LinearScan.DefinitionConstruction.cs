@@ -210,6 +210,8 @@ public sealed partial class LinearScan
             var liveDefinitions = VarSetOps.MakeEmpty(_compiler);
             VarSetOps.UnionD(_compiler, liveDefinitions, block.bbLiveIn);
             VarSetOps.UnionD(_compiler, liveDefinitions, block.bbVarDef);
+            assert(VarSetOps.IsSubset(_compiler,
+                VarSetOps.Intersection(_compiler, _currentLiveVariables, _largeVectorVars), liveDefinitions));
             var blockAlwaysReturns = block.Kind is BBJ_THROW or BBJ_EHFINALLYRET or BBJ_EHFAULTRET or
                 BBJ_EHFILTERRET or BBJ_EHCATCHRET;
 
@@ -269,7 +271,7 @@ public sealed partial class LinearScan
 
         if (tree.Oper.IsLocal)
         {
-            return _compiler.lvaGetDesc(tree.AsLclVarCommon().LclNum).GetRegisterType(tree.AsLclVarCommon());
+            return _compiler.lvaGetDesc(tree.AsLclVarCommon().LclNum).GetRegisterType();
         }
 
         assert(tree.Oper.IsCall);
