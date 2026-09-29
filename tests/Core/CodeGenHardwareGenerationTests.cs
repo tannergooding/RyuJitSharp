@@ -263,6 +263,25 @@ internal static class CodeGenHardwareGenerationTests
         });
     }
 
+    [TestCase(false, INS_pause)]
+    [TestCase(true, INS_insertps)]
+    public static void NonTableDispatchRoutesX86BaseAndVectorScalarCreation(bool vector, instruction expected)
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        {
+            Enable(compiler, codeGen);
+            var node = vector
+                ? new GenTreeHWIntrinsic(TYP_SIMD16, NI_Vector_CreateScalar, TYP_FLOAT, 16,
+                    new GenTreeDblCon(TYP_FLOAT, 1.0) { RegNum = REG_XMM1 }) { RegNum = REG_XMM0 }
+                : new GenTreeHWIntrinsic(TYP_VOID, NI_X86Base_Pause, TYP_UNKNOWN, 0) { RegNum = REG_NA };
+
+            codeGen.genHWIntrinsic(node);
+
+            var descriptor = Descriptors(codeGen).Single();
+            Assert.That(descriptor.idIns(), Is.EqualTo(expected));
+        });
+    }
+
     internal static void Enable(Compiler compiler, CodeGen codeGen)
     {
         foreach (var isa in new[] { InstructionSet_X86Base, InstructionSet_AVX, InstructionSet_AVX2,

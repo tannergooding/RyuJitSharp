@@ -10,9 +10,6 @@ public sealed partial class CodeGen
 {
     public unsafe void genBaseIntrinsic(GenTreeHWIntrinsic node, insOpts instOptions)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Base hardware intrinsic generation requires Windows AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         var intrinsicId = node.HWIntrinsicId;
         var targetReg = node.RegNum;
@@ -39,6 +36,42 @@ public sealed partial class CodeGen
                 if (varTypeIsIntegral(baseType))
                 {
                     var baseAttr = baseType.ActualType.EmitSize;
+#if TARGET_X86
+                    if (varTypeIsLong(baseType))
+                    {
+                        assert(op1.IsContained);
+
+                        if (op1.Oper is GT_LONG)
+                        {
+                            node.SimdBaseType = TYP_INT;
+
+                            var canCombineLoad = false;
+                            var loPart = op1.AsOp().Op1;
+                            var hiPart = op1.AsOp().Op2;
+
+                            if (loPart.IsContained && hiPart.IsContained &&
+                                (loPart.Oper is GT_LCL_FLD) && (hiPart.Oper is GT_LCL_FLD))
+                            {
+                                var loFld = loPart.AsLclFld();
+                                var hiFld = hiPart.AsLclFld();
+                                canCombineLoad = (hiFld.LclNum == loFld.LclNum) &&
+                                    (hiFld.LclOffs == unchecked(loFld.LclOffs + 4));
+                            }
+
+                            if (!canCombineLoad)
+                            {
+                                genHWIntrinsic_R_RM(node, ins, baseAttr, targetReg, loPart, instOptions);
+                                inst_RV_RV_TT_IV(INS_pinsrd, EA_16BYTE, targetReg, targetReg, hiPart, 1,
+                                    !_compiler.canUseVexEncoding(), instOptions);
+                                break;
+                            }
+
+                            op1 = loPart;
+                        }
+
+                        baseAttr = EA_8BYTE;
+                    }
+#endif
                     if (op1.IsUsedFromMemory && (baseAttr == EA_8BYTE))
                     {
                         ins = INS_movq;
@@ -473,7 +506,6 @@ public sealed partial class CodeGen
         }
 
         genProduceReg(node);
-#endif
     }
 
     public void ClearUnusedMaskBits(regNumber maskReg, uint count)

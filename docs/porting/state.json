@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "xarchHardwareDispatcherClosure": {
+      "scope": "Whole genHWIntrinsic, assertIsContainableHWIntrinsicOp, genBaseIntrinsic and genX86BaseIntrinsic. Complete Unix/x86 base-family entry and x86 scalar-create paths, preserving target guards and APX selection.",
+      "validation": "Windows21 Debug/21 Release and Linux21 Debug pass; identical old Linux cases yield4 passes/17 failures. ARM64 source build passes. X86 old/final retain14 identical errors.",
+      "retirement": "Delete the fully translated1694-line hwintrinsiccodegenxarch.cpp and two xarch-only declarations:4 final definitions/1696 lines. Shared genHWIntrinsic declaration remains for ARM64/Wasm.",
+      "nativeBefore": "56b834df6b08734acc4966db482e883af09117c1",
+      "nativeAfter": "f895d51f0c2c46e68dc7d351dbb3fe741b026ea0",
+      "evidence": "artifacts/hwintrinsic-dispatch-packet; artifacts/residual-reconciliation/hwintrinsic-dispatch-proposed/proof-supplement-20260929.json and hw-dispatch corrected component/header/whole-file verification.",
+      "limits": "The supplement corrects an erroneous dispatcher boundary and shared declaration proposal before retirement. All four full bodies match the pin; unrelated previously retired helpers were not re-audited. X86 immediate insertion remains a separate typed terminating dependency. No generated-code parity claim."
+    },
     "xarchIntrinsicScalarAndContainmentRetirement": {
       "scope": "Existing whole LowerHWIntrinsicToScalar, IsContainableHWIntrinsicOp and ContainCheckHWIntrinsic translations; no new managed source changes.",
       "validation": "Windows28 Debug/28 Release and Linux28 Debug pass; x86 retains14 established errors.",
@@ -1402,7 +1411,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "56b834df6b08734acc4966db482e883af09117c1",
+      "residualHead": "f895d51f0c2c46e68dc7d351dbb3fe741b026ea0",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -1553,7 +1562,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Shared consumption/reload family is accepted. Integrate ready intrinsic containment and HW-dispatch packets, retaining the shared genHWIntrinsic declaration for ARM64/Wasm and using corrected full-function evidence. Then complete the retained instr.cpp copy/move family (both ins_Copy overloads and inst_Mov) needed by the new shared callers, preserving all target branches and genuine emitter dependencies. Keep four lanes productive and13 Wasm WIP frozen.",
+      "parentScope": "Complete retained instr.cpp copy/move family (both ins_Copy overloads and inst_Mov) needed by shared consumption callers. Preserve target branches and genuine emitter dependencies; validate focused selectors and Windows register controls plus compilable ARM64 paths and baseline x86 blockers, then retire the three definitions. Integrate bounded remaining xarch lane packets. Keep four lanes productive and13 Wasm WIP frozen.",
       "wholeFunctionRepairLanes": [
         {
           "scope": "Next retained general codegenxarch family after cookie/EH and immediate/helper-call completion.",
@@ -1981,7 +1990,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Scalar/containment retirement accepted through native56b834df:3 existing definitions/2244 lines; do not reapply. Reassign B to remaining lowerxarch definitions. Integrate HW dispatch using hwintrinsic-dispatch-proof-supplement-20260929.json: pinned dispatcher is684 lines, not1552, and shared genHWIntrinsic declaration must remain. Whole HW CPP removal is proposed after exact full-file verification; only two xarch declarations retire. Parent next ports retained instr.cpp ins_Copy overloads/inst_Mov. Preserve14x86 blockers,13Wasm, four lanes, oracle-plus-one and no publication.",
+    "nextAction": "HW dispatcher closure accepted through nativef895d51f:4 final definitions,1694-line CPP deleted plus2 xarch declarations; shared genHWIntrinsic remains. Do not reapply. B continues remaining lowerxarch; reassign HW lane to a disjoint retained backend family. Parent ports retained instr.cpp ins_Copy overloads/inst_Mov in CodeGen.RegisterCopies.cs with focused target controls. Preserve14x86 blockers,13Wasm, four lanes, oracle-plus-one and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

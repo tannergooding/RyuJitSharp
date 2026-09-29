@@ -10,9 +10,6 @@ public sealed partial class CodeGen
 {
     public void genX86BaseIntrinsic(GenTreeHWIntrinsic node, insOpts instOptions)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "X86 base hardware intrinsic generation requires Windows AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         var intrinsicId = node.HWIntrinsicId;
         var targetReg = node.RegNum;
@@ -207,6 +204,7 @@ public sealed partial class CodeGen
                     genIsSameLocalVar(op1, op2));
                 _ = emit.emitIns_Mov(INS_mov, targetType.EmitSize, targetReg, op1Reg, canSkip: true);
 
+#if TARGET_AMD64
                 var needsEvex = false;
                 if (emit.IsExtendedGPReg(targetReg))
                 {
@@ -232,6 +230,7 @@ public sealed partial class CodeGen
                 {
                     ins = INS_crc32_apx;
                 }
+#endif
 
                 if (baseType is TYP_UBYTE or TYP_USHORT)
                 {
@@ -292,7 +291,6 @@ public sealed partial class CodeGen
         }
 
         genProduceReg(node);
-#endif
     }
 }
 #endif

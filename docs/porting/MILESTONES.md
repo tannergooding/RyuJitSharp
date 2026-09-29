@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch hardware-intrinsic dispatcher closure
+
+The base-family routines preserve Unix/x86 entry, x86 scalar creation and
+AMD64-only APX selection. The four final definitions close
+`hwintrinsiccodegenxarch.cpp`; its 1,694 lines and two xarch declarations retire
+in `f895d51f`. The shared dispatcher declaration remains for ARM64/Wasm.
+
+Windows controls pass 21 Debug/21 Release and Linux passes 21 Debug, versus
+four passes and 17 failures with identical old cases. ARM64 source compilation
+passes; x86 retains 14 baseline errors and an independent immediate-insertion
+dependency. No generated-code parity is claimed. Evidence:
+`artifacts/hwintrinsic-dispatch-packet` and its corrected boundary/header
+supplement and whole-file retirement records under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Existing intrinsic scalar and containment retirement
 
 The complete existing ToScalar, containability and intrinsic-containment
