@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Shared register consumption and reload control
+
+Six whole consumption/reload routines preserve 32-bit long operands, ARM64
+contained address and AND paths, fixed-register guards, and native GC/liveness
+ordering. Their definitions and declarations retire 506 lines in `f89207a1`.
+Non-xarch move declarations now compile while their separate unported bodies
+still terminate; local reload, spill and register-copy dependencies remain.
+
+Windows controls pass 176 Debug/166 Release. Nine ARM64 cases pass in both
+configurations and all nine fail on identical old source. These establish GC
+clearing, operand order and no-spill exits, not ARM64 move/load emission.
+X86 retains 14 baseline errors. Evidence: `artifacts/shared-register-consumption`
+and its validation and retirement records under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Xarch widening multiplication and binary arithmetic
 
 High/widening multiplication now preserves the x86 `MUL_LONG` second result

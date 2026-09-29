@@ -58,12 +58,12 @@ public sealed partial class CodeGen
 
     public void genCopyRegIfNeeded(GenTree node, regNumber needReg)
     {
-#if TARGET_AMD64
+#if !TARGET_WASM
         assert((node.RegNum != REG_NA) && (needReg != REG_NA));
         assert(!node.IsUsedFromSpillTemp);
         inst_Mov(node.Type, needReg, node.RegNum, canSkip: true);
 #else
-        throw new FatalJitException(CORJIT_SKIPPED, "Register copies outside AMD64 are not implemented.");
+        throw new FatalJitException(CORJIT_SKIPPED, "Register copies are not supported on Wasm.");
 #endif
     }
 
@@ -80,8 +80,8 @@ public sealed partial class CodeGen
 
     public regNumber genConsumeReg(GenTree tree, byte multiRegIndex)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Indexed register consumption outside AMD64 is not implemented.");
+#if TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "Indexed register consumption is not supported on Wasm.");
 #else
         var reg = tree.GetRegByIndex(multiRegIndex);
         if (tree.Oper is GT_COPY)
@@ -141,9 +141,7 @@ public sealed partial class CodeGen
 
     public regNumber genConsumeReg(GenTree tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Register consumption outside AMD64 is not implemented.");
-#else
+#if HAS_FIXED_REGISTER_SET
         if (tree.Oper is GT_COPY)
         {
             genRegCopy(tree);
@@ -161,9 +159,10 @@ public sealed partial class CodeGen
         }
 
         genUnspillRegIfNeeded(tree);
+#endif
         genUpdateLife(tree);
 
-#if EMIT_GENERATE_GCINFO
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
         if (genIsRegCandidateLocal(tree))
         {
             assert(tree.HasReg(_compiler));
@@ -214,7 +213,6 @@ public sealed partial class CodeGen
         genCheckConsumeNode(tree);
 #endif
         return tree.RegNum;
-#endif
     }
 
     public void genConsumeAddress(GenTree addr)
@@ -236,9 +234,15 @@ public sealed partial class CodeGen
 
     public void genConsumeRegs(GenTree tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Operand register consumption outside AMD64 is not implemented.");
-#else
+#if !TARGET_64BIT
+        if (tree.Oper is GT_LONG)
+        {
+            genConsumeRegs(tree.AsOp().Op1);
+            genConsumeRegs(tree.AsOp().Op2);
+            return;
+        }
+#endif
+
         if (tree.IsUsedFromSpillTemp)
         {
             // Spill temps are untracked, so they have no variable lifetime to update.
@@ -253,11 +257,32 @@ public sealed partial class CodeGen
             {
                 genConsumeAddress(tree);
             }
+#if TARGET_XARCH || TARGET_ARM64
             else if (tree.Oper.IsCompare)
             {
                 genConsumeRegs(tree.AsOp().Op1);
                 genConsumeRegs(tree.AsOp().Op2);
             }
+#endif
+#if TARGET_ARM64
+            else if (tree.Oper is GT_BFIZ)
+            {
+                var cast = tree.AsOp().Op1.AsCast();
+                assert(cast.IsContained);
+                genConsumeAddress(cast.CastOp);
+            }
+            else if (tree.Oper is GT_CAST)
+            {
+                var cast = tree.AsCast();
+                assert(cast.IsContained);
+                genConsumeAddress(cast.CastOp);
+            }
+            else if (tree.Oper is GT_AND)
+            {
+                genConsumeRegs(tree.AsOp().Op1);
+                genConsumeRegs(tree.AsOp().Op2);
+            }
+#endif
             else if (tree.Oper is GT_FIELD_LIST)
             {
                 foreach (var use in tree.AsFieldList().Uses)
@@ -289,14 +314,17 @@ public sealed partial class CodeGen
             }
             else
             {
+#if FEATURE_SIMD
                 assert(tree.Oper.IsLeaf || tree.IsVectorZero);
+#else
+                assert(tree.Oper.IsLeaf);
+#endif
             }
         }
         else
         {
             _ = genConsumeReg(tree);
         }
-#endif
     }
 
     public void genConsumeOperands(GenTreeUnOp tree)

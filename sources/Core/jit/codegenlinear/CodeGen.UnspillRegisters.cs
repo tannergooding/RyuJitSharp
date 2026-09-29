@@ -73,8 +73,8 @@ public sealed partial class CodeGen
 
     public void genUnspillRegIfNeeded(GenTree tree, byte multiRegIndex)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Indexed register reloads outside AMD64 are not implemented.");
+#if TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "Indexed register reloads are not supported on Wasm.");
 #else
         var unspillTree = tree;
         assert(unspillTree.IsMultiRegNode);
@@ -124,8 +124,8 @@ public sealed partial class CodeGen
 
     public void genUnspillRegIfNeeded(GenTree tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Register reloads outside AMD64 are not implemented.");
+#if TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "Register reloads are not supported on Wasm.");
 #else
         var unspillTree = tree;
         if (tree.Oper is GT_RELOAD)
