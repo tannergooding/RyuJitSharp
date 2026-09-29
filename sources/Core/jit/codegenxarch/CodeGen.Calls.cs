@@ -176,7 +176,7 @@ public sealed partial class CodeGen
 #endif
     }
 
-#if FEATURE_SIMD
+#if FEATURE_SIMD && TARGET_XARCH
     public void genSimd12UpperClear(regNumber targetReg)
     {
         Emitter.RequireSupportedInstructionRecording();

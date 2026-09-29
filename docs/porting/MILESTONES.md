@@ -16,6 +16,15 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Restore the SIMD upper-clear target boundary
+
+The SIMD completion batch accidentally exposed `genSimd12UpperClear` to ARM64,
+where `INS_insertps` does not exist. Its declaration now retains the native
+`TARGET_XARCH` boundary without changing either xarch body. ARM64 Debug and
+Release source builds pass; the unchanged pre-fix snapshot fails at that symbol.
+Evidence: `artifacts/xarch-register-helper-closure/final-arm64-guard-*` and
+`artifacts/xarch-immediate-helper-a196428/arm64-old-debug.log`.
+
 ## 2026-09-29: Xarch memory register construction
 
 Local-heap and indirection builders retain native x86 counter-register and
