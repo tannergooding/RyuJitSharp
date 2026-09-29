@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Shared struct call and return lowering
+
+Struct call/return lowering preserves SysV single-register results, ARM HFA
+conditions, narrow memory reads and Wasm zero-constant retyping. Three complete
+definitions and their declarations retire 316 native lines in `db6214e`.
+
+Old/final Windows controls pass 43 Debug/43 Release; both direct Linux
+regressions fail on old source and pass after translation. A fixture-field guard
+correction preserves the exact previously tested target-selected source.
+Paired ARM64 core builds pass, but target-test compilation remains separately
+blocked; identical baseline syntax errors prevent Wasm validation. Broader Linux
+return controls still reach the independent retained `LowerRet` guard.
+Evidence: `artifacts/lower-struct-14d46ad`, its guard supplement and the
+`struct-return` retirement records. No generated-code parity claim.
+
 ## 2026-09-29: Xarch atomics and memory barriers
 
 Whole lock-add, atomic exchange/update, compare-exchange and memory-barrier

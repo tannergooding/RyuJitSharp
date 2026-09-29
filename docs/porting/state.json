@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sharedStructCallAndReturnLowering": {
+      "scope": "Whole LowerCallStruct, LowerRetStruct and already translated LowerRetSingleRegStructLclVar preserve SysV single-register returns, ARM HFA conditions, narrow loads and Wasm zero-constant retyping through owning-use-aware LIR replacement.",
+      "validation": "Old/final Windows43 Debug/43 Release pass. Both direct Linux cases fail at old guards and pass final. Paired ARM64 core builds pass; Wasm remains blocked by identical baseline syntax errors.",
+      "retirement": "Three complete definitions and all three associated declarations;316 exact native lines.",
+      "nativeBefore": "0fe483da022a5513a26e07b596d04ddfd01131ce",
+      "nativeAfter": "db6214efcde435d1ab4e25d208efd7df61f8eec9",
+      "integration": "The Unix-only descriptor-query fixture field is now explicitly guarded. Exact comparison proves corrected Windows-selected fixture text equals the original43-case control fixture and Linux-selected text equals the tested two-case version; original evidence is unchanged.",
+      "evidence": "artifacts/lower-struct-14d46ad; artifacts/residual-reconciliation/lower-struct-return proposal/guard-supplement and struct-return combined/applied/verification.",
+      "limits": "LowerRet and LowerStoreSingleRegCallStruct remain separate native definitions. Broader Linux return fixtures stop in the retained caller; ARM64 target-test compilation has independent intrinsic fixture failures. No ARM64/Wasm execution or generated-code parity claim."
+    },
     "xarchAtomicAndBarrierClosure": {
       "scope": "Whole lock-add, locked exchange/update, compare-exchange and memory-barrier generation restores non-Windows xarch reachability while preserving instruction ordering, implicit locks, small-result extension and diagnostics.",
       "validation": "Windows and Linux each pass43 Debug/40 Release. All24 selected old Linux cases fail at the former target guards; the identical selector passes24 on the unchanged final Debug binary.",
@@ -1703,7 +1713,7 @@
           "scope": "Retained shared call-result and return lowering after call/argument dispatch closure.",
           "owner": "b2253a3d-d101-444e-9c56-d631eb5b274b",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "active after14d46ad"
+          "status": "struct call/return packet accepted; continue retained LowerRet and single-register call storage"
         },
         {
           "scope": "Whole shared return and adjacent memory/write-barrier builders, including the existing Linux return-fixture discrepancy.",
@@ -2119,7 +2129,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Atomic/barrier closure accepted through native0fe483d; do not reapply. Continue parent rsSpillTree/spillReg/reloadReg/genSpillLocal boundary, replacing invented target exclusions with native fixed-register/non-Wasm boundaries. Add focused ARM64 spill controls using established frame setup; existing Linux spill regression is captured with all three old cases failing. B and LSRA continue shared return families; HW continues SIMD codegen. Refill A after commit. Preserve14x86 blockers,13Wasm, oracle-plus-one and no publication.",
+    "nextAction": "Struct call/return retirement accepted through nativedb6214e; do not reapply. Parent spill batch is uncommitted: Windows83 Debug/81 Release pass; Linux56 focused controls pass on unchanged binary, while broader68/83 retains15 independent genMultiRegStoreToLocal failures. ARM64 first runs expose a recent atomic translation regression: restore TARGET_XARCH boundaries in Atomics.cs and the analogous flag-reuse helper, then collect final-3/old-3 spill runs with these explicit identical prerequisite overlays. Finish four spill definitions/declarations with the repair and no duplicate atomic retirement credit. B continues retained return/storage dispatch, LSRA return builders, A scalar codegen and HW SIMD. Preserve14x86 blockers,13Wasm and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

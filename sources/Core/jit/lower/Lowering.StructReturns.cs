@@ -11,7 +11,6 @@ public sealed partial class Lowering
 {
     private unsafe void LowerRetStruct(GenTreeUnOp ret)
     {
-#if WINDOWS_AMD64_ABI || TARGET_ARM64
         var compiler = CompilerInstance;
 #if TARGET_ARM64
         if (GlobalJitOptions.compFeatureHfa && varTypeIsSimd(ret.Type))
@@ -58,6 +57,13 @@ public sealed partial class Lowering
                 else
                 {
                     assert(varTypeUsesIntReg(nativeReturnType));
+#if TARGET_WASM
+                    if ((value.Type.ActualType != nativeReturnType.ActualType) && value.IsIntegralConst(0))
+                    {
+                        var replacement = value.BashToZeroConst(nativeReturnType, NodeThreading.LIR);
+                        BlockRange().ReplaceNode(value, replacement);
+                    }
+#endif
                 }
                 break;
             }
@@ -133,9 +139,6 @@ public sealed partial class Lowering
                 break;
             }
         }
-#else
-        throw new NotImplementedException("Struct return lowering is not ported for this target.");
-#endif
     }
 
     private void LowerRetSingleRegStructLclVar(GenTreeUnOp ret)

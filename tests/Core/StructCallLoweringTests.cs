@@ -11,11 +11,34 @@ using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.gtCallTypes;
 using static RyuJitSharp.var_types;
+#if UNIX_AMD64_ABI
+using static RyuJitSharp.SystemVClassificationType;
+#endif
 
 namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class StructCallLoweringTests
 {
+#if UNIX_AMD64_ABI
+    [Test]
+    public static void SysVSingleRegisterStructCallIsRetyped()
+    {
+        WithCompiler(4, TYPE_GC_NONE, (compiler, block, lowering, handle) => {
+            var call = CreateCall(handle);
+            call._returnTypeDesc.InitializeStructReturnType(compiler, handle, call.UnmanagedCallConv);
+            block.InsertAtEnd(call);
+
+            LowerCallStruct(lowering, call);
+
+            Assert.That(call.Type, Is.EqualTo(TYP_INT));
+            Assert.That(call._returnType, Is.EqualTo(TYP_STRUCT));
+            Assert.That((nint)call.RetClsHnd, Is.EqualTo((nint)handle));
+            Assert.That(block.LastNode, Is.SameAs(call));
+            Assert.That(((ClassInfo*)handle)->DescriptorQueries, Is.EqualTo(2));
+        });
+    }
+#endif
+
     [TestCase(1, TYPE_GC_NONE, TYP_INT)]
     [TestCase(2, TYPE_GC_NONE, TYP_INT)]
     [TestCase(4, TYPE_GC_NONE, TYP_INT)]
@@ -284,6 +307,9 @@ internal static unsafe class StructCallLoweringTests
         vtable.Base.Base.getClassSize = &GetClassSize;
         vtable.Base.Base.getClassGClayout = &GetClassGcLayout;
         vtable.Base.Base.getEEInfo = &GetEEInfo;
+#if UNIX_AMD64_ABI
+        vtable.Base.Base.getSystemVAmd64PassStructInRegisterDescriptor = &GetDescriptor;
+#endif
         var ee = new EEState {
             Interface = new ICorJitInfo { lpVtbl = &vtable },
             Abi = abi,
@@ -325,6 +351,9 @@ internal static unsafe class StructCallLoweringTests
         public CorInfoGCType GcType;
         public int SizeQueries;
         public int GcQueries;
+#if UNIX_AMD64_ABI
+        public int DescriptorQueries;
+#endif
     }
 
     private struct EEState
@@ -357,6 +386,21 @@ internal static unsafe class StructCallLoweringTests
 
         return info->GcType is TYPE_GC_NONE ? 0 : 1;
     }
+
+#if UNIX_AMD64_ABI
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte GetDescriptor(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* handle,
+        SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* result)
+    {
+        var info = (ClassInfo*)handle;
+        info->DescriptorQueries++;
+        result->passedInRegisters = true;
+        result->eightByteCount = 1;
+        result->eightByteClassifications[0] = SystemVClassificationTypeInteger;
+        result->eightByteSizes[0] = (byte)info->Size;
+        return 1;
+    }
+#endif
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static void GetEEInfo(ICorJitInfo* self, CORINFO_EE_INFO* info)

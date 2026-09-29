@@ -11,7 +11,6 @@ public sealed partial class Lowering
 {
     private unsafe void LowerCallStruct(GenTreeCall call)
     {
-#if WINDOWS_AMD64_ABI || TARGET_ARM64
         assert(varTypeIsStruct(call.Type));
         if (call.HasMultiRegRetVal)
         {
@@ -19,17 +18,21 @@ public sealed partial class Lowering
         }
 
         var compiler = CompilerInstance;
-#if TARGET_ARM64
         if (GlobalJitOptions.compFeatureHfa && compiler.IsHfa(call.RetClsHnd))
         {
+#if TARGET_ARM64
             assert(compiler.GetHfaCount(call.RetClsHnd) == 1);
+#elif TARGET_ARM
+            assert(compiler.GetHfaCount(call.RetClsHnd) <= 2);
+#else
+            throw new NotImplementedException("HFA struct-call lowering is not supported for this target.");
+#endif
             var hfaType = compiler.GetHfaType(call.RetClsHnd);
             if (call.Type == hfaType)
             {
                 return;
             }
         }
-#endif
         var returnType = compiler.GetReturnTypeForStruct(call.RetClsHnd, call.UnmanagedCallConv, out _);
         assert(returnType is not TYP_STRUCT and not TYP_UNKNOWN);
         var originalType = call.Type;
@@ -100,8 +103,5 @@ public sealed partial class Lowering
                 }
             }
         }
-#else
-        throw new NotImplementedException("Struct-call lowering is not ported for this target.");
-#endif
     }
 }
