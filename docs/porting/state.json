@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "foldingDispatchRestoration": {
+      "managedCommit": "8f134a319364a2141cb2d0081671223419ed711d",
+      "nativeCommit": "7ac5d5b569f5e3e0d050187e417fc48a91df0f9d",
+      "mapping": "Pinned gentree.cpp15570-15613 -> Compiler.gt.cs gtFoldExpr. The caller retains FEATURE_HW_INTRINSICS dispatch and all native control-flow guards.",
+      "dependency": "gtFoldExprHWIntrinsic remains a typed terminating stub under FEATURE_HW_INTRINSICS && !(TARGET_XARCH && FEATURE_MASKED_HW_INTRINSICS). Existing xarch implementation is unchanged; the helper's own remaining inline target bodies are the next repair packet.",
+      "validation": "Genuine e0d198a ARM64 baseline: one failed dispatch case and one passing disabled-tier-zero control. Integrated full-analysis controls:24 Debug/24 Release ARM64 dispatch/import cases and376 Debug/367 Release Windows folding/argument cases. Earlier isolated Windows folding/intrinsic controls passed634 Debug/626 Release.",
+      "retirement": "The completed dispatcher/comment/declaration is absent from native. Restore the previously absent2036-line gtFoldExprHWIntrinsic body and declaration so its remaining translation is visible. Relative to prior native HEAD:2037 lines restored,56 removed; no whole-target execution or net-completion percentage is implied.",
+      "evidence": "artifacts/residual-reconciliation/gt-fold-expr-prefixed-evidence-20260928.json, gt-fold-expr-handoff-20260928.json and gt-fold-expr-retirement-20260928.json; integrated fold-expr-integrated.trx and whole-function-integration.trx retain the combined results.",
+      "limits": "This restores the complete caller and an honest dependency boundary, not ARM64 hardware-fold implementation or generated-code execution."
+    },
     "typeComparisonArguments": {
       "scope": "B455: gtFoldTypeCompare selects and counts user arguments rather than including non-user prefixes.",
       "mapping": "Pinned gentree.cpp16119-16346 -> Compiler.gt.cs gtFoldTypeCompare; existing CallArgs.GetUserArgByIndex and CountUserArgs implement the native argument partition.",
@@ -750,7 +760,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "b65c2dcf776f71701cb2a12a491e67fc57ddbb18",
+      "residualHead": "7ac5d5b569f5e3e0d050187e417fc48a91df0f9d",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -832,8 +842,8 @@
         "Raw target-block getters have no pinned callsites and remain unused support. emitCodeGetCookie remains because its managed helper is only declared under TARGET_AMD64."
       ],
       "remaining": "Continue the full already-completed-code cleanup, distinguishing unreconciled areas from genuine target/CFI/optional-statistics gaps. emitGenIG/emitSavIG retain architecture/statistics paths, genCreateTempLabel retains Unix x86, and genGetRegMask retains ARM floating support. No new default Windows emission gap was established; the earlier blanket claim is withdrawn. Complete bodies are not retained merely because unfinished native callers reference them. Notify the user when the full cleanup is done.",
-      "verification": "Native HEAD at report103 was bf77e6b6 after the authorized amendment of b65c2dcf. The additional three-line deletion removes the B452-reviewed Range.TryGetUse declaration. Prior reports89/92/93 retire55/18/28lines of emitted-size, throw-helper query and tree-constructor support. Reports104-106 were read-only; the mistaken mutation pause is now lifted following the user's clarification. Native and pinned-oracle tracked source/index were unchanged at those report boundaries. Retirement adds no parity evidence.",
-      "targetLedger": "Collected through report107, last consumed C# commit1f0a0d68 for scoped B453/B454. Reports102/104-106 review the Windows fgMorphSmpOp driver and six typed constant folds. Report107 source-matches EvalArgsToTemps, fgTryMorphStructArg and the fgMorphArgs driver, retaining the argument family as unknown for B456's conditional copy-omission VN difference. The reviewed materialization bodies are already absent; AddFinalArgsAndDetermineABIInfo retains Wasm work. No default-Windows failure is demonstrated by report107. B455 is corrected in the current validation batch and awaits scoped ledger intake. Call/tail-call and HWI driver review coverage remains separate. D009, R005, B392 and B446 remain optional gaps. Review-family counts are not unique functions or compiler-completion percentages.",
+      "verification": "Native HEAD7ac5d5b5 incorporates the accepted8f134a3 dispatcher repair: completed gtFoldExpr removed; partially translated gtFoldExprHWIntrinsic restored byte-identically to the oracle. The native receipt separately records2037 additions and56 deletions relative to bf77e6b6. Native and pinned-oracle tracked source/index are clean; original recovery ref remains unchanged. Earlier report103 amendment was authorized, not a history-repair blocker. Retirement adds no parity evidence.",
+      "targetLedger": "Historical ledger collected through report108, consuming e0d198a for B455 without reopening unrelated rows. Report107's suspected copy-omission VN mismatch B456 is dismissed: GenTreeLclFld -> GenTreeLclVarCommon -> GenTreeUnOp source-aware construction explicitly clears both VNs after the root metadata copy. No production correction is needed. The reviewed materialization bodies are already absent. Existing call-driver review uncertainty is not a new untranslated-definition queue; stop recurring audits. Repair concrete residual partials and track only their stub/exception boundaries. D009, R005, B392 and B446 remain separately recorded optional gaps.",
       "retirementQueue": "A bounded existing-evidence pass found no immediately eligible bulk retirement: strongly reviewed definitions were already absent, surviving return helpers lack whole-target review, and gtFoldExpr retains an ARM64 path. artifacts/residual-reconciliation/bulk-retirement-candidates-20260928.json records the inspected scope and native snapshot. Stop duplicate sweeps of these candidates; prioritize unresolved Windows/shared contracts separately from mixed-target retirement. This is not repository-wide catch-up completion.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
       "policy": "Retire whole translated definitions, preserving all own target branches and calls. A tracked terminating stub in a separate dependency does not block caller retirement; an omitted or wholesale-stubbed branch inside that caller does. Keep unported dependency bodies native. Preserve the oracle and existing index distinctions; translation status is not execution parity."
@@ -883,10 +893,10 @@
       "caution": "Current backend allocation/codegen/emitter exclusions checked in this pass target non-Windows or non-AMD64 configurations. Commented callback declarations and historical baseline gaps are not an inventory of missing Windows implementations."
     },
     "activeBatch": {
-      "scope": "Restore whole-function translation and direct native retirement for known partial methods, in parallel file-owned lanes. Preserve original target guards and dependency calls; add typed terminating stubs for missing other-target helpers instead of excluding caller branches.",
+      "scope": "Continue whole-function restoration after the completed gtFoldExpr/native-retirement boundary: translate remaining gtFoldExprHWIntrinsic inline target algorithms in lane A and resolve CallArgs Wasm declaration/compilation closure in lane B. Preserve original guards/calls and typed terminating dependency stubs rather than excluding caller branches.",
       "status": "in-progress",
       "doneWhen": [
-        "Restore the complete gtFoldExpr dispatcher, including hardware-intrinsic target dispatch, with explicit helper stubs where the dependency body remains unported.",
+        "Translate the complete gtFoldExprHWIntrinsic body, including inline ARM64 algorithms; preserve the existing Windows behavior and use stubs only for distinct unported dependencies.",
         "Restore AddFinalArgsAndDetermineAbiInfo own conditional/control-flow translation, including its Wasm branch; retain typed stubs for missing dependencies rather than stubbing the entire branch.",
         "Resolve shared declaration/signature/guard conflicts centrally; preserve existing Windows behavior and compilability of affected target paths.",
         "Commit validated C# repairs with sparse dependency/exception records, then retire the exact completed native definitions in the same batch through the consolidated amended cleanup commit. Retain unported helper bodies."
@@ -900,18 +910,18 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Integrate the two file-owned structural repair lanes and resolve cross-file stub/type/signature conflicts. B455 is committed e0d198a with306 Debug/299 Release. B456 remains a separate conditional VN-contract correction. Five official Methodical merged runners have built successfully at priority1; corrected inventory is11 merged array sources/41 variants, not nine, including gcarr.cs and selfref.cs. Their primary execution is pending and is not a prerequisite for the structural repairs.",
+      "parentScope": "Dispatcher8f134a3/native7ac5d5b5 boundary is complete. Integrate remaining helper/CallArgs repairs and resolve shared declarations. Wasm parser repairs and a typed classifier stub are WIP; a bounded declaration batch clears the first73 errors but exposes246 broader diagnostics. The Wasm fixture has not run, and the caller remains uncommitted/native until its completion boundary is established. B456 is closed as a false positive. Five official Methodical merged runners are built;11 array sources/41 variants await primary execution after structural repairs.",
       "wholeFunctionRepairLanes": [
         {
-          "scope": "gtFoldExpr complete dispatcher and required hardware-fold helper stub; only a directly justified residual vector-factory overload may extend this bounded file packet.",
+          "scope": "Whole gtFoldExprHWIntrinsic body at pinned gentree.cpp35373-37408, retaining all own inline target branches and stubbing only separate missing dependencies. Completed gtFoldExpr dispatcher/native boundary is recorded separately.",
           "owner": "4b57b744-36f1-4e6e-8b76-94c1a87d6e02",
           "files": "Compiler.gt.cs, required stub boundary in Compiler.gt.HardwareIntrinsicFolding.cs, and focused tests.",
           "status": "in-progress"
         },
         {
-          "scope": "AddFinalArgsAndDetermineAbiInfo complete own target control flow and minimal typed dependency stubs.",
+          "scope": "AddFinalArgsAndDetermineAbiInfo complete own target control flow, typed classifier dependency stub and bounded Wasm declaration/guard closure required for compilation.",
           "owner": "b2253a3d-d101-444e-9c56-d631eb5b274b",
-          "files": "CallArgs.Morph.cs and focused tests; parent owns cross-file dependency integration.",
+          "files": "CallArgs.Morph.cs, Wasm-only Targets fixture, related target/register/instruction declaration files; parent owns parser fixes, WasmClassifier stub and shared integration.",
           "status": "in-progress"
         }
       ],
@@ -1316,7 +1326,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Collect the file-owned whole-function repair packets from the two existing ordinary workers after their completion notifications. Resolve shared declarations/signatures/guards, run integrated focused Windows and affected-target checks, commit each coherent completed packet and give the sole native mutation owner exact caller retirement approval. Do not wait for unported dependency execution or restart coverage sweeps. Resume the already-built official merged array runners afterward; artifacts/official-array-merged/scope.json records11 source cases/41 variants and the preserved managed JIT identity. B456 remains separately recorded; do not lose that conditional VN follow-up.",
+    "nextAction": "Continue the active gtFoldExprHWIntrinsic whole-body translation and CallArgs Wasm compilation-closure lanes; collect their concrete packets after completion notifications. gtFoldExpr is already committed8f134a3 and retired in native7ac5d5b5; do not repeat that boundary. Wasm currently stops at246 shared diagnostics after the parser/classifier/declaration repairs (artifacts/lane-b-evidence/wasm-after-lane-b-final.log), with no target fixture execution yet. Resolve typed declaration/guard blockers, not backend functionality or fabricated ABI constants; preserve incomplete WIP. Accept/commit coherent verified repairs, then retire exact completed definitions. Do not reopen B456 or coverage sweeps. Official merged-array execution remains queued with its built41-variant scope.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Whole-function folding dispatch and native work-list repair
+
+Expression folding now retains the native hardware-intrinsic dispatch on all
+applicable targets, reaching a terminating dependency stub where the folding
+body is unported. Windows behavior is unchanged. A pre-fix ARM64 dispatch failure
+and tier-zero control are covered; integrated checks pass 24 Debug/24 Release
+ARM64 cases and 376 Debug/367 Release Windows cases.
+
+The completed dispatcher is removed from the native remainder. The unfinished
+hardware-fold helper, which had incorrectly been absent, is restored exactly
+from the pinned oracle. Completed callers no longer wait for other-target
+dependencies to execute; those dependencies remain visible as untranslated work.
+The helper's remaining algorithms and Wasm call-argument compilation are separate
+active repairs.
+
 ## 2026-09-28: Runtime type comparison argument selection
 
 Type comparison folding now selects and counts user arguments, matching the

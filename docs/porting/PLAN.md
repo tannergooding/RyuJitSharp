@@ -177,14 +177,17 @@ Process dependency-coherent batches in this order:
    registers, opcodes, phases, intrinsics, and configuration defaults.
 3. Shared types and already ported functions, following their actual dependencies:
    initialization/ABI, blocks/IR/locals, importer/calls/inlining policy, and
-   diagnostics. Reconcile whole functions, not only changed lines.
+   diagnostics. Apply their actual old/new upstream deltas, inspecting enough
+   surrounding context to preserve the contract without re-porting unchanged bodies.
 4. Relevant support-code/include changes outside those directories, followed by
    a final sweep of the classified inventory and target-specific compilation.
 
 For each batch, record affected native files/symbols, C# destinations, dispositions,
-and evidence. Label still-unported changes as remaining work; explicitly defer
-new non-Windows-x64-only behavior with NYIs where needed. Do not introduce silent
-stubs on relevant Windows-x64 paths to make reconciliation appear complete.
+and evidence. Preserve new target branches and their dependency calls; use tracked,
+terminating helper stubs for unported non-Windows-x64 dependencies where needed.
+An entire inline branch replaced with NYI remains a partial translation. Do not
+introduce silent stubs on relevant Windows-x64 paths to make reconciliation
+appear complete.
 
 Use the raw old-to-new upstream diff, not the size of merge-conflict regions, to
 drive reconciliation. Preserve previous deletions of ported methods, retain net
@@ -195,10 +198,12 @@ reassess its scope and approach rather than expanding the investigation.
 
 Move the oracle to the pinned target only with a clean source tree and preserved
 old-baseline evidence. Update the residual tree with its snapshots protected.
-For modify/delete conflicts, compare old native code, new native code, and the C#
-implementation: retain newly unported behavior in the residual view, and remove
-it only when accounted for. Never resolve all such conflicts as "keep deleted."
-Track mixed-revision progress until reconciliation is complete.
+For modify/delete conflicts, compare the old/new native delta with the existing
+C# implementation. Update an already translated definition in C# and keep its
+native body absent; retain new and still-unported definitions in the residual.
+Do not restore completed bodies merely to make the merge easier, or keep them
+deleted without applying their changed behavior to C#. Track unresolved deltas
+as explicit mixed-revision exceptions until reconciliation is complete.
 
 Rebuild matching native artifacts and recapture version-specific replay inputs
 when the ABI or collection format requires it. Do not silently reuse incompatible

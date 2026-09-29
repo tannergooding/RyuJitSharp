@@ -1534,6 +1534,14 @@ consumers reject scalable values instead of treating them as SIMD16. Native's
 ordinary GetElement/SetElement and EvaluateBroadcastInPlace switches also omit
 `TYP_SIMD`; those gates are not missing scalable translations.
 
+`Compiler.gtFoldExpr` retains the native `FEATURE_HW_INTRINSICS` dispatch.
+Its `gtFoldExprHWIntrinsic` dependency throws `NotImplementedException` under
+`FEATURE_HW_INTRINSICS && !(TARGET_XARCH && FEATURE_MASKED_HW_INTRINSICS)` until
+the helper's remaining target bodies are translated. The completed dispatcher is
+retired from the residual; the whole partially translated helper and declaration
+remain there. This boundary is explicit rather than silently skipping folding
+on ARM64.
+
 `CallArgs.AddFinalArgsAndDetermineAbiInfo` implements outgoing argument
 classification and non-standard argument insertion for Windows x64. Its Wasm
 branch throws `NotImplementedException` pending shadow-stack argument insertion;
