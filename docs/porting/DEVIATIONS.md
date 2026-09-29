@@ -669,6 +669,10 @@ preserves the logical tree ID and data effects, and repairs threading and
 ancestor flags. The typed SSA `DefNode` reference is cleared rather than left
 pointing to the detached store; its descriptor and VN pair remain available for
 later comparisons within the pass. SSA-dependent consumers precede this phase.
+SSA definitions can outlive removed statements or retain an old block after
+statement movement. Managed replacement searches live owning uses when needed;
+an already-detached definition requires no live-tree edit. Both paths preserve
+the native NOP allocation and clear the typed definition reference.
 The bounded runtime probe preserves effects and exceptions but triggers no
 removals in either JIT. Positive-removal execution and code parity remain
 unestablished; focused IR cases exercise the transformation.

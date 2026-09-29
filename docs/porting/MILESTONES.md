@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: SSA dead-store ownership after statement removal
+
+VN-based dead-store removal no longer assumes that an SSA definition's original
+block still owns its store. Induction-variable optimization can remove that
+statement while retaining the definition. The managed replacement now finds a
+moved owning use or handles an already-detached definition, preserving native
+NOP allocation, SSA value numbers, threading and effects.
+
+Four regression cases fail before correction in both configurations; focused
+DSE/SSA/induction coverage passes 42 Debug/40 Release. The original
+`Grisu3.TryDigitGenShortest` primary-compilation failure is resolved, and the
+official d1 lcs runner completes all eight selected tests and its result XML.
+This does not yet establish the remaining merged-array variants or dump/code
+parity. See B459 and `artifacts/official-array-merged/ssa-owner-evidence.json`.
+
 ## 2026-09-28: Complete hardware-folding body and native retirement
 
 `gtFoldExprHWIntrinsic` now preserves its complete native target control flow

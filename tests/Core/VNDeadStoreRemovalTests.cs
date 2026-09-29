@@ -100,6 +100,88 @@ internal static unsafe class VNDeadStoreRemovalTests
         });
     }
 
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void DefinitionMetadataSurvivesStatementRemovalAndMovement(bool moved, bool threaded)
+    {
+        WithCompiler((compiler, store) =>
+        {
+            var definingBlock = new BasicBlock(null, null);
+            var otherBlock = new BasicBlock(null, null) { Prev = definingBlock };
+            definingBlock.Next = otherBlock;
+            compiler.fgFirstBB = definingBlock;
+            compiler.fgLastBB = otherBlock;
+            compiler.lvaTable[0].lvInSsa = true;
+            if (threaded)
+            {
+                compiler.fgNodeThreading = NodeThreading.AllTrees;
+            }
+
+            var value = store.VNForIntCon(7);
+            _ = AddDefinition(compiler, 0, definingBlock, null, value);
+            var first = compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 7));
+            first.Data._vnPair.SetBoth(value);
+            _ = AddDefinition(compiler, 0, definingBlock, first, value);
+            var firstStatement = compiler.gtNewStmt(first);
+            compiler.fgInsertStmtAtEnd(definingBlock, firstStatement);
+
+            var data = compiler.gtNewIconNode(TYP_INT, 7);
+            data._vnPair.SetBoth(value);
+            var dead = compiler.gtNewStoreLclVarNode(0, data);
+            var number = AddDefinition(compiler, 0, definingBlock, dead, value);
+            var statement = compiler.gtNewStmt(dead);
+            compiler.fgInsertStmtAtEnd(definingBlock, statement);
+            if (threaded)
+            {
+                compiler.fgSetStmtSeq(statement);
+            }
+
+            if (moved)
+            {
+                compiler.fgUnlinkStmt(definingBlock, statement);
+                compiler.fgInsertStmtAtEnd(otherBlock, statement);
+            }
+            else
+            {
+                compiler.fgRemoveStmt(definingBlock, statement);
+            }
+
+            Assert.That(compiler.lvaTable[0].GetPerSsaData(number).DefNode, Is.SameAs(dead));
+#if DEBUG
+            var nextTreeId = compiler.compGenTreeID;
+#endif
+            Assert.That(compiler.optVNBasedDeadStoreRemoval(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+#if DEBUG
+            Assert.That(compiler.compGenTreeID, Is.EqualTo(nextTreeId + 1));
+#endif
+            Assert.That(definingBlock.FirstStmt, Is.SameAs(firstStatement));
+            Assert.That(firstStatement.NextStmt, Is.Null);
+            Assert.That(compiler.lvaTable[0].GetPerSsaData(number).DefNode, Is.Null);
+            Assert.That(compiler.lvaTable[0].GetPerSsaData(number)._vnPair.Conservative, Is.EqualTo(value));
+
+            if (moved)
+            {
+                Assert.That(otherBlock.FirstStmt, Is.SameAs(statement));
+                Assert.That(statement.RootNode.Oper, Is.EqualTo(GT_COMMA));
+                Assert.That(statement.RootNode.AsOp().Op1, Is.SameAs(data));
+                Assert.That((statement.RootNode.Flags & GTF_ASG) == 0, Is.True);
+                if (threaded)
+                {
+                    Assert.That(statement.TreeListBegin, Is.SameAs(data));
+                    Assert.That(data.Next, Is.SameAs(statement.RootNode.AsOp().Op2));
+                    Assert.That(statement.RootNode.AsOp().Op2.Next, Is.SameAs(statement.RootNode));
+                }
+            }
+            else
+            {
+                Assert.That(otherBlock.FirstStmt, Is.Null);
+                Assert.That(statement.RootNode, Is.SameAs(dead));
+            }
+        });
+    }
+
     [TestCase("NotInSsa")]
     [TestCase("SingleDef")]
     [TestCase("OtherBlock")]

@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "ssaDeadStoreOwnership": {
+      "scope": "B459: optVNReplaceDeadStore must not assume that the original SSA defining block still owns the node after statement removal/movement.",
+      "mapping": "Pinned optimizer.cpp6015-6147 optVNBasedDeadStoreRemoval in-place retagging -> Compiler.VNDeadStoreRemoval.cs owning-use replacement.",
+      "cause": "Grisu3.TryDigitGenShortest IV optimization removes STMT00138/store000732 fromBB60 while its SSA descriptor remains. Native can retag this detached node; managed replacement previously threw.",
+      "validation": "Four regression cases fail in both configurations before correction; full-analysis DSE/SSA/induction checks pass42 Debug/40 Release. Cases verify movement/removal, threaded/unthreaded IR, retained VNs, cleared DefNode and native NOP allocation count.",
+      "execution": "The original Grisu3.TryDigitGenShortest now compiles; the official Methodical_d1 lcs runner completes all eight selected cases with positive body compilation and final result XML. Remaining merged groups continue separately.",
+      "source": "Isolated447f6b3 plus Compiler.VNDeadStoreRemoval.cs and VNDeadStoreRemovalTests.cs overlays; source/JIT hashes in artifacts/official-array-merged/scope-ssa-owner.json. Active ARM64/Wasm worker packets excluded.",
+      "evidence": "artifacts/official-array-merged/ssa-owner-evidence.json, managed-ssa-dump-1 and managed-ssa-owner-1.",
+      "limits": "No full41-variant managed result or dump/generated-code parity claimed."
+    },
     "nativeHistoryConsolidation": {
       "oraclePin": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
       "previousHead": "366e9f52b10025ec6243bf4c6e8d24525a3a8d21",
@@ -1360,7 +1370,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Hardware-fold helper is accepted and retired in native366e9f52; continue with its two concrete retained dependencies, GetMaskVariant and NarrowAndDuplicateSimdLong, rather than re-auditing the completed caller. Independently trace B459 optVNReplaceDeadStore ownership in System.Number+Grisu3.TryDigitGenShortest; B458 is committed d8f318e and its original address overflow is resolved. Reproduce the next primary frontier with official-array-merged/capture.py managed <fresh-output> --scope scope-address-complete.json. Wasm packet remains uncommitted/native with108 wider target diagnostics and no target fixture execution; preserve it without expanding into backend algorithms. No completed managed merged-array run yet. Do not reopen B456 or recurring coverage sweeps.",
+    "nextAction": "Collect the approved combined ARM64 dependency/layout retirement receipt from lane A:264 lines,183 implementation/declaration and81 duplicate-text/comment cleanup, amended onto the single oracle-child native commit. Integrated ARM64 checks pass72 Debug/72 Release; then commit the accepted two-helper/GetLayout C# packets and sparse runtime-vector-length stub boundary. B459 SSA ownership correction is verified:42 Debug/40 Release and a completed8-case primary d1 lcs runner; remaining primary capture is arrays-ssa-owner with immutable scope-ssa-owner.json. Read completion rather than rerunning it. Wasm WIP remains blocked by108 broader target diagnostics; preserve it without backend expansion. Do not reopen completed callers or recurring coverage sweeps.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

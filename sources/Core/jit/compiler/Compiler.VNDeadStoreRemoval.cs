@@ -134,6 +134,30 @@ public partial class Compiler
 
     private void optVNReplaceDeadStore(BasicBlock block, GenTreeLclVarCommon store)
     {
+        var data = store.Data;
+        var replacement = new GenTreeOp(GT_COMMA, TYP_VOID, data, gtNewNothingNode(), store, fgNodeThreading);
+        replacement.SetAllEffectsFlags(data);
+
+        if (optVNTryReplaceDeadStore(block, store, replacement))
+        {
+            return;
+        }
+
+        for (var candidate = fgFirstBB; candidate is not null; candidate = candidate.Next)
+        {
+            if ((candidate != block) && optVNTryReplaceDeadStore(candidate, store, replacement))
+            {
+                return;
+            }
+        }
+
+        // Later phases can remove statements without clearing SSA definitions.
+        // Native retags the detached node; only its SSA reference needs clearing here.
+        return;
+    }
+
+    private bool optVNTryReplaceDeadStore(BasicBlock block, GenTreeLclVarCommon store, GenTreeOp replacement)
+    {
         for (var statement = block.FirstStmt; statement is not null; statement = statement.NextStmt)
         {
             var link = gtFindLink(statement, store);
@@ -141,10 +165,6 @@ public partial class Compiler
             {
                 continue;
             }
-
-            var data = store.Data;
-            var replacement = new GenTreeOp(GT_COMMA, TYP_VOID, data, gtNewNothingNode(), store, fgNodeThreading);
-            replacement.SetAllEffectsFlags(data);
 
             if (link.parent is GenTree parent)
             {
@@ -161,9 +181,9 @@ public partial class Compiler
             }
 
             gtUpdateSideEffects(statement, replacement);
-            return;
+            return true;
         }
 
-        throw new InvalidOperationException("The SSA store is not in its defining block.");
+        return false;
     }
 }
