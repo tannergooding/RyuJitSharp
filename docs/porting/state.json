@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "xarchScalarRegisterConstruction": {
+      "scope": "Whole BuildShiftRotate, BuildModDiv and BuildMul, including x86 long shifts, long-dividend modulo and widening multiply.",
+      "validation": "Old and final full-analysis Windows controls pass 22 Debug / 22 Release. Identical parser-overlaid x86 builds retain the same 14 baseline errors; six new x86 cases remain unexecuted.",
+      "coverage": "Native source counts, fixed EAX/EDX uses, internal-register and kill ordering, delay-free operands, two-register definitions and the AVX2 MULX branch.",
+      "retirement": "Three definitions; 282 exact native deletions. Other xarch builders remain native.",
+      "nativeBefore": "1273a804509144f4b58eb486bbcdd5fffe8504fd",
+      "nativeAfter": "76a2525c86b61b5ca1aa6a01ed465d083ecce954",
+      "evidence": "artifacts/lsra-xarch-scalar-20260929 and artifacts/residual-reconciliation/lsra-xarch-scalar-proposed-20260929.json; normalized integration component and lsra-scalar-combined/applied/verification-20260929.json.",
+      "limits": "Substantive x86 branch translation, not x86 execution or new Windows generated-code parity."
+    },
     "arm64ConstantNodes": {
       "scope": "Whole ARM64 genSetRegToConst, constant-address recording and scalable element-option mapping; shared floating constant data, TLS-handle classification and double-to-single conversion.",
       "mapping": "FloatingPointUtils::convertToSingle maps native HOST_RISCV64 to the actual managed process architecture, independently of the compiler target. The SVE move-option enum and seven terminating recorder signatures preserve native defaults.",
@@ -1205,7 +1215,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "1273a804509144f4b58eb486bbcdd5fffe8504fd",
+      "residualHead": "76a2525c86b61b5ca1aa6a01ed465d083ecce954",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -1772,7 +1782,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "ARM64 constant nodes accepted at native1273a804:6 definitions plus1 enum/576 lines,630D600R and shared Windows115D114R;50 identical old controls fail. Do not reapply. Parent next integrates ready lsra-xarch-scalar-proposed-20260929.json (3 definitions/282 lines), normalizing its nativeFile/ownedManagedFiles shape for existing integration tooling. A/B are active on codegenxarch/lowerxarch from f527abe; exclude six SIMD12 helpers owned by a9254d85, which is extending its first SIMD packet. Keep four xarch lanes productive and prioritize accepted-packet integration over another parent ARM64 family. Preserve14 x86 baseline errors,13 Wasm WIP files, oracle-plus-one and no publication.",
+    "nextAction": "LSRA scalar packet accepted at native76a2525c:3 definitions/282 lines,22D22R, unchanged14 x86 blockers; do not reapply. Reassign bf8933b0 to the next coherent retained LSRA family. Parent next integrates simdcodegenxarch-combined-superseding-20260929.json:all11 functions, whole465-line file plus22 header lines. Verify hashes/evidence and use apply_patch for whole-file deletion, not an empty-file span retirement. A/B are active on general codegen/lowering; SIMD-owned codegenxarch paths are IndirectLoads, LocalStores, LocalLoads and Calls partials and remain excluded from A. Preserve13 Wasm WIP, oracle-plus-one and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

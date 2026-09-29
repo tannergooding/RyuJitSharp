@@ -247,6 +247,102 @@ internal static unsafe class LinearScanScalarArithmeticTests
         });
     }
 
+#if TARGET_X86
+    [TestCase(GT_LSH_HI, true, false)]
+    [TestCase(GT_RSH_LO, false, false)]
+    [TestCase(GT_LSH_HI, true, true)]
+    public static void ThreeOperandShiftUsesBothLongHalvesAndDelaysTheOverwrittenHalf(
+        genTreeOps operation, bool delaysLow, bool contained)
+    {
+        WithAllocator((compiler, allocator) => {
+            var low = compiler.gtNewIconNode(TYP_INT, 0x1234);
+            var high = compiler.gtNewIconNode(TYP_INT, 0x5678);
+            var count = compiler.gtNewIconNode(TYP_INT, 3);
+            count.IsContained = true;
+            ReferenceBuildLocation(allocator) = 2;
+            var lowDef = BuildDef(allocator, low, SRBM_NONE, 0);
+            var highDef = BuildDef(allocator, high, SRBM_NONE, 0);
+            var source = new GenTreeOp(GT_LONG, TYP_LONG, low, high);
+            source.IsContained = true;
+            var shift = new GenTreeOp(operation, TYP_INT, source, count);
+            shift.IsContained = contained;
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildShiftRotate(allocator, shift), Is.Zero);
+            Assert.That(lowDef.nextRefPosition?.delayRegFree, Is.EqualTo(!contained && delaysLow));
+            Assert.That(highDef.nextRefPosition?.delayRegFree, Is.EqualTo(!contained && !delaysLow));
+            Assert.That(TargetPreferredUse(allocator), Is.Null);
+            Assert.That(allocator.refPositions.Exists(reference =>
+                ReferenceEquals(reference.treeNode, shift) &&
+                (reference.refType is RefType.RefTypeDef)), Is.EqualTo(!contained));
+        });
+    }
+
+    [Test]
+    public static void LongDividendModuloUsesBothFixedRegistersAndAnInternalTemporary()
+    {
+        WithAllocator((compiler, allocator) => {
+            var low = compiler.gtNewIconNode(TYP_INT, 101);
+            var high = compiler.gtNewIconNode(TYP_INT, 0);
+            var divisor = compiler.gtNewIconNode(TYP_INT, 7);
+            divisor.IsContained = true;
+            ReferenceBuildLocation(allocator) = 2;
+            var lowDef = BuildDef(allocator, low, SRBM_NONE, 0);
+            var highDef = BuildDef(allocator, high, SRBM_NONE, 0);
+            var dividend = new GenTreeOp(GT_LONG, TYP_LONG, low, high);
+            dividend.IsContained = true;
+            var modulo = new GenTreeOp(GT_UMOD, TYP_INT, dividend, divisor);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildModDiv(allocator, modulo), Is.EqualTo(2));
+            Assert.That(lowDef.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_EAX));
+            Assert.That(highDef.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_EDX));
+            Assert.That(TargetPreferredUse(allocator), Is.Null);
+            Assert.That(allocator.refPositions.FindAll(reference =>
+                ReferenceEquals(reference.treeNode, modulo) &&
+                reference.refType is RefType.RefTypeDef), Has.Count.EqualTo(2));
+            Assert.That(allocator.refPositions[^1].registerAssignment, Is.EqualTo(SRBM_RDX));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void WideningMultiplyBuildsBothResultRegisters(bool mulx)
+    {
+        WithAllocator((compiler, allocator) => {
+            if (mulx)
+            {
+                EnableAvx2(compiler);
+            }
+
+            var left = compiler.gtNewIconNode(TYP_INT, 17);
+            var right = compiler.gtNewIconNode(TYP_INT, 5);
+            ReferenceBuildLocation(allocator) = 2;
+            _ = BuildDef(allocator, left, SRBM_NONE, 0);
+            _ = BuildDef(allocator, right, SRBM_NONE, 0);
+            var multiply = new GenTreeMultiRegOp(GT_MUL_LONG, TYP_LONG, left, right);
+            if (mulx)
+            {
+                multiply.Flags |= GTF_UNSIGNED;
+            }
+
+            ReferenceBuildLocation(allocator) = 4;
+            Assert.That(BuildMul(allocator, multiply), Is.EqualTo(2));
+            var definitions = allocator.refPositions.FindAll(reference =>
+                ReferenceEquals(reference.treeNode, multiply) &&
+                reference.refType is RefType.RefTypeDef);
+            Assert.That(definitions, Has.Count.EqualTo(2));
+            Assert.That(definitions[0].multiRegIdx, Is.EqualTo(0));
+            Assert.That(definitions[1].multiRegIdx, Is.EqualTo(1));
+            if (!mulx)
+            {
+                Assert.That(definitions[0].registerAssignment, Is.EqualTo(SRBM_RAX));
+                Assert.That(definitions[1].registerAssignment, Is.EqualTo(SRBM_RDX));
+            }
+        });
+    }
+#endif
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildShiftRotate")]
     private static extern int BuildShiftRotate(LinearScan allocator, GenTree tree);
 

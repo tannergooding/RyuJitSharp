@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch scalar register construction
+
+Shift/rotate, modulo/divide and multiply builders now retain their x86 long-value
+paths: paired shift operands, fixed EAX/EDX modulo uses and widening-multiply
+definitions, including MULX. Native source counts, assertions, delay-free uses and
+kill/internal-register ordering are preserved.
+
+Old and final Windows controls pass 22 Debug/22 Release. The same 14 pre-existing
+x86 errors still prevent executing six new x86 controls. Three complete
+definitions retire 282 native lines in `76a2525c`; this is branch translation,
+not an x86 execution claim. Evidence is in `artifacts/lsra-xarch-scalar-20260929`
+and its proposal/integration records under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: ARM64 constant-node materialization
 
 Constant-node generation now retains the complete scalar, fixed-vector,
