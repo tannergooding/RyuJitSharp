@@ -1,12 +1,16 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 #if TARGET_ARM64
+using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
+using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
+using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -74,6 +78,153 @@ internal static unsafe class Arm64RegisterCopyTests
         Assert.That(GroupSize(codeGen.Emitter), Is.EqualTo(expectedSize));
     }
 
+    [TestCase(0)]
+    [TestCase(2)]
+    public static void VariableRangeKeeperStartsWithEmptyBodyAndPrologRanges(int localCount)
+    {
+        var keeper = new CodeGen.VariableLiveKeeper(localCount, localCount, CreateCodeGen());
+        for (var index = 0; index < localCount; index++)
+        {
+            Assert.That(keeper.getLiveRangesForVarForBody(index), Is.Empty);
+            Assert.That(keeper.getLiveRangesForVarForProlog(index), Is.Empty);
+        }
+
+        keeper.siEndAllVariableLiveRange();
+        keeper.psiClosePrologVariableRanges();
+    }
+
+    [TestCase(TYP_REF)]
+    [TestCase(TYP_BYREF)]
+    [TestCase(TYP_INT)]
+    public static void ProductionMarksTheDestinationGcKind(var_types type)
+    {
+        WithRegisterLife((compiler, codeGen) =>
+        {
+            var value = compiler.gtNewIconNode(type, 0);
+            value.RegNum = REG_R0;
+
+            codeGen.genProduceReg(value);
+
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(type == TYP_REF ? Mask(REG_R0) : default));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(type == TYP_BYREF ? Mask(REG_R0) : default));
+        });
+    }
+
+    [TestCase(TYP_REF)]
+    [TestCase(TYP_BYREF)]
+    [TestCase(TYP_INT)]
+    public static void ScalarCopyConsumesItsSourceAndProducesTheDestination(var_types type)
+    {
+        WithRegisterLife((compiler, codeGen) =>
+        {
+            var value = compiler.gtNewIconNode(type, 0);
+            value.RegNum = REG_R0;
+            var copy = new GenTreeCopyOrReload(GT_COPY, type, value) { RegNum = REG_R1 };
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_R0, type);
+
+            codeGen.genRegCopy(copy);
+
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(type == TYP_REF ? Mask(REG_R1) : default));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(type == TYP_BYREF ? Mask(REG_R1) : default));
+            var descriptor = LastInstruction(codeGen.Emitter) ?? throw new AssertionException("Missing scalar copy.");
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R1));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R0));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void IndexedCopyConsumesOneResultAndCopiesOnlyWhenAssigned(bool retarget)
+    {
+        WithRegisterLife((compiler, codeGen) =>
+        {
+            var call = new GenTreeCall(TYP_STRUCT);
+            call._returnTypeDesc.InitializeReturnType(compiler, TYP_REF, null, CorInfoCallConvExtension.Managed);
+            ReturnTypes(ref call._returnTypeDesc)[1] = TYP_BYREF;
+            call.SetRegNumByIdx(REG_R0, 0);
+            call.SetRegNumByIdx(REG_R1, 1);
+            var copy = new GenTreeCopyOrReload(GT_COPY, TYP_STRUCT, call) { RegNum = REG_R3 };
+            if (retarget)
+            {
+                copy.SetRegNumByIdx(REG_R2, 1);
+            }
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_R1, TYP_BYREF);
+
+            Assert.That(codeGen.genRegCopy(copy, 1), Is.EqualTo(retarget ? REG_R2 : REG_R1));
+
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(retarget ? Mask(REG_R2) : default));
+            Assert.That(GroupSize(codeGen.Emitter), Is.EqualTo(retarget ? 4 : 0));
+        });
+    }
+
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void LocalReloadPreservesRespillAndLastUseLocationRules(bool reSpill, bool lastUse)
+    {
+        WithRegisterLife((compiler, codeGen) =>
+        {
+            compiler.lvaCount = 1;
+            compiler.lvaTrackedToVarNum = [0];
+            compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
+            compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
+            compiler.lvaTable = [new LclVarDsc
+            {
+                Type = TYP_REF,
+                RegNum = REG_STK,
+                lvTracked = true,
+                lvLRACandidate = true,
+                lvOnFrame = true,
+                lvFramePointerBased = true,
+                StackOffset = -16,
+            }];
+            codeGen.IsFramePointerRequired = true;
+            codeGen.IsFramePointerUsed = true;
+            codeGen.initializeVariableLiveKeeper();
+            VarSetOps.AddElemD(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0);
+            var local = compiler.gtNewLclvNode(TYP_REF, 0).AsLclVar();
+
+            codeGen.genUnspillLocal(0, TYP_REF, local, REG_R0, reSpill, lastUse);
+
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(reSpill ? REG_STK : REG_R0));
+            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(reSpill ? default : Mask(REG_R0)));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(REG_R0)));
+            Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.EqualTo(reSpill));
+            var descriptor = LastInstruction(codeGen.Emitter) ?? throw new AssertionException("Missing local reload.");
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_ldr));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R0));
+        });
+    }
+
+    private static regMaskTP Mask(regNumber reg) => regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
+
+    private static void WithRegisterLife(Action<Compiler, CodeGen> action)
+    {
+#if DEBUG
+        using var tls = new JitTls(null);
+#endif
+        var previous = JitTls.Compiler;
+        var codeGen = CreateCodeGen();
+        var compiler = codeGen.Compiler;
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+        compiler.codeGen = codeGen;
+        compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
+        codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
+        codeGen.GCInfo.gcTrkStkPtrLcls = VarSetOps.MakeEmpty(compiler);
+        LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+        JitTls.Compiler = compiler;
+        try
+        {
+            action(compiler, codeGen);
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
     private static CodeGen CreateCodeGen()
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -100,5 +251,11 @@ internal static unsafe class Arm64RegisterCopyTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGsize")]
     private static extern ref int GroupSize(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
+    private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regType")]
+    private static extern ref InlineArrayMaxRetRegCount<var_types> ReturnTypes(ref ReturnTypeDesc descriptor);
 }
 #endif

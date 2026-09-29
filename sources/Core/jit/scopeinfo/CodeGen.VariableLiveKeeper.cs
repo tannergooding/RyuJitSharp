@@ -36,9 +36,6 @@ public sealed partial class CodeGen
 
         public VariableLiveKeeper(int totalLocalCount, int argsCount, CodeGen codeGen)
         {
-#if !TARGET_AMD64
-            throw new FatalJitException(CORJIT_SKIPPED, "Variable live ranges outside AMD64 are not implemented.");
-#else
             m_LiveDscCount = totalLocalCount;
             m_LiveArgsCount = argsCount;
             m_compiler = codeGen.Compiler;
@@ -60,7 +57,6 @@ public sealed partial class CodeGen
 #endif
                     );
             }
-#endif
         }
 
         public void siStartOrCloseVariableLiveRange(in LclVarDsc varDsc, int varNum, bool isBorn, bool isDying)

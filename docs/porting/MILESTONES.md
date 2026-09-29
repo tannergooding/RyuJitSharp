@@ -16,6 +16,27 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Shared register copies, reloads and selectors
+
+Register production, local reloads, both copy overloads, indexed GenTree queries
+and load/store selectors now retain their complete native target branches.
+Nine definitions and associated declarations retire 977 native lines in
+`e8c18c5`. The separate variable-range constructor guard is corrected without
+retirement credit because its native body was already absent (B466).
+
+Combined ARM64 controls pass 76 Debug/76 Release and Windows controls pass
+218 Debug/213 Release. Coverage includes GC kinds, indexed copies, local
+respill/last-use ownership and load/store widths. Component old-source failures
+and earlier integration failures remain recorded. A final selector preprocessor
+correction preserves the validated active Windows/ARM64 source while removing
+two unreachable-code diagnostics from an unsuppressed Wasm comparison; that is
+not a successful Wasm build.
+
+Separate spill-store helpers remain native. X86 and other-target compilation
+limitations remain explicit; no generated-code parity is claimed. Evidence:
+`artifacts/shared-local-copy` final-4/windows-3, the selector/GenTree packets
+and `shared-register` integration records.
+
 ## 2026-09-29: Shared LSRA local stores
 
 Three whole local-store builders preserve x86 byte-register constraints,

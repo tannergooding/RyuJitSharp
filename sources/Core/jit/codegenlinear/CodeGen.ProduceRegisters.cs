@@ -26,13 +26,11 @@ public sealed partial class CodeGen
 
     public void genProduceReg(GenTree tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Register production outside AMD64 is not implemented.");
-#else
 #if DEBUG
         assert((tree._debugFlags & GTF_DEBUG_NODE_CG_PRODUCED) == 0);
         tree._debugFlags |= GTF_DEBUG_NODE_CG_PRODUCED;
 #endif
+#if HAS_FIXED_REGISTER_SET
         if ((tree.Flags & GTF_SPILL) != 0)
         {
             noway_assert(!tree.Oper.IsCopyOrReload);
@@ -91,6 +89,8 @@ public sealed partial class CodeGen
             }
         }
 
+#endif
+
         genUpdateLife(tree);
 
 #if EMIT_GENERATE_GCINFO
@@ -147,7 +147,6 @@ public sealed partial class CodeGen
                 _gcInfo.gcMarkRegPtrVal(tree.RegNum, tree.Type);
             }
         }
-#endif
 #endif
     }
 

@@ -16,6 +16,17 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sharedRegisterProductionCopiesAndSelectors": {
+      "scope": "Whole register production, local reload, both copy overloads, three GenTree indexed-register queries and load/store selectors preserve native target branches and GC/location ordering.",
+      "mapping": "CodeGenInterface::ins_Load/ins_Store map to CodeGen.LoadSelection.cs/StoreSelection.cs; other definitions follow their native-stem partials.",
+      "validation": "Combined ARM6476 Debug/76 Release and Windows218 Debug/213 Release pass. Component old-source controls retain14 parent,5 GenTree and22 selector failures. ARM64 covers indexed copies, GC kinds, local respill/last-use and selector widths; earlier failed integration runs remain recorded.",
+      "retirement": "Nine complete definitions and associated declarations;977 exact native lines. The VariableLiveKeeper constructor's invented AMD64 guard is corrected as B466 without retirement credit because its native body was already absent.",
+      "nativeBefore": "3c88ed47c982fdd59327cc746a9bf8b0906a95f9",
+      "nativeAfter": "e8c18c569829698fd7f57778413471c3a1f0bbd8",
+      "integration": "A final selector preprocessor-only correction removes unreachable statements from the Wasm fallback. Exact source transformation preserves the validated Windows/ARM64 active bodies; an unsuppressed Wasm diagnostic comparison removes exactly two CS0162 identities with no new diagnostics. The final ARM64 fixture additionally initializes its required frame-pointer state; this fixture is wholly excluded on Windows.",
+      "evidence": "artifacts/shared-local-copy final-4/windows-3 and preserved earlier runs; GenTree and selector proposals/supplement; artifacts/residual-reconciliation/shared-register combined/applied/verification and prepare-shared-register-integration.py.",
+      "limits": "GenSpillLocal, RegSet tree spilling and other-target emitter dependencies remain separately retained. X86 retains14 existing errors; Wasm and other unsupported-target builds are not claimed passing. No target machine-code parity claim."
+    },
     "sharedLsraLocalStores": {
       "scope": "Whole BuildStoreLocDef, BuildMultiRegStoreLoc and BuildStoreLoc preserve x86 byte-register masks, 32-bit long halves, ARM misaligned-field temporaries and shared per-field liveness.",
       "validation": "Windows23 Debug/23 Release pass; Linux store-only21 Debug pass using the unchanged broader-run binary. Corrected shared guards pass four focused controls on Windows and Linux each; exact source comparison proves only the two invented whole-function guards and their NYI alternatives were removed.",
@@ -1671,31 +1682,31 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Complete codegenlinear.cpp genUnspillLocal/genProduceReg and codegencommon.cpp genRegCopy overloads together with A's shared GenTree register queries. ARM64 controls exposed a separate VariableLiveKeeper constructor guard despite its native definition already being absent; correct that exception without retirement credit. Preserve fixed-register guards, ownership and GC/liveness ordering. Integrate ready condition/operand and lowering packets; keep13 Wasm WIP frozen.",
+      "parentScope": "Continue the shared spill boundary: whole RegSet.rsSpillTree, CodeGenInterface.spillReg/reloadReg and CodeGen.genSpillLocal. Preserve HAS_FIXED_REGISTER_SET/non-Wasm boundaries, spill descriptor ownership, GC/location ordering and target store widths. Three existing Linux spill/reload cases fail on immutable a12cc63 at the Windows-only tree-spill guard. Complete focused Windows/ARM64/Linux controls and exact retirement together; prioritize ready packet integration and keep13 Wasm WIP frozen.",
       "wholeFunctionRepairLanes": [
         {
-          "scope": "Whole xarch integer/floating comparison helpers; completed GenTree register queries are frozen for parent integration.",
+          "scope": "Whole retained xarch scalar/atomic codegen families.",
           "owner": "4b57b744-36f1-4e6e-8b76-94c1a87d6e02",
-          "files": "CodeGen.Comparisons.cs and comparison fixtures; parent owns shared register helpers and both ARM64 register fixtures.",
-          "status": "active from6c96f10"
+          "files": "Scalar/atomic CodeGen partials and focused fixtures; parent owns shared register helpers and both ARM64 register fixtures.",
+          "status": "four-function atomic packet ready fromf2ed014; GenTree and flag reuse accepted"
         },
         {
-          "scope": "Next retained shared lower.cpp family after switch and memory-compare closure.",
+          "scope": "Retained shared call-result and return lowering after call/argument dispatch closure.",
           "owner": "b2253a3d-d101-444e-9c56-d631eb5b274b",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "switch and memcmp accepted with explicit repaired-baseline Linux evidence"
+          "status": "active after14d46ad"
         },
         {
-          "scope": "Retained shared lsrabuild family after xarch file closure and Unix call-builder compilation repair.",
+          "scope": "Whole shared return and adjacent memory/write-barrier builders, including the existing Linux return-fixture discrepancy.",
           "owner": "bf8933b0-1d43-49d4-9d3e-91c4322f5215",
           "files": "LSRA partials and focused fixtures.",
-          "status": "xarch file closure accepted; next bounded family to be assigned after commit"
+          "status": "local stores accepted; return family active aftera12cc63"
         },
         {
           "scope": "Whole load/store instruction selectors required by parent ARM64 reload controls.",
           "owner": "a9254d85-a0d4-46d4-a852-87eef8c242fb",
           "files": "Instruction and emitter partials with dedicated fixtures; exclude parent register helpers and shared GenTree queries.",
-          "status": "operand-core accepted; load/store selectors active froma143b50"
+          "status": "load/store selectors and Wasm preprocessor supplement accepted; refill after shared-register commit"
         }
       ],
       "parallelPackets": [
@@ -2099,7 +2110,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "LSRA local stores accepted through native3c88ed4; do not reapply. Parent register/GenTree/selectors pass76 ARM64 Debug/Release and218/213 Windows controls; collect HW selector Wasm-fallback correction, prove unchanged validated target branches and combine exact components. Recompute parent header spans after flag-reuse retirement, and retire nine definitions plus their declarations; VariableLiveKeeper constructor correction receives no extra credit. A continues scalar/atomic codegen, B shared call/return lowering; refill LSRA after commit. Preserve14x86 blockers,13Wasm, oracle-plus-one and no publication.",
+    "nextAction": "Shared register/copy/selector integration accepted through nativee8c18c5; do not reapply. Integrate A's ready four-function atomic packet (224 lines; header requires reanchoring), then continue parent rsSpillTree/spillReg/reloadReg/genSpillLocal boundary. Existing Linux spill regression already captured: all three old cases fail. B and LSRA continue shared return families; refill HW lane after selector acceptance. Preserve14x86 blockers,13Wasm, oracle-plus-one and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

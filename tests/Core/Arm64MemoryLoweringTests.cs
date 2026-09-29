@@ -9,6 +9,7 @@ using static RyuJitSharp.CORINFO_InstructionSet;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.instruction;
 using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
@@ -17,6 +18,50 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class Arm64MemoryLoweringTests
 {
     private static bool s_immutable;
+
+    [TestCase(TYP_BYTE, false, INS_ldrsb)]
+    [TestCase(TYP_UBYTE, false, INS_ldrb)]
+    [TestCase(TYP_SHORT, false, INS_ldrsh)]
+    [TestCase(TYP_USHORT, false, INS_ldrh)]
+    [TestCase(TYP_INT, false, INS_ldr)]
+    [TestCase(TYP_LONG, false, INS_ldr)]
+    [TestCase(TYP_REF, false, INS_ldr)]
+    [TestCase(TYP_FLOAT, false, INS_ldr)]
+    [TestCase(TYP_DOUBLE, false, INS_ldr)]
+    [TestCase(TYP_SIMD12, true, INS_ldr)]
+#if FEATURE_MASKED_HW_INTRINSICS
+    [TestCase(TYP_MASK, false, INS_sve_ldr)]
+#endif
+    public static void LoadSelectorPreservesNativeRegisterClassAndWidth(
+        var_types type, bool aligned, instruction expected)
+    {
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var codeGen = new CodeGen(compiler);
+
+        Assert.That(codeGen.ins_Load(type, aligned), Is.EqualTo(expected));
+    }
+
+    [TestCase(TYP_BYTE, false, INS_strb)]
+    [TestCase(TYP_UBYTE, false, INS_strb)]
+    [TestCase(TYP_SHORT, false, INS_strh)]
+    [TestCase(TYP_USHORT, false, INS_strh)]
+    [TestCase(TYP_INT, false, INS_str)]
+    [TestCase(TYP_LONG, false, INS_str)]
+    [TestCase(TYP_BYREF, false, INS_str)]
+    [TestCase(TYP_FLOAT, false, INS_str)]
+    [TestCase(TYP_DOUBLE, false, INS_str)]
+    [TestCase(TYP_SIMD16, true, INS_str)]
+#if FEATURE_MASKED_HW_INTRINSICS
+    [TestCase(TYP_MASK, false, INS_sve_str)]
+#endif
+    public static void StoreSelectorPreservesNativeRegisterClassAndWidth(
+        var_types type, bool aligned, instruction expected)
+    {
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var codeGen = new CodeGen(compiler);
+
+        Assert.That(codeGen.ins_Store(type, aligned), Is.EqualTo(expected));
+    }
 
     [TestCase(TYP_FLOAT, false, false, 0.0)]
     [TestCase(TYP_DOUBLE, false, true, 0.0)]

@@ -522,6 +522,8 @@ existing deviation entries rather than maintaining competing descriptions.
 
 | B465 | Pinned direct SIMD immediate API requires signed-byte representation | Direct `emitIns_R_R_I(INS_pshufd, EA_16BYTE, ..., 0xE4)` fails the managed Debug size assertion. The pin has the same signed-byte representability check followed by the non-SIMD assertion. | Establish native caller reachability and expected immediate representation before proposing a contract correction; do not widen only the port's predicate. | Pinned behavior preserved. This is a source-level API restriction, not an established native production failure. Evidence: `artifacts/residual-reconciliation/emitter-pshufd-imm8-native-evidence-20260929.json`; original failed fixture and current valid-immediate control are distinguished. |
 
+| B466 | Variable-range constructor remains target-gated after native retirement | The shared `VariableLiveKeeper` constructor still rejected non-AMD64 targets even though its complete native definition was already absent from the residual. ARM64 local reload controls exposed the stale guard. | Restore the pinned shared constructor, retaining its existing conditional fields and initialization. | Fixed with shared register/copy/selector integration. ARM64 zero/nonzero range initialization and local reload controls pass; no additional native retirement credit. Evidence: `artifacts/shared-local-copy` and `shared-register` integration records. |
+
 Larger module decomposition and broad unit-test infrastructure belong to the
 post-port phase. Add concrete candidates here as evidence appears, rather than
 preemptively planning a redesign of every compiler subsystem.

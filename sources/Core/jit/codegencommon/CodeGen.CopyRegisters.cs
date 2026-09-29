@@ -9,8 +9,8 @@ public sealed partial class CodeGen
 {
     public void genRegCopy(GenTree treeNode)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Register copy generation outside AMD64 is not implemented.");
+#if TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "Register copy generation is not supported on Wasm.");
 #else
         assert(treeNode.Oper is GT_COPY);
         var op1 = treeNode.AsUnOp().Op1;
@@ -90,8 +90,8 @@ public sealed partial class CodeGen
 
     public regNumber genRegCopy(GenTree treeNode, byte multiRegIndex)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Indexed register copies outside AMD64 are not implemented.");
+#if TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "Indexed register copies are not supported on Wasm.");
 #else
         assert(treeNode.Oper is GT_COPY);
         var op1 = treeNode.AsUnOp().Op1;

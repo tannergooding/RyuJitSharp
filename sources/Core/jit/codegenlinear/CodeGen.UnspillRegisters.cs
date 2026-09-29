@@ -20,8 +20,8 @@ public sealed partial class CodeGen
     public void genUnspillLocal(int varNum, var_types type, GenTreeLclVar lclNode, regNumber regNum,
         bool reSpill, bool isLastUse)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Local reloads outside AMD64 are not implemented.");
+#if TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "Register-local reloads are not supported on Wasm.");
 #else
         ref var varDsc = ref _compiler.lvaGetDesc(varNum);
 #if DEBUG

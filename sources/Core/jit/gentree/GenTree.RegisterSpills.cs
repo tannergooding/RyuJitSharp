@@ -9,18 +9,34 @@ public partial class GenTree
 {
     public var_types GetRegTypeByIndex(int regIndex)
     {
-#if TARGET_AMD64
 #if FEATURE_MULTIREG_RET
         if (IsMultiRegCall)
         {
             return AsCall().ReturnTypeDesc.GetReturnRegType(checked((byte)regIndex));
         }
+
+#if !TARGET_64BIT
+        if (Oper.IsMultiRegOp)
+        {
+            return AsMultiRegOp().GetRegType(checked((byte)regIndex));
+        }
+#endif
 #endif
 #if FEATURE_HW_INTRINSICS
         if (Oper.IsHWIntrinsic)
         {
             assert(Type is TYP_STRUCT);
+#if TARGET_ARM64
+            if (AsHWIntrinsic().SimdSize == 16)
+            {
+                return TYP_SIMD16;
+            }
+
+            assert(AsHWIntrinsic().SimdSize == 8);
+            return TYP_SIMD8;
+#elif TARGET_XARCH
             return AsHWIntrinsic().GetOp(1).Type;
+#endif
         }
 #endif
         if (Oper.IsScalarLocal)
@@ -36,19 +52,22 @@ public partial class GenTree
         }
 
         throw new FatalJitException("Invalid node type for GetRegTypeByIndex.");
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Indexed register types outside AMD64 are not implemented.");
-#endif
     }
 
     public GenTreeFlags GetRegSpillFlagByIdx(int regIndex)
     {
-#if TARGET_AMD64
 #if FEATURE_MULTIREG_RET
         if (IsMultiRegCall)
         {
             return AsCall().GetRegSpillFlagByIdx(checked((byte)regIndex));
         }
+
+#if !TARGET_64BIT
+        if (Oper.IsMultiRegOp)
+        {
+            return AsMultiRegOp().GetRegSpillFlagByIdx(checked((byte)regIndex));
+        }
+#endif
 #endif
 #if FEATURE_HW_INTRINSICS
         if (Oper.IsHWIntrinsic)
@@ -62,20 +81,24 @@ public partial class GenTree
         }
 
         throw new FatalJitException("Invalid node type for GetRegSpillFlagByIdx.");
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Indexed register spill flags outside AMD64 are not implemented.");
-#endif
     }
 
     public void SetRegSpillFlagByIdx(GenTreeFlags flags, int regIndex)
     {
-#if TARGET_AMD64
 #if FEATURE_MULTIREG_RET
         if (IsMultiRegCall)
         {
             AsCall().SetRegSpillFlagByIdx(flags, checked((byte)regIndex));
             return;
         }
+
+#if !TARGET_64BIT
+        if (Oper.IsMultiRegOp)
+        {
+            AsMultiRegOp().SetRegSpillFlagByIdx(flags, checked((byte)regIndex));
+            return;
+        }
+#endif
 #endif
 #if FEATURE_HW_INTRINSICS
         if (Oper.IsHWIntrinsic)
@@ -92,9 +115,5 @@ public partial class GenTree
 
         assert(false, "Invalid node type for SetRegSpillFlagByIdx");
         throw new FatalJitException("Invalid node type for indexed register spill flags.");
-#else
-        NYI("GenTree.SetRegSpillFlagByIdx outside AMD64");
-        throw new FatalJitException("GenTree.SetRegSpillFlagByIdx outside AMD64.");
-#endif
     }
 }
