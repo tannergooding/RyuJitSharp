@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Whole xarch shift generation
+
+Scalar, split-long and read-modify-write shifts retain their whole x86/AMD64
+branches. Three definitions and the xarch-only declaration retire 250 lines
+in `4a79d031`; native ARM and other-target declarations remain.
+
+Full-analysis preservation controls pass Windows 415 Debug/399 Release and
+Linux 350 Debug/337 Release. Old Linux shifts already pass 39/39; broad old/final
+runs retain the same 63 indirect-store guard failures. Both x86 builds stop at
+the same four pre-existing syntax diagnostics before compiling shifts, so the
+four new x86 cases have not executed. Evidence: `artifacts/xarch-shifts-0860136`.
+This establishes translation and preservation, not x86 execution or code parity.
+
 ## 2026-09-29: Shared throw-helper and overflow generation
 
 The whole throw-helper and overflow functions preserve Unix-x86 funclet

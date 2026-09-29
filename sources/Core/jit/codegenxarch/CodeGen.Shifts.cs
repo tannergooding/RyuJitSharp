@@ -10,10 +10,9 @@ public sealed partial class CodeGen
 {
     public void genCodeForShift(GenTree tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Shift node generation requires AMD64.");
-#else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(tree.Oper.IsShiftOrRotate);
         assert(tree.RegNum != REG_NA);
         assert(tree.AsOp().Op1.IsUsedFromReg || _compiler.compIsaSupportedDebugOnly(InstructionSet_AVX2));
@@ -98,8 +97,49 @@ public sealed partial class CodeGen
         }
 
         genProduceReg(tree);
-#endif
     }
+
+#if TARGET_X86
+    public void genCodeForShiftLong(GenTree tree)
+    {
+        var oper = tree.Oper;
+        assert(oper is GT_LSH_HI or GT_RSH_LO);
+
+        var operand = tree.AsOp().Op1;
+        assert(operand.Oper is GT_LONG);
+        assert(operand.AsOp().Op1.IsUsedFromReg);
+        assert(operand.AsOp().Op2.IsUsedFromReg);
+
+        var operandLo = operand.AsOp().Op1;
+        var operandHi = operand.AsOp().Op2;
+        var regLo = operandLo.RegNum;
+        var regHi = operandHi.RegNum;
+
+        genConsumeOperands(tree.AsOp());
+
+        var targetType = tree.Type;
+        var ins = genGetInsForOper(oper, targetType);
+        var shiftBy = tree.AsOp().Op2;
+        assert(shiftBy.IsContainedIntOrIImmed);
+        var count = unchecked((uint)shiftBy.AsIntConCommon().IconValue);
+        var targetReg = tree.RegNum;
+
+        if (oper is GT_LSH_HI)
+        {
+            assert(regLo != targetReg);
+            inst_Mov(targetType, targetReg, regHi, canSkip: true);
+            inst_RV_RV_IV(ins, targetType.EmitSize, targetReg, regLo, count);
+        }
+        else
+        {
+            assert(regHi != targetReg);
+            inst_Mov(targetType, targetReg, regLo, canSkip: true);
+            inst_RV_RV_IV(ins, targetType.EmitSize, targetReg, regHi, count);
+        }
+
+        genProduceReg(tree);
+    }
+#endif
 
     public static instruction genMapShiftInsToShiftByConstantIns(instruction ins, int value)
     {
@@ -133,10 +173,9 @@ public sealed partial class CodeGen
 
     public void genCodeForShiftRMW(GenTreeStoreInd storeInd)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Memory read-modify-write shift generation requires AMD64.");
-#else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         var data = storeInd.Data;
         assert(data.Oper.IsShiftOrRotate);
         assert(data.AsOp().Op1.IsUsedFromMemory);
@@ -165,7 +204,6 @@ public sealed partial class CodeGen
             genCopyRegIfNeeded(shiftBy, REG_RCX);
             Emitter.emitInsRMW(ins, attr, storeInd);
         }
-#endif
     }
 }
 #endif
