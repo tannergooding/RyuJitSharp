@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch lowering file closure
+
+Restoring the x86 virtual-stub call-containment path closes the final two
+definitions in `lowerxarch.cpp`. Its remaining 131 lines retire in `66d75df4`;
+shared declarations stay for other targets.
+
+Windows 135 Debug/135 Release and Linux 135 Debug controls pass. Two new Windows
+controls also pass on old source; the actual x86 repair remains unexecuted
+behind 14 unchanged baseline errors. File retirement is not complete execution
+parity. Evidence: `artifacts/xarch-final-88b686b` and the `xarch-lower-final`
+proposal and `lower-final` whole-file records under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Xarch LSRA call and node dispatch
 
 Whole call and node builders preserve x86 ABI constraints, split arithmetic and

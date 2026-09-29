@@ -4,6 +4,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
+using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.gtCallTypes;
 using static RyuJitSharp.var_types;
@@ -94,6 +95,35 @@ internal static unsafe class CallDispatchLoweringTests
 #endif
             Assert.That(target.RegNum, Is.EqualTo(regNumber.REG_NA));
             Assert.That(target.Next, Is.SameAs(call));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void IndirectCallContainmentPreservesVirtualStubTargetRegister(bool virtualStub)
+    {
+        WithCompiler((compiler, block, lowering) => {
+            var address = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+            var target = compiler.gtNewIndir(TYP_I_IMPL, address);
+            target.RegNum = regNumber.REG_RAX;
+            var call = new GenTreeCall(TYP_VOID) {
+                _callType = CT_INDIRECT,
+                _controlExpr = target,
+                Flags = virtualStub ? GTF_CALL_VIRT_STUB : 0,
+            };
+            block.InsertAtEnd(address);
+            block.InsertAtEnd(target);
+            block.InsertAtEnd(call);
+
+            ContainCheckCallOperands(lowering, call);
+
+            Assert.That(call._controlExpr, Is.SameAs(target));
+            Assert.That(target.IsContained, Is.True);
+#if TARGET_X86
+            Assert.That(target.RegNum, Is.EqualTo(virtualStub ? regNumber.REG_RAX : regNumber.REG_NA));
+#else
+            Assert.That(target.RegNum, Is.EqualTo(regNumber.REG_NA));
+#endif
         });
     }
 
@@ -339,6 +369,9 @@ internal static unsafe class CallDispatchLoweringTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerCall")]
     private static extern GenTree? LowerCall(Lowering lowering, GenTree call);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckCallOperands")]
+    private static extern void ContainCheckCallOperands(Lowering lowering, GenTreeCall call);
 
     private static void WithCompiler(Action<Compiler, BasicBlock, Lowering> action)
     {

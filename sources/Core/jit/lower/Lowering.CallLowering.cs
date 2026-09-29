@@ -88,11 +88,26 @@ public sealed partial class Lowering
 
     private void ContainCheckCallOperands(GenTreeCall call)
     {
-#if TARGET_AMD64
+#if TARGET_XARCH
         var control = call._controlExpr;
+#if TARGET_X86
+        if (call._callType is CT_INDIRECT)
+        {
+            assert(!call.IsFastTailCall || !call.IsVirtualStub);
+        }
+#endif
         if (control is not null)
         {
             assert(control.Type is not TYP_VOID);
+#if TARGET_X86
+            if (call.IsVirtualStub && (call._callType is CT_INDIRECT) &&
+                !CompilerInstance.IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            {
+                assert(control.Oper.IsIndir);
+                MakeSrcContained(call, control);
+            }
+            else
+#endif
             if (control.Oper.IsIndir && IsSafeToContainMem(call, control))
             {
                 control.RegNum = REG_NA;
