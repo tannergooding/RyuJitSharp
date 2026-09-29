@@ -9,7 +9,7 @@ public sealed partial class Lowering
 {
     private unsafe void LowerCast(GenTreeCast tree)
     {
-#if TARGET_AMD64
+#if TARGET_XARCH
         assert(tree.Oper is GT_CAST);
         var compiler = CompilerInstance;
         var castOp = tree.CastOp;
@@ -24,7 +24,68 @@ public sealed partial class Lowering
             // Morph handles checked conversions and inserts the intermediate cast for small types.
             noway_assert(!tree.HasOverflowCheck);
             assert(!varTypeIsSmall(dstType));
+            assert(!varTypeIsLong(dstType) || TargetArchitecture.Is64Bit);
         }
+
+#if TARGET_X86
+        if ((srcType is TYP_UINT) && varTypeIsFloating(dstType) &&
+            !compiler.compOpportunisticallyDependsOn(InstructionSet_AVX512))
+        {
+            LABELEDDISPTREERANGE("LowerCast before", BlockRange(), tree);
+
+            var castRange = new LIR.Range(null, null);
+            var zero = compiler.gtNewZeroConNode(TYP_SIMD16);
+            GenTree castResult = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16,
+                NI_X86Base_ConvertScalarToVector128Double, TYP_INT, 16, zero, castOp);
+            castRange.InsertAtEnd(zero);
+            castRange.InsertAtEnd(castResult);
+
+            LIR.Use.MakeDummyUse(castRange, castResult, out var resultUse);
+            _ = resultUse.ReplaceWithLclVar(compiler);
+            castResult = resultUse.Def();
+
+            var addConstant = compiler.gtNewVconNode(TYP_SIMD16);
+            addConstant.SimdVal.f64[0] = 4294967296.0;
+            var addResult = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_X86Base_AddScalar,
+                TYP_DOUBLE, 16, castResult, addConstant);
+            castRange.InsertAtEnd(addConstant);
+            castRange.InsertAtEnd(addResult);
+
+            var firstClone = CloneLocal(castResult);
+            var secondClone = CloneLocal(castResult);
+            castResult = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_X86Base_BlendVariable,
+                TYP_DOUBLE, 16, firstClone, addResult, secondClone);
+            castRange.InsertAtEnd(firstClone);
+            castRange.InsertAtEnd(secondClone);
+            castRange.InsertAtEnd(castResult);
+
+            if (dstType is TYP_FLOAT)
+            {
+                castResult = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16,
+                    NI_X86Base_ConvertToVector128Single, TYP_DOUBLE, 16, castResult);
+                castRange.InsertAtEnd(castResult);
+            }
+
+            var toScalar = compiler.gtNewSimdToScalarNode(dstType, castResult, dstType, 16);
+            castRange.InsertAtEnd(toScalar);
+
+            var first = castRange.FirstNode;
+            var last = castRange.LastNode;
+            BlockRange().InsertBefore(tree, castRange);
+            LABELEDDISPTREERANGE("LowerCast after", BlockRange(), toScalar);
+            if (BlockRange().TryGetUse(tree, out var castUse))
+            {
+                castUse.ReplaceWith(toScalar);
+            }
+            else
+            {
+                toScalar.IsUnusedValue = true;
+            }
+            BlockRange().Remove(tree);
+            LowerRange(first, last);
+            return;
+        }
+#endif
 
         if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType))
         {
@@ -83,8 +144,13 @@ public sealed partial class Lowering
 
                         case TYP_UINT:
                         {
+#if TARGET_X86
+                            intrinsic = NI_X86Base_ConvertToVector128Int32WithTruncation;
+                            maxIntegralValue = compiler.gtNewIconNode(TYP_INT, -1);
+#else
                             intrinsic = NI_X86Base_X64_ConvertToInt64WithTruncation;
                             maxIntegralValue = compiler.gtNewIconNode(TYP_INT, unchecked((nint)uint.MaxValue));
+#endif
                             minFloatOverflow = 4294967296.0; // 2^32
                             break;
                         }
@@ -148,46 +214,77 @@ public sealed partial class Lowering
                             srcVector, zero);
                         castRange.InsertAtEnd(zero);
                         castRange.InsertAtEnd(fixup);
-                        if (dstType is TYP_UINT)
+                        if ((dstType is TYP_UINT) && (intrinsic == NI_X86Base_X64_ConvertToInt64WithTruncation))
                         {
                             // X64's signed long conversion covers the entire uint range.
                             convertResult = compiler.gtNewSimdHWIntrinsicNode(TYP_LONG, intrinsic, srcType, 16, fixup);
                         }
                         else
                         {
-                            assert(dstType is TYP_ULONG);
-                            // For the upper half of ulong, convert x - 2^64 as a signed long.
-                            // Double's precision guarantees whole numbers at that magnitude, so
-                            // the positive and negative truncating conversions have identical low bits.
                             castRange.InsertAtEnd(overflowValue);
                             LIR.Use.MakeDummyUse(castRange, overflowValue, out var overflowUse);
                             _ = overflowUse.ReplaceWithLclVar(compiler);
                             overflowValue = overflowUse.Def();
                             var floor = CloneLocal(srcVector);
                             castRange.InsertAtEnd(floor);
+
+                            if ((srcType is TYP_DOUBLE) && (dstType is TYP_UINT))
+                            {
+                                floor = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16,
+                                    NI_X86Base_RoundToZeroScalar, srcType, 16, floor);
+                                castRange.InsertAtEnd(floor);
+                            }
+
                             var wrap = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_X86Base_SubtractScalar,
                                 srcType, 16, floor, overflowValue);
                             castRange.InsertAtEnd(wrap);
                             overflowValue = CloneLocal(overflowValue);
 
-                            GenTree result = compiler.gtNewSimdHWIntrinsicNode(TYP_LONG, intrinsic, srcType, 16, fixup);
-                            var negated = compiler.gtNewSimdHWIntrinsicNode(TYP_LONG, intrinsic, srcType, 16, wrap);
-                            castRange.InsertAtEnd(result);
-                            castRange.InsertAtEnd(negated);
-                            LIR.Use.MakeDummyUse(castRange, result, out var resultUse);
-                            _ = resultUse.ReplaceWithLclVar(compiler);
-                            result = resultUse.Def();
+                            if (dstType is TYP_UINT)
+                            {
+                                GenTree result = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsic,
+                                    srcType, 16, fixup);
+                                var negated = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsic,
+                                    srcType, 16, wrap);
+                                castRange.InsertAtEnd(result);
+                                castRange.InsertAtEnd(negated);
+                                LIR.Use.MakeDummyUse(castRange, result, out var resultUse);
+                                _ = resultUse.ReplaceWithLclVar(compiler);
+                                result = resultUse.Def();
 
-                            // Signed conversion overflow returns MinValue. Its sign selects the wrapped result.
-                            var sixtyThree = compiler.gtNewIconNode(TYP_INT, 63);
-                            var mask = new GenTreeOp(GT_RSH, TYP_LONG, result, sixtyThree);
-                            var andMask = new GenTreeOp(GT_AND, TYP_LONG, mask, negated);
-                            var resultClone = CloneLocal(result);
-                            castRange.InsertAtEnd(sixtyThree);
-                            castRange.InsertAtEnd(mask);
-                            castRange.InsertAtEnd(andMask);
-                            castRange.InsertAtEnd(resultClone);
-                            convertResult = new GenTreeOp(GT_OR, TYP_LONG, andMask, resultClone);
+                                var resultClone = CloneLocal(result);
+                                castRange.InsertAtEnd(resultClone);
+                                convertResult = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16,
+                                    NI_X86Base_BlendVariable, TYP_FLOAT, 16, result, negated, resultClone);
+                                castRange.InsertAtEnd(convertResult);
+                                convertResult = compiler.gtNewSimdToScalarNode(TYP_INT, convertResult, dstType, 16);
+                            }
+                            else
+                            {
+                                assert(dstType is TYP_ULONG);
+                                // For the upper half of ulong, convert x - 2^64 as a signed long.
+                                // Double's precision guarantees whole numbers at that magnitude, so
+                                // the positive and negative truncating conversions have identical low bits.
+                                GenTree result = compiler.gtNewSimdHWIntrinsicNode(TYP_LONG, intrinsic, srcType,
+                                    16, fixup);
+                                var negated = compiler.gtNewSimdHWIntrinsicNode(TYP_LONG, intrinsic, srcType, 16, wrap);
+                                castRange.InsertAtEnd(result);
+                                castRange.InsertAtEnd(negated);
+                                LIR.Use.MakeDummyUse(castRange, result, out var resultUse);
+                                _ = resultUse.ReplaceWithLclVar(compiler);
+                                result = resultUse.Def();
+
+                                // Signed conversion overflow returns MinValue. Its sign selects the wrapped result.
+                                var sixtyThree = compiler.gtNewIconNode(TYP_INT, 63);
+                                var mask = new GenTreeOp(GT_RSH, TYP_LONG, result, sixtyThree);
+                                var andMask = new GenTreeOp(GT_AND, TYP_LONG, mask, negated);
+                                var resultClone = CloneLocal(result);
+                                castRange.InsertAtEnd(sixtyThree);
+                                castRange.InsertAtEnd(mask);
+                                castRange.InsertAtEnd(andMask);
+                                castRange.InsertAtEnd(resultClone);
+                                convertResult = new GenTreeOp(GT_OR, TYP_LONG, andMask, resultClone);
+                            }
                         }
                     }
 

@@ -54,6 +54,62 @@ internal static unsafe class CastLoweringTests
         });
     }
 
+#if TARGET_X86
+    [TestCase(var_types.TYP_FLOAT)]
+    [TestCase(var_types.TYP_DOUBLE)]
+    public static void UnsignedIntToFloatingUsesDoubleFixup(var_types destination)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Type = var_types.TYP_INT;
+            var value = compiler.gtNewLclvNode(var_types.TYP_INT, 0);
+            var cast = new GenTreeCast(destination, value, true, destination) { IsUnusedValue = true };
+            var lowering = CreateLowering(compiler, value, cast);
+
+            LowerCast(lowering, cast);
+
+            var result = LoweringBlock(lowering)?.LastNode as GenTreeHWIntrinsic
+                ?? throw new AssertionException("Unsigned cast scalar result missing.");
+            Assert.That(result.HWIntrinsicId, Is.EqualTo(NamedIntrinsic.NI_Vector_ToScalar));
+            Assert.That(result.Type, Is.EqualTo(destination));
+        });
+    }
+
+    [TestCase(var_types.TYP_FLOAT, false)]
+    [TestCase(var_types.TYP_DOUBLE, true)]
+    public static void FloatingToUnsignedIntUsesX86VectorWrap(var_types sourceType, bool roundBeforeWrapping)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Type = sourceType;
+            var value = compiler.gtNewLclvNode(sourceType, 0);
+            var cast = new GenTreeCast(var_types.TYP_INT, value, false, var_types.TYP_UINT)
+            {
+                IsUnusedValue = true,
+            };
+            var lowering = CreateLowering(compiler, value, cast);
+
+            LowerCast(lowering, cast);
+
+            var block = LoweringBlock(lowering) ?? throw new AssertionException("Cast block missing.");
+            Assert.That(block.LastNode?.Oper, Is.EqualTo(genTreeOps.GT_SELECT));
+            var hasBlend = false;
+            var hasRound = false;
+            for (var node = block.FirstNode; node is not null; node = node.Next)
+            {
+                if (node is GenTreeHWIntrinsic intrinsic)
+                {
+                    hasBlend |= intrinsic.HWIntrinsicId == NamedIntrinsic.NI_X86Base_BlendVariable;
+                    hasRound |= intrinsic.HWIntrinsicId == NamedIntrinsic.NI_X86Base_RoundToZeroScalar;
+                }
+            }
+            Assert.That(hasBlend, Is.True);
+            Assert.That(hasRound, Is.EqualTo(roundBeforeWrapping));
+        });
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerCast")]
+    private static extern void LowerCast(Lowering lowering, GenTreeCast cast);
+#endif
+
     private static Lowering CreateLowering(Compiler compiler, GenTree source, GenTreeCast cast)
     {
         var block = new BasicBlock(null, null);

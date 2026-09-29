@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Whole xarch cast lowering
+
+`LowerCast` now includes the native x86 unsigned-int/floating conversion paths,
+with the original vector operations, target-width constants, LIR replacement
+and recursive lowering order. The whole definition and heading retire 495 lines
+in `b4e56280`; its shared declaration and separate intrinsic-lowering dependency
+remain native.
+
+Windows controls pass 24 Debug/24 Release, with the same 24 old-source Debug
+passes; Linux-target controls also pass 24. Four new x86 cases remain unexecuted
+behind the same 14 baseline compilation errors. Evidence:
+`artifacts/xarch-lowercast-f527abe` and the LowerCast proposal and retirement
+receipts under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Xarch cookie and EH code generation
 
 Security-cookie initialization/checking now retain their native x86 paths, and
