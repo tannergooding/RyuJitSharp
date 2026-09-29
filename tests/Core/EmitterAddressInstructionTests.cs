@@ -15,6 +15,86 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class EmitterAddressInstructionTests
 {
+    [TestCase(INS_inc, EA_4BYTE, REG_RAX, 0, IF_ARW, 2u)]
+    [TestCase(INS_dec, EA_2BYTE, REG_RSP, -8, IF_ARW, 5u)]
+    public static void UnaryBaseAddressRecordsSizeAndOptions(
+        instruction ins, emitAttr attr, regNumber baseReg, int displacement, Emitter.insFormat format, uint size)
+    {
+        WithEmitter((_, emitter) =>
+        {
+            emitter.emitIns_AR(ins, attr, baseReg, displacement);
+            var id = Last(emitter);
+
+            Assert.That(id.idInsFmt(), Is.EqualTo(format));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(baseReg));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_NA));
+            Assert.That(Displacement(emitter, id), Is.EqualTo((nint)displacement));
+            Assert.That(id.idCodeSize(), Is.EqualTo(size));
+            Assert.That(CurrentSize(emitter), Is.EqualTo((int)size));
+            Assert.That(CurrentCount(emitter), Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public static void RegisterToBaseAddressPreservesOperandsAndZeroLeaElision()
+    {
+        WithEmitter((_, emitter) =>
+        {
+            emitter.emitIns_R_AR(INS_mov, EA_8BYTE, REG_RAX, REG_RSP, 8);
+            var id = Last(emitter);
+
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_RWR_ARD));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_RAX));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RSP));
+            Assert.That(Displacement(emitter, id), Is.EqualTo((nint)8));
+            Assert.That(id.idCodeSize(), Is.EqualTo(5u));
+            Assert.That(CurrentCount(emitter), Is.EqualTo(1));
+            Assert.That(CurrentSize(emitter), Is.EqualTo(5));
+
+            emitter.emitIns_R_AR(INS_lea, EA_8BYTE, REG_RAX, REG_RAX, 0);
+            Assert.That(CurrentCount(emitter), Is.EqualTo(1));
+            Assert.That(CurrentSize(emitter), Is.EqualTo(5));
+        });
+    }
+
+    [Test]
+    public static void BaseAddressToRegisterPreservesWriteFormatAndScale()
+    {
+        WithEmitter((_, emitter) =>
+        {
+            emitter.emitIns_AR_R(INS_xchg, EA_4BYTE, REG_RCX, REG_RAX, 0);
+            var id = Last(emitter);
+
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_ARW_RRW));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_RCX));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RAX));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_NA));
+            Assert.That(id.idAddr().iiaAddrMode.amScale, Is.Zero);
+            Assert.That(id.idCodeSize(), Is.EqualTo(2u));
+            Assert.That(CurrentCount(emitter), Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public static void ThreeOperandBaseAddressRetainsVectorRegisters()
+    {
+        WithEmitter((_, emitter) =>
+        {
+            emitter.UseVexEncodings = true;
+            emitter.emitIns_AR_R_R(INS_vmaskmovps, EA_16BYTE, REG_XMM1, REG_XMM2, REG_RAX, 16);
+            var id = Last(emitter);
+
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_AWR_RRD_RRD));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM1));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_XMM2));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RAX));
+            Assert.That(Displacement(emitter, id), Is.EqualTo((nint)16));
+            Assert.That(id.idCodeSize(), Is.GreaterThan(0u));
+            Assert.That(CurrentSize(emitter), Is.EqualTo((int)id.idCodeSize()));
+            Assert.That(CurrentCount(emitter), Is.EqualTo(1));
+        });
+    }
+
     [TestCase(INS_mov, EA_4BYTE, REG_RAX, 0L, 7u, false)]
     [TestCase(INS_lea, EA_8BYTE, REG_RAX, 0x12345678L, 8u, true)]
     [TestCase(INS_mov, EA_8BYTE | EA_DSP_RELOC_FLG, REG_RAX, 0L, 7u, false)]

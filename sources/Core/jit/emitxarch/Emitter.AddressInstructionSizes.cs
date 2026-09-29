@@ -9,6 +9,13 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+#if TARGET_X86
+    public uint emitInsSizeAM(instrDesc id, ulong code)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "x86 address-mode instruction sizing is not ported.");
+    }
+#endif
+
 #if TARGET_AMD64
     private static bool baseRegisterRequiresSibByte(regNumber reg)
     {

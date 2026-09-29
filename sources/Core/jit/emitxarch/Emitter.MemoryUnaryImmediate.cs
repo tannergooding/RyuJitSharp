@@ -74,10 +74,12 @@ public partial class Emitter
 
     public void emitIns_AR(instruction ins, emitAttr attr, regNumber baseReg, int offs, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Unary memory instruction recording requires Windows AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Unary memory instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         assert(ins is INS_prefetcht0 or INS_prefetcht1 or INS_prefetcht2 or INS_prefetchnta or INS_inc or INS_dec);
         var id = emitNewInstrAmd(attr, offs);
         id.idIns(ins);

@@ -9,7 +9,11 @@ public partial class Emitter
 {
     public void emitIns_R_AR(instruction ins, emitAttr attr, regNumber reg, regNumber baseReg, int displacement)
     {
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Register/address instruction recording requires xarch.");
+#else
         emitIns_R_ARX(ins, attr, reg, baseReg, REG_NA, 1, displacement);
+#endif
     }
 
     public regNumber emitIns_BASE_R_R_RM(instruction ins, emitAttr attr, regNumber targetReg,

@@ -124,10 +124,12 @@ public partial class Emitter
     public void emitIns_R_ARX(instruction ins, emitAttr attr, regNumber reg, regNumber @base,
         regNumber index, uint scale, int disp)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Indexed-address instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Indexed-address instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         assert(!CodeGen.instIsFP(ins) && (EA_SIZE(attr) <= EA_64BYTE) && (reg != REG_NA));
         noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg));
 

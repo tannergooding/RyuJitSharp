@@ -16,6 +16,24 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Register-address recording
+
+Six register-address recorders and their direct helpers retain their complete
+x86/AMD64 paths, including instruction formats, address operands, vector options,
+zero-LEA elision and x86 stack adjustment. Unix AMD64 unary-address recording no
+longer stops at the former Windows-only guard.
+
+Full-analysis controls pass Windows 76 Debug/73 Release and Linux-x64 target
+5/5. The identical old Linux fixture fails the two newly reachable cases while
+its three existing controls pass. ARM64 compiles; identical preexisting x86
+diagnostics still prevent execution, and x86 address sizing remains a terminating
+dependency rather than an estimated size.
+
+Six definitions and six declarations retire 182 lines in native `fd64b328`.
+Previously absent wrappers are not counted again. The component proposal,
+combined retirement, applied receipt and reconstruction are under
+`artifacts/residual-reconciliation/*register-address*-20260929.json`.
+
 ## 2026-09-29: Common call allocation and GC-register encoding
 
 Direct and indirect call allocation now preserve the complete target conditions,

@@ -11,22 +11,32 @@ public partial class Emitter
 {
     public void emitIns_ARR_R(instruction ins, emitAttr attr, regNumber reg, regNumber @base, regNumber index, int disp)
     {
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Indexed address/register instruction recording requires xarch.");
+#else
         emitIns_ARX_R(ins, attr, reg, @base, index, 1, disp);
+#endif
     }
 
     public void emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber @base, nint disp,
         insOpts instOptions = INS_OPTS_NONE)
     {
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Address/register instruction recording requires xarch.");
+#else
         emitIns_ARX_R(ins, attr, reg, @base, REG_NA, 1, disp, instOptions);
+#endif
     }
 
     public void emitIns_ARX_R(instruction ins, emitAttr attr, regNumber reg, regNumber @base,
         regNumber index, uint scale, nint disp, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Address/register instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Address/register instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         var id = emitNewInstrAmd(attr, disp);
         insFormat fmt;
         if (reg == REG_NA)
@@ -60,7 +70,9 @@ public partial class Emitter
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)size);
 
-        // Native emitAdjustStackDepthPushPop is empty with AMD64's FEATURE_FIXED_OUT_ARGS.
+#if TARGET_X86
+        emitAdjustStackDepthPushPop(ins);
+#endif
 #endif
     }
 }

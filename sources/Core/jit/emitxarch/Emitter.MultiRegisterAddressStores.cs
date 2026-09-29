@@ -12,10 +12,12 @@ public partial class Emitter
     public void emitIns_AR_R_R(instruction ins, emitAttr attr, regNumber op2Reg, regNumber op3Reg,
         regNumber @base, int offs, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Address/two-register instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Address/two-register instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         assert(IsSimdInstruction(ins));
         assert(IsThreeOperandAVXInstruction(ins));
 
