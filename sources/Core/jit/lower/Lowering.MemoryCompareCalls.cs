@@ -29,9 +29,6 @@ public sealed partial class Lowering
 
     private unsafe bool LowerCallMemcmp(GenTreeCall call, out GenTree? next)
     {
-#if !TARGET_AMD64
-        throw new NotImplementedException("LowerCallMemcmp outside AMD64 is not ported.");
-#else
         var compiler = CompilerInstance;
         next = null;
 #if DEBUG
@@ -39,6 +36,7 @@ public sealed partial class Lowering
 #endif
         assert(compiler.lookupNamedIntrinsic(call._callMethHnd) is NI_System_SpanHelpers_SequenceEqual);
         assert(call.Args.CountUserArgs() == 3);
+        assert(TYP_I_IMPL.Size == 8);
 
         if (!compiler.opts.OptimizationEnabled)
         {
@@ -151,13 +149,25 @@ public sealed partial class Lowering
             BlockRange().InsertAfter(rightClone, leftFirst, leftOffset, leftAddress, leftSecond);
             BlockRange().InsertAfter(leftSecond, rightFirst, rightOffset, rightAddress, rightSecond);
 
-            var leftXor = NewMemcmpBinaryOp(GT_XOR, actualLoadType, leftFirst, rightFirst);
-            var rightXor = NewMemcmpBinaryOp(GT_XOR, actualLoadType, leftSecond, rightSecond);
-            var combined = NewMemcmpBinaryOp(GT_OR, actualLoadType, leftXor, rightXor);
-            var zero = compiler.gtNewZeroConNode(actualLoadType);
-            result = NewMemcmpBinaryOp(GT_EQ, TYP_INT, combined, zero);
-            BlockRange().InsertAfter(rightSecond, leftXor, rightXor, combined, zero);
-            BlockRange().InsertAfter(zero, result);
+#if TARGET_ARM64
+            if (!varTypeIsSimd(loadType))
+            {
+                var leftEqual = NewMemcmpBinaryOp(GT_EQ, TYP_INT, leftFirst, rightFirst);
+                var rightEqual = NewMemcmpBinaryOp(GT_EQ, TYP_INT, leftSecond, rightSecond);
+                result = NewMemcmpBinaryOp(GT_AND, TYP_INT, leftEqual, rightEqual);
+                BlockRange().InsertAfter(rightSecond, leftEqual, rightEqual, result);
+            }
+            else
+#endif
+            {
+                var leftXor = NewMemcmpBinaryOp(GT_XOR, actualLoadType, leftFirst, rightFirst);
+                var rightXor = NewMemcmpBinaryOp(GT_XOR, actualLoadType, leftSecond, rightSecond);
+                var combined = NewMemcmpBinaryOp(GT_OR, actualLoadType, leftXor, rightXor);
+                var zero = compiler.gtNewZeroConNode(actualLoadType);
+                result = NewMemcmpBinaryOp(GT_EQ, TYP_INT, combined, zero);
+                BlockRange().InsertAfter(rightSecond, leftXor, rightXor, combined, zero);
+                BlockRange().InsertAfter(zero, result);
+            }
         }
 
         JITDUMP("\nUnrolled to:\n");
@@ -181,6 +191,5 @@ public sealed partial class Lowering
             }
         }
         return true;
-#endif
     }
 }

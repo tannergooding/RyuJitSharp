@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sharedSwitchAndMemoryComparisonLowering": {
+      "scope": "Whole LowerSwitch, TryLowerSwitchToBitTest and LowerCallMemcmp. Preserve Wasm degenerate/br_table handling, ARM32 and RISC-V switch decisions, and ARM64 scalar comparison/AND versus SIMD XOR/OR lowering.",
+      "validation": "Switch Windows27 Debug/23 Release and repaired-baseline Linux27 Debug/23 Release pass; six identical old Linux cases fail at target guards. Memcmp Windows old/final25 per configuration pass; ARM64 final3 per configuration pass and all three old cases fail.",
+      "retirement": "Three definitions plus all three associated shared declarations;1014 native lines. Remaining native callers are not grounds for retaining completed declarations; original proposal dispositions were corrected.",
+      "nativeBefore": "b80a54a7ab063acfedc24df645f317eef4271e13",
+      "nativeAfter": "d4db3e8d6a9f950b15d87a282f58424091720353",
+      "evidence": "artifacts/residual-reconciliation/shared-lower-switch and shared-lower-memcmp proposals, shared-lower-switch-linux-repaired-baseline-20260929.json, and shared-lowering combined/applied/verification records.",
+      "limits": "Linux switch snapshots explicitly contain the now-committed Calls.cs declaration repair on both sides, not an unmodified-baseline pass. Paired switch x86 and Wasm builds retain14 and81 existing diagnostics respectively; no target execution or generated-code parity claim."
+    },
     "xarchConditionAndOperandDispatch": {
       "scope": "Whole comparison dispatch, SETCC, return-trap generation, operand classification, unary/register operand dispatch and register/register/immediate wrapper.",
       "validation": "Combined Windows84 Debug/81 Release pass. Linux83/84 Debug passes; the remaining fixture stops at the independent Windows-only rsSpillTree dependency before operand classification. Original ARM64 source build passes and x86 retains14 baseline errors.",
@@ -1629,16 +1638,16 @@
       "parentScope": "Complete codegenlinear.cpp genUnspillLocal/genProduceReg and codegencommon.cpp genRegCopy overloads together with A's shared GenTree register queries. ARM64 controls exposed a separate VariableLiveKeeper constructor guard despite its native definition already being absent; correct that exception without retirement credit. Preserve fixed-register guards, ownership and GC/liveness ordering. Integrate ready condition/operand and lowering packets; keep13 Wasm WIP frozen.",
       "wholeFunctionRepairLanes": [
         {
-          "scope": "Shared GenTree register type/spill queries required by the parent copy family; condition/trap packet is frozen for integration.",
+          "scope": "Whole xarch integer/floating comparison helpers; completed GenTree register queries are frozen for parent integration.",
           "owner": "4b57b744-36f1-4e6e-8b76-94c1a87d6e02",
-          "files": "GenTree.RegisterSpills.cs and disjoint fixtures; parent owns shared CodeGen register helpers and Arm64RegisterCopyTests.",
-          "status": "active from3e883a0"
+          "files": "CodeGen.Comparisons.cs and comparison fixtures; parent owns shared register helpers and both ARM64 register fixtures.",
+          "status": "active from6c96f10"
         },
         {
-          "scope": "Ready shared switch and memory-compare lowering packets; refresh switch Linux evidence with the explicit call-builder declaration repair.",
+          "scope": "Next retained shared lower.cpp family after switch and memory-compare closure.",
           "owner": "b2253a3d-d101-444e-9c56-d631eb5b274b",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "switch and memcmp files frozen; paired Linux switch validation active"
+          "status": "switch and memcmp accepted with explicit repaired-baseline Linux evidence"
         },
         {
           "scope": "Retained shared lsrabuild family after xarch file closure and Unix call-builder compilation repair.",
@@ -1647,10 +1656,10 @@
           "status": "xarch file closure accepted; next bounded family to be assigned after commit"
         },
         {
-          "scope": "Ready instr operand classification/wrappers. Separate PSHUFD immediate assertion matches the pin and remains unchanged.",
+          "scope": "Whole load/store instruction selectors required by parent ARM64 reload controls.",
           "owner": "a9254d85-a0d4-46d4-a852-87eef8c242fb",
           "files": "Instruction and emitter partials with dedicated fixtures; exclude parent register helpers and shared GenTree queries.",
-          "status": "operand-core packet frozen for combined condition/operand integration"
+          "status": "operand-core accepted; load/store selectors active froma143b50"
         }
       ],
       "parallelPackets": [
@@ -2054,7 +2063,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Condition/operand dispatch accepted through nativeb80a54a7; do not reapply. Integrate B's switch+memcmp packets and all three associated declarations (1014lines), using the explicit repaired-baseline Linux supplement; original proposal declaration-retention rationale was incorrect. Parent combined register/GenTree controls pass50/54 ARM64: four local reloads now reach ins_Load's separate non-xarch guard. HW lane completes whole load/store selectors to unblock them; preserve initial failures. Refill A after condition integration and B after lowering integration; LSRA resumes shared builders. Preserve14x86 blockers,13Wasm, oracle-plus-one and no publication.",
+    "nextAction": "Shared switch/memcmp closure accepted through natived4db3e8d; do not reapply. Finish parent register/GenTree integration:54 ARM64 cases currently50pass/fourfail at ins_Load's non-xarch guard; HW lane supplies whole load/store selectors. Rerun the combined ARM64 controls with those exact overlays, preserve earlier failures and retire the complete helper definitions/declarations. A handles integer/float comparison, B resumes a retained shared lowering family, LSRA shared builders. Preserve14x86 blockers,13Wasm, oracle-plus-one and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

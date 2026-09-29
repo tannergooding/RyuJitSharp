@@ -16,6 +16,24 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Shared switch and memory-comparison lowering
+
+Whole switch/bit-test lowering restores Unix/x86 paths, Wasm's degenerate-switch
+handling before `br_table`, and ARM32/RISC-V target decisions. Memory comparison
+preserves ARM64's scalar equality/AND form and SIMD XOR/OR form. Three complete
+definitions and all three associated declarations retire 1,014 native lines in
+`d4db3e8d`; independent native callers remain.
+
+Switch controls pass 27 Debug/23 Release on Windows and Linux. Both fresh Linux
+snapshots explicitly include the now-committed call-builder declaration repair;
+six identical old-source cases fail at the old target guards. Memcmp Windows
+old/final controls pass 25 per configuration; three ARM64 cases fail on old
+source and pass in both final configurations. Paired switch x86/Wasm builds
+retain 14/81 existing diagnostics. These are managed target controls, not target
+machine-code execution. Evidence: the `shared-lower-switch`, repaired Linux
+supplement, `shared-lower-memcmp` and `shared-lowering` records under
+`artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Condition and operand instruction dispatch
 
 Whole comparison/condition/trap and operand-dispatch routines preserve x86

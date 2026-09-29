@@ -11,7 +11,6 @@ public sealed partial class Lowering
 {
     private GenTree? LowerSwitch(GenTree node)
     {
-#if WINDOWS_AMD64_ABI || TARGET_ARM64
         assert(node.Oper is GT_SWITCH);
         var compiler = CompilerInstance;
         var original = _block;
@@ -47,6 +46,10 @@ public sealed partial class Lowering
         }
 
         noway_assert(jumpCount >= 2);
+#if TARGET_WASM
+        // Wasm br_table consumes the switch directly after the degenerate case.
+        return node.Next;
+#else
         var use = new LIR.Use(original, ref node.AsUnOp().Op1Ref, node);
         _ = ReplaceWithLclVar(use);
         var indexLocal = node.AsUnOp().Op1;
@@ -61,6 +64,9 @@ public sealed partial class Lowering
         {
             minimumTableCases++;
         }
+#if TARGET_ARM
+        minimumTableCases += 2;
+#endif
 
         // Match Windows native argument construction order and dump-visible IDs.
         var defaultLimit = compiler.gtNewIconNode(indexType.ActualType, jumpCount - 2);
@@ -94,6 +100,12 @@ public sealed partial class Lowering
         switchBlock.scaleBBWeight(switchLikelihood);
 
         var useJumpSequence = jumpCount < minimumTableCases;
+#if TARGET_ARM
+        if (TargetOS.IsUnix && CompilerInstance.IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        {
+            useJumpSequence = true;
+        }
+#endif
         if ((targetCount == 2) && (defaultEdge.DupCount == 0))
         {
             var remaining = successors[0] == defaultEdge ? successors[1] : successors[0];
@@ -222,11 +234,18 @@ public sealed partial class Lowering
             if (!TryLowerSwitchToBitTest(cases, jumpCount, targetCount, switchBlock, switchValue, defaultLikelihood))
             {
                 JITDUMP($"Lowering switch {FMT_BB(original.bbNum)}: using jump table expansion\n");
+#if TARGET_64BIT
+#if TARGET_RISCV64
+                if (!compiler.compOpportunisticallyDependsOn(CORINFO_InstructionSet.InstructionSet_Zba) &&
+                    (indexType is not TYP_I_IMPL))
+#else
                 if (indexType is not TYP_I_IMPL)
+#endif
                 {
                     switchValue = compiler.gtNewCastNode(TYP_I_IMPL, switchValue, true, TYP_U_IMPL);
                     switchBlock.InsertAtEnd(switchValue);
                 }
+#endif
                 var table = new GenTree(GT_JMPTABLE, TYP_I_IMPL);
                 var jump = new GenTreeOp(GT_SWITCH_TABLE, TYP_VOID, switchValue, table);
                 switchBlock.InsertAfter(switchValue, table, jump);
@@ -293,15 +312,12 @@ public sealed partial class Lowering
         compiler.fgInvalidateDfsTree();
 
         return followingNode;
-#else
-        throw new NotImplementedException("Switch lowering is not ported for this target.");
 #endif
     }
 
     private bool TryLowerSwitchToBitTest(ReadOnlySpan<FlowEdge> jumpTable, int jumpCount, int targetCount,
         BasicBlock switchBlock, GenTree switchValue, double defaultLikelihood)
     {
-#if WINDOWS_AMD64_ABI || TARGET_ARM64
         assert(jumpCount >= 2);
         assert(targetCount >= 2);
         assert(switchBlock.Kind is BBJ_SWITCH);
@@ -343,7 +359,7 @@ public sealed partial class Lowering
         // LowerSwitch eliminates the single non-default target case before
         // calling this helper, so both target edges must have been found.
         assert(case0Edge is not null);
-#if TARGET_XARCH
+#if TARGET_64BIT && TARGET_XARCH
         if (~bitTable <= uint.MaxValue)
         {
             // Loading a 32-bit immediate zero-extends it on x64. Invert a table
@@ -407,8 +423,5 @@ public sealed partial class Lowering
 #endif
 
         return true;
-#else
-        throw new NotImplementedException("Switch bit-test lowering is not ported for this target.");
-#endif
     }
 }
