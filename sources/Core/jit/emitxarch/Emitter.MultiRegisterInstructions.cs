@@ -12,13 +12,15 @@ public partial class Emitter
     public void emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int ival,
         insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Two-register-immediate instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Two-register-immediate instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
         // Only mov reg,imm64 takes a full eight-byte immediate. Other instructions
         // use a sign-extended dword, which cannot hold an eight-byte relocation.
         noway_assert((EA_SIZE(attr) < EA_8BYTE) || !EA_IS_CNS_RELOC(attr));
+#endif
         var id = emitNewInstrSC(attr, ival);
         var useNDD = ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0) && IsApxNddEncodableInstruction(ins);
         id.idIns(ins);
@@ -54,10 +56,12 @@ public partial class Emitter
     public void emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2,
         insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Three-register instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Three-register instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         assert(IsSimdInstruction(ins) || IsApxExtendedEvexInstruction(ins));
         assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins) || IsApxExtendedEvexInstruction(ins));
 
@@ -85,10 +89,12 @@ public partial class Emitter
     public void emitIns_R_R_R_I(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber reg1, regNumber reg2, int ival, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Three-register-immediate instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Three-register-immediate instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         assert(IsSimdInstruction(ins));
         assert(IsThreeOperandAVXInstruction(ins));
 

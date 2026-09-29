@@ -44,11 +44,13 @@ public partial class Emitter
     public static bool instrIs3opImul(instruction ins) => (ins >= INS_imul_AX) && (ins <= INS_imul_31);
 
     public static bool instrIsExtendedReg3opImul(instruction ins) => (ins >= INS_imul_08) && (ins <= INS_imul_31);
+#endif
 
     public static bool IsKInstruction(instruction ins) => (prefixFlags(ins) & KInstruction) != 0;
 
     public static bool IsKInstructionWithLBit(instruction ins) => (prefixFlags(ins) & KInstructionWithLBit) != 0;
 
+#if TARGET_AMD64
     public ulong AddVexPrefix(instruction ins, ulong code, emitAttr attr)
     {
         // Carry the three-byte VEX encoding until emission, when all conditions
@@ -77,6 +79,7 @@ public partial class Emitter
 
         return code;
     }
+#endif
 
     public uint emitInsSizeRR(instrDesc id)
     {
@@ -118,6 +121,5 @@ public partial class Emitter
 
         return sz;
     }
-#endif
 #endif
 }

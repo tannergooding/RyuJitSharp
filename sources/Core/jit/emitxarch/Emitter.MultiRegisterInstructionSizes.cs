@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
+#if TARGET_XARCH
     public uint emitInsSizeRR(instrDesc id, ulong code)
     {
         assert(id.idIns() != INS_invalid);
@@ -33,9 +33,11 @@ public partial class Emitter
         var valSize = EA_SIZE_IN_BYTES(id.idOpSize());
         var valInByte = ImmCanUseSByteEncoding(ins, val);
 
+#if TARGET_AMD64
         // Only mov reg,imm64 supports an eight-byte immediate; the remaining
         // instructions sign-extend a dword and cannot carry a pointer relocation.
         noway_assert((valSize <= sizeof(int)) || !id.idIsCnsReloc());
+#endif
         if (valSize > sizeof(int))
         {
             valSize = sizeof(int);

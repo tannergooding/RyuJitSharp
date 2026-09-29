@@ -16,6 +16,29 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Register recording and no-GC call preservation
+
+Four xarch register recorders, three sizing overloads and their K/EVEX/APX
+helpers retain both xarch target paths. Common no-GC call classification and
+register preservation now cover ARM64 as well as AMD64. Native-named masks
+preserve dynamic register configuration and profiler/write-barrier behavior;
+unimplemented other-target masks terminate explicitly.
+
+The combined isolated batch passes full-analysis Windows 16 Debug/15 Release.
+Corrected mask controls pass Windows 2/2, ARM64 1/1 and Unix AMD64 1/1. The old
+ARM64 fixture reaches the original target guard. Existing independent x86
+diagnostics still block that target; no x86 execution or new runtime parity is
+claimed.
+
+Nineteen complete definitions retire 622 exact-span lines plus two exposed
+trailing separators: 624 pure deletions in native `8249af01`, still the sole
+oracle child. The move recorder and x86 Debug sanity checker remain separate
+dependencies. This batch does not wait for the larger ARM64 sanity translation.
+
+Evidence: `artifacts/register-nogc-integrated` and
+`artifacts/residual-reconciliation/register-nogc-combined-20260929.json`
+with its applied receipt and exact reconstruction results.
+
 ## 2026-09-29: Stack GC accounting, call recording and ARM64 descriptor sizes
 
 Stack push/pop, argument killing and register-mask death retain the native

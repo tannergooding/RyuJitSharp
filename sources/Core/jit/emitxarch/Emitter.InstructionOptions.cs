@@ -36,7 +36,7 @@ public partial class Emitter
     }
 #endif
 
-#if TARGET_AMD64
+#if TARGET_XARCH
     public void SetEvexEmbMaskIfNeeded(instrDesc id, insOpts instOptions)
     {
         if ((instOptions & INS_OPTS_EVEX_aaa_MASK) != 0)
@@ -52,7 +52,7 @@ public partial class Emitter
         }
     }
 
-#if DEBUG
+#if DEBUG && TARGET_AMD64
     private static void emitInsSanityCheck(instrDesc id)
     {
         var idOp = (ID_OPS)emitFmtToOps[(int)id.idInsFmt()];

@@ -181,10 +181,12 @@ public partial class Emitter
     public void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Register-register instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Register-register instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         if (IsMovInstruction(ins))
         {
             assert(false, "Please use emitIns_Mov() to correctly handle move elision");

@@ -7,8 +7,10 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+#if TARGET_XARCH
 #if TARGET_AMD64
     public static bool IsCCMP(instruction ins) => (ins >= FIRST_CCMP_INSTRUCTION) && (ins <= LAST_CCMP_INSTRUCTION);
+#endif
 
     public bool IsApxNfEncodableInstruction(instruction ins)
     {
@@ -81,12 +83,14 @@ public partial class Emitter
 
     public void SetEvexDFVIfNeeded(instrDesc id, insOpts instOptions)
     {
+#if TARGET_AMD64
         if ((instOptions & INS_OPTS_EVEX_dfv_MASK) != 0)
         {
             assert(UsePromotedEvexEncodings);
             assert(IsCCMP(id.idIns()) || IsCTEST(id.idIns()));
             id.idSetEvexDFV((uint)instOptions);
         }
+#endif
     }
 #endif
 }

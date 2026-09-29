@@ -16,6 +16,56 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class EmitterSimdRegisterInstructionTests
 {
+    [TestCase(0, INS_add, EA_4BYTE, REG_RAX, REG_RCX, REG_NA, 2u, IF_RRW_RRD)]
+    [TestCase(1, INS_pshufd, EA_16BYTE, REG_XMM0, REG_XMM1, REG_NA, 5u, IF_RWR_RRD_CNS)]
+    [TestCase(2, INS_addps, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2, 4u, IF_RWR_RRD_RRD)]
+    [TestCase(3, INS_shufps, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2, 5u, IF_RWR_RRD_RRD_CNS)]
+    public static void XarchRegisterPacketPreservesFourRecordingAndSizingPaths(
+        int entrypoint, instruction ins, emitAttr attr, regNumber dst, regNumber src,
+        regNumber third, uint expectedSize, Emitter.insFormat expectedFormat)
+    {
+        WithEmitter((_, emitter) =>
+        {
+            switch (entrypoint)
+            {
+                case 0:
+                {
+                    emitter.emitIns_R_R(ins, attr, dst, src);
+                    break;
+                }
+
+                case 1:
+                {
+                    emitter.emitIns_R_R_I(ins, attr, dst, src, 7);
+                    break;
+                }
+
+                case 2:
+                {
+                    emitter.emitIns_R_R_R(ins, attr, dst, src, third);
+                    break;
+                }
+
+                default:
+                {
+                    emitter.emitIns_R_R_R_I(ins, attr, dst, src, third, 7);
+                    break;
+                }
+            }
+
+            var id = Last(emitter);
+            Assert.That(id.idIns(), Is.EqualTo(ins));
+            Assert.That(id.idInsFmt(), Is.EqualTo(expectedFormat));
+            Assert.That(id.idCodeSize(), Is.EqualTo(expectedSize));
+            Assert.That(CurrentCount(emitter), Is.EqualTo(1));
+            Assert.That(CurrentSize(emitter), Is.EqualTo((int)expectedSize));
+            if (entrypoint == 0)
+            {
+                Assert.That(emitter.emitInsSizeRR(id), Is.EqualTo(expectedSize));
+            }
+        });
+    }
+
     [TestCase(INS_addps, REG_XMM1, REG_XMM8, INS_OPTS_NONE, REG_XMM8, REG_XMM1, 4u)]
     [TestCase(INS_addps, REG_XMM9, REG_XMM8, INS_OPTS_NONE, REG_XMM9, REG_XMM8, 5u)]
     [TestCase(INS_addps, REG_XMM1, REG_XMM16, INS_OPTS_NONE, REG_XMM16, REG_XMM1, 6u)]
