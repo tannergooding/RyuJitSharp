@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch LSRA call and node dispatch
+
+Whole call and node builders preserve x86 ABI constraints, split arithmetic and
+shifts, multi-result multiplication, byte-register restrictions and address
+temporaries. Two definitions retire 856 native lines in `bdf33799`; independent
+builders and shared declarations remain.
+
+Each packet passes 46 Debug/46 Release Windows controls on old and final source.
+Paired x86 builds retain 14 identical errors, leaving 17 new x86 cases unexecuted.
+Evidence: `artifacts/lsra-xarch-call-20260929-d1f820a`,
+`artifacts/lsra-xarch-node-20260929-c824e24` and the `lsra-call-node` retirement
+records. These are translation and control results, not generated-code parity.
+
 ## 2026-09-29: Xarch conditional codegen
 
 Four complete JTrue/conditional-move/select/jump definitions retire 183 native

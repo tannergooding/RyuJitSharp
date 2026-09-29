@@ -9,7 +9,7 @@ public sealed partial class LinearScan
 {
     private int buildCall(GenTreeCall call)
     {
-#if TARGET_AMD64
+#if TARGET_XARCH
         assert(!call.IsContained);
 
         var hasMultiRegRetVal = false;
@@ -23,6 +23,21 @@ public sealed partial class LinearScan
 
         if (!hasMultiRegRetVal && (dstCount != 0))
         {
+#if TARGET_X86
+            if (call.IsHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME))
+            {
+                singleDstCandidates = SRBM_ESI;
+            }
+            else if (varTypeUsesFloatReg(call.Type))
+            {
+                singleDstCandidates = allRegs(regType(call.Type));
+            }
+            else
+            {
+                assert(varTypeUsesIntReg(call.Type));
+                singleDstCandidates = (call.Type is TYP_LONG) ? SRBM_EAX | SRBM_EDX : SRBM_EAX;
+            }
+#else
             if (varTypeUsesFloatReg(call.Type))
             {
                 singleDstCandidates = SRBM_FLOATRET;
@@ -32,6 +47,7 @@ public sealed partial class LinearScan
                 assert(varTypeUsesIntReg(call.Type));
                 singleDstCandidates = (call.Type is TYP_LONG) ? SRBM_LNGRET : SRBM_INTRET;
             }
+#endif
         }
 
         var callHasFloatRegArgs = false;
@@ -67,12 +83,22 @@ public sealed partial class LinearScan
                     ctrlExprCandidates &= ~_compiler.codeGen.genGetGSCookieTempRegs(true, call).IntRegSet;
                 }
             }
+#if TARGET_X86
+            else if (call.IsVirtualStub && (call._callType is CT_INDIRECT) &&
+                !_compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            {
+                assert(ctrlExpr.IsContainedIndir);
+                ctrlExprCandidates = SRBM_EAX;
+            }
+#endif
 
+#if WINDOWS_AMD64_ABI
             if (compFeatureVarArg() && call.Args.IsVarArgs && callHasFloatRegArgs &&
                 (ctrlExprCandidates == SRBM_NONE))
             {
                 ctrlExprCandidates = _availableIntRegs & ~SRBM_ARG_REGS;
             }
+#endif
 
             srcCount += buildOperandUses(ctrlExpr, ctrlExprCandidates);
         }

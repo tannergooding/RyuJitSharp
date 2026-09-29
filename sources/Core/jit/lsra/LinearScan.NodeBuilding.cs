@@ -9,7 +9,7 @@ public sealed partial class LinearScan
 {
     private int buildNode(GenTree tree)
     {
-#if TARGET_AMD64
+#if TARGET_XARCH
         assert(!tree.IsContained);
         clearBuildState();
 
@@ -122,6 +122,21 @@ public sealed partial class LinearScan
                 break;
             }
 
+#if TARGET_X86
+            case GT_LONG:
+            {
+                assert(tree.IsUnusedValue);
+                tree.Type = TYP_VOID;
+                tree.IsUnusedValue = false;
+                isLocalDefUse = false;
+                sourceCount = 2;
+                destinationCount = 0;
+                _ = buildUse(tree.AsOp().Op1);
+                _ = buildUse(tree.AsOp().Op2);
+                break;
+            }
+#endif
+
             case GT_RETURN:
             {
                 sourceCount = buildReturn(tree);
@@ -150,7 +165,11 @@ public sealed partial class LinearScan
                 {
                     assert(tree.Type is TYP_INT);
                     sourceCount = 1;
+#if TARGET_X86
+                    _ = buildUse(tree.AsUnOp().Op1, SRBM_EAX);
+#else
                     _ = buildUse(tree.AsUnOp().Op1, SRBM_INTRET);
+#endif
                 }
                 break;
             }
@@ -187,8 +206,13 @@ public sealed partial class LinearScan
 
             case GT_PATCHPOINT:
             {
+#if TARGET_X86
+                sourceCount = buildOperandUses(tree.AsOp().Op1, SRBM_ECX);
+                _ = buildOperandUses(tree.AsOp().Op2, SRBM_EDX);
+#else
                 sourceCount = buildOperandUses(tree.AsOp().Op1, SRBM_ARG_0);
                 _ = buildOperandUses(tree.AsOp().Op2, SRBM_ARG_1);
+#endif
                 sourceCount++;
                 buildKills(tree, _compiler.compHelperCallKillSet(CORINFO_HELP_PATCHPOINT));
                 break;
@@ -196,7 +220,11 @@ public sealed partial class LinearScan
 
             case GT_PATCHPOINT_FORCED:
             {
+#if TARGET_X86
+                sourceCount = buildOperandUses(tree.AsUnOp().Op1, SRBM_ECX);
+#else
                 sourceCount = buildOperandUses(tree.AsUnOp().Op1, SRBM_ARG_0);
+#endif
                 buildKills(tree, _compiler.compHelperCallKillSet(CORINFO_HELP_PATCHPOINT_FORCED));
                 break;
             }
@@ -205,7 +233,11 @@ public sealed partial class LinearScan
             {
                 sourceCount = 0;
                 assert(destinationCount == 1);
+#if TARGET_X86
+                _ = buildDef(tree, _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet());
+#else
                 _ = buildDef(tree, _availableIntRegs);
+#endif
                 break;
             }
 
@@ -237,6 +269,12 @@ public sealed partial class LinearScan
 
             case GT_ADD:
             case GT_SUB:
+#if TARGET_X86
+            case GT_ADD_LO:
+            case GT_ADD_HI:
+            case GT_SUB_LO:
+            case GT_SUB_HI:
+#endif
             case GT_AND:
             case GT_OR:
             case GT_XOR:
@@ -268,6 +306,14 @@ public sealed partial class LinearScan
                 break;
             }
 
+#if TARGET_X86
+            case GT_MUL_LONG:
+            {
+                destinationCount = 2;
+                sourceCount = buildMul(tree);
+                break;
+            }
+#endif
             case GT_MUL:
             case GT_MULHI:
             {
@@ -346,6 +392,10 @@ public sealed partial class LinearScan
             case GT_RSZ:
             case GT_ROL:
             case GT_ROR:
+#if TARGET_X86
+            case GT_LSH_HI:
+            case GT_RSH_LO:
+#endif
             {
                 sourceCount = buildShiftRotate(tree);
                 break;
@@ -364,7 +414,9 @@ public sealed partial class LinearScan
             case GT_CMP:
             case GT_TEST:
             case GT_BT:
+#if TARGET_AMD64
             case GT_CCMP:
+#endif
             {
                 sourceCount = buildCmp(tree);
                 break;
@@ -387,7 +439,13 @@ public sealed partial class LinearScan
                 var compareExchange = tree.AsCmpXchg();
                 var candidates = _availableIntRegs & ~SRBM_RAX;
                 _ = buildUse(compareExchange.Addr, candidates);
+#if TARGET_X86
+                _ = buildUse(compareExchange.Data, varTypeIsByte(tree.Type)
+                    ? candidates & ~RBM_NON_BYTE_REGS.GetIntRegSet()
+                    : candidates);
+#else
                 _ = buildUse(compareExchange.Data, varTypeIsByte(tree.Type) ? candidates & _rbmAllInt : candidates);
+#endif
                 _ = buildUse(compareExchange.Comparand, SRBM_RAX);
                 _ = buildDef(tree, SRBM_RAX);
                 break;
@@ -424,7 +482,13 @@ public sealed partial class LinearScan
                 setDelayFree(addressUse);
                 _targetPreferredUse = addressUse;
                 assert(!data.IsContained);
+#if TARGET_X86
+                _ = buildUse(data, varTypeIsByte(tree.Type)
+                    ? _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet()
+                    : SRBM_NONE);
+#else
                 _ = buildUse(data, varTypeIsByte(tree.Type) ? _rbmAllInt : SRBM_NONE);
+#endif
                 sourceCount = 2;
                 assert(destinationCount == 1);
                 _ = buildDef(tree, SRBM_NONE);
@@ -504,6 +568,14 @@ public sealed partial class LinearScan
             case GT_NULLCHECK:
             {
                 assert(destinationCount == 0);
+#if TARGET_X86
+                if (varTypeIsByte(tree.Type))
+                {
+                    _ = buildUse(tree.AsUnOp().Op1, _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet());
+                    sourceCount = 1;
+                    break;
+                }
+#endif
                 _ = buildUse(tree.AsUnOp().Op1);
                 sourceCount = 1;
                 break;
@@ -520,23 +592,46 @@ public sealed partial class LinearScan
             {
                 sourceCount = 0;
                 assert(destinationCount == 1);
+#if TARGET_X86
+                _ = buildDef(tree, SRBM_EAX);
+#else
                 _ = buildDef(tree, SRBM_EXCEPTION_OBJECT);
+#endif
                 break;
             }
 
             case GT_ASYNC_CONTINUATION:
             {
                 sourceCount = 0;
+#if TARGET_X86
+                _ = buildDef(tree, SRBM_ECX);
+#else
                 _ = buildDef(tree, genSingleTypeRegMask(REG_ASYNC_CONTINUATION_RET));
+#endif
                 break;
             }
 
             case GT_INDEX_ADDR:
             {
                 assert(destinationCount == 1);
+#if TARGET_X86
+                assert(!varTypeIsLong(tree.AsIndexAddr().Index.Type));
+                var elemSize = tree.AsIndexAddr().ElemSize;
+                var needsTemporary = elemSize is not (1 or 2 or 4 or 8);
+                if (needsTemporary)
+                {
+                    _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
+                }
+#else
                 _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
+#endif
                 sourceCount = buildBinaryUses(tree.AsOp());
-                buildInternalRegisterUses();
+#if TARGET_X86
+                if (needsTemporary)
+#endif
+                {
+                    buildInternalRegisterUses();
+                }
                 _ = buildDef(tree, SRBM_NONE);
                 break;
             }

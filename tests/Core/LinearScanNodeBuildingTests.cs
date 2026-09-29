@@ -20,6 +20,97 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanNodeBuildingTests
 {
+#if TARGET_X86
+    [Test]
+    public static void UnusedLongConsumesBothHalvesWithoutDefiningARegister()
+    {
+        WithAllocator((compiler, allocator) => {
+            var low = compiler.gtNewIconNode(TYP_INT, 17);
+            var high = compiler.gtNewIconNode(TYP_INT, 23);
+            _ = Build(allocator, low);
+            var lowDef = allocator.refPositions[^1];
+            _ = Build(allocator, high);
+            var highDef = allocator.refPositions[^1];
+            var pair = new GenTreeOp(GT_LONG, TYP_LONG, low, high) { IsUnusedValue = true };
+
+            Assert.That(Build(allocator, pair), Is.EqualTo(2));
+            Assert.That(pair.Type, Is.EqualTo(TYP_VOID));
+            Assert.That(pair.IsUnusedValue, Is.False);
+            Assert.That(lowDef.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
+            Assert.That(highDef.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
+            Assert.That(allocator.refPositions.Exists(reference =>
+                reference.treeNode == pair && reference.refType is RefType.RefTypeDef), Is.False);
+        });
+    }
+
+    [TestCase(GT_ADD_LO)]
+    [TestCase(GT_ADD_HI)]
+    [TestCase(GT_SUB_LO)]
+    [TestCase(GT_SUB_HI)]
+    public static void LongArithmeticHalvesBuildBothOperandUses(genTreeOps operation)
+    {
+        WithAllocator((compiler, allocator) => {
+            var low = compiler.gtNewIconNode(TYP_INT, 17);
+            var high = compiler.gtNewIconNode(TYP_INT, 23);
+            _ = Build(allocator, low);
+            _ = Build(allocator, high);
+            var half = compiler.gtNewBinaryNode(operation, TYP_INT, low, high);
+
+            Assert.That(Build(allocator, half), Is.EqualTo(2));
+            Assert.That(allocator.refPositions[^1].treeNode, Is.SameAs(half));
+            Assert.That(allocator.refPositions[^1].refType, Is.EqualTo(RefType.RefTypeDef));
+        });
+    }
+
+    [Test]
+    public static void LongMultiplyDefinesTwoRegisters()
+    {
+        WithAllocator((compiler, allocator) => {
+            var left = compiler.gtNewIconNode(TYP_INT, 17);
+            var right = compiler.gtNewIconNode(TYP_INT, 23);
+            _ = Build(allocator, left);
+            _ = Build(allocator, right);
+            var multiply = compiler.gtNewBinaryNode(GT_MUL_LONG, TYP_LONG, left, right);
+
+            Assert.That(Build(allocator, multiply), Is.EqualTo(2));
+            Assert.That(multiply.GetRegisterDstCount(compiler), Is.EqualTo(2));
+            Assert.That(allocator.refPositions.FindAll(reference =>
+                reference.treeNode == multiply && reference.refType is RefType.RefTypeDef), Has.Count.EqualTo(2));
+        });
+    }
+
+    [TestCase(1, false)]
+    [TestCase(2, false)]
+    [TestCase(4, false)]
+    [TestCase(8, false)]
+    [TestCase(3, true)]
+    [TestCase(12, true)]
+    public static void IndexAddressReservesTemporaryOnlyForUnscaledElementSizes(int elemSize, bool needsTemporary)
+    {
+        WithAllocator((compiler, allocator) => {
+            var array = compiler.gtNewIconNode(TYP_REF, 0);
+            var index = compiler.gtNewIconNode(TYP_INT, 3);
+            _ = Build(allocator, array);
+            _ = Build(allocator, index);
+            var address = new GenTreeIndexAddr(array, index, TYP_INT, null, elemSize, 8, 16, true);
+
+            Assert.That(Build(allocator, address), Is.EqualTo(2));
+            Assert.That(InternalDefinitionCount(allocator), Is.EqualTo(needsTemporary ? 1 : 0));
+        });
+    }
+
+    [Test]
+    public static void SetccDefinesOnlyByteCapableRegisters()
+    {
+        WithAllocator((compiler, allocator) => {
+            var setcc = new GenTree(GT_SETCC, TYP_INT);
+
+            Assert.That(Build(allocator, setcc), Is.Zero);
+            Assert.That(allocator.refPositions[^1].registerAssignment,
+                Is.EqualTo(AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.GetIntRegSet()));
+        });
+    }
+#else
     [Test]
     public static void NodeSequenceBuildsConstantIntervalsAndConsumesTheirDefinitions()
     {
@@ -308,6 +399,7 @@ internal static unsafe class LinearScanNodeBuildingTests
             Assert.That(compiler.lvaCount, Is.EqualTo(1));
         });
     }
+#endif
 
     private static int Build(LinearScan allocator, GenTree node)
     {

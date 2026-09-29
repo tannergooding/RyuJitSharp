@@ -21,6 +21,55 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanCallBuildingTests
 {
+#if TARGET_X86
+    [Test]
+    public static void InitPInvokeFrameReturnsTheThreadControlBlockInEsi()
+    {
+        WithAllocator((compiler, allocator) => {
+            var call = compiler.gtNewHelperCallNode(TYP_I_IMPL, CorInfoHelpFunc.CORINFO_HELP_INIT_PINVOKE_FRAME);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildCall(allocator, call), Is.Zero);
+            Assert.That(allocator.refPositions.FindLast(reference =>
+                reference.treeNode == call && reference.refType is RefType.RefTypeDef)?.registerAssignment,
+                Is.EqualTo(SRBM_ESI));
+        });
+    }
+
+    [TestCase(TYP_FLOAT)]
+    [TestCase(TYP_DOUBLE)]
+    public static void FloatingCallReturnUsesAllocatableRegisters(var_types type)
+    {
+        WithAllocator((compiler, allocator) => {
+            var call = compiler.gtNewCallNode(type, CT_USER_FUNC, null);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildCall(allocator, call), Is.Zero);
+            Assert.That(allocator.refPositions.FindLast(reference =>
+                reference.treeNode == call && reference.refType is RefType.RefTypeDef)?.registerAssignment,
+                Is.EqualTo(CompilerAllFloatRegs(compiler)));
+        });
+    }
+
+    [Test]
+    public static void IndirectVirtualStubCallUsesEaxForTheContainedTargetAddress()
+    {
+        WithAllocator((compiler, allocator) => {
+            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            ReferenceBuildLocation(allocator) = 2;
+            var addressDef = BuildDef(allocator, address, SRBM_NONE, 0);
+            var target = compiler.gtNewIndir(TYP_I_IMPL, address);
+            target.IsContained = true;
+            var call = compiler.gtNewCallNode(TYP_VOID, CT_INDIRECT, null);
+            call.Flags |= GTF_CALL_VIRT_STUB;
+            call.ControlExpr = target;
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildCall(allocator, call), Is.EqualTo(1));
+            Assert.That(addressDef.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_EAX));
+        });
+    }
+#else
     [TestCase(TYP_VOID, SRBM_NONE)]
     [TestCase(TYP_INT, SRBM_INTRET)]
     [TestCase(TYP_LONG, SRBM_LNGRET)]
@@ -277,6 +326,7 @@ internal static unsafe class LinearScanCallBuildingTests
             Assert.That(fixedUse.delayRegFree, Is.True);
         });
     }
+#endif
 #endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildCall")]
