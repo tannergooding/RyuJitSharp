@@ -135,6 +135,12 @@ reversal and append order without copying CLR objects into unmanaged storage.
 Actual emitted-code patch addresses remain native pointers; they are not
 narrowed to managed descriptor offsets.
 
+ARM64 sizing follows native format categories and payload flags, including
+local-variable pairs. On the Windows 64-bit host, ARM64 fat-call descriptors
+reserve 80 bytes rather than AMD64's 72 because of native bitfield padding.
+Non-Windows ARM64 fat-call layouts and x86 descriptor layouts remain explicit
+dependencies, not inferred sizes.
+
 Final emission retains pinned managed arrays for native-pointer data-chunk,
 logical-offset, frame-offset and large argument-tracking tables. Their owners
 remain attached to the emitter, preserving compilation lifetime across EE

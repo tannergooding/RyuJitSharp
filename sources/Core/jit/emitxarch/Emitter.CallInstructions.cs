@@ -11,8 +11,10 @@ public partial class Emitter
 {
     public unsafe void emitIns_Call(in EmitCallParams parameters)
     {
+#if TARGET_XARCH
 #if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         assert(_compiler is not null);
         var callType = parameters.callType;
         assert(callType < EC_COUNT);
@@ -116,10 +118,19 @@ public partial class Emitter
                 ? emitEncodeScale(parameters.xmul) : opSize.OPSZ1);
 
             ulong code = insCodeMR(ins);
-            if (parameters.isJump)
+            if (ins == INS_tail_i_jmp)
             {
                 // The unwinder recognizes the REX.W-prefixed indirect tail jump as an epilog.
-                code = AddRexWPrefix(id, code);
+#if TARGET_X86
+                if (!hasEvexPrefix(code) && !hasVexPrefix(code))
+                {
+                    assert(false);
+                }
+                else
+#endif
+                {
+                    code = AddRexWPrefix(id, code);
+                }
             }
             size = emitInsSizeAM(id, code);
 
@@ -129,11 +140,13 @@ public partial class Emitter
                 {
                     id.idSetIsDspReloc();
                 }
+#if TARGET_AMD64
                 else
                 {
                     noway_assert(unchecked((nuint)(nint)(int)(nint)parameters.addr) == (nuint)parameters.addr);
                     size++;
                 }
+#endif
             }
         }
         else if (callType == EC_FUNC_TOKEN_INDIR)
@@ -151,11 +164,13 @@ public partial class Emitter
             {
                 id.idSetIsDspReloc();
             }
+#if TARGET_AMD64
             else
             {
                 noway_assert(unchecked((nuint)(nint)(int)(nint)parameters.addr) == (nuint)parameters.addr);
                 size++;
             }
+#endif
         }
         else
         {
@@ -195,8 +210,17 @@ public partial class Emitter
         id.idCodeSize(size);
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)size);
+
+#if !FEATURE_FIXED_OUT_ARGS
+        if (emitCntStackDepth != 0 && parameters.argSize > 0)
+        {
+            noway_assert(unchecked((nint)(uint)emitCurStackLvl) >= parameters.argSize);
+            emitCurStackLvl = unchecked(emitCurStackLvl - (int)parameters.argSize);
+            assert(emitCurStackLvl >= 0);
+        }
+#endif
 #else
-        throw new FatalJitException(CORJIT_SKIPPED, "Call instruction recording is implemented only for AMD64.");
+        throw new FatalJitException(CORJIT_SKIPPED, "Call instruction recording requires xarch.");
 #endif
     }
 

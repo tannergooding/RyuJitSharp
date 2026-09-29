@@ -103,9 +103,6 @@ public partial class Emitter
         return code;
     }
 
-    private nint emitGetInsCIdisp(instrDesc id)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 call displacement descriptor is not ported.");
-
     private ulong AddEvexPrefix(instrDesc id, ulong code, emitAttr size)
         => throw new FatalJitException(CORJIT_SKIPPED, "x86 EVEX prefix encoding is not ported.");
 

@@ -1393,11 +1393,16 @@ public sealed partial class CodeGen
         var formatBuilder = ProcessMacroBasedFile(formatInput, formatLines, ["IF_DEF("],
             AppendInstructionFormat);
         var arm64FormatBuilder = new StringBuilder();
+        var arm64OperandBuilder = new StringBuilder();
         string[] arm64Inputs = [@"Inputs\emitfmtsarm64.h", @"Inputs\emitfmtsarm64sve.h"];
         foreach (var input in arm64Inputs)
         {
-            _ = arm64FormatBuilder.Append(ProcessMacroBasedFile(input, ReadInstructionFormatLines(input),
+            var lines = ReadInstructionFormatLines(input);
+            _ = arm64FormatBuilder.Append(ProcessMacroBasedFile(input, lines,
                 ["IF_DEF("], AppendInstructionFormat));
+            _ = arm64OperandBuilder.Append(ProcessMacroBasedFile(input, lines, ["IF_DEF("],
+                (builder, inputFile, line, prefix, parts) => _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                    $"        (byte)ID_OP_{parts[2].Trim()}, // IF_{parts[0].Trim()}")));
         }
 
         var operandBuilder = ProcessMacroBasedFile(formatInput, formatLines, ["IF_DEF("],
@@ -1448,10 +1453,15 @@ public partial class Emitter
         IF_COUNT,
     }
 
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
     internal static ReadOnlySpan<byte> emitFmtToOps => [
-{{operandBuilder}}    ];
+#if TARGET_ARM64
+{{arm64OperandBuilder}}#else
+{{operandBuilder}}#endif
+    ];
+#endif
 
+#if TARGET_XARCH
     private static ReadOnlySpan<IS_INFO> emitFmtToSchedInfo => [
 {{schedulingBuilder}}    ];
 #endif
@@ -1479,7 +1489,25 @@ public partial class Emitter
 }
 """);
 
-        GenerateNativeEnum(formatInput, "ID_OPS", @"Outputs\jit\emit\ID_OPS.generated.cs", isFlags: false);
+        var xarchOperandKinds = ReadNativeEnumBody(formatInput, "ID_OPS");
+        var arm64OperandKinds = ReadNativeEnumBody(arm64Inputs[0], "ID_OPS");
+        File.WriteAllText(@"Outputs\jit\emit\ID_OPS.generated.cs", $$"""
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+global using static RyuJitSharp.ID_OPS;
+
+namespace RyuJitSharp;
+
+public enum ID_OPS
+{
+#if TARGET_ARM64
+{{arm64OperandKinds}}#else
+{{xarchOperandKinds}}#endif
+}
+""");
         GenerateNativeEnum(formatInput, "IS_INFO", @"Outputs\jit\emit\IS_INFO.generated.cs", isFlags: true);
         GenerateNativeEnum(@"Inputs\instr.h", "insUpdateModes",
             @"Outputs\jit\instr\insUpdateModes.generated.cs", isFlags: false);
@@ -1668,7 +1696,7 @@ public static partial class Globals
         return ExpandOpcode(body, macros);
     }
 
-    private static void GenerateNativeEnum(string inputFile, string enumName, string outputFile, bool isFlags)
+    private static StringBuilder ReadNativeEnumBody(string inputFile, string enumName)
     {
         var input = File.ReadAllText(inputFile);
         var match = Regex.Match(input, $@"enum\s+{Regex.Escape(enumName)}\s*\{{(?<body>.*?)\}};", RegexOptions.Singleline);
@@ -1686,6 +1714,12 @@ public static partial class Globals
             }
         }
 
+        return builder;
+    }
+
+    private static void GenerateNativeEnum(string inputFile, string enumName, string outputFile, bool isFlags)
+    {
+        var builder = ReadNativeEnumBody(inputFile, enumName);
         File.WriteAllText(outputFile, $$"""
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 //

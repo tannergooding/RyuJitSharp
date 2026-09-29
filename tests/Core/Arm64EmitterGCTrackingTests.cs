@@ -14,6 +14,107 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class Arm64EmitterGCTrackingTests
 {
     [Test]
+    public static void SimpleStackTrackingPreservesPointerAndByrefBits()
+    {
+        WithEmitter((emitter, buffer) =>
+        {
+            emitter.emitSimpleStkUsed = true;
+            emitter.emitStackPush(buffer + 1, GCT_GCREF);
+            emitter.emitStackPush(buffer + 2, GCT_BYREF);
+            emitter.emitStackPushN(buffer + 3, 2);
+
+            Assert.That(emitter.emitCurStackLvl, Is.EqualTo(16));
+            Assert.That(unchecked((uint)emitter.u1.emitSimpleStkMask), Is.EqualTo(12u));
+            Assert.That(unchecked((uint)emitter.u1.emitSimpleByrefStkMask), Is.EqualTo(4u));
+
+            emitter.emitStackKillArgs(buffer + 4, 3, 0);
+            Assert.That(unchecked((uint)emitter.u1.emitSimpleStkMask), Is.EqualTo(8u));
+            Assert.That(unchecked((uint)emitter.u1.emitSimpleByrefStkMask), Is.Zero);
+            emitter.emitStackPop(buffer + 5, false, 0, 2);
+
+            Assert.That(emitter.emitCurStackLvl, Is.EqualTo(8));
+            Assert.That(unchecked((uint)emitter.u1.emitSimpleStkMask), Is.EqualTo(2u));
+        });
+    }
+
+    [Test]
+    public static void FullMapTracksPushKillAndPopDescriptors()
+    {
+        WithEmitter((emitter, buffer) =>
+        {
+            var tracking = stackalloc byte[8];
+            emitter.emitSimpleStkUsed = false;
+            emitter.emitFullGCinfo = true;
+            emitter.emitFullArgInfo = true;
+            emitter.emitMaxStackDepth = 8;
+            emitter.u2.emitArgTrackTab = tracking;
+            emitter.u2.emitArgTrackTop = tracking;
+
+            emitter.emitStackPushN(buffer + 1, 2);
+            emitter.emitStackPush(buffer + 3, GCT_GCREF);
+            Assert.That(emitter.emitCurStackLvl, Is.EqualTo(12));
+            Assert.That(emitter.u2.emitGcArgTrackCnt, Is.EqualTo((ushort)3));
+
+            emitter.emitStackKillArgs(buffer + 4, 1, 4);
+            Assert.That(emitter.u2.emitGcArgTrackCnt, Is.EqualTo((ushort)3));
+            emitter.emitStackPop(buffer + 5, false, 0, 3);
+
+            Assert.That(emitter.emitCurStackLvl, Is.Zero);
+            Assert.That((nint)emitter.u2.emitArgTrackTop, Is.EqualTo((nint)tracking));
+            Assert.That(emitter.u2.emitGcArgTrackCnt, Is.Zero);
+
+            var record = RegPtrList(ref emitter.GCInfo)
+                ?? throw new AssertionException("Missing first argument push.");
+            for (var i = 0; i < 3; i++)
+            {
+                Assert.That(record.rpdArgType, Is.EqualTo(GCInfo.rpdArgType_t.rpdARG_PUSH));
+                Assert.That(record.rpdCallData.rpdPtrArg, Is.EqualTo((ushort)i));
+                record = record.rpdNext ?? throw new AssertionException("Missing argument transition.");
+            }
+
+            Assert.That(record.rpdArgType, Is.EqualTo(GCInfo.rpdArgType_t.rpdARG_KILL));
+            Assert.That(record.rpdOffs, Is.EqualTo(4u));
+            record = record.rpdNext ?? throw new AssertionException("Missing call transition.");
+            Assert.That(record.rpdArgType, Is.EqualTo(GCInfo.rpdArgType_t.rpdARG_POP));
+            Assert.That(record.rpdCall, Is.True);
+            Assert.That(record.rpdCallInstrSize, Is.EqualTo((byte)4));
+            record = record.rpdNext ?? throw new AssertionException("Missing final pop.");
+            Assert.That(record.rpdArgType, Is.EqualTo(GCInfo.rpdArgType_t.rpdARG_POP));
+            Assert.That(record.rpdCall, Is.True);
+            Assert.That(record.rpdCallInstrSize, Is.Zero);
+            Assert.That(record.rpdCallData.rpdPtrArg, Is.EqualTo((ushort)3));
+            Assert.That(record.rpdNext, Is.Null);
+        });
+    }
+
+    [Test]
+    public static void RegisterMaskDeathsRecordGcrefsBeforeByrefs()
+    {
+        WithEmitter((emitter, buffer) =>
+        {
+            emitter.emitFullGCinfo = true;
+            SyncThisRegister(emitter) = REG_NA;
+            GCrefRegisters(emitter) = SRBM_R1;
+            ByrefRegisters(emitter) = SRBM_R2;
+
+            KillRegisters(emitter, new regMaskTP(SRBM_R1 | SRBM_R2), buffer + 9);
+
+            Assert.That(GCrefRegisters(emitter), Is.EqualTo(SRBM_NONE));
+            Assert.That(ByrefRegisters(emitter), Is.EqualTo(SRBM_NONE));
+            var first = RegPtrList(ref emitter.GCInfo)
+                ?? throw new AssertionException("Missing GC-ref death.");
+            var second = first.rpdNext ?? throw new AssertionException("Missing byref death.");
+            Assert.That(first.rpdOffs, Is.EqualTo(9u));
+            Assert.That(first.rpdGCtype, Is.EqualTo(GCT_GCREF));
+            Assert.That(first.rpdCompiler.rpdDel, Is.EqualTo(SRBM_R1));
+            Assert.That(second.rpdOffs, Is.EqualTo(9u));
+            Assert.That(second.rpdGCtype, Is.EqualTo(GCT_BYREF));
+            Assert.That(second.rpdCompiler.rpdDel, Is.EqualTo(SRBM_R2));
+            Assert.That(second.rpdNext, Is.Null);
+        });
+    }
+
+    [Test]
     public static void PartialCallRecordsCodeOffsetAndRegisterMasks()
     {
         WithEmitter((emitter, buffer) =>
@@ -131,6 +232,9 @@ internal static unsafe class Arm64EmitterGCTrackingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitUpdateLiveGCregs")]
     private static extern void UpdateRegisters(Emitter emitter, GCInfo.GCtype type, regMaskTP registers, byte* address);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGCregDeadUpdMask")]
+    private static extern void KillRegisters(Emitter emitter, regMaskTP registers, byte* address);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "gcVarPtrList")]
     private static extern ref GCInfo.varPtrDsc? VarPtrList(ref GCInfo info);

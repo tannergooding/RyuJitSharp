@@ -76,17 +76,16 @@ internal static unsafe class Arm64EmitterLocationTests
     }
 
     [Test]
-    public static void WalkingWithinAGroupRetainsTheDescriptorSizeDependency()
+    public static void WalkingWithinAGroupPreservesDescriptorOrder()
     {
         var (compiler, emitter) = CreateEmitter();
-        _ = emitter.Allocate();
-        _ = emitter.Allocate();
-        var count = 0;
-        var error = Assert.Throws<PlatformNotSupportedException>(() =>
-            Walk(emitter, new emitLocation(emitter.emitCurIG), (_, _) => count++, compiler));
+        var first = emitter.Allocate();
+        var second = emitter.Allocate();
+        List<Emitter.instrDesc> visited = [];
+        Walk(emitter, new emitLocation(emitter.emitCurIG), (descriptor, _) => visited.Add(descriptor), compiler);
 
-        Assert.That(error, Has.Message.EqualTo("Instruction descriptor sizes are not yet ported for this target."));
-        Assert.That(count, Is.EqualTo(1));
+        Emitter.instrDesc[] expected = [first, second];
+        Assert.That(visited, Is.EqualTo(expected));
     }
 
     [Test]

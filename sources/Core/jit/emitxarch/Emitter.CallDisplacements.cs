@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
+#if TARGET_XARCH || TARGET_ARM64
     protected sealed class instrDescCGCA : instrDesc
     {
         public VARSET_TP idcGCvars = [];
@@ -17,7 +17,7 @@ public partial class Emitter
         public uint idcArgCnt;
         private bool _hasAsyncContinuationRet;
 
-#if UNIX_AMD64_ABI
+#if MULTIREG_HAS_SECOND_GC_RET
         private GCInfo.GCtype _secondRetRegGCType;
 
         internal GCInfo.GCtype idSecondGCref()
@@ -35,7 +35,14 @@ public partial class Emitter
         // two 16-byte AMD64 register masks, uint argument count, then a shared
         // bitfield allocation for the SysV second-return GC type and async bit.
         // Both AMD64 layouts round to the same eight-byte boundary.
+#if TARGET_AMD64
         public override int NativeLogicalSize => 72;
+#elif TARGET_ARM64
+        public override int NativeLogicalSize => Arm64CallDescriptorSize();
+#else
+        public override int NativeLogicalSize
+            => throw new System.PlatformNotSupportedException("The x86 call descriptor layout is not yet ported.");
+#endif
 
         public bool hasAsyncContinuationRet()
         {
@@ -47,7 +54,9 @@ public partial class Emitter
             _hasAsyncContinuationRet = value;
         }
     }
+#endif
 
+#if TARGET_XARCH
     private nint emitGetInsCIdisp(instrDesc id)
     {
         if (id.idIsLargeCall())

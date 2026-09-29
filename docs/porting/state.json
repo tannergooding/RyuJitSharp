@@ -16,6 +16,18 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "emitterStackCallsAndArm64DescriptorSizes": {
+      "scope": "Whole stack GC accounting and register-mask death, xarch call recording and displacement access, ARM64 descriptor sizing and local-pair types, and complete ARM64/SVE format headers.",
+      "mapping": "emitarm64.cpp::emitSizeOfInsDsc maps to emit/Emitter.DescriptorSizes.cs; emit.h local-pair types map to emitarm64/Emitter.LocalVariablePairDescriptors.cs. Shared CGCA storage remains in emitxarch/Emitter.CallDisplacements.cs. ARM64 operand categories and enum values are generated from the pinned format inputs.",
+      "validation": "Combined full-analysis Windows183D157R and ARM6441D41R. Final stack-only delta passes Windows27D19R and ARM646D6R; exact final overlay hashes agree. Only stack accounting and its regression fixture differ from the combined matrix. Linux-target ARM64 size contracts pass34D34R, including explicit fat-call-layout rejection. No skips or source exclusions.",
+      "controls": "Four old ARM64 size-guard failures per configuration; three old ARM64 stack/register-guard failures. MinOpts controls expose missing SafeInt Value assertions and their consumption order; the final pop/simple-stack controls fail3/3 on the prior body and pass with the correction. General-encoder simple-stack zero-count calls remain valid.",
+      "layouts": "Scoped MSVC data-member probes establish Windows64-host logical sizes, including ARM64 CGCA80, base16, small8, jump48, align48D40R, pair24 and pairCns32. Native macro expansion matches all599 format names/ordinals/categories and five operand-enum values. This is not native runtime parity.",
+      "retirement": "1601 pure deletions across six native files:853 exact-span lines for12 complete functions and two descriptor types, plus748 lines in two complete format headers. Preserve the shared emitIns_Call and size declarations for remaining target definitions.",
+      "nativeBefore": "2c4db8b0138605d5143ca947606003422fb77959",
+      "nativeAfter": "d68355b2a413b99283c834b290f1f66e689889cb",
+      "limits": "ARM64 Debug sanity checking, non-Windows ARM64 fat-call layouts, x86 descriptor allocation/layouts and generic call allocator target paths remain explicit dependencies. x86 retains independent compile blockers. No new runtime, GC-encoding or whole-dump parity claim.",
+      "evidence": "artifacts/emitter-stack-call-size-integrated contains combined/final hashes, logs, TRXs and WIP preservation. artifacts/arm64-descriptor-size-packet contains native layout/metadata probes and old controls. artifacts/residual-reconciliation/stack-call-size-combined-20260929.json, its applied receipt and final-verification receipt record retirement."
+    },
     "emitterGCBranchAndDescriptorLocations": {
       "scope": "Whole GC stack-slot/register live sets and call tracking, xarch branch/padding output, descriptor traversal and location/unwind-offset queries. Preserve JIT32 and Unix conditionals, host-width arithmetic and native noway recovery.",
       "mapping": "Common register GC operations and emitCurCodeOffs map to emit/Emitter.RegisterGCOutput.cs. Native descriptor byte pointers use the existing managed storage/index/logical-offset representation; null represents one-past-end, not missing storage. emitWalkIDs uses Action<instrDesc,Compiler> for the sole pinned unwind callback context.",
@@ -920,7 +932,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "2c4db8b0138605d5143ca947606003422fb77959",
+      "residualHead": "d68355b2a413b99283c834b290f1f66e689889cb",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -1053,11 +1065,12 @@
       "caution": "Current backend allocation/codegen/emitter exclusions checked in this pass target non-Windows or non-AMD64 configurations. Commented callback declarations and historical baseline gaps are not an inventory of missing Windows implementations."
     },
     "activeBatch": {
-      "scope": "Continue retained GC stack push/pop/argument tracking and GC-mask death in lane A; xarch call recording and directly required call-descriptor allocation in lane B. Parent owns descriptor-size/sanity dependencies, beginning the retained ARM64 emitSizeOfInsDsc. Preserve managed logical descriptor ownership and native target paths.",
+      "scope": "Continue retained no-GC call-register preservation in lane A (emitNoGChelper, emitGetGCRegsSavedOrModified, emitGetGCRegsKilledByNoGCCall); xarch register recording and three emitInsSizeRR overloads in lane B. Parent owns the complete ARM64 Debug emitInsSanityCheck and its explicit dependencies. Preserve native target paths and managed descriptor ownership.",
       "status": "in-progress",
       "doneWhen": [
-        "Complete retained emitter stack push/pop, large-stack argument tracking and GC-mask death paths without changing approved managed descriptor ownership or native GC contracts.",
-        "Complete retained xarch emitIns_Call and directly required call-descriptor allocation paths, preserving native target conditionals, widths, relocations and diagnostic contracts.",
+        "Complete the three retained no-GC call-register preservation functions and their target-mask dependencies without changing native GC contracts.",
+        "Complete the four retained xarch register-recording functions and three emitInsSizeRR overloads, preserving native target conditionals, widths and diagnostics.",
+        "Complete the ARM64 Debug sanity dispatcher as a whole function; preserve explicit terminating dependencies for separately unported validators.",
         "Resolve shared declaration/signature/guard conflicts centrally; preserve existing Windows behavior and compilability of affected target paths.",
         "Commit validated C# repairs with sparse dependency/exception records, then retire the exact completed native definitions in the same batch through the consolidated amended cleanup commit. Retain unported helper bodies."
       ],
@@ -1070,7 +1083,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "The CodeGen label/local-register exceptions and floating-mask support are accepted with static-field output; reuse their scoped Windows/ARM64 and old-source evidence. Integrate coherent worker packets, preserving source/declaration ownership and native oracle-plus-one. The isolated Wasm packet remains blocked by 108 wider diagnostics; preserve its WIP and native caller without backend expansion. B458/B459 close all 41 merged-array variants under both JITs; do not rerun completed evidence.",
+      "parentScope": "Translate the complete ARM64 Debug sanity dispatcher and own shared declaration/guard integration. Integrate the no-GC helper and register-recording packets after focused validation; preserve native oracle-plus-one and all13 unrelated Wasm WIP files. Reuse completed size, GC and call evidence rather than repeating it for retirement.",
       "wholeFunctionRepairLanes": [
         {
           "scope": "Whole emitStackPush/PushN/Pop, emitStackPushLargeStk/PopLargeStk/KillArgs and emitGCregDeadUpdMask, plus directly required stack-accounting support. Preserve native unsigned bits, encoder branches and diagnostic ordering.",
@@ -1486,7 +1499,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "After committing the accepted GC/branch/location packet, continue the same two workers: lane A handles retained stack push/pop/large-stack argument tracking and emitGCregDeadUpdMask; lane B handles retained xarch emitIns_Call and directly required call-descriptor allocation. Parent starts emitarm64.cpp::emitSizeOfInsDsc and its logical descriptor layouts, then the distinct Debug sanity dependency, preserving managed ownership and proving target sizes rather than inventing values. Native2c4db8b0 already includes1777-line retirement for31 definitions; never reapply those spans. Final combined231D209R/ARM6413D13R/Linux2D2R and Windows delta10D9R are accepted; reuse their evidence. Complete each whole dependency-coherent packet, review numeric/conditional contracts before the combined matrix, then consolidate retirement/docs and commit. Preserve Wasm WIP and native oracle-plus-one. No publication, recurring audits or milestone stop.",
+    "nextAction": "After the stack/call/size commit, continue the same two workers on the scoped no-GC call-register preservation and xarch register-recording families. Parent translates the complete833-line pinned ARM64 emitInsSanityCheck (currently a terminating dependency in Emitter.InstructionRecording.cs), retaining separate unported helper bodies. Coordinate InstructionOptions/InstructionRecording guards centrally. Native d68355b2 already includes1601-line retirement; never reapply those spans. Reuse combined Windows183D157R/ARM6441D41R, final stack27D19R/6D6R and Linux ARM64 layout34D34R evidence. Preserve Wasm WIP, native oracle-plus-one and coherent commits. No publication or milestone stop.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

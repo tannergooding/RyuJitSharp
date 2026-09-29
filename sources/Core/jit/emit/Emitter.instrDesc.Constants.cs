@@ -69,7 +69,7 @@ public partial class Emitter
     {
         public nint idcCnsVal;
 
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
         public override int NativeLogicalSize => ConstantDescriptorSizes.Constant;
 #else
         public override int NativeLogicalSize => throw new PlatformNotSupportedException("Constant descriptor size is not yet ported for this target.");
@@ -80,7 +80,7 @@ public partial class Emitter
     {
         public nint iddDspVal;
 
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
         public override int NativeLogicalSize => ConstantDescriptorSizes.Displacement;
 #else
         public override int NativeLogicalSize => throw new PlatformNotSupportedException("Displacement descriptor size is not yet ported for this target.");
@@ -94,7 +94,7 @@ public partial class Emitter
         public ref nint iddcCnsVal => ref idcCnsVal;
         public int iddcDspVal;
 
-#if TARGET_AMD64
+#if TARGET_AMD64 || TARGET_ARM64
         public override int NativeLogicalSize => ConstantDescriptorSizes.ConstantDisplacement;
 #else
         public override int NativeLogicalSize => throw new PlatformNotSupportedException("Constant/displacement descriptor size is not yet ported for this target.");

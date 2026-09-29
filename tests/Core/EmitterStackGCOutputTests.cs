@@ -2,6 +2,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+#if DEBUG
+using System.Runtime.InteropServices;
+#endif
 using NUnit.Framework;
 using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.regMask;
@@ -13,6 +16,121 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterStackGCOutputTests
 {
+#if DEBUG && EMIT_TRACK_STACK_DEPTH
+    private static int s_safeIntAssertions;
+
+    [TestCase(ushort.MaxValue + 1)]
+    [TestCase(ushort.MaxValue + 2)]
+    [NonParallelizable]
+    public static void LargeStackPopAssertsAtOverflowedArgCountValue(int count)
+    {
+        WithEmitter((compiler, codeGen, buffer) =>
+        {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.doAssert = &RecordSafeIntAssertion;
+            ICorJitInfo ee = new() { lpVtbl = &vtable };
+            using var tls = new JitTls(&ee);
+            JitTls.Compiler = compiler;
+            s_safeIntAssertions = 0;
+
+            var tracking = stackalloc byte[count];
+            new Span<byte>(tracking, count).Clear();
+            var emitter = codeGen.Emitter;
+            emitter.emitSimpleStkUsed = false;
+            emitter.emitFullArgInfo = true;
+            emitter.emitFullGCinfo = true;
+            emitter.emitCurStackLvl = count * sizeof(int);
+            emitter.emitMaxStackDepth = count;
+            emitter.u2.emitArgTrackTab = tracking;
+            emitter.u2.emitArgTrackTop = tracking + count;
+
+            emitter.emitStackPop(buffer + 8, false, 0, (uint)count);
+
+            Assert.That(s_safeIntAssertions, Is.EqualTo(3));
+            Assert.That(emitter.emitCurStackLvl, Is.Zero);
+            Assert.That(emitter.u2.emitGcArgTrackCnt, Is.Zero);
+        });
+    }
+
+#if !JIT32_GCENCODER
+    [Test]
+    [NonParallelizable]
+    public static void SimpleStackZeroCountCallRecordsGeneralEncoderDescriptor()
+    {
+        WithEmitter((compiler, codeGen, buffer) =>
+        {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.doAssert = &RecordSafeIntAssertion;
+            ICorJitInfo ee = new() { lpVtbl = &vtable };
+            using var tls = new JitTls(&ee);
+            JitTls.Compiler = compiler;
+            s_safeIntAssertions = 0;
+
+            var emitter = codeGen.Emitter;
+            emitter.emitSimpleStkUsed = true;
+            emitter.emitFullGCinfo = false;
+            emitter.emitCurStackLvl = 0;
+
+            emitter.emitStackPop(buffer + 8, true, 5, 0);
+
+            Assert.That(s_safeIntAssertions, Is.Zero);
+            var record = RegPtrList(ref codeGen.GCInfo)
+                ?? throw new AssertionException("Missing zero-count general-encoder call.");
+            Assert.That(record.rpdOffs, Is.EqualTo(8u));
+            Assert.That(record.rpdArgType, Is.EqualTo(GCInfo.rpdArgType_t.rpdARG_POP));
+            Assert.That(record.rpdCall, Is.True);
+            Assert.That(record.rpdCallInstrSize, Is.EqualTo((byte)5));
+            Assert.That(record.rpdCallData.rpdPtrArg, Is.Zero);
+            Assert.That(record.rpdNext, Is.Null);
+        });
+    }
+#endif
+
+    [TestCase(false, false, 1)]
+    [TestCase(false, true, 2)]
+    [TestCase(true, false, 0)]
+    [TestCase(true, true, 1)]
+    [NonParallelizable]
+    public static void LargeStackKillAssertsOnlyWhenOverflowedValueIsConsumed(
+        bool fullArgInfo, bool fullGcInfo, int expectedAssertions)
+    {
+        WithEmitter((compiler, codeGen, buffer) =>
+        {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.doAssert = &RecordSafeIntAssertion;
+            ICorJitInfo ee = new() { lpVtbl = &vtable };
+            using var tls = new JitTls(&ee);
+            JitTls.Compiler = compiler;
+            s_safeIntAssertions = 0;
+
+            const int count = ushort.MaxValue + 1;
+            var tracking = stackalloc byte[count];
+            new Span<byte>(tracking, count).Fill((byte)GCT_GCREF);
+            var emitter = codeGen.Emitter;
+            emitter.emitSimpleStkUsed = false;
+            emitter.emitFullArgInfo = fullArgInfo;
+            emitter.emitFullGCinfo = fullGcInfo;
+            emitter.emitCurStackLvl = count * sizeof(int);
+            emitter.emitMaxStackDepth = count;
+            emitter.u2.emitArgTrackTab = tracking;
+            emitter.u2.emitArgTrackTop = tracking + count;
+
+            emitter.emitStackKillArgs(buffer + 8, count, 5);
+
+            Assert.That(s_safeIntAssertions, Is.EqualTo(expectedAssertions));
+            Assert.That(emitter.emitCurStackLvl, Is.EqualTo(count * sizeof(int)));
+            Assert.That(tracking[0], Is.EqualTo((byte)GCT_NONE));
+        });
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int RecordSafeIntAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
+    {
+        s_safeIntAssertions++;
+        return 0;
+    }
+#endif
+
     [TestCase(GCT_GCREF, 0u)]
     [TestCase(GCT_BYREF, 1u)]
     public static void StackSlotLifetimesAreLinkedAndRetainOffsetFlags(GCInfo.GCtype type, uint flag)

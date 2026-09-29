@@ -31,6 +31,12 @@ public partial class Emitter
 #endif
         internal const int DebugPrefix = 8;
         internal const int DebugInfo = 56;
+#if TARGET_ARM64
+        // The four-byte emitLclVarAddr payload rounds each eight-byte-aligned
+        // base up by eight bytes (emit.h:2385-2397).
+        internal const int LocalVarPair = Full + 8;
+        internal const int LocalVarPairConstant = ConstantDescriptorSizes.Constant + 8;
+#endif
     }
 
     protected sealed class instrDescBasic : instrDesc
@@ -39,8 +45,12 @@ public partial class Emitter
         {
             get
             {
+#if TARGET_AMD64 || TARGET_ARM64
+                if (idIns() is INS_invalid or INS_align
 #if TARGET_AMD64
-                if (idIns() is INS_invalid or INS_jmp or INS_align)
+                    or INS_jmp
+#endif
+                    )
                 {
                     throw new InvalidOperationException("This instruction requires an initialized descriptor with its native layout.");
                 }
@@ -62,8 +72,93 @@ public partial class Emitter
     {
 #if TARGET_AMD64
         return descriptor.NativeLogicalSize;
+#elif TARGET_ARM64
+        if (descriptor.idIsSmallDsc())
+        {
+            return SMALL_IDSC_SIZE;
+        }
+
+        assert(descriptor.idInsFmt() < insFormat.IF_COUNT);
+        var operands = (ID_OPS)emitFmtToOps[(int)descriptor.idInsFmt()];
+        var isCall = descriptor.idIns() is INS_bl or INS_blr or INS_b_tail or INS_br_tail;
+        var mayBeCall = descriptor.idIns() is INS_b or INS_br;
+
+        switch (operands)
+        {
+            case ID_OP_NONE:
+            {
+                break;
+            }
+
+            case ID_OP_JMP:
+            {
+                return DescriptorSizes.Jump;
+            }
+
+            case ID_OP_CALL:
+            {
+                assert(isCall || mayBeCall);
+                if (descriptor.idIsLargeCall())
+                {
+                    return Arm64CallDescriptorSize();
+                }
+
+                assert(!descriptor.idIsLargeDsp());
+                assert(!descriptor.idIsLargeCns());
+                return INSTR_DESC_SIZE;
+            }
+
+            default:
+            {
+                NO_WAY("unexpected instruction descriptor format");
+                break;
+            }
+        }
+
+        if (descriptor.idIsLargeCns())
+        {
+            if (descriptor.idIsLclVarPair())
+            {
+                return DescriptorSizes.LocalVarPairConstant;
+            }
+            if (descriptor.idIsLargeDsp())
+            {
+                return ConstantDescriptorSizes.ConstantDisplacement;
+            }
+
+            return ConstantDescriptorSizes.Constant;
+        }
+        if (descriptor.idIsLclVarPair())
+        {
+            return DescriptorSizes.LocalVarPair;
+        }
+        if (descriptor.idIsLargeDsp())
+        {
+            return ConstantDescriptorSizes.Displacement;
+        }
+#if FEATURE_LOOP_ALIGN
+        if (descriptor.idIns() == INS_align)
+        {
+            return DescriptorSizes.Align;
+        }
+#endif
+
+        return INSTR_DESC_SIZE;
 #else
         throw new PlatformNotSupportedException("Instruction descriptor sizes are not yet ported for this target.");
 #endif
     }
+
+#if TARGET_ARM64
+    private static int Arm64CallDescriptorSize()
+    {
+#if TARGET_WINDOWS
+        // MSVC gives the GCtype and following bool bitfields separate storage
+        // units at offsets 68 and 72, rounding the complete descriptor to 80.
+        return 80;
+#else
+        throw new PlatformNotSupportedException("The ARM64 call descriptor layout is not established for this ABI.");
+#endif
+    }
+#endif
 }

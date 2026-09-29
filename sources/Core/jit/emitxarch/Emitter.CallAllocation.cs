@@ -12,7 +12,22 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
+#if TARGET_XARCH
+#if TARGET_X86
+    private regMaskTP CallScratchRegisters
+    {
+        get
+        {
+            assert(_compiler is not null);
+            return new regMaskTP(
+                _compiler.SRBM_INT_CALLEE_TRASH | _compiler.SRBM_FLT_CALLEE_TRASH, _compiler.SRBM_MSK_CALLEE_TRASH);
+        }
+    }
+
+    private instrDescCGCA emitAllocInstrCGCA(emitAttr attr)
+        => throw new FatalJitException(CORJIT_SKIPPED, "x86 large-call descriptor allocation is not ported.");
+#endif
+
     private instrDesc emitNewInstrCallInd(int argCnt, nint disp, ReadOnlySpan<nint> GCvars,
         regMaskTP gcrefRegs, regMaskTP byrefRegs, emitAttr retSize,
 #if UNIX_AMD64_ABI
@@ -37,7 +52,11 @@ public partial class Emitter
 
         if (large)
         {
+#if TARGET_X86
+            var id = emitAllocInstrCGCA(retSize);
+#else
             var id = emitAllocAnyInstr<instrDescCGCA>(72, retSize);
+#endif
             id.idSetIsLargeCall();
             VarSetOps.Assign(_compiler, ref id.idcGCvars, GCvars);
             id.idcGcrefRegs = gcrefRegs;
@@ -86,7 +105,11 @@ public partial class Emitter
 
         if (large)
         {
+#if TARGET_X86
+            var id = emitAllocInstrCGCA(retSize);
+#else
             var id = emitAllocAnyInstr<instrDescCGCA>(72, retSize);
+#endif
             id.idSetIsLargeCall();
             VarSetOps.Assign(_compiler, ref id.idcGCvars, GCvars);
             id.idcGcrefRegs = gcrefRegs;
@@ -130,6 +153,24 @@ public partial class Emitter
 
     private static void emitEncodeCallGCregs(regMaskTP gcRefRegs, instrDesc id)
     {
+#if TARGET_X86
+        var regs = gcRefRegs.Lower;
+        uint encoded = 0;
+        if ((regs & SRBM_ESI) != 0)
+        {
+            encoded |= 1;
+        }
+        if ((regs & SRBM_EDI) != 0)
+        {
+            encoded |= 2;
+        }
+        if ((regs & SRBM_EBX) != 0)
+        {
+            encoded |= 4;
+        }
+
+        id.idReg1((regNumber)encoded);
+#else
         var regs = gcRefRegs.Lower;
         uint reg1 = 0;
         uint reg2 = 0;
@@ -170,8 +211,10 @@ public partial class Emitter
 
         id.idReg1((regNumber)reg1);
         id.idReg2((regNumber)reg2);
+#endif
     }
 
+#if TARGET_AMD64
     private static uint emitDecodeCallGCregs(instrDesc id)
     {
         var reg1 = (uint)id.idReg1();
@@ -214,5 +257,6 @@ public partial class Emitter
 
         return (uint)regs;
     }
+#endif
 #endif
 }

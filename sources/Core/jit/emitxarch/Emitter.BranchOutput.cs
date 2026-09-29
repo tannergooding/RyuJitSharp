@@ -285,46 +285,4 @@ public partial class Emitter
         return dst;
 #endif
     }
-
-    private unsafe void emitGCregDeadUpdMask(regMaskTP regs, byte* addr)
-    {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "GC register output outside AMD64 is not ported.");
-#else
-#if DEBUG
-        assert(emitIssuing);
-#endif
-        if (emitIGisInEpilog(emitCurIG))
-        {
-            return;
-        }
-
-#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
-        var gcrefRegs = new regMaskTP(emitThisGCrefRegs) & regs;
-        assert(emitSyncThisObjReg == REG_NA ||
-            (regMaskTP.CreateFromRegNum(emitSyncThisObjReg, emitSyncThisObjReg.SingleTypeMask) & regs).IsEmpty);
-
-        if (gcrefRegs.IsNonEmpty)
-        {
-            assert((emitThisByrefRegs & (regMask)gcrefRegs) == SRBM_NONE);
-            if (emitFullGCinfo)
-            {
-                emitGCregDeadSet(GCInfo.GCtype.GCT_GCREF, gcrefRegs, addr);
-            }
-            emitThisGCrefRegs &= ~(regMask)gcrefRegs;
-        }
-
-        var byrefRegs = new regMaskTP(emitThisByrefRegs) & regs;
-        if (byrefRegs.IsNonEmpty)
-        {
-            assert((emitThisGCrefRegs & (regMask)byrefRegs) == SRBM_NONE);
-            if (emitFullGCinfo)
-            {
-                emitGCregDeadSet(GCInfo.GCtype.GCT_BYREF, byrefRegs, addr);
-            }
-            emitThisByrefRegs &= ~(regMask)byrefRegs;
-        }
-#endif
-#endif
-    }
 }

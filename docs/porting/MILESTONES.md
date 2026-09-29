@@ -16,6 +16,47 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Stack GC accounting, call recording and ARM64 descriptor sizes
+
+Stack push/pop, argument killing and register-mask death retain the native
+general/JIT32 encoder paths. Large-stack counting preserves safe-integer
+overflow behavior, including each Debug assertion when MinOpts continues and
+the EE ignores an assertion. The general encoder can record a zero-count call
+while using simple stack tracking. Existing pre-write tracking-table checks
+remain in place.
+
+Xarch call recording and indirect-call displacement access retain the x86
+branches, including host-width conversion of unsigned stack-level bits. The
+shared call declaration and generic allocator definitions remain native for
+their unported target paths; x86 descriptor allocation remains explicit.
+
+ARM64 descriptor sizing now dispatches on native operand categories and payload
+flags, including local-variable pairs, jumps, calls and alignment. Within-group
+traversal no longer stops at the size dependency. Pinned inputs generate all
+599 operand categories and the ARM64-specific operand enum. Independent native
+macro expansion matches every row; scoped MSVC layout probes establish the
+Windows 64-bit-host sizes, including 80-byte ARM64 fat calls. Non-Windows ARM64
+fat-call layouts remain unsupported.
+
+The combined full-analysis matrix passes Windows 183 Debug/157 Release and
+ARM64 41/41. Separate Linux-target ARM64 size contracts pass 34/34, including
+the explicit unsupported fat-call layout. The final stack delta passes Windows
+27 Debug/19 Release and ARM64 6/6; unchanged descriptor/call evidence is reused.
+Old-source controls
+expose the prior size guards, stack guards, missing safe-integer assertions and
+simple-stack call assertion.
+
+Twelve complete functions, two descriptor types and both complete ARM64 format
+headers retire 1,601 native lines. Retirement records translation, not new
+runtime or whole-dump parity. ARM64 Debug instruction sanity checking remains
+the next recording dependency; independent x86 compilation blockers remain.
+
+Evidence: `artifacts/emitter-stack-call-size-integrated`,
+`artifacts/arm64-descriptor-size-packet`, and
+`artifacts/residual-reconciliation/stack-call-size-combined-20260929.json`
+with its applied and final-verification receipts. Component proposals retain
+the bounded controls and native-source contracts.
+
 ## 2026-09-29: GC tracking, branch output and descriptor locations
 
 GC live-set and call tracking retain their JIT32/general-encoder and Unix paths.

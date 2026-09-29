@@ -16,22 +16,22 @@ public partial class Emitter
         return type is GCT_GCREF or GCT_BYREF;
     }
 
-#if EMIT_TRACK_STACK_DEPTH && TARGET_AMD64
+#if EMIT_TRACK_STACK_DEPTH
     private const int MAX_SIMPLE_STK_DEPTH = sizeof(uint) * 8;
 #endif
 
     internal unsafe void emitStackPush(byte* addr, GCInfo.GCtype gcType)
     {
-#if !EMIT_TRACK_STACK_DEPTH || !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack GC accounting requires Windows AMD64.");
-#else
+#if EMIT_TRACK_STACK_DEPTH
         assert(gcType is GCT_NONE or GCT_GCREF or GCT_BYREF);
         if (emitSimpleStkUsed)
         {
             assert(!emitFullGCinfo);
-            assert(emitCurStackLvl / sizeof(int) < MAX_SIMPLE_STK_DEPTH);
-            u1.emitSimpleStkMask = unchecked((u1.emitSimpleStkMask << 1) | (emitStackNeedsGC(gcType) ? 1 : 0));
-            u1.emitSimpleByrefStkMask = unchecked((u1.emitSimpleByrefStkMask << 1) | (gcType == GCT_BYREF ? 1 : 0));
+            assert(unchecked((uint)emitCurStackLvl) / sizeof(int) < MAX_SIMPLE_STK_DEPTH);
+            u1.emitSimpleStkMask = unchecked((int)((unchecked((uint)u1.emitSimpleStkMask) << 1) |
+                (emitStackNeedsGC(gcType) ? 1u : 0u)));
+            u1.emitSimpleByrefStkMask = unchecked((int)((unchecked((uint)u1.emitSimpleByrefStkMask) << 1) |
+                (gcType == GCT_BYREF ? 1u : 0u)));
             assert((u1.emitSimpleStkMask & u1.emitSimpleByrefStkMask) == u1.emitSimpleByrefStkMask);
         }
         else
@@ -39,37 +39,37 @@ public partial class Emitter
             emitStackPushLargeStk(addr, gcType);
         }
 
-        emitCurStackLvl = unchecked(emitCurStackLvl + sizeof(int));
+        emitCurStackLvl = unchecked((int)(unchecked((uint)emitCurStackLvl) + sizeof(int)));
+#else
+        throw new FatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
 #endif
     }
 
     internal unsafe void emitStackPushN(byte* addr, uint count)
     {
-#if !EMIT_TRACK_STACK_DEPTH || !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack GC accounting requires Windows AMD64.");
-#else
+#if EMIT_TRACK_STACK_DEPTH
         assert(count != 0);
         if (emitSimpleStkUsed)
         {
             assert(!emitFullGCinfo);
-            u1.emitSimpleStkMask = unchecked(u1.emitSimpleStkMask << (int)count);
-            u1.emitSimpleByrefStkMask = unchecked(u1.emitSimpleByrefStkMask << (int)count);
+            u1.emitSimpleStkMask = unchecked((int)(unchecked((uint)u1.emitSimpleStkMask) << (int)count));
+            u1.emitSimpleByrefStkMask = unchecked((int)(unchecked((uint)u1.emitSimpleByrefStkMask) << (int)count));
         }
         else
         {
             emitStackPushLargeStk(addr, GCT_NONE, count);
         }
 
-        emitCurStackLvl = unchecked(emitCurStackLvl + (int)unchecked(count * sizeof(int)));
+        emitCurStackLvl = unchecked((int)(unchecked((uint)emitCurStackLvl) + unchecked(count * sizeof(int))));
+#else
+        throw new FatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
 #endif
     }
 
     internal unsafe void emitStackPop(byte* addr, bool isCall, byte callInstrSize, uint count = 1)
     {
-#if !EMIT_TRACK_STACK_DEPTH || !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack GC accounting requires Windows AMD64.");
-#else
-        assert((uint)emitCurStackLvl / sizeof(int) >= count);
+#if EMIT_TRACK_STACK_DEPTH
+        assert(unchecked((uint)emitCurStackLvl) / sizeof(int) >= count);
         assert(!isCall || callInstrSize > 0);
 
         if (count != 0)
@@ -80,31 +80,37 @@ public partial class Emitter
                 var remaining = count;
                 do
                 {
-                    u1.emitSimpleStkMask = (int)(unchecked((uint)u1.emitSimpleStkMask) >> 1);
-                    u1.emitSimpleByrefStkMask = (int)(unchecked((uint)u1.emitSimpleByrefStkMask) >> 1);
+                    u1.emitSimpleStkMask = unchecked((int)(unchecked((uint)u1.emitSimpleStkMask) >> 1));
+                    u1.emitSimpleByrefStkMask = unchecked((int)(unchecked((uint)u1.emitSimpleByrefStkMask) >> 1));
                 } while (--remaining != 0);
             }
             else
             {
                 emitStackPopLargeStk(addr, isCall, callInstrSize, count);
             }
-            emitCurStackLvl = unchecked(emitCurStackLvl - (int)unchecked(count * sizeof(int)));
+            emitCurStackLvl = unchecked((int)(unchecked((uint)emitCurStackLvl) - unchecked(count * sizeof(int))));
         }
         else
         {
             assert(isCall);
-            if (emitFullGCinfo || (codeGen.IsFullPtrRegMapRequired && !codeGen.Interruptible && isCall))
+            if (emitFullGCinfo
+#if !JIT32_GCENCODER
+                || (codeGen.IsFullPtrRegMapRequired && !codeGen.Interruptible && isCall)
+#endif
+                )
             {
                 emitStackPopLargeStk(addr, isCall, callInstrSize, 0);
             }
         }
+#else
+        throw new FatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
 #endif
     }
 
     private unsafe void emitStackPushLargeStk(byte* addr, GCInfo.GCtype gcType, uint count = 1)
     {
-#if EMIT_TRACK_STACK_DEPTH && TARGET_AMD64 && WINDOWS_AMD64_ABI
-        var level = (uint)emitCurStackLvl / sizeof(int);
+#if EMIT_TRACK_STACK_DEPTH
+        var level = unchecked((uint)emitCurStackLvl) / sizeof(int);
         assert(gcType is GCT_NONE or GCT_GCREF or GCT_BYREF);
         assert(count != 0 && !emitSimpleStkUsed);
 
@@ -114,6 +120,7 @@ public partial class Emitter
             assert(u2.emitArgTrackTop == u2.emitArgTrackTab + level);
             noway_assert(u2.emitArgTrackTop < u2.emitArgTrackTab + emitMaxStackDepth);
             *u2.emitArgTrackTop++ = (byte)gcType;
+            assert(u2.emitArgTrackTop <= u2.emitArgTrackTab + emitMaxStackDepth);
 
             if (emitFullArgInfo || emitStackNeedsGC(gcType))
             {
@@ -128,7 +135,7 @@ public partial class Emitter
                     {
                         IMPL_LIMITATION("Too many/too big arguments to encode GC information");
                     }
-                    descriptor.rpdCallData.rpdPtrArg = (ushort)level;
+                    descriptor.rpdCallData.rpdPtrArg = unchecked((ushort)level);
                     descriptor.rpdArgType = GCInfo.rpdArgType_t.rpdARG_PUSH;
                     descriptor.rpdIsThis = false;
                 }
@@ -136,21 +143,23 @@ public partial class Emitter
                 u2.emitGcArgTrackCnt = unchecked((ushort)(u2.emitGcArgTrackCnt + 1));
             }
             level = unchecked(level + 1);
-            noway_assert(level != 0);
+            assert(level != 0);
         } while (--count != 0);
 #else
-        throw new FatalJitException(CORJIT_SKIPPED, "Large-stack GC push accounting requires Windows AMD64.");
+        throw new FatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
 #endif
     }
 
     private unsafe void emitStackPopLargeStk(byte* addr, bool isCall, byte callInstrSize, uint count = 1)
     {
-#if EMIT_GENERATE_GCINFO && EMIT_TRACK_STACK_DEPTH && TARGET_AMD64 && WINDOWS_AMD64_ABI
+#if EMIT_GENERATE_GCINFO && EMIT_TRACK_STACK_DEPTH
 #if DEBUG
         assert(emitIssuing);
 #endif
+#if JIT32_GCENCODER
         assert(!emitSimpleStkUsed);
-        var argRecCnt = 0u;
+#endif
+        uint argRecCnt = 0;
         for (var remaining = count; remaining != 0; remaining--)
         {
             assert(u2.emitArgTrackTop > u2.emitArgTrackTab);
@@ -158,15 +167,26 @@ public partial class Emitter
             assert(gcType is GCT_NONE or GCT_GCREF or GCT_BYREF);
             if (emitFullArgInfo || emitStackNeedsGC(gcType))
             {
-                argRecCnt++;
+                argRecCnt = unchecked(argRecCnt + 1);
             }
         }
 
         assert(u2.emitArgTrackTop >= u2.emitArgTrackTab);
-        assert(u2.emitArgTrackTop == u2.emitArgTrackTab + (uint)emitCurStackLvl / sizeof(int) - count);
+        assert(u2.emitArgTrackTop == u2.emitArgTrackTab + unchecked((uint)emitCurStackLvl) / sizeof(int) - count);
         noway_assert(argRecCnt <= ushort.MaxValue);
-        noway_assert(argRecCnt <= u2.emitGcArgTrackCnt);
-        u2.emitGcArgTrackCnt = (ushort)(u2.emitGcArgTrackCnt - argRecCnt);
+#if DEBUG
+        assert(argRecCnt <= ushort.MaxValue);
+#endif
+        // ClrSafeInt::Value returns zero after overflow if its Debug assertion is ignored.
+        var argRecValue = argRecCnt <= ushort.MaxValue ? unchecked((ushort)argRecCnt) : (ushort)0;
+        u2.emitGcArgTrackCnt = unchecked((ushort)(u2.emitGcArgTrackCnt - argRecValue));
+
+#if JIT32_GCENCODER
+        if (!emitFullGCinfo)
+        {
+            return;
+        }
+#endif
 
         var gcrefRegs = unchecked((uint)emitThisGCrefRegs) >> (int)REG_INT_FIRST;
         var byrefRegs = unchecked((uint)emitThisByrefRegs) >> (int)REG_INT_FIRST;
@@ -175,7 +195,31 @@ public partial class Emitter
         assert(new regMaskTP((regMask)((ulong)byrefRegs << (int)REG_INT_FIRST)) ==
             new regMaskTP(emitThisByrefRegs));
 
-        var isCallRelatedPop = argRecCnt > 1;
+#if JIT32_GCENCODER
+        uint reportedRegs = unchecked((uint)(SRBM_INT_CALLEE_SAVED | SRBM_EBP)) >> (int)REG_INT_FIRST;
+        gcrefRegs &= reportedRegs;
+        byrefRegs &= reportedRegs;
+
+#if DEBUG
+        assert(argRecCnt <= ushort.MaxValue);
+#endif
+        if (argRecValue == 0)
+        {
+#if !FPO_INTERRUPTIBLE
+            if (emitFullyInt || (gcrefRegs == 0 && byrefRegs == 0 && u2.emitGcArgTrackCnt == 0))
+            {
+                return;
+            }
+#else
+            return;
+#endif
+        }
+#endif
+
+#if DEBUG
+        assert(argRecCnt <= ushort.MaxValue);
+#endif
+        var isCallRelatedPop = argRecValue > 1;
         var descriptor = gcInfo.gcRegPtrAllocDsc();
         descriptor.rpdGCtype = GCT_GCREF;
         descriptor.rpdOffs = emitCurCodeOffs(addr);
@@ -191,22 +235,23 @@ public partial class Emitter
         descriptor.rpdCallData.rpdCallByrefRegs = byrefRegs;
         descriptor.rpdArg = true;
         descriptor.rpdArgType = GCInfo.rpdArgType_t.rpdARG_POP;
-        descriptor.rpdCallData.rpdPtrArg = (ushort)argRecCnt;
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Large-stack GC pop accounting requires Windows AMD64 GC info.");
+#if DEBUG
+        assert(argRecCnt <= ushort.MaxValue);
+#endif
+        descriptor.rpdCallData.rpdPtrArg = argRecValue;
+#elif !EMIT_TRACK_STACK_DEPTH
+        throw new FatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
 #endif
     }
 
     internal unsafe void emitStackKillArgs(byte* addr, uint count, byte callInstrSize)
     {
-#if !EMIT_TRACK_STACK_DEPTH || !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack GC accounting requires Windows AMD64.");
-#else
+#if EMIT_TRACK_STACK_DEPTH
         assert(count != 0);
         if (emitSimpleStkUsed)
         {
             assert(!emitFullGCinfo);
-            assert((uint)emitCurStackLvl / sizeof(int) >= count);
+            assert(unchecked((uint)emitCurStackLvl) / sizeof(int) >= count);
             for (var level = 0u; level < count; level++)
             {
                 u1.emitSimpleStkMask &= unchecked((int)~(1u << (int)level));
@@ -226,31 +271,39 @@ public partial class Emitter
             if (emitStackNeedsGC(gcType))
             {
                 *argTrackTop = (byte)GCT_NONE;
-                gcCnt++;
+                gcCnt = unchecked(gcCnt + 1);
             }
         }
         noway_assert(gcCnt <= ushort.MaxValue);
+        var gcCntValue = gcCnt <= ushort.MaxValue ? unchecked((ushort)gcCnt) : (ushort)0;
 
         if (!emitFullArgInfo)
         {
-            noway_assert(gcCnt <= u2.emitGcArgTrackCnt);
-            u2.emitGcArgTrackCnt = (ushort)(u2.emitGcArgTrackCnt - gcCnt);
+#if DEBUG
+            assert(gcCnt <= ushort.MaxValue);
+#endif
+            u2.emitGcArgTrackCnt = unchecked((ushort)(u2.emitGcArgTrackCnt - gcCntValue));
         }
         if (!emitFullGCinfo)
         {
             return;
         }
 
-        if (gcCnt != 0)
+#if DEBUG
+        assert(gcCnt <= ushort.MaxValue);
+#endif
+        if (gcCntValue != 0)
         {
             var descriptor = gcInfo.gcRegPtrAllocDsc();
             descriptor.rpdGCtype = GCT_GCREF;
             descriptor.rpdOffs = emitCurCodeOffs(addr);
             descriptor.rpdArg = true;
             descriptor.rpdArgType = GCInfo.rpdArgType_t.rpdARG_KILL;
-            descriptor.rpdCallData.rpdPtrArg = (ushort)gcCnt;
+            descriptor.rpdCallData.rpdPtrArg = gcCntValue;
         }
         emitStackPopLargeStk(addr, true, callInstrSize, 0);
+#else
+        throw new FatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
 #endif
     }
 }
