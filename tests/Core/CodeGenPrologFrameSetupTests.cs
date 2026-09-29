@@ -23,10 +23,11 @@ internal static unsafe class CodeGenPrologFrameSetupTests
             codeGen.Emitter.spillIntArgRegsToShadowSlots();
 
             var ids = Descriptors(codeGen);
-            Assert.That(ids.Select(id => id.idReg1()), Is.EqualTo((regNumber[])[REG_RCX, REG_RDX, REG_R8, REG_R9]));
-            Assert.That(ids.Select(id => Displacement(codeGen.Emitter, id)), Is.EqualTo((nint[])[8, 16, 24, 32]));
+            Assert.That(ids.Select(id => id.idReg1()), Is.EqualTo(IntArgRegs.ToArray()));
+            Assert.That(ids.Select(id => Displacement(codeGen.Emitter, id)),
+                Is.EqualTo(Enumerable.Range(1, MAX_REG_ARG).Select(index => (nint)(index * TARGET_POINTER_SIZE))));
             Assert.That(ids.All(id => id.idIns() == INS_mov && id.idOpSize() == EA_8BYTE
-                && id.idAddr().iiaAddrMode.amBaseReg == REG_RSP
+                && id.idAddr().iiaAddrMode.amBaseReg == REG_SPBASE
                 && id.idAddr().iiaAddrMode.amIndxReg == REG_NA), Is.True);
         });
     }

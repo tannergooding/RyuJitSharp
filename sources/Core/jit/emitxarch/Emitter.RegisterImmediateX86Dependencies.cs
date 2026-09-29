@@ -64,9 +64,17 @@ public partial class Emitter
         => throw new FatalJitException(CORJIT_SKIPPED, "x86 SIMD immediate shift opcode selection is not ported.");
 
     private ulong AddRex2Prefix(instruction ins, ulong code)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 REX2 prefix encoding is not ported.");
+    {
+        assert(IsRex2EncodableInstruction(ins));
 
-    private static bool emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc id)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 SIMD register-write classification is not ported.");
+        code |= 0xD50000000000UL;
+        if (IsLegacyMap1(code))
+        {
+            code |= 0x008000000000UL;
+        }
+
+        return code;
+    }
+
 }
 #endif

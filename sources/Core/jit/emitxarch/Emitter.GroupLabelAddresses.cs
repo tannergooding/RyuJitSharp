@@ -19,10 +19,12 @@ public partial class Emitter
 
     public void emitIns_R_L(instruction ins, emitAttr attr, insGroup dst, regNumber reg)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Instruction-group address recording requires Windows AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Instruction-group address recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         assert(ins == INS_lea);
         var id = emitNewInstrJmp();
         id.idIns(ins);

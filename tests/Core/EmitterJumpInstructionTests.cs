@@ -6,6 +6,7 @@ using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.Emitter.insFormat;
+using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.emitJumpKind;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
@@ -71,6 +72,25 @@ internal static class EmitterJumpInstructionTests
             Assert.That(JumpLists.NextJump(id), Is.Null);
             Assert.That(CurrentSize(emitter), Is.EqualTo((int)size));
             Assert.That(CurrentCount(emitter), Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public static void GroupLabelAddressRetainsItsTargetAndOwningInstructionGroup()
+    {
+        WithEmitter((_, emitter) =>
+        {
+            var target = new insGroup();
+            emitter.emitIns_R_L(INS_lea, EA_PTRSIZE, target, REG_RAX);
+
+            var id = Last(emitter);
+            Assert.That(id.idIns(), Is.EqualTo(INS_lea));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_RWR_LABEL));
+            Assert.That(JumpView.TargetGroup(id), Is.SameAs(target));
+            Assert.That(JumpView.Group(id), Is.SameAs(emitter.emitCurIG));
+            Assert.That(JumpView.KeepLong(id), Is.True);
+            Assert.That(CurrentCount(emitter), Is.EqualTo(1));
+            Assert.That(CurrentSize(emitter), Is.EqualTo((int)id.idCodeSize()));
         });
     }
 

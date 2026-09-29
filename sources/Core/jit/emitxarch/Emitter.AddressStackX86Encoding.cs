@@ -103,9 +103,6 @@ public partial class Emitter
         return code;
     }
 
-    private ulong AddEvexPrefix(instrDesc id, ulong code, emitAttr size)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 EVEX prefix encoding is not ported.");
-
     private ulong insEncodeReg3456(instrDesc id, regNumber reg, emitAttr size, ulong code)
     {
         assert(reg < REG_STK);

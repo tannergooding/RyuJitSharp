@@ -158,6 +158,9 @@ public partial class Emitter
         };
     }
 
+#endif
+
+#if TARGET_XARCH
     private ulong AddEvexPrefix(instrDesc id, ulong code, emitAttr size)
     {
         var ins = id.idIns();
@@ -193,12 +196,14 @@ public partial class Emitter
             {
                 code |= 0x10000000000UL;
             }
+#if TARGET_AMD64
             if (IsCCMP(ins) || IsCTEST(ins))
             {
                 code &= 0xFFFF87F0FFFFFFFFUL;
                 code |= (ulong)GetCCFromCCMPOrCTEST(ins) << 32;
                 code |= (ulong)id.idGetEvexDFV() << 43;
             }
+#endif
             return code;
         }
         assert(!IsApxExtendedEvexInstruction(ins));
@@ -289,13 +294,16 @@ public partial class Emitter
 
             default:
             {
-                if (!IsCCMP(ins) && !IsCTEST(ins))
+#if TARGET_AMD64
+                if (IsCCMP(ins) || IsCTEST(ins))
                 {
-                    var aaa = id.idGetEvexAaaContext();
-                    if (aaa != 0)
-                    {
-                        maskReg = (regNumber)((int)REG_K0 + (int)aaa);
-                    }
+                    break;
+                }
+#endif
+                var aaa = id.idGetEvexAaaContext();
+                if (aaa != 0)
+                {
+                    maskReg = (regNumber)((int)REG_K0 + (int)aaa);
                 }
                 break;
             }
@@ -311,6 +319,9 @@ public partial class Emitter
         return code;
     }
 
+#endif
+
+#if TARGET_AMD64
     private ulong AddRexRPrefix(instrDesc id, ulong code)
     {
         if (hasEvexPrefix(code))

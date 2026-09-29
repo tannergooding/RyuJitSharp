@@ -101,7 +101,7 @@ public partial class Emitter
             }
             else if (ins is INS_movd32 or INS_movd64)
             {
-                if (regFor012Bits >= REG_XMM0 && regFor012Bits <= REG_XMM31)
+                if (regFor012Bits.IsFltReg)
                 {
                     regFor012Bits = id.idReg1();
                 }
@@ -133,7 +133,7 @@ public partial class Emitter
         }
         if (includeRexPrefixSize && hasRexPrefix(code))
         {
-            if (id.idIns() >= INS_imul_08 && id.idIns() <= INS_imul_31 && TakesEvexPrefix(id))
+            if (instrIsExtendedReg3opImul(id.idIns()) && TakesEvexPrefix(id))
             {
                 return 0;
             }

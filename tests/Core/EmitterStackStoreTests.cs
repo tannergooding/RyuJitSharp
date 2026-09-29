@@ -47,6 +47,28 @@ internal static unsafe class EmitterStackStoreTests
 #endif
     }
 
+    [TestCase(0u)]
+    [TestCase(16u)]
+    public static void Simd12StoreWritesLowEightBytesThenExtractsLaneTwo(uint offset)
+    {
+        var emitter = CreateEmitter(out var compiler);
+
+        emitter.emitStoreSimd12ToLclOffset(0, offset, REG_XMM1, null);
+
+        var codeGen = compiler.codeGen as CodeGen ?? throw new AssertionException("Missing code generator.");
+        var ids = CodeGenShiftTests.Descriptors(codeGen);
+        Assert.That(ids, Has.Count.EqualTo(2));
+        Assert.That(ids[0].idIns(), Is.EqualTo(INS_movsd_simd));
+        Assert.That(ids[0].idOpSize(), Is.EqualTo(EA_8BYTE));
+        Assert.That(ids[0].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(offset));
+        Assert.That(ids[1].idIns(), Is.EqualTo(INS_extractps));
+        Assert.That(ids[1].idOpSize(), Is.EqualTo(EA_16BYTE));
+        Assert.That(ids[1].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(offset + 8));
+        Assert.That(ids[1].idSmallCns(), Is.EqualTo(2));
+        Assert.That(CurrentCount(emitter), Is.EqualTo(2));
+        Assert.That(CurrentSize(emitter), Is.EqualTo((int)(ids[0].idCodeSize() + ids[1].idCodeSize())));
+    }
+
     [TestCase(false, 2)]
     [TestCase(true, 1)]
     public static void OptimizedIdenticalStoresAreElidedButMinoptsStoresAreRetained(bool optimized, int count)

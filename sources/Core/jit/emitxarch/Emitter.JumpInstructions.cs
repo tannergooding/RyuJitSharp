@@ -29,7 +29,7 @@ public partial class Emitter
 #endif
     }
 
-#if DEBUG
+#if DEBUG || DEBUG_EMIT
 #pragma warning disable CA1802 // Keep the native debug selector non-constant so disabled tracing has no unreachable branches.
     private static readonly int INTERESTING_JUMP_NUM = -1;
 #pragma warning restore CA1802
@@ -41,10 +41,12 @@ public partial class Emitter
 
     public void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock dst, regNumber reg)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Basic-block label address recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Basic-block label address recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         assert(_compiler is not null);
         assert(ins == INS_lea);
         assert(dst.HasFlag(BBF_HAS_LABEL));
@@ -82,13 +84,17 @@ public partial class Emitter
 
     public void emitIns_J(instruction ins, BasicBlock dst, bool keepShort = false, bool isRemovableJmpCandidate = false)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Label jump instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Label jump instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         assert(_compiler is not null);
         assert(_compiler.compCurBB is not null);
+#if TARGET_AMD64
         var lastInsIsCall = emitIsLastInsCall();
+#endif
         uint sz;
         var id = emitNewInstrJmp();
 
@@ -110,7 +116,9 @@ public partial class Emitter
             id.idjIsRemovableJmpCandidate = true;
             // Removing a jump after a call may require a nop before an OS epilog.
             // The epilog check belongs to emitRemoveJumpToNextInst.
+#if TARGET_AMD64
             id.idjIsAfterCallBeforeEpilog = lastInsIsCall;
+#endif
         }
         else
         {
@@ -163,7 +171,7 @@ public partial class Emitter
                 var jmpDist = unchecked((int)(srcOffs - tgt.igOffs));
                 assert(jmpDist > 0);
                 var extra = unchecked(jmpDist + JMP_DIST_SMALL_MAX_NEG);
-#if DEBUG
+#if DEBUG_EMIT
                 var debugInfo = id.idDebugOnlyInfo();
                 assert(debugInfo is not null);
                 if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) || (INTERESTING_JUMP_NUM == 0))
@@ -187,7 +195,7 @@ public partial class Emitter
                     sz = JMP_SIZE_SMALL;
                 }
             }
-#if DEBUG
+#if DEBUG_EMIT
             else
             {
                 var debugInfo = id.idDebugOnlyInfo();
@@ -210,7 +218,9 @@ public partial class Emitter
         dispIns(id);
         appendToCurIG(id);
 
-        // Native emitAdjustStackDepthPushPop is empty with AMD64's FEATURE_FIXED_OUT_ARGS.
+#if TARGET_X86
+        emitAdjustStackDepthPushPop(ins);
+#endif
 #endif
     }
 

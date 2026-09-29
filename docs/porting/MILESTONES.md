@@ -16,6 +16,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Labels, ABI stores and instruction prefixes
+
+Xarch label/jump recording, SIMD12 stores and argument-register homing now retain
+their whole target paths. Prefix construction includes x86 EVEX/REX2 behavior
+and SIMD-only register-write classification while preserving AMD64 encoding
+gates, opcode bits and prefix sizes.
+
+The exact combined Windows overlay passes 638 Debug/607 Release controls,
+including the complete prolog-frame fixture in both configurations. Linux-x64
+target controls pass 96 label/store/homing and 514 prefix cases on Windows.
+ARM64 builds pass. Existing x86 compiler/GenTree/target build errors still
+prevent execution; the old/final prefix builds have the same 15 first-pass
+errors after identical parser overlays. No new generated-code parity is claimed.
+
+Fifteen definitions, corresponding declarations and EVEX constants retire
+1,011 native lines in `e2524f9e`. Shared declarations needed by untranslated
+other-target definitions remain. Evidence is in `artifacts/xarch-label-prefix`
+and its component and integration records under `artifacts`.
+
 ## 2026-09-29: Three-register immediates and paired locals
 
 ARM64 three-register/immediate recording now preserves all 74 native instruction

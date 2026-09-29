@@ -431,7 +431,8 @@ public partial class Emitter
             return code | 0x00008000000000UL;
         }
 
-        throw new FatalJitException(CORJIT_SKIPPED, "REX.W without a VEX/EVEX prefix is unavailable on x86.");
+        assert(false, "UNREACHED");
+        return code;
     }
 #endif
 }

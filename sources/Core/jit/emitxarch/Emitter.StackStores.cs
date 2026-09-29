@@ -73,7 +73,6 @@ public partial class Emitter
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
     }
 
-#if TARGET_AMD64
 #if FEATURE_SIMD
     public void emitStoreSimd12ToLclOffset(uint varNum, uint offset, regNumber dataReg, GenTree? tmpRegProvider)
     {
@@ -85,6 +84,7 @@ public partial class Emitter
     }
 #endif
 
+#if TARGET_AMD64
     internal void RequireSupportedInstructionRecording()
     {
         assert(_compiler is not null);

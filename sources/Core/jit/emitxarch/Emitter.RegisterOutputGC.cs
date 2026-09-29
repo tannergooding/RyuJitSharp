@@ -148,7 +148,7 @@ public partial class Emitter
 
 #endif
 
-#if TARGET_AMD64
+#if TARGET_XARCH
     private static bool emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc id)
     {
         var ins = id.idIns();
