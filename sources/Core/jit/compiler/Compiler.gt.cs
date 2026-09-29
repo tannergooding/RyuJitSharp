@@ -3880,14 +3880,14 @@ public partial class Compiler
     {
         assert(!optValnumCSE_phase);
 
-        if (!opts.Tier0OptimizationEnabled || tree.Oper.IsLeaf)
+        if (!opts.Tier0OptimizationEnabled)
         {
             return tree;
         }
 
-        if (tree.Oper.IsUnary)
+        if (tree.Oper.IsLeaf)
         {
-            return gtFoldExprUnary(tree.AsUnOp());
+            return tree;
         }
 
         if (tree.Oper.IsBinary)
@@ -3895,12 +3895,19 @@ public partial class Compiler
             return gtFoldExprBinary(tree.AsOp());
         }
 
+        if (tree.Oper.IsUnary)
+        {
+            return gtFoldExprUnary(tree.AsUnOp());
+        }
+
+        assert(tree.Oper.IsSpecial);
+
         if (tree.Oper.IsConditional)
         {
             return gtFoldExprConditional(tree);
         }
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH && FEATURE_MASKED_HW_INTRINSICS
+#if FEATURE_HW_INTRINSICS
         if (tree.Oper.IsHWIntrinsic)
         {
             return gtFoldExprHWIntrinsic(tree.AsHWIntrinsic());

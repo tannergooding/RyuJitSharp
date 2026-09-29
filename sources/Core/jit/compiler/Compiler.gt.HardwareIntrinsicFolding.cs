@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if FEATURE_HW_INTRINSICS
+using System;
 using System.Numerics;
 using System.Runtime.Intrinsics.X86;
 
@@ -54,6 +55,13 @@ public partial class Compiler
         }
 
         return mskCon;
+    }
+#endif
+
+#if !(TARGET_XARCH && FEATURE_MASKED_HW_INTRINSICS)
+    public GenTree gtFoldExprHWIntrinsic(GenTreeHWIntrinsic tree)
+    {
+        throw new NotImplementedException("gtFoldExprHWIntrinsic folding is not ported for this target.");
     }
 #endif
 
