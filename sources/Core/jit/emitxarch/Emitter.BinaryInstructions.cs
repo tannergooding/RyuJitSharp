@@ -17,12 +17,17 @@ public partial class Emitter
     public unsafe regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree dst, GenTree src,
         regNumber targetReg = REG_NA)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Binary operand recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Binary operand recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         assert(_compiler is not null);
         var useNdd = UsePromotedEvexEncodings && (targetReg != REG_NA);
+#if TARGET_X86
+        assert(!useNdd);
+#else
         if (useNdd)
         {
             assert(IsApxNddEncodableInstruction(ins));
@@ -33,6 +38,7 @@ public partial class Emitter
             assert(targetReg != dstReg);
             assert(targetReg != srcReg);
         }
+#endif
 
         GenTree? memOp = null;
         GenTree? cnsOp = null;

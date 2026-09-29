@@ -21,6 +21,60 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterIndirectStoreTests
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void IndirectLoadsChooseStackLocalOrAddressMode(bool local)
+    {
+        WithEmitter((_, codeGen) =>
+        {
+            var address = Address(local);
+            var load = new GenTreeIndir(GT_IND, TYP_INT, address);
+
+            codeGen.Emitter.emitInsLoadInd(INS_mov, EA_4BYTE, REG_RDX, load);
+
+            var id = Only(codeGen);
+            Assert.That(id.idIns(), Is.EqualTo(INS_mov));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_RDX));
+            Assert.That(id.idInsFmt(), Is.EqualTo(local ? IF_RWR_SRD : IF_RWR_ARD));
+            if (local)
+            {
+                Assert.That(id.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
+                Assert.That(id.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(4));
+            }
+            else
+            {
+                Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RAX));
+            }
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void LocalStoresRecordSourceKindWithoutProducingARegister(bool immediate)
+    {
+        WithEmitter((compiler, codeGen) =>
+        {
+            ref var local = ref compiler.lvaTable[0];
+            local.Type = TYP_INT;
+            local.RegNum = REG_STK;
+            GenTree source = Physical(REG_RDX, TYP_INT);
+            if (immediate)
+            {
+                source = compiler.gtNewIconNode(TYP_INT, 7);
+                source.IsContained = true;
+            }
+
+            var store = compiler.gtNewStoreLclVarNode(0, source);
+            codeGen.Emitter.emitInsStoreLcl(INS_mov, EA_4BYTE, store);
+
+            var id = Only(codeGen);
+            Assert.That(id.idInsFmt(), Is.EqualTo(immediate ? IF_SWR_CNS : IF_SWR_RRD));
+            Assert.That(id.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
+            Assert.That(id.idAddr().iiaLclVar.lvaOffset(), Is.Zero);
+            Assert.That(store.RegNum, Is.EqualTo(REG_NA));
+        });
+    }
+
     [TestCase(false, 0, 2)]
     [TestCase(false, 8192, -128)]
     [TestCase(true, 0, -1)]

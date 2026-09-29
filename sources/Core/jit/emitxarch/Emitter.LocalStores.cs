@@ -9,10 +9,12 @@ public partial class Emitter
 {
     public void emitInsStoreLcl(instruction ins, emitAttr attr, GenTreeLclVarCommon tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Local store recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Local store recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         assert(tree.Oper is GT_STORE_LCL_VAR);
         assert(tree.RegNum == REG_NA);
         var data = tree.Op1;

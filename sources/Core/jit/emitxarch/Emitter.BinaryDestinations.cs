@@ -19,10 +19,12 @@ public partial class Emitter
     public regNumber emitIns_BASE_R_R_RM(instruction ins, emitAttr attr, regNumber targetReg,
         GenTree tree, GenTree regOp, GenTree rmOp)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Non-destructive binary instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Non-destructive binary instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         assert(regOp.IsUsedFromReg);
         var useNdd = DoJitUseApxNDD(ins);
         if (emitIns_Mov(INS_mov, attr, targetReg, regOp.RegNum, canSkip: true, useNdd) && useNdd)

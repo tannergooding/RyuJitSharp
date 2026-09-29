@@ -66,9 +66,6 @@ public partial class Emitter
     private ulong AddRex2Prefix(instruction ins, ulong code)
         => throw new FatalJitException(CORJIT_SKIPPED, "x86 REX2 prefix encoding is not ported.");
 
-    private unsafe void emitHandleGCrefRegs(byte* dst, instrDesc id)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 register-pair GC tracking is not ported.");
-
     private static bool emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc id)
         => throw new FatalJitException(CORJIT_SKIPPED, "x86 SIMD register-write classification is not ported.");
 }

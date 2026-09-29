@@ -11,10 +11,12 @@ public partial class Emitter
 {
     public void emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir mem)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Indirect-load recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Indirect-load recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         assert(mem.Oper is GT_IND or GT_NULLCHECK);
         var addr = mem.Addr;
 

@@ -10,9 +10,13 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
+#if TARGET_XARCH
     private GCInfo.GCtype emitRegGCtype(regNumber reg)
     {
+#if DEBUG
+        assert(emitIssuing);
+#endif
+
         var mask = reg.SingleTypeMask;
         if ((emitThisGCrefRegs & mask) != SRBM_NONE)
         {
@@ -38,7 +42,11 @@ public partial class Emitter
 
             case IF_RWR_RRD:
             {
+#if TARGET_X86
+                if (emitSyncThisObjReg != REG_NA && emitIGisInProlog(emitCurIG) && reg2 == REG_ECX)
+#else
                 if (emitSyncThisObjReg != REG_NA && emitIGisInProlog(emitCurIG) && reg2 == REG_ARG_0)
+#endif
                 {
                     var compiler = _compiler ?? throw new System.InvalidOperationException("Emitter is not initialized.");
                     assert(compiler.lvaIsOriginalThisArg(0));
@@ -138,6 +146,9 @@ public partial class Emitter
         }
     }
 
+#endif
+
+#if TARGET_AMD64
     private static bool emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc id)
     {
         var ins = id.idIns();

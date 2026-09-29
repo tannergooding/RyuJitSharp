@@ -16,6 +16,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Tree operands and GC-register handling
+
+Seven xarch tree-level load/store/binary/RMW/base dispatchers now preserve their
+whole target paths. GC-reference register handling includes x86 and retains
+death-before-birth ordering during exchanges. The two upper-bit queries were
+already complete and remain unchanged.
+
+The exact combined Windows overlay passes 614 Debug/589 Release controls.
+Component Linux-x64 target checks pass 282 supported tree cases and 202
+upper-bit/GC cases on Windows. Three additional tree cases still stop in the
+pre-existing non-Windows `RegSet.rsSpillTree` gate before reaching the recorders;
+their failed results remain recorded. ARM64 builds pass. Existing x86 build
+blockers still prevent execution.
+
+Ten definitions and their declarations retire 1,109 native lines in `be05d130`.
+Other-target binary/store definitions and signatures remain native. No new
+machine-code parity is claimed. Evidence is in `artifacts/xarch-tree-upper-gc`
+and the tree/GC integration records under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Three-register and extended-memory recording
 
 ARM64 three-register recording now preserves all 286 native instruction cases,

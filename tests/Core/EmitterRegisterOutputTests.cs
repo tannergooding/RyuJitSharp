@@ -149,6 +149,52 @@ internal static unsafe class EmitterRegisterOutputTests
         });
     }
 
+    [Test]
+    public static void RegisterExchangeKillsBothGCTypesBeforeRecordingTheirNewOwners()
+    {
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
+        {
+            codeGen.IsFullPtrRegMapRequired = true;
+            var emitter = codeGen.Emitter;
+            emitter.emitFullGCinfo = true;
+            emitter.emitIns_R_R(INS_xchg, EA_GCREF, REG_RAX, REG_RCX);
+            var id = Last(emitter);
+            Assert.That(id.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_RRW_RRW));
+
+            SyncThisReg(emitter) = REG_NA;
+            GCrefRegs(emitter) = SRBM_RAX;
+            ByrefRegs(emitter) = SRBM_RCX;
+            var buffer = stackalloc byte[32];
+            emitter.emitCodeBlock = buffer;
+            emitter.emitTotalHotCodeSize = 32;
+#if DEBUG
+            emitter.emitIssuing = true;
+#endif
+            HandleGCrefRegs(emitter, buffer + 3, id);
+
+            var expected = new[]
+            {
+                (GCT_GCREF, SRBM_NONE, SRBM_RAX),
+                (GCT_BYREF, SRBM_NONE, SRBM_RCX),
+                (GCT_GCREF, SRBM_RCX, SRBM_NONE),
+                (GCT_BYREF, SRBM_RAX, SRBM_NONE),
+            };
+            var record = RegPtrList(ref codeGen.GCInfo);
+            foreach (var (type, add, del) in expected)
+            {
+                Assert.That(record, Is.Not.Null);
+                Assert.That(record!.rpdGCtype, Is.EqualTo(type));
+                Assert.That(record.rpdOffs, Is.EqualTo(3u));
+                Assert.That(record.rpdCompiler.rpdAdd, Is.EqualTo(add));
+                Assert.That(record.rpdCompiler.rpdDel, Is.EqualTo(del));
+                record = record.rpdNext;
+            }
+            Assert.That(record, Is.Null);
+            Assert.That(GCrefRegs(emitter), Is.EqualTo(SRBM_RCX));
+            Assert.That(ByrefRegs(emitter), Is.EqualTo(SRBM_RAX));
+        });
+    }
+
     [TestCase(false, CorInfoReloc.DIRECT)]
     [TestCase(true, CorInfoReloc.AMD64_WIN_SECREL)]
     public static void MovImmediateRecordsDirectOrSectionRelativeRelocationAtTheImmediate(
@@ -259,4 +305,13 @@ internal static unsafe class EmitterRegisterOutputTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisGCrefRegs")]
     private static extern ref regMask GCrefRegs(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisByrefRegs")]
+    private static extern ref regMask ByrefRegs(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitSyncThisObjReg")]
+    private static extern ref regNumber SyncThisReg(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitHandleGCrefRegs")]
+    private static extern void HandleGCrefRegs(Emitter emitter, byte* dst, Emitter.instrDesc id);
 }

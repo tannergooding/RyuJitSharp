@@ -11,10 +11,12 @@ public partial class Emitter
 {
     public void emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd storeInd, GenTree src)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Read-modify-write instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Read-modify-write instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         var addr = storeInd.Addr;
         if (addr.Oper is GT_RELOAD or GT_COPY)
         {
@@ -85,10 +87,12 @@ public partial class Emitter
 
     public void emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd storeInd)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Unary read-modify-write instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Unary read-modify-write instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         var addr = storeInd.Addr;
         if (addr.Oper is GT_RELOAD or GT_COPY)
         {

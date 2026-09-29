@@ -12,17 +12,23 @@ public partial class Emitter
     public void emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd mem,
         insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Indirect-store recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Indirect-store recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         assert(mem.Oper is GT_STOREIND);
         var addr = mem.Addr;
         var data = mem.Data;
 
         if ((data.Oper is GT_BSWAP or GT_BSWAP16) && data.IsContained)
         {
+#if TARGET_AMD64
             assert(ins is INS_movbe or INS_movbe_apx);
+#else
+            assert(ins == INS_movbe);
+#endif
             data = data.AsUnOp().Op1;
         }
 
