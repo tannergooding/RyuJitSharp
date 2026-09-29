@@ -700,6 +700,186 @@ internal static unsafe class Arm64EmitterRecordingTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_compiler")]
     private static extern ref Compiler? EmitterCompiler(Emitter emitter);
 
+    [TestCase(INS_mul, EA_8BYTE, false, INS_OPTS_NONE, IF_DR_3A, INS_OPTS_NONE)]
+    [TestCase(INS_adc, EA_4BYTE, false, INS_OPTS_NONE, IF_DR_3A, INS_OPTS_NONE)]
+    [TestCase(INS_smulh, EA_8BYTE, false, INS_OPTS_NONE, IF_DR_3A, INS_OPTS_NONE)]
+    [TestCase(INS_crc32b, EA_4BYTE, false, INS_OPTS_NONE, IF_DR_3A, INS_OPTS_NONE)]
+    [TestCase(INS_mul, EA_16BYTE, true, INS_OPTS_4S, IF_DV_3A, INS_OPTS_4S)]
+    [TestCase(INS_add, EA_16BYTE, true, INS_OPTS_4S, IF_DV_3A, INS_OPTS_4S)]
+    [TestCase(INS_add, EA_8BYTE, true, INS_OPTS_NONE, IF_DV_3E, INS_OPTS_NONE)]
+    [TestCase(INS_cmhi, EA_8BYTE, true, INS_OPTS_NONE, IF_DV_3E, INS_OPTS_NONE)]
+    [TestCase(INS_cmhi, EA_16BYTE, true, INS_OPTS_2D, IF_DV_3A, INS_OPTS_2D)]
+    [TestCase(INS_sqadd, EA_1BYTE, true, INS_OPTS_NONE, IF_DV_3E, INS_OPTS_NONE)]
+    [TestCase(INS_sqadd, EA_16BYTE, true, INS_OPTS_8H, IF_DV_3A, INS_OPTS_8H)]
+    [TestCase(INS_fcmeq, EA_8BYTE, true, INS_OPTS_NONE, IF_DV_3D, INS_OPTS_NONE)]
+    [TestCase(INS_fcmeq, EA_16BYTE, true, INS_OPTS_4S, IF_DV_3B, INS_OPTS_4S)]
+    [TestCase(INS_mla, EA_16BYTE, true, INS_OPTS_4S, IF_DV_3A, INS_OPTS_4S)]
+    [TestCase(INS_zip1, EA_16BYTE, true, INS_OPTS_4S, IF_DV_3A, INS_OPTS_4S)]
+    [TestCase(INS_mov, EA_16BYTE, true, INS_OPTS_NONE, IF_DV_3C, INS_OPTS_16B)]
+    [TestCase(INS_and, EA_8BYTE, true, INS_OPTS_NONE, IF_DV_3C, INS_OPTS_8B)]
+    [TestCase(INS_tbl_4regs, EA_16BYTE, true, INS_OPTS_16B, IF_DV_3C, INS_OPTS_16B)]
+    [TestCase(INS_bsl, EA_16BYTE, true, INS_OPTS_NONE, IF_DV_3C, INS_OPTS_16B)]
+    [TestCase(INS_fadd, EA_16BYTE, true, INS_OPTS_4S, IF_DV_3B, INS_OPTS_4S)]
+    [TestCase(INS_fadd, EA_8BYTE, true, INS_OPTS_NONE, IF_DV_3D, INS_OPTS_NONE)]
+    [TestCase(INS_fnmul, EA_4BYTE, true, INS_OPTS_NONE, IF_DV_3D, INS_OPTS_NONE)]
+    [TestCase(INS_fmla, EA_16BYTE, true, INS_OPTS_4S, IF_DV_3B, INS_OPTS_4S)]
+    [TestCase(INS_stxr, EA_8BYTE, false, INS_OPTS_NONE, IF_LS_3D, INS_OPTS_NONE)]
+    [TestCase(INS_cas, EA_8BYTE, false, INS_OPTS_NONE, IF_LS_3E, INS_OPTS_NONE)]
+    [TestCase(INS_ldaddb, EA_1BYTE, false, INS_OPTS_NONE, IF_LS_3E, INS_OPTS_NONE)]
+    [TestCase(INS_swpalh, EA_2BYTE, false, INS_OPTS_NONE, IF_LS_3E, INS_OPTS_NONE)]
+    [TestCase(INS_sha256h, EA_16BYTE, true, INS_OPTS_NONE, IF_DV_3F, INS_OPTS_4S)]
+    [TestCase(INS_addhn, EA_8BYTE, true, INS_OPTS_2S, IF_DV_3A, INS_OPTS_2S)]
+    [TestCase(INS_addhn2, EA_16BYTE, true, INS_OPTS_4S, IF_DV_3A, INS_OPTS_4S)]
+    [TestCase(INS_sabal, EA_8BYTE, true, INS_OPTS_2S, IF_DV_3A, INS_OPTS_2S)]
+    [TestCase(INS_sabal2, EA_16BYTE, true, INS_OPTS_4S, IF_DV_3A, INS_OPTS_4S)]
+    [TestCase(INS_sqdmlal, EA_8BYTE, true, INS_OPTS_2S, IF_DV_3A, INS_OPTS_2S)]
+    [TestCase(INS_sqdmlal, EA_4BYTE, true, INS_OPTS_NONE, IF_DV_3E, INS_OPTS_NONE)]
+    [TestCase(INS_sqdmulh, EA_16BYTE, true, INS_OPTS_4S, IF_DV_3A, INS_OPTS_4S)]
+    [TestCase(INS_sqdmulh, EA_4BYTE, true, INS_OPTS_NONE, IF_DV_3E, INS_OPTS_NONE)]
+    [TestCase(INS_sqdmlal2, EA_16BYTE, true, INS_OPTS_4S, IF_DV_3A, INS_OPTS_4S)]
+    [TestCase(INS_pmul, EA_8BYTE, true, INS_OPTS_8B, IF_DV_3A, INS_OPTS_8B)]
+    [TestCase(INS_pmull, EA_8BYTE, true, INS_OPTS_1D, IF_DV_3A, INS_OPTS_1D)]
+    [TestCase(INS_pmull2, EA_16BYTE, true, INS_OPTS_2D, IF_DV_3A, INS_OPTS_2D)]
+    [TestCase(INS_sdot, EA_16BYTE, true, INS_OPTS_4S, IF_DV_3A, INS_OPTS_4S)]
+    [TestCase(INS_rax1, EA_16BYTE, true, INS_OPTS_2D, IF_DV_3H, INS_OPTS_2D)]
+    [TestCase(INS_sm3partw1, EA_16BYTE, true, INS_OPTS_4S, IF_DV_3H, INS_OPTS_4S)]
+    public static void ThreeRegisterRecordingPreservesNativeFormats(instruction ins, emitAttr size,
+        bool vector, insOpts opt, Emitter.insFormat format, insOpts expectedOpt)
+    {
+        var emitter = CreateEmitter();
+        var reg1 = vector ? REG_V19 : REG_R19;
+        var reg2 = vector ? REG_V20 : REG_R20;
+        var reg3 = ins == INS_mov ? reg2 : vector ? REG_V21 : REG_R21;
+        RecordThree(emitter, ins, size, reg1, reg2, reg3, opt, INS_SCALABLE_OPTS_NONE);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No three-register instruction was recorded.");
+        Assert.That(id.idIns(), Is.EqualTo(ins));
+        Assert.That(id.idInsFmt(), Is.EqualTo(format));
+        Assert.That(id.idOpSize(), Is.EqualTo(size));
+        Assert.That(id.idInsOpt(), Is.EqualTo(expectedOpt));
+        Assert.That(id.idReg1(), Is.EqualTo(reg1));
+        Assert.That(id.idReg2(), Is.EqualTo(reg2));
+        Assert.That(id.idReg3(), Is.EqualTo(reg3));
+        Assert.That(id.idIsSmallDsc(), Is.False);
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [TestCase(INS_aesd, INS_OPTS_16B, false)]
+    [TestCase(INS_aesd, INS_OPTS_16B, true)]
+    [TestCase(INS_fcvtn2, INS_OPTS_4S, false)]
+    [TestCase(INS_sadalp, INS_OPTS_4S, false)]
+    [TestCase(INS_sqxtn2, INS_OPTS_4S, false)]
+    public static void ThreeRegisterRmwPreservesCopyBeforeUpdate(instruction ins, insOpts opt, bool sameSource)
+    {
+        var emitter = CreateEmitter();
+        RecordThree(emitter, ins, EA_16BYTE, REG_V19, sameSource ? REG_V19 : REG_V20,
+            REG_V21, opt, INS_SCALABLE_OPTS_NONE);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No RMW operation was recorded.");
+        Assert.That(id.idIns(), Is.EqualTo(ins));
+        Assert.That(id.idReg1(), Is.EqualTo(REG_V19));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_V21));
+        Assert.That(GroupSize(emitter), Is.EqualTo(sameSource ? 4 : 8));
+    }
+
+    [TestCase(INS_ld2, INS_OPTS_2S)]
+    [TestCase(INS_st1, INS_OPTS_1D)]
+    [TestCase(INS_ld4r, INS_OPTS_2S)]
+    public static void ThreeRegisterStructuresPreservePostIndexAndSpEncoding(instruction ins, insOpts opt)
+    {
+        var emitter = CreateEmitter();
+        RecordThree(emitter, ins, EA_8BYTE, REG_V19, REG_SPBASE, REG_R20, opt, INS_SCALABLE_OPTS_NONE);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No post-indexed structure was recorded.");
+        Assert.That(id.idInsFmt(), Is.EqualTo(IF_LS_3F));
+        Assert.That(id.idReg1(), Is.EqualTo(REG_V19));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_ZR));
+        Assert.That(id.idReg3(), Is.EqualTo(REG_R20));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [TestCase(INS_add, "three-register/immediate")]
+    [TestCase(INS_and, "three-register/immediate")]
+    [TestCase(INS_ldp, "three-register/immediate")]
+    [TestCase(INS_nop, "SVE three-register")]
+    public static void ThreeRegisterDependenciesRemainExplicit(instruction ins, string dependency)
+    {
+        var emitter = CreateEmitter();
+        var error = Assert.Throws<FatalJitException>(() =>
+            RecordThree(emitter, ins, EA_8BYTE, REG_R19, REG_R20, REG_R21, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE));
+        Assert.That(error, Has.Message.Contains(dependency));
+        Assert.That(GroupSize(emitter), Is.Zero);
+    }
+
+    [Test]
+    public static void ThreeRegisterForwardingPreservesStoreAliasAndIgnoredFlags()
+    {
+        var emitter = CreateEmitter();
+        RecordRegisters(emitter, INS_stadd, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+        var atomic = LastInstruction(emitter) ?? throw new AssertionException("No store-add alias was recorded.");
+        Assert.That(atomic.idIns(), Is.EqualTo(INS_ldadd));
+        Assert.That(atomic.idReg1(), Is.EqualTo(REG_R19));
+        Assert.That(atomic.idReg2(), Is.EqualTo(REG_ZR));
+        Assert.That(atomic.idReg3(), Is.EqualTo(REG_R20));
+
+        RecordRegistersWithFlags(emitter, INS_neg, EA_8BYTE, REG_R19, REG_R20, insFlags.INS_FLAGS_DONT_CARE);
+        var unary = LastInstruction(emitter) ?? throw new AssertionException("No flags-forwarded pair was recorded.");
+        Assert.That(unary.idInsFmt(), Is.EqualTo(IF_DR_2E));
+        Assert.That(GroupSize(emitter), Is.EqualTo(8));
+    }
+
+    [TestCase(INS_ldrb, EA_1BYTE, REG_R19, INS_OPTS_NONE, -1, true)]
+    [TestCase(INS_ldrb, EA_1BYTE, REG_R19, INS_OPTS_NONE, 0, true)]
+    [TestCase(INS_ldr, EA_8BYTE, REG_R19, INS_OPTS_NONE, -1, false)]
+    [TestCase(INS_ldr, EA_8BYTE, REG_R19, INS_OPTS_LSL, -1, true)]
+    [TestCase(INS_ldr, EA_8BYTE, REG_R19, INS_OPTS_UXTW, 0, false)]
+    [TestCase(INS_ldr, EA_8BYTE, REG_R19, INS_OPTS_SXTW, 3, true)]
+    [TestCase(INS_ldrh, EA_2BYTE, REG_R19, INS_OPTS_NONE, -1, false)]
+    [TestCase(INS_ldrh, EA_2BYTE, REG_R19, INS_OPTS_UXTW, 1, true)]
+    [TestCase(INS_ldrsw, EA_8BYTE, REG_R19, INS_OPTS_SXTW, 2, true)]
+    [TestCase(INS_ldrsb, EA_8BYTE, REG_R19, INS_OPTS_LSL, -1, true)]
+    [TestCase(INS_ldr, EA_16BYTE, REG_V19, INS_OPTS_LSL, -1, true)]
+    [TestCase(INS_str, EA_4BYTE, REG_V19, INS_OPTS_UXTX, 0, false)]
+    [TestCase(INS_str, EA_16BYTE, REG_V19, INS_OPTS_SXTX, 4, true)]
+    public static void ThreeRegisterExtendedMemoryPreservesNaturalAndExplicitScale(instruction ins,
+        emitAttr size, regNumber reg, insOpts opt, int shift, bool scaled)
+    {
+        var emitter = CreateEmitter();
+        RecordExtended(emitter, ins, size, reg, REG_SPBASE, REG_R20, opt, shift);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No extended-register memory operand was recorded.");
+        Assert.That(id.idIns(), Is.EqualTo(ins));
+        Assert.That(id.idInsFmt(), Is.EqualTo(IF_LS_3A));
+        Assert.That(id.idOpSize(), Is.EqualTo(size));
+        Assert.That(id.idInsOpt(), Is.EqualTo(opt));
+        Assert.That(id.idReg1(), Is.EqualTo(reg));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_ZR));
+        Assert.That(id.idReg3(), Is.EqualTo(REG_R20));
+        Assert.That(id.idReg3Scaled(), Is.EqualTo(scaled));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [Test]
+    public static void ThreeRegisterMemoryDelegatesToExtendedRecording()
+    {
+        var emitter = CreateEmitter();
+        RecordThree(emitter, INS_ldr, EA_8BYTE, REG_R19, REG_SPBASE, REG_R20,
+            INS_OPTS_LSL, INS_SCALABLE_OPTS_NONE);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No three-register memory load was recorded.");
+        Assert.That(id.idInsFmt(), Is.EqualTo(IF_LS_3A));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_ZR));
+        Assert.That(id.idReg3Scaled(), Is.True);
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_R_R_Ext")]
+    private static extern void RecordExtended(Emitter emitter, instruction ins, emitAttr size,
+        regNumber reg1, regNumber reg2, regNumber reg3, insOpts opt, int shift);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_R_R")]
+    private static extern void RecordThree(Emitter emitter, instruction ins, emitAttr size,
+        regNumber reg1, regNumber reg2, regNumber reg3, insOpts opt, insScalableOpts sopt);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_R")]
+    private static extern void RecordRegistersWithFlags(Emitter emitter, instruction ins, emitAttr size,
+        regNumber reg1, regNumber reg2, insFlags flags);
+
     [TestCase(0L, 1, true)]
     [TestCase(-1L, 1, true)]
     [TestCase(1L, 1, false)]

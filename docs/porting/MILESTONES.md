@@ -16,6 +16,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Three-register and extended-memory recording
+
+ARM64 three-register recording now preserves all 286 native instruction cases,
+including RMW copy-before-update, scalar/vector arithmetic, atomic and structure
+memory operations, and MOV/store-add aliases. Its complete extended-register
+memory dependency retains SP encoding, natural and explicit shifts, and scaled
+register metadata. The flags-only two-register forwarding overload is complete.
+
+Full-analysis ARM64 recording/predicate controls pass 451 Debug/437 Release.
+All 61 identical positive recorder cases fail at the old missing APIs. Windows
+SIMD controls pass 373/352 against the exact xarch overload exclusions; the
+remaining changes are ARM64-only.
+
+Three definitions and their declarations retire 862 native lines in `04034591`.
+General three-register/immediate and SVE recording remain explicit dependencies.
+No ARM64 machine-code parity is claimed. Evidence is in
+`artifacts/arm64-three-register-recording` and the corresponding three-register
+integration records under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Move, basic and flag-dependent recording
 
 ARM64 move and two-register recording now preserve the whole native dispatch,
