@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sharedMultiRegisterLocalStorage": {
+      "scope": "Whole genMultiRegStoreToLocal and xarch genMultiRegStoreToSIMDLocal preserve sequential field liveness, Swift/LoongArch64/RISC-V offsets, 32-bit bounds and SIMD packing with destination/source aliasing.",
+      "mapping": "Both definitions map to codegencommon/CodeGen.MultiRegisterStores.cs, including the xarch SIMD helper. The independent ARM SIMD helper and shared declaration remain native.",
+      "validation": "Final Windows83 Debug/81 Release and Linux89 Debug/87 Release pass. All eight identical old Linux cases fail at the intended production guard. ARM64 core Debug/Release builds pass; paired x86 builds retain exactly14 diagnostic identities.",
+      "retirement": "Two definitions with headings, the standalone xarch FEATURE_SIMD guard and common local-store declaration;301 native lines.",
+      "nativeBefore": "05077bfc7ab58920f92e2d3e2c219314c28adb8b",
+      "nativeAfter": "0d914d38ef964196af672abfd14344b14611c4a8",
+      "evidence": "artifacts/shared-multireg-stores final-2, final-linux-4, final-linux-4-Release, old-linux-3, final-arm64 and paired x86; artifacts/residual-reconciliation/shared-multireg-store component/combined/applied/verification.",
+      "limits": "Preserves the existing Windows AMD64 unsupported SIMD-return rejection before operand consumption. Earlier failed fixture snapshots remain historical; old-linux-2 is not valid eight-case guard evidence. ARM64 builds cover production, not the final test-only layout helper. No generated-code parity or other-target execution claim."
+    },
     "xarchReturnAndIntegerCastClosure": {
       "scope": "Whole genSIMDSplitReturn, x86 genFloatReturn, genIntCastOverflowCheck and genIntToIntCast preserve target branches, return register aliasing and guarded 64-bit overflow/extension cases.",
       "mapping": "Xarch genSIMDSplitReturn maps to codegencommon/CodeGen.Returns.cs; x86 genFloatReturn maps to codegenxarch/CodeGen.FloatReturn.cs. The unported inst_FS_ST helper remains a typed terminating dependency.",
@@ -1758,7 +1768,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Continue whole retained genMultiRegStoreToLocal and the xarch genMultiRegStoreToSIMDLocal definition exposed by15 Linux failures. Preserve Swift/LoongArch64/RISC-V field offsets,32-bit debug bounds and SIMD packing; retain the independent ARM SIMD helper. Validate focused Windows/Linux controls and exact retirement together, prioritizing ready integration and preserving13 Wasm WIP.",
+      "parentScope": "Shared multi-register local storage is complete. Prioritize ready LSRA kill-set and lowering packet integration, then continue retained shared backend dependencies. Preserve independent ARM SIMD helper,13 Wasm WIP and centrally owned native retirement.",
       "wholeFunctionRepairLanes": [
         {
           "scope": "Whole retained xarch scalar/atomic codegen families.",
@@ -2186,7 +2196,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Return/integer-cast retirement consolidated at native05077bfc; do not reapply. Refill A/HW after the managed commit. Finish parent multi-register storage: final Windows83D/81R, Linux89D/87R, ARM64 coreD/R and identical14x86 diagnostics are collected; all eight old Linux cases fail at the intended production guard. Review final diff, prepare exact two-definition retirement against current native hashes, retain ARM SIMD helper/shared declaration, document and commit. LSRA shared kill-set packet awaits review; B continues field-list return/struct spill lowering. Preserve13Wasm and no publication.",
+    "nextAction": "Multi-register storage retirement committed at native0d914d38; do not reapply. Finish its managed commit, then review/integrate ready LSRA getKillSetForNode/Call/ShiftRotate packet. A continues throw-helper codegen, HW continues retained SIMD codegen, and B continues field-list return/struct spill lowering. Preserve13Wasm, existing14x86 blockers and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

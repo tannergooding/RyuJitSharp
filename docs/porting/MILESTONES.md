@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Shared multi-register local storage
+
+Multi-register local stores preserve field-by-field liveness, Swift and
+LoongArch64/RISC-V offsets and 32-bit bounds. Xarch SIMD assembly handles
+copy/reload substitutions and destination aliasing without losing either
+half. Two definitions and the common declaration retire 301 native lines in
+`0d914d38`; the independent ARM SIMD helper remains.
+
+Windows controls pass 83 Debug/81 Release and Linux-target controls pass
+89 Debug/87 Release. All eight identical old Linux cases fail at the former
+production guard. ARM64 core builds pass; x86 retains the same 14 diagnostic
+identities. Existing Windows unsupported-SIMD rejection is unchanged.
+Evidence: `artifacts/shared-multireg-stores` final snapshots and
+`shared-multireg-store` retirement records. These are managed contract
+checks, not new generated-code parity.
+
 ## 2026-09-29: Xarch returns and integer casts
 
 SIMD split returns, x86 floating returns and integer cast generation preserve

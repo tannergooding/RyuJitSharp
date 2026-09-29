@@ -192,6 +192,7 @@ internal static class CodeGenMultiRegisterStoreTests
             Assert.That(codeGen.ins_StoreFromSrc(source, destination, aligned), Is.EqualTo(expected)));
     }
 
+#if !UNIX_AMD64_ABI
     [Test]
     public static void NativeUnsupportedWindowsSimdAssemblyRejectsBeforeConsumption(
         [Values(false, true)] bool direct)
@@ -223,6 +224,108 @@ internal static class CodeGenMultiRegisterStoreTests
             Assert.That(compiler.compCurLifeTree, Is.Null);
         });
     }
+#endif
+
+#if UNIX_AMD64_ABI
+    [TestCase(0, false)]
+    [TestCase(1, false)]
+    [TestCase(2, false)]
+    [TestCase(0, true)]
+    [TestCase(1, true)]
+    [TestCase(2, true)]
+    public static unsafe void SysvSimdStorePacksBothHalvesAfterResolvingCopies(int destination, bool copy)
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        {
+            EnableAvx2(compiler);
+            codeGen.Emitter.UseVexEncodings = true;
+            codeGen.Emitter.UseEvexEncodings = false;
+            compiler.lvaTable[0].Type = TYP_SIMD16;
+            compiler.lvaTable[0].lvLRACandidate = true;
+            compiler.lvaTable[0].lvIsMultiRegDest = true;
+            var call = new GenTreeCall(TYP_STRUCT);
+            call._returnTypeDesc.InitializeReturnType(compiler, TYP_DOUBLE, null, CorInfoCallConvExtension.Managed);
+            ReturnTypes(ref call._returnTypeDesc)[1] = TYP_DOUBLE;
+            call.SetRegNumByIdx(REG_XMM0, 0);
+            call.SetRegNumByIdx(REG_XMM1, 1);
+            var first = copy ? REG_XMM2 : REG_XMM0;
+            var second = copy ? REG_XMM3 : REG_XMM1;
+            GenTree source = call;
+            if (copy)
+            {
+                var wrapper = new GenTreeCopyOrReload(GT_COPY, TYP_STRUCT, call);
+                wrapper.SetRegNumByIdx(first, 0);
+                wrapper.SetRegNumByIdx(second, 1);
+                source = wrapper;
+            }
+
+            var target = destination == 0 ? first : destination == 1 ? second : REG_XMM4;
+            var store = new GenTreeLclVar(TYP_SIMD16, 0, source) { RegNum = target, Flags = GTF_VAR_DEF };
+
+            codeGen.genMultiRegStoreToLocal(store);
+
+            var descriptors = Descriptors(codeGen);
+            var aliasesSecond = target == second;
+            Assert.That(descriptors, Has.Count.EqualTo((copy ? 2 : 0) + (aliasesSecond ? 2 : 1)));
+            var merge = descriptors[copy ? 2 : 0];
+            Assert.That(merge.idIns(), Is.EqualTo(INS_movlhps));
+            Assert.That(merge.idReg1(), Is.EqualTo(target));
+            Assert.That(merge.idReg2(), Is.EqualTo(aliasesSecond ? second : first));
+            Assert.That(merge.idReg3(), Is.EqualTo(aliasesSecond ? first : second));
+            if (aliasesSecond)
+            {
+                Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_shufpd));
+                Assert.That(descriptors[^1].idReg1(), Is.EqualTo(target));
+                Assert.That(descriptors[^1].idSmallCns(), Is.EqualTo(1));
+            }
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(target));
+            Assert.That(compiler.compCurLifeTree, Is.SameAs(store));
+        });
+    }
+#endif
+
+#if SWIFT_SUPPORT
+    [TestCase(0, 12)]
+    [TestCase(4, 16)]
+    public static unsafe void SwiftCallStoresUseLoweredFieldOffsets(int firstOffset, int secondOffset)
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        {
+            ConfigureStackHome(compiler, 24);
+            compiler.lvaTable[0].lvIsMultiRegDest = true;
+            var handle = (CORINFO_CLASS_STRUCT_*)0x1234;
+            CORINFO_SWIFT_LOWERING lowering = default;
+            lowering.numLoweredElements = 2;
+            lowering.loweredElements[0] = CorInfoType.CORINFO_TYPE_INT;
+            lowering.loweredElements[1] = CorInfoType.CORINFO_TYPE_INT;
+            lowering.offsets[0] = firstOffset;
+            lowering.offsets[1] = secondOffset;
+            compiler._swiftLoweringCache = new()
+            {
+                [new Pointer<CORINFO_CLASS_STRUCT_>(handle)] = new StrongBox<CORINFO_SWIFT_LOWERING>(lowering),
+            };
+            var call = new GenTreeCall(TYP_STRUCT)
+            {
+                RetClsHnd = handle,
+                Flags = GTF_CALL_UNMANAGED,
+                _unmgdCallConv = CorInfoCallConvExtension.Swift,
+            };
+            call._returnTypeDesc.InitializeReturnType(compiler, TYP_INT, null, CorInfoCallConvExtension.Swift);
+            ReturnTypes(ref call._returnTypeDesc)[1] = TYP_INT;
+            call.SetRegNumByIdx(REG_RAX, 0);
+            call.SetRegNumByIdx(REG_RDX, 1);
+            var store = new GenTreeLclVar(TYP_STRUCT, 0, call) { Flags = GTF_VAR_DEF };
+
+            codeGen.genMultiRegStoreToLocal(store);
+
+            var descriptors = Descriptors(codeGen);
+            Assert.That(descriptors, Has.Count.EqualTo(2));
+            Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(firstOffset));
+            Assert.That(descriptors[1].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(secondOffset));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+        });
+    }
+#endif
 
 #if DEBUG
     [Test]
@@ -272,10 +375,10 @@ internal static class CodeGenMultiRegisterStoreTests
         return store;
     }
 
-    private static void ConfigureStackHome(Compiler compiler)
+    private static void ConfigureStackHome(Compiler compiler, uint size = 16)
     {
         compiler.lvaTable[0].Type = TYP_STRUCT;
-        compiler.lvaTable[0].Layout = new ClassLayout(16);
+        compiler.lvaTable[0].Layout = new ClassLayout(size);
         compiler.lvaTable[0].lvTracked = false;
         compiler.lvaTable[0].RegNum = REG_RAX;
     }
@@ -323,6 +426,11 @@ internal static class CodeGenMultiRegisterStoreTests
     }
 
     private static regMaskTP Mask(regNumber reg) => regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
+
+#if UNIX_AMD64_ABI || SWIFT_SUPPORT
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regType")]
+    private static extern ref InlineArrayMaxRetRegCount<var_types> ReturnTypes(ref ReturnTypeDesc descriptor);
+#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
