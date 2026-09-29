@@ -16,6 +16,24 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Local-stack single and paired recording
+
+ARM64 stack loads/stores now preserve fixed and scalable frame paths, local and
+spill-temp addressing, displacement scaling, paired-register GC types and debug
+reference metadata. The flexible-immediate wrapper and reserved-register lookup
+preserve their native dispatch and reservation invariant.
+
+Full-analysis ARM64 controls pass 631 Debug/605 Release. All 39 identical baseline
+controls fail at missing methods. Scalable descriptor metadata is checked in
+Release; Debug explicitly stops at the retained SVE sanity-check dependency.
+Immediate/base-plus-immediate materialization and load/store optimization remain
+terminating dependencies, not omitted calls or claims of generated-code parity.
+
+Seven definitions and their declarations retire 689 native lines in `53cdacff`.
+The shared reserved-register definition remains for other targets. Evidence is in
+`artifacts/arm64-local-stack-recording` and the local-stack integration records
+under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Multioperand, conditional and barrier recording
 
 Ten ARM64 recorders now preserve multi-immediate packing, four-register

@@ -3,12 +3,16 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT license.
 
-#if TARGET_ARM64 && DEBUG
+#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public partial class CodeGen
 {
     public regNumber rsGetRsvdReg()
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 reserved-register descriptor validation is not ported.");
+    {
+        noway_assert((_regSet.rsMaskResvd & new regMaskTP(SRBM_OPT_RSVD)).IsNonEmpty);
+
+        return REG_OPT_RSVD;
+    }
 }
 #endif

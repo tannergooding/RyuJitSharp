@@ -1645,6 +1645,313 @@ internal static unsafe class Arm64EmitterRecordingTests
     private static extern ref uint[] FormatCounts(Emitter? emitter);
 #endif
 
+    [TestCase(false, INS_ldr, EA_8BYTE, REG_R4, 0, 0, false, IF_LS_2A, 0)]
+    [TestCase(false, INS_ldrb, EA_4BYTE, REG_R4, 4094, 1, false, IF_LS_2B, 4095)]
+    [TestCase(false, INS_ldrsb, EA_8BYTE, REG_R4, -256, 0, true, IF_LS_2C, -256)]
+    [TestCase(false, INS_ldrh, EA_4BYTE, REG_R4, 8190, 0, false, IF_LS_2B, 4095)]
+    [TestCase(false, INS_ldrsh, EA_8BYTE, REG_R4, 3, 0, false, IF_LS_2C, 3)]
+    [TestCase(false, INS_ldrsw, EA_8BYTE, REG_R4, 16380, 0, false, IF_LS_2B, 4095)]
+    [TestCase(false, INS_ldr, EA_GCREF, REG_R4, 32760, 0, false, IF_LS_2B, 4095)]
+    [TestCase(false, INS_ldr, EA_16BYTE, REG_V4, 65520, 0, false, IF_LS_2B, 4095)]
+    [TestCase(false, INS_lea, EA_8BYTE, REG_R4, -4095, 0, true, IF_DI_2A, 4095)]
+    [TestCase(false, INS_lea, EA_8BYTE, REG_R4, 4090, 5, false, IF_DI_2A, 4095)]
+    [TestCase(false, INS_str, EA_8BYTE, REG_R4, 8, 0, false, IF_LS_2B, 1)]
+    [TestCase(true, INS_strb, EA_4BYTE, REG_R4, 0, 0, false, IF_LS_2A, 0)]
+    [TestCase(true, INS_strh, EA_4BYTE, REG_R4, -256, 0, true, IF_LS_2C, -256)]
+    [TestCase(true, INS_str, EA_4BYTE, REG_R4, 16380, 0, false, IF_LS_2B, 4095)]
+    [TestCase(true, INS_str, EA_BYREF, REG_R4, 32760, 0, false, IF_LS_2B, 4095)]
+    [TestCase(true, INS_str, EA_16BYTE, REG_V4, 65520, 0, false, IF_LS_2B, 4095)]
+    [TestCase(true, INS_str, EA_16BYTE, REG_V4, 255, 0, false, IF_LS_2C, 255)]
+    public static void LocalStackRecordingPreservesFrameAndMetadata(bool store, instruction ins, emitAttr attr,
+        regNumber reg, int frameOffset, int localOffset, bool fpBased, Emitter.insFormat format, int immediate)
+    {
+        var emitter = CreateLocalStackEmitter(frameOffset, fpBased);
+        if (store)
+        {
+            RecordLocalStore(emitter, ins, attr, reg, 0, localOffset);
+        }
+        else
+        {
+            RecordLocalLoad(emitter, ins, attr, reg, 0, localOffset);
+        }
+
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No local access was recorded.");
+        var expectedIns = ins == INS_lea ? frameOffset < 0 ? INS_sub : INS_add : ins;
+        Assert.That(id.idIns(), Is.EqualTo(expectedIns));
+        Assert.That(id.idInsFmt(), Is.EqualTo(format));
+        Assert.That(id.idReg1(), Is.EqualTo(reg));
+        Assert.That(id.idReg2(), Is.EqualTo(fpBased ? REG_FPBASE : REG_ZR));
+        Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)immediate));
+        Assert.That(id.idGCref(), Is.EqualTo(attr == EA_GCREF ? GCInfo.GCtype.GCT_GCREF :
+            attr == EA_BYREF ? GCInfo.GCtype.GCT_BYREF : GCInfo.GCtype.GCT_NONE));
+        Assert.That(id.idIsLclVar(), Is.True);
+        Assert.That(id.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
+        Assert.That(id.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(localOffset));
+#if DEBUG
+        var debugInfo = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing local-reference metadata.");
+        Assert.That(debugInfo.idVarRefOffs, Is.EqualTo(123));
+#endif
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [TestCase(INS_ldp, -512, false, EA_GCREF, IF_LS_3C, -64, false)]
+    [TestCase(INS_ldnp, 504, false, EA_BYREF, IF_LS_3C, 63, false)]
+    [TestCase(INS_ldp, 0, true, EA_8BYTE, IF_LS_3B, 0, false)]
+    [TestCase(INS_ldnp, 512, false, EA_BYREF, IF_LS_3B, 0, true)]
+    [TestCase(INS_stp, -512, false, EA_GCREF, IF_LS_3C, -64, false)]
+    [TestCase(INS_stnp, 504, false, EA_BYREF, IF_LS_3C, 63, false)]
+    [TestCase(INS_stp, 0, true, EA_8BYTE, IF_LS_3B, 0, false)]
+    [TestCase(INS_stnp, 7, false, EA_GCREF, IF_LS_3B, 0, true)]
+    public static void LocalStackRecordingPairsPreserveBoundsAndGc(instruction ins, int offset, bool fpBased,
+        emitAttr secondAttr, Emitter.insFormat format, int immediate, bool reserved)
+    {
+        var emitter = CreateLocalStackEmitter(offset, fpBased);
+        if (ins is INS_ldp or INS_ldnp)
+        {
+            RecordLocalLoadPair(emitter, ins, EA_GCREF, secondAttr, REG_R4, REG_R5, 0, 0);
+        }
+        else
+        {
+            RecordLocalStorePair(emitter, ins, EA_GCREF, secondAttr, REG_R4, REG_R5, 0, 0);
+        }
+
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No local pair was recorded.");
+        Assert.That(id.idIns(), Is.EqualTo(ins));
+        Assert.That(id.idInsFmt(), Is.EqualTo(format));
+        Assert.That(id.idReg1(), Is.EqualTo(REG_R4));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_R5));
+        Assert.That(id.idReg3(), Is.EqualTo(reserved ? REG_OPT_RSVD : fpBased ? REG_FPBASE : REG_ZR));
+        Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)immediate));
+        Assert.That(id.idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
+        Assert.That(id.idGCrefReg2(), Is.EqualTo(secondAttr == EA_GCREF ? GCInfo.GCtype.GCT_GCREF :
+            secondAttr == EA_BYREF ? GCInfo.GCtype.GCT_BYREF : GCInfo.GCtype.GCT_NONE));
+        Assert.That(id.idIsLclVar(), Is.True);
+        Assert.That(id.idIsLclVarPair(), Is.False);
+        Assert.That(id.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
+        Assert.That(GroupSize(emitter), Is.EqualTo(reserved ? 8 : 4));
+        if (reserved)
+        {
+            var address = CurrentInstructions(emitter)[0];
+            Assert.That(address.idIns(), Is.EqualTo(INS_add));
+            Assert.That(address.idReg1(), Is.EqualTo(REG_OPT_RSVD));
+            Assert.That(Emitter.emitGetInsSC(address), Is.EqualTo((nint)offset));
+        }
+    }
+
+    [TestCase(false, false, REG_V4, IF_SVE_IE_2A)]
+    [TestCase(false, true, REG_P1, IF_SVE_ID_2A)]
+    [TestCase(true, false, REG_P1, IF_SVE_JG_2A)]
+    [TestCase(true, true, REG_V4, IF_SVE_JH_2A)]
+    public static void LocalStackRecordingScalableLocalsAndTemps(bool store, bool temp,
+        regNumber reg, Emitter.insFormat format)
+    {
+        var emitter = CreateLocalStackEmitter(0, false);
+        var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
+        compiler.unkSizeFrame.nMask = 9;
+        compiler.unkSizeFrame.nVector = 3;
+        compiler.unkSizeFrame.FinalizeLayout();
+        var varx = 0;
+        if (temp)
+        {
+            ref var regSet = ref EmitterCodeGen(emitter).RegSet;
+            regSet.tmpBeginPreAllocateTemps();
+            regSet.tmpPreAllocateTemps(var_types.TYP_SIMD, 1);
+            regSet.tmpGetNum(-1).tdTempOffs = 2;
+            varx = -1;
+        }
+        else
+        {
+            compiler.lvaTable[0].Type = var_types.TYP_SIMD;
+            compiler.lvaTable[0].UnknownSizeFrameIndex = 2;
+        }
+
+        void Record()
+        {
+            if (store)
+            {
+                RecordLocalStore(emitter, INS_sve_str, EA_SCALABLE, reg, varx, 0);
+            }
+            else
+            {
+                RecordLocalLoad(emitter, INS_sve_ldr, EA_SCALABLE, reg, varx, 0);
+            }
+        }
+
+#if DEBUG
+        Assert.That(Record, Throws.TypeOf<FatalJitException>().With.Message.Contains("SVE instruction sanity checking"));
+        Assert.That(GroupSize(emitter), Is.Zero);
+#else
+        Record();
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No scalable access was recorded.");
+        Assert.That(id.idInsFmt(), Is.EqualTo(format));
+        Assert.That(id.idReg1(), Is.EqualTo(reg));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_UNKBASE));
+        Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)(-5)));
+        Assert.That(id.idIsLclVar(), Is.True);
+        Assert.That(id.idAddr().iiaLclVar.lvaVarNum(), Is.EqualTo(varx));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+#endif
+    }
+
+    [TestCase(INS_add, 4095)]
+    [TestCase(INS_adds, 4096)]
+    [TestCase(INS_sub, 8)]
+    [TestCase(INS_subs, 16)]
+    [TestCase(INS_and, 255)]
+    [TestCase(INS_ands, 255)]
+    [TestCase(INS_eor, 255)]
+    [TestCase(INS_orr, 255)]
+    public static void LocalStackRecordingImmediateWrapper(instruction ins, int immediate)
+    {
+        var emitter = CreateEmitter();
+        RecordFlexibleImmediate(emitter, ins, EA_8BYTE, REG_R4, REG_R5, immediate);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No immediate instruction was recorded.");
+        Assert.That(id.idIns(), Is.EqualTo(ins));
+        Assert.That(id.idReg1(), Is.EqualTo(REG_R4));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_R5));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void LocalStackRecordingOrdinaryTemps(bool store)
+    {
+        var emitter = CreateLocalStackEmitter(0, false);
+        var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
+        var codeGen = EmitterCodeGen(emitter);
+        codeGen.IsFramePointerUsed = false;
+        compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
+        ref var regSet = ref codeGen.RegSet;
+        regSet.tmpBeginPreAllocateTemps();
+        regSet.tmpPreAllocateTemps(var_types.TYP_LONG, 1);
+        regSet.tmpGetNum(-1).tdTempOffs = 16;
+        if (store)
+        {
+            RecordLocalStore(emitter, INS_str, EA_8BYTE, REG_R4, -1, 8);
+        }
+        else
+        {
+            RecordLocalLoad(emitter, INS_ldr, EA_8BYTE, REG_R4, -1, 8);
+        }
+
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No spill-temp access was recorded.");
+        Assert.That(id.idInsFmt(), Is.EqualTo(IF_LS_2B));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_ZR));
+        Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)3));
+        Assert.That(id.idAddr().iiaLclVar.lvaVarNum(), Is.EqualTo(-1));
+        Assert.That(id.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(8));
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void LocalStackOptimizationRemainsAnExplicitDependency(bool store)
+    {
+        var emitter = CreateLocalStackEmitter(0, false);
+        var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
+        compiler.opts.compMinOpts = false;
+        compiler.opts.canUseAllOpts = true;
+        Assert.That(() =>
+        {
+            if (store)
+            {
+                RecordLocalStore(emitter, INS_str, EA_8BYTE, REG_R4, 0, 0);
+            }
+            else
+            {
+                RecordLocalLoad(emitter, INS_ldr, EA_8BYTE, REG_R4, 0, 0);
+            }
+        }, Throws.TypeOf<FatalJitException>().With.Message.Contains("load/store instruction optimization"));
+        Assert.That(GroupSize(emitter), Is.Zero);
+    }
+
+    [TestCase(31, "SVE")]
+    [TestCase(32, "immediate materialization")]
+    public static void LocalStackScalableAddressDependenciesPreserveSignedSixBitBoundary(int index, string dependency)
+    {
+        var emitter = CreateLocalStackEmitter(0, false);
+        var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
+        compiler.lvaTable[0].Type = var_types.TYP_SIMD;
+        compiler.lvaTable[0].UnknownSizeFrameIndex = index;
+        compiler.unkSizeFrame.nVector = (uint)(index + 1);
+        compiler.unkSizeFrame.FinalizeLayout();
+        Assert.That(() => RecordLocalLoad(emitter, INS_lea, EA_8BYTE, REG_R4, 0, 0),
+            Throws.TypeOf<FatalJitException>().With.Message.Contains(dependency));
+        Assert.That(GroupSize(emitter), Is.Zero);
+    }
+
+    [TestCase(false, INS_ldr, -257, "immediate materialization")]
+    [TestCase(true, INS_str, 32768, "immediate materialization")]
+    [TestCase(false, INS_lea, 4096, "immediate materialization")]
+    [TestCase(false, INS_sve_ldr, 0, "base-plus-immediate materialization")]
+    [TestCase(true, INS_sve_str, 0, "base-plus-immediate materialization")]
+    public static void LocalStackDependenciesTerminate(bool store, instruction ins, int offset, string dependency)
+    {
+        var emitter = CreateLocalStackEmitter(offset, false);
+        var reg = ins is INS_sve_ldr or INS_sve_str ? REG_V4 : REG_R4;
+        Assert.That(() =>
+        {
+            if (store)
+            {
+                RecordLocalStore(emitter, ins, EA_8BYTE, reg, 0, 0);
+            }
+            else
+            {
+                RecordLocalLoad(emitter, ins, EA_8BYTE, reg, 0, 0);
+            }
+        }, Throws.TypeOf<FatalJitException>().With.Message.Contains(dependency));
+        Assert.That(GroupSize(emitter), Is.Zero);
+    }
+
+    private static RecordingEmitter CreateLocalStackEmitter(int offset, bool fpBased)
+    {
+        var emitter = CreateEmitter();
+        var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
+        compiler.codeGen = EmitterCodeGen(emitter);
+        compiler.codeGen.IsFramePointerRequired = fpBased;
+        compiler.codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD);
+        compiler.lvaCount = 1;
+        compiler.lvaTable = [new LclVarDsc {
+            Type = var_types.TYP_LONG,
+            lvOnFrame = true,
+            lvFramePointerBased = fpBased,
+            StackOffset = offset,
+        }];
+        compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
+        compiler.lvaDoneFrameLayout = Compiler.REGALLOC_FRAME_LAYOUT;
+#if DEBUG
+        LocalReferenceOffset(emitter) = 123;
+#endif
+        return emitter;
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_S")]
+    private static extern void RecordLocalLoad(Emitter emitter, instruction ins, emitAttr attr,
+        regNumber reg, int varx, int offs);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_S_R")]
+    private static extern void RecordLocalStore(Emitter emitter, instruction ins, emitAttr attr,
+        regNumber reg, int varx, int offs);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_R_S_S")]
+    private static extern void RecordLocalLoadPair(Emitter emitter, instruction ins, emitAttr attr1, emitAttr attr2,
+        regNumber reg1, regNumber reg2, int varx, int offs);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_S_S_R_R")]
+    private static extern void RecordLocalStorePair(Emitter emitter, instruction ins, emitAttr attr1, emitAttr attr2,
+        regNumber reg1, regNumber reg2, int varx, int offs);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_R_Imm")]
+    private static extern void RecordFlexibleImmediate(Emitter emitter, instruction ins, emitAttr attr,
+        regNumber reg1, regNumber reg2, nint immediate);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "codeGen")]
+    private static extern ref CodeGen EmitterCodeGen(Emitter emitter);
+
+#if DEBUG
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitVarRefOffs")]
+    private static extern ref int LocalReferenceOffset(Emitter emitter);
+#endif
+
     private static RecordingEmitter CreateEmitter(bool optimized = false, bool reloc = false)
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

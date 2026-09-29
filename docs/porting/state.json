@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "arm64LocalStackRecording": {
+      "scope": "Four whole local-stack single/pair recorders, flexible-immediate wrapper, predicate-register classification and ZR-to-SP encoding; ARM64 reserved-register lookup replaces its debug-only stub.",
+      "validation": "Full-analysis ARM64 controls631Debug/605Release. All39 identical old controls fail at missing methods;35 exercise ordinary recording and4 exercise scalable dependency boundaries in Debug, with full scalable metadata checks in Release.",
+      "coverage": "FP/SP locals, ordinary/scalable spill temps, byte through vector scaling, signed and scaled displacement limits, paired-register GC types, local/debug metadata and reserved-register address generation. All13 load,4 store and8 immediate-wrapper cases retain native ordering.",
+      "retirement": "Seven definitions and their declarations;689 exact native deletions.",
+      "nativeBefore": "5059bf2684dc4d98e6ad99398c5b01eb4e3b1b94",
+      "nativeAfter": "53cdacff65a7cd72a3c2af6576e9e5cb774754e7",
+      "limits": "ARM64 CodeGen immediate/base-plus-immediate materialization, OptimizeLdrStr and SVE recording/sanity helpers remain terminating with native bodies retained. Scalable descriptors reach append only in Release while Debug sanity checking is unported. Shared rsGetRsvdReg remains native for other REG_OPT_RSVD targets. No ARM64 machine-code parity claim.",
+      "evidence": "artifacts/arm64-local-stack-recording final-2 and old-final-2; artifacts/residual-reconciliation/prepare-local-stack-integration.py and local-stack-combined/applied/verification-20260929.json."
+    },
     "multioperandAndConditionalRecording": {
       "scope": "Ten whole ARM64 multi-immediate, four-register, conditional and barrier recorders; packed condFlagsImm plus condition/barrier enums. Existing insCFlags is reused unchanged.",
       "validation": "Final full-analysis ARM64583Debug/557Release; Windows SIMD/address409Debug/392Release controls use the exact shared overload guard. All64 identical positive cases fail at missing methods on baseline implementations with only two enum declarations supplied as fixture prerequisites.",
@@ -1141,7 +1151,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "5059bf2684dc4d98e6ad99398c5b01eb4e3b1b94",
+      "residualHead": "53cdacff65a7cd72a3c2af6576e9e5cb774754e7",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -1292,19 +1302,19 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Complete ARM64 emitIns_R_S, emitIns_S_R, emitIns_R_R_S_S and emitIns_S_S_R_R with direct support, reusing the accepted local-pair allocation/metadata. Preserve native signatures/defaults, SVE/peephole dependencies, oracle-plus-one and all13 unrelated Wasm WIP files.",
+      "parentScope": "ARM64 local-stack packet is accepted. Integrate the ready xarch descriptor-size and register-bit packets with exact source/result hashes and combined Windows controls, then continue ARM64 CodeGen immediate materialization dependencies. Preserve oracle-plus-one and all13 unrelated Wasm WIP files.",
       "wholeFunctionRepairLanes": [
         {
-          "scope": "Whole retained emitIns_R_L overloads, emitSetShortJump, emitIns_J, emitStoreSimd12ToLclOffset and spillIntArgRegsToShadowSlots, with directly coupled dependencies.",
+          "scope": "Whole retained emitNewInstrAmd, emitSetAmdDisp, emitNewInstrAmdCns and six emitSizeOfInsDsc dispatchers.",
           "owner": "4b57b744-36f1-4e6e-8b76-94c1a87d6e02",
-          "files": "Xarch label/jump and small ABI recorder partials plus focused fixtures. Parent owns common and ARM64 descriptors; lane B owns prefixes and directly coupled classifiers.",
-          "status": "tree/address packet accepted; label/small ABI recorders are next"
+          "files": "Shared descriptor-size classes and xarch allocation/size partials plus focused fixtures; exact proposal xarch-descriptor-size-proposed-20260929.json.",
+          "status": "ready;298WindowsDebug/299Release,196LinuxDebug and ARM64 build;9definitions/361lines awaiting integration"
         },
         {
-          "scope": "Whole retained TakesSimdPrefix, AddEvexPrefix, AddVexPrefix, AddRex2Prefix, HasMaskReg, AddRexWPrefix, emitGetPrefixSize, emitGetVexPrefixSize and emitInsCanOnlyWriteSSE2OrAVXReg with directly coupled dependencies.",
+          "scope": "Whole retained register-bit encoders and coupled BMI/SSE/APX conditional classifiers.",
           "owner": "b2253a3d-d101-444e-9c56-d631eb5b274b",
-          "files": "Xarch prefix construction/sizing/classification partials plus focused fixtures. Lane A owns label/small ABI recorders; parent owns common and ARM64 contracts. No Wasm WIP edits.",
-          "status": "upper-bit/GC packet accepted; prefix construction is next"
+          "files": "Xarch register/address encoding and option partials plus EmitterPrefixTests; exact proposal xarch-register-bits-proposed-20260929.json.",
+          "status": "ready;47WindowsDebug/41Release, Linux build and matching15x86 baseline errors;18definitions/496lines awaiting integration"
         }
       ],
       "parallelPackets": [
@@ -1708,7 +1718,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "ARM64 multioperand/conditional packet is accepted at native5059bf26:10defs plus3types/752lines,583D557R, Windows409D392R and64 old missing-method controls. Never reapply its spans. A/B remain active on descriptor allocation/sizing and register-bit encoding from3574741; collect only on notification and reanchor unchanged spans if needed. Parent next reads whole pinned emitarm64.cpp8239-8860 (R_S, R_R_S_S, S_R, S_S_R_R) and exact header signatures, then ports local-stack single/pair loads/stores and direct dependencies using existing pair descriptors. Preserve B461, Linux spill/x86 build gaps, all13 Wasm WIP files, oracle-plus-one and no publication.",
+    "nextAction": "ARM64 local-stack packet is accepted at native53cdacff:7defs/689lines,631D605R and39 old missing-method controls. Never reapply its spans. A/B handoffs are collected and ready: xarch-descriptor-size-proposed-20260929.json (9defs361lines) and xarch-register-bits-proposed-20260929.json (18defs496lines), both observed native5059bf26; only ARM64 files changed afterward. Verify exact hashes, run combined Windows controls, retire and commit the coherent xarch packet. Then reuse the workers and continue ARM64 immediate materialization. Preserve B461, Linux/x86 gaps,13 Wasm WIP files, oracle-plus-one and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
