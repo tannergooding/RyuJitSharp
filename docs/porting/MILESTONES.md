@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Shared throw-helper and overflow generation
+
+The whole throw-helper and overflow functions preserve Unix-x86 funclet
+inline throws, stack-depth assertions and ARM jump selection. Typed terminating
+jump/helper-call dependencies remain for other targets. Two definitions and
+declarations retire 140 lines in `6b4cd26d`.
+
+All 22 Linux-target cast cases failing the old Windows-only guard pass.
+Full-analysis focused controls pass Linux 352 Debug/340 Release and Windows
+378 Debug/365 Release; ARM64 Core compiles in both configurations. Broad Linux
+Debug retains one baseline SIMD16 helper-return failure (377/378), reproduced
+on old and final snapshots and tracked as B469. Passing Linux selections exclude
+that helper-call fixture class. Evidence: `artifacts/xarch-throw-helpers-6a23316`.
+These are Windows-hosted target controls, not Linux or ARM64 runtime parity.
+
 ## 2026-09-29: Shared local-store lowering and struct-result spilling
 
 `LowerStoreLocCommon` and `SpillStructCallResult` now retain their whole native

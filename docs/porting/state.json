@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sharedThrowHelperClosure": {
+      "scope": "Whole genJumpToThrowHlpBlk and genCheckOverflow retain Unix-x86 funclet inline throws, stack-depth assertions and ARM overflow jump selection. Non-xarch jump/helper-call dependencies remain typed terminating stubs; independent native target overloads remain.",
+      "validation": "All22 Linux-target integer-cast cases failing the former Windows-only throw-helper guard pass on final source. Full-analysis focused controls pass Linux352 Debug/340 Release and Windows378 Debug/365 Release. ARM64 Core compiles Debug/Release with zero warnings/errors.",
+      "retirement": "Two definitions with enclosures/headings and two declarations;140 native lines.",
+      "nativeBefore": "81e9df837b0a4300e3199e3afe683b42477c95ae",
+      "nativeAfter": "6b4cd26dee225511866b326ced9e84491bd8954c",
+      "evidence": "artifacts/xarch-throw-helpers-6a23316/ready-results.json and corresponding throw-helpers retirement records.",
+      "limits": "Broad Linux Debug passes377/378; its remaining SIMD16 helper-return descriptor assertion reproduces on old and final source (B469). Passing Linux selections exclude CodeGenHelperCallTests, not a production guard or disabled test. ARM64 compilation and Windows-hosted target controls do not establish target runtime parity."
+    },
     "sharedLocalStoreAndSpillClosure": {
       "scope": "Whole LowerStoreLocCommon and SpillStructCallResult preserve the xarch, ARM, LoongArch64, RISC-V and Wasm branches. ARM64 local-store coalescing keeps its native disabled-optimization early return and a terminating dependency boundary for optimized code; its unfinished native body remains.",
       "validation": "Full-analysis Windows87 Debug/87 Release, Linux66 Debug/66 Release and ARM6471 Debug/71 Release controls. Final source removes a redundant owner assignment; final Windows Debug87 rerun passes. ReplaceNode already updates the owning use, so the new identity/LIR case is a preservation control, not a port-bug regression.",
@@ -1803,7 +1812,7 @@
           "scope": "Whole retained xarch scalar/atomic codegen families.",
           "owner": "4126f755-f5b6-49bc-b68d-a80815468a7d",
           "files": "Scalar/atomic CodeGen partials and focused fixtures; parent owns shared register helpers and both ARM64 register fixtures.",
-          "status": "replacement worker validating preserved throw-helper edits in first monitored slot"
+          "status": "whole throw-helper packet accepted; first monitored compiler slot released; next retained scalar family is shift/shift-long/shift-RMW"
         },
         {
           "scope": "Retained whole local-store coalescing family after shared local-store and spill closure.",
@@ -2225,7 +2234,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Shared lowering committede3c557a. Kill-position/preference pair accepted on unchanged tested source; native134-line retirement consolidated81e9df83. Commit its checkpoint, then parent resumes isCandidateMultiRegLclVar/checkContainedOrCandidateLclVar and adjacent retained local construction. Accept scalar4126f755 throw-helper packet when ready; lowering41f2570d owns retained coalescing. Workers may each run one monitored compiler; parent runs no third command. All13Wasm files remain frozen; no publication.",
+    "nextAction": "Kill-position closure committed19ab8ad; shared throw helpers accepted with native6b4cd26d and22 proven old-failing Linux cast cases. Finish managed throw-helper commit, then scalar4126f755 continues retained genCodeForShift/genCodeForShiftLong/genCodeForShiftRMW. Parent continues retained local-candidate and upper-vector reference construction; lowering41f2570d owns local-store coalescing. At most two monitored compiler commands; parent must coordinate a slot before building. All13Wasm files remain frozen; no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

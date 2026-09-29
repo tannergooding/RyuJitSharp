@@ -18,11 +18,18 @@ public sealed partial class CodeGen
     public void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind,
         BasicBlock? failBlock = null)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Throw-helper generation requires Windows AMD64.");
+#if TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm throw-helper generation uses a separate target path.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
-        if (_compiler.fgUseThrowHelperBlocks())
+#endif
+        var useThrowHelperBlocks = _compiler.fgUseThrowHelperBlocks();
+#if UNIX_X86_ABI
+        // Funclets must throw inline so their frames can be unwound.
+        useThrowHelperBlocks = useThrowHelperBlocks && (_compiler.funCurrentFunc().funKind == FuncKind.FUNC_ROOT);
+#endif
+        if (useThrowHelperBlocks)
         {
             assert(_compiler.compCurBB is not null);
             BasicBlock? target;
@@ -33,6 +40,9 @@ public sealed partial class CodeGen
                 var add = _compiler.fgGetExcptnTarget(codeKind, _compiler.compCurBB);
                 assert(add.acdUsed);
                 assert(ReferenceEquals(target, add.acdDstBlk));
+#if !FEATURE_FIXED_OUT_ARGS
+                assert(add.acdStkLvlInit || IsFramePointerUsed);
+#endif
 #endif
             }
             else
@@ -41,6 +51,9 @@ public sealed partial class CodeGen
                 assert(add is not null);
                 assert(add.acdUsed);
                 target = add.acdDstBlk;
+#if DEBUG && !FEATURE_FIXED_OUT_ARGS
+                assert(add.acdStkLvlInit || IsFramePointerUsed);
+#endif
             }
 
             noway_assert(target is not null);
@@ -68,13 +81,48 @@ public sealed partial class CodeGen
 
     public void genCheckOverflow(GenTree tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Overflow-check generation requires AMD64.");
+#if TARGET_WASM || TARGET_LOONGARCH64 || TARGET_RISCV64
+        throw new FatalJitException(CORJIT_SKIPPED, "Overflow checking uses a separate target path.");
 #else
         noway_assert(tree.HasOverflowCheck);
         noway_assert(!varTypeIsSmall(tree.Type));
-        var jumpKind = (tree.Flags & GTF_UNSIGNED) != 0 ? emitJumpKind.EJ_jb : emitJumpKind.EJ_jo;
+        emitJumpKind jumpKind;
+#if TARGET_ARM64
+        if (tree.Oper is GT_MUL)
+        {
+            jumpKind = emitJumpKind.EJ_ne;
+        }
+        else
+#endif
+        {
+            var unsigned = (tree.Flags & GTF_UNSIGNED) != 0;
+#if TARGET_XARCH
+            jumpKind = unsigned ? emitJumpKind.EJ_jb : emitJumpKind.EJ_jo;
+#elif TARGET_ARMARCH
+            jumpKind = unsigned ? emitJumpKind.EJ_lo : emitJumpKind.EJ_vs;
+            if ((jumpKind == emitJumpKind.EJ_lo) && (tree.Oper is not GT_SUB))
+            {
+                jumpKind = emitJumpKind.EJ_hs;
+            }
+#else
+            throw new FatalJitException(CORJIT_SKIPPED, "Overflow checking is not implemented for this target.");
+#endif
+        }
+
         genJumpToThrowHlpBlk(jumpKind, SCK_OVERFLOW);
 #endif
     }
+
+#if !TARGET_XARCH && !TARGET_WASM
+    public void inst_JMP(emitJumpKind jump, BasicBlock target, bool isRemovableJmpCandidate = false)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Jump instruction generation is not implemented for this target.");
+    }
+
+    public void genEmitHelperCall(CorInfoHelpFunc helper, int argSize, emitAttr retSize,
+        regNumber callTargetReg = REG_NA)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Helper call generation is not implemented for this target.");
+    }
+#endif
 }
