@@ -220,19 +220,29 @@ public sealed partial class CodeGen
 
     public void genSIMDSplitReturn(GenTree source, ReturnTypeDesc descriptor)
     {
-#if !TARGET_AMD64 || !FEATURE_SIMD
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD split returns require AMD64 SIMD support.");
+#if !TARGET_XARCH || !FEATURE_SIMD
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD split returns require xarch SIMD support.");
 #else
         assert(varTypeIsSimd(source.Type) && source.IsUsedFromReg);
         var sourceReg = source.RegNum;
         var firstReg = descriptor.GetAbiReturnReg(0, _compiler.info.compCallConv);
         var secondReg = descriptor.GetAbiReturnReg(1, _compiler.info.compCallConv);
         assert((firstReg != REG_NA) && (secondReg != REG_NA) && (sourceReg != REG_NA));
+#if TARGET_AMD64
         assert(source.Type == TYP_SIMD16 && genIsValidFloatReg(sourceReg));
         assert(genIsValidFloatReg(firstReg) && (firstReg != secondReg));
 
         inst_Mov(TYP_SIMD16, firstReg, sourceReg, canSkip: true);
         Emitter.emitIns_SIMD_R_R_R(INS_movhlps, EA_16BYTE, secondReg, secondReg, sourceReg, INS_OPTS_NONE);
+#else
+        assert(genIsValidFloatReg(sourceReg));
+        assert(source.Type == TYP_SIMD8);
+        assert(!genIsValidFloatReg(firstReg));
+        assert((firstReg == REG_EAX) && (secondReg == REG_EDX));
+
+        inst_Mov(TYP_INT, firstReg, sourceReg, canSkip: false);
+        inst_RV_TT_IV(INS_pextrd, EA_4BYTE, secondReg, source, 1, INS_OPTS_NONE);
+#endif
 #endif
     }
 

@@ -90,6 +90,38 @@ internal static unsafe class CodeGenReturnTests
         });
     }
 
+#if UNIX_AMD64_ABI
+    [TestCase(REG_XMM0, 1)]
+    [TestCase(REG_XMM1, 2)]
+    [TestCase(REG_XMM2, 2)]
+    public static void SplitSimdReturnsPreserveBothAbiHalvesWhenSourceAliasesEitherRegister(
+        regNumber sourceReg, int expectedInstructions)
+    {
+        WithReturn(TYP_INT, (compiler, codeGen) =>
+        {
+            ref var types = ref ReturnTypes(ref compiler.compRetTypeDesc);
+            types[0] = TYP_DOUBLE;
+            types[1] = TYP_DOUBLE;
+            var source = new GenTreeLclVar(TYP_SIMD16, 0) { RegNum = sourceReg };
+
+            codeGen.genSIMDSplitReturn(source, compiler.compRetTypeDesc);
+
+            var descriptors = Descriptors(codeGen);
+            Assert.That(descriptors, Has.Count.EqualTo(expectedInstructions));
+            Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_movhlps));
+            Assert.That(descriptors[^1].idOpSize(), Is.EqualTo(EA_16BYTE));
+            Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_XMM1));
+            Assert.That(descriptors[^1].idReg3(), Is.EqualTo(sourceReg));
+            if (expectedInstructions == 2)
+            {
+                Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_movaps));
+                Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_XMM0));
+                Assert.That(descriptors[0].idReg2(), Is.EqualTo(sourceReg));
+            }
+        });
+    }
+#endif
+
     [TestCase(false)]
     [TestCase(true)]
     public static void AsyncReturnsClearAndReportTheContinuationAfterReturningTheValue(bool profiler)
@@ -303,6 +335,11 @@ internal static unsafe class CodeGenReturnTests
             action(compiler, codeGen);
         });
     }
+
+#if UNIX_AMD64_ABI
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regType")]
+    private static extern ref InlineArrayMaxRetRegCount<var_types> ReturnTypes(ref ReturnTypeDesc descriptor);
+#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compProfilerHookNeeded")]
     private static extern ref bool ProfilerHookNeeded(Compiler compiler);

@@ -13,10 +13,9 @@ public sealed partial class CodeGen
 {
     public void genIntCastOverflowCheck(GenTreeCast cast, in GenIntCastDesc desc, regNumber reg)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Integer cast overflow checks require AMD64.");
-#else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         switch (desc.Check)
         {
             case CHECK_POSITIVE:
@@ -26,6 +25,7 @@ public sealed partial class CodeGen
                 break;
             }
 
+#if TARGET_64BIT
             case CHECK_UINT_RANGE:
             {
                 // 0xFFFFFFFF is not an encodable compare immediate; check the upper half instead.
@@ -52,6 +52,7 @@ public sealed partial class CodeGen
                 genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
                 break;
             }
+#endif
 
             default:
             {
@@ -68,15 +69,13 @@ public sealed partial class CodeGen
                 break;
             }
         }
-#endif
     }
 
     public void genIntToIntCast(GenTreeCast cast)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Integer cast generation requires AMD64.");
-#else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         genConsumeRegs(cast.CastOp);
         var src = cast.CastOp;
         var srcReg = src.IsUsedFromReg ? src.RegNum : REG_NA;
@@ -110,6 +109,7 @@ public sealed partial class CodeGen
                 break;
             }
 
+#if TARGET_64BIT
             case ZERO_EXTEND_INT:
             case LOAD_ZERO_EXTEND_INT:
             {
@@ -125,6 +125,7 @@ public sealed partial class CodeGen
                 size = 4;
                 break;
             }
+#endif
 
             case COPY:
             {
@@ -159,7 +160,6 @@ public sealed partial class CodeGen
         }
 
         genProduceReg(cast);
-#endif
     }
 }
 #endif

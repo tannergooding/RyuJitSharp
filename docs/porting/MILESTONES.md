@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch returns and integer casts
+
+SIMD split returns, x86 floating returns and integer cast generation preserve
+their complete native target branches. Four definitions and the x86-only
+return declaration retire 283 native lines in `05077bfc`. Independent
+other-target definitions and the unported x87 stack-store helper remain.
+
+Windows return controls pass 46 Debug/41 Release; integer-cast controls pass
+81 Debug/80 Release. Three SysV return alias cases pass on both immutable
+sides, and supported Linux cast controls pass 59 Debug/58 Release. Broader
+Linux cast runs retain 22 independent throw-helper failures; x86 retains
+14 existing diagnostic identities. ARM64 source compilation succeeds.
+Evidence: the `xarch-simd-returns` and `xarch-integer-casts` proposals and
+`xarch-return-cast` retirement records. No new generated-code parity claim.
+
 ## 2026-09-29: Shared return and call-storage lowering
 
 Return dispatch and single-register struct-call storage preserve their native
