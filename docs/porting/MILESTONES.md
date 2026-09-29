@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch flag reuse
+
+Whole zero/sign flag reuse and consumer discovery preserve condition mutation,
+resolution-node skipping and first-consumer ordering. Two definitions and their
+xarch-only declaration block retire 108 native lines in `25f2429`; the separate
+Wasm comparison declarations remain.
+
+Windows controls pass 38 Debug/35 Release and Linux passes 38 Debug, including
+native diagnostic text. X86 retains 14 existing build errors, leaving its new
+non-register early-return case unexecuted. Evidence:
+`artifacts/xarch-flag-reuse-19939c8` and corresponding retirement records.
+This is not generated-code parity.
+
 ## 2026-09-29: Shared call and argument lowering
 
 Whole call and argument dispatch preserve target-specific lowering order,

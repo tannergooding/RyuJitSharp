@@ -1,5 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -314,6 +315,81 @@ internal static class CodeGenComparisonTests
             Assert.That(Descriptors(codeGen).Select(id => id.idIns()), Is.EqualTo((instruction[])[INS_add, INS_test]));
         });
     }
+
+    [TestCase(GT_LCL_VAR)]
+    [TestCase(GT_COPY)]
+    [TestCase(GT_SWAP)]
+    public static void FlagConsumerSkipsOnlyResolutionNodes(genTreeOps resolutionOper)
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, _) =>
+        {
+            var value = new GenTreeLclVar(TYP_INT, 0);
+            var producer = new GenTreeOp(GT_CMP, TYP_VOID, value, compiler.gtNewIconNode(TYP_INT, 0))
+            {
+                Flags = GTF_SET_FLAGS,
+            };
+            GenTree resolution = resolutionOper switch
+            {
+                GT_LCL_VAR => new GenTreeLclVar(TYP_INT, 1),
+                GT_COPY => new GenTreeCopyOrReload(GT_COPY, TYP_INT, value),
+                GT_SWAP => new GenTreeOp(GT_SWAP, TYP_VOID, value, new GenTreeLclVar(TYP_INT, 1)),
+                _ => throw new AssertionException("Unexpected resolution node."),
+            };
+            var first = new GenTreeCC(GT_JCC, TYP_VOID, new GenCondition(GenCondition.CodeKind.SLT));
+            var later = new GenTreeCC(GT_SETCC, TYP_INT, new GenCondition(GenCondition.CodeKind.EQ));
+            producer.Next = resolution;
+            resolution.Next = first;
+            first.Next = later;
+
+            Assert.That(CodeGen.genTryFindFlagsConsumer(producer, out var condition), Is.SameAs(first));
+            Assert.That(condition.Code, Is.EqualTo(GenCondition.CodeKind.SLT));
+        });
+    }
+
+#if TARGET_X86
+    [Test]
+    public static void X86NonRegisterValueCannotReuseFlags()
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var zero = compiler.gtNewIconNode(TYP_INT, 0);
+            var tree = new GenTreeOp(GT_CMP, TYP_VOID, new GenTreeLclVar(TYP_INT, 0), zero);
+
+            Assert.That(codeGen.genCanAvoidEmittingCompareAgainstZero(tree, EA_4BYTE), Is.False);
+        });
+    }
+#endif
+
+#if DEBUG
+    [TestCase(INS_and, GenCondition.CodeKind.EQ, false)]
+    [TestCase(INS_add, GenCondition.CodeKind.SLT, true)]
+    public static void FlagReusePreservesZeroAndSignDiagnostics(
+        instruction producerInstruction, GenCondition.CodeKind conditionCode, bool changesCondition)
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.opts.canUseAllOpts = true;
+            compiler.verbose = true;
+            var value = Register(compiler, TYP_INT, REG_RAX);
+            var zero = compiler.gtNewIconNode(TYP_INT, 0);
+            zero.IsContained = true;
+            var tree = new GenTreeOp(GT_CMP, TYP_VOID, value, zero) { Flags = GTF_SET_FLAGS };
+            var consumer = new GenTreeCC(GT_JCC, TYP_VOID, new GenCondition(conditionCode));
+            tree.Next = consumer;
+            codeGen.Emitter.emitIns_R_R(producerInstruction, EA_4BYTE, REG_RAX, REG_RCX);
+
+            var diagnostic = InstructionRecordingTestSupport.Capture(() =>
+                Assert.That(codeGen.genCanAvoidEmittingCompareAgainstZero(tree, EA_4BYTE), Is.True));
+
+            var expected = changesCondition
+                ? $"Not emitting compare due to sign being already set; modifying [{consumer.TreeId:D6}] to check sign flag\n"
+                : "Not emitting compare due to flags being already set\n";
+            Assert.That(diagnostic.Replace("\r\n", "\n", StringComparison.Ordinal), Does.Contain(expected));
+            Assert.That(consumer.Condition.Code,
+                Is.EqualTo(changesCondition ? GenCondition.CodeKind.S : conditionCode));
+        });
+    }
+#endif
 
     [TestCase(EJ_NONE, EJ_NONE)]
     [TestCase(EJ_jmp, EJ_jmp)]

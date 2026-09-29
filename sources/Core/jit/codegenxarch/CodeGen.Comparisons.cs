@@ -163,10 +163,9 @@ public sealed partial class CodeGen
 
     public bool genCanAvoidEmittingCompareAgainstZero(GenTree tree, emitAttr opSize)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Comparison flag reuse requires AMD64.");
-#else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         var op = tree.AsOp();
         var op1 = op.Op1;
         assert(op.Op2.IsIntegralConst(0));
@@ -225,7 +224,6 @@ public sealed partial class CodeGen
         }
 
         return false;
-#endif
     }
 
     public static GenTree? genTryFindFlagsConsumer(GenTree producer, out GenCondition condition)
