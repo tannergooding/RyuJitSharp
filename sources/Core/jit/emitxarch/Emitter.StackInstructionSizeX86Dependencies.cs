@@ -8,10 +8,9 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public uint emitInsSizeSV(instrDesc id, ulong code, int var, int dsp)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 stack-variable instruction sizing is not ported.");
-
-    public uint emitInsSizeSV(instrDesc id, ulong code, int var, int dsp, int val)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 stack-variable immediate sizing is not ported.");
+    public static bool IsSSEOrAVXInstruction(instruction ins)
+    {
+        return (ins >= FIRST_SSE_INSTRUCTION) && (ins <= LAST_AVX_INSTRUCTION);
+    }
 }
 #endif

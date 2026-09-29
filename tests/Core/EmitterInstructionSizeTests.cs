@@ -15,6 +15,27 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterInstructionSizeTests
 {
+#if TARGET_X86
+    [TestCase(INS_addps, EA_16BYTE, IF_RWR_SRD, 4, 256, 16, true)]
+    [TestCase(INS_pslld, EA_16BYTE, IF_RWR_RRD_SRD, 4, 16, 1, true)]
+    [TestCase(INS_addps, EA_16BYTE, IF_RWR_SRD, 4, 257, 257, false)]
+    public static void X86TupleMetadataControlsEvexDisp8Compression(
+        instruction ins, emitAttr attr, Emitter.insFormat format, int inputSize,
+        int displacement, int expectedDisplacement, bool expected)
+    {
+        var emitter = CreateEmitter(false, 0);
+        var id = CreateDescriptor(ins, attr, format);
+        id.idSetEvexCompressedDisplacementBit();
+
+        Assert.That(Emitter.hasTupleTypeInfo(ins), Is.True);
+        Assert.That(Emitter.GetInputSizeInBytes(id), Is.EqualTo((nint)inputSize));
+        Assert.That(emitter.TryEvexCompressDisp8Byte(id, displacement, out var compressed, out var fits),
+            Is.EqualTo(expected));
+        Assert.That(compressed, Is.EqualTo((nint)expectedDisplacement));
+        Assert.That(fits, Is.EqualTo(expected));
+    }
+#endif
+
     [TestCase(false, 0, 0u, EA_4BYTE, REG_RAX, 3u)]
     [TestCase(true, 0, 0u, EA_4BYTE, REG_RAX, 3u)]
     [TestCase(false, -128, 0u, EA_4BYTE, REG_RAX, 4u)]

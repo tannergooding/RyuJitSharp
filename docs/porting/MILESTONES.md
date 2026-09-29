@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Stack sizing and EVEX displacement compression
+
+Stack-variable sizing and EVEX displacement compression now retain their whole
+x86 paths. This includes pushed-stack displacement wrapping, restrictions on
+optimistic compression without fixed outgoing arguments, tuple scaling and
+the native early-exit invariants. The immediate overload keeps AMD64-only
+relocation assertions and the shared immediate-width rules.
+
+Full-analysis controls pass Windows 241 Debug/225 Release for stack sizing and
+53/53 for compression, plus 53 Linux-x64 target cases and ARM64 builds. Existing
+x86 build blockers still prevent execution of the three new x86 compression
+cases. Six complete definitions retire 452 lines in native `1b167498`.
+Evidence and exact retirement records are under
+`artifacts/residual-reconciliation/*sizing*-20260929.json`.
+
 ## 2026-09-29: Stack and local-variable recording
 
 Seven stack/local recorder and move-elision bodies retain their complete x86

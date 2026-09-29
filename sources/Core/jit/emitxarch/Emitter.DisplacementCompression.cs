@@ -9,7 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
+#if TARGET_XARCH
     public static bool hasTupleTypeInfo(instruction ins)
     {
         assert((uint)ins < (uint)s_tupleTypes.Length);
@@ -46,6 +46,7 @@ public partial class Emitter
         {
             // APX-EVEX instructions without tuple information always scale by one.
             assert(IsApxExtendedEvexInstruction(ins) || IsBMIInstruction(ins) || IsKMOVInstruction(ins));
+            assert(compressedDsp == dsp);
             return fitsInByte;
         }
 
@@ -54,6 +55,7 @@ public partial class Emitter
             if (!TakesEvexPrefix(id))
             {
                 // Prefer the smaller VEX encoding when EVEX is not otherwise needed.
+                assert(compressedDsp == dsp);
                 return false;
             }
         }
@@ -63,6 +65,7 @@ public partial class Emitter
 
             if (unchecked((sbyte)compressedTest) != compressedTest)
             {
+                assert(compressedDsp == dsp);
                 return false;
             }
         }
@@ -218,6 +221,7 @@ public partial class Emitter
 
         if ((dsp % disp8Compression) != 0)
         {
+            assert(compressedDsp == dsp);
             fitsInByte = false;
             return false;
         }
@@ -226,6 +230,7 @@ public partial class Emitter
 
         if (unchecked((sbyte)compressedDisp) != compressedDisp)
         {
+            assert(compressedDsp == dsp);
             fitsInByte = false;
             return false;
         }

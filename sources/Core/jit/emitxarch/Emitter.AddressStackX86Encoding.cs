@@ -120,10 +120,5 @@ public partial class Emitter
         return code ^ ((ulong)RegEncoding(reg) << 35);
     }
 
-    private bool TryEvexCompressDisp8Byte(instrDesc id, nint dsp, out nint compressedDsp, out bool fitsInByte)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 EVEX displacement compression is not ported.");
-
-    private static bool hasTupleTypeInfo(instruction ins)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 EVEX tuple metadata is not ported.");
 }
 #endif
