@@ -11,7 +11,11 @@ public partial class Emitter
 {
 #if !TARGET_ARM64
     public bool emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg,
+#if TARGET_ARM
+        bool canSkip, insFlags flags = INS_FLAGS_DONT_CARE)
+#else
         bool canSkip, bool useApxNdd = false)
+#endif
     {
 #if !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Register move recording requires xarch.");

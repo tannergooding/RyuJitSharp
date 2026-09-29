@@ -295,8 +295,8 @@ public sealed partial class CodeGen
     public unsafe void inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg,
         GenTree operand, int value, insOpts options)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Register/memory/immediate instruction generation requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Register/memory/immediate instruction generation requires xarch.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         noway_assert(Emitter.emitVerifyEncodable(ins, EA_SIZE(attr), reg));
@@ -356,8 +356,8 @@ public sealed partial class CodeGen
     public unsafe void inst_RV_RV_TT_IV(instruction ins, emitAttr size, regNumber targetReg,
         regNumber op1Reg, GenTree op2, sbyte immediate, bool isRMW, insOpts options)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD register/operand/immediate generation requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD register/operand/immediate generation requires xarch.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         noway_assert(Emitter.emitVerifyEncodable(ins, EA_SIZE(size), op1Reg));
@@ -435,8 +435,8 @@ public sealed partial class CodeGen
     public unsafe void inst_RV_RV_TT(instruction ins, emitAttr size, regNumber targetReg,
         regNumber op1Reg, GenTree op2, bool isRMW, insOpts options)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Three-operand register/memory instruction generation requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Three-operand register/memory instruction generation requires xarch.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         noway_assert(Emitter.emitVerifyEncodable(ins, EA_SIZE(size), targetReg));

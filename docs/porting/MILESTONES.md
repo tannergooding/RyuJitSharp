@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Shared copy/move and intrinsic operand helpers
+
+Whole copy selectors and move dispatch preserve ARM, ARM64, x86, LoongArch64
+and RISC-V64 branches, including register-class normalization and ARM flags.
+Three intrinsic operand wrappers retain their complete x86 paths. Six
+definitions and their declarations retire 600 native lines in `c953db8a`.
+Independent ARM/SVE recording and x86 operand/recording dependencies remain.
+
+Combined Windows controls pass 133 Debug/126 Release. ARM64 selector, move
+operand/width and elision controls pass 26 Debug/26 Release; all 26 identical
+old cases fail at the old target guards. Wrapper Linux controls pass 15 Debug.
+X86 retains 14 baseline errors. No generated-code execution parity is claimed.
+Evidence: `artifacts/shared-copy-move`, `artifacts/shared-instr-integrated`,
+`artifacts/instr-intrinsic-wrappers-packet` and the `shared-instr` retirement records.
+
 ## 2026-09-29: Xarch constant generation
 
 Three whole scalar/vector/mask constant-generation overloads retire 310 native

@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sharedCopyMoveAndIntrinsicOperands": {
+      "scope": "Whole ins_Copy overloads, inst_Mov and three intrinsic operand wrappers. Preserve every copy-selector target path, ARM flag forwarding, LoongArch64/RISC-V64 destination-class normalization and x86 operand flow.",
+      "validation": "Combined Windows133 Debug/126 Release pass. ARM64 copy selection and move recording26 Debug/26 Release pass; all26 identical old cases fail at old target guards. Wrapper Linux15 Debug pass. Paired x86 builds retain14 identical errors.",
+      "retirement": "Six whole definitions plus associated declarations;600 native lines. Wrapper declarations are xarch-only and retire despite residual callers; the original packet's retention rationale was corrected.",
+      "nativeBefore": "eff075a1cbcff119dc5b098a9fe633211b39dc92",
+      "nativeAfter": "c953db8aa7429f3fe35492b04ebe95faadcf18ef",
+      "evidence": "artifacts/shared-copy-move final-3/old and paired x86; artifacts/shared-instr-integrated; artifacts/instr-intrinsic-wrappers-packet; artifacts/residual-reconciliation/shared-instr component/combined/applied/verification.",
+      "retainedDependencies": "ARM emitIns_Mov receives its typed flags parameter but still terminates; no emitter definition retires. SVE recording, x86 operand classification and recording remain independent work.",
+      "limits": "ARM64 evidence covers selector results, recorded move operands/widths and elision permission, not generated-code execution. Earlier final/final-2 fixture failures remain preserved. No x86 or other-target execution claim."
+    },
     "xarchConstantGenerationClosure": {
       "scope": "All three genSetRegToConst overloads preserve scalar, vector, mask, relocation and x86 paths.",
       "validation": "Windows71 Debug/67 Release and Linux71 Debug pass; ARM64 source build passes; x86 retains14 established first-pass errors.",
@@ -1447,7 +1457,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "eff075a1cbcff119dc5b098a9fe633211b39dc92",
+      "residualHead": "c953db8aa7429f3fe35492b04ebe95faadcf18ef",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -1598,7 +1608,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Complete retained instr.cpp copy/move family (both ins_Copy overloads and inst_Mov) needed by shared consumption callers. Preserve target branches and genuine emitter dependencies; validate focused selectors and Windows register controls plus compilable ARM64 paths and baseline x86 blockers, then retire the three definitions. Integrate bounded remaining xarch lane packets. Keep four lanes productive and13 Wasm WIP frozen.",
+      "parentScope": "Complete retained codegenlinear.cpp genUnspillLocal and genRegCopy overloads using the accepted shared consumption and copy/move contracts. Preserve target paths, register ownership and GC/liveness ordering; validate focused register controls and available ARM64 paths, retain explicit independent spill/emitter dependencies, then retire whole definitions. Integrate bounded lane packets, keeping13 Wasm WIP frozen.",
       "wholeFunctionRepairLanes": [
         {
           "scope": "Next retained general codegenxarch family after cookie/EH and immediate/helper-call completion.",
@@ -2026,7 +2036,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Constants accepted through nativeeff075a1:3 definitions/310 lines; do not reapply. Reassign A to next retained general codegen. B continues shared lower.cpp and LSRA BuildHWIntrinsic. Finish combined instr batch: copy/move final-3 passes26D26R ARM64 with26 old failures, combined Windows controls run at artifacts/shared-instr-integrated. Remove6 full definitions and associated declarations after exact verification; wrapper owner confirms its three declarations are xarch-only (original retention rationale was incorrect). Preserve14x86 blockers,13Wasm, four lanes, oracle-plus-one and no publication.",
+    "nextAction": "Combined instr accepted through nativec953db8a:6 definitions/600 lines,133D126R Windows,26D26R ARM64 with26 old failures. Do not reapply. Reassign HW lane to retained instr operand classification/recording helpers, excluding parent shared register-copy work. Parent next completes codegenlinear genUnspillLocal/genRegCopy overloads; A continues general codegen, B shared lower.cpp, LSRA BuildHWIntrinsic. Preserve14x86 blockers,13Wasm, four lanes, oracle-plus-one and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
