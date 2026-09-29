@@ -45,6 +45,12 @@ ARM64's native no-fixed-register masks. These are preservation controls,
 not old-failing regressions or target generated-code parity. Evidence:
 `artifacts/lsra-killset-helpers-fc74a22` and corresponding retirement records.
 
+The already-translated kill-position builder and interval-preference update
+also retire their two definitions and declarations, 134 lines in `81e9df83`.
+Their unchanged source and fixture hashes match the same Windows evidence,
+including GC-reference kills and call-register preferences; no behavior changes
+or additional compiler runs were needed.
+
 ## 2026-09-29: Shared LSRA kill-set construction
 
 Shift/rotate, call and debug node kill-set construction retain the native

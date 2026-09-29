@@ -31,6 +31,7 @@
       "retirement": "Six definitions with headings, their declarations and the now-orphaned declaration heading;164 native lines.",
       "nativeBefore": "b735522c122633220015676e82a0c2bbf30948e5",
       "nativeAfter": "1c56e6d4227f493c8fe90cfff74ebbab1043f1c2",
+      "killPositionClosure": "Whole buildKillPositionsForNode and updateIntervalPreferencesForKill are already translated; retire their definitions and declarations,134 additional lines, from native77c21b36 to81e9df837b0a4300e3199e3afe683b42477c95ae. DefinitionConstruction source and fixture hashes exactly match the completed Windows75D/74R evidence, including GC-reference kills and call preferences. No new behavior change or redundant rebuild; records are artifacts/residual-reconciliation/lsra-kill-positions-*.",
       "evidence": "artifacts/lsra-killset-helpers-fc74a22; artifacts/residual-reconciliation/lsra-killset-helpers component/combined/applied/verification.",
       "limits": "These are preservation and whole-translation controls, not old-failing regressions. X86 and ARM32 execution remain unverified behind independent target prerequisites; no target generated-code parity claim."
     },
@@ -1796,19 +1797,19 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Shared multi-register stores and the complete shared kill-set family are accepted. Integrate recovered lowering and scalar throw-helper packets, then resume adjacent retained backend families. Maintain at most two compiler-heavy commands with memory monitoring, immutable owned-only snapshots,13 frozen Wasm files and centrally owned native retirement.",
+      "parentScope": "Shared multi-register stores, local-store lowering and the complete shared kill-set/position family are accepted. Integrate recovered scalar throw-helper packet while continuing local-candidate construction and retained coalescing support. Maintain at most two compiler-heavy commands with memory monitoring, immutable owned-only snapshots,13 frozen Wasm files and centrally owned native retirement.",
       "wholeFunctionRepairLanes": [
         {
           "scope": "Whole retained xarch scalar/atomic codegen families.",
-          "owner": "4b57b744-36f1-4e6e-8b76-94c1a87d6e02",
+          "owner": "4126f755-f5b6-49bc-b68d-a80815468a7d",
           "files": "Scalar/atomic CodeGen partials and focused fixtures; parent owns shared register helpers and both ARM64 register fixtures.",
           "status": "replacement worker validating preserved throw-helper edits in first monitored slot"
         },
         {
-          "scope": "Retained shared call-result and return lowering after call/argument dispatch closure.",
+          "scope": "Retained whole local-store coalescing family after shared local-store and spill closure.",
           "owner": "41f2570d-eb35-4a4b-92d7-1b2d0a3df242",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "final v5 preservation control accepted87/87; second monitored slot released; local-store and spill packet ready for managed commit"
+          "status": "local-store and spill packet committede3c557a; continuing coalescing in second monitored build slot"
         },
         {
           "scope": "Whole retained shared kill-set family after return/write-barrier closure.",
@@ -2224,7 +2225,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Shared helper closure committed94592a3. Final lowering v5 control accepted87/87; native two-definition retirement consolidated77c21b36. Finish its managed commit, then continue retained coalescing support while accepting scalar throw-helper packet. Parent's adjacent LSRA work is buildKillPositionsForNode/updateIntervalPreferencesForKill. Scalar4126f755 owns first monitored build slot; lowering41f2570d released second. At most two compiler commands. All13Wasm files remain frozen; no publication.",
+    "nextAction": "Shared lowering committede3c557a. Kill-position/preference pair accepted on unchanged tested source; native134-line retirement consolidated81e9df83. Commit its checkpoint, then parent resumes isCandidateMultiRegLclVar/checkContainedOrCandidateLclVar and adjacent retained local construction. Accept scalar4126f755 throw-helper packet when ready; lowering41f2570d owns retained coalescing. Workers may each run one monitored compiler; parent runs no third command. All13Wasm files remain frozen; no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
