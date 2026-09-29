@@ -8,10 +8,13 @@ checkpoint, and load only the relevant sections of the
 - Establish a clean, recognizable port before restructuring. Record discovered
   bugs, rename/refactoring candidates, and architectural ideas in the
   [backlog](docs/porting/BACKLOG.md); do not fold unrelated cleanup into a port.
-- Windows x64 is the first execution/parity target. Port whole functions,
-  including their relevant conditional paths, rather than selected statements.
-  Paths unique to other platforms may explicitly report NYI while remaining
-  compilable. Do not introduce silent no-ops or success-shaped fallbacks.
+- Windows x64 is the first execution/parity target. Translate each whole function,
+  preserving target conditionals and dependency calls. Add compilable declarations
+  and tracked, terminating NYI helper stubs for unported other-target dependencies;
+  do not omit their callers' branches. Remove the translated definition from
+  `runtime-port` in the same batch, retaining the unported helper definitions there.
+  A caller need not wait for those helpers to execute. Do not introduce silent
+  no-ops or success-shaped fallbacks.
 - Preserve upstream algorithms, phase ordering, diagnostics, numeric semantics,
   and JIT/EE contracts. Idiomatic C# does not authorize different generated code
   or dumps. Ask before substantial redesigns or new observable deviations.
@@ -28,10 +31,18 @@ checkpoint, and load only the relevant sections of the
   The residual `runtime-port` tree identifies remaining work; deleted native code
   is not evidence of parity. Obtain their local paths from the session setup,
   not from assumptions about another contributor's checkout.
+- Treat the residual as the untranslated-definition work list, not a second
+  recurring audit project. Track stubs and exceptions sparsely. On an oracle
+  update, use the immutable old/new upstream diff: apply changes to already
+  translated definitions in C# and keep them absent from the residual; update
+  still-unported definitions and retain new definitions for porting. Do not
+  restore completed bodies merely to resolve modify/delete conflicts.
 - Keep the mapping sparse. Conventionally, `src/coreclr/jit/<stem>.{h,cpp}`
   maps to `sources/Core/jit/<stem>/`; `Compiler` partials span several native
   files. Verify symbol matches, and record non-obvious mappings for active work.
-  An absent mapping or missing native function does not mean a port is complete.
+  Conventional mappings need no per-function entries. Treat unexpected native
+  absence or a known incomplete translation as an exception, not a reason to
+  re-audit every retired definition.
 - Preserve saved WIP and its staged/unstaged distinction. Apply snapshots by
   immutable ID, not a moving stash index; do not drop them until verified.
 - Change table inputs and their generator together. Review generated output;

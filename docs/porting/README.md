@@ -29,44 +29,37 @@ expected. Native source revisions match at completed synchronization checkpoints
 During synchronization, explicitly retain the old source revision and the target
 revision. A fetched upstream head is not automatically the port's new baseline.
 
-Retire completed source areas in large, coherent batches: remove fully ported
-functions and their associated declarations from `runtime-port`. Use the existing
-implementation reviews, mappings and explicit NYIs; investigate only unclear
-boundaries rather than repeating function-by-function parity review. Retain
-mixed-target bodies with unfinished paths and identify the remaining targets.
-Retirement is work tracking, not a new parity result.
+Use `runtime-port` as the untranslated-definition work list. Inspect a function,
+translate its whole body, validate the relevant contract, and remove its native
+definition and associated declarations in the same coherent batch. Preserve its
+target conditionals, inline algorithms and dependency calls. Add compilable
+declarations and tracked, terminating NYI helper stubs for unported other-target
+dependencies. Retain those helpers' native definitions, not their completed
+callers. This makes the remaining native source directly useful for choosing the
+next translation without a second recurring completion-audit project.
 
-Track Windows-x64 implementation status separately from whole-function retirement
-eligibility. A mixed function retained only for unfinished x86 or ARM paths is not
-Windows-x64 implementation work. Conversely, a removed native definition is not
-proof that its managed implementation is complete.
+Distinguish a translated caller with an NYI dependency from a function whose own
+target branch was omitted or replaced wholesale by NYI. The former can be retired;
+the latter still has untranslated body text and must remain native until that
+translation is complete. Windows-x64 execution does not require other targets to
+execute. Conversely, native retirement records translation, not a parity pass or
+a guarantee that the port has no bugs.
 
-Drive reconciliation from committed port reviews, mappings, explicit NYIs and
-C# commit deltas, not repeated file-by-file semantic audits. Keep a durable local
-ledger of bounded source areas or function families with native/managed mappings,
-evidence revisions, Windows-x64 status (`implemented`, `partial`, `unported`,
-`unknown` or `not-applicable`), concrete missing behavior, other-target blockers,
-and a separate retirement disposition. `implemented` describes the reviewed
-implementation scope, not exhaustive execution parity. Group definitions when
-the same existing review covers them; do not manufacture per-function reviews
-for an already reviewed area.
+Reuse the original translation review and focused evidence when retiring a
+definition; do not independently re-audit it for cleanup. Keep sparse records for
+active work, missing dependencies, unusual mappings, known defects and unresolved
+exceptions, rather than a parallel completion catalog for every function or
+family. Existing cleanup receipts can resolve historical lag, but should not
+become periodic scans of already-absent definitions. Revisit translated code for
+an actual upstream change, defect, test failure or concrete unresolved exception.
 
-Seed the ledger from existing receipts and reviews, then consume C# changes from
-a recorded commit cursor. Revisit classified areas only when relevant source,
-evidence or target conditions change. Prioritize unknown Windows/shared areas
-and actionable Windows gaps; carry known other-target-only blockers forward.
-Use bounded inspection for ambiguous evidence and retain `unknown` when it does
-not settle the question. Report the inventory scope, coverage and counting unit;
-do not turn classified-family counts or remaining native lines into a percentage
-of the compiler completed.
-
-Publish a consolidated baseline and incremental gap reports without waiting for
-all native deletions or whole-target classifications. Batch safe deletions across
-completed source families, validating exact spans and preserved unfinished paths.
-Use ordinary native-only commits for new batches; do not amend existing history
-without explicit authorization. Preserve unrelated staged/unstaged work. Existing
-recovery refs remain available, but routine retirement does not need new snapshots,
-runtime reruns or a separate documentation cycle for each helper.
+Batch the native edits for a coherent translation change, verifying exact spans
+and preserved unfinished definitions. Use ordinary native-only commits unless
+amending a consolidated deletion-tracking commit is explicitly authorized.
+Preserve unrelated staged/unstaged work and existing recovery refs. Retirement
+does not need its own runtime rerun, routine snapshot or helper-by-helper
+documentation cycle. Do not infer execution coverage or compiler-completion
+percentages from removed lines or remaining source counts.
 
 Before moving either baseline, preserve native and C# WIP, including untracked
 files and index state. Record immutable snapshot IDs and protect them with local
@@ -89,15 +82,18 @@ Before editing or resuming, follow the plan's
 condition, selected validation, and deferred work in `checkpoint.activeBatch`.
 Use that boundary to decide what to investigate and test, rather than restarting
 a helper-by-helper validation cycle after each commit or context refresh.
-At validated milestones, update the journal and push the current porting branch,
-then continue; publication is authorized for this ongoing port. Do not open PRs,
-rewrite published history, or update other branches without separate approval.
+At validated milestones, update the journal, commit locally, and continue.
+Push or open a PR only with explicit authorization; a local commit is not
+publication approval. Do not rewrite published history or update other branches
+without separate approval.
 
 Port a whole native function and its required support, rather than a fragment
-selected to get one test running. Preserve all Windows-x64 behavior in that
-function. Paths unique to other targets may be explicit NYIs, with their target,
-symbol, and missing behavior recorded. Other targets must remain compilable;
-compilation is not proof of their execution support.
+selected to get one test running. Preserve all Windows-x64 behavior and the
+other-target control flow. Represent unported other-target dependencies with
+compilable declarations and terminating helper stubs, recording the target,
+symbol and missing behavior. An explicit NYI replacing an entire inline target
+branch is a partial translation, not a completed caller. Other targets must
+remain compilable; compilation is not proof of their execution support.
 
 A shared native dispatcher may be split along its existing phase/mode predicates
 when that avoids making an unported optional phase a prerequisite of the active
@@ -211,9 +207,9 @@ Keep implementation and evidence separate:
 | Implementation status | Meaning |
 | --- | --- |
 | Remaining | Native implementation has not been ported. |
-| Stub | A declaration/no-op/NYI exists, not an implementation. |
+| Stub | A declaration or terminating NYI placeholder exists; its body is not translated. |
 | In progress | Work is preserved but incomplete or not integrated. |
-| Ported | The whole intended function is implemented; deferred platform paths are explicit. |
+| Ported | The whole body is translated, target branches are retained, and deferred dependency stubs are tracked separately. |
 
 Evidence is scoped separately to build, unit behavior, phase dumps, codegen, or
 execution, and to a particular revision, configuration, target, and corpus.
@@ -246,11 +242,15 @@ records are not guaranteed to remain live; preserve their source/revision and
 build instructions, while keeping current checkpoint inputs directly available.
 The milestone journal remains the capability history, not an artifact inventory.
 
-For upstream synchronization, obtain the changed-file/commit inventory first.
-Classify each affected ported area, generator input, JIT/EE interface, and relevant
-native dependency. Save classifications and unresolved symbols once, rather than
-rediscovering them in each session. Record an explicit reason for an exclusion.
-Git retains old native code even when it has been removed from `runtime-port`.
+For upstream synchronization, compare the immutable old and new oracle revisions,
+using the preserved residual to distinguish translated definitions from remaining
+work. For an already translated definition, port its upstream delta into C# and
+keep it absent from `runtime-port`; a modify/delete conflict is not a reason to
+restore or re-port its unchanged body. Update still-unported definitions to the
+new revision, retain newly added definitions, and remove definitions upstream
+deleted. Apply the same scoped review to changed tables, generators, types and
+JIT/EE contracts. Save unresolved exceptions once instead of rediscovering them.
+Git and the intact oracle retain reference source for removed definitions.
 Generate a review inventory from the pinned revisions and preserved residual
 snapshot with:
 
