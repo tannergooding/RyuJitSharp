@@ -16,6 +16,29 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch LSRA file closure
+
+The final hardware-intrinsic builder preserves x86 byte-register and CRC32
+constraints and target-specific APX/EVEX behavior. Its complete definition and
+remaining scaffolding close the 1,123-line `lsraxarch.cpp` in `a892d056`.
+The shared declaration remains for other targets.
+
+The native APX-aware `BigMul` constraint also repairs an unnecessarily restricted
+Windows-x64 candidate mask: R16 is available when EVEX semantics permit it.
+The recent call-builder translation's Windows-only float-vararg local now has
+a matching declaration guard, fixing Unix CS0219 without changing ABI behavior.
+
+Original Windows controls pass 42 Debug/42 Release. Supplemental controls pass
+10 Debug/10 Release; identical old cases fail only the BigMul mask in each
+configuration. Linux call/BigMul controls pass three cases per configuration
+after the declaration repair. The initial broader Linux run retains one Debug
+SIMD16 return-description fixture failure (five of six pass); Release passes six.
+X86 retains 14 baseline errors, leaving six new cases unexecuted. Evidence:
+`artifacts/lsra-xarch-hw-intrinsic-20260929-f37322e` and the corresponding proposal
+and `lsra-final` whole-file records, plus `lsra-xarch-hw-bigmul` and
+`lsra-call-linux-bigmul` supplements under `artifacts/residual-reconciliation`.
+File closure and allocator-mask controls are not execution parity.
+
 ## 2026-09-29: Shared copy/move and intrinsic operand helpers
 
 Whole copy selectors and move dispatch preserve ARM, ARM64, x86, LoongArch64

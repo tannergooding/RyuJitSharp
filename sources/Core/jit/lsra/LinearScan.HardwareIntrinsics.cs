@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-#if FEATURE_HW_INTRINSICS && TARGET_AMD64
+#if FEATURE_HW_INTRINSICS && TARGET_XARCH
     private int buildDelayFreeUses(GenTree node, GenTree? rmwNode, SingleTypeRegSet candidates = SRBM_NONE)
     {
         RefPosition? use = null;
@@ -56,7 +56,11 @@ public sealed partial class LinearScan
             var buildUses = true;
             var isRmw = intrinsic.IsRmwHWIntrinsic(_compiler);
             var isEvexCompatible = intrinsic.IsEvexCompatibleHWIntrinsic(_compiler);
+#if TARGET_AMD64
             var canUseApxRegs = isEvexCompatible && _evexIsSupported;
+#else
+            const bool canUseApxRegs = false;
+#endif
 
             if ((category is HW_Category_IMM) &&
                 ((HWIntrinsicInfo.lookupFlags(intrinsicId) & HW_Flag_NoJmpTableIMM) == 0) &&
@@ -94,6 +98,12 @@ public sealed partial class LinearScan
                         }
                         buildUses = false;
                     }
+#if TARGET_X86
+                    else if (varTypeIsByte(baseType) && intrinsicId is NI_Vector_ToScalar)
+                    {
+                        destinationCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+                    }
+#endif
                     break;
                 }
 
@@ -119,7 +129,13 @@ public sealed partial class LinearScan
                     _ = _compiler.getSIMDInitTempVarNum(intrinsic.Type);
                     sourceCount += buildOperandUses(op1);
                     sourceCount += buildOperandUses(op2);
+#if TARGET_X86
+                    sourceCount += buildOperandUses(op3, varTypeIsByte(baseType)
+                        ? _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet()
+                        : SRBM_NONE);
+#else
                     sourceCount += buildOperandUses(op3, varTypeIsByte(baseType) ? _availableIntRegs : SRBM_NONE);
+#endif
                     buildUses = false;
                     break;
                 }
@@ -182,6 +198,33 @@ public sealed partial class LinearScan
                     break;
                 }
 
+                case NI_X86Base_Extract:
+                {
+                    assert(!varTypeIsFloating(baseType));
+#if TARGET_X86
+                    if (varTypeIsByte(baseType))
+                    {
+                        destinationCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+                    }
+#endif
+                    break;
+                }
+
+#if TARGET_X86
+                case NI_X86Base_Crc32:
+                case NI_X86Base_X64_Crc32:
+                {
+                    assert(operandCount == 2 && isRmw);
+                    _targetPreferredUse = buildUse(op1);
+                    sourceCount++;
+                    sourceCount += buildDelayFreeUses(op2, op1, varTypeIsByte(baseType)
+                        ? _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet()
+                        : SRBM_NONE);
+                    buildUses = false;
+                    break;
+                }
+#endif
+
                 case NI_X86Base_DivRem:
                 case NI_X86Base_X64_DivRem:
                 {
@@ -211,7 +254,7 @@ public sealed partial class LinearScan
                 case NI_X86Base_X64_BigMul:
                 {
                     assert(operandCount == 2 && destinationCount == 2 && isRmw && !op1.IsContained);
-                    var candidates = forceLowGprForApx(op1);
+                    var candidates = forceLowGprForApxIfNeeded(op1, SRBM_NONE, canUseApxRegs);
                     sourceCount = buildOperandUses(op1, op2.IsContained ? SRBM_EAX : candidates);
                     sourceCount += buildOperandUses(op2, candidates);
                     _ = buildDef(intrinsic, SRBM_EAX, 0);
@@ -618,7 +661,9 @@ public sealed partial class LinearScan
 
                         if (operandCount >= 4)
                         {
+#if TARGET_AMD64
                             assert(isEvexCompatible);
+#endif
                             sourceCount += isRmw
                                 ? buildDelayFreeUses(op4, op1, SRBM_NONE)
                                 : buildOperandUses(op4);
@@ -632,6 +677,7 @@ public sealed partial class LinearScan
 
         if (destinationCount == 1)
         {
+#if TARGET_AMD64
             var isEvexCompatible = intrinsic.IsEvexCompatibleHWIntrinsic(_compiler);
             if (!isEvexCompatible)
             {
@@ -641,6 +687,7 @@ public sealed partial class LinearScan
             {
                 destinationCandidates = forceLowGprForApx(intrinsic, destinationCandidates);
             }
+#endif
             _ = buildDef(intrinsic, destinationCandidates);
         }
         else

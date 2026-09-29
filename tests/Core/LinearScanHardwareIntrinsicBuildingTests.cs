@@ -18,6 +18,92 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
 {
+#if TARGET_X86
+    [Test]
+    public static void ByteVectorToScalarRestrictsTheResultToByteRegisters()
+    {
+        WithAllocator((_, allocator) => {
+            var vector = new GenTreeVecCon(TYP_SIMD16);
+            ReferenceBuildLocation(allocator) = 2;
+            _ = BuildDef(allocator, vector, SRBM_NONE, 0);
+            var intrinsic = new GenTreeHWIntrinsic(TYP_INT, NI_Vector_ToScalar, TYP_BYTE, 16, vector);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildHWIntrinsic(allocator, intrinsic, out var destinations), Is.EqualTo(1));
+            Assert.That(destinations, Is.EqualTo(1));
+            Assert.That(allocator.refPositions[^1].registerAssignment,
+                Is.EqualTo(AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.GetIntRegSet()));
+        });
+    }
+
+    [Test]
+    public static void ByteExtractRestrictsTheResultToByteRegisters()
+    {
+        WithAllocator((compiler, allocator) => {
+            var vector = new GenTreeVecCon(TYP_SIMD16);
+            var index = compiler.gtNewIconNode(TYP_INT, 1);
+            index.IsContained = true;
+            ReferenceBuildLocation(allocator) = 2;
+            _ = BuildDef(allocator, vector, SRBM_NONE, 0);
+            var intrinsic = new GenTreeHWIntrinsic(TYP_INT, NI_X86Base_Extract, TYP_BYTE, 16, vector, index);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildHWIntrinsic(allocator, intrinsic, out var destinations), Is.EqualTo(1));
+            Assert.That(destinations, Is.EqualTo(1));
+            Assert.That(allocator.refPositions[^1].registerAssignment,
+                Is.EqualTo(AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.GetIntRegSet()));
+        });
+    }
+
+    [TestCase(NI_X86Base_Crc32, TYP_BYTE, true)]
+    [TestCase(NI_X86Base_Crc32, TYP_INT, false)]
+    [TestCase(NI_X86Base_X64_Crc32, TYP_BYTE, true)]
+    public static void Crc32DelaysItsSecondOperandAndConstrainsByteSources(
+        NamedIntrinsic id, var_types baseType, bool byteSource)
+    {
+        WithAllocator((compiler, allocator) => {
+            var accumulator = compiler.gtNewIconNode(TYP_INT, 7);
+            var data = compiler.gtNewIconNode(TYP_INT, 13);
+            ReferenceBuildLocation(allocator) = 2;
+            var accumulatorDef = BuildDef(allocator, accumulator, SRBM_NONE, 0);
+            var dataDef = BuildDef(allocator, data, SRBM_NONE, 0);
+            var intrinsic = new GenTreeHWIntrinsic(TYP_INT, id, baseType, 0, accumulator, data);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildHWIntrinsic(allocator, intrinsic, out var destinations), Is.EqualTo(2));
+            Assert.That(destinations, Is.EqualTo(1));
+            Assert.That(TargetPreferredUse(allocator), Is.SameAs(accumulatorDef.nextRefPosition));
+            Assert.That(dataDef.nextRefPosition?.registerAssignment,
+                Is.EqualTo(byteSource
+                    ? AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.GetIntRegSet()
+                    : AvailableIntRegs(allocator)));
+            Assert.That(dataDef.nextRefPosition?.delayRegFree, Is.True);
+        });
+    }
+
+    [Test]
+    public static void ByteVectorInsertionRestrictsScalarSource()
+    {
+        WithAllocator((compiler, allocator) => {
+            var vector = new GenTreeVecCon(TYP_SIMD16);
+            var index = new GenTreeUnOp(
+                genTreeOps.GT_NEG, TYP_INT, compiler.gtNewIconNode(TYP_INT, 1));
+            var scalar = compiler.gtNewIconNode(TYP_INT, 42);
+            ReferenceBuildLocation(allocator) = 2;
+            _ = BuildDef(allocator, vector, SRBM_NONE, 0);
+            _ = BuildDef(allocator, index, SRBM_NONE, 0);
+            var scalarDef = BuildDef(allocator, scalar, SRBM_NONE, 0);
+            var intrinsic = new GenTreeHWIntrinsic(
+                TYP_SIMD16, NI_Vector_WithElement, TYP_BYTE, 16, vector, index, scalar);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildHWIntrinsic(allocator, intrinsic, out var destinations), Is.EqualTo(3));
+            Assert.That(destinations, Is.EqualTo(1));
+            Assert.That(scalarDef.nextRefPosition?.registerAssignment,
+                Is.EqualTo(AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.GetIntRegSet()));
+        });
+    }
+#else
     [Test]
     public static void ZeroOperandFenceHasNoSourcesOrResults()
     {
@@ -88,6 +174,32 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
                 reference.treeNode == intrinsic && reference.refType == RefType.RefTypeDef)
                 .Select(reference => reference.registerAssignment),
                 Is.EqualTo(expectedRegisters));
+        });
+    }
+
+    [Test]
+    public static void BigMulPermitsExtendedGprsWhenEvexEncodingIsAvailable()
+    {
+        WithAllocator((compiler, allocator) => {
+            ApxSupported(allocator) = true;
+            EvexSupported(allocator) = true;
+            AvailableIntRegs(allocator) |= SRBM_R16;
+            var left = compiler.gtNewIconNode(TYP_LONG, 11);
+            var right = compiler.gtNewIconNode(TYP_LONG, 13);
+            ReferenceBuildLocation(allocator) = 2;
+            var leftDef = BuildDef(allocator, left, SRBM_NONE, 0);
+            var rightDef = BuildDef(allocator, right, SRBM_NONE, 0);
+            var intrinsic = new GenTreeHWIntrinsic(
+                TYP_STRUCT, NI_X86Base_X64_BigMul, TYP_LONG, 0, left, right);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(intrinsic.IsEvexCompatibleHWIntrinsic(compiler), Is.True);
+            Assert.That(BuildHWIntrinsic(allocator, intrinsic, out var destinations), Is.EqualTo(2));
+            Assert.That(destinations, Is.EqualTo(2));
+            Assert.That(leftDef.nextRefPosition?.registerAssignment, Is.EqualTo(AvailableIntRegs(allocator)));
+            Assert.That(rightDef.nextRefPosition?.registerAssignment, Is.EqualTo(AvailableIntRegs(allocator)));
+            Assert.That(leftDef.nextRefPosition?.registerAssignment & SRBM_R16, Is.Not.EqualTo(SRBM_NONE));
+            Assert.That(LowGprRegs(allocator) & SRBM_R16, Is.EqualTo(SRBM_NONE));
         });
     }
 
@@ -300,6 +412,7 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
                 reference.delayRegFree && reference.registerAssignment == SRBM_LOWFLOAT), Is.True);
         });
     }
+#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildHWIntrinsic")]
     private static extern int BuildHWIntrinsic(
@@ -332,6 +445,9 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lowGprRegs")]
     private static extern ref regMask LowGprRegs(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_availableIntRegs")]
+    private static extern ref regMask AvailableIntRegs(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllFloat")]
     private static extern ref regMask CompilerAllFloatRegs(Compiler compiler);

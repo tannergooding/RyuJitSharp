@@ -50,8 +50,8 @@ public sealed partial class LinearScan
 #endif
         }
 
-        var callHasFloatRegArgs = false;
 #if WINDOWS_AMD64_ABI
+        var callHasFloatRegArgs = false;
         if (compFeatureVarArg() && call.Args.IsVarArgs)
         {
             foreach (var arg in call.Args.LateArgs)

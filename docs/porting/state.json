@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "xarchLsraFileClosure": {
+      "scope": "Whole BuildHWIntrinsic preserves x86 byte-register, CRC32 and target-specific APX/EVEX constraints. Correct BigMul's APX candidate mask and the recent call-builder Unix declaration-guard regression.",
+      "validation": "Original Windows42 Debug/42 Release controls pass. Supplemental Windows10 Debug/10 Release pass; identical old cases fail only BigMul in both configurations. Linux focused3 Debug/3 Release pass after the declaration repair; old builds fail CS0219. Initial broader Linux Debug5/6 retains an unrelated SIMD16 return-description fixture failure; Release6/6 passes. Paired x86 builds retain14 identical errors; six new x86 cases remain unexecuted.",
+      "retirement": "The final954-line definition and remaining scaffolding close the1123-line lsraxarch.cpp. Shared lsra.h declaration remains for other targets.",
+      "nativeBefore": "c953db8aa7429f3fe35492b04ebe95faadcf18ef",
+      "nativeAfter": "a892d056ab4578fa661ec79bd1ba1eeb6286c743",
+      "evidence": "artifacts/lsra-xarch-hw-intrinsic-20260929-f37322e; artifacts/residual-reconciliation/lsra-xarch-hw-intrinsic-proposed-20260929.json, lsra-xarch-hw-bigmul-supplement-20260929.json, lsra-call-linux-bigmul-supplement-20260929.json and lsra-final whole-file verification.",
+      "limits": "Translation closure does not establish x86 compilation/execution or generated-code parity; shared builders and other-target LSRA remain independent."
+    },
     "sharedCopyMoveAndIntrinsicOperands": {
       "scope": "Whole ins_Copy overloads, inst_Mov and three intrinsic operand wrappers. Preserve every copy-selector target path, ARM flag forwarding, LoongArch64/RISC-V64 destination-class normalization and x86 operand flow.",
       "validation": "Combined Windows133 Debug/126 Release pass. ARM64 copy selection and move recording26 Debug/26 Release pass; all26 identical old cases fail at old target guards. Wrapper Linux15 Debug pass. Paired x86 builds retain14 identical errors.",
@@ -1457,7 +1466,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "c953db8aa7429f3fe35492b04ebe95faadcf18ef",
+      "residualHead": "a892d056ab4578fa661ec79bd1ba1eeb6286c743",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -1595,7 +1604,7 @@
       "doneWhen": [
         "Complete dependency-coherent retained xarch codegen and lowering families with whole native target branches; distinguish real omissions from retirement lag.",
         "Complete retained xarch scalar LSRA and SIMD codegen families, preserving x86 paths and tracking separate helper dependencies.",
-        "Integrate each validated xarch packet before assigning its lane another family; keep native retirement coupled to whole-function translation and preserve separately tracked helper dependencies.",
+        "Prioritize integration of ready packets. While a shared integration dependency is being resolved, freeze completed packet files and let idle lanes handle a disjoint family or clear validation; bound the queue rather than adding idle workers. Keep native retirement coupled to whole-function translation and preserve separately tracked helper dependencies.",
         "Resolve shared declaration/signature/guard conflicts centrally; preserve existing Windows behavior and compilability of affected target paths.",
         "Commit validated C# repairs with sparse dependency/exception records, then retire the exact completed native definitions in the same batch through the consolidated amended cleanup commit. Retain unported helper bodies."
       ],
@@ -1608,31 +1617,31 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Complete retained codegenlinear.cpp genUnspillLocal and genRegCopy overloads using the accepted shared consumption and copy/move contracts. Preserve target paths, register ownership and GC/liveness ordering; validate focused register controls and available ARM64 paths, retain explicit independent spill/emitter dependencies, then retire whole definitions. Integrate bounded lane packets, keeping13 Wasm WIP frozen.",
+      "parentScope": "Complete codegenlinear.cpp genUnspillLocal/genProduceReg and codegencommon.cpp genRegCopy overloads together with A's shared GenTree register queries. ARM64 controls exposed a separate VariableLiveKeeper constructor guard despite its native definition already being absent; correct that exception without retirement credit. Preserve fixed-register guards, ownership and GC/liveness ordering. Integrate ready condition/operand and lowering packets; keep13 Wasm WIP frozen.",
       "wholeFunctionRepairLanes": [
         {
-          "scope": "Next retained general codegenxarch family after cookie/EH and immediate/helper-call completion.",
+          "scope": "Shared GenTree register type/spill queries required by the parent copy family; condition/trap packet is frozen for integration.",
           "owner": "4b57b744-36f1-4e6e-8b76-94c1a87d6e02",
-          "files": "General codegenxarch partials and focused fixtures; exclude hardware-intrinsic codegen and shared parent contracts.",
-          "status": "active from f87562b"
+          "files": "GenTree.RegisterSpills.cs and disjoint fixtures; parent owns shared CodeGen register helpers and Arm64RegisterCopyTests.",
+          "status": "active from3e883a0"
         },
         {
-          "scope": "Next retained lowerxarch helper family after LowerCast and LowerHWIntrinsic completion.",
+          "scope": "Ready shared switch and memory-compare lowering packets; refresh switch Linux evidence with the explicit call-builder declaration repair.",
           "owner": "b2253a3d-d101-444e-9c56-d631eb5b274b",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "LowerHWIntrinsic accepted with failing-old assertion evidence; ready for next assignment"
+          "status": "switch and memcmp files frozen; paired Linux switch validation active"
         },
         {
-          "scope": "Next retained xarch LSRA family, including the separate CheckAndMoveRMWLastUse helper.",
+          "scope": "Retained shared lsrabuild family after xarch file closure and Unix call-builder compilation repair.",
           "owner": "bf8933b0-1d43-49d4-9d3e-91c4322f5215",
           "files": "LSRA partials and focused fixtures.",
-          "status": "active from86a8984"
+          "status": "xarch file closure accepted; next bounded family to be assigned after commit"
         },
         {
-          "scope": "Retained xarch hardware-intrinsic code generation after full SIMD file closure.",
+          "scope": "Ready instr operand classification/wrappers. Separate PSHUFD immediate assertion matches the pin and remains unchanged.",
           "owner": "a9254d85-a0d4-46d4-a852-87eef8c242fb",
-          "files": "Hardware-intrinsic codegen partials and dedicated fixtures; general codegenxarch remains with A.",
-          "status": "active fromf4f4501; parent separately repaired SIMD ARM64 declaration guard"
+          "files": "Instruction and emitter partials with dedicated fixtures; exclude parent register helpers and shared GenTree queries.",
+          "status": "operand-core packet frozen for combined condition/operand integration"
         }
       ],
       "parallelPackets": [
@@ -2036,7 +2045,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Combined instr accepted through nativec953db8a:6 definitions/600 lines,133D126R Windows,26D26R ARM64 with26 old failures. Do not reapply. Reassign HW lane to retained instr operand classification/recording helpers, excluding parent shared register-copy work. Parent next completes codegenlinear genUnspillLocal/genRegCopy overloads; A continues general codegen, B shared lower.cpp, LSRA BuildHWIntrinsic. Preserve14x86 blockers,13Wasm, four lanes, oracle-plus-one and no publication.",
+    "nextAction": "LSRA closure with BigMul regression and Calls.cs Unix declaration repair is accepted; nativea892d056 already contains the1123-line retirement, do not reapply. Integrate condition/operand packets: combined Windows84 Debug/81 Release pass; Linux83/84 retains the separate rsSpillTree Windows-only dependency in fixture setup, not a full pass. B's memcmp packet is ready and switch reruns explicitly include the declaration repair. Finish combined A GenTree queries plus parent local/copy/production/VariableLiveKeeper controls, then retire the seven whole definitions. Refill existing lanes without unbounded ready packets. Preserve14x86 blockers,13Wasm, oracle-plus-one and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
