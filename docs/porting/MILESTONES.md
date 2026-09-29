@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch address-mode sizing
+
+Both address-mode sizing overloads now retain their x86 bodies, including
+absolute-EAX MOV shortening, base/index swapping and displacement widths.
+AMD64-only SIB and relocation conditions remain target-specific. The two base
+register predicates, prefetch query and scale decoder complete the same family.
+
+Full-analysis controls pass Windows 76 Debug/73 Release and Linux-x64 target
+5 Debug cases; ARM64 builds. Identical preexisting x86 diagnostics still prevent
+execution of the six new x86-specific cases. Separate EVEX compression and tuple
+metadata dependencies remain explicit.
+
+Six complete definitions retire 332 lines in native `1c9d0d6d`. Exact evidence
+and retirement records are under
+`artifacts/residual-reconciliation/*address-sizing*-20260929.json`.
+
 ## 2026-09-29: Common constant and descriptor-flag access
 
 Instruction constant access now preserves the complete native target flow,

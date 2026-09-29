@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "xarchAddressSizing": {
+      "scope": "Both whole emitInsSizeAM overloads, base-register SIB/displacement predicates, prefetch query and scale decoding.",
+      "validation": "Full-analysis Windows76Debug/73Release and Linux-x64 target5Debug cases; ARM64 Debug builds. Old/new x86 snapshots retain the same15 independent diagnostics after identical parser overlays. Six added x86-conditional cases remain unexecuted, not passing.",
+      "retirement": "Six complete definitions and associated declarations,332 pure deletions across emitxarch.cpp and emitxarch.h.",
+      "nativeBefore": "0cd7402896cfe231cdca8e629edfc55f96cce742",
+      "nativeAfter": "1c9d0d6d4149a030c631fde52b81c21bc25aaa85",
+      "limits": "Preserves x86 absolute-EAX MOV opcode reduction, AMD64-only absolute SIB and relocation assertions, register swapping and displacement/immediate widths. x86 EVEX displacement compression and tuple metadata remain separate terminating dependencies.",
+      "evidence": "artifacts/residual-reconciliation/xarch-address-sizing-proposed-20260929.json retains exact source/TRX hashes and commands. address-sizing-combined-20260929.json and its receipt/reconstruction verify unchanged file anchors after intervening common-file retirements."
+    },
     "commonDescriptorAccess": {
       "scope": "Whole emitGetInsSC, common TLS/relocation flags, ARM frame-base flags and ARM/LoongArch64/RISC-V64 local-variable flag accessors.",
       "mapping": "emit.cpp::emitGetInsSC now resides in emit/Emitter.ConstantAccess.cs; descriptor flags reside in emit/Emitter.instrDesc.Attributes.cs. Xarch TLS flags retain their existing custom-bit alias.",
@@ -1000,7 +1009,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "0cd7402896cfe231cdca8e629edfc55f96cce742",
+      "residualHead": "1c9d0d6d4149a030c631fde52b81c21bc25aaa85",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -1567,7 +1576,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Common descriptor access is accepted at native0cd74028:12 definitions/90 exact deletions, Windows409D402R and ARM6469D57R, with seven genuine old constant-guard failures. Never reapply prior retirements. Lane B address-sizing packet is ready: xarch-address-sizing-proposed-20260929.json proposes332 lines, Windows76D73R/Linux-target5 cases and ARM64 build; read its exact evidence/source hashes, reanchor any emit.h spans after descriptor-access deletions, and integrate without parent WIP. Lane A is active on retained stack/local recording and IsRedundantStackMov at managed6840/native30e5. Parent next resolves ARM64 third/fourth-register descriptor access using the pinned address-union layout and existing logical-size evidence, preserving local-address/GC-field overlap and separate SVE dependencies. Preserve13 Wasm WIP files and oracle-plus-one. No publication.",
+    "nextAction": "Address sizing is accepted at native1c9d0d6d:6 definitions/332 exact deletions, Windows76D73R/Linux-target5Debug and ARM64 build. Common descriptor access is committed18f8ed1. Never reapply prior retirements. Lane A remains active on retained stack/local recording and IsRedundantStackMov at managed6840/native30e5. Lane B next closes retained EVEX displacement compression and directly coupled tuple metadata, without overlapping A's stack sizing declarations. Parent resolves ARM64 third/fourth-register descriptor access using the pinned address-union layout and existing logical-size evidence, preserving local-address/GC-field overlap and separate SVE dependencies. Preserve13 Wasm WIP files and oracle-plus-one. No publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

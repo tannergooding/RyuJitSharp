@@ -9,22 +9,23 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_X86
-    public uint emitInsSizeAM(instrDesc id, ulong code)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "x86 address-mode instruction sizing is not ported.");
-    }
-#endif
-
-#if TARGET_AMD64
+#if TARGET_XARCH
     private static bool baseRegisterRequiresSibByte(regNumber reg)
     {
+#if TARGET_AMD64
         return reg is REG_ESP or REG_R12 or REG_R20 or REG_R28;
+#else
+        return reg == REG_ESP;
+#endif
     }
 
     private static bool baseRegisterRequiresDisplacement(regNumber reg)
     {
+#if TARGET_AMD64
         return reg is REG_EBP or REG_R13 or REG_R21 or REG_R29;
+#else
+        return reg == REG_EBP;
+#endif
     }
 
     private static bool isPrefetch(instruction ins)
@@ -140,12 +141,23 @@ public partial class Emitter
             // [reg+disp]
             if (reg == REG_NA)
             {
-                // [disp] uses disp32; non-relocatable addresses also require SIB.
+#if TARGET_X86
+                if ((ins == INS_mov) && (id.idReg1() == REG_EAX) &&
+                    (id.idInsFmt() is IF_RWR_ARD or IF_AWR_RRD))
+                {
+                    assert((size == 2) || ((size == 3) && (id.idOpSize() == EA_2BYTE)));
+                    size--;
+                }
+#endif
+
+                // [disp] uses disp32; AMD64 non-relocatable addresses also require SIB.
                 size += sizeof(int);
+#if TARGET_AMD64
                 if (!id.idIsDspReloc())
                 {
                     size++;
                 }
+#endif
 
                 return size;
             }
@@ -238,7 +250,9 @@ public partial class Emitter
         // BT mem,reg has poor performance; BT mem,imm would need special handling
         // because its immediate is always encoded in a byte.
         assert(ins != INS_bt);
+#if TARGET_AMD64
         noway_assert((valSize <= sizeof(int)) || !id.idIsCnsReloc());
+#endif
 
         if (valSize > sizeof(int))
         {

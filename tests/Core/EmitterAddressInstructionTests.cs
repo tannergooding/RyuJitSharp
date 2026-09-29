@@ -15,6 +15,33 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class EmitterAddressInstructionTests
 {
+#if TARGET_X86
+    [TestCase(INS_mov, EA_4BYTE, REG_NA, REG_NA, 0u, REG_EAX, IF_RWR_ARD, 5u)]
+    [TestCase(INS_mov, EA_4BYTE, REG_NA, REG_NA, 0u, REG_EAX, IF_AWR_RRD, 5u)]
+    [TestCase(INS_mov, EA_4BYTE, REG_NA, REG_NA, 0u, REG_ECX, IF_RWR_ARD, 6u)]
+    [TestCase(INS_mov, EA_4BYTE, REG_ESP, REG_NA, 0u, REG_EAX, IF_RWR_ARD, 3u)]
+    [TestCase(INS_mov, EA_4BYTE, REG_EBP, REG_NA, 0u, REG_EAX, IF_RWR_ARD, 3u)]
+    [TestCase(INS_mov, EA_4BYTE, REG_EBP, REG_ECX, 0u, REG_EAX, IF_RWR_ARD, 3u)]
+    public static void X86AbsoluteAndIndexedAddressesPreserveNativeWidth(
+        instruction ins, emitAttr attr, regNumber baseReg, regNumber index, uint scale,
+        regNumber targetReg, Emitter.insFormat format, uint size)
+    {
+        WithEmitter((_, emitter) =>
+        {
+            var id = Address(emitter, ins, attr, baseReg, index, scale, 0, targetReg);
+            id.idInsFmt(format);
+            var code = format == IF_AWR_RRD ? insCodeMR(ins) : insCodeRM(ins);
+
+            Assert.That(emitter.emitInsSizeAM(id, code), Is.EqualTo(size));
+            if ((baseReg == REG_EBP) && (index == REG_ECX))
+            {
+                Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_ECX));
+                Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_EBP));
+            }
+        });
+    }
+#endif
+
     [TestCase(INS_inc, EA_4BYTE, REG_RAX, 0, IF_ARW, 2u)]
     [TestCase(INS_dec, EA_2BYTE, REG_RSP, -8, IF_ARW, 5u)]
     public static void UnaryBaseAddressRecordsSizeAndOptions(
