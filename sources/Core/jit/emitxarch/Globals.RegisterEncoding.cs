@@ -28,5 +28,11 @@ public static partial class Globals
         assert(((uint)REG_XMM0 & 0x7) == 0);
         return (uint)AbsRegNumber(reg) & 0x7;
     }
+#elif TARGET_X86
+    public static uint RegEncoding(regNumber reg)
+    {
+        assert(reg < REG_STK);
+        return (uint)reg & 7;
+    }
 #endif
 }

@@ -34,6 +34,7 @@
   <ItemGroup Condition="'$(RyuJitTargetRuntimeIdentifier)' == 'win-x86' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'win-x86')">
     <Compile Include="..\Core\X86EmitterStaticFieldDependencyTests.cs" Link="X86EmitterStaticFieldDependencyTests.cs" />
     <Compile Include="..\Core\X86EmitterStaticOutputTests.cs" Link="X86EmitterStaticOutputTests.cs" />
+    <Compile Include="..\Core\X86EmitterAddressStackOutputTests.cs" Link="X86EmitterAddressStackOutputTests.cs" />
   </ItemGroup>
 
 </Project>

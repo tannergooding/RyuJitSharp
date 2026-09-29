@@ -7,7 +7,7 @@ public partial class Compiler
 #if EMITTER_STATS
     private static void emitterStaticStats()
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Static emitter statistics are not yet ported.");
+        Emitter.emitStaticStats();
     }
 #endif
 }

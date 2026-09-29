@@ -16,6 +16,32 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Allocation, static layouts and address/stack output
+
+Emitter allocation now retains target and statistics paths while preserving
+managed descriptor ownership. Static reporting uses native logical sizes for
+proved Windows AMD64/ARM64 feature layouts, including the distinct 72/80-byte
+call descriptors. Unsupported layouts terminate. Address and stack byte output
+retain their whole target paths, including x86 widths, prefixes, relocations and
+GC ordering; unported encoding dependencies remain explicit.
+
+Integrated Windows checks pass 226 Debug/218 Release and, with statistics,
+230 Debug/222 Release. Scoped Linux address/stack checks pass three per
+configuration, with two old-source stack-output guard failures and one unchanged
+address control. ARM64 allocation/init checks pass four per configuration with
+and without statistics, reaching a separate typed operand-size dependency.
+Numeric static-report cases pass Windows AMD64/ARM64 Debug and Release.
+
+MSVC declaration-layout probes establish the reported sizes and offsets, not
+full native-header or runtime parity. Independent x86 declaration/type errors
+still prevent that target's fixtures from running. General statistics reporting,
+prolog/epilog and distinct operand-size/encoding dependencies remain native.
+
+Five complete definitions retire 1,888 body lines, ten own heading lines and
+six declaration/friend lines: 1,904 total in `f46405d5`, still the sole oracle
+child. Evidence: `artifacts/residual-reconciliation/allocation-address-output-combined-20260929.json`
+and its applied receipt.
+
 ## 2026-09-29: Static-field output and CodeGen target helpers
 
 Static-field output now retains its Unix AMD64 and x86 paths, including absolute

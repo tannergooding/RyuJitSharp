@@ -41,7 +41,7 @@ internal static unsafe class X86EmitterStaticOutputTests
         });
     }
 
-    private static void WithEmitter(Action<Compiler, Emitter> action)
+    internal static void WithEmitter(Action<Compiler, Emitter> action)
     {
 #if DEBUG
         using var tls = new JitTls(null);

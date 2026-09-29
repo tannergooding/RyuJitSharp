@@ -13,9 +13,6 @@ public partial class Emitter
 {
     public unsafe byte* emitOutputSV(byte* dst, instrDesc id, ulong code, CnsVal* addc)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack-variable byte output requires Windows AMD64.");
-#else
         assert(id.idHasMemStk());
 
         var ins = id.idIns();
@@ -128,7 +125,9 @@ public partial class Emitter
             {
                 case EA_1BYTE:
                 {
+#if TARGET_AMD64
                     assert(ins is not (INS_lzcnt_apx or INS_tzcnt_apx or INS_popcnt_apx));
+#endif
                     break;
                 }
 
@@ -138,10 +137,12 @@ public partial class Emitter
                     {
                         dst += emitOutputByte(dst, 0x66);
                     }
+#if TARGET_AMD64
                     else
                     {
                         code |= EXTENDED_EVEX_PP_BITS;
                     }
+#endif
                     code |= 1;
                     break;
                 }
@@ -152,6 +153,7 @@ public partial class Emitter
                     break;
                 }
 
+#if TARGET_AMD64
                 case EA_8BYTE:
                 {
                     if (TakesEvexPrefix(id))
@@ -165,6 +167,14 @@ public partial class Emitter
                     }
                     break;
                 }
+#else
+                case EA_8BYTE:
+                {
+                    code |= 4;
+                    NO_WAY("bad 8 byte op");
+                    break;
+                }
+#endif
 
                 default:
                 {
@@ -172,10 +182,12 @@ public partial class Emitter
                 }
             }
 
+#if TARGET_AMD64
             if (ins >= INS_imul_08 && ins <= INS_imul_31)
             {
                 _ = insEncodeReg345(id, inst3opImulReg(ins), size, &code);
             }
+#endif
         }
 
         dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, ref code);
@@ -277,7 +289,9 @@ public partial class Emitter
         if (addc is not null)
         {
             var cval = addc->cnsVal;
+#if TARGET_AMD64
             noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
+#endif
 
             switch (opsz)
             {
@@ -408,7 +422,6 @@ public partial class Emitter
         }
 
         return dst;
-#endif
     }
 }
 #endif

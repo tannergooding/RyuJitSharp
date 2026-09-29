@@ -46,6 +46,17 @@ internal static unsafe class Arm64EmitterMethodInitializationTests
         Assert.That(emitter.emitHasFramePtr, Is.True);
     }
 
+    [Test]
+    public static void AllocatingDescriptorReachesTheUnportedArm64OperandSizeDependency()
+    {
+        var emitter = CreateEmitter();
+        Begin(emitter, false);
+
+        var error = Assert.Throws<FatalJitException>(() => emitter.AllocateBasic());
+        Assert.That(error!.Message, Does.Contain("Instruction operand-size fields outside AMD64"));
+        Assert.That(InstructionsInGroup(emitter), Is.Zero);
+    }
+
     private static TestEmitter CreateEmitter()
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -63,6 +74,15 @@ internal static unsafe class Arm64EmitterMethodInitializationTests
         {
             return new instrDescBasic();
         }
+
+        public instrDesc AllocateBasic()
+        {
+            return Allocate<instrDescBasic>(this, 16, emitAttr.EA_4BYTE);
+        }
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitAllocAnyInstr")]
+        private static extern T Allocate<T>(Emitter emitter, nuint size, emitAttr attr)
+            where T : instrDesc, new();
     }
 
     private static void Begin(Emitter emitter, bool hasFramePointer)
@@ -88,5 +108,8 @@ internal static unsafe class Arm64EmitterMethodInitializationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_debugInfoSize")]
     private static extern ref int DebugPrefix(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGinsCnt")]
+    private static extern ref int InstructionsInGroup(Emitter emitter);
 }
 #endif

@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "allocationAndAddressOutput": {
+      "scope": "Whole emitGetMem, emitAllocAnyInstr, emitterStaticStats, emitOutputAM and emitOutputSV, including target/statistics paths and narrow x86 encoding support.",
+      "validation": "Integrated full-analysis Windows226D218R and EMITTER_STATS230D222R, zero skips. Component Linux address/stack3D3R retains two genuine old stack-output guard failures and an unchanged address control. ARM64 allocation/init4D4R also passes with statistics, reaching a separate typed operand-size dependency. Numeric static-report cases pass Windows AMD64/ARM64 Debug/Release.",
+      "layout": "Scoped MSVC pinned-member declaration probes establish Windows AMD64 CGCA72 and ARM64 CGCA80 with their field offsets. Report guards permit only proved Windows ABI/feature combinations. Probes are not full native-header builds or runtime parity; the pinned FILE* declaration versus parameterless emitterStaticStats definition remains an upstream discrepancy.",
+      "retirement": "Five definitions:1888 body lines, ten own heading lines and six declaration/friend lines =1904 total, with no duplicate cleanup.",
+      "nativeBefore": "01edbed9281831a5cbc49c02ba5753a58205fde5",
+      "nativeAfter": "f46405d5c210beba2c87797feacf3ec85b53395b",
+      "limits": "The same17 independent x86 declaration/type errors still prevent fixture execution. x86 call descriptors, EVEX/tuple compression, ARM64 operand-size support and unsupported static-report layouts remain terminating dependencies. General emitterStats(FILE*) and prolog/epilog bodies remain native. No x86 compilation or generated-code parity claim.",
+      "evidence": "artifacts/residual-reconciliation/allocation-address-output-combined-20260929.json and applied receipt, component manifests and artifacts/emitter-allocation-output-integrated. Parent restored getBmiRegNumber's native default assertion only in excluded x86 code after the integrated run; executed-target evidence is reused without claiming x86 execution."
+    },
     "staticOutputAndTargetHelpers": {
       "scope": "Whole static-field byte output, temporary-label creation and local-register masks, including x86 addressing, Unix-x86 label stack depth and ARM float-pair logic.",
       "mapping": "target.h genRegMaskFloat/genSingleTypeFloatMask map to regNumber.GetFloatMask/GetSingleTypeFloatMask in target/regNumberExtensions.cs. CodeGen helpers retain their existing conventional mappings.",
@@ -877,7 +887,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "01edbed9281831a5cbc49c02ba5753a58205fde5",
+      "residualHead": "f46405d5c210beba2c87797feacf3ec85b53395b",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -958,8 +968,8 @@
         "B393 edge visit-state assertions, unconditional DEBUG block membership and block-iterator mutation support are retired.",
         "Raw target-block getters have no pinned callsites and remain unused support. emitCodeGetCookie remains because its managed helper is only declared under TARGET_AMD64."
       ],
-      "remaining": "Continue whole-function translation/retirement from the residual, not recurring audits. Group saving/preparation/transitions, static-field recording/output and the two tracked CodeGen target-helper exceptions are complete; retain their distinct unported dependencies. Allocation/statistics and address/stack byte output are the active source areas. No new default Windows emission gap was established. Notify the user when full cleanup is done.",
-      "verification": "Native 01edbed9 amends the sole oracle-child commit, removing 554 lines for five static-output/CodeGen/mask definitions and associated declarations. Parent remains 33baf8ee, count above oracle one; native index/worktree clean. Retirement adds no target compilation or parity evidence.",
+      "remaining": "Continue whole-function translation/retirement from the residual, not recurring audits. Allocation/static-layout reporting and address/stack output are complete; retain their distinct unported dependencies. Prolog/epilog lifecycle and register/immediate byte output are the next source areas. No new default Windows emission gap was established. Notify the user when full cleanup is done.",
+      "verification": "Native f46405d5 amends the sole oracle-child commit, removing1904 lines for five allocation/static-layout/address/stack output definitions and associated headings/declarations. Parent remains33baf8ee, count above oracle one; native index/worktree clean. Retirement adds no target compilation or parity evidence.",
       "targetLedger": "Historical ledger collected through report108, consuming e0d198a for B455 without reopening unrelated rows. Report107's suspected copy-omission VN mismatch B456 is dismissed: GenTreeLclFld -> GenTreeLclVarCommon -> GenTreeUnOp source-aware construction explicitly clears both VNs after the root metadata copy. No production correction is needed. The reviewed materialization bodies are already absent. Existing call-driver review uncertainty is not a new untranslated-definition queue; stop recurring audits. Repair concrete residual partials and track only their stub/exception boundaries. D009, R005, B392 and B446 remain separately recorded optional gaps.",
       "retirementQueue": "A bounded existing-evidence pass found no immediately eligible bulk retirement: strongly reviewed definitions were already absent, surviving return helpers lack whole-target review, and gtFoldExpr retains an ARM64 path. artifacts/residual-reconciliation/bulk-retirement-candidates-20260928.json records the inspected scope and native snapshot. Stop duplicate sweeps of these candidates; prioritize unresolved Windows/shared contracts separately from mixed-target retirement. This is not repository-wide catch-up completion.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
@@ -1010,11 +1020,11 @@
       "caution": "Current backend allocation/codegen/emitter exclusions checked in this pass target non-Windows or non-AMD64 configurations. Commented callback declarations and historical baseline gaps are not an inventory of missing Windows implementations."
     },
     "activeBatch": {
-      "scope": "Continue emitter allocation/statistics support in lane A and address/stack byte output in lane B. Method-entry initialization, sizing/prefix and static-field output are complete. Consolidate evidence and retirement by source/dependency area, including associated declarations and old-source controls up front. No recurring audit or general backend expansion.",
+      "scope": "Continue emitter prolog/epilog/placeholder lifecycle in lane A and register/immediate byte output in lane B after the accepted allocation/address-output batch. Consolidate evidence and retirement by source/dependency area, including associated declarations and old-source controls up front. No recurring audit or general backend expansion.",
       "status": "in-progress",
       "doneWhen": [
-        "Complete retained emitGetMem, emitAllocAnyInstr and emitterStaticStats own paths and directly required support without changing approved managed descriptor ownership or native diagnostic contracts.",
-        "Complete retained emitOutputAM/emitOutputSV own target paths and narrowly required encoding dependencies, preserving address/displacement widths, SIB encoding, stack adjustment, relocation and GC semantics.",
+        "Complete retained emitter prolog/epilog/placeholder lifecycle own paths and directly required support without changing approved managed descriptor ownership or native diagnostic contracts.",
+        "Complete retained emitOutputR/emitOutputRR/emitOutputRI/emitOutputIV own target paths and narrowly required encoding dependencies, preserving widths, prefixes, relocation and GC semantics.",
         "Resolve shared declaration/signature/guard conflicts centrally; preserve existing Windows behavior and compilability of affected target paths.",
         "Commit validated C# repairs with sparse dependency/exception records, then retire the exact completed native definitions in the same batch through the consolidated amended cleanup commit. Retain unported helper bodies."
       ],
@@ -1030,16 +1040,16 @@
       "parentScope": "The CodeGen label/local-register exceptions and floating-mask support are accepted with static-field output; reuse their scoped Windows/ARM64 and old-source evidence. Integrate coherent worker packets, preserving source/declaration ownership and native oracle-plus-one. The isolated Wasm packet remains blocked by 108 wider diagnostics; preserve its WIP and native caller without backend expansion. B458/B459 close all 41 merged-array variants under both JITs; do not rerun completed evidence.",
       "wholeFunctionRepairLanes": [
         {
-          "scope": "Whole emitter allocation/statistics family: emitGetMem, emitAllocAnyInstr, emitterStaticStats and directly required support. Preserve existing managed descriptor ownership; stop before prolog/epilog and general encoding.",
+          "scope": "Whole emitter prolog/epilog/placeholder lifecycle: emitBegProlog, emitEndProlog, emitCreatePlaceholderIG, emitGeneratePrologEpilog and directly required nearby lifecycle helpers. Preserve managed ownership; keep the general statistics reporter separate.",
           "owner": "4b57b744-36f1-4e6e-8b76-94c1a87d6e02",
-          "files": "Emitter allocation/statistics partials, reporting support and focused fixtures; coordinate shared emitter declarations with the output lane.",
-          "status": "in-progress from dd76da0: allocation/statistics source-area packet includes focused old-source controls"
+          "files": "Emitter prolog/epilog/placeholder partials and focused fixtures; coordinate shared emitter declarations with the output lane.",
+          "status": "ready after allocation/address-output commit; preceding allocation/static-report packet accepted with exact declarations and scoped old-source controls"
         },
         {
-          "scope": "Whole emitOutputAM/emitOutputSV address and stack byte output plus narrow directly required encoding helpers; keep unrelated diagnostics and global target declarations separate.",
+          "scope": "Whole emitOutputR/emitOutputRR/emitOutputRI/emitOutputIV register/immediate byte output plus narrow directly required encoding helpers; keep unrelated diagnostics and global target declarations separate.",
           "owner": "b2253a3d-d101-444e-9c56-d631eb5b274b",
-          "files": "Emitter.AddressOutput.cs, Emitter.StackOutput.cs and narrow encoding support/fixtures; no initialization/group-buffer, statistics or Wasm WIP edits.",
-          "status": "next after the static-output commit: address/stack output source-area packet; independent x86 build limitations remain recorded"
+          "files": "Register/immediate output partials and narrow encoding support/fixtures; no prolog/epilog, statistics or Wasm WIP edits.",
+          "status": "ready after allocation/address-output commit; preceding address/stack output packet accepted, independent x86 build limitations remain recorded"
         }
       ],
       "parallelPackets": [
@@ -1443,7 +1453,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Collect lane A's active emitGetMem/emitAllocAnyInstr/emitterStaticStats packet after its completion notification; continue lane B with whole emitOutputAM/emitOutputSV after the accepted static-output boundary. Native 01edbed9 already contains the 554-line static-output/CodeGen retirement; do not reapply it. Reuse accepted unaffected evidence and known target-build limitations. Preserve Wasm WIP and its project edits. Include exact associated declarations; no recurring audits or publication.",
+    "nextAction": "Continue the two existing workers after the allocation/address-output commit: lane A owns the whole prolog/epilog/placeholder lifecycle family, lane B owns emitOutputR/emitOutputRR/emitOutputRI/emitOutputIV and narrow encoding dependencies. Native f46405d5 already contains the1904-line allocation/static-layout/address/stack retirement; do not reapply it. Require exact associated declarations, fixture filters/counts and old-source controls. Reuse unaffected evidence and known target limitations; preserve Wasm WIP/project edits. Parent integrates source packets and alone amends the native oracle child. No recurring audits or publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

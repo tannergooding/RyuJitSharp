@@ -13,14 +13,12 @@ public partial class Emitter
 {
     public unsafe byte* emitOutputAM(byte* dst, instrDesc id, ulong code, CnsVal* addc)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Address-mode byte output requires AMD64.");
-#else
         assert(_compiler is not null);
         assert(id.idHasMemAdr());
         nint dsp;
         bool dspInByte;
         bool dspIsZero;
+        var isMoffset = false;
         var ins = id.idIns();
         var size = id.idOpSize();
         var opsz = EA_SIZE_IN_BYTES(size);
@@ -70,6 +68,26 @@ public partial class Emitter
                 opsz = 1;
             }
         }
+#if TARGET_X86
+        else if ((ins == INS_mov) && (id.idReg1() == REG_EAX) && (reg == REG_NA) && (rgx == REG_NA))
+        {
+            var fmt = id.idInsFmt();
+            if (fmt == IF_RWR_ARD)
+            {
+                assert(code == ((ulong)insCodeRM(ins) |
+                    ((ulong)insEncodeReg345(id, REG_EAX, EA_PTRSIZE, null) << 8)));
+                code = (code & ~0xFFFFFFFFUL) | 0xA0;
+                isMoffset = true;
+            }
+            else if (fmt == IF_AWR_RRD)
+            {
+                assert(code == ((ulong)insCodeMR(ins) |
+                    ((ulong)insEncodeReg345(id, REG_EAX, EA_PTRSIZE, null) << 8)));
+                code = (code & ~0xFFFFFFFFUL) | 0xA2;
+                isMoffset = true;
+            }
+        }
+#endif
 
         code = AddX86PrefixIfNeededAndNotPresent(id, code, size);
         if (TakesSimdPrefix(id))
@@ -241,25 +259,38 @@ public partial class Emitter
                 }
 
                 case EA_4BYTE:
+#if TARGET_AMD64
                 case EA_8BYTE:
+#endif
                 {
+#if TARGET_AMD64
                     if (ins != INS_movbe_apx)
+#endif
                     {
                         code |= 1;
                     }
                     break;
                 }
 
+#if TARGET_X86
+                case EA_8BYTE:
+                {
+                    code |= 4;
+                    break;
+                }
+#endif
                 default:
                 {
                     NO_WAY("unexpected size");
                     break;
                 }
             }
+#if TARGET_AMD64
             if ((ins >= INS_imul_08) && (ins <= INS_imul_31))
             {
                 _ = insEncodeReg345(id, inst3opImulReg(ins), size, &code);
             }
+#endif
         }
 
         dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, ref code);
@@ -297,7 +328,21 @@ public partial class Emitter
             dspIsZero = dsp == 0;
         }
 
-        if (rgx == REG_NA)
+        if (isMoffset)
+        {
+#if TARGET_X86
+            dst += emitOutputByte(dst, unchecked((long)code));
+            dst += emitOutputSizeT(dst, (long)dsp);
+
+            if (id.idIsDspReloc())
+            {
+                emitRecordRelocation(dst - TARGET_POINTER_SIZE, (void*)dsp, CorInfoReloc.DIRECT);
+            }
+#else
+            throw new FatalJitException("Absolute accumulator address output is unavailable on AMD64.");
+#endif
+        }
+        else if (rgx == REG_NA)
         {
             switch (reg)
             {
@@ -314,6 +359,7 @@ public partial class Emitter
                             dst += emitOutputWord(dst, (long)(code | 0x0500));
                         }
                         var addlDelta = 0;
+#if TARGET_AMD64
                         if (addc != null)
                         {
                             // RIP follows the immediate, so the displacement relocation includes its width.
@@ -347,7 +393,12 @@ public partial class Emitter
                                 }
                             }
                         }
+#endif
+#if TARGET_AMD64
                         dst += emitOutputLong(dst, 0);
+#else
+                        dst += emitOutputLong(dst, (long)dsp);
+#endif
                         if (!IsSimdInstruction(ins) && id.idIsTlsGD())
                         {
                             addlDelta = -4;
@@ -360,18 +411,30 @@ public partial class Emitter
                     }
                     else
                     {
+#if TARGET_AMD64
                         noway_assert(!_compiler.opts.compReloc);
                         noway_assert(codeGen.genAddrRelocTypeHint((nuint)dsp) != CorInfoReloc.RELATIVE32);
                         noway_assert(unchecked((int)dsp) == dsp);
+#endif
                         if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
                         {
+#if TARGET_AMD64
                             dst += emitOutputByte(dst, (long)(code | 0x04));
+#else
+                            dst += emitOutputByte(dst, (long)(code | 0x05));
+#endif
                         }
                         else
                         {
+#if TARGET_AMD64
                             dst += emitOutputWord(dst, (long)(code | 0x0400));
+#else
+                            dst += emitOutputWord(dst, (long)(code | 0x0500));
+#endif
                         }
+#if TARGET_AMD64
                         dst += emitOutputByte(dst, 0x25);
+#endif
                         dst += emitOutputLong(dst, dsp);
                     }
                     break;
@@ -647,7 +710,9 @@ public partial class Emitter
         if (addc != null)
         {
             var cval = addc->cnsVal;
+#if TARGET_AMD64
             noway_assert((opsz < 8) || ((unchecked((int)cval) == cval) && !addc->cnsReloc));
+#endif
             switch (opsz)
             {
                 case 0:
@@ -791,7 +856,6 @@ public partial class Emitter
         }
 
         return dst;
-#endif
     }
 }
 #endif

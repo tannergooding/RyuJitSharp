@@ -11,12 +11,37 @@ public partial class Emitter
 {
     private const int EMIT_MAX_IG_INS_COUNT = 256;
 
+#if EMITTER_STATS
+    private static uint emitTotalInsCnt;
+#endif
+
+    private void emitRecordMemAllocation(nuint size)
+    {
+        assert((size % sizeof(int)) == 0);
+
+#if EMITTER_STATS
+        emitTotMemAlloc = unchecked(emitTotMemAlloc + size);
+#endif
+    }
+
+    private byte[] emitGetMem(nuint size)
+    {
+        emitRecordMemAllocation(size);
+
+        return System.GC.AllocateUninitializedArray<byte>(checked((int)size));
+    }
+
+    private T emitGetMem<T>(nuint size)
+        where T : class, new()
+    {
+        emitRecordMemAllocation(size);
+
+        return new T();
+    }
+
     private T emitAllocAnyInstr<T>(nuint size, emitAttr opsz)
         where T : instrDesc, new()
     {
-#if !TARGET_AMD64 || EMITTER_STATS
-        throw new FatalJitException(CORJIT_SKIPPED, "Instruction allocation requires AMD64 without emitter allocation statistics.");
-#else
         assert(_compiler is not null);
         assert(emitCurIG is not null);
         assert(emitCurIGfreeBase is not null);
@@ -51,10 +76,14 @@ public partial class Emitter
 
         var id = new T();
         emitLastIns = id;
+#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
         emitCurIG.igLastIns = id;
+#endif
         assert(size >= (nuint)nint.Size);
+#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
         id.idSetPrevSize(unchecked((uint)emitLastInsFullSize));
         emitLastInsFullSize = (int)fullSize;
+#endif
         emitLastInsIG = emitCurIG;
 
         id.StorageGroup = emitCurIG;
@@ -66,16 +95,17 @@ public partial class Emitter
 
         assert(id.idReg1() == 0);
         assert(id.idReg2() == 0);
+#if TARGET_XARCH
         assert(id.idCodeSize() == 0);
+#endif
         emitInsCount = unchecked(emitInsCount + 1);
 
         if (_debugInfoSize > 0)
         {
-            id.idDebugOnlyInfo(new instrDescDebugInfo
-            {
-                idNum = unchecked((uint)emitInsCount),
-                idSize = size,
-            });
+            var info = emitGetMem<instrDescDebugInfo>(DescriptorSizes.DebugInfo);
+            info.idNum = unchecked((uint)emitInsCount);
+            info.idSize = size;
+            id.idDebugOnlyInfo(info);
         }
 
         if (EA_IS_GCREF(opsz))
@@ -94,7 +124,11 @@ public partial class Emitter
             id.idOpSize(EA_SIZE(opsz));
         }
 
-        if (EA_IS_DSP_RELOC(opsz))
+        if (EA_IS_DSP_RELOC(opsz)
+#if !TARGET_AMD64
+            && _compiler.opts.compReloc
+#endif
+            )
         {
             id.idSetIsDspReloc();
         }
@@ -104,6 +138,9 @@ public partial class Emitter
             id.idSetIsCnsReloc();
         }
 
+#if EMITTER_STATS
+        emitTotalInsCnt = unchecked(emitTotalInsCnt + 1);
+#endif
         emitCurIGinsCnt++;
 
 #if DEBUG
@@ -121,7 +158,6 @@ public partial class Emitter
 #endif
 
         return id;
-#endif
     }
 
     private instrDescBasic emitAllocInstr(emitAttr attr)
