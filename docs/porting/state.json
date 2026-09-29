@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "commonCallGcAndReturnReporting": {
+      "scope": "Whole genEmitCallWithCurrentGC, preserving GC capture order, fixed-register retbuffer unwrapping, x86 stack-pop bias/x87 locations and target-specific multi-register return-reporting limits.",
+      "validation": "Windows144 Debug/133 Release and ARM64 allocation/capture20 Debug/20 Release pass. Two identical old ARM64 GC-capture controls fail before reaching the recorder dependency. Old/final x86 builds retain14 identical baseline errors.",
+      "retirement": "One definition with heading and its common declaration;158 native lines.",
+      "nativeBefore": "a30146a8ff7c0deb132f013955b672c82b930c34",
+      "nativeAfter": "822520d296b890ce1d8539412e424c38702d023c",
+      "evidence": "artifacts/common-call-gc-closure; artifacts/residual-reconciliation/common-call-gc-validation/component/combined/applied/verification-20260929.json and prepare-common-call-gc-integration.py.",
+      "limits": "ARM64 controls prove capture-before-terminating-recorder ordering, not ARM64 call emission or post-call return reporting. Non-AMD64 variable-location helpers remain independent dependencies; x86 execution and generated-code parity are unverified."
+    },
     "xarchScalarCodeGeneration": {
       "scope": "Whole genCodeForNegNot, genCodeForBswap, genCodeForIncSaturate and genCodeForBitOp, preserving xarch target branches.",
       "validation": "Windows98 Debug/95 Release and focused Linux65 pass; ten identical old Linux increment/bit-operation controls fail. Two broader Linux spill controls retain the separate rsSpillTree dependency. ARM64 source builds; x86 retains14 baseline errors.",
@@ -1301,7 +1310,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "a30146a8ff7c0deb132f013955b672c82b930c34",
+      "residualHead": "822520d296b890ce1d8539412e424c38702d023c",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -1452,7 +1461,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Complete shared genEmitCallWithCurrentGC, including x86 stack/x87 and ARM64/other-target return-reporting branches. Preserve separate emitter and variable-location dependencies. Use existing Windows call/GC controls and identical old/new ARM64 GC-capture-before-dependency controls, then retire the whole definition. Keep four xarch lanes productive and integrate their handoffs; shared contracts, generators, native mutations and13 Wasm WIP remain parent-owned.",
+      "parentScope": "Shared genEmitCallWithCurrentGC is accepted. Next complete the retained GenTreeMultiRegOp second-result-register contract that blocks the general codegen lane's widening multiply. Preserve native register/last-use/spill state and allocator consumers, with focused old/new contracts rather than a redesign. Keep four xarch lanes productive and integrate handoffs; shared contracts, generators, native mutations and13 Wasm WIP remain parent-owned.",
       "wholeFunctionRepairLanes": [
         {
           "scope": "Next retained general codegenxarch family after cookie/EH and immediate/helper-call completion.",
@@ -1880,7 +1889,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Scalar codegen accepted at nativea30146a8:4 definitions/155 lines,98D95R/65Linux and ten failing-old controls; do not reapply. Reassign A next family excluding shared GenTreeMultiRegOp contract. Parent finalizes genEmitCallWithCurrentGC:144D133R Windows,20D20R ARM64, two old ARM64 failures and unchanged14 x86 errors in artifacts/common-call-gc-closure. Verify/remove its whole native definition and common declaration, then address GenTreeMultiRegOp second-result state needed by retained genCodeForMulHi. Lowering, LSRA and HW lanes continue. Preserve13 Wasm WIP, oracle-plus-one and no publication.",
+    "nextAction": "Common call GC accepted at native822520d2:1 definition/1 declaration/158 lines,144D133R Windows and20D20R ARM64; do not reapply. Parent next inspects/ports GenTreeMultiRegOp second-result state needed by retained genCodeForMulHi, coordinating availability with A once validated. Four xarch lanes continue. Native codegen.h lost only old line222 in this batch; reanchor any pending header proposal accordingly. Preserve14 x86 blockers,13 Wasm WIP, oracle-plus-one and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

@@ -18,6 +18,26 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64EmitterCallAllocationTests
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void CallsCaptureCurrentGcStateBeforeTheUnportedRecorder(bool jump)
+    {
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var codeGen = new CodeGen(compiler);
+        codeGen.GCInfo.gcVarPtrSetCur = [0];
+        codeGen.GCInfo.gcRegGCrefSetCur = new regMaskTP(SRBM_R19);
+        codeGen.GCInfo.gcRegByrefSetCur = new regMaskTP(SRBM_R20);
+        var parameters = new EmitCallParams { argSize = 16, isJump = jump };
+
+        Assert.That(() => codeGen.genEmitCallWithCurrentGC(ref parameters), Throws.TypeOf<FatalJitException>());
+
+        Assert.That(parameters.ptrVars, Is.SameAs(codeGen.GCInfo.gcVarPtrSetCur));
+        Assert.That(parameters.gcrefRegs, Is.EqualTo(new regMaskTP(SRBM_R19)));
+        Assert.That(parameters.byrefRegs, Is.EqualTo(new regMaskTP(SRBM_R20)));
+        Assert.That(parameters.argSize, Is.EqualTo((nint)16));
+        Assert.That(parameters.isJump, Is.EqualTo(jump));
+    }
+
     [TestCase(-65, false)]
     [TestCase(-64, true)]
     [TestCase(63, true)]

@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Shared call GC capture and return reporting
+
+The whole shared call routine now preserves non-AMD64 control flow: fixed-register
+retbuffer unwrapping, x86 stack-pop bias and x87 return locations, ARM64 piece-size
+restrictions and other targets' debugger register limitations. Current GC state
+is captured before calling the independent recorder, in native order.
+The definition and common declaration retire 158 lines in `822520d2`.
+
+Windows controls pass 144 Debug/133 Release; ARM64 allocation and capture
+controls pass 20 Debug/20 Release. Two identical old ARM64 capture cases fail.
+These ARM64 checks stop at the terminating recorder and do not establish call
+emission or post-call reporting. Other-target variable-location dependencies and
+the 14 x86 baseline errors remain. Evidence: `artifacts/common-call-gc-closure`
+and its validation/integration records under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Xarch unary, byte-swap and scalar operations
 
 Negation/not, byte swap, saturating increment and bit modification retain their
