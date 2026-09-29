@@ -1112,7 +1112,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
+#if TARGET_XARCH
     private static ReadOnlySpan<instruction> emitJumpKindInstructions => [
         INS_nop, // EJ_NONE
 {{instructionBuilder}}
@@ -1274,7 +1274,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64 && (DEBUG || LATE_DISASM)
+#if TARGET_XARCH && (DEBUG || LATE_DISASM)
     private static ReadOnlySpan<float> insLatencyInfos => [
 {{latencyBuilder}}    ];
 

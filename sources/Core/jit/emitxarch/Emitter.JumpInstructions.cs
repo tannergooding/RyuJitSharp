@@ -11,18 +11,18 @@ public partial class Emitter
 {
     public static emitJumpKind emitReverseJumpKind(emitJumpKind jumpKind)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Reverse jump-kind mapping requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Reverse jump-kind mapping requires xarch.");
 #else
-        assert(unchecked((uint)jumpKind) < (uint)emitReverseJumpKinds.Length);
+        assert(unchecked((uint)jumpKind) < (uint)emitJumpKind.EJ_COUNT);
         return emitReverseJumpKinds[(int)jumpKind];
 #endif
     }
 
     public static instruction emitJumpKindToIns(emitJumpKind jumpKind)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Jump-kind instruction mapping requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Jump-kind instruction mapping requires xarch.");
 #else
         assert(unchecked((uint)jumpKind) < (uint)emitJumpKindInstructions.Length);
         return emitJumpKindInstructions[(int)jumpKind];

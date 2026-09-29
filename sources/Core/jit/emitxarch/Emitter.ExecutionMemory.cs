@@ -12,8 +12,16 @@ public partial class Emitter
 #if TARGET_XARCH
     internal static insFormat getMemoryOperation(instrDesc id)
     {
-        // LEA computes an address without accessing the memory named by its format.
-        return id.idIns() == INS_lea ? IF_NONE : ExtractMemoryFormat(id.idInsFmt());
+        var ins = id.idIns();
+        var insFmt = id.idInsFmt();
+
+        if (ins == INS_lea)
+        {
+            // LEA computes an address without accessing the memory named by its format.
+            return IF_NONE;
+        }
+
+        return ExtractMemoryFormat(insFmt);
     }
 
     internal static insFormat ExtractMemoryFormat(insFormat insFmt)

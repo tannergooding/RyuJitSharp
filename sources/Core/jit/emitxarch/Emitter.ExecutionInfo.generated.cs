@@ -9,7 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64 && (DEBUG || LATE_DISASM)
+#if TARGET_XARCH && (DEBUG || LATE_DISASM)
     private static ReadOnlySpan<float> insLatencyInfos => [
 #if TARGET_XARCH
 #if !TARGET_XARCH

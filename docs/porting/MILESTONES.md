@@ -16,6 +16,27 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch names, jump classification and execution costs
+
+Shared instruction display-name dispatch preserves its target paths; non-xarch
+names still depend on an explicit unported table helper. Xarch jump/no-code
+classification retains the after-call nop exception, and x86 stack-level tracking
+retains group and maximum-depth updates. Cost classification preserves all 212
+instruction cases, including x86 `fld`/`fstp`, and the native timing tables.
+
+The jump and execution-table generator guards now cover both xarch targets.
+A fresh combined generator run reproduces both maintained outputs. Combined
+Windows controls pass 316 Debug/249 Release; focused Linux-target controls pass
+174 name/jump and 31 cost cases. ARM64 compiles. The same 14 unrelated x86 build
+errors still prevent x86 execution, including the new x87 controls.
+
+Eleven definitions and their dedicated tables/declarations retire 1,708 lines in
+`82af7a2a`. `emitxarch.cpp` now contains 585 physical lines; this is not a count
+of untranslated implementation. Other-target names, x86 unhandled-instruction
+diagnostics and the existing non-DEBUG `LATE_DISASM` alignment-metadata boundary
+remain separate. Evidence is in `artifacts/xarch-name-cost-integration` and the
+combined-generator receipt under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Xarch instruction and operand diagnostics
 
 Instruction display retains all 120 native format labels and the whole x86/AMD64

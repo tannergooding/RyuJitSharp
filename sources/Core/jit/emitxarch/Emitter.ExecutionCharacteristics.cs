@@ -10,7 +10,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if (DEBUG || LATE_DISASM) && TARGET_AMD64
+#if (DEBUG || LATE_DISASM) && TARGET_XARCH
     internal insExecutionCharacteristics getInsExecutionCharacteristics(instrDesc id)
     {
         var ins = id.idIns();
@@ -325,6 +325,16 @@ public partial class Emitter
                 insLatency = (memFmt == IF_NONE) ? PERFSCORE_LATENCY_1C : PERFSCORE_LATENCY_23C;
                 break;
             }
+
+#if TARGET_X86
+            case INS_fld:
+            case INS_fstp:
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_2X;
+                insLatency = PERFSCORE_LATENCY_1C;
+                break;
+            }
+#endif
 
             case INS_movd32:
             case INS_movd64:
@@ -1149,7 +1159,7 @@ public partial class Emitter
 #elif DEBUG || LATE_DISASM
     internal insExecutionCharacteristics getInsExecutionCharacteristics(instrDesc id)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Execution characteristics outside AMD64 are not implemented.");
+        throw new FatalJitException(CORJIT_SKIPPED, "Execution characteristics outside xarch are not implemented.");
     }
 #endif
 }

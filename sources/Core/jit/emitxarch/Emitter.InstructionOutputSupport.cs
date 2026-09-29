@@ -80,8 +80,12 @@ public partial class Emitter
     private static bool emitJmpInstHasNoCode(instrDesc id)
     {
         var result = id.idIns() == INS_jmp && ((instrDescJmp)id).idjIsRemovableJmpCandidate;
+#if TARGET_AMD64
         assert(!result || id.idCodeSize() == 0
             || (((instrDescJmp)id).idjIsAfterCallBeforeEpilog && id.idCodeSize() == 1));
+#else
+        assert(!result || id.idCodeSize() == 0);
+#endif
 
         return result;
     }
