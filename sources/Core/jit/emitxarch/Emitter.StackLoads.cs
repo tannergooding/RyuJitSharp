@@ -13,10 +13,9 @@ public partial class Emitter
     public void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs,
         insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Register-stack instruction recording requires AMD64.");
-#else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), ireg));
         var fmt = emitInsModeFormat(ins, IF_RRD_SRD);
 
@@ -45,7 +44,6 @@ public partial class Emitter
 #endif
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 }
 #endif

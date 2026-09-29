@@ -138,7 +138,7 @@ public partial class Emitter
 
         var lastReg1 = emitLastIns.idReg1();
         var varNum = emitLastIns.idAddr().iiaLclVar.lvaVarNum();
-        var lastOffs = emitLastIns.idAddr().iiaLclVar.lvaOffset();
+        var lastOffs = unchecked((int)emitLastIns.idAddr().iiaLclVar.lvaOffset());
         var hasSideEffect = HasSideEffect(ins, size);
 
         if ((varNum == varx) && (lastReg1 == ireg) && (lastOffs == offs))

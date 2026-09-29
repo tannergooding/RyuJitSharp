@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Stack and local-variable recording
+
+Seven stack/local recorder and move-elision bodies retain their complete x86
+paths, including signed offset handling, byte-register validation and
+post-record stack-depth adjustment. Windows behavior remains unchanged.
+
+Full-analysis controls pass Windows 221 Debug/205 Release, with ARM64 builds in
+both configurations. Existing x86 parser errors and separately unported stack
+sizing still prevent x86 execution. The completed definitions retire 298 lines
+in native `48547f3d`; multi-register stack recorders and stack-sizing definitions
+remain. Evidence is in `artifacts/xarch-stack-local-6840ddea` and the stack-local
+retirement records under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Xarch address-mode sizing
 
 Both address-mode sizing overloads now retain their x86 bodies, including

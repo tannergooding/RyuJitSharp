@@ -13,10 +13,9 @@ public partial class Emitter
     public void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs,
         insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack-register instruction recording requires AMD64.");
-#else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         var fmt = (ins == INS_xchg) ? IF_SRW_RRW : emitInsModeFormat(ins, IF_SRD_RRD);
 
         if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
@@ -33,6 +32,12 @@ public partial class Emitter
         assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
         SetEvexEmbMaskIfNeeded(id, instOptions);
         var sz = emitInsSizeSV(id, insCodeMR(ins), varx, offs);
+#if TARGET_X86
+        if (attr == EA_1BYTE)
+        {
+            assert(IsX86ByteRegister(ireg));
+        }
+#endif
         id.idCodeSize(sz);
 #if DEBUG
         var debugInfo = id.idDebugOnlyInfo();
@@ -41,15 +46,13 @@ public partial class Emitter
 #endif
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 
     public void emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs, regNumber reg, int ival)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack-register-immediate instruction recording requires AMD64.");
-#else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         assert(IsSimdInstruction(ins));
         assert(reg != REG_NA);
 
@@ -68,7 +71,6 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 
 #if TARGET_AMD64
