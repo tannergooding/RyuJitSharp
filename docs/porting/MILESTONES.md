@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Element and dot-product retirement catch-up
+
+Four existing whole translations cover element extraction/insertion and
+dot-product lowering with its inner multiply/sum helper. No managed repair was
+needed. Their definitions and three xarch-only declarations retire 1,427 lines
+in `36b302c1`; the shared dot declaration and independent scalar/containment
+dependencies remain.
+
+Unchanged-source controls pass 45 Debug/45 Release on Windows and 45 Debug for
+Linux. X86 retains 14 baseline errors. This is retirement catch-up, not new
+implementation or execution coverage. Evidence:
+`artifacts/xarch-element-dot-bf1d73b` and its proposal and retirement receipts.
+
 ## 2026-09-29: Xarch multiplication, division and long remainder
 
 Multiplication and division preserve their whole xarch paths. The x86 long
