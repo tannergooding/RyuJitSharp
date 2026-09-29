@@ -10,9 +10,6 @@ public sealed partial class CodeGen
 {
     public void genCodeForMul(GenTreeOp tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Integer multiplication generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_MUL);
         var targetReg = tree.RegNum;
@@ -86,7 +83,6 @@ public sealed partial class CodeGen
         }
 
         genProduceReg(tree);
-#endif
     }
 
     public void genCodeForMulHi(GenTreeOp tree)

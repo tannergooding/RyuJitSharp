@@ -10,12 +10,16 @@ public sealed partial class CodeGen
 {
     public void genCodeForDivMod(GenTreeOp tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Integer division generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_DIV or GT_UDIV or GT_MOD or GT_UMOD);
         var dividend = tree.Op1;
+#if TARGET_X86
+        if (varTypeIsLong(dividend.Type))
+        {
+            genCodeForLongUMod(tree);
+            return;
+        }
+#endif
         var divisor = tree.Op2;
         var oper = tree.Oper;
         var size = tree.Type.EmitSize;
@@ -54,7 +58,6 @@ public sealed partial class CodeGen
         }
 
         genProduceReg(tree);
-#endif
     }
 }
 #endif

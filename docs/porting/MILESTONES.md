@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch multiplication, division and long remainder
+
+Multiplication and division preserve their whole xarch paths. The x86 long
+unsigned remainder helper now performs native conditional high-word reduction
+and two-stage division, retaining separate consumption/copy dependencies.
+Three definitions and xarch-only declarations retire 279 lines in `f589d7e7`;
+the shared division declaration and widening-multiply body remain.
+
+Windows controls pass 49 Debug/46 Release; ARM64 source builds. Linux old and
+final selections both have 38 passes and the same 11 throw-helper/tree-spill
+failures. X86 retains 14 baseline errors, so its new remainder body is not an
+execution result. Evidence: `artifacts/xarch-mul-div-74d4617` and its proposal,
+header reanchoring and retirement receipts.
+
 ## 2026-09-29: Shared multi-register result assignment
 
 `GenTreeMultiRegOp` now has the native mutable second-result register and
