@@ -16,6 +16,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Existing intrinsic scalar and containment retirement
+
+The complete existing ToScalar, containability and intrinsic-containment
+translations retire 2,244 native lines in `56b834df`, without managed changes.
+Shared declarations and independent call-containment definitions remain.
+Windows 28 Debug/28 Release and Linux 28 Debug controls pass; x86 retains 14
+established errors. This is translation retirement, not new execution coverage.
+Evidence: `artifacts/xarch-containment-03a2661` and the
+`xarch-lower-containment-scalar` records under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Shared register consumption and reload control
 
 Six whole consumption/reload routines preserve 32-bit long operands, ARM64
