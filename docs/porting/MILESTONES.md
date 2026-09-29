@@ -16,6 +16,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Shifted-immediate and address recording
+
+ARM64 shifted-halfword recording preserves MOV aliasing, all legal 32/64-bit
+halfword positions, packed immediates and the separate SVE fallback. Four xarch
+address/blend recorders and three address helpers now retain their x86 paths,
+along with nine SIMD wrappers and six instruction classifiers.
+
+Combined Windows controls pass 681 Debug/639 Release. Two obsolete x86-only
+missing-recorder expectations are replaced by positive operand checks, passing
+separately in Debug and Release against identical production bytes. ARM64
+recording controls pass 112/98, including 96 shifted descriptors; eight identical
+old-source cases fail at the absent recorder API. Linux-x64 target wrapper
+controls pass 471 Debug; existing x86 build blockers still prevent execution.
+
+Twenty-three definitions and corresponding declarations retire 908 native lines
+in `5406118b`. These are translation and descriptor-contract results, not new
+machine-code parity. Evidence is in `artifacts/arm64-shifted-immediate` and the
+shifted integration records under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: ARM64 floating-immediate recording
 
 Scalar/vector FMOV and zero-compare recording now preserve the native floating

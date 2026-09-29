@@ -18,7 +18,6 @@ public partial class Emitter
     }
 
 #if TARGET_X86
-#if FEATURE_HW_INTRINSICS
     public bool IsThreeOperandAVXInstruction(instruction ins)
     {
         if (!UseSimdEncoding())
@@ -28,12 +27,8 @@ public partial class Emitter
 
         return (prefixFlags(ins) & INS_FLAGS_Is3OperandInstructionMask) != 0;
     }
-#else
-    public bool IsThreeOperandAVXInstruction(instruction ins)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "x86 three-operand classification without hardware intrinsics is not ported.");
-    }
 
+#if !FEATURE_HW_INTRINSICS
     private static bool isAvxBlendv(instruction ins)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "x86 AVX blend classification without hardware intrinsics is not ported.");

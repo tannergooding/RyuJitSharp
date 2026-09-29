@@ -32,39 +32,6 @@ public partial class Emitter
 #endif
     }
 
-    public void emitIns_R_R_A(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
-        GenTreeIndir indir, insOpts instOptions = INS_OPTS_NONE)
-    {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Two-register memory instruction recording requires AMD64.");
-#else
-        RequireSupportedInstructionRecording();
-        assert(IsSimdInstruction(ins) || IsApxExtendedEvexInstruction(ins));
-        assert(IsThreeOperandAVXInstruction(ins) || IsApxExtendedEvexInstruction(ins));
-
-        var offs = indir.Offset;
-        var id = emitNewInstrAmd(attr, offs);
-        id.idIns(ins);
-        id.idReg1(reg1);
-        id.idReg2(reg2);
-        emitHandleMemOp(indir, id,
-            (ins == INS_mulx) ? IF_RWR_RWR_ARD : emitInsModeFormat(ins, IF_RRD_RRD_ARD), ins);
-
-        if (IsSimdInstruction(ins))
-        {
-            SetEvexBroadcastIfNeeded(id, instOptions);
-            SetEvexEmbMaskIfNeeded(id, instOptions);
-        }
-        SetEvexNdIfNeeded(id, instOptions);
-        SetEvexNfIfNeeded(id, instOptions);
-        var sz = emitInsSizeAM(id, insCodeRM(ins));
-        id.idCodeSize(sz);
-
-        dispIns(id);
-        emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
-    }
-
     public void emitIns_R_R_AR(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         regNumber @base, int offs, insOpts instOptions = INS_OPTS_NONE)
     {
@@ -96,8 +63,8 @@ public partial class Emitter
     public void emitIns_SIMD_R_R_I(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg,
         int ival, insOpts instOptions)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD register-immediate recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD register-immediate recording requires xarch.");
 #else
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding() || IsDstSrcImmAvxInstruction(ins))
@@ -116,8 +83,8 @@ public partial class Emitter
     public void emitIns_SIMD_R_R_A(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg,
         GenTreeIndir indir, insOpts instOptions)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD memory instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD memory instruction recording requires xarch.");
 #else
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding())
@@ -136,8 +103,8 @@ public partial class Emitter
     public void emitIns_SIMD_R_R_S(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg,
         int varx, int offs, insOpts instOptions)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD stack instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD stack instruction recording requires xarch.");
 #else
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding())
@@ -156,8 +123,8 @@ public partial class Emitter
     public void emitIns_SIMD_R_R_A_I(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg,
         GenTreeIndir indir, int ival, insOpts instOptions)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD address-immediate recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD address-immediate recording requires xarch.");
 #else
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding())
@@ -176,8 +143,8 @@ public partial class Emitter
     public unsafe void emitIns_SIMD_R_R_C_I(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, CORINFO_FIELD_STRUCT_* field, int offset, int immediate, insOpts options)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD field-immediate recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD field-immediate recording requires xarch.");
 #else
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding())
@@ -196,8 +163,8 @@ public partial class Emitter
     public void emitIns_SIMD_R_R_S_I(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg,
         int varx, int offs, int ival, insOpts instOptions)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD stack-immediate recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD stack-immediate recording requires xarch.");
 #else
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding())
@@ -213,7 +180,7 @@ public partial class Emitter
 #endif
     }
 
-#if TARGET_AMD64
+#if TARGET_XARCH
     private static bool IsDstSrcImmAvxInstruction(instruction ins)
     {
         // These forms do not encode an operand in VEX.vvvv, and retain separate

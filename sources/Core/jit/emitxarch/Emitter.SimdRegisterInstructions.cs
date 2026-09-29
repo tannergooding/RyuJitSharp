@@ -10,8 +10,8 @@ public partial class Emitter
     public void emitIns_SIMD_R_R_R(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op2Reg, insOpts instOptions)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD register instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD register instruction recording requires xarch.");
 #else
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding())
@@ -51,8 +51,8 @@ public partial class Emitter
     public void emitIns_SIMD_R_R_R_I(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op2Reg, int ival, insOpts instOptions)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD register-immediate instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD register-immediate instruction recording requires xarch.");
 #else
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding())
@@ -85,7 +85,9 @@ public partial class Emitter
 
         return (prefixFlags(ins) & INS_FLAGS_Is3OperandInstructionMask) != 0;
     }
+#endif
 
+#if TARGET_XARCH
     public bool IsAvxCommutative(instruction ins)
     {
         if (!UseVexEncodings)

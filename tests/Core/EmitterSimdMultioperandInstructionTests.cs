@@ -18,36 +18,38 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterSimdMultioperandInstructionTests
 {
-#if TARGET_X86
     [Test]
-    public static void X86BlendWrapperReachesSeparateBlendRecorder()
+    public static void BlendAddressWrapperRecordsItsOperands()
     {
         WithEmitter((compiler, emitter) =>
         {
             emitter.UseVexEncodings = true;
-            var error = Assert.Throws<FatalJitException>(() =>
-                emitter.emitIns_SIMD_R_R_A_R(INS_blendvps, EA_16BYTE, REG_XMM3, REG_XMM1,
-                    REG_XMM2, Address(compiler, 0), INS_OPTS_NONE));
-
-            Assert.That(error?.Message, Does.Contain("SIMD blend recording requires AMD64."));
+            emitter.emitIns_SIMD_R_R_A_R(INS_blendvps, EA_16BYTE, REG_XMM3, REG_XMM1,
+                REG_XMM2, Address(compiler, 0), INS_OPTS_NONE);
+            var id = Last(emitter);
+            Assert.That(id.idIns(), Is.EqualTo(INS_vblendvps));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_RWR_RRD_ARD_RRD));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM3));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_XMM1));
+            Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)REG_XMM2));
         });
     }
 
     [Test]
-    public static void X86RmwWrapperReachesSeparateInstructionClassifier()
+    public static void RmwAddressWrapperRecordsItsOperands()
     {
         WithEmitter((compiler, emitter) =>
         {
             emitter.UseVexEncodings = true;
-            var error = Assert.Throws<FatalJitException>(() =>
-                emitter.emitIns_SIMD_R_R_R_A(INS_vfmadd132ps, EA_16BYTE, REG_XMM3,
-                    REG_XMM1, REG_XMM2, Address(compiler, 0), INS_OPTS_NONE));
-
-            Assert.That(error?.Message, Does.Contain("x86 three-operand RMW instruction classification is not ported."));
+            emitter.emitIns_SIMD_R_R_R_A(INS_vfmadd132ps, EA_16BYTE, REG_XMM3,
+                REG_XMM1, REG_XMM2, Address(compiler, 0), INS_OPTS_NONE);
+            var id = Last(emitter);
+            Assert.That(id.idIns(), Is.EqualTo(INS_vfmadd132ps));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_RRW_RRD_ARD));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM3));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_XMM2));
         });
     }
-#endif
-
     [TestCase(INS_addps, EA_16BYTE, REG_XMM1, REG_XMM2, REG_RAX, -128, INS_OPTS_NONE, IF_RWR_RRD_ARD)]
     [TestCase(INS_add, EA_8BYTE, REG_R16, REG_R17, REG_R31, 65536, INS_OPTS_EVEX_nd | INS_OPTS_EVEX_nf, IF_RRW_RRD_ARD)]
     public static void TwoRegisterBaseAddressesPreserveOperandsAndEncodingOptions(

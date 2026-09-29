@@ -149,8 +149,8 @@ public partial class Emitter
     public unsafe void emitIns_SIMD_R_R_C(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg,
         CORINFO_FIELD_HANDLE fldHnd, int offs, insOpts instOptions)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD static-field instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "SIMD static-field instruction recording requires xarch.");
 #else
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding())

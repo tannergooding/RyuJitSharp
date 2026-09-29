@@ -33,8 +33,8 @@ public partial class Emitter
 
     public void emitHandleMemOp(GenTreeIndir indir, instrDesc id, insFormat fmt, instruction ins)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Memory operand descriptor initialization requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Memory operand descriptor initialization requires xarch.");
 #else
         assert(fmt != IF_NONE);
         assert(_compiler is not null);
@@ -104,7 +104,7 @@ public partial class Emitter
 #endif
     }
 
-#if TARGET_AMD64
+#if TARGET_XARCH
     public insFormat emitMapFmtForIns(insFormat fmt, instruction ins)
     {
         switch (ins)

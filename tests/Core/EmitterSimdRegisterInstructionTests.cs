@@ -16,6 +16,23 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class EmitterSimdRegisterInstructionTests
 {
+    [TestCase(false, false)]
+    [TestCase(true, true)]
+    public static void ThreeOperandAndCommutativeClassificationRequiresSimdEncoding(
+        bool vex, bool expected)
+    {
+        WithEmitter((_, emitter) =>
+        {
+            emitter.UseEvexEncodings = false;
+            emitter.UseVexEncodings = vex;
+
+            Assert.That(emitter.IsThreeOperandAVXInstruction(INS_addps), Is.EqualTo(expected));
+            Assert.That(emitter.IsAvxCommutative(INS_addps), Is.EqualTo(expected));
+            Assert.That(emitter.IsThreeOperandAVXInstruction(INS_movaps), Is.False);
+            Assert.That(emitter.IsAvxCommutative(INS_divps), Is.False);
+        });
+    }
+
     [TestCase(0, INS_add, EA_4BYTE, REG_RAX, REG_RCX, REG_NA, 2u, IF_RRW_RRD)]
     [TestCase(1, INS_pshufd, EA_16BYTE, REG_XMM0, REG_XMM1, REG_NA, 5u, IF_RWR_RRD_CNS)]
     [TestCase(2, INS_addps, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2, 4u, IF_RWR_RRD_RRD)]

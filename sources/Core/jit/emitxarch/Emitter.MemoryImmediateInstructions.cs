@@ -173,33 +173,6 @@ public partial class Emitter
 #endif
     }
 
-    public void emitIns_R_R_A_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
-        GenTreeIndir indir, int ival, insFormat fmt, insOpts instOptions = INS_OPTS_NONE)
-    {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Two-register memory-immediate recording requires AMD64.");
-#else
-        RequireSupportedInstructionRecording();
-        assert(IsSimdInstruction(ins));
-        assert(IsThreeOperandAVXInstruction(ins));
-
-        var offs = indir.Offset;
-        var id = emitNewInstrAmdCns(attr, offs, ival);
-        id.idIns(ins);
-        id.idReg1(reg1);
-        id.idReg2(reg2);
-        emitHandleMemOp(indir, id, fmt, ins);
-
-        SetEvexBroadcastIfNeeded(id, instOptions);
-        SetEvexEmbMaskIfNeeded(id, instOptions);
-        var sz = emitInsSizeAM(id, insCodeRM(ins), ival);
-        id.idCodeSize(sz);
-
-        dispIns(id);
-        emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
-    }
-
 #if TARGET_AMD64
     public uint emitInsSizeCV(instrDesc id, ulong code, int val)
     {

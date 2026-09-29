@@ -242,6 +242,52 @@ internal static unsafe class Arm64EmitterRecordingTests
     private static extern void RecordFloat(Emitter emitter, instruction ins, emitAttr attr,
         regNumber reg, double immDbl, insOpts opt);
 
+    [TestCase(INS_mov, EA_4BYTE)]
+    [TestCase(INS_mov, EA_8BYTE)]
+    [TestCase(INS_movz, EA_4BYTE)]
+    [TestCase(INS_movz, EA_8BYTE)]
+    [TestCase(INS_movn, EA_4BYTE)]
+    [TestCase(INS_movn, EA_8BYTE)]
+    [TestCase(INS_movk, EA_4BYTE)]
+    [TestCase(INS_movk, EA_8BYTE)]
+    public static void ShiftedHalfwordRecordingPreservesEveryLegalPosition(instruction ins, emitAttr size)
+    {
+        for (var shift = 0; shift < (int)size * 8; shift += 16)
+        {
+            foreach (var immediate in new[] { 0, 1, 32768, 65535 })
+            {
+                var emitter = CreateEmitter();
+                RecordShifted(emitter, ins, size, REG_R19, immediate, shift, INS_OPTS_LSL);
+                var descriptor = LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
+                Assert.That(descriptor.idIns(), Is.EqualTo(ins == INS_mov ? INS_movz : ins));
+                Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_DI_1B));
+                Assert.That(descriptor.idOpSize(), Is.EqualTo(size));
+                Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_LSL));
+                Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R19));
+                Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)(immediate | ((shift / 16) << 16))));
+                Assert.That(GroupSize(emitter), Is.EqualTo(4));
+            }
+        }
+    }
+
+    [Test]
+    public static void ShiftedFallbackRetainsItsSeparateSveRecorder()
+    {
+        var emitter = CreateEmitter();
+        var error = Assert.Throws<FatalJitException>(() =>
+            RecordShifted(emitter, INS_nop, EA_8BYTE, REG_R0, 1, 16, INS_OPTS_LSL));
+        Assert.That(error, Has.Message.EqualTo("ARM64 SVE register/two-immediate instruction recording is not ported."));
+        Assert.That(GroupSize(emitter), Is.Zero);
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_I_I")]
+    private static extern void RecordShifted(Emitter emitter, instruction ins, emitAttr attr,
+        regNumber reg, nint imm1, nint imm2, insOpts opt
+#if DEBUG
+        , nuint targetHandle = 0, GenTreeFlags gtFlags = GenTreeFlags.GTF_EMPTY
+#endif
+        );
+
 #if DEBUG
     [TestCase(false)]
     [TestCase(true)]

@@ -13,12 +13,50 @@ public partial class Emitter
         return UseVexEncodings || UseEvexEncodings;
     }
 
-#if FEATURE_HW_INTRINSICS
-    public static bool Is3OpRmwInstruction(instruction ins)
+    public static bool IsAVXVNNIFamilyInstruction(instruction ins)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "x86 three-operand RMW instruction classification is not ported.");
+        return ((ins >= FIRST_AVXVNNI_INSTRUCTION) && (ins <= LAST_AVXVNNI_INSTRUCTION))
+            || IsAVXVNNIINTInstruction(ins);
     }
 
+    public static bool IsAVXVNNIINTInstruction(instruction ins)
+    {
+        return ((ins >= FIRST_AVXVNNIINT8_INSTRUCTION) && (ins <= LAST_AVXVNNIINT8_INSTRUCTION))
+            || ((ins >= FIRST_AVXVNNIINT16_INSTRUCTION) && (ins <= LAST_AVXVNNIINT16_INSTRUCTION));
+    }
+
+    public static bool Is3OpRmwInstruction(instruction ins)
+    {
+        switch (ins)
+        {
+            case INS_vpermi2d:
+            case INS_vpermi2pd:
+            case INS_vpermi2ps:
+            case INS_vpermi2q:
+            case INS_vpermt2d:
+            case INS_vpermt2pd:
+            case INS_vpermt2ps:
+            case INS_vpermt2q:
+            case INS_vpermi2w:
+            case INS_vpermt2w:
+            case INS_vpermi2b:
+            case INS_vpermt2b:
+            {
+                return true;
+            }
+
+            default:
+            {
+                return ((ins >= FIRST_FMA_INSTRUCTION) && (ins <= LAST_FMA_INSTRUCTION))
+                    || IsAVXVNNIFamilyInstruction(ins)
+                    || ((ins >= FIRST_AVX512BMM_INSTRUCTION) && (ins <= LAST_AVX512BMM_INSTRUCTION))
+                    || ((ins >= FIRST_AVXIFMA_INSTRUCTION) && (ins <= LAST_AVXIFMA_INSTRUCTION))
+                    || ((ins >= INS_vfmadd132ph) && (ins <= INS_vfnmsub231sh));
+            }
+        }
+    }
+
+#if FEATURE_HW_INTRINSICS
     private static bool isAvx512Blendv(instruction ins)
     {
         return ins is INS_vblendmps or INS_vblendmpd or INS_vpblendmb or INS_vpblendmd or INS_vpblendmq or INS_vpblendmw;
