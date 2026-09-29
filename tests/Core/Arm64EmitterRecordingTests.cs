@@ -2,6 +2,7 @@
 
 #if TARGET_ARM64
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -1141,6 +1142,316 @@ internal static unsafe class Arm64EmitterRecordingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitGetLclVarPairLclVar2")]
     private static extern ref emitLclVarAddr SecondLocal(Emitter? emitter, Emitter.instrDesc id);
+
+    [TestCase(INS_bfm, EA_8BYTE, 63, 0, IF_DI_2D, 8128)]
+    [TestCase(INS_sbfm, EA_4BYTE, 0, 31, IF_DI_2D, 31)]
+    [TestCase(INS_ubfm, EA_8BYTE, 3, 63, IF_DI_2D, 4351)]
+    [TestCase(INS_bfi, EA_8BYTE, 1, 63, IF_DI_2D, 8190)]
+    [TestCase(INS_sbfiz, EA_4BYTE, 31, 1, IF_DI_2D, 64)]
+    [TestCase(INS_ubfiz, EA_8BYTE, 63, 1, IF_DI_2D, 4160)]
+    [TestCase(INS_bfxil, EA_8BYTE, 32, 32, IF_DI_2D, 6207)]
+    [TestCase(INS_sbfx, EA_4BYTE, 1, 31, IF_DI_2D, 95)]
+    [TestCase(INS_ubfx, EA_8BYTE, 63, 1, IF_DI_2D, 8191)]
+    [TestCase(INS_mov, EA_1BYTE, 15, 14, IF_DV_2F, 254)]
+    [TestCase(INS_ins, EA_8BYTE, 1, 0, IF_DV_2F, 16)]
+    [TestCase(INS_ld1, EA_1BYTE, 15, 1, IF_LS_2G, 15)]
+    [TestCase(INS_ld2, EA_2BYTE, 7, 4, IF_LS_2G, 7)]
+    [TestCase(INS_st3, EA_4BYTE, 3, 12, IF_LS_2G, 3)]
+    [TestCase(INS_st4, EA_8BYTE, 1, 32, IF_LS_2G, 1)]
+    public static void MultioperandTwoImmediatesPreserveEncoding(instruction ins, emitAttr size,
+        int imm1, int imm2, Emitter.insFormat format, int encoded)
+    {
+        var emitter = CreateEmitter();
+        var vector = format != IF_DI_2D;
+        var memory = format == IF_LS_2G;
+        var reg1 = vector ? REG_V19 : REG_R19;
+        var reg2 = memory ? REG_SPBASE : vector ? REG_V20 : REG_R20;
+        var opt = memory ? INS_OPTS_POST_INDEX : INS_OPTS_NONE;
+        RecordTwoImmediates(emitter, ins, size, reg1, reg2, imm1, imm2, opt);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No two-immediate instruction was recorded.");
+        Assert.That(id.idIns(), Is.EqualTo(ins));
+        Assert.That(id.idInsFmt(), Is.EqualTo(format));
+        Assert.That(id.idReg1(), Is.EqualTo(reg1));
+        Assert.That(id.idReg2(), Is.EqualTo(memory ? REG_ZR : reg2));
+        Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)encoded));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void MultioperandInsertCopiesBeforeUpdating(bool sameSource)
+    {
+        var emitter = CreateEmitter();
+        RecordThreeTwoImmediates(emitter, INS_ins, EA_8BYTE, REG_V19, sameSource ? REG_V19 : REG_V20,
+            REG_V21, 1, 0, INS_OPTS_NONE);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No element insertion was recorded.");
+        Assert.That(id.idInsFmt(), Is.EqualTo(IF_DV_2F));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_V21));
+        Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)16));
+        Assert.That(GroupSize(emitter), Is.EqualTo(sameSource ? 4 : 8));
+    }
+
+    [TestCase(INS_madd, EA_4BYTE, INS_OPTS_NONE, IF_DR_4A)]
+    [TestCase(INS_msub, EA_8BYTE, INS_OPTS_NONE, IF_DR_4A)]
+    [TestCase(INS_smaddl, EA_8BYTE, INS_OPTS_NONE, IF_DR_4A)]
+    [TestCase(INS_umaddl, EA_8BYTE, INS_OPTS_NONE, IF_DR_4A)]
+    [TestCase(INS_fmadd, EA_4BYTE, INS_OPTS_NONE, IF_DV_4A)]
+    [TestCase(INS_fnmsub, EA_8BYTE, INS_OPTS_NONE, IF_DV_4A)]
+    [TestCase(INS_eor3, EA_16BYTE, INS_OPTS_16B, IF_DV_4B)]
+    [TestCase(INS_bcax, EA_16BYTE, INS_OPTS_16B, IF_DV_4B)]
+    [TestCase(INS_sm3ss1, EA_16BYTE, INS_OPTS_4S, IF_DV_4B)]
+    public static void MultioperandFourRegistersPreserveFormats(instruction ins, emitAttr size,
+        insOpts opt, Emitter.insFormat format)
+    {
+        var emitter = CreateEmitter();
+        var vector = format != IF_DR_4A;
+        var reg1 = vector ? REG_V19 : REG_R19;
+        var reg2 = vector ? REG_V20 : REG_R20;
+        var reg3 = vector ? REG_V21 : REG_R21;
+        var reg4 = vector ? REG_V22 : REG_R22;
+        RecordFour(emitter, ins, size, reg1, reg2, reg3, reg4, opt, INS_SCALABLE_OPTS_NONE);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No four-register instruction was recorded.");
+        Assert.That(id.idIns(), Is.EqualTo(ins));
+        Assert.That(id.idInsFmt(), Is.EqualTo(format));
+        Assert.That(id.idOpSize(), Is.EqualTo(size));
+        Assert.That(id.idReg1(), Is.EqualTo(reg1));
+        Assert.That(id.idReg2(), Is.EqualTo(reg2));
+        Assert.That(id.idReg3(), Is.EqualTo(reg3));
+        Assert.That(id.idReg4(), Is.EqualTo(reg4));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [TestCase(INS_sqdmlal, EA_2BYTE, INS_OPTS_NONE, EA_8BYTE, false, false)]
+    [TestCase(INS_sqdmlal, EA_2BYTE, INS_OPTS_NONE, EA_8BYTE, false, true)]
+    [TestCase(INS_smlal, EA_8BYTE, INS_OPTS_4H, EA_16BYTE, false, false)]
+    [TestCase(INS_fmla, EA_16BYTE, INS_OPTS_4S, EA_16BYTE, false, false)]
+    [TestCase(INS_sqdmlal, EA_2BYTE, INS_OPTS_NONE, EA_8BYTE, true, false)]
+    [TestCase(INS_smlal, EA_8BYTE, INS_OPTS_4H, EA_16BYTE, true, false)]
+    [TestCase(INS_fmla, EA_16BYTE, INS_OPTS_4S, EA_16BYTE, true, false)]
+    public static void MultioperandRmwPreservesDestinationCopyWidth(instruction ins, emitAttr size,
+        insOpts opt, emitAttr copySize, bool immediate, bool sameSource)
+    {
+        var emitter = CreateEmitter();
+        var reg2 = sameSource ? REG_V19 : REG_V20;
+        if (immediate)
+        {
+            RecordFourImmediate(emitter, ins, size, REG_V19, reg2, REG_V21, REG_V15,
+                size == EA_2BYTE || opt == INS_OPTS_4H ? 7 : 3, opt);
+        }
+        else
+        {
+            RecordFour(emitter, ins, size, REG_V19, reg2, REG_V21, REG_V15, opt, INS_SCALABLE_OPTS_NONE);
+        }
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No four-operand RMW operation was recorded.");
+        Assert.That(id.idIns(), Is.EqualTo(ins));
+        Assert.That(id.idReg1(), Is.EqualTo(REG_V19));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_V21));
+        Assert.That(id.idReg3(), Is.EqualTo(REG_V15));
+        Assert.That(GroupSize(emitter), Is.EqualTo(sameSource ? 4 : 8));
+        if (!sameSource)
+        {
+            var copy = CurrentInstructions(emitter)[0];
+            Assert.That(copy.idIns(), Is.EqualTo(INS_mov));
+            Assert.That(copy.idOpSize(), Is.EqualTo(copySize));
+            Assert.That(copy.idReg1(), Is.EqualTo(REG_V19));
+            Assert.That(copy.idReg2(), Is.EqualTo(reg2));
+        }
+    }
+
+    [TestCase(INS_cset, 1, IF_DR_1D)]
+    [TestCase(INS_csetm, 1, IF_DR_1D)]
+    [TestCase(INS_cinc, 2, IF_DR_2D)]
+    [TestCase(INS_cinv, 2, IF_DR_2D)]
+    [TestCase(INS_cneg, 2, IF_DR_2D)]
+    [TestCase(INS_csel, 3, IF_DR_3D)]
+    [TestCase(INS_csinc, 3, IF_DR_3D)]
+    [TestCase(INS_csinv, 3, IF_DR_3D)]
+    [TestCase(INS_csneg, 3, IF_DR_3D)]
+    public static void ConditionalRecordingPreservesEveryCondition(instruction ins, int registers,
+        Emitter.insFormat format)
+    {
+        foreach (var condition in Enum.GetValues<insCond>())
+        {
+            var emitter = CreateEmitter();
+            if (registers == 1)
+            {
+                RecordCondition(emitter, ins, EA_8BYTE, REG_R19, condition);
+            }
+            else if (registers == 2)
+            {
+                RecordPairCondition(emitter, ins, EA_8BYTE, REG_R19, REG_ZR, condition);
+            }
+            else
+            {
+                RecordThreeCondition(emitter, ins, EA_8BYTE, REG_R19, REG_ZR, REG_R20, condition);
+            }
+            var id = LastInstruction(emitter) ?? throw new AssertionException("No conditional instruction was recorded.");
+            Assert.That(id.idInsFmt(), Is.EqualTo(format));
+            Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)condition));
+            Assert.That(id.idIsSmallDsc(), Is.EqualTo(registers != 3));
+            Assert.That(GroupSize(emitter), Is.EqualTo(4));
+        }
+    }
+
+    [TestCase(INS_ccmp)]
+    [TestCase(INS_ccmn)]
+    public static void ConditionalRecordingPreservesAndTruncatesFlagBits(instruction ins)
+    {
+        foreach (var condition in Enum.GetValues<insCond>())
+        {
+            for (uint flags = 0; flags < 32; flags++)
+            {
+                var emitter = CreateEmitter();
+                RecordFlagsCondition(emitter, ins, EA_8BYTE, REG_R19, REG_R20, (insCFlags)flags, condition);
+                var id = LastInstruction(emitter) ?? throw new AssertionException("No conditional register comparison was recorded.");
+                Assert.That(id.idInsFmt(), Is.EqualTo(IF_DR_2I));
+                Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)(((flags & 15) << 4) | (uint)condition)));
+            }
+        }
+    }
+
+    [TestCase(INS_ccmp, 0, INS_ccmp)]
+    [TestCase(INS_ccmp, 31, INS_ccmp)]
+    [TestCase(INS_ccmp, -31, INS_ccmn)]
+    [TestCase(INS_ccmn, 0, INS_ccmn)]
+    [TestCase(INS_ccmn, 31, INS_ccmn)]
+    [TestCase(INS_ccmn, -31, INS_ccmp)]
+    public static void ConditionalRecordingImmediateReversesNegativeOperands(instruction ins, int imm,
+        instruction expected)
+    {
+        foreach (var condition in Enum.GetValues<insCond>())
+        {
+            var emitter = CreateEmitter();
+            RecordImmediateCondition(emitter, ins, EA_8BYTE, REG_R19, imm, insCFlags.INS_FLAGS_NZCV, condition);
+            var id = LastInstruction(emitter) ?? throw new AssertionException("No conditional immediate comparison was recorded.");
+            Assert.That(id.idIns(), Is.EqualTo(expected));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_DI_1F));
+            Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)((Math.Abs(imm) << 8) | 0xF0 | (int)condition)));
+        }
+    }
+
+    [TestCase(INS_dmb, 1)]
+    [TestCase(INS_dmb, 2)]
+    [TestCase(INS_dmb, 3)]
+    [TestCase(INS_dmb, 5)]
+    [TestCase(INS_dmb, 6)]
+    [TestCase(INS_dmb, 7)]
+    [TestCase(INS_dmb, 9)]
+    [TestCase(INS_dmb, 10)]
+    [TestCase(INS_dmb, 11)]
+    [TestCase(INS_dmb, 13)]
+    [TestCase(INS_dmb, 14)]
+    [TestCase(INS_dmb, 15)]
+    [TestCase(INS_dsb, 3)]
+    [TestCase(INS_isb, 15)]
+    public static void BarrierRecordingPreservesImmediate(instruction ins, int barrier)
+    {
+        var emitter = CreateEmitter();
+        RecordBarrier(emitter, ins, (insBarrier)barrier);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No barrier was recorded.");
+        Assert.That(id.idIns(), Is.EqualTo(ins));
+        Assert.That(id.idInsFmt(), Is.EqualTo(IF_SI_0B));
+        Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)barrier));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [TestCase(0, "three-register/two-immediate")]
+    [TestCase(1, "four-register recording")]
+    [TestCase(2, "four-register/immediate")]
+    public static void SveMultioperandFallbackTerminates(int form, string dependency)
+    {
+        var emitter = CreateEmitter();
+        var error = Assert.Throws<FatalJitException>(() =>
+        {
+            switch (form)
+            {
+                case 0:
+                {
+                    RecordThreeTwoImmediates(emitter, INS_nop, EA_8BYTE,
+                        REG_V19, REG_V20, REG_V21, 0, 0, INS_OPTS_NONE);
+                    break;
+                }
+                case 1:
+                {
+                    RecordFour(emitter, INS_nop, EA_8BYTE,
+                        REG_V19, REG_V20, REG_V21, REG_V22, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+                    break;
+                }
+                default:
+                {
+                    RecordFourImmediate(emitter, INS_nop, EA_8BYTE,
+                        REG_V19, REG_V20, REG_V21, REG_V22, 0, INS_OPTS_NONE);
+                    break;
+                }
+            }
+        });
+        Assert.That(error, Has.Message.Contains(dependency));
+        Assert.That(GroupSize(emitter), Is.Zero);
+    }
+
+#if DEBUG
+    [TestCase(32)]
+    [TestCase(-32)]
+    public static void ConditionalImmediateRejectsWideOperands(int imm)
+    {
+        var emitter = CreateEmitter();
+        var error = Assert.Catch(() => RecordImmediateCondition(emitter, INS_ccmp, EA_8BYTE,
+            REG_R19, imm, insCFlags.INS_FLAGS_NONE, insCond.INS_COND_EQ));
+        Assert.That(error, Has.Message.Contains("ccmp/ccmn imm5"));
+        Assert.That(GroupSize(emitter), Is.Zero);
+    }
+
+    [TestCase(14)]
+    [TestCase(15)]
+    public static void ConditionalCodeRejectsReservedValues(int condition)
+    {
+        var emitter = CreateEmitter();
+        var error = Assert.Catch(() => RecordCondition(emitter, INS_cset, EA_8BYTE, REG_R19, (insCond)condition));
+        Assert.That(error, Has.Message.Contains("isValidImmCond"));
+        Assert.That(GroupSize(emitter), Is.Zero);
+    }
+#endif
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_R_I_I")]
+    private static extern void RecordTwoImmediates(Emitter emitter, instruction ins, emitAttr size,
+        regNumber reg1, regNumber reg2, nint imm1, nint imm2, insOpts opt);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_R_R_I_I")]
+    private static extern void RecordThreeTwoImmediates(Emitter emitter, instruction ins, emitAttr size,
+        regNumber reg1, regNumber reg2, regNumber reg3, nint imm1, nint imm2, insOpts opt);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_R_R_R")]
+    private static extern void RecordFour(Emitter emitter, instruction ins, emitAttr size,
+        regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4, insOpts opt, insScalableOpts sopt);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_R_R_R_I")]
+    private static extern void RecordFourImmediate(Emitter emitter, instruction ins, emitAttr size,
+        regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4, nint imm, insOpts opt);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
+    private static extern ref List<Emitter.instrDesc> CurrentInstructions(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_COND")]
+    private static extern void RecordCondition(Emitter emitter, instruction ins, emitAttr size, regNumber reg, insCond cond);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_R_COND")]
+    private static extern void RecordPairCondition(Emitter emitter, instruction ins, emitAttr size,
+        regNumber reg1, regNumber reg2, insCond cond);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_R_R_COND")]
+    private static extern void RecordThreeCondition(Emitter emitter, instruction ins, emitAttr size,
+        regNumber reg1, regNumber reg2, regNumber reg3, insCond cond);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_R_FLAGS_COND")]
+    private static extern void RecordFlagsCondition(Emitter emitter, instruction ins, emitAttr size,
+        regNumber reg1, regNumber reg2, insCFlags flags, insCond cond);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_I_FLAGS_COND")]
+    private static extern void RecordImmediateCondition(Emitter emitter, instruction ins, emitAttr size,
+        regNumber reg, nint imm, insCFlags flags, insCond cond);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_BARR")]
+    private static extern void RecordBarrier(Emitter emitter, instruction ins, insBarrier barrier);
 
     [TestCase(0L, 1, true)]
     [TestCase(-1L, 1, true)]

@@ -16,6 +16,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Multioperand, conditional and barrier recording
+
+Ten ARM64 recorders now preserve multi-immediate packing, four-register
+operations, RMW copy widths/order, conditional operations and barriers. The
+packed condition/flags/immediate representation and condition/barrier enums
+retain native values and truncation. Three SVE dependencies remain explicit.
+
+Full-analysis ARM64 controls pass 583 Debug/557 Release; Windows SIMD/address
+controls pass 409/392 against the exact four-register overload guard. All 64
+identical positive cases fail at missing methods on baseline implementations;
+those controls add only the two enum declarations needed to compile the fixture.
+Additional controls exercise reserved conditions, immediate bounds and SVE
+termination. No ARM64 generated-code parity is claimed.
+
+Ten definitions, declarations, one packed union and two enums retire 752 native
+lines in `5059bf26`. Other-target barrier enums and unported SVE bodies remain.
+Evidence is in `artifacts/arm64-multioperand-recording` and the multioperand
+integration records under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Labels, ABI stores and instruction prefixes
 
 Xarch label/jump recording, SIMD12 stores and argument-register homing now retain
