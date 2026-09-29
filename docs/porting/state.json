@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "xarchWideAndBinaryCodeGeneration": {
+      "scope": "Whole genCodeForMulHi and genCodeForBinary, preserving x86 MUL_LONG second-result selection and split add/subtract carry/borrow paths.",
+      "validation": "Windows71 Debug/68 Release pass; ARM64 source builds. Linux old/final both retain55 passes and the same16 dependency failures. X86 retains14 first-pass errors; five new x86 cases remain unexecuted.",
+      "retirement": "Two definitions and headings;298 native lines. Common declarations and other-target definitions remain.",
+      "nativeBefore": "83a45ef59a67c5238b69286da846c85ee66cc784",
+      "nativeAfter": "07e3838bfa5502995095efbdd87dc43e0085b977",
+      "evidence": "artifacts/xarch-mulhi-binary-fd29708 and artifacts/residual-reconciliation/xarch-mulhi-binary-proposed/combined/applied/verification-20260929.json.",
+      "limits": "Uses the committed writable GenTreeMultiRegOp result contract; independent operand-consumption and recording dependencies are not counted as complete. No x86 execution or generated-code parity."
+    },
     "xarchScalarSelectionRegisterConstruction": {
       "scope": "Whole BuildSelect, BuildIntrinsic and BuildCast, including x86 select/interference paths, intrinsic masks, byte-register restrictions and contained long operands.",
       "validation": "Old/final Windows25 Debug/25 Release pass. Parser-overlaid x86 old/final retain14 identical first-pass errors; the three new x86 cases remain unexecuted.",
@@ -96,7 +105,7 @@
       "nativeBefore": "1e1ddea208012cea58a6bf6ab7413a4491205420",
       "nativeAfter": "a30146a8ff7c0deb132f013955b672c82b930c34",
       "evidence": "artifacts/xarch-scalar-f87562b and artifacts/residual-reconciliation/xarch-scalar-proposed/combined/applied/verification-20260929.json.",
-      "remainingContract": "Shared-register writeback now provides assignable GenTreeMultiRegOp second-result state; the retained genCodeForMulHi body can proceed in the general codegen lane.",
+      "remainingContract": "Shared-register writeback provides assignable GenTreeMultiRegOp second-result state; whole genCodeForMulHi is now translated and retired by the wide/binary batch.",
       "limits": "No x86 execution or Linux generated-code parity."
     },
     "xarchBlockAndRmwRegisterConstruction": {
@@ -1374,7 +1383,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "83a45ef59a67c5238b69286da846c85ee66cc784",
+      "residualHead": "07e3838bfa5502995095efbdd87dc43e0085b977",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -1953,7 +1962,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Scalar/select LSRA accepted through native83a45ef5; do not reapply. Parent six-function consumption/reload WIP is under final-2/windows-2 validation in artifacts/shared-register-consumption after exposing missing non-xarch inst_Mov declarations; initial ARM64 source failed only at that missing symbol. Collect paired old ARM64 and x86 controls, then retire/commit the complete family. A's MulHi/binary298-line packet and B's scalar/containment2244-line retirement packet are ready. Reassign LSRA after this commit. Preserve14x86 blockers,13Wasm, four lanes, oracle-plus-one and no publication.",
+    "nextAction": "MulHi/binary and scalar/select LSRA accepted through native07e3838b; do not reapply. Collect parent final-2/windows-2 consumption validation plus paired old ARM64 and x86 results in artifacts/shared-register-consumption, then retire/commit its six whole definitions; instr register-move helpers remain typed terminating dependencies. Integrate B's ready xarch-lower-containment-scalar-proposed-20260929.json (three existing definitions/2244 lines). Reassign A to its next retained family after this commit. Preserve14x86 blockers,13Wasm, four lanes, oracle-plus-one and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

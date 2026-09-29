@@ -87,9 +87,6 @@ public sealed partial class CodeGen
 
     public void genCodeForMulHi(GenTreeOp tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "High-half multiplication generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(!tree.HasOverflowCheckEx);
         var targetReg = tree.RegNum;
@@ -126,7 +123,13 @@ public sealed partial class CodeGen
             }
             else
             {
+#if TARGET_64BIT
                 assert(false);
+#else
+                assert(tree.Oper is GT_MUL_LONG);
+                var highReg = tree.GetRegByIndex(1);
+                inst_RV_RV_TT(INS_mulx, size, highReg, targetReg, rmOp, isRMW: false, INS_OPTS_NONE);
+#endif
             }
         }
         else
@@ -146,7 +149,6 @@ public sealed partial class CodeGen
         }
 
         genProduceReg(tree);
-#endif
     }
 }
 #endif

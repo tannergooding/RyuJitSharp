@@ -10,15 +10,18 @@ public sealed partial class CodeGen
 {
     public void genCodeForBinary(GenTreeOp tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Binary arithmetic generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
 #if DEBUG
         var valid = tree.Oper is GT_ADD or GT_SUB;
         valid |= varTypeIsFloating(tree.Type)
             ? tree.Oper is GT_MUL or GT_DIV
             : tree.Oper is GT_AND or GT_OR or GT_XOR;
+#if !TARGET_64BIT
+        if (!varTypeIsFloating(tree.Type))
+        {
+            valid |= tree.Oper is GT_ADD_LO or GT_ADD_HI or GT_SUB_LO or GT_SUB_HI;
+        }
+#endif
         assert(valid);
 #endif
         genConsumeOperands(tree);
@@ -147,12 +150,15 @@ public sealed partial class CodeGen
 
         if (tree.HasOverflowCheckEx)
         {
+#if TARGET_64BIT
             assert(oper is GT_ADD or GT_SUB);
+#else
+            assert(oper is GT_ADD or GT_SUB or GT_ADD_HI or GT_SUB_HI);
+#endif
             genCheckOverflow(tree);
         }
 
         genProduceReg(tree);
-#endif
     }
 
     public void inst_JMP(emitJumpKind jump, BasicBlock target, bool isRemovableJmpCandidate = false)

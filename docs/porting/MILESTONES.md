@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Xarch widening multiplication and binary arithmetic
+
+High/widening multiplication now preserves the x86 `MUL_LONG` second result
+through the shared register contract. Binary arithmetic retains split add/subtract
+carry and borrow cases and their overflow diagnostics. Two whole definitions
+retire 298 lines in `07e3838b`; common declarations and other-target bodies remain.
+
+Windows controls pass 71 Debug/68 Release; ARM64 source builds. Linux old and
+final selections both have 55 passes and the same 16 independent dependency
+failures. X86 retains 14 first-pass errors, so five added x86 cases remain
+unexecuted. Evidence: `artifacts/xarch-mulhi-binary-fd29708` and its proposal and
+retirement receipts.
+
 ## 2026-09-29: Xarch scalar and select register requirements
 
 Select, scalar intrinsic and cast builders now retain their x86 branches,

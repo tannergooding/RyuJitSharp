@@ -19,6 +19,30 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class CodeGenBinaryTests
 {
+#if TARGET_X86
+    [TestCase(GT_ADD_LO, INS_add)]
+    [TestCase(GT_ADD_HI, INS_adc)]
+    [TestCase(GT_SUB_LO, INS_sub)]
+    [TestCase(GT_SUB_HI, INS_sbb)]
+    public static void SplitIntegerOperationsPreserveCarryAndBorrow(genTreeOps oper, instruction expected)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var tree = new GenTreeOp(oper, TYP_INT,
+                Register(compiler, TYP_INT, REG_EAX), Register(compiler, TYP_INT, REG_ECX))
+            {
+                RegNum = REG_EAX,
+            };
+
+            codeGen.genCodeForBinary(tree);
+
+            var descriptors = Descriptors(codeGen);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(expected));
+        });
+    }
+#endif
+
     [TestCase(GT_ADD, INS_add)]
     [TestCase(GT_SUB, INS_sub)]
     [TestCase(GT_AND, INS_and)]

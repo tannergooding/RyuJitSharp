@@ -176,6 +176,33 @@ internal static class CodeGenMultiplicationTests
         });
     }
 
+#if TARGET_X86
+    [Test]
+    public static void LongProductsPreserveBothMulxResultRegisters()
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        {
+            CodeGenShiftTests.EnableAvx2(compiler);
+            var tree = new GenTreeMultiRegOp(GT_MUL_LONG, TYP_LONG,
+                CodeGenShiftTests.Register(compiler, TYP_INT, REG_EDX),
+                CodeGenShiftTests.Register(compiler, TYP_INT, REG_ECX))
+            {
+                RegNum = REG_EBX,
+                OtherReg = REG_ESI,
+                Flags = GTF_UNSIGNED,
+            };
+
+            codeGen.genCodeForMulHi(tree);
+
+            var descriptors = CodeGenShiftTests.Descriptors(codeGen);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_mulx));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ESI));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_EBX));
+        });
+    }
+#endif
+
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]
