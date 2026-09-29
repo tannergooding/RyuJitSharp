@@ -9,29 +9,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public void emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir indir,
-        insOpts instOptions = INS_OPTS_NONE)
-    {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Register-memory instruction recording requires AMD64.");
-#else
-        RequireSupportedInstructionRecording();
-        var offs = indir.Offset;
-        var id = emitNewInstrAmd(attr, offs);
-        id.idIns(ins);
-        id.idReg1(reg1);
-        emitHandleMemOp(indir, id, emitInsModeFormat(ins, IF_RRD_ARD), ins);
-
-        SetEvexBroadcastIfNeeded(id, instOptions);
-        SetEvexEmbMaskIfNeeded(id, instOptions);
-        var sz = emitInsSizeAM(id, insCodeRM(ins));
-        id.idCodeSize(sz);
-
-        dispIns(id);
-        emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
-    }
-
     public void emitIns_R_R_AR(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         regNumber @base, int offs, insOpts instOptions = INS_OPTS_NONE)
     {

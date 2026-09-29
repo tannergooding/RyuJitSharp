@@ -212,6 +212,7 @@ public partial class Emitter
 #endif
     }
 
+#if !TARGET_ARM64
     public void emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int ival,
         insOpts instOptions = INS_OPTS_NONE)
     {
@@ -255,6 +256,8 @@ public partial class Emitter
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
 #endif
     }
+
+#endif
 
     public void emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2,
         insOpts instOptions = INS_OPTS_NONE)

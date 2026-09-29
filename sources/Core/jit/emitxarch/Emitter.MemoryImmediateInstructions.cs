@@ -82,64 +82,6 @@ public partial class Emitter
 #endif
     }
 
-    public void emitIns_R_A_I(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir indir, int ival,
-        insOpts instOptions = INS_OPTS_NONE)
-    {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Register-memory-immediate instruction recording requires AMD64.");
-#else
-        RequireSupportedInstructionRecording();
-        noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg1));
-        assert(IsSimdInstruction(ins));
-
-        var offs = indir.Offset;
-        var id = emitNewInstrAmdCns(attr, offs, ival);
-        id.idIns(ins);
-        id.idReg1(reg1);
-        emitHandleMemOp(indir, id, emitInsModeFormat(ins, IF_RRD_ARD_CNS), ins);
-        ulong code = hasCodeMI(ins) ? insCodeMI(ins) : insCodeRM(ins);
-
-        SetEvexBroadcastIfNeeded(id, instOptions);
-        SetEvexEmbMaskIfNeeded(id, instOptions);
-        var sz = emitInsSizeAM(id, code, ival);
-        id.idCodeSize(sz);
-
-        dispIns(id);
-        emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
-    }
-
-    public unsafe void emitIns_R_C_I(instruction ins, emitAttr attr, regNumber reg1,
-        CORINFO_FIELD_HANDLE fldHnd, int offs, int ival, insOpts instOptions = INS_OPTS_NONE)
-    {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Register-field-immediate instruction recording requires AMD64.");
-#else
-        RequireSupportedInstructionRecording();
-        if (!jitStaticFldIsGlobAddr(fldHnd))
-        {
-            attr |= EA_DSP_RELOC_FLG;
-        }
-
-        noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg1));
-        assert(IsSimdInstruction(ins));
-        var id = emitNewInstrCnsDsp(attr, ival, offs);
-        id.idIns(ins);
-        id.idInsFmt(emitInsModeFormat(ins, IF_RRD_MRD_CNS));
-        id.idReg1(reg1);
-        id.idAddr().iiaFieldHnd = fldHnd;
-        ulong code = hasCodeMI(ins) ? insCodeMI(ins) : insCodeRM(ins);
-
-        SetEvexBroadcastIfNeeded(id, instOptions);
-        SetEvexEmbMaskIfNeeded(id, instOptions);
-        var sz = emitInsSizeCV(id, code, ival);
-        id.idCodeSize(sz);
-
-        dispIns(id);
-        emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
-    }
-
     public void emitIns_R_S_I(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs, int ival,
         insOpts instOptions = INS_OPTS_NONE)
     {

@@ -132,6 +132,61 @@ internal static class EmitterInstructionFormatTests
             Throws.TypeOf<FatalJitException>());
     }
 
+    [TestCase(INS_addps, true, false)]
+    [TestCase(INS_vblendmps, false, true)]
+    [TestCase(INS_add, false, false)]
+    public static void XarchSimdInstructionRangesFollowNativeBoundaries(
+        instruction ins, bool sse, bool avx512)
+    {
+        Assert.That(IsSSEInstruction(null, ins), Is.EqualTo(sse));
+        Assert.That(IsAvx512OnlyInstruction(null, ins), Is.EqualTo(avx512));
+    }
+
+    [TestCase(INS_addps, true, false)]
+    [TestCase(INS_movss, false, true)]
+    [TestCase(INS_add, false, false)]
+    public static void VexOperandDuplicationUsesSeparateMetadataFlags(
+        instruction ins, bool dstDstSrc, bool dstSrcSrc)
+    {
+        var emitter = CreateEmitter();
+        emitter.UseVexEncodings = true;
+
+        Assert.That(IsDstDstSrcAVXInstruction(emitter, ins), Is.EqualTo(dstDstSrc));
+        Assert.That(IsDstSrcSrcAVXInstruction(emitter, ins), Is.EqualTo(dstSrcSrc));
+
+        emitter.UseVexEncodings = false;
+        Assert.That(IsDstDstSrcAVXInstruction(emitter, ins), Is.False);
+        Assert.That(IsDstSrcSrcAVXInstruction(emitter, ins), Is.False);
+    }
+
+    [TestCase(0x0000000FUL, true)]
+    [TestCase(0x000F0000UL, true)]
+    [TestCase(0x0F660000UL, true)]
+    [TestCase(0x0F000000UL, false)]
+    public static void LegacyMapOnePreservesTargetSpecificOpcodePacking(ulong code, bool amd64Result)
+    {
+#if TARGET_AMD64
+        Assert.That(Emitter.IsLegacyMap1(code), Is.EqualTo(amd64Result));
+#else
+        Assert.That(Emitter.IsLegacyMap1(code), Is.False);
+#endif
+    }
+
+    [Test]
+    public static void EvexAndApxZeroUpperClassifiersRespectTheirOwnTargets()
+    {
+        var emitter = CreateEmitter();
+        emitter.UseVexEncodings = true;
+        emitter.UseEvexEncodings = true;
+
+        Assert.That(IsSimdEvexEncodableInstruction(emitter, INS_addps), Is.True);
+        Assert.That(IsSimdEvexEncodableInstruction(emitter, INS_add), Is.False);
+        Assert.That(Emitter.IsApxZuCompatibleInstruction(INS_add), Is.False);
+#if TARGET_AMD64
+        Assert.That(Emitter.IsApxZuCompatibleInstruction(INS_seto_apx), Is.True);
+#endif
+    }
+
     [TestCase(IF_NONE, ID_OP_NONE, IS_NONE)]
     [TestCase(IF_LABEL, ID_OP_JMP, IS_NONE)]
     [TestCase(IF_SWR_LABEL, ID_OP_LBL, IS_SF_WR)]
@@ -300,4 +355,19 @@ internal static class EmitterInstructionFormatTests
         var type = typeof(Emitter).GetNestedType("instrDescBasic", BindingFlags.NonPublic)!;
         return (Emitter.instrDesc)Activator.CreateInstance(type, nonPublic: true)!;
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "IsSSEInstruction")]
+    private static extern bool IsSSEInstruction(Emitter? emitter, instruction ins);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "IsAvx512OnlyInstruction")]
+    private static extern bool IsAvx512OnlyInstruction(Emitter? emitter, instruction ins);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "IsDstDstSrcAVXInstruction")]
+    private static extern bool IsDstDstSrcAVXInstruction(Emitter emitter, instruction ins);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "IsDstSrcSrcAVXInstruction")]
+    private static extern bool IsDstSrcSrcAVXInstruction(Emitter emitter, instruction ins);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "IsSimdEvexEncodableInstruction")]
+    private static extern bool IsSimdEvexEncodableInstruction(Emitter emitter, instruction ins);
 }

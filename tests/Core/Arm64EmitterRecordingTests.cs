@@ -7,9 +7,11 @@ using System.Security.Cryptography;
 using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.insOpts;
+using static RyuJitSharp.insScalableOpts;
 using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp.UnitTests;
@@ -288,6 +290,207 @@ internal static unsafe class Arm64EmitterRecordingTests
 #endif
         );
 
+    [TestCase(INS_lsl, EA_8BYTE, 63, INS_OPTS_NONE, IF_DI_2D)]
+    [TestCase(INS_lsr, EA_4BYTE, 31, INS_OPTS_NONE, IF_DI_2D)]
+    [TestCase(INS_asr, EA_8BYTE, 0, INS_OPTS_NONE, IF_DI_2D)]
+    [TestCase(INS_ror, EA_8BYTE, 63, INS_OPTS_NONE, IF_DI_2B)]
+    [TestCase(INS_mvn, EA_8BYTE, 0, INS_OPTS_NONE, IF_DR_2E)]
+    [TestCase(INS_neg, EA_8BYTE, 0, INS_OPTS_NONE, IF_DR_2E)]
+    [TestCase(INS_negs, EA_8BYTE, 3, INS_OPTS_LSL, IF_DR_2F)]
+    [TestCase(INS_tst, EA_8BYTE, 0, INS_OPTS_NONE, IF_DR_2A)]
+    [TestCase(INS_tst, EA_8BYTE, 3, INS_OPTS_LSR, IF_DR_2B)]
+    [TestCase(INS_cmp, EA_8BYTE, 0, INS_OPTS_NONE, IF_DR_2A)]
+    [TestCase(INS_cmn, EA_8BYTE, 3, INS_OPTS_LSL, IF_DR_2B)]
+    [TestCase(INS_cmp, EA_8BYTE, 4, INS_OPTS_UXTW, IF_DR_2C)]
+    public static void PairImmediateScalarRecording(instruction ins, emitAttr size, int imm,
+        insOpts opt, Emitter.insFormat format)
+    {
+        CheckPair(ins, size, REG_R19, REG_R20, imm, opt, format, imm, ins);
+    }
+
+    [TestCase(INS_add, 1, INS_add, 1, INS_OPTS_NONE)]
+    [TestCase(INS_add, -4095, INS_sub, 4095, INS_OPTS_NONE)]
+    [TestCase(INS_sub, -1, INS_add, 1, INS_OPTS_NONE)]
+    [TestCase(INS_sub, 4096, INS_sub, 1, INS_OPTS_LSL12)]
+    [TestCase(INS_adds, 0, INS_adds, 0, INS_OPTS_NONE)]
+    [TestCase(INS_adds, -16773120, INS_subs, 4095, INS_OPTS_LSL12)]
+    [TestCase(INS_subs, -4096, INS_adds, 1, INS_OPTS_LSL12)]
+    [TestCase(INS_subs, 4095, INS_subs, 4095, INS_OPTS_NONE)]
+    public static void PairImmediateArithmeticRecording(instruction ins, int imm,
+        instruction expectedIns, int expectedImm, insOpts expectedOpt)
+    {
+        var emitter = CreateEmitter();
+        RecordPair(emitter, ins, EA_8BYTE, REG_R19, REG_R20, imm, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
+        Assert.That(id.idIns(), Is.EqualTo(expectedIns));
+        Assert.That(id.idInsFmt(), Is.EqualTo(IF_DI_2A));
+        Assert.That(id.idInsOpt(), Is.EqualTo(expectedOpt));
+        Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)expectedImm));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [TestCase(INS_and, EA_4BYTE, 7)]
+    [TestCase(INS_and, EA_8BYTE, 4103)]
+    [TestCase(INS_ands, EA_4BYTE, 7)]
+    [TestCase(INS_ands, EA_8BYTE, 4103)]
+    [TestCase(INS_eor, EA_4BYTE, 7)]
+    [TestCase(INS_eor, EA_8BYTE, 4103)]
+    [TestCase(INS_orr, EA_4BYTE, 7)]
+    [TestCase(INS_orr, EA_8BYTE, 4103)]
+    public static void PairImmediateLogicalRecording(instruction ins, emitAttr size, int encoded)
+    {
+        CheckPair(ins, size, REG_R19, REG_R20, 255, INS_OPTS_NONE, IF_DI_2C, encoded, ins);
+    }
+
+    [TestCase(INS_mov, EA_4BYTE, REG_V19, REG_R20, 3, INS_OPTS_NONE, IF_DV_2C)]
+    [TestCase(INS_mov, EA_4BYTE, REG_V19, REG_V20, 3, INS_OPTS_NONE, IF_DV_2E)]
+    [TestCase(INS_mov, EA_4BYTE, REG_R19, REG_V20, 3, INS_OPTS_NONE, IF_DV_2B)]
+    [TestCase(INS_dup, EA_4BYTE, REG_V19, REG_V20, 3, INS_OPTS_NONE, IF_DV_2E)]
+    [TestCase(INS_dup, EA_8BYTE, REG_V19, REG_V20, 3, INS_OPTS_2S, IF_DV_2D)]
+    [TestCase(INS_ins, EA_1BYTE, REG_V19, REG_ZR, 15, INS_OPTS_NONE, IF_DV_2C)]
+    [TestCase(INS_umov, EA_8BYTE, REG_R19, REG_V20, 1, INS_OPTS_NONE, IF_DV_2B)]
+    [TestCase(INS_smov, EA_2BYTE, REG_R19, REG_V20, 7, INS_OPTS_NONE, IF_DV_2B)]
+    [TestCase(INS_shl, EA_16BYTE, REG_V19, REG_V20, 31, INS_OPTS_4S, IF_DV_2O)]
+    [TestCase(INS_sshr, EA_8BYTE, REG_V19, REG_V20, 64, INS_OPTS_NONE, IF_DV_2N)]
+    [TestCase(INS_sqshl, EA_2BYTE, REG_V19, REG_V20, 15, INS_OPTS_NONE, IF_DV_2N)]
+    [TestCase(INS_uqshl, EA_16BYTE, REG_V19, REG_V20, 15, INS_OPTS_8H, IF_DV_2O)]
+    [TestCase(INS_sqrshrn, EA_2BYTE, REG_V19, REG_V20, 16, INS_OPTS_NONE, IF_DV_2N)]
+    [TestCase(INS_sqshrun, EA_8BYTE, REG_V19, REG_V20, 16, INS_OPTS_4H, IF_DV_2O)]
+    [TestCase(INS_shrn, EA_8BYTE, REG_V19, REG_V20, 16, INS_OPTS_4H, IF_DV_2O)]
+    [TestCase(INS_sxtl, EA_8BYTE, REG_V19, REG_V20, 0, INS_OPTS_4H, IF_DV_2O)]
+    [TestCase(INS_uxtl2, EA_16BYTE, REG_V19, REG_V20, 0, INS_OPTS_8H, IF_DV_2O)]
+    [TestCase(INS_shrn2, EA_16BYTE, REG_V19, REG_V20, 16, INS_OPTS_8H, IF_DV_2O)]
+    public static void PairImmediateVectorRecording(instruction ins, emitAttr size,
+        regNumber reg1, regNumber reg2, int imm, insOpts opt, Emitter.insFormat format)
+    {
+        CheckPair(ins, size, reg1, reg2, imm, opt, format, imm, ins);
+    }
+
+    [TestCase(INS_mvn, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_ROR, IF_DR_2F,
+        "insOptsNone(id.idInsOpt()) || insOptsAluShift(id.idInsOpt())")]
+    [TestCase(INS_dup, EA_4BYTE, REG_V19, REG_R20, INS_OPTS_NONE, IF_DV_2C,
+        "isValidVectorDatasize(datasize)")]
+    public static void PairImmediateNativeDiagnosticRestrictions(instruction ins, emitAttr size,
+        regNumber reg1, regNumber reg2, insOpts opt, Emitter.insFormat format, string condition)
+    {
+#if DEBUG
+        var emitter = CreateEmitter();
+        var error = Assert.Catch(() =>
+            RecordPair(emitter, ins, size, reg1, reg2, 3, opt, INS_SCALABLE_OPTS_NONE));
+        Assert.That(error, Has.Message.Contains(condition));
+        Assert.That(GroupSize(emitter), Is.Zero);
+#else
+        CheckPair(ins, size, reg1, reg2, 3, opt, format, 3, ins);
+#endif
+    }
+
+    [TestCase(INS_ldrsb, EA_8BYTE, REG_R19, 255, INS_OPTS_NONE, IF_LS_2B, 255)]
+    [TestCase(INS_ldursb, EA_4BYTE, REG_R19, -256, INS_OPTS_NONE, IF_LS_2C, -256)]
+    [TestCase(INS_ldrsh, EA_8BYTE, REG_R19, 8190, INS_OPTS_NONE, IF_LS_2B, 4095)]
+    [TestCase(INS_ldursh, EA_8BYTE, REG_R19, 3, INS_OPTS_NONE, IF_LS_2C, 3)]
+    [TestCase(INS_ldrsw, EA_8BYTE, REG_R19, 16380, INS_OPTS_NONE, IF_LS_2B, 4095)]
+    [TestCase(INS_ldursw, EA_8BYTE, REG_R19, -4, INS_OPTS_NONE, IF_LS_2C, -4)]
+    [TestCase(INS_ldrb, EA_1BYTE, REG_R19, 0, INS_OPTS_NONE, IF_LS_2A, 0)]
+    [TestCase(INS_strh, EA_2BYTE, REG_R19, 3, INS_OPTS_NONE, IF_LS_2C, 3)]
+    [TestCase(INS_ldr, EA_8BYTE, REG_R19, 32760, INS_OPTS_NONE, IF_LS_2B, 4095)]
+    [TestCase(INS_ldr, EA_8BYTE, REG_R19, 8, INS_OPTS_PRE_INDEX, IF_LS_2C, 8)]
+    [TestCase(INS_str, EA_8BYTE, REG_R19, -8, INS_OPTS_POST_INDEX, IF_LS_2C, -8)]
+    [TestCase(INS_ldr, EA_16BYTE, REG_V19, 65520, INS_OPTS_NONE, IF_LS_2B, 4095)]
+    [TestCase(INS_str, EA_1BYTE, REG_V19, 255, INS_OPTS_NONE, IF_LS_2B, 255)]
+    [TestCase(INS_ldurb, EA_1BYTE, REG_R19, -1, INS_OPTS_NONE, IF_LS_2C, -1)]
+    [TestCase(INS_stlurh, EA_2BYTE, REG_R19, -2, INS_OPTS_NONE, IF_LS_2C, -2)]
+    [TestCase(INS_ldapur, EA_8BYTE, REG_R19, -8, INS_OPTS_NONE, IF_LS_2C, -8)]
+    [TestCase(INS_stur, EA_8BYTE, REG_R19, -8, INS_OPTS_NONE, IF_LS_2C, -8)]
+    public static void PairImmediateMemoryRecording(instruction ins, emitAttr size, regNumber reg,
+        int imm, insOpts opt, Emitter.insFormat format, int expectedImm)
+    {
+        CheckPair(ins, size, reg, REG_SPBASE, imm, opt, format, expectedImm, ins);
+    }
+
+    [TestCase(INS_ld1, EA_4BYTE, INS_OPTS_NONE, 3, IF_LS_2F)]
+    [TestCase(INS_st2, EA_2BYTE, INS_OPTS_NONE, 7, IF_LS_2F)]
+    [TestCase(INS_ld1, EA_8BYTE, INS_OPTS_1D, 8, IF_LS_2E)]
+    [TestCase(INS_st1_2regs, EA_16BYTE, INS_OPTS_4S, 32, IF_LS_2E)]
+    [TestCase(INS_ld3, EA_16BYTE, INS_OPTS_16B, 48, IF_LS_2E)]
+    [TestCase(INS_st4, EA_8BYTE, INS_OPTS_4H, 32, IF_LS_2E)]
+    [TestCase(INS_ld1r, EA_16BYTE, INS_OPTS_4S, 4, IF_LS_2E)]
+    [TestCase(INS_ld2r, EA_16BYTE, INS_OPTS_4S, 8, IF_LS_2E)]
+    [TestCase(INS_ld3r, EA_16BYTE, INS_OPTS_4S, 12, IF_LS_2E)]
+    [TestCase(INS_ld4r, EA_16BYTE, INS_OPTS_4S, 16, IF_LS_2E)]
+    public static void PairImmediateStructureRecording(instruction ins, emitAttr size, insOpts opt,
+        int imm, Emitter.insFormat format)
+    {
+        CheckPair(ins, size, REG_V19, REG_SPBASE, imm, opt, format, imm, ins);
+    }
+
+    [Test]
+    public static void PairImmediateTlsRecordingPreservesUnscaledToken()
+    {
+        var emitter = CreateEmitter();
+        RecordPair(emitter, INS_ldr, EA_8BYTE | EA_CNS_TLSGD_RELOC, REG_R19, REG_SPBASE,
+            0x12345, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
+        Assert.That(id.idInsFmt(), Is.EqualTo(IF_LS_2A));
+        Assert.That(id.idIsTlsGD(), Is.True);
+        Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)0x12345));
+    }
+
+    [TestCase(INS_nop, 1, false, false, REG_R20, "SVE two-register/immediate")]
+    [TestCase(INS_ldr, 0, false, true, REG_R20, "relocatable page-offset load folding")]
+    [TestCase(INS_ldr, 8, true, false, REG_R20, "load/store instruction optimization")]
+    [TestCase(INS_add, 8, true, false, REG_R19, "post-indexed instruction optimization")]
+    public static void PairImmediateDependenciesRemainExplicit(instruction ins, int imm,
+        bool optimized, bool reloc, regNumber reg2, string dependency)
+    {
+        var emitter = CreateEmitter(optimized, reloc);
+        var error = Assert.Throws<FatalJitException>(() =>
+            RecordPair(emitter, ins, EA_8BYTE, REG_R19, reg2, imm, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE));
+        Assert.That(error, Has.Message.Contains(dependency));
+        Assert.That(GroupSize(emitter), Is.Zero);
+    }
+
+    private static void CheckPair(instruction ins, emitAttr size, regNumber reg1, regNumber reg2,
+        int imm, insOpts opt, Emitter.insFormat format, int expectedImm, instruction expectedIns)
+    {
+        var emitter = CreateEmitter();
+        RecordPair(emitter, ins, size, reg1, reg2, imm, opt, INS_SCALABLE_OPTS_NONE);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
+        Assert.That(id.idIns(), Is.EqualTo(expectedIns));
+        Assert.That(id.idInsFmt(), Is.EqualTo(format));
+        Assert.That(id.idOpSize(), Is.EqualTo(size));
+        Assert.That(id.idInsOpt(), Is.EqualTo(opt));
+        Assert.That(id.idReg1(), Is.EqualTo(reg1 == REG_SPBASE ? REG_ZR : reg1));
+        Assert.That(id.idReg2(), Is.EqualTo(reg2 == REG_SPBASE ? REG_ZR : reg2));
+        Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)expectedImm));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_R_I")]
+    private static extern void RecordPair(Emitter emitter, instruction ins, emitAttr attr,
+        regNumber reg1, regNumber reg2, nint imm, insOpts opt, insScalableOpts sopt);
+
+    [TestCase(0L, 1, true)]
+    [TestCase(-1L, 1, true)]
+    [TestCase(1L, 1, false)]
+    [TestCase(-2L, 1, false)]
+    [TestCase(-256L, 9, true)]
+    [TestCase(255L, 9, true)]
+    [TestCase(-257L, 9, false)]
+    [TestCase(256L, 9, false)]
+    [TestCase(-2147483648L, 32, true)]
+    [TestCase(2147483648L, 32, false)]
+    [TestCase(-4611686018427387904L, 63, true)]
+    [TestCase(4611686018427387904L, 63, false)]
+    [TestCase(long.MinValue, 64, true)]
+    [TestCase(long.MaxValue, 64, true)]
+    public static void SignedImmediateBoundsIncludeFullNativeWidth(long value, int bits, bool expected)
+    {
+        Assert.That(ValidSignedImmediate(null, (nint)value, bits), Is.EqualTo(expected));
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "isValidSimm")]
+    private static extern bool ValidSignedImmediate(Emitter? emitter, nint value, int bits);
+
 #if DEBUG
     [TestCase(false)]
     [TestCase(true)]
@@ -458,11 +661,15 @@ internal static unsafe class Arm64EmitterRecordingTests
     private static extern ref uint[] FormatCounts(Emitter? emitter);
 #endif
 
-    private static RecordingEmitter CreateEmitter()
+    private static RecordingEmitter CreateEmitter(bool optimized = false, bool reloc = false)
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.lvaTrackedCount = 1;
         compiler.lvaTrackedCountInSizeTUnits = 1;
+        compiler.opts.compMinOptsIsSet = true;
+        compiler.opts.compMinOpts = !optimized;
+        compiler.opts.canUseAllOpts = optimized;
+        compiler.opts.compReloc = reloc;
         var emitter = new RecordingEmitter(new CodeGen(compiler));
         emitter.emitBegCG(compiler, default);
         emitter.Init();

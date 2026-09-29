@@ -15,6 +15,17 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class EmitterFlagQueryTests
 {
+    [TestCase(INS_and, true, true, true)]
+    [TestCase(INS_add, true, true, false)]
+    [TestCase(INS_invalid, false, false, false)]
+    public static void NativeInstructionFlagQueriesUseGeneratedMetadata(
+        instruction ins, bool parity, bool sign, bool resetsOverflowAndCarry)
+    {
+        Assert.That(Emitter.DoesWriteParityFlag(ins), Is.EqualTo(parity));
+        Assert.That(Emitter.DoesWriteSignFlag(ins), Is.EqualTo(sign));
+        Assert.That(Emitter.DoesResetOverflowAndCarryFlags(ins), Is.EqualTo(resetsOverflowAndCarry));
+    }
+
     [Test]
     public static void RedundantComparisonsRetainWidthOperandOrderAndMinoptsBehavior(
         [Values(EA_1BYTE, EA_2BYTE, EA_4BYTE, EA_8BYTE)] emitAttr size,

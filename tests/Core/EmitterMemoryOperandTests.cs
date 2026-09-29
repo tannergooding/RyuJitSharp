@@ -44,6 +44,29 @@ internal static unsafe class EmitterMemoryOperandTests
         });
     }
 
+    [TestCase(INS_inc, 0, 3u)]
+    [TestCase(INS_dec, 128, 7u)]
+    public static void UnaryAddressRecordingKeepsDisplacementAndCodeSize(instruction ins, int offset, uint size)
+    {
+        WithEmitter((compiler, emitter) =>
+        {
+            var baseNode = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+            baseNode.RegNum = REG_RAX;
+            var address = new GenTreeAddrMode(TYP_BYREF, baseNode, null, 0, offset) { IsContained = true };
+            var indir = new GenTreeIndir(GT_IND, TYP_LONG, address);
+
+            emitter.emitIns_A(ins, EA_8BYTE, indir);
+            var id = Last(emitter);
+
+            Assert.That(id.idIns(), Is.EqualTo(ins));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RAX));
+            Assert.That(AddressDisplacement(emitter, id), Is.EqualTo((nint)offset));
+            Assert.That(id.idCodeSize(), Is.EqualTo(size));
+            Assert.That(CurrentSize(emitter), Is.EqualTo((int)size));
+            Assert.That(CurrentCount(emitter), Is.EqualTo(1));
+        });
+    }
+
     [TestCase(REG_RAX, REG_NA, 1, 0, 0u)]
     [TestCase(REG_RBP, REG_R8, 2, 128, 1u)]
     [TestCase(REG_RAX, REG_RCX, 4, 65536, 2u)]

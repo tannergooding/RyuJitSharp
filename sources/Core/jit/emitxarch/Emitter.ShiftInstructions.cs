@@ -188,7 +188,7 @@ public partial class Emitter
 #endif
     }
 
-#if TARGET_AMD64
+#if TARGET_XARCH
     public static bool IsShiftInstruction(instruction ins)
     {
         return ins is INS_rcl_1 or INS_rcr_1 or INS_rol_1 or INS_ror_1 or INS_shl_1 or INS_shr_1 or INS_sar_1

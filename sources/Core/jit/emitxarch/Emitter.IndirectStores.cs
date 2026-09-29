@@ -9,27 +9,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public void emitIns_A_R_I(instruction ins, emitAttr attr, GenTreeIndir indir, regNumber reg, int imm)
-    {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Memory-register-immediate recording requires AMD64.");
-#else
-        RequireSupportedInstructionRecording();
-        assert(IsSimdInstruction(ins));
-        assert(reg != REG_NA);
-
-        var id = emitNewInstrAmdCns(attr, indir.Offset, imm);
-        id.idIns(ins);
-        id.idReg1(reg);
-        emitHandleMemOp(indir, id, emitInsModeFormat(ins, IF_ARD_RRD_CNS), ins);
-        var size = emitInsSizeAM(id, insCodeMR(ins), imm);
-        id.idCodeSize(size);
-
-        dispIns(id);
-        emitCurIGsize = unchecked(emitCurIGsize + (int)size);
-#endif
-    }
-
     public void emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd mem,
         insOpts instOptions = INS_OPTS_NONE)
     {

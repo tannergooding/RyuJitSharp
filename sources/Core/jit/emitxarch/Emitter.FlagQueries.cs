@@ -153,7 +153,7 @@ public partial class Emitter
 #endif
     }
 
-#if TARGET_AMD64
+#if TARGET_XARCH
     public static bool DoesWriteParityFlag(instruction ins)
     {
         var flags = CodeGen.instInfo[(int)ins];
@@ -202,6 +202,9 @@ public partial class Emitter
         return true;
     }
 
+#endif
+
+#if TARGET_AMD64
     public static bool emitDoesInsModifyFlags(instruction ins)
     {
         return (CodeGen.instInfo[(int)ins] &

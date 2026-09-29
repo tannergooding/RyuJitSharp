@@ -16,6 +16,29 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Two-register immediates and direct addresses
+
+ARM64 two-register/immediate recording now preserves the complete native
+instruction dispatch, including vector aliases, arithmetic reversal, packed
+logical immediates, scaled/unscaled/indexed memory forms, register lists and TLS
+tokens. Its optimization and SVE calls remain explicit separate dependencies.
+Eight xarch direct-address recorders retain their x86 paths, including push/pop
+stack-depth updates and target-width absolute addresses. Sixteen instruction,
+encoding and flag classifiers are complete.
+
+The exact combined Windows overlay passes 1,105 Debug/1,045 Release controls;
+ARM64 recording/predicate controls pass 283/269. All 76 identical old-source
+recorder cases fail at the missing API. Linux-x64 target controls cover 416
+classification cases and two direct-address cases that previously stopped at a
+Windows-only guard. Known x86 build blockers still prevent execution.
+
+Thirty-one definitions and their declarations retire 1,523 native lines in
+`7d519f03`. Two source-level native recorder/sanity disagreements are preserved,
+not corrected silently; B461 records their Debug/Release contracts. No new
+machine-code parity is claimed. Evidence is in
+`artifacts/arm64-register-pair-immediate` and the pair integration records under
+`artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Shifted-immediate and address recording
 
 ARM64 shifted-halfword recording preserves MOV aliasing, all legal 32/64-bit
