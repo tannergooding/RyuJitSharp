@@ -93,7 +93,6 @@ public sealed partial class Lowering
 
     private unsafe GenTree? LowerStoreLocCommon(GenTreeLclVarCommon lclStore)
     {
-#if TARGET_AMD64 || TARGET_ARM64
         assert(lclStore.Oper is GT_STORE_LCL_FLD or GT_STORE_LCL_VAR);
         JITDUMP("lowering store lcl var/field (before):\n");
         DISPTREERANGE(BlockRange(), lclStore);
@@ -141,12 +140,17 @@ public sealed partial class Lowering
 #if DEBUG
                 var layout = lclStore.GetLayout(CompilerInstance);
                 assert(layout is not null);
-#if TARGET_ARM64 || UNIX_AMD64_ABI
+#if TARGET_XARCH && !UNIX_AMD64_ABI
+                assert(layout.SlotCount == 1);
+                assert(localRegisterType is not TYP_UNDEF);
+#else
                 if (!CompilerInstance.IsHfa(layout.ClassHandle))
                 {
                     if (layout.SlotCount > 1)
                     {
+#if !TARGET_RISCV64 && !TARGET_LOONGARCH64 && !TARGET_WASM
                         assert(src.AsCall().HasMultiRegRetVal);
+#endif
                     }
                     else
                     {
@@ -155,12 +159,9 @@ public sealed partial class Lowering
                         assert((((size - 1) & size) == 0) == (localRegisterType is not TYP_UNDEF));
                     }
                 }
-#else
-                assert(layout.SlotCount == 1);
-                assert(localRegisterType is not TYP_UNDEF);
 #endif
 #endif
-#if TARGET_ARM64 || UNIX_AMD64_ABI
+#if !WINDOWS_AMD64_ABI
                 if (!src.AsCall().HasMultiRegRetVal && (localRegisterType is TYP_UNDEF))
                 {
                     lclStore.Op1 = SpillStructCallResult(src.AsCall());
@@ -177,15 +178,20 @@ public sealed partial class Lowering
             else if (src.Oper is GT_CNS_INT)
             {
                 assert(src.IsIntegralConst(0), "expected an INIT_VAL for non-zero init.");
+                var retypeZeroToRegType = false;
 #if FEATURE_SIMD
-                if (varTypeIsSimd(localRegisterType))
+                retypeZeroToRegType = varTypeIsSimd(localRegisterType);
+#endif
+#if TARGET_WASM
+                retypeZeroToRegType |= localRegisterType != src.Type;
+#endif
+                if (retypeZeroToRegType)
                 {
                     var zero = CompilerInstance.gtNewZeroConNode(localRegisterType);
                     BlockRange().InsertAfter(src, zero);
                     BlockRange().Remove(src);
                     lclStore.Op1 = src = zero;
                 }
-#endif
                 convertToStoreObj = false;
             }
             else if (src.Oper is GT_LCL_VAR)
@@ -213,10 +219,12 @@ public sealed partial class Lowering
                         }
                         _ = LowerIndir(src.AsIndir());
                     }
+#if TARGET_XARCH
                     if (varTypeIsSmall(localRegisterType))
                     {
                         src.Flags |= GTF_DONT_EXTEND;
                     }
+#endif
                 }
                 convertToStoreObj = false;
 #endif
@@ -271,9 +279,6 @@ public sealed partial class Lowering
         JITDUMP("\n");
 
         return next;
-#else
-        throw new NotImplementedException("Common local-store lowering is not ported for this target.");
-#endif
     }
 
     private void WidenSIMD12IfNecessary(GenTreeLclVarCommon node)
@@ -459,7 +464,7 @@ public sealed partial class Lowering
         }
     }
 
-#if TARGET_ARM64 || UNIX_AMD64_ABI
+#if !WINDOWS_AMD64_ABI
     private unsafe GenTreeLclVar SpillStructCallResult(GenTreeCall call)
     {
         var compiler = CompilerInstance;

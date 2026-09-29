@@ -491,6 +491,25 @@ internal static unsafe class Arm64MemoryLoweringTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void LocalStoreCoalescingKeepsTheNativeOptimizationGate(bool optimized)
+    {
+        WithLowering(optimized, (compiler, lowering, _) => {
+            var zero = compiler.gtNewIconNode(TYP_LONG, 0);
+            var store = compiler.gtNewStoreLclVarNode(0, zero);
+
+            if (optimized)
+            {
+                Assert.That(() => LowerLocalStoreCoalescing(lowering, store), Throws.TypeOf<NotImplementedException>());
+            }
+            else
+            {
+                Assert.DoesNotThrow(() => LowerLocalStoreCoalescing(lowering, store));
+            }
+        });
+    }
+
     [TestCase(1, TYP_UBYTE)]
     [TestCase(2, TYP_USHORT)]
     [TestCase(8, TYP_LONG)]
@@ -557,6 +576,9 @@ internal static unsafe class Arm64MemoryLoweringTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerStoreLocCommon")]
     private static extern GenTree? LowerStoreLocCommon(Lowering lowering, GenTreeLclVarCommon local);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerLocalStoreCoalescing")]
+    private static extern void LowerLocalStoreCoalescing(Lowering lowering, GenTreeLclVarCommon local);
 
     private static void WithLowering(bool optimized, Action<Compiler, Lowering, BasicBlock> action)
     {

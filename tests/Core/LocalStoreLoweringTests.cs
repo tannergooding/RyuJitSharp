@@ -161,6 +161,52 @@ internal static unsafe class LocalStoreLoweringTests
         });
     }
 
+#if TARGET_XARCH
+    [Test]
+    public static void ScalarStructBlockLoadReplacesTheLocalStoreOperand()
+    {
+        WithCompiler(compiler => {
+            var layout = new ClassLayout(4);
+            compiler.lvaTable[0].Type = var_types.TYP_STRUCT;
+            compiler.lvaTable[0].Layout = layout;
+            compiler.lvaTable[1].Type = var_types.TYP_BYREF;
+            compiler.lvaCount = 2;
+
+            var address = compiler.gtNewLclvNode(var_types.TYP_BYREF, 1);
+            var original = new GenTreeBlk(var_types.TYP_STRUCT, address, layout);
+            var store = compiler.gtNewStoreLclVarNode(0, original);
+            store.Type = var_types.TYP_STRUCT;
+            var successor = new GenTreeUnOp(genTreeOps.GT_RETURN, var_types.TYP_VOID, null);
+            var block = new BasicBlock(null, null);
+            block.MakeLir(null, null);
+            block.InsertAtEnd(address);
+            block.InsertAtEnd(original);
+            block.InsertAtEnd(store);
+            block.InsertAtEnd(successor);
+            var lowering = new Lowering(compiler, new LinearScan(compiler));
+            LoweringBlock(lowering) = block;
+
+            Assert.That(layout.RegisterType, Is.EqualTo(var_types.TYP_INT));
+            Assert.That(LowerNode(lowering, store), Is.SameAs(successor));
+
+            var replacement = store.Op1.AsIndir();
+            Assert.That(store.Op1, Is.Not.SameAs(original));
+            Assert.That(store.Op1.Oper, Is.EqualTo(genTreeOps.GT_IND));
+            Assert.That(store.Op1.Type, Is.EqualTo(var_types.TYP_INT));
+            Assert.That(replacement.Addr, Is.SameAs(address));
+            Assert.That(address.Next, Is.SameAs(replacement));
+            Assert.That(replacement.Next, Is.SameAs(store));
+            Assert.That(block.TryGetUse(replacement, out var use), Is.True);
+            Assert.That(use.User(), Is.SameAs(store));
+            Assert.That(original.Prev, Is.Null);
+            Assert.That(original.Next, Is.Null);
+#if DEBUG
+            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+#endif
+        });
+    }
+#endif
+
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_block")]
     private static extern ref BasicBlock? LoweringBlock(Lowering lowering);
 

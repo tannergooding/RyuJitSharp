@@ -260,13 +260,6 @@ public sealed partial class Lowering
 #endif
     }
 
-#if !WINDOWS_AMD64_ABI && !TARGET_ARM64 && !UNIX_AMD64_ABI
-    private GenTreeLclVar SpillStructCallResult(GenTreeCall call)
-    {
-        throw new NotImplementedException("Struct call result spilling is not ported for this target.");
-    }
-#endif
-
     private void LowerInitBlockStore(GenTreeBlk block)
     {
 #if TARGET_XARCH || TARGET_ARM64

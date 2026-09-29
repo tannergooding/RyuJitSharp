@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Shared local-store lowering and struct-result spilling
+
+`LowerStoreLocCommon` and `SpillStructCallResult` now retain their whole native
+target branches. ARM64 local-store coalescing preserves its optimization-disabled
+early return, while the optimized dependency remains explicitly unported and
+its native body remains. Two definitions and their declarations retire 263 lines
+in `77c21b36`.
+
+Full-analysis controls pass Windows 87 Debug/87 Release, Linux 66 Debug/66 Release
+and ARM64 71 Debug/71 Release. Final Windows Debug repeats 87 cases after removing
+a redundant owner assignment; `LIR.Range.ReplaceNode` already replaces the owning
+use. The new identity/LIR test is therefore a preservation control, not a defect
+fix. Other results precede that redundant-write removal; ARM64-selected code is
+unchanged. Evidence: `artifacts/lower-local-spill-c84e404-isolated/manifest-v5.json`.
+Other-target execution and generated-code parity are not established.
+
 ## 2026-09-29: Shared LSRA kill-set helper closure
 
 The six remaining arithmetic, block, intrinsic and profiler kill-set helpers

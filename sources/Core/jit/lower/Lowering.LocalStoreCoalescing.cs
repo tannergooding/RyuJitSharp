@@ -316,6 +316,13 @@ public sealed partial class Lowering
                 (((upperBits & currentMask) << currentShift) & newMask);
             current.Value.AsIntCon().IconVal = unchecked((nint)result);
         }
+#elif TARGET_ARM64
+        if (!CompilerInstance.opts.OptimizationEnabled)
+        {
+            return;
+        }
+
+        throw new NotImplementedException("ARM64 local-store coalescing is not ported.");
 #endif
     }
 }

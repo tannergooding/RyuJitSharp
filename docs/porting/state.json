@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sharedLocalStoreAndSpillClosure": {
+      "scope": "Whole LowerStoreLocCommon and SpillStructCallResult preserve the xarch, ARM, LoongArch64, RISC-V and Wasm branches. ARM64 local-store coalescing keeps its native disabled-optimization early return and a terminating dependency boundary for optimized code; its unfinished native body remains.",
+      "validation": "Full-analysis Windows87 Debug/87 Release, Linux66 Debug/66 Release and ARM6471 Debug/71 Release controls. Final source removes a redundant owner assignment; final Windows Debug87 rerun passes. ReplaceNode already updates the owning use, so the new identity/LIR case is a preservation control, not a port-bug regression.",
+      "retirement": "Two definitions, headings, target enclosure and declarations;263 native lines.",
+      "nativeBefore": "1c56e6d4227f493c8fe90cfff74ebbab1043f1c2",
+      "nativeAfter": "77c21b363c332f4457b8542bf746f01ff527554a",
+      "evidence": "artifacts/lower-local-spill-c84e404-isolated/manifest-v5.json and corresponding lower-local-spill retirement records.",
+      "limits": "Final Windows Debug directly exercises the revised owner path; other full-analysis controls precede removal of the redundant assignment. ARM64-selected code is unchanged by that removal. Other-target execution and generated-code parity remain unverified."
+    },
     "sharedLsraKillSetHelpers": {
       "scope": "Whole multiply, divide/modulo, block-store, hardware-intrinsic, return and profiler-hook kill-set helpers preserve native zero masks on non-xarch targets, x86 multiply-long classification and ARM void-return profiler kills. Replaces the former dependent terminating declarations with their complete native bodies.",
       "validation": "Full-analysis ARM64 target controls80 Debug/65 Release and Windows controls75 Debug/74 Release pass. Five additional ARM64 arithmetic cases preserve native no-fixed-register behavior. With at most two compiler commands active, sampled available physical memory stays above37GiB.",
@@ -1793,13 +1802,13 @@
           "scope": "Whole retained xarch scalar/atomic codegen families.",
           "owner": "4b57b744-36f1-4e6e-8b76-94c1a87d6e02",
           "files": "Scalar/atomic CodeGen partials and focused fixtures; parent owns shared register helpers and both ARM64 register fixtures.",
-          "status": "replacement worker recovering preserved throw-helper edits; source work only until parent grants the single validation slot"
+          "status": "replacement worker validating preserved throw-helper edits in first monitored slot"
         },
         {
           "scope": "Retained shared call-result and return lowering after call/argument dispatch closure.",
           "owner": "41f2570d-eb35-4a4b-92d7-1b2d0a3df242",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "replacement worker validating final v5 preservation control in second monitored slot; other final Windows/Linux/ARM64 controls pass"
+          "status": "final v5 preservation control accepted87/87; second monitored slot released; local-store and spill packet ready for managed commit"
         },
         {
           "scope": "Whole retained shared kill-set family after return/write-barrier closure.",
@@ -2215,7 +2224,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Six shared kill-set helpers validated80D/65R ARM64 and75D/74R Windows; native retirement consolidated1c56e6d4. Finish managed helper commit, then accept final lowering v5 control and scalar throw-helper packet. The alleged stale owner was disproved: LIR.Range.ReplaceNode already updates the owning use; redundant assignment removed and new test is a preservation control. Lowering worker41f2570d uses second monitored build slot and scalar4126f755 first; no third compiler command. All13Wasm files remain frozen. Recovery profiling is in artifacts/power-recovery-20260929/recovery.json. No publication.",
+    "nextAction": "Shared helper closure committed94592a3. Final lowering v5 control accepted87/87; native two-definition retirement consolidated77c21b36. Finish its managed commit, then continue retained coalescing support while accepting scalar throw-helper packet. Parent's adjacent LSRA work is buildKillPositionsForNode/updateIntervalPreferencesForKill. Scalar4126f755 owns first monitored build slot; lowering41f2570d released second. At most two compiler commands. All13Wasm files remain frozen; no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
