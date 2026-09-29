@@ -17,6 +17,43 @@ public static class LsraGlobals
 
     public const int RegisterTypeCount = 2;
 
+    public static void lsraAssignRegToTree(GenTree tree, regNumber reg, uint regIdx)
+    {
+        if (regIdx == 0)
+        {
+            tree.RegNum = reg;
+        }
+#if !TARGET_64BIT
+        else if (tree.Oper.IsMultiRegOp)
+        {
+            assert(regIdx == 1);
+            tree.AsMultiRegOp().OtherReg = reg;
+        }
+#endif
+#if FEATURE_MULTIREG_RET
+        else if (tree.Oper is GT_COPY)
+        {
+            assert(regIdx == 1);
+            tree.AsCopyOrReload().SetRegNumByIdx(reg, 1);
+        }
+#endif
+#if FEATURE_HW_INTRINSICS
+        else if (tree.Oper is GT_HWINTRINSIC)
+        {
+            tree.AsHWIntrinsic().SetRegNumByIdx(reg, checked((byte)regIdx));
+        }
+#endif
+        else if (tree.Oper is GT_LCL_VAR or GT_STORE_LCL_VAR)
+        {
+            tree.AsLclVar().SetRegNumByIdx(reg, checked((byte)regIdx));
+        }
+        else
+        {
+            assert(tree.IsMultiRegCall);
+            tree.AsCall().SetRegNumByIdx(reg, checked((byte)regIdx));
+        }
+    }
+
     public static SingleTypeRegSet genAndNot(SingleTypeRegSet registers, SingleTypeRegSet excluded) => registers & ~excluded;
 
     public static bool genMaxOneBit(SingleTypeRegSet registers)

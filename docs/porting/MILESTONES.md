@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Shared multi-register result assignment
+
+`GenTreeMultiRegOp` now has the native mutable second-result register and
+explicit spill-state initialization. Whole `lsraAssignRegToTree` and
+`writeRegisters` preserve primary and indexed assignment across target guards.
+Their definitions and declaration retire 56 lines in `a9bdcdfd`. The native
+node structure was already absent despite the incomplete managed contract;
+repairing that bounded exception adds no struct-retirement credit.
+
+Combined Windows controls pass 280 Debug/267 Release; ARM64 source builds pass
+both configurations. Two Linux writeback cases pass and fail on identical old
+source. X86 retains 14 first-pass errors, so its new state/copy/spill case remains
+unexecuted. Secondary copy coverage follows native `FEATURE_MULTIREG_RET`,
+correcting a prior Windows fixture that exercised an invalid native target case.
+Evidence: `artifacts/multireg-writeback-closure`,
+`artifacts/xarch-shared-writeback-integration` and their integration records.
+
 ## 2026-09-29: Whole xarch AVX-family code generation
 
 AVX-family generation, FMA, two-source permutation and mask-lane clearing now

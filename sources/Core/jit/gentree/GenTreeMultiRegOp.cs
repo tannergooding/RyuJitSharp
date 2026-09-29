@@ -8,7 +8,7 @@ namespace RyuJitSharp;
 
 public sealed class GenTreeMultiRegOp : GenTreeOp
 {
-    private readonly regNumber _otherReg;
+    private regNumber _otherReg;
 
     // GTF_SPILL or GTF_SPILLED flag on a multi-reg node indicates that one or
     // more of its result regs are in that state. The spill flag of each of the
@@ -22,9 +22,21 @@ public sealed class GenTreeMultiRegOp : GenTreeOp
     {
         assert(oper.IsMultiRegOp);
         _otherReg = REG_NA;
+        ClearOtherRegFlags();
     }
 
-    public regNumber OtherReg => _otherReg;
+    public regNumber OtherReg
+    {
+        get
+        {
+            return _otherReg;
+        }
+
+        set
+        {
+            _otherReg = value;
+        }
+    }
 
     public byte RegCount => (byte)((Type is TYP_LONG) ? 2 : 1);
 

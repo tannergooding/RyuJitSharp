@@ -9,41 +9,7 @@ public partial class LinearScan
 {
     private void writeRegisters(RefPosition currentRefPosition, GenTree tree)
     {
-#if !((TARGET_AMD64 && WINDOWS_AMD64_ABI) || TARGET_ARM64)
-        throw new FatalJitException("LSRA register writeback is not ported for this target.");
-#else
-        var reg = currentRefPosition.assignedReg();
-        var regIdx = currentRefPosition.getMultiRegIdx();
-
-        if (regIdx == 0)
-        {
-            tree.RegNum = reg;
-        }
-        else if (tree.Oper is GT_COPY)
-        {
-            assert(regIdx == 1);
-            tree.AsCopyOrReload().SetRegNumByIdx(reg, checked((byte)regIdx));
-        }
-        else if (tree.Oper is GT_HWINTRINSIC)
-        {
-            tree.AsHWIntrinsic().SetRegNumByIdx(reg, checked((byte)regIdx));
-        }
-        else if (tree.Oper is GT_LCL_VAR or GT_STORE_LCL_VAR)
-        {
-            tree.AsLclVar().SetRegNumByIdx(reg, checked((byte)regIdx));
-        }
-        else
-        {
-#if FEATURE_MULTIREG_RET && TARGET_ARM64
-            if (tree.Oper is GT_CALL && tree.AsCall().HasMultiRegRetVal)
-            {
-                tree.AsCall().SetRegNumByIdx(reg, checked((byte)regIdx));
-                return;
-            }
-#endif
-            throw new FatalJitException("Unsupported multi-register LSRA writeback node.");
-        }
-#endif
+        LsraGlobals.lsraAssignRegToTree(tree, currentRefPosition.assignedReg(), currentRefPosition.getMultiRegIdx());
     }
 
     private void insertCopyOrReload(BasicBlock block, GenTree tree, uint multiRegIdx, RefPosition refPosition)

@@ -22,6 +22,49 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanRegisterWritebackTests
 {
+#if TARGET_X86
+    [Test]
+    public static void MultiRegisterResultsCanBeAssignedAndCopiedIndependently()
+    {
+#if DEBUG
+        using var tls = new JitTls(null);
+#endif
+        var previous = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitTls.Compiler = compiler;
+        try
+        {
+            var left = compiler.gtNewIconNode(TYP_INT, 2);
+            var right = compiler.gtNewIconNode(TYP_INT, 3);
+            var source = new GenTreeMultiRegOp(GT_MUL_LONG, TYP_LONG, left, right);
+            var copy = new GenTreeMultiRegOp(GT_MUL_LONG, TYP_LONG, left, right);
+            Assert.That(source.OtherReg, Is.EqualTo(regNumber.REG_NA));
+            Assert.That(source.RegCount, Is.EqualTo((byte)2));
+            Assert.That(source.GetRegType(1), Is.EqualTo(TYP_INT));
+            Assert.That(source.GetRegSpillFlagByIdx(1), Is.EqualTo(default(GenTreeFlags)));
+
+            lsraAssignRegToTree(source, regNumber.REG_EAX, 0);
+            lsraAssignRegToTree(source, regNumber.REG_EDX, 1);
+            source.SetRegSpillFlagByIdx(GTF_SPILLED, 1);
+            copy.RegNum = regNumber.REG_ECX;
+            copy.CopyOtherRegs(source);
+
+            Assert.That(source.GetRegNumByIdx(0), Is.EqualTo(regNumber.REG_EAX));
+            Assert.That(source.GetRegNumByIdx(1), Is.EqualTo(regNumber.REG_EDX));
+            Assert.That(copy.RegNum, Is.EqualTo(regNumber.REG_ECX));
+            Assert.That(copy.OtherReg, Is.EqualTo(regNumber.REG_EDX));
+            Assert.That(copy.GetRegSpillFlagByIdx(1), Is.EqualTo(GTF_SPILLED));
+            copy.ClearOtherRegFlags();
+            Assert.That(copy.GetRegSpillFlagByIdx(1), Is.EqualTo(default(GenTreeFlags)));
+            Assert.That(source.GetRegSpillFlagByIdx(1), Is.EqualTo(GTF_SPILLED));
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+#endif
+
     [TestCase(false, false)]
     [TestCase(true, false)]
     [TestCase(false, true)]
@@ -47,7 +90,9 @@ internal static unsafe class LinearScanRegisterWritebackTests
     }
 
     [TestCase(false)]
+#if FEATURE_MULTIREG_RET
     [TestCase(true)]
+#endif
     public static void WriteRegistersSelectsTheIndexedResult(bool indexed)
     {
         WithAllocator((compiler, allocator) => {
