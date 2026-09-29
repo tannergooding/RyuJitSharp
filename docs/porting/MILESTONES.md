@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Whole xarch hardware-intrinsic lowering dispatcher
+
+The complete `LowerHWIntrinsic` dispatcher retains its native transformations,
+nested gather selection, containment and separate-helper calls. Missing native
+diagnostic structure is restored without changing valid instruction selection.
+The 1,355-line definition and heading retire in `60ab6147`; separate intrinsic
+lowering helpers and the shared declaration remain.
+
+Windows controls pass 60 Debug/59 Release; Linux-target controls pass 60.
+An identical old extract-shape control fails because two native assertions had
+been combined into one. Impossible comparison-ID defaults are bounded by the
+outer switch and are not dynamically tested. X86 retains 14 baseline errors.
+Evidence: `artifacts/xarch-hwintrinsic-a0d3f34` and the original proposal,
+assertion supplement and retirement receipts under
+`artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Xarch immediate materialization and helper calls
 
 Immediate materialization and helper-call generation preserve their x86 paths,

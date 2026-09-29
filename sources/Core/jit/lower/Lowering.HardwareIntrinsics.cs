@@ -97,7 +97,8 @@ public sealed partial class Lowering
                             (op1, op2) = (op2, op1);
                             if (isNot)
                             {
-                                assert(op1.IsVectorAllBitsSet && op3.IsVectorAllBitsSet);
+                                assert(op1.IsVectorAllBitsSet);
+                                assert(op3.IsVectorAllBitsSet);
                                 if (BlockRange().TryGetUse(user, out var outerUse))
                                 {
                                     outerUse.ReplaceWith(op2);
@@ -299,7 +300,16 @@ public sealed partial class Lowering
                 var second = node.GetOp(2);
                 if (!varTypeIsFloating(node.SimdBaseType) && second.IsVectorZero)
                 {
-                    var testId = intrinsicId is NI_AVX512_CompareEqualMask ? NI_AVX512_PTESTNM : NI_AVX512_PTESTM;
+                    NamedIntrinsic testId;
+                    if (intrinsicId is NI_AVX512_CompareEqualMask)
+                    {
+                        testId = NI_AVX512_PTESTNM;
+                    }
+                    else
+                    {
+                        assert(intrinsicId is NI_AVX512_CompareNotEqualMask);
+                        testId = NI_AVX512_PTESTM;
+                    }
                     BlockRange().Remove(second);
                     var firstUse = new LIR.Use(BlockRange(), ref node.GetOpRef(1), node);
                     _ = ReplaceWithLclVar(firstUse);
@@ -385,7 +395,8 @@ public sealed partial class Lowering
             {
                 if (varTypeIsFloating(node.SimdBaseType))
                 {
-                    assert((node.SimdBaseType is TYP_FLOAT) && (node.SimdSize == 16));
+                    assert(node.SimdBaseType is TYP_FLOAT);
+                    assert(node.SimdSize == 16);
                     var index = node.GetOp(2);
                     if (!index.Oper.IsConst)
                     {
@@ -559,7 +570,8 @@ public sealed partial class Lowering
                     NI_X86Base_CompareGreaterThan => NI_X86Base_CompareLessThan,
                     NI_X86Base_CompareGreaterThanOrEqual => NI_X86Base_CompareLessThanOrEqual,
                     NI_X86Base_CompareNotGreaterThan => NI_X86Base_CompareNotLessThan,
-                    _ => NI_X86Base_CompareNotLessThanOrEqual,
+                    NI_X86Base_CompareNotGreaterThanOrEqual => NI_X86Base_CompareNotLessThanOrEqual,
+                    _ => throw new FatalJitException("Unexpected floating comparison intrinsic."),
                 };
                 node.ChangeHWIntrinsicId(newId);
                 (node.GetOpRef(1), node.GetOpRef(2)) = (node.GetOp(2), node.GetOp(1));
@@ -573,8 +585,12 @@ public sealed partial class Lowering
                     break;
                 }
                 assert(varTypeIsIntegral(node.SimdBaseType));
-                node.ChangeHWIntrinsicId(intrinsicId is NI_X86Base_CompareLessThan
-                    ? NI_X86Base_CompareGreaterThan : NI_AVX2_CompareGreaterThan);
+                var newId = intrinsicId switch {
+                    NI_X86Base_CompareLessThan => NI_X86Base_CompareGreaterThan,
+                    NI_AVX2_CompareLessThan => NI_AVX2_CompareGreaterThan,
+                    _ => throw new FatalJitException("Unexpected integer comparison intrinsic."),
+                };
+                node.ChangeHWIntrinsicId(newId);
                 (node.GetOpRef(1), node.GetOpRef(2)) = (node.GetOp(2), node.GetOp(1));
                 break;
             }

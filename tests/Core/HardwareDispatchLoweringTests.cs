@@ -3,6 +3,7 @@
 #if TARGET_XARCH
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.CORINFO_InstructionSet;
 using static RyuJitSharp.Globals;
@@ -181,6 +182,41 @@ internal static unsafe class HardwareDispatchLoweringTests
         });
     }
 
+#if DEBUG
+    [Test]
+    public static void FloatingExtractReportsBothInvalidShapeAssertions()
+    {
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.doAssert = &RecordAssertion;
+        var context = new AssertionContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
+
+        WithCompiler(compiler => {
+            var vector = new GenTreeLclVar(TYP_SIMD32, 0);
+            var index = compiler.gtNewIconNode(TYP_INT, 0);
+            var extract = new GenTreeHWIntrinsic(TYP_DOUBLE, NI_X86Base_Extract,
+                TYP_DOUBLE, 32, vector, index);
+            var block = NewBlock(vector, index, extract);
+
+            _ = LowerIntrinsic(NewLowering(compiler, block), extract);
+        }, &context.JitInfo);
+
+        Assert.That(context.Assertions, Is.EqualTo(2));
+    }
+
+    private struct AssertionContext
+    {
+        public ICorJitInfo JitInfo;
+        public int Assertions;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
+    {
+        ((AssertionContext*)self)->Assertions++;
+        return 0;
+    }
+#endif
+
     private static GenTreeVecCon AllBitsSet()
     {
         var node = new GenTreeVecCon(TYP_SIMD16);
@@ -223,10 +259,10 @@ internal static unsafe class HardwareDispatchLoweringTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerHWIntrinsic")]
     private static extern GenTree? LowerIntrinsic(Lowering lowering, GenTreeHWIntrinsic node);
 
-    private static void WithCompiler(Action<Compiler> action)
+    private static void WithCompiler(Action<Compiler> action, ICorJitInfo* jitInfo = null)
     {
 #if DEBUG
-        using var tls = new JitTls(null);
+        using var tls = new JitTls(jitInfo);
 #endif
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

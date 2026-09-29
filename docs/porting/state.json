@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "xarchHardwareIntrinsicLowering": {
+      "scope": "Whole LowerHWIntrinsic dispatcher, including nested gather-index selection, transformations, containment, helper calls and native diagnostic structure.",
+      "changes": "Separate native extract/bitwise assertions and restore mask-compare invariants and terminating impossible comparison-ID defaults; valid instruction selection is unchanged.",
+      "validation": "Windows60 Debug/59 Release and Linux-target60 pass. Identical old extract-shape control reports one assertion instead of two and fails; old full control59 pass/1 fail. X86 retains14 identical baseline errors.",
+      "retirement": "One complete definition and heading;1355 native lines. Shared declaration and separate intrinsic lowering helpers remain native.",
+      "nativeBefore": "0a2410734cec4a49a4f2b608981d1f105bcc54a9",
+      "nativeAfter": "60ab61473c3cf255de056ae1390704806ee895f4",
+      "evidence": "artifacts/xarch-hwintrinsic-a0d3f34 and artifacts/residual-reconciliation/xarch-lowerhwintrinsic-proposed-20260929.json plus assertion-supplement; hw-lowering-combined/applied/verification receipts.",
+      "limits": "Impossible comparison-ID defaults cannot be reached through the outer switch and have no dynamic regression claim. No x86 execution or generated-code parity."
+    },
     "xarchImmediateAndHelperCalls": {
       "scope": "Whole instGen_Set_Reg_To_Imm and genEmitHelperCall, including x86 immediate/PC-relative paths and target-width zero-relative-address classification.",
       "validation": "Windows90 Debug/84 Release and focused Linux46 pass. The broader Linux return-location fixture retains one SIMD16 NullReferenceException reproduced on unchanged a196428. X86 has the same14 baseline errors; new x86 cases do not execute.",
@@ -1272,7 +1282,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "0a2410734cec4a49a4f2b608981d1f105bcc54a9",
+      "residualHead": "60ab61473c3cf255de056ae1390704806ee895f4",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -1426,16 +1436,28 @@
       "parentScope": "Keep four independent xarch lanes productive and integrate coherent handoffs using their whole-function review and focused evidence. SIMD, scalar LSRA, cookie/EH codegen and LowerCast are accepted. Parent owns shared contracts, generators, native mutations and13 preserved Wasm WIP files; do not reopen these accepted packets as a new audit.",
       "wholeFunctionRepairLanes": [
         {
-          "scope": "Whole retained xarch emitRegName, emitXMMregName, emitYMMregName, emitZMMregName and operand/display helpers preceding emitDispIns.",
+          "scope": "Next retained general codegenxarch family after cookie/EH and immediate/helper-call completion.",
           "owner": "4b57b744-36f1-4e6e-8b76-94c1a87d6e02",
-          "files": "Emitter.RegisterNames.cs, Emitter.InstructionDisplay.cs and helper partials plus focused separate fixtures; coordinate signatures with lane B without editing its Formats partial.",
-          "status": "ready and frozen;15definitions887lines,143WindowsDebug/106Release,102Linux-focused controls and unchanged14x86 errors"
+          "files": "General codegenxarch partials and focused fixtures; exclude hardware-intrinsic codegen and shared parent contracts.",
+          "status": "active from f87562b"
         },
         {
-          "scope": "Whole retained xarch emitDispIns and directly coupled dependencies; preserve every native instruction-format and target branch.",
+          "scope": "Next retained lowerxarch helper family after LowerCast and LowerHWIntrinsic completion.",
           "owner": "b2253a3d-d101-444e-9c56-d631eb5b274b",
-          "files": "Emitter.InstructionDisplay.Formats.cs and dedicated tests; lane A owns register/operand display helpers. Parent owns shared contracts and ARM64.",
-          "status": "caller proposal ready but acceptance pending: determine whether register-pair/name helpers extract inline native emitDispIns logic; close any such omissions before retirement"
+          "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
+          "status": "LowerHWIntrinsic accepted with failing-old assertion evidence; ready for next assignment"
+        },
+        {
+          "scope": "Next retained xarch LSRA family, including the separate CheckAndMoveRMWLastUse helper.",
+          "owner": "bf8933b0-1d43-49d4-9d3e-91c4322f5215",
+          "files": "LSRA partials and focused fixtures.",
+          "status": "active from86a8984"
+        },
+        {
+          "scope": "Retained xarch hardware-intrinsic code generation after full SIMD file closure.",
+          "owner": "a9254d85-a0d4-46d4-a852-87eef8c242fb",
+          "files": "Hardware-intrinsic codegen partials and dedicated fixtures; general codegenxarch remains with A.",
+          "status": "active fromf4f4501; parent separately repaired SIMD ARM64 declaration guard"
         }
       ],
       "parallelPackets": [
@@ -1839,7 +1861,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Immediate/helper-call packet accepted at native0a241073:2 definitions/127 lines,90D84R/46 focusedLinux; do not reapply. Reassign A to its next retained codegen family. B is adding failing-old assertion controls for1355-line LowerHWIntrinsic before acceptance. LSRA continues its next family with CheckAndMoveRMWLastUse ownership, and HW codegen continues. Parent integrates completed handoffs and handles shared blockers. Both residual emitxarch.cpp and simdcodegenxarch.cpp are gone; this is not whole-pipeline parity. Preserve14 x86 blockers,13 Wasm WIP, oracle-plus-one and no publication.",
+    "nextAction": "LowerHWIntrinsic accepted at native60ab6147:1 definition/1355 lines,60D59R/60Linux, identical old assertion control fails; do not reapply. Reassign B to a retained intrinsic helper family. A/general codegen, LSRA with last-use-helper ownership, and HW codegen continue. Parent integrates completed handoffs and handles shared caller dependencies; both residual emitxarch.cpp and simdcodegenxarch.cpp are gone, not whole-pipeline parity. Preserve14 x86 blockers,13 Wasm WIP, oracle-plus-one and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
