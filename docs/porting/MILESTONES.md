@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Common peephole eligibility and xarch classification
+
+Move and side-effect classification and the complete Debug relocation checker
+now retain their x86 paths. The two instruction-group peephole eligibility
+helpers are common to all targets, preserving boundary, no-GC and forced-group
+checks rather than duplicating their xarch implementation.
+
+Full-analysis Windows controls pass 163 Debug/157 Release, and ARM64 builds in
+both configurations. Existing x86/Wasm parser failures remain independent.
+Five definitions and associated declarations retire 274 lines in native
+`30e5e933`; distinct other-target sanity definitions and the separate peephole
+iterator remain. Evidence is in `artifacts/xarch-classification-common-d40c126`
+and `artifacts/residual-reconciliation/classification-*-20260929.json`.
+
 ## 2026-09-29: Register-address recording
 
 Six register-address recorders and their direct helpers retain their complete

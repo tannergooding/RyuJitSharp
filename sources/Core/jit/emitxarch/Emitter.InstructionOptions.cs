@@ -52,7 +52,7 @@ public partial class Emitter
         }
     }
 
-#if DEBUG && TARGET_AMD64
+#if DEBUG
     private static void emitInsSanityCheck(instrDesc id)
     {
         var idOp = (ID_OPS)emitFmtToOps[(int)id.idInsFmt()];

@@ -153,6 +153,39 @@ internal static class EmitterInstructionFormatTests
         Assert.That(Emitter.emitGetSchedInfo(format), Is.EqualTo(scheduling));
     }
 
+#if DEBUG && TARGET_XARCH
+    [TestCase(IF_RRW_SHF, false, false, false)]
+    [TestCase(IF_RWR_RRD_RRD_RRD, true, true, false)]
+    [TestCase(IF_MRW_RRW, false, false, true)]
+    [TestCase(IF_RWR_RRD_ARD_CNS, false, true, true)]
+    public static void SanityCheckAcceptsNativeRelocationOperandClasses(
+        Emitter.insFormat format, bool largeConstant, bool constantRelocation, bool displacementRelocation)
+    {
+        var descriptor = CreateDescriptor();
+        descriptor.idInsFmt(format);
+
+        if (largeConstant)
+        {
+            descriptor.idSetIsLargeCns();
+        }
+
+        if (constantRelocation)
+        {
+            descriptor.idSetIsCnsReloc();
+        }
+
+        if (displacementRelocation)
+        {
+            descriptor.idSetIsDspReloc();
+        }
+
+        CheckSanity(null, descriptor);
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitInsSanityCheck")]
+    private static extern void CheckSanity(Emitter? emitter, Emitter.instrDesc descriptor);
+#endif
+
     [Test]
     public static void EveryFormatRoundTripsWithoutChangingOtherDescriptorFieldsOrLogicalSizes()
     {

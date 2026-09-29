@@ -9,7 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
+#if TARGET_XARCH
     public static bool IsMovInstruction(instruction ins)
     {
         // This is the native move-elision set, not all instructions with move-like semantics.
@@ -18,7 +18,11 @@ public partial class Emitter
             INS_vmovdqu64 or INS_movq or INS_movsd_simd or INS_movss or INS_vmovsh or
             INS_movsx or INS_movupd or INS_movups or INS_movzx or INS_kmovb_msk or
             INS_kmovw_msk or INS_kmovd_msk or INS_kmovq_msk or INS_kmovb_gpr or
-            INS_kmovw_gpr or INS_kmovd_gpr or INS_kmovq_gpr or INS_movsxd;
+            INS_kmovw_gpr or INS_kmovd_gpr or INS_kmovq_gpr
+#if TARGET_64BIT
+            or INS_movsxd
+#endif
+            ;
     }
 
     public bool HasSideEffect(instruction ins, emitAttr size)
@@ -67,13 +71,21 @@ public partial class Emitter
                 break;
             }
 
-            case INS_vmovsh or INS_movsx or INS_movzx or INS_movq or INS_movsxd:
+            case INS_vmovsh or INS_movsx or INS_movzx or INS_movq:
             case INS_kmovb_msk or INS_kmovw_msk or INS_kmovd_msk:
             case INS_kmovb_gpr or INS_kmovw_gpr or INS_kmovd_gpr or INS_kmovq_gpr:
             {
                 hasSideEffect = true;
                 break;
             }
+
+#if TARGET_64BIT
+            case INS_movsxd:
+            {
+                hasSideEffect = true;
+                break;
+            }
+#endif
 
             case INS_kmovq_msk:
             {
@@ -88,31 +100,6 @@ public partial class Emitter
         }
 
         return hasSideEffect;
-    }
-
-    private static bool isInsIGSafeForPeepholeOptimization(insGroup prevInsIG, insGroup curInsIG)
-    {
-        if (prevInsIG == curInsIG)
-        {
-            return true;
-        }
-
-        return ((curInsIG.igFlags & InsGroupFlags.Extend) != 0) &&
-            ((prevInsIG.igFlags & InsGroupFlags.NoGCInterrupt) == (curInsIG.igFlags & InsGroupFlags.NoGCInterrupt));
-    }
-
-    private bool emitCanPeepholeLastIns()
-    {
-        assert(emitHasLastIns() == (emitLastInsIG is not null));
-
-        if (!emitHasLastIns() || emitForceNewIG)
-        {
-            return false;
-        }
-
-        assert(emitLastInsIG is not null);
-        assert(emitCurIG is not null);
-        return isInsIGSafeForPeepholeOptimization(emitLastInsIG, emitCurIG);
     }
 
     public bool IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size, regNumber ireg, int varx, int offs)

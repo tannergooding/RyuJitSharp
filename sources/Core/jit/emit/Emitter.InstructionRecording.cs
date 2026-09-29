@@ -55,7 +55,7 @@ public partial class Emitter
     private static readonly uint[] emitIFcounts = new uint[(int)insFormat.IF_COUNT];
 #endif
 
-#if DEBUG && !TARGET_AMD64 && !TARGET_ARM64
+#if DEBUG && !TARGET_XARCH && !TARGET_ARM64
     private static void emitInsSanityCheck(instrDesc id)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "Instruction sanity checking outside AMD64 is not ported.");

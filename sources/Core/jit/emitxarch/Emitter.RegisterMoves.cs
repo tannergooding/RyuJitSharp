@@ -271,14 +271,4 @@ public partial class Emitter
     }
 #endif
 
-#if TARGET_X86
-    public static bool IsMovInstruction(instruction ins)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 move instruction classification is not ported.");
-
-    public bool HasSideEffect(instruction ins, emitAttr size)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 move side-effect classification is not ported.");
-
-    private bool emitCanPeepholeLastIns()
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 last-instruction peephole eligibility is not ported.");
-#endif
 }
