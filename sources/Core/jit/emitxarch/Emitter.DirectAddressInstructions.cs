@@ -218,6 +218,7 @@ public partial class Emitter
 #endif
     }
 
+#if !TARGET_ARM64
     public void emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, nint disp
 #if DEBUG
         , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY
@@ -266,6 +267,8 @@ public partial class Emitter
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
 #endif
     }
+
+#endif
 
     public void emitIns_A_R_I(instruction ins, emitAttr attr, GenTreeIndir indir, regNumber reg, int imm)
     {

@@ -16,6 +16,26 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Immediate and relocatable-address materialization
+
+ARM64 constants now preserve native MOVN/MOVZ selection, halfword skipping,
+MOVK ordering, low-halfword debug metadata and relocation precedence. Base-plus-
+immediate materialization preserves SP operand placement. ADR and ADRP-plus-ADD
+record their native relocations. Shared zero materialization retains every target
+branch, with explicit unported recording dependencies outside xarch/ARM64.
+
+Full-analysis ARM64 controls pass 657 Debug/628 Release; shared Windows controls
+pass 99/93. Thirty old controls fail at the former dependencies. Large local-stack
+offsets now record through the reserved register instead of stopping at
+materialization. SVE recording/sanity and load/store optimization remain separate.
+B462 records the pinned nonzero flag-request path's unencodable `tst #0`; it is
+not silently corrected or claimed to be a reproduced native runtime failure.
+
+Four definitions and two declarations retire 210 native lines in `541759eb`.
+Evidence is in `artifacts/arm64-immediate-materialization` and its integration
+records under `artifacts/residual-reconciliation`. No new ARM64 generated-code
+parity is claimed.
+
 ## 2026-09-29: Descriptor sizing and register-bit encoding
 
 Xarch descriptor sizing now dispatches on native operand categories and flags,

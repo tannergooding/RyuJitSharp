@@ -8,13 +8,6 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags flags = INS_FLAGS_DONT_CARE)
-    {
-        assert(genIsValidIntOrFakeReg(reg));
-        Emitter.emitIns_R_R(INS_xor, size, reg, reg);
-        _regSet.verifyRegUsed(reg);
-    }
-
     public void instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, nint imm, insFlags flags = INS_FLAGS_DONT_CARE
 #if DEBUG
         , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY

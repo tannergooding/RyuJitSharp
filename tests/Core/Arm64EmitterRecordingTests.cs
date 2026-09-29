@@ -1864,9 +1864,10 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(GroupSize(emitter), Is.Zero);
     }
 
-    [TestCase(31, "SVE")]
-    [TestCase(32, "immediate materialization")]
-    public static void LocalStackScalableAddressDependenciesPreserveSignedSixBitBoundary(int index, string dependency)
+    [TestCase(31, "SVE", 0)]
+    [TestCase(32, "SVE", 4)]
+    public static void LocalStackScalableAddressDependenciesPreserveSignedSixBitBoundary(
+        int index, string dependency, int recordedSize)
     {
         var emitter = CreateLocalStackEmitter(0, false);
         var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
@@ -1876,31 +1877,239 @@ internal static unsafe class Arm64EmitterRecordingTests
         compiler.unkSizeFrame.FinalizeLayout();
         Assert.That(() => RecordLocalLoad(emitter, INS_lea, EA_8BYTE, REG_R4, 0, 0),
             Throws.TypeOf<FatalJitException>().With.Message.Contains(dependency));
-        Assert.That(GroupSize(emitter), Is.Zero);
+        Assert.That(GroupSize(emitter), Is.EqualTo(recordedSize));
     }
 
-    [TestCase(false, INS_ldr, -257, "immediate materialization")]
-    [TestCase(true, INS_str, 32768, "immediate materialization")]
-    [TestCase(false, INS_lea, 4096, "immediate materialization")]
-    [TestCase(false, INS_sve_ldr, 0, "base-plus-immediate materialization")]
-    [TestCase(true, INS_sve_str, 0, "base-plus-immediate materialization")]
-    public static void LocalStackDependenciesTerminate(bool store, instruction ins, int offset, string dependency)
+    [TestCase(false, INS_ldr, -257, false, IF_LS_3A)]
+    [TestCase(true, INS_str, 32768, false, IF_LS_3A)]
+    [TestCase(false, INS_lea, 4096, false, IF_DR_3C)]
+    [TestCase(false, INS_lea, -4096, true, IF_DR_3A)]
+    public static void MaterializationStackOffsetsRecordThroughReservedRegister(bool store, instruction ins,
+        int offset, bool fpBased, Emitter.insFormat format)
     {
-        var emitter = CreateLocalStackEmitter(offset, false);
-        var reg = ins is INS_sve_ldr or INS_sve_str ? REG_V4 : REG_R4;
-        Assert.That(() =>
+        var emitter = CreateLocalStackEmitter(offset, fpBased);
+        if (store)
+        {
+            RecordLocalStore(emitter, ins, EA_8BYTE, REG_R4, 0, 0);
+        }
+        else
+        {
+            RecordLocalLoad(emitter, ins, EA_8BYTE, REG_R4, 0, 0);
+        }
+
+        var instructions = CurrentInstructions(emitter);
+        Assert.That(instructions, Has.Count.EqualTo(2));
+        Assert.That(instructions[0].idReg1(), Is.EqualTo(REG_OPT_RSVD));
+        Assert.That(instructions[1].idInsFmt(), Is.EqualTo(format));
+        Assert.That(instructions[1].idReg1(), Is.EqualTo(REG_R4));
+        Assert.That(instructions[1].idReg2(), Is.EqualTo(fpBased ? REG_FPBASE : REG_ZR));
+        Assert.That(instructions[1].idIsLclVar(), Is.True);
+        Assert.That(GroupSize(emitter), Is.EqualTo(8));
+    }
+
+    [TestCase(false, REG_V4, IF_SVE_IE_2A)]
+    [TestCase(false, REG_P1, IF_SVE_ID_2A)]
+    [TestCase(true, REG_V4, IF_SVE_JH_2A)]
+    [TestCase(true, REG_P1, IF_SVE_JG_2A)]
+    public static void MaterializationScalableAccessUsesFixedFrameAddress(bool store,
+        regNumber reg, Emitter.insFormat format)
+    {
+        var emitter = CreateLocalStackEmitter(24, false);
+        void Record()
         {
             if (store)
             {
-                RecordLocalStore(emitter, ins, EA_8BYTE, reg, 0, 0);
+                RecordLocalStore(emitter, INS_sve_str, EA_8BYTE, reg, 0, 0);
             }
             else
             {
-                RecordLocalLoad(emitter, ins, EA_8BYTE, reg, 0, 0);
+                RecordLocalLoad(emitter, INS_sve_ldr, EA_8BYTE, reg, 0, 0);
             }
-        }, Throws.TypeOf<FatalJitException>().With.Message.Contains(dependency));
-        Assert.That(GroupSize(emitter), Is.Zero);
+        }
+
+#if DEBUG
+        Assert.That(Record, Throws.TypeOf<FatalJitException>().With.Message.Contains("SVE instruction sanity checking"));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+#else
+        Record();
+        Assert.That(GroupSize(emitter), Is.EqualTo(8));
+        var access = LastInstruction(emitter) ?? throw new AssertionException("Missing scalable access.");
+        Assert.That(access.idInsFmt(), Is.EqualTo(format));
+        Assert.That(access.idReg2(), Is.EqualTo(REG_OPT_RSVD));
+        Assert.That(Emitter.emitGetInsSC(access), Is.EqualTo((nint)0));
+#endif
+        var address = CurrentInstructions(emitter)[0];
+        Assert.That(address.idIns(), Is.EqualTo(INS_add));
+        Assert.That(address.idReg1(), Is.EqualTo(REG_OPT_RSVD));
+        Assert.That(address.idReg2(), Is.EqualTo(REG_ZR));
+        Assert.That(Emitter.emitGetInsSC(address), Is.EqualTo((nint)24));
     }
+
+    [TestCase(0L, EA_8BYTE, 1, INS_mov)]
+    [TestCase(1L, EA_8BYTE, 1, INS_mov)]
+    [TestCase(-1L, EA_8BYTE, 1, INS_movn)]
+    [TestCase(0x12345678L, EA_4BYTE, 2, INS_movz)]
+    [TestCase(0x89abcdefL, EA_4BYTE, 2, INS_movz)]
+    [TestCase(0x1234000056780000L, EA_8BYTE, 2, INS_movz)]
+    [TestCase(0x123456789abcdef0L, EA_8BYTE, 4, INS_movz)]
+    [TestCase(unchecked((long)0xffff1234ffff5678UL), EA_8BYTE, 2, INS_movn)]
+    [TestCase(unchecked((long)0xffff000012345678UL), EA_8BYTE, 3, INS_movz)]
+    public static void MaterializationPreservesHalfwordSelection(long value, emitAttr size, int count,
+        instruction first)
+    {
+        var emitter = CreateLocalStackEmitter(0, false);
+        var codeGen = EmitterCodeGen(emitter);
+        codeGen.instGen_Set_Reg_To_Imm(size, REG_R4, unchecked((nint)value));
+        var instructions = CurrentInstructions(emitter);
+        Assert.That(instructions, Has.Count.EqualTo(count));
+        Assert.That(instructions[0].idIns(), Is.EqualTo(first));
+        ulong reconstructed = 0;
+        for (var index = 0; index < instructions.Count; index++)
+        {
+            var id = instructions[index];
+            Assert.That(id.idReg1(), Is.EqualTo(REG_R4));
+            if (value == 0)
+            {
+                Assert.That(id.idReg2(), Is.EqualTo(REG_ZR));
+                continue;
+            }
+
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_DI_1B));
+            var encoded = unchecked((uint)Emitter.emitGetInsSC(id));
+            var shift = (int)((encoded >> 16) & 3) * 16;
+            var halfword = (ulong)(encoded & 0xffff) << shift;
+            if (index == 0)
+            {
+                reconstructed = first == INS_movn ? ~halfword : halfword;
+            }
+            else
+            {
+                Assert.That(id.idIns(), Is.EqualTo(INS_movk));
+                reconstructed = (reconstructed & ~(0xffffUL << shift)) | halfword;
+            }
+        }
+
+        var mask = size == EA_8BYTE ? ulong.MaxValue : uint.MaxValue;
+        Assert.That(reconstructed & mask, Is.EqualTo(unchecked((ulong)value) & mask));
+        Assert.That(codeGen.RegSet.rsGetModifiedRegsMask(), Is.EqualTo(new regMaskTP(REG_R4.SingleTypeMask)));
+        Assert.That(GroupSize(emitter), Is.EqualTo(count * 4));
+    }
+
+    [TestCase(0, REG_R5, 1)]
+    [TestCase(4095, REG_SPBASE, 1)]
+    [TestCase(0x12345678, REG_R5, 3)]
+    [TestCase(0x12345678, REG_SPBASE, 3)]
+    public static void MaterializationBasePlusImmediatePreservesSpOperand(int immediate, regNumber baseReg, int count)
+    {
+        var emitter = CreateLocalStackEmitter(0, false);
+        EmitterCodeGen(emitter).instGen_Set_Reg_To_Base_Plus_Imm(EA_8BYTE, REG_R4, baseReg, immediate);
+        var instructions = CurrentInstructions(emitter);
+        Assert.That(instructions, Has.Count.EqualTo(count));
+        var add = instructions[^1];
+        Assert.That(add.idIns(), Is.EqualTo(immediate == 0 ? INS_mov : INS_add));
+        Assert.That(add.idReg1(), Is.EqualTo(REG_R4));
+        Assert.That(add.idReg2(), Is.EqualTo(baseReg == REG_SPBASE ? REG_ZR : baseReg));
+        if (count > 1)
+        {
+            Assert.That(add.idReg3(), Is.EqualTo(REG_R4));
+        }
+    }
+
+    [TestCase(false, 0L)]
+    [TestCase(false, 0x1234L)]
+    [TestCase(true, 0L)]
+    [TestCase(true, 0x12345678L)]
+    public static void MaterializationRelocationsPrecedeZeroSelection(bool reloc, long address)
+    {
+        var emitter = CreateLocalStackEmitter(0, false);
+        var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
+        compiler.opts.compReloc = reloc;
+        EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(EA_8BYTE | EA_CNS_RELOC_FLG, REG_R4, (nint)address
+#if DEBUG
+            , targetHandle: 0x4321, gtFlags: GTF_ICON_CLASS_HDL
+#endif
+            );
+        var instructions = CurrentInstructions(emitter);
+        Assert.That(instructions, Has.Count.EqualTo(reloc ? 2 : 1));
+        var first = instructions[0];
+        Assert.That(first.idIns(), Is.EqualTo(reloc ? INS_adrp : INS_mov));
+        Assert.That(first.idIsDspReloc(), Is.EqualTo(reloc));
+        if (reloc)
+        {
+            Assert.That((nint)first.idAddr().iiaAddr, Is.EqualTo((nint)address));
+            Assert.That(instructions[1].idIns(), Is.EqualTo(INS_add));
+            Assert.That(instructions[1].idReg2(), Is.EqualTo(REG_R4));
+            Assert.That(instructions[1].idIsCnsReloc(), Is.True);
+            Assert.That((nint)instructions[1].idAddr().iiaAddr, Is.EqualTo((nint)address));
+#if DEBUG
+            var debugInfo = first.idDebugOnlyInfo() ?? throw new AssertionException("Missing relocation metadata.");
+            Assert.That(debugInfo.idMemCookie, Is.EqualTo((nint)0x4321));
+            Assert.That(debugInfo.idFlags, Is.EqualTo(GTF_ICON_CLASS_HDL));
+#endif
+        }
+    }
+
+    [Test]
+    public static void MaterializationAdrDoesNotAddAPageOffsetInstruction()
+    {
+        var emitter = CreateLocalStackEmitter(0, false);
+        emitter.emitIns_R_AI(INS_adr, EA_8BYTE | EA_DSP_RELOC_FLG, REG_R4, 0x12345678);
+        var instructions = CurrentInstructions(emitter);
+        Assert.That(instructions, Has.Count.EqualTo(1));
+        Assert.That(instructions[0].idInsFmt(), Is.EqualTo(IF_DI_1E));
+        Assert.That(instructions[0].idIsDspReloc(), Is.True);
+        Assert.That((nint)instructions[0].idAddr().iiaAddr, Is.EqualTo((nint)0x12345678));
+    }
+
+    [Test]
+    public static void MaterializationBitmaskUsesASingleMove()
+    {
+        var emitter = CreateLocalStackEmitter(0, false);
+        EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(EA_8BYTE, REG_R4, unchecked((nint)0x00ff00ff00ff00ff));
+        var instructions = CurrentInstructions(emitter);
+        Assert.That(instructions, Has.Count.EqualTo(1));
+        Assert.That(instructions[0].idIns(), Is.EqualTo(INS_mov));
+        Assert.That(instructions[0].idInsFmt(), Is.EqualTo(IF_DI_1D));
+    }
+
+    [Test]
+    public static void MaterializationZeroPreservesNativeFlagHandling()
+    {
+        var emitter = CreateLocalStackEmitter(0, false);
+        EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(EA_8BYTE, REG_R4, 0, insFlags.INS_FLAGS_SET);
+        var instructions = CurrentInstructions(emitter);
+        Assert.That(instructions, Has.Count.EqualTo(1));
+        Assert.That(instructions[0].idIns(), Is.EqualTo(INS_mov));
+        Assert.That(instructions[0].idReg2(), Is.EqualTo(REG_ZR));
+    }
+
+#if DEBUG
+    [TestCase(0x12345678L)]
+    [TestCase(0x1234000056780000L)]
+    public static void MaterializationHalfwordCookiesBelongOnlyToTheLowHalfword(long value)
+    {
+        var emitter = CreateLocalStackEmitter(0, false);
+        EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(EA_8BYTE, REG_R4, (nint)value,
+            targetHandle: 0x4321, gtFlags: GTF_ICON_CLASS_HDL);
+        foreach (var id in CurrentInstructions(emitter))
+        {
+            var lowHalfword = ((uint)Emitter.emitGetInsSC(id) >> 16) == 0;
+            var info = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing immediate metadata.");
+            Assert.That(info.idMemCookie, Is.EqualTo(lowHalfword ? (nint)0x4321 : 0));
+            Assert.That(info.idFlags, Is.EqualTo(lowHalfword ? GTF_ICON_CLASS_HDL : GenTreeFlags.GTF_EMPTY));
+        }
+    }
+
+    [Test]
+    public static void NonzeroImmediateFlagRequestPreservesNativeZeroMaskAssertion()
+    {
+        var emitter = CreateLocalStackEmitter(0, false);
+        Assert.That(() => EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(
+            EA_8BYTE, REG_R4, 1, insFlags.INS_FLAGS_SET),
+            Throws.Exception.With.Message.Contains("canEncode"));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+#endif
 
     private static RecordingEmitter CreateLocalStackEmitter(int offset, bool fpBased)
     {
@@ -1947,6 +2156,9 @@ internal static unsafe class Arm64EmitterRecordingTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "codeGen")]
     private static extern ref CodeGen EmitterCodeGen(Emitter emitter);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_cgEmitter")]
+    private static extern ref Emitter CodeGenEmitter(CodeGen codeGen);
+
 #if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitVarRefOffs")]
     private static extern ref int LocalReferenceOffset(Emitter emitter);
@@ -1961,7 +2173,10 @@ internal static unsafe class Arm64EmitterRecordingTests
         compiler.opts.compMinOpts = !optimized;
         compiler.opts.canUseAllOpts = optimized;
         compiler.opts.compReloc = reloc;
-        var emitter = new RecordingEmitter(new CodeGen(compiler));
+        var codeGen = new CodeGen(compiler);
+        codeGen.RegSet.rsClearRegsModified();
+        var emitter = new RecordingEmitter(codeGen);
+        CodeGenEmitter(codeGen) = emitter;
         emitter.emitBegCG(compiler, default);
         emitter.Init();
         emitter.emitBegFN(false
