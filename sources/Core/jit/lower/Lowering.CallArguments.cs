@@ -124,12 +124,25 @@ public sealed partial class Lowering
         }
 
 #if TARGET_X86 && FEATURE_IJW
-        throw new NotImplementedException("X86 IJW special-copy argument lowering is not ported.");
-#else
+        LowerSpecialCopyArgs(call);
+#endif
         LegalizeArgPlacement(call);
         AfterLowerArgsForCall(call);
-#endif
     }
+
+#if TARGET_X86 && FEATURE_IJW
+    private unsafe void LowerSpecialCopyArgs(GenTreeCall call)
+    {
+        var compiler = CompilerInstance;
+        if (!compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB) ||
+            !compiler.compMethodRequiresPInvokeFrame || !call.IsUnmanaged)
+        {
+            return;
+        }
+
+        throw new NotImplementedException("X86 IJW special-copy argument lowering is not ported.");
+    }
+#endif
 
     private static void AfterLowerArgsForCall(GenTreeCall call)
     {

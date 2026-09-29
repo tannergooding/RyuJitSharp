@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Shared call and argument lowering
+
+Whole call and argument dispatch preserve target-specific lowering order,
+special-copy handling and tailcall dependencies. Two complete definitions and
+their associated declarations retire 263 native lines in `e4f55b1`.
+Separate special-copy, helper-tailcall and portable-entrypoint helper bodies remain
+native behind typed terminating managed dependencies.
+
+Windows controls pass 119 Debug/119 Release, ARM64 passes 33 Debug and Linux
+passes 12 Release. A subsequent `unsafe` keyword correction affects only the
+unexecuted x86/IJW dependency; its exact source difference is recorded separately.
+No x86, Wasm, RISC-V or generated-code execution parity is claimed. Evidence:
+the `shared-lower-call-dispatch` proposal/supplement and `shared-call-lowering`
+integration records under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Integer and floating comparison closure
 
 Whole xarch comparison helpers preserve x86's byte-addressable-register

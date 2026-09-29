@@ -123,7 +123,6 @@ public sealed partial class Lowering
 
     private unsafe GenTree? LowerCall(GenTree node)
     {
-#if TARGET_AMD64 || TARGET_ARM64
         var call = node.AsCall();
         var compiler = CompilerInstance;
         JITDUMP("lowering call (before):\n");
@@ -139,6 +138,7 @@ public sealed partial class Lowering
             assert(call._initClsHnd is null);
         }
 
+#if TARGET_AMD64 || TARGET_ARM64
         GenTree? nextNode;
         if (call.IsSpecialIntrinsic())
         {
@@ -181,6 +181,7 @@ public sealed partial class Lowering
         {
             return nextMemsetBlock;
         }
+#endif
 
         call._directCallAddress = null;
         call.ClearOtherRegs();
@@ -259,7 +260,8 @@ public sealed partial class Lowering
                 assert((call._callType is CT_INDIRECT) && (call._controlExpr is not null));
                 controlExpr = call._controlExpr;
             }
-            throw new NotImplementedException("Windows x86 JIT-helper tailcall lowering is not ported.");
+            assert(controlExpr is not null);
+            controlExpr = LowerTailCallViaJitHelper(call, controlExpr);
         }
 
         if ((controlExpr is not null) && !callWasExpandedEarly)
@@ -270,6 +272,13 @@ public sealed partial class Lowering
             ContainCheckRange(controlRange);
             BlockRange().InsertBefore(call, controlRange);
             call._controlExpr = controlExpr;
+#if TARGET_RISCV64
+            if (controlExpr.Oper.IsCnsIntOrI && !controlExpr.AsIntCon().ImmedValNeedsReloc(compiler) &&
+                !call.IsFastTailCall)
+            {
+                MakeSrcContained(call, controlExpr);
+            }
+#endif
         }
 
         if (compiler.opts.IsCFGEnabled)
@@ -286,6 +295,13 @@ public sealed partial class Lowering
             RequireOutgoingArgSpace(call, call.Args.OutgoingArgsStackSize);
         }
 
+#if TARGET_WASM
+        if (!call.IsUnmanaged && compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PORTABLE_ENTRY_POINTS))
+        {
+            LowerPEPCall(call);
+        }
+#endif
+
         if (varTypeIsStruct(call.Type))
         {
             LowerCallStruct(call);
@@ -296,8 +312,17 @@ public sealed partial class Lowering
         DISPTREERANGE(BlockRange(), call);
         JITDUMP("\n");
         return null;
-#else
-        throw new NotImplementedException("Call lowering is not ported for this target.");
+    }
+
+#if TARGET_WASM
+    private void LowerPEPCall(GenTreeCall call)
+    {
+        throw new NotImplementedException("Wasm portable-entrypoint call lowering is not ported.");
+    }
 #endif
+
+    private GenTree LowerTailCallViaJitHelper(GenTreeCall call, GenTree callTarget)
+    {
+        throw new NotImplementedException("JIT-helper tailcall lowering is not ported.");
     }
 }

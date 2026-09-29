@@ -14,6 +14,25 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CallDispatchLoweringTests
 {
+#if TARGET_X86
+    [Test]
+    public static void X86OrdinaryDirectCallReachesTargetLowering()
+    {
+        WithCompiler((compiler, block, lowering) => {
+            var call = new GenTreeCall(TYP_VOID) {
+                _callType = CT_USER_FUNC,
+                _callMethHnd = (CORINFO_METHOD_STRUCT_*)0x1234,
+                _directCallAddress = (void*)0x9999,
+            };
+            block.InsertAtEnd(call);
+
+            Assert.That(LowerCall(lowering, call), Is.Null);
+            Assert.That((nint)call._directCallAddress, Is.EqualTo((nint)0x5678));
+            Assert.That(block.FirstNode, Is.SameAs(call));
+        });
+    }
+#endif
+
     [Test]
     public static void DirectUserCallUsesMetadataAndReplacesStaleTargetAddress()
     {
