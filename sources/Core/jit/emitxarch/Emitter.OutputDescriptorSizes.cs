@@ -7,11 +7,12 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
+#if TARGET_XARCH
     private static int emitSizeOfInsDsc_AMD(instrDesc id)
     {
         assert(!id.idIsSmallDsc());
 #if DEBUG
+        assert((uint)id.idInsFmt() < (uint)emitFmtToOps.Length);
         var idOp = (ID_OPS)emitFmtToOps[(int)id.idInsFmt()];
         assert(idOp is ID_OPS.ID_OP_AMD or ID_OPS.ID_OP_AMD_CNS);
 #endif
@@ -30,6 +31,7 @@ public partial class Emitter
     private static int emitSizeOfInsDsc_CNS(instrDesc id)
     {
 #if DEBUG
+        assert((uint)id.idInsFmt() < (uint)emitFmtToOps.Length);
         var idOp = (ID_OPS)emitFmtToOps[(int)id.idInsFmt()];
         assert(idOp is ID_OPS.ID_OP_CNS or ID_OPS.ID_OP_SCNS);
 #endif
@@ -48,6 +50,7 @@ public partial class Emitter
     private static int emitSizeOfInsDsc_NONE(instrDesc id)
     {
 #if DEBUG
+        assert((uint)id.idInsFmt() < (uint)emitFmtToOps.Length);
         assert((ID_OPS)emitFmtToOps[(int)id.idInsFmt()] == ID_OPS.ID_OP_NONE);
 #endif
         if (id.idIsSmallDsc())
@@ -67,6 +70,7 @@ public partial class Emitter
     {
         assert(!id.idIsSmallDsc());
 #if DEBUG
+        assert((uint)id.idInsFmt() < (uint)emitFmtToOps.Length);
         var idOp = (ID_OPS)emitFmtToOps[(int)id.idInsFmt()];
         assert(idOp is ID_OPS.ID_OP_CALL or ID_OPS.ID_OP_SPEC);
 #endif
@@ -90,6 +94,7 @@ public partial class Emitter
     {
         assert(!id.idIsSmallDsc());
 #if DEBUG
+        assert((uint)id.idInsFmt() < (uint)emitFmtToOps.Length);
         var idOp = (ID_OPS)emitFmtToOps[(int)id.idInsFmt()];
         assert(idOp is ID_OPS.ID_OP_DSP or ID_OPS.ID_OP_DSP_CNS);
 #endif

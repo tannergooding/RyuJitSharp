@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
+#if TARGET_XARCH
     protected sealed class instrDescLbl : instrDescJmp
     {
         // The managed target is separate, so the destination remains in iiaLclVar.

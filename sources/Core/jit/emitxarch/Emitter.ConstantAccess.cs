@@ -8,7 +8,13 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private const int AM_DISP_BITS = 32 - (2 * (REGNUM_BITS + 1)) - 2;
+#if TARGET_X86
+    // targetx86.h uses six bits for a register number; the packed displacement grows accordingly.
+    private const int AM_REGNUM_BITS = 6;
+#else
+    private const int AM_REGNUM_BITS = REGNUM_BITS;
+#endif
+    private const int AM_DISP_BITS = 32 - (2 * (AM_REGNUM_BITS + 1)) - 2;
     private const int AM_DISP_BIG_VAL = -(1 << (AM_DISP_BITS - 1));
     private const int AM_DISP_MIN = -((1 << (AM_DISP_BITS - 1)) - 1);
     private const int AM_DISP_MAX = (1 << (AM_DISP_BITS - 1)) - 1;

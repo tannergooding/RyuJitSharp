@@ -68,22 +68,30 @@ public partial class Emitter
         }
     }
 
-    // emit.h:2343-2380: the native AMD64 base is 16 bytes. One pointer-sized
-    // payload makes 24; two make 32. CnsDsp's trailing int also rounds to 32.
+    // emit.h:2343-2380: native x86/x64 bases are 12/16 bytes. Pointer-sized
+    // payloads add four/eight bytes; CnsDsp's trailing int rounds x64 to 32.
     private static class ConstantDescriptorSizes
     {
+#if TARGET_X86
+        internal const int Constant = 16;
+        internal const int Displacement = 16;
+        internal const int ConstantDisplacement = 20;
+        internal const int AddressMode = 16;
+        internal const int ConstantAddressMode = 20;
+#else
         internal const int Constant = 24;
         internal const int Displacement = 24;
         internal const int ConstantDisplacement = 32;
         internal const int AddressMode = 24;
         internal const int ConstantAddressMode = 32;
+#endif
     }
 
     protected class instrDescCns : instrDesc
     {
         public nint idcCnsVal;
 
-#if TARGET_AMD64 || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM64
         public override int NativeLogicalSize => ConstantDescriptorSizes.Constant;
 #else
         public override int NativeLogicalSize => throw new PlatformNotSupportedException("Constant descriptor size is not yet ported for this target.");
@@ -94,7 +102,7 @@ public partial class Emitter
     {
         public nint iddDspVal;
 
-#if TARGET_AMD64 || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM64
         public override int NativeLogicalSize => ConstantDescriptorSizes.Displacement;
 #else
         public override int NativeLogicalSize => throw new PlatformNotSupportedException("Displacement descriptor size is not yet ported for this target.");
@@ -108,7 +116,7 @@ public partial class Emitter
         public ref nint iddcCnsVal => ref idcCnsVal;
         public int iddcDspVal;
 
-#if TARGET_AMD64 || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM64
         public override int NativeLogicalSize => ConstantDescriptorSizes.ConstantDisplacement;
 #else
         public override int NativeLogicalSize => throw new PlatformNotSupportedException("Constant/displacement descriptor size is not yet ported for this target.");
@@ -120,7 +128,7 @@ public partial class Emitter
     {
         public nint idaAmdVal;
 
-#if TARGET_AMD64
+#if TARGET_XARCH
         public override int NativeLogicalSize => ConstantDescriptorSizes.AddressMode;
 #else
         public override int NativeLogicalSize => throw new PlatformNotSupportedException("Address-mode descriptor size is not yet ported for this target.");
@@ -132,7 +140,7 @@ public partial class Emitter
         public ref nint idacCnsVal => ref idcCnsVal;
         public nint idacAmdVal;
 
-#if TARGET_AMD64
+#if TARGET_XARCH
         public override int NativeLogicalSize => ConstantDescriptorSizes.ConstantAddressMode;
 #else
         public override int NativeLogicalSize => throw new PlatformNotSupportedException("Constant/address-mode descriptor size is not yet ported for this target.");

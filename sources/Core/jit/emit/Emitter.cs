@@ -340,7 +340,11 @@ public partial class Emitter
     {
         _compiler = comp;
         emitCmpHandle = cmpHandle;
+#if TARGET_X86
+        _debugInfoSize = TARGET_POINTER_SIZE;
+#else
         _debugInfoSize = sizeof(nint);
+#endif
 
 #if !DEBUG
         if (!comp.opts.disAsm)

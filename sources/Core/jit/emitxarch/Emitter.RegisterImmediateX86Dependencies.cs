@@ -61,7 +61,26 @@ public partial class Emitter
     }
 
     private static regNumber getSseShiftRegNumber(instruction ins)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 SIMD immediate shift opcode selection is not ported.");
+    {
+        var reg = ins switch
+        {
+            INS_psrldq => (regNumber)3,
+            INS_pslldq => (regNumber)7,
+            INS_psrld or INS_psrlw or INS_psrlq => (regNumber)2,
+            INS_pslld or INS_psllw or INS_psllq => (regNumber)6,
+            INS_psrad or INS_psraw or INS_vpsraq => (regNumber)4,
+            INS_vprold or INS_vprolq => (regNumber)1,
+            INS_vprord or INS_vprorq => (regNumber)0,
+            _ => REG_NA,
+        };
+
+        if (reg == REG_NA)
+        {
+            assert(false, "Invalid instruction for SSE2 instruction of the form: opcode reg, immed8");
+        }
+
+        return reg;
+    }
 
     private ulong AddRex2Prefix(instruction ins, ulong code)
     {

@@ -37,25 +37,45 @@ public partial class Emitter
         return (regNumber)(ins - INS_imul_AX);
     }
 
-    private static regNumber getBmiRegNumber(instruction ins) => ins switch
+    private static regNumber getBmiRegNumber(instruction ins)
     {
-        INS_blsi => (regNumber)3,
-        INS_blsmsk => (regNumber)2,
-        INS_blsr => (regNumber)1,
-        _ => REG_NA,
-    };
+        var reg = ins switch
+        {
+            INS_blsi => (regNumber)3,
+            INS_blsmsk => (regNumber)2,
+            INS_blsr => (regNumber)1,
+            _ => REG_NA,
+        };
 
-    private static regNumber getSseShiftRegNumber(instruction ins) => ins switch
+        if (reg == REG_NA)
+        {
+            assert(IsBMIInstruction(ins));
+        }
+
+        return reg;
+    }
+
+    private static regNumber getSseShiftRegNumber(instruction ins)
     {
-        INS_psrldq => (regNumber)3,
-        INS_pslldq => (regNumber)7,
-        INS_psrld or INS_psrlw or INS_psrlq => (regNumber)2,
-        INS_pslld or INS_psllw or INS_psllq => (regNumber)6,
-        INS_psrad or INS_psraw or INS_vpsraq => (regNumber)4,
-        INS_vprold or INS_vprolq => (regNumber)1,
-        INS_vprord or INS_vprorq => (regNumber)0,
-        _ => throw new System.InvalidOperationException("Invalid SIMD shift immediate instruction."),
-    };
+        var reg = ins switch
+        {
+            INS_psrldq => (regNumber)3,
+            INS_pslldq => (regNumber)7,
+            INS_psrld or INS_psrlw or INS_psrlq => (regNumber)2,
+            INS_pslld or INS_psllw or INS_psllq => (regNumber)6,
+            INS_psrad or INS_psraw or INS_vpsraq => (regNumber)4,
+            INS_vprold or INS_vprolq => (regNumber)1,
+            INS_vprord or INS_vprorq => (regNumber)0,
+            _ => REG_NA,
+        };
+
+        if (reg == REG_NA)
+        {
+            assert(false, "Invalid instruction for SSE2 instruction of the form: opcode reg, immed8");
+        }
+
+        return reg;
+    }
 
     private static bool insNeedsRRIb(instruction ins) => ins == INS_imul;
 
@@ -398,6 +418,8 @@ public partial class Emitter
         {
             bits |= 8;
         }
+        assert(bits <= 0xF);
+
         if (IsSimdVexOrEvexEncodableInstruction(ins))
         {
             if (TakesEvexPrefix(id) && hasEvexPrefix(code))
@@ -409,6 +431,7 @@ public partial class Emitter
                 }
                 return code ^ (bits << 43);
             }
+            assert(IsVexEncodableInstruction(ins));
             assert(hasVexPrefix(code));
             return code ^ (bits << 35);
         }

@@ -9,13 +9,31 @@ namespace RyuJitSharp;
 public partial class Emitter
 {
     private unsafe uint insEncodeReg012(instrDesc id, regNumber reg, emitAttr size, ulong* code)
-        => RegEncoding(reg);
+    {
+        assert(reg < REG_STK);
+        var bits = RegEncoding(reg);
+        assert(bits < 8);
+
+        return bits;
+    }
 
     private unsafe uint insEncodeRegSIB(instrDesc id, regNumber reg, ulong* code)
-        => RegEncoding(reg);
+    {
+        assert(reg < REG_STK);
+        var bits = (uint)reg;
+        assert(bits < 8);
+
+        return bits;
+    }
 
     private unsafe uint insEncodeReg345(instrDesc id, regNumber reg, emitAttr size, ulong* code)
-        => RegEncoding(reg) << 3;
+    {
+        assert(reg < REG_STK);
+        var bits = RegEncoding(reg);
+        assert(bits < 8);
+
+        return bits << 3;
+    }
 
     private unsafe ulong insEncodeMRreg(instrDesc id, regNumber reg, emitAttr size, ulong code)
     {
@@ -105,17 +123,40 @@ public partial class Emitter
 
     private ulong insEncodeReg3456(instrDesc id, regNumber reg, emitAttr size, ulong code)
     {
+        var ins = id.idIns();
         assert(reg < REG_STK);
-        assert(IsSimdVexOrEvexEncodableInstruction(id.idIns()));
-
-        if (TakesEvexPrefix(id))
+        assert(IsSimdVexOrEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
+        assert(hasVexPrefix(code) || hasEvexPrefix(code));
+        ulong bits = RegEncoding(reg);
+        if (IsExtendedReg(reg))
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "x86 EVEX register encoding is not ported.");
+            bits |= 8;
+        }
+        assert(bits <= 0xF);
+
+        if (IsSimdVexOrEvexEncodableInstruction(ins))
+        {
+            if (TakesEvexPrefix(id) && hasEvexPrefix(code))
+            {
+                assert(hasEvexPrefix(code));
+                return code ^ (bits << 43);
+            }
+
+            assert(IsVexEncodableInstruction(ins));
+            assert(hasVexPrefix(code));
+            return code ^ (bits << 35);
         }
 
-        assert(hasVexPrefix(code));
-        return code ^ ((ulong)RegEncoding(reg) << 35);
+        assert(TakesEvexPrefix(id));
+        assert(hasEvexPrefix(code));
+        return code ^ (bits << 43);
     }
 
+    private static uint GetCCFromCCMPOrCTEST(instruction ins)
+    {
+        assert(IsCTEST(ins) || IsCCMP(ins));
+        unreached();
+        throw new System.InvalidOperationException("Invalid CCMP or CTEST condition.");
+    }
 }
 #endif

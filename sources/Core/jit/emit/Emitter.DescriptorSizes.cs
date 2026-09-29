@@ -13,24 +13,43 @@ public partial class Emitter
     private const int INSTR_DESC_SIZE = DescriptorSizes.Full;
 
     // emit.h:639-650, 1027, 2270-2332 and emit.cpp:1780. These are native
-    // payload sizes, not managed object sizes. The 16-byte base includes an
-    // eight-byte address union; jump adds three pointers and a four-byte
-    // bitfield (48 after alignment). Align adds three pointers and a Debug
-    // bool (40 Release, 48 Debug). Debug info is 56 bytes, but each descriptor
-    // reserves only an eight-byte pointer prefix for the separately owned info.
+    // payload sizes, not managed object sizes. AMD64's 16-byte base includes an
+    // eight-byte address union; x86 uses a 12-byte base and four-byte pointers.
+    // Jump adds three pointers and a four-byte bitfield. Align adds three pointers
+    // and a Debug bool (40/48 bytes on AMD64). Debug info and its separately
+    // owned pointer prefix have target-dependent native sizes.
     internal static class DescriptorSizes
     {
         internal const int Small = 8;
+#if TARGET_X86
+        internal const int Full = Small + 4;
+        internal const int Jump = 28;
+        internal const int Label = Jump + 4;
+#else
         internal const int Full = Small + 8;
         internal const int Jump = 48;
         internal const int Label = Jump + 8;
+#endif
 #if DEBUG
+#if TARGET_X86
+        internal const int Align = 28;
+#else
         internal const int Align = 48;
+#endif
+#else
+#if TARGET_X86
+        internal const int Align = 24;
 #else
         internal const int Align = 40;
 #endif
+#endif
+#if TARGET_X86
+        internal const int DebugPrefix = 4;
+        internal const int DebugInfo = 36;
+#else
         internal const int DebugPrefix = 8;
         internal const int DebugInfo = 56;
+#endif
 #if TARGET_ARM64
         // The four-byte emitLclVarAddr payload rounds each eight-byte-aligned
         // base up by eight bytes (emit.h:2385-2397).
@@ -45,7 +64,7 @@ public partial class Emitter
         {
             get
             {
-#if TARGET_AMD64 || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM64
                 if (idIns() is INS_invalid or INS_align
 #if TARGET_AMD64
                     or INS_jmp
@@ -70,8 +89,62 @@ public partial class Emitter
 
     private int emitSizeOfInsDsc(instrDesc descriptor)
     {
-#if TARGET_AMD64
-        return descriptor.NativeLogicalSize;
+#if TARGET_XARCH
+        assert((uint)descriptor.idInsFmt() < (uint)emitFmtToOps.Length);
+        var operands = (ID_OPS)emitFmtToOps[(int)descriptor.idInsFmt()];
+
+        if (descriptor.idIns() == INS_call)
+        {
+            assert(operands is ID_OP_CALL or ID_OP_SPEC or ID_OP_JMP);
+        }
+
+        switch (operands)
+        {
+            case ID_OP_NONE:
+            {
+                return emitSizeOfInsDsc_NONE(descriptor);
+            }
+
+            case ID_OP_LBL:
+            {
+                return DescriptorSizes.Label;
+            }
+
+            case ID_OP_JMP:
+            {
+                return DescriptorSizes.Jump;
+            }
+
+            case ID_OP_CALL:
+            case ID_OP_SPEC:
+            {
+                return emitSizeOfInsDsc_SPEC(descriptor);
+            }
+
+            case ID_OP_SCNS:
+            case ID_OP_CNS:
+            {
+                return emitSizeOfInsDsc_CNS(descriptor);
+            }
+
+            case ID_OP_DSP:
+            case ID_OP_DSP_CNS:
+            {
+                return emitSizeOfInsDsc_DSP(descriptor);
+            }
+
+            case ID_OP_AMD:
+            case ID_OP_AMD_CNS:
+            {
+                return emitSizeOfInsDsc_AMD(descriptor);
+            }
+
+            default:
+            {
+                NO_WAY("unexpected instruction descriptor format");
+                return INSTR_DESC_SIZE;
+            }
+        }
 #elif TARGET_ARM64
         if (descriptor.idIsSmallDsc())
         {

@@ -17,7 +17,7 @@ public partial class Emitter
         public bool isPlacedAfterJmp;
 #endif
 
-#if TARGET_AMD64 || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM64
         public override int NativeLogicalSize => DescriptorSizes.Align;
 #else
         public override int NativeLogicalSize => throw new System.PlatformNotSupportedException("Align descriptor size is not yet ported for this target.");

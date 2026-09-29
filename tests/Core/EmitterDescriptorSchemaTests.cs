@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
+using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.instruction;
 
 namespace RyuJitSharp.UnitTests;
@@ -98,6 +99,7 @@ internal static unsafe class EmitterDescriptorSchemaTests
             "instrDescAlign" => INS_align,
             _ => INS_nop,
         });
+        descriptor.idInsFmt(typeName == "instrDescJmp" ? IF_LABEL : IF_NONE);
         Assert.That(descriptor.NativeLogicalSize, Is.EqualTo(size));
 
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

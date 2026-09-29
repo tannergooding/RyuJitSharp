@@ -31,6 +31,32 @@ internal static unsafe class EmitterPrefixTests
         Assert.That(EncodeRegisterField(emitter, descriptor, reg, size, null), Is.EqualTo(expected));
     }
 
+    [TestCase(INS_psrldq, REG_RBX)]
+    [TestCase(INS_pslldq, REG_RDI)]
+    [TestCase(INS_psrlw, REG_RDX)]
+    [TestCase(INS_psllq, REG_RSI)]
+    [TestCase(INS_vpsraq, REG_RSP)]
+    [TestCase(INS_vprolq, REG_RCX)]
+    [TestCase(INS_vprord, REG_RAX)]
+    public static void ShiftImmediateOpcodeSelectsNativeRegisterField(instruction ins, regNumber expected)
+    {
+        Assert.That(GetSseShiftRegNumber(CreateEmitter(), ins), Is.EqualTo(expected));
+    }
+
+#if DEBUG
+    [Test]
+    public static void InvalidShiftImmediateOpcodeAssertsAndReturnsNoRegister()
+    {
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.doAssert = &RecordAssertion;
+        var context = new AssertionContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
+        using var tls = new JitTls(&context.JitInfo);
+
+        Assert.That(GetSseShiftRegNumber(CreateEmitter(), INS_mov), Is.EqualTo(REG_NA));
+        Assert.That(context.Assertions, Is.EqualTo(1));
+    }
+#endif
+
 #if DEBUG
     [TestCase(false, false, 0x62FFFFFFFFFFFFFFUL, 1)]
     [TestCase(true, false, 0x62FFFFFFFFFFFFFFUL, 0)]
@@ -271,6 +297,9 @@ internal static unsafe class EmitterPrefixTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "insEncodeReg345")]
     private static extern uint EncodeRegisterField(
         Emitter emitter, Emitter.instrDesc descriptor, regNumber reg, emitAttr size, ulong* code);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "getSseShiftRegNumber")]
+    private static extern regNumber GetSseShiftRegNumber(Emitter emitter, instruction ins);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "TakesRex2Prefix")]
     private static extern bool TakesRex2(Emitter emitter, Emitter.instrDesc descriptor);

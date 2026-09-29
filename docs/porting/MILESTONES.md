@@ -16,6 +16,27 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Descriptor sizing and register-bit encoding
+
+Xarch descriptor sizing now dispatches on native operand categories and flags,
+including fat-call precedence, rather than managed subclass size. Address-mode
+allocation retains packed displacement selection and ownership. Register-bit
+encoding retains APX/REX/VEX/EVEX writebacks, x86 register assertions and native
+BMI/SSE selector assertion-and-recovery behavior.
+
+Combined Windows controls pass 377 Debug/372 Release, including memory output.
+Component Linux-target descriptor controls pass 196 cases and ARM64 builds pass.
+With identical parser-only overlays, combined x86 compilation has 14 of the 15
+established errors and no new diagnostics; the corrected local register-width
+constant removes one error. X86 execution and fat-call descriptor size remain
+unverified, with the latter an explicit terminating dependency.
+
+Twenty-seven definitions and 25 private declarations retire 857 native lines in
+`8a8bffd4`. The shared descriptor-size declaration remains for other targets.
+Evidence is in `artifacts/xarch-descriptor-register-integration`, its component
+packets and `artifacts/xarch-descriptor-x86-supplement`. These contract checks do
+not claim new generated-code parity.
+
 ## 2026-09-29: Local-stack single and paired recording
 
 ARM64 stack loads/stores now preserve fixed and scalable frame paths, local and
