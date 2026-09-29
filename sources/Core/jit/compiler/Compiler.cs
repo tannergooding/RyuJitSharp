@@ -2314,30 +2314,59 @@ public partial class Compiler
     }
 
     public var_types roundDownMaxType(int size)
+        => roundDownMaxType(unchecked((uint)size));
+
+    public var_types roundDownMaxType(uint size)
     {
         assert(size > 0);
 
 #if FEATURE_SIMD
-        if (roundDownSimdSize((uint)size) > 0)
+        if (roundDownSimdSize(size) > 0)
         {
-            return GetSimdTypeForSize(roundDownSimdSize((uint)size));
+            return GetSimdTypeForSize(roundDownSimdSize(size));
         }
 #endif
 
-        var nearestPow2 = 1 << int.Log2(size);
+        // Keep the signed shift and minimum: a high-bit input has a negative nearestPow2.
+        var nearestPow2 = unchecked(1 << BitOperations.Log2(size));
 
-        return int.Min(nearestPow2, REGSIZE_BYTES) switch {
-            1 => TYP_UBYTE,
-            2 => TYP_USHORT,
-            4 => TYP_INT,
-#if TARGET_64BIT
-            8 => TYP_LONG,
-#endif
-            _ => TYP_UNDEF,
-        };
+        switch (int.Min(nearestPow2, REGSIZE_BYTES))
+        {
+            case 1:
+            {
+                return TYP_UBYTE;
+            }
+
+            case 2:
+            {
+                return TYP_USHORT;
+            }
+
+            case 4:
+            {
+                return TYP_INT;
+            }
+
+            case 8:
+            {
+#pragma warning disable CA1508 // Native retains this register-width assertion even when the target constant proves it.
+                assert(REGSIZE_BYTES == 8);
+#pragma warning restore CA1508
+                return TYP_LONG;
+            }
+
+            default:
+            {
+                unreached();
+                return TYP_UNDEF;
+            }
+        }
     }
 
     public var_types roundDownMaxType(int size, bool conservative)
+        => roundDownMaxType(unchecked((uint)size), conservative);
+
+    public var_types roundDownMaxType(uint size, bool conservative)
     {
         var result = roundDownMaxType(size);
 #if FEATURE_SIMD && TARGET_XARCH
@@ -2357,6 +2386,7 @@ public partial class Compiler
     /// <returns></returns>
     public int roundDownSimdSize(uint size)
     {
+#if FEATURE_SIMD
 #if FEATURE_HW_INTRINSICS && TARGET_XARCH
         var maxSize = GetPreferredVectorByteLength();
         assert(maxSize is (>= XMM_REGSIZE_BYTES and <= ZMM_REGSIZE_BYTES));
@@ -2379,17 +2409,21 @@ public partial class Compiler
         unreached();
         return 0;
 #endif
+#else
+        return 0;
+#endif
     }
 
     public static int roundUpGprSize(int size)
     {
+        var unsignedSize = unchecked((uint)size);
 #if TARGET_64BIT
-        if (size > 4)
+        if (unsignedSize > 4)
         {
             return 8;
         }
 #endif
-        return (size > 2) ? 4 : size;
+        return (unsignedSize > 2) ? 4 : size;
     }
 
     public static var_types roundUpGprType(int size)
@@ -2401,7 +2435,7 @@ public partial class Compiler
 #if TARGET_64BIT
             8 => TYP_LONG,
 #endif
-            _ => TYP_UNDEF,
+            _ => throw new FatalJitException("Invalid GPR size."),
         };
     }
 
@@ -2411,18 +2445,20 @@ public partial class Compiler
     /// <remarks>It's only supposed to be used for scenarios where we can perform an overlapped load/store.</remarks>
     public int roundUpSimdSize(int size)
     {
+#if FEATURE_SIMD
 #if FEATURE_HW_INTRINSICS && TARGET_XARCH
+        var unsignedSize = unchecked((uint)size);
         var maxSize = GetPreferredVectorByteLength();
         assert(maxSize <= ZMM_REGSIZE_BYTES);
 
-        if (size <= XMM_REGSIZE_BYTES)
+        if (unsignedSize <= XMM_REGSIZE_BYTES)
         {
             if (maxSize > XMM_REGSIZE_BYTES)
             {
                 maxSize = XMM_REGSIZE_BYTES;
             }
         }
-        else if (size <= YMM_REGSIZE_BYTES)
+        else if (unsignedSize <= YMM_REGSIZE_BYTES)
         {
             if (maxSize > YMM_REGSIZE_BYTES)
             {
@@ -2436,6 +2472,9 @@ public partial class Compiler
 #else
         assert(!"roundUpSimdSize unimplemented on target arch");
         unreached();
+        return 0;
+#endif
+#else
         return 0;
 #endif
     }

@@ -2,14 +2,17 @@
 
 #if TARGET_ARM64 && FEATURE_HW_INTRINSICS
 using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
+using static RyuJitSharp.CORINFO_InstructionSet;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
-internal static class Arm64HWIntrinsicLayoutTests
+internal static unsafe class Arm64HWIntrinsicLayoutTests
 {
     [TestCase(NI_AdvSimd_Arm64_LoadPairScalarVector64, 16)]
     [TestCase(NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal, 16)]
@@ -53,18 +56,82 @@ internal static class Arm64HWIntrinsicLayoutTests
         });
     }
 
-    [TestCase(NI_Sve_Load2xVectorAndUnzip)]
-    [TestCase(NI_Sve_Load3xVectorAndUnzip)]
-    [TestCase(NI_Sve_Load4xVectorAndUnzip)]
-    public static void SveAggregateLayoutsReachRuntimeVectorLengthDependency(NamedIntrinsic intrinsic)
+    [TestCase(NI_Sve_Load2xVectorAndUnzip, 2)]
+    [TestCase(NI_Sve_Load3xVectorAndUnzip, 3)]
+    [TestCase(NI_Sve_Load4xVectorAndUnzip, 4)]
+    public static void SveAggregateLayoutsUseCompileTimeVectorLength(NamedIntrinsic intrinsic, int vectors)
     {
         CSELiveAcrossCallCostTests.WithCompiler(compiler => {
+            compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_VectorT128);
+            compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_VectorT128);
             var node = NewIntrinsic(intrinsic);
-            var exception = Assert.Throws<NotImplementedException>(() => node.GetLayout(compiler));
 
-            Assert.That(exception!.Message, Does.Contain(nameof(Compiler.getRuntimeVectorTByteLength)));
+            Assert.That(compiler.getRuntimeVectorTByteLength(), Is.EqualTo(16u));
+            Assert.That(node.GetLayout(compiler).Size, Is.EqualTo((uint)(16 * vectors)));
         });
     }
+
+    [Test]
+    public static void RuntimeLengthUsesFixedArm64FallbackWithoutVectorIsa()
+    {
+        CSELiveAcrossCallCostTests.WithCompiler(compiler => {
+            compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_VectorT128);
+
+            Assert.That(compiler.getRuntimeVectorTByteLength(), Is.EqualTo(16u));
+        });
+    }
+
+#if DEBUG
+    [TestCase(NI_Sve_Load2xVectorAndUnzip, 2, 32)]
+    [TestCase(NI_Sve_Load3xVectorAndUnzip, 3, 48)]
+    [TestCase(NI_Sve_Load4xVectorAndUnzip, 4, 64)]
+    public static void SveAggregateLayoutsResolveRuntimeVectorLength(
+        NamedIntrinsic intrinsic, int vectors, int byteLength)
+    {
+        CSELiveAcrossCallCostTests.WithCompiler(compiler => {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.getBuiltinClass = &GetVectorClass;
+            vtable.Base.Base.getClassSize = &GetVectorClassSize;
+            VectorLengthState state = new() {
+                Info = new ICorJitInfo { lpVtbl = &vtable },
+                ByteLength = byteLength,
+            };
+            compiler.info.compCompHnd = &state.Info;
+            Arm64ScalableMaskValueNumTests.SetScalableConfiguration(true);
+            compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_VectorT);
+            compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_VectorT);
+            var node = NewIntrinsic(intrinsic);
+
+            Assert.That(node.GetLayout(compiler).Size, Is.EqualTo((uint)(byteLength * vectors)));
+            Assert.That(state.BuiltinClassRequests, Is.EqualTo(1));
+            Assert.That(state.ClassSizeRequests, Is.EqualTo(1));
+        });
+    }
+
+    private struct VectorLengthState
+    {
+        public ICorJitInfo Info;
+        public int ByteLength;
+        public int BuiltinClassRequests;
+        public int ClassSizeRequests;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CORINFO_CLASS_STRUCT_* GetVectorClass(ICorJitInfo* info, CorInfoClassId id)
+    {
+        var state = (VectorLengthState*)info;
+        state->BuiltinClassRequests++;
+        return id is CorInfoClassId.CLASSID_NUMERICS_VECTORT ? (CORINFO_CLASS_STRUCT_*)0x1234 : null;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int GetVectorClassSize(ICorJitInfo* info, CORINFO_CLASS_STRUCT_* cls)
+    {
+        var state = (VectorLengthState*)info;
+        state->ClassSizeRequests++;
+        return cls == (CORINFO_CLASS_STRUCT_*)0x1234 ? state->ByteLength : 0;
+    }
+#endif
 
     private static GenTreeHWIntrinsic NewIntrinsic(NamedIntrinsic intrinsic)
     {

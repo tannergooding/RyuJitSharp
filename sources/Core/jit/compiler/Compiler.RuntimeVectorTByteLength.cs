@@ -3,16 +3,24 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
-using System;
-
 namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    public uint getRuntimeVectorTByteLength()
+    public unsafe uint getRuntimeVectorTByteLength()
     {
-        throw new NotImplementedException("Compiler.getRuntimeVectorTByteLength is not yet ported.");
+        var compileTimeLength = getCompileTimeVectorTByteLength();
+
+        if (compileTimeLength == SIZE_UNKNOWN)
+        {
+            assert(!IsAot);
+            var vectorT = info.compCompHnd->getBuiltinClass(CLASSID_NUMERICS_VECTORT);
+            assert(vectorT != null);
+            var size = unchecked((uint)info.compCompHnd->getClassSize(vectorT));
+            assert(size > 0);
+            return size;
+        }
+
+        return compileTimeLength;
     }
 }
-#endif

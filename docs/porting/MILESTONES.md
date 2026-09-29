@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-28: Runtime vector length and type-size utilities
+
+Runtime `Vector<T>` length now uses the known compile-time width or the native
+EE metadata lookup. The utility packet also completes unsigned SIMD element
+mapping, conditional SIMD rounding and maximum-type selection. GPR and SIMD
+rounding preserve native unsigned input bits; invalid zero-size GPR types
+terminate instead of returning an undefined type.
+
+Nine boundary regressions fail before correction in both configurations.
+Final Windows utility checks pass 50 Debug/51 Release; unaffected ARM64,
+classification and runtime-length evidence is reused. Ordinary boundaries and
+the native Release zero-size maximum-type result remain unchanged.
+Thirteen complete native definitions retire 152 lines in `53af680b`, still the
+sole oracle child. This is source/contract closure, not generated-code parity.
+See B460 and `artifacts/residual-reconciliation/simd-type-size-cluster-proposed-20260928.json`
+with its applied receipt.
+
 ## 2026-09-28: Complete instruction-group saving
 
 `emitSavIG` now retains its ARM barrier reset, optional native-width statistics,

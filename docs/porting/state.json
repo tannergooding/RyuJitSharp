@@ -16,6 +16,18 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "simdTypeSizeUtilities": {
+      "scope": "Complete runtime Vector<T> length resolution, unsigned element mapping and contiguous SIMD/GPR type-size utilities.",
+      "status": "Complete source packet accepted, including runtime length resolution and native unsigned/default rounding behavior; thirteen native definitions retired.",
+      "nativeBefore": "857083f72be647316edd20df0c3d7b5ae4d971da",
+      "nativeAfter": "53af680ba0078ac7fba4c368b6c7b3c61b62350f",
+      "retirement": "152 exact definition lines across thirteen spans. Native index/worktree clean; sole parent remains33baf8ee and count above oracle is one.",
+      "negativeControl": "Five unchanged-int-API GPR cases and four high-bit SIMD upward-rounding cases fail on8b027f6 in both configurations and pass after correction. Eight ordinary SIMD boundaries and Release roundDownMaxType(0) remain passing controls.",
+      "validation": "Final full-analysis Windows utility50D51R. Reused unaffected ARM64 utility36D37R, Windows classification47D47R and runtime-length ARM6437D34R/Windows9D9R. Source/log hashes and actual failed/passed test counts verified.",
+      "evidence": "artifacts/residual-reconciliation/simd-type-size-cluster-proposed-20260928.json and simd-type-size-cluster-applied-20260928.json; runtime-length evidence reused.",
+      "remaining": "No stub remains in the runtime-length helper. Retained metadata-recognition declarations and adjacent unroll utilities are outside this packet. The corrected active-SIMD upward-rounding body was already absent, so it receives no additional retirement credit.",
+      "limits": "Target contracts on an x64 host, not generated ARM64 execution; !FEATURE_SIMD branches source-matched, not executed."
+    },
     "emitterGroupSaving": {
       "scope": "Complete emitSavIG own target/statistics paths, preserving approved managed descriptor storage and alias identity.",
       "mapping": "Pinned emit.cpp971-1317 -> Emitter.GroupBuffers.cs emitSavIG.",
@@ -30,7 +42,7 @@
     "arm64FoldingLayoutClosure": {
       "scope": "Complete GetMaskVariant, both NarrowAndDuplicateSimdLong templates, and all GenTreeHWIntrinsic.GetLayout target branches.",
       "validation": "Combined full-analysis ARM64 target checks pass72 Debug/72 Release. Fresh Windows controls from the accepted packets pass637 Debug/629 Release folding and6 Debug/6 Release layout cases.",
-      "remainingDependency": "Compiler.getRuntimeVectorTByteLength is a typed terminating ARM64 stub; native compiler.h definition retained. Other unrelated residual helpers are untouched.",
+      "remainingDependency": "The runtime-vector-length dependency is now implemented and retired in53af680b; see simdTypeSizeUtilities. Other unrelated residual helpers are untouched.",
       "nativeBefore": "76786160c7d8ea163e383ec717f9ec6225d39b8d",
       "nativeAfter": "59f2f2d419a1824e5b0b337ddedb8795254a8847",
       "retirement": "183 implementation/comment/declaration lines plus81 separately classified duplicate layout text/comment lines =264 removed. One amended commit above oracle33baf8ee; native worktree/index clean, oracle/recovery ref unchanged.",
@@ -833,7 +845,7 @@
         "limits": "Collected scoped baseline and incremental reports are summarized in targetLedger below. Records overlap and do not establish a compiler completion percentage. Implementation classification is not runtime parity."
       },
       "retirementCommit": "4a639db1df21b167b27c319b07a898b6aa09ac72",
-      "residualHead": "857083f72be647316edd20df0c3d7b5ae4d971da",
+      "residualHead": "53af680ba0078ac7fba4c368b6c7b3c61b62350f",
       "structIntrinsicLayoutRestoration": "B435 restored the exact67-line GetLayout definition plus one separating blank line:68added/0removed. The definition had been absent despite missing derived dispatch; retain it for unresolved SVE runtime Vector<T> length resolution. Separate restoration commit preserves prior cleanup commit. Cumulative catch-up27793removed/471restored physical lines. Evidence: artifacts/primary-wide-integer/evidence.json. Native source/index clean; worker idle.",
       "xarchEmitterSurfaceClosure55": "Report55 retired101lines,0restored: GetEmbRoundingMode, IsBitwiseInstruction, emitMapFmtAtoM and both unit-scale indexed wrappers, with paired declarations. B426 static-field functions remain for their incomplete x86 paths. Cumulative catch-up27793removed/403restored. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-55.json. Worker idle.",
       "constantDispatchClosure54": "Report54 retired909lines,0restored across four files: whole gtDispConst, vnDump, VNAllBitsForType and Chunk constructor plus declarations. fgValueNumberTreeConst and VNZeroForType were already absent, with no function-deletion credit. None of these six boundaries remains incomplete. Cumulative catch-up is27692removed/403restored since8f39f402. Artifact: artifacts/residual-reconciliation/native-catchup-20260928-54.json. Native index/worktree and tracked oracle are clean; worker idle.",
@@ -915,7 +927,7 @@
         "Raw target-block getters have no pinned callsites and remain unused support. emitCodeGetCookie remains because its managed helper is only declared under TARGET_AMD64."
       ],
       "remaining": "Continue whole-function translation/retirement from the residual, not recurring completion audits. emitGenIG retains architecture/statistics paths; emitSavIG is complete and retired in857083f7. genCreateTempLabel retains Unix x86 and genGetRegMask retains ARM floating support. No new default Windows emission gap was established. Complete bodies are not retained merely because unfinished native callers reference them. Notify the user when the full cleanup is done.",
-      "verification": "Native857083f7 amends the single oracle-child commit, removing353 lines for complete instruction-group saving. The oracle remains its sole parent and the count above oracle is one; old pre-consolidation history is protected by refs/porting/recovery/366e9f52-before-oracle-consolidation. Runtime-vector-length/type-size packet remains pending. Native worktree/index clean. Retirement adds no parity evidence.",
+      "verification": "Native53af680b amends the single oracle-child commit, removing152 definition lines for the accepted thirteen-function type-size utility cluster after the353-line emitter-save retirement. The oracle remains its sole parent and count above oracle is one. Related unsigned/default repairs are validated; native worktree/index clean. Retirement adds no parity evidence.",
       "targetLedger": "Historical ledger collected through report108, consuming e0d198a for B455 without reopening unrelated rows. Report107's suspected copy-omission VN mismatch B456 is dismissed: GenTreeLclFld -> GenTreeLclVarCommon -> GenTreeUnOp source-aware construction explicitly clears both VNs after the root metadata copy. No production correction is needed. The reviewed materialization bodies are already absent. Existing call-driver review uncertainty is not a new untranslated-definition queue; stop recurring audits. Repair concrete residual partials and track only their stub/exception boundaries. D009, R005, B392 and B446 remain separately recorded optional gaps.",
       "retirementQueue": "A bounded existing-evidence pass found no immediately eligible bulk retirement: strongly reviewed definitions were already absent, surviving return helpers lack whole-target review, and gtFoldExpr retains an ARM64 path. artifacts/residual-reconciliation/bulk-retirement-candidates-20260928.json records the inspected scope and native snapshot. Stop duplicate sweeps of these candidates; prioritize unresolved Windows/shared contracts separately from mixed-target retirement. This is not repository-wide catch-up completion.",
       "executionConstraint": "Avoid repeated focus-stealing process launches; consolidate related commands and prefer direct file tools. Session-local port_git_batch runs Git directly with windowsHide=true and shell=false, retaining normal tool permissions. Shell use is not categorically forbidden, but visible PowerShell launches should not be the default.",
@@ -966,11 +978,11 @@
       "caution": "Current backend allocation/codegen/emitter exclusions checked in this pass target non-Windows or non-AMD64 configurations. Commented callback declarations and historical baseline gaps are not an inventory of missing Windows implementations."
     },
     "activeBatch": {
-      "scope": "After committed8b027f6/native59f2f2d4, translate whole emitter.emitSavIG across its target/statistics branches in lane A and the contiguous compiler.h SIMD type/size utility cluster, including getRuntimeVectorTByteLength, in lane B. Consolidate evidence and retirement by source/dependency area, not by helper. Preserve native control flow and distinct dependency calls; no recurring completion audit or Wasm backend expansion.",
+      "scope": "After emitter-save and SIMD/type-size closure, continue emitter group preparation/transitions in lane A and the retained B426 static-field store recording family in lane B. Consolidate evidence and retirement by source/dependency area, not helper. Preserve native control flow and typed dependency calls; no recurring audit or backend expansion.",
       "status": "in-progress",
       "doneWhen": [
-        "Translate the complete emitSavIG body, including native non-AMD64 and EMITTER_STATS paths, preserving approved managed descriptor representation and Windows behavior.",
-        "Complete the bounded compiler.h SIMD class/type/size and GPR/SIMD rounding utility packet, including the accepted runtime-vector-length helper. Reuse original translation evidence for existing bodies, restore missing own branches, and retain unported dependencies.",
+        "Complete retained group preparation/transition functions across target/statistics paths, preserving approved managed descriptor representation and Windows behavior.",
+        "Complete the retained emitIns_C_R, emitIns_C_I and emitIns_C_R_I recording bodies including their x86 paths; reuse B426 Windows evidence, preserve instruction restrictions and retain distinct unported dependencies.",
         "Resolve shared declaration/signature/guard conflicts centrally; preserve existing Windows behavior and compilability of affected target paths.",
         "Commit validated C# repairs with sparse dependency/exception records, then retire the exact completed native definitions in the same batch through the consolidated amended cleanup commit. Retain unported helper bodies."
       ],
@@ -983,19 +995,19 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Dispatcher, whole hardware-fold helper, its two deferred dependencies and intrinsic layout caller are accepted and retired through native59f2f2d4; only the layout runtime-vector-length helper remains a typed dependency. Combined ARM64 checks pass72 per configuration. The isolated327ca87 Wasm packet passes70 Debug/68 Release Windows call-argument controls but still has108 wider target diagnostics; fixture unexecuted and WIP/native caller retained. No backend expansion. B458 d8f318e and B459 d488e78 close the primary array frontiers; all41 merged variants now pass both JITs.",
+      "parentScope": "Whole folding/layout, emitter save and runtime-vector/type-size utilities are accepted and retired through native53af680b. B460 unsigned/default utility repairs are included in the source packet. The isolated Wasm packet remains blocked by108 wider diagnostics; preserve its WIP and native caller without backend expansion. B458/B459 close all41 merged-array variants under both JITs; do not rerun completed evidence.",
       "wholeFunctionRepairLanes": [
         {
-          "scope": "Whole emitter.emitSavIG(bool) at pinned emit.cpp971 onward, replacing the broad non-AMD64/EMITTER_STATS throw with native own-body translation and typed dependency boundaries.",
+          "scope": "Whole emitGenIG/emitNewIG/emitNxtIG preparation/transition cluster and directly coupled retained IG helpers; preserve descriptor representation and stop before unrelated entry/exit, encoding and global statistics.",
           "owner": "4b57b744-36f1-4e6e-8b76-94c1a87d6e02",
           "files": "Emitter.GroupBuffers.cs, narrowly required emitter declarations/support and focused group-buffer fixtures.",
-          "status": "completed: emitSavIG accepted and353 native lines retired in857083f7; next packet is group preparation/transition rather than another single helper"
+          "status": "in-progress: emitSavIG predecessor committed9d035f9 and retired in857083f7; group preparation/transition is one area-sized packet"
         },
         {
-          "scope": "Contiguous retained compiler.h SIMD class/type/size and GPR/SIMD rounding utility cluster around2940-3100. Runtime-vector-length component is accepted; reuse its evidence rather than repeating a helper-sized cycle.",
+          "scope": "Retained B426 static-field store recording family: whole emitIns_C_R, emitIns_C_I and emitIns_C_R_I, including own x86 branches and narrow typed dependencies.",
           "owner": "b2253a3d-d101-444e-9c56-d631eb5b274b",
-          "files": "Compiler.RuntimeVectorTByteLength.cs, narrow SIMD/type/size support and focused fixtures. Prior Wasm WIP remains preserved and blocked.",
-          "status": "in-progress: runtime-length source and evidence hashes verified; full-analysis ARM6437D34R and Windows9D9R. Broader coherent utility packet pending."
+          "files": "Existing static-field recording partials and focused store fixtures; narrow new dependency partials if needed. No group-buffer or Wasm WIP edits.",
+          "status": "next: utility predecessor complete and retired in53af680b; begin the coherent B426 family after its source commit"
         }
       ],
       "parallelPackets": [
@@ -1399,7 +1411,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Continue lane A through the bounded emitGenIG/emitNewIG/emitNxtIG preparation/transition cluster; the emitSavIG source/test/docs batch and native857083f7 retirement are complete. Collect lane B's compiler.h SIMD/type/size packet including both roundDownMaxType overloads and coupled unsigned rounding; runtime-length evidence is already accepted. Use area-sized validation/retirement packets, not helper-sized cycles. Preserve blocked Wasm WIP with108 broader diagnostics. Native mutations must amend the sole oracle-child commit; no publication or recurring coverage sweep.",
+    "nextAction": "Continue the active group preparation/transition packet in lane A and the next retained B426 static-field recording family in lane B. The complete utility source/test/docs batch includes the final unsigned SIMD fix and nine confirmed before/after regressions; its thirteen definitions are already retired in native53af680b. Do not reapply that manifest or rerun completed evidence. Preserve blocked Wasm WIP and amend only the sole oracle-child native commit; no publication or recurring audit.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
