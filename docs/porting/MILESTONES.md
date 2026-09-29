@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Shared return and call-storage lowering
+
+Return dispatch and single-register struct-call storage preserve their native
+target branches, ABI types and P/Invoke ordering. Two complete definitions
+and their declarations retire 141 native lines in `50e6bcf4`; the independent
+struct-call spill helper remains.
+
+Old/final Windows controls pass 50 cases in each configuration. Linux return
+controls improve from 1/24 to 24/24 in Debug; combined Release controls improve
+from 3/26 to 26/26. Paired ARM64 builds pass with identical recorded prerequisite
+repairs. RISC-V/Wasm remain blocked; the Wasm classifier is an existing
+unresolved dependency, not a claimed working conversion. Evidence:
+`artifacts/lower-ret-store-bcb453d` and `xarch-lower-ret-store` retirement
+records. No target runtime or generated-code parity claim.
+
 ## 2026-09-29: Xarch floating casts
 
 Floating-width and integer-to-floating casts retain their whole xarch

@@ -9,7 +9,6 @@ public sealed partial class Lowering
 {
     private void LowerRet(GenTreeUnOp ret)
     {
-#if WINDOWS_AMD64_ABI || TARGET_ARM64
         assert(ret.Oper is GT_RETURN or GT_SWIFT_ERROR_RET);
         JITDUMP("lowering return node\n");
         DISPNODE(ret);
@@ -67,9 +66,6 @@ public sealed partial class Lowering
             InsertPInvokeMethodEpilog(compiler.compCurBB, ret);
         }
         ContainCheckRet(ret);
-#else
-        throw new System.NotImplementedException("Return lowering is not ported for this target.");
-#endif
     }
 
     private static ref GenTree GetRetValueRef(GenTreeUnOp ret)

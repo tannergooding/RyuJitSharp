@@ -223,14 +223,26 @@ public sealed partial class Lowering
         return true;
     }
 
-    private void LowerStoreSingleRegCallStruct(GenTreeBlk block)
+    private unsafe void LowerStoreSingleRegCallStruct(GenTreeBlk block)
     {
         assert(block.Data.Oper is GT_CALL);
-        assert(!block.Data.AsCall().HasMultiRegRetVal);
+        var call = block.Data.AsCall();
+        assert(!call.HasMultiRegRetVal);
 
         var registerType = block.Layout.RegisterType;
         if (registerType is not TYP_UNDEF)
         {
+#if TARGET_LOONGARCH64 || TARGET_RISCV64
+            if (varTypeIsFloating(call.Type))
+            {
+                registerType = call.Type;
+            }
+#endif
+#if TARGET_WASM
+            var wasmAbiType = CompilerInstance.info.compCompHnd->getWasmLowering(call.RetClsHnd);
+            assert(wasmAbiType is not CORINFO_WASM_TYPE_VOID);
+            registerType = WasmClassifier.ToJitType(wasmAbiType);
+#endif
             var store = new GenTreeStoreInd(registerType, block.Addr, block.Data, block, NodeThreading.LIR) {
                 Flags = block.Flags,
             };
@@ -241,14 +253,19 @@ public sealed partial class Lowering
 
 #if WINDOWS_AMD64_ABI
         unreached();
-#elif TARGET_ARM64 || UNIX_AMD64_ABI
-        block._kind = GenTreeBlk.BlkOpKindUnroll;
-        block.Data = SpillStructCallResult(block.Data.AsCall());
-        LowerBlockStoreCommon(block);
 #else
-        throw new NotImplementedException("Non-Windows-x64 irregular-size struct call result spilling is not ported.");
+        block._kind = GenTreeBlk.BlkOpKindUnroll;
+        block.Data = SpillStructCallResult(call);
+        LowerBlockStoreCommon(block);
 #endif
     }
+
+#if !WINDOWS_AMD64_ABI && !TARGET_ARM64 && !UNIX_AMD64_ABI
+    private GenTreeLclVar SpillStructCallResult(GenTreeCall call)
+    {
+        throw new NotImplementedException("Struct call result spilling is not ported for this target.");
+    }
+#endif
 
     private void LowerInitBlockStore(GenTreeBlk block)
     {
