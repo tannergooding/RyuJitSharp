@@ -16,6 +16,32 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class EmitterRegisterInstructionTests
 {
+    [TestCase(INS_neg, false)]
+    [TestCase(INS_not, true)]
+    public static void BaseUnaryMovesBeforeRecordingUnlessTheRegistersMatch(instruction ins, bool sameRegister)
+    {
+        WithEmitter((_, emitter) =>
+        {
+            emitter.emitIns_BASE_R_R(ins, EA_4BYTE, REG_RAX, sameRegister ? REG_RAX : REG_RCX);
+
+            Assert.That(Last(emitter).idIns(), Is.EqualTo(ins));
+            Assert.That(CurrentCount(emitter), Is.EqualTo(sameRegister ? 1 : 2));
+        });
+    }
+
+    [TestCase(INS_add, 3, 2)]
+    [TestCase(INS_shl_1, 1, 2)]
+    public static void BaseImmediateRecordsMoveAndCorrectImmediateForm(instruction ins, int value, int count)
+    {
+        WithEmitter((_, emitter) =>
+        {
+            emitter.emitIns_BASE_R_R_I(ins, EA_4BYTE, REG_RAX, REG_RCX, value);
+
+            Assert.That(CurrentCount(emitter), Is.EqualTo(count));
+            Assert.That(Last(emitter).idIns(), Is.EqualTo(ins));
+        });
+    }
+
     [TestCase(INS_mov, EA_8BYTE, REG_RAX, 0xFFFFFFFFL, EA_4BYTE, 5u, IF_RWR_CNS)]
     [TestCase(INS_mov, EA_8BYTE, REG_R8, 0xFFFFFFFFL, EA_4BYTE, 6u, IF_RWR_CNS)]
     [TestCase(INS_mov, EA_8BYTE, REG_RAX, 0x100000000L, EA_8BYTE, 10u, IF_RWR_CNS)]

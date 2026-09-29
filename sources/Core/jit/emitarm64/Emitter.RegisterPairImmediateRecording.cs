@@ -665,7 +665,7 @@ public unsafe partial class Emitter
                 assert(isGeneralRegisterOrSP(reg2));
                 if (imm == 0)
                 {
-                    _ = emitIns_Mov(INS_mov, attr, reg1, reg2, canSkip: true);
+                    emitIns_Mov(INS_mov, attr, reg1, reg2, canSkip: true);
                     return;
                 }
                 if ((reg1 == reg2) && (EA_SIZE(attr) == EA_PTRSIZE) && _compiler.opts.OptimizationEnabled &&

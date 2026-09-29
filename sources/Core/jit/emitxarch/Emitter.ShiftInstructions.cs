@@ -158,10 +158,12 @@ public partial class Emitter
 
     public void emitIns_BASE_R_R_I(instruction ins, emitAttr attr, regNumber op1Reg, regNumber op2Reg, int ival)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Base register-immediate instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Base register-immediate instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         if (DoJitUseApxNDD(ins) && (op1Reg != op2Reg))
         {
             if (IsShiftInstruction(ins) && (ival == 1))

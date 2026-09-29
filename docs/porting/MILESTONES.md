@@ -16,6 +16,28 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Move, basic and flag-dependent recording
+
+ARM64 move and two-register recording now preserve the whole native dispatch,
+including scalar/vector conversions, narrowing, reductions, acquire/release and
+structure memory forms. Move elision retains optimization gates, upper-bit
+clearing, preceding loads/moves and instruction-group boundaries. The ARM64 move
+API keeps its native `void`/`insOpts` contract, separate from xarch's Boolean API.
+Five xarch immediate/basic recorders and their stack-depth helper preserve x86
+paths; flag-reuse and register-write queries retain their target-specific gates.
+
+The exact combined Windows overlay passes 441 Debug/426 Release controls; ARM64
+recording/predicate controls pass 381/367. All 77 identical positive recorder
+cases fail at missing APIs on the old source. Component Linux-x64 target checks
+pass 84 and 332 Debug cases on the Windows host. Existing x86 build blockers
+still prevent execution.
+
+Sixteen definitions and their declarations retire 1,801 native lines in
+`630e1993`. Separate SVE, three-register and optimization dependencies remain
+explicit. B461 diagnostic restrictions are unchanged. No new machine-code
+parity is claimed. Evidence is in `artifacts/arm64-move-recording` and the move
+integration records under `artifacts/residual-reconciliation`.
+
 ## 2026-09-29: Two-register immediates and direct addresses
 
 ARM64 two-register/immediate recording now preserves the complete native

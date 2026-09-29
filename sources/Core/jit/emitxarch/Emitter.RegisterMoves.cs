@@ -9,6 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+#if !TARGET_ARM64
     public bool emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg,
         bool canSkip, bool useApxNdd = false)
     {
@@ -111,6 +112,7 @@ public partial class Emitter
         return true;
 #endif
     }
+#endif
 
 #if TARGET_XARCH
     public bool EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, regNumber src)

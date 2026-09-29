@@ -469,6 +469,237 @@ internal static unsafe class Arm64EmitterRecordingTests
     private static extern void RecordPair(Emitter emitter, instruction ins, emitAttr attr,
         regNumber reg1, regNumber reg2, nint imm, insOpts opt, insScalableOpts sopt);
 
+    [TestCase(INS_mov, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_DR_2E, INS_OPTS_NONE)]
+    [TestCase(INS_mov, EA_4BYTE, REG_R19, REG_ZR, INS_OPTS_NONE, IF_DR_2E, INS_OPTS_NONE)]
+    [TestCase(INS_mov, EA_8BYTE, REG_SPBASE, REG_R20, INS_OPTS_NONE, IF_DR_2G, INS_OPTS_NONE)]
+    [TestCase(INS_mov, EA_8BYTE, REG_R19, REG_SPBASE, INS_OPTS_NONE, IF_DR_2G, INS_OPTS_NONE)]
+    [TestCase(INS_sxtw, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_DR_2H, INS_OPTS_NONE)]
+    [TestCase(INS_sxtb, EA_4BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_DR_2H, INS_OPTS_NONE)]
+    [TestCase(INS_sxth, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_DR_2H, INS_OPTS_NONE)]
+    [TestCase(INS_uxtb, EA_4BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_DR_2H, INS_OPTS_NONE)]
+    [TestCase(INS_uxth, EA_4BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_DR_2H, INS_OPTS_NONE)]
+    [TestCase(INS_fmov, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
+    [TestCase(INS_fmov, EA_4BYTE, REG_V0, REG_R20, INS_OPTS_NONE, IF_DV_2I, INS_OPTS_4BYTE_TO_S)]
+    [TestCase(INS_fmov, EA_8BYTE, REG_V0, REG_R20, INS_OPTS_NONE, IF_DV_2I, INS_OPTS_8BYTE_TO_D)]
+    [TestCase(INS_fmov, EA_4BYTE, REG_R19, REG_V1, INS_OPTS_NONE, IF_DV_2H, INS_OPTS_S_TO_4BYTE)]
+    [TestCase(INS_fmov, EA_8BYTE, REG_R19, REG_V1, INS_OPTS_NONE, IF_DV_2H, INS_OPTS_D_TO_8BYTE)]
+    [TestCase(INS_fmov, EA_4BYTE, REG_R19, REG_V1, INS_OPTS_D_TO_4BYTE, IF_DV_2H, INS_OPTS_D_TO_4BYTE)]
+    [TestCase(INS_mov, EA_8BYTE, REG_R19, REG_V1, INS_OPTS_NONE, IF_DV_2B, INS_OPTS_NONE)]
+    public static void MoveRecordingPreservesNativeFormats(instruction ins, emitAttr size,
+        regNumber dst, regNumber src, insOpts opt, Emitter.insFormat format, insOpts expectedOpt)
+    {
+        var emitter = CreateEmitter();
+        RecordMove(emitter, ins, size, dst, src, false, opt);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No move was recorded.");
+        Assert.That(id.idIns(), Is.EqualTo(ins));
+        Assert.That(id.idInsFmt(), Is.EqualTo(format));
+        Assert.That(id.idInsOpt(), Is.EqualTo(expectedOpt));
+        Assert.That(id.idOpSize(), Is.EqualTo(size));
+        Assert.That(id.idReg1(), Is.EqualTo(dst == REG_SPBASE ? REG_ZR : dst));
+        Assert.That(id.idReg2(), Is.EqualTo(src == REG_SPBASE ? REG_ZR : src));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [TestCase(INS_dup, EA_16BYTE, REG_V0, REG_R20, INS_OPTS_4S, IF_DV_2C, INS_OPTS_4S)]
+    [TestCase(INS_abs, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2L, INS_OPTS_NONE)]
+    [TestCase(INS_abs, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2M, INS_OPTS_4S)]
+    [TestCase(INS_not, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2M, INS_OPTS_16B)]
+    [TestCase(INS_mvn, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2S, IF_DV_2M, INS_OPTS_8B)]
+    [TestCase(INS_neg, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2L, INS_OPTS_NONE)]
+    [TestCase(INS_neg, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_DR_2E, INS_OPTS_NONE)]
+    [TestCase(INS_mvn, EA_4BYTE, REG_R19, REG_ZR, INS_OPTS_NONE, IF_DR_2E, INS_OPTS_NONE)]
+    [TestCase(INS_negs, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_DR_2E, INS_OPTS_NONE)]
+    [TestCase(INS_sxtl, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_8B, IF_DV_2O, INS_OPTS_8B)]
+    [TestCase(INS_cls, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2M, INS_OPTS_4S)]
+    [TestCase(INS_clz, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_DR_2G, INS_OPTS_NONE)]
+    [TestCase(INS_rev32, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_DR_2G, INS_OPTS_NONE)]
+    [TestCase(INS_rev32, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_8H, IF_DV_2M, INS_OPTS_8H)]
+    [TestCase(INS_rbit, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_16B, IF_DV_2M, INS_OPTS_16B)]
+    [TestCase(INS_cnt, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_16B, IF_DV_2M, INS_OPTS_16B)]
+    [TestCase(INS_addv, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2T, INS_OPTS_4S)]
+    [TestCase(INS_rev64, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2M, INS_OPTS_4S)]
+    [TestCase(INS_sqxtn, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2L, INS_OPTS_NONE)]
+    [TestCase(INS_xtn, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2S, IF_DV_2M, INS_OPTS_2S)]
+    [TestCase(INS_sqxtn2, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2M, INS_OPTS_4S)]
+    [TestCase(INS_ldar, EA_8BYTE, REG_R19, REG_SPBASE, INS_OPTS_NONE, IF_LS_2A, INS_OPTS_NONE)]
+    [TestCase(INS_ldarb, EA_1BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_LS_2A, INS_OPTS_NONE)]
+    [TestCase(INS_stlrh, EA_2BYTE, REG_ZR, REG_SPBASE, INS_OPTS_NONE, IF_LS_2A, INS_OPTS_NONE)]
+    [TestCase(INS_ldr, EA_8BYTE, REG_R19, REG_SPBASE, INS_OPTS_NONE, IF_LS_2A, INS_OPTS_NONE)]
+    [TestCase(INS_fcmp, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2K, INS_OPTS_NONE)]
+    [TestCase(INS_fcvtzs, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
+    [TestCase(INS_fcvtzs, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
+    [TestCase(INS_fcvtzs, EA_8BYTE, REG_R19, REG_V1, INS_OPTS_D_TO_8BYTE, IF_DV_2H, INS_OPTS_D_TO_8BYTE)]
+    [TestCase(INS_fcvtl, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2S, IF_DV_2A, INS_OPTS_2S)]
+    [TestCase(INS_fcvtn2, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
+    [TestCase(INS_fcvtxn, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2S, IF_DV_2A, INS_OPTS_2S)]
+    [TestCase(INS_fcvtxn, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
+    [TestCase(INS_fcvtxn2, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
+    [TestCase(INS_scvtf, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
+    [TestCase(INS_scvtf, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
+    [TestCase(INS_scvtf, EA_8BYTE, REG_V0, REG_R20, INS_OPTS_8BYTE_TO_D, IF_DV_2I, INS_OPTS_8BYTE_TO_D)]
+    [TestCase(INS_fsqrt, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
+    [TestCase(INS_fsqrt, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
+    [TestCase(INS_faddp, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_2D, IF_DV_2Q, INS_OPTS_2D)]
+    [TestCase(INS_fmaxv, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2R, INS_OPTS_4S)]
+    [TestCase(INS_addp, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_2D, IF_DV_2S, INS_OPTS_2D)]
+    [TestCase(INS_fcvt, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_D_TO_S, IF_DV_2J, INS_OPTS_D_TO_S)]
+    [TestCase(INS_cmeq, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2M, INS_OPTS_4S)]
+    [TestCase(INS_cmeq, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2L, INS_OPTS_NONE)]
+    [TestCase(INS_frecpe, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
+    [TestCase(INS_frecpe, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
+    [TestCase(INS_aesd, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_16B, IF_DV_2P, INS_OPTS_16B)]
+    [TestCase(INS_sha1h, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2U, INS_OPTS_NONE)]
+    [TestCase(INS_sha256su0, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2U, INS_OPTS_4S)]
+    [TestCase(INS_sha512su0, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_2D, IF_DV_2V, INS_OPTS_2D)]
+    [TestCase(INS_sm4e, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2V, INS_OPTS_4S)]
+    [TestCase(INS_ld2, EA_16BYTE, REG_V0, REG_SPBASE, INS_OPTS_4S, IF_LS_2D, INS_OPTS_4S)]
+    [TestCase(INS_st1, EA_8BYTE, REG_V0, REG_R20, INS_OPTS_1D, IF_LS_2D, INS_OPTS_1D)]
+    [TestCase(INS_ld4r, EA_16BYTE, REG_V0, REG_R20, INS_OPTS_4S, IF_LS_2D, INS_OPTS_4S)]
+    [TestCase(INS_urecpe, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
+    [TestCase(INS_frecpx, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
+    [TestCase(INS_sadalp, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2T, INS_OPTS_4S)]
+    [TestCase(INS_sqabs, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2M, INS_OPTS_4S)]
+    [TestCase(INS_sqabs, EA_2BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2L, INS_OPTS_NONE)]
+    [TestCase(INS_pacia, EA_8BYTE, REG_R19, REG_SPBASE, INS_OPTS_NONE, IF_PC_2A, INS_OPTS_NONE)]
+    public static void RegisterPairRecordingPreservesNativeFormats(instruction ins, emitAttr size,
+        regNumber dst, regNumber src, insOpts opt, Emitter.insFormat format, insOpts expectedOpt)
+    {
+        var emitter = CreateEmitter();
+        RecordRegisters(emitter, ins, size, dst, src, opt, INS_SCALABLE_OPTS_NONE);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No register pair was recorded.");
+        Assert.That(id.idIns(), Is.EqualTo(ins));
+        Assert.That(id.idInsFmt(), Is.EqualTo(format));
+        Assert.That(id.idInsOpt(), Is.EqualTo(expectedOpt));
+        Assert.That(id.idOpSize(), Is.EqualTo(size));
+        Assert.That(id.idReg1(), Is.EqualTo(dst));
+        Assert.That(id.idReg2(), Is.EqualTo(src == REG_SPBASE ? REG_ZR : src));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [TestCase(false, false, EA_8BYTE, REG_R19, 4)]
+    [TestCase(false, true, EA_4BYTE, REG_R19, 0)]
+    [TestCase(true, false, EA_8BYTE, REG_R19, 0)]
+    [TestCase(true, false, EA_4BYTE, REG_R19, 4)]
+    [TestCase(true, false, EA_16BYTE, REG_V0, 0)]
+    public static void MoveElisionPreservesOptimizationAndClearingRules(
+        bool optimized, bool canSkip, emitAttr size, regNumber reg, int expectedSize)
+    {
+        var emitter = CreateEmitter(optimized);
+#if DEBUG
+        using var tls = new JitTls(null);
+        JitTls.Compiler = EmitterCompiler(emitter);
+#endif
+        RecordMove(emitter, INS_mov, size, reg, reg, canSkip, INS_OPTS_NONE);
+        Assert.That(GroupSize(emitter), Is.EqualTo(expectedSize));
+    }
+
+    [TestCase(INS_sxtb)]
+    [TestCase(INS_sxth)]
+    [TestCase(INS_sxtw)]
+    [TestCase(INS_uxtb)]
+    [TestCase(INS_uxth)]
+    [TestCase(INS_fmov)]
+    public static void MoveElisionHonorsExplicitExtensionAndFloatPermission(instruction ins)
+    {
+        var emitter = CreateEmitter();
+        var reg = ins == INS_fmov ? REG_V0 : REG_R19;
+        RecordMove(emitter, ins, EA_8BYTE, reg, reg, true, INS_OPTS_NONE);
+        Assert.That(GroupSize(emitter), Is.Zero);
+    }
+
+    [TestCase(EA_8BYTE, false, 4)]
+    [TestCase(EA_4BYTE, false, 4)]
+    [TestCase(EA_8BYTE, true, 4)]
+    [TestCase(EA_4BYTE, true, 8)]
+    public static void MoveElisionPreservesRepeatedAndOppositeMoveRules(
+        emitAttr size, bool opposite, int expectedSize)
+    {
+        var emitter = CreateEmitter(optimized: true);
+#if DEBUG
+        using var tls = new JitTls(null);
+        JitTls.Compiler = EmitterCompiler(emitter);
+#endif
+        RecordMove(emitter, INS_mov, size, REG_R19, REG_R20, false, INS_OPTS_NONE);
+        RecordMove(emitter, INS_mov, size, opposite ? REG_R20 : REG_R19,
+            opposite ? REG_R19 : REG_R20, false, INS_OPTS_NONE);
+        Assert.That(GroupSize(emitter), Is.EqualTo(expectedSize));
+    }
+
+    [TestCase(INS_ldr, EA_4BYTE, 4)]
+    [TestCase(INS_ldrh, EA_4BYTE, 4)]
+    [TestCase(INS_ldrb, EA_4BYTE, 4)]
+    [TestCase(INS_ldr, EA_8BYTE, 8)]
+    public static void MoveElisionRecognizesPriorZeroExtension(instruction ins, emitAttr size, int expectedSize)
+    {
+        var emitter = CreateEmitter(optimized: true);
+        var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing emitter compiler.");
+#if DEBUG
+        using var tls = new JitTls(null);
+        JitTls.Compiler = compiler;
+#endif
+        compiler.opts.compMinOpts = true;
+        compiler.opts.canUseAllOpts = false;
+        RecordRegisters(emitter, ins, size, REG_R19, REG_R20, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+        compiler.opts.compMinOpts = false;
+        compiler.opts.canUseAllOpts = true;
+        RecordMove(emitter, INS_mov, EA_4BYTE, REG_R19, REG_R19, false, INS_OPTS_NONE);
+        Assert.That(GroupSize(emitter), Is.EqualTo(expectedSize));
+    }
+
+    [Test]
+    public static void MoveElisionRespectsGroupBoundariesAndMovprfx()
+    {
+        var emitter = CreateEmitter(optimized: true);
+#if DEBUG
+        using var tls = new JitTls(null);
+        JitTls.Compiler = EmitterCompiler(emitter);
+#endif
+        RecordMove(emitter, INS_mov, EA_8BYTE, REG_R19, REG_R20, false, INS_OPTS_NONE);
+        ForceNewGroup(emitter) = true;
+        Assert.That(RedundantMove(emitter, INS_mov, EA_8BYTE, REG_R19, REG_R20, false), Is.False);
+        Assert.That(RedundantMove(emitter, INS_sve_movprfx, EA_16BYTE, REG_V0, REG_V0, false), Is.False);
+        Assert.That(RedundantMove(emitter, INS_sve_movprfx, EA_16BYTE, REG_V0, REG_V0, true), Is.True);
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+    }
+
+    [Test]
+    public static void MoveAliasesPreserveZeroAddAndSeparateDependencies()
+    {
+        var emitter = CreateEmitter();
+        RecordPair(emitter, INS_add, EA_8BYTE, REG_R19, REG_R20, 0, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No zero-add alias was recorded.");
+        Assert.That(id.idIns(), Is.EqualTo(INS_mov));
+        Assert.That(id.idInsFmt(), Is.EqualTo(IF_DR_2E));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+
+        var sve = CreateEmitter();
+        var moveError = Assert.Throws<FatalJitException>(() =>
+            RecordMove(sve, INS_sve_movprfx, EA_8BYTE, REG_V0, REG_V1, false, INS_OPTS_NONE));
+        Assert.That(moveError, Has.Message.Contains("SVE move recording"));
+        var pairError = Assert.Throws<FatalJitException>(() =>
+            RecordRegisters(sve, INS_nop, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE));
+        Assert.That(pairError, Has.Message.Contains("SVE two-register recording"));
+        Assert.That(GroupSize(sve), Is.Zero);
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_Mov")]
+    private static extern void RecordMove(Emitter emitter, instruction ins, emitAttr attr,
+        regNumber dst, regNumber src, bool canSkip, insOpts opt);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_R")]
+    private static extern void RecordRegisters(Emitter emitter, instruction ins, emitAttr attr,
+        regNumber dst, regNumber src, insOpts opt, insScalableOpts sopt);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitForceNewIG")]
+    private static extern ref bool ForceNewGroup(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "IsRedundantMov")]
+    private static extern bool RedundantMove(Emitter emitter, instruction ins, emitAttr size,
+        regNumber dst, regNumber src, bool canSkip);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_compiler")]
+    private static extern ref Compiler? EmitterCompiler(Emitter emitter);
+
     [TestCase(0L, 1, true)]
     [TestCase(-1L, 1, true)]
     [TestCase(1L, 1, false)]

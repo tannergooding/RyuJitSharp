@@ -9,7 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
+#if TARGET_XARCH
     private const int EMIT_MAX_PEEPHOLE_INS_COUNT = 32;
 
     private enum emitPeepholeResult
@@ -81,7 +81,7 @@ public partial class Emitter
     }
 #endif
 
-#if TARGET_AMD64
+#if TARGET_XARCH
     private void emitPeepholeIterateLastInstrs(Func<instrDesc, emitPeepholeResult> action)
     {
         assert(emitCanPeepholeLastIns());
@@ -129,6 +129,7 @@ public partial class Emitter
         }
     }
 
+#if TARGET_AMD64
     public bool AreUpperBitsZero(regNumber reg, emitAttr size)
     {
         if (!genIsValidIntReg(reg))
@@ -243,6 +244,8 @@ public partial class Emitter
         return result;
     }
 
+#endif
+
     public static bool emitIsInstrWritingToReg(instrDesc id, regNumber reg)
     {
         assert(genIsValidIntReg(reg));
@@ -256,7 +259,11 @@ public partial class Emitter
                 return true;
             }
 
+#if TARGET_AMD64
             case >= INS_imul_AX and <= INS_imul_31:
+#else
+            case >= INS_imul_AX and <= INS_imul_SP:
+#endif
             {
                 if (reg == (regNumber)(ins - INS_imul_AX))
                 {
@@ -283,7 +290,10 @@ public partial class Emitter
                 break;
             }
 
-            case INS_movsb or INS_movsd or INS_movsq:
+            case INS_movsb or INS_movsd:
+#if TARGET_AMD64
+            case INS_movsq:
+#endif
             {
                 if ((reg == REG_RDI) || (reg == REG_RSI))
                 {
@@ -292,7 +302,10 @@ public partial class Emitter
                 break;
             }
 
-            case INS_stosb or INS_stosd or INS_stosq:
+            case INS_stosb or INS_stosd:
+#if TARGET_AMD64
+            case INS_stosq:
+#endif
             {
                 if (reg == REG_RDI)
                 {
@@ -301,7 +314,10 @@ public partial class Emitter
                 break;
             }
 
-            case INS_r_movsb or INS_r_movsd or INS_r_movsq:
+            case INS_r_movsb or INS_r_movsd:
+#if TARGET_AMD64
+            case INS_r_movsq:
+#endif
             {
                 if ((reg == REG_RDI) || (reg == REG_RSI) || (reg == REG_RCX))
                 {
@@ -310,7 +326,10 @@ public partial class Emitter
                 break;
             }
 
-            case INS_r_stosb or INS_r_stosd or INS_r_stosq:
+            case INS_r_stosb or INS_r_stosd:
+#if TARGET_AMD64
+            case INS_r_stosq:
+#endif
             {
                 if ((reg == REG_RDI) || (reg == REG_RCX))
                 {
@@ -325,6 +344,7 @@ public partial class Emitter
             }
         }
 
+#if TARGET_64BIT
         switch (ins)
         {
             case INS_cwde:
@@ -350,6 +370,7 @@ public partial class Emitter
                 break;
             }
         }
+#endif
 
         if (id.idIsReg1Write() && (id.idReg1() == reg))
         {

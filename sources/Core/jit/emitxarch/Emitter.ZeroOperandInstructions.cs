@@ -14,10 +14,9 @@ public partial class Emitter
 
     public void emitIns_Nop(uint size)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "NOP recording outside AMD64 is not implemented.");
-#else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         assert(size <= MAX_ENCODED_SIZE);
         var id = emitNewInstr(EA_4BYTE);
         id.idIns(INS_nop);
@@ -26,7 +25,6 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)size);
-#endif
     }
 
     public void emitIns(instruction ins)

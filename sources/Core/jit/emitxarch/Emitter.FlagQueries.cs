@@ -9,10 +9,15 @@ public partial class Emitter
 {
     public bool IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Redundant comparison queries outside AMD64 are not implemented.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Redundant comparison queries outside xarch are not implemented.");
 #else
-        if (!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2))
+        if (!genIsValidIntReg(reg1))
+        {
+            return false;
+        }
+
+        if (!genIsValidIntReg(reg2))
         {
             return false;
         }
@@ -60,8 +65,8 @@ public partial class Emitter
 
     public bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition cond)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Zero-comparison flag queries outside AMD64 are not implemented.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Zero-comparison flag queries outside xarch are not implemented.");
 #else
         assert(reg != REG_NA);
         assert(_compiler is not null);
@@ -112,8 +117,8 @@ public partial class Emitter
 
     public bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenCondition cond)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Sign-jump flag queries outside AMD64 are not implemented.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Sign-jump flag queries outside xarch are not implemented.");
 #else
         assert(reg != REG_NA);
         assert(_compiler is not null);
@@ -204,7 +209,7 @@ public partial class Emitter
 
 #endif
 
-#if TARGET_AMD64
+#if TARGET_XARCH
     public static bool emitDoesInsModifyFlags(instruction ins)
     {
         return (CodeGen.instInfo[(int)ins] &

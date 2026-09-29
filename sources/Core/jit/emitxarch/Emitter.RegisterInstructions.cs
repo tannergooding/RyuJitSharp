@@ -17,10 +17,17 @@ public partial class Emitter
 #endif
         )
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Register-immediate instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Register-immediate instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#else
+        val = unchecked((int)val);
+#if DEBUG
+        targetHandle = unchecked((uint)targetHandle);
+#endif
+#endif
         assert(_compiler is not null);
         var size = EA_SIZE(attr);
 
@@ -30,8 +37,10 @@ public partial class Emitter
 
         // Only mov reg, imm64 takes a full eight-byte immediate. All other opcodes
         // take a sign-extended four-byte immediate.
+#if TARGET_AMD64
         noway_assert((size < EA_8BYTE) || (ins == INS_mov) ||
             ((unchecked((int)val) == val) && !EA_IS_CNS_RELOC(attr)));
+#endif
 
         uint sz;
         var fmt = emitInsModeFormat(ins, IF_RRD_CNS);
@@ -48,6 +57,7 @@ public partial class Emitter
         {
             case INS_mov:
             {
+#if TARGET_AMD64
                 // A non-relocatable zero-extended imm32 can use mov r32, imm32.
                 if ((size > EA_4BYTE) && ((unchecked((ulong)val) & 0xFFFFFFFF00000000UL) == 0) &&
                     !EA_IS_CNS_RELOC(attr))
@@ -60,6 +70,7 @@ public partial class Emitter
                     sz = 9; // The REX prefix is counted below.
                     break;
                 }
+#endif
 
                 sz = 5;
                 break;
@@ -101,8 +112,25 @@ public partial class Emitter
                 else
                 {
                     assert(!IsSimdInstruction(ins));
-                    sz = ((reg == REG_EAX) && !instrIs3opImul(ins)) ? 1u : 2u;
-                    sz += (size > EA_4BYTE) ? 4u : EA_SIZE_IN_BYTES(attr);
+                    if ((reg == REG_EAX) && !instrIs3opImul(ins))
+                    {
+                        sz = 1;
+                    }
+                    else
+                    {
+                        sz = 2;
+                    }
+
+#if TARGET_AMD64
+                    if (size > EA_4BYTE)
+                    {
+                        sz += 4;
+                    }
+                    else
+#endif
+                    {
+                        sz += EA_SIZE_IN_BYTES(attr);
+                    }
                 }
                 break;
             }
@@ -153,6 +181,7 @@ public partial class Emitter
 
         sz += emitGetAdjustedSize(id, insCodeMI(ins));
 
+#if TARGET_AMD64
         if ((reg == REG_EAX) && !instrIs3opImul(ins) && TakesEvexPrefix(id))
         {
             // The accumulator form is not promoted into EVEX space; use MI.
@@ -164,6 +193,7 @@ public partial class Emitter
             // TEST's accumulator form is not REX2 compatible.
             sz -= (size == EA_8BYTE) ? 1u : 2u;
         }
+#endif
 
         // Three-operand IMUL has an implicit destination encoded in its opcode.
         if (IsExtendedReg(reg, attr) || TakesRexWPrefix(id) || instrIsExtendedReg3opImul(ins))
@@ -175,11 +205,17 @@ public partial class Emitter
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
 
-        // Native emitAdjustStackDepth is empty with AMD64's FEATURE_FIXED_OUT_ARGS.
+#if TARGET_X86
+        if (reg == REG_ESP)
+        {
+            emitAdjustStackDepth(ins, val);
+        }
+#endif
 #endif
     }
 #endif
 
+#if !TARGET_ARM64
     public void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         insOpts instOptions = INS_OPTS_NONE)
     {
@@ -221,4 +257,5 @@ public partial class Emitter
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
 #endif
     }
+#endif
 }

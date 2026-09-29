@@ -73,8 +73,29 @@ internal static class EmitterZeroOperandTests
             var id = LastInstruction(emitter);
             assert(id is not null);
             Assert.That(id.idIns(), Is.EqualTo(INS_nop));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_NONE));
+            Assert.That(id.idOpSize(), Is.EqualTo(EA_4BYTE));
             Assert.That(id.idCodeSize(), Is.EqualTo(size));
             Assert.That(CurrentSize(emitter), Is.EqualTo(size));
+            Assert.That(CurrentCount(emitter), Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public static void Data16RecordsOneBytePrefixDescriptor()
+    {
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (_, codeGen, _) =>
+        {
+            var emitter = codeGen.Emitter;
+            emitter.emitIns_Data16();
+            var id = LastInstruction(emitter);
+            assert(id is not null);
+            Assert.That(id.idIns(), Is.EqualTo(INS_data16));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_NONE));
+            Assert.That(id.idOpSize(), Is.EqualTo(EA_1BYTE));
+            Assert.That(id.idIsSmallDsc(), Is.True);
+            Assert.That(id.idCodeSize(), Is.EqualTo(1u));
+            Assert.That(CurrentSize(emitter), Is.EqualTo(1));
             Assert.That(CurrentCount(emitter), Is.EqualTo(1));
         });
     }

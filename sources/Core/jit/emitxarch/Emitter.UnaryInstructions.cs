@@ -97,10 +97,12 @@ public partial class Emitter
 
     public void emitIns_BASE_R_R(instruction ins, emitAttr attr, regNumber op1Reg, regNumber op2Reg)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Base unary instruction recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Base unary instruction recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         if (DoJitUseApxNDD(ins) && (op1Reg != op2Reg))
         {
             emitIns_R_R(ins, attr, op1Reg, op2Reg, INS_OPTS_EVEX_nd);

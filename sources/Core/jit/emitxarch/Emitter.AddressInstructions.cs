@@ -11,10 +11,12 @@ public partial class Emitter
 {
     public void emitIns_Data16()
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "DATA16 recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "DATA16 recording requires xarch.");
 #else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         var id = emitNewInstrSmall(EA_1BYTE);
         id.idIns(INS_data16);
         id.idInsFmt(IF_NONE);

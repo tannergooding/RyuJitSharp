@@ -44,6 +44,8 @@ public partial class Emitter
     public static bool instrIs3opImul(instruction ins) => (ins >= INS_imul_AX) && (ins <= INS_imul_31);
 
     public static bool instrIsExtendedReg3opImul(instruction ins) => (ins >= INS_imul_08) && (ins <= INS_imul_31);
+#elif TARGET_X86
+    public static bool instrIsExtendedReg3opImul(instruction ins) => false;
 #endif
 
     public static bool IsKInstruction(instruction ins) => (prefixFlags(ins) & KInstruction) != 0;
