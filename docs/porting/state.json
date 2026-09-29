@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "xarchConditionAndOperandDispatch": {
+      "scope": "Whole comparison dispatch, SETCC, return-trap generation, operand classification, unary/register operand dispatch and register/register/immediate wrapper.",
+      "validation": "Combined Windows84 Debug/81 Release pass. Linux83/84 Debug passes; the remaining fixture stops at the independent Windows-only rsSpillTree dependency before operand classification. Original ARM64 source build passes and x86 retains14 baseline errors.",
+      "retirement": "Seven definitions and four xarch-only declarations;437 native lines. Shared compare/condition/trap declarations and independent compare/emitter/spill dependencies remain.",
+      "nativeBefore": "a892d056ab4578fa661ec79bd1ba1eeb6286c743",
+      "nativeAfter": "b80a54a7ab063acfedc24df645f317eef4271e13",
+      "evidence": "artifacts/condition-operand-integration; artifacts/residual-reconciliation/condition-operand combined/applied/verification and Linux-limitation records. Original condition/trap and operand-core proposals remain unchanged; a normalized component resolves their different file/span newline conventions.",
+      "limits": "No full Linux suite, x86 execution or generated-code parity claim. PSHUFD immediate0xE4 reproduces a pinned signed-byte/SIMD assertion; preserve it pending native caller-reachability evidence (B465)."
+    },
     "xarchLsraFileClosure": {
       "scope": "Whole BuildHWIntrinsic preserves x86 byte-register, CRC32 and target-specific APX/EVEX constraints. Correct BigMul's APX candidate mask and the recent call-builder Unix declaration-guard regression.",
       "validation": "Original Windows42 Debug/42 Release controls pass. Supplemental Windows10 Debug/10 Release pass; identical old cases fail only BigMul in both configurations. Linux focused3 Debug/3 Release pass after the declaration repair; old builds fail CS0219. Initial broader Linux Debug5/6 retains an unrelated SIMD16 return-description fixture failure; Release6/6 passes. Paired x86 builds retain14 identical errors; six new x86 cases remain unexecuted.",
@@ -2045,7 +2054,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "LSRA closure with BigMul regression and Calls.cs Unix declaration repair is accepted; nativea892d056 already contains the1123-line retirement, do not reapply. Integrate condition/operand packets: combined Windows84 Debug/81 Release pass; Linux83/84 retains the separate rsSpillTree Windows-only dependency in fixture setup, not a full pass. B's memcmp packet is ready and switch reruns explicitly include the declaration repair. Finish combined A GenTree queries plus parent local/copy/production/VariableLiveKeeper controls, then retire the seven whole definitions. Refill existing lanes without unbounded ready packets. Preserve14x86 blockers,13Wasm, oracle-plus-one and no publication.",
+    "nextAction": "Condition/operand dispatch accepted through nativeb80a54a7; do not reapply. Integrate B's switch+memcmp packets and all three associated declarations (1014lines), using the explicit repaired-baseline Linux supplement; original proposal declaration-retention rationale was incorrect. Parent combined register/GenTree controls pass50/54 ARM64: four local reloads now reach ins_Load's separate non-xarch guard. HW lane completes whole load/store selectors to unblock them; preserve initial failures. Refill A after condition integration and B after lowering integration; LSRA resumes shared builders. Preserve14x86 blockers,13Wasm, oracle-plus-one and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

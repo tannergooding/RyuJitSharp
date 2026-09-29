@@ -9,7 +9,7 @@ public sealed partial class CodeGen
 {
     public void genCodeForReturnTrap(GenTreeUnOp tree)
     {
-#if !TARGET_AMD64
+#if !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Return-trap generation requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();

@@ -12,10 +12,12 @@ public sealed partial class CodeGen
 {
     internal unsafe OperandDesc genOperandDesc(instruction ins, GenTree op)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Instruction operand classification requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Instruction operand classification requires xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         if (!op.IsContained && !op.IsUsedFromSpillTemp)
         {
             return new OperandDesc(op.RegNum);
@@ -191,10 +193,12 @@ public sealed partial class CodeGen
 
     public unsafe void inst_TT(instruction ins, emitAttr size, GenTree op1)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Single-operand instruction generation requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Single-operand instruction generation requires xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         var descriptor = genOperandDesc(ins, op1);
         switch (descriptor.GetKind())
         {
@@ -239,10 +243,12 @@ public sealed partial class CodeGen
 
     public unsafe void inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTree op2)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Register/operand instruction generation requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Register/operand instruction generation requires xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         var descriptor = genOperandDesc(ins, op2);
         switch (descriptor.GetKind())
         {
@@ -289,6 +295,19 @@ public sealed partial class CodeGen
                 break;
             }
         }
+#endif
+    }
+
+    public void inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, uint value)
+    {
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Register/register/immediate instruction generation requires xarch.");
+#else
+        assert(ins is INS_shld or INS_shrd or INS_shufps or INS_shufpd or INS_pshufd or
+            INS_cmpps or INS_cmppd or INS_dppd or INS_dpps or INS_insertps or INS_roundps or
+            INS_roundss or INS_roundpd or INS_roundsd);
+
+        Emitter.emitIns_R_R_I(ins, size, reg1, reg2, unchecked((int)value));
 #endif
     }
 

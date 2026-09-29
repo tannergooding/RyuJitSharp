@@ -12,9 +12,6 @@ public sealed partial class CodeGen
 {
     public void genCodeForCompare(GenTreeOp tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Scalar comparison generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper.IsCompare || (tree.Oper is GT_CMP or GT_TEST or GT_BT));
         if (varTypeIsFloating(tree.Op1.Type))
@@ -25,7 +22,6 @@ public sealed partial class CodeGen
         {
             genCompareInt(tree);
         }
-#endif
     }
 
     public void genCompareFloat(GenTreeOp tree)

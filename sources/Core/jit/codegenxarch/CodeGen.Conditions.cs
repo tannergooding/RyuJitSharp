@@ -10,12 +10,15 @@ public sealed partial class CodeGen
 {
     public void inst_SETCC(GenCondition condition, var_types type, regNumber dstReg)
     {
-#if !TARGET_AMD64
+#if !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Boolean condition generation requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(varTypeIsIntegral(type));
         assert(genIsValidIntReg(dstReg));
+#if TARGET_X86
+        assert(dstReg is REG_EAX or REG_ECX or REG_EDX or REG_EBX);
+#endif
         var desc = GenConditionDesc.Get(condition);
         var instOptions = INS_OPTS_NONE;
         var needsMovzx = !varTypeIsByte(type);

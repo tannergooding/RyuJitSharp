@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Condition and operand instruction dispatch
+
+Whole comparison/condition/trap and operand-dispatch routines preserve x86
+branches and independent emitter dependencies. Seven definitions and four
+xarch-only declarations retire 437 native lines in `b80a54a7`; shared
+compare/condition/trap declarations remain for other targets.
+
+Combined Windows controls pass 84 Debug/81 Release. Linux passes 83 of 84
+Debug cases; the remaining fixture reaches the independent Windows-only tree
+spill dependency before operand classification. It is not a full Linux pass.
+X86 retains 14 baseline errors. A direct PSHUFD immediate `0xE4` assertion
+matches the pinned native restriction and remains unchanged (B465).
+Evidence: `artifacts/condition-operand-integration` and the corresponding
+`condition-operand` retirement and limitation records. No execution-parity
+claim follows from translation retirement.
+
 ## 2026-09-29: Xarch LSRA file closure
 
 The final hardware-intrinsic builder preserves x86 byte-register and CRC32

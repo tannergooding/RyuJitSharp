@@ -520,6 +520,8 @@ existing deviation entries rather than maintaining competing descriptions.
 
 | B464 | Call-builder target restoration breaks Unix compilation | The recent xarch call-builder integration guards uses of `callHasFloatRegArgs` with `WINDOWS_AMD64_ABI` but leaves its declaration unconditional, producing CS0219 on Unix. | Guard the declaration with its Windows-only assignments and read; do not suppress the diagnostic. | Fixed. Old Linux target builds reproduce CS0219; corrected builds execute the focused call/BigMul cases in both configurations. The broader Debug SIMD16 return-description fixture failure remains explicitly recorded, not counted as passing. Evidence: `artifacts/residual-reconciliation/lsra-call-linux-bigmul-supplement-20260929.json`. |
 
+| B465 | Pinned direct SIMD immediate API requires signed-byte representation | Direct `emitIns_R_R_I(INS_pshufd, EA_16BYTE, ..., 0xE4)` fails the managed Debug size assertion. The pin has the same signed-byte representability check followed by the non-SIMD assertion. | Establish native caller reachability and expected immediate representation before proposing a contract correction; do not widen only the port's predicate. | Pinned behavior preserved. This is a source-level API restriction, not an established native production failure. Evidence: `artifacts/residual-reconciliation/emitter-pshufd-imm8-native-evidence-20260929.json`; original failed fixture and current valid-immediate control are distinguished. |
+
 Larger module decomposition and broad unit-test infrastructure belong to the
 post-port phase. Add concrete candidates here as evidence appears, rather than
 preemptively planning a redesign of every compiler subsystem.

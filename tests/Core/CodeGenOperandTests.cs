@@ -215,6 +215,54 @@ internal static unsafe class CodeGenOperandTests
         });
     }
 
+    [TestCase(INS_shld, EA_4BYTE, REG_RAX, REG_RCX, 3u)]
+    [TestCase(INS_pshufd, EA_16BYTE, REG_XMM0, REG_XMM1, 0x24u)]
+    public static void RegisterPairImmediateWrapperPreservesInstructionOperands(
+        instruction ins, emitAttr size, regNumber target, regNumber source, uint immediate)
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            codeGen.inst_RV_RV_IV(ins, size, target, source, immediate);
+
+            var descriptors = Descriptors(codeGen);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            var descriptor = descriptors[0];
+            Assert.That(descriptor.idIns(), Is.EqualTo(ins));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(target));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(source));
+            Assert.That(InstructionConstant(codeGen.Emitter, descriptor), Is.EqualTo((nint)immediate));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void RegisterOperandWrapperPreservesRegisterAndImmediateSources(bool immediate)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            GenTree operand = immediate
+                ? compiler.gtNewIconNode(TYP_INT, 7)
+                : Register(compiler, TYP_INT, REG_RCX);
+            operand.IsContained = immediate;
+
+            codeGen.inst_RV_TT(INS_add, EA_4BYTE, REG_RAX, operand);
+
+            var descriptors = Descriptors(codeGen);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            var descriptor = descriptors[0];
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_add));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_RAX));
+            if (immediate)
+            {
+                Assert.That(InstructionConstant(codeGen.Emitter, descriptor), Is.EqualTo((nint)7));
+            }
+            else
+            {
+                Assert.That(descriptor.idReg2(), Is.EqualTo(REG_RCX));
+            }
+        });
+    }
+
     [TestCase(INS_vpandq, INS_pandd)]
     [TestCase(INS_vpandnq, INS_pandnd)]
     [TestCase(INS_vporq, INS_pord)]
