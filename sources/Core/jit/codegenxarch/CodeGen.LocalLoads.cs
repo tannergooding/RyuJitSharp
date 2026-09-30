@@ -10,9 +10,6 @@ public sealed partial class CodeGen
 {
     public void genCodeForLclAddr(GenTreeLclFld tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Local address generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_LCL_ADDR);
         var targetType = tree.Type;
@@ -22,14 +19,10 @@ public sealed partial class CodeGen
 
         Emitter.emitIns_R_S(INS_lea, size, targetReg, tree.LclNum, tree.LclOffs);
         genProduceReg(tree);
-#endif
     }
 
     public void genCodeForLclFld(GenTreeLclFld tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Local field generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_LCL_FLD);
         var targetType = tree.Type;
@@ -53,14 +46,10 @@ public sealed partial class CodeGen
         var loadIns = tree.DontExtend ? INS_mov : ins_Load(targetType);
         Emitter.emitIns_R_S(loadIns, size, targetReg, varNum, offset);
         genProduceReg(tree);
-#endif
     }
 
     public void genCodeForLclVar(GenTreeLclVar tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Local variable generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_LCL_VAR);
         assert((tree.Flags & GTF_VAR_DEF) == 0);
@@ -70,12 +59,19 @@ public sealed partial class CodeGen
         // Non-candidates are loaded here unless consumption owns the reload.
         if (!varDsc.lvIsRegCandidate && !tree.IsMultiReg && ((tree.Flags & GTF_SPILLED) == 0))
         {
+#if FEATURE_SIMD && TARGET_X86
+            if (tree.Type is TYP_SIMD12)
+            {
+                genLoadLclTypeSimd12(tree);
+                return;
+            }
+#endif
+
             var type = varDsc.GetRegisterType(tree);
             Emitter.emitIns_R_S(ins_Load(type, _compiler.isSIMDTypeLocalAligned(tree.LclNum)),
                 type.EmitSize, tree.RegNum, tree.LclNum, 0);
             genProduceReg(tree);
         }
-#endif
     }
 
 #if FEATURE_SIMD

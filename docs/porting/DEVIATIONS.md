@@ -1378,6 +1378,12 @@ vectors. Scalable vector/mask constant queries remain explicitly unsupported
 rather than reading fixed-width storage; the shared frame-location padding
 discrepancy is tracked as B376.
 
+Xarch local address/load/store callers retain the x86 SIMD12 local-load path
+and 32-bit long-store dispatch. `CodeGen.genStoreLongLclVar(GenTreeLclVar)`,
+guarded by `TARGET_XARCH && !TARGET_64BIT`, terminates with `CORJIT_SKIPPED`;
+its long-store implementation remains in native `codegenlinear.cpp`. Completing
+these callers does not activate x86 emission or complete that shared helper.
+
 `LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
 performs conservative frame layout before reserving IP1 and reserves x19 when
 the layout contains scalable vectors. The layout includes varargs homes,

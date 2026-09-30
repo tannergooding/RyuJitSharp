@@ -10,9 +10,6 @@ public sealed partial class CodeGen
 {
     public void genCodeForStoreLclFld(GenTreeLclFld tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Local field stores require AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_STORE_LCL_FLD);
         var targetType = tree.Type;
@@ -56,14 +53,10 @@ public sealed partial class CodeGen
         }
 
         genUpdateLifeStore(tree, targetReg, ref varDsc);
-#endif
     }
 
     public void genCodeForStoreLclVar(GenTreeLclVar tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Local variable stores require AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_STORE_LCL_VAR);
         var targetReg = tree.RegNum;
@@ -90,6 +83,14 @@ public sealed partial class CodeGen
             }
             assert(varTypeUsesSameRegType(targetType, op1Type));
             assert(varTypeUsesIntReg(targetType) || (targetType.EmitSize == op1Type.EmitSize));
+#endif
+
+#if !TARGET_64BIT
+            if (targetType is TYP_LONG)
+            {
+                genStoreLongLclVar(tree);
+                return;
+            }
 #endif
 
 #if FEATURE_SIMD
@@ -151,8 +152,14 @@ public sealed partial class CodeGen
 
             genUpdateLifeStore(tree, targetReg, ref varDsc);
         }
-#endif
     }
+
+#if !TARGET_64BIT
+    private void genStoreLongLclVar(GenTreeLclVar tree)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "32-bit long local stores require genStoreLongLclVar.");
+    }
+#endif
 
     public void genUpdateLifeStore(GenTree tree, regNumber targetReg, ref LclVarDsc varDsc)
     {

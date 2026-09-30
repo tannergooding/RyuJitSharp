@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole xarch local access
+
+Local address generation, field and variable loads, and field and variable
+stores retain their native x86/AMD64 control flow. The x86 SIMD12 variable-load
+branch uses the existing twelve-byte helper; 32-bit long stores dispatch to
+their separately retained helper before SIMD or ordinary stores. Existing
+Windows AMD64 and SysV x64 behavior is unchanged.
+
+Five whole xarch definitions are removed from the residual tree. Shared
+other-target declarations and independent SIMD12 and long-store definitions
+remain. The long-store dependency terminates explicitly, and x86 emitter and
+build boundaries remain unresolved; this source closure does not establish
+x86 execution or new generated-code parity.
+
 ## 2026-09-30: Xarch struct argument copy closure
 
 Unrolled and REP-MOVS struct copies retain the native x86/AMD64 branches.

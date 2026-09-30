@@ -15,6 +15,30 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class CodeGenLocalStoreTests
 {
+    [Test]
+    public static void FieldStoreAndReloadPreserveLocalOffsetAndRegisterLiveness()
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaTable[0].Type = TYP_LONG;
+            var source = Register(compiler, TYP_INT, REG_RCX);
+            var store = compiler.gtNewStoreLclFldNode(TYP_INT, 0, 4, source);
+            store.RegNum = REG_NA;
+            var load = new GenTreeLclFld(GT_LCL_FLD, TYP_INT, 0, 4) { RegNum = REG_RAX };
+
+            codeGen.genCodeForStoreLclFld(store);
+            codeGen.genCodeForLclFld(load);
+
+            var descriptors = Descriptors(codeGen);
+            Assert.That(descriptors, Has.Count.EqualTo(2));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_mov));
+            Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(4u));
+            Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_mov));
+            Assert.That(descriptors[1].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(4u));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+        });
+    }
+
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]
