@@ -166,6 +166,17 @@ public sealed partial class CodeGen
 #endif
         }
     }
+#endif
+
+#if TARGET_XARCH
+#if TARGET_X86
+    private bool _pushStkArg;
+
+    private void genPushReg(var_types type, regNumber srcReg)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "x86 stack argument register pushes are not yet ported.");
+    }
+#endif
 
     private void genStoreRegToStackArg(var_types type, regNumber srcReg, int offset)
     {
@@ -189,6 +200,14 @@ public sealed partial class CodeGen
             }
             else
 #endif
+#if TARGET_X86
+            if (type == TYP_LONG)
+            {
+                assert(genIsValidFloatReg(srcReg));
+                ins = INS_movq;
+            }
+            else
+#endif
             {
                 assert((varTypeUsesFloatReg(type) && genIsValidFloatReg(srcReg)) ||
                     (varTypeUsesIntReg(type) && genIsValidIntReg(srcReg)));
@@ -197,8 +216,19 @@ public sealed partial class CodeGen
             attr = type.EmitSize;
         }
 
+#if TARGET_X86
+        if (_pushStkArg)
+        {
+            genPushReg(type, srcReg);
+        }
+        else
+        {
+            Emitter.emitIns_AR_R(ins, attr, srcReg, REG_SPBASE, offset);
+        }
+#else
         assert(_stkArgVarNum != BAD_VAR_NUM);
         Emitter.emitIns_S_R(ins, attr, srcReg, _stkArgVarNum, unchecked(_stkArgOffset + offset));
+#endif
     }
 
     private void genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree source, int offset)
@@ -218,7 +248,11 @@ public sealed partial class CodeGen
     {
         if ((size & 8) != 0)
         {
+#if TARGET_X86
+            genCodeForLoadOffset(INS_movq, EA_8BYTE, longTmpReg, src, offset);
+#else
             genCodeForLoadOffset(INS_mov, EA_8BYTE, longTmpReg, src, offset);
+#endif
             genStoreRegToStackArg(TYP_LONG, longTmpReg, offset);
             return 8;
         }
@@ -268,6 +302,10 @@ public sealed partial class CodeGen
         assert(src.IsContained && (src.Type == TYP_STRUCT) &&
             ((src.Oper is GT_BLK) || src.Oper.IsLocalRead));
 
+#if TARGET_X86
+        assert(!_pushStkArg);
+#endif
+
         if (src.Oper is GT_BLK)
         {
             _ = genConsumeReg(src.AsBlk().Addr);
@@ -279,8 +317,13 @@ public sealed partial class CodeGen
         var offset = 0;
         var xmmTmpReg = REG_NA;
         var intTmpReg = REG_NA;
+        var longTmpReg = REG_NA;
 
+#if TARGET_X86
+        if (loadSize >= 8)
+#else
         if (loadSize >= XMM_REGSIZE_BYTES)
+#endif
         {
             xmmTmpReg = _internalRegisters.GetSingle(putArgNode, new regMaskTP(SRBM_ALLFLOAT));
         }
@@ -288,6 +331,12 @@ public sealed partial class CodeGen
         {
             intTmpReg = _internalRegisters.GetSingle(putArgNode, new regMaskTP(SRBM_ALLINT));
         }
+
+#if TARGET_X86
+        longTmpReg = xmmTmpReg;
+#else
+        longTmpReg = intTmpReg;
+#endif
 
         var slots = loadSize / XMM_REGSIZE_BYTES;
         while (slots-- > 0)
@@ -299,7 +348,7 @@ public sealed partial class CodeGen
 
         if ((loadSize % XMM_REGSIZE_BYTES) != 0)
         {
-            offset += genMove8IfNeeded(loadSize, intTmpReg, src, offset);
+            offset += genMove8IfNeeded(loadSize, longTmpReg, src, offset);
             offset += genMove4IfNeeded(loadSize, intTmpReg, src, offset);
             offset += genMove2IfNeeded(loadSize, intTmpReg, src, offset);
             offset += genMove1IfNeeded(loadSize, intTmpReg, src, offset);
@@ -324,12 +373,17 @@ public sealed partial class CodeGen
             srcAddrReg = genConsumeReg(src.AsIndir().Addr);
         }
 
+#if TARGET_X86
+        assert(dstReg != REG_SPBASE);
+        _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, dstReg, REG_SPBASE, canSkip: false);
+#else
         if (putArgNode.RegNum != dstReg)
         {
             // The destination is always a stack address, including incoming homes for tail calls.
             assert(_stkArgVarNum != BAD_VAR_NUM);
             Emitter.emitIns_R_S(INS_lea, EA_PTRSIZE, dstReg, _stkArgVarNum, putArgNode.ArgOffset);
         }
+#endif
 
         if (srcAddrReg != REG_NA)
         {
@@ -359,6 +413,7 @@ public sealed partial class CodeGen
         instGen(INS_r_movsb);
     }
 
+#if !TARGET_X86
     private void genStructPutArgPartialRepMovs(GenTreePutArgStk putArgNode)
     {
         genConsumePutStructArgStk(putArgNode, REG_RDI, REG_RSI, REG_NA);
@@ -421,5 +476,6 @@ public sealed partial class CodeGen
         assert(numGCSlotsCopied == layout.GCPtrCount);
 #endif
     }
+#endif
 #endif
 }

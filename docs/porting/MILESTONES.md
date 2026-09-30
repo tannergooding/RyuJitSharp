@@ -16,6 +16,32 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Xarch struct argument copy closure
+
+Unrolled and REP-MOVS struct copies retain the native x86/AMD64 branches.
+Eight-byte x86 chunks use XMM registers and MOVQ; stack stores retain the
+push-versus-SP-relative distinction, and REP destinations start at SP on x86.
+Windows AMD64 behavior is unchanged. Four whole bodies and four declarations,
+including the required eight-byte move and stack-store helpers, retire 219
+native lines in `7c5dcedf`.
+
+Windows old/final controls pass 39 Debug and 37 Release cases, including three
+new preservation cases. A fresh combined snapshot at `9884fded` passes 98/90,
+the exact disjoint union of struct-copy and paired-LSRA controls. Linux retains
+36/34 caller-level Windows-AMD64 NYIs, with identical identities, messages and
+origins; it does not execute these copies. Paired x86 diagnostics retain the
+same fourteen build errors. Non-xarch expansion differs only by a blank line;
+all nonblank lines match across forty target/feature combinations.
+
+Evidence: `artifacts/xarch-struct-putarg-5bd5cf8`, `work-st-v2` and
+`final-integrated`, with exact archives, inventories, commands, ten actual TRXs
+and paired raw x86 diagnostics independently checked. The initial four fixture
+IDE0048 failures remain preserved. The generic `codegenlinear.cpp`
+`genConsumePutStructArgStk` body and declaration remain: its current managed
+partial is xarch-only, not a complete translation for every non-Wasm target.
+The x86 push helper, stack-argument callers and independent push/partial-REP
+bodies also remain. No native runtime or generated-code parity claim.
+
 ## 2026-09-30: Paired-register assignment and spilling
 
 LSRA assignment, spilling, lifetime and selector helpers retain ARM32's
