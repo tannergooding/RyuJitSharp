@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "loweringTraversalClosure": {
+      "scope": "Whole node/block/phase and containment traversal, SIMD12 widening and outgoing-argument/frame setup preserve all target dispatch and phase order. Outgoing-space arithmetic is unsigned; LowerBlock checks semantic block emptiness.",
+      "validation": "Windows226D/219R and ARM64257D/257R controls pass. Eight formerly gated Linux phase/traversal cases pass in Debug/Release. Finalwork-v7 configured-analysis Debug4/4 verifies corrected non-LIR diagnostic; unaffected work-v5 evidence reused. Raw/semantic target diagnostic sets match baseline, not successful builds.",
+      "retirement": "Eight definitions, headings and declarations;735 native lines plus3trailing blank lines. Independent32-bit decomposition, RISC-V shift and Wasm helper definitions remain.",
+      "nativeBefore": "d4e8570dfe014d368a094b48e3bb7218b078724f",
+      "nativeAfter": "8b2d36a2a9db378ec53b2777ec3a442868009ff1",
+      "evidence": "artifacts/lower-traversal-phase-1c17c5e/proposal.json finalwork-v7;2496source files,11TRXs and paired target diagnostic logs verified; traversal retirement records.",
+      "limits": "Other-target builds and independent method-jump/ABI/liveness paths remain blocked. Source/IR controls are not generated-code parity."
+    },
     "localBlockResolutionClosure": {
       "scope": "Whole block-start/end location tracking, local-reference resolution and copy/reload insertion preserve all target algorithms, ARM double-width live masks and typed register-state dependencies.",
       "validation": "Finalv2 Windows101D/88R and ARM64110D/91R pass. Linux integration76->82passes/96D and67->70passes/83R; direct family22->50passes/53D and21->48passes/51R, no old pass lost. Raw and parser-unblocked other-target diagnostics match, not successful builds.",
@@ -1947,16 +1956,16 @@
       "parentScope": "Prior lowering/candidate/resolution closures committed. Finish accepted comparison/conditional integration and continue local/block resolution support. Maintain at most two compiler-heavy commands, memory monitoring, immutable owned-only snapshots,13 frozen Wasm files and centrally owned native retirement.",
       "wholeFunctionRepairLanes": [
         {
-          "scope": "Whole retained shared LSRA local/block resolution support.",
+          "scope": "Whole retained shared LSRA edge-resolution family.",
           "owner": "2aa4b7ae-79d5-4599-ad4a-eef9208ec3f0",
           "files": "LinearScan resolution/dispatch partials and focused fixtures; parent owns shared contracts and native integration.",
-          "status": "local/block final-v2 accepted, native d4e8570d retires4definitions857lines; six managed source files validated, commit in progress; worker idle pending next edge-resolution family"
+          "status": "local/block committed2869bc1/native d4e8570d; worker owns whole resolveEdges/resolveEdge/addResolution and move/swap/temp/double support on2869bc1; parent runs hidden validation on request"
         },
         {
           "scope": "Whole retained shared lowering traversal and phase setup.",
           "owner": "c25d48cd-9585-4ecc-9253-39bf6743137d",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "comparison committed1c17c5e/native237f75d1; worker owns whole node/block/phase/containment dispatch, SIMD12 widening and outgoing-arg/frame setup on1c17c5e with one guarded compiler slot"
+          "status": "traversal finalwork-v7 accepted; native8b2d36a2 retires8definitions735lines plus3EOF blanks, managed commit next; worker idle"
         },
         {
           "scope": "Whole retained shared kill-set family after return/write-barrier closure.",
@@ -2372,7 +2381,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Finish managed commit for accepted local/block final-v2: native d4e8570d already retires4definitions857lines, do not repeat. Then assign worker2aa4b7ae whole retained edge-resolution family. Workerc25d48cd owns eight lowering traversal/setup definitions on1c17c5e; collect complete packet and review before retirement. Hidden port_validation_run is parent-only; workers prepare exact packet/snapshot/run requests rather than launch visible shells. Keep two guarded compiler slots,13frozenWasm files and native pin-plus-one; no publication. Process review17 at20min/streak1.",
+    "nextAction": "Finish managed traversal commit: acceptedwork-v7, native8b2d36a2 already retires8definitions735lines plus3EOF blanks, do not repeat. Edge final-v3 seven-function source review complete; Linux integration gains9D/8R, direct13D/12R old failures fixed, one unchanged Windows-specific Debug stress expectation. Parent must run remaining final-v3 Windows/ARM64 controls and parser-unblocked final-diag-v3 probes, then worker2aa4b7ae finalizes packet. New hidden tools disappear from existing agent catalogs after reload; parent owns launches, no visible shells. Continue next lowering family after commit; preserve13Wasm and native pin-plus-one, no publication. Process review18 at20min/streak0 due launch handoff bottleneck.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

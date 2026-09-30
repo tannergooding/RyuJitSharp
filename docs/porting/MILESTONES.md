@@ -16,6 +16,26 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole lowering traversal and phase setup
+
+Node, block, phase and containment traversal preserve target dispatch, cursor
+ownership, long-decomposition dependencies and phase ordering. Outgoing argument
+space retains native unsigned arithmetic and frame-pointer thresholds.
+The block-entry diagnostic now checks semantic statement emptiness instead of
+the unrelated LIR range. Eight definitions, headings and declarations retire
+735 native lines in `8b2d36a2`, with three trailing blank lines also removed.
+Independent 32-bit decomposition, RISC-V shift and Wasm helpers remain retained.
+
+Windows controls pass 226 Debug/219 Release and ARM64 passes 257/257. Eight
+formerly gated Linux phase/traversal cases pass in each configuration; broader
+Linux method-jump, ABI-fixture and liveness failures remain separately scoped.
+Final Debug controls pass four cases covering empty and nonempty non-LIR blocks,
+with unaffected prior results reused. The unsigned-size fixture fails on old
+production code and passes after correction. Other-target raw and isolated
+semantic diagnostic sets match but do not establish successful builds.
+Evidence: `artifacts/lower-traversal-phase-1c17c5e`, immutable `work-v7`.
+These are source/IR controls, not generated-code parity.
+
 ## 2026-09-30: Whole local and block register resolution
 
 Block-start/end location tracking, local-reference resolution and copy/reload

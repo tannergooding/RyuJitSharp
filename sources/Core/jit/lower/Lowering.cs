@@ -11,7 +11,7 @@ public sealed partial class Lowering : Phase
     private SideEffectSet _scratchSideEffects;
     private BasicBlock? _block;
     private int _vtableCallTemp = BAD_VAR_NUM;
-    private int _outgoingArgSpaceSize;
+    private uint _outgoingArgSpaceSize;
 
     public Lowering(Compiler compiler, IRegAlloc regAlloc)
         : base(compiler, PHASE_LOWERING)
@@ -31,13 +31,13 @@ public sealed partial class Lowering : Phase
     {
 #if FEATURE_FIXED_OUT_ARGS
         var compiler = CompilerInstance;
-        if (_outgoingArgSpaceSize < MIN_ARG_AREA_FOR_CALL)
+        if (_outgoingArgSpaceSize < (uint)MIN_ARG_AREA_FOR_CALL)
         {
             if (compiler.opts.compDbgCode || compiler.compUsesThrowHelper || compiler.compIsProfilerHookNeeded ||
                 (compiler.compMethodRequiresPInvokeFrame && !compiler.opts.ShouldUsePInvokeHelpers) ||
                 compiler.NeedsGSSecurityCookie)
             {
-                _outgoingArgSpaceSize = MIN_ARG_AREA_FOR_CALL;
+                _outgoingArgSpaceSize = (uint)MIN_ARG_AREA_FOR_CALL;
                 JITDUMP($"Bumping outgoing arg space size to {_outgoingArgSpaceSize} for possible helper or profile hook call");
             }
         }
@@ -45,12 +45,12 @@ public sealed partial class Lowering : Phase
         if (compiler.compLocallocUsed)
         {
             // Localloc moves the outgoing area; aligning its size avoids holes when that area is moved.
-            _outgoingArgSpaceSize = roundUp(_outgoingArgSpaceSize, STACK_ALIGN);
+            _outgoingArgSpaceSize = roundUp(_outgoingArgSpaceSize, (uint)STACK_ALIGN);
             JITDUMP($"Bumping outgoing arg space size to {_outgoingArgSpaceSize} for localloc");
         }
 
         assert((_outgoingArgSpaceSize % TARGET_POINTER_SIZE) == 0);
-        compiler.lvaOutgoingArgSpaceSize.Value = _outgoingArgSpaceSize;
+        compiler.lvaOutgoingArgSpaceSize.Value = unchecked((int)_outgoingArgSpaceSize);
         compiler.lvaOutgoingArgSpaceSize.MarkAsReadOnly();
         compiler.lvaGetDesc(compiler.lvaOutgoingArgSpaceVar)
             .GrowBlockLayout(compiler.typGetBlkLayout(_outgoingArgSpaceSize));
@@ -62,15 +62,16 @@ public sealed partial class Lowering : Phase
     private void RequireOutgoingArgSpace(GenTree node, int size)
     {
 #if FEATURE_FIXED_OUT_ARGS
-        if (size <= _outgoingArgSpaceSize)
+        var unsignedSize = unchecked((uint)size);
+        if (unsignedSize <= _outgoingArgSpaceSize)
         {
             return;
         }
 
 #if DEBUG
-        JITDUMP($"Bumping outgoing arg space size from {_outgoingArgSpaceSize} to {size} for [{node.TreeId:D6}]\n");
+        JITDUMP($"Bumping outgoing arg space size from {_outgoingArgSpaceSize} to {unsignedSize} for [{node.TreeId:D6}]\n");
 #endif
-        _outgoingArgSpaceSize = size;
+        _outgoingArgSpaceSize = unsignedSize;
 #endif
     }
 
@@ -86,12 +87,13 @@ public sealed partial class Lowering : Phase
                     tailCallsConvertibleToLoopOnly: false, out var tailCall))
                 {
                     assert(tailCall is not null);
-                    stackLevelSpace = int.Max(stackLevelSpace, tailCall.Args.OutgoingArgsStackSize);
+                    stackLevelSpace = uint.Max(stackLevelSpace, unchecked((uint)tailCall.Args.OutgoingArgsStackSize));
                 }
             }
         }
 
-        var stackLevel = (int.Max(stackLevelSpace, MIN_ARG_AREA_FOR_CALL) - MIN_ARG_AREA_FOR_CALL) / TARGET_POINTER_SIZE;
+        var stackLevel = (uint.Max(stackLevelSpace, (uint)MIN_ARG_AREA_FOR_CALL) - (uint)MIN_ARG_AREA_FOR_CALL) /
+            TARGET_POINTER_SIZE;
         // Four or more argument slots beyond the mandatory call area require a frame pointer.
         if (stackLevel >= 4)
         {
@@ -103,7 +105,6 @@ public sealed partial class Lowering : Phase
 
     protected override PhaseStatus DoPhase()
     {
-#if WINDOWS_AMD64_ABI
         var compiler = CompilerInstance;
         // Insert the one-time prolog even if all P/Invoke calls were eliminated.
         // Epilogs are inserted at the appropriate sites during block lowering.
@@ -111,6 +112,14 @@ public sealed partial class Lowering : Phase
         {
             InsertPInvokeMethodProlog();
         }
+
+#if LOWER_DECOMPOSE_LONGS
+        var decomp = new DecomposeLongs(compiler, this);
+        if (compiler.compLongUsed)
+        {
+            decomp.PrepareForDecomposition();
+        }
+#endif
 
         // Containment needs to know which locals cannot be enregistered.
         if (!compiler.compEnregLocals)
@@ -130,18 +139,46 @@ public sealed partial class Lowering : Phase
         foreach (var block in compiler.Blocks)
         {
             compiler.compCurBB = block;
+#if LOWER_DECOMPOSE_LONGS
+            if (compiler.compLongUsed)
+            {
+                decomp.DecomposeBlock(block);
+            }
+#endif
             LowerBlock(block);
         }
 
-        // Native AfterLowerBlocks is empty outside Wasm.
+        AfterLowerBlocks();
         compiler._dfsTree ??= compiler.fgComputeDfs();
         _ = compiler.fgRemoveBlocksOutsideDfsTree();
 
         return PhaseStatus.MODIFIED_EVERYTHING;
-#else
-        const string message = "Lowering.DoPhase outside Windows AMD64 is not ported.";
-        JITDUMP($"\nCOMPILATION FAILED: {message}\n");
-        throw new FatalJitException(CORJIT_SKIPPED, message);
+    }
+
+    private void AfterLowerBlocks()
+    {
+#if TARGET_WASM
+        throw new NotImplementedException("Wasm post-lowering block processing is not ported.");
 #endif
     }
+
+#if LOWER_DECOMPOSE_LONGS
+    private sealed class DecomposeLongs
+    {
+        public DecomposeLongs(Compiler compiler, Lowering lowering)
+        {
+            throw new NotImplementedException("32-bit long decomposition is not ported.");
+        }
+
+        public void PrepareForDecomposition()
+        {
+            throw new NotImplementedException("32-bit long decomposition preparation is not ported.");
+        }
+
+        public void DecomposeBlock(BasicBlock block)
+        {
+            throw new NotImplementedException("32-bit long block decomposition is not ported.");
+        }
+    }
+#endif
 }

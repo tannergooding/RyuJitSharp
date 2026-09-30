@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -68,10 +69,31 @@ internal static unsafe class CallDispatchLoweringTests
             block.InsertAtEnd(call);
 
             Assert.That(LowerCall(lowering, call), Is.Null);
-            Assert.That(OutgoingArgSpaceSize(lowering), Is.EqualTo(expectedSpace));
+            Assert.That(OutgoingArgSpaceSize(lowering), Is.EqualTo((uint)expectedSpace));
             Assert.That((nint)call._directCallAddress, Is.EqualTo((nint)0x5678));
             Assert.That(block.FirstNode, Is.SameAs(call));
             Assert.That(block.LastNode, Is.SameAs(call));
+        });
+    }
+
+    [TestCase(8, 8u)]
+    [TestCase(-1, uint.MaxValue)]
+    public static void OutgoingArgumentRequirementUsesNativeUnsignedSize(int size, uint expected)
+    {
+        WithCompiler((compiler, block, lowering) => {
+            var patchpoint = compiler.gtNewIconNode(TYP_INT, 0);
+
+            RequireOutgoingArgSpace(lowering, patchpoint, size);
+
+            var field = typeof(Lowering).GetField("_outgoingArgSpaceSize",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null);
+            var actual = field!.GetValue(lowering) switch {
+                int value => unchecked((uint)value),
+                uint value => value,
+                _ => throw new AssertionException("Unexpected outgoing argument size representation."),
+            };
+            Assert.That(actual, Is.EqualTo(expected));
         });
     }
 
@@ -381,13 +403,16 @@ internal static unsafe class CallDispatchLoweringTests
     private static extern ref BasicBlock? LoweringBlock(Lowering lowering);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_outgoingArgSpaceSize")]
-    private static extern ref int OutgoingArgSpaceSize(Lowering lowering);
+    private static extern ref uint OutgoingArgSpaceSize(Lowering lowering);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerNode")]
     private static extern GenTree? LowerNode(Lowering lowering, GenTree node);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerCall")]
     private static extern GenTree? LowerCall(Lowering lowering, GenTree call);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "RequireOutgoingArgSpace")]
+    private static extern void RequireOutgoingArgSpace(Lowering lowering, GenTree node, int size);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckCallOperands")]
     private static extern void ContainCheckCallOperands(Lowering lowering, GenTreeCall call);

@@ -177,6 +177,35 @@ internal static unsafe class BlockTraversalLoweringTests
     }
 
 #if DEBUG
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void NonLirBlockRequiresSemanticStatementsToBeEmpty(bool hasSemanticStatement)
+    {
+        WithCompiler(true, (compiler, lowering, ee) => {
+            var block = new BasicBlock(null, null);
+            var root = hasSemanticStatement
+                ? compiler.gtNewStoreLclVarNode(3, compiler.gtNewIconNode(TYP_INT, 1))
+                : new GenTree(GT_NOP, TYP_VOID);
+            compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(root));
+            compiler.compCurBB = block;
+
+            Assert.That(block.IsLIR, Is.False);
+            Assert.That(block.IsEmpty, Is.True);
+            Assert.That(block.isEmpty(), Is.EqualTo(!hasSemanticStatement));
+
+            var failures = CollectAssertions(() => {
+                LowerBlock(lowering, block);
+                return true;
+            });
+
+            Assert.That(failures, Has.Length.EqualTo(hasSemanticStatement ? 1 : 0));
+            if (hasSemanticStatement)
+            {
+                Assert.That(failures[0], Is.EqualTo("block.isEmpty() || block.IsLIR"));
+            }
+        });
+    }
+
     [Test]
     public static void CallValidationVisitsEarlyThenLateArgumentsAndChecksFieldListElements()
     {

@@ -24,7 +24,6 @@ public sealed partial class Lowering
 
     private void ContainCheckNode(GenTree node)
     {
-#if TARGET_XARCH || TARGET_ARM64
         switch (node.Oper)
         {
             case GT_STORE_LCL_VAR:
@@ -100,12 +99,7 @@ public sealed partial class Lowering
 
             case GT_RETURNTRAP:
             {
-#if TARGET_XARCH
-                if (node.AsUnOp().Op1.Oper is GT_IND or GT_STOREIND)
-                {
-                    MakeSrcContained(node, node.AsUnOp().Op1);
-                }
-#endif
+                ContainCheckReturnTrap(node.AsUnOp());
                 break;
             }
 
@@ -173,6 +167,12 @@ public sealed partial class Lowering
                 break;
             }
 
+            case GT_PATCHPOINT:
+            case GT_PATCHPOINT_FORCED:
+            {
+                break;
+            }
+
 #if FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
             {
@@ -181,8 +181,16 @@ public sealed partial class Lowering
             }
 #endif
         }
-#else
-        throw new NotImplementedException("Containment traversal is not ported for this target.");
+    }
+
+    private void ContainCheckReturnTrap(GenTreeUnOp node)
+    {
+#if TARGET_XARCH
+        assert(node.Oper is GT_RETURNTRAP);
+        if (node.Op1.Oper is GT_IND or GT_STOREIND)
+        {
+            MakeSrcContained(node, node.Op1);
+        }
 #endif
     }
 
@@ -211,7 +219,7 @@ public sealed partial class Lowering
 
     private GenTree? LowerNode(GenTree node)
     {
-#if TARGET_XARCH || TARGET_ARM64
+        assert(node is not null);
         switch (node.Oper)
         {
             case GT_LCL_FLD:
@@ -252,9 +260,22 @@ public sealed partial class Lowering
                 {
                     return next;
                 }
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
                 LowerShift(node.AsOp());
+#else
+                ContainCheckShiftRotate(node.AsOp());
+#endif
                 break;
             }
+
+#if !TARGET_64BIT
+            case GT_LSH_HI:
+            case GT_RSH_LO:
+            {
+                ContainCheckShiftRotate(node.AsOp());
+                break;
+            }
+#endif
 
             case GT_ROL:
             case GT_ROR:
@@ -264,28 +285,33 @@ public sealed partial class Lowering
                 {
                     return next;
                 }
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
                 TryRemoveShiftRotateMask(node.AsOp());
+#endif
                 LowerRotate(node);
                 break;
             }
 
             case GT_NEG:
+            {
+#if TARGET_ARM64
+                if (TryLowerNegToMulLongOp(node.AsUnOp(), out var next))
+                {
+                    return next;
+                }
+
+                ContainCheckNeg(node.AsUnOp());
+#endif
+#if TARGET_WASM
+                return LowerNeg(node.AsUnOp());
+#endif
+                break;
+            }
+
             case GT_NOT:
             {
 #if TARGET_ARM64
-                if (node.Oper is GT_NEG)
-                {
-                    if (TryLowerNegToMulLongOp(node.AsUnOp(), out var next))
-                    {
-                        return next;
-                    }
-
-                    ContainCheckNeg(node.AsUnOp());
-                }
-                else
-                {
-                    ContainCheckNot(node.AsUnOp());
-                }
+                ContainCheckNot(node.AsUnOp());
 #endif
                 break;
             }
@@ -308,13 +334,23 @@ public sealed partial class Lowering
             case GT_AND:
             case GT_OR:
             case GT_XOR:
+#if !TARGET_64BIT
+            case GT_ADD_LO:
+            case GT_ADD_HI:
+            case GT_SUB_LO:
+            case GT_SUB_HI:
+#endif
             case GT_SUB:
             {
                 if (CompilerInstance.opts.OptimizationEnabled)
                 {
-                    if ((node.Oper is GT_AND) && TryLowerAndNegativeOne(node.AsOp(), out var nextNode))
+                    if (node.Oper is GT_AND)
                     {
-                        return nextNode;
+                        if (TryLowerAndNegativeOne(node.AsOp(), out var nextNode))
+                        {
+                            return nextNode;
+                        }
+                        assert(nextNode is null);
                     }
 
                     var next = node.Next;
@@ -339,7 +375,7 @@ public sealed partial class Lowering
 
             case GT_MUL:
             case GT_MULHI:
-#if TARGET_ARM64
+#if TARGET_X86 || TARGET_ARM64
             case GT_MUL_LONG:
 #endif
             {
@@ -389,15 +425,18 @@ public sealed partial class Lowering
                 return LowerCompare(node);
             }
 
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
             case GT_BOUNDS_CHECK:
             {
                 ContainCheckBoundsChk(node.AsBoundsChk());
                 break;
             }
+#endif
 
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
             case GT_XADD:
             {
-#if TARGET_ARM64
+#if TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
                 _ = CheckImmedAndMakeContained(node, node.AsOp().Op2);
 #else
                 if (node.IsUnusedValue)
@@ -413,9 +452,12 @@ public sealed partial class Lowering
                 break;
             }
 
-#if TARGET_ARM64
+#if TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
             case GT_CMPXCHG:
             {
+#if TARGET_RISCV64
+                _ = CheckImmedAndMakeContained(node, node.AsCmpXchg().Data);
+#endif
                 _ = CheckImmedAndMakeContained(node, node.AsCmpXchg().Comparand);
                 break;
             }
@@ -427,6 +469,7 @@ public sealed partial class Lowering
                 _ = CheckImmedAndMakeContained(node, node.AsOp().Op2);
                 break;
             }
+#endif
 #endif
 
             case GT_JTRUE:
@@ -497,7 +540,7 @@ public sealed partial class Lowering
 
             case GT_RETURNTRAP:
             {
-                ContainCheckNode(node);
+                ContainCheckReturnTrap(node.AsUnOp());
                 break;
             }
 
@@ -510,12 +553,6 @@ public sealed partial class Lowering
             {
                 LowerReturnSuspend(node);
                 break;
-            }
-
-            case GT_PHI:
-            case GT_PHI_ARG:
-            {
-                throw new InvalidOperationException("Phi nodes must be removed during rationalization.");
             }
 
             case GT_LCL_VAR:
@@ -563,6 +600,20 @@ public sealed partial class Lowering
                 return LowerIndir(node.AsIndir());
             }
 
+#if TARGET_WASM
+            case GT_INDEX_ADDR:
+            {
+                LowerIndexAddr(node.AsIndexAddr());
+                break;
+            }
+
+            case GT_CKFINITE:
+            {
+                LowerCkfinite(node.AsOp());
+                break;
+            }
+#endif
+
             default:
             {
                 break;
@@ -570,16 +621,18 @@ public sealed partial class Lowering
         }
 
         return node.Next;
-#else
-        throw new NotImplementedException("Node lowering outside xarch and ARM64 is not ported.");
-#endif
     }
 
-#if TARGET_XARCH || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
     private void TryRemoveShiftRotateMask(GenTreeOp operation)
     {
         assert(operation.Oper is GT_LSH or GT_RSH or GT_RSZ or GT_ROL or GT_ROR);
+#if LOWER_DECOMPOSE_LONGS
+        assert(operation.Type is not TYP_LONG);
+        var mask = 0x1fL;
+#else
         var mask = operation.Type is TYP_LONG ? 0x3fL : 0x1fL;
+#endif
         var block = _block;
         assert(block is not null);
 
@@ -626,6 +679,36 @@ public sealed partial class Lowering
             }
         }
 #endif
+#if TARGET_RISCV64
+        if (CompilerInstance.compOpportunisticallyDependsOn(CORINFO_InstructionSet.InstructionSet_Zba))
+        {
+            TryLowerZextLeftShiftToSlliUw(shift, out _);
+        }
+#endif
+    }
+#endif
+
+#if TARGET_RISCV64
+    private void TryLowerZextLeftShiftToSlliUw(GenTreeOp shift, out GenTree? next)
+    {
+        throw new NotImplementedException("RISC-V Zba left-shift lowering is not ported.");
+    }
+#endif
+
+#if TARGET_WASM
+    private GenTree? LowerNeg(GenTreeUnOp node)
+    {
+        throw new NotImplementedException("Wasm negate lowering is not ported.");
+    }
+
+    private void LowerIndexAddr(GenTreeIndexAddr node)
+    {
+        throw new NotImplementedException("Wasm index-address lowering is not ported.");
+    }
+
+    private void LowerCkfinite(GenTreeOp node)
+    {
+        throw new NotImplementedException("Wasm finite-check lowering is not ported.");
     }
 #endif
 }

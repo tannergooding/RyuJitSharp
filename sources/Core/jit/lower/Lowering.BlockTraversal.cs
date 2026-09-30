@@ -9,10 +9,9 @@ public sealed partial class Lowering
 {
     private void LowerBlock(BasicBlock block)
     {
-#if WINDOWS_AMD64_ABI || TARGET_ARM64
         var compiler = CompilerInstance;
         assert(block == compiler.compCurBB);
-        assert(block.IsEmpty || block.IsLIR);
+        assert(block.isEmpty() || block.IsLIR);
         _block = block;
 #if TARGET_ARM64
         _blockIndirs.Clear();
@@ -29,9 +28,6 @@ public sealed partial class Lowering
 
 #if DEBUG
         assert(CheckBlock(compiler, block));
-#endif
-#else
-        throw new System.NotImplementedException("Block lowering is not ported for this target.");
 #endif
     }
 
