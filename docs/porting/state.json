@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sharedIntervalConstructionClosure": {
+      "scope": "Whole buildIntervals template specializations preserve target branches, x86 frame alignment/varargs scratch kills and non-xarch frame-poison masks. Restores minimal DEBUG parameter-stress activation and the EH floating-register assertion; initial-definition and six reference-association helpers are complete.",
+      "mapping": "Native buildIntervals<true/false> maps to LinearScan.LocalIntervalConstruction.cs and LinearScan.MinimalIntervalConstruction.cs; parameter/zero-init helpers map to EntryDefinitions and LocalIntervalValidation partials.",
+      "validation": "Final v3 full-analysis Windows binaries pass120 Debug/106 Release grouped controls. Old focused Debug passes1/2, failing stress activation; final passes2/2. Non-identity tracked-liveness output passes both old/final and is preservation, not a bug fix. Earlier ARM6485 Debug/67 Release and Linux22 Debug/15 Release controls precede the final Debug correction.",
+      "retirement": "Ten top-level definitions, both template instantiations, headings and declarations;1224 native lines. Shared DEBUG enclosure and independent candidate/frame/resolution helpers remain.",
+      "nativeBefore": "d57f87d22c53738cbd3819e6356a1f82596935a2",
+      "nativeAfter": "c69394bf27fcef42ec29ea0853216d7e4244e7cc",
+      "evidence": "artifacts/lsra-build-intervals-dd9fc73/ready-results.json and interval-construction retirement records.",
+      "limits": "B473 is a port stress/diagnostic omission, not proven generated-code divergence. Broader old/final Linux runs retain the same three resolution NYIs; paired x86 builds retain four baseline syntax diagnostics. No other-target runtime parity claim."
+    },
     "commonIndirectStoreLoweringClosure": {
       "scope": "Whole LowerStoreIndirCommon preserves floating-store retyping, ARM64 order-hint-aware address containment, Wasm write-barrier dispatch, non-xarch mutable-object publication release semantics, coalescing and final target dispatch.",
       "validation": "Full-analysis Windows46/46, Linux46/46 and ARM6478/78 controls pass in Debug/Release. The new write-barrier case verifies the return cursor, unchanged operands and containment/LIR preservation; it is not an old-failing regression.",
@@ -1845,6 +1855,7 @@
     "activeBatch": {
       "scope": "Two implementation lanes cover retained shared/xarch LSRA and lowering families. Prioritize ready integrations and the Windows-x64 remainder; shared contracts, generators and native mutations remain centrally owned.",
       "status": "in-progress",
+      "resourcePause": "New compiler-heavy commands paused after available physical memory fell to0.44GiB, below the8GiB cutoff. Both workers confirm no active owned compiler/test process. The load/retyping Linux Release monitor stopped its owned command at7.761GiB; preserve the failed run and use a fresh result directory after recovery. Cause of machine memory pressure is not established; do not touch unrelated processes.",
       "doneWhen": [
         "Complete dependency-coherent retained xarch codegen and lowering families with whole native target branches; distinguish real omissions from retirement lag.",
         "Complete retained xarch scalar LSRA and SIMD codegen families, preserving x86 paths and tracking separate helper dependencies.",
@@ -1861,19 +1872,19 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Node-reference construction, physical-register initialization and mixed-store coalescing are accepted. Continue retained interval construction and common indirect-store lowering. Maintain at most two compiler-heavy commands with memory monitoring, immutable owned-only snapshots,13 frozen Wasm files and centrally owned native retirement.",
+      "parentScope": "Interval/reference construction and common-store lowering are accepted. Preserve the unfinished load/retyping packet through the resource pause; candidate/frame setup follows capacity recovery. Maintain at most two compiler-heavy commands with memory monitoring, immutable owned-only snapshots,13 frozen Wasm files and centrally owned native retirement.",
       "wholeFunctionRepairLanes": [
         {
           "scope": "Whole retained shared LSRA interval construction.",
           "owner": "4126f755-f5b6-49bc-b68d-a80815468a7d",
           "files": "LinearScan build-interval partials and focused fixtures; parent owns shared contracts and native integration.",
-          "status": "interval target-branch packet ready; parent requested exact verbose-minimal-liveness regression before acceptance, using first monitored compiler slot; six unchanged reference helpers are already reviewed"
+          "status": "interval/reference construction accepted and retired1224lines; next coherent unit is retained candidate/frame setup after commit and resource recovery; first compiler slot released"
         },
         {
           "scope": "Whole retained indirect-load and floating-store retyping family.",
           "owner": "41f2570d-eb35-4a4b-92d7-1b2d0a3df242",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "common indirect-store lowering accepted and retired; continue LowerIndir and directly coupled unused-load/floating-store retyping helpers after managed commit, using second monitored compiler slot"
+          "status": "common-store closure committed73b7e9b; load/retyping packet remains worker-owned on that baseline; resource pause requested after available memory fell below cutoff, preserve unfinished work"
         },
         {
           "scope": "Whole retained shared kill-set family after return/write-barrier closure.",
@@ -2289,7 +2300,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Common-store lowering accepted/natived57f87d2;58-line retirement applied, do not repeat. Continue LowerIndir and coupled unused-load/floating-store retyping helpers after the managed commit. Worker4126f755 is adding exact buildIntervalsMinimal verbose-liveness regression for its changed formatter; collect after notification and finish interval-specialization review/retirement with unchanged initial-definition helpers. Parent's six reference-association helpers are already reviewed: component-20260929 contains324 proposed lines, unchanged across current native advancement; combine with interval retirement. Preserve13Wasm, two monitored compiler slots and no publication.",
+    "nextAction": "Interval/reference construction is complete with120D/106R and native c69394bf;1224-line retirement already applied, do not repeat. Resource pause: latest physical-memory sample0.44GiB is below8GiB safety floor; both workers confirm no active owned compiler/test process. Collect lowering turn15 and review its preserved packet without compiling. After capacity recovers, resume worker41f2570d's indir-floating-retyping-73b7e9b Linux Release validation in a fresh result directory (previous monitor stop at7.761GiB), then finish acceptance/retirement. Assign worker4126f755 retained candidate/frame setup only after resource recovery. Preserve13Wasm and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

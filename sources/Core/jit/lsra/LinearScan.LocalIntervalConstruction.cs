@@ -7,9 +7,12 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
+#if TARGET_X86
+    private bool _doDoubleAlign;
+#endif
+
     private void buildIntervalsWithLocals()
     {
-#if (TARGET_AMD64 && WINDOWS_AMD64_ABI) || TARGET_ARM64
         if (!_enregisterLocalVars)
         {
             throw new FatalJitException("Local interval construction requires enregistered locals.");
@@ -38,10 +41,15 @@ public sealed partial class LinearScan
 #endif
 
         resetRegStateWithLocals();
+#if TARGET_X86
+        _doDoubleAlign = false;
+#endif
         identifyCandidatesWithLocals();
         setFrameType();
-#if TARGET_XARCH
+#if TARGET_AMD64
         _lowGprRegs = _availableIntRegs & SRBM_LOWINT;
+#elif TARGET_X86
+        _lowGprRegs = _availableIntRegs;
 #endif
 
 #if DEBUG
@@ -222,7 +230,11 @@ public sealed partial class LinearScan
                 JITDUMP($"firstColdLoc = {_firstColdLocation}\n");
             }
 
-            if ((block == _compiler.fgFirstBB) && _compiler.lvaHasAnySwiftStackParamToReassemble())
+            var prologUsesScratchRegister = _compiler.lvaHasAnySwiftStackParamToReassemble();
+#if TARGET_X86
+            prologUsesScratchRegister |= _compiler.info.compIsVarArgs;
+#endif
+            if ((block == _compiler.fgFirstBB) && prologUsesScratchRegister)
             {
                 _ = addKillForRegs(regMaskTP.CreateFromRegNum(REG_SCRATCH, genSingleTypeRegMask(REG_SCRATCH)),
                     _referenceBuildLocation + 1);
@@ -231,12 +243,12 @@ public sealed partial class LinearScan
 
             if (_compiler.compShouldPoisonFrame() && (block == _compiler.fgFirstBB))
             {
-#if TARGET_ARM64
+#if TARGET_XARCH
+                _ = addKillForRegs(RBM_EDI | RBM_ECX | RBM_EAX, _referenceBuildLocation + 1);
+#else
                 var poisonKills = _compiler.compHelperCallKillSet(CORINFO_HELP_NATIVE_MEMSET);
                 poisonKills |= regMaskTP.CreateFromRegNum(REG_SCRATCH, genSingleTypeRegMask(REG_SCRATCH));
                 _ = addKillForRegs(poisonKills, _referenceBuildLocation + 1);
-#else
-                _ = addKillForRegs(RBM_EDI | RBM_ECX | RBM_EAX, _referenceBuildLocation + 1);
 #endif
                 _referenceBuildLocation += 2;
             }
@@ -406,11 +418,20 @@ public sealed partial class LinearScan
                 {
                     // Write-through EH values pay stack/copy costs as well as callee-save
                     // save/restore; seven weighted uses is the conservative cutoff.
-                    var calleeSaveCount = varTypeUsesIntReg(interval.registerType)
-                        ? CNT_CALLEE_ENREG
-                        : varTypeUsesMaskReg(interval.registerType)
-                            ? CNT_CALLEE_ENREG_MASK
-                            : CNT_CALLEE_ENREG_FLOAT;
+                    int calleeSaveCount;
+                    if (varTypeUsesIntReg(interval.registerType))
+                    {
+                        calleeSaveCount = CNT_CALLEE_ENREG;
+                    }
+                    else if (varTypeUsesMaskReg(interval.registerType))
+                    {
+                        calleeSaveCount = CNT_CALLEE_ENREG_MASK;
+                    }
+                    else
+                    {
+                        assert(varTypeUsesFloatReg(interval.registerType));
+                        calleeSaveCount = CNT_CALLEE_ENREG_FLOAT;
+                    }
                     if ((weight <= (BB_UNITY_WEIGHT * 7)) || (local._varIndex >= calleeSaveCount))
                     {
                         interval.preferCalleeSave = false;
@@ -486,9 +507,6 @@ public sealed partial class LinearScan
             dumpRefPositions("BEFORE VALIDATING INTERVALS");
         }
         validateIntervals();
-#endif
-#else
-        throw new FatalJitException("Local interval construction is not implemented outside Windows AMD64/ARM64.");
 #endif
     }
 

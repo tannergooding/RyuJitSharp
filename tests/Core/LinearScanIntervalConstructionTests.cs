@@ -283,6 +283,83 @@ internal static unsafe class LinearScanIntervalConstructionTests
         });
     }
 
+#if DEBUG
+    [Test]
+    public static void MinimalIntervalsDumpTrackedLivenessInLocalNumberOrder()
+    {
+        WithAllocator((compiler, allocator) => {
+            compiler.lvaTable = [
+                new() { Type = TYP_INT, lvTracked = true, _varIndex = 2, lvOnFrame = true },
+                new() { Type = TYP_INT, lvTracked = true, _varIndex = 0, lvOnFrame = true },
+                new() { Type = TYP_INT, lvTracked = true, _varIndex = 1, lvOnFrame = true },
+            ];
+            compiler.lvaCount = 3;
+            compiler.lvaTrackedCount = 3;
+            compiler.lvaTrackedCountInSizeTUnits = 1;
+            compiler.lvaTrackedFixed = true;
+            compiler.lvaTrackedToVarNum = [1, 2, 0];
+            compiler.fgBBVarSetsInited = true;
+            var block = CreateBlocks(compiler, BBJ_RETURN)[0];
+            block.bbVarUse = SetOps.MakeEmpty(compiler);
+            block.bbVarDef = SetOps.MakeEmpty(compiler);
+            block.bbLiveIn = SetOps.MakeEmpty(compiler);
+            block.bbLiveOut = SetOps.MakeEmpty(compiler);
+            SetOps.AddElemD(compiler, block.bbVarUse, 0);
+            SetOps.AddElemD(compiler, block.bbVarUse, 2);
+            SetOps.AddElemD(compiler, block.bbVarDef, 1);
+            SetOps.AddElemD(compiler, block.bbLiveIn, 0);
+            SetOps.AddElemD(compiler, block.bbLiveIn, 1);
+            SetOps.AddElemD(compiler, block.bbLiveOut, 2);
+            compiler.verbose = true;
+
+            var output = CodeGenLifeTransitionTests.Capture(() => BuildIntervals(allocator));
+
+            var expected = $"{FMT_BB(block.bbNum)}{Environment.NewLine}" +
+                $"use: {{V00 V01}}{Environment.NewLine}" +
+                $"def: {{V02}}{Environment.NewLine}" +
+                $" in: {{V01 V02}}{Environment.NewLine}" +
+                $"out: {{V00}}{Environment.NewLine}";
+            Assert.That(output, Does.Contain(expected));
+        });
+    }
+
+    [Test]
+    [NonParallelizable]
+    public static void MinimalIntervalsActivateInitialParameterStressWithoutCandidateParameters()
+    {
+        WithAllocator((compiler, allocator) => {
+            compiler.compAllowStress = true;
+            compiler.info.compMethodName = nameof(MinimalIntervalsActivateInitialParameterStressWithoutCandidateParameters);
+            compiler.info.compFullName = nameof(LinearScanIntervalConstructionTests);
+            compiler.verbose = true;
+            _ = CreateBlocks(compiler, BBJ_RETURN);
+
+            var savedNames = StressNames(ref JitConfig);
+            var savedNamesOnly = StressNamesOnly(ref JitConfig);
+            fixed (byte* names = "STRESS_INITIAL_PARAM_REG\0"u8)
+            {
+                try
+                {
+                    StressNames(ref JitConfig) = names;
+                    StressNamesOnly(ref JitConfig) = 1;
+
+                    var output = CodeGenLifeTransitionTests.Capture(() => BuildIntervals(allocator));
+
+                    Assert.That(compiler.compActiveStressModes[(int)Compiler.compStressArea.STRESS_INITIAL_PARAM_REG], Is.EqualTo(1));
+                    Assert.That(output, Does.Contain("*** JitStress: STRESS_INITIAL_PARAM_REG ***"));
+                    Assert.That(allocator.refPositions.Exists(
+                        reference => reference.refType is RefType.RefTypeParamDef), Is.False);
+                }
+                finally
+                {
+                    StressNames(ref JitConfig) = savedNames;
+                    StressNamesOnly(ref JitConfig) = savedNamesOnly;
+                }
+            }
+        });
+    }
+#endif
+
     [TestCase(false)]
     [TestCase(true)]
     public static void AFinalBackedgeGetsItsOwnBoundaryAndPreservesRegisterClasses(bool floating)
@@ -525,6 +602,12 @@ internal static unsafe class LinearScanIntervalConstructionTests
 #if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_lsraStressMask")]
     private static extern ref int StressMask(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressModeNames")]
+    private static extern ref byte* StressNames(ref JitConfigValues config);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitStressModeNamesOnly")]
+    private static extern ref int StressNamesOnly(ref JitConfigValues config);
 #endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_firstColdLocation")]

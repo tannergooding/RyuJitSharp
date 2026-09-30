@@ -16,7 +16,6 @@ public sealed partial class LinearScan
             throw new FatalJitException("Minimal interval construction cannot run with enregistered locals.");
         }
 
-#if TARGET_AMD64 || TARGET_ARM64
         JITDUMP("\nbuildIntervals ========\n");
         buildPhysRegRecords();
 
@@ -27,23 +26,28 @@ public sealed partial class LinearScan
             foreach (var block in _compiler.Blocks)
             {
                 jitprintf($"{FMT_BB(block.bbNum)}\nuse: ");
-                dumpCandidateVarSet(block.bbVarUse);
+                dumpConvertedVarSet(_compiler, block.bbVarUse);
                 jitprintf("\ndef: ");
-                dumpCandidateVarSet(block.bbVarDef);
+                dumpConvertedVarSet(_compiler, block.bbVarDef);
                 jitprintf("\n in: ");
-                dumpCandidateVarSet(block.bbLiveIn);
+                dumpConvertedVarSet(_compiler, block.bbLiveIn);
                 jitprintf("\nout: ");
-                dumpCandidateVarSet(block.bbLiveOut);
+                dumpConvertedVarSet(_compiler, block.bbLiveOut);
                 jitprintf("\n");
             }
         }
 #endif
 
         resetRegStateMinimal();
+#if TARGET_X86
+        _doDoubleAlign = false;
+#endif
         identifyCandidatesMinimal();
         setFrameType();
 #if TARGET_AMD64
         _lowGprRegs = _availableIntRegs & SRBM_LOWINT;
+#elif TARGET_X86
+        _lowGprRegs = _availableIntRegs;
 #endif
 
 #if DEBUG
@@ -101,8 +105,15 @@ public sealed partial class LinearScan
             }
         }
 
-        // identifyCandidates<false> leaves no local candidates, so the native parameter-definition
-        // and parameter-preference passes produce no references in this specialization.
+        // identifyCandidates<false> leaves no local candidates, so the parameter-definition
+        // iteration is empty. The stress check can still activate the native diagnostic mode.
+#if DEBUG
+        if (stressInitialParamReg())
+        {
+            stressSetRandomParameterPreferences();
+        }
+#endif
+
         _placedArgumentLocalCount = 0;
         _placedArgumentRegisters = RBM_NONE;
         VarSetOps.AssignNoCopy(_compiler, ref _currentLiveVariables, VarSetOps.MakeEmpty(_compiler));
@@ -123,7 +134,11 @@ public sealed partial class LinearScan
                 JITDUMP($"firstColdLoc = {_firstColdLocation}\n");
             }
 
-            if ((block == _compiler.fgFirstBB) && _compiler.lvaHasAnySwiftStackParamToReassemble())
+            var prologUsesScratchRegister = _compiler.lvaHasAnySwiftStackParamToReassemble();
+#if TARGET_X86
+            prologUsesScratchRegister |= _compiler.info.compIsVarArgs;
+#endif
+            if ((block == _compiler.fgFirstBB) && prologUsesScratchRegister)
             {
                 _ = addKillForRegs(regMaskTP.CreateFromRegNum(REG_SCRATCH, genSingleTypeRegMask(REG_SCRATCH)),
                     _referenceBuildLocation + 1);
@@ -132,12 +147,12 @@ public sealed partial class LinearScan
 
             if (_compiler.compShouldPoisonFrame() && (block == _compiler.fgFirstBB))
             {
-#if TARGET_ARM64
+#if TARGET_XARCH
+                _ = addKillForRegs(RBM_EDI | RBM_ECX | RBM_EAX, _referenceBuildLocation + 1);
+#else
                 var poisonKills = _compiler.compHelperCallKillSet(CORINFO_HELP_NATIVE_MEMSET);
                 poisonKills |= regMaskTP.CreateFromRegNum(REG_SCRATCH, genSingleTypeRegMask(REG_SCRATCH));
                 _ = addKillForRegs(poisonKills, _referenceBuildLocation + 1);
-#else
-                _ = addKillForRegs(RBM_EDI | RBM_ECX | RBM_EAX, _referenceBuildLocation + 1);
 #endif
                 _referenceBuildLocation += 2;
             }
@@ -245,10 +260,6 @@ public sealed partial class LinearScan
             dumpRefPositions("BEFORE VALIDATING INTERVALS");
         }
         // Native validateIntervals has no work when local variables are not enregistered.
-#endif
-#else
-        NYI("LinearScan.buildIntervalsMinimal outside AMD64");
-        throw new FatalJitException("LinearScan.buildIntervalsMinimal outside AMD64.");
 #endif
     }
 }

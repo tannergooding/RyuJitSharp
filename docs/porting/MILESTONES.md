@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Whole interval and reference construction
+
+Both interval-building specializations retain native target branches, including
+x86 frame alignment and varargs scratch kills. Minimal construction again
+activates initial-parameter stress even without candidate parameters, and the
+EH heuristic restores its floating-register assertion (B473). Initial-definition
+and reference-association support is also complete. Ten definitions, template
+instantiations and declarations retire 1,224 native lines in `c69394bf`.
+
+Final Windows controls pass 120 Debug/106 Release. The focused old Debug run
+fails stress activation and passes liveness formatting; final passes both.
+Earlier ARM64 85 Debug/67 Release and Linux 22 Debug/15 Release controls precede
+the final Debug correction. Three broader Linux resolution NYIs and four x86
+syntax errors remain baseline limitations. Evidence:
+`artifacts/lsra-build-intervals-dd9fc73`. No generated-code or other-target runtime
+parity is claimed.
+
 ## 2026-09-29: Whole common indirect-store lowering
 
 The common store caller now retains Wasm's write-barrier dispatch and all
