@@ -16,6 +16,35 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Paired-register assignment and spilling
+
+LSRA assignment, spilling, lifetime and selector helpers retain ARM32's
+overlapping float/double register bookkeeping. Pair lookup, availability,
+next-reference/spill costs and constant masks account for both halves.
+Unassigning the odd half still reaches the even home register's active-interval
+spill and previous-interval restoration rather than taking the temporary-copy
+early return. Existing single-register behavior and its private accessor
+contracts are preserved.
+
+Twenty complete CPP definitions, eight inline header bodies and twenty
+associated declarations retire 862 native lines in `ee70e896`. The independent
+`isMatchingConstant` and `getRegisterType` bodies and declarations remain.
+`getMatchingConstants` was already absent and is not restored or counted again.
+Windows old/final direct controls pass 59 Debug and 53 Release cases; integration
+passes 102/89. Linux integration passes 97/84, while its direct controls retain
+the same three `Interval.isUpperVector` reflection failures per configuration.
+ARM64 controls fail compilation on identical baseline errors; all five other
+target diagnostic pairs also match and remain failed builds.
+
+Evidence: `artifacts/lsra-paired-assignment-3d2f285`, `final-v3`, with an immutable
+2,503-file archive and exact 2,504-file overlays. The parent independently
+reconstructed all eight parser masks and verified thirty complete commands,
+receipt timing/memory floors, sixteen actual TRXs and fourteen raw diagnostic
+runs through the versioned proof. Initial duplicate-helper and accessor failures
+remain preserved. ARM32 constructor/build boundaries still prevent paired
+register execution; these preservation controls and source retirements do not
+establish native runtime or generated-code parity.
+
 ## 2026-09-30: Whole xarch block emission
 
 Memmove, block stores, unrolled/loop initialization and unrolled copies retain

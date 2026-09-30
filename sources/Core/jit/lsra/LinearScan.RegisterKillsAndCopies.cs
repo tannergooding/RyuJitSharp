@@ -72,7 +72,7 @@ public sealed partial class LinearScan
             {
                 var registerType = assignedInterval.registerType;
                 unassignPhysReg(regRecord, assignedInterval.recentRefPosition);
-                clearConstantReg(regRecord.regNum);
+                clearConstantReg(regRecord.regNum, registerType);
                 makeRegisterTypeAvailable(regRecord.regNum, registerType);
             }
 

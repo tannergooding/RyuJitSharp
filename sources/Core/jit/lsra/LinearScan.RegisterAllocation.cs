@@ -187,12 +187,35 @@ public sealed partial class LinearScan
 #if TARGET_ARM
     private void unassignDoublePhysReg(RegRecord record)
     {
-        NYI("LinearScan.unassignDoublePhysReg for ARM32 double-register spilling");
-        fatal(CORJIT_IMPLLIMITATION);
-        throw new FatalJitException("ARM32 double-register spilling is not ported.");
+        assert(genIsValidDoubleReg(record.regNum));
+        var second = getSecondHalfRegRec(record);
+        if (record.assignedInterval is Interval firstInterval)
+        {
+            if (firstInterval.registerType is TYP_DOUBLE)
+            {
+                unassignPhysReg(record, firstInterval.recentRefPosition);
+            }
+            else
+            {
+                assert(firstInterval.registerType is TYP_FLOAT);
+                unassignPhysReg(record, firstInterval.recentRefPosition);
+                if (second.assignedInterval is Interval secondInterval)
+                {
+                    assert(secondInterval.registerType is TYP_FLOAT);
+                    unassignPhysReg(second, secondInterval.recentRefPosition);
+                }
+            }
+        }
+        else
+        {
+            var secondInterval = second.assignedInterval
+                ?? throw new FatalJitException("A double-register spill requires an occupied half.");
+            assert(secondInterval.registerType is TYP_FLOAT);
+            unassignPhysReg(second, secondInterval.recentRefPosition);
+        }
     }
 
-    private void updatePreviousInterval(RegRecord record, Interval interval, RegisterType registerType)
+    private void updatePreviousInterval(RegRecord record, Interval? interval, RegisterType registerType)
     {
         updatePreviousInterval(record, interval);
         if (registerType is TYP_DOUBLE)

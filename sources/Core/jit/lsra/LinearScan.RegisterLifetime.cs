@@ -40,6 +40,10 @@ public sealed partial class LinearScan
             if (!assignedInterval.isConstant &&
                 ((nextRefPosition is null) || RefTypeIsDef(nextRefPosition.refType)))
             {
+#if TARGET_ARM
+                assert(assignedInterval.registerType is not TYP_DOUBLE ||
+                    genIsValidDoubleReg(regRecord.regNum));
+#endif
                 unassignPhysReg(regRecord, (RefPosition?)null);
             }
         }
@@ -75,6 +79,13 @@ public sealed partial class LinearScan
             var registerOffset = BitOperations.TrailingZeroCount(remaining);
             remaining &= remaining - 1;
             var register = (regNumber)(registerOffset + registerBase);
+#if TARGET_ARM
+            if (getRegisterRecord(register).assignedInterval?.registerType is TYP_DOUBLE)
+            {
+                assert(genIsValidDoubleReg(register));
+                remaining &= ~unchecked((ulong)genSingleTypeRegMask(register + 1));
+            }
+#endif
             freeRegister(getRegisterRecord(register));
         }
     }
@@ -284,7 +295,7 @@ public sealed partial class LinearScan
 #if TARGET_ARM
         if (interval.registerType is TYP_DOUBLE)
         {
-            throw new FatalJitException("ARM32 second-half register association is not ported.");
+            return isSecondHalfReg(regRecord, interval);
         }
 #endif
         return false;

@@ -12,12 +12,42 @@ public sealed partial class LinearScan
 #if TARGET_ARM
     private RegRecord getSecondHalfRegRec(RegRecord record)
     {
-        throw new FatalJitException("ARM32 double-register half lookup is not ported.");
+        assert(genIsValidDoubleReg(record.regNum));
+        return getRegisterRecord(record.regNum + 1);
     }
 
     private RegRecord findAnotherHalfRegRec(RegRecord record)
     {
-        throw new FatalJitException("ARM32 floating-register pair lookup is not ported.");
+        return getRegisterRecord(findAnotherHalfRegNum(record.regNum));
+    }
+
+    private regNumber findAnotherHalfRegNum(regNumber register)
+    {
+        assert(genIsValidFloatReg(register));
+        if (genIsValidDoubleReg(register))
+        {
+            var other = register + 1;
+            assert(!genIsValidDoubleReg(other));
+            return other;
+        }
+
+        var first = register - 1;
+        assert(genIsValidDoubleReg(first));
+        return first;
+    }
+
+    private bool isSecondHalfReg(RegRecord record, Interval interval)
+    {
+        var assigned = interval.assignedReg;
+        if (assigned is null || interval.registerType is not TYP_DOUBLE)
+        {
+            return false;
+        }
+
+        assert(genIsValidDoubleReg(assigned.regNum));
+        var second = assigned.regNum + 1;
+        assert(genIsValidFloatReg(second) && !genIsValidDoubleReg(second));
+        return ReferenceEquals(getRegisterRecord(second), record);
     }
 
 #endif

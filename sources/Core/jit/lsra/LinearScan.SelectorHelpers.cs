@@ -430,11 +430,25 @@ public sealed partial class LinearScan
     {
         assert(registerType is not TYP_UNDEF and not TYP_STRUCT);
         _nextIntervalRef[(int)regNum] = MaxLocation;
+#if TARGET_ARM
+        if (registerType is TYP_DOUBLE)
+        {
+            assert(genIsValidDoubleReg(regNum));
+            _nextIntervalRef[(int)(regNum + 1)] = MaxLocation;
+        }
+#endif
     }
 
     private void updateNextIntervalRef(regNumber regNum, Interval interval)
     {
-        _nextIntervalRef[(int)regNum] = interval.getNextRefLocation();
+        var location = interval.getNextRefLocation();
+        _nextIntervalRef[(int)regNum] = location;
+#if TARGET_ARM
+        if (interval.registerType is TYP_DOUBLE)
+        {
+            _nextIntervalRef[(int)(regNum + 1)] = location;
+        }
+#endif
     }
 
     private void clearAllSpillCost() => Array.Fill(_spillCost, 0.0);
@@ -443,17 +457,41 @@ public sealed partial class LinearScan
     {
         assert(registerType is not TYP_UNDEF and not TYP_STRUCT);
         _spillCost[(int)regNum] = 0;
+#if TARGET_ARM
+        if (registerType is TYP_DOUBLE)
+        {
+            assert(genIsValidDoubleReg(regNum));
+            _spillCost[(int)(regNum + 1)] = 0;
+        }
+#endif
     }
 
     private void updateSpillCost(regNumber regNum, Interval interval)
     {
-        _spillCost[(int)regNum] = interval.recentRefPosition is not null
+        var cost = interval.recentRefPosition is not null
             ? getWeight(interval.recentRefPosition)
             : 0;
+        _spillCost[(int)regNum] = cost;
+#if TARGET_ARM
+        if (interval.registerType is TYP_DOUBLE)
+        {
+            _spillCost[(int)(regNum + 1)] = cost;
+        }
+#endif
     }
 
-    private SingleTypeRegSet getFreeCandidates(SingleTypeRegSet candidates, RegisterType registerType) =>
-        candidates & _availableRegs[(int)regType(registerType)];
+    private SingleTypeRegSet getFreeCandidates(SingleTypeRegSet candidates, RegisterType registerType)
+    {
+        var available = _availableRegs[(int)regType(registerType)];
+        var free = candidates & available;
+#if TARGET_ARM
+        if (registerType is TYP_DOUBLE)
+        {
+            free &= (SingleTypeRegSet)(unchecked((ulong)(long)available) >> 1);
+        }
+#endif
+        return free;
+    }
 
     private SingleTypeRegSet getAvailableGPRsForType(SingleTypeRegSet candidates, var_types registerType)
     {
@@ -482,13 +520,27 @@ public sealed partial class LinearScan
     private LsraLocation getNextIntervalRef(regNumber regNum, RegisterType registerType)
     {
         assert(registerType is not TYP_UNDEF and not TYP_STRUCT);
-        return _nextIntervalRef[(int)regNum];
+        var location = _nextIntervalRef[(int)regNum];
+#if TARGET_ARM
+        if (registerType is TYP_DOUBLE)
+        {
+            location = Math.Min(location, _nextIntervalRef[(int)(regNum + 1)]);
+        }
+#endif
+        return location;
     }
 
     private LsraLocation getNextFixedRef(regNumber regNum, RegisterType registerType)
     {
         assert(registerType is not TYP_UNDEF and not TYP_STRUCT);
-        return _nextFixedRef[(int)regNum];
+        var location = _nextFixedRef[(int)regNum];
+#if TARGET_ARM
+        if (registerType is TYP_DOUBLE)
+        {
+            location = Math.Min(location, _nextFixedRef[(int)(regNum + 1)]);
+        }
+#endif
+        return location;
     }
 
     private void updateNextFixedRef(RegRecord regRecord, RefPosition? nextRefPosition, RefPosition? nextKill)
@@ -530,12 +582,26 @@ public sealed partial class LinearScan
     private bool isRegBusy(regNumber regNum, RegisterType registerType)
     {
         assert(registerType is not TYP_UNDEF and not TYP_STRUCT);
+#if TARGET_ARM
+        if (registerType is TYP_DOUBLE)
+        {
+            var first = genIsValidDoubleReg(regNum) ? regNum : regNum - 1;
+            return _regsBusyUntilKill.IsSet(first) || _regsBusyUntilKill.IsSet(first + 1);
+        }
+#endif
         return _regsBusyUntilKill.IsSet(regNum);
     }
 
     private bool isRegInUse(regNumber regNum, RegisterType registerType)
     {
         assert(registerType is not TYP_UNDEF and not TYP_STRUCT);
+#if TARGET_ARM
+        if (registerType is TYP_DOUBLE)
+        {
+            var first = genIsValidDoubleReg(regNum) ? regNum : regNum - 1;
+            return _regsInUseThisLocation.IsSet(first) || _regsInUseThisLocation.IsSet(first + 1);
+        }
+#endif
         return _regsInUseThisLocation.IsSet(regNum);
     }
 
@@ -595,6 +661,23 @@ public sealed partial class LinearScan
         return false;
     }
 
+#if TARGET_ARM
+    private bool canSpillDoubleReg(RegRecord record, LsraLocation location)
+    {
+        assert(genIsValidDoubleReg(record.regNum));
+        var second = getSecondHalfRegRec(record);
+        if ((record.assignedInterval is not null) && !canSpillReg(record, location))
+        {
+            return false;
+        }
+        if ((second.assignedInterval is not null) && !canSpillReg(second, location))
+        {
+            return false;
+        }
+        return true;
+    }
+#endif
+
     private bool isSpillCandidate(Interval current, RefPosition refPosition, RegRecord regRecord)
     {
         var candidateBit = genSingleTypeRegMask(regRecord.regNum);
@@ -605,6 +688,12 @@ public sealed partial class LinearScan
         assert(!refPosition.isFixedRefOfRegMask(candidateBit));
         assert(!conflictingFixedRegReference(regRecord.regNum, refPosition));
 
+#if TARGET_ARM
+        if (current.registerType is TYP_DOUBLE)
+        {
+            return canSpillDoubleReg(regRecord, refLocation);
+        }
+#endif
         return canSpillReg(regRecord, refLocation);
     }
 
