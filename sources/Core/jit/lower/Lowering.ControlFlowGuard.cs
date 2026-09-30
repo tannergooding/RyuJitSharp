@@ -3,8 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
-
 namespace RyuJitSharp;
 
 public sealed partial class Lowering
@@ -68,7 +66,6 @@ public sealed partial class Lowering
 
     private unsafe void LowerCFGCall(GenTreeCall call)
     {
-#if TARGET_AMD64 || TARGET_ARM64
         assert(!call.IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL));
         if (call.IsHelperCall(CORINFO_HELP_VALIDATE_INDIRECT_CALL))
         {
@@ -126,7 +123,21 @@ public sealed partial class Lowering
             {
                 // The validator preserves its target in a designated register; reloading it
                 // from memory after validation would allow the checked and called targets to differ.
+#if TARGET_AMD64 || TARGET_ARM64
                 var regNode = new GenTreePhysReg(REG_VALIDATE_INDIRECT_CALL_ADDR, TYP_I_IMPL);
+#elif TARGET_X86
+                var regNode = new GenTreePhysReg(REG_ECX, TYP_I_IMPL);
+#elif TARGET_ARM
+                var regNode = new GenTreePhysReg(REG_R0, TYP_I_IMPL);
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+                var regNode = new GenTreePhysReg(REG_T3, TYP_I_IMPL);
+#elif TARGET_WASM
+                var regNode = new GenTreePhysReg(REG_NA, TYP_I_IMPL);
+#else
+                NYI("Lowering.LowerCFGCall validation register for this target");
+                fatal(CORJIT_IMPLLIMITATION);
+                return;
+#endif
                 var gotUse = BlockRange().TryGetUse(callTarget, out var targetUse);
                 assert(gotUse);
                 // Managed LIR.Use requires its replacement to be linked before updating the edge.
@@ -159,13 +170,21 @@ public sealed partial class Lowering
 
             case CFGCallKind.Dispatch:
             {
+#if TARGET_AMD64 || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
+#if TARGET_LOONGARCH64 || TARGET_RISCV64
+                const regNumber dispatchRegister = REG_T0;
+#elif TARGET_WASM
+                const regNumber dispatchRegister = REG_NA;
+#else
+                const regNumber dispatchRegister = REG_DISPATCH_INDIRECT_CALL_ADDR;
+#endif
                 var targetArg = call.Args.PushBack(NewCallArg.CreateForPrimitive(callTarget)
                     .WithWellKnownArg(WellKnownArg.DispatchIndirectCallTarget));
                 targetArg.EarlyNode = null;
                 targetArg.LateNode = callTarget;
                 call.Args.PushLateBack(targetArg);
                 targetArg.AbiInfo = AbiPassingInformation.FromSegment(compiler, false,
-                    AbiPassingSegment.InRegister(REG_DISPATCH_INDIRECT_CALL_ADDR, 0, TARGET_POINTER_SIZE));
+                    AbiPassingSegment.InRegister(dispatchRegister, 0, TARGET_POINTER_SIZE));
 
                 LowerArg(call, targetArg);
 
@@ -184,6 +203,9 @@ public sealed partial class Lowering
                     ContainCheckRange(dispatchRange);
                     BlockRange().InsertBefore(call, dispatchRange);
                 }
+#else
+                unreached();
+#endif
                 break;
             }
 
@@ -193,8 +215,5 @@ public sealed partial class Lowering
                 break;
             }
         }
-#else
-        throw new NotImplementedException("Control-flow-guard lowering is not ported for this target.");
-#endif
     }
 }

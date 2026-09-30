@@ -134,6 +134,8 @@ internal static unsafe class ControlFlowGuardLoweringTests
             Assert.That(targetArg?.LateNode?.Oper, Is.EqualTo(genTreeOps.GT_PUTARG_REG));
             Assert.That(targetArg?.LateNode?.AsUnOp().Op1, Is.SameAs(target));
             Assert.That(targetArg?.LateNode?.RegNum, Is.EqualTo(Globals.REG_DISPATCH_INDIRECT_CALL_ADDR));
+            Assert.That(target.Next, Is.SameAs(targetArg?.LateNode));
+            Assert.That(targetArg?.LateNode?.Next, Is.SameAs(call));
             Assert.That(call.Args.LateHead, Is.SameAs(targetArg));
             Assert.That(call._callType, Is.EqualTo(CT_HELPER));
             Assert.That((nint)call._callMethHnd, Is.EqualTo((nint)Compiler.eeFindHelper(

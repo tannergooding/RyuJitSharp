@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "cfgLoweringClosure": {
+      "scope": "Whole LowerCFGCall retains target-expression cloning and validation ordering, late dispatch argument ownership and all native register/unsupported-dispatch branches. Existing AMD64/ARM64 algorithm remains unchanged.",
+      "validation": "Old Windows/ARM64Debug7each pass; finalWindows27D/27R, ARM649D/8R andLinux7D/7R pass. ARM64Release Debug-only dispatch omission explicitly verified by identity. Five isolated diagnostic sets14/92/85/85/81match and remain failed builds.",
+      "retirement": "One complete definition, heading and declaration;216native lines. Windows/ARM64 body was pretranslated; other-target branches newly complete. Independent shift/rotate and helper definitions remain retained.",
+      "nativeBefore": "7593d46fc3f0dcf1e059f7eabc19d2bbd74e59be",
+      "nativeAfter": "f7a7c3bf53fc549249d1e2f60feabe479f7d5a3e",
+      "evidence": "artifacts/lower-cfg-62d0336 work-v1;5exact2499file inventories fromfresharchive,8actualTRXs, exactcommand target/configuration/filter and five byte-exact paired diagnostic overlays independently verified. Evidence-summary SHAafe37e4316f3312bd524a9e1d65cda4a7f42b40d001e2834bcc98ab3d80961b8.",
+      "limits": "New dispatch ownership assertions are preservation coverage; unexecuted new target branches/build blockers and selected managed IR controls are not native target or generated-code parity."
+    },
     "registerAssignmentClosure": {
       "scope": "Whole general allocation and required isAssigned helper retain ARM32 double spilling, second-half occupancy and previous-interval bookkeeping; existing general/minimal copy bodies preserve home register, related interval and active state.",
       "validation": "Linux integration97D/84R, Windows102D/89R and direct Windows/Linux24D/23R pass. ARM64110D/91R pass. New minimal-copy fixture passes old production;26actualTRXs verify no selected old pass lost and exact initialfinal/final-v2 identities. Five paired target error sets14/92/85/85/81match and remain failed builds.",
@@ -2027,25 +2036,25 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Tailcall committed62d0336; general/copy assignment final-v2 source/evidence accepted and native7593d46f retires239lines, coherent managed commit next. Three implementation roles plus independent review, one hidden CFG validation role and one evidence-proof role form a bounded6-role pool. Compiler slots remain2globally: parent1/CFGvalidation1, serial per slot,8GiB cutoff. Freeze ready packets while acceptance catches up;13Wasm and pin-plus-one preserved.",
+      "parentScope": "Tailcall62d0336 and assignmente761087 committed. CFG source/evidence accepted; nativef7a7c3bf retires216lines, managed coherent commit next. Parentstressold-fixture first run has3pass2fail: expectedUnixsmall-set plusunexpectedbusy-candidate assertion, workerdiagnosing. Frame/probing validator prepared5snapshots but losttoolcatalog; approvedequivalent explicit hidden pwshwrapper preserves same guarded dotnetchild. Six bounded roles, max2compiler slots(parent1/validator1),8GiBcutoff; freeze ready packets,13Wasm and pin-plus-one.",
       "wholeFunctionRepairLanes": [
         {
           "scope": "Whole retained shared LSRA DEBUG stress register limiting.",
           "owner": "2aa4b7ae-79d5-4599-ad4a-eef9208ec3f0",
           "files": "LinearScan.SelectorHelpers.cs and dedicated stress fixture; assignment3files frozen until managedcommit. Parent owns shared declarations and native integration.",
-          "status": "Assignment final-v2 accepted with26TRXs and fiveequal diagnosticsets; native7593d46f retires4defs239lines. Stress limiting whole source reviewed; Unix small-set old-source regression expected, preparation/validation pending. getConstrainedRegMask already absent, excluded."
+          "status": "Assignment committede761087. Stresswhole source reviewed and immutableold/final/old-fixture/pairedclones prepared. Old-fixtureLinuxDebug3pass2fail; expectedR12vsRDI regression and unexpectedRequiredBusyCandidate assertionline46, workerdiagnosing/correcting withimmutablev2 ifneeded. getConstrainedRegMask already absent, excluded."
         },
         {
           "scope": "Whole retained CFG and shift/rotate lowering families.",
           "owner": "c25d48cd-9585-4ecc-9253-39bf6743137d",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "Tailcall committed62d0336. CFG whole source reviewed and hidden validation delegated; source frozen. Shift/rotate source reviewed and both unsigned64mask/RISCguard defects corrected with scoped acceptance; preparation/old-source regression pending. Xarch rotate already absent, excluded."
+          "status": "Tailcall62d0336 committed. CFG fullsource/evidence accepted with8TRXs/fiveequal diagnosticsets, nativef7a7c3bf216lines retired; managedcommit next. Shift/rotate unsigned64mask/RISCguard corrections sourceaccepted, preparation/old-source regression pending. Xarch rotate already absent, excluded."
         },
         {
           "scope": "Whole xarch frame setup, stack probing and localloc family.",
           "owner": "239a0205-bbd7-4aa9-bc1d-2f7b24501d76",
           "files": "CodeGen.PrologFrameSetup.cs, CodeGen.LocalHeap.cs and frame fixture; parent-owned x86Globals prerequisites.",
-          "status": "Seven whole bodies source-reviewed. Parent verified/integrated native x86 constants, packet overlay updated; immutable preparation and full-analysis controls pending. Shared ARM frame declarations and existing emitter/unwind boundaries remain retained."
+          "status": "Seven whole bodies source-reviewed; approvedx86constants integrated andimmutable5snapshots prepared. Newfixture makesfinal2500files vsbase2499; diagnosticclones includeexplicitidenticalx86 prerequisite+eightmasks. Firstcompiler operationold-controlwin-debug pending hiddenwrapper recovery; shared ARM declarations/emitter/unwind boundaries remain retained."
         },
         {
           "scope": "Whole retained shared kill-set family after return/write-barrier closure.",
@@ -2461,7 +2470,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Commit accepted assignment batch with related docs; native7593d46f already retires239lines, do not repeat. Then parent prepares/executes source-reviewed lsra-stress-limiting-62d0336 old-fixture-first DEBUG controls (Unix small-set case expected oldfail), overlapping e0d0b7c7 hidden CFG validation at onecompiler slot each. ef60cfd1 assignment proof accepted/rerun; collect CFG evidence once notified and independently review before retirement anchored7593d46f. Shift/rotate corrected source and frame/probing7whole bodies source-reviewed, queued behind bounded acceptance; parent x86Globals prerequisite belongs only frame batch. Tailcall committed62d0336. Preserve13Wasm, pin-plus-one and8GiB cutoff, no app sessions/publication. Process review21,40min cadence/streak0; six bounded roles address acceptance bottleneck, not six compiler processes.",
+    "nextAction": "Commit accepted CFG batch withdocs; nativef7a7c3bf already retires216lines, neverrepeat. Resume stresslimiting worker correction for extraold-fixture failure RequiredBusyCandidateRetainsTheOriginalMask46 (expectedRAX1,gotRAX|RBX9), preservev1snapshot/logs and executecorrectedfinal-v2/old-fixture-v2 first iffixturechanges; UnixSmallIntegerSet expectedoldfailconfirmedR12vsRDI. Framevalidator e0d0b7c7 resumesold-controlwin-debug frompreparedsnapshots usingexplicit hidden pwshwrapper whencontextcatalogmissing; samefullanalysis/8GiB/CreateNoWindowdotnetguard, parentothercompiler slot. Shift/rotate correctedwhole source queuedforpreparation onceprimaryacceptance advances. Assignmente761087 andtailcall62d0336 committed. Windowsx64first,Linuxx64second,ARM64third; six boundedroles/max2compiler-heavy children,40min schedule. Preserve13Wasm/pin-plus-one; no publication/appsessions. Processreview21 cadence40/streak0.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

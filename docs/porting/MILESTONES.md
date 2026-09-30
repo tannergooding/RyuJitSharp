@@ -16,6 +16,26 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole control-flow-guard call lowering
+
+CFG call lowering preserves validated target expressions, VSD cloning,
+validator placement and late dispatch-argument ownership. The complete native
+target-register branches now remain in C#, including native-unreachable
+x86/ARM32 dispatch handling. One definition, heading and declaration retire
+216 native lines in `f7a7c3bf`; independent shift and rotate bodies remain.
+The AMD64/ARM64 paths were already translated; this batch completes the
+other-target branches rather than claiming new Windows CFG capability.
+
+Old Windows/ARM64 Debug preservation controls pass 7 cases each.
+Final Windows controls pass 27 Debug/27 Release, ARM64 passes 9/8, and Linux
+passes 7/7. The ARM64 Release selector correctly excludes its Debug-only
+dispatch fixture. Five isolated target diagnostic sets match and remain
+failed builds. Evidence: `artifacts/lower-cfg-62d0336`, final `work-v1`,
+with five exact 2,499-file snapshots, eight actual TRXs and paired diagnostic
+overlays/logs independently verified. Newly translated target branches remain
+unexecuted behind build/dependency boundaries; no native runtime or
+generated-code parity claim.
+
 ## 2026-09-30: Whole general and copy register assignment
 
 General allocation preserves ARM32 double-register spill selection and
