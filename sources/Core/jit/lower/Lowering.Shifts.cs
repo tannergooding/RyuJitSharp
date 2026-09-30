@@ -11,7 +11,7 @@ public sealed partial class Lowering
     {
 #if TARGET_XARCH
         ContainCheckShiftRotate(tree.AsOp());
-#elif TARGET_ARM64
+#elif TARGET_ARMARCH || TARGET_LOONGARCH64
         if (tree.Oper is GT_ROL)
         {
             var rotate = tree.AsOp();
@@ -20,7 +20,11 @@ public sealed partial class Lowering
             if (rotateLeftIndexNode.Oper.IsCnsIntOrI)
             {
                 var constant = rotateLeftIndexNode.AsIntCon();
+#if TARGET_ARM
+                constant.IconValue = unchecked((nint)(int)((uint)rotatedValueBitSize - (uint)constant.IconValue));
+#else
                 constant.IconValue = unchecked(rotatedValueBitSize - constant.IconValue);
+#endif
             }
             else
             {
@@ -36,7 +40,7 @@ public sealed partial class Lowering
 
         ContainCheckShiftRotate(tree.AsOp());
 #else
-        throw new System.NotImplementedException("Rotate lowering is not ported for this target.");
+        ContainCheckShiftRotate(tree.AsOp());
 #endif
     }
 

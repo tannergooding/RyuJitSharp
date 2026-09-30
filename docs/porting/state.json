@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "shiftRotateLoweringClosure": {
+      "scope": "Whole shared shift/mask lowering and retained ARM/LoongArch/RISC-V/Wasm rotate bodies preserve native operand widths, unsigned-long masks, ARM32 constant truncation, rotate-left conversion, containment and LIR node ownership.",
+      "validation": "Corrected old Windows fixture passes five cases and fails only TYP_ULONG/count-32/mask-31; final Windows passes 45 Debug/44 Release, Linux six each, ARM64 183 each. The unchanged old ARM64 fixture passes four, all retained in final controls. Five paired diagnostic sets match and remain failed builds.",
+      "retirement": "Six whole definitions/headings, 196 native lines, plus three declarations: 199 total. Xarch LowerRotate was already absent and excluded. Retain target ContainCheckShiftRotate and RISC-V Zba helper definitions/declarations.",
+      "nativeBefore": "6c77d2bd44fe51608e6796460f2be35475c36c2d",
+      "nativeAfter": "35eb6e97bece0224e125797f8609a5f089213e72",
+      "evidence": "artifacts/lower-shift-rotate-62d0336 work-v2; evidence SHA256 abb6baab5a2e3fe5a4cb2fa050e495d1d343786c389e5b79afc33a45c457af13. Fresh 2499-file archive, exact snapshot inventories, eight actual TRXs, exact full commands, live owned hashes and eight byte-reconstructed parser masks independently verified. Parent-rerun proof SHA256 2c0042f3faad53362af948e3c98fb748111f8e48854a61808b7fa0fb4c78a3c9.",
+      "rejectedEvidence": "V1's six Windows shift-fixture failures occurred in LinearScan construction before lowering. V2 adds only CodeGen initialization; production hashes and the old ARM64 fixture are unchanged.",
+      "limits": "Managed target controls are not native runtime, phase-dump or generated-code parity. Newly completed unsupported-target branches retain terminating containment/Zba dependencies and existing build boundaries."
+    },
     "xarchFrameProbingClosure": {
       "scope": "Seven whole xarch frame setup, stack allocation/probing and localloc bodies retain x86/AMD64 target branches, secret-argument preservation, hidden stack adjustments, outgoing-area handling and x86 localloc SP saves. Existing Windows AMD64 algorithms are preserved.",
       "validation": "Windows old/final controls pass 57 Debug/55 Release cases. Linux old 23 Debug/27 Release passes improve to 50/52 with no old pass lost; seven Debug/three Release failures have identical messages and normalized origin frames. Five paired target diagnostic sets match and remain failed builds.",
@@ -2056,7 +2066,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Stress de770c2 is committed alongside tailcall, assignment and CFG. Frame/probing source/evidence and parent-rerun re-anchor proof are accepted; native 6c77d2bd retires 568 lines. Finish its managed commit, then add the block-emission x86 prerequisite and prepare that reviewed five-body family from the fresh committed HEAD. Shift v2 validation is delegated. Preserve at most two compiler slots, the 8 GiB memory floor, frozen packet sources, 13 Wasm files and oracle-plus-one native history.",
+      "parentScope": "Stress de770c2 and frame/probing bbc8e2c are committed. Shift v2 source/evidence and parent-rerun proof are accepted; native 35eb6e97 retires 199 lines, with the managed commit next. Block BBC Windows old/final controls pass 51 Debug/49 Release; Linux old platform failures become 51/49 final passes. Five diagnostic pairs match but do not clear the non-xarch source-guard gap; a guard-only v2 correction is authorized with xarch preprocessing/evidence reuse. The next retained LSRA paired-assignment family is source-ready and under review. Preserve at most two compiler slots, the 8 GiB memory floor, 13 Wasm files and oracle-plus-one native history.",
       "wholeFunctionRepairLanes": [
         {
           "scope": "Whole retained shared LSRA DEBUG stress register limiting.",
@@ -2068,13 +2078,13 @@
           "scope": "Whole retained CFG and shift/rotate lowering families.",
           "owner": "c25d48cd-9585-4ecc-9253-39bf6743137d",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "Tailcall 62d0336 and CFG dae5831 are committed. Shift/rotate source is reviewed. V1's six new Windows fixtures failed before lowering because CodeGen was not initialized before LinearScan construction; existing 39 Windows shift controls and four old ARM64 rotate controls passed. The fixture-only v2 correction and immutable snapshots are prepared, with old-source controls/final validation delegated. Xarch rotate is already absent and excluded."
+          "status": "Shift v2 source, selected controls and parent-rerun exact archive/command/mask/native proof are accepted. Native 35eb6e97 retires six definitions and three declarations, 199 lines. Commit the managed batch next. Preserve rejected v1 constructor evidence; xarch rotate was already absent and excluded."
         },
         {
           "scope": "Whole xarch frame setup, stack probing and localloc family.",
           "owner": "239a0205-bbd7-4aa9-bc1d-2f7b24501d76",
           "files": "CodeGen.PrologFrameSetup.cs, CodeGen.LocalHeap.cs and frame fixture; parent-owned x86Globals prerequisites.",
-          "status": "Seven whole bodies, scoped v2 corrections and parent-rerun evidence proof are accepted; native 6c77d2bd retires 568 lines. Windows old/final controls pass 57 Debug/55 Release; Linux improves to 50/52 passes, retaining seven/three matching dependency failures without losing an old pass. Five diagnostic pairs match. Finish the managed commit before adding XMM_REGSIZE_BYTES for the reviewed, unvalidated five-body block-emission packet."
+          "status": "Frame/probing is committed in bbc8e2c. Block BBC controls pass Windows old/final 51 Debug/49 Release and Linux final 51/49, resolving old caller-level platform failures. Five diagnostic pairs match, but early baseline errors do not establish semantic binding of unguarded non-xarch references. Guard-only v2 correction is authorized; preserve BBC evidence and prove unchanged xarch preprocessing before reuse."
         },
         {
           "scope": "Whole retained shared kill-set family after return/write-barrier closure.",
@@ -2490,7 +2500,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Finish the accepted frame managed commit if its four owned files remain uncommitted; native 6c77d2bd already retires its 568 lines. Stress de770c2 is committed and must not be repeated. After the frame commit, add x86 XMM_REGSIZE_BYTES = 16 and prepare the reviewed five-body block-emission family from that fresh committed managed HEAD, not its stale Dae baseline; old Windows preservation controls precede final validation. e0d0b7c7 owns shift v2 old-source controls/final validation after the fixture-only CodeGen initialization correction. Retain shared ARM declarations and emitter/unwind helpers. Continue Windows x64, Linux x64, then ARM64 with at most two compiler slots. Preserve frozen Wasm WIP, the oracle pin, native oracle-plus-one history and the 8 GiB memory floor. Review 22 recorded two commits/five definitions/455 retired lines since review 21; cadence remains 40 minutes, streak zero pending acceptance catchup. No publication or app-native sessions are authorized.",
+    "nextAction": "Stage and commit the accepted shift/rotate batch if its four owned files remain uncommitted; native 35eb6e97 already retires its 199 lines. Stress de770c2 and frame bbc8e2c are committed and must not be repeated. Collect 239a0205's guard-only block v2 correction: require five terminating non-xarch branches, exact unchanged Windows/Linux/x86 preprocessed bodies and immutable BBC evidence reuse, then assign ef60cfd1 scoped diagnostics/proof before native acceptance. XMM_REGSIZE_BYTES = 16 is already added. Collect the paired-assignment source review for artifacts/lsra-paired-assignment-bbc8e2c and prepare its bounded controls only after any findings are resolved. Continue Windows x64, Linux x64, then ARM64 with at most two compiler slots, the 8 GiB floor, frozen Wasm WIP and oracle-plus-one native history. Review cadence remains 40 minutes; no publication or app-native sessions.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

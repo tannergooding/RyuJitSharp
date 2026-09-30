@@ -16,6 +16,31 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole shift and rotate lowering
+
+Shift-count mask removal uses the operand's native width, including unsigned
+64-bit types, and preserves containment and LIR ownership when removing the
+AND and mask nodes. Rotate lowering retains ARM32-width constant arithmetic,
+ARM/LoongArch rotate-left conversion and RISC-V/Wasm containment calls.
+Six definitions and headings retire 196 native lines, with three declarations
+bringing the batch to 199 lines in `35eb6e97`. The xarch rotate definition was
+already absent and is not counted again; target containment and Zba helpers
+remain native dependencies.
+
+The corrected old Windows fixture passes five cases and fails only the
+unsigned-long count-32/mask-31 case. Final Windows controls pass 45 Debug and
+44 Release cases; Linux passes six each and ARM64 passes 183 each. The unchanged
+old ARM64 rotate fixture passes four cases, all retained in final controls.
+Five paired target diagnostic sets match and remain failed builds.
+
+Evidence: `artifacts/lower-shift-rotate-62d0336`, `work-v2`, with a fresh
+2,499-file archive, exact 2,501-file final/control inventories, eight actual
+TRXs, exact commands and byte-reconstructed diagnostic masks independently
+verified. Rejected v1 constructor failures are preserved; v2 initializes
+CodeGen before constructing LinearScan and changes no production algorithm.
+Other-target dependency/build limits remain explicit; no native runtime or
+generated-code parity claim.
+
 ## 2026-09-30: Whole xarch frame setup, probing and localloc
 
 Frame setup, local-stack allocation, constant/dynamic stack probing and localloc

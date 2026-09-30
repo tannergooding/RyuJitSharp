@@ -623,15 +623,14 @@ public sealed partial class Lowering
         return node.Next;
     }
 
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
     private void TryRemoveShiftRotateMask(GenTreeOp operation)
     {
         assert(operation.Oper is GT_LSH or GT_RSH or GT_RSZ or GT_ROL or GT_ROR);
 #if LOWER_DECOMPOSE_LONGS
-        assert(operation.Type is not TYP_LONG);
+        assert(!varTypeIsLong(operation.Type));
         var mask = 0x1fL;
 #else
-        var mask = operation.Type is TYP_LONG ? 0x3fL : 0x1fL;
+        var mask = varTypeIsLong(operation.Type) ? 0x3fL : 0x1fL;
 #endif
         var block = _block;
         assert(block is not null);
@@ -686,7 +685,6 @@ public sealed partial class Lowering
         }
 #endif
     }
-#endif
 
 #if TARGET_RISCV64
     private void TryLowerZextLeftShiftToSlliUw(GenTreeOp shift, out GenTree? next)
