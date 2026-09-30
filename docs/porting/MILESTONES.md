@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Whole mixed-store coalescing
+
+Local and indirect coalescing now retain the complete shared native algorithm,
+including ARM64 atomic-pair rules, load metadata, unsigned access sizes and
+unsupported-target no-op behavior. SIMD widening clears the whole constant
+payload, temporary insertion follows native ordering, and both stores retain
+the write-barrier assertion (B472). Seven top-level functions, declarations and
+the private data record retire 891 native lines in `81049525`; the common
+indirect-store caller remains native.
+
+Full-analysis controls pass Windows 117/117, ARM64 78/78 and Linux 122/122 in
+Debug/Release. The final fixture-only refinement directly checks null load values
+and unsigned sizes, passing both Windows cases in each configuration. Earlier
+versions fail seven optimized ARM64, two data-helper and two inactive-payload
+cases. Evidence: `artifacts/lower-coalescing-e3c557a`. These establish native
+contracts, not generated-code differences or other-target runtime parity.
+
 ## 2026-09-29: Shared node-reference and physical-register construction
 
 Node-reference traversal now preserves all-target entry, xarch contained-local

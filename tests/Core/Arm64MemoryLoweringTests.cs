@@ -495,18 +495,102 @@ internal static unsafe class Arm64MemoryLoweringTests
     [TestCase(true)]
     public static void LocalStoreCoalescingKeepsTheNativeOptimizationGate(bool optimized)
     {
-        WithLowering(optimized, (compiler, lowering, _) => {
-            var zero = compiler.gtNewIconNode(TYP_LONG, 0);
-            var store = compiler.gtNewStoreLclVarNode(0, zero);
+        WithLowering(optimized, (compiler, lowering, block) => {
+            compiler.lvaTable[0].Type = TYP_LONG;
+            var firstValue = compiler.gtNewIconNode(TYP_BYTE, 0x11);
+            var first = new GenTreeLclFld(TYP_BYTE, 0, 0, firstValue, null);
+            var secondValue = compiler.gtNewIconNode(TYP_BYTE, 0x22);
+            var second = new GenTreeLclFld(TYP_BYTE, 0, 1, secondValue, null);
+            Append(block, firstValue, first, secondValue, second);
 
-            if (optimized)
-            {
-                Assert.That(() => LowerLocalStoreCoalescing(lowering, store), Throws.TypeOf<NotImplementedException>());
-            }
-            else
-            {
-                Assert.DoesNotThrow(() => LowerLocalStoreCoalescing(lowering, store));
-            }
+            Assert.DoesNotThrow(() => LowerLocalStoreCoalescing(lowering, second));
+            Assert.That(first.Next is null, Is.EqualTo(optimized));
+            Assert.That(second.Type, Is.EqualTo(optimized ? TYP_USHORT : TYP_BYTE));
+            Assert.That(second.Data.AsIntCon().IconValue, Is.EqualTo(optimized ? (nint)0x2211 : (nint)0x22));
+#if DEBUG
+            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+#endif
+        });
+    }
+
+    [TestCase(false, 0, true)]
+    [TestCase(true, 0, true)]
+    [TestCase(true, 1, false)]
+    [TestCase(false, 1, true)]
+    public static void AddressExposedLocalStoresRespectAtomicAlignment(
+        bool exposed, int offset, bool merged)
+    {
+        WithLowering(true, (compiler, lowering, block) => {
+            compiler.lvaTable[0].Type = TYP_LONG;
+            compiler.lvaTable[0].SetAddressExposed(exposed, AddressExposedReason.ESCAPE_ADDRESS);
+            var firstValue = compiler.gtNewIconNode(TYP_BYTE, 0x12);
+            var first = new GenTreeLclFld(TYP_BYTE, 0, (ushort)offset, firstValue, null);
+            var secondValue = compiler.gtNewIconNode(TYP_BYTE, 0x34);
+            var second = new GenTreeLclFld(TYP_BYTE, 0, (ushort)(offset + 1), secondValue, null);
+            Append(block, firstValue, first, secondValue, second);
+
+            LowerLocalStoreCoalescing(lowering, second);
+
+            Assert.That(first.Next is null, Is.EqualTo(merged));
+            Assert.That(second.Type, Is.EqualTo(merged ? TYP_USHORT : TYP_BYTE));
+            Assert.That(second.Data.AsIntCon().IconValue, Is.EqualTo(merged ? (nint)0x3412 : (nint)0x34));
+#if DEBUG
+            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+#endif
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void AdjacentLongLocalStoresUseArm64AtomicPairRule(bool exposed)
+    {
+        WithLowering(true, (compiler, lowering, block) => {
+            compiler.lvaTable[0].Type = TYP_STRUCT;
+            compiler.lvaTable[0].Layout = new ClassLayout(16);
+            compiler.lvaTable[0].SetAddressExposed(exposed, AddressExposedReason.ESCAPE_ADDRESS);
+            var firstValue = compiler.gtNewIconNode(TYP_LONG, 0x11223344);
+            var first = new GenTreeLclFld(TYP_LONG, 0, 0, firstValue, null);
+            var secondValue = compiler.gtNewIconNode(TYP_LONG, 0x55667788);
+            var second = new GenTreeLclFld(TYP_LONG, 0, 8, secondValue, null);
+            Append(block, firstValue, first, secondValue, second);
+
+            LowerLocalStoreCoalescing(lowering, second);
+
+            Assert.That(first.Next, Is.Null);
+            Assert.That(second.Type, Is.EqualTo(TYP_SIMD16));
+            Assert.That(second.Data.AsVecCon().SimdVal.u64[0], Is.EqualTo(0x11223344UL));
+            Assert.That(second.Data.AsVecCon().SimdVal.u64[1], Is.EqualTo(0x55667788UL));
+#if DEBUG
+            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+#endif
+        });
+    }
+
+    [Test]
+    public static void EqualSimdLocalStoresReuseFirstValue()
+    {
+        WithLowering(true, (compiler, lowering, block) => {
+            compiler.lvaTable[0].Type = TYP_STRUCT;
+            compiler.lvaTable[0].Layout = new ClassLayout(32);
+            var firstValue = compiler.gtNewVconNode(TYP_SIMD16);
+            firstValue.SimdVal.u64[0] = 0x1122334455667788UL;
+            var first = new GenTreeLclFld(TYP_SIMD16, 0, 0, firstValue, null);
+            var secondValue = compiler.gtNewVconNode(TYP_SIMD16);
+            secondValue.SimdVal = firstValue.SimdVal;
+            var second = new GenTreeLclFld(TYP_SIMD16, 0, 16, secondValue, null);
+            Append(block, firstValue, first, secondValue, second);
+
+            LowerLocalStoreCoalescing(lowering, second);
+
+            Assert.That(first.Type, Is.EqualTo(TYP_SIMD16));
+            Assert.That(second.Type, Is.EqualTo(TYP_SIMD16));
+            Assert.That(first.Data.Oper, Is.EqualTo(GT_LCL_VAR));
+            Assert.That(second.Data.Oper, Is.EqualTo(GT_LCL_VAR));
+            Assert.That(first.Data.AsLclVar().LclNum, Is.EqualTo(second.Data.AsLclVar().LclNum));
+            Assert.That(secondValue.Next, Is.Null);
+#if DEBUG
+            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+#endif
         });
     }
 

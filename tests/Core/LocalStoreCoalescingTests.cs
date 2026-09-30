@@ -197,6 +197,42 @@ internal static unsafe class LocalStoreCoalescingTests
 #endif
         });
     }
+
+    [Test]
+    public static void WidenedVectorLocalStoreClearsInactivePayload()
+    {
+        WithCompiler(optimized: true, enabled: true, compiler => {
+            compiler.opts.compSupportsISA.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX);
+            compiler.opts.compSupportsISAReported.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX);
+            compiler.opts.compSupportsISAExactly.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX);
+            Assert.That(compiler.GetPreferredVectorByteLength(), Is.EqualTo(32));
+
+            compiler.lvaTable[0].Type = var_types.TYP_STRUCT;
+            compiler.lvaTable[0].Layout = new ClassLayout(32);
+            var firstValue = compiler.gtNewVconNode(var_types.TYP_SIMD16);
+            firstValue.SimdVal.u64[0] = 0x1122334455667788UL;
+            var first = new GenTreeLclFld(var_types.TYP_SIMD16, 0, 0, firstValue, null);
+            var secondValue = compiler.gtNewVconNode(var_types.TYP_SIMD16);
+            secondValue.SimdVal.u64[0] = 0x0102030405060708UL;
+            secondValue.SimdVal.AsSpan<byte>()[16..].Fill(0xA5);
+            var second = new GenTreeLclFld(var_types.TYP_SIMD16, 0, 16, secondValue, null);
+            var block = NewBlock(firstValue, first, secondValue, second);
+            var lowering = new Lowering(compiler, new LinearScan(compiler));
+            LoweringBlock(lowering) = block;
+
+            _ = LowerNode(lowering, first);
+            _ = LowerNode(lowering, second);
+            Assert.That(second.Type, Is.EqualTo(var_types.TYP_SIMD32));
+            Assert.That(second.Data.AsVecCon().SimdVal.u64[0], Is.EqualTo(0x1122334455667788UL));
+            Assert.That(second.Data.AsVecCon().SimdVal.u64[2], Is.EqualTo(0x0102030405060708UL));
+            Assert.That(second.Data.AsVecCon().SimdVal.AsSpan<byte>()[32..].ToArray(),
+                Is.All.EqualTo((byte)0));
+#if DEBUG
+            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+#endif
+        });
+    }
+
     private static BasicBlock NewBlock(params GenTree[] nodes)
     {
         var block = new BasicBlock(null, null);

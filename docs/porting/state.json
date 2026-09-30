@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "mixedStoreCoalescingClosure": {
+      "scope": "Complete local and indirect store coalescing, invariant/constant extraction, load/store metadata and atomicity. Preserves ARM64 aligned 128-bit pair rules, native unsupported-target no-op, unsigned sizes, complete SIMD payload initialization, both write-barrier assertions and temporary insertion order.",
+      "mapping": "Native LowerStoreCoalescing, GetStoreCoalescingData and LowerCheckCoalescedStoreAtomicity local/indirect modes map to Lowering.LocalStoreCoalescing.cs and Lowering.IndirectStoreCoalescing.cs. The native indirect wrapper maps to the managed indirect entry.",
+      "validation": "Full-analysis v6 controls pass Windows117/117, ARM6478/78 and Linux122/122 in Debug/Release. Final v7 changes only the indirect fixture to assert null Value and AccessSize0x80000000u; both focused Windows cases pass Debug/Release. Seven old optimized ARM64 cases, two old data-helper cases and two v5 inactive-payload cases fail before the relevant corrections and pass afterward.",
+      "retirement": "Seven top-level functions, their headings/feature enclosure, declarations and private data record with four inline predicates;891 native lines. LowerStoreIndirCommon and its calls remain native.",
+      "nativeBefore": "2102dee885034646889cf01b4d6fb4f4530b30ef",
+      "nativeAfter": "81049525c5d2fabfa81e2422ea7b9d341279ae57",
+      "evidence": "artifacts/lower-coalescing-e3c557a/proposal-family.json and mixed-coalescing retirement records.",
+      "limits": "B472 records native-contract discrepancies, not demonstrated generated-code differences. Target fixtures run on Windows; no ARM64/Linux runtime parity or x86 compilation/execution claim."
+    },
     "sharedNodeReferenceConstructionClosure": {
       "scope": "Whole buildRefPositionsForNode preserves all-target traversal, xarch-only contained-local handling, target-specific stress masks and the ARM64 first-definition consecutive-register exemption. Existing buildPhysRegRecords preserves native register-bank ordering.",
       "validation": "ARM64 controls pass84 Debug/66 Release; the same old Debug fixtures fail exactly two stress cases. Windows node/reference/physical-register controls pass20 Debug/13 Release; Linux Debug controls pass18. Physical-register cases reuse unchanged full-analysis binaries with fresh results.",
@@ -1842,19 +1852,19 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Shared node-reference construction and physical-register initialization are accepted. Integrate the accepted whole mixed-store coalescing family, then continue retained interval construction and common indirect-store lowering. Maintain at most two compiler-heavy commands with memory monitoring, immutable owned-only snapshots,13 frozen Wasm files and centrally owned native retirement.",
+      "parentScope": "Node-reference construction, physical-register initialization and mixed-store coalescing are accepted. Continue retained interval construction and common indirect-store lowering. Maintain at most two compiler-heavy commands with memory monitoring, immutable owned-only snapshots,13 frozen Wasm files and centrally owned native retirement.",
       "wholeFunctionRepairLanes": [
         {
           "scope": "Whole retained shared LSRA interval construction.",
           "owner": "4126f755-f5b6-49bc-b68d-a80815468a7d",
           "files": "LinearScan build-interval partials and focused fixtures; parent owns shared contracts and native integration.",
-          "status": "node-reference traversal and physical-register initialization accepted; first compiler slot released; continue buildIntervals after this batch commits"
+          "status": "node-reference closure committeddd9fc73; worker owns whole buildIntervals and tightly coupled initial-definition helpers on that immutable baseline, with first monitored compiler slot"
         },
         {
-          "scope": "Retained whole local-store coalescing family after shared local-store and spill closure.",
+          "scope": "Whole retained common indirect-store lowering after mixed coalescing closure.",
           "owner": "41f2570d-eb35-4a4b-92d7-1b2d0a3df242",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "whole mixed coalescing v6 production and v7 exact data-contract assertions accepted; second compiler slot released; integrate seven functions and private data record before common indirect-store lowering"
+          "status": "whole mixed coalescing accepted and retired; next unit is LowerStoreIndirCommon after the managed commit, using second monitored compiler slot"
         },
         {
           "scope": "Whole retained shared kill-set family after return/write-barrier closure.",
@@ -2270,7 +2280,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Node-reference traversal and physical-register initialization accepted/native2102dee8; retirement already applied, do not repeat. Continue whole buildIntervals in the LSRA lane after the managed commit. Coalescing v6 production plus v7 exact null-value/unsigned-size tests are reviewed and accepted: verify packet hashes and eight result sets, retire seven native functions plus private record from current native2102dee8, and commit the five owned files with docs. Then continue LowerStoreIndirCommon. Preserve13Wasm, two monitored compiler slots, and no publication.",
+    "nextAction": "Mixed coalescing accepted/native81049525;891-line retirement already applied, do not repeat. Continue whole LowerStoreIndirCommon in the lowering lane after the managed commit. Worker4126f755 owns retained buildIntervals and tightly coupled initial-definition helpers on dd9fc73 in first monitored compiler slot. Review completed source/evidence, retire exact whole functions from native81049525 or its subsequent cleanup replacement, and commit each coherent batch. Preserve13Wasm, two compiler slots, and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

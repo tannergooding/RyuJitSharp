@@ -16,11 +16,11 @@ public sealed partial class Lowering
         public readonly GenTree RangeStart;
         public readonly GenTree RangeEnd;
         public readonly int Offset;
-        public readonly int AccessSize;
+        public readonly uint AccessSize;
         public readonly bool IsAddressExposed;
 
         public LocalStoreCoalescingData(GenTreeLclVarCommon store, GenTree rangeStart, GenTree rangeEnd,
-            int accessSize, bool isAddressExposed)
+            uint accessSize, bool isAddressExposed)
         {
             Store = store;
             Value = store.Data;
@@ -32,8 +32,13 @@ public sealed partial class Lowering
         }
     }
 
-    private bool IsLocalStoreCoalescingInvariant(GenTree node)
+    private bool IsLocalStoreCoalescingInvariant(GenTree? node, bool allowNull = false)
     {
+        if (node is null)
+        {
+            return allowNull;
+        }
+
         return node.Oper.IsConst ||
             ((node.Oper is GT_LCL_VAR) && !CompilerInstance.lvaGetDesc(node.AsLclVar().LclNum).IsAddressExposed);
     }
@@ -57,13 +62,9 @@ public sealed partial class Lowering
         }
 
         ref var descriptor = ref CompilerInstance.lvaGetDesc(store.LclNum);
-        if ((store.Oper is GT_STORE_LCL_FLD) && (store.AsLclFld().Size > int.MaxValue))
-        {
-            return false;
-        }
         var accessSize = store.Oper is GT_STORE_LCL_FLD
-            ? (int)store.AsLclFld().Size
-            : descriptor.lvExactSize;
+            ? store.AsLclFld().Size
+            : checked((uint)descriptor.lvExactSize);
         data = new LocalStoreCoalescingData(store, first, last, accessSize,
             descriptor.IsAddressExposed);
         return true;
@@ -79,10 +80,16 @@ public sealed partial class Lowering
         }
         if (node.Oper.IsCnsFltOrDbl)
         {
-            bits = node.Type is TYP_FLOAT
-                ? unchecked((uint)BitConverter.SingleToInt32Bits((float)node.AsDblCon().DconVal))
-                : unchecked((ulong)BitConverter.DoubleToInt64Bits(node.AsDblCon().DconVal));
+            if (node.Type is TYP_FLOAT)
+            {
+                bits = unchecked((uint)BitConverter.SingleToInt32Bits((float)node.AsDblCon().DconVal));
+                return true;
+            }
+#if TARGET_64BIT
+            assert(node.Type is TYP_DOUBLE);
+            bits = unchecked((ulong)BitConverter.DoubleToInt64Bits(node.AsDblCon().DconVal));
             return true;
+#endif
         }
         return false;
     }
@@ -98,12 +105,19 @@ public sealed partial class Lowering
         }
 
         var alignment = Math.Min(compiler.lvaLclStackHomeSize(current.Store.LclNum), TARGET_POINTER_SIZE);
+#if TARGET_ARM64
+        if (current.AccessSize == TARGET_POINTER_SIZE)
+        {
+            // A pointer-aligned 128-bit SIMD write preserves ARM64's pair of atomic 64-bit writes.
+            return (alignment >= TARGET_POINTER_SIZE) && ((minOffset % TARGET_POINTER_SIZE) == 0);
+        }
+#endif
         return (combinedSize <= alignment) && ((minOffset % combinedSize) == 0);
     }
 
     private void LowerLocalStoreCoalescing(GenTreeLclVarCommon store)
     {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
         var compiler = CompilerInstance;
         if (!compiler.opts.OptimizationEnabled)
         {
@@ -146,6 +160,9 @@ public sealed partial class Lowering
                 {
                     return;
                 }
+#if DEBUG
+                JITDUMP($"Store coalescing: removing previous store [{previousNode.TreeId:D6}] because store [{store.TreeId:D6}] rewrites the same location\n");
+#endif
                 BlockRange().Remove(previous.RangeStart, previous.RangeEnd);
                 continue;
             }
@@ -178,6 +195,9 @@ public sealed partial class Lowering
 
             if (currentContainsPrevious)
             {
+#if DEBUG
+                JITDUMP($"Store coalescing: removing previous store [{previousNode.TreeId:D6}] because store [{store.TreeId:D6}] fully overwrites it\n");
+#endif
                 BlockRange().Remove(previous.RangeStart, previous.RangeEnd);
                 continue;
             }
@@ -191,29 +211,40 @@ public sealed partial class Lowering
                     1 => TYP_UBYTE,
                     2 => TYP_USHORT,
                     4 => TYP_INT,
+#if TARGET_64BIT
                     8 => TYP_LONG,
+#endif
                     _ => TYP_UNDEF,
                 };
             }
             else
             {
-                if (!adjacent || !sameSize || (Math.Abs(previous.Offset - current.Offset) != previous.AccessSize))
+                if (!adjacent || !sameSize ||
+                    (Math.Abs((long)previous.Offset - current.Offset) != previous.AccessSize))
                 {
                     return;
                 }
                 newType = oldType switch {
                     TYP_BYTE or TYP_UBYTE => TYP_USHORT,
                     TYP_SHORT or TYP_USHORT => TYP_INT,
+#if TARGET_64BIT
                     TYP_INT => TYP_LONG,
 #if FEATURE_HW_INTRINSICS
                     TYP_LONG or TYP_REF => TYP_SIMD16,
+#if TARGET_AMD64
                     TYP_SIMD16 when compiler.GetPreferredVectorByteLength() >= 32 => TYP_SIMD32,
                     TYP_SIMD32 when compiler.GetPreferredVectorByteLength() >= 64 => TYP_SIMD64,
 #endif
+#endif
+#endif
                     _ => TYP_UNDEF,
                 };
-#if FEATURE_HW_INTRINSICS
-                reusePreviousValue = (newType is TYP_UNDEF) && (oldType is TYP_SIMD16 or TYP_SIMD32);
+#if TARGET_64BIT && FEATURE_HW_INTRINSICS
+                reusePreviousValue = (newType is TYP_UNDEF) && (oldType is TYP_SIMD16
+#if TARGET_AMD64
+                    or TYP_SIMD32
+#endif
+                    );
                 if ((oldType is TYP_REF) &&
                     (!current.Value.IsIntegralConst(0) || !previous.Value.IsIntegralConst(0)))
                 {
@@ -236,20 +267,19 @@ public sealed partial class Lowering
                 if ((current.Value.Oper is GT_CNS_VEC) && GenTree.Compare(previous.Value, current.Value) &&
                     BlockRange().TryGetUse(previous.Value, out var use))
                 {
-                    var temp = use.ReplaceWithLclVar(compiler, out var tempStore);
+                    var temp = use.ReplaceWithLclVar(compiler);
                     var read = compiler.gtNewLclvNode(current.Value.Type, temp);
                     BlockRange().InsertBefore(current.Value, read);
                     BlockRange().Remove(current.Value);
                     store.DataRef = read;
-                    _ = LowerNode(tempStore);
                 }
 #endif
                 return;
             }
 
+#if FEATURE_HW_INTRINSICS && TARGET_AMD64
             ulong lowerBits = 0;
             ulong upperBits = 0;
-#if FEATURE_HW_INTRINSICS
             if (varTypeIsSimd(oldType))
             {
                 if ((previous.Value.Oper is not GT_CNS_VEC) || (current.Value.Oper is not GT_CNS_VEC))
@@ -258,9 +288,12 @@ public sealed partial class Lowering
                 }
             }
             else
-#endif
             if (!TryGetLocalStoreConstantBits(previous.Value, out lowerBits) ||
                 !TryGetLocalStoreConstantBits(current.Value, out upperBits))
+#else
+            if (!TryGetLocalStoreConstantBits(previous.Value, out var lowerBits) ||
+                !TryGetLocalStoreConstantBits(current.Value, out var upperBits))
+#endif
             {
                 return;
             }
@@ -274,7 +307,7 @@ public sealed partial class Lowering
                 store.AsLclFld().LclOffs = checked((ushort)minOffset);
             }
 
-#if FEATURE_HW_INTRINSICS
+#if FEATURE_HW_INTRINSICS && TARGET_AMD64
             if (varTypeIsSimd(oldType))
             {
                 var left = previous.Value.AsVecCon().SimdVal.AsSpan<byte>();
@@ -282,10 +315,13 @@ public sealed partial class Lowering
                 var width = oldType.Size;
                 var lower = previous.Offset < current.Offset ? left[..width].ToArray() : right[..width].ToArray();
                 var upper = previous.Offset < current.Offset ? right[..width].ToArray() : left[..width].ToArray();
+                right.Clear();
                 lower.CopyTo(right[..width]);
                 upper.CopyTo(right.Slice(width, width));
                 continue;
             }
+#endif
+#if TARGET_64BIT && FEATURE_HW_INTRINSICS
             if (varTypeIsSimd(newType))
             {
                 if (previous.Offset > current.Offset)
@@ -302,27 +338,23 @@ public sealed partial class Lowering
             }
 #endif
 
-            static ulong Mask(int size)
+            static ulong Mask(uint size)
             {
-                return size >= sizeof(ulong) ? ulong.MaxValue : (1UL << (size * 8)) - 1;
+                return size >= sizeof(ulong) ? ulong.MaxValue : (1UL << ((int)size * 8)) - 1;
             }
             var previousMask = Mask(previous.AccessSize);
             var currentMask = Mask(current.AccessSize);
-            var newMask = Mask(newType.Size);
+            var newMask = Mask((uint)newType.Size);
             var previousShift = (previous.Offset - minOffset) * 8;
             var currentShift = (current.Offset - minOffset) * 8;
             var currentBitsMask = (currentMask << currentShift) & newMask;
             var result = (((lowerBits & previousMask) << previousShift) & newMask & ~currentBitsMask) |
                 (((upperBits & currentMask) << currentShift) & newMask);
+#if DEBUG
+            JITDUMP($"Coalesced two stores into a single store with value {unchecked((long)result)}\n");
+#endif
             current.Value.AsIntCon().IconVal = unchecked((nint)result);
         }
-#elif TARGET_ARM64
-        if (!CompilerInstance.opts.OptimizationEnabled)
-        {
-            return;
-        }
-
-        throw new NotImplementedException("ARM64 local-store coalescing is not ported.");
 #endif
     }
 }

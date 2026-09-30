@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 
@@ -259,6 +260,88 @@ internal static unsafe class IndirectStoreCoalescingTests
             Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
 #endif
         });
+    }
+
+    [Test]
+    public static void WidenedVectorStoreClearsInactivePayload()
+    {
+        WithCompiler(optimized: true, compiler => {
+            compiler.opts.compSupportsISA.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX);
+            compiler.opts.compSupportsISAReported.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX);
+            compiler.opts.compSupportsISAExactly.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX);
+            Assert.That(compiler.GetPreferredVectorByteLength(), Is.EqualTo(32));
+
+            var firstAddr = compiler.gtNewIconNode(Globals.TYP_I_IMPL, 0x1000);
+            var firstValue = compiler.gtNewVconNode(var_types.TYP_SIMD16);
+            firstValue.SimdVal.u64[0] = 0x1122334455667788UL;
+            var first = new GenTreeStoreInd(var_types.TYP_SIMD16, firstAddr, firstValue) {
+                Flags = GenTreeFlags.GTF_IND_ALLOW_NON_ATOMIC,
+            };
+            var secondAddr = compiler.gtNewIconNode(Globals.TYP_I_IMPL, 0x1010);
+            var secondValue = compiler.gtNewVconNode(var_types.TYP_SIMD16);
+            secondValue.SimdVal.u64[0] = 0x0102030405060708UL;
+            secondValue.SimdVal.AsSpan<byte>()[16..].Fill(0xA5);
+            var second = new GenTreeStoreInd(var_types.TYP_SIMD16, secondAddr, secondValue) {
+                Flags = GenTreeFlags.GTF_IND_ALLOW_NON_ATOMIC,
+            };
+            var block = NewBlock(firstAddr, firstValue, first, secondAddr, secondValue, second);
+            var lowering = NewLowering(compiler, block);
+
+            _ = LowerNode(lowering, first);
+            _ = LowerNode(lowering, second);
+            Assert.That(second.Type, Is.EqualTo(var_types.TYP_SIMD32));
+            Assert.That(second.Data.AsVecCon().SimdVal.u64[0], Is.EqualTo(0x1122334455667788UL));
+            Assert.That(second.Data.AsVecCon().SimdVal.u64[2], Is.EqualTo(0x0102030405060708UL));
+            Assert.That(second.Data.AsVecCon().SimdVal.AsSpan<byte>()[32..].ToArray(),
+                Is.All.EqualTo((byte)0));
+#if DEBUG
+            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+#endif
+        });
+    }
+
+    [Test]
+    public static void LoadCoalescingDataHasNoStoreValue()
+    {
+        WithCompiler(optimized: true, compiler => {
+            var address = compiler.gtNewIconNode(Globals.TYP_I_IMPL, 0x1000);
+            var load = new GenTreeIndir(genTreeOps.GT_IND, var_types.TYP_INT, address);
+            var block = NewBlock(address, load);
+            Assert.That(TryGetLoadStoreCoalescingData(NewLowering(compiler, block), load, out var data), Is.True);
+            var dataType = typeof(Lowering).GetNestedType("IndirectStoreCoalescingData",
+                BindingFlags.NonPublic) ?? throw new InvalidOperationException();
+            var valueField = dataType.GetField("Value") ?? throw new InvalidOperationException();
+            Assert.That(valueField.GetValue(data), Is.Null);
+        });
+    }
+
+    [Test]
+    public static void LargeStoreCoalescingDataRetainsUnsignedSize()
+    {
+        WithCompiler(optimized: true, compiler => {
+            var address = compiler.gtNewIconNode(Globals.TYP_I_IMPL, 0x1000);
+            var value = compiler.gtNewIconNode(var_types.TYP_INT, 0);
+            var store = new GenTreeBlk(var_types.TYP_STRUCT, address, value, new ClassLayout(0x80000000u));
+            var block = NewBlock(address, value, store);
+            Assert.That(TryGetLoadStoreCoalescingData(NewLowering(compiler, block), store, out var data), Is.True);
+            var dataType = typeof(Lowering).GetNestedType("IndirectStoreCoalescingData",
+                BindingFlags.NonPublic) ?? throw new InvalidOperationException();
+            var accessSizeField = dataType.GetField("AccessSize") ?? throw new InvalidOperationException();
+            Assert.That(accessSizeField.GetValue(data), Is.EqualTo(0x80000000u));
+        });
+    }
+
+    private static bool TryGetLoadStoreCoalescingData(Lowering lowering, GenTreeIndir node, out object? data)
+    {
+        var method = typeof(Lowering).GetMethod("TryGetLoadStoreCoalescingData",
+            BindingFlags.Instance | BindingFlags.NonPublic) ??
+            typeof(Lowering).GetMethod("TryGetIndirectStoreCoalescingData",
+                BindingFlags.Instance | BindingFlags.NonPublic) ??
+            throw new InvalidOperationException();
+        object?[] arguments = [node, null];
+        var succeeded = method.Invoke(lowering, arguments) is true;
+        data = arguments[1];
+        return succeeded && data is not null;
     }
 
     private static Lowering NewLowering(Compiler compiler, BasicBlock block)
