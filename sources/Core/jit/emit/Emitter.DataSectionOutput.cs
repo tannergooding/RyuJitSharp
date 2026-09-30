@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 using System;
 
 namespace RyuJitSharp;
@@ -12,9 +11,6 @@ public partial class Emitter
 {
     public unsafe void emitOutputDataSec(dataSecDsc sec, AllocMemChunk* chunks)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Data-section output requires Windows AMD64.");
-#else
         var compiler = _compiler ?? throw new FatalJitException("Data-section output requires an active compiler.");
 #if DEBUG
         if (compiler.verbose)
@@ -52,7 +48,11 @@ public partial class Emitter
 #endif
                 assert(dscSize != 0 && dscSize % TARGET_POINTER_SIZE == 0);
                 var numElems = dscSize / TARGET_POINTER_SIZE;
+#if TARGET_64BIT
                 var bDstRW = (nuint*)dstRW;
+#else
+                var bDstRW = (uint*)dstRW;
+#endif
                 for (uint i = 0; i < numElems; i++)
                 {
                     var block = dsc.Blocks[i]
@@ -61,7 +61,17 @@ public partial class Emitter
                         ?? throw new FatalJitException("An absolute-label table requires an emitted block label.");
                     var target = emitOffsetToPtr(lab.igOffs);
 
+#if TARGET_ARM
+                    if (!compiler.opts.compReloc)
+                    {
+                        target = (byte*)((nuint)target | 1u);
+                    }
+#endif
+#if TARGET_64BIT
                     bDstRW[i] = (nuint)target;
+#else
+                    bDstRW[i] = unchecked((uint)(nuint)target);
+#endif
                     if (compiler.opts.compReloc)
                     {
                         emitRecordRelocation(&bDstRW[i], target, CorInfoReloc.DIRECT);
@@ -109,7 +119,11 @@ public partial class Emitter
                 for (uint i = 0; i < numElems; i++)
                 {
                     var location = dsc.Locations[i];
+#if TARGET_WASM
+                    var target = location.Valid() && compiler.IsReadyToRun ? emitCodeBlock : null;
+#else
                     var target = location.Valid() ? emitOffsetToPtr(location.CodeOffset(this)) : null;
+#endif
 
                     aDstRW[i].Resume = (nint)emitAsyncResumeStubEntryPoint;
                     aDstRW[i].DiagnosticIP = (nint)target;
@@ -119,7 +133,12 @@ public partial class Emitter
                         emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc.DIRECT);
                         if (target is not null)
                         {
+#if TARGET_WASM
+                            emitRecordRelocation(&aDstRW[i].DiagnosticIP, target,
+                                CorInfoReloc.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32);
+#else
                             emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc.DIRECT);
+#endif
                         }
                     }
 
@@ -169,7 +188,5 @@ public partial class Emitter
 #endif
             }
         }
-#endif
     }
 }
-#endif

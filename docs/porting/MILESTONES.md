@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Shared data-section output and diagnostics
+
+Final data-section output and display retain the whole native target branches:
+ARM Thumb tagging, Wasm ReadyToRun diagnostic-IP relocations, 32-bit absolute
+addresses and assembler syntax, and 64-bit address forms. Raw bytes write only
+the writable allocation alias; relative tables preserve unsigned offsets, and
+removed async locations retain null diagnostic IPs.
+
+Two whole definitions, their declarations and the now-shared inline hot/cold
+offset helper are removed from the residual tree. Linux-target data-output
+controls now execute rather than stopping at the Windows-AMD64 restriction.
+Other-target instruction emission and runtime validation remain separate;
+these Windows-hosted controls do not establish new generated-code parity.
+
 ## 2026-09-30: Shared async-resume metadata
 
 Location recording, singleton table registration, state-handle generation and

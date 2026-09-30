@@ -1391,9 +1391,14 @@ Their native definitions and completed declarations are removed. The two-pointer
 EE record layout, pointer alignment, singleton registration, location capture,
 section linking and resumption-stub cache are unchanged. Other-target
 instruction recording still terminates through its separate support boundary.
-Final data-section output, suspension/continuation and patchpoint bodies remain
-deferred; metadata registration does not establish runtime or generated-code
-parity on those targets.
+Shared final data-section output/display preserve native ARM, Wasm and
+target-width branches, writable-alias stores, relocation ordering and async
+null-location handling. Their native definitions and declarations, and the
+newly shared existing inline hot/cold offset helper, are removed. Native
+`emitLocation` diagnostic geometry remains a host pointer plus an aligned
+unsigned field; the EE record layout is not redesigned. Suspension/continuation
+and patchpoint bodies remain deferred. These shared helpers do not establish
+other-target instruction emission or runtime/generated-code parity.
 
 `LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
 performs conservative frame layout before reserving IP1 and reserves x19 when

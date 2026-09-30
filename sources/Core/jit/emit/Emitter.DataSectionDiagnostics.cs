@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 using System;
 using System.Buffers.Binary;
 using System.Globalization;
@@ -14,9 +13,6 @@ public partial class Emitter
 {
     public unsafe void emitDispDataSec(dataSecDsc section, AllocMemChunk* dataChunks)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Data-section diagnostics require Windows AMD64.");
-#else
         var compiler = _compiler ?? throw new FatalJitException("Data-section diagnostics require an active compiler.");
         jitprintf("\n");
 
@@ -66,14 +62,29 @@ public partial class Emitter
                             jitprintf($"\tdd\t{unchecked(ig.igOffs - igFirst.igOffs):X8}h");
                         }
                     }
-                    else if (compiler.opts.disDiffable)
-                    {
-                        jitprintf($"\tdq\t{blockLabel}\n");
-                    }
                     else
                     {
-                        var address = emitOffsetToPtr(ig.igOffs);
-                        jitprintf($"\tdq\t{(nuint)address:X16}h");
+#if TARGET_64BIT
+                        if (compiler.opts.disDiffable)
+                        {
+                            jitprintf($"\tdq\t{blockLabel}\n");
+                        }
+                        else
+                        {
+                            var address = emitOffsetToPtr(ig.igOffs);
+                            jitprintf($"\tdq\t{(nuint)address:X16}h");
+                        }
+#else
+                        if (compiler.opts.disDiffable)
+                        {
+                            jitprintf($"\tdd\t{blockLabel}\n");
+                        }
+                        else
+                        {
+                            var address = emitOffsetToPtr(ig.igOffs);
+                            jitprintf($"\tdd\t{unchecked((uint)(nuint)address):X8}h");
+                        }
+#endif
                     }
 
                     if (!compiler.opts.disDiffable)
@@ -88,8 +99,8 @@ public partial class Emitter
                 assert(emitAsyncResumeStubEntryPoint is not null);
 
                 var resumeStubName = compiler.eeGetMethodFullName(emitAsyncResumeStub, true, true);
-                // A native emitLocation occupies 16 bytes on AMD64, the same as one resume-info entry.
-                var infoCount = data.dsSize / (uint)sizeof(CORINFO_AsyncResumeInfo);
+                // Native emitLocation is a host pointer plus uint, padded to host pointer alignment.
+                var infoCount = data.dsSize / (2u * (uint)sizeof(nint));
                 for (uint i = 0; i < infoCount; i++)
                 {
                     if (i > 0)
@@ -269,7 +280,6 @@ public partial class Emitter
                 }
             }
         }
-#endif
     }
 
     private static uint ReadDataWord(byte[] data, uint offset, int size)
@@ -292,4 +302,3 @@ public partial class Emitter
         return formatted.PadLeft(width);
     }
 }
-#endif

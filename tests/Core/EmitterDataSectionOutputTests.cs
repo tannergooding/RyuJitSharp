@@ -216,6 +216,82 @@ internal static unsafe class EmitterDataSectionOutputTests
         });
     }
 
+    [TestCase(true)]
+    [TestCase(false)]
+    public static void AbsoluteTableDumpUsesPointerWidthAndRetainsCaseLabels(bool diffable)
+    {
+        WithEmitter((compiler, emitter) =>
+        {
+            compiler.opts.disAsm = true;
+            compiler.opts.disDiffable = diffable;
+            var group = new insGroup { igOffs = 8 };
+            group.InitializeNum(1);
+            var block = new BasicBlock(null, null) { bbEmitCookie = group };
+            compiler.fgFirstBB = block;
+            Assert.That(emitter.emitBBTableDataGenBeg(1, false), Is.Zero);
+            emitter.emitDataGenData(0, block);
+            emitter.emitDataGenEnd();
+
+            var code = stackalloc byte[32];
+            emitter.emitCodeBlock = code;
+            emitter.emitTotalHotCodeSize = 32;
+            var readonlyBlock = stackalloc byte[8];
+            var writableBlock = stackalloc byte[8];
+            var chunk = new AllocMemChunk { size = 8, block = readonlyBlock, blockRW = writableBlock };
+
+            var output = CaptureOutput(emitter, &chunk);
+
+            var expected = diffable
+                ? "\nRWD00  \tdq\tG_M000_IG01\n"
+                : $"\nRWD00  \tdq\t{(nuint)(code + 8):X16}h ; case G_M000_IG01\n";
+            Assert.That(output, Is.EqualTo(expected.Replace("\n", Environment.NewLine, StringComparison.Ordinal)));
+            Assert.That(*(nuint*)writableBlock, Is.EqualTo((nuint)(code + 8)));
+        });
+    }
+
+    [Test]
+    public static void AsyncTableDumpUsesRecordedLocationsAndNativeEntryOffsets()
+    {
+        WithEmitter((compiler, emitter) =>
+        {
+            compiler.opts.disAsm = true;
+            var group = new insGroup { igOffs = 12 };
+            group.InitializeNum(1);
+#if DEBUG
+            group.igSelf = group;
+#endif
+            var section = new Emitter.dataSection
+            {
+                dsType = Emitter.dataSection.sectionType.asyncResumeInfo,
+                dsSize = 2 * (uint)sizeof(CORINFO_AsyncResumeInfo),
+                Locations = [new emitLocation(group), new emitLocation(group)],
+            };
+            emitter.emitConsDsc.dsdList = section;
+            emitter.emitConsDsc.dsdLast = section;
+            emitter.emitConsDsc.dsdOffs = section.dsSize;
+            var helper = CorInfoHelpFunc.CORINFO_HELP_THROW;
+            StubHandle(emitter) = (CORINFO_METHOD_STRUCT_*)(((nint)(int)helper << 2) | 1);
+            StubEntryPoint(emitter) = (void*)0x1234;
+            var code = stackalloc byte[32];
+            emitter.emitCodeBlock = code;
+            emitter.emitTotalHotCodeSize = 32;
+            var readonlyBlock = stackalloc byte[32];
+            var writableBlock = stackalloc byte[32];
+            var chunk = new AllocMemChunk { size = 32, block = readonlyBlock, blockRW = writableBlock };
+
+            var output = CaptureOutput(emitter, &chunk);
+
+            Assert.That(output, Is.EqualTo((
+                "\nRWD00  \tdq\tCORINFO_HELP_THROW\n" +
+                "\tdq\tG_M000_IG01\n" +
+                "RWD16  \tdq\tCORINFO_HELP_THROW\n" +
+                "\tdq\tG_M000_IG01\n").Replace("\n", Environment.NewLine, StringComparison.Ordinal)));
+            var entries = (CORINFO_AsyncResumeInfo*)writableBlock;
+            Assert.That(entries[0].DiagnosticIP, Is.EqualTo((nint)(code + 12)));
+            Assert.That(entries[1].DiagnosticIP, Is.EqualTo((nint)(code + 12)));
+        });
+    }
+
     [Test]
     public static void FloatingDataDumpRetainsBitPatternsAndDecimalComments()
     {
@@ -264,6 +340,9 @@ internal static unsafe class EmitterDataSectionOutputTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitAsyncResumeStubEntryPoint")]
     private static extern ref void* StubEntryPoint(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitAsyncResumeStub")]
+    private static extern ref CORINFO_METHOD_STRUCT_* StubHandle(Emitter emitter);
 
     private struct RelocationContext
     {

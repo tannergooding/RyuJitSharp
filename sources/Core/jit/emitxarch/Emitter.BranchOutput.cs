@@ -9,7 +9,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
     private unsafe byte* emitOffsetToPtr(uint offset)
     {
         if (offset < emitTotalHotCodeSize)
@@ -21,6 +20,7 @@ public partial class Emitter
         return emitColdCodeBlock + (offset - emitTotalHotCodeSize);
     }
 
+#if TARGET_XARCH
     private bool emitJumpCrossHotColdBoundary(uint srcOffset, uint dstOffset)
     {
         if (emitTotalColdCodeSize == 0)
