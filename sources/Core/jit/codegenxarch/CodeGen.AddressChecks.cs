@@ -10,9 +10,6 @@ public sealed partial class CodeGen
 {
     public void genLeaInstruction(GenTreeAddrMode lea)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Address generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         var size = lea.Type.EmitSize;
         genConsumeOperands(lea);
@@ -32,27 +29,19 @@ public sealed partial class CodeGen
         }
 
         genProduceReg(lea);
-#endif
     }
 
     public void genCodeForNullCheck(GenTreeIndir tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Null-check generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_NULLCHECK);
         assert(tree.Op1.IsUsedFromReg);
         var reg = genConsumeReg(tree.Op1);
         Emitter.emitIns_AR_R(INS_cmp, tree.Type.EmitSize, reg, reg, 0);
-#endif
     }
 
     public void genRangeCheck(GenTree oper)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Bounds-check generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         noway_assert(oper.Oper is GT_BOUNDS_CHECK);
         var bounds = oper.AsBoundsChk();
@@ -96,7 +85,6 @@ public sealed partial class CodeGen
         assert(type.EmitSize >= src1.Type.EmitSize);
         _ = Emitter.emitInsBinary(compare, type.EmitSize, src1, src2);
         genJumpToThrowHlpBlk(jumpKind, bounds.ThrowKind);
-#endif
     }
 }
 #endif

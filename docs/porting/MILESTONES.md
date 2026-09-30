@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole xarch address generation and checks
+
+Indexed addresses, LEA, null checks and bounds checks retain their native
+x86/AMD64 branches. X86 indexing uses pointer-width comparisons, acquires a
+temporary only for scales that cannot be encoded directly, and preserves the
+signed 32-bit multiply immediate. AMD64 widening, instruction ordering and
+base-register GC liveness are unchanged.
+
+Four whole xarch definitions are removed from the residual tree. Shared
+other-target declarations and independent indirect-load, SIMD and emitter
+dependencies remain. X86 compilation and emission boundaries are still
+unresolved; this source closure does not establish new runtime or generated-code
+parity.
+
 ## 2026-09-30: Whole xarch local access
 
 Local address generation, field and variable loads, and field and variable
