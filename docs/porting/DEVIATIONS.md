@@ -1455,6 +1455,18 @@ The nineteen retained Linux profiler failures are preexisting register and
 frame-delta assertions, not newly exposed NYIs. Failed target builds can still
 mask later body diagnostics; this closure does not establish runtime parity.
 
+Xarch callee-save push/pop, floating preservation/restoration, root epilog and
+AVX-clearing callers now include their native x86 paths. Caller-entry recording
+checks remain AMD64-only so x86 empty/no-op paths do not fail before reaching
+their native predicates; unsupported independent recording helpers still
+terminate when called. `DOUBLE_ALIGN` state/readback is represented through
+`CodeGen`, `ICodeGen`, `Compiler` and the existing LSRA policy. The five complete
+native inline accessors, including both `doubleAlignOrFramePointerUsed` variants,
+are retired; native fields and guards remain. Shared push/pop/root declarations
+remain for other-target definitions. X86 compilation still fails before full
+body checking, and new x86 controls remain unexecuted; funclets and general
+frame/GC encoding are separate work.
+
 `LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
 performs conservative frame layout before reserving IP1 and reserves x19 when
 the layout contains scalable vectors. The layout includes varargs homes,

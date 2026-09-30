@@ -98,10 +98,12 @@ public sealed partial class CodeGen
 
     public void genClearAvxStateInProlog()
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Prolog AVX-state clearing requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Prolog AVX-state clearing requires xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         // Hoist clearing to the prolog when only calls, not this method's own SIMD, require it.
         if (Emitter.ContainsCallNeedingVzeroupper && !Emitter.Contains256BitOrMoreAvxInstruction)
         {
@@ -112,10 +114,12 @@ public sealed partial class CodeGen
 
     public void genClearAvxStateInEpilog()
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Epilog AVX-state clearing requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Epilog AVX-state clearing requires xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         if (Emitter.Contains256BitOrMoreAvxInstruction)
         {
             instGen(INS_vzeroupper);

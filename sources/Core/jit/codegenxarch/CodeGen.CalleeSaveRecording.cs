@@ -12,10 +12,12 @@ public sealed partial class CodeGen
 {
     public void genPushCalleeSavedRegisters(regNumber initReg, ref bool initRegZeroed)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Callee-save pushes require AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Callee-save pushes require xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
 #if DEBUG
         if (_compiler.opts.IsOSR)
@@ -25,11 +27,11 @@ public sealed partial class CodeGen
 #endif
         var pushRegs = _regSet.rsGetModifiedIntCalleeSavedRegsMask();
 #if ETW_EBP_FRAMED
-        noway_assert(IsFramePointerUsed || !_regSet.rsRegsModified(RBM_RBP));
+        noway_assert(IsFramePointerUsed || !_regSet.rsRegsModified(new regMaskTP(SRBM_EBP)));
 #endif
         if (IsFramePointerUsed)
         {
-            pushRegs &= ~RBM_RBP;
+            pushRegs &= ~new regMaskTP(SRBM_EBP);
         }
 
 #if DEBUG
@@ -42,20 +44,26 @@ public sealed partial class CodeGen
             assert(_compiler.compCalleeRegsPushed == count);
         }
 #endif
+#if TARGET_AMD64
         if (_compiler.canUseApxEvexEncoding() && (JitConfig.EnableApxPP2 != 0))
         {
             genPushCalleeSavedRegistersFromMaskAPX(pushRegs);
             return;
         }
+#endif
 
         for (var reg = REG_INT_LAST; pushRegs.IsNonEmpty; reg--)
         {
             var bit = regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
             if ((bit & pushRegs).IsNonEmpty)
             {
+#if TARGET_AMD64
                 var options = _compiler.canUseApxEvexEncoding() && (JitConfig.EnableApxPPHint != 0)
                     ? INS_OPTS_APX_ppx : INS_OPTS_NONE;
                 Emitter.emitIns_R(INS_push, EA_PTRSIZE, reg, options);
+#else
+                inst_RV(INS_push, reg, TYP_REF);
+#endif
                 _compiler.unwindPush(reg);
                 pushRegs &= ~bit;
             }
@@ -109,10 +117,12 @@ public sealed partial class CodeGen
 
     public void genPreserveCalleeSavedFltRegs()
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Floating callee-save recording requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Floating callee-save recording requires xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         var mask = new regMaskTP(_compiler.compCalleeFPRegsSavedMask);
         assert((mask & new regMaskTP(SRBM_FLT_CALLEE_SAVED)) == mask);
         if (mask.IsEmpty)
@@ -120,10 +130,17 @@ public sealed partial class CodeGen
             return;
         }
 
+#if TARGET_AMD64
         var padding = _compiler.lvaIsCalleeSavedIntRegCountEven() ? REGSIZE_BYTES : 0;
-        var offset = unchecked((uint)(_compiler.compLclFrameSize - padding - XMM_REGSIZE_BYTES));
-        assert((offset % 16) == 0);
         var ins = ins_Copy(TYP_FLOAT);
+#else
+        var padding = 0;
+        var ins = INS_movupd;
+#endif
+        var offset = unchecked((uint)(_compiler.compLclFrameSize - padding - XMM_REGSIZE_BYTES));
+#if TARGET_AMD64
+        assert((offset % 16) == 0);
+#endif
         for (var reg = REG_FLT_CALLEE_SAVED_FIRST; mask.IsNonEmpty; reg++)
         {
             var bit = regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
@@ -141,10 +158,12 @@ public sealed partial class CodeGen
 
     public void genRestoreCalleeSavedFltRegs()
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Floating callee-save restoration requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Floating callee-save restoration requires xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         var mask = new regMaskTP(_compiler.compCalleeFPRegsSavedMask);
         assert((mask & new regMaskTP(SRBM_FLT_CALLEE_SAVED)) == mask);
         if (mask.IsEmpty)
@@ -152,18 +171,25 @@ public sealed partial class CodeGen
             return;
         }
 
+#if TARGET_AMD64
         var padding = _compiler.lvaIsCalleeSavedIntRegCountEven() ? REGSIZE_BYTES : 0;
+        var ins = ins_Copy(TYP_FLOAT);
+#else
+        var padding = 0;
+        var ins = INS_movupd;
+#endif
         var offset = unchecked((uint)(_compiler.compLclFrameSize - padding - XMM_REGSIZE_BYTES));
         var baseReg = REG_SPBASE;
         if (_compiler.compLocallocUsed)
         {
             assert(IsFramePointerUsed);
             baseReg = REG_FPBASE;
-            offset = unchecked(offset - (uint)genSPtoFPdelta);
+            offset = unchecked((uint)(_compiler.compLclFrameSize - genSPtoFPdelta - padding - XMM_REGSIZE_BYTES));
         }
 
+#if TARGET_AMD64
         assert((offset % 16) == 0);
-        var ins = ins_Copy(TYP_FLOAT);
+#endif
         for (var reg = REG_FLT_CALLEE_SAVED_FIRST; mask.IsNonEmpty; reg++)
         {
             var bit = regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);

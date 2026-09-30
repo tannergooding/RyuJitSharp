@@ -10,14 +10,26 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+    private bool doubleAlignOrFramePointerUsed()
+    {
+#if DOUBLE_ALIGN
+        return IsFramePointerUsed || _compiler.genDoubleAlign;
+#else
+        return IsFramePointerUsed;
+#endif
+    }
+
     public unsafe void genPopCalleeSavedRegisters(bool jmpEpilog = false)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Callee-save restoration requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Callee-save restoration requires xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(Emitter.emitGeneratingEpilogOrFuncletEpilog());
 
+#if TARGET_AMD64
         var isFunclet = _compiler.funCurrentFunc().funKind != FuncKind.FUNC_ROOT;
         if (_compiler.opts.IsOSR && !isFunclet)
         {
@@ -28,52 +40,61 @@ public sealed partial class CodeGen
                 & new regMaskTP(SRBM_OSR_INT_CALLEE_SAVED);
             var additional = popRegs & ~tier0;
             genPopCalleeSavedRegistersFromMask(additional);
-            genPopCalleeSavedRegistersFromMask(tier0 & ~RBM_RBP);
+            genPopCalleeSavedRegistersFromMask(tier0 & ~new regMaskTP(SRBM_EBP));
             return;
         }
 
+        if (_compiler.canUseApxEvexEncoding() && (JitConfig.EnableApxPP2 != 0))
+        {
+            var apxRegs = _regSet.rsGetModifiedIntCalleeSavedRegsMask();
+            var apxCount = genPopCalleeSavedRegistersFromMaskAPX(apxRegs);
+            noway_assert(_compiler.compCalleeRegsPushed == apxCount);
+            return;
+        }
+#endif
         var normalRegs = _regSet.rsGetModifiedIntCalleeSavedRegsMask();
-        var count = _compiler.canUseApxEvexEncoding() && (JitConfig.EnableApxPP2 != 0)
-            ? genPopCalleeSavedRegistersFromMaskAPX(normalRegs)
-            : genPopCalleeSavedRegistersFromMask(normalRegs);
+        var count = genPopCalleeSavedRegistersFromMask(normalRegs);
         noway_assert(_compiler.compCalleeRegsPushed == count);
 #endif
     }
 
     public uint genPopCalleeSavedRegistersFromMask(regMaskTP popRegs)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Callee-save restoration requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Callee-save restoration requires xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         var count = 0u;
         var options = _compiler.canUseApxEvexEncoding() && (JitConfig.EnableApxPPHint != 0)
             ? INS_OPTS_APX_ppx : INS_OPTS_NONE;
 
-        if ((popRegs & RBM_RBX).IsNonEmpty)
+        if ((popRegs & RBM_EBX).IsNonEmpty)
         {
             count++;
-            Emitter.emitIns_R(INS_pop, EA_PTRSIZE, REG_RBX, options);
+            Emitter.emitIns_R(INS_pop, EA_PTRSIZE, REG_EBX, options);
         }
-        if ((popRegs & RBM_RBP).IsNonEmpty)
+        if ((popRegs & new regMaskTP(SRBM_EBP)).IsNonEmpty)
         {
-            assert(!IsFramePointerUsed);
+            assert(!doubleAlignOrFramePointerUsed());
             count++;
-            Emitter.emitIns_R(INS_pop, EA_PTRSIZE, REG_RBP, options);
+            Emitter.emitIns_R(INS_pop, EA_PTRSIZE, REG_FPBASE, options);
         }
-#if WINDOWS_AMD64_ABI
-        if ((popRegs & RBM_RSI).IsNonEmpty)
+#if !UNIX_AMD64_ABI
+        if ((popRegs & RBM_ESI).IsNonEmpty)
         {
             count++;
-            Emitter.emitIns_R(INS_pop, EA_PTRSIZE, REG_RSI, options);
+            Emitter.emitIns_R(INS_pop, EA_PTRSIZE, REG_ESI, options);
         }
-        if ((popRegs & RBM_RDI).IsNonEmpty)
+        if ((popRegs & RBM_EDI).IsNonEmpty)
         {
             count++;
-            Emitter.emitIns_R(INS_pop, EA_PTRSIZE, REG_RDI, options);
+            Emitter.emitIns_R(INS_pop, EA_PTRSIZE, REG_EDI, options);
         }
 #endif
 
+#if TARGET_AMD64
         var highRegs = popRegs & (RBM_R12 | RBM_R13 | RBM_R14 | RBM_R15);
         while (highRegs.IsNonEmpty)
         {
@@ -82,6 +103,7 @@ public sealed partial class CodeGen
             Emitter.emitIns_R(INS_pop, EA_PTRSIZE, reg, options);
             highRegs &= ~regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
         }
+#endif
 
         return count;
 #endif
@@ -141,10 +163,18 @@ public sealed partial class CodeGen
 
     public unsafe void genFnEpilog(BasicBlock block)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Root epilog generation requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Root epilog generation requires xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
+#if DEBUG
+        if (_verbose)
+        {
+            jitprintf("*************** In genFnEpilog()\n");
+        }
+#endif
         VarSetOps.Assign(_compiler, ref GCInfo.gcVarPtrSetCur, Emitter.InitGCrefVars);
         GCInfo.gcRegGCrefSetCur = Emitter.InitGCrefRegs;
         GCInfo.gcRegByrefSetCur = Emitter.InitByrefRegs;
@@ -175,13 +205,23 @@ public sealed partial class CodeGen
         genClearAvxStateInEpilog();
         genRestoreCalleeSavedFltRegs();
 
-        var removeEbpFrame = IsFramePointerUsed &&
-            (_compiler.compLocallocUsed || _compiler.opts.compDbgEnC);
+#if JIT32_GCENCODER
+        Emitter.emitStartEpilog();
+#endif
+
+        var removeEbpFrame = doubleAlignOrFramePointerUsed();
+#if TARGET_AMD64
+        if (removeEbpFrame)
+        {
+            removeEbpFrame = _compiler.compLocallocUsed || _compiler.opts.compDbgEnC;
+        }
+#endif
         if (!removeEbpFrame)
         {
             noway_assert(!_compiler.compLocallocUsed);
             noway_assert(_compiler.compLclFrameSize >= 0);
             var frameSize = unchecked((uint)_compiler.compLclFrameSize);
+#if TARGET_AMD64
             if (_compiler.opts.IsOSR)
             {
                 var patchpoint = _compiler.info.compPatchpointInfo;
@@ -199,34 +239,111 @@ public sealed partial class CodeGen
                 JITDUMP($"    OSR frame size {frameSize}; net osr adjust {adjustment}, result {frameSize + adjustment}\n");
                 frameSize = unchecked(frameSize + adjustment);
             }
+#endif
 
             if (frameSize > 0)
             {
-                inst_RV_IV(INS_add, REG_SPBASE, (nint)frameSize, EA_PTRSIZE);
+#if TARGET_X86
+                if ((frameSize == TARGET_POINTER_SIZE) && !_compiler.compJmpOpUsed && !_compiler.compIsAsync)
+                {
+                    inst_RV(INS_pop, REG_ECX, TYP_I_IMPL);
+                    _regSet.verifyRegUsed(REG_ECX);
+                }
+                else
+#endif
+                {
+                    inst_RV_IV(INS_add, REG_SPBASE, (nint)frameSize, EA_PTRSIZE);
+                }
             }
             genPopCalleeSavedRegisters();
-            if (IsFramePointerUsed || _compiler.opts.IsOSR)
+#if TARGET_AMD64
+            if (doubleAlignOrFramePointerUsed() || _compiler.opts.IsOSR)
             {
-                inst_RV(INS_pop, REG_RBP, TYP_I_IMPL);
+                inst_RV(INS_pop, REG_FPBASE, TYP_I_IMPL);
             }
+#endif
         }
         else
         {
-            noway_assert(IsFramePointerUsed);
+            noway_assert(doubleAlignOrFramePointerUsed());
             assert(!_compiler.opts.IsOSR);
-            var needLea = _compiler.compLocallocUsed
-                || (_compiler.compLclFrameSize != 0);
-            if (needLea)
+
+            var needMovEspEbp = false;
+#if DOUBLE_ALIGN
+            if (_compiler.genDoubleAlign)
             {
-                var offset = genSPtoFPdelta - _compiler.compLclFrameSize;
-                if (!_compiler.compLocallocUsed)
+                noway_assert(_compiler.compLclFrameSize != 0);
+                inst_RV_IV(INS_add, REG_SPBASE, _compiler.compLclFrameSize, EA_PTRSIZE);
+                needMovEspEbp = true;
+            }
+            else
+#endif
+            {
+                var needLea = false;
+                if (_compiler.compLocallocUsed)
                 {
-                    noway_assert(offset < byte.MaxValue);
+                    needLea = true;
                 }
-                Emitter.emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_SPBASE, REG_RBP, -offset);
+                else if (!_regSet.rsRegsModified(
+                    new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED)))
+                {
+                    if (_compiler.compLclFrameSize != 0)
+                    {
+#if TARGET_AMD64
+                        needLea = true;
+#else
+                        needMovEspEbp = true;
+#endif
+                    }
+                }
+                else if (_compiler.compLclFrameSize != 0)
+                {
+#if TARGET_X86
+                    if ((_compiler.compLclFrameSize == REGSIZE_BYTES) && !_compiler.compJmpOpUsed &&
+                        !_compiler.compIsAsync)
+                    {
+                        inst_RV(INS_pop, REG_ECX, TYP_I_IMPL);
+                        _regSet.verifyRegUsed(REG_ECX);
+                    }
+                    else
+#endif
+                    {
+                        needLea = true;
+                    }
+                }
+
+                if (needLea)
+                {
+#if TARGET_AMD64
+                    var offset = genSPtoFPdelta - _compiler.compLclFrameSize;
+                    if (!_compiler.compLocallocUsed)
+                    {
+                        noway_assert(offset < byte.MaxValue);
+                    }
+#else
+                    var offset = _compiler.compCalleeRegsPushed * REGSIZE_BYTES;
+                    noway_assert(offset < byte.MaxValue);
+#endif
+                    Emitter.emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -offset);
+                }
             }
             genPopCalleeSavedRegisters();
-            inst_RV(INS_pop, REG_RBP, TYP_I_IMPL);
+#if TARGET_AMD64
+            if (_compiler.opts.IsOSR)
+            {
+                var patchpoint = _compiler.info.compPatchpointInfo;
+                noway_assert(patchpoint is not null);
+                inst_RV_IV(INS_add, REG_SPBASE,
+                    patchpoint->TotalFrameSize + TARGET_POINTER_SIZE, EA_PTRSIZE);
+            }
+            assert(!needMovEspEbp);
+#else
+            if (needMovEspEbp)
+            {
+                inst_Mov(TYP_I_IMPL, REG_SPBASE, REG_FPBASE, canSkip: false);
+            }
+#endif
+            inst_RV(INS_pop, REG_FPBASE, TYP_I_IMPL);
         }
 
         Emitter.emitStartExitSeq();
@@ -235,9 +352,17 @@ public sealed partial class CodeGen
         {
             noway_assert(block.Kind == BBJ_RETURN);
             var last = block.GetLastNode() ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Missing JMP epilog node.");
+#if !FEATURE_FASTTAILCALL
+            noway_assert(last.Oper == GT_JMP);
+#else
+            noway_assert((last.Oper == GT_JMP) ||
+                ((last.Oper == GT_CALL) && last.AsCall().IsFastTailCall));
+#endif
             if (last.Oper == GT_JMP)
             {
+#if FEATURE_FASTTAILCALL
                 noway_assert(last.Next is null);
+#endif
                 var method = (CORINFO_METHOD_HANDLE)last.AsVal().Val1;
                 CORINFO_CONST_LOOKUP lookup = default;
                 _compiler.info.compCompHnd->getFunctionEntryPoint(method, &lookup);
@@ -268,13 +393,31 @@ public sealed partial class CodeGen
             }
             else
             {
+#if FEATURE_FASTTAILCALL
                 noway_assert(last.Oper == GT_CALL && last.AsCall().IsFastTailCall);
                 genCallInstruction(last.AsCall());
+#endif
             }
         }
         else
         {
-            instGen_Return(0);
+            var stackArgumentSize = 0u;
+#if TARGET_X86
+            var calleePop = !_compiler.info.compIsVarArgs && !IsCallerPop(_compiler.info.compCallConv);
+            if (calleePop)
+            {
+                stackArgumentSize = unchecked((uint)_compiler.lvaParameterStackSize);
+                noway_assert(stackArgumentSize < 0x10000);
+            }
+#if UNIX_X86_ABI
+            if ((_compiler.info.compCallConv == CorInfoCallConvExtension.C) &&
+                (_compiler.info.compRetBuffArg != BAD_VAR_NUM))
+            {
+                stackArgumentSize += TARGET_POINTER_SIZE;
+            }
+#endif
+#endif
+            instGen_Return(stackArgumentSize);
         }
 #endif
     }

@@ -39,6 +39,10 @@ public interface ICodeGen
     /// <summary>Indicates whether the current method sets up an explicit stack frame or not.</summary>
     bool IsFramePointerUsed { get; set; }
 
+#if DOUBLE_ALIGN
+    bool IsDoubleAligned { get; set; }
+#endif
+
     /// <summary>Indicates whether the current method requires an explicit frame.</summary>
     /// <remarks>Does not prohibit double alignment of the stack.</remarks>
     bool IsFrameRequired { get; set; }

@@ -140,8 +140,9 @@ public sealed partial class LinearScan
 #if DOUBLE_ALIGN
     private void setDoubleAlign(bool enabled)
     {
-        NYI($"CodeGen.setDoubleAlign({enabled}) for x86 frame selection");
-        throw new FatalJitException(CORJIT_IMPLLIMITATION, "CodeGen.setDoubleAlign is not ported.");
+        var codeGen = _compiler.codeGen;
+        assert(codeGen is not null);
+        codeGen.IsDoubleAligned = enabled;
     }
 #endif
 

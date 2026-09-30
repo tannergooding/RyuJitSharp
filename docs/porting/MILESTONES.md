@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole xarch epilog and callee saves
+
+Root epilogs and integer/floating callee saves retain the complete x86 paths,
+including double-aligned frame teardown, callee-pop returns and Unix hidden
+return-buffer handling. AMD64 APX, OSR and unwind ordering remain intact.
+AVX clearing preserves both target paths, including native empty/no-op decisions.
+The existing LSRA policy now stores double-alignment state through the shared
+code-generation contract rather than a terminating setter.
+
+Eight xarch definitions, five complete inline accessors and five exclusive
+declarations are removed together. Eighteen Windows controls pass in each
+configuration and one Linux root-epilog control passes. X86 still has fourteen
+earlier declaration errors; its three new state/no-op cases are not executed.
+Other-target definitions, funclets and independent recording dependencies remain.
+
 ## 2026-09-30: Non-Wasm return helper closure
 
 ARM64, LoongArch and RISC-V simple returns preserve ABI register selection and
