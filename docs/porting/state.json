@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "callPInvokeClosure": {
+      "scope": "Whole method-jump, direct-call and PInvoke method/call lowering preserve frame publication, transition ordering, x86 stack-byte bookkeeping and target call-range semantics.",
+      "mapping": "ARM CodeGenInterface::validImmForBL in instr.cpp maps to instr/CodeGen.CallTargets.cs and the ICodeGen declaration; Lowering preserves this dependency call. The four retained target IsCallTargetInRange definitions map to Lowering.Calls.cs.",
+      "validation": "Windows147D/139R and ARM6423D/23R pass. LinuxDebug78pass6fail/84 becomes83pass2fail/85, fixing four method-jump cases and adding one publication-order case. Release75pass2fail/77; both remaining outgoing-area failures match baseline. Five parser-unblocked target error sets match, not successful builds.",
+      "retirement": "Twelve whole definitions, headings and declarations;743 native lines. Independently retained argument/tailcall/CFG helpers remain.",
+      "nativeBefore": "db978a4c69d3f46526447178531670b324d26e65",
+      "nativeAfter": "93a65445cad8352dd6b55d4a9f548f75cec30e69",
+      "evidence": "artifacts/lower-call-pinvoke-f212bd2 finalwork-v4;2497source files,7actualTRXs and paired diagnostic logs independently verified. Unaffected work-v2 x64 evidence reused; later deltas are ARM-only interface/nullability corrections.",
+      "limits": "An initial broad Linux filter accidentally included a preexisting crashing struct-return fixture; preserved separately and superseded by exact-class controls. No new native runtime or generated-code parity claim."
+    },
     "edgeResolutionClosure": {
       "scope": "Whole edge traversal/resolution, move/swap insertion, scratch selection and ARM double-register cycle handling preserve register masks, split-edge maps, move ordering and final stack reloads.",
       "validation": "Final-v3 Windows integration101D/88R and direct30D/13R pass; ARM64 integration110D/91R passes. Linux integration82->91passes/96D and70->78passes/83R; direct14->29passes/30D and0->13passes/13R, including2D/1R new cases. No old passing test regressed. Five parser-unblocked diagnostic sets match; these are not successful builds.",
@@ -1962,19 +1972,19 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Prior lowering/candidate/resolution closures committed. Finish accepted comparison/conditional integration and continue local/block resolution support. Maintain at most two compiler-heavy commands, memory monitoring, immutable owned-only snapshots,13 frozen Wasm files and centrally owned native retirement.",
+      "parentScope": "Traversal committedf212bd2 and edge resolution7270c48/native db978a4c. Complete call/PInvoke lowering and allocation traversal lanes. Parent owns source/evidence review and hidden launches; max2compiler-heavy commands,8GiB cutoff, immutable owned-only snapshots,13frozenWasm files and exact native retirement.",
       "wholeFunctionRepairLanes": [
         {
-          "scope": "Whole retained shared LSRA edge-resolution family.",
+          "scope": "Whole retained shared LSRA allocation traversal family.",
           "owner": "2aa4b7ae-79d5-4599-ad4a-eef9208ec3f0",
-          "files": "LinearScan resolution/dispatch partials and focused fixtures; parent owns shared contracts and native integration.",
-          "status": "edge final-v3 accepted and native db978a4c retires7definitions1255lines; managed commit next, worker finalizing packet"
+          "files": "LinearScan allocation traversal/minimal partials and focused fixtures; parent owns shared contracts and native integration.",
+          "status": "whole allocation source review complete; final-v2 corrects single-bank mask pop/accessor and adds preservation fixture. Linux91pass5fail/96 reaches retained RegisterSelection.select; direct28pass15fail/43 vs27pass15fail/42old. Windows/ARM64/Release and paired diagnostics pending."
         },
         {
           "scope": "Whole retained call and P/Invoke lowering family.",
           "owner": "c25d48cd-9585-4ecc-9253-39bf6743137d",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "traversal committedf212bd2/native8b2d36a2; worker owns LowerJmpMethod/LowerDirectCall and four PInvoke method/call setup bodies onf212bd2; no shell launches"
+          "status": "call/PInvoke finalwork-v4 accepted; native93a65445 retires12definitions743lines, managed commit next; worker idle pending next coherent lower family"
         },
         {
           "scope": "Whole retained shared kill-set family after return/write-barrier closure.",
@@ -2390,7 +2400,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Finish managed edge-resolution commit: final-v3 whole7function review and16TRXs/paired target diagnostics accepted, native db978a4c already retires1255lines, do not repeat. Collect worker2aa4b7ae final packet then assign remaining allocation traversal family closing five Linux integration failures. Lowering traversal committedf212bd2; workerc25d48cd owns six call/PInvoke setup definitions onf212bd2. Parent owns hidden launches because reloaded tools disappear from existing agent catalogs; no visible shells. Preserve13Wasm and native pin-plus-one, no publication. Process review18 at20min/streak0 due launch handoff bottleneck.",
+    "nextAction": "Finish managed call/PInvoke commit: finalwork-v4 source/evidence accepted; native93a65445 already retires12definitions743lines, do not repeat. Then assign next retained lower family to c25d48cd. Complete lsra-allocation-traversal-7270c48 final-v2 Windows/ARM64/Release controls and paired diagnostics; whole-body source review accepted after single-bank mask/accessor corrections. Linux5integration/15direct failures advance to retained register selection or remain baseline, compareidentities beforeacceptance. Workers have no hidden tool access; parent launches only. Preserve13Wasm and native pin-plus-one, no publication. Process review18 at20min/streak0.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

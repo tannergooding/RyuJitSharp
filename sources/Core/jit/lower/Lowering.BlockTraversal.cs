@@ -33,7 +33,6 @@ public sealed partial class Lowering
 
     private void LowerJmpMethod(GenTree jmp)
     {
-#if WINDOWS_AMD64_ABI || TARGET_ARM64
         assert(jmp.Oper is GT_JMP);
         JITDUMP("lowering GT_JMP\n");
         DISPNODE(jmp);
@@ -46,8 +45,5 @@ public sealed partial class Lowering
             assert(block is not null);
             InsertPInvokeMethodEpilog(block, jmp);
         }
-#else
-        throw new System.NotImplementedException("Method-jump lowering outside Windows AMD64 is not ported.");
-#endif
     }
 }

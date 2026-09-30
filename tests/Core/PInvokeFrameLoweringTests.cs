@@ -106,16 +106,16 @@ internal static unsafe class PInvokeFrameLoweringTests
                 }
             }
             Assert.That(rootStores, Is.EqualTo(1));
-            Assert.That(stackPointerStores, Is.EqualTo(1));
-            Assert.That(framePointerStores, Is.EqualTo(1));
-            Assert.That(frameLinks, Is.EqualTo(isILStub ? 1 : 0));
+            Assert.That(stackPointerStores, Is.EqualTo(TargetArchitecture.IsX86 || TargetArchitecture.IsArm32 ? 0 : 1));
+            Assert.That(framePointerStores, Is.EqualTo(TargetArchitecture.IsArm32 ? 0 : 1));
+            Assert.That(frameLinks, Is.EqualTo(TargetArchitecture.Is64Bit && isILStub ? 1 : 0));
             Assert.That(block.LastNode, Is.SameAs(original));
         });
     }
 
     [TestCase(false)]
     [TestCase(true)]
-    public static void MethodExitPopsOnlyILStubFrameAfterReturnOperands(bool isILStub)
+    public static void MethodExitPops32BitOrILStubFrameAfterReturnOperands(bool isILStub)
     {
         WithCompiler((compiler, block, lowering, ee) => {
             if (isILStub)
@@ -131,7 +131,7 @@ internal static unsafe class PInvokeFrameLoweringTests
 
             InsertPInvokeMethodEpilog(lowering, block, ret);
 
-            if (isILStub)
+            if (!TargetArchitecture.Is64Bit || isILStub)
             {
                 var link = block.LastNode?.Prev;
                 Assert.Multiple(() => {

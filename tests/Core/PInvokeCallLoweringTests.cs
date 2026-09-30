@@ -16,6 +16,19 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class PInvokeCallLoweringTests
 {
+#if TARGET_ARM64
+    [Test]
+    public static void Arm64CallTargetRangeReliesOnRelocationStub()
+    {
+        WithCompiler((compiler, block, lowering, ee) => {
+            var codeGen = compiler.codeGen;
+            assert(codeGen is not null);
+            Assert.That(codeGen.validImmForBL(0), Is.True);
+            Assert.That(codeGen.validImmForBL(nint.MaxValue), Is.True);
+        });
+    }
+#endif
+
     [TestCase(InfoAccessType.IAT_VALUE, false, GT_CNS_INT)]
     [TestCase(InfoAccessType.IAT_VALUE, true, GT_NONE)]
     [TestCase(InfoAccessType.IAT_PVALUE, false, GT_IND)]
@@ -75,6 +88,51 @@ internal static unsafe class PInvokeCallLoweringTests
             Assert.That(ee->TargetLookups, Is.Zero);
             Assert.That(target.Next, Is.SameAs(call));
             Assert.That(call._controlExpr, Is.SameAs(target));
+        });
+    }
+
+    [Test]
+    public static void IndirectTransitionPublishesFrameBeforeEvaluatingCallTarget()
+    {
+        WithCompiler((compiler, block, lowering, ee) => {
+            var target = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+            var call = NewPInvokeCall();
+            call._callType = CT_INDIRECT;
+            call._controlExpr = target;
+            block.InsertAtEnd(target);
+            block.InsertAtEnd(call);
+
+            Assert.That(LowerNonvirtPinvokeCall(lowering, call), Is.Null);
+            Assert.That(ee->TargetLookups, Is.Zero);
+
+            var datumStores = 0;
+            var returnAddressStores = 0;
+            var beforeTarget = true;
+            for (var node = block.FirstNode; node is not null; node = node.Next)
+            {
+                if (node == target)
+                {
+                    beforeTarget = false;
+                }
+                if (node.Oper is GT_STORE_LCL_FLD)
+                {
+                    var store = node.AsLclFld();
+                    if (store.LclOffs == 24)
+                    {
+                        Assert.That(beforeTarget, Is.True);
+                        Assert.That(store.Data.AsIntCon().IconValue, Is.EqualTo((nint)0));
+                        datumStores++;
+                    }
+                    if (store.LclOffs == 32)
+                    {
+                        Assert.That(beforeTarget, Is.True);
+                        returnAddressStores++;
+                    }
+                }
+            }
+            Assert.That(datumStores, Is.EqualTo(1));
+            Assert.That(returnAddressStores, Is.EqualTo(1));
+            Assert.That(target.Next, Is.SameAs(call));
         });
     }
 

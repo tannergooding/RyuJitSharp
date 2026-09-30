@@ -100,6 +100,10 @@ public interface ICodeGen
 
     bool genCreateAddrMode(GenTreeOp addr, bool fold, int naturalMul, out bool rev, out GenTree? rv1, out GenTree? rv2, out int mul, out nint cns);
 
+#if TARGET_ARMARCH
+    bool validImmForBL(nint address);
+#endif
+
     unsafe void genGenerateCode(out void* codePtr, out int nativeSizeOfCode);
 
     instruction ins_Store(var_types dstType, bool aligned = false);

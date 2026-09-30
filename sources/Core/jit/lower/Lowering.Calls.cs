@@ -110,15 +110,22 @@ public sealed partial class Lowering
 
     private GenTreeIndir Ind(GenTree tree, var_types type = TYP_I_IMPL) => CompilerInstance.gtNewIndir(type, tree);
 
-    private static unsafe bool IsCallTargetInRange(void* address)
+    private unsafe bool IsCallTargetInRange(void* address)
     {
 #if TARGET_XARCH
         return true;
-#elif TARGET_ARM64
-        // Native validImmForBL relies on the VM to create an out-of-range ARM64_BRANCH26 jump stub.
+#elif TARGET_ARMARCH
+        var codeGen = CompilerInstance.codeGen;
+        assert(codeGen is not null);
+        return codeGen.validImmForBL((nint)address);
+#elif TARGET_LOONGARCH64
         return true;
+#elif TARGET_RISCV64
+        return true;
+#elif TARGET_WASM
+        return !CompilerInstance.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PORTABLE_ENTRY_POINTS);
 #else
-        NYI("Lowering.IsCallTargetInRange outside xarch");
+        NYI("Lowering.IsCallTargetInRange outside supported targets");
         fatal(CORJIT_IMPLLIMITATION);
         return false;
 #endif

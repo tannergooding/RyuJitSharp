@@ -9,9 +9,6 @@ public sealed partial class Lowering
 {
     private unsafe void InsertPInvokeMethodProlog()
     {
-#if !TARGET_AMD64 && !TARGET_ARM64
-        throw new System.NotImplementedException("P/Invoke method prolog lowering is not ported for this target.");
-#else
         var compiler = CompilerInstance;
         noway_assert(compiler.info.compUnmanagedCallCountWithGCTransition != 0);
         noway_assert(compiler.lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
@@ -59,18 +56,23 @@ public sealed partial class Lowering
         firstBlockRange.InsertBefore(insertionPoint, LIR.SeqTree(compiler, morphedStore));
         DISPTREERANGE(firstBlockRange, morphedStore);
 
+#if !TARGET_X86 && !TARGET_ARM
         var stackPointer = new GenTreePhysReg(REG_SPBASE, TYP_I_IMPL);
         var stackPointerStore = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
             checked((ushort)frameInfo.offsetOfCallSiteSP), stackPointer);
         firstBlockRange.InsertBefore(insertionPoint, LIR.SeqTree(compiler, stackPointerStore));
         DISPTREERANGE(firstBlockRange, stackPointerStore);
+#endif
 
+#if !TARGET_ARM
         var framePointer = new GenTreePhysReg(REG_FPBASE, TYP_I_IMPL);
         var framePointerStore = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
             checked((ushort)frameInfo.offsetOfCalleeSavedFP), framePointer);
         firstBlockRange.InsertBefore(insertionPoint, LIR.SeqTree(compiler, framePointerStore));
         DISPTREERANGE(firstBlockRange, framePointerStore);
+#endif
 
+#if TARGET_64BIT
 #if USE_PER_FRAME_PINVOKE_INIT
         if (compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB))
 #endif
@@ -85,9 +87,6 @@ public sealed partial class Lowering
 
     private unsafe void InsertPInvokeMethodEpilog(BasicBlock returnBlock, GenTree? lastExpr)
     {
-#if !TARGET_AMD64 && !TARGET_ARM64
-        throw new System.NotImplementedException("P/Invoke method epilog lowering is not ported for this target.");
-#else
         var compiler = CompilerInstance;
         assert(returnBlock is not null);
         assert(compiler.info.compUnmanagedCallCountWithGCTransition != 0);
@@ -111,6 +110,5 @@ public sealed partial class Lowering
             returnBlock.InsertBefore(insertionPoint, LIR.SeqTree(compiler, link));
             ContainCheckStoreIndir(link);
         }
-#endif
     }
 }

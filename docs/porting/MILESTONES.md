@@ -16,6 +16,27 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole call and PInvoke lowering
+
+Method-jump, direct-call and PInvoke lowering preserve frame publication and
+GC-transition ordering across targets, including x86 stack-byte/SP bookkeeping
+and 32-bit method-exit unlinking. ARM call-range checks retain their codegen
+dependency through `ICodeGen.validImmForBL`; the ARM32 relocation/AOT and ARM64
+jump-stub contracts are translated in `instr/CodeGen.CallTargets.cs`.
+Twelve definitions and associated headings/declarations retire 743 native lines
+in `93a65445`. Argument, tailcall and control-flow-guard helpers remain independent.
+
+Windows controls pass 147 Debug/139 Release and ARM64 passes 23/23. Exact-class
+Linux Debug controls improve from 78 passing/6 failing to 83 passing/2 failing:
+four method-jump cases now run and one publication-order case is new.
+Linux Release has 75 passing/2 failing cases; the two Windows-specific outgoing
+area expectations match the baseline failures. Five isolated other-target
+diagnostic sets match but remain failed builds. An initial broad Linux selection
+included an unrelated crashing struct-return fixture; its aborted result is
+preserved, not counted as a completed control.
+Evidence: `artifacts/lower-call-pinvoke-f212bd2`, final `work-v4` and unaffected
+`work-v2` x64 results. These source/IR controls do not establish generated-code parity.
+
 ## 2026-09-30: Whole register edge resolution
 
 Edge traversal, register-map reconciliation, move/swap insertion, scratch

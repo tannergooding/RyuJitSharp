@@ -73,21 +73,27 @@ public sealed partial class Lowering
         if (compiler.opts.ShouldUsePInvokeHelpers)
         {
             var frameAddress = compiler.gtNewLclVarAddrNode(TYP_BYREF, compiler.lvaInlinedPInvokeFrameVar);
+#if TARGET_X86 && !UNIX_X86_ABI
+            var stackBytes = compiler.gtNewIconNode(TYP_INT, call.Args.OutgoingArgsStackSize);
+            var helper = compiler.gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_JIT_PINVOKE_BEGIN,
+                frameAddress, stackBytes);
+#else
             var helper = compiler.gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_JIT_PINVOKE_BEGIN, frameAddress);
+#endif
             _ = compiler.fgMorphTree(helper);
             BlockRange().InsertBefore(insertionPoint, LIR.SeqTree(compiler, helper));
-#if TARGET_ARM64
-            _ = LowerCall(helper);
-#else
             _ = LowerNode(helper);
-#endif
             return;
         }
 
         GenTree target;
         if (call._callType is CT_INDIRECT)
         {
+#if TARGET_X86
+            target = compiler.gtNewIconNode(TYP_INT, call.Args.OutgoingArgsStackSize);
+#else
             target = compiler.gtNewIconNode(TYP_I_IMPL, 0);
+#endif
         }
         else
         {
@@ -105,6 +111,13 @@ public sealed partial class Lowering
         var targetStore = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
             checked((ushort)frameInfo.offsetOfCallTarget), target);
         InsertTreeBeforeAndContainCheck(insertionPoint, targetStore);
+
+#if TARGET_X86
+        var stackPointer = new GenTreePhysReg(REG_SPBASE, TYP_I_IMPL);
+        var stackPointerStore = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
+            checked((ushort)frameInfo.offsetOfCallSiteSP), stackPointer);
+        InsertTreeBeforeAndContainCheck(insertionPoint, stackPointerStore);
+#endif
 
         var label = new GenTree(GT_LABEL, TYP_I_IMPL);
         var returnAddressStore = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
@@ -171,9 +184,6 @@ public sealed partial class Lowering
 
     private unsafe GenTree? LowerNonvirtPinvokeCall(GenTreeCall call)
     {
-#if !TARGET_AMD64 && !TARGET_ARM64
-        throw new NotImplementedException("Nonvirtual P/Invoke lowering is not ported for this target.");
-#else
         var compiler = CompilerInstance;
         var needsTransition = !call.IsSuppressGCTransition;
         if (needsTransition)
@@ -263,6 +273,5 @@ public sealed partial class Lowering
         }
 #endif
         return result;
-#endif
     }
 }

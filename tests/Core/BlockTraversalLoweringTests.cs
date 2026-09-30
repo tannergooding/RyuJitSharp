@@ -153,7 +153,7 @@ internal static unsafe class BlockTraversalLoweringTests
 
             Assert.That(block.LastNode, Is.SameAs(jump));
             Assert.That(jump.Val1, Is.EqualTo((nint)0x1234));
-            var insertsEpilog = requiresFrame && !helpers && stub;
+            var insertsEpilog = requiresFrame && !helpers && (!TargetArchitecture.Is64Bit || stub);
             Assert.That(ee->InfoLookups, Is.EqualTo(insertsEpilog ? 1 : 0));
             if (insertsEpilog)
             {
