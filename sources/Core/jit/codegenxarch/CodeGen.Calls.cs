@@ -9,13 +9,46 @@ public sealed partial class CodeGen
 {
     public unsafe void genCall(GenTreeCall call)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Call generation requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Call generation requires xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         genAlignStackBeforeCall(call);
         genCallPlaceRegArgs(call);
 
+#if TARGET_X86
+        var stackArgBytes = 0;
+        foreach (var arg in call.Args.EarlyArgs)
+        {
+            var argNode = arg.EarlyNode;
+            if ((argNode is not null) && (argNode.Oper == GT_PUTARG_STK) && (arg.LateNode is null))
+            {
+                var putArgStk = argNode.AsPutArgStk();
+                var source = putArgStk.Op1;
+                var argSize = putArgStk.StackByteSize;
+                stackArgBytes = unchecked(stackArgBytes + argSize);
+
+#if DEBUG
+                var stackBytesConsumed = 0;
+                foreach (ref readonly var segment in arg.AbiInfo.Segments)
+                {
+                    if (!segment.IsPassedInRegister)
+                    {
+                        stackBytesConsumed = unchecked(stackBytesConsumed + segment.StackSize);
+                    }
+                }
+                assert(argSize == stackBytesConsumed);
+                if ((source.Type == TYP_STRUCT) && (source.Oper != GT_FIELD_LIST))
+                {
+                    var loadSize = source.GetLayout(_compiler).Size;
+                    assert(argSize == roundUp(unchecked((int)loadSize), TARGET_POINTER_SIZE));
+                }
+#endif
+            }
+        }
+#endif
         if (call.NeedsNullCheck)
         {
             var regThis = genGetThisArgReg(call);
@@ -58,13 +91,27 @@ public sealed partial class CodeGen
             genDefineTempLabel(genCreateTempLabel());
         }
 
+#if TARGET_X86 && DEBUG
+        if (_compiler.opts.compStackCheckOnCall && (call._callType == CT_USER_FUNC))
+        {
+            assert(_compiler.lvaCallSpCheck != BAD_VAR_NUM);
+            ref var local = ref _compiler.lvaGetDesc(_compiler.lvaCallSpCheck);
+            assert(local.lvDoNotEnregister);
+            assert(local.lvOnFrame);
+            Emitter.emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, _compiler.lvaCallSpCheck, 0);
+        }
+#endif
         if (Emitter.Contains256BitOrMoreAvxInstruction && call.NeedsVzeroupper(_compiler))
         {
             // A single prolog vzeroupper is insufficient when this method also uses wide vectors.
             instGen(INS_vzeroupper);
         }
 
+#if TARGET_X86
+        genCallInstruction(call, stackArgBytes);
+#else
         genCallInstruction(call);
+#endif
         genDefinePendingCallLabel(call);
 
 #if DEBUG
@@ -82,34 +129,55 @@ public sealed partial class CodeGen
         var returnType = call.Type;
         if (returnType != TYP_VOID)
         {
-            regNumber returnReg;
-            if (call.HasMultiRegRetVal)
+#if TARGET_X86
+            if (varTypeIsFloating(returnType))
             {
-                ref readonly var retTypeDesc = ref call.ReturnTypeDesc;
-                var regCount = retTypeDesc.ReturnRegCount;
-                for (byte i = 0; i < regCount; i++)
-                {
-                    var regType = retTypeDesc.GetReturnRegType(i);
-                    returnReg = retTypeDesc.GetAbiReturnReg(i, call.UnmanagedCallConv);
-                    var allocatedReg = call.GetRegNumByIdx(i);
-                    inst_Mov(regType, allocatedReg, returnReg, canSkip: true);
-                }
-
-#if FEATURE_SIMD
-                if (call.IsUnmanaged && (returnType == TYP_SIMD12))
-                {
-                    returnReg = retTypeDesc.GetAbiReturnReg(1, call.UnmanagedCallConv);
-                    genSimd12UpperClear(returnReg);
-                }
-#endif
+                call.Flags |= GTF_SPILL;
+                RegSet.rsSpillFPStack(call);
+                call.Flags |= GTF_SPILLED;
+                call.Flags &= ~GTF_SPILL;
             }
             else
+#endif
             {
-                returnReg = varTypeIsFloating(returnType) ? REG_FLOATRET : REG_INTRET;
-                inst_Mov(returnType, call.RegNum, returnReg, canSkip: true);
-            }
+                regNumber returnReg;
+                if (call.HasMultiRegRetVal)
+                {
+                    ref readonly var retTypeDesc = ref call.ReturnTypeDesc;
+                    var regCount = retTypeDesc.ReturnRegCount;
+                    for (byte i = 0; i < regCount; i++)
+                    {
+                        var regType = retTypeDesc.GetReturnRegType(i);
+                        returnReg = retTypeDesc.GetAbiReturnReg(i, call.UnmanagedCallConv);
+                        var allocatedReg = call.GetRegNumByIdx(i);
+                        inst_Mov(regType, allocatedReg, returnReg, canSkip: true);
+                    }
 
-            genProduceReg(call);
+#if FEATURE_SIMD
+                    if (call.IsUnmanaged && (returnType == TYP_SIMD12))
+                    {
+                        returnReg = retTypeDesc.GetAbiReturnReg(1, call.UnmanagedCallConv);
+                        genSimd12UpperClear(returnReg);
+                    }
+#endif
+                }
+                else
+                {
+#if TARGET_X86
+                    if (call.IsHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME))
+                    {
+                        returnReg = REG_PINVOKE_TCB;
+                    }
+                    else
+#endif
+                    {
+                        returnReg = varTypeIsFloating(returnType) ? REG_FLOATRET : REG_INTRET;
+                    }
+                    inst_Mov(returnType, call.RegNum, returnReg, canSkip: true);
+                }
+
+                genProduceReg(call);
+            }
         }
 
         // Keep unused return values visible to the debugger in minopts/debuggable methods.
@@ -118,24 +186,77 @@ public sealed partial class CodeGen
             GCInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_INTRET));
         }
 
-        genRemoveAlignmentAfterCall(call);
+#if TARGET_X86 && DEBUG
+        genStackPointerCheck(_compiler.opts.compStackCheckOnCall && (call._callType == CT_USER_FUNC),
+            _compiler.lvaCallSpCheck, call.CallerPop ? 0 : stackArgBytes, REG_ARG_0);
+#endif
+        var stackAdjustBias = 0u;
+#if TARGET_X86
+        if (call.CallerPop && (stackArgBytes != 0))
+        {
+            stackAdjustBias = unchecked((uint)stackArgBytes);
+        }
+        SubtractStackLevel(unchecked((uint)stackArgBytes));
+#endif
+        genRemoveAlignmentAfterCall(call, stackAdjustBias);
 #endif
     }
 
     private static regNumber genGetThisArgReg(GenTreeCall call) => REG_ARG_0;
 
-    private static void genAlignStackBeforeCall(GenTreeCall call)
+    private void genAlignStackBeforeCall(GenTreePutArgStk putArgStk)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Call stack alignment requires AMD64.");
+#if UNIX_X86_ABI
+        var call = putArgStk.Call;
+        assert(call is not null);
+        genAlignStackBeforeCall(call);
 #endif
-        // Native per-call alignment is Unix-x86-only; AMD64 uses a fixed outgoing area.
     }
 
-    private static void genRemoveAlignmentAfterCall(GenTreeCall call, uint bias = 0)
+    private void genAlignStackBeforeCall(GenTreeCall call)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Call stack realignment requires AMD64.");
+#if UNIX_X86_ABI
+        if (!call.Args.IsStkAlignmentDone)
+        {
+            var stackLevel = unchecked(genStackLevel + call.Args.GetStkSizeBytes());
+            call.Args.ComputeStackAlignment(stackLevel);
+            var padding = call.Args.GetStkAlign();
+            if (padding != 0)
+            {
+                inst_RV_IV(INS_sub, REG_SPBASE, unchecked((nint)padding), EA_PTRSIZE);
+                AddStackLevel(padding);
+                AddNestedAlignment(padding);
+            }
+            call.Args.IsStkAlignmentDone = true;
+        }
+#endif
+    }
+
+    private void genRemoveAlignmentAfterCall(GenTreeCall call, uint bias = 0)
+    {
+#if TARGET_X86
+#if UNIX_X86_ABI
+        var padding = call.Args.GetStkAlign();
+        var adjustment = unchecked(padding + bias);
+        if (adjustment != 0)
+        {
+            inst_RV_IV(INS_add, REG_SPBASE, unchecked((nint)adjustment), EA_PTRSIZE);
+            SubtractStackLevel(padding);
+            SubtractNestedAlignment(padding);
+        }
+#else
+        if (bias != 0)
+        {
+            if (bias == sizeof(int))
+            {
+                inst_RV(INS_pop, REG_ECX, TYP_INT);
+            }
+            else
+            {
+                inst_RV_IV(INS_add, REG_SPBASE, unchecked((nint)bias), EA_PTRSIZE);
+            }
+        }
+#endif
 #else
         assert(bias == 0);
 #endif
@@ -143,8 +264,8 @@ public sealed partial class CodeGen
 
     public unsafe void genDefinePendingCallLabel(GenTreeCall call)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Pending call labels require AMD64.");
+#if TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "Pending call labels require a native target.");
 #else
         if (genPendingCallLabel is null)
         {

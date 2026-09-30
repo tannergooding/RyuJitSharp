@@ -19,10 +19,12 @@ public sealed partial class CodeGen
 
     public void genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, ref bool initRegZeroed)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Prolog block initialization requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Prolog block initialization requires xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
         assert(UseBlockInit);
         assert(untrLclHi > untrLclLo);
@@ -33,6 +35,7 @@ public sealed partial class CodeGen
         noway_assert((blkSize % sizeof(int)) == 0);
         assert((regMaskTP.CreateFromRegNum(initReg, initReg.SingleTypeMask) & _calleeRegArgMaskLiveIn).IsEmpty);
 
+#if TARGET_AMD64
         var simdMov = simdAlignedMovIns();
         var alignedLclLo = (untrLclLo + XMM_REGSIZE_BYTES - 1) & -XMM_REGSIZE_BYTES;
         if ((untrLclLo != alignedLclLo) && (blkSize < 2 * XMM_REGSIZE_BYTES))
@@ -40,6 +43,10 @@ public sealed partial class CodeGen
             assert(alignedLclLo - untrLclLo < XMM_REGSIZE_BYTES);
             simdMov = simdUnalignedMovIns();
         }
+#else
+        var simdMov = simdUnalignedMovIns();
+        var alignedLclLo = untrLclLo;
+#endif
 
         if (blkSize < XMM_REGSIZE_BYTES)
         {
@@ -50,12 +57,14 @@ public sealed partial class CodeGen
                 Emitter.emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, untrLclLo + i);
             }
 
+#if TARGET_AMD64
             assert((i == blkSize) || (i + sizeof(int) == blkSize));
             if (i != blkSize)
             {
                 Emitter.emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, untrLclLo + i);
                 i += sizeof(int);
             }
+#endif
             assert(i == blkSize);
         }
         else
@@ -63,11 +72,12 @@ public sealed partial class CodeGen
 #if UNIX_AMD64_ABI
             var zeroSimdReg = REG_XMM8;
 #else
-            // Windows AMD64's first non-argument, caller-saved SIMD register is XMM4.
+            // Windows xarch's first non-argument, caller-saved SIMD register is XMM4.
             var zeroSimdReg = REG_XMM4;
 #endif
             int alignedLclHi;
             int alignmentHiBlkSize;
+#if TARGET_AMD64
             if ((blkSize < 2 * XMM_REGSIZE_BYTES) || (untrLclLo == alignedLclLo))
             {
                 var alignmentBlkSize = blkSize & -XMM_REGSIZE_BYTES;
@@ -102,9 +112,21 @@ public sealed partial class CodeGen
                 }
                 assert(i == alignmentLoBlkSize);
             }
+#else
+            var alignmentBlkSize = blkSize & -XMM_REGSIZE_BYTES;
+            alignmentHiBlkSize = blkSize - alignmentBlkSize;
+            alignedLclHi = untrLclLo + alignmentBlkSize;
+            blkSize = alignmentBlkSize;
+            assert(blkSize + alignmentHiBlkSize == untrLclHi - untrLclLo);
+#endif
 
             var maxSimdSize = _compiler.roundDownSimdSize((uint)blkSize);
+#if TARGET_AMD64
             assert((maxSimdSize >= XMM_REGSIZE_BYTES) && (maxSimdSize <= ZMM_REGSIZE_BYTES));
+#else
+            // ZMM_REGSIZE_BYTES is not declared for managed x86; four XMM widths retain its 64-byte bound.
+            assert((maxSimdSize >= XMM_REGSIZE_BYTES) && (maxSimdSize <= 4 * XMM_REGSIZE_BYTES));
+#endif
             // Three stores per loop iteration: use a loop only for at least two iterations.
             if (blkSize < 6 * maxSimdSize)
             {
@@ -175,12 +197,14 @@ public sealed partial class CodeGen
                     Emitter.emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, alignedLclHi + i);
                 }
 
+#if TARGET_AMD64
                 assert((i == alignmentHiBlkSize) || (i + sizeof(int) == alignmentHiBlkSize));
                 if (i != alignmentHiBlkSize)
                 {
                     Emitter.emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, alignedLclHi + i);
                     i += sizeof(int);
                 }
+#endif
                 assert(i == alignmentHiBlkSize);
             }
         }

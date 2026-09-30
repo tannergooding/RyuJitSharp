@@ -11,13 +11,18 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public unsafe void genCallInstruction(GenTreeCall call)
+    public unsafe void genCallInstruction(GenTreeCall call, int stackArgBytes = 0)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Call-instruction generation requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Call-instruction generation requires xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         var parameters = new EmitCallParams();
+#if TARGET_X86
+        parameters.argSize = call.CallerPop ? -stackArgBytes : stackArgBytes;
+#endif
         ref readonly var retTypeDesc = ref call.ReturnTypeDesc;
 
         // Unused values are of no interest to GC.
@@ -64,6 +69,25 @@ public sealed partial class CodeGen
         var target = getCallTarget(call, out parameters.methHnd);
         if (target is not null)
         {
+#if TARGET_X86
+            if (call.IsVirtualStub && (call._callType == CT_INDIRECT) &&
+                !_compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            {
+                assert(_compiler.virtualStubParamInfo is not null);
+                assert(_compiler.virtualStubParamInfo.Reg == REG_VIRTUAL_STUB_TARGET);
+                assert(target.IsContainedIndir);
+                var address = target.AsIndir().Addr;
+                assert(address.IsUsedFromReg);
+                _ = genConsumeReg(address);
+                genCopyRegIfNeeded(address, REG_VIRTUAL_STUB_TARGET);
+
+                Emitter.emitIns_Nop(3);
+                parameters.callType = EC_INDIR_ARD;
+                parameters.ireg = REG_VIRTUAL_STUB_TARGET;
+                genEmitCallWithCurrentGC(ref parameters);
+            }
+            else
+#endif
             if (target.IsContainedIndir)
             {
                 assert(!_compiler.opts.IsCFGEnabled ||

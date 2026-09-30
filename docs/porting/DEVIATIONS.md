@@ -1478,6 +1478,21 @@ configuration. The Swift-error generator and x86 helper-call recording primitive
 also remain typed terminating dependencies. The failed x86 declaration build
 does not establish compilation or execution of the restored caller bodies.
 
+Xarch funclet and block-initialization callers now retain the separate native
+x86 paths. X86 unwind operations remain independent typed terminating helpers;
+AMD64 funclet layout and algorithms are unchanged. Call generation and call
+instruction selection retain x86 stack adjustment, floating-return spill,
+virtual-stub/PInvoke registers and Unix alignment accounting. The three
+unsigned alignment immediates convert explicitly to the native signed-width
+instruction boundary. X86 excludes `FEATURE_FASTTAILCALL`, so the fast-tail
+epilog callsite does not impose an extra-argument-zero contract there.
+The shared non-Wasm pending-call-label definition and exclusive declaration are
+retired; pending-label state remains native. Four Unix x86 CallArgs inline
+definitions retire without restoring fields already absent from the residual.
+The exact fourteen earlier x86 declaration errors still prevent full body
+checking; floating spill, unwind and recording dependencies remain untranslated.
+Windows frame/call controls do not establish x86 runtime or generated-code parity.
+
 `LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
 performs conservative frame layout before reserving IP1 and reserves x19 when
 the layout contains scalable vectors. The layout includes varargs homes,

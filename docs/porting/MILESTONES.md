@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole xarch frame initialization and call generation
+
+Funclet prologs, epilogs and frame capture retain the separate x86 algorithms.
+Block frame initialization preserves SIMD width, unaligned bounds, scalar
+head/tail handling and loop thresholds. Call generation retains x86 stack
+adjustment, signed caller-pop sizes, floating returns and Unix alignment
+accounting. The shared pending-call-label helper preserves helper exclusions,
+label publication and clearing order.
+
+Fourteen whole definitions and one exclusive declaration retire 959 native
+lines, including headings. Selected Windows controls pass 95 Debug and 78
+Release cases. The x86 build retains the exact fourteen earlier errors and
+zero warnings; new x86 controls remain unexecuted. Independent x86 unwind,
+floating-return spill and instruction-recording dependencies still terminate.
+These results establish selected managed behavior, not x86 execution or
+generated-code parity.
+
 ## 2026-09-30: Whole xarch dispatch and profiling callbacks
 
 The node dispatcher retains its complete x86 and SysV branches, including split
