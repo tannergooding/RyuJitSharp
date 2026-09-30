@@ -38,6 +38,14 @@ public partial class Globals
 
     public const regNumber REG_ASYNC_CONTINUATION_RET = REG_ECX;
 
+    public const regNumber REG_INTRET = REG_EAX;
+
+    public const regNumber REG_LNGRET_LO = REG_EAX;
+
+    public const regNumber REG_LNGRET_HI = REG_EDX;
+
+    public const regNumber REG_FLOATRET = REG_NA;
+
     public const int ARG_STACK_PROBE_THRESHOLD_BYTES = 1024;
 
     public const int STACK_PROBE_BOUNDARY_THRESHOLD_BYTES = ARG_STACK_PROBE_THRESHOLD_BYTES;

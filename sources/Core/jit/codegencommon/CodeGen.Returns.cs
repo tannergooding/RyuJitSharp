@@ -9,11 +9,28 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+#if TARGET_X86 || TARGET_ARM
+    public void genLongReturn(GenTree tree)
+    {
+        assert(tree.Oper is GT_RETURN or GT_RETFILT);
+        assert(tree.Type == TYP_LONG);
+
+        var pair = tree.AsUnOp().Op1;
+        assert(pair.Oper == GT_LONG);
+        var low = pair.AsOp().Op1;
+        var high = pair.AsOp().Op2;
+        assert((low.RegNum != REG_NA) && (high.RegNum != REG_NA));
+
+        _ = genConsumeReg(low);
+        _ = genConsumeReg(high);
+
+        inst_Mov(tree.Type, REG_LNGRET_LO, low.RegNum, canSkip: true, TYP_INT.EmitActualSize);
+        inst_Mov(tree.Type, REG_LNGRET_HI, high.RegNum, canSkip: true, TYP_INT.EmitActualSize);
+    }
+#endif
+
     public void genReturn(GenTree tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Return generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_RETURN or GT_RETFILT or GT_SWIFT_ERROR_RET);
         var value = tree.Oper == GT_SWIFT_ERROR_RET ? tree.AsOp().Op2 : tree.AsUnOp().Op1;
@@ -21,6 +38,13 @@ public sealed partial class CodeGen
         assert((tree.Oper != GT_RETFILT) || (type is TYP_VOID or TYP_INT));
         assert((type != TYP_VOID) || (value is null));
 
+#if TARGET_X86 || TARGET_ARM
+        if (type == TYP_LONG)
+        {
+            genLongReturn(tree);
+        }
+        else
+#endif
         if (isStructReturn(tree))
         {
             genStructReturn(tree);
@@ -28,27 +52,62 @@ public sealed partial class CodeGen
         else if (type != TYP_VOID)
         {
             assert(value is not null);
+#if HAS_FIXED_REGISTER_SET
             noway_assert(value.RegNum != REG_NA);
+#endif
             // Consumption clears dead operand roots. Restore the ABI return roots below
             // before any profiler callback can observe the return value.
             _ = genConsumeReg(value);
-            regNumber retReg;
-            if (varTypeUsesIntReg(type))
+
+#if HAS_FIXED_REGISTER_SET
+#if TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+            genSimpleReturn(tree);
+#else
+#if TARGET_X86
+            if (varTypeUsesFloatReg(type))
             {
-                retReg = REG_INTRET;
+                genFloatReturn(tree);
             }
             else
+#elif TARGET_ARM
+            if (varTypeUsesFloatReg(type) && (_compiler.opts.compUseSoftFP || _compiler.info.compIsVarArgs))
             {
-                assert(varTypeUsesFloatReg(type));
-                retReg = REG_FLOATRET;
+                if (type == TYP_FLOAT)
+                {
+                    Emitter.emitIns_Mov(INS_vmov_f2i, EA_4BYTE, REG_INTRET, value.RegNum, canSkip: false);
+                }
+                else
+                {
+                    assert(type == TYP_DOUBLE);
+                    Emitter.emitIns_R_R_R(INS_vmov_d2i, EA_8BYTE, REG_INTRET, REG_R1, value.RegNum,
+                        insFlags.INS_FLAGS_DONT_CARE);
+                }
             }
-            inst_Mov_Extend(type, srcInReg: true, retReg, value.RegNum, canSkip: true, EA_UNKNOWN);
+            else
+#endif
+            {
+                regNumber retReg;
+                if (varTypeUsesIntReg(type))
+                {
+                    retReg = REG_INTRET;
+                }
+                else
+                {
+                    assert(varTypeUsesFloatReg(type));
+                    retReg = REG_FLOATRET;
+                }
+                inst_Mov_Extend(type, srcInReg: true, retReg, value.RegNum, canSkip: true, EA_UNKNOWN);
+            }
+#endif
+#endif
         }
 
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
         if (tree.Oper is GT_RETURN or GT_SWIFT_ERROR_RET)
         {
             genMarkReturnGCInfo();
         }
+#endif
 #if PROFILING_SUPPORTED
         if ((tree.Oper is GT_RETURN or GT_SWIFT_ERROR_RET) && _compiler.compIsProfilerHookNeeded)
         {
@@ -57,10 +116,14 @@ public sealed partial class CodeGen
 #endif
         if ((tree.Oper == GT_RETURN) && _compiler.compIsAsync)
         {
+#if TARGET_WASM
+            genClearAsyncContinuationGlobal();
+#else
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_ASYNC_CONTINUATION_RET);
             GCInfo.gcMarkRegPtrVal(REG_ASYNC_CONTINUATION_RET, TYP_REF);
+#endif
         }
-#if DEBUG
+#if DEBUG && TARGET_XARCH
         var checkStackPointer = _compiler.opts.compStackCheckOnRet;
         if (_compiler.funCurrentFunc().funKind != FuncKind.FUNC_ROOT)
         {
@@ -68,12 +131,11 @@ public sealed partial class CodeGen
         }
         genStackPointerCheck(checkStackPointer, _compiler.lvaReturnSpCheck);
 #endif
-#endif
     }
 
     public void genMarkReturnGCInfo()
     {
-#if !TARGET_AMD64
+#if TARGET_WASM
         throw new FatalJitException(CORJIT_SKIPPED, "Return GC information requires AMD64.");
 #else
         var descriptor = _compiler.compRetTypeDesc;
@@ -92,6 +154,20 @@ public sealed partial class CodeGen
         }
 #endif
     }
+
+#if TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+    public void genSimpleReturn(GenTree tree)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Simple return generation is not implemented for this target.");
+    }
+#endif
+
+#if TARGET_WASM
+    public void genClearAsyncContinuationGlobal()
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm async continuation clearing is not implemented.");
+    }
+#endif
 
     public bool isStructReturn(GenTree tree)
     {

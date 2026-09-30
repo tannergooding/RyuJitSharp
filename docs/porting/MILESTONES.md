@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole shared return support
+
+Return generation retains x86/ARM32 low/high pairs, floating and target-specific
+simple-return dispatch, ARM soft-float/varargs transfers, and Wasm async
+continuation clearing. Return GC roots are restored before profiler callbacks;
+async clearing follows profiling, and DEBUG stack checks remain xarch-only.
+Required return-register aliases and ARM instruction flags match the pinned
+native definitions. Unported target helpers have typed terminating declarations.
+
+Three whole common definitions and three declarations are removed from the
+residual tree. Existing Windows controls preserve their behavior; Linux-target
+controls retain nineteen genuine profiler dependency failures per configuration.
+ARM32 resolves fourteen flag-binding diagnostics without adding errors; other
+target diagnostic sets remain unchanged. Failed target builds, x64 fixtures
+that exclude the x86 long-pair case, and retained emission dependencies do not
+establish other-target execution or new generated-code parity.
+
 ## 2026-09-30: Shared async transfers and debug publication
 
 Suspension returns and continuation values retain the complete native non-Wasm

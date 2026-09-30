@@ -1401,11 +1401,22 @@ Shared non-Wasm suspension/continuation transfers and async debug publication
 retain their complete native algorithms. Five non-AMD64 continuation-register
 aliases now match the pinned target headers. Their three common definitions and
 the publication declaration are removed; native Wasm-specific transfer bodies
-and their shared declarations remain. `genMarkReturnGCInfo` and instruction
-emission keep their separate terminating target boundaries, and patchpoint
-generation remains deferred. The publication fixture is still Windows-only;
+and their shared declarations remain. Instruction emission keeps its separate
+terminating target boundaries, and patchpoint generation remains deferred.
+The publication fixture is still Windows-only;
 these shared helpers do not establish Linux publication coverage, other-target
 instruction emission or runtime/generated-code parity.
+
+Shared `genReturn`, x86/ARM32 `genLongReturn` and non-Wasm
+`genMarkReturnGCInfo` retain their complete native caller algorithms; their
+definitions and declarations are removed. ARM soft-float/varargs moves use the
+native unsigned instruction-flags enum and an explicitly selected flags-typed
+three-register recording boundary. Target-specific `genSimpleReturn`, Wasm
+`genClearAsyncContinuationGlobal` and ARM recording dependencies terminate;
+their native implementations remain. Independent struct-return classification
+and generation are unchanged. Linux profiler controls retain their existing
+failures. Other-target diagnostic builds still fail, so this caller closure does
+not establish complete compilability, GC-header publication or execution there.
 
 `LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
 performs conservative frame layout before reserving IP1 and reserves x19 when
