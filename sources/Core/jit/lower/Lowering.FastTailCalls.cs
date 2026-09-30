@@ -12,7 +12,7 @@ public sealed partial class Lowering
 {
     private void LowerFastTailCall(GenTreeCall call)
     {
-#if FEATURE_FASTTAILCALL && (TARGET_AMD64 || TARGET_ARM64)
+#if FEATURE_FASTTAILCALL
         var compiler = CompilerInstance;
         assert((compiler.info.compFlags & CORINFO_FLG_SYNCH) == 0);
         assert(!compiler.opts.IsReversePInvoke);
@@ -112,11 +112,11 @@ public sealed partial class Lowering
             InsertProfTailCallHook(call, startNonGCNode);
         }
 #else
-        throw new NotImplementedException("Fast tailcall lowering is not ported for this target.");
+        unreached();
 #endif
     }
 
-#if FEATURE_FASTTAILCALL && (TARGET_AMD64 || TARGET_ARM64)
+#if FEATURE_FASTTAILCALL
     private static GenTree FirstNode(GenTree first, GenTree second)
         => ReferenceEquals(LIR.LastNode(first, second), first) ? second : first;
 
@@ -170,7 +170,19 @@ public sealed partial class Lowering
                 tmpDsc.DoNotEnregisterReason = callerArgDsc.DoNotEnregisterReason;
 #endif
 
-                var value = compiler.gtNewLclvNode(tmpType, lclNum);
+                GenTree value;
+#if TARGET_ARM
+                if (tmpType is TYP_LONG)
+                {
+                    var low = compiler.gtNewLclFldNode(TYP_INT, lclNum, 0);
+                    var high = compiler.gtNewLclFldNode(TYP_INT, lclNum, 4);
+                    value = new GenTreeOp(GT_LONG, TYP_LONG, low, high);
+                }
+                else
+#endif
+                {
+                    value = compiler.gtNewLclvNode(tmpType, lclNum);
+                }
                 if (tmpType is TYP_STRUCT)
                 {
                     compiler.lvaSetStruct(tmpLclNum, callerArgDsc.Layout ??
@@ -181,11 +193,7 @@ public sealed partial class Lowering
                 var store = compiler.gtNewStoreLclVarNode(tmpLclNum, value);
                 BlockRange().InsertBefore(insertTempBefore, LIR.SeqTree(compiler, store));
                 ContainCheckRange(value, store);
-#if TARGET_ARM64
-                _ = LowerStoreLocCommon(store);
-#else
                 _ = LowerNode(store);
-#endif
             }
 
             local.LclNum = tmpLclNum;

@@ -16,6 +16,27 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole tailcall lowering
+
+Tailcall lowering preserves profiler-hook placement, argument mark clearing,
+overlapping incoming/outgoing stack copies, defensive temporary ownership and
+GC-free-region ordering. ARM32 long rehoming retains the low/high field
+construction and normal node-lowering dependency. The x86 JIT-helper path
+preserves placeholder replacement order, helper flags and stack-word counts.
+Five definitions, headings and declarations retire 499 native lines in
+`e1622d06`; CFG and independent helper dependencies remain retained.
+
+Windows controls pass 58 Debug/58 Release. Linux has 56 passing/2 failing in
+both configurations, with exactly the previously accepted outgoing-area
+failure identities and messages. ARM64 controls pass 15/15. Old-production
+tailcall preservation controls pass 13 cases on Windows/Linux Debug and ARM64
+Debug/Release; all selected previously accepted argument cases remain unchanged.
+Five isolated target diagnostic sets match and remain failed builds.
+Evidence: `artifacts/lower-tailcalls-9fea404`, final `work-v2`,
+with 2,499 source files, ten current TRXs and six reused accepted argument TRXs
+independently verified. x86 helper and ARM32 execution remain blocked by target
+dependencies/build failures; these controls do not establish generated-code parity.
+
 ## 2026-09-30: Whole minimal register selection and allocation
 
 Minimal selection retains native assertion and heuristic behavior, ARM32

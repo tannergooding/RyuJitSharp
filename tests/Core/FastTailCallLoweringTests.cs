@@ -253,6 +253,32 @@ internal static unsafe class FastTailCallLoweringTests
     }
 
 #if PROFILING_SUPPORTED
+    [Test]
+    public static void ProfilerHookClearsArgumentMarksBeforeStackSetup()
+    {
+        WithCompiler((compiler, block, lowering) => {
+            ProfilerHookNeeded(compiler) = true;
+            block.SetFlags(BBF_GC_SAFE_POINT);
+            var call = FastCall();
+            var earlyValue = compiler.gtNewIconNode(TYP_INT, 1);
+            var earlyPut = AddStackArgument(call, earlyValue, 32, 8);
+            var lateValue = compiler.gtNewIconNode(TYP_INT, 2);
+            var latePut = AddStackArgument(call, lateValue, 40, 8);
+            block.InsertAtEnd(lateValue);
+            block.InsertAtEnd(latePut);
+            block.InsertAtEnd(earlyValue);
+            block.InsertAtEnd(earlyPut);
+            block.InsertAtEnd(call);
+
+            InsertProfTailCallHook(lowering, call, null);
+
+            Assert.That(latePut.Prev?.Oper, Is.EqualTo(GT_PROF_HOOK));
+            Assert.That(earlyPut.Prev, Is.SameAs(earlyValue));
+            Assert.That((earlyPut._lirFlags | latePut._lirFlags) & LIR.Flags.Mark,
+                Is.EqualTo(LIR.Flags.None));
+        });
+    }
+
     [TestCase(true)]
     [TestCase(false)]
     public static void ProfilerHookPrecedesNonGcRegionOrFirstRegisterArgument(bool hasStackArg)
@@ -328,6 +354,9 @@ internal static unsafe class FastTailCallLoweringTests
 #if PROFILING_SUPPORTED
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compProfilerHookNeeded")]
     private static extern ref bool ProfilerHookNeeded(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "InsertProfTailCallHook")]
+    private static extern void InsertProfTailCallHook(Lowering lowering, GenTreeCall call, GenTree? insertionPoint);
 #endif
 
     private static void WithCompiler(Action<Compiler, BasicBlock, Lowering> action)

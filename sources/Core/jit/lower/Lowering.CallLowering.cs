@@ -321,8 +321,75 @@ public sealed partial class Lowering
     }
 #endif
 
-    private GenTree LowerTailCallViaJitHelper(GenTreeCall call, GenTree callTarget)
+    private unsafe GenTree? LowerTailCallViaJitHelper(GenTreeCall call, GenTree callTarget)
     {
-        throw new NotImplementedException("JIT-helper tailcall lowering is not ported.");
+        var compiler = CompilerInstance;
+        assert((compiler.info.compFlags & CORINFO_FLG_SYNCH) == 0);
+        assert(!call.IsUnmanaged);
+        assert(!compiler.compLocallocUsed);
+        assert(call.IsTailCallViaJitHelper);
+        assert(callTarget is not null);
+
+        if (compiler.compMethodRequiresPInvokeFrame)
+        {
+            assert(compiler.compCurBB is not null);
+            InsertPInvokeMethodEpilog(compiler.compCurBB, call);
+        }
+
+        const uint wordSize = 4;
+        var newStackArgsWords = unchecked((uint)call.Args.OutgoingArgsStackSize) / wordSize;
+        assert(newStackArgsWords >= 4);
+        newStackArgsWords -= 4;
+
+        var numArgs = call.Args.CountArgs();
+        var targetArg = call.Args.GetArgByIndex(numArgs - 1) ??
+            throw new InvalidOperationException("Tail-call helper target argument is missing.");
+        var targetPutArg = (targetArg.EarlyNode ??
+            throw new InvalidOperationException("Tail-call helper target placement is missing.")).AsPutArgStk();
+        var placeholderRange = BlockRange().GetTreeRange(targetPutArg.Op1, out var isClosed);
+        assert(isClosed);
+        BlockRange().Remove(placeholderRange);
+        targetPutArg.Op1 = callTarget;
+
+        var flagsArg = call.Args.GetArgByIndex(numArgs - 2) ??
+            throw new InvalidOperationException("Tail-call helper flags argument is missing.");
+        var flags = (flagsArg.EarlyNode ??
+            throw new InvalidOperationException("Tail-call helper flags placement is missing.")).AsPutArgStk().Op1;
+        assert(flags.Oper is GT_CNS_INT);
+        flags.AsIntCon().IconValue = 1 | (call.IsVirtualStub ? 2 : 0);
+
+        var sizeArg = call.Args.GetArgByIndex(numArgs - 3) ??
+            throw new InvalidOperationException("Tail-call helper size argument is missing.");
+        var size = (sizeArg.EarlyNode ??
+            throw new InvalidOperationException("Tail-call helper size placement is missing.")).AsPutArgStk().Op1;
+        assert(size.Oper is GT_CNS_INT);
+        size.AsIntCon().IconValue = unchecked((nint)newStackArgsWords);
+
+#if DEBUG
+        var oldSizeArg = call.Args.GetArgByIndex(numArgs - 4) ??
+            throw new InvalidOperationException("Tail-call helper incoming size argument is missing.");
+        assert(oldSizeArg.EarlyNode is not null);
+        assert(oldSizeArg.EarlyNode.AsPutArgStk().Op1.Oper is GT_CNS_INT);
+#endif
+
+        MovePutArgNodesUpToCall(call);
+
+        call._callType = CT_HELPER;
+        call._controlExpr = null;
+        call._callMethHnd = Compiler.eeFindHelper(CORINFO_HELP_TAILCALL);
+        call.Flags &= ~GTF_CALL_VIRT_KIND_MASK;
+
+        call._callMoreFlags &= ~(GTF_CALL_M_TAILCALL | GTF_CALL_M_TAILCALL_VIA_JIT_HELPER);
+        var result = LowerDirectCall(call);
+        call._callMoreFlags |= GTF_CALL_M_TAILCALL | GTF_CALL_M_TAILCALL_VIA_JIT_HELPER;
+
+#if PROFILING_SUPPORTED
+        if (compiler.compIsProfilerHookNeeded)
+        {
+            InsertProfTailCallHook(call, null);
+        }
+#endif
+
+        return result;
     }
 }

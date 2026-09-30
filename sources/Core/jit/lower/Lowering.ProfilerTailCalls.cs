@@ -9,21 +9,20 @@ public sealed partial class Lowering
 {
     private void InsertProfTailCallHook(GenTreeCall call, GenTree? insertionPoint)
     {
-#if TARGET_AMD64 || TARGET_ARM64
         assert(call.IsTailCall);
         assert(CompilerInstance.compIsProfilerHookNeeded);
+#if TARGET_X86
+        insertionPoint ??= call;
+#else
         insertionPoint ??= FindEarliestPutArg(call) ?? call;
+#endif
 
 #if DEBUG
         JITDUMP($"Inserting profiler tail call before [{insertionPoint.TreeId:D6}]\n");
 #endif
         BlockRange().InsertBefore(insertionPoint, new GenTree(GT_PROF_HOOK, TYP_VOID));
-#else
-        throw new System.NotImplementedException("Profiler tail-call hook placement is not ported for this target.");
-#endif
     }
 
-#if TARGET_AMD64 || TARGET_ARM64
     private static GenTree? FindEarliestPutArg(GenTreeCall call)
     {
         var numMarkedNodes = MarkCallPutArgAndFieldListNodes(call);
@@ -47,5 +46,4 @@ public sealed partial class Lowering
         assert(node.Oper.IsPutArg);
         return node;
     }
-#endif
 }
