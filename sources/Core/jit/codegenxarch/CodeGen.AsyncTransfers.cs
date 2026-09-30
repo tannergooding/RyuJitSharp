@@ -70,7 +70,7 @@ public sealed partial class CodeGen
 
     public void genPatchpoint(GenTreeUnOp tree)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
+#if TARGET_WASM
         throw new FatalJitException(CORJIT_SKIPPED, "Patchpoint generation requires Windows AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
@@ -84,9 +84,27 @@ public sealed partial class CodeGen
         var helper = tree.Oper == GT_PATCHPOINT ? CORINFO_HELP_PATCHPOINT : CORINFO_HELP_PATCHPOINT_FORCED;
         genEmitHelperCall(helper, 0, EA_UNKNOWN);
 
+#if !TARGET_XARCH
+        // After the transfer, the return-address slot may have moved. GC metadata
+        // must disable hijacking so unhijacking cannot write to the old slot.
+        HasTailCalls = true;
+#endif
+
+#if TARGET_XARCH
         // A tail-jump prefix would falsely tell the Windows unwinder that the
         // epilog has restored RSP and callee-saved registers.
         Emitter.emitIns_R(INS_i_jmp, EA_PTRSIZE, REG_INTRET);
+#elif TARGET_ARM64
+        Emitter.emitIns_R(INS_br, EA_PTRSIZE, REG_INTRET);
+#elif TARGET_ARM
+        Emitter.emitIns_R(INS_bx, EA_PTRSIZE, REG_INTRET);
+#elif TARGET_LOONGARCH64
+        Emitter.emitIns_R_R_I(INS_jirl, EA_PTRSIZE, REG_R0, REG_INTRET, (nint)0);
+#elif TARGET_RISCV64
+        Emitter.emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_R0, REG_INTRET, (nint)0);
+#else
+#error Unsupported target architecture for GT_PATCHPOINT
+#endif
 #endif
     }
 }

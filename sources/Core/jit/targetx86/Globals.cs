@@ -38,6 +38,10 @@ public partial class Globals
 
     public const regNumber REG_ASYNC_CONTINUATION_RET = REG_ECX;
 
+    public const regNumber REG_ARG_0 = REG_ECX;
+
+    public const regNumber REG_ARG_1 = REG_EDX;
+
     public const regNumber REG_INTRET = REG_EAX;
 
     public const regNumber REG_LNGRET_LO = REG_EAX;

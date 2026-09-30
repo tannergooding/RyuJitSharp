@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole shared patchpoint transfers
+
+Regular and forced patchpoints retain argument moves, helper selection and all
+five native target jumps. Xarch uses the jump that is not recognized as an
+epilog; non-xarch records tail-call state after the helper and before the transfer
+so future GC publication can disable unsafe return-address hijacking.
+
+The whole caller, its declaration and two inline state accessors are removed from
+the residual tree. Windows controls preserve both helper forms; Linux-target
+controls now reach the existing helper and jump recording rather than the former
+Windows-only gate. Other-target recording and GC-header publication still
+terminate. Storing the state does not publish the non-xarch GC-header bit or
+complete the target-specific emitter APIs, and is not new runtime parity.
+
 ## 2026-09-30: Whole shared return support
 
 Return generation retains x86/ARM32 low/high pairs, floating and target-specific

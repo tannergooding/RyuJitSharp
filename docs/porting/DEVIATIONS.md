@@ -1402,7 +1402,7 @@ retain their complete native algorithms. Five non-AMD64 continuation-register
 aliases now match the pinned target headers. Their three common definitions and
 the publication declaration are removed; native Wasm-specific transfer bodies
 and their shared declarations remain. Instruction emission keeps its separate
-terminating target boundaries, and patchpoint generation remains deferred.
+terminating target boundaries; other-target patchpoint execution remains blocked.
 The publication fixture is still Windows-only;
 these shared helpers do not establish Linux publication coverage, other-target
 instruction emission or runtime/generated-code parity.
@@ -1417,6 +1417,18 @@ their native implementations remain. Independent struct-return classification
 and generation are unchanged. Linux profiler controls retain their existing
 failures. Other-target diagnostic builds still fail, so this caller closure does
 not establish complete compilability, GC-header publication or execution there.
+
+Shared non-Wasm patchpoint generation retains regular/forced helper selection,
+target jumps and non-xarch tail-call state. Its whole common body/declaration and
+the two native inline state accessors are removed. `CodeGen.HasTailCalls` retains
+native target guards and false initialization, but modern GC-header publication
+still terminates outside Windows AMD64; the state is not yet emitted into other
+targets' GC metadata. Native GC/header/encoder implementations remain, and their
+tail-call bit is not replaced by AMD64's `WantsReportOnlyLeaf`.
+ARM unary recording has its native three-argument terminating declaration.
+LoongArch/RISC-V's five-argument `nint` NYI binds only the caller's omitted-options
+arity (`INS_OPTS_NONE=0`), not the native six-parameter emitter API or target-wide
+options enum. Those native emitters remain untranslated.
 
 `LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
 performs conservative frame layout before reserving IP1 and reserves x19 when

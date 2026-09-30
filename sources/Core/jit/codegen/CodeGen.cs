@@ -21,6 +21,9 @@ public sealed partial class CodeGen : ICodeGen
     private PhasedVar<bool> _cgFrameRequired;
 
     private bool _cgInterruptible;
+#if TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+    private bool _cgHasTailCalls;
+#endif
     private bool _cgFullPtrRegMap;
 
     private Compiler _compiler;
@@ -99,6 +102,9 @@ public sealed partial class CodeGen : ICodeGen
 
         compiler.genCallSite2DebugInfoMap = null;
         Interruptible = false;
+#if TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+        HasTailCalls = false;
+#endif
 
 #if DEBUG
         _genInterruptibleUsed = false;
@@ -323,6 +329,21 @@ public sealed partial class CodeGen : ICodeGen
             _cgInterruptible = value;
         }
     }
+
+#if TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+    public bool HasTailCalls
+    {
+        get
+        {
+            return _cgHasTailCalls;
+        }
+
+        set
+        {
+            _cgHasTailCalls = value;
+        }
+    }
+#endif
 
     public bool IsFramePointerRequired
     {
