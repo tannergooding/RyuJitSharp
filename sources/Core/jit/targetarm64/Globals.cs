@@ -40,6 +40,8 @@ public partial class Globals
 
     public const regNumber REG_SECRET_STUB_PARAM = REG_R12;
 
+    public const regNumber REG_ASYNC_CONTINUATION_RET = REG_R2;
+
     public const regNumber REG_ARG_RET_BUFF = REG_R8;
 
     public const int MAX_REG_ARG = 8;

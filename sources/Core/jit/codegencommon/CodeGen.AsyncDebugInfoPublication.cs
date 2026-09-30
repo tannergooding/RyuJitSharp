@@ -9,9 +9,6 @@ public sealed partial class CodeGen
 {
     public unsafe void genReportAsyncDebugInfo()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Async debug-info publication requires Windows AMD64.");
-#else
         if (!_compiler.opts.compDbgInfo)
         {
             return;
@@ -75,7 +72,6 @@ public sealed partial class CodeGen
                 jitprintf($"  [{index}] VarNumber = {unchecked((uint)asyncVars[index].VarNumber)}, Offset = {unchecked((uint)asyncVars[index].Offset):x}\n");
             }
         }
-#endif
 #endif
     }
 }

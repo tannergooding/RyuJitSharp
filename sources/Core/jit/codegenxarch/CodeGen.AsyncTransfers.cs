@@ -9,7 +9,7 @@ public sealed partial class CodeGen
 {
     public void genReturnSuspend(GenTreeUnOp tree)
     {
-#if !TARGET_AMD64
+#if TARGET_WASM
         throw new FatalJitException(CORJIT_SKIPPED, "Suspension return generation requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
@@ -35,7 +35,7 @@ public sealed partial class CodeGen
 
     public void genCodeForAsyncContinuation(GenTree tree)
     {
-#if !TARGET_AMD64
+#if TARGET_WASM
         throw new FatalJitException(CORJIT_SKIPPED, "Async continuation generation requires AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();

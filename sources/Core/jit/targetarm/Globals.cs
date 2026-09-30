@@ -17,5 +17,7 @@ public partial class Globals
     public const regNumber REG_R2R_INDIRECT_PARAM = REG_R12;
 
     public const regMask SRBM_R2R_INDIRECT_PARAM = SRBM_R12;
+
+    public const regNumber REG_ASYNC_CONTINUATION_RET = REG_R2;
 }
 #endif

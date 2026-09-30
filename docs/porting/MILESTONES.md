@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Shared async transfers and debug publication
+
+Suspension returns and continuation values retain the complete native non-Wasm
+algorithms: continuation-register moves, GC-root transfer and clearing only
+GC-typed ordinary return values. Required x86, ARM32, ARM64, RISC-V and LoongArch
+register aliases match their pinned native definitions. Debug publication keeps
+location capture, allocation/copy order, EE ownership and diagnostics.
+
+Three whole common definitions and the publication declaration are removed from
+the residual tree. Wasm-specific transfer bodies and their shared declarations
+remain, as do return-marking and instruction-emission dependencies. Existing
+Windows and Linux-target controls preserve their results; the publication fixture
+remains Windows-only and supplies no direct Linux publication coverage. This
+source closure does not establish other-target execution or generated-code parity.
+
 ## 2026-09-30: Shared data-section output and diagnostics
 
 Final data-section output and display retain the whole native target branches:

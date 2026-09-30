@@ -13,5 +13,7 @@ public partial class Globals
     public const int TARGET_MASKS_SHIFTS = 1;
 
     public const int TARGET_HAS_MULHI = 1;
+
+    public const regNumber REG_ASYNC_CONTINUATION_RET = REG_A2;
 }
 #endif

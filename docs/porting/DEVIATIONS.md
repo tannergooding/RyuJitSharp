@@ -1396,9 +1396,16 @@ target-width branches, writable-alias stores, relocation ordering and async
 null-location handling. Their native definitions and declarations, and the
 newly shared existing inline hot/cold offset helper, are removed. Native
 `emitLocation` diagnostic geometry remains a host pointer plus an aligned
-unsigned field; the EE record layout is not redesigned. Suspension/continuation
-and patchpoint bodies remain deferred. These shared helpers do not establish
-other-target instruction emission or runtime/generated-code parity.
+unsigned field; the EE record layout is not redesigned.
+Shared non-Wasm suspension/continuation transfers and async debug publication
+retain their complete native algorithms. Five non-AMD64 continuation-register
+aliases now match the pinned target headers. Their three common definitions and
+the publication declaration are removed; native Wasm-specific transfer bodies
+and their shared declarations remain. `genMarkReturnGCInfo` and instruction
+emission keep their separate terminating target boundaries, and patchpoint
+generation remains deferred. The publication fixture is still Windows-only;
+these shared helpers do not establish Linux publication coverage, other-target
+instruction emission or runtime/generated-code parity.
 
 `LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
 performs conservative frame layout before reserving IP1 and reserves x19 when
