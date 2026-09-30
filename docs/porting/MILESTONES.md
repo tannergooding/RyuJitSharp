@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Whole common indirect-store lowering
+
+The common store caller now retains Wasm's write-barrier dispatch and all
+non-xarch mutable-object publication branches, without replacing the whole
+caller with a target guard. Retyping, address construction, write-barrier
+handling, coalescing and target dispatch keep native ordering. The function,
+heading and declaration retire 58 lines in `d57f87d2`; independent helper
+definitions remain native.
+
+Full-analysis controls pass Windows 46/46, Linux 46/46 and ARM64 78/78 in
+Debug/Release. The new write-barrier case is a preservation control. Wasm
+compilation remains blocked by five unchanged baseline syntax diagnostics;
+no target execution or generated-code parity is claimed. Evidence:
+`artifacts/store-indir-common-8bc9635`.
+
 ## 2026-09-29: Whole mixed-store coalescing
 
 Local and indirect coalescing now retain the complete shared native algorithm,

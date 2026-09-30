@@ -11,7 +11,6 @@ public sealed partial class Lowering
 {
     private unsafe GenTree? LowerStoreIndirCommon(GenTreeStoreInd ind)
     {
-#if TARGET_XARCH || TARGET_ARM64
         var compiler = CompilerInstance;
         assert(ind.Type is not TYP_STRUCT);
         ind = TryRetypingFloatingPointStoreToIntegerStore(ind).AsStoreInd();
@@ -26,10 +25,14 @@ public sealed partial class Lowering
         assert(compiler.codeGen is not null);
         if (compiler.codeGen.GCInfo.gcIsWriteBarrierStoreIndNode(ind))
         {
+#if TARGET_WASM
+            return LowerStoreIndir(ind);
+#else
             return ind.Next;
+#endif
         }
 
-#if TARGET_ARM64
+#if !TARGET_XARCH
         if (ind.Data.Oper.IsCnsIntOrI && ind.Data.AsIntCon().IsIconHandle(GTF_ICON_OBJ_HDL) &&
             !compiler.info.compCompHnd->isObjectImmutable((CORINFO_OBJECT_HANDLE)ind.Data.AsIntCon().IconValue))
         {
@@ -39,9 +42,6 @@ public sealed partial class Lowering
 #endif
         LowerIndirectStoreCoalescing(ind);
         return LowerStoreIndir(ind);
-#else
-        throw new NotImplementedException("Indirect-store lowering outside xarch and ARM64 is not ported.");
-#endif
     }
 
     private GenTree? LowerStoreIndir(GenTreeStoreInd node)

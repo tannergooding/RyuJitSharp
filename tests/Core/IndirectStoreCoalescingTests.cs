@@ -10,6 +10,34 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class IndirectStoreCoalescingTests
 {
+    [Test]
+    public static void WriteBarrierStoreReturnsBeforeOrdinaryContainment()
+    {
+        WithCompiler(optimized: true, compiler => {
+            compiler.lvaCount = 2;
+            compiler.lvaTable[0].Type = var_types.TYP_BYREF;
+            compiler.lvaTable[1].Type = var_types.TYP_REF;
+            var address = compiler.gtNewLclvNode(var_types.TYP_BYREF, 0);
+            var value = compiler.gtNewLclvNode(var_types.TYP_REF, 1);
+            var store = new GenTreeStoreInd(var_types.TYP_REF, address, value) {
+                Flags = GenTreeFlags.GTF_IND_TGT_HEAP,
+            };
+            var next = new GenTreeUnOp(genTreeOps.GT_RETURN, var_types.TYP_VOID, null);
+            var block = NewBlock(address, value, store, next);
+            var lowering = NewLowering(compiler, block);
+
+            var codeGen = compiler.codeGen ?? throw new InvalidOperationException();
+            Assert.That(codeGen.GCInfo.gcIsWriteBarrierStoreIndNode(store), Is.True);
+            Assert.That(LowerNode(lowering, store), Is.SameAs(next));
+            Assert.That(store.Addr, Is.SameAs(address));
+            Assert.That(store.Data, Is.SameAs(value));
+            Assert.That(value.IsContained, Is.False);
+#if DEBUG
+            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+#endif
+        });
+    }
+
     [TestCase(0x1000, 0x1001, true, false, true, 0x2211)]
     [TestCase(0x1001, 0x1000, true, false, true, 0x1122)]
     [TestCase(0x1000, 0x1001, false, false, false, 0)]
