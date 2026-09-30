@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole shared struct-return callers
+
+Struct-return classification preserves field-list precedence and the distinct
+Windows-AMD64 policy; other targets, including Wasm, use the native struct-type
+predicate. Non-Wasm generation retains register moves, reload/copy aliases,
+spilled fields and Swift offsets. LoongArch/RISC-V loads use each descriptor's
+field offset with native unsigned arithmetic, and SIMD splitting keeps its
+feature guard. Descriptor layout and return-classification ABI are unchanged.
+
+Two whole common definitions and the classification declaration are removed
+from the residual tree. Six focused classification cases preserve old-source
+behavior alongside existing return controls. Linux retains its nineteen
+profiler dependency failures; other-target builds still fail. Wasm-specific
+generation, ARMARCH SIMD splitting and lower emitter implementations remain
+native, with explicit terminating managed boundaries. This caller closure does
+not establish other-target execution or new generated-code parity.
+
 ## 2026-09-30: Whole shared patchpoint transfers
 
 Regular and forced patchpoints retain argument moves, helper selection and all

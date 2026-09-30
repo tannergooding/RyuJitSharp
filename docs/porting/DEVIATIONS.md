@@ -1413,9 +1413,8 @@ definitions and declarations are removed. ARM soft-float/varargs moves use the
 native unsigned instruction-flags enum and an explicitly selected flags-typed
 three-register recording boundary. Target-specific `genSimpleReturn`, Wasm
 `genClearAsyncContinuationGlobal` and ARM recording dependencies terminate;
-their native implementations remain. Independent struct-return classification
-and generation are unchanged. Linux profiler controls retain their existing
-failures. Other-target diagnostic builds still fail, so this caller closure does
+their native implementations remain. Linux profiler controls retain their
+existing failures. Other-target diagnostic builds still fail, so this caller closure does
 not establish complete compilability, GC-header publication or execution there.
 
 Shared non-Wasm patchpoint generation retains regular/forced helper selection,
@@ -1429,6 +1428,21 @@ ARM unary recording has its native three-argument terminating declaration.
 LoongArch/RISC-V's five-argument `nint` NYI binds only the caller's omitted-options
 arity (`INS_OPTS_NONE=0`), not the native six-parameter emitter API or target-wide
 options enum. Those native emitters remain untranslated.
+
+Shared struct-return classification now preserves field-list precedence and the
+Windows-AMD64-only policy, using the native struct-type predicate elsewhere,
+including Wasm. Non-Wasm generation retains the whole common algorithm,
+including `FEATURE_SIMD`, Swift offsets and LoongArch/RISC-V descriptor field
+offsets. Existing signed offsets are converted bit-preservingly for native
+unsigned addition/comparison, then converted back at the emitter boundary;
+descriptor representation and ABI classification are unchanged.
+The two common definitions and classification declaration are removed.
+Wasm-specific generation and its shared declaration remain, as do ARMARCH
+SIMD split-return and independent native emitter bodies. The new five-argument
+ARM32/LoongArch/RISC-V local-stack NYI is a terminating call-arity boundary,
+not a translation of ARM's optional sixth base-register argument or full target
+recording. Failed target builds can mask body diagnostics and do not establish
+complete compilability or execution.
 
 `LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
 performs conservative frame layout before reserving IP1 and reserves x19 when

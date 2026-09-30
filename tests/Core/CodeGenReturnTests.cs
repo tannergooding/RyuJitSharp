@@ -90,6 +90,38 @@ internal static unsafe class CodeGenReturnTests
         });
     }
 
+    [TestCase(GT_RETFILT, TYP_VOID)]
+    [TestCase(GT_RETFILT, TYP_INT)]
+    [TestCase(GT_RETURN, TYP_VOID)]
+    [TestCase(GT_RETURN, TYP_INT)]
+    public static void VoidFilterAndScalarReturnsAreNotClassifiedAsStructs(genTreeOps oper, var_types type)
+    {
+        WithReturn(TYP_INT, (compiler, codeGen) =>
+        {
+            compiler.info.compRetNativeType = TYP_STRUCT;
+            var value = type == TYP_VOID ? null : new GenTreeLclVar(type, 0);
+            var tree = new GenTreeUnOp(oper, type, value);
+
+            Assert.That(codeGen.isStructReturn(tree), Is.False);
+        });
+    }
+
+#if UNIX_AMD64_ABI
+    [TestCase(TYP_INT, false)]
+    [TestCase(TYP_STRUCT, true)]
+    public static void StructClassificationRequiresTheNativeReturnType(var_types nativeType, bool expected)
+    {
+        WithReturn(TYP_INT, (compiler, codeGen) =>
+        {
+            compiler.info.compRetNativeType = nativeType;
+            var value = new GenTreeLclVar(TYP_STRUCT, 0);
+            var tree = new GenTreeUnOp(GT_RETURN, TYP_STRUCT, value);
+
+            Assert.That(codeGen.isStructReturn(tree), Is.EqualTo(expected));
+        });
+    }
+#endif
+
 #if UNIX_AMD64_ABI
     [TestCase(REG_XMM0, 1)]
     [TestCase(REG_XMM1, 2)]

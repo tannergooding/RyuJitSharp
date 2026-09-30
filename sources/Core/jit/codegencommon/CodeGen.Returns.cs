@@ -171,9 +171,6 @@ public sealed partial class CodeGen
 
     public bool isStructReturn(GenTree tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Struct-return classification requires AMD64.");
-#else
         noway_assert(tree.Oper is GT_RETURN or GT_RETFILT or GT_SWIFT_ERROR_RET);
         if (tree.Oper is not (GT_RETURN or GT_SWIFT_ERROR_RET))
         {
@@ -185,19 +182,18 @@ public sealed partial class CodeGen
             return true;
         }
 
-#if UNIX_AMD64_ABI
-        return varTypeIsStruct(tree.Type) && (_compiler.info.compRetNativeType == TYP_STRUCT);
-#else
+#if TARGET_AMD64 && !UNIX_AMD64_ABI
         assert(!varTypeIsStruct(tree.Type));
         return false;
-#endif
+#else
+        return varTypeIsStruct(tree.Type) && (_compiler.info.compRetNativeType == TYP_STRUCT);
 #endif
     }
 
     public void genStructReturn(GenTree tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Struct-return generation requires AMD64.");
+#if TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "WebAssembly struct-return generation is not implemented.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_RETURN or GT_SWIFT_ERROR_RET);
@@ -227,12 +223,32 @@ public sealed partial class CodeGen
         {
             assert(varTypeIsSimd(_compiler.lvaGetDesc(actualValue.AsLclVarCommon().LclNum).GetRegisterType()));
             assert(!actualValue.AsLclVar().IsMultiReg);
+#if FEATURE_SIMD
             genSIMDSplitReturn(value, descriptor);
+#endif
         }
         else if ((actualValue.Oper == GT_LCL_VAR) && !actualValue.AsLclVar().IsMultiReg)
         {
             var local = actualValue.AsLclVar();
             assert(_compiler.lvaGetDesc(local.LclNum).lvIsMultiRegRet);
+#if TARGET_LOONGARCH64 || TARGET_RISCV64
+            var type = descriptor.GetReturnRegType(0);
+            var offset = unchecked((uint)descriptor.GetReturnFieldOffset(0));
+            var register = descriptor.GetAbiReturnReg(0, _compiler.info.compCallConv);
+
+            Emitter.emitIns_R_S(ins_Load(type), type.EmitSize, register, local.LclNum, unchecked((int)offset));
+            if (descriptor.ReturnRegCount > 1)
+            {
+                assert(descriptor.ReturnRegCount == 2);
+                assert(unchecked(offset + (uint)type.Size) <=
+                    unchecked((uint)descriptor.GetReturnFieldOffset(1)));
+                type = descriptor.GetReturnRegType(1);
+                offset = unchecked((uint)descriptor.GetReturnFieldOffset(1));
+                register = descriptor.GetAbiReturnReg(1, _compiler.info.compCallConv);
+
+                Emitter.emitIns_R_S(ins_Load(type), type.EmitSize, register, local.LclNum, unchecked((int)offset));
+            }
+#else
 #if SWIFT_SUPPORT
             ReadOnlySpan<int> offsets = default;
             if (_compiler.info.compCallConv == CorInfoCallConvExtension.Swift)
@@ -260,6 +276,7 @@ public sealed partial class CodeGen
                 Emitter.emitIns_R_S(ins_Load(type), type.EmitSize, register, local.LclNum, offset);
                 offset += type.Size;
             }
+#endif
         }
         else
         {
