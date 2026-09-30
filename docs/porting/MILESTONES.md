@@ -16,6 +16,29 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Register/immediate adapters and tail-jump argument placement
+
+Common register/immediate adapters retain native target dispatch, target32
+signed truncation and AMD64 zero-extended MOV width selection. Unused
+LoongArch/RISC-V single-register paths retain their native diagnostics and
+explicitly terminate if the configured NYI handler returns. ARM32 immediate
+validation and materialization remain independent terminating dependencies.
+
+Shared tail-jump placement preserves the non-Wasm enclosure and
+spill/profiler/reload order without rewriting local register homes. Register
+masks retain their integer or floating bank; the new floating-home regression
+checks overlapping RDX/XMM2 bits and restoration to the ABI floating register.
+X86 varargs remain stack-only, while Windows AMD64 restores unknown shadow-space
+arguments inside the native GC-disabled interval.
+
+Selected Windows controls pass 31 Debug and 29 Release cases; Linux controls
+pass 18 in each configuration. The x86 diagnostic retains fourteen earlier
+errors and zero warnings; its new controls remain unexecuted.
+Four whole definitions and three exclusive declarations retire 275 native lines,
+including headings. Other-target varargs bodies, parameter-stack type selection
+and instruction dependencies remain native. These checks do not establish
+other-target or generated-code parity.
+
 ## 2026-09-30: Whole argument placement and common scalar generation
 
 Xarch argument placement retains x86 pushes, field-list padding, GC-slot order,

@@ -1514,6 +1514,26 @@ bind those calls, so no additional emitter move API is introduced.
 The x86 diagnostic still stops at fourteen earlier declaration errors; neither
 its caller bodies nor the new x86 controls have execution evidence.
 
+Common `inst_RV` and `inst_RV_IV` retain native sizing and target dispatch,
+including target32 immediate truncation and AMD64 zero-extended MOV selection.
+LoongArch/RISC-V retain the upstream unused-path NYI diagnostics followed by
+explicit termination if `AltJitAssertOnNYI` permits those diagnostics to return.
+The ARM32 immediate validator and register-immediate materializer remain typed
+terminating dependencies; their native bodies and declarations remain.
+The adjacent register/register adapter is unchanged and remains native.
+
+Shared tail-jump placement retains the native non-Wasm scope,
+spill/profiler/reload order, GC-root transitions and unchanged descriptor homes.
+Live-register masks are constructed in the actual register bank; a floating-home
+control checks that removing XMM2 does not clear the overlapping integer RDX bit
+and that reloading XMM0 restores the floating bank. X86 varargs require no
+register placement; Windows AMD64 restores unknown shadow-space bits inside the
+native GC-disabled interval. Other-target varargs bodies and the common
+parameter-stack type helper remain independently incomplete.
+The retained x86 declaration failures still prevent execution of its new
+adapter/tail-jump controls. No non-xarch recording or generated-code parity is
+claimed by the selected Windows/Linux checks.
+
 `LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
 performs conservative frame layout before reserving IP1 and reserves x19 when
 the layout contains scalable vectors. The layout includes varargs homes,

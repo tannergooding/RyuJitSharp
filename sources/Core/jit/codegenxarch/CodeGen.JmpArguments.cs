@@ -11,10 +11,12 @@ public sealed partial class CodeGen
 {
     public unsafe void genJmpPlaceArgs(GenTree jmp)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "JMP argument placement requires Windows AMD64.");
+#if TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "JMP argument placement requires a native target.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(jmp.Oper is GT_JMP);
         assert(_compiler.compJmpOpUsed);
 
@@ -62,8 +64,14 @@ public sealed partial class CodeGen
 
                 var stackType = genParamStackType(in varDsc, in segment);
                 Emitter.emitIns_R_S(ins_Load(stackType), stackType.EmitSize, segment.Register, varNum, segment.Offset);
-                // Windows AMD64 segments occupy one register; RegisterMask is ABI-bank-relative.
-                _regSet.AddMaskVars(regMaskTP.CreateFromRegNum(segment.Register, segment.Register.SingleTypeMask));
+                var registerMask = segment.Register.SingleTypeMask;
+#if TARGET_ARM
+                if (genIsValidFloatReg(segment.Register) && (segment.Size == 8))
+                {
+                    registerMask |= (segment.Register + 1).SingleTypeMask;
+                }
+#endif
+                _regSet.AddMaskVars(regMaskTP.CreateFromRegNum(segment.Register, registerMask));
                 _gcInfo.gcMarkRegPtrVal(segment.Register, stackType);
             }
 
@@ -87,11 +95,11 @@ public sealed partial class CodeGen
 
     public void genJmpPlaceVarArgs()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "JMP varargs placement requires Windows AMD64.");
-#else
-        Emitter.RequireSupportedInstructionRecording();
         assert(_compiler.info.compIsVarArgs);
+#if TARGET_X86
+        // All x86 varargs are already on the stack.
+#elif WINDOWS_AMD64_ABI
+        Emitter.RequireSupportedInstructionRecording();
         var potentialArgs = SRBM_ARG_REGS;
 
         for (var varNum = 0; varNum < _compiler.info.compArgsCount; varNum++)
@@ -140,13 +148,18 @@ public sealed partial class CodeGen
         while (potentialArgs != SRBM_NONE);
 
         Emitter.emitEnableGC();
+#elif TARGET_AMD64
+        unreached();
+        throw new FatalJitException(CORJIT_SKIPPED, "SysV AMD64 JMP varargs are not supported.");
+#else
+        throw new FatalJitException(CORJIT_SKIPPED, "JMP varargs placement is not yet ported for this target.");
 #endif
     }
 
     public var_types genParamStackType(in LclVarDsc descriptor, in AbiPassingSegment segment)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Parameter stack type selection requires AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Parameter stack type selection is not yet ported for this target.");
 #else
         assert(segment.IsPassedInRegister);
         switch (descriptor.Type)
