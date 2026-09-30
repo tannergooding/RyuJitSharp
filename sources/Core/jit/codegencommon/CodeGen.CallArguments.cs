@@ -9,16 +9,12 @@ public sealed partial class CodeGen
 {
     public void genCallPlaceRegArgs(GenTreeCall call)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Call register argument placement requires AMD64.");
+#if TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "Call register argument placement requires a native target.");
 #else
-#if UNIX_AMD64_ABI
-        if (call.Args.IsVarArgs)
-        {
-            throw new FatalJitException(CORJIT_SKIPPED, "SysV AMD64 varargs are not supported.");
-        }
-#endif
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
 
         foreach (var arg in call.Args.LateArgs)
         {

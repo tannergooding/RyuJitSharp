@@ -33,7 +33,9 @@ public sealed partial class CodeGen
 
     public void genCodeForNullCheck(GenTreeIndir tree)
     {
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(tree.Oper is GT_NULLCHECK);
         assert(tree.Op1.IsUsedFromReg);
         var reg = genConsumeReg(tree.Op1);

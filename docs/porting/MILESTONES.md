@@ -16,6 +16,27 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole argument placement and common scalar generation
+
+Xarch argument placement retains x86 pushes, field-list padding, GC-slot order,
+struct copies and register moves. SysV incoming stack arguments are selected
+from parameter ABI segments. The shared register-placement caller retains its
+non-Wasm target branches and Windows floating-varargs duplication; fixed x86
+temporary-register masks preserve the native register sets.
+
+Common catch arguments preserve the incoming exception root, move, root clearing
+and produce order across targets. Register reuse retains the native instruction-
+group boundary for an integral zero; the previously failing Linux dispatcher
+case now passes in both configurations. Existing non-xarch recording helpers
+remain terminating dependencies rather than duplicated overloads.
+
+Twelve whole definitions and ten exclusive declarations retire 867 native lines
+including headings and isolated guards. Selected Windows controls pass 85 Debug
+and 79 Release cases; Linux controls pass 36 in each configuration. The x86 build
+retains the exact fourteen earlier errors and zero warnings; new x86 controls
+remain unexecuted. These are selected managed behavior checks, not x86 runtime
+or whole-pipeline generated-code parity.
+
 ## 2026-09-30: Whole xarch frame initialization and call generation
 
 Funclet prologs, epilogs and frame capture retain the separate x86 algorithms.

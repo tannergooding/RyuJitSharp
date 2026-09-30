@@ -1472,10 +1472,11 @@ control flow. Stack-level addition is shared across targets; single-push
 accounting retains the native non-Wasm guard, and nested-alignment accounting
 remains Unix x86-only. Native fields and guards remain after retiring completed
 helper definitions. Their managed mapping is `CodeGen.ProfilingDependencies.cs`.
-SysV register reuse still terminates in the independently Windows-only
-`genCodeForReuseVal`; one selected Linux case reaches that boundary in each
-configuration. The Swift-error generator and x86 helper-call recording primitive
-also remain typed terminating dependencies. The failed x86 declaration build
+The common `genCodeForReuseVal` now retains its native integral-zero
+instruction-group boundary across targets; the previously failing SysV
+dispatcher case passes in both configurations. The Swift-error generator and
+x86 helper-call recording primitive also remain typed terminating dependencies.
+The failed x86 declaration build
 does not establish compilation or execution of the restored caller bodies.
 
 Xarch funclet and block-initialization callers now retain the separate native
@@ -1492,6 +1493,26 @@ definitions retire without restoring fields already absent from the residual.
 The exact fourteen earlier x86 declaration errors still prevent full body
 checking; floating spill, unwind and recording dependencies remain untranslated.
 Windows frame/call controls do not establish x86 runtime or generated-code parity.
+
+Xarch register/stack argument placement now retains the complete x86 push,
+field-list and struct-copy callers, with fixed native integer/floating masks.
+SysV incoming stack selection reads the existing parameter ABI segments.
+The shared non-Wasm register-placement caller preserves target branches and
+Windows varargs duplication. Its definition, the xarch-only definitions and
+their completed exclusive declarations are retired; shared declarations remain
+for independent target definitions. `getFirstArgWithStackSlot` and the non-x86
+field-list definition remain native because their other-target bodies are
+incomplete.
+
+The common catch-argument caller preserves the handler predicate, incoming
+exception GC root, move, conditional root clearing and produce order on every
+target. Its exception-register aliases match the pinned headers; Wasm keeps
+the native never-dispatched common path instead of fabricating catch support.
+Existing ARM32/LoongArch/RISC-V move bindings terminate at their independent
+recording dependency. New optional overloads would duplicate or ambiguously
+bind those calls, so no additional emitter move API is introduced.
+The x86 diagnostic still stops at fourteen earlier declaration errors; neither
+its caller bodies nor the new x86 controls have execution evidence.
 
 `LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
 performs conservative frame layout before reserving IP1 and reserves x19 when

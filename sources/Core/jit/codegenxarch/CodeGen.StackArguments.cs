@@ -9,8 +9,40 @@ public sealed partial class CodeGen
 {
     public void genPutArgStk(GenTreePutArgStk putArgStk)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack argument generation requires Windows AMD64.");
+#if TARGET_X86
+        var data = putArgStk.Op1;
+        var targetType = data.Type.ActualType;
+        assert(targetType != TYP_LONG);
+        assert((putArgStk.StackByteSize % TARGET_POINTER_SIZE) == 0);
+
+        genAlignStackBeforeCall(putArgStk);
+
+        if (data.Oper is GT_FIELD_LIST)
+        {
+            genPutArgStkFieldList(putArgStk);
+            return;
+        }
+
+        if (varTypeIsStruct(targetType))
+        {
+            genAdjustStackForPutArgStk(putArgStk);
+            genPutStructArgStk(putArgStk);
+            return;
+        }
+
+        genConsumeRegs(data);
+        if (data.IsUsedFromReg)
+        {
+            genPushReg(targetType, data.RegNum);
+        }
+        else
+        {
+            assert(data.Type.Size == TARGET_POINTER_SIZE);
+            inst_TT(INS_push, data.Type.EmitSize, data);
+            AddStackLevel(TARGET_POINTER_SIZE);
+        }
+#elif !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Stack argument generation requires xarch.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         var data = putArgStk.Op1;
@@ -57,13 +89,22 @@ public sealed partial class CodeGen
 
     public void genPutStructArgStk(GenTreePutArgStk putArgStk)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Struct stack argument generation requires Windows AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Struct stack argument generation requires xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         var source = putArgStk.Op1;
         var targetType = source.Type;
 
+#if TARGET_X86 && FEATURE_SIMD
+        if (putArgStk.IsSimd12)
+        {
+            genPutArgStkSimd12(putArgStk);
+            return;
+        }
+#endif
         if (varTypeIsSimd(targetType))
         {
             var srcReg = genConsumeReg(source);
@@ -83,7 +124,11 @@ public sealed partial class CodeGen
 
             case GenTreePutArgStk.Kind.PartialRepInstr:
             {
+#if TARGET_X86
+                unreached();
+#else
                 genStructPutArgPartialRepMovs(putArgStk);
+#endif
                 break;
             }
 
@@ -93,6 +138,13 @@ public sealed partial class CodeGen
                 break;
             }
 
+#if TARGET_X86
+            case GenTreePutArgStk.Kind.Push:
+            {
+                genStructPutArgPush(putArgStk);
+                break;
+            }
+#endif
             default:
             {
                 unreached();
@@ -104,18 +156,46 @@ public sealed partial class CodeGen
 
     public int getFirstArgWithStackSlot()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Incoming argument stack-slot selection requires Windows AMD64.");
-#else
-        // Windows AMD64 reserves homing space even for register-passed arguments.
+#if UNIX_AMD64_ABI
+        for (var index = 0; index < _compiler.info.compArgsCount; index++)
+        {
+            assert(_compiler.lvaGetDesc(index).lvIsParam);
+            ref readonly var abiInfo = ref _compiler.lvaGetParameterAbiInfo(index);
+            assert(!abiInfo.IsSplitAcrossRegistersAndStack);
+            if (abiInfo.HasAnyStackSegment)
+            {
+                return index;
+            }
+        }
+
+        assert(false, "Expected to find a parameter passed on the stack");
+        return BAD_VAR_NUM;
+#elif TARGET_X86
+        throw new FatalJitException(CORJIT_SKIPPED, "The first incoming stack argument is not implemented for x86.");
+#elif TARGET_AMD64
         return 0;
+#else
+        throw new FatalJitException(CORJIT_SKIPPED, "Incoming stack argument selection is not yet ported for this target.");
 #endif
     }
 
     public int getBaseVarForPutArgStk(GenTree treeNode)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack argument base selection requires Windows AMD64.");
+#if TARGET_X86
+        assert(treeNode.Oper is GT_PUTARG_STK);
+        if (treeNode.AsPutArgStk().PutInIncomingArgArea)
+        {
+            return getFirstArgWithStackSlot();
+        }
+
+#if FEATURE_FIXED_OUT_ARGS
+        return _compiler.lvaOutgoingArgSpaceVar;
+#else
+        assert(false, "No BaseVarForPutArgStk on x86");
+        return BAD_VAR_NUM;
+#endif
+#elif !TARGET_AMD64
+        throw new FatalJitException(CORJIT_SKIPPED, "Stack argument base selection requires xarch.");
 #else
         assert(treeNode.Oper is GT_PUTARG_STK);
         var baseVarNum = treeNode.AsPutArgStk().PutInIncomingArgArea
@@ -126,7 +206,263 @@ public sealed partial class CodeGen
 #endif
     }
 
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
+#if TARGET_X86
+    private bool genAdjustStackForPutArgStk(GenTreePutArgStk putArgStk)
+    {
+        var argSize = putArgStk.StackByteSize;
+        var source = putArgStk.Op1;
+
+#if FEATURE_SIMD
+        if ((source.Oper is not GT_FIELD_LIST) && varTypeIsSimd(source.Type))
+        {
+            inst_RV_IV(INS_sub, REG_SPBASE, argSize, EA_PTRSIZE);
+            AddStackLevel(unchecked((uint)argSize));
+            _pushStkArg = false;
+            return true;
+        }
+#endif
+
+#if DEBUG
+        switch (putArgStk._kind)
+        {
+            case GenTreePutArgStk.Kind.RepInstr:
+            case GenTreePutArgStk.Kind.Unroll:
+            {
+                assert(!source.GetLayout(_compiler).HasGCPtr);
+                break;
+            }
+
+            case GenTreePutArgStk.Kind.Push:
+            {
+                assert((source.Oper is GT_FIELD_LIST) || source.GetLayout(_compiler).HasGCPtr ||
+                    (argSize < XMM_REGSIZE_BYTES));
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+#endif
+
+        if (!putArgStk.IsPush)
+        {
+            if ((argSize >= ARG_STACK_PROBE_THRESHOLD_BYTES) ||
+                _compiler.compStressCompile(Compiler.STRESS_GENERIC_VARN, 5))
+            {
+                _ = genStackPointerConstantAdjustmentLoopWithProbe(unchecked(-(nint)argSize),
+                    trackSpAdjustments: true);
+            }
+            else
+            {
+                inst_RV_IV(INS_sub, REG_SPBASE, argSize, EA_PTRSIZE);
+            }
+
+            AddStackLevel(unchecked((uint)argSize));
+            _pushStkArg = false;
+            return true;
+        }
+
+        _pushStkArg = true;
+        return false;
+    }
+
+    private void genStructPutArgPush(GenTreePutArgStk putArgNode)
+    {
+        assert(_pushStkArg);
+        var source = putArgNode.Data;
+        var sourceReg = REG_NA;
+        var sourceLocal = BAD_VAR_NUM;
+        var sourceOffset = 0;
+
+        if (source.Oper.IsLocalRead)
+        {
+            assert(source.IsContained);
+            var local = source.AsLclVarCommon();
+            sourceLocal = local.LclNum;
+            sourceOffset = local.LclOffs;
+        }
+        else
+        {
+            sourceReg = genConsumeReg(source.AsBlk().Addr);
+        }
+
+        var layout = source.GetLayout(_compiler);
+        var loadSize = putArgNode.ArgLoadSize;
+        assert(((loadSize < XMM_REGSIZE_BYTES) || layout.HasGCPtr) &&
+            ((loadSize % TARGET_POINTER_SIZE) == 0));
+
+        for (var slot = (loadSize / TARGET_POINTER_SIZE) - 1; slot >= 0; slot--)
+        {
+            var slotAttr = layout.GetGCPtrType(slot).EmitSize;
+            var offset = slot * TARGET_POINTER_SIZE;
+            if (sourceReg != REG_NA)
+            {
+                Emitter.emitIns_AR_R(INS_push, slotAttr, REG_NA, sourceReg, offset);
+            }
+            else
+            {
+                Emitter.emitIns_S(INS_push, slotAttr, sourceLocal, unchecked(sourceOffset + offset));
+            }
+
+            AddStackLevel(TARGET_POINTER_SIZE);
+        }
+    }
+
+    private void genPutArgStkFieldList(GenTreePutArgStk putArgStk)
+    {
+        var fieldList = putArgStk.Op1.AsFieldList();
+        var preAdjustedStack = genAdjustStackForPutArgStk(putArgStk);
+        assert(putArgStk.IsPush && !preAdjustedStack && _pushStkArg);
+
+        var currentOffset = preAdjustedStack ? 0 : putArgStk.StackByteSize;
+        var previousOffset = currentOffset;
+        var intTmpReg = REG_NA;
+        var simdTmpReg = REG_NA;
+        if (_internalRegisters.Count(putArgStk) != 0)
+        {
+            var reserved = _internalRegisters.GetAll(putArgStk);
+            if (!(reserved & new regMaskTP(SRBM_ALLINT)).IsEmpty)
+            {
+                intTmpReg = _internalRegisters.GetSingle(putArgStk, new regMaskTP(SRBM_ALLINT));
+                assert(genIsValidIntReg(intTmpReg));
+            }
+            if (!(reserved & new regMaskTP(SRBM_ALLFLOAT)).IsEmpty)
+            {
+                simdTmpReg = _internalRegisters.GetSingle(putArgStk, new regMaskTP(SRBM_ALLFLOAT));
+                assert(genIsValidFloatReg(simdTmpReg));
+            }
+            assert(_internalRegisters.Count(putArgStk) ==
+                (uint)((intTmpReg == REG_NA ? 0 : 1) + (simdTmpReg == REG_NA ? 0 : 1)));
+        }
+
+        foreach (var use in fieldList.Uses)
+        {
+            var fieldNode = use.Node;
+            var fieldOffset = use.Offset;
+            var fieldType = use.Type;
+            assert(!varTypeIsLong(fieldType));
+            assert(fieldOffset <= previousOffset);
+
+            genConsumeRegs(fieldNode);
+            var argReg = fieldNode.IsUsedFromSpillTemp ? REG_NA : fieldNode.RegNum;
+            var fieldIsSlot = ((fieldOffset % 4) == 0) && ((previousOffset - fieldOffset) >= 4);
+            var adjustment = roundUp(currentOffset - fieldOffset, 4);
+
+            if (fieldIsSlot && !varTypeIsSimd(fieldType))
+            {
+                var pushSize = fieldType.ActualType.Size;
+                assert((pushSize % 4) == 0);
+                adjustment -= pushSize;
+                assert((adjustment % TARGET_POINTER_SIZE) == 0);
+                while (adjustment != 0)
+                {
+                    inst_IV(INS_push, 0);
+                    currentOffset -= TARGET_POINTER_SIZE;
+                    AddStackLevel(TARGET_POINTER_SIZE);
+                    adjustment -= TARGET_POINTER_SIZE;
+                }
+
+                _pushStkArg = true;
+            }
+            else
+            {
+                _pushStkArg = false;
+                assert(varTypeIsIntegralOrI(fieldNode.Type) || varTypeIsSimd(fieldNode.Type));
+                if (adjustment != 0)
+                {
+                    inst_RV_IV(INS_sub, REG_SPBASE, adjustment, EA_PTRSIZE);
+                    currentOffset -= adjustment;
+                    AddStackLevel(unchecked((uint)adjustment));
+                }
+
+                if (varTypeIsByte(fieldType) && ((argReg == REG_NA) ||
+                    ((argReg != REG_EAX) && (argReg != REG_EBX) &&
+                     (argReg != REG_ECX) && (argReg != REG_EDX))))
+                {
+                    assert(intTmpReg != REG_NA);
+                    noway_assert((intTmpReg == REG_EAX) || (intTmpReg == REG_EBX) ||
+                        (intTmpReg == REG_ECX) || (intTmpReg == REG_EDX));
+                    if (argReg != REG_NA)
+                    {
+                        inst_Mov(fieldType, intTmpReg, argReg, canSkip: false);
+                        argReg = intTmpReg;
+                    }
+                }
+            }
+
+            var canStoreFullSlot = fieldIsSlot;
+            var canLoadFullSlot = genIsValidIntReg(argReg);
+            if (argReg == REG_NA)
+            {
+                assert(fieldNode.Type.Size <= TARGET_POINTER_SIZE);
+                assert(fieldNode.Type.ActualType.Size == fieldType.ActualType.Size);
+                canLoadFullSlot = (fieldNode.Type.Size == TARGET_POINTER_SIZE) ||
+                    fieldNode.IsUsedFromSpillTemp ||
+                    (fieldNode.Oper.IsLocalRead && (fieldNode.Type.Size >= fieldType.Size));
+            }
+
+            if (canStoreFullSlot && canLoadFullSlot)
+            {
+                assert(_pushStkArg);
+                assert(fieldNode.Type.Size <= TARGET_POINTER_SIZE);
+                inst_TT(INS_push, fieldNode.Type.EmitActualSize, fieldNode);
+                currentOffset -= TARGET_POINTER_SIZE;
+                AddStackLevel(TARGET_POINTER_SIZE);
+            }
+            else
+            {
+                assert(!varTypeIsGC(fieldNode.Type));
+                if (argReg == REG_NA)
+                {
+                    assert(varTypeIsIntegralOrI(fieldNode.Type) && genIsValidIntReg(intTmpReg));
+                    if (fieldNode.IsContainedIntOrIImmed)
+                    {
+                        genSetRegToConst(intTmpReg, fieldNode.Type, fieldNode);
+                    }
+                    else
+                    {
+                        var loadIns = canLoadFullSlot ? INS_mov : ins_Load(fieldNode.Type);
+                        var loadSize = canLoadFullSlot ? EA_PTRSIZE : fieldNode.Type.EmitSize;
+                        inst_RV_TT(loadIns, loadSize, intTmpReg, fieldNode);
+                    }
+
+                    argReg = intTmpReg;
+                }
+
+#if FEATURE_SIMD
+                if (fieldType == TYP_SIMD12)
+                {
+                    assert(genIsValidFloatReg(simdTmpReg));
+                    genStoreSimd12ToStack(argReg, simdTmpReg);
+                }
+                else
+#endif
+                {
+                    var storeType = canStoreFullSlot ? fieldType.ActualType : fieldType;
+                    genStoreRegToStackArg(storeType, argReg, fieldOffset - currentOffset);
+                }
+
+                if (_pushStkArg)
+                {
+                    currentOffset -= roundUp(fieldType.Size, TARGET_POINTER_SIZE);
+                }
+            }
+
+            previousOffset = fieldOffset;
+        }
+
+        if (currentOffset != 0)
+        {
+            inst_RV_IV(INS_sub, REG_SPBASE, currentOffset, EA_PTRSIZE);
+            AddStackLevel(unchecked((uint)currentOffset));
+        }
+    }
+#endif
+
+#if TARGET_AMD64
     private void genPutArgStkFieldList(GenTreePutArgStk putArgStk, int outArgVarNum)
     {
         assert(putArgStk.Op1.Oper is GT_FIELD_LIST);
@@ -174,7 +510,21 @@ public sealed partial class CodeGen
 
     private void genPushReg(var_types type, regNumber srcReg)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "x86 stack argument register pushes are not yet ported.");
+        var size = type.Size;
+        if (varTypeIsIntegralOrI(type) && (type != TYP_LONG))
+        {
+            assert(genIsValidIntReg(srcReg));
+            inst_RV(INS_push, srcReg, type);
+        }
+        else
+        {
+            var ins = type == TYP_LONG ? INS_movq : ins_Store(type);
+            assert(genIsValidFloatReg(srcReg));
+            inst_RV_IV(INS_sub, REG_SPBASE, size, EA_PTRSIZE);
+            Emitter.emitIns_AR_R(ins, type.EmitSize, srcReg, REG_SPBASE, 0);
+        }
+
+        AddStackLevel(unchecked((uint)size));
     }
 #endif
 

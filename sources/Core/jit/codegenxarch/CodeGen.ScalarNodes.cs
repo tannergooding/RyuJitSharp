@@ -12,7 +12,9 @@ public sealed partial class CodeGen
 #if !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Saturating increment generation requires xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         var targetReg = tree.RegNum;
         var targetType = tree.Type;
         var operand = tree.AsUnOp().Op1;
@@ -31,7 +33,9 @@ public sealed partial class CodeGen
 #if !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Bit modification generation requires xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(tree.Oper is GT_BIT_SET or GT_BIT_CLEAR or GT_BIT_INVERT);
         var op1 = tree.Op1;
         var op2 = tree.Op2;
@@ -53,9 +57,11 @@ public sealed partial class CodeGen
     public void genCodeForPhysReg(GenTreePhysReg tree)
     {
 #if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Physical register generation requires Windows AMD64.");
+        throw new FatalJitException(CORJIT_SKIPPED, "Physical register generation requires xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(tree.Oper == GT_PHYSREG);
         inst_Mov(tree.Type, tree.RegNum, tree.SrcReg, canSkip: true);
         genTransferRegGCState(tree.RegNum, tree.SrcReg);
@@ -65,10 +71,9 @@ public sealed partial class CodeGen
 
     public void genCodeForCatchArg(GenTree tree)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Catch argument generation requires Windows AMD64.");
-#else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         var block = _compiler.compCurBB;
         assert(block is not null);
         noway_assert(handlerGetsXcptnObj(block.CatchType));
@@ -80,15 +85,13 @@ public sealed partial class CodeGen
             _gcInfo.gcMarkRegSetNpt(exceptionMask);
         }
         genProduceReg(tree);
-#endif
     }
 
     public void genCodeForReuseVal(GenTree tree)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Register value reuse generation requires Windows AMD64.");
-#else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(tree.IsReuseRegVal);
 #if FEATURE_MASKED_HW_INTRINSICS
         assert(tree.Oper is GT_CNS_INT or GT_CNS_DBL or GT_CNS_VEC or GT_CNS_MSK);
@@ -105,6 +108,5 @@ public sealed partial class CodeGen
         {
             genDefineTempLabel(genCreateTempLabel());
         }
-#endif
     }
 }
