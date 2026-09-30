@@ -9,9 +9,6 @@ public sealed partial class CodeGen
 {
     public void genCodeForCast(GenTreeCast tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Scalar cast generation requires AMD64.");
-#else
         assert(tree.Oper == GT_CAST);
         var targetType = tree.Type;
         if (varTypeIsFloating(targetType) && varTypeIsFloating(tree.CastOp.Type))
@@ -20,17 +17,45 @@ public sealed partial class CodeGen
         }
         else if (varTypeIsFloating(tree.CastOp.Type))
         {
+#if TARGET_XARCH
             // Xarch floating-to-integer casts must already be lowered to hardware intrinsics.
             unreached();
+#else
+            genFloatToIntCast(tree);
+#endif
         }
         else if (varTypeIsFloating(targetType))
         {
             genIntToFloatCast(tree);
         }
+#if !TARGET_64BIT && !TARGET_WASM
+        else if (varTypeIsLong(tree.CastOp.Type))
+        {
+            genLongToIntCast(tree);
+        }
+#endif
         else
         {
             genIntToIntCast(tree);
         }
-#endif
     }
+
+#if !TARGET_XARCH
+    private void genFloatToIntCast(GenTreeCast tree)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Floating-to-integer cast generation outside xarch is not ported.");
+    }
+
+    private void genIntToIntCast(GenTreeCast tree)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Integer cast generation outside xarch is not ported.");
+    }
+#endif
+
+#if TARGET_ARM
+    private void genLongToIntCast(GenTreeCast tree)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 long-to-integer cast generation is not ported.");
+    }
+#endif
 }

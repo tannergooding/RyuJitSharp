@@ -43,9 +43,6 @@ public sealed partial class CodeGen
 
         public GenIntCastDesc(GenTreeCast cast)
         {
-#if !TARGET_AMD64
-            throw new FatalJitException(CORJIT_SKIPPED, "Integer cast descriptions require AMD64.");
-#else
             var src = cast.CastOp;
             var srcType = src.Type.ActualType;
             var srcUnsigned = cast.IsUnsigned;
@@ -58,8 +55,13 @@ public sealed partial class CodeGen
             var castIsLoad = !src.IsUsedFromReg;
 
             assert(castIsLoad == src.IsUsedFromMemory);
+#if TARGET_WASM
+            assert((srcSize == 4) || (srcSize == 8));
+            assert((dstSize == 4) || (dstSize == 8));
+#else
             assert((srcSize == 4) || (srcSize == TYP_I_IMPL.Size));
             assert((dstSize == 4) || (dstSize == TYP_I_IMPL.Size));
+#endif
             assert(dstSize == castType.ActualType.Size);
 
             if (castSize < 4)
@@ -82,6 +84,7 @@ public sealed partial class CodeGen
                     ExtendSrcSize = castSize;
                 }
             }
+#if TARGET_64BIT || TARGET_WASM
             else if (castSize > srcSize)
             {
                 assert((srcSize == 4) && (castSize == 8));
@@ -113,9 +116,15 @@ public sealed partial class CodeGen
                 {
                     Check = CHECK_NONE;
                 }
+#if TARGET_LOONGARCH64 || TARGET_RISCV64
+                // These ABIs require sign-extended 32-bit values even after narrowing.
+                Extend = SIGN_EXTEND_INT;
+#else
                 Extend = COPY;
+#endif
                 ExtendSrcSize = 4;
             }
+#endif
             else
             {
                 assert(castSize == srcSize);
@@ -154,6 +163,7 @@ public sealed partial class CodeGen
                         break;
                     }
 
+#if TARGET_64BIT
                     case ZERO_EXTEND_INT:
                     {
                         assert(varTypeIsUnsigned(srcLoadType) || (srcLoadType == TYP_INT));
@@ -169,6 +179,7 @@ public sealed partial class CodeGen
                         ExtendSrcSize = srcLoadType.Size;
                         break;
                     }
+#endif
 
                     case COPY:
                     {
@@ -184,7 +195,6 @@ public sealed partial class CodeGen
                     }
                 }
             }
-#endif
         }
 
         public CheckKind Check { get; }

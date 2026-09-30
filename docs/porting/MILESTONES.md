@@ -16,6 +16,30 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Shared scalar casts and 32-bit long stores
+
+The shared cast dispatcher and integer-cast description now retain their native
+target branches instead of requiring AMD64. Wasm keeps 64-bit scalar checks on
+its 32-bit target; LoongArch64 and RISC-V64 narrowing retains ABI-required sign
+extension. The shared 32-bit long local store consumes both halves in native
+order and uses their four-byte homes. Independent non-xarch cast emitters and
+ARM32 long-to-int emission remain terminating dependencies.
+
+Four final Windows/Linux Debug/Release configurations each pass forty-six
+selected cases, including ten new range, load-width, signedness and overflow
+controls. The four matching baselines each pass thirty-six controls. Seventeen
+fresh full-analysis commands and three authenticated historical negative
+baselines preserve exact target diagnostic identities and multiplicities.
+Historical x86/ARM32/ARM64 evidence retains its original paths; it is not
+relabeled as fresh execution. Eight LoongArch64/RISC-V64/Wasm cases remain
+source-only, and early target errors can mask later bodies.
+
+Three whole definitions and three exclusive declarations retire 272 native
+lines. Oracle authentication and exact residual reconstruction preserve the
+outer non-Wasm guard, following condition callers and independent cast helpers.
+Focused fixtures and native retirement do not establish other-target execution
+or generated-code parity.
+
 ## 2026-09-30: Xarch write barriers, casts and GC publication
 
 The remaining xarch codegen family now preserves x86 register-specific write

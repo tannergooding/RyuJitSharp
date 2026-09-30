@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sharedCastClosure": {
+      "scope": "Whole shared genCodeForCast, GenIntCastDesc constructor and genStoreLongLclVar retain native target branches, Wasm wide scalars and LoongArch64/RISC-V64 narrowing sign extension. Independent non-xarch cast emission and ARM32 long-to-int helpers remain terminating dependencies.",
+      "validation": "Seventeen fresh hidden serial full-analysis receipts: four final Windows/Linux Debug/Release configurations each pass46cases; four matching baselines each pass36; nine fresh diagnostic runs preserve exact target error identities/multiplicities against three new and three authenticated historical negative baselines. Historical x86/ARM32/ARM64 receipts retain original paths and hashes. No memory stops. Eight other-target cases remain source-only; early errors may mask cast bodies.",
+      "retirement": "Three whole definitions and three exclusive declarations,272native lines. Exact oracle proof and full residual reconstruction preserve outer non-Wasm guard, following condition callers, independent ARM32 long-to-int helper and already-ported x86 helper.",
+      "nativeBefore": "765e340e0062ca01fa1ef4c60a3ee3ba22b7caec",
+      "nativeAfter": "246f09c0553c4c85537296dff1ec4df22c41aa92",
+      "evidence": "artifacts/codegenlinear-cast-e90cc4b-v3 and codegenlinear-cast-e90cc4b-v3-reuse;2547baseline/2549final files,5sealed overlays/2additions. Parent-executed accept-v2 b5d00685d81b18b3a4c5181a72ce65f44940a405b5f9ae7450b548a2222cb891 authenticates reuse module53728c1d14f018a60d75b4e8ca6000c3fc2282d3065aecba463f194ad48f7440 and original accept63460286fa1450450b7253484de110f0560afea8865cd92efd0746aed218d997. Proposal-v5 raw0b124e6e1a24ec58bd7c415c722262c1efa41df1231ee4f760db04e2c55ec6de. Reconstruction/retirement receipts in artifacts/residual-reconciliation.",
+      "limits": "Focused x64 fixtures and retired native lines are not generated-code/phase parity or other-target execution. Original fixture failures and memory-stoppedV2 remain immutable invalid evidence. Compiler-only CscEnvironment conserve5/processors2 preserves full analysis and sealed12GiBentry/8GiBrunningguards; different host/configuration conditions prevent controlled performance claims."
+    },
     "xarchResidualClosure": {
       "scope": "Whole x86 optimized GC write barrier and checked long-to-int cast, GC publication dispatcher/JIT32/modern callers, AMD64 CCMP and x86 OSR unreachable body; unchanged complete GenConditionDesc map. Preserve shared other-target declarations and independent encoding/filter/recording dependencies.",
       "validation": "Fresh hidden serial full-analysis final Windows37Debug/35Release and Linux31/31 all pass. Baseline Windows34/32 pass; each Linux baseline executes28cases with22pass and exactly6CCMP guard failures, whose same identities pass final. Three new AMD64 cases supplement unchanged controls. Four paired target diagnostics preserve exact14x86 Debug/Release,78ARM32Debug and39ARM64Debug error identities/occurrences, zero warnings/tests. All16commands finish without memory stops;18x86 cases remain source-only.",
@@ -2173,19 +2182,58 @@
     "planApprovedAt": "2026-09-22",
     "residualReconciliation": {
       "status": "in-progress",
+      "linearConditionSourceReady": {
+        "scope": "Whole genCodeForJcc/inst_JCC/genCodeForSetcc preserve native target guards, short-circuit label/branch ordering, false-target fallthrough and result publication. AMD64 algorithm is unchanged; ARM inst_SETCC is a new typed terminating dependency with its independent native definition retained.",
+        "status": "Parent reviewed actual three-path source/test diff and pinned native whole bodies; source-approved/frozen/unvalidated. Separate sealed proposal-v2-e90cc4b.json collected and centrally hashed dd1d17f22a08195594ec8766a161773d0e292e4f9eb9045dee866a40c8cc89f3; three frozen source hashes reconfirmed. Reanchor only after cast commit.",
+        "sourceSha256": {
+          "sources/Core/jit/codegenlinear/CodeGen.ConditionalBranches.cs": "02a46cb77efdd49509eade416bbe584f01c03e6345e50bf3894be373bccacf85",
+          "sources/Core/jit/codegenlinear/CodeGen.ArmConditionDependencies.cs": "43e037e0fa833f62e311237f5f7f4d2e28a5c0b77bbaddff318f1620faccacc0",
+          "tests/Core/CodeGenConditionalTests.cs": "f58cc76e78f911ed1302d9641538491ea155049028152118a0e9f576d2e490ba"
+        },
+        "controls": "Eight new AMD64 cases plus four existing controls,12selected cases; all new cases unexecuted. X86/ARM32/ARM64 bodies remain source-only until separate dependencies execute. Three whole native definitions and exclusive inner guard await reanchor/acceptance; retain shared declarations and outer!TARGET_WASM guard."
+      },
       "linearCastSourceReady": {
         "scope": "Whole genCodeForCast dispatcher, GenIntCastDesc constructor and genStoreLongLclVar preserve Wasm widths, RISC-V/LoongArch narrowing sign-extension, spill actual types and 32-bit long dispatch/store ordering.",
-        "status": "Parent source-reviewed after removing duplicate ARM emitIns_S_R binding; reuse existing terminating Emitter.JmpArgumentStackStores dependency. Five paths frozen, three modifications/two additions. No build, retirement or commit yet.",
-        "proposal": "artifacts/codegenlinear-cast-closure-472749f/proposal-v2.json",
-        "proposalSha256": "6022d3d7af73538c99a9051f69aeeefc4472acb5677012037de5f62dee1b0e2d",
+        "status": "Accepted by parent-executed V3 reuse adapter; all seventeen fresh receipts and three original-path historical negative baselines authenticated. Four final x64 configurations46cases and four baseline36cases passed. Exact3definitions/3declarations/272lines retired and reconstructed in native246f09c0. Corrected fixture retains unchanged four production hashes; original fixture-failedV1 and memory-stoppedV2 remain invalid evidence.",
+        "proposal": "artifacts/codegenlinear-cast-closure-472749f/proposal-v5-e90cc4b.json",
+        "proposalSha256": "0b124e6e1a24ec58bd7c415c722262c1efa41df1231ee4f760db04e2c55ec6de",
+        "validationPacket": {
+          "path": "artifacts/codegenlinear-cast-e90cc4b-v3",
+          "contractSha256": "4c842d5caec03c076c117bf01ea5f431be9673136be97e2f58bc56e217d0166a",
+          "prepareSha256": "460ac5fb1521eed3604520b77ad33bbd6eef0875ae61ac14a40b5a55850bc9bb",
+          "verifySha256": "89c8a8ede6d2c16221eda158e05f10fcc16e6d9a92ee9518e39fba459d324df4",
+          "acceptSha256": "63460286fa1450450b7253484de110f0560afea8865cd92efd0746aed218d997",
+          "nativeProofSha256": "7531f1ef4fa79128a3a980f76819a894cc201073d310a913a7911864cabe6b66",
+          "runnerSha256": "8f08c851b4aa9ef718fc6cb6bb13460365c578bffe1f5e5dac615f31af161be1",
+          "acceptanceAdapter": {
+            "path": "artifacts/codegenlinear-cast-e90cc4b-v3-reuse/accept-v2.py",
+            "sha256": "b5d00685d81b18b3a4c5181a72ce65f44940a405b5f9ae7450b548a2222cb891",
+            "moduleSha256": "53728c1d14f018a60d75b4e8ca6000c3fc2282d3065aecba463f194ad48f7440",
+            "preflightSha256": "236705b63ea8da024d381242ae110f73e104c27d13ea4d4cec24cb5a5a652c54",
+            "status": "Parent reviewed and executed read-only preflight successfully:2544normalized non-document inputs match, actualoldcommands/rawreceipts/logs/binlogs andcomplete14/78/39error counters authenticated. Reuseonly3historicalnegative x86/ARM32/ARM64 baselines with originaloutputpaths/historicalevidencekeys; require17freshV3receipts. No copied/relabelled oldruns, target execution or independently verified compiler/reference/analyzer binary identities; those binlog metadata identities remain an explicit limit."
+          },
+          "memoryTelemetry": "Session files/Invoke-CastValidationWithMemory.ps1 measures owned ancestry/private bytes/working set/CPU without titles or command lines. Post-restart commands use compiler-only CscEnvironment conserve5/processors2 and two30second12GiB admission samples; sealed runner retains12GiBentry/8GiBrunningguards. Completed outputs are immutable; future controllers can remove unconditional admission delay without weakening sealed guards."
+        },
         "sourceSha256": {
           "sources/Core/jit/codegenlinear/CodeGen.Casts.cs": "c16ad3d0dda8b0a0619780d75cba296b304cf949a0d7e7808472403d9e3926df",
           "sources/Core/jit/codegenlinear/CodeGen.GenIntCastDesc.cs": "3c7da5cbe17e3196e37b0261c8c0eccf43d911774af6042eff4d4ee3807b0bb1",
           "sources/Core/jit/codegenxarch/CodeGen.LocalStores.cs": "3b3d56dcd140f41ed4e76fc8c75544317072e634503b293b5d406bf0fd33610f",
           "sources/Core/jit/codegenlinear/CodeGen.LongLocalStores.cs": "82e99637c93b5d773a2442040c693d883b5c49f3e203ad393af4619fc990087b",
-          "tests/Core/CodeGenLinearCastClosureTests.cs": "fbd3ad504d492142e346aa6c825bbd91c65da3045d18488d5884810c38dda3f6"
+          "tests/Core/CodeGenLinearCastClosureTests.cs": "4392bc4d5686a3d50e528f33ae31c73ceeeb66872cf1f6123be306a34b380803"
         },
-        "controls": "Eighteen source cases, ten selected for Windows/Linux x64 and eight extra target-specific cases; all unexecuted. Three whole definitions/three exclusive declarations await native reanchor after preceding batches."
+        "controls": "Eighteen fixture cases; ten new x64 cases pass in each of four final46case configurations, four baseline36case controls pass. Eight extra target-specific cases remain source-only. Six final target diagnostics and three fresh new-target baselines plus three authenticated historical negative baselines preserve exact identities/multiplicities. Original fixture startup failures/stoppedV2 excluded from acceptance; retirement completed."
+      },
+      "instructionOperandSourceReady": {
+        "status": "Parent reviewed/froze three new paths and unchanged common inst_IV mapping; compiler validation and retirement pending. A named-type DEBUG guard replaces unsupported unchecked address reinterpretation with CORJIT_INTERNALERROR before any publication; valid variable/store offsets match native. No fabricated BAD_IL_OFFSET, assertion-only unsafe correctness or shared metadata changes.",
+        "scope": "Final retained instr.cpp interface: inst_RV_RV_RV, inst_IV, inst_IV_handle and inst_set_SV_var; retain independent emitter helpers and shared declarations. New LoongArch64 emitter dependency terminates explicitly. Preserve ARM flags/default attrs and pointer-width relocation.",
+        "proposal": "artifacts/instruction-operand-e90cc4b/proposal-v4.json",
+        "proposalSha256": "80c088c67e3a6ff3b4d022f6308a5a2781aec76b4bef6f111df42d6bfb100e60",
+        "sourceSha256": {
+          "sources/Core/jit/instr/CodeGen.OperandAdapters.cs": "00e9070e356485292cff0e6a8a4b6276e003973caaeb3d4dd0d48ffff03e3bf9",
+          "sources/Core/jit/emit/Emitter.LoongArchOperandDependencies.cs": "a559be5e5b9dcb487b8c45d94eb27432c72a374439b567c93cfb33d4ebaba2f3",
+          "tests/Core/CodeGenOperandAdapterTests.cs": "f6465344a95021163b32fe82e8ec9443d4a7452ac2512ac620254164a7a122f6"
+        },
+        "controls": "13AMD64Debug/10Release selected cases proposed:3three-register,2DEBUGvariable/store offsets,1DEBUGinvalidaddress rejection and7existingimmediate controls. Three positive x86 handle-relocation cases remain source-only. No tests/build/native mutation; reanchor after cast and frozencondition units, maximum2ready source units."
       },
       "windowsX64Classification": {
         "status": "baseline-recorded",
@@ -2331,9 +2379,16 @@
       "caution": "Current backend allocation/codegen/emitter exclusions checked in this pass target non-Windows or non-AMD64 configurations. Commented callback declarations and historical baseline gaps are not an inventory of missing Windows implementations."
     },
     "activeBatch": {
-      "scope": "Integrate the reviewed frozen shared codegenlinear cast family after accepted xarch residual closure. Parent owns shared contracts, hidden serial compiler execution and native integration; retain the bounded source queue and preserve Wasm WIP.",
+      "restartRecovery": {
+        "status": "Resumed after explicit user continuation on2026-09-30T15:43-07:00;20minute review automation restored.",
+        "handoff": "artifacts/session-handoff/RESTART-20260930-compiler-policy.md",
+        "automation": "Exact saved prompt restored at20minute cadence; productive streak remains0.",
+        "trial": "Controller parsed;freshV3WindowsRelease compiler-only CscEnvironment conserve5/processors2 trial passed46cases,104.058seconds,no memory stop. Ownedcsc private peaks1404465152/876453888bytes; globalmin41896288256bytes afterrestart. Differentconfiguration/hostconditions preventisolatingpolicyperformance. SDKMicrosoft.CSharp.Core.targets:119 forwards CscEnvironment;testhostdoesnotreceiveDOTNETknobs directly. Originalsealed12GiB entry/8GiBrunningguards/fullanalysis/serialflags unchanged.",
+        "continuation": "Hidden serial queue completed successfully. All seventeen fresh receipts plus three historical negative baselines authenticated; exact272native lines retired and reconstructed in246f09c0. Cast local managed commit is the current completion boundary; condition evidence preparation proceeds independently without compiler execution."
+      },
+      "scope": "Complete shared cast local commit, then integrate frozen JCC/SETCC and operand-adapter families in order. Queue bounded to current plus two ready units; source-only condition evidence preparation proceeds independently. Parent owns shared contracts, hidden serial compiler execution and exact native retirement, preserving thirteen Wasm WIP paths. Astra-approved final-only x64 matrices and named target risks avoid automatic old/final and six-target replay; authenticate historical diagnostic comparators against complete normalized inputs.",
       "status": "in-progress",
-      "resourcePause": "Memory recovered; all twelve fresh V3 commands completed without memory stops: eight x64 baseline/final Windows/Linux Debug/Release runs each passed48cases, and four ARM32 paired diagnostics each retained78errors/0warnings/0tests. Stopped V2 remains invalid historical evidence. Commands remain hidden and serial with shared compilation disabled, six analyzer disablements, conservative12GiB full-build entry headroom and unchanged8GiB running floor. No other session's processes were terminated.",
+      "resourcePause": "Resolved after explicit restart continuation: compiler-only CscEnvironment conserve5/processors2 preserved full analysis, hidden serial execution and sealed12GiBentry/8GiBrunningguards. Remaining queue completed without memory stops. Preserve invalidV1/V2 evidence and historical pre-restart observations separately; no controlled performance or global focus-resolution claim.",
       "doneWhen": [
         "Complete dependency-coherent retained xarch codegen and lowering families with whole native target branches; distinguish real omissions from retirement lag.",
         "Complete retained xarch scalar LSRA and SIMD codegen families, preserving x86 paths and tracking separate helper dependencies.",
@@ -2350,7 +2405,7 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "ARM32 committed650f022. Xarch seven-source closure accepted with16fresh commands, exact6Linux baseline CCMP failures resolved,7functions+map/3prototypes/543native lines retired and reconstructed in native765e340e. Historical proof and actual failures remain immutable. Linear-cast5path/v2 family is source-reviewed/frozen/unvalidated; reanchor to committed managed/native revisions and integrate next. Parent owns shared contracts, hidden serial execution and native integration. Preserve13WIP, no ABI redesign/publication/app sessions.",
+      "parentScope": "Cast seventeen fresh commands accepted, three definitions/three declarations/272native lines retired and reconstructed in246f09c0. Finish local cast commit and reanchor condition evidence; source-only owner1c551fe3 prepares condition scripts, not a competing compiler or third ready family. Parent retains shared-contract and acceptance ownership. Preserve thirteen WIP hashes/staging, immutable failure evidence and oracle-plus-one native history; no ABI redesign/publication/app-native sessions.",
       "wholeFunctionRepairLanes": [
         {
           "scope": "Whole retained shared LSRA DEBUG stress register limiting.",
@@ -2784,7 +2839,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Reanchor frozen five-path shared codegenlinear cast proposal-v2 6022d3d7af73538c99a9051f69aeeefc4472acb5677012037de5f62dee1b0e2d to the committed xarch managed HEAD and native765e340e0062ca01fa1ef4c60a3ee3ba22b7caec. ReuseF03 for immutable reanchor of genCodeForCast/GenIntCastDesc constructor/genStoreLongLclVar and exclusive declarations, retaining following JCC/SETCC and outer !TARGET_WASM scope. ReuseEF for one focused fresh packet: ten newx64cases with existing cast controls, exact paired affected-target diagnostics and honest8extra source-only cases. Existing Emitter.JmpArgumentStackStores ARM binding is reused, never duplicated. Parent reviews/seals artifacts, runs hidden serial full-analysis acceptance, retires exact whole definitions and commits before proceeding. Xarch accepted16commands and7functions+map/3prototypes/543lines, native reconstruction complete; no compiler replay. Retain12GiB full-build entry headroom and8GiB running floor,13WIP/helpers and immutable failure evidence; no publication/app sessions.",
+    "nextAction": "Cast V3 acceptance passed: seventeen fresh receipts, all four final x64 configurations46cases/all four baseline36cases, and three authenticated historical negative baselines. Exact272line native retirement applied and reconstructed; finish native consolidation, related docs and local managed commit before starting condition execution. Next reanchor sealed condition proposal-v2-e90cc4b to integrated managed/native parents. New source-only evidence owner1c551fe3-a9a1-4bdd-b7e9-bbc4335a9c54 prepares condition packet. Astra approved final-only four x64 configurations12cases each and named x86/ARM32/ARM64 Debug diagnostics with exact authenticated comparators; no automatic six-target or old/final x64 replay. Operand follows with13Debug/10Release and six named target diagnostics because shared unguarded adapters expose those targets. Ready queue remains conditions+operands, thirteen frozen Wasm WIP paths/staging preserved. No push/PR/app-native sessions or worker compiler execution. Review cadence20minutes; preserve immutable cast failure/stopped evidence and compiler-only policy, sealed12GiBentry/8GiBrunningguard. Do not stop at the cast milestone.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

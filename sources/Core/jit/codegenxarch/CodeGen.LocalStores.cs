@@ -154,13 +154,6 @@ public sealed partial class CodeGen
         }
     }
 
-#if !TARGET_64BIT
-    private void genStoreLongLclVar(GenTreeLclVar tree)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "32-bit long local stores require genStoreLongLclVar.");
-    }
-#endif
-
     public void genUpdateLifeStore(GenTree tree, regNumber targetReg, ref LclVarDsc varDsc)
     {
         if (targetReg != REG_NA)

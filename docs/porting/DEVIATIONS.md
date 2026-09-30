@@ -1379,10 +1379,15 @@ rather than reading fixed-width storage; the shared frame-location padding
 discrepancy is tracked as B376.
 
 Xarch local address/load/store callers retain the x86 SIMD12 local-load path
-and 32-bit long-store dispatch. `CodeGen.genStoreLongLclVar(GenTreeLclVar)`,
-guarded by `TARGET_XARCH && !TARGET_64BIT`, terminates with `CORJIT_SKIPPED`;
-its long-store implementation remains in native `codegenlinear.cpp`. Completing
-these callers does not activate x86 emission or complete that shared helper.
+and 32-bit long-store dispatch. Shared `CodeGen.genStoreLongLclVar(GenTreeLclVar)`
+now retains the whole `!TARGET_64BIT && !TARGET_WASM` algorithm, including
+contained-long consumption and separate low/high four-byte stores. Shared cast
+dispatch and integer-cast descriptions also retain their native target branches;
+their completed definitions and exclusive declarations are removed. Independent
+non-xarch floating-to-integer/integer-to-integer cast emission and ARM32
+long-to-integer emission still terminate with `CORJIT_SKIPPED`. The focused
+Windows/Linux x64 fixtures do not activate x86 or other-target emission; genuine
+target declaration errors can mask downstream bodies.
 
 Shared `genRecordAsyncResume`, `genEmitAsyncResumeInfoTable`,
 `genEmitAsyncResumeInfo` and `Emitter.emitAsyncResumeTable` retain the complete
