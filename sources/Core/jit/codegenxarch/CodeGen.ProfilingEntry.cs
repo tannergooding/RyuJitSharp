@@ -10,10 +10,12 @@ public sealed partial class CodeGen
 {
     public unsafe void genProfilingEnterCallback(regNumber initReg, ref bool initRegZeroed)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Profiler enter callbacks require AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Profiler enter callbacks require xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
 
         // Give the profiler a chance to back out of hooking this method.
@@ -22,6 +24,29 @@ public sealed partial class CodeGen
             return;
         }
 
+#if TARGET_X86
+        // The x86 helper consumes its pushed handle and preserves all registers.
+        // Keep the caller's tracked stack level unchanged across the naked helper.
+        var savedStackLevel = genStackLevel;
+#if UNIX_X86_ABI
+        Emitter.emitIns_R_I(INS_sub, EA_4BYTE, REG_SPBASE, 0xC);
+#endif
+        if (_compiler.compProfilerMethHndIndirected)
+        {
+            Emitter.emitIns_AR_R(INS_push, EA_PTRSIZE | EA_DSP_RELOC_FLG, REG_NA, REG_NA,
+                unchecked((nint)_compiler.compProfilerMethHnd));
+        }
+        else
+        {
+            inst_IV(INS_push, unchecked((nint)_compiler.compProfilerMethHnd));
+        }
+
+        genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER, 0, EA_UNKNOWN);
+#if UNIX_X86_ABI
+        Emitter.emitIns_R_I(INS_add, EA_4BYTE, REG_SPBASE, 0x10);
+#endif
+        SetStackLevel(savedStackLevel);
+#else
 #if WINDOWS_AMD64_ABI
         // Windows requires homing and reloading incoming register arguments around the callback.
         noway_assert(_compiler.lvaOutgoingArgSpaceVar != BAD_VAR_NUM);
@@ -131,6 +156,7 @@ public sealed partial class CodeGen
         {
             initRegZeroed = false;
         }
+#endif
 #endif
     }
 }

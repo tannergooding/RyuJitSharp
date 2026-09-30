@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole xarch dispatch and profiling callbacks
+
+The node dispatcher retains its complete x86 and SysV branches, including split
+long operations, TLS restrictions and Swift-error dispatch. Profiling callbacks
+retain x86 handle pushes, signed caller-pop sizes and Unix alignment accounting.
+Shared stack helpers preserve unsigned arithmetic and the nested-alignment
+high-water mark.
+
+Seven definitions and one declaration are retired together. Windows controls
+pass; Linux reaches the independent, still Windows-only register-reuse helper
+in one selected case per configuration. X86 retains its fourteen earlier
+declaration errors, so body compilation and callback execution remain unproved.
+Swift-error generation and lower recording helpers remain independent work.
+
 ## 2026-09-30: Whole xarch epilog and callee saves
 
 Root epilogs and integer/floating callee saves retain the complete x86 paths,

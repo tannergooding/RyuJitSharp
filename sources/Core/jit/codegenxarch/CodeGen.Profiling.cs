@@ -10,10 +10,12 @@ public sealed partial class CodeGen
 {
     public unsafe void genProfilingLeaveCallback(CorInfoHelpFunc helper)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Profiler leave callbacks require AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Profiler leave callbacks require xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(helper is CORINFO_HELP_PROF_FCN_LEAVE or CORINFO_HELP_PROF_FCN_TAILCALL);
         if (!_compiler.compIsProfilerHookNeeded)
         {
@@ -21,6 +23,37 @@ public sealed partial class CodeGen
         }
 
         _compiler.info.compProfilerCallback = true;
+#if TARGET_X86
+        var savedStackLevel = genStackLevel;
+#if UNIX_X86_ABI
+        Emitter.emitIns_R_I(INS_sub, EA_4BYTE, REG_SPBASE, 0xC);
+        AddStackLevel(0xC);
+        AddNestedAlignment(0xC);
+#endif
+        if (_compiler.compProfilerMethHndIndirected)
+        {
+            Emitter.emitIns_AR_R(INS_push, EA_PTRSIZE | EA_DSP_RELOC_FLG, REG_NA, REG_NA,
+                unchecked((nint)_compiler.compProfilerMethHnd));
+        }
+        else
+        {
+            inst_IV(INS_push, unchecked((nint)_compiler.compProfilerMethHnd));
+        }
+        genSinglePush();
+
+#if UNIX_X86_ABI
+        var argSize = -REGSIZE_BYTES;
+#else
+        var argSize = REGSIZE_BYTES;
+#endif
+        genEmitHelperCall(helper, argSize, EA_UNKNOWN);
+#if UNIX_X86_ABI
+        Emitter.emitIns_R_I(INS_add, EA_4BYTE, REG_SPBASE, 0x10);
+        SubtractStackLevel(0x10);
+        SubtractNestedAlignment(0xC);
+#endif
+        SetStackLevel(savedStackLevel);
+#else
 #if WINDOWS_AMD64_ABI
         noway_assert(_compiler.lvaOutgoingArgSpaceVar != BAD_VAR_NUM);
         noway_assert(_compiler.lvaOutgoingArgSpaceSize.Value >= 4 * REGSIZE_BYTES);
@@ -59,6 +92,7 @@ public sealed partial class CodeGen
         genEmitHelperCall(helper, 0, EA_UNKNOWN, REG_DEFAULT_PROFILER_CALL_TARGET);
 #else
         genEmitHelperCall(helper, 0, EA_UNKNOWN, REG_ARG_2);
+#endif
 #endif
 #endif
     }

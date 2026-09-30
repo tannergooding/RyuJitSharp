@@ -9,11 +9,17 @@ public sealed partial class CodeGen
 {
     public unsafe void genCodeForTreeNode(GenTree tree)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Node instruction generation requires Windows AMD64.");
+#if !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Node instruction generation requires xarch.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
+#if !TARGET_64BIT
+        var targetReg = tree.Type == TYP_LONG ? REG_NA : tree.RegNum;
+#else
         var targetReg = tree.RegNum;
+#endif
         var targetType = tree.Type;
 #if DEBUG
         // Operand-use ordering is local to each generated node.
@@ -66,6 +72,12 @@ public sealed partial class CodeGen
             }
 
             case GT_CNS_INT:
+#if TARGET_X86
+            {
+                assert(!tree.AsIntCon().IsIconHandle(GTF_ICON_TLS_HDL));
+                goto case GT_CNS_DBL;
+            }
+#endif
             case GT_CNS_DBL:
 #if FEATURE_SIMD
             case GT_CNS_VEC:
@@ -121,6 +133,12 @@ public sealed partial class CodeGen
 
             case GT_ADD:
             case GT_SUB:
+#if !TARGET_64BIT
+            case GT_ADD_LO:
+            case GT_ADD_HI:
+            case GT_SUB_LO:
+            case GT_SUB_HI:
+#endif
             {
                 genCodeForBinary(tree.AsOp());
                 break;
@@ -154,6 +172,15 @@ public sealed partial class CodeGen
                 genCodeForShift(tree);
                 break;
             }
+
+#if !TARGET_64BIT
+            case GT_LSH_HI:
+            case GT_RSH_LO:
+            {
+                genCodeForShiftLong(tree);
+                break;
+            }
+#endif
 
             case GT_CAST:
             {
@@ -244,6 +271,9 @@ public sealed partial class CodeGen
             }
 
             case GT_MULHI:
+#if TARGET_X86
+            case GT_MUL_LONG:
+#endif
             {
                 genCodeForMulHi(tree.AsOp());
                 break;
@@ -409,6 +439,14 @@ public sealed partial class CodeGen
                 break;
             }
 
+#if SWIFT_SUPPORT
+            case GT_SWIFT_ERROR:
+            {
+                genCodeForSwiftErrorReg(tree);
+                break;
+            }
+#endif
+
             case GT_KEEPALIVE:
             {
                 genConsumeRegs(tree.AsUnOp().Op1);
@@ -506,11 +544,22 @@ public sealed partial class CodeGen
                 break;
             }
 
+#if !TARGET_64BIT
+            case GT_LONG:
+            {
+                assert(tree.IsUsedFromReg);
+                genConsumeRegs(tree);
+                break;
+            }
+#endif
+
+#if TARGET_AMD64
             case GT_CCMP:
             {
                 genCodeForCCMP(tree.AsCCMP());
                 break;
             }
+#endif
 
             default:
             {
@@ -519,4 +568,11 @@ public sealed partial class CodeGen
         }
 #endif
     }
+
+#if TARGET_XARCH && SWIFT_SUPPORT
+    public void genCodeForSwiftErrorReg(GenTree tree)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Swift error register generation is not implemented.");
+    }
+#endif
 }

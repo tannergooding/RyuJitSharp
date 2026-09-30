@@ -1467,6 +1467,17 @@ remain for other-target definitions. X86 compilation still fails before full
 body checking, and new x86 controls remain unexecuted; funclets and general
 frame/GC encoding are separate work.
 
+The xarch node dispatcher and profiling callbacks retain their x86 and SysV
+control flow. Stack-level addition is shared across targets; single-push
+accounting retains the native non-Wasm guard, and nested-alignment accounting
+remains Unix x86-only. Native fields and guards remain after retiring completed
+helper definitions. Their managed mapping is `CodeGen.ProfilingDependencies.cs`.
+SysV register reuse still terminates in the independently Windows-only
+`genCodeForReuseVal`; one selected Linux case reaches that boundary in each
+configuration. The Swift-error generator and x86 helper-call recording primitive
+also remain typed terminating dependencies. The failed x86 declaration build
+does not establish compilation or execution of the restored caller bodies.
+
 `LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
 performs conservative frame layout before reserving IP1 and reserves x19 when
 the layout contains scalable vectors. The layout includes varargs homes,
