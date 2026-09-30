@@ -10,10 +10,9 @@ public sealed partial class CodeGen
 {
     public void genCodeForStoreInd(GenTreeStoreInd tree)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Indirect store generation requires Windows AMD64.");
-#else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(tree.Oper is GT_STOREIND);
 
 #if FEATURE_SIMD
@@ -128,10 +127,13 @@ public sealed partial class CodeGen
                 {
                     if (data.Oper is GT_BSWAP or GT_BSWAP16)
                     {
+                        ins = INS_movbe;
+#if TARGET_AMD64
                         var needsEvex = Emitter.IsExtendedGPReg(data.AsUnOp().Op1.RegNum) ||
                             (tree.HasBase && Emitter.IsExtendedGPReg(tree.Base.RegNum)) ||
                             (tree.HasIndex && Emitter.IsExtendedGPReg(tree.Index.RegNum));
                         ins = needsEvex ? INS_movbe_apx : INS_movbe;
+#endif
                     }
 #if FEATURE_HW_INTRINSICS
                     else if (data.Oper is GT_HWINTRINSIC)
@@ -153,6 +155,13 @@ public sealed partial class CodeGen
                             {
                                 ins = HWIntrinsicInfo.lookupIns(intrinsicId, baseType, _compiler);
                                 attr = baseType.ActualType.EmitSize;
+#if TARGET_X86
+                                if (varTypeIsLong(baseType))
+                                {
+                                    ins = INS_movq;
+                                    attr = EA_8BYTE;
+                                }
+#endif
                                 break;
                             }
 
@@ -242,7 +251,6 @@ public sealed partial class CodeGen
                 Emitter.emitInsStoreInd(ins, attr, tree);
             }
         }
-#endif
     }
 
     public bool genEmitOptimizedGCWriteBarrier(GCInfo.WriteBarrierForm writeBarrierForm, GenTree addr, GenTree data)

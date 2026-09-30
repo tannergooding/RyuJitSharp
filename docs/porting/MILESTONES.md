@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Whole xarch indirect loads and stores
+
+Indirect load/store generation now retains the x86 TLS segment, byte-swap and
+long-intrinsic branches as well as AMD64 behavior. Two definitions retire
+359 lines in `8bc4e5b9`; shared declarations and the independent optimized
+x86 write-barrier helper remain native.
+
+All 63 old Linux indirect-store guard failures pass. Full-analysis focused
+controls pass 343 Debug/327 Release on both Windows and Linux targets.
+Paired x86 builds retain four pre-existing syntax diagnostics, preventing the
+two new x86 fixtures from running. Evidence: `artifacts/xarch-indirect-9e4b720`.
+Target runtime execution and generated-code parity remain unverified.
+
 ## 2026-09-29: Local-candidate and upper-vector construction
 
 The two candidate checks and three upper-vector interval/save/restore builders

@@ -10,10 +10,9 @@ public sealed partial class CodeGen
 {
     public unsafe void genCodeForIndir(GenTreeIndir tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Indirect read generation requires AMD64.");
-#else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(tree.Oper is GT_IND);
 
 #if FEATURE_SIMD
@@ -28,8 +27,13 @@ public sealed partial class CodeGen
         if (addr.Oper.IsCnsIntOrI && addr.AsIntCon().IsIconHandle(GTF_ICON_TLS_HDL))
         {
             noway_assert((emitAttr)targetType.Size == EA_PTRSIZE);
+#if TARGET_64BIT
             Emitter.emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree.RegNum, FLD_GLOBAL_GS,
                 unchecked((int)addr.AsIntCon().IconValue));
+#else
+            Emitter.emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree.RegNum, FLD_GLOBAL_FS,
+                unchecked((int)addr.AsIntCon().IconValue));
+#endif
         }
         else
         {
@@ -39,7 +43,6 @@ public sealed partial class CodeGen
         }
 
         genProduceReg(tree);
-#endif
     }
 
 #if FEATURE_SIMD

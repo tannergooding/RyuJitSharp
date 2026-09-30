@@ -48,6 +48,7 @@ internal static unsafe class CodeGenIndirectLoadTests
         });
     }
 
+#if TARGET_AMD64
     [Test]
     public static void TlsReadsUseTheGsSegmentWithoutConsumingTheHandle()
     {
@@ -68,6 +69,30 @@ internal static unsafe class CodeGenIndirectLoadTests
 #endif
         });
     }
+#endif
+
+#if TARGET_X86
+    [Test]
+    public static void X86TlsReadsUseTheFsSegmentWithoutConsumingTheHandle()
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x58);
+            address.Flags |= GTF_ICON_TLS_HDL;
+            address.IsContained = true;
+            var tree = new GenTreeIndir(GT_IND, TYP_I_IMPL, address) { RegNum = REG_EAX };
+
+            codeGen.genCodeForIndir(tree);
+
+            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(1));
+            Assert.That(Descriptors(codeGen)[0].idAddr().iiaFieldHnd == FLD_GLOBAL_FS, Is.True);
+#if DEBUG
+            Assert.That(address._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
+                Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
+#endif
+        });
+    }
+#endif
 
     [Test]
     public static void Simd12ReadsPreserveAllNativeAddressForms(

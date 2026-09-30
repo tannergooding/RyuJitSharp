@@ -189,6 +189,26 @@ internal static unsafe class CodeGenIndirectStoreTests
         });
     }
 
+#if TARGET_X86
+    [Test]
+    public static void X86ContainedByteSwapsUseMovbeWithoutApx()
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var data = new GenTreeUnOp(GT_BSWAP, TYP_INT, Register(compiler, TYP_INT, REG_EBX))
+            {
+                IsContained = true,
+            };
+            var store = new GenTreeStoreInd(TYP_INT, Register(compiler, TYP_BYREF, REG_EAX), data);
+
+            codeGen.genCodeForStoreInd(store);
+
+            Assert.That(Descriptors(codeGen), Has.Count.EqualTo(1));
+            Assert.That(Descriptors(codeGen)[0].idIns(), Is.EqualTo(INS_movbe));
+        });
+    }
+#endif
+
     [Test]
     public static void Simd12StoresWriteExactlyEightThenFourBytes(
         [Values(0, 1, 2, 3)] int addressKind, [Values(false, true)] bool zero,

@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "xarchIndirectClosure": {
+      "scope": "Whole indirect load/store generation preserves 32-bit FS versus 64-bit GS TLS loads, AMD64-only APX selection and x86 long intrinsic stores. The independent x86 optimized-barrier helper remains retained with a terminating managed dependency.",
+      "validation": "All63 old Linux indirect-store guard failures pass on final source. Full-analysis Linux and Windows focused controls each pass343 Debug/327 Release.",
+      "retirement": "Two definitions with headings;359 native lines. Shared declarations remain for independent non-xarch definitions.",
+      "nativeBefore": "93423e1ae28ac6a5477df6857b0e81fe2b7219a9",
+      "nativeAfter": "8bc4e5b9f2748e76d17a74d34890daaea98a9f3a",
+      "evidence": "artifacts/xarch-indirect-9e4b720/ready-results.json and corresponding xarch-indirect retirement records.",
+      "limits": "Paired x86 builds retain four earlier syntax diagnostics; two new x86 fixtures did not execute. Windows-hosted target controls do not establish target runtime or generated-code parity."
+    },
     "localAndUpperVectorConstructionClosure": {
       "scope": "Whole candidate/multireg containment checks and upper-vector interval/save/restore construction. Restores the native Debug invariant that live large vectors occur in the current block's live-in/definitions; uses the native descriptor register-type overload for struct-local classification.",
       "validation": "Full-analysis Windows80 Debug/76 Release pass across definition, local-candidate, node, reference and local-interval construction fixtures. Old-source controls pass3/4: only the missing liveness diagnostic fails. Two normalized struct-local classification cases preserve existing behavior.",
@@ -1830,7 +1839,7 @@
           "scope": "Whole retained xarch scalar/atomic codegen families.",
           "owner": "4126f755-f5b6-49bc-b68d-a80815468a7d",
           "files": "Scalar/atomic CodeGen partials and focused fixtures; parent owns shared register helpers and both ARM64 register fixtures.",
-          "status": "whole shift packet accepted; first monitored compiler slot released to parent LSRA validation; next retained scalar family is indirect loads/stores"
+          "status": "indirect load/store packet accepted343D/327R on Windows and Linux; first compiler slot released; next coherent unit is shared LSRA node-reference traversal"
         },
         {
           "scope": "Retained whole local-store coalescing family after shared local-store and spill closure.",
@@ -2252,7 +2261,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Shifts committed9e4b720. Local/upper-vector construction accepted80D/76R with one old-failing native diagnostic; five-definition native retirement consolidated93423e1a. Finish managed construction commit, then parent continues retained whole buildRefPositionsForNode. Scalar4126f755 owns indirect loads/stores and first monitored compiler slot; lowering41f2570d owns complete local/indirect coalescing and second. Parent performs integration/source work only until a slot is released. Preserve13Wasm; no publication.",
+    "nextAction": "Local/vector construction committed30a80de. Indirect-load/store packet accepted with63 old-failing Linux guard cases and native8bc4e5b9; finish managed commit. Reassign worker4126f755 to whole buildRefPositionsForNode: remove whole target exclusion, preserve TARGET_XARCH contained-local branch, use target-correct stress mask (0x6003 AMD64,0x3 elsewhere) and preserve ARM64 first-definition consecutive-location exemption before checkConflictingDefUse. First compiler slot is available for that unit. Worker41f2570d completes whole local/indirect coalescing in second slot; parent owns integration, shared contracts and native retirement. Preserve13Wasm; no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
