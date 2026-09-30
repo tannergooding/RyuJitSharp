@@ -16,6 +16,28 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole minimal register selection and allocation
+
+Minimal selection retains native assertion and heuristic behavior, ARM32
+double-register busy filtering, and fixed-reference conflict lookup in the
+correct register bank. A mask-register conflict regression proves that a busy
+high-bank register is excluded: the new test fails old production and passes
+final in both Linux-target configurations. All existing direct cases remain
+passing. The general selector shares the same double-half mask arithmetic.
+
+Two definitions, headings and declarations retire 239 native lines in
+`18db2a26`, plus two trailing EOF blanks. Newly completed minimal selection
+accounts for 202 lines; the previously translated, unchanged minimal allocation
+body accounts for 37 lines of retirement catchup. Independent paired-register
+assignment and stress helpers remain retained.
+Linux integration passes 96 Debug/83 Release and Windows passes 101/88.
+Direct Windows/Linux controls pass 28/27; ARM64 integration passes 110/91.
+Five isolated target diagnostic sets match and remain failed builds.
+Evidence: `artifacts/lsra-minimal-selection-b3aa70b`, final `final`,
+with 16 actual TRXs and exact source/diagnostic-overlay verification.
+ARM32 paired-register behavior remains source-only; these controls do not
+establish target runtime or generated-code parity.
+
 ## 2026-09-30: Whole call-argument lowering
 
 Call-argument lowering retains all target branches, split field-list owner

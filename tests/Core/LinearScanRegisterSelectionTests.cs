@@ -106,6 +106,27 @@ internal static unsafe class LinearScanRegisterSelectionTests
         });
     }
 
+#if TARGET_AMD64 && HAS_MORE_THAN_64_REGISTERS
+    [Test]
+    public static void MinimalMaskSelectionExcludesConflictingHighBankRegister()
+    {
+        WithCompiler(compiler => {
+            CompilerAllMaskRegs(compiler) = SRBM_K1 | SRBM_K2;
+            var allocator = CreateAllocator(compiler);
+            var interval = NewInterval(allocator, TYP_MASK);
+            var tree = compiler.gtNewIconNode(TYP_INT, 1);
+            var definition = allocator.newRefPosition(
+                interval, 10, RefType.RefTypeDef, tree, SRBM_K1 | SRBM_K2);
+            _ = allocator.newRefPosition(regNumber.REG_K1, 10, RefType.RefTypeFixedReg, null, SRBM_K1);
+            UpdateNextFixedReference(allocator, regNumber.REG_K1);
+
+            var selected = allocator.selectMinimal(interval, definition);
+
+            Assert.That(selected, Is.EqualTo(SRBM_K2));
+        });
+    }
+#endif
+
     private static LinearScan CreateAllocator(Compiler compiler)
     {
         var allocator = new LinearScan(compiler);

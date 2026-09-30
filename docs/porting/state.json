@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "minimalSelectionClosure": {
+      "scope": "Whole minimal selection/allocation preserves native assertions, ARM32 paired-register busy masks and fixed-reference conflict lookup in the correct register bank. General selection shares the same double-half mask arithmetic.",
+      "validation": "Linux integration96D/83R and Windows101D/88R pass. Direct Linux/Windows28D/27R pass; all old27D/26R direct identities remain passing. New high-bank mask conflict case fails old production and passes final in both Linux configurations. ARM64 integration110D/91R passes. Five isolated target error sets14/92/85/85/81match, not successful builds.",
+      "retirement": "Two whole definitions, headings and declarations;239 native lines plus2EOF blank lines. Newly completed selectMinimal accounts for202lines; previously translated allocateRegMinimal accounts for37lines of retirement catchup. Independent paired assignment and stress helpers remain retained.",
+      "nativeBefore": "0e571e3d9eb3f9c0c5664a3f58d18b3b53f993d1",
+      "nativeAfter": "18db2a26394de2230831086fbdd55bf28090ed9d",
+      "evidence": "artifacts/lsra-minimal-selection-b3aa70b final;2497source files,16actualTRXs and paired diagnostic overlays/logs independently verified. old-fixture changes only the new test over unchanged production.",
+      "limits": "ARM32 double-half behavior remains source-only behind existing target compilation blockers. These Windows-hosted controls are not target runtime or generated-code parity."
+    },
     "callArgumentLoweringClosure": {
       "scope": "Whole call-argument lowering preserves all target branches, field-list/register/stack owner chains and argument placement order. x86 IJW special-copy insertion and three compiler marker helpers preserve copy-helper and placeholder lowering order.",
       "mapping": "The three compiler.h special-copy marker helpers map to compiler/Compiler.SpecialCopyArgs.cs. Existing split and legalization bodies were verified unchanged before their retirement.",
@@ -2000,19 +2009,19 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "General selection committedb3aa70b. Call-argument work-v3 accepted/native0e571e3d, managed commit next; minimal selection/allocation worker continues on exactb3aa70b. Parent owns source/evidence review and explicit hidden child launches; max2compiler-heavy commands,8GiB cutoff, immutable owned-only snapshots,13frozenWasm files and exact native retirement.",
+      "parentScope": "General selection committedb3aa70b and call-arguments9fea404. Minimal selection/allocation accepted/native18db2a26, managed commit next; tailcall packet source-ready on exact9fea404. Parent owns source/evidence review and explicit hidden child launches; max2compiler-heavy commands,8GiB cutoff, immutable owned-only snapshots,13frozenWasm files and exact native retirement.",
       "wholeFunctionRepairLanes": [
         {
           "scope": "Whole retained shared LSRA minimal selection/allocation family.",
           "owner": "2aa4b7ae-79d5-4599-ad4a-eef9208ec3f0",
           "files": "LinearScan RegisterSelection partials, necessary typed support and focused fixtures; parent owns shared contracts and native integration.",
-          "status": "general selector committedb3aa70b/native47ee3737; worker assigned whole retained selectMinimal/allocateRegMinimal pair on exactb3aa70b. Old-source controls required for changed target behavior; independent stress/consecutive dependencies remain tracked."
+          "status": "minimal pair final source/evidence accepted;16TRXs and five equal diagnostic sets verified. High-bank collision fails old production and passes final; no old pass lost. Native18db2a26 retires239lines plus2EOF blanks; managed commit next. One completed body202lines and one pretranslated37line retirement catchup."
         },
         {
-          "scope": "Whole retained call-argument lowering family.",
+          "scope": "Whole retained tailcall lowering family.",
           "owner": "c25d48cd-9585-4ecc-9253-39bf6743137d",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "call-argument finalwork-v3 accepted;2499source files/8TRXs and five exact diagnostic sets verified after correcting introduced x86 sealed partial declaration. Native0e571e3d retires8definitions627lines, including2previously translated bodies338lines. Managed commit next."
+          "status": "call-argument committed9fea404; lower-tailcalls-9fea404 source packet collected, five complete bodies and profiler-placement preservation fixture ready for parent source review/preparation. CFG remains independent."
         },
         {
           "scope": "Whole retained shared kill-set family after return/write-barrier closure.",
@@ -2428,7 +2437,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Commit accepted call-argument finalwork-v3 with related docs; native0e571e3d already retires8definitions627lines, do not repeat. Then assign next retained lowering dependency-coherent family to c25d48cd. Corrected x86 diagnostic14 matches baseline exactly; earlier74introduced CS0628 errors came from owned sealed partial declaration, not newly exposed baseline errors. General selector committedb3aa70b; worker2aa4b7ae continues minimal selector/allocation pair on exactb3aa70b. Hidden extension tools remain unavailable, but execution recovered through sessionfiles/Invoke-HiddenPortProcess.ps1: explicit UseShellExecute=false/CreateNoWindow=true children and guarded dotnet runners. Preserve13Wasm and native pin-plus-one; no publication. Process review19 at20min/streak1.",
+    "nextAction": "Commit accepted minimal selection/allocation final with related docs; native18db2a26 already retires239lines plus2EOF blanks, do not repeat. Then assign next retained LSRA dependency-coherent family to2aa4b7ae. Review lower-tailcalls-9fea404 source/prepare.py and old-control-first matrix; five whole bodies and profiler preservation fixture source-ready. Call-arguments committed9fea404 and general selectorb3aa70b. Hidden extension tools remain unavailable, but execution recovered through sessionfiles/Invoke-HiddenPortProcess.ps1: explicit UseShellExecute=false/CreateNoWindow=true children and guarded dotnet runners. Preserve13Wasm and native pin-plus-one; no publication. Process review19 at20min/streak1.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

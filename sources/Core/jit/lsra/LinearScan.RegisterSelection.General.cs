@@ -189,13 +189,7 @@ public sealed partial class LinearScan
 #if TARGET_ARM
                 if (currentInterval.registerType is TYP_DOUBLE)
                 {
-                    const SingleTypeRegSet oddDoubleRegisters =
-                        SRBM_F1 | SRBM_F3 | SRBM_F5 | SRBM_F7 |
-                        SRBM_F9 | SRBM_F11 | SRBM_F13 | SRBM_F15 |
-                        SRBM_F17 | SRBM_F19 | SRBM_F21 | SRBM_F23 |
-                        SRBM_F25 | SRBM_F27 | SRBM_F29 | SRBM_F31;
-                    var busyOddHalves = unchecked((ulong)(long)(busy & oddDoubleRegisters));
-                    _candidates &= ~unchecked((SingleTypeRegSet)(busyOddHalves >> 1));
+                    _candidates = excludeBusyDoubleHalves(_candidates, busy);
                 }
 #endif
 #if DEBUG && TARGET_ARM64

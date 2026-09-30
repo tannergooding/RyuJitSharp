@@ -39,6 +39,23 @@ public sealed partial class LinearScan
     {
         private const int HeuristicCount = 17;
 
+#if TARGET_ARM
+        private const SingleTypeRegSet OddDoubleRegisters =
+            SRBM_F1 | SRBM_F3 | SRBM_F5 | SRBM_F7 |
+            SRBM_F9 | SRBM_F11 | SRBM_F13 | SRBM_F15 |
+            SRBM_F17 | SRBM_F19 | SRBM_F21 | SRBM_F23 |
+            SRBM_F25 | SRBM_F27 | SRBM_F29 | SRBM_F31;
+
+        private static SingleTypeRegSet excludeBusyDoubleHalves(
+            SingleTypeRegSet candidates, SingleTypeRegSet busyRegisters)
+        {
+            // An ARM double occupies an even register and its following odd half.
+            // Shift the busy odd halves to exclude their corresponding even candidates.
+            var busyOddHalves = unchecked((ulong)(long)(busyRegisters & OddDoubleRegisters));
+            return candidates & ~unchecked((SingleTypeRegSet)(busyOddHalves >> 1));
+        }
+#endif
+
         private readonly LinearScan _linearScan;
         private Interval? _currentInterval;
         private RefPosition? _refPosition;
@@ -201,6 +218,9 @@ public sealed partial class LinearScan
             Interval currentInterval, RefPosition refPosition, out RegisterScore selectionScore)
         {
             selectionScore = RegisterScore.NONE;
+#if TARGET_ARM64
+            assert(!refPosition.needsConsecutive);
+#endif
 #if DEBUG
             if (VERBOSE)
             {
@@ -227,7 +247,7 @@ public sealed partial class LinearScan
                          (nextRefPosition is not null) &&
                          RefTypeIsUse(nextRefPosition.refType) &&
                          !nextRefPosition.isFixedRegRef &&
-                         isSingleRegister(refPosition.registerAssignment))
+                         genMaxOneBit(refPosition.registerAssignment))
                 {
                     var defReg = refPosition.assignedReg();
                     var nextFixedRegRefLocation = _linearScan.getNextFixedRef(defReg, currentInterval.registerType);
@@ -251,7 +271,7 @@ public sealed partial class LinearScan
             var fixedRegMask = SRBM_NONE;
             if (refPosition.isFixedRegRef)
             {
-                assert(isSingleRegister(refPosition.registerAssignment));
+                assert(genMaxOneBit(refPosition.registerAssignment));
                 if (_candidates == refPosition.registerAssignment)
                 {
                     _found = true;
@@ -266,8 +286,21 @@ public sealed partial class LinearScan
                 _linearScan._regsBusyUntilKill | _linearScan._regsInUseThisLocation,
                 _regType);
             _candidates &= ~busyRegs;
+#if TARGET_ARM
+            if (currentInterval.registerType is TYP_DOUBLE)
+            {
+                _candidates = excludeBusyDoubleHalves(_candidates, busyRegs);
+            }
+#endif
 
-            var checkConflictMask = _candidates & _linearScan._fixedRegsLow;
+            var checkConflictMask = _candidates;
+#if HAS_MORE_THAN_64_REGISTERS
+            checkConflictMask &= varTypeIsMask(_regType)
+                ? _linearScan._fixedRegsHigh
+                : _linearScan._fixedRegsLow;
+#else
+            checkConflictMask &= _linearScan._fixedRegsLow;
+#endif
             while (checkConflictMask != SRBM_NONE)
             {
                 var conflictReg = firstRegNumFromMask(checkConflictMask, _regType);
@@ -286,7 +319,6 @@ public sealed partial class LinearScan
             _found = isSingleRegister(_candidates);
             if (_found)
             {
-                _foundRegBit = _candidates;
                 return _candidates;
             }
 
@@ -347,7 +379,6 @@ public sealed partial class LinearScan
                 throw new FatalJitException("Minimal LSRA selection did not choose exactly one register.");
             }
 
-            _foundRegBit = _candidates;
             return _candidates;
         }
 
