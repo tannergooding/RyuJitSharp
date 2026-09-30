@@ -17,7 +17,11 @@ public sealed partial class LinearScan
             ?? throw new FatalJitException("Edge resolution requires the predecessor's register map.");
         var toMap = toBlock is null ? null : getInVarToRegMap(checked((uint)toBlock.bbNum))
             ?? throw new FatalJitException("Edge resolution requires the successor's register map.");
+#if TARGET_ARM
+        var freeRegs = allRegs(type is TYP_DOUBLE ? TYP_FLOAT : type);
+#else
         var freeRegs = getAvailableGPRsForType(allRegs(type), type is TYP_INT ? TYP_REF : type);
+#endif
 #if DEBUG
         // The small-set stress mode deliberately forces integer cycles through XCHG.
         if ((_lsraStressMask & 0x3) == 0x3)
@@ -35,7 +39,7 @@ public sealed partial class LinearScan
             assert(fromReg != REG_NA);
             if (fromReg != REG_STK)
             {
-                freeRegs &= ~genSingleTypeRegMask(fromReg);
+                freeRegs &= ~resolutionRegisterMask(fromReg, checked((uint)index));
             }
             if (toMap is not null)
             {
@@ -43,7 +47,7 @@ public sealed partial class LinearScan
                 assert(toReg != REG_NA);
                 if (toReg != REG_STK)
                 {
-                    freeRegs &= ~genSingleTypeRegMask(toReg);
+                    freeRegs &= ~resolutionRegisterMask(toReg, checked((uint)index));
                 }
             }
             return freeRegs != SRBM_NONE;
@@ -58,12 +62,27 @@ public sealed partial class LinearScan
                 assert(register != REG_NA);
                 if (register != REG_STK)
                 {
-                    freeRegs &= ~genSingleTypeRegMask(register);
+                    freeRegs &= ~resolutionRegisterMask(register, checked((uint)index));
                 }
                 return freeRegs != SRBM_NONE;
             });
         }
 
+#if TARGET_ARM
+        if (type is TYP_DOUBLE)
+        {
+            var freePairs = SRBM_NONE;
+            for (var low = REG_F0; low < REG_F31; low += 2)
+            {
+                var pair = low.GetSingleTypeFloatMask(TYP_DOUBLE);
+                if ((freeRegs & pair) == pair)
+                {
+                    freePairs |= genSingleTypeRegMask(low);
+                }
+            }
+            freeRegs = freePairs;
+        }
+#endif
         if (freeRegs == SRBM_NONE)
         {
             return REG_NA;
@@ -76,5 +95,16 @@ public sealed partial class LinearScan
         }
         var lowestBit = (SingleTypeRegSet)(1UL << BitOperations.TrailingZeroCount(unchecked((ulong)freeRegs)));
         return genRegNumFromMask(lowestBit, type);
+    }
+
+    private SingleTypeRegSet resolutionRegisterMask(regNumber register, uint trackedIndex)
+    {
+#if TARGET_ARM
+        if (genIsValidFloatReg(register))
+        {
+            return register.GetSingleTypeFloatMask(getIntervalForLocalVar(trackedIndex).registerType);
+        }
+#endif
+        return genSingleTypeRegMask(register);
     }
 }

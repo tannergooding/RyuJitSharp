@@ -148,4 +148,40 @@ public sealed partial class LinearScan
         updateLsraStat(LsraStat.STAT_RESOLUTION_MOV, checked((uint)block.bbNum));
 #endif
     }
+
+#if TARGET_ARM
+    private void addResolutionForDouble(BasicBlock block, GenTree? insertionPoint,
+        Interval?[] sourceIntervals, regNumber[] location, regNumber toReg, regNumber fromReg,
+        ResolveType resolveType, BasicBlock fromBlock, BasicBlock? toBlock)
+    {
+        var upperFrom = fromReg + 1;
+        var lowerInterval = sourceIntervals[(int)fromReg];
+        var upperInterval = sourceIntervals[(int)upperFrom];
+        assert(lowerInterval is not null || upperInterval is not null);
+
+        if (lowerInterval is not null)
+        {
+            if (lowerInterval.registerType is TYP_DOUBLE)
+            {
+                assert(upperInterval is null && genIsValidDoubleReg(toReg));
+            }
+            else
+            {
+                assert(genIsValidFloatReg(toReg));
+            }
+            addResolution(block, insertionPoint, lowerInterval, toReg, fromReg,
+                fromBlock, toBlock, s_resolveTypeName[(int)resolveType]);
+            location[(int)fromReg] = toReg;
+        }
+
+        if (upperInterval is not null)
+        {
+            assert(upperInterval.registerType is TYP_FLOAT);
+            var upperTo = toReg + 1;
+            addResolution(block, insertionPoint, upperInterval, upperTo, upperFrom,
+                fromBlock, toBlock, s_resolveTypeName[(int)resolveType]);
+            location[(int)upperFrom] = upperTo;
+        }
+    }
+#endif
 }

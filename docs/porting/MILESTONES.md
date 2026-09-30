@@ -16,6 +16,27 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole register edge resolution
+
+Edge traversal, register-map reconciliation, move/swap insertion, scratch
+selection and ARM double-register cycle handling retain the native ordering
+and target branches. Regression controls cover source moves before destination
+reloads and exclusion of live and terminator-consumed scratch registers.
+Seven definitions, headings and declarations retire 1,255 native lines in
+`db978a4c`; independent allocation, critical-edge and register-state helpers remain.
+
+Windows integration passes 101 Debug/88 Release, direct edge controls pass
+30/13, and ARM64 integration passes 110/91. Linux integration improves from
+82 to 91 passing cases out of 96 Debug and from 70 to 78 out of 83 Release.
+Direct Linux edge controls fix 13 Debug/12 Release baseline failures and add
+two Debug/one Release cases. Five allocation-traversal failures remain, as
+does one baseline-identical Linux Debug stress expectation that assumes
+Windows XMM6 callee-save status. No old passing case regresses.
+Five parser-unblocked target diagnostic sets match; these remain failed builds.
+Evidence: `artifacts/lsra-edge-resolution-2869bc1`, immutable `final-v3`,
+16 actual TRX runs and separately verified diagnostic overlays.
+These are source/IR controls, not generated-code parity.
+
 ## 2026-09-30: Whole lowering traversal and phase setup
 
 Node, block, phase and containment traversal preserve target dispatch, cursor

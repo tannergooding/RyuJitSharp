@@ -157,6 +157,63 @@ internal static class LinearScanEdgeResolutionTests
     }
 
     [Test]
+    public static void RegisterSourceIsMovedBeforeItsDestinationReloadsFromStack()
+    {
+        WithEdge(2, (compiler, allocator, source, target, _) =>
+        {
+            var liveSet = SetOps.MakeEmpty(compiler);
+            for (var index = 0; index < 2; index++)
+            {
+                MapInterval(compiler, allocator, index).isSpilled = true;
+                SetOps.AddElemD(compiler, liveSet, index);
+                SetOps.AddElemD(compiler, target.bbLiveIn, index);
+            }
+            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_RCX);
+            allocator.setOutVarRegForBB((uint)source.bbNum, 1, REG_STK);
+            allocator.setInVarRegForBB((uint)target.bbNum, 0, REG_RDX);
+            allocator.setInVarRegForBB((uint)target.bbNum, 1, REG_RCX);
+
+            ResolveEdge(allocator, source, target, LinearScan.ResolveType.ResolveJoin, liveSet, RBM_NONE);
+
+            Assert.That(source.FirstNode!.Oper, Is.EqualTo(GT_LCL_VAR));
+            Assert.That(source.FirstNode.Next!.Oper, Is.EqualTo(GT_COPY));
+            Assert.That(source.FirstNode.Next.Next!.Oper, Is.EqualTo(GT_LCL_VAR));
+            Assert.That((source.LastNode!.Flags & GTF_SPILLED) != 0, Is.True);
+            Assert.That(source.LastNode.RegNum, Is.EqualTo(REG_RCX));
+            Assert.That(allocator.getOutVarToRegMap((uint)source.bbNum)![0], Is.EqualTo(REG_RDX));
+            Assert.That(allocator.getOutVarToRegMap((uint)source.bbNum)![1], Is.EqualTo(REG_RCX));
+        });
+    }
+
+#if DEBUG
+    [Test]
+    public static void ScratchSelectionExcludesLiveSourceDestinationAndTerminatorRegisters()
+    {
+        WithEdge(2, (compiler, allocator, source, target, _) =>
+        {
+            AvailableIntegerRegisters(allocator) = SRBM_RAX | SRBM_RCX | SRBM_RDX | SRBM_RBX;
+            for (var index = 0; index < 2; index++)
+            {
+                MapInterval(compiler, allocator, index).isSplit = true;
+                SetOps.AddElemD(compiler, target.bbLiveIn, index);
+            }
+            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_RCX);
+            allocator.setOutVarRegForBB((uint)source.bbNum, 1, REG_RBX);
+            allocator.setInVarRegForBB((uint)target.bbNum, 0, REG_RDX);
+            allocator.setInVarRegForBB((uint)target.bbNum, 1, REG_RBX);
+
+            var free = TempReg(allocator, source, target, TYP_INT,
+                SetOps.MakeEmpty(compiler), RBM_NONE);
+            var consumed = TempReg(allocator, source, target, TYP_INT,
+                SetOps.MakeEmpty(compiler), new regMaskTP(SRBM_RAX));
+
+            Assert.That(free, Is.EqualTo(REG_RAX));
+            Assert.That(consumed, Is.EqualTo(REG_NA));
+        });
+    }
+#endif
+
+    [Test]
     public static void WriteThroughSplitRetainsValidMemoryHome()
     {
         WithEdge(1, (compiler, allocator, source, target, _) =>

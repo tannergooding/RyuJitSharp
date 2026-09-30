@@ -33,7 +33,6 @@ public sealed partial class LinearScan
     private void resolveEdge(BasicBlock fromBlock, BasicBlock? toBlock, ResolveType resolveType,
         VARSET_TP liveSet, regMaskTP terminatorConsumedRegs)
     {
-        requireLocalEdgeResolution();
         var fromMap = getOutVarToRegMap(checked((uint)fromBlock.bbNum))
             ?? throw new FatalJitException("Resolution requires a predecessor outgoing map.");
         var toMap = (resolveType is ResolveType.ResolveSharedCritical
@@ -73,9 +72,22 @@ public sealed partial class LinearScan
         // Compute scratch registers before changing either side's map.
         var intTemp = getTempRegForResolution(fromBlock, toBlock, TYP_INT, liveSet, terminatorConsumedRegs);
         var floatTemp = REG_NA;
+#if TARGET_ARM
+        var doubleTemp = REG_NA;
+#endif
         if (_compiler.compFloatingPointUsed)
         {
-            floatTemp = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT, liveSet, terminatorConsumedRegs);
+#if TARGET_ARM
+            doubleTemp = getTempRegForResolution(fromBlock, toBlock, TYP_DOUBLE, liveSet, terminatorConsumedRegs);
+            if (doubleTemp != REG_NA)
+            {
+                floatTemp = doubleTemp;
+            }
+            else
+#endif
+            {
+                floatTemp = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT, liveSet, terminatorConsumedRegs);
+            }
         }
 
         var targetsToDo = RBM_NONE;
@@ -91,6 +103,19 @@ public sealed partial class LinearScan
         var stackToRegIntervals = new Interval?[(int)REG_COUNT];
         var insertionPoint = resolveType is ResolveType.ResolveSplit or ResolveType.ResolveCritical
             ? block.FirstNode : null;
+
+#if TARGET_ARM
+        void AddOtherHalfRegToReady(regNumber otherHalf)
+        {
+            var original = source[(int)otherHalf];
+            if (original != REG_NA && location[(int)otherHalf] == REG_NA &&
+                sourceIntervals[(int)original] is not null &&
+                targetsToDo.IsSet(otherHalf) && !targetsFromStack.IsSet(otherHalf))
+            {
+                targetsReady |= regMaskTP.CreateFromRegNum(otherHalf, genSingleTypeRegMask(otherHalf));
+            }
+        }
+#endif
 
         if (resolveType is ResolveType.ResolveJoin && _compiler.compHndBBtabCount > 0)
         {
@@ -166,7 +191,39 @@ public sealed partial class LinearScan
             var target = popResolutionRegister(ref targetCandidates);
             if (location[(int)target] == REG_NA)
             {
-                targetsReady |= regMaskTP.CreateFromRegNum(target, genSingleTypeRegMask(target));
+#if TARGET_ARM
+                var original = source[(int)target];
+                var interval = sourceIntervals[(int)original]
+                    ?? throw new FatalJitException("Ready resolution target requires a source interval.");
+                var otherTarget = REG_NA;
+                Interval? otherInterval = null;
+                if (genIsValidFloatReg(target) && !genIsValidDoubleReg(target))
+                {
+                    otherTarget = target - 1;
+                    otherInterval = sourceIntervals[(int)otherTarget];
+                }
+
+                if (interval.registerType is TYP_DOUBLE)
+                {
+                    assert(genIsValidDoubleReg(target));
+                    if (location[(int)(target + 1)] == REG_NA)
+                    {
+                        targetsReady |= regMaskTP.CreateFromRegNum(target, genSingleTypeRegMask(target));
+                    }
+                }
+                else if (otherInterval is not null && otherInterval.registerType is TYP_DOUBLE)
+                {
+                    assert(otherTarget != REG_NA);
+                    if (location[(int)otherTarget] == REG_NA)
+                    {
+                        targetsReady |= regMaskTP.CreateFromRegNum(target, genSingleTypeRegMask(target));
+                    }
+                }
+                else
+#endif
+                {
+                    targetsReady |= regMaskTP.CreateFromRegNum(target, genSingleTypeRegMask(target));
+                }
             }
         }
 
@@ -191,10 +248,34 @@ public sealed partial class LinearScan
                 sourceIntervals[(int)original] = null;
                 location[(int)original] = REG_NA;
 
-                if (from == original && source[(int)from] != REG_NA &&
-                    !targetsFromStack.IsSet(from))
+                if (from == original)
                 {
-                    targetsReady |= regMaskTP.CreateFromRegNum(from, genSingleTypeRegMask(from));
+                    if (source[(int)from] != REG_NA && !targetsFromStack.IsSet(from))
+                    {
+                        targetsReady |= regMaskTP.CreateFromRegNum(from, genSingleTypeRegMask(from));
+#if TARGET_ARM
+                        if (genIsValidDoubleReg(from))
+                        {
+                            var nextInterval = sourceIntervals[(int)source[(int)from]]
+                                ?? throw new FatalJitException("Double resolution requires a pending source.");
+                            var upper = from + 1;
+                            if (nextInterval.registerType is TYP_DOUBLE && location[(int)upper] != REG_NA)
+                            {
+                                targetsReady &= ~regMaskTP.CreateFromRegNum(from, genSingleTypeRegMask(from));
+                            }
+                            if (targetsReady.IsSet(from))
+                            {
+                                AddOtherHalfRegToReady(upper);
+                            }
+                        }
+#endif
+                    }
+#if TARGET_ARM
+                    else if (genIsValidFloatReg(from) && !genIsValidDoubleReg(from))
+                    {
+                        AddOtherHalfRegToReady(from - 1);
+                    }
+#endif
                 }
             }
             if (targetsToDo.IsEmpty)
@@ -214,6 +295,17 @@ public sealed partial class LinearScan
 
             var isFloat = genIsValidFloatReg(targetReg);
             var tempReg = isFloat ? floatTemp : intTemp;
+#if TARGET_ARM
+            if (isFloat)
+            {
+                var sourceAtLocation = sourceIntervals[(int)fromReg]
+                    ?? throw new FatalJitException("Floating resolution requires a source interval.");
+                if (sourceAtLocation.registerType is TYP_DOUBLE)
+                {
+                    tempReg = doubleTemp;
+                }
+            }
+#endif
 #if TARGET_XARCH
             var useSwap = !isFloat && tempReg == REG_NA;
 #else
@@ -276,19 +368,63 @@ public sealed partial class LinearScan
                     if (source[(int)fromReg] != REG_NA && fromReg != otherTargetReg)
                     {
                         targetsReady |= regMaskTP.CreateFromRegNum(fromReg, genSingleTypeRegMask(fromReg));
+#if TARGET_ARM
+                        if (genIsValidDoubleReg(fromReg))
+                        {
+                            var nextInterval = sourceIntervals[(int)source[(int)fromReg]]
+                                ?? throw new FatalJitException("Double resolution requires a pending source.");
+                            if (nextInterval.registerType is TYP_DOUBLE && location[(int)(fromReg + 1)] != REG_NA)
+                            {
+                                targetsReady &= ~regMaskTP.CreateFromRegNum(fromReg, genSingleTypeRegMask(fromReg));
+                            }
+                        }
+#endif
                     }
                 }
                 targetsToDo &= ~targetMask;
             }
             else
             {
-                var displaced = sourceIntervals[(int)targetReg]
-                    ?? throw new FatalJitException("Cycle scratch move requires a displaced interval.");
                 _compiler.codeGen!.RegSet.rsSetRegsModified(
                     regMaskTP.CreateFromRegNum(tempReg, genSingleTypeRegMask(tempReg)), true);
-                addResolution(block, insertionPoint, displaced, tempReg, targetReg,
-                    fromBlock, toBlock, s_resolveTypeName[(int)resolveType]);
-                location[(int)targetReg] = tempReg;
+#if TARGET_ARM
+                var otherTarget = REG_NA;
+                Interval? otherInterval = null;
+                if (genIsValidFloatReg(targetReg) && !genIsValidDoubleReg(targetReg))
+                {
+                    otherTarget = targetReg - 1;
+                    otherInterval = sourceIntervals[(int)otherTarget];
+                }
+                var sourceAtLocation = sourceIntervals[(int)fromReg]
+                    ?? throw new FatalJitException("Double resolution requires a source interval.");
+                if (sourceAtLocation.registerType is TYP_DOUBLE)
+                {
+                    assert(genIsValidDoubleReg(targetReg) && genIsValidDoubleReg(tempReg));
+                    addResolutionForDouble(block, insertionPoint, sourceIntervals, location,
+                        tempReg, targetReg, resolveType, fromBlock, toBlock);
+                }
+                else if (otherInterval is not null)
+                {
+                    assert(otherTarget != REG_NA && otherInterval.registerType is TYP_DOUBLE);
+                    addResolutionForDouble(block, insertionPoint, sourceIntervals, location,
+                        tempReg, otherTarget, resolveType, fromBlock, toBlock);
+                }
+                else
+#endif
+                {
+                    var displaced = sourceIntervals[(int)targetReg]
+                        ?? throw new FatalJitException("Cycle scratch move requires a displaced interval.");
+                    addResolution(block, insertionPoint, displaced, tempReg, targetReg,
+                        fromBlock, toBlock, s_resolveTypeName[(int)resolveType]);
+                    location[(int)targetReg] = tempReg;
+#if TARGET_ARM
+                    if (displaced.registerType is TYP_DOUBLE)
+                    {
+                        assert(genIsValidDoubleReg(targetReg));
+                        AddOtherHalfRegToReady(targetReg + 1);
+                    }
+#endif
+                }
                 targetsReady |= targetMask;
             }
         }

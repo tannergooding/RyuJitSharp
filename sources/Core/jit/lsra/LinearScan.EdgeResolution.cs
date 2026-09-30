@@ -19,16 +19,12 @@ public sealed partial class LinearScan
 
     private void requireLocalEdgeResolution()
     {
-#if (TARGET_AMD64 && WINDOWS_AMD64_ABI) || TARGET_ARM64
         if (!_enregisterLocalVars || !_blockSequencingDone ||
             (_inVarToRegMaps is null) || (_outVarToRegMaps is null) ||
             (_splitOrSpilledVars is null))
         {
             throw new FatalJitException("LSRA edge resolution requires allocated local maps and block sequence.");
         }
-#else
-        throw new FatalJitException("LSRA edge resolution is not implemented outside Windows AMD64/ARM64.");
-#endif
     }
 
     private void resolveEdges()
@@ -205,7 +201,7 @@ public sealed partial class LinearScan
             var from = getVarReg(outgoingMap, checked((uint)index));
             if (from != REG_STK)
             {
-                liveOutRegs |= regMaskTP.CreateFromRegNum(from, genSingleTypeRegMask(from));
+                liveOutRegs |= blockLiveRegMask(from, getIntervalForLocalVar(checked((uint)index)).registerType);
             }
             return true;
         });
