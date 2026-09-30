@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Whole address-mode construction and add lowering
+
+Address-mode construction retains the common algorithm on every target and
+RISC-V's explicit base-plus-index addition. Add lowering preserves the RISC-V
+Zba helper sequence and Wasm binary-arithmetic call; those unported dependencies
+remain terminating managed boundaries and retained native definitions. The two
+completed callers and declarations retire 398 lines in `56370b03`.
+
+Windows and Linux-target controls pass 190 Debug/190 Release each, and ARM64
+passes 34/34. Old Windows and ARM64 Debug controls also pass; these are
+preservation results. RISC-V and Wasm old/final builds stop at identical baseline
+diagnostics before tests. Evidence: `artifacts/address-mode-add-770748d`.
+No generated-code or other-target execution parity is claimed.
+
 ## 2026-09-29: Whole indirect-load and floating-store retyping
 
 Indirect loads preserve target-specific ordering between unused-load conversion

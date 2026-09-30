@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "addressModeAddClosure": {
+      "scope": "Whole TryCreateAddrMode and LowerAdd preserve shared algorithms, RISC-V explicit indexed-address addition and Zba helper ordering, and Wasm binary-arithmetic dispatch.",
+      "validation": "Windows190D/190R, Linux-target190D/190R, ARM6434D/34R with repository analyzer configuration. Old Windows190D and ARM6434D pass. Old/final RISC-V and Wasm builds retain identical baseline diagnostics before tests.",
+      "retirement": "Two complete definitions, headings and declarations;398 native lines. RISC-V Zba and Wasm binary-arithmetic dependencies retained.",
+      "nativeBefore": "f4bd7f46c9995f29155ee0c329e74de318b19242",
+      "nativeAfter": "56370b03e25ae92fe8b8b5ed50b3db4809b1481b",
+      "evidence": "artifacts/address-mode-add-770748d/proposal.json and address-add retirement records.",
+      "limits": "Target fixtures are preservation controls, not target-generated-code execution or parity. RISC-V and Wasm helper dependencies remain terminating."
+    },
     "indirectLoadRetypingClosure": {
       "scope": "Whole LowerIndir, TransformUnusedIndirection and TryRetypingFloatingPointStoreToIntegerStore preserve target ordering, volatile ARM64 bitcasts, signed-zero and width policies.",
       "validation": "Windows85D/85R, ARM6478D/78R and Linux90D/90R. Fresh Linux Release90/90 passed in36.31s with minimum45.46GiB free; final snapshot differs only by the authorized six-rule root analyzer configuration from the source-reviewed snapshot. Earlier unaffected evidence reused.",
@@ -1890,10 +1899,10 @@
           "status": "source-reviewed five-file packet on8363a2f; replacement worker validating with analyzer-config overlay and one compiler slot after memory recovery"
         },
         {
-          "scope": "Whole retained indirect-load and floating-store retyping family.",
+          "scope": "Whole retained address-mode construction and add lowering.",
           "owner": "c25d48cd-9585-4ecc-9253-39bf6743137d",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "accepted; missing Linux Release90/90 completed36.31s with45.46GiB minimum free;3definitions/237lines retired in nativef4bd7f46; compiler slot released"
+          "status": "address/add source and evidence accepted;2definitions398lines retired in native56370b03; worker idle and compiler slot released"
         },
         {
           "scope": "Whole retained shared kill-set family after return/write-barrier closure.",
@@ -2309,7 +2318,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Analyzer repair committed3df6e8f. Load/retyping accepted after fresh Linux Release90/90;3definitions/237lines retired in nativef4bd7f46, finish its managed commit before next batch. Candidate/frame worker2aa4b7ae still validating source-reviewed5file packet with config overlay and8GiB floor; collect actual evidence and integrate separately, prepared component3definitions/560lines not applied. Reuse accepted prior evidence. Old worker IDs were cleared. Preserve13Wasm and native pin-plus-one; no publication.",
+    "nextAction": "Address/add accepted and398line native retirement56370b03 applied; finish managed commit before starting next lowering unit. Candidate/frame worker2aa4b7ae has focused validation but parent requested broad Linux old/final candidate failure classification so newly executable paths are not filtered away; collect final handoff and integrate prepared3definition560line component only after acceptance. Analyzer repair3df6e8f and load/retyping770748d already committed. Preserve13Wasm and native pin-plus-one; no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

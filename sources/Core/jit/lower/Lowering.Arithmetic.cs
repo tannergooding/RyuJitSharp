@@ -117,8 +117,27 @@ public sealed partial class Lowering
                 return next;
             }
         }
-#elif TARGET_RISCV64 || TARGET_WASM
-        throw new NotImplementedException("LowerAdd target-specific lowering is not ported.");
+#endif
+
+#if TARGET_RISCV64
+        if (CompilerInstance.compOpportunisticallyDependsOn(CORINFO_InstructionSet.InstructionSet_Zba))
+        {
+            if (TryLowerShiftAddToShxadd(node, out var next))
+            {
+                return next;
+            }
+            else if (TryLowerZextAddToAddUw(node, out next))
+            {
+                return next;
+            }
+        }
+#endif
+
+#if TARGET_WASM
+        if (node.Oper is GT_ADD)
+        {
+            _ = LowerBinaryArithmetic(node);
+        }
 #endif
         if (node.Oper is GT_ADD)
         {
@@ -126,6 +145,18 @@ public sealed partial class Lowering
         }
         return null;
     }
+
+#if TARGET_RISCV64
+    private bool TryLowerShiftAddToShxadd(GenTreeOp node, out GenTree? next)
+    {
+        throw new NotImplementedException("RISC-V Zba shift-add lowering is not ported.");
+    }
+
+    private bool TryLowerZextAddToAddUw(GenTreeOp node, out GenTree? next)
+    {
+        throw new NotImplementedException("RISC-V Zba zero-extended add lowering is not ported.");
+    }
+#endif
 
 #if TARGET_XARCH
     private GenTreeOp? TryLowerMulWithConstant(GenTreeOp node)

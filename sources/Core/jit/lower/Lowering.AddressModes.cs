@@ -69,7 +69,6 @@ public sealed partial class Lowering
 
     private bool TryCreateAddrMode(ref GenTree addr, bool isContainable, GenTree parent)
     {
-#if TARGET_XARCH || TARGET_ARM64
         if ((addr.Oper is not GT_ADD) || addr.HasOverflowCheck)
         {
             return false;
@@ -87,8 +86,10 @@ public sealed partial class Lowering
         {
             return false;
         }
+#endif
 
         var targetType = parent.Oper.IsIndir ? parent.Type : TYP_UNDEF;
+#if TARGET_ARM64
         var naturalMul = targetType.Size;
 #else
         var naturalMul = 0;
@@ -197,14 +198,23 @@ public sealed partial class Lowering
                 }
             }
         }
+#elif TARGET_RISCV64
+        if (index is not null)
+        {
+            assert(baseAddress is not null);
+            assert(scale <= 1);
+
+            var addition = CompilerInstance.gtNewOperNode(GT_ADD, addrMode.Type, baseAddress, index);
+            BlockRange().InsertBefore(addrMode, addition);
+            addrMode.BaseAddress = addition;
+            addrMode.Index = null;
+            _ = LowerAdd(addition);
+        }
 #endif
 
         JITDUMP("New addressing mode node:\n  ");
         DISPNODE(addrMode);
         JITDUMP("\n");
         return true;
-#else
-        throw new NotImplementedException("Address-mode lowering outside xarch and ARM64 is not ported.");
-#endif
     }
 }
