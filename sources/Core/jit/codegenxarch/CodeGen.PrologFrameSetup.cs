@@ -9,14 +9,11 @@ public sealed partial class CodeGen
 {
     public void genEstablishFramePointer(int delta, bool reportUnwindData)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Prolog frame-pointer setup requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
         if (delta == 0)
         {
-            Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, canSkip: false);
+            _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, canSkip: false);
         }
         else
         {
@@ -27,14 +24,10 @@ public sealed partial class CodeGen
         {
             _compiler.unwindSetFrameReg(REG_FPBASE, (uint)delta);
         }
-#endif
     }
 
     public void genAllocLclFrame(uint frameSize, regNumber initReg, ref bool initRegZeroed, regMaskTP maskArgRegsLiveIn)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Prolog stack allocation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
         if (frameSize == 0)
@@ -59,6 +52,29 @@ public sealed partial class CodeGen
         }
         else
         {
+#if TARGET_X86
+            var spOffset = unchecked(-(int)frameSize);
+
+            if (_compiler.compHasSecretStubArgument())
+            {
+                Emitter.emitIns_R(INS_push, EA_PTRSIZE, REG_SECRET_STUB_PARAM);
+                spOffset += REGSIZE_BYTES;
+            }
+
+            Emitter.emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_STACK_PROBE_HELPER_ARG, REG_SPBASE, spOffset);
+            _regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);
+            genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN);
+
+            if (_compiler.compHasSecretStubArgument())
+            {
+                Emitter.emitIns_R(INS_pop, EA_PTRSIZE, REG_SECRET_STUB_PARAM);
+                Emitter.emitIns_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, (nint)frameSize);
+            }
+            else
+            {
+                _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE, REG_STACK_PROBE_HELPER_ARG, canSkip: false);
+            }
+#else
             assert((SRBM_STACK_PROBE_HELPER_ARG & (SRBM_SECRET_STUB_PARAM | SRBM_DEFAULT_HELPER_CALL_TARGET)) == 0);
             Emitter.emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_STACK_PROBE_HELPER_ARG, REG_SPBASE,
                 unchecked(-(int)frameSize));
@@ -70,14 +86,14 @@ public sealed partial class CodeGen
             }
 
             assert((SRBM_STACK_PROBE_HELPER_TRASH & SRBM_STACK_PROBE_HELPER_ARG) == 0);
-            Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE, REG_STACK_PROBE_HELPER_ARG, canSkip: false);
+            _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE, REG_STACK_PROBE_HELPER_ARG, canSkip: false);
+#endif
             _compiler.unwindAllocStack(frameSize);
             if (initReg == REG_STACK_PROBE_HELPER_ARG)
             {
                 initRegZeroed = false;
             }
         }
-#endif
     }
 
     public void genClearAvxStateInProlog()

@@ -13,5 +13,29 @@ public partial class Globals
     public const int TARGET_MASKS_SHIFTS = 1;
 
     public const int TARGET_HAS_MULHI = 1;
+
+    public const int REGSIZE_BYTES = 4;
+
+#if UNIX_X86_ABI
+    public const int STACK_ALIGN = 16;
+
+    public const int STACK_ALIGN_SHIFT = 4;
+#else
+    public const int STACK_ALIGN = 4;
+
+    public const int STACK_ALIGN_SHIFT = 2;
+#endif
+
+    public const regNumber REG_FPBASE = REG_EBP;
+
+    public const regNumber REG_SPBASE = REG_ESP;
+
+    public const regNumber REG_SECRET_STUB_PARAM = REG_EAX;
+
+    public const regNumber REG_STACK_PROBE_HELPER_ARG = REG_EAX;
+
+    public const int ARG_STACK_PROBE_THRESHOLD_BYTES = 1024;
+
+    public const int STACK_PROBE_BOUNDARY_THRESHOLD_BYTES = ARG_STACK_PROBE_THRESHOLD_BYTES;
 }
 #endif

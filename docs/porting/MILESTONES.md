@@ -16,6 +16,31 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole xarch frame setup, probing and localloc
+
+Frame setup, local-stack allocation, constant/dynamic stack probing and localloc
+retain the native x86 and AMD64 branches, including secret-argument preservation,
+hidden x86 stack adjustments, outgoing-area handling and the x86 localloc SP
+save. Probe controls cover the EE-provided page size and exact page boundaries.
+The Windows AMD64 algorithms are preservation work; the batch completes the
+other-target branches and removes caller-level platform exclusions.
+
+Seven definitions and their headings, plus four xarch-specific declarations,
+retire 568 native lines in `6c77d2bd`. Shared ARM/ARM64 declarations, non-xarch
+overloads, AVX-state clearing and independent emitter/unwind helpers remain.
+Windows old/final controls pass 57 Debug and 55 Release cases. Linux improves
+from 23/27 passing Debug/Release cases to 50/52 without losing an old pass;
+the seven Debug and three Release failures retain their old messages and
+origin frames. They are dependency boundaries, not Linux parity.
+
+Evidence: `artifacts/xarch-frame-probing-62d0336`, `work-v2`, with the immutable
+2,499-file baseline, exact snapshot inventories, eight actual old/final TRXs
+and five identical failed diagnostic pairs independently verified. Both
+diagnostic sides explicitly include the approved x86 constants and eight
+parser masks. Rejected v1 fixture and IDE0058 failures are preserved; v2 changes
+only the native-int assertion and three explicit ignored Boolean results.
+No native runtime or generated-code parity claim.
+
 ## 2026-09-30: Whole DEBUG register stress limiting
 
 Register stress limiting retains the native callee-bank constraints, minimum

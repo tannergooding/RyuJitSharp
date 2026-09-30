@@ -14,33 +14,31 @@ public sealed partial class CodeGen
 
     public void genStackPointerConstantAdjustment(nint spDelta, bool trackSpAdjustments)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack-pointer adjustment requires Windows AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(spDelta < 0);
         assert(unchecked((nuint)(-spDelta)) <= _compiler.eeGetPageSize());
-        // AMD64 always exposes this constant adjustment; the flag is x86-only.
-        inst_RV_IV(INS_sub, REG_SPBASE, unchecked(-spDelta), EA_PTRSIZE);
+#if TARGET_AMD64
+        trackSpAdjustments = true;
 #endif
+        if (trackSpAdjustments)
+        {
+            inst_RV_IV(INS_sub, REG_SPBASE, unchecked(-spDelta), EA_PTRSIZE);
+        }
+        else
+        {
+            inst_RV_IV(INS_sub_hide, REG_SPBASE, unchecked(-spDelta), EA_PTRSIZE);
+        }
     }
 
     public void genStackPointerConstantAdjustmentWithProbe(nint spDelta, bool trackSpAdjustments)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack probing requires Windows AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         Emitter.emitIns_AR_R(INS_test, EA_4BYTE, REG_SPBASE, REG_SPBASE, 0);
         genStackPointerConstantAdjustment(spDelta, trackSpAdjustments);
-#endif
     }
 
     public nint genStackPointerConstantAdjustmentLoopWithProbe(nint spDelta, bool trackSpAdjustments)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack probing requires Windows AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(spDelta < 0);
         var pageSize = _compiler.eeGetPageSize();
@@ -65,14 +63,10 @@ public sealed partial class CodeGen
         }
 
         return unchecked((nint)lastTouchDelta);
-#endif
     }
 
     public void genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Dynamic stack probing requires Windows AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(regSpDelta != REG_NA);
         var loop = genCreateTempLabel();
@@ -88,14 +82,10 @@ public sealed partial class CodeGen
         inst_RV_RV(INS_cmp, REG_SPBASE, regSpDelta, TYP_I_IMPL);
         inst_JMP(EJ_jae, loop);
         inst_Mov(TYP_I_IMPL, REG_SPBASE, regSpDelta, canSkip: false);
-#endif
     }
 
     public void genLclHeap(GenTree tree)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Local heap generation requires Windows AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper == GT_LCLHEAP);
         assert(_compiler.compLocallocUsed);
@@ -153,6 +143,7 @@ public sealed partial class CodeGen
         }
 
         var initMemOrLargeAlloc = _compiler.info.compInitMem || (amount >= _compiler.eeGetPageSize());
+#if FEATURE_FIXED_OUT_ARGS
         if (_compiler.lvaOutgoingArgSpaceSize.Value > 0)
         {
             assert((_compiler.lvaOutgoingArgSpaceSize.Value % STACK_ALIGN) == 0);
@@ -176,12 +167,13 @@ public sealed partial class CodeGen
                 locAllocStackOffset = stackAdjustment;
             }
         }
+#endif
 
         if (size.Oper.IsCnsIntOrI && size.IsContained)
         {
             assert((amount > 0) && ((amount % STACK_ALIGN) == 0));
             // Constant allocations are initialized by a separate lowered BLK.
-            if (amount >= _compiler.eeGetPageSize())
+            if ((amount >= _compiler.eeGetPageSize()) || (TARGET_POINTER_SIZE == 4))
             {
                 regCnt = InternalRegisters.GetSingle(tree);
                 instGen_Set_Reg_To_Imm(EA_PTRSIZE, regCnt, unchecked(-(nint)amount));
@@ -238,6 +230,13 @@ public sealed partial class CodeGen
             genDefineTempLabel(endLabel);
         }
 
+#if JIT32_GCENCODER
+        if (_compiler.lvaLocAllocSPvar != BAD_VAR_NUM)
+        {
+            Emitter.emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, _compiler.lvaLocAllocSPvar, 0);
+        }
+#endif
+
 #if DEBUG
         if (_compiler.opts.compStackCheckOnRet)
         {
@@ -248,6 +247,5 @@ public sealed partial class CodeGen
         }
 #endif
         genProduceReg(tree);
-#endif
     }
 }
