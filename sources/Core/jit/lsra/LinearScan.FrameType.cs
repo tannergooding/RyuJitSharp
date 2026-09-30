@@ -13,11 +13,19 @@ public sealed partial class LinearScan
         Justification = "Preserves the native target-dependent reserved-register assertion.")]
     private void setFrameType()
     {
-#if TARGET_AMD64 || TARGET_ARM64
         var codeGen = _compiler.codeGen;
         assert(codeGen is not null);
 
         var frameType = FT_NOT_SET;
+#if DOUBLE_ALIGN
+        setDoubleAlign(false);
+        if (_doDoubleAlign)
+        {
+            frameType = FT_DOUBLE_ALIGN_FRAME;
+            setDoubleAlign(true);
+        }
+        else
+#endif
         if (codeGen.IsFramePointerRequired)
         {
             frameType = FT_EBP_FRAME;
@@ -47,8 +55,8 @@ public sealed partial class LinearScan
         {
             case FT_ESP_FRAME:
             {
-                assert(!codeGen.IsFramePointerRequired);
-                assert(!codeGen.IsFrameRequired);
+                noway_assert(!codeGen.IsFramePointerRequired);
+                noway_assert(!codeGen.IsFrameRequired);
                 codeGen.IsFramePointerUsed = false;
                 break;
             }
@@ -57,23 +65,59 @@ public sealed partial class LinearScan
                 codeGen.IsFramePointerUsed = true;
                 break;
             }
+#if DOUBLE_ALIGN
+            case FT_DOUBLE_ALIGN_FRAME:
+            {
+                noway_assert(!codeGen.IsFramePointerRequired);
+                codeGen.IsFramePointerUsed = false;
+                break;
+            }
+#endif
             default:
             {
                 throw new FatalJitException("LSRA frame type was not selected.");
             }
         }
 
-        _compiler.rpFrameType = frameType;
-        var removeMask = frameType is FT_EBP_FRAME ? SRBM_FPBASE : SRBM_NONE;
-#if TARGET_ARM64
-        if (_compiler.compRsvdRegCheck(Compiler.REGALLOC_FRAME_LAYOUT))
+        var removeMask = SRBM_NONE;
+        if (frameType is FT_EBP_FRAME)
         {
-            codeGen.RegSet.rsMaskResvd |= new regMaskTP(SRBM_OPT_RSVD);
-            assert(REG_OPT_RSVD != REG_FP);
-            JITDUMP($"  Reserved REG_OPT_RSVD ({REG_OPT_RSVD.Name}) due to large frame\n");
-            removeMask |= SRBM_OPT_RSVD;
+#if TARGET_AMD64 || TARGET_ARM64
+            removeMask |= SRBM_FPBASE;
+#else
+            removeMask |= getFramePointerBaseMask();
+#endif
         }
 
+        _compiler.rpFrameType = frameType;
+#if TARGET_ARMARCH || TARGET_RISCV64
+        if (_compiler.compRsvdRegCheck(Compiler.REGALLOC_FRAME_LAYOUT))
+        {
+#if TARGET_ARM64
+            var reservedRegister = REG_OPT_RSVD;
+#else
+            var reservedRegister = getOptionalFrameReserveRegister();
+#endif
+            var reservedMask = genSingleTypeRegMask(reservedRegister);
+            codeGen.RegSet.rsMaskResvd |= regMaskTP.CreateFromRegNum(reservedRegister, reservedMask);
+            assert(reservedRegister != REG_FP);
+            JITDUMP($"  Reserved REG_OPT_RSVD ({reservedRegister.Name}) due to large frame\n");
+            removeMask |= reservedMask;
+        }
+#endif
+
+#if TARGET_ARM
+        if (_compiler.compLocallocUsed)
+        {
+            var savedStackPointerRegister = getSavedLocallocStackPointerRegister();
+            var savedStackPointerMask = genSingleTypeRegMask(savedStackPointerRegister);
+            codeGen.RegSet.rsMaskResvd |= regMaskTP.CreateFromRegNum(savedStackPointerRegister, savedStackPointerMask);
+            JITDUMP($"  Reserved REG_SAVED_LOCALLOC_SP ({savedStackPointerRegister.Name}) due to localloc\n");
+            removeMask |= savedStackPointerMask;
+        }
+#endif
+
+#if TARGET_ARM64
         if (_compiler.compUsesUnknownSizeFrame)
         {
             codeGen.RegSet.rsMaskResvd |= new regMaskTP(SRBM_UNKBASE);
@@ -85,14 +129,43 @@ public sealed partial class LinearScan
         {
             _availableIntRegs &= ~removeMask;
             initializeAvailableRegs();
-#if TARGET_XARCH
+#if TARGET_AMD64
             _lowGprRegs = _availableIntRegs & SRBM_LOWINT;
+#elif TARGET_X86
+            _lowGprRegs = _availableIntRegs;
 #endif
         }
-#else
-        NYI("LSRA frame selection outside AMD64/ARM64");
-        fatal(CORJIT_IMPLLIMITATION);
-        throw new FatalJitException("LSRA frame selection outside AMD64/ARM64.");
-#endif
     }
+
+#if DOUBLE_ALIGN
+    private void setDoubleAlign(bool enabled)
+    {
+        NYI($"CodeGen.setDoubleAlign({enabled}) for x86 frame selection");
+        throw new FatalJitException(CORJIT_IMPLLIMITATION, "CodeGen.setDoubleAlign is not ported.");
+    }
+#endif
+
+#if !(TARGET_AMD64 || TARGET_ARM64)
+    private regMask getFramePointerBaseMask()
+    {
+        NYI("RBM_FPBASE on this target");
+        throw new FatalJitException(CORJIT_IMPLLIMITATION, "Frame-pointer base register mask is not ported.");
+    }
+#endif
+
+#if (TARGET_ARM && !TARGET_ARM64) || TARGET_RISCV64
+    private regNumber getOptionalFrameReserveRegister()
+    {
+        NYI("REG_OPT_RSVD on this target");
+        throw new FatalJitException(CORJIT_IMPLLIMITATION, "Reserved frame-offset register is not ported.");
+    }
+#endif
+
+#if TARGET_ARM
+    private regNumber getSavedLocallocStackPointerRegister()
+    {
+        NYI("REG_SAVED_LOCALLOC_SP on ARM");
+        throw new FatalJitException(CORJIT_IMPLLIMITATION, "Saved localloc stack-pointer register is not ported.");
+    }
+#endif
 }

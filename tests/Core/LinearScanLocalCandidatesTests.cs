@@ -65,6 +65,30 @@ internal static class LinearScanLocalCandidatesTests
         });
     }
 
+#if DEBUG
+    [Test]
+    public static void FloatingCandidateDumpUsesLocalNumbersWithNonidentityTrackedOrder()
+    {
+        WithCandidates(2, (compiler, allocator) => {
+            compiler.lvaTable[0]._varIndex = 1;
+            compiler.lvaTable[1]._varIndex = 0;
+            compiler.lvaTrackedToVarNum = [1, 0];
+            compiler.lvaTable[0].Type = TYP_DOUBLE;
+            compiler.lvaTable[1].Type = TYP_DOUBLE;
+            compiler.lvaTable[0].setLvRefCntWtd(4 * BB_UNITY_WEIGHT);
+            compiler.lvaTable[1].setLvRefCntWtd(BB_UNITY_WEIGHT);
+            compiler.verbose = true;
+
+            var output = CodeGenLifeTransitionTests.Capture(() => Identify(allocator));
+
+            Assert.That(SetOps.IsMember(compiler, FloatingCandidates(allocator), 1), Is.True);
+            Assert.That(SetOps.IsMember(compiler, FloatingCandidates(allocator), 0), Is.False);
+            Assert.That(output, Does.Contain(
+                $"{Environment.NewLine}FP callee save candidate vars: {{V00}}{Environment.NewLine}"));
+        });
+    }
+#endif
+
     [TestCase(6, true, true, false)]
     [TestCase(7, false, true, false)]
     [TestCase(7, true, false, false)]

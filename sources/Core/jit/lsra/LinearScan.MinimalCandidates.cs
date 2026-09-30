@@ -24,6 +24,43 @@ public sealed partial class LinearScan
             identifyCandidatesExceptionDataflow();
         }
 
+#if DOUBLE_ALIGN
+        _doDoubleAlign = false;
+        var checkDoubleAlign = true;
+        var codeGen = _compiler.codeGen;
+        assert(codeGen is not null);
+        if (codeGen.IsFramePointerRequired || _compiler.opts.MinOpts)
+        {
+            checkDoubleAlign = false;
+        }
+        else
+        {
+            switch (getCanDoubleAlign())
+            {
+                case CanDoubleAlign.MUST_DOUBLE_ALIGN:
+                {
+                    _doDoubleAlign = true;
+                    checkDoubleAlign = false;
+                    break;
+                }
+                case CanDoubleAlign.CAN_DOUBLE_ALIGN:
+                {
+                    break;
+                }
+                case CanDoubleAlign.CANT_DOUBLE_ALIGN:
+                {
+                    _doDoubleAlign = false;
+                    checkDoubleAlign = false;
+                    break;
+                }
+                default:
+                {
+                    throw new FatalJitException("Unrecognized double-alignment policy.");
+                }
+            }
+        }
+#endif
+
         localVarIntervals = null;
         for (var localNumber = 0; localNumber < _compiler.lvaCount; localNumber++)
         {
@@ -35,12 +72,27 @@ public sealed partial class LinearScan
             local.lvLRACandidate = false;
         }
 
+#if DOUBLE_ALIGN
+        if (checkDoubleAlign)
+        {
+            _doDoubleAlign = shouldDoubleAlign(0, 0, 0, 0, 0);
+        }
+#endif
+
 #if DEBUG
         if (VERBOSE)
         {
             jitprintf("\nFP callee save candidate vars: None\n\n");
             var singleExit = (_compiler.fgReturnBlocks is null) || (_compiler.fgReturnBlocks.Next is null);
             jitprintf($"floatVarCount = 0; hasLoops = {dspBool(_compiler.fgHasLoops)}, singleExit = {dspBool(singleExit)}\n");
+        }
+#endif
+
+#if TARGET_ARM && DEBUG
+        if (VERBOSE)
+        {
+            jitprintf("\nlvaTable after IdentifyCandidates\n");
+            _compiler.lvaTableDump(Compiler.PRE_REGALLOC_FRAME_LAYOUT);
         }
 #endif
     }
@@ -68,9 +120,9 @@ public sealed partial class LinearScan
         if (VERBOSE)
         {
             JITDUMP("EH Vars: ");
-            dumpCandidateVarSet(_exceptVars);
+            dumpConvertedVarSet(_compiler, _exceptVars);
             JITDUMP("\nFinally Vars: ");
-            dumpCandidateVarSet(_finallyVars);
+            dumpConvertedVarSet(_compiler, _finallyVars);
             JITDUMP("\n\n");
         }
 
@@ -93,30 +145,4 @@ public sealed partial class LinearScan
         }
 #endif
     }
-
-#if DEBUG
-    private void dumpCandidateVarSet(VARSET_TP variables)
-    {
-        jitprintf("{");
-        var first = true;
-        for (var localNumber = 0; localNumber < _compiler.lvaCount; localNumber++)
-        {
-            ref var local = ref _compiler.lvaGetDesc(localNumber);
-            if (!local.lvTracked || !VarSetOps.IsMember(_compiler, variables, local._varIndex))
-            {
-                continue;
-            }
-
-            if (!first)
-            {
-                jitprintf(" ");
-            }
-
-            jitprintf($"V{localNumber:D2}");
-            first = false;
-        }
-
-        jitprintf("}");
-    }
-#endif
 }

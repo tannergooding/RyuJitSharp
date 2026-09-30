@@ -11,7 +11,6 @@ public sealed partial class LinearScan
 
     private void identifyCandidatesWithLocals()
     {
-#if (TARGET_AMD64 && WINDOWS_AMD64_ABI) || TARGET_ARM64
         assert(_enregisterLocalVars);
         assert(_compiler.lvaCount != 0);
         VarSetOps.AssignNoCopy(_compiler, ref _registerCandidateVars, VarSetOps.MakeEmpty(_compiler));
@@ -37,6 +36,48 @@ public sealed partial class LinearScan
         VarSetOps.AssignNoCopy(_compiler, ref _largeVectorCalleeSaveCandidateVars, VarSetOps.MakeEmpty(_compiler));
 #endif
 
+#if DOUBLE_ALIGN
+        uint refCntStk = 0;
+        uint refCntReg = 0;
+        double refCntWtdReg = 0;
+        uint refCntStkParam = 0;
+        double refCntWtdStkDbl = 0;
+        _doDoubleAlign = false;
+        var checkDoubleAlign = true;
+        var codeGen = _compiler.codeGen;
+        assert(codeGen is not null);
+        if (codeGen.IsFramePointerRequired || _compiler.opts.MinOpts)
+        {
+            checkDoubleAlign = false;
+        }
+        else
+        {
+            switch (getCanDoubleAlign())
+            {
+                case CanDoubleAlign.MUST_DOUBLE_ALIGN:
+                {
+                    _doDoubleAlign = true;
+                    checkDoubleAlign = false;
+                    break;
+                }
+                case CanDoubleAlign.CAN_DOUBLE_ALIGN:
+                {
+                    break;
+                }
+                case CanDoubleAlign.CANT_DOUBLE_ALIGN:
+                {
+                    _doDoubleAlign = false;
+                    checkDoubleAlign = false;
+                    break;
+                }
+                default:
+                {
+                    throw new FatalJitException("Unrecognized double-alignment policy.");
+                }
+            }
+        }
+#endif
+
         if (_compiler.lvaTrackedCount > 0)
         {
             localVarIntervals = new Interval?[_compiler.lvaTrackedCount];
@@ -46,6 +87,33 @@ public sealed partial class LinearScan
         {
             ref var local = ref _compiler.lvaGetDesc(localNumber);
             local.RegNum = REG_STK;
+#if !TARGET_64BIT
+            local.OtherReg = REG_STK;
+#endif
+#if DOUBLE_ALIGN
+            if (checkDoubleAlign)
+            {
+                if (local.lvIsParam && !local.lvIsRegArg)
+                {
+                    refCntStkParam += local.lvRefCnt();
+                }
+                else if (!IsRegCandidate(in local) || local.lvDoNotEnregister)
+                {
+                    refCntStk += local.lvRefCnt();
+                    if ((local.Type is TYP_DOUBLE) ||
+                        (varTypeIsStruct(local.Type) && local.lvStructDoubleAlign &&
+                         (_compiler.lvaGetPromotionType(in local) is not Compiler.PROMOTION_TYPE_INDEPENDENT)))
+                    {
+                        refCntWtdStkDbl += local.lvRefCntWtd();
+                    }
+                }
+                else
+                {
+                    refCntReg += local.lvRefCnt();
+                    refCntWtdReg += local.lvRefCntWtd();
+                }
+            }
+#endif
             local.lvLRACandidate = true;
             local.lvRegister = false;
             checkForDNER(localNumber, in local);
@@ -166,13 +234,22 @@ public sealed partial class LinearScan
         }
 #endif
 
+#if DOUBLE_ALIGN
+        if (checkDoubleAlign)
+        {
+            var refCntEBP = refCntReg / 8;
+            var refCntWtdEBP = refCntWtdReg / 8;
+            _doDoubleAlign = shouldDoubleAlign(refCntStk, refCntEBP, refCntWtdEBP, refCntStkParam, refCntWtdStkDbl);
+        }
+#endif
+
 #if DEBUG
         if (VERBOSE)
         {
             jitprintf("\nFP callee save candidate vars: ");
             if (!VarSetOps.IsEmpty(_compiler, _fpCalleeSaveCandidateVars))
             {
-                dumpCandidateVarSet(_fpCalleeSaveCandidateVars);
+                dumpConvertedVarSet(_compiler, _fpCalleeSaveCandidateVars);
                 jitprintf("\n");
             }
             else
@@ -191,7 +268,7 @@ public sealed partial class LinearScan
                 jitprintf("Adding additional fp callee save candidates: \n");
                 if (!VarSetOps.IsEmpty(_compiler, fpMaybeCandidateVars))
                 {
-                    dumpCandidateVarSet(fpMaybeCandidateVars);
+                    dumpConvertedVarSet(_compiler, fpMaybeCandidateVars);
                     jitprintf("\n");
                 }
                 else
@@ -206,11 +283,29 @@ public sealed partial class LinearScan
         {
             VarSetOps.IntersectionD(_compiler, _exceptVars, _registerCandidateVars);
         }
-#else
-        throw new FatalJitException(CORJIT_SKIPPED,
-            "Local register-candidate construction outside Windows AMD64/ARM64 is not implemented.");
+#if TARGET_ARM && DEBUG
+        if (VERBOSE)
+        {
+            jitprintf("\nlvaTable after IdentifyCandidates\n");
+            _compiler.lvaTableDump(Compiler.PRE_REGALLOC_FRAME_LAYOUT);
+        }
 #endif
     }
+
+#if DOUBLE_ALIGN
+    private CanDoubleAlign getCanDoubleAlign()
+    {
+        NYI("Compiler.getCanDoubleAlign for x86 register candidates");
+        throw new FatalJitException(CORJIT_IMPLLIMITATION, "Compiler.getCanDoubleAlign is not ported.");
+    }
+
+    private bool shouldDoubleAlign(uint refCntStk, uint refCntEBP, double refCntWtdEBP,
+        uint refCntStkParam, double refCntWtdStkDbl)
+    {
+        NYI("Compiler.shouldDoubleAlign for x86 register candidates");
+        throw new FatalJitException(CORJIT_IMPLLIMITATION, "Compiler.shouldDoubleAlign is not ported.");
+    }
+#endif
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     private void makeUpperVectorInterval(uint varIndex)

@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Whole candidate construction and frame selection
+
+Both candidate-construction modes preserve x86 double-alignment policy and ARM
+diagnostics. Shared candidate construction is no longer restricted to Windows
+x64/ARM64, and frame selection retains target reservation order and assertions.
+EH dataflow support, the candidate template and frame selection retire 560
+native lines in `67ab3db3`; unported target policy helpers remain native.
+
+Windows controls pass 67 Debug/63 Release and ARM64 88/70, including four direct
+frame-reservation cases per configuration. Thirteen Linux candidate cases that
+failed at the old target gate now pass; the candidate family passes 17 Debug/16
+Release. Eighteen broader Linux failures remain unchanged allocation/resolution
+NYIs. x86 alignment fixtures remain source-only behind baseline syntax failures.
+Evidence: `artifacts/lsra-candidate-frame-8363a2f`. No generated-code parity is
+claimed.
+
 ## 2026-09-29: Whole address-mode construction and add lowering
 
 Address-mode construction retains the common algorithm on every target and

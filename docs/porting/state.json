@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "candidateFrameClosure": {
+      "scope": "Whole identifyCandidates<true/false>, identifyCandidatesExceptionDataflow and setFrameType preserve all target branches, x86 alignment policy and ARM diagnostics/reservations.",
+      "validation": "Windows67D/63R; ARM6488D/70R including4direct frame cases each. Linux candidate family17D/16R:13old target-gate failures pass. Portable preparation/interval controls13D/11R also pass;18broader allocation/resolution NYIs remain unchanged.",
+      "retirement": "Three complete definitions including both candidate template instantiations, headings and declarations;560 native lines. Independent target policy/helper definitions retained.",
+      "nativeBefore": "56370b03e25ae92fe8b8b5ed50b3db4809b1481b",
+      "nativeAfter": "67ab3db366892661a7fe217a5b2f0e2fb18a6a29",
+      "evidence": "artifacts/lsra-candidate-frame-8363a2f/proposal.json, linux-candidate-diff.json and candidate-frame retirement records.",
+      "limits": "x86 alignment fixtures remain source-only behind baseline syntax failures. Formatter tests are preservation controls. No generated-code parity claim."
+    },
     "addressModeAddClosure": {
       "scope": "Whole TryCreateAddrMode and LowerAdd preserve shared algorithms, RISC-V explicit indexed-address addition and Zba helper ordering, and Wasm binary-arithmetic dispatch.",
       "validation": "Windows190D/190R, Linux-target190D/190R, ARM6434D/34R with repository analyzer configuration. Old Windows190D and ARM6434D pass. Old/final RISC-V and Wasm builds retain identical baseline diagnostics before tests.",
@@ -1896,13 +1905,13 @@
           "scope": "Whole retained shared LSRA candidate and frame setup.",
           "owner": "2aa4b7ae-79d5-4599-ad4a-eef9208ec3f0",
           "files": "LinearScan candidate/frame partials and focused fixtures; parent owns shared contracts and native integration.",
-          "status": "source-reviewed five-file packet on8363a2f; replacement worker validating with analyzer-config overlay and one compiler slot after memory recovery"
+          "status": "accepted after Windows/Linux/ARM64 controls and13Linux old-gate failures now passing;3definitions560lines retired in native67ab3db3; worker idle and compiler slot released"
         },
         {
-          "scope": "Whole retained address-mode construction and add lowering.",
+          "scope": "Whole retained shared integer division and remainder lowering.",
           "owner": "c25d48cd-9585-4ecc-9253-39bf6743137d",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "address/add source and evidence accepted;2definitions398lines retired in native56370b03; worker idle and compiler slot released"
+          "status": "address/add committed47f3cb8/native56370b03; worker now owns five-function div/mod family on47f3cb8, one guarded compiler slot"
         },
         {
           "scope": "Whole retained shared kill-set family after return/write-barrier closure.",
@@ -2318,7 +2327,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Address/add accepted and398line native retirement56370b03 applied; finish managed commit before starting next lowering unit. Candidate/frame worker2aa4b7ae has focused validation but parent requested broad Linux old/final candidate failure classification so newly executable paths are not filtered away; collect final handoff and integrate prepared3definition560line component only after acceptance. Analyzer repair3df6e8f and load/retyping770748d already committed. Preserve13Wasm and native pin-plus-one; no publication.",
+    "nextAction": "Candidate/frame accepted,560line retirement67ab3db3 applied; finish managed commit before next LSRA unit. Thirteen Linux target-gate failures now pass,18independent allocation/resolution NYIs remain. Workerc25d48cd owns five-function shared div/mod lowering on47f3cb8 with one guarded compiler slot. After candidate commit, assign whole register-resolution/dispatcher family to2aa4b7ae, retaining independent unfinished helpers. Analyzer3df6e8f, load/retyping770748d and address/add47f3cb8 already committed. Preserve13Wasm and native pin-plus-one; no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

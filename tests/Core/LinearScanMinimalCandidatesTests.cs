@@ -54,19 +54,43 @@ internal static unsafe class LinearScanMinimalCandidatesTests
             var allocator = new LinearScan(compiler) {
                 localVarIntervals = existingMappings,
             };
+#if TARGET_X86
+            DoDoubleAlign(allocator) = true;
+#endif
 
             IdentifyCandidatesMinimal(allocator);
 
             Assert.That(allocator.localVarIntervals, Is.SameAs(existingMappings));
+#if TARGET_X86
+            Assert.That(DoDoubleAlign(allocator), Is.True);
+#endif
         });
     }
+
+#if TARGET_X86
+    [Test]
+    public static void MinimalCandidatePreparationResetsDoubleAlignmentForMinoptsWithLocals()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new() { Type = TYP_INT, lvLRACandidate = true }];
+            compiler.lvaCount = 1;
+            var allocator = new LinearScan(compiler);
+            DoDoubleAlign(allocator) = true;
+
+            IdentifyCandidatesMinimal(allocator);
+
+            Assert.That(DoDoubleAlign(allocator), Is.False);
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+            Assert.That(compiler.lvaTable[0].lvLRACandidate, Is.False);
+        });
+    }
+#endif
 
     [Test]
     public static void MinimalCandidatePreparationBuildsExceptionAndFinallyVariableSets()
     {
         WithCompiler((compiler, allocator) => {
             compiler.lvaTable = [
-                new() { Type = TYP_INT, _varIndex = 0, lvTracked = true, lvLRACandidate = true },
                 new() {
                     Type = TYP_REF,
                     _varIndex = 1,
@@ -74,10 +98,17 @@ internal static unsafe class LinearScanMinimalCandidatesTests
                     lvLRACandidate = true,
                     lvMustInit = true,
                 },
+                new() {
+                    Type = TYP_INT,
+                    _varIndex = 0,
+                    lvTracked = true,
+                    lvLRACandidate = true,
+                },
             ];
             compiler.lvaCount = 2;
             compiler.lvaTrackedCount = 2;
             compiler.lvaTrackedCountInSizeTUnits = 1;
+            compiler.lvaTrackedToVarNum = [1, 0];
             compiler.compHndBBtabCount = 1;
             compiler.fgBBVarSetsInited = true;
             LiveInOutOfHandler(ref compiler.lvaTable[0], true);
@@ -114,7 +145,7 @@ internal static unsafe class LinearScanMinimalCandidatesTests
 #if DEBUG
             Assert.That(output, Is.EqualTo(
                 $"EH Vars: {{V00 V01}}{Environment.NewLine}" +
-                $"Finally Vars: {{V01}}{Environment.NewLine}{Environment.NewLine}{Environment.NewLine}" +
+                $"Finally Vars: {{V00}}{Environment.NewLine}{Environment.NewLine}{Environment.NewLine}" +
                 $"FP callee save candidate vars: None{Environment.NewLine}{Environment.NewLine}" +
                 $"floatVarCount = 0; hasLoops = false, singleExit = true{Environment.NewLine}"));
 #endif
@@ -129,6 +160,11 @@ internal static unsafe class LinearScanMinimalCandidatesTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_finallyVars")]
     private static extern ref nint[] FinallyVars(LinearScan allocator);
+
+#if TARGET_X86
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_doDoubleAlign")]
+    private static extern ref bool DoDoubleAlign(LinearScan allocator);
+#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set__lvLiveInOutOfHandler")]
     private static extern void LiveInOutOfHandler(ref LclVarDsc local, bool value);
