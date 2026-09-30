@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole general register selection
+
+The general register selector preserves all target branches and heuristic
+ordering, including x86 byte-register preferences and ARM32 double-register
+busy masks. Its former Windows/ARM64 caller gate is removed.
+One whole definition, template, heading and declaration retire 477 native lines
+in `47ee3737`; minimal selection and independent target helpers remain retained.
+
+All five previously gated Linux integration cases now pass, yielding 96/96
+Debug and 83/83 Release. All fifteen previously gated direct cases also pass:
+23/23 in both configurations. Exact old/final test identities match.
+Windows integration controls pass 101/88 and direct controls 23/23; ARM64
+integration passes 110/91. Five isolated target diagnostic sets match and remain
+failed builds. Evidence: `artifacts/lsra-register-selection-1e0ae1a`, final
+`final`, with 14 actual TRXs and exact source/diagnostic-overlay verification.
+These Windows-hosted controls do not establish Linux runtime or generated-code parity.
+
 ## 2026-09-30: Whole register allocation traversal
 
 Optimized and minimal allocation traversal retain all target branches, ARM

@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "registerSelectionClosure": {
+      "scope": "Whole RegisterSelection::select preserves target branches and heuristic/tie-break order, restoring x86 byte-register preference and ARM32 double-half busy masks. The general caller gate is removed.",
+      "validation": "Linux integration91pass5fail->96pass/96D and78pass5fail->83pass/83R; direct8pass15fail->23pass/23D/R. Exact old/final test identities match and no old passing test regresses. Windows integration101D/88R and direct23D/23R pass; ARM64 integration110D/91R passes. Five isolated target error sets match, not successful builds.",
+      "retirement": "One whole definition, template, heading and declaration;477 native lines. selectMinimal, ARM32 debug stressLimitRegs and ARM64 consecutive-selection dependencies remain independent.",
+      "nativeBefore": "b99e9953ac57d76f11e409020b3804fddbf961de",
+      "nativeAfter": "47ee37374397a161575792b5d0b4a6808598495e",
+      "evidence": "artifacts/lsra-register-selection-1e0ae1a final;2497source files,14actualTRXs and paired diagnostic overlays/logs independently verified; selector retirement records.",
+      "limits": "Windows-hosted target controls establish source/IR behavior, not Linux runtime or generated-code parity."
+    },
     "allocationTraversalClosure": {
       "scope": "Whole optimized/minimal register allocation traversal preserves ARM double-width bookkeeping, target branches and the 32-bit GC this postpass. Lower-bank mask removal preserves other banks without referring to absent single-bank members.",
       "validation": "Windows integration101D/88R and direct65D/52R pass; ARM64 integration110D/91R passes. Linux integration remains91pass5fail/96D and78pass5fail/83R, with five cases advancing to retained RegisterSelection.select. Direct27->28passes/43D and19->20passes/35R; fifteen failure identities/messages match baseline. The new mask test passes on Windows/Linux Debug/Release. Five isolated target diagnostic sets match, not successful builds.",
@@ -1981,19 +1990,19 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Call/PInvoke committed50e4df9. Allocation traversal accepted and native b99e9953 retires1959lines; finish managed commit, then continue retained register selection. Call-argument lowering packet is source-ready for parent review. Parent owns source/evidence review and hidden launches; max2compiler-heavy commands,8GiB cutoff, immutable owned-only snapshots,13frozenWasm files and exact native retirement.",
+      "parentScope": "Call/PInvoke committed50e4df9 and allocation traversal1e0ae1a. Register selection accepted/native47ee3737, managed commit next; call-argument lowering finalwork-v2 controls complete, classify x86 diagnostic reachability before retirement. Parent owns source/evidence review and explicit hidden child launches; max2compiler-heavy commands,8GiB cutoff, immutable owned-only snapshots,13frozenWasm files and exact native retirement.",
       "wholeFunctionRepairLanes": [
         {
-          "scope": "Whole retained shared LSRA allocation traversal family.",
+          "scope": "Whole retained shared LSRA register-selection family.",
           "owner": "2aa4b7ae-79d5-4599-ad4a-eef9208ec3f0",
-          "files": "LinearScan allocation traversal/minimal partials and focused fixtures; parent owns shared contracts and native integration.",
-          "status": "final-v2 accepted after full source/evidence review;14TRXs and five paired diagnostic sets verified. Native b99e9953 retires both bodies1959lines; managed commit next. Next coherent boundary is retained RegisterSelection.select."
+          "files": "LinearScan RegisterSelection partials, necessary typed support and focused fixtures; parent owns shared contracts and native integration.",
+          "status": "selector final source/evidence accepted; all fifteen direct and five integration Linux failures pass in Debug/Release. Fourteen actualTRXs and equal five diagnostic sets verified. Native47ee3737 retires477lines; managed commit next. selectMinimal remains independent."
         },
         {
           "scope": "Whole retained call-argument lowering family.",
           "owner": "c25d48cd-9585-4ecc-9253-39bf6743137d",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "call/PInvoke committed50e4df9; lower-call-arguments-50e4df9 source ready for review/preparation. Covers LowerArg, split arguments, special-copy insertion and argument legalization with required compiler marker helpers; no native retirement yet."
+          "status": "call-argument whole-body source review accepted. work-v1 Windows45D/45R pass; Linux43pass2fail/45D/R matches old controls. work-v2 fixture-only correction passes ARM6418D/18R. Paired diagnostics executed; x86 reaches deeper preexisting errors after helper activation, worker classifying exact differences. No native retirement yet."
         },
         {
           "scope": "Whole retained shared kill-set family after return/write-barrier closure.",
@@ -2409,7 +2418,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Commit accepted allocation traversal final-v2 with related docs; native b99e9953 already retires1959lines, do not repeat. Then assign retained RegisterSelection.select whole family to2aa4b7ae. Review lower-call-arguments-50e4df9 source and run hidden preparation/validation with old controls included up front; c25d48cd source handoff collected. Call/PInvoke already committed50e4df9. Parent launches only, preserves13Wasm and native pin-plus-one; no publication. Process review18 at20min/streak0.",
+    "nextAction": "Commit accepted register selection with related docs; native47ee3737 already retires477lines, do not repeat. Then continue next dependency-coherent LSRA family. Call-arguments work-v2 ARM64 and unaffectedwork-v1 x64 controls complete; collect c25d48cd exact x86 diagnostic difference classification, independently verify source/TRXs/overlays and exact native spans, then integrate. Hidden extension tools remain unavailable, but process execution recovered through sessionfiles/Invoke-HiddenPortProcess.ps1: explicit UseShellExecute=false/CreateNoWindow=true children and guarded dotnet runners, no direct compiler launch. Preserve13Wasm and native pin-plus-one; no publication. Process review19 at20min/streak1.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

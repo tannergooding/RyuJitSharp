@@ -18,7 +18,6 @@ public sealed partial class LinearScan
             bool needsConsecutiveRegisters)
         {
             selectionScore = RegisterScore.NONE;
-#if (TARGET_AMD64 && WINDOWS_AMD64_ABI) || TARGET_ARM64
 #if TARGET_ARM64
             assert(!needsConsecutiveRegisters || refPosition.needsConsecutive);
 #endif
@@ -62,6 +61,10 @@ public sealed partial class LinearScan
 
             var nextRelatedInterval = _relatedInterval;
             var rangeEndInterval = _relatedInterval;
+#if TARGET_X86
+            const SingleTypeRegSet byteRegisters = SRBM_EAX | SRBM_ECX | SRBM_EDX | SRBM_EBX;
+            var avoidByteRegisters = (_relatedPreferences & ~byteRegisters) != SRBM_NONE;
+#endif
             while (nextRelatedInterval is not null)
             {
                 var nextRelatedReference = nextRelatedInterval.getNextRefPosition();
@@ -69,7 +72,14 @@ public sealed partial class LinearScan
                 {
                     var finalRelatedInterval = nextRelatedInterval;
                     nextRelatedInterval = null;
-                    var relatedPreferences = finalRelatedInterval.getCurrentPreferences() & _relatedPreferences;
+                    var intervalPreferences = finalRelatedInterval.getCurrentPreferences();
+                    var relatedPreferences = intervalPreferences & _relatedPreferences;
+#if TARGET_X86
+                    if (avoidByteRegisters && intervalPreferences == byteRegisters)
+                    {
+                        relatedPreferences = SRBM_NONE;
+                    }
+#endif
                     if (relatedPreferences != SRBM_NONE)
                     {
                         // Keep native isFree rather than the stronger availability check: the
@@ -176,6 +186,18 @@ public sealed partial class LinearScan
                 var busy = (_linearScan._regsBusyUntilKill | _linearScan._regsInUseThisLocation)
                     .GetRegSetForType(_regType);
                 _candidates &= ~busy;
+#if TARGET_ARM
+                if (currentInterval.registerType is TYP_DOUBLE)
+                {
+                    const SingleTypeRegSet oddDoubleRegisters =
+                        SRBM_F1 | SRBM_F3 | SRBM_F5 | SRBM_F7 |
+                        SRBM_F9 | SRBM_F11 | SRBM_F13 | SRBM_F15 |
+                        SRBM_F17 | SRBM_F19 | SRBM_F21 | SRBM_F23 |
+                        SRBM_F25 | SRBM_F27 | SRBM_F29 | SRBM_F31;
+                    var busyOddHalves = unchecked((ulong)(long)(busy & oddDoubleRegisters));
+                    _candidates &= ~unchecked((SingleTypeRegSet)(busyOddHalves >> 1));
+                }
+#endif
 #if DEBUG && TARGET_ARM64
                 inUseOrBusyRegsMask |= busy;
 #endif
@@ -403,11 +425,6 @@ public sealed partial class LinearScan
             assert(_found && isSingleRegister(_candidates));
             _foundRegBit = _candidates;
             return _candidates;
-#else
-            const string message = "General register selection outside Windows AMD64 is not implemented.";
-            JITDUMP($"\nCOMPILATION FAILED: {message}\n");
-            throw new FatalJitException(CORJIT_SKIPPED, message);
-#endif
         }
     }
 
