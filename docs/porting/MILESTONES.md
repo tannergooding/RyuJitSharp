@@ -16,6 +16,30 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole DEBUG register stress limiting
+
+Register stress limiting retains the native callee-bank constraints, minimum
+candidate counts, busy-register filtering, edit-and-continue handling and fixed
+references across the translated target branches. Unix AMD64's small integer
+set uses R12/R13 rather than the Windows RSI/RDI pair. One definition, heading
+and declaration retire 95 native lines in `188a735b`; the already-retired
+constraint helper is not counted again.
+
+The corrected Linux fixture fails only the ABI small-set case on old production
+and passes all five cases on final production. Windows old/final focused controls
+pass five cases each. Linux integration passes 96 old/final Debug cases; ARM64
+passes 110 each, plus its focused stress case. Final Windows integration passes
+101 Debug and 88 Release. Both owned deltas are entirely DEBUG-only; Linux and
+ARM64 Release controls were not rerun. Five paired target diagnostic sets are
+identical and remain failed builds.
+
+Evidence: `artifacts/lsra-stress-limiting-62d0336`, `final-v2`, with a fresh
+2,499-file archive, exact snapshot inventories, 12 actual TRXs, same-snapshot
+Windows binary reuse and paired diagnostic overlays independently verified.
+The rejected first fixture's extra failure was missing caller-trash setup;
+its evidence is preserved. These are managed target controls, not native
+runtime or generated-code parity.
+
 ## 2026-09-30: Whole control-flow-guard call lowering
 
 CFG call lowering preserves validated target expressions, VSD cloning,

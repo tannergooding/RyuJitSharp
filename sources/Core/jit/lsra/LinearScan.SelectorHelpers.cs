@@ -65,7 +65,11 @@ public sealed partial class LinearScan
                 _compiler.SRBM_INT_CALLEE_TRASH, _compiler.SRBM_FLT_CALLEE_TRASH, _compiler.SRBM_MSK_CALLEE_TRASH,
                 registerType),
             LimitSmallSet => getRegSetForType(
+#if UNIX_AMD64_ABI
+                SRBM_RAX | SRBM_RCX | SRBM_RBX | SRBM_ETW_FRAMED_EBP | SRBM_R12 | SRBM_R13,
+#else
                 SRBM_RAX | SRBM_RCX | SRBM_RBX | SRBM_ETW_FRAMED_EBP | SRBM_RSI | SRBM_RDI,
+#endif
                 SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_XMM6 | SRBM_XMM7,
                 SRBM_NONE,
                 registerType),
@@ -148,12 +152,146 @@ public sealed partial class LinearScan
         }
 
         return mask;
+#elif TARGET_X86 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
+        var limit = _lsraStressMask & 0x3;
+        if (limit == 0)
+        {
+            return mask;
+        }
+
+        var minimumCount = refPosition?.minRegCandidateCount ?? 1u;
+        switch (limit)
+        {
+            case 1:
+            {
+                if (!_compiler.opts.compDbgEnC)
+                {
+                    mask = getConstrainedRegMask(refPosition, registerType, mask,
+                        getOtherTargetStressCalleeMask(registerType, saved: true), minimumCount);
+                }
+                break;
+            }
+            case 2:
+            {
+                mask = getConstrainedRegMask(refPosition, registerType, mask,
+                    getOtherTargetStressCalleeMask(registerType, saved: false), minimumCount);
+                break;
+            }
+            case 3:
+            {
+                // The floating subset keeps five registers for Vector4 InitN; ARM32
+                // also needs six integer registers for virtual-call target setup.
+#if TARGET_X86
+                const SingleTypeRegSet smallInt = SRBM_EAX | SRBM_ECX | SRBM_EDI;
+                const SingleTypeRegSet smallFloat = SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_XMM6 | SRBM_XMM7;
+#elif TARGET_ARM
+                const SingleTypeRegSet smallInt = SRBM_R0 | SRBM_R1 | SRBM_R2 | SRBM_R3 | SRBM_R4 | SRBM_R5;
+                const SingleTypeRegSet smallFloat = SRBM_F0 | SRBM_F1 | SRBM_F2 | SRBM_F16 | SRBM_F17;
+#elif TARGET_LOONGARCH64
+                const SingleTypeRegSet smallInt = SRBM_T1 | SRBM_T3 | SRBM_A0 | SRBM_A1 | SRBM_T0;
+                const SingleTypeRegSet smallFloat = SRBM_F0 | SRBM_F1 | SRBM_F2 | SRBM_F8 | SRBM_F9;
+#elif TARGET_RISCV64
+                const SingleTypeRegSet smallInt = SRBM_T1 | SRBM_T3 | SRBM_A0 | SRBM_A1 | SRBM_T0;
+                const SingleTypeRegSet smallFloat = SRBM_FT0 | SRBM_FT1 | SRBM_FT2 | SRBM_FS0 | SRBM_FS1;
+#endif
+                if ((mask & smallInt) != SRBM_NONE)
+                {
+                    mask = getConstrainedRegMask(refPosition, registerType, mask, smallInt, minimumCount);
+                }
+                else if ((mask & smallFloat) != SRBM_NONE)
+                {
+                    mask = getConstrainedRegMask(refPosition, registerType, mask, smallFloat, minimumCount);
+                }
+                break;
+            }
+        }
+
+        if (refPosition is not null && refPosition.isFixedRegRef)
+        {
+            mask |= refPosition.registerAssignment;
+        }
+
+        return mask;
 #else
-        NYI("LSRA stress register limiting outside AMD64");
+        NYI("LSRA stress register limiting on this target");
         fatal(CORJIT_IMPLLIMITATION);
-        throw new FatalJitException("LSRA stress register limiting outside AMD64.");
+        throw new FatalJitException("LSRA stress register limiting on this target is not ported.");
 #endif
     }
+
+#if TARGET_X86 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
+    private SingleTypeRegSet getOtherTargetStressCalleeMask(RegisterType registerType, bool saved)
+    {
+#if TARGET_X86
+        const SingleTypeRegSet intSaved = SRBM_EBX | SRBM_ESI | SRBM_EDI;
+        const SingleTypeRegSet intTrash = SRBM_EAX | SRBM_ECX | SRBM_EDX;
+        const SingleTypeRegSet floatSaved = SRBM_NONE;
+        const SingleTypeRegSet floatTrash =
+            SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_XMM3 |
+            SRBM_XMM4 | SRBM_XMM5 | SRBM_XMM6 | SRBM_XMM7;
+#elif TARGET_ARM
+        const SingleTypeRegSet intSaved =
+            SRBM_R4 | SRBM_R5 | SRBM_R6 | SRBM_R7 | SRBM_R8 | SRBM_R9 | SRBM_R10;
+        const SingleTypeRegSet intTrash =
+            SRBM_R0 | SRBM_R1 | SRBM_R2 | SRBM_R3 | SRBM_R12 | SRBM_LR;
+        const SingleTypeRegSet floatSaved =
+            SRBM_F16 | SRBM_F17 | SRBM_F18 | SRBM_F19 |
+            SRBM_F20 | SRBM_F21 | SRBM_F22 | SRBM_F23 |
+            SRBM_F24 | SRBM_F25 | SRBM_F26 | SRBM_F27 |
+            SRBM_F28 | SRBM_F29 | SRBM_F30 | SRBM_F31;
+        const SingleTypeRegSet floatTrash =
+            SRBM_F0 | SRBM_F1 | SRBM_F2 | SRBM_F3 |
+            SRBM_F4 | SRBM_F5 | SRBM_F6 | SRBM_F7 |
+            SRBM_F8 | SRBM_F9 | SRBM_F10 | SRBM_F11 |
+            SRBM_F12 | SRBM_F13 | SRBM_F14 | SRBM_F15;
+#elif TARGET_LOONGARCH64
+        const SingleTypeRegSet intSaved =
+            SRBM_S0 | SRBM_S1 | SRBM_S2 | SRBM_S3 | SRBM_S4 |
+            SRBM_S5 | SRBM_S6 | SRBM_S7 | SRBM_S8;
+        const SingleTypeRegSet intTrash =
+            SRBM_A0 | SRBM_A1 | SRBM_A2 | SRBM_A3 | SRBM_A4 |
+            SRBM_A5 | SRBM_A6 | SRBM_A7 | SRBM_T0 | SRBM_T1 |
+            SRBM_T2 | SRBM_T3 | SRBM_T4 | SRBM_T5 | SRBM_T6 |
+            SRBM_T7 | SRBM_T8;
+        const SingleTypeRegSet floatSaved =
+            SRBM_F24 | SRBM_F25 | SRBM_F26 | SRBM_F27 |
+            SRBM_F28 | SRBM_F29 | SRBM_F30 | SRBM_F31;
+        const SingleTypeRegSet floatTrash =
+            SRBM_F0 | SRBM_F1 | SRBM_F2 | SRBM_F3 |
+            SRBM_F4 | SRBM_F5 | SRBM_F6 | SRBM_F7;
+#else
+        const SingleTypeRegSet intSaved =
+            SRBM_S1 | SRBM_S2 | SRBM_S3 | SRBM_S4 | SRBM_S5 |
+            SRBM_S6 | SRBM_S7 | SRBM_S8 | SRBM_S9 | SRBM_S10 | SRBM_S11;
+        const SingleTypeRegSet intTrash =
+            SRBM_A0 | SRBM_A1 | SRBM_A2 | SRBM_A3 | SRBM_A4 |
+            SRBM_A5 | SRBM_A6 | SRBM_A7 | SRBM_T0 | SRBM_T1 |
+            SRBM_T2 | SRBM_T3 | SRBM_T4 | SRBM_T5 | SRBM_T6;
+        const SingleTypeRegSet floatSaved =
+            SRBM_FS0 | SRBM_FS1 | SRBM_FS2 | SRBM_FS3 |
+            SRBM_FS4 | SRBM_FS5 | SRBM_FS6 | SRBM_FS7 |
+            SRBM_FS8 | SRBM_FS9 | SRBM_FS10 | SRBM_FS11;
+        const SingleTypeRegSet floatTrash =
+            SRBM_FA0 | SRBM_FA1 | SRBM_FA2 | SRBM_FA3 |
+            SRBM_FA4 | SRBM_FA5 | SRBM_FA6 | SRBM_FA7 |
+            SRBM_FT0 | SRBM_FT1 | SRBM_FT2 | SRBM_FT3 |
+            SRBM_FT4 | SRBM_FT5 | SRBM_FT6 | SRBM_FT7 |
+            SRBM_FT8 | SRBM_FT9 | SRBM_FT10 | SRBM_FT11;
+#endif
+        if (varTypeUsesFloatReg(registerType))
+        {
+            return saved ? floatSaved : floatTrash;
+        }
+
+#if TARGET_X86 && FEATURE_MASKED_HW_INTRINSICS
+        if (varTypeUsesMaskReg(registerType))
+        {
+            return saved ? SRBM_NONE : _compiler.SRBM_MSK_CALLEE_TRASH;
+        }
+#endif
+        return saved ? intSaved : intTrash;
+    }
+#endif
 
 #if TARGET_AMD64
     private static SingleTypeRegSet getRegSetForType(
