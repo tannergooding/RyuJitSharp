@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "registerAssignmentClosure": {
+      "scope": "Whole general allocation and required isAssigned helper retain ARM32 double spilling, second-half occupancy and previous-interval bookkeeping; existing general/minimal copy bodies preserve home register, related interval and active state.",
+      "validation": "Linux integration97D/84R, Windows102D/89R and direct Windows/Linux24D/23R pass. ARM64110D/91R pass. New minimal-copy fixture passes old production;26actualTRXs verify no selected old pass lost and exact initialfinal/final-v2 identities. Five paired target error sets14/92/85/85/81match and remain failed builds.",
+      "retirement": "Four definitions, templates, headings and declarations;239native lines. Two newly completed definitions137lines; two pretranslated copy-assignment bodies102lines of retirement catchup. Pair lookup/unassignDoublePhysReg and other independent assignment dependencies remain retained.",
+      "nativeBefore": "e1622d06904af0323534c801d7149eea1ddf7f2c",
+      "nativeAfter": "7593d46fc3f0dcf1e059f7eabc19d2bbd74e59be",
+      "evidence": "artifacts/lsra-register-assignment-3f9200d final-v2; exact2499file Gitarchive baseline and overlays,26actualTRXs, explicit command target/configuration and same-snapshot reuse,10diagnostic logs and byte-exact eight parser masks independently verified.",
+      "limits": "ARM32 double execution remains blocked by baseline compilation and terminating pair dependencies. Preservation fixture is not an old-failing regression; target controls and retirement are not native runtime or generated-code parity."
+    },
     "tailcallLoweringClosure": {
       "scope": "Five whole tailcall bodies preserve profiler insertion and mark clearing, overlapping stack arguments and temporary ownership, GC-free-region order, ARM32 long low/high rehoming and x86 JIT-helper placeholder/flag/word-count semantics.",
       "validation": "Windows58D/58R pass; Linux56pass2fail/58D/R matches accepted outgoing-area failure identities/messages. ARM6415D/15R pass. Old tailcall preservation controls13 Windows/LinuxDebug and13 ARM64D/R pass; exact unions/subsets retain accepted argument cases. Five isolated diagnostic sets14/92/85/85/81match and remain failed builds.",
@@ -2018,19 +2027,25 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Tailcall final-v2 whole source/evidence accepted;16actualTRXs including6reused argument controls,2499files and five identical diagnostic sets verified. Nativee1622d06 retires499lines; managed coherent commit next. General/copy register assignment first16controls pass; tightly coupled ARM32 isAssigned dependency corrected and parent-reviewed, immutablefinal-v2 and paired diagnostic clones prepared for affected builds. Parent owns acceptance and direct hidden extension compiler launches; max2compiler-heavy commands,8GiB cutoff, immutable snapshots,13frozenWasm files.",
+      "parentScope": "Tailcall committed62d0336; general/copy assignment final-v2 source/evidence accepted and native7593d46f retires239lines, coherent managed commit next. Three implementation roles plus independent review, one hidden CFG validation role and one evidence-proof role form a bounded6-role pool. Compiler slots remain2globally: parent1/CFGvalidation1, serial per slot,8GiB cutoff. Freeze ready packets while acceptance catches up;13Wasm and pin-plus-one preserved.",
       "wholeFunctionRepairLanes": [
         {
-          "scope": "Whole retained shared LSRA general/copy assignment and required isAssigned helper.",
+          "scope": "Whole retained shared LSRA DEBUG stress register limiting.",
           "owner": "2aa4b7ae-79d5-4599-ad4a-eef9208ec3f0",
-          "files": "LinearScan RegisterSelection partials, necessary typed support and focused fixtures; parent owns shared contracts and native integration.",
-          "status": "Minimal pair committed3f9200d; general/copy assignment initial16controls pass and wholebody reviewed. ARM32 isAssigned second-half omission corrected and parent-reviewed against oracle, immutablefinal-v2 and paired old/final-diag-v2 clones prepared; affected builds pending. Four definitions proposed; two copy bodies are retirement catchup."
+          "files": "LinearScan.SelectorHelpers.cs and dedicated stress fixture; assignment3files frozen until managedcommit. Parent owns shared declarations and native integration.",
+          "status": "Assignment final-v2 accepted with26TRXs and fiveequal diagnosticsets; native7593d46f retires4defs239lines. Stress limiting whole source reviewed; Unix small-set old-source regression expected, preparation/validation pending. getConstrainedRegMask already absent, excluded."
         },
         {
-          "scope": "Whole retained tailcall lowering family.",
+          "scope": "Whole retained CFG and shift/rotate lowering families.",
           "owner": "c25d48cd-9585-4ecc-9253-39bf6743137d",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "Five whole bodies source/evidence accepted; Windows58D/R, ARM6415D/R, Linux56pass2baselinefailD/R.16actualTRXs including6accepted argument controls and exactfive diagnosticsets verified. Nativee1622d06 retires499lines; coherent managed commit next. CFG remains independent."
+          "status": "Tailcall committed62d0336. CFG whole source reviewed and hidden validation delegated; source frozen. Shift/rotate source reviewed and both unsigned64mask/RISCguard defects corrected with scoped acceptance; preparation/old-source regression pending. Xarch rotate already absent, excluded."
+        },
+        {
+          "scope": "Whole xarch frame setup, stack probing and localloc family.",
+          "owner": "239a0205-bbd7-4aa9-bc1d-2f7b24501d76",
+          "files": "CodeGen.PrologFrameSetup.cs, CodeGen.LocalHeap.cs and frame fixture; parent-owned x86Globals prerequisites.",
+          "status": "Seven whole bodies source-reviewed. Parent verified/integrated native x86 constants, packet overlay updated; immutable preparation and full-analysis controls pending. Shared ARM frame declarations and existing emitter/unwind boundaries remain retained."
         },
         {
           "scope": "Whole retained shared kill-set family after return/write-barrier closure.",
@@ -2446,7 +2461,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Execute lsra-register-assignment-3f9200d corrected final-v2 selected integration/direct controls and paired old-diag/final-diag-v2 five-target diagnostic matrix; helper isAssigned source-reviewed and snapshots prepared. Independently verify all actual identities/overlays before four-function retirement, anchor nativee1622d06. Tailcall finalwork-v2 accepted with16actualTRXs including6reused controls, source/native already verified and499lines retired; commit coherent managed batch before continuing and never reapply native spans. Minimal pair committed3f9200d. Reuse2aa4b7ae/c25d48cd for whole next families, no app sessions/publication. Direct hidden extension compiler tools recovered; preserve13Wasm,8GiB cutoff and pin-plus-one. Process review20,40min cadence/streak0.",
+    "nextAction": "Commit accepted assignment batch with related docs; native7593d46f already retires239lines, do not repeat. Then parent prepares/executes source-reviewed lsra-stress-limiting-62d0336 old-fixture-first DEBUG controls (Unix small-set case expected oldfail), overlapping e0d0b7c7 hidden CFG validation at onecompiler slot each. ef60cfd1 assignment proof accepted/rerun; collect CFG evidence once notified and independently review before retirement anchored7593d46f. Shift/rotate corrected source and frame/probing7whole bodies source-reviewed, queued behind bounded acceptance; parent x86Globals prerequisite belongs only frame batch. Tailcall committed62d0336. Preserve13Wasm, pin-plus-one and8GiB cutoff, no app sessions/publication. Process review21,40min cadence/streak0; six bounded roles address acceptance bottleneck, not six compiler processes.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

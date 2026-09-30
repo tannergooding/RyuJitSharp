@@ -16,7 +16,22 @@ public sealed partial class LinearScan
     private bool isAssigned(RegRecord regRecord, RegisterType newRegisterType)
     {
         assert(newRegisterType is not TYP_UNDEF and not TYP_STRUCT);
-        return regRecord.assignedInterval is not null;
+        if (regRecord.assignedInterval is not null)
+        {
+            return true;
+        }
+
+#if TARGET_ARM
+        if (newRegisterType is TYP_DOUBLE)
+        {
+            var otherHalf = getSecondHalfRegRec(regRecord);
+            if (otherHalf.assignedInterval is not null)
+            {
+                return true;
+            }
+        }
+#endif
+        return false;
     }
 
     private void checkAndAssignInterval(RegRecord regRecord, Interval interval)

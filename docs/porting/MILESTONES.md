@@ -16,6 +16,28 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole general and copy register assignment
+
+General allocation preserves ARM32 double-register spill selection and
+previous-interval bookkeeping. `isAssigned` checks the second half of a double
+when the chosen even register is empty. Independently unported paired-register
+helpers remain terminating dependencies, not omitted caller branches.
+The existing general and minimal copy-assignment bodies preserve the interval's
+home register, related interval and active state after creating a temporary copy.
+
+Four definitions, templates, headings and declarations retire 239 native lines
+in `7593d46f`: two newly completed definitions account for 137 lines and two
+already-translated copy-assignment bodies account for 102 lines of retirement
+catchup. Linux integration passes 97 Debug/84 Release and Windows passes
+102/89; direct Windows/Linux controls pass 24/23. ARM64 passes 110/91.
+The new minimal-copy fixture passes old production and final; all earlier
+selected passing identities remain unchanged. Five isolated target diagnostic
+sets match and remain failed builds.
+Evidence: `artifacts/lsra-register-assignment-3f9200d`, final `final-v2`,
+with 2,499-file snapshots, 26 actual TRXs and paired diagnostic overlays/logs
+independently verified. ARM32 double allocation remains source-only behind
+target build failures and retained pair helpers; no generated-code parity claim.
+
 ## 2026-09-30: Whole tailcall lowering
 
 Tailcall lowering preserves profiler-hook placement, argument mark clearing,

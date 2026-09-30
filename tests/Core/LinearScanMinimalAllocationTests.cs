@@ -85,6 +85,33 @@ internal static unsafe class LinearScanMinimalAllocationTests
         });
     }
 
+    [Test]
+    public static void MinimalCopyAssignmentRestoresHomeAndRelatedInterval()
+    {
+        WithAllocator((compiler, allocator) => {
+            var interval = NewInterval(allocator, TYP_INT);
+            var tree = compiler.gtNewIconNode(TYP_INT, 1);
+            var definition = allocator.newRefPosition(interval, 1, RefType.RefTypeDef, tree, SRBM_RAX);
+            var use = allocator.newRefPosition(interval, 10, RefType.RefTypeUse, tree, SRBM_RBX);
+            interval.recentRefPosition = definition;
+            var home = allocator.physRegs[(int)regNumber.REG_RAX];
+            AssignPhysReg(allocator, home, interval);
+            var related = NewInterval(allocator, TYP_INT);
+            interval.relatedInterval = related;
+
+            var selected = AssignCopyRegMinimal(allocator, use);
+
+            Assert.That(selected, Is.EqualTo(regNumber.REG_RBX));
+            Assert.That(use.copyReg, Is.True);
+            Assert.That(use.RegOptional(), Is.False);
+            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_RAX));
+            Assert.That(interval.assignedReg, Is.SameAs(home));
+            Assert.That(interval.relatedInterval, Is.SameAs(related));
+            Assert.That(interval.isActive, Is.True);
+            Assert.That(allocator.physRegs[(int)regNumber.REG_RBX].assignedInterval, Is.SameAs(interval));
+        });
+    }
+
 #if DEBUG
     [Test]
     public static void SpillingEmitsNativeAllocationEventText()
@@ -119,6 +146,9 @@ internal static unsafe class LinearScanMinimalAllocationTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "allocateRegMinimal")]
     private static extern regNumber AllocateRegMinimal(
         LinearScan allocator, Interval interval, RefPosition refPosition);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "assignCopyRegMinimal")]
+    private static extern regNumber AssignCopyRegMinimal(LinearScan allocator, RefPosition refPosition);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "assignPhysReg")]
     private static extern void AssignPhysReg(LinearScan allocator, RegRecord register, Interval interval);

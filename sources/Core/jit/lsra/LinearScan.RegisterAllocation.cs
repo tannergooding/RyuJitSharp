@@ -129,25 +129,48 @@ public sealed partial class LinearScan
         var assigned = record.assignedInterval;
         if (assigned != currentInterval && isAssigned(record, getRegisterType(currentInterval, reference)))
         {
-            assert(assigned is not null);
             if (_regSelector.isSpilling())
             {
-                unassignPhysReg(record, assigned.recentRefPosition);
+#if TARGET_ARM
+                if (currentInterval.registerType is TYP_DOUBLE)
+                {
+                    assert(genIsValidDoubleReg(record.regNum));
+                    unassignDoublePhysReg(record);
+                }
+                else if (assigned is Interval assignedDouble && assignedDouble.registerType is TYP_DOUBLE)
+                {
+                    var firstHalf = assignedDouble.assignedReg
+                        ?? throw new FatalJitException("An assigned ARM32 double must retain its first register.");
+                    assert(genIsValidDoubleReg(firstHalf.regNum));
+                    unassignPhysReg(firstHalf, assignedDouble.recentRefPosition);
+                }
+                else
+#endif
+                {
+                    assert(assigned is not null);
+                    unassignPhysReg(record, assigned.recentRefPosition);
+                }
             }
             else
             {
                 // Unassignment clears physReg; remember the historical association first.
-                var wasAssigned = _regSelector.foundUnassignedReg() && assigned.physReg == register;
+                var wasAssigned = _regSelector.foundUnassignedReg() &&
+                    (assigned is not null) && (assigned.physReg == register);
                 unassignPhysReg(record, currentInterval.registerType);
                 if (_regSelector.isMatchingConstant() && _compiler.opts.OptimizationEnabled)
                 {
-                    assert(assigned.isConstant);
+                    assert(assigned is not null && assigned.isConstant);
                     assert(reference.treeNode is not null);
                     reference.treeNode.IsReuseRegVal = true;
                 }
                 else if (wasAssigned)
                 {
+                    assert(assigned is not null);
+#if TARGET_ARM
+                    updatePreviousInterval(record, assigned, assigned.registerType);
+#else
                     updatePreviousInterval(record, assigned);
+#endif
                 }
                 else
                 {
@@ -160,6 +183,24 @@ public sealed partial class LinearScan
         reference.registerAssignment = bit;
         return register;
     }
+
+#if TARGET_ARM
+    private void unassignDoublePhysReg(RegRecord record)
+    {
+        NYI("LinearScan.unassignDoublePhysReg for ARM32 double-register spilling");
+        fatal(CORJIT_IMPLLIMITATION);
+        throw new FatalJitException("ARM32 double-register spilling is not ported.");
+    }
+
+    private void updatePreviousInterval(RegRecord record, Interval interval, RegisterType registerType)
+    {
+        updatePreviousInterval(record, interval);
+        if (registerType is TYP_DOUBLE)
+        {
+            findAnotherHalfRegRec(record).previousInterval = interval;
+        }
+    }
+#endif
 
     private regNumber assignCopyReg(RefPosition reference) => assignCopyReg(reference, false);
 
