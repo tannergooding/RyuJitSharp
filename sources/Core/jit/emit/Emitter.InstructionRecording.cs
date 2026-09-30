@@ -73,7 +73,16 @@ public partial class Emitter
 #if TARGET_ARM
     private bool emitInsIsLoadOrStore(instruction ins)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 instruction memory classification is not ported.");
+        // ARM32 instInfo uses the LD/ST bits from the native emitarm.cpp table.
+        const byte LD = 2;
+        const byte ST = 4;
+
+        if ((uint)ins < (uint)CodeGen.instInfo.Length)
+        {
+            return (CodeGen.instInfo[(int)ins] & (LD | ST)) != 0;
+        }
+
+        return false;
     }
 #endif
 }

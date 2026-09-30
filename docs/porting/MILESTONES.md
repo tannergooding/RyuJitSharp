@@ -16,6 +16,30 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: ARM32 immediate validation and materialization
+
+Whole ARM32 immediate/displacement validators, Thumb modified-immediate
+predicates, low-register classification and register-immediate materialization
+now preserve the native algorithms. Relocation addresses and zero checks remain
+host-sized before nonrelocatable values narrow to 32 bits; MOVW/MOVT, SXTH and
+flag-setting choices retain their native order. Recording helpers remain
+independent terminating dependencies.
+
+This batch also corrects the common frontend's class-closing target guard:
+non-xarch preprocessing now retains the class closing brace, without changing
+xarch code. Eight baseline/final Windows/Linux Debug/Release controls each pass
+forty-eight cases. Paired ARM32 diagnostics retain the same seventy-eight errors
+and zero warnings, with no ARM32 tests executed. The sixty-two new ARM32 cases
+remain source-only; declaration failures can mask later body diagnostics.
+
+Seventeen whole definitions and fifteen exclusive declarations retire 297
+native lines. Every body and guard is oracle-authenticated; the already-absent
+intervening branch-link validator is not counted again. Exact reconstruction and
+native consolidation preserve independent classifiers, encoding helpers,
+recording bodies and tables. The original parser failure and memory-stopped
+run remain invalid historical evidence, separate from the fresh accepted runs.
+These checks do not establish ARM32 execution or generated-code parity.
+
 ## 2026-09-30: Common instruction frontend and target tables
 
 Instruction names, operand-size strings, zero-operand generation, FP and

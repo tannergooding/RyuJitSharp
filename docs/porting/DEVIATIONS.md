@@ -1518,8 +1518,9 @@ Common `inst_RV` and `inst_RV_IV` retain native sizing and target dispatch,
 including target32 immediate truncation and AMD64 zero-extended MOV selection.
 LoongArch/RISC-V retain the upstream unused-path NYI diagnostics followed by
 explicit termination if `AltJitAssertOnNYI` permits those diagnostics to return.
-The ARM32 immediate validator and register-immediate materializer remain typed
-terminating dependencies; their native bodies and declarations remain.
+The ARM32 immediate validator and register-immediate materializer now retain
+their complete native algorithms. Independent recording dependencies still
+terminate; their native bodies remain.
 The adjacent register/register adapter now retains whole native target dispatch
 and actual-type sizing; ARM32's flags-aware recording remains a terminating
 dependency whose independent native definition is retained.
@@ -1581,6 +1582,23 @@ Independent recording helpers remain unsupported where already tracked.
 Forty-eight AMD64 cases pass in each Windows/Linux configuration, but the
 fourteen earlier x86 declaration errors and source-only ARM32/ARM64/Wasm
 controls do not establish other-target compilation, execution or code parity.
+
+ARM32 immediate/displacement validators and Thumb modified-immediate predicates
+retain target-width numeric semantics. Register-immediate materialization tests
+relocation and zero at host `ssize_t` width before narrowing nonrelocatable values
+to 32 bits; relocation addresses keep their host-width bit pattern. Its native
+MOVW/MOVT, low-register SXTH and flag-setting sequence is preserved. ARM32
+memory classification reads the generated LD/ST metadata with bounds checks,
+including synthetic and unknown instructions.
+
+The frontend class guard now closes before the unconditional class closing
+brace, correcting non-xarch syntax without changing xarch preprocessing.
+Paired ARM32 diagnostics retain seventy-eight existing errors and zero warnings;
+sixty-two ARM32 fixture cases remain source-only. Early declarations can mask
+later body diagnostics. Eight forty-eight-case AMD64 controls do not establish
+ARM32 compilation, execution or code parity. Independent native recording,
+encoding and classifier helpers remain; already-retired branch-link validation
+is excluded from this batch's retirement.
 
 `LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
 performs conservative frame layout before reserving IP1 and reserves x19 when

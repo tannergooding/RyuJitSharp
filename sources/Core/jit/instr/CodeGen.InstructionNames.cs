@@ -253,5 +253,5 @@ public sealed partial class CodeGen
         }
         return insName;
     }
-}
 #endif
+}
