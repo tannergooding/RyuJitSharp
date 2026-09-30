@@ -261,6 +261,65 @@ internal static unsafe class Arm64LinearScanConstructionTests
     }
 
     [Test]
+    public static void ContainedArm64NodeDoesNotBuildReferences()
+    {
+        WithCompiler(false, false, (compiler, _) => {
+            var allocator = new LinearScan(compiler);
+            var constant = new GenTreeIntCon(TYP_INT, 42) { IsContained = true };
+
+            BuildRefPositionsForNode(allocator, constant, 2);
+
+            Assert.That(allocator.refPositions, Is.Empty);
+        });
+    }
+
+#if DEBUG
+    [Test]
+    public static void Amd64OnlyRegisterStressDoesNotConstrainArm64NodeReferences()
+    {
+        WithCompiler(false, false, (compiler, _) => {
+            var allocator = new LinearScan(compiler);
+            var constant = new GenTreeIntCon(TYP_INT, 42);
+            ReferenceBuildLocation(allocator) = 2;
+            BuildRefPositionsForNode(allocator, constant, 2);
+            StressMask(allocator) = 0x2000;
+            var negate = new GenTreeUnOp(GT_NEG, TYP_INT, constant);
+
+            ReferenceBuildLocation(allocator) = 4;
+            BuildRefPositionsForNode(allocator, negate, 4);
+
+            Assert.That(allocator.refPositions[^1].minRegCandidateCount, Is.EqualTo(1u));
+            Assert.That(allocator.refPositions[0].nextRefPosition?.minRegCandidateCount, Is.EqualTo(1u));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ConsecutiveDefinitionSkipsReversePreferenceConflicts(bool consecutive)
+    {
+        WithCompiler(false, false, (compiler, _) => {
+            var allocator = new LinearScan(compiler);
+            var constant = new GenTreeIntCon(TYP_INT, 42);
+            ReferenceBuildLocation(allocator) = 2;
+            BuildRefPositionsForNode(allocator, constant, 2);
+            var definition = allocator.refPositions[^1];
+            definition.registerAssignment = SRBM_R0;
+            definition.needsConsecutive = consecutive;
+            StressMask(allocator) = 0x08;
+            var negate = new GenTreeUnOp(GT_NEG, TYP_INT, constant);
+
+            ReferenceBuildLocation(allocator) = 4;
+            BuildRefPositionsForNode(allocator, negate, 4);
+
+            var use = definition.nextRefPosition
+                ?? throw new AssertionException("Missing use of consecutive definition.");
+            Assert.That(use.registerAssignment & SRBM_R0, Is.EqualTo(SRBM_NONE));
+            Assert.That(definition.getInterval().hasConflictingDefUse, Is.EqualTo(!consecutive));
+        });
+    }
+#endif
+
+    [Test]
     public static void FiniteCheckDefinesResultBeforeInternalRegisterUse()
     {
         WithCompiler(false, false, (compiler, codeGen) => {
@@ -947,6 +1006,9 @@ internal static unsafe class Arm64LinearScanConstructionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildRefPositionsForNode")]
     private static extern void BuildRefPositionsForNode(LinearScan allocator, GenTree tree, uint location);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_referenceBuildLocation")]
+    private static extern ref uint ReferenceBuildLocation(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "getNextConsecutiveRefPosition")]
     private static extern RefPosition? NextConsecutive(LinearScan allocator, RefPosition position);

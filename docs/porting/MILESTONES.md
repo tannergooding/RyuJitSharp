@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Shared node-reference and physical-register construction
+
+Node-reference traversal now preserves all-target entry, xarch contained-local
+handling, target-specific stress masks and ARM64's consecutive-definition
+exemption (B471). The existing physical-register initializer retains native
+register-bank ordering. Two functions, their declarations and eight associated
+register-order array/size definitions retire 276 native lines in `2102dee8`.
+
+ARM64 controls pass 84 Debug/66 Release; old Debug fails the two corrected stress
+cases. Windows node/reference/physical-register controls pass 20 Debug/13 Release,
+and Linux Debug controls pass 18. Physical-register acceptance reuses unchanged
+full-analysis binaries. Paired x86 builds stop at four existing syntax errors;
+other-target dependencies remain explicit. Evidence:
+`artifacts/lsra-node-traversal-e6a812b`. No target runtime or generated-code parity
+is claimed.
+
 ## 2026-09-29: Whole xarch indirect loads and stores
 
 Indirect load/store generation now retains the x86 TLS segment, byte-swap and

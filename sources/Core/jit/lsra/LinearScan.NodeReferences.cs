@@ -56,7 +56,6 @@ public sealed partial class LinearScan
 
     private void buildRefPositionsForNode(GenTree tree, LsraLocation currentLocation)
     {
-#if TARGET_AMD64 || TARGET_ARM64
 #if DEBUG
         if (VERBOSE)
         {
@@ -67,9 +66,7 @@ public sealed partial class LinearScan
 
         if (tree.IsContained)
         {
-#if TARGET_ARM64
-            assert(!isCandidateLocalRef(tree));
-#else
+#if TARGET_XARCH
             if (tree.Oper.IsLocal && ((tree.Flags & GTF_VAR_DEATH) != 0))
             {
                 ref var local = ref _compiler.lvaGetDesc(tree.AsLclVarCommon().LclNum);
@@ -81,6 +78,8 @@ public sealed partial class LinearScan
                     updatePreferencesOfDyingLocal(getIntervalForLocalVar(varIndex));
                 }
             }
+#else
+            assert(!isCandidateLocalRef(tree));
 #endif
             JITDUMP("Contained\n");
             return;
@@ -99,8 +98,11 @@ public sealed partial class LinearScan
         _ = produced;
         assert((consumed == 0) || (computeAvailableSrcCount(tree) == consumed));
 
-        // lsra.h packs the AMD64 register limits and selection heuristics into the stress mask.
+#if TARGET_AMD64
         const int registerLimitMask = 0x6003;
+#else
+        const int registerLimitMask = 0x3;
+#endif
         const int selectionHeuristicsMask = 0x1c;
         if ((_lsraStressMask & (registerLimitMask | selectionHeuristicsMask)) != 0)
         {
@@ -174,7 +176,15 @@ public sealed partial class LinearScan
                     if ((reference.registerAssignment != previousCandidates) &&
                         (reference.refType is RefType.RefTypeUse) && !interval.isLocalVar)
                     {
-                        checkConflictingDefUse(reference);
+#if TARGET_ARM64
+                        var firstReference = interval.firstRefPosition;
+                        assert(firstReference is not null);
+                        assert(firstReference.treeNode is not null);
+                        if (!firstReference.isLiveAtConsecutiveRegistersLoc(_consecutiveRegistersLocation))
+#endif
+                        {
+                            checkConflictingDefUse(reference);
+                        }
                     }
                 }
             }
@@ -182,8 +192,5 @@ public sealed partial class LinearScan
         }
 #endif
         JITDUMP("\n");
-#else
-        throw new FatalJitException("LSRA node reference building is not implemented outside AMD64.");
-#endif
     }
 }

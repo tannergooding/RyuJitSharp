@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "sharedNodeReferenceConstructionClosure": {
+      "scope": "Whole buildRefPositionsForNode preserves all-target traversal, xarch-only contained-local handling, target-specific stress masks and the ARM64 first-definition consecutive-register exemption. Existing buildPhysRegRecords preserves native register-bank ordering.",
+      "validation": "ARM64 controls pass84 Debug/66 Release; the same old Debug fixtures fail exactly two stress cases. Windows node/reference/physical-register controls pass20 Debug/13 Release; Linux Debug controls pass18. Physical-register cases reuse unchanged full-analysis binaries with fresh results.",
+      "retirement": "Two definitions, eight associated register-order array/size definitions, headings and declarations;276 native lines.",
+      "nativeBefore": "8bc4e5b9f2748e76d17a74d34890daaea98a9f3a",
+      "nativeAfter": "2102dee885034646889cf01b4d6fb4f4530b30ef",
+      "evidence": "artifacts/lsra-node-traversal-e6a812b/ready-results.json and node-traversal retirement records.",
+      "limits": "B471 records port omissions, not upstream bugs. Paired x86 builds retain four earlier syntax diagnostics; other-target buildNode/register-stress dependencies remain typed terminating boundaries. Windows-hosted target controls are not target runtime or generated-code parity."
+    },
     "xarchIndirectClosure": {
       "scope": "Whole indirect load/store generation preserves 32-bit FS versus 64-bit GS TLS loads, AMD64-only APX selection and x86 long intrinsic stores. The independent x86 optimized-barrier helper remains retained with a terminating managed dependency.",
       "validation": "All63 old Linux indirect-store guard failures pass on final source. Full-analysis Linux and Windows focused controls each pass343 Debug/327 Release.",
@@ -1815,7 +1824,7 @@
       "caution": "Current backend allocation/codegen/emitter exclusions checked in this pass target non-Windows or non-AMD64 configurations. Commented callback declarations and historical baseline gaps are not an inventory of missing Windows implementations."
     },
     "activeBatch": {
-      "scope": "Four independent xarch lanes cover retained codegen, lowering, LSRA and SIMD/hardware codegen definitions. Parent prioritizes integration and the Windows-x64 remainder after completing ARM64 constant-node materialization; shared contracts, generators and native mutations remain centrally owned.",
+      "scope": "Two implementation lanes cover retained shared/xarch LSRA and lowering families. Prioritize ready integrations and the Windows-x64 remainder; shared contracts, generators and native mutations remain centrally owned.",
       "status": "in-progress",
       "doneWhen": [
         "Complete dependency-coherent retained xarch codegen and lowering families with whole native target branches; distinguish real omissions from retirement lag.",
@@ -1833,19 +1842,19 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Shared multi-register stores, local-store lowering and the complete shared kill-set/position family are accepted. Integrate recovered scalar throw-helper packet while continuing local-candidate construction and retained coalescing support. Maintain at most two compiler-heavy commands with memory monitoring, immutable owned-only snapshots,13 frozen Wasm files and centrally owned native retirement.",
+      "parentScope": "Shared node-reference construction and physical-register initialization are accepted. Integrate the accepted whole mixed-store coalescing family, then continue retained interval construction and common indirect-store lowering. Maintain at most two compiler-heavy commands with memory monitoring, immutable owned-only snapshots,13 frozen Wasm files and centrally owned native retirement.",
       "wholeFunctionRepairLanes": [
         {
-          "scope": "Whole retained xarch scalar/atomic codegen families.",
+          "scope": "Whole retained shared LSRA interval construction.",
           "owner": "4126f755-f5b6-49bc-b68d-a80815468a7d",
-          "files": "Scalar/atomic CodeGen partials and focused fixtures; parent owns shared register helpers and both ARM64 register fixtures.",
-          "status": "indirect load/store packet accepted343D/327R on Windows and Linux; first compiler slot released; next coherent unit is shared LSRA node-reference traversal"
+          "files": "LinearScan build-interval partials and focused fixtures; parent owns shared contracts and native integration.",
+          "status": "node-reference traversal and physical-register initialization accepted; first compiler slot released; continue buildIntervals after this batch commits"
         },
         {
           "scope": "Retained whole local-store coalescing family after shared local-store and spill closure.",
           "owner": "41f2570d-eb35-4a4b-92d7-1b2d0a3df242",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "local coalescing controls pass78/78 ARM64 and99/99 Windows in both configurations; extending acceptance to shared indirect mode before whole-function retirement, using second monitored build slot"
+          "status": "whole mixed coalescing v6 production and v7 exact data-contract assertions accepted; second compiler slot released; integrate seven functions and private data record before common indirect-store lowering"
         },
         {
           "scope": "Whole retained shared kill-set family after return/write-barrier closure.",
@@ -2261,7 +2270,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Local/vector construction committed30a80de. Indirect-load/store packet accepted with63 old-failing Linux guard cases and native8bc4e5b9; finish managed commit. Reassign worker4126f755 to whole buildRefPositionsForNode: remove whole target exclusion, preserve TARGET_XARCH contained-local branch, use target-correct stress mask (0x6003 AMD64,0x3 elsewhere) and preserve ARM64 first-definition consecutive-location exemption before checkConflictingDefUse. First compiler slot is available for that unit. Worker41f2570d completes whole local/indirect coalescing in second slot; parent owns integration, shared contracts and native retirement. Preserve13Wasm; no publication.",
+    "nextAction": "Node-reference traversal and physical-register initialization accepted/native2102dee8; retirement already applied, do not repeat. Continue whole buildIntervals in the LSRA lane after the managed commit. Coalescing v6 production plus v7 exact null-value/unsigned-size tests are reviewed and accepted: verify packet hashes and eight result sets, retire seven native functions plus private record from current native2102dee8, and commit the five owned files with docs. Then continue LowerStoreIndirCommon. Preserve13Wasm, two monitored compiler slots, and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
