@@ -9,10 +9,6 @@ public sealed partial class CodeGen
 {
     public void inst_ST_RV(instruction ins, TempDsc temp, int offset, regNumber reg, var_types type)
     {
-#if TARGET_AMD64
         Emitter.emitIns_S_R(ins, type.EmitActualSize, reg, temp.tdTempNum, offset);
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Spill-temp instruction recording outside AMD64 is not ported.");
-#endif
     }
 }

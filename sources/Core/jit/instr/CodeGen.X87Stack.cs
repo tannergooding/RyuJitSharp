@@ -3,14 +3,14 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_X86
+#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
     public void inst_FS_ST(instruction ins, emitAttr size, TempDsc temp, uint offset)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "x87 temporary-stack instruction emission is not implemented.");
+        Emitter.emitIns_S(ins, size, temp.tdTempNum, unchecked((int)offset));
     }
 }
 #endif

@@ -1534,6 +1534,17 @@ The retained x86 declaration failures still prevent execution of its new
 adapter/tail-jump controls. No non-xarch recording or generated-code parity is
 claimed by the selected Windows/Linux checks.
 
+Common local and spill-store adapters retain native DEBUG spilled/write-through
+assertions, local bounds, actual-type widths and negative temporary numbers.
+ARM64 retains its SVE store-classification exception. The stack-only adapter is
+xarch-wide, not x86-only; its unsigned offset converts unchecked to the signed
+emitter offset, preserving the native bit pattern.
+CPU-load/store classification and missing target recording arities are typed
+terminating dependencies, not successful stores. Their independent native
+definitions remain. The selected sixteen-case Windows/Linux controls do not
+establish other-target or generated-code parity; fourteen earlier x86
+declaration errors still prevent execution.
+
 `LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
 performs conservative frame layout before reserving IP1 and reserves x19 when
 the layout contains scalable vectors. The layout includes varargs homes,

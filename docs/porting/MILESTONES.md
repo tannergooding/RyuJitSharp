@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Local and spill-temporary store adapters
+
+Whole local and spill-store adapters retain native assertions, local bounds,
+actual-type widths and negative temporary numbers. ARM64 keeps the SVE store
+classification exception. The xarch stack-only adapter preserves the unsigned
+offset's bit pattern at the signed emitter boundary.
+
+The same sixteen focused controls pass in Windows and Linux Debug/Release,
+including separate local/spill homes and byte/int actual-width checks.
+Three whole definitions and three exclusive declarations retire 61 native
+lines, including headings and guards. Independent emitter classification and
+recording bodies remain native; missing target bindings terminate.
+The x86 diagnostic retains fourteen earlier errors and zero warnings, not
+successful x86 compilation or execution. These checks are not generated-code
+parity.
+
 ## 2026-09-30: Register/immediate adapters and tail-jump argument placement
 
 Common register/immediate adapters retain native target dispatch, target32

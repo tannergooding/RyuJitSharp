@@ -9,9 +9,6 @@ public sealed partial class CodeGen
 {
     public void inst_TT_RV(instruction ins, emitAttr size, GenTree tree, regNumber reg)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Register-to-local stores outside AMD64 are not implemented.");
-#else
 #if DEBUG
         assert(reg != REG_STK);
         var isValidInReg = (tree.Flags & GTF_SPILLED) == 0;
@@ -27,8 +24,15 @@ public sealed partial class CodeGen
 #endif
         var varNum = tree.AsLclVarCommon().LclNum;
         assert((uint)varNum < (uint)_compiler.lvaCount);
-        Emitter.emitIns_S_R(ins, size, reg, varNum, 0);
+#if DEBUG && CPU_LOAD_STORE_ARCH
+#if TARGET_ARM64
+        // Workaround until https://github.com/dotnet/runtime/issues/105512 is fixed.
+        assert(Emitter.emitInsIsStore(ins) || ins == INS_sve_str);
+#else
+        assert(Emitter.emitInsIsStore(ins));
 #endif
+#endif
+        Emitter.emitIns_S_R(ins, size, reg, varNum, 0);
     }
 
     public instruction ins_Store(var_types dstType, bool aligned = false)
