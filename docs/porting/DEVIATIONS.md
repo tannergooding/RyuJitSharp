@@ -1520,7 +1520,16 @@ LoongArch/RISC-V retain the upstream unused-path NYI diagnostics followed by
 explicit termination if `AltJitAssertOnNYI` permits those diagnostics to return.
 The ARM32 immediate validator and register-immediate materializer remain typed
 terminating dependencies; their native bodies and declarations remain.
-The adjacent register/register adapter is unchanged and remains native.
+The adjacent register/register adapter now retains whole native target dispatch
+and actual-type sizing; ARM32's flags-aware recording remains a terminating
+dependency whose independent native definition is retained.
+Constant shifts preserve ARM32 count masking and flags, xarch implicit-one
+selection, target32 signed immediate conversion, and the AMD64 encodable-count
+bound. Unknown targets retain native NYI diagnostics followed by termination.
+The native xarch emitter canonicalizes count 255 to 127 before descriptor
+recording; the new boundary control checks that behavior rather than an
+unmodified descriptor immediate. X86's unsigned-maximum case remains
+unexecuted behind the fourteen earlier declaration errors.
 
 Shared tail-jump placement retains the native non-Wasm scope,
 spill/profiler/reload order, GC-root transitions and unchanged descriptor homes.

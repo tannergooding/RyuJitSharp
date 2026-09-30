@@ -77,11 +77,20 @@ public sealed partial class CodeGen
     public void inst_RV_SH(instruction ins, emitAttr size, regNumber reg, uint value,
         insFlags flags = INS_FLAGS_DONT_CARE)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Constant register shifts require AMD64.");
-#else
+#if TARGET_ARM
+        if (value >= 32)
+        {
+            value &= 0x1f;
+        }
+
+        Emitter.emitIns_R_I(ins, size, reg, unchecked((int)value), flags);
+#elif TARGET_XARCH
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+        // X64 JB BE only permits encodable counts here. x86 can encode eight bits,
+        // then masks the count to five or six bits according to operand width.
         assert(value < 256);
+#endif
         ins = genMapShiftInsToShiftByConstantIns(ins, unchecked((int)value));
         if (value == 1)
         {
@@ -89,8 +98,11 @@ public sealed partial class CodeGen
         }
         else
         {
-            Emitter.emitIns_R_I(ins, size, reg, (nint)value);
+            Emitter.emitIns_R_I(ins, size, reg, unchecked((nint)(int)value));
         }
+#else
+        NYI("inst_RV_SH - unknown target");
+        throw new FatalJitException(CORJIT_SKIPPED, "inst_RV_SH - unknown target");
 #endif
     }
 }

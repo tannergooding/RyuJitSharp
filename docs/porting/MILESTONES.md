@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Register-pair and constant-shift adapters
+
+Whole register-pair and shift adapters preserve default actual-type sizing,
+explicit-size overrides, ARM32 flags and xarch implicit-one instruction
+selection. Target32 shift arguments retain their signed conversion. Unknown
+targets keep the native NYI diagnostic and explicitly terminate if it returns.
+The upper encodable count 255 records the native emitter's canonical 127.
+
+The same twenty-six focused controls pass in Windows and Linux Debug/Release.
+Two whole definitions and two exclusive declarations retire 81 native lines,
+including headings. Independent emitters and ARM immediate helpers remain
+native. The x86 diagnostic retains fourteen earlier errors and zero warnings;
+its unsigned-maximum control remains unexecuted. These checks do not establish
+other-target or generated-code parity.
+
 ## 2026-09-30: Local and spill-temporary store adapters
 
 Whole local and spill-store adapters retain native assertions, local bounds,
