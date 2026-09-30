@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "integerDivModClosure": {
+      "scope": "Whole signed/unsigned div/mod and constant-magic lowering retain target widths, ARM assertions, multiply-high target branches and Wasm exception operand reuse/diagnostic arguments.",
+      "validation": "Windows44D/44R and ARM64179D/179R. Finalv3 Debug includes restored assertions; unaffectedv2 Release evidence reused. Old Windows/ARM64 controls pass; old/final RISC-V, LoongArch64 and Wasm baseline diagnostics match before tests.",
+      "retirement": "Five shared definitions plus the separate Wasm LowerDivOrMod definition, headings/guard and five declarations;690 native lines. Target containment and Wasm SetMultiplyUsed remain retained dependencies.",
+      "nativeBefore": "67ab3db366892661a7fe217a5b2f0e2fb18a6a29",
+      "nativeAfter": "01f7e85f0512970d1efa693df3b21a3cd8c7519c",
+      "evidence": "artifacts/integer-divmod-47f3cb8/proposal.json and divmod retirement records.",
+      "limits": "Other-target helpers terminate until ported. No generated-code or target execution parity claim."
+    },
     "candidateFrameClosure": {
       "scope": "Whole identifyCandidates<true/false>, identifyCandidatesExceptionDataflow and setFrameType preserve all target branches, x86 alignment policy and ARM diagnostics/reservations.",
       "validation": "Windows67D/63R; ARM6488D/70R including4direct frame cases each. Linux candidate family17D/16R:13old target-gate failures pass. Portable preparation/interval controls13D/11R also pass;18broader allocation/resolution NYIs remain unchanged.",
@@ -1899,19 +1908,19 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Finish load/retyping and candidate/frame validation and native retirement after analyzer configuration repair. Maintain at most two compiler-heavy commands, memory monitoring, immutable owned-only snapshots with explicit analyzer-config overlay,13 frozen Wasm files and centrally owned native retirement.",
+      "parentScope": "Load/retyping, address/add and candidate/frame closures are committed. Integrate next whole div/mod and register-resolution/dispatcher packets. Maintain at most two compiler-heavy commands, memory monitoring, immutable owned-only snapshots,13 frozen Wasm files and centrally owned native retirement.",
       "wholeFunctionRepairLanes": [
         {
-          "scope": "Whole retained shared LSRA candidate and frame setup.",
+          "scope": "Whole retained shared LSRA register resolution and phase dispatch.",
           "owner": "2aa4b7ae-79d5-4599-ad4a-eef9208ec3f0",
-          "files": "LinearScan candidate/frame partials and focused fixtures; parent owns shared contracts and native integration.",
-          "status": "accepted after Windows/Linux/ARM64 controls and13Linux old-gate failures now passing;3definitions560lines retired in native67ab3db3; worker idle and compiler slot released"
+          "files": "LinearScan resolution/dispatch partials and focused fixtures; parent owns shared contracts and native integration.",
+          "status": "candidate/frame committed62d8205/native67ab3db3; worker owns resolveRegisters specializations and doRegisterAllocation on62d8205, one guarded compiler slot"
         },
         {
           "scope": "Whole retained shared integer division and remainder lowering.",
           "owner": "c25d48cd-9585-4ecc-9253-39bf6743137d",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "address/add committed47f3cb8/native56370b03; worker now owns five-function div/mod family on47f3cb8, one guarded compiler slot"
+          "status": "whole div/mod family accepted after Debug diagnostic corrections;6definitions690lines retired in native01f7e85f; worker idle, slot released"
         },
         {
           "scope": "Whole retained shared kill-set family after return/write-barrier closure.",
@@ -2327,7 +2336,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Candidate/frame accepted,560line retirement67ab3db3 applied; finish managed commit before next LSRA unit. Thirteen Linux target-gate failures now pass,18independent allocation/resolution NYIs remain. Workerc25d48cd owns five-function shared div/mod lowering on47f3cb8 with one guarded compiler slot. After candidate commit, assign whole register-resolution/dispatcher family to2aa4b7ae, retaining independent unfinished helpers. Analyzer3df6e8f, load/retyping770748d and address/add47f3cb8 already committed. Preserve13Wasm and native pin-plus-one; no publication.",
+    "nextAction": "Div/mod accepted and690line native retirement01f7e85f applied; finish managed commit before next lowering unit. Worker2aa4b7ae continues whole resolveRegisters specializations/doRegisterAllocation on62d8205 with one guarded compiler slot. After div/mod commit choose next coherent retained lowering family, not a helper-sized audit. Prior analyzer/load/address/candidate closures committed; preserve13Wasm and native pin-plus-one, no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

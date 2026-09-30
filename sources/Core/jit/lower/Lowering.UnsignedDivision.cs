@@ -27,13 +27,22 @@ public sealed partial class Lowering
     private bool TryLowerConstIntUDivOrUMod(GenTreeOp divMod, out GenTree? nextNode)
     {
         assert(divMod.Oper is GT_UDIV or GT_UMOD);
-#if TARGET_ARM64
+#if USE_HELPERS_FOR_INT_DIV
+        assert(varTypeIsFloating(divMod.Type));
+#endif
+#if TARGET_ARMARCH
         assert(divMod.Oper is not GT_UMOD);
 #endif
         nextNode = null;
         var compiler = CompilerInstance;
         var dividend = divMod.Op1;
         var divisor = divMod.Op2;
+#if !TARGET_64BIT
+        if (dividend.Oper is GT_LONG)
+        {
+            return false;
+        }
+#endif
         if (!divisor.Oper.IsCnsIntOrI || dividend.Oper.IsCnsIntOrI)
         {
             return false;
@@ -43,7 +52,11 @@ public sealed partial class Lowering
         assert(type is TYP_INT or TYP_I_IMPL);
         var divisorValue = type is TYP_INT
             ? unchecked((ulong)(uint)divisor.AsIntCon().IconValue)
+#if TARGET_64BIT
             : unchecked((ulong)(nuint)divisor.AsIntCon().IconValue);
+#else
+            : unchecked((ulong)(uint)divisor.AsIntCon().IconValue);
+#endif
         if (divisorValue == 0)
         {
             return false;
@@ -74,7 +87,7 @@ public sealed partial class Lowering
             return true;
         }
 
-#if TARGET_XARCH || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
         if (compiler.opts.MinOpts || divisorValue < 3)
         {
             return false;
@@ -107,10 +120,10 @@ public sealed partial class Lowering
         {
             magic = MagicDivide.GetUnsigned32Magic((uint)divisorValue, out increment, out preShift, out postShift, bits);
 #if TARGET_64BIT
-#if TARGET_ARM64
-            var useNativeWidthMagic = increment || (preShift != 0);
-#else
+#if TARGET_XARCH
             var useNativeWidthMagic = increment || ((preShift != 0) && (unchecked((int)magic) < 0));
+#else
+            var useNativeWidthMagic = increment || (preShift != 0);
 #endif
             if (useNativeWidthMagic)
             {
@@ -125,7 +138,11 @@ public sealed partial class Lowering
         }
         else
         {
+#if TARGET_64BIT
             magic = MagicDivide.GetUnsigned64Magic(divisorValue, out increment, out preShift, out postShift, bits);
+#else
+            throw new InvalidOperationException("Native-width division must use the 32-bit path on this target.");
+#endif
         }
 
         if (!isDiv)

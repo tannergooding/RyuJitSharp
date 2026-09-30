@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Whole integer division and remainder lowering
+
+Signed and unsigned constant division retain target-width conversion, 32-bit
+long exclusions, multiply-high availability and target-specific magic selection.
+The Wasm dispatcher preserves exception-check operand reuse and diagnostic
+arguments; its multiply-use helper remains a terminating dependency. Five shared
+definitions and the separate Wasm dispatcher retire 690 native lines in
+`01f7e85f`.
+
+Windows controls pass 44 Debug/44 Release; ARM64 passes 179/179. Final Debug
+runs include restored assertions, with unaffected Release evidence reused.
+Old Windows/ARM64 controls pass; RISC-V, LoongArch64 and Wasm old/final builds
+stop at identical baseline diagnostics. Evidence:
+`artifacts/integer-divmod-47f3cb8`. These are preservation controls, not
+generated-code parity.
+
 ## 2026-09-29: Whole candidate construction and frame selection
 
 Both candidate-construction modes preserve x86 double-alignment policy and ARM

@@ -48,6 +48,41 @@ public sealed partial class Lowering
 
     private void LowerDivOrMod(GenTreeOp divMod)
     {
+#if TARGET_WASM
+        var exceptions = divMod.Exceptions(CompilerInstance);
+        if ((exceptions & ExceptionSetFlags.ArithmeticException) is not ExceptionSetFlags.None)
+        {
+            SetMultiplyUsed(divMod.Op1
+#if DEBUG
+                , "LowerDivOrMod op1 (arithmetic exception)"
+#endif
+            );
+            SetMultiplyUsed(divMod.Op2
+#if DEBUG
+                , "LowerDivOrMod op2 (arithmetic exception)"
+#endif
+            );
+        }
+        else if ((exceptions & ExceptionSetFlags.DivideByZeroException) is not ExceptionSetFlags.None)
+        {
+            SetMultiplyUsed(divMod.Op2
+#if DEBUG
+                , "LowerDivOrMod op2 (divide by zero exception)"
+#endif
+            );
+        }
+#endif
         ContainCheckDivOrMod(divMod);
     }
+
+#if TARGET_WASM
+    private void SetMultiplyUsed(GenTree node
+#if DEBUG
+        , string reason
+#endif
+    )
+    {
+        throw new System.NotImplementedException("WASM multiply-use tracking is not ported.");
+    }
+#endif
 }

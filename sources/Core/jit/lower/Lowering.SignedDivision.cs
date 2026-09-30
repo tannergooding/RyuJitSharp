@@ -12,9 +12,15 @@ public sealed partial class Lowering
 {
     private GenTree? LowerSignedDivOrMod(GenTreeOp node)
     {
-        if (varTypeIsIntegral(node.Type) && TryLowerConstIntDivOrMod(node, out var next))
+        assert(node.Oper is GT_DIV or GT_MOD);
+
+        if (varTypeIsIntegral(node.Type))
         {
-            return next;
+            if (TryLowerConstIntDivOrMod(node, out var next))
+            {
+                return next;
+            }
+            assert(next is null);
         }
 
         LowerDivOrMod(node);
@@ -31,6 +37,9 @@ public sealed partial class Lowering
         var divisor = divMod.Op2;
         var type = divMod.Type;
         assert(type is TYP_INT or TYP_LONG);
+#if USE_HELPERS_FOR_INT_DIV
+        assert(false, "unreachable: integral GT_DIV/GT_MOD should get morphed into helper calls");
+#endif
 
 #if TARGET_ARM64
         if ((divMod.Oper is GT_MOD) && divisor.IsIntegralConstPow2)
@@ -40,7 +49,12 @@ public sealed partial class Lowering
             return true;
         }
 
+#endif
+#if TARGET_ARMARCH
         assert(divMod.Oper is not GT_MOD);
+#endif
+#if TARGET_WASM
+        return false;
 #endif
         if (!divisor.Oper.IsCnsIntOrI || dividend.Oper.IsCnsIntOrI)
         {
@@ -58,7 +72,11 @@ public sealed partial class Lowering
         }
 
         var isDiv = divMod.Oper is GT_DIV;
-        if (isDiv && (divisorValue == (type is TYP_INT ? int.MinValue : long.MinValue)))
+        if (isDiv && (((type is TYP_INT) && (divisorValue == int.MinValue))
+#if TARGET_64BIT
+            || ((type is TYP_LONG) && (divisorValue == long.MinValue))
+#endif
+            ))
         {
             ChangeDivisionOper(divMod, GT_EQ);
             nextNode = divMod;
@@ -76,11 +94,21 @@ public sealed partial class Lowering
                 return false;
             }
 
-#if TARGET_XARCH || TARGET_ARM64
-            var magic = type is TYP_INT
-                ? MagicDivide.GetSigned32Magic((int)divisorValue, out var shift32)
-                : MagicDivide.GetSigned64Magic(divisorValue, out shift32);
-            var shift = shift32;
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+            long magic;
+            int shift;
+            if (type is TYP_INT)
+            {
+                magic = MagicDivide.GetSigned32Magic((int)divisorValue, out shift);
+            }
+            else
+            {
+#if TARGET_64BIT
+                magic = MagicDivide.GetSigned64Magic(divisorValue, out shift);
+#else
+                throw new InvalidOperationException("64-bit signed magic division requires a 64-bit target.");
+#endif
+            }
             divisor.AsIntCon().IconValue = (nint)magic;
 
             var mulhi = compiler.gtNewBinaryNode(GT_MULHI, type, divisor, dividend);
