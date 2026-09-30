@@ -11,18 +11,20 @@ public sealed partial class Lowering
 {
     private GenTree? LowerIndir(GenTreeIndir ind)
     {
-#if TARGET_XARCH || TARGET_ARM64
         var next = ind.Next;
         assert(ind.Oper is GT_IND or GT_NULLCHECK);
 
         if ((ind.Type is not TYP_STRUCT) || ind.IsUnusedValue)
         {
-#if TARGET_ARM64
+#if !TARGET_XARCH
+            // The transformed access width controls non-xarch containment. Xarch instead chooses
+            // IND or NULLCHECK based on whether address containment succeeded, so transforms last.
             if ((ind.Oper is GT_NULLCHECK) || ind.IsUnusedValue)
             {
                 ind = TransformUnusedIndirection(ind, CompilerInstance, BlockRange());
             }
-
+#endif
+#if TARGET_ARM64
             if ((ind.Oper is GT_IND) && ind.IsVolatile && varTypeIsFloating(ind.Type) &&
                 BlockRange().TryGetUse(ind, out var use))
             {
@@ -62,9 +64,6 @@ public sealed partial class Lowering
         }
 #endif
         return next;
-#else
-        throw new NotImplementedException("Indirection lowering outside xarch and ARM64 is not ported.");
-#endif
     }
 
     private void ContainCheckIndir(GenTreeIndir node)
@@ -143,14 +142,14 @@ public sealed partial class Lowering
     {
         assert(ind.Oper is GT_NULLCHECK or GT_IND or GT_BLK);
         ind.Type = compiler.gtTypeForNullCheck(ind);
-#if TARGET_XARCH
-        // A contained address needs a target register; otherwise a compare can perform the probe.
-        var useNullCheck = !ind.Addr.IsContained;
-        ind.Flags &= ~GTF_DONT_EXTEND;
+#if TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
+        var useNullCheck = true;
 #elif TARGET_ARM
         var useNullCheck = false;
 #else
-        var useNullCheck = true;
+        // A contained address needs a target register; otherwise a compare can perform the probe.
+        var useNullCheck = !ind.Addr.IsContained;
+        ind.Flags &= ~GTF_DONT_EXTEND;
 #endif
         if (useNullCheck && (ind.Oper is not GT_NULLCHECK))
         {

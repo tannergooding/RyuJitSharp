@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-29: Whole indirect-load and floating-store retyping
+
+Indirect loads preserve target-specific ordering between unused-load conversion
+and address containment, including ARM64 volatile floating-load bitcasts.
+Unused-load conversion and floating-store retyping retain every native target
+branch, signed-zero policy and access width. Three definitions and declarations
+retire 237 native lines in `f4bd7f46`; independent address-mode and target
+containment helpers remain native.
+
+Windows 85/85, ARM64 78/78 and Linux 90/90 controls pass in Debug/Release.
+The previously memory-stopped Linux Release run passes in a fresh snapshot with
+the six user-authorized analyzer exclusions: 36.31 seconds, at least 45.46 GiB
+free memory. Earlier unaffected results are retained, not relabeled as new runs.
+Evidence: `artifacts/indir-floating-retyping-73b7e9b`. These are translation and
+preservation controls, not generated-code parity.
+
 ## 2026-09-29: Whole interval and reference construction
 
 Both interval-building specializations retain native target branches, including

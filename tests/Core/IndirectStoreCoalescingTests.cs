@@ -10,6 +10,42 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class IndirectStoreCoalescingTests
 {
+    [TestCase(false, genTreeOps.GT_NULLCHECK)]
+    [TestCase(true, genTreeOps.GT_IND)]
+    public static void UnusedIndirectionTransformsAfterXarchContainment(bool allowContainment,
+        genTreeOps expectedOperation)
+    {
+        WithCompiler(optimized: true, compiler => {
+            compiler.lvaTable[0].Type = var_types.TYP_BYREF;
+            var baseAddress = compiler.gtNewLclvNode(var_types.TYP_BYREF, 0);
+            var address = new GenTreeAddrMode(var_types.TYP_BYREF, baseAddress, null, 1, 0);
+            var load = new GenTreeIndir(genTreeOps.GT_IND, var_types.TYP_LONG, address) {
+                IsUnusedValue = true,
+            };
+            if (!allowContainment)
+            {
+                load.Flags |= GenTreeFlags.GTF_IND_REQ_ADDR_IN_REG;
+            }
+            var next = new GenTreeUnOp(genTreeOps.GT_RETURN, var_types.TYP_VOID, null);
+            var block = NewBlock(baseAddress, address, load, next);
+            var lowering = NewLowering(compiler, block);
+
+            Assert.That(LowerIndir(lowering, load), Is.SameAs(next));
+            var probe = next.Prev ?? throw new InvalidOperationException();
+            Assert.That(probe.Oper, Is.EqualTo(expectedOperation));
+            Assert.That(probe.Type, Is.EqualTo(var_types.TYP_INT));
+            Assert.That(probe.IsUnusedValue, Is.EqualTo(allowContainment));
+            Assert.That(address.IsContained, Is.EqualTo(allowContainment));
+            if (expectedOperation is genTreeOps.GT_NULLCHECK)
+            {
+                Assert.That(load.Next, Is.Null);
+            }
+#if DEBUG
+            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+#endif
+        });
+    }
+
     [Test]
     public static void WriteBarrierStoreReturnsBeforeOrdinaryContainment()
     {
@@ -395,6 +431,9 @@ internal static unsafe class IndirectStoreCoalescingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerNode")]
     private static extern GenTree? LowerNode(Lowering lowering, GenTree node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerIndir")]
+    private static extern GenTree? LowerIndir(Lowering lowering, GenTreeIndir node);
 
     private static void WithCompiler(bool optimized, Action<Compiler> action)
     {

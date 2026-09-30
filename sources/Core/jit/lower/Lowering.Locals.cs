@@ -11,7 +11,6 @@ public sealed partial class Lowering
 {
     private GenTree TryRetypingFloatingPointStoreToIntegerStore(GenTree store)
     {
-#if TARGET_XARCH || TARGET_ARM64
         assert(store.Oper.IsStore);
         if (!varTypeIsFloating(store.Type))
         {
@@ -39,7 +38,9 @@ public sealed partial class Lowering
         {
             return store;
         }
-#if TARGET_ARM64
+#if !TARGET_XARCH && !TARGET_ARM
+        // Xarch can contain the immediate and ARM constructs FP constants from integer bits.
+        // Other targets only profit from integer stores for positive zero.
         if (!value.AsDblCon().IsPositiveZero)
         {
             return store;
@@ -86,9 +87,6 @@ public sealed partial class Lowering
         store.Type = type;
 
         return store;
-#else
-        throw new NotImplementedException("Floating-store retyping outside xarch and ARM64 is not ported.");
-#endif
     }
 
     private unsafe GenTree? LowerStoreLocCommon(GenTreeLclVarCommon lclStore)
