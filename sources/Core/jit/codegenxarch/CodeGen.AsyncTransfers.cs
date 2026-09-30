@@ -48,7 +48,7 @@ public sealed partial class CodeGen
 
     public void genNonLocalJmp(GenTreeUnOp tree)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
+#if !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Nonlocal jump generation requires Windows AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
@@ -59,7 +59,7 @@ public sealed partial class CodeGen
 
     public void genFtnEntry(GenTree tree)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
+#if !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Function-entry address generation requires Windows AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();

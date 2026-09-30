@@ -27,7 +27,7 @@ public sealed partial class CodeGen
 
     public unsafe void genAsyncResumeInfo(GenTreeVal treeNode)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
+#if !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Async resume address generation requires Windows AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();

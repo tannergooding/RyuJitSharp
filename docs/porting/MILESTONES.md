@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole xarch transfer addresses
+
+Nonlocal jumps retain register, local and indirect operands; function-entry
+addresses bind to the first prolog group rather than the current body group.
+Async-resume address generation preserves unsigned-32 state truncation,
+pointer-sized LEA, relocation and result production. Existing AMD64 algorithms
+and non-xarch failure branches are unchanged.
+
+Three whole xarch definitions are removed from the residual tree. Shared
+declarations and independent async table, handle, recording and emitter
+dependencies remain. Linux-target nonlocal and function-entry controls now
+execute, while async addresses reach the retained shared helper boundary.
+These Windows-hosted controls do not establish Linux runtime execution or new
+generated-code parity; x86 compilation and emission remain unresolved.
+
 ## 2026-09-30: Whole xarch register transfers
 
 Physical-register reads preserve move, GC-state transfer and result production.
