@@ -9,9 +9,7 @@ public sealed partial class CodeGen
 {
     public instruction ins_FloatConv(var_types to, var_types from)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Floating conversion instruction selection requires AMD64.");
-#else
+#if TARGET_XARCH
         switch (from)
         {
             case TYP_INT:
@@ -71,6 +69,161 @@ public sealed partial class CodeGen
                 throw new FatalJitException("Invalid floating conversion source type.");
             }
         }
+#elif TARGET_ARM
+        switch (from)
+        {
+            case TYP_INT:
+            {
+                switch (to)
+                {
+                    case TYP_FLOAT:
+                    {
+                        return INS_vcvt_i2f;
+                    }
+
+                    case TYP_DOUBLE:
+                    {
+                        return INS_vcvt_i2d;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                        throw new FatalJitException("Invalid integer-to-floating conversion.");
+                    }
+                }
+            }
+
+            case TYP_UINT:
+            {
+                switch (to)
+                {
+                    case TYP_FLOAT:
+                    {
+                        return INS_vcvt_u2f;
+                    }
+
+                    case TYP_DOUBLE:
+                    {
+                        return INS_vcvt_u2d;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                        throw new FatalJitException("Invalid unsigned-to-floating conversion.");
+                    }
+                }
+            }
+
+            case TYP_LONG:
+            {
+                switch (to)
+                {
+                    case TYP_FLOAT:
+                    {
+                        NYI("long to float");
+                        throw new FatalJitException(CORJIT_SKIPPED, "long to float");
+                    }
+
+                    case TYP_DOUBLE:
+                    {
+                        NYI("long to double");
+                        throw new FatalJitException(CORJIT_SKIPPED, "long to double");
+                    }
+
+                    default:
+                    {
+                        unreached();
+                        throw new FatalJitException("Invalid long-to-floating conversion.");
+                    }
+                }
+            }
+
+            case TYP_FLOAT:
+            {
+                switch (to)
+                {
+                    case TYP_INT:
+                    {
+                        return INS_vcvt_f2i;
+                    }
+
+                    case TYP_UINT:
+                    {
+                        return INS_vcvt_f2u;
+                    }
+
+                    case TYP_LONG:
+                    {
+                        NYI("float to long");
+                        throw new FatalJitException(CORJIT_SKIPPED, "float to long");
+                    }
+
+                    case TYP_DOUBLE:
+                    {
+                        return INS_vcvt_f2d;
+                    }
+
+                    case TYP_FLOAT:
+                    {
+                        return INS_vmov;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                        throw new FatalJitException("Invalid float conversion.");
+                    }
+                }
+            }
+
+            case TYP_DOUBLE:
+            {
+                switch (to)
+                {
+                    case TYP_INT:
+                    {
+                        return INS_vcvt_d2i;
+                    }
+
+                    case TYP_UINT:
+                    {
+                        return INS_vcvt_d2u;
+                    }
+
+                    case TYP_LONG:
+                    {
+                        NYI("double to long");
+                        throw new FatalJitException(CORJIT_SKIPPED, "double to long");
+                    }
+
+                    case TYP_FLOAT:
+                    {
+                        return INS_vcvt_d2f;
+                    }
+
+                    case TYP_DOUBLE:
+                    {
+                        return INS_vmov;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                        throw new FatalJitException("Invalid double conversion.");
+                    }
+                }
+            }
+
+            default:
+            {
+                unreached();
+                throw new FatalJitException("Invalid floating conversion source type.");
+            }
+        }
+#else
+        throw new FatalJitException(CORJIT_SKIPPED, "Floating conversion instruction selection requires xarch or ARM.");
 #endif
     }
 

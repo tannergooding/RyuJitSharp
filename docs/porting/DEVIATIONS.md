@@ -1563,6 +1563,13 @@ remain source-only, and fourteen earlier x86 declaration errors still prevent
 its execution. Native retirement does not establish other-target or generated
 code parity.
 
+Floating instruction selection now retains whole xarch and ARM32 conversion
+bodies and ARM32 math selection. ARM32's unsupported long conversions keep
+their native diagnostics followed by explicit termination. The eighteen selected
+AMD64 math/conversion controls do not execute the ten x86 or seventeen ARM32
+cases; existing target declaration blockers remain. The already-completed
+xarch math selector is unchanged and is not counted again in native retirement.
+
 `LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
 performs conservative frame layout before reserving IP1 and reserves x19 when
 the layout contains scalable vectors. The layout includes varargs homes,

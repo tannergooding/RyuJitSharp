@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Floating conversion and math instruction selection
+
+The whole xarch conversion selector is reachable on x86, and ARM32 conversion
+and math selection preserve native VFP opcodes. Unsupported ARM32 long
+conversions retain their four native NYI diagnostics and explicitly terminate.
+The existing xarch math selector is unchanged.
+
+Eighteen focused controls pass in Windows and Linux Debug/Release: eight math
+and ten existing AMD64 conversion cases. Three whole definitions and two
+exclusive prototypes retire 181 native lines, including the complete shared
+xarch/ARM conditional enclosure. The xarch math body was already absent and
+is not counted again. The x86 diagnostic retains fourteen earlier errors and
+zero warnings; its ten new conversion controls and seventeen ARM32 controls
+remain unexecuted. These checks are not generated-code parity.
+
 ## 2026-09-30: Scalar condition, extension and store selection
 
 Whole condition-setting, extending-move and source-register store selectors
