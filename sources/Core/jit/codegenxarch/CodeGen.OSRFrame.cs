@@ -14,7 +14,7 @@ public sealed partial class CodeGen
     public unsafe void genOSRHandleTier0CalleeSavedRegistersAndFrame()
     {
 #if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Tier0 OSR frame reconstruction requires AMD64.");
+        unreached();
 #else
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
         assert(_compiler.opts.IsOSR);

@@ -48,9 +48,6 @@ public sealed partial class CodeGen
 
     public void genCodeForCCMP(GenTreeCCMP tree)
     {
-#if !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Conditional compare generation requires Windows AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(Emitter.UsePromotedEvexEncodings);
         genConsumeOperands(tree);
@@ -83,7 +80,6 @@ public sealed partial class CodeGen
         {
             Emitter.emitIns_R_R(ins, size, srcReg1, op2.RegNum, opts);
         }
-#endif
     }
 }
 #endif

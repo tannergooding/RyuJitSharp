@@ -1600,6 +1600,24 @@ ARM32 compilation, execution or code parity. Independent native recording,
 encoding and classifier helpers remain; already-retired branch-link validation
 is excluded from this batch's retirement.
 
+The residual xarch write-barrier, checked long-to-int cast, GC-publication and
+OSR caller definitions now retain their complete native target branches.
+AMD64 conditional comparison and modern GC publication no longer impose
+Windows-only gates. Six Linux conditional-compare failures reproduce the old
+guard and pass after its removal; eighteen x86 cases remain source-only.
+Paired target diagnostics preserve fourteen x86, seventy-eight ARM32 and
+thirty-nine ARM64 errors with their exact identities and repetition counts.
+Early declarations still limit body checking.
+
+JIT32 header and pointer-table encoders, filter pinning and the Unix modern
+encoder remain independent unsupported dependencies. The empty `InfoHdr`
+carrier exists only behind terminating JIT32 boundaries, not as an ABI layout.
+Live GC dump diagnostics are preserved; the native DEBUG `if (0)` hexdump is
+unreachable and excluded. Native retirement covers seven functions and the
+already-complete condition map, retaining shared other-target declarations and
+independent helper definitions. No x86 execution, Unix GC-publication execution
+or generated-code parity is claimed.
+
 `LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
 performs conservative frame layout before reserving IP1 and reserves x19 when
 the layout contains scalable vectors. The layout includes varargs homes,

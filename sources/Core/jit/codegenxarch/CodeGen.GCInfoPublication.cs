@@ -9,13 +9,106 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+#if JIT32_GCENCODER
+    internal unsafe void* genCreateAndStoreGCInfo(uint codeSize, uint prologSize, uint epilogSize
+#if DEBUG
+        , void* codePtr
+#endif
+        )
+    {
+        return genCreateAndStoreGCInfoJIT32(codeSize, prologSize, epilogSize
+#if DEBUG
+            , codePtr
+#endif
+            );
+    }
+
+    internal unsafe void* genCreateAndStoreGCInfoJIT32(uint codeSize, uint prologSize, uint epilogSize
+#if DEBUG
+        , void* codePtr
+#endif
+        )
+    {
+        byte* headerBuf = stackalloc byte[64];
+        GCInfo.InfoHdr header = default;
+        var cached = 0;
+
+        if (_compiler.compHndBBtabCount != 0)
+        {
+            _gcInfo.gcMarkFilterVarsPinned();
+        }
+
+        var headerSize = _gcInfo.gcInfoBlockHdrSave(headerBuf, 0, codeSize, prologSize,
+            epilogSize, ref header, ref cached);
+        _compiler.compInfoBlkSize = unchecked((nint)headerSize);
+
+        nuint argTabOffset = 0;
+        var ptrMapSize = _gcInfo.gcPtrTableSize(header, codeSize, ref argTabOffset);
+
+#if DISPLAY_SIZES
+        if (Interruptible)
+        {
+            gcHeaderISize += headerSize;
+            gcPtrMapISize += ptrMapSize;
+        }
+        else
+        {
+            gcHeaderNSize += headerSize;
+            gcPtrMapNSize += ptrMapSize;
+        }
+#endif
+
+        _compiler.compInfoBlkSize = unchecked(_compiler.compInfoBlkSize + (nint)ptrMapSize);
+        _compiler.compInfoBlkAddr = (byte*)_compiler.info.compCompHnd->allocGCInfo(_compiler.compInfoBlkSize);
+        var infoPtr = _compiler.compInfoBlkAddr;
+
+        var writtenHeaderSize = _gcInfo.gcInfoBlockHdrSave(_compiler.compInfoBlkAddr, -1,
+            codeSize, prologSize, epilogSize, ref header, ref cached);
+        _compiler.compInfoBlkAddr = (byte*)((nuint)_compiler.compInfoBlkAddr + writtenHeaderSize);
+
+#if DEBUG
+        assert(_compiler.compInfoBlkAddr == (byte*)((nuint)infoPtr + headerSize));
+#endif
+        _compiler.compInfoBlkAddr = _gcInfo.gcPtrTableSave(_compiler.compInfoBlkAddr,
+            header, codeSize, ref argTabOffset);
+
+#if DEBUG
+        assert(_compiler.compInfoBlkAddr == (byte*)((nuint)infoPtr + headerSize + ptrMapSize));
+#endif
+
+#if DUMP_GC_TABLES
+        if (_compiler.opts.dspGCtbls)
+        {
+            var basePtr = infoPtr;
+            GCInfo.InfoHdr dumpHeader = default;
+            jitprintf($"GC Info for method {_compiler.info.compFullName}\n");
+            jitprintf($"GC info size = {_compiler.compInfoBlkSize,3}\n");
+
+            var size = _gcInfo.gcInfoBlockHdrDump(basePtr, ref dumpHeader, out var methodSize);
+            jitprintf("\n");
+
+            if (_compiler.opts.dspGCtbls)
+            {
+                basePtr = (byte*)((nuint)basePtr + size);
+                size = _gcInfo.gcDumpPtrTable(basePtr, dumpHeader, methodSize);
+                jitprintf("\n");
+                noway_assert(_compiler.compInfoBlkAddr == (byte*)((nuint)basePtr + size));
+            }
+        }
+#endif
+
+        noway_assert(_compiler.compInfoBlkAddr == (byte*)((nuint)infoPtr + (nuint)_compiler.compInfoBlkSize));
+
+        return infoPtr;
+    }
+#else
     internal unsafe void genCreateAndStoreGCInfo(uint codeSize, uint prologSize, uint epilogSize
 #if DEBUG
         , void* codePtr
 #endif
         )
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
+#if !TARGET_AMD64
         throw new FatalJitException(CORJIT_SKIPPED, "GC-info publication requires Windows AMD64.");
 #else
         genCreateAndStoreGCInfoX64(codeSize, prologSize
@@ -32,7 +125,7 @@ public sealed partial class CodeGen
 #endif
         )
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
+#if !TARGET_AMD64
         throw new FatalJitException(CORJIT_SKIPPED, "GC-info publication requires Windows AMD64.");
 #else
         using var encoder = new GcInfoEncoder(_compiler.info.compCompHnd, _compiler.info.compMethodInfo);
@@ -95,4 +188,5 @@ public sealed partial class CodeGen
         _compiler.compInfoBlkSize = unchecked((nint)encoder.GetEncodedGCInfoSize());
 #endif
     }
+#endif
 }

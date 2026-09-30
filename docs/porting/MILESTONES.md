@@ -16,6 +16,30 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Xarch write barriers, casts and GC publication
+
+The remaining xarch codegen family now preserves x86 register-specific write
+barriers, checked long-to-int cast ordering, JIT32 GC publication callers and
+the native x86 OSR unreachable path. AMD64 conditional comparison and modern GC
+publication retain their native SysV branches instead of Windows-only guards.
+JIT32 encoding/filter dependencies and the Unix GC encoder remain separate;
+the opaque JIT32 header carrier is not a native-layout claim.
+
+Windows controls pass thirty-seven Debug and thirty-five Release cases; Linux
+controls pass thirty-one in each configuration. Both Linux baselines reproduce
+six conditional-compare guard failures and twenty-two passing controls; the
+same six identities pass after the change. Windows baseline controls and three
+new AMD64 cases are preserved. Eighteen x86 cases remain source-only. Paired
+x86 Debug/Release, ARM32 Debug and ARM64 Debug diagnostics retain their exact
+earlier error identities and occurrence counts, with zero warnings/tests.
+
+Seven whole functions, the complete condition map and three exclusive
+declarations retire 543 native lines. Exact oracle authentication and native
+reconstruction preserve shared other-target declarations, independent GC
+encoders, filters and emitter helpers. Live dump diagnostics remain; the native
+DEBUG `if (0)` hexdump is unreachable and excluded. Focused target checks do not
+establish other-target execution, Unix GC publication or generated-code parity.
+
 ## 2026-09-30: ARM32 immediate validation and materialization
 
 Whole ARM32 immediate/displacement validators, Thumb modified-immediate
