@@ -14,6 +14,8 @@ public partial class Globals
 
     public const int TARGET_HAS_MULHI = 1;
 
+    public const int XMM_REGSIZE_BYTES = 16;
+
     public const int REGSIZE_BYTES = 4;
 
 #if UNIX_X86_ABI

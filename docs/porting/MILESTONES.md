@@ -16,6 +16,32 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole xarch block emission
+
+Memmove, block stores, unrolled/loop initialization and unrolled copies retain
+the native scalar/SIMD ordering and x86 tail loops. Windows AMD64 instruction
+paths are preservation work; the x86 branches are now source-complete, and
+Linux x64 reaches the same selected descriptor-generation paths without the
+old Windows-only caller guard. Non-xarch methods retain their original typed
+failure branches rather than compiling calls to xarch-only helpers.
+
+Five definitions and their headings retire 747 native lines in `c8c49205`.
+Independent struct PUTARG bodies, load-offset callers and shared declarations
+remain. Windows old/final controls pass 51 Debug and 49 Release cases.
+The old Linux caller guards fail those same cases; final passes all 51/49.
+The new five-method fixture is a Windows preservation control, not an
+old-source algorithm regression.
+
+Evidence: `artifacts/xarch-block-emission-dae5831`, `work-guard-v2`, anchored
+to the fresh `bbc8e2c` 2,501-file archive. Exact original/versioned inventories,
+eight reused TRXs, exact commands, raw-log provenance, parser masks and the
+approved x86 XMM constant are independently verified. Guard-only corrections
+preserve complete preprocessed Windows/Linux AMD64 and x86 source; non-xarch
+source matches the original typed stubs. Four fresh diagnostic sets match
+their baselines; the unchanged x86 pair is verified from its original logs.
+All five target pairs remain failed builds. These managed descriptor controls
+do not establish native runtime or generated-code parity.
+
 ## 2026-09-30: Whole shift and rotate lowering
 
 Shift-count mask removal uses the operand's native width, including unsigned

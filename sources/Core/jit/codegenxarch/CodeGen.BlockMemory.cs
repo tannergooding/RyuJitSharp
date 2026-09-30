@@ -12,7 +12,7 @@ public sealed partial class CodeGen
 {
     public void genCodeForStoreBlk(GenTreeBlk node)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
+#if !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Block memory generation requires Windows AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
@@ -72,10 +72,11 @@ public sealed partial class CodeGen
 
     public void genCodeForMemmove(GenTreeBlk node)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
+#if !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Unrolled memmove requires Windows AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
+        assert(TARGET_POINTER_SIZE == 8);
         var srcIndir = node.Data.AsIndir();
         assert(srcIndir.IsContained && !srcIndir.Addr.IsContained);
         var dst = genConsumeReg(node.Addr);
@@ -182,7 +183,7 @@ public sealed partial class CodeGen
 
     public void genCodeForInitBlkLoop(GenTreeBlk node)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
+#if !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Loop block initialization requires Windows AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
@@ -216,7 +217,7 @@ public sealed partial class CodeGen
 
     public void genCodeForInitBlkUnroll(GenTreeBlk node)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
+#if !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Unrolled block initialization requires Windows AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
@@ -343,6 +344,7 @@ public sealed partial class CodeGen
         }
 #endif
         assert((srcIntReg != REG_NA) || (size == 0));
+#if TARGET_AMD64
         var scalarSize = (uint)REGSIZE_BYTES;
         while (scalarSize > size)
         {
@@ -361,12 +363,24 @@ public sealed partial class CodeGen
             dst.Offset = unchecked(dst.Offset - (int)shiftBack);
             EmitStore(INS_mov, scalarSize, srcIntReg);
         }
+#else
+        for (var scalarSize = (uint)REGSIZE_BYTES; size > 0;
+             size -= scalarSize, dst.Offset = unchecked(dst.Offset + (int)scalarSize))
+        {
+            while (scalarSize > size)
+            {
+                scalarSize /= 2;
+            }
+
+            EmitStore(INS_mov, scalarSize, srcIntReg);
+        }
+#endif
 #endif
     }
 
     public void genCodeForCpBlkUnroll(GenTreeBlk node)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
+#if !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Unrolled block copy requires Windows AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
@@ -437,6 +451,7 @@ public sealed partial class CodeGen
         if (size > 0)
         {
             var tempReg = InternalRegisters.GetSingle(node, new regMaskTP(SRBM_ALLINT));
+#if TARGET_AMD64
             var scalarSize = (uint)REGSIZE_BYTES;
             while (scalarSize > size)
             {
@@ -458,11 +473,25 @@ public sealed partial class CodeGen
                 dst.Offset = unchecked(dst.Offset - (int)shiftBack);
                 EmitMoves(INS_mov, scalarSize, tempReg);
             }
+#else
+            for (var scalarSize = (uint)REGSIZE_BYTES; size > 0;
+                 size -= scalarSize,
+                 src.Offset = unchecked(src.Offset + (int)scalarSize),
+                 dst.Offset = unchecked(dst.Offset + (int)scalarSize))
+            {
+                while (scalarSize > size)
+                {
+                    scalarSize /= 2;
+                }
+
+                EmitMoves(INS_mov, scalarSize, tempReg);
+            }
+#endif
         }
 #endif
     }
 
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI
+#if TARGET_XARCH
     private (int Local, regNumber Base, regNumber Index, uint Scale, int Offset) genConsumeBlockAddress(GenTree addr)
     {
         if (!addr.IsContained)
@@ -491,7 +520,7 @@ public sealed partial class CodeGen
     }
 #endif
 
-#if TARGET_AMD64
+#if TARGET_XARCH
     private instruction simdUnalignedMovIns()
     {
         // Legacy MOVUPS is shorter; VEX MOVDQU has broader port availability
