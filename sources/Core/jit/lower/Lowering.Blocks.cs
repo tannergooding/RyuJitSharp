@@ -262,8 +262,36 @@ public sealed partial class Lowering
 
     private void LowerInitBlockStore(GenTreeBlk block)
     {
-#if TARGET_XARCH || TARGET_ARM64
         assert(block.IsInitBlkOp);
+#if TARGET_WASM
+        var destination = block.Addr;
+        var source = block.Data;
+        if (source.Oper is GT_INIT_VAL)
+        {
+            source.IsContained = true;
+            source = source.AsUnOp().Op1;
+        }
+
+        if (block.IsZeroingGCPointersOnHeap)
+        {
+            block._kind = GenTreeBlk.BlkOpKindLoop;
+            source.IsContained = true;
+        }
+        else
+        {
+            block._kind = GenTreeBlk.BlkOpKindNativeOpcode;
+        }
+
+        if ((block._kind is not GenTreeBlk.BlkOpKindNativeOpcode) ||
+            ((block.Flags & GTF_IND_NONFAULTING) is 0))
+        {
+            SetMultiplyUsed(destination
+#if DEBUG
+                , "LowerInitBlockStore destination address"
+#endif
+            );
+        }
+#else
 #if TARGET_XARCH
         _ = TryCreateAddrMode(ref block.AddrRef, false, block);
 #endif
@@ -286,32 +314,31 @@ public sealed partial class Lowering
             (size <= (uint)CompilerInstance.GetUnrollThreshold(Compiler.UnrollKind.Memset, canUseSimd)))
         {
             var fill = source.AsIntCon().IconValue & 0xFF;
+            var useSimdFill = false;
 #if TARGET_XARCH
-            if (canUseSimd && (size >= XMM_REGSIZE_BYTES))
+            useSimdFill = canUseSimd && (size >= XMM_REGSIZE_BYTES);
+#endif
+            if (useSimdFill)
             {
                 // Overlapping SIMD stores handle the remainder without another fill register.
                 source.IsContained = true;
             }
-            else if (fill != 0)
-#else
-            if (fill == 0)
+            else if (fill == 0)
             {
+#if FEATURE_HAS_ZERO_REG
                 source.IsContained = true;
+#endif
             }
-            else
-#endif
-            {
 #if TARGET_64BIT
-                if (size >= REGSIZE_BYTES)
-                {
-                    fill = unchecked(fill * (nint)0x0101010101010101L);
-                    source.Type = TYP_LONG;
-                }
-                else
+            else if (size >= REGSIZE_BYTES)
+            {
+                fill = unchecked(fill * (nint)0x0101010101010101L);
+                source.Type = TYP_LONG;
+            }
 #endif
-                {
-                    fill = unchecked(fill * 0x01010101);
-                }
+            else
+            {
+                fill = unchecked(fill * 0x01010101);
             }
 
             block._kind = GenTreeBlk.BlkOpKindUnroll;
@@ -324,7 +351,7 @@ public sealed partial class Lowering
         {
             // A GC-safe helper could observe a torn GC pointer, including in a stack destination.
             block._kind = GenTreeBlk.BlkOpKindLoop;
-#if TARGET_ARM64
+#if FEATURE_HAS_ZERO_REG
             source.IsContained = true;
 #endif
         }
@@ -332,15 +359,13 @@ public sealed partial class Lowering
         {
             LowerBlockStoreAsHelperCall(block);
         }
-#else
-        throw new NotImplementedException("Block initialization lowering is not ported for this target.");
 #endif
     }
 
     private void LowerCopyBlockStore(GenTreeBlk block)
     {
-#if TARGET_XARCH || TARGET_ARM64
-        assert((block.Oper is GT_STORE_BLK) && !block.IsInitBlkOp);
+        assert(block.Oper is GT_STORE_BLK);
+        assert(!block.IsInitBlkOp);
         var source = block.Data;
         var address = block.Addr;
         var size = block.Size;
@@ -354,13 +379,22 @@ public sealed partial class Lowering
 
         var copyGcPointers = block.Layout.HasGCPtr;
         var isNotHeap = block.IsAddressNotOnHeap(CompilerInstance);
+#if !TARGET_WASM
         var unrollLimit = CompilerInstance.GetUnrollThreshold(Compiler.UnrollKind.Memcpy, !copyGcPointers || isNotHeap);
+#endif
 #if !JIT32_GCENCODER
-        if (copyGcPointers && isNotHeap && (size <= unrollLimit))
+        if (copyGcPointers && isNotHeap)
         {
+#if TARGET_WASM
             copyGcPointers = false;
-            // The temporary registers do not report GC references, so the entire copy must be non-interruptible.
-            block._gcUnsafe = true;
+#else
+            if (size <= unrollLimit)
+            {
+                copyGcPointers = false;
+                // The temporary registers do not report GC references, so the entire copy must be non-interruptible.
+                block._gcUnsafe = true;
+            }
+#endif
         }
 #endif
         if (copyGcPointers)
@@ -372,6 +406,26 @@ public sealed partial class Lowering
             return;
         }
 
+#if TARGET_WASM
+        block._kind = GenTreeBlk.BlkOpKindNativeOpcode;
+        if ((source.Oper is GT_IND) && ((source.Flags & GTF_IND_NONFAULTING) is 0))
+        {
+            SetMultiplyUsed(source.AsIndir().Addr
+#if DEBUG
+                , "LowerCopyBlockStore source address (indirection)"
+#endif
+            );
+        }
+
+        if ((block.Flags & GTF_IND_NONFAULTING) is 0)
+        {
+            SetMultiplyUsed(address
+#if DEBUG
+                , "LowerCopyBlockStore destination address"
+#endif
+            );
+        }
+#else
         if (size <= (uint)unrollLimit)
         {
             block._kind = GenTreeBlk.BlkOpKindUnroll;
@@ -384,8 +438,6 @@ public sealed partial class Lowering
         }
 
         LowerBlockStoreAsHelperCall(block);
-#else
-        throw new NotImplementedException("Block-copy lowering is not ported for this target.");
 #endif
     }
 }

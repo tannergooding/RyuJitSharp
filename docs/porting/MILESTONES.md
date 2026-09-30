@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole block-store lowering
+
+Block copy and initialization preserve GC-pointer atomicity, stack-copy
+unroll limits, target zero-register containment and Wasm memory opcodes.
+Common lowering and scalar-store replacement retain owner-aware node
+replacement and lowering order. Five definitions, including the separate
+Wasm initialization body, retire 361 native lines in `a2168066`.
+Unported target containment and Wasm multiply-use helpers remain retained.
+
+Windows controls pass 26 Debug/26 Release; ARM64 passes 78/78. Final Debug
+runs include the native assertion split; unchanged Release evidence is reused.
+Wasm, RISC-V and LoongArch64 old/final builds stop at identical baseline
+diagnostics. Evidence: `artifacts/block-store-family-7e7da03`.
+These are IR preservation controls, not generated-code parity.
+
 ## 2026-09-29: Whole integer division and remainder lowering
 
 Signed and unsigned constant division retain target-width conversion, 32-bit
