@@ -11,7 +11,6 @@ public sealed partial class Lowering
 {
     private void LowerArg(GenTreeCall call, CallArg callArg)
     {
-#if TARGET_XARCH || TARGET_ARM64
         ref var argSlot = ref callArg.NodeRef;
         var arg = argSlot;
         assert(arg is not null);
@@ -29,7 +28,7 @@ public sealed partial class Lowering
         }
 #endif
 
-#if TARGET_X86
+#if !TARGET_64BIT && !TARGET_WASM
         if (CompilerInstance.opts.compUseSoftFP && (arg.Type is TYP_DOUBLE))
         {
             // Doubles remain primitive until lowering, unlike decomposed integer longs.
@@ -104,9 +103,6 @@ public sealed partial class Lowering
             LowerPutArgStk(arg.AsPutArgStk());
         }
         DISPTREERANGE(BlockRange(), arg);
-#else
-        throw new NotImplementedException("Call argument lowering is not ported for this target.");
-#endif
     }
 
     private void LowerArgsForCall(GenTreeCall call)
@@ -134,13 +130,85 @@ public sealed partial class Lowering
     private unsafe void LowerSpecialCopyArgs(GenTreeCall call)
     {
         var compiler = CompilerInstance;
-        if (!compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB) ||
-            !compiler.compMethodRequiresPInvokeFrame || !call.IsUnmanaged)
+        if (compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB) &&
+            compiler.compMethodRequiresPInvokeFrame && call.IsUnmanaged &&
+            compiler.compHasSpecialCopyArgs())
         {
-            return;
+            var argIndex = call.Args.CountUserArgs() - 1;
+            assert(call.Args.CountUserArgs() <= compiler.info.compILargsCount);
+            var checkForUnmanagedThisArg = call.UnmanagedCallConv is CorInfoCallConvExtension.Thiscall;
+            foreach (var arg in call.Args.Args)
+            {
+                if (!arg.IsUserArg)
+                {
+                    continue;
+                }
+
+                if (checkForUnmanagedThisArg && (argIndex == call.Args.CountUserArgs() - 1))
+                {
+                    assert(arg.Node.Oper is GT_PUTARG_REG);
+                    checkForUnmanagedThisArg = false;
+                    continue;
+                }
+
+                var paramLocal = compiler.compMapILargNum(argIndex);
+                assert(paramLocal < compiler.info.compArgsCount);
+                if (compiler.argRequiresSpecialCopy(paramLocal) && (arg.SignatureType is TYP_STRUCT))
+                {
+                    assert(arg.Node.Oper is GT_PUTARG_STK);
+                    InsertSpecialCopyArg(arg.Node.AsPutArgStk(), arg.SignatureClassHandle, paramLocal);
+                }
+
+                argIndex--;
+            }
+        }
+    }
+
+    private unsafe void InsertSpecialCopyArg(GenTreePutArgStk putArgStk, CORINFO_CLASS_HANDLE argType, int lclNum)
+    {
+        assert(putArgStk is not null);
+        var compiler = CompilerInstance;
+        GenTree destination = new GenTreePhysReg(REG_SPBASE, TYP_I_IMPL);
+        var localType = compiler.lvaGetRealType(lclNum);
+        GenTree source;
+        if (localType is TYP_BYREF or TYP_I_IMPL)
+        {
+            source = compiler.gtNewLclVarNode(localType, lclNum);
+        }
+        else
+        {
+            assert(localType is TYP_STRUCT);
+            source = compiler.gtNewLclAddrNode(TYP_I_IMPL, lclNum, 0);
         }
 
-        throw new NotImplementedException("X86 IJW special-copy argument lowering is not ported.");
+        var destinationPlaceholder = compiler.gtNewZeroConNode(destination.Type);
+        var sourcePlaceholder = compiler.gtNewZeroConNode(source.Type);
+        var helper = compiler.gtNewUserCallNode(TYP_VOID, compiler.info.compCompHnd->getSpecialCopyHelper(argType));
+        _ = helper.Args.PushBack(NewCallArg.CreateForPrimitive(destinationPlaceholder));
+        _ = helper.Args.PushBack(NewCallArg.CreateForPrimitive(sourcePlaceholder));
+        _ = compiler.fgMorphArgs(helper);
+
+        var helperRange = LIR.SeqTree(compiler, helper);
+        var first = helperRange.FirstNode;
+        var last = helperRange.LastNode;
+        assert(first is not null && last is not null);
+        BlockRange().InsertAfter(putArgStk, helperRange);
+        BlockRange().InsertAfter(putArgStk, destination);
+        BlockRange().InsertAfter(putArgStk, source);
+
+        var foundDestination = BlockRange().TryGetUse(destinationPlaceholder, out var destinationUse);
+        var foundSource = BlockRange().TryGetUse(sourcePlaceholder, out var sourceUse);
+        assert(foundDestination && foundSource);
+        destinationUse.ReplaceWith(destination);
+        sourceUse.ReplaceWith(source);
+        destinationPlaceholder.IsUnusedValue = true;
+        sourcePlaceholder.IsUnusedValue = true;
+
+        LowerRange(first, last);
+        MovePutArgNodesUpToCall(helper);
+
+        BlockRange().Remove(destinationPlaceholder);
+        BlockRange().Remove(sourcePlaceholder);
     }
 #endif
 

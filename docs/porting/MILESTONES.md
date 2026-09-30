@@ -16,6 +16,31 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole call-argument lowering
+
+Call-argument lowering retains all target branches, split field-list owner
+chains and placement order. x86 IJW copy-helper insertion and three compiler
+argument-marker helpers preserve native placeholder and lowering order.
+Eight definitions and associated headings/declarations/enclosures retire 627
+native lines in `0e571e3d`: six newly completed definitions account for 289
+lines; two already-translated split/legalization bodies account for 338 lines
+of retirement catchup. Tailcall, CFG and independent stack-argument helpers
+remain retained.
+
+Windows controls pass 45 Debug/45 Release; old/final Linux results are 43
+passing/2 failing in both configurations with identical failure messages.
+ARM64 passes 18/18, including early/late split-owner preservation cases.
+An introduced x86 `sealed partial Compiler` declaration was corrected:
+the corrected isolated diagnostic set returns from 88 errors to the same 14
+baseline errors. The other four target error sets also match and remain
+failed builds. x86 special-copy execution remains blocked by those existing
+target failures.
+Evidence: `artifacts/lower-call-arguments-50e4df9`, final `work-v3`,
+with eight actual TRXs and exact source/diagnostic-overlay verification.
+Unaffected x64 `work-v1` and ARM64 `work-v2` results are reused; the last
+delta is exclusively an x86 IJW declaration correction.
+These controls do not establish target execution or generated-code parity.
+
 ## 2026-09-30: Whole general register selection
 
 The general register selector preserves all target branches and heuristic

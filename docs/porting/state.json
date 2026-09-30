@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "callArgumentLoweringClosure": {
+      "scope": "Whole call-argument lowering preserves all target branches, field-list/register/stack owner chains and argument placement order. x86 IJW special-copy insertion and three compiler marker helpers preserve copy-helper and placeholder lowering order.",
+      "mapping": "The three compiler.h special-copy marker helpers map to compiler/Compiler.SpecialCopyArgs.cs. Existing split and legalization bodies were verified unchanged before their retirement.",
+      "validation": "Windows45D/45R pass; old/final Linux43pass2fail/45D/R have identical identities/messages for two outgoing-area expectations. ARM6418D/18R passes, including two early/late split preservation cases. Finalwork-v3 removes an introduced sealed partial Compiler declaration; corrected x86 errors return88->14 and exactly match baseline. Other four diagnostic sets92/85/85/81match, not successful builds.",
+      "retirement": "Eight accepted definitions, headings, declarations and completed IJW enclosures;627 native lines. Six newly completed definitions account for289lines; two already-translated split/legalization definitions account for338lines of retirement catchup. Independent tailcall, CFG and stack-argument dependencies remain retained.",
+      "nativeBefore": "47ee37374397a161575792b5d0b4a6808598495e",
+      "nativeAfter": "0e571e3d9eb3f9c0c5664a3f58d18b3b53f993d1",
+      "evidence": "artifacts/lower-call-arguments-50e4df9 finalwork-v3;2499source files,8actualTRXs and paired diagnostic overlays/logs independently verified. Unaffectedwork-v1 x64 andwork-v2 ARM64 evidence reused; final delta is exclusively an x86 IJW declaration fix.",
+      "limits": "The x86 special-copy path cannot execute behind existing target build blockers. The new split fixture is preservation coverage, not an old-failing regression. No native runtime or generated-code parity claim."
+    },
     "registerSelectionClosure": {
       "scope": "Whole RegisterSelection::select preserves target branches and heuristic/tie-break order, restoring x86 byte-register preference and ARM32 double-half busy masks. The general caller gate is removed.",
       "validation": "Linux integration91pass5fail->96pass/96D and78pass5fail->83pass/83R; direct8pass15fail->23pass/23D/R. Exact old/final test identities match and no old passing test regresses. Windows integration101D/88R and direct23D/23R pass; ARM64 integration110D/91R passes. Five isolated target error sets match, not successful builds.",
@@ -1990,19 +2000,19 @@
         "Linux execution parity remains separate from managed SysV target fixtures and the active backend/ABI continuation.",
         "Whole-pipeline dump parity and native diagnostic quirks remain separate; allocation statistics are excluded only under explicit D001 comparison policy."
       ],
-      "parentScope": "Call/PInvoke committed50e4df9 and allocation traversal1e0ae1a. Register selection accepted/native47ee3737, managed commit next; call-argument lowering finalwork-v2 controls complete, classify x86 diagnostic reachability before retirement. Parent owns source/evidence review and explicit hidden child launches; max2compiler-heavy commands,8GiB cutoff, immutable owned-only snapshots,13frozenWasm files and exact native retirement.",
+      "parentScope": "General selection committedb3aa70b. Call-argument work-v3 accepted/native0e571e3d, managed commit next; minimal selection/allocation worker continues on exactb3aa70b. Parent owns source/evidence review and explicit hidden child launches; max2compiler-heavy commands,8GiB cutoff, immutable owned-only snapshots,13frozenWasm files and exact native retirement.",
       "wholeFunctionRepairLanes": [
         {
-          "scope": "Whole retained shared LSRA register-selection family.",
+          "scope": "Whole retained shared LSRA minimal selection/allocation family.",
           "owner": "2aa4b7ae-79d5-4599-ad4a-eef9208ec3f0",
           "files": "LinearScan RegisterSelection partials, necessary typed support and focused fixtures; parent owns shared contracts and native integration.",
-          "status": "selector final source/evidence accepted; all fifteen direct and five integration Linux failures pass in Debug/Release. Fourteen actualTRXs and equal five diagnostic sets verified. Native47ee3737 retires477lines; managed commit next. selectMinimal remains independent."
+          "status": "general selector committedb3aa70b/native47ee3737; worker assigned whole retained selectMinimal/allocateRegMinimal pair on exactb3aa70b. Old-source controls required for changed target behavior; independent stress/consecutive dependencies remain tracked."
         },
         {
           "scope": "Whole retained call-argument lowering family.",
           "owner": "c25d48cd-9585-4ecc-9253-39bf6743137d",
           "files": "Lowering partials and focused fixtures; parent owns shared GenTree/compiler contracts.",
-          "status": "call-argument whole-body source review accepted. work-v1 Windows45D/45R pass; Linux43pass2fail/45D/R matches old controls. work-v2 fixture-only correction passes ARM6418D/18R. Paired diagnostics executed; x86 reaches deeper preexisting errors after helper activation, worker classifying exact differences. No native retirement yet."
+          "status": "call-argument finalwork-v3 accepted;2499source files/8TRXs and five exact diagnostic sets verified after correcting introduced x86 sealed partial declaration. Native0e571e3d retires8definitions627lines, including2previously translated bodies338lines. Managed commit next."
         },
         {
           "scope": "Whole retained shared kill-set family after return/write-barrier closure.",
@@ -2418,7 +2428,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Commit accepted register selection with related docs; native47ee3737 already retires477lines, do not repeat. Then continue next dependency-coherent LSRA family. Call-arguments work-v2 ARM64 and unaffectedwork-v1 x64 controls complete; collect c25d48cd exact x86 diagnostic difference classification, independently verify source/TRXs/overlays and exact native spans, then integrate. Hidden extension tools remain unavailable, but process execution recovered through sessionfiles/Invoke-HiddenPortProcess.ps1: explicit UseShellExecute=false/CreateNoWindow=true children and guarded dotnet runners, no direct compiler launch. Preserve13Wasm and native pin-plus-one; no publication. Process review19 at20min/streak1.",
+    "nextAction": "Commit accepted call-argument finalwork-v3 with related docs; native0e571e3d already retires8definitions627lines, do not repeat. Then assign next retained lowering dependency-coherent family to c25d48cd. Corrected x86 diagnostic14 matches baseline exactly; earlier74introduced CS0628 errors came from owned sealed partial declaration, not newly exposed baseline errors. General selector committedb3aa70b; worker2aa4b7ae continues minimal selector/allocation pair on exactb3aa70b. Hidden extension tools remain unavailable, but execution recovered through sessionfiles/Invoke-HiddenPortProcess.ps1: explicit UseShellExecute=false/CreateNoWindow=true children and guarded dotnet runners. Preserve13Wasm and native pin-plus-one; no publication. Process review19 at20min/streak1.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
