@@ -75,6 +75,43 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
         }, evex);
     }
 
+    [Test]
+    public static void PoppingLowerRegisterPreservesOtherRegisterBits()
+    {
+        WithAllocator((compiler, allocator) => {
+#if HAS_MORE_THAN_64_REGISTERS
+            var registers = new regMaskTP(SRBM_RAX | SRBM_RBX, SRBM_RAX);
+#else
+            var registers = new regMaskTP(SRBM_RAX | SRBM_RBX);
+#endif
+            Assert.That(TryPopRegister(allocator, ref registers, out var popped), Is.True);
+            Assert.That(popped, Is.EqualTo(regNumber.REG_RAX));
+            Assert.That(registers.Lower, Is.EqualTo(SRBM_RBX));
+#if HAS_MORE_THAN_64_REGISTERS
+            Assert.That(registers.Upper, Is.EqualTo(SRBM_RAX));
+#endif
+        });
+    }
+
+#if TARGET_ARM
+    [TestCase(regNumber.REG_F0)]
+    [TestCase(regNumber.REG_F1)]
+    public static void FixedHalfOfDoubleConstantClearsTheWholePair(regNumber fixedHalf)
+    {
+        WithAllocator((compiler, allocator) => {
+            var pair = genSingleTypeRegMask(regNumber.REG_F0) |
+                genSingleTypeRegMask(regNumber.REG_F1);
+            var untouched = genSingleTypeRegMask(regNumber.REG_F2);
+            RegistersWithConstants(allocator) = new regMaskTP(pair | untouched);
+
+            Assert.That(SingleTypeRegisterMask(allocator, fixedHalf, TYP_DOUBLE), Is.EqualTo(pair));
+            ClearConstantRegister(allocator, fixedHalf, TYP_DOUBLE);
+
+            Assert.That(RegistersWithConstants(allocator), Is.EqualTo(new regMaskTP(untouched)));
+        });
+    }
+#endif
+
 #if DEBUG
     [Test]
     public static void MinimalAllocationDiagnosticsMatchNativeIntervalAndReferenceShapes()
@@ -575,6 +612,20 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "allocateRegistersMinimal")]
     private static extern void AllocateRegistersMinimal(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "tryPopRegister")]
+    private static extern bool TryPopRegister(LinearScan allocator, ref regMaskTP registers, out regNumber register);
+
+#if TARGET_ARM
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "getSingleTypeRegMask")]
+    private static extern regMask SingleTypeRegisterMask(LinearScan allocator, regNumber register, var_types type);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "clearConstantReg")]
+    private static extern void ClearConstantRegister(LinearScan allocator, regNumber register, var_types type);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_registersWithConstants")]
+    private static extern ref regMaskTP RegistersWithConstants(LinearScan allocator);
+#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildPhysRegRecords")]
     private static extern void BuildPhysRegRecords(LinearScan allocator);

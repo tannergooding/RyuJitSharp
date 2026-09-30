@@ -9,7 +9,6 @@ public sealed partial class LinearScan
 {
     private void allocateRegisters()
     {
-#if (TARGET_AMD64 && WINDOWS_AMD64_ABI) || TARGET_ARM64
         JITDUMP("*************** In LinearScan::allocateRegisters()\n");
 #if DEBUG
         if (VERBOSE)
@@ -52,6 +51,12 @@ public sealed partial class LinearScan
             updateNextFixedRef(register, register.firstRefPosition, _killHead);
             if (register.assignedInterval is Interval incoming)
             {
+#if TARGET_ARM
+                if (incoming.registerType is TYP_DOUBLE && !genIsValidDoubleReg(register.regNum))
+                {
+                    continue;
+                }
+#endif
                 updateNextIntervalRef(register.regNum, incoming);
                 updateSpillCost(register.regNum, incoming);
                 setRegInUse(register.regNum, incoming.registerType);
@@ -255,9 +260,18 @@ public sealed partial class LinearScan
                 if ((assignedInterval is not null) && !assignedInterval.isActive &&
                     assignedInterval.isConstant)
                 {
-                    clearConstantReg(fixedRegister.regNum);
+                    clearConstantReg(fixedRegister.regNum, assignedInterval.registerType);
                     fixedRegister.assignedInterval = null;
                     clearSpillCost(fixedRegister.regNum, assignedInterval.registerType);
+#if TARGET_ARM
+                    if (assignedInterval.registerType is TYP_DOUBLE)
+                    {
+                        var otherHalf = findAnotherHalfRegRec(fixedRegister);
+                        assert(ReferenceEquals(otherHalf.assignedInterval, assignedInterval));
+                        otherHalf.assignedInterval = null;
+                        clearSpillCost(otherHalf.regNum, assignedInterval.registerType);
+                    }
+#endif
                 }
                 _regsInUseThisLocation |= createRegisterMask(reference.registerAssignment,
                     fixedRegister.registerType);
@@ -389,7 +403,8 @@ public sealed partial class LinearScan
                                     updateSpillCost(assignedRegister, interval);
                                 }
                                 registersToFree |= createRegisterMask(
-                                    genSingleTypeRegMask(assignedRegister), interval.registerType);
+                                    getSingleTypeRegMask(assignedRegister, interval.registerType),
+                                    interval.registerType);
                             }
                             reference.registerAssignment = SRBM_NONE;
                             lastAllocatedRefPosition = reference;
@@ -436,7 +451,7 @@ public sealed partial class LinearScan
                     unassignPhysReg(register, interval.firstRefPosition);
                     if (assigned.isConstant)
                     {
-                        clearConstantReg(assignedRegister);
+                        clearConstantReg(assignedRegister, assigned.registerType);
                     }
 #if DEBUG
                     dumpFullAllocationEvent(FullAllocationEvent.NO_REG_ALLOCATED, reference, interval);
@@ -476,7 +491,8 @@ public sealed partial class LinearScan
                     {
                         // The source local must survive unchanged until the putarg's fixed-register kill.
                         _regsBusyUntilKill |= createRegisterMask(
-                            genSingleTypeRegMask(source.physReg), source.registerType);
+                            getSingleTypeRegMask(source.physReg, source.registerType),
+                            source.registerType);
                     }
                     else
                     {
@@ -588,7 +604,7 @@ public sealed partial class LinearScan
                     if (ReferenceEquals(register.assignedInterval, interval))
                     {
                         unassignPhysRegNoSpill(register);
-                        clearConstantReg(assignedRegister);
+                        clearConstantReg(assignedRegister, interval.registerType);
                     }
                     reference.moveReg = true;
                     assignedRegister = REG_NA;
@@ -619,9 +635,12 @@ public sealed partial class LinearScan
                             if (copy != assignedRegister)
                             {
                                 lastAllocatedRefPosition = reference;
-                                var copyBit = genSingleTypeRegMask(copy);
-                                var oldBit = (assignedBit & _consecutiveRegsInUseThisLocation) != SRBM_NONE
-                                    ? SRBM_NONE : assignedBit;
+                                var copyBit = getSingleTypeRegMask(copy, interval.registerType);
+                                var oldBit = getSingleTypeRegMask(assignedRegister, interval.registerType);
+                                if ((oldBit & _consecutiveRegsInUseThisLocation) != SRBM_NONE)
+                                {
+                                    oldBit = SRBM_NONE;
+                                }
                                 updateRegsFreeBusyState(reference, interval.registerType, oldBit | copyBit,
                                     ref registersToFree, ref delayedRegistersToFree, interval, assignedRegister);
                                 if (!reference.lastUse)
@@ -677,14 +696,14 @@ public sealed partial class LinearScan
                     var copyRegister = assignCopyReg(reference);
 #endif
                     lastAllocatedRefPosition = reference;
-                    var copyMask = genSingleTypeRegMask(copyRegister);
+                    var copyMask = getSingleTypeRegMask(copyRegister, interval.registerType);
 #if TARGET_ARM64
                     if (needsConsecutive && reference.isFirstRefPositionOfConsecutiveRegisters())
                     {
                         assignConsecutiveRegisters(reference, copyRegister);
                     }
 #endif
-                    var originalMask = genSingleTypeRegMask(assignedRegister);
+                    var originalMask = getSingleTypeRegMask(assignedRegister, interval.registerType);
 #if TARGET_ARM64
                     if (needsConsecutive && (_consecutiveRegsInUseThisLocation & originalMask) != SRBM_NONE)
                     {
@@ -714,7 +733,8 @@ public sealed partial class LinearScan
                     dumpFullAllocationEvent(FullAllocationEvent.NEEDS_NEW_REG,
                         reference, register: assignedRegister);
 #endif
-                    registersToFree |= createRegisterMask(assignedBit, interval.registerType);
+                    registersToFree |= createRegisterMask(
+                        getSingleTypeRegMask(register.regNum, interval.registerType), interval.registerType);
                     assignedRegister = REG_NA;
                     if (ReferenceEquals(register.assignedInterval, interval))
                     {
@@ -791,8 +811,7 @@ public sealed partial class LinearScan
                     assignedRegister = allocateReg(interval, reference, out var selectionScore);
 #endif
 #if TARGET_ARM64
-                    if (needsConsecutive && reference.isFirstRefPositionOfConsecutiveRegisters() &&
-                        assignedRegister != REG_NA)
+                    if (needsConsecutive && reference.isFirstRefPositionOfConsecutiveRegisters())
                     {
                         assignConsecutiveRegisters(reference, assignedRegister);
                     }
@@ -833,7 +852,8 @@ public sealed partial class LinearScan
             if (assignedRegister != REG_NA)
             {
                 assignedBit = genSingleTypeRegMask(assignedRegister);
-                var registerMask = createRegisterMask(assignedBit, interval.registerType);
+                var registerTypeMask = getSingleTypeRegMask(assignedRegister, interval.registerType);
+                var registerMask = createRegisterMask(registerTypeMask, interval.registerType);
                 _regsInUseThisLocation |= registerMask;
                 if (reference.delayRegFree)
                 {
@@ -841,7 +861,7 @@ public sealed partial class LinearScan
                 }
                 reference.registerAssignment = assignedBit;
                 interval.physReg = assignedRegister;
-                removeRegisterSetForType(ref registersToFree, assignedBit, interval.registerType);
+                removeRegisterSetForType(ref registersToFree, registerTypeMask, interval.registerType);
                 var unassign = false;
                 if (!interval.IsUpperVector())
                 {
@@ -897,6 +917,68 @@ public sealed partial class LinearScan
             lastAllocatedRefPosition = reference;
         }
 
+#if JIT32_GCENCODER
+        if (_compiler.lvaKeepAliveAndReportThis())
+        {
+            ref var thisLocal = ref _compiler.lvaGetDesc(_compiler.info.compThisArg);
+            if (thisLocal.lvLRACandidate)
+            {
+                var interval = getIntervalForLocalVar(thisLocal._varIndex);
+                if (interval.isSplit)
+                {
+                    setIntervalAsSpilled(interval);
+                }
+                if (interval.isSpilled)
+                {
+                    var previousBlockNumber = 0u;
+                    for (var reference = interval.firstRefPosition; reference is not null;
+                        reference = reference.nextRefPosition)
+                    {
+                        if (RefTypeIsUse(reference.refType) && reference.bbNum != previousBlockNumber)
+                        {
+                            var inMap = getInVarToRegMap(reference.bbNum)
+                                ?? throw new FatalJitException("A live this interval requires an incoming map.");
+                            setVarReg(inMap, thisLocal._varIndex, REG_STK);
+                        }
+
+                        if (reference.RegOptional())
+                        {
+                            reference.registerAssignment = SRBM_NONE;
+                            reference.reload = false;
+                            reference.spillAfter = false;
+                        }
+
+                        switch (reference.refType)
+                        {
+                            case RefType.RefTypeDef:
+                            {
+                                if (reference.registerAssignment != SRBM_NONE)
+                                {
+                                    reference.spillAfter = true;
+                                }
+                                break;
+                            }
+
+                            case RefType.RefTypeUse:
+                            {
+                                if (reference.registerAssignment != SRBM_NONE)
+                                {
+                                    reference.reload = true;
+                                    reference.spillAfter = true;
+                                    reference.copyReg = false;
+                                    reference.moveReg = false;
+                                }
+                                break;
+                            }
+                        }
+
+                        previousBlockNumber = reference.bbNum;
+                    }
+                }
+            }
+        }
+#endif
+
 #if DEBUG
         if (extendLifetimes())
         {
@@ -924,11 +1006,6 @@ public sealed partial class LinearScan
             dumpVarRefPositions("AFTER ALLOCATION");
             dumpActiveIntervalsAtEnd();
         }
-#endif
-#else
-        NYI("Full LSRA allocation traversal outside Windows AMD64");
-        fatal(CORJIT_IMPLLIMITATION);
-        throw new FatalJitException("Full LSRA allocation traversal outside Windows AMD64.");
 #endif
     }
 

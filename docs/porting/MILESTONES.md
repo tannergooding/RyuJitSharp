@@ -16,6 +16,28 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole register allocation traversal
+
+Optimized and minimal allocation traversal retain all target branches, ARM
+double-register bookkeeping and the 32-bit GC `this` postpass. Lower-bank mask
+removal now preserves other banks without using members absent on single-bank
+targets. Two whole definitions, template guards, headings and declarations
+retire 1,959 native lines in `b99e9953`; register selection, ARM32 pair lookup and
+ARM64 consecutive-allocation dependencies remain independent.
+
+Windows integration controls pass 101 Debug/88 Release and direct controls
+65/52; ARM64 integration passes 110/91. Linux integration retains 91 passing/5
+failing Debug and 78/5 Release, but the five failures now reach the separately
+retained `RegisterSelection.select` boundary. Direct Linux controls add one
+mask-preservation pass in each configuration, reaching 28/15 Debug and 20/15
+Release; all fifteen failure identities and messages match the baseline.
+The mask test also passes on Windows in both configurations.
+Five isolated target diagnostic sets match and remain failed builds.
+Evidence: `artifacts/lsra-allocation-traversal-7270c48`, final `final-v2`,
+with 14 actual TRXs and exact snapshot/diagnostic-overlay verification.
+ARM32 pair fixtures remain source-only; these controls do not establish
+target execution or generated-code parity.
+
 ## 2026-09-30: Whole call and PInvoke lowering
 
 Method-jump, direct-call and PInvoke lowering preserve frame publication and

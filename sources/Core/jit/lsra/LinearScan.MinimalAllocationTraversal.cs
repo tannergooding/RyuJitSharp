@@ -237,9 +237,18 @@ public sealed partial class LinearScan
 
                 if ((assignedInterval is not null) && !assignedInterval.isActive && assignedInterval.isConstant)
                 {
-                    clearConstantReg(register.regNum);
+                    clearConstantReg(register.regNum, assignedInterval.registerType);
                     register.assignedInterval = null;
                     clearSpillCost(register.regNum, assignedInterval.registerType);
+#if TARGET_ARM
+                    if (assignedInterval.registerType is TYP_DOUBLE)
+                    {
+                        var otherHalf = findAnotherHalfRegRec(register);
+                        assert(ReferenceEquals(otherHalf.assignedInterval, assignedInterval));
+                        otherHalf.assignedInterval = null;
+                        clearSpillCost(otherHalf.regNum, assignedInterval.registerType);
+                    }
+#endif
                 }
 
                 _regsInUseThisLocation |=
@@ -283,7 +292,7 @@ public sealed partial class LinearScan
                     unassignPhysReg(register, firstReference);
                     if (assignedInterval.isConstant)
                     {
-                        clearConstantReg(assignedRegister);
+                        clearConstantReg(assignedRegister, assignedInterval.registerType);
                     }
 
 #if DEBUG
@@ -347,7 +356,7 @@ public sealed partial class LinearScan
                     if (ReferenceEquals(register.assignedInterval, currentInterval))
                     {
                         unassignPhysRegNoSpill(register);
-                        clearConstantReg(assignedRegister);
+                        clearConstantReg(assignedRegister, currentInterval.registerType);
                     }
 
                     currentRefPosition.moveReg = true;
@@ -380,8 +389,8 @@ public sealed partial class LinearScan
                     }
 
                     lastAllocatedRefPosition = currentRefPosition;
-                    var copyRegisterMask = genSingleTypeRegMask(copyRegister);
-                    var oldRegisterMask = genSingleTypeRegMask(assignedRegister);
+                    var copyRegisterMask = getSingleTypeRegMask(copyRegister, currentInterval.registerType);
+                    var oldRegisterMask = getSingleTypeRegMask(assignedRegister, currentInterval.registerType);
                     updateRegsFreeBusyState(
                         currentRefPosition, currentInterval.registerType, oldRegisterMask | copyRegisterMask,
                         ref registersToFree, ref delayedRegistersToFree, currentInterval, assignedRegister);
@@ -405,7 +414,7 @@ public sealed partial class LinearScan
                         MinimalAllocationEvent.NEEDS_NEW_REG, currentRefPosition, register: assignedRegister);
 #endif
                     registersToFree |=
-                        createRegisterMask(genSingleTypeRegMask(assignedRegister),
+                        createRegisterMask(getSingleTypeRegMask(assignedRegister, currentInterval.registerType),
                             currentInterval.registerType);
                     assignedRegister = REG_NA;
                     if (ReferenceEquals(register.assignedInterval, currentInterval))
@@ -493,7 +502,7 @@ public sealed partial class LinearScan
             if (assignedRegister is not REG_NA)
             {
                 assignedRegisterMask = genSingleTypeRegMask(assignedRegister);
-                var assignedRegisterTypeMask = genSingleTypeRegMask(assignedRegister);
+                var assignedRegisterTypeMask = getSingleTypeRegMask(assignedRegister, currentInterval.registerType);
                 var assignedRegisterMaskTP = createRegisterMask(
                     assignedRegisterTypeMask, currentInterval.registerType);
                 _regsInUseThisLocation |= assignedRegisterMaskTP;
@@ -598,6 +607,25 @@ public sealed partial class LinearScan
         _regsBusyUntilKill = RBM_NONE;
     }
 
+    private static SingleTypeRegSet getSingleTypeRegMask(regNumber register, RegisterType registerType)
+    {
+#if TARGET_ARM
+        if (registerType is TYP_DOUBLE)
+        {
+            // A double occupies both halves, even when its second half is queried.
+            var firstHalf = genIsValidDoubleReg(register) ? register : register - 1;
+            return firstHalf.GetSingleTypeFloatMask(TYP_DOUBLE);
+        }
+#endif
+        return genSingleTypeRegMask(register);
+    }
+
+    private void clearConstantReg(regNumber register, RegisterType registerType)
+    {
+        _registersWithConstants &=
+            ~createRegisterMask(getSingleTypeRegMask(register, registerType), registerType);
+    }
+
     private void processBlockEndAllocation(BasicBlock currentBlock)
     {
         markBlockVisited(currentBlock);
@@ -640,7 +668,7 @@ public sealed partial class LinearScan
         if (lower != 0)
         {
             var offset = BitOperations.TrailingZeroCount(lower);
-            registers = new regMaskTP(registers.Lower & ~(SingleTypeRegSet)(1UL << offset), registers.Upper);
+            registers &= ~new regMaskTP((SingleTypeRegSet)(1UL << offset));
             register = (regNumber)(offset + REG_LOW_BASE);
             return true;
         }
