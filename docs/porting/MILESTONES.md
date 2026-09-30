@@ -16,6 +16,28 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Common instruction frontend and target tables
+
+Instruction names, operand-size strings, zero-operand generation, FP and
+pseudo-name metadata, Wasm SIMD element widths and return dispatch now preserve
+their whole native target branches. The table generator supplies ARM32,
+ARM64/SVE, LoongArch64, RISC-V64 and Wasm names and metadata in native order.
+Existing xarch table entries remain unchanged; synthetic `lea` metadata is
+zero-initialized where native includes it, without adding a synthetic name.
+The live instruction enum is unchanged.
+
+The same forty-eight focused controls pass in Windows and Linux Debug/Release.
+Seven whole definitions and seven exclusive prototypes retire 207 native lines,
+including headings and owned guards. Independent emitter tables and recording
+helpers remain native; the previously absent ARM64 metadata table is not counted
+again. ARM32 return remains intentionally folded into its epilog; ARM64's
+unreachable path and other-target NYIs terminate.
+
+The x86 diagnostic retains fourteen earlier errors and zero warnings/tests.
+Two positive x86 X87 controls, two ARM32 FP controls, one ARM64 SVE-name control
+and three Wasm SIMD-width controls remain source-only. Focused AMD64 checks do
+not establish other-target execution or generated-code parity.
+
 ## 2026-09-30: Floating conversion and math instruction selection
 
 The whole xarch conversion selector is reachable on x86, and ARM32 conversion

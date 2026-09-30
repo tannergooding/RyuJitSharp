@@ -424,17 +424,23 @@ public sealed partial class CodeGen
 
     public void instGen_Return(uint stackArgumentSize)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Return instruction generation requires xarch.");
-#else
+#if TARGET_XARCH
         if (stackArgumentSize == 0)
         {
             instGen(INS_ret);
         }
         else
         {
-            inst_IV(INS_ret, (nint)stackArgumentSize);
+            inst_IV(INS_ret, unchecked((nint)stackArgumentSize));
         }
+#elif TARGET_ARM
+        // ARM emits the return as part of the register-restoring epilog pop.
+#elif TARGET_ARM64
+        unreached();
+        throw new FatalJitException(CORJIT_SKIPPED, "instGen_Return is not used on ARM64.");
+#else
+        NYI("instGen_Return");
+        throw new FatalJitException(CORJIT_SKIPPED, "Return instruction generation is not implemented on this target.");
 #endif
     }
 }

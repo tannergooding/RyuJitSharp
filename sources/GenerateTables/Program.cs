@@ -1182,6 +1182,28 @@ public enum instruction
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {name}, // INS_{parts[0].Trim()}");
         });
 
+        var otherNameBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
+            if (inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            var name = parts[1].Trim();
+            if (!name.StartsWith('"', StringComparison.Ordinal)
+                || !name.EndsWith('"', StringComparison.Ordinal))
+            {
+                throw new InvalidDataException($"Unexpected instruction name: '{line}'");
+            }
+
+            var id = parts[0].Trim();
+            if (inputFile.Equals(@"Inputs\instrsarm64sve.h", StringComparison.Ordinal))
+            {
+                id = $"sve_{id}";
+            }
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {name}, // INS_{id}");
+        });
+
         _ = Directory.CreateDirectory(@"Outputs\jit\instr");
         File.WriteAllText(@"Outputs\jit\instr\CodeGen.InstructionNames.generated.cs", $$"""
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
@@ -1198,6 +1220,9 @@ public sealed partial class CodeGen
 #if TARGET_XARCH
     private static readonly string[] s_insNames = [
 {{nameBuilder}}    ];
+#else
+    private static readonly string[] s_insNames = [
+{{otherNameBuilder}}    ];
 #endif
 }
 """);
@@ -1245,6 +1270,20 @@ public sealed partial class CodeGen
                 var flags = string.Join(" | ", parts[2].Split('|', StringSplitOptions.TrimEntries));
                 _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {flags}, // {parts[0].Trim()}");
             }
+        });
+
+        var otherFlagsBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
+            if (inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal)
+                || inputFile.Equals(@"Inputs\instrsarm64.h", StringComparison.Ordinal)
+                || inputFile.Equals(@"Inputs\instrsarm64sve.h", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            var flags = inputFile.Equals(@"Inputs\instrsarm.h", StringComparison.Ordinal)
+                ? $"({parts[3].Trim()}) | (INST_FP * ({parts[2].Trim()}))"
+                : parts[2].Trim();
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {flags}, // INS_{parts[0].Trim()}");
         });
 
         var latencyBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
@@ -1343,6 +1382,7 @@ public sealed partial class CodeGen
 {{flagsBuilder}}
     ];
 #elif TARGET_ARM64
+    private const byte INST_FP = 1;
     internal const byte LD = 1;
     internal const byte ST = 2;
     private const byte CMP = 4;
@@ -1354,6 +1394,25 @@ public sealed partial class CodeGen
 
     internal static ReadOnlySpan<byte> instInfo => [
 {{arm64FlagsBuilder}}
+        0, // INS_lea is zero-initialized in native instInfo[INS_count].
+    ];
+#elif TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
+    private const byte INST_FP = 1;
+
+#if TARGET_ARM
+    private const byte LD = 2;
+    private const byte ST = 4;
+    private const byte CMP = 8;
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+    private const byte LD = 1;
+    private const byte ST = 2;
+#endif
+
+    internal static ReadOnlySpan<byte> instInfo => [
+{{otherFlagsBuilder}}
+#if TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
+        0, // INS_lea is zero-initialized in native instInfo[INS_count].
+#endif
     ];
 #endif
 }

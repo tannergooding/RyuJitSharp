@@ -7,11 +7,21 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if TARGET_XARCH
     public static bool instIsFP(instruction ins)
     {
         assert((uint)ins < (uint)instInfo.Length);
+#if TARGET_XARCH
         return (instInfo[(int)ins] & INS_FLAGS_X87Instr) != 0;
+#else
+        return (instInfo[(int)ins] & INST_FP) != 0;
+#endif
+    }
+
+#if TARGET_XARCH
+    public static bool instHasPseudoName(instruction ins)
+    {
+        assert((uint)ins < (uint)instInfo.Length);
+        return (instInfo[(int)ins] & INS_FLAGS_HasPseudoName) != 0;
     }
 
     public static int instKMaskBaseSize(instruction ins)
@@ -35,8 +45,16 @@ public sealed partial class CodeGen
         return false;
 #endif
     }
-#elif TARGET_ARM
-    public static bool instIsFP(instruction ins)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM floating-point instruction classification is not ported.");
+#endif
+
+#if TARGET_WASM
+    // Bit zero is the FP flag; the upper seven bits encode the SIMD element width.
+    private const int InstInfoElemSizeShift = 1;
+
+    public static byte instSimdElemSize(instruction ins)
+    {
+        assert((uint)ins < (uint)instInfo.Length);
+        return (byte)(instInfo[(int)ins] >> InstInfoElemSizeShift);
+    }
 #endif
 }

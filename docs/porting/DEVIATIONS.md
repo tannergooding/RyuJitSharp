@@ -1570,6 +1570,18 @@ AMD64 math/conversion controls do not execute the ten x86 or seventeen ARM32
 cases; existing target declaration blockers remain. The already-completed
 xarch math selector is unchanged and is not counted again in native retirement.
 
+The common instruction frontend now retains complete target name/size queries,
+zero-operand calls, FP/pseudo-name metadata, Wasm SIMD-width queries and return
+dispatch. Generated target tables preserve native ordering and flag values,
+including the native ARM64 overlap between `INST_FP` and `LD`. Synthetic `lea`
+has zero metadata on targets where native includes it; it is not a name-table
+entry. ARM32 return is intentionally epilog-folded rather than an unsupported
+no-op. ARM64's unused return path and other-target NYIs explicitly terminate.
+Independent recording helpers remain unsupported where already tracked.
+Forty-eight AMD64 cases pass in each Windows/Linux configuration, but the
+fourteen earlier x86 declaration errors and source-only ARM32/ARM64/Wasm
+controls do not establish other-target compilation, execution or code parity.
+
 `LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
 performs conservative frame layout before reserving IP1 and reserves x19 when
 the layout contains scalable vectors. The layout includes varargs homes,

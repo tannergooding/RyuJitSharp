@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 using System;
 using static RyuJitSharp.Globals;
 
@@ -14,9 +13,11 @@ public sealed partial class CodeGen
     public string genInsName(instruction ins)
     {
         assert((uint)ins < (uint)s_insNames.Length);
+        assert(s_insNames[(int)ins] is not null);
         return s_insNames[(int)ins];
     }
 
+#if TARGET_XARCH
     public string genInsDisplayName(global::RyuJitSharp.Emitter.instrDesc id)
     {
         var ins = id.idIns();
@@ -54,7 +55,7 @@ public sealed partial class CodeGen
             return emit.TakesEvexPrefix(id) ? pseudoName : RemoveVexPrefixIfNeeded(insName);
         }
 
-        if ((instInfo[(int)ins] & insFlags.INS_FLAGS_HasPseudoName) != 0)
+        if (instHasPseudoName(ins))
         {
             switch (ins)
             {

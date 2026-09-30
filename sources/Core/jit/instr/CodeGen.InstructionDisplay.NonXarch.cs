@@ -17,10 +17,5 @@ public sealed partial class CodeGen
 
         return insName;
     }
-
-    private static string genInsName(instruction ins)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "Non-xarch instruction-name table is not ported.");
-    }
 }
 #endif
