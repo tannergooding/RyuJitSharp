@@ -9,7 +9,7 @@ public sealed partial class Lowering
 {
     private GenTree? LowerJTrue(GenTreeUnOp branch)
     {
-#if TARGET_XARCH || TARGET_ARM64
+#if !TARGET_LOONGARCH64 && !TARGET_RISCV64 && !TARGET_WASM
         var condition = branch.Op1;
         JITDUMP("Lowering JTRUE:\n");
         DISPTREERANGE(BlockRange(), branch);
@@ -82,7 +82,7 @@ public sealed partial class Lowering
         JITDUMP("\n");
         return null;
 #else
-        throw new System.NotImplementedException("Non-xarch conditional branch lowering is not ported.");
+        throw new System.NotImplementedException("The target-specific LowerJTrue override is not ported.");
 #endif
     }
 }

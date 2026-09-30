@@ -68,7 +68,7 @@ public sealed partial class Lowering
         bool allowMultipleFlagsChecks = true)
     {
         code = default;
-#if TARGET_XARCH || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_ARM
         JITDUMP("Lowering condition:\n");
         DISPTREERANGE(BlockRange(), condition);
         JITDUMP("\n");
@@ -167,7 +167,8 @@ public sealed partial class Lowering
 
         return false;
 #else
-        throw new System.NotImplementedException("Condition-to-flags lowering is not ported for this target.");
+        // These targets have no status/flag register.
+        return false;
 #endif
     }
 }

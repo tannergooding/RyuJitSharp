@@ -7,6 +7,14 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
+#if TARGET_RISCV64
+    private GenTree LowerSavedIntegerCompare(GenTree comparison) =>
+        throw new System.NotImplementedException("RISC-V saved integer comparison lowering is not ported.");
+
+    private void SignExtendIfNecessary(ref GenTree operand) =>
+        throw new System.NotImplementedException("RISC-V comparison operand sign extension is not ported.");
+#endif
+
     private bool IsProfitableToSetZeroFlag(GenTree op)
     {
 #if TARGET_XARCH
@@ -27,10 +35,18 @@ public sealed partial class Lowering
     // TEST_EQ/NE to BITTEST_EQ/NE and clears containment on the resulting bit index.
     private bool TryReduceSingleBitTestOps(GenTreeOp test)
     {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_RISCV64
         assert(test.Oper is GT_AND or GT_TEST_EQ or GT_TEST_NE);
         var testedOp = test.Op1;
         var bitOp = test.Op2;
+#if TARGET_RISCV64
+        if (bitOp.IsIntegralConstUnsignedPow2)
+        {
+            var constant = bitOp.AsIntConCommon();
+            constant.IntegralValue = System.Numerics.BitOperations.Log2(constant.UnsignedIntegralValue);
+            return true;
+        }
+#endif
         if (bitOp.Oper is not GT_LSH)
         {
             (bitOp, testedOp) = (testedOp, bitOp);
@@ -46,6 +62,7 @@ public sealed partial class Lowering
             return true;
         }
 
+#if TARGET_XARCH
         // (x >> y) & 1 tests the same bit for either signed or unsigned shifts.
         // BT masks the index modulo the operand width, just like the shift. Keep
         // constant-index shifts: the existing constant-mask TEST is already optimal.
@@ -70,6 +87,7 @@ public sealed partial class Lowering
 
             return true;
         }
+#endif
 
         return false;
 #else

@@ -9,7 +9,6 @@ public sealed partial class Lowering
 {
     private GenTree? LowerSelect(GenTreeConditional select)
     {
-#if TARGET_XARCH || TARGET_ARM64
         var condition = select.Cond;
 #if TARGET_ARM64
         var trueValue = select.Op1;
@@ -55,9 +54,6 @@ public sealed partial class Lowering
 #endif
 
         return newSelect is not null ? newSelect.Next : select.Next;
-#else
-        throw new System.NotImplementedException("Non-xarch select lowering is not ported.");
-#endif
     }
 
     private void ContainCheckSelect(GenTreeOp select)

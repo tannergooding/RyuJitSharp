@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
 using System.Numerics;
 
 namespace RyuJitSharp;
@@ -12,12 +11,11 @@ public sealed partial class Lowering
 {
     private GenTree? LowerCompare(GenTree cmp)
     {
-#if TARGET_XARCH || TARGET_ARM64
         var comparison = cmp.AsOp();
 #if LOWER_DECOMPOSE_LONGS
         if (comparison.Op1.Type is TYP_LONG)
         {
-            throw new NotImplementedException("x86 long comparison decomposition is not ported.");
+            return DecomposeLongCompare(comparison);
         }
 #endif
 
@@ -30,21 +28,32 @@ public sealed partial class Lowering
             }
         }
 
+#if TARGET_RISCV64
+        if (varTypeUsesIntReg(comparison.Op1.Type))
+        {
+            var next = LowerSavedIntegerCompare(comparison);
+            if (next != cmp)
+            {
+                return next;
+            }
+
+            SignExtendIfNecessary(ref comparison.Op1Ref);
+            SignExtendIfNecessary(ref comparison.Op2Ref);
+        }
+#endif
+
         ContainCheckCompare(comparison);
 
         return cmp.Next;
-#else
-        throw new NotImplementedException("Non-xarch comparison lowering is not ported.");
-#endif
     }
 
-#if TARGET_XARCH || TARGET_ARM64
     private GenTree? OptimizeConstCompare(GenTreeOp cmp)
     {
         assert(cmp.Op2.Oper.IsIntegralConst);
         var op1 = cmp.Op1;
         var op2 = cmp.Op2.AsIntConCommon();
         var op2Value = op2.IntegralValue;
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_RISCV64
         if ((op1.Oper is GT_CAST) && !op1.HasOverflowCheck)
         {
             var cast = op1.AsCast();
@@ -57,6 +66,8 @@ public sealed partial class Lowering
 #if TARGET_ARM64
                 var removeCast = (op2Value == 0) && (cmp.Oper is GT_EQ or GT_NE or GT_GT) &&
                     !castOp.IsContained && (castOp.Oper is GT_LCL_VAR or GT_CALL or GT_OR or GT_XOR or GT_AND);
+#elif TARGET_RISCV64
+                var removeCast = false;
 #else
                 var removeCast = (castOp.Oper is GT_LCL_VAR or GT_CALL or GT_OR or GT_XOR or GT_AND) ||
                     IsContainableMemoryOp(castOp);
@@ -126,6 +137,46 @@ public sealed partial class Lowering
                 cmp.SetOper(cmp.Oper.ReverseRelop, GenTree.PRESERVE_VN);
             }
 
+#if TARGET_RISCV64
+            if ((op2Value == 0) && !andOp2.IsContained && TryReduceSingleBitTestOps(op1.AsOp()))
+            {
+                var testedOp = op1.AsOp().Op1;
+                var bitIndexOp = op1.AsOp().Op2;
+                if (bitIndexOp.Oper.IsIntegralConst)
+                {
+                    var bitIndex = bitIndexOp.AsIntConCommon().IntegralValue;
+                    var signBitIndex = (TARGET_POINTER_SIZE * 8) - 1;
+                    if (bitIndex < signBitIndex)
+                    {
+                        bitIndexOp.AsIntConCommon().IntegralValue = signBitIndex - bitIndex;
+                        bitIndexOp.IsContained = true;
+                        op1.SetOper(GT_LSH, GenTree.PRESERVE_VN);
+                        op1.Type = TYP_I_IMPL;
+                    }
+                    else
+                    {
+                        assert(bitIndex == signBitIndex);
+                        assert(testedOp.Type.ActualType is TYP_I_IMPL);
+                        BlockRange().Remove(bitIndexOp);
+                        BlockRange().Remove(op1);
+                        cmp.Op1 = testedOp;
+                    }
+
+                    op2.Type = TYP_I_IMPL;
+                    cmp.SetOper(cmp.Oper is GT_NE ? GT_LT : GT_GE, GenTree.PRESERVE_VN);
+                    cmp.IsUnsigned = false;
+                    return cmp;
+                }
+
+                var type = testedOp.Type.ActualType;
+                andOp1 = new GenTreeOp(GT_RSH, type, testedOp, bitIndexOp);
+                andOp2 = CompilerInstance.gtNewIconNode(type, 1);
+                op1.AsOp().Op1 = andOp1;
+                op1.AsOp().Op2 = andOp2;
+                BlockRange().InsertBefore(op1, andOp1, andOp2);
+                andOp2.IsContained = true;
+            }
+#endif
             var optimizeToAnd = (op2Value == 0) && (cmp.Oper is GT_NE);
             var optimizeToNotAnd = (op2Value == 0) && (cmp.Oper is GT_EQ);
             if (andOp2.IsIntegralConst(1) && (op1.Type.ActualType == cmp.Type) &&
@@ -153,6 +204,7 @@ public sealed partial class Lowering
 
             if (op2Value == 0)
             {
+#if !TARGET_RISCV64
                 BlockRange().Remove(op1);
                 BlockRange().Remove(op2);
                 cmp.SetOper(cmp.Oper is GT_EQ ? GT_TEST_EQ : GT_TEST_NE, GenTree.PRESERVE_VN);
@@ -178,6 +230,7 @@ public sealed partial class Lowering
                         andOp2.Type = TYP_USHORT;
                     }
                 }
+#endif
 #endif
             }
             else if (andOp2.Oper.IsIntegralConst && GenTree.Compare(andOp2, op2))
@@ -207,6 +260,7 @@ public sealed partial class Lowering
 
             return cmp.Next;
         }
+#endif
 #endif
 
         if ((cmp.Oper is GT_EQ or GT_NE) && op2.IsIntegralConst(0) &&
@@ -267,5 +321,4 @@ public sealed partial class Lowering
 
         return cmp;
     }
-#endif
 }

@@ -16,6 +16,24 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole comparison and conditional lowering
+
+Shared comparison, branch, select and condition-code lowering retain all target
+branches. The 32-bit long-comparison decomposition preserves wrapping constant
+adjustment, signed/unsigned boundaries, flag ordering, successor cursors and
+owner-aware replacements with cleared value numbers. RISC-V bit-test transforms
+are preserved; independent target helpers and branch overrides remain retained.
+Seven native definitions, headings, guards and declarations retire 1,120 lines
+in `237f75d1`; `LowerJTrue` retains its declaration for unported target overrides.
+
+Windows controls pass 82 Debug/81 Release, ARM64 passes 182/182, and Linux-target
+Debug passes 82. Unaffected evidence is reused for the final 32-bit corrections.
+Other-target raw diagnostics match the old source. Isolated parser-unblocked
+x86/ARM32/RISC-V probes also match, with no owned comparison diagnostics, but
+independent baseline errors prevent execution of the new long-comparison code.
+Evidence: `artifacts/comparison-conditions-add9598`. These are source/IR controls,
+not generated-code parity.
+
 ## 2026-09-30: Whole register-resolution and allocation dispatch
 
 The allocation phase dispatcher preserves all target branches and phase order,
