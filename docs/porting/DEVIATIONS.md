@@ -1554,6 +1554,15 @@ definitions remain. The selected sixteen-case Windows/Linux controls do not
 establish other-target or generated-code parity; fourteen earlier x86
 declaration errors still prevent execution.
 
+Common condition-setting, extending-move and source-register store selectors
+now preserve their whole target branches. ARM64 condition classification remains
+a typed terminating dependency; ARM32 flags and other-target calls reuse
+existing emitter bindings. Forty-seven Windows/Linux controls cover AMD64
+SETcc/APX, extension widths and register-bank stores. Nine ARM64-only cases
+remain source-only, and fourteen earlier x86 declaration errors still prevent
+its execution. Native retirement does not establish other-target or generated
+code parity.
+
 `LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
 performs conservative frame layout before reserving IP1 and reserves x19 when
 the layout contains scalable vectors. The layout includes varargs homes,

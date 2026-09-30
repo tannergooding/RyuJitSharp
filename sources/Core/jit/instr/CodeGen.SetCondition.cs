@@ -9,10 +9,10 @@ public sealed partial class CodeGen
 {
     public void inst_SET(emitJumpKind condition, regNumber reg, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Set-condition instruction generation requires AMD64.");
-#else
+#if TARGET_XARCH
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         var ins = condition switch
         {
             EJ_js => INS_sets,
@@ -37,6 +37,7 @@ public sealed partial class CodeGen
             return;
         }
 
+#if TARGET_AMD64
         if ((instOptions & INS_OPTS_EVEX_zu_MASK) != 0)
         {
             const int offset = INS_seto - INS_seto_apx;
@@ -58,9 +59,20 @@ public sealed partial class CodeGen
             assert(INS_setg == (INS_setg_apx + offset));
             ins = (instruction)(ins - offset);
         }
+#endif
 
+#if TARGET_X86
+        assert((regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask).Lower &
+            (SRBM_EAX | SRBM_ECX | SRBM_EDX | SRBM_EBX)) != SRBM_NONE);
+#else
         assert((regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask).Lower & SRBM_ALLINT) != SRBM_NONE);
+#endif
         Emitter.emitIns_R(ins, EA_1BYTE, reg, instOptions);
+#elif TARGET_ARM64
+        Emitter.emitIns_R_COND(INS_cset, EA_8BYTE, reg, JumpKindToInsCond(condition));
+#else
+        NYI("inst_SET");
+        throw new FatalJitException(CORJIT_SKIPPED, "Set-condition generation is not implemented on this target.");
 #endif
     }
 }

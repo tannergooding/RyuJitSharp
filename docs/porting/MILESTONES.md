@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Scalar condition, extension and store selection
+
+Whole condition-setting, extending-move and source-register store selectors
+retain xarch SETcc/APX selection, ARMARCH register/memory extension rules and
+integer/floating register-bank conversions. ARM64 condition classification
+remains a typed terminating dependency; existing target emitter bindings are
+reused rather than duplicated.
+
+The same forty-seven focused controls pass in Windows and Linux Debug/Release.
+Four whole definitions and four exclusive prototypes retire 375 native lines,
+including headings. `CodeGenInterface::ins_StoreFromSrc` maps to the managed
+`CodeGen.StoreFromSource.cs`. Independent condition and emitter helpers remain
+native. The x86 diagnostic retains fourteen earlier errors and zero warnings;
+nine ARM64-only cases remain unexecuted. These checks are not generated-code
+parity.
+
 ## 2026-09-30: Register-pair and constant-shift adapters
 
 Whole register-pair and shift adapters preserve default actual-type sizing,

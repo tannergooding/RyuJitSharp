@@ -9,9 +9,6 @@ public sealed partial class CodeGen
 {
     public instruction ins_StoreFromSrc(regNumber srcReg, var_types dstType, bool aligned = false)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Source-register store selection outside AMD64 is not implemented.");
-#else
         assert(srcReg != REG_NA);
         if (varTypeUsesIntReg(dstType))
         {
@@ -19,7 +16,7 @@ public sealed partial class CodeGen
             {
                 return ins_Store(dstType, aligned);
             }
-#if FEATURE_SIMD
+#if TARGET_XARCH && FEATURE_SIMD
             if (genIsValidMaskReg(srcReg))
             {
                 return ins_Store(TYP_MASK, aligned);
@@ -33,8 +30,13 @@ public sealed partial class CodeGen
             }
             else
             {
+#if TARGET_64BIT
                 assert(dstSize == 8);
                 dstType = TYP_DOUBLE;
+#else
+                unreached();
+                throw new FatalJitException(CORJIT_SKIPPED, "An eight-byte floating register store requires a 64-bit target.");
+#endif
             }
 
             return ins_Store(dstType, aligned);
@@ -62,8 +64,13 @@ public sealed partial class CodeGen
             }
             else
             {
+#if TARGET_64BIT
                 assert(dstSize == 8);
                 dstType = TYP_LONG;
+#else
+                unreached();
+                throw new FatalJitException(CORJIT_SKIPPED, "An eight-byte integer register store requires a 64-bit target.");
+#endif
             }
         }
         else
@@ -72,6 +79,5 @@ public sealed partial class CodeGen
         }
 
         return ins_Store(dstType, aligned);
-#endif
     }
 }
