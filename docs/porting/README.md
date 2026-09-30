@@ -149,6 +149,13 @@ the default: build and test without these overrides in the same configuration
 before committing a porting batch, and keep final NativeAOT publication and
 execution validation unchanged. Fast-mode success is not a full-analysis checkpoint.
 
+Full analysis uses the repository's analyzer configuration. The root
+`.editorconfig` temporarily disables CA1508, CA2329, CA2330, CA3001, CA5390 and
+CA5403 because of upstream dataflow-analysis performance issues; the rule entries
+link their tracking issues and fix. Leave the remaining analyzers enabled for
+acceptance builds. Isolated validation snapshots must include this configuration
+and record it separately from compiler-source changes.
+
 Cross-target ABI, intrinsic and register-policy fixtures also run through
 `tests\Targets\RyuJitSharp.Target.UnitTests.csproj`. This project links the relevant
 fixtures without compiling the Windows-x64 backend suite; it does not remove or

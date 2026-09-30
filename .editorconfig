@@ -48,6 +48,20 @@ charset = utf-16le
 file_header_template = Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.\n\nBased on the RyuJIT compiler from dotnet/runtime.\nOriginal source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 ###############################################################################
+# Disable expensive dataflow analyzers pending upstream fixes
+###############################################################################
+[*.{cs,vb}]
+# CA1508: https://github.com/dotnet/sdk/issues/56412
+dotnet_diagnostic.CA1508.severity = none
+# CA2329/CA2330/CA3001: https://github.com/dotnet/sdk/pull/56415
+dotnet_diagnostic.CA2329.severity = none
+dotnet_diagnostic.CA2330.severity = none
+dotnet_diagnostic.CA3001.severity = none
+# CA5390/CA5403: https://github.com/dotnet/sdk/issues/56413
+dotnet_diagnostic.CA5390.severity = none
+dotnet_diagnostic.CA5403.severity = none
+
+###############################################################################
 # Set dotnet naming rules to:
 #    require async methods be pascal case suffixed with Async
 #    require const fields and locals be pascal case
