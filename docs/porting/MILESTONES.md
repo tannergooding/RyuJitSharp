@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Shared async-resume metadata
+
+Location recording, singleton table registration, state-handle generation and
+emitter allocation retain native size/offset arithmetic, pointer alignment,
+default locations, section linking and EE resumption-stub caching. The actual
+two-pointer `CORINFO_AsyncResumeInfo` layout is unchanged.
+
+Four whole definitions and four completed declarations are removed from the
+residual tree. Linux-target controls now reach and exercise these helpers
+instead of their former Windows-AMD64 gates. Final data-section materialization,
+other-target instruction recording, suspension/continuation and patchpoint
+bodies remain separate. These Windows-hosted controls do not establish Linux
+runtime execution, other-target EE layout or new generated-code parity.
+
 ## 2026-09-30: Whole xarch transfer addresses
 
 Nonlocal jumps retain register, local and indirect operands; function-entry

@@ -9,9 +9,6 @@ public partial class Emitter
 {
     public unsafe void emitAsyncResumeTable(uint numEntries, out uint dataSecOffs, out dataSection dataSec)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Async resume table allocation requires Windows AMD64.");
-#else
         RequireSupportedInstructionRecording();
         var emittedSize = unchecked((uint)sizeof(CORINFO_AsyncResumeInfo) * numEntries);
         var secOffs = roundUp(emitConsDsc.dsdOffs, TARGET_POINTER_SIZE);
@@ -50,6 +47,5 @@ public partial class Emitter
                 emitAsyncResumeStub = emitCmpHandle->getAsyncResumptionStub(entryPoint);
             }
         }
-#endif
     }
 }

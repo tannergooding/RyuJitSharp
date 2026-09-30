@@ -1384,13 +1384,16 @@ guarded by `TARGET_XARCH && !TARGET_64BIT`, terminates with `CORJIT_SKIPPED`;
 its long-store implementation remains in native `codegenlinear.cpp`. Completing
 these callers does not activate x86 emission or complete that shared helper.
 
-The whole xarch `genAsyncResumeInfo` address caller retains the separate
-`genEmitAsyncResumeInfo` and `genEmitAsyncResumeInfoTable` dependencies.
-Their existing Windows-AMD64-only branches terminate with `CORJIT_SKIPPED`
-on other targets; both native definitions remain in `codegencommon.cpp`.
-Shared location recording and emitter table allocation also remain deferred.
-Completing the address caller does not complete async metadata registration
-or final data-section output on those targets.
+Shared `genRecordAsyncResume`, `genEmitAsyncResumeInfoTable`,
+`genEmitAsyncResumeInfo` and `Emitter.emitAsyncResumeTable` retain the complete
+native metadata algorithms without their former Windows-AMD64 whole-body gates.
+Their native definitions and completed declarations are removed. The two-pointer
+EE record layout, pointer alignment, singleton registration, location capture,
+section linking and resumption-stub cache are unchanged. Other-target
+instruction recording still terminates through its separate support boundary.
+Final data-section output, suspension/continuation and patchpoint bodies remain
+deferred; metadata registration does not establish runtime or generated-code
+parity on those targets.
 
 `LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
 performs conservative frame layout before reserving IP1 and reserves x19 when

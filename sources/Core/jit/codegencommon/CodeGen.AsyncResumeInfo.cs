@@ -12,9 +12,6 @@ public sealed partial class CodeGen
 
     public void genRecordAsyncResume(GenTreeVal asyncResume)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Async resume location recording requires Windows AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         var index = unchecked((nuint)asyncResume.Val1);
         assert(_compiler.compSuspensionPoints is not null);
@@ -22,7 +19,6 @@ public sealed partial class CodeGen
 
         _ = genEmitAsyncResumeInfoTable(out var asyncResumeInfo);
         asyncResumeInfo.Locations[unchecked((int)index)] = new emitLocation(Emitter);
-#endif
     }
 
     public unsafe void genAsyncResumeInfo(GenTreeVal treeNode)
@@ -39,9 +35,6 @@ public sealed partial class CodeGen
 
     public uint genEmitAsyncResumeInfoTable(out Emitter.dataSection dataSection)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Async resume table registration requires Windows AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(_compiler.compSuspensionPoints is not null);
 
@@ -54,14 +47,10 @@ public sealed partial class CodeGen
         dataSection = genAsyncResumeInfoTable;
 
         return genAsyncResumeInfoTableOffset;
-#endif
     }
 
     public unsafe CORINFO_FIELD_HANDLE genEmitAsyncResumeInfo(uint stateNum)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Async resume data handles require Windows AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(_compiler.compSuspensionPoints is not null);
         assert(stateNum < (uint)_compiler.compSuspensionPoints.Count);
@@ -69,6 +58,5 @@ public sealed partial class CodeGen
         var baseOffs = genEmitAsyncResumeInfoTable(out _);
 
         return Compiler.eeFindJitDataOffs(unchecked(baseOffs + stateNum * (uint)sizeof(CORINFO_AsyncResumeInfo)));
-#endif
     }
 }
