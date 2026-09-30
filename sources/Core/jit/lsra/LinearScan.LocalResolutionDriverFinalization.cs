@@ -27,8 +27,17 @@ public sealed partial class LinearScan
                 var initialMask = parameterReference.registerAssignment;
                 var initialReg = (initialMask == SRBM_NONE || parameterReference.spillAfter)
                     ? REG_STK : genRegNumFromMask(initialMask, interval.registerType);
-                local.ArgInitReg = initialReg;
-                JITDUMP($"  Set V{localNumber:D2} argument initial register to {initialReg.Name}\n");
+#if TARGET_ARM
+                if (varTypeIsMultiReg(local.Type))
+                {
+                    assert(false, "Multi-reg types not yet supported");
+                }
+                else
+#endif
+                {
+                    local.ArgInitReg = initialReg;
+                    JITDUMP($"  Set V{localNumber:D2} argument initial register to {initialReg.Name}\n");
+                }
                 assert(local.lvIsRegArg || !_compiler.lvaIsFieldOfDependentlyPromotedStruct(in local));
             }
 

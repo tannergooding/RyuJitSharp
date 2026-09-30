@@ -75,6 +75,83 @@ internal static unsafe class LinearScanIntervalConstructionTests
         });
     }
 
+#if DEBUG
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void MinimalVectorSpillOrMoveMarksAvxInstructionWidth(bool spill)
+    {
+        WithAllocator((compiler, allocator) => {
+            compiler.opts.compSupportsISA.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX);
+            compiler.opts.compSupportsISAReported.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX);
+            compiler.opts.compSupportsISAExactly.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX);
+            compiler.lvaTable[0].Type = TYP_SIMD32;
+            var block = CreateBlocks(compiler, BBJ_RETURN)[0];
+            var value = new GenTreeVecCon(TYP_SIMD32);
+            value.SimdVal.u32[0] = 1;
+            var store = new GenTreeLclVar(TYP_SIMD32, 0, value);
+            var ret = new GenTreeUnOp(GT_RETURN, TYP_VOID, null);
+            block.InsertAtEnd(value);
+            block.InsertAtEnd(store);
+            block.InsertAtEnd(ret);
+            if (spill)
+            {
+                StressMask(allocator) = 0xc00;
+            }
+
+            BuildIntervals(allocator);
+            allocator.initVarRegMaps();
+            AllocateRegisters(allocator);
+            AllocationPassComplete(allocator) = true;
+            var definition = allocator.refPositions.Find(reference =>
+                ReferenceEquals(reference.treeNode, value) && reference.refType is RefType.RefTypeDef)
+                ?? throw new AssertionException("The vector producer has no definition.");
+            if (spill)
+            {
+                Assert.That(definition.spillAfter, Is.True);
+            }
+            else
+            {
+                Assert.That(definition.spillAfter, Is.False);
+                var use = definition.nextRefPosition
+                    ?? throw new AssertionException("The vector producer has no use.");
+                use.registerAssignment = definition.assignedReg() is REG_XMM1 ? SRBM_XMM0 : SRBM_XMM1;
+                use.moveReg = true;
+            }
+
+            var emitter = compiler.codeGen!.Emitter;
+            emitter.ContainsAvxInstruction = false;
+            emitter.Contains256BitOrMoreAvxInstruction = false;
+            ResolveRegisters(allocator);
+
+            Assert.That(emitter.ContainsAvxInstruction, Is.True);
+            Assert.That(emitter.Contains256BitOrMoreAvxInstruction, Is.True);
+        }, trackedLocal: true);
+    }
+#endif
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void MinimalVectorLocalStoreWithoutCandidateHasNoDestinationReference(bool contained)
+    {
+        WithAllocator((compiler, allocator) => {
+            compiler.lvaTable[0].Type = TYP_SIMD32;
+            var block = CreateBlocks(compiler, BBJ_RETURN)[0];
+            var source = new GenTreeVecCon(TYP_SIMD32);
+            source.SimdVal.u32[0] = 1;
+            source.IsContained = contained;
+            var store = new GenTreeLclVar(TYP_SIMD32, 0, source);
+            block.InsertAtEnd(source);
+            block.InsertAtEnd(store);
+
+            BuildIntervals(allocator);
+
+            Assert.That(allocator.refPositions.Exists(reference =>
+                ReferenceEquals(reference.treeNode, store) && reference.isIntervalRef() &&
+                !reference.getInterval().isInternal), Is.False);
+            Assert.That(compiler.lvaTable[0].lvLRACandidate, Is.False);
+        }, trackedLocal: true);
+    }
+
     [TestCase(TYP_FLOAT)]
     [TestCase(TYP_DOUBLE)]
     public static void ResolutionRecordsInternalRegistersWithoutOverwritingFloatingResults(var_types type)

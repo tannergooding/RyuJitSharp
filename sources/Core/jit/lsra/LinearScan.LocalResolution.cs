@@ -9,7 +9,6 @@ public sealed partial class LinearScan
 {
     private void resolveLocalRef(BasicBlock? block, GenTreeLclVar? treeNode, RefPosition currentRefPosition)
     {
-#if (TARGET_AMD64 && WINDOWS_AMD64_ABI) || TARGET_ARM64
         if ((block is null) != (treeNode is null) || !_enregisterLocalVars)
         {
             throw new FatalJitException("Local register resolution requires matching block/node ownership and enregistered locals.");
@@ -258,8 +257,5 @@ public sealed partial class LinearScan
             interval.assignedReg = homeRecord;
             updateAssignedInterval(homeRecord, interval);
         }
-#else
-        throw new FatalJitException("Local register resolution is not implemented outside Windows AMD64/ARM64.");
-#endif
     }
 }

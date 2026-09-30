@@ -322,7 +322,6 @@ public sealed partial class LinearScan : IRegAlloc
 
     public PhaseStatus DoRegisterAllocation()
     {
-#if TARGET_AMD64 && !UNIX_AMD64_ABI
         if (_enregisterLocalVars && (_compiler.lvaTrackedCount == 0))
         {
             _enregisterLocalVars = false;
@@ -332,6 +331,9 @@ public sealed partial class LinearScan : IRegAlloc
         assert(_compiler.codeGen is not null);
         _compiler.codeGen.RegSet.rsClearRegsModified();
         initMaxSpill();
+#if TARGET_ARM64
+        _nextConsecutiveRefPositions.Clear();
+#endif
         if (_enregisterLocalVars)
         {
             buildIntervalsWithLocals();
@@ -355,17 +357,22 @@ public sealed partial class LinearScan : IRegAlloc
 #endif
 
         initVarRegMaps();
-        if (_enregisterLocalVars || _compiler.opts.OptimizationEnabled
 #if TARGET_ARM64
-            || _compiler.info.compNeedsConsecutiveRegisters
-#endif
-        )
+        if (_compiler.info.compNeedsConsecutiveRegisters)
         {
-            allocateRegisters();
+            allocateRegistersWithConsecutiveRegisters();
         }
         else
+#endif
         {
-            allocateRegistersMinimal();
+            if (_enregisterLocalVars || _compiler.opts.OptimizationEnabled)
+            {
+                allocateRegisters();
+            }
+            else
+            {
+                allocateRegistersMinimal();
+            }
         }
         _allocationPassComplete = true;
         _compiler.EndPhase(PHASE_LINEAR_SCAN_ALLOC);
@@ -405,12 +412,15 @@ public sealed partial class LinearScan : IRegAlloc
             _compiler.fgInvalidateDfsTree();
         }
         return PhaseStatus.MODIFIED_EVERYTHING;
-#else
-        const string message = "LinearScan.DoRegisterAllocation outside Windows AMD64 is not implemented.";
-        JITDUMP($"\nCOMPILATION FAILED: {message}\n");
-        throw new FatalJitException(CORJIT_SKIPPED, message);
-#endif
     }
+
+#if TARGET_ARM64
+    private void allocateRegistersWithConsecutiveRegisters()
+    {
+        NYI("LinearScan.allocateRegisters<true> consecutive-register allocation");
+        throw new FatalJitException("Consecutive-register allocation is not implemented.");
+    }
+#endif
 
 #if TRACK_LSRA_STATS
     public void dumpLsraStatsCsv(StreamWriter streamWriter)

@@ -18,7 +18,6 @@ public sealed partial class LinearScan
             throw new FatalJitException("Minimal register resolution cannot run with enregistered locals.");
         }
 
-#if (TARGET_AMD64 && WINDOWS_AMD64_ABI) || TARGET_ARM64
         var referenceIndex = 0;
         assert((refPositions.Count == 0) ||
             (refPositions[0].refType is not RefType.RefTypeParamDef and not RefType.RefTypeZeroInit));
@@ -130,6 +129,12 @@ public sealed partial class LinearScan
                     writeRegisters(reference, tree);
                     if (reference.spillAfter || (reference.nextRefPosition?.moveReg == true))
                     {
+#if TARGET_XARCH
+                        if (varTypeIsSimd(tree.Type))
+                        {
+                            setContainsAVXFlags((uint)tree.Type.Size);
+                        }
+#endif
                         if (reference.spillAfter)
                         {
                             tree.Flags |= GTF_SPILL;
@@ -180,6 +185,17 @@ public sealed partial class LinearScan
                             }
                         }
                     }
+
+#if TARGET_XARCH
+                    if (varTypeIsSimd(tree.Type) && tree.Oper.IsLocalStore && (tree.RegNum is not REG_NA))
+                    {
+                        var source = tree.AsLclVarCommon().Data;
+                        if (!source.IsContained && (source.RegNum != tree.RegNum))
+                        {
+                            setContainsAVXFlags((uint)tree.Type.Size);
+                        }
+                    }
+#endif
                 }
             }
         }
@@ -194,9 +210,5 @@ public sealed partial class LinearScan
 #endif
         _compiler.raMarkStkVars();
         recordMaxSpill();
-#else
-        NYI("LinearScan.resolveRegistersMinimal outside Windows AMD64/ARM64");
-        throw new FatalJitException("LinearScan.resolveRegistersMinimal outside Windows AMD64/ARM64.");
-#endif
     }
 }

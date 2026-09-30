@@ -9,7 +9,6 @@ public sealed partial class LinearScan
 {
     internal void resolveRegistersWithLocals()
     {
-#if (TARGET_AMD64 && WINDOWS_AMD64_ABI) || TARGET_ARM64
         if (!_enregisterLocalVars)
         {
             throw new FatalJitException("Local register resolution requires enregistered locals.");
@@ -334,8 +333,5 @@ public sealed partial class LinearScan
 #endif
         _compiler.raMarkStkVars();
         recordMaxSpill();
-#else
-        throw new FatalJitException("Local register resolution is not implemented outside Windows AMD64/ARM64.");
-#endif
     }
 }

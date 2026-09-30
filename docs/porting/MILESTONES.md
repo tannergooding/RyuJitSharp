@@ -16,6 +16,24 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole register-resolution and allocation dispatch
+
+The allocation phase dispatcher preserves all target branches and phase order,
+including the ARM64 consecutive-register path with its retained terminating
+allocator dependency. Both register-resolution modes preserve local/frame/spill
+ordering, xarch SIMD AVX-state bookkeeping and ARM parameter diagnostics.
+The two native definitions and their declarations retire 743 lines in `151ef319`.
+
+Initial Windows controls pass 97 Debug/86 Release and ARM64 passes 110/91.
+Linux improves from 41 to 74 passes out of 92 Debug cases, and from 33 to 65
+out of 81 Release cases, without losing an old passing case. Remaining failures
+reach retained allocation, block-location or copy/reload helpers. Final focused
+Windows controls pass 54/44; unaffected evidence is retained.
+Other-target old/final compiler diagnostics match, including isolated probes
+past shared parser blockers; those targets still do not build successfully.
+Evidence: `artifacts/lsra-resolution-dispatch-62d8205`. These are source/IR
+controls, not generated-code parity.
+
 ## 2026-09-30: Whole block-store lowering
 
 Block copy and initialization preserve GC-pointer atomicity, stack-copy
