@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Non-Wasm return helper closure
+
+ARM64, LoongArch and RISC-V simple returns preserve ABI register selection and
+extending moves for aliased narrow locals. ARMARCH SIMD splitting extracts
+lanes in ascending order without overwriting an unread source lane. Swift moves
+the error value before the normal return, and DEBUG stack checks retain the
+whole xarch control flow.
+
+Six whole native definitions and four declarations are removed together.
+Focused final controls reuse authenticated baseline evidence rather than
+rebuilding unchanged baselines. Four new Unix-x64 Swift cases pass; nineteen
+preexisting Linux profiler assertions remain genuine failures. Other-target
+builds still fail, and independent LoongArch/RISC-V recording dependencies
+terminate. This is source completion, not new target execution or ABI parity.
+
 ## 2026-09-30: Whole shared struct-return callers
 
 Struct-return classification preserves field-list precedence and the distinct

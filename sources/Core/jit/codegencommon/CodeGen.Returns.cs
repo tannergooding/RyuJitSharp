@@ -158,7 +158,61 @@ public sealed partial class CodeGen
 #if TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
     public void genSimpleReturn(GenTree tree)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Simple return generation is not implemented for this target.");
+#if TARGET_ARM64
+        assert(tree.Oper is GT_RETURN or GT_RETFILT or GT_SWIFT_ERROR_RET);
+        var value = tree.Oper == GT_SWIFT_ERROR_RET ? tree.AsOp().Op2 : tree.AsUnOp().Op1;
+#else
+        assert(tree.Oper is GT_RETURN or GT_RETFILT);
+        var value = tree.AsUnOp().Op1;
+#endif
+        var type = tree.Type;
+        assert(type is not (TYP_STRUCT or TYP_VOID));
+
+        var returnReg = varTypeUsesFloatArgReg(type) ? REG_FLOATRET : REG_INTRET;
+        var movRequired = value.RegNum != returnReg;
+        if (!movRequired && (value.Oper == GT_LCL_VAR))
+        {
+            ref var local = ref _compiler.lvaGetDesc(value.AsLclVarCommon().LclNum);
+            if (local.lvIsRegCandidate && ((value.Flags & GTF_SPILLED) == 0))
+            {
+                if (value.Type.ActualType.Size < local.Type.ActualType.Size)
+                {
+                    movRequired = true;
+                }
+            }
+        }
+
+        var size = type.EmitActualSize;
+#if TARGET_ARM64
+        Emitter.emitIns_Mov(INS_mov, size, returnReg, value.RegNum, canSkip: !movRequired);
+#else
+        if (movRequired)
+        {
+#if TARGET_LOONGARCH64
+            if (varTypeUsesFloatArgReg(type))
+            {
+                var ins = size == EA_4BYTE ? INS_fmov_s : INS_fmov_d;
+                Emitter.emitIns_R_R(ins, size, returnReg, value.RegNum);
+            }
+            else
+            {
+                var ins = size == EA_4BYTE ? INS_slli_w : INS_ori;
+                Emitter.emitIns_R_R_I(ins, size, returnReg, value.RegNum, 0);
+            }
+#else
+            if (varTypeUsesFloatArgReg(type))
+            {
+                var ins = size == EA_4BYTE ? INS_fsgnj_s : INS_fsgnj_d;
+                Emitter.emitIns_R_R_R(ins, size, returnReg, value.RegNum, value.RegNum);
+            }
+            else
+            {
+                var ins = size == EA_4BYTE ? INS_sext_w : INS_mov;
+                Emitter.emitIns_R_R(ins, size, returnReg, value.RegNum);
+            }
+#endif
+        }
+#endif
     }
 #endif
 
@@ -313,11 +367,29 @@ public sealed partial class CodeGen
 
     public void genSIMDSplitReturn(GenTree source, ReturnTypeDesc descriptor)
     {
-#if !TARGET_XARCH || !FEATURE_SIMD
+#if !FEATURE_SIMD || (!TARGET_XARCH && !TARGET_ARMARCH)
         throw new FatalJitException(CORJIT_SKIPPED, "SIMD split returns require xarch SIMD support.");
 #else
         assert(varTypeIsSimd(source.Type) && source.IsUsedFromReg);
         var sourceReg = source.RegNum;
+#if TARGET_ARMARCH
+        var count = descriptor.ReturnRegCount;
+        // Extract source lane zero first. If source aliases a destination, writing its lane zero
+        // cannot destroy any source lanes needed by later iterations.
+        for (byte index = 0; index < count; index++)
+        {
+            var type = descriptor.GetReturnRegType(index);
+            var register = descriptor.GetAbiReturnReg(index, _compiler.info.compCallConv);
+            if (varTypeIsFloating(type))
+            {
+                Emitter.emitIns_R_R_I_I(INS_mov, type.EmitSize, register, sourceReg, 0, (nint)index);
+            }
+            else
+            {
+                Emitter.emitIns_R_R_I(INS_mov, type.EmitSize, register, sourceReg, (nint)index);
+            }
+        }
+#else
         var firstReg = descriptor.GetAbiReturnReg(0, _compiler.info.compCallConv);
         var secondReg = descriptor.GetAbiReturnReg(1, _compiler.info.compCallConv);
         assert((firstReg != REG_NA) && (secondReg != REG_NA) && (sourceReg != REG_NA));
@@ -337,20 +409,17 @@ public sealed partial class CodeGen
         inst_RV_TT_IV(INS_pextrd, EA_4BYTE, secondReg, source, 1, INS_OPTS_NONE);
 #endif
 #endif
+#endif
     }
 
 #if SWIFT_SUPPORT
     public void genSwiftErrorReturn(GenTree tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Swift error returns require AMD64.");
-#else
         assert(tree.Oper == GT_SWIFT_ERROR_RET);
         var swiftError = tree.AsOp().Op1;
         var sourceReg = genConsumeReg(swiftError);
         inst_Mov(swiftError.Type, REG_SWIFT_ERROR, sourceReg, canSkip: true, EA_PTRSIZE);
         genReturn(tree);
-#endif
     }
 #endif
 
@@ -358,9 +427,6 @@ public sealed partial class CodeGen
     public void genStackPointerCheck(bool doStackPointerCheck, int stackPointerVar,
         nint offset = 0, regNumber tempReg = REG_NA)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack-pointer checks require AMD64.");
-#else
         if (doStackPointerCheck)
         {
             Emitter.RequireSupportedInstructionRecording();
@@ -385,7 +451,6 @@ public sealed partial class CodeGen
             instGen(INS_int3);
             genDefineTempLabel(label);
         }
-#endif
     }
 #endif
 }

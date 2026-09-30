@@ -1437,12 +1437,23 @@ offsets. Existing signed offsets are converted bit-preservingly for native
 unsigned addition/comparison, then converted back at the emitter boundary;
 descriptor representation and ABI classification are unchanged.
 The two common definitions and classification declaration are removed.
-Wasm-specific generation and its shared declaration remain, as do ARMARCH
-SIMD split-return and independent native emitter bodies. The new five-argument
+Wasm-specific generation and its shared declaration remain, as do independent
+native emitter bodies. The new five-argument
 ARM32/LoongArch/RISC-V local-stack NYI is a terminating call-arity boundary,
 not a translation of ARM's optional sixth base-register argument or full target
 recording. Failed target builds can mask body diagnostics and do not establish
 complete compilability or execution.
+
+ARMARCH SIMD splitting, the three ARM64/LoongArch/RISC-V simple-return bodies,
+Swift error returns and xarch DEBUG stack-pointer checks now retain their whole
+native control flow. Their six definitions and four declarations are removed
+together. ARM64 uses existing recording APIs, including its void move helper.
+LoongArch/RISC-V float-return aliases match native F0/FA0; new two/three-register
+declarations terminate and bind only the caller arity, not the optional
+`insOpts` or full native emitter API. Those independent emitters remain.
+The nineteen retained Linux profiler failures are preexisting register and
+frame-delta assertions, not newly exposed NYIs. Failed target builds can still
+mask later body diagnostics; this closure does not establish runtime parity.
 
 `LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
 performs conservative frame layout before reserving IP1 and reserves x19 when
