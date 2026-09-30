@@ -10,9 +10,6 @@ public sealed partial class CodeGen
 {
     public void genCodeForSwap(GenTreeOp tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Local-register swap generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper == GT_SWAP);
         assert(tree.Op2 is not null);
@@ -41,7 +38,6 @@ public sealed partial class CodeGen
         GCInfo.gcRegGCrefSetCur &= ~(oldMask1 | oldMask2);
         GCInfo.gcMarkRegPtrVal(oldReg2, type1);
         GCInfo.gcMarkRegPtrVal(oldReg1, type2);
-#endif
     }
 }
 #endif

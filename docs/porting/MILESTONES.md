@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole xarch register transfers
+
+Physical-register reads preserve move, GC-state transfer and result production.
+Local-register swaps retain enregistered home exchange, pointer-width `xchg`,
+mixed-GC annotation and type-specific root restoration. Existing AMD64
+algorithms are unchanged; the whole xarch bodies no longer have caller-level
+Windows/AMD64 restrictions.
+
+Two whole definitions are removed from the residual tree. Both shared
+declarations remain for other-target bodies, as do independent scalar, async
+and emitter helpers. Four Linux-target physical-register controls now execute
+instead of stopping at the caller NYI. These Windows-hosted descriptor and
+GC-state controls are not Linux runtime execution or new generated-code parity;
+x86 compilation and emitter boundaries remain unresolved.
+
 ## 2026-09-30: Whole xarch switch tables
 
 Table-switch dispatch and jump-table address generation retain the whole native

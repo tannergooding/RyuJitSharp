@@ -52,7 +52,7 @@ public sealed partial class CodeGen
 
     public void genCodeForPhysReg(GenTreePhysReg tree)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
+#if !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Physical register generation requires Windows AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
