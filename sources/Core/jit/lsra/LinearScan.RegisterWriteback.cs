@@ -14,9 +14,6 @@ public partial class LinearScan
 
     private void insertCopyOrReload(BasicBlock block, GenTree tree, uint multiRegIdx, RefPosition refPosition)
     {
-#if !((TARGET_AMD64 && WINDOWS_AMD64_ABI) || TARGET_ARM64)
-        throw new FatalJitException("LSRA copy or reload insertion is not ported for this target.");
-#else
         var foundUse = block.TryGetUse(tree, out var treeUse);
         assert(foundUse);
         if (!foundUse)
@@ -75,6 +72,5 @@ public partial class LinearScan
             block.InsertAfter(tree, newNode);
             treeUse.ReplaceWith(newNode);
         }
-#endif
     }
 }

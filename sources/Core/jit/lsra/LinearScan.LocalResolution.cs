@@ -45,7 +45,7 @@ public sealed partial class LinearScan
             if ((interval.assignedReg is not null) &&
                 ReferenceEquals(interval.assignedReg.assignedInterval, interval))
             {
-                clearAssignedInterval(interval.assignedReg);
+                clearAssignedInterval(interval.assignedReg, interval.registerType);
             }
             interval.assignedReg = null;
             interval.physReg = REG_NA;
@@ -77,7 +77,7 @@ public sealed partial class LinearScan
                 var oldRecord = getRegisterRecord(oldReg);
                 if (ReferenceEquals(oldRecord.assignedInterval, interval))
                 {
-                    clearAssignedInterval(oldRecord);
+                    clearAssignedInterval(oldRecord, interval.registerType);
                 }
             }
         }
@@ -249,13 +249,13 @@ public sealed partial class LinearScan
             interval.isActive = false;
             interval.assignedReg = null;
             interval.physReg = REG_NA;
-            clearAssignedInterval(homeRecord);
+            clearAssignedInterval(homeRecord, interval.registerType);
         }
         else
         {
             interval.isActive = true;
             interval.assignedReg = homeRecord;
-            updateAssignedInterval(homeRecord, interval);
+            updateAssignedInterval(homeRecord, interval, interval.registerType);
         }
     }
 }

@@ -16,6 +16,26 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole local and block register resolution
+
+Block-start/end location tracking, local-reference resolution and copy/reload
+insertion preserve predecessor and exception-edge maps, register-state ordering
+and owner-aware LIR replacement across targets. ARM live masks include both
+halves of double registers; unported paired-register operations terminate at
+their typed helper boundaries rather than replacing caller algorithms.
+Four definitions, headings and declarations retire 857 native lines in
+`d4e8570d`; independent edge-resolution, allocation and ARM helpers remain.
+
+Final Windows controls pass 101 Debug/88 Release and ARM64 passes 110/91.
+Linux integration improves from 76 to 82 passes out of 96 Debug cases and
+from 67 to 70 out of 83 Release cases; remaining failures reach retained
+edge-resolution or allocation helpers. Direct-family controls gain 28/27
+passes, retaining three unchanged Windows-only fixture expectations.
+No old passing case regresses. Other-target raw and parser-unblocked diagnostics
+match but still prevent successful builds. Evidence:
+`artifacts/lsra-local-resolution-c8eee52`, immutable `final-v2`.
+These are source/IR controls, not generated-code parity.
+
 ## 2026-09-30: Whole comparison and conditional lowering
 
 Shared comparison, branch, select and condition-code lowering retain all target

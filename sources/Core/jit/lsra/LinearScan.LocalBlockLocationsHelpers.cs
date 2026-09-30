@@ -9,6 +9,19 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
+#if TARGET_ARM
+    private RegRecord getSecondHalfRegRec(RegRecord record)
+    {
+        throw new FatalJitException("ARM32 double-register half lookup is not ported.");
+    }
+
+    private RegRecord findAnotherHalfRegRec(RegRecord record)
+    {
+        throw new FatalJitException("ARM32 floating-register pair lookup is not ported.");
+    }
+
+#endif
+
 #if DEBUG
     private regNumber rotateBlockStartLocation(Interval interval, regNumber targetReg, regMaskTP availableRegs)
     {
@@ -68,7 +81,7 @@ public sealed partial class LinearScan
         }
         else
         {
-            clearAssignedInterval(record);
+            clearAssignedInterval(record, assigned.registerType);
         }
     }
 

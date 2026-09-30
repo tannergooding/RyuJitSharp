@@ -33,11 +33,17 @@ public sealed partial class LinearScan
             unassignPhysReg(regRecord, (RefPosition?)null);
         }
 
-        updateAssignedInterval(regRecord, interval);
+        updateAssignedInterval(regRecord, interval, interval.registerType);
     }
 
     private void assignPhysReg(RegRecord regRecord, Interval interval)
     {
+#if TARGET_ARM
+        if (interval.registerType is TYP_DOUBLE)
+        {
+            throw new FatalJitException("ARM32 paired-register physical assignment is not ported.");
+        }
+#endif
         var codeGen = _compiler.codeGen
             ?? throw new FatalJitException("Register assignment requires initialized codegen state.");
         codeGen.RegSet.rsSetRegsModified(
@@ -55,14 +61,38 @@ public sealed partial class LinearScan
 
     private void clearAssignedInterval(RegRecord regRecord)
     {
+#if TARGET_ARM
+        if (regRecord.assignedInterval?.registerType is TYP_DOUBLE)
+        {
+            throw new FatalJitException("ARM32 paired-register assignment clearing is not ported.");
+        }
+#endif
         regRecord.assignedInterval = null;
         clearNextIntervalRef(regRecord.regNum, regRecord.registerType);
         clearSpillCost(regRecord.regNum, regRecord.registerType);
         clearConstantReg(regRecord.regNum);
     }
 
+    private void clearAssignedInterval(RegRecord regRecord, RegisterType registerType)
+    {
+#if TARGET_ARM
+        if (registerType is TYP_DOUBLE)
+        {
+            throw new FatalJitException("ARM32 paired-register assignment clearing is not ported.");
+        }
+#endif
+        clearAssignedInterval(regRecord);
+    }
+
     private void updateAssignedInterval(RegRecord regRecord, Interval interval)
     {
+#if TARGET_ARM
+        if ((interval.registerType is TYP_DOUBLE) ||
+            (regRecord.assignedInterval?.registerType is TYP_DOUBLE))
+        {
+            throw new FatalJitException("ARM32 paired-register assignment update is not ported.");
+        }
+#endif
         regRecord.assignedInterval = interval;
         setRegInUse(regRecord.regNum, interval.registerType);
         if (interval.isConstant)
@@ -76,6 +106,17 @@ public sealed partial class LinearScan
 
         updateNextIntervalRef(regRecord.regNum, interval);
         updateSpillCost(regRecord.regNum, interval);
+    }
+
+    private void updateAssignedInterval(RegRecord regRecord, Interval interval, RegisterType registerType)
+    {
+#if TARGET_ARM
+        if (registerType is TYP_DOUBLE)
+        {
+            throw new FatalJitException("ARM32 paired-register assignment update is not ported.");
+        }
+#endif
+        updateAssignedInterval(regRecord, interval);
     }
 
     private void updatePreviousInterval(RegRecord regRecord, Interval? interval)
@@ -109,11 +150,18 @@ public sealed partial class LinearScan
             assert(ReferenceEquals(spillRefPosition.getInterval(), assignedInterval));
         }
 
-        clearAssignedInterval(regRecord);
+        clearAssignedInterval(regRecord, assignedInterval.registerType);
     }
 
     private void unassignPhysReg(RegRecord regRecord, RegisterType newRegisterType)
     {
+#if TARGET_ARM
+        if ((newRegisterType is TYP_DOUBLE) ||
+            (regRecord.assignedInterval?.registerType is TYP_DOUBLE))
+        {
+            throw new FatalJitException("ARM32 paired-register physical unassignment is not ported.");
+        }
+#endif
         var assignedInterval = regRecord.assignedInterval;
         if (assignedInterval is not null)
         {
@@ -125,6 +173,12 @@ public sealed partial class LinearScan
     {
         var assignedInterval = regRecord.assignedInterval
             ?? throw new FatalJitException("Cannot unassign a physical register without an interval.");
+#if TARGET_ARM
+        if (assignedInterval.registerType is TYP_DOUBLE)
+        {
+            throw new FatalJitException("ARM32 paired-register physical unassignment is not ported.");
+        }
+#endif
         assert((spillRefPosition is null) ||
             ReferenceEquals(spillRefPosition.getInterval(), assignedInterval));
 

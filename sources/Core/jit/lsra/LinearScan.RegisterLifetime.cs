@@ -275,8 +275,20 @@ public sealed partial class LinearScan
     private bool isRegConstant(regNumber register, RegisterType registerType) =>
         _registersWithConstants.IsSet(register);
 
-    private bool isAssignedToInterval(Interval interval, RegRecord regRecord) =>
-        ReferenceEquals(interval.assignedReg, regRecord);
+    private bool isAssignedToInterval(Interval interval, RegRecord regRecord)
+    {
+        if (ReferenceEquals(interval.assignedReg, regRecord))
+        {
+            return true;
+        }
+#if TARGET_ARM
+        if (interval.registerType is TYP_DOUBLE)
+        {
+            throw new FatalJitException("ARM32 second-half register association is not ported.");
+        }
+#endif
+        return false;
+    }
 
     private weight_t getSpillWeight(RegRecord regRecord)
     {
