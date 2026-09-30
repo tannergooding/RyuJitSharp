@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Whole xarch switch tables
+
+Table-switch dispatch and jump-table address generation retain the whole native
+xarch algorithms. Dispatch loads a 32-bit offset relative to `fgFirstBB`, adds
+that block's address at pointer width, then jumps indirectly. Shared table
+emission preserves case order and duplicates, relative/absolute mode,
+diagnostics and data-generation ordering, with the native non-Wasm enclosure.
+Existing AMD64 behavior is unchanged.
+
+Three whole definitions and the completed shared helper declaration are removed
+from the residual tree. Caller declarations needed by other-target bodies and
+independent async-transfer and scalar helpers remain. Linux data-section output
+still terminates explicitly, and other-target build/emitter boundaries remain;
+this source closure does not establish new runtime or generated-code parity.
+
 ## 2026-09-30: Whole xarch address generation and checks
 
 Indexed addresses, LEA, null checks and bounds checks retain their native

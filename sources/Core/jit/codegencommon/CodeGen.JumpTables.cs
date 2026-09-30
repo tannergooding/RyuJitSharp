@@ -3,15 +3,13 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+#if !TARGET_WASM
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
     public uint genEmitJumpTable(GenTree tree, bool relativeAddr)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Jump-table generation requires AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(_compiler.compCurBB is not null);
         noway_assert(_compiler.compCurBB.Kind == BBJ_SWITCH);
@@ -40,6 +38,6 @@ public sealed partial class CodeGen
         Emitter.emitDataGenEnd();
 
         return tableBase;
-#endif
     }
 }
+#endif
