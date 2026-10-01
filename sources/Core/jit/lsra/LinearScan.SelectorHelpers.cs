@@ -512,9 +512,23 @@ public sealed partial class LinearScan
 
     private RegisterType getRegisterType(Interval interval, RefPosition refPosition)
     {
-        assert(ReferenceEquals(refPosition.referent, interval));
-        assert((refPosition.registerAssignment & allRegs(interval.registerType)) != SRBM_NONE);
-        return interval.registerType;
+        assert(ReferenceEquals(refPosition.getInterval(), interval));
+        var registerType = interval.registerType;
+        var candidates = refPosition.registerAssignment;
+#if TARGET_LOONGARCH64 || TARGET_RISCV64
+        // These ABIs can pass floating arguments in integer registers after exhausting the floating bank.
+        if ((candidates & allRegs(registerType)) != SRBM_NONE)
+        {
+            return registerType;
+        }
+
+        assert(registerType is TYP_DOUBLE or TYP_FLOAT);
+        assert((candidates & allRegs(TYP_I_IMPL)) != SRBM_NONE);
+        return TYP_I_IMPL;
+#else
+        assert((candidates & allRegs(registerType)) != SRBM_NONE);
+        return registerType;
+#endif
     }
 
     private LsraLocation getNextIntervalRef(regNumber regNum, RegisterType registerType)

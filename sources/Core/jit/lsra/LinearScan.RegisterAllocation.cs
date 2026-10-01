@@ -52,10 +52,10 @@ public sealed partial class LinearScan
             return false;
         }
         var tree = reference.treeNode;
-        assert(tree is not null);
+        noway_assert(tree is not null);
         assert(assigned.firstRefPosition is not null);
         var other = assigned.firstRefPosition.treeNode;
-        assert(other is not null);
+        noway_assert(other is not null);
         if (tree.Oper != other.Oper)
         {
             return false;
@@ -67,9 +67,14 @@ public sealed partial class LinearScan
             {
                 var value = tree.AsIntCon().IconValue;
                 var otherValue = other.AsIntCon().IconValue;
+                var matches = value == otherValue &&
+                    (varTypeIsGC(tree.Type) == varTypeIsGC(other.Type) || value == 0);
+#if TARGET_64BIT
                 // Negative int immediates need not have been sign-extended to 64 bits.
-                return value == otherValue && (varTypeIsGC(tree.Type) == varTypeIsGC(other.Type) || value == 0) &&
-                    (tree.Type == other.Type || value >= 0);
+                // On 32-bit targets, long values occupy multiple registers instead.
+                matches = matches && (tree.Type == other.Type || value >= 0);
+#endif
+                return matches;
             }
 
             case GT_CNS_DBL:

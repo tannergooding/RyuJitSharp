@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: LSRA lifetime, spills and kills
+
+Twelve whole retained definitions are closed: ten reuse their accepted
+implementations and evidence; register-bank selection and constant matching
+restore missing target conditions and native assertion checks. LoongArch64 and
+RISC-V64 floating arguments can select the integer bank, and only 64-bit targets
+reject negative constant reuse across types.
+
+Thirteen focused cases and eight existing constant controls pass per
+Windows/Linux Debug/Release configuration, 84 executions. ARM64 retains exactly
+39 historical diagnostics. Twelve definitions and nine declarations retire
+512 lines; three declarations remain for live native callers. This does not
+establish other-target execution or new generated-code parity.
+
 ## 2026-10-01: Value-number constructor retention lag
 
 The already-translated store constructor is removed from the residual, retiring
