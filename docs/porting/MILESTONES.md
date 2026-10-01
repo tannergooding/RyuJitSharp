@@ -16,6 +16,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Value-number constructor retention lag
+
+The already-translated store constructor is removed from the residual, retiring
+84 lines without changing managed code or tests. Its initialization and budget
+algorithm were compared with the pinned constructor; accepted compiled-source
+hashes and dispatcher coverage were reused rather than replayed. The residual
+had already lost five scalable/mask initializer lines whose managed fields are
+present, so raw source equality is not claimed. Independent native helpers and
+declarations remain. This adds no execution or parity credit.
+
 ## 2026-10-01: Wasm SIMD operation mapping
 
 The binary and comparison mappers retain all 17 pinned Wasm branches, including
