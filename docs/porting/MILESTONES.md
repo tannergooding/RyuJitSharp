@@ -16,6 +16,24 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: LSRA copy/move busy-reference helper
+
+Translated the whole `copyOrMoveRegInUse` helper into `LsraGlobals`, preserving
+its early exits, inclusive unsigned reference ends and interval cursor lookup.
+Tree comparison retains reference identity, including equal null pointers;
+delayed-end overflow retains native unsigned wraparound. The existing
+`isRefPositionActive` predicate has different semantics and remains unchanged.
+No native callers were found, so no wiring or runtime-impact claim was added.
+
+Thirty boundary cases pass in each full-analysis Windows and Linux-target
+Debug/Release configuration, 120 executions total. ARM64 retains the exact
+39-diagnostic compilation baseline, with no fixture execution credit.
+
+Retired the 18-line definition and its ten-line exclusive heading, with no
+separate declaration. Exact native reconstruction and fresh corrected-fixture
+evidence are recorded in `artifacts/lsra-copy-move-acceptance-30b51a3b/v2`;
+the initial missing-import failure remains preserved.
+
 ## 2026-10-01: Emitter descriptor primitive closure
 
 Added the retained variadic `instrDesc.idInsIs` predicate as ordered,

@@ -17,6 +17,29 @@ public static class LsraGlobals
 
     public const int RegisterTypeCount = 2;
 
+    public static bool copyOrMoveRegInUse(RefPosition reference, LsraLocation location)
+    {
+        if (!reference.copyReg && !reference.moveReg)
+        {
+            return false;
+        }
+
+        if (reference.getRefEndLocation() >= location)
+        {
+            return true;
+        }
+
+        var interval = reference.getInterval();
+        var nextReference = interval.getNextRefPosition();
+        if ((nextReference is not null) && ReferenceEquals(nextReference.treeNode, reference.treeNode) &&
+            (nextReference.getRefEndLocation() >= location))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     public static void lsraAssignRegToTree(GenTree tree, regNumber reg, uint regIdx)
     {
         if (regIdx == 0)
