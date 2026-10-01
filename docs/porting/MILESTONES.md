@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Hardware-intrinsic value-number dispatch
+
+The whole dispatcher retains non-xarch execution paths, xarch-only barrier and
+imprecise-address cases, and native value-number diagnostic formatting. Heap
+mutation precedes operand numbering; precise and opaque arities preserve
+exception unions, address-load dependencies and unique mask-conversion results.
+
+Windows/Linux Debug passes 176 cases and Release 175 each, 702 total.
+The 36/35 new dispatcher cases run with 140 evaluator controls. One definition
+and four exclusive declarations retire 229 native lines. ARM64 retains exactly
+39 historical diagnostics. Explicit-HW-Wasm memory classification remains
+incomplete (B477); neither target has new execution or generated-code parity.
+
 ## 2026-10-01: Shared SIMD shuffle construction
 
 Constant and variable shuffle builders retain complete ARM64/Wasm byte-index

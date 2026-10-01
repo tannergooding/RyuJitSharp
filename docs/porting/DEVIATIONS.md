@@ -1845,6 +1845,14 @@ Existing libm and unchecked integer-round conversion policy are unchanged;
 valid-domain x64 regressions do not define native NaN/out-of-range C++ integer
 conversion results or establish other-target numeric parity.
 
+Hardware-intrinsic VN dispatch retains its whole target-independent body and
+native xarch-only barrier/imprecise-address cases. Mask-conversion uniqueness
+allocates fresh opaque VNs while preserving operand exceptions. The dispatcher
+and now-exclusive evaluator declarations are retired; the independent scalable
+constant wrapper remains native. Explicit-HW-Wasm memory classification still
+lacks target branches and definite assignment (B477); default Wasm HW is disabled.
+Focused x64 dispatcher results do not establish non-xarch execution parity.
+
 `GenTreeHWIntrinsic.GetLayout` now preserves its complete fixed and SVE aggregate
 layout dispatch and is retired. SVE cases call the typed, terminating
 `Compiler.getRuntimeVectorTByteLength` dependency; that native helper remains.

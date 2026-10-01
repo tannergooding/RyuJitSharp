@@ -132,9 +132,6 @@ public partial class Compiler
 #if FEATURE_HW_INTRINSICS
     public void fgValueNumberHWIntrinsic(GenTreeHWIntrinsic tree)
     {
-#if !TARGET_XARCH
-        throw new NotImplementedException("Hardware intrinsic value numbering is not ported for this target.");
-#else
         assert(vnStore is not null);
         var id = tree.HWIntrinsicId;
         var isMemoryLoad = tree.IsMemoryLoad(out var address);
@@ -144,10 +141,12 @@ public partial class Compiler
         {
             fgMutateGcHeap(tree, "HWIntrinsic - MemoryStore");
         }
+#if TARGET_XARCH
         else if (HWIntrinsicInfo.HasSpecialSideEffect_Barrier(id))
         {
             fgMutateGcHeap(tree, "HWIntrinsic - Barrier");
         }
+#endif
 
         var exceptions = ValueNumStore.VNPForEmptyExcSet();
         var normal = default(ValueNumPair);
@@ -170,7 +169,7 @@ public partial class Compiler
             if (verbose)
             {
                 jitprintf("    simdTypeVN is ");
-                vnStore.vnDump(this, typeVN);
+                vnPrint(typeVN, 1);
                 jitprintf("\n");
             }
 #endif
@@ -229,6 +228,7 @@ public partial class Compiler
         {
             switch (id)
             {
+#if TARGET_XARCH
                 case NI_X86Base_MaskMove:
                 case NI_AVX_MaskStore:
                 case NI_AVX2_MaskStore:
@@ -245,6 +245,7 @@ public partial class Compiler
                     tree._vnPair = vnStore.VNPWithExc(tree._vnPair, nullSet);
                     break;
                 }
+#endif
 
                 default:
                 {
@@ -269,7 +270,6 @@ public partial class Compiler
                 value.Conservative = vnStore.VNForExpr(compCurBB, loadType);
             }
         }
-#endif
     }
 #endif
 
