@@ -48,15 +48,42 @@ public sealed partial class LinearScan
 #if DEBUG
     private enum LsraDumpEvent
     {
-        FREE_REGS,
-        LAST_USE,
-        LAST_USE_DELAYED,
         DEFUSE_CONFLICT,
         DEFUSE_DEF_IN_FIXED_USE,
         DEFUSE_DEF_IN_USE,
         DEFUSE_ANY_DEF,
         DEFUSE_COPY,
+        SPILL,
+        SPILL_EXTENDED_LIFETIME,
+        RESTORE_PREVIOUS_INTERVAL,
+        RESTORE_PREVIOUS_INTERVAL_AFTER_SPILL,
+        DONE_KILL_GC_REFS,
+        NO_GC_KILLS,
+        START_BB,
+        END_BB,
+        FREE_REGS,
+        UPPER_VECTOR_SAVE,
+        UPPER_VECTOR_RESTORE,
+        KILL_REGS,
+        INCREMENT_RANGE_END,
+        LAST_USE,
+        LAST_USE_DELAYED,
+        NEEDS_NEW_REG,
+        FIXED_REG,
+        EXP_USE,
+        ZERO_REF,
+        NO_ENTRY_REG_ALLOCATED,
+        KEPT_ALLOCATION,
+        COPY_REG,
+        MOVE_REG,
+        ALLOC_REG,
+        NO_REG_ALLOCATED,
+        RELOAD,
+        SPECIAL_PUTARG,
+        REUSE_REG,
     }
+
+    private static int s_allocationDumpEmptyColumnWidth;
 
     private bool _allocationDumpFormatInitialized;
     private regMaskTP _allocationDumpRegisters;
@@ -77,7 +104,13 @@ public sealed partial class LinearScan
     private string _allocationDumpRightBox = "";
 
     private void dumpLsraAllocationEvent(
-        LsraDumpEvent dumpEvent, Interval? interval, RefPosition? activeRefPosition, regNumber register = REG_NA)
+        LsraDumpEvent dumpEvent,
+        Interval? interval,
+        RefPosition? activeRefPosition,
+        regNumber register = REG_NA,
+        BasicBlock? currentBlock = null,
+        RegisterScore registerScore = RegisterScore.NONE,
+        regMaskTP registerMask = default)
     {
         if (!VERBOSE)
         {
@@ -87,7 +120,8 @@ public sealed partial class LinearScan
         initializeAllocationDumpFormat();
         if ((interval is not null) && (register is not REG_NA and not REG_STK))
         {
-            _allocationDumpRegisters |= regMaskTP.CreateFromRegNum(register, genSingleTypeRegMask(register));
+            _allocationDumpRegisters |=
+                regMaskTP.CreateFromRegNum(register, getSingleTypeRegMask(register, interval.registerType));
             dumpAllocationRegisterTitleIfNeeded();
         }
 
@@ -95,7 +129,7 @@ public sealed partial class LinearScan
         {
             case LsraDumpEvent.DEFUSE_CONFLICT:
             {
-                dumpRefPositionShort(activeRefPosition);
+                dumpRefPositionShort(activeRefPosition, currentBlock);
                 jitprintf("DUconflict    ");
                 dumpAllocationRegisterRecords();
                 break;
@@ -131,16 +165,217 @@ public sealed partial class LinearScan
                     dumpAllocationIndentedText("    NULL interval");
                     dumpAllocationRegisterRecords();
                 }
-                else if ((interval.firstRefPosition is not null) && (interval.firstRefPosition.multiRegIdx != 0))
+                else
                 {
-                    dumpAllocationIndentedText("    (multiReg)");
-                    dumpAllocationRegisterRecords();
+                    assert(interval.firstRefPosition is not null);
+                    if (interval.firstRefPosition.multiRegIdx != 0)
+                    {
+                        dumpAllocationIndentedText("    (multiReg)");
+                        dumpAllocationRegisterRecords();
+                    }
                 }
 
                 break;
             }
 
+            case LsraDumpEvent.SPILL:
+            {
+                dumpRefPositionShort(activeRefPosition, currentBlock);
+                assert(interval is not null && interval.assignedReg is not null);
+                jitprintf($"Spill    {interval.assignedReg.regNum.Name,-4} ");
+                dumpAllocationRegisterRecords();
+                break;
+            }
+
+            case LsraDumpEvent.RESTORE_PREVIOUS_INTERVAL:
+            case LsraDumpEvent.RESTORE_PREVIOUS_INTERVAL_AFTER_SPILL:
+            {
+                assert(interval is not null);
+                if ((activeRefPosition is null) || (activeRefPosition.refType is RefType.RefTypeBB))
+                {
+                    dumpRefPositionShort(null);
+                }
+                else
+                {
+                    dumpRefPositionShort(activeRefPosition, currentBlock);
+                }
+
+                jitprintf(
+                    $"{(dumpEvent is LsraDumpEvent.RESTORE_PREVIOUS_INTERVAL ? "Restr" : "SRstr")}    {register.Name,-4} ");
+                dumpAllocationRegisterRecords();
+                break;
+            }
+
+            case LsraDumpEvent.DONE_KILL_GC_REFS:
+            {
+                dumpRefPositionShort(activeRefPosition, currentBlock);
+                jitprintf("Done          ");
+                break;
+            }
+
+            case LsraDumpEvent.NO_GC_KILLS:
+            {
+                dumpRefPositionShort(activeRefPosition, currentBlock);
+                jitprintf("None          ");
+                break;
+            }
+
+            case LsraDumpEvent.START_BB:
+            {
+                assert(activeRefPosition is not null);
+                if (activeRefPosition.refType is not RefType.RefTypeBB)
+                {
+                    dumpAllocationNewBlock(currentBlock, activeRefPosition.nodeLocation, activeRefPosition);
+                    dumpAllocationRegisterRecords();
+                }
+                else
+                {
+                    dumpRefPositionShort(activeRefPosition, currentBlock);
+                }
+
+                break;
+            }
+
+            case LsraDumpEvent.NEEDS_NEW_REG:
+            {
+                dumpRefPositionShort(activeRefPosition, currentBlock);
+                jitprintf($"Free  {register.Name,-4} ");
+                dumpAllocationRegisterRecords();
+                break;
+            }
+
+            case LsraDumpEvent.ZERO_REF:
+            {
+                assert(interval is not null && interval.isLocalVar);
+                dumpRefPositionShort(activeRefPosition, currentBlock);
+                jitprintf("NoRef      ");
+                dumpAllocationRegisterRecords();
+                break;
+            }
+
+            case LsraDumpEvent.FIXED_REG:
+            case LsraDumpEvent.EXP_USE:
+            case LsraDumpEvent.KEPT_ALLOCATION:
+            {
+                dumpRefPositionShort(activeRefPosition, currentBlock);
+                jitprintf($"Keep     {register.Name,-4} ");
+                break;
+            }
+
+            case LsraDumpEvent.COPY_REG:
+            {
+                assert(interval is not null && interval.recentRefPosition is not null);
+                dumpRefPositionShort(activeRefPosition, currentBlock);
+                if (_allocationPassComplete || (registerScore is RegisterScore.NONE))
+                {
+                    jitprintf($"Copy     {register.Name,-4} ");
+                }
+                else
+                {
+                    jitprintf($"{getScoreName(registerScore),-5}(C) {register.Name,-4} ");
+                }
+
+                break;
+            }
+
+            case LsraDumpEvent.MOVE_REG:
+            {
+                assert(interval is not null && interval.recentRefPosition is not null);
+                dumpRefPositionShort(activeRefPosition, currentBlock);
+                jitprintf($"Move     {register.Name,-4} ");
+                dumpAllocationRegisterRecords();
+                break;
+            }
+
+            case LsraDumpEvent.ALLOC_REG:
+            {
+                dumpRefPositionShort(activeRefPosition, currentBlock);
+                if (_allocationPassComplete || (registerScore is RegisterScore.NONE))
+                {
+                    jitprintf($"Alloc    {register.Name,-4} ");
+                }
+                else
+                {
+                    jitprintf($"{getScoreName(registerScore),-5}(A) {register.Name,-4} ");
+                }
+
+                break;
+            }
+
+            case LsraDumpEvent.REUSE_REG:
+            {
+                dumpRefPositionShort(activeRefPosition, currentBlock);
+                if (_allocationPassComplete || (registerScore is RegisterScore.NONE))
+                {
+                    jitprintf($"Reuse    {register.Name,-4} ");
+                }
+                else
+                {
+                    jitprintf($"{getScoreName(registerScore),-5}(R) {register.Name,-4} ");
+                }
+
+                break;
+            }
+
+            case LsraDumpEvent.NO_ENTRY_REG_ALLOCATED:
+            {
+                assert(interval is not null && interval.isLocalVar);
+                dumpRefPositionShort(activeRefPosition, currentBlock);
+                jitprintf("LoRef         ");
+                break;
+            }
+
+            case LsraDumpEvent.NO_REG_ALLOCATED:
+            {
+                dumpRefPositionShort(activeRefPosition, currentBlock);
+                jitprintf("NoReg         ");
+                break;
+            }
+
+            case LsraDumpEvent.RELOAD:
+            {
+                dumpRefPositionShort(activeRefPosition, currentBlock);
+                jitprintf($"ReLod    {register.Name,-4} ");
+                dumpAllocationRegisterRecords();
+                break;
+            }
+
+            case LsraDumpEvent.SPECIAL_PUTARG:
+            {
+                dumpRefPositionShort(activeRefPosition, currentBlock);
+                jitprintf($"PtArg    {register.Name,-4} ");
+                break;
+            }
+
+            case LsraDumpEvent.UPPER_VECTOR_SAVE:
+            {
+                dumpRefPositionShort(activeRefPosition, currentBlock);
+                jitprintf($"UVSav    {register.Name,-4} ");
+                break;
+            }
+
+            case LsraDumpEvent.UPPER_VECTOR_RESTORE:
+            {
+                dumpRefPositionShort(activeRefPosition, currentBlock);
+                jitprintf($"UVRes    {register.Name,-4} ");
+                break;
+            }
+
+            case LsraDumpEvent.KILL_REGS:
+            {
+                dumpRefPositionShort(activeRefPosition, currentBlock);
+                jitprintf("None     ");
+                _compiler.dumpRegMask(registerMask);
+                jitprintf("\n");
+                dumpRefPositionShort(activeRefPosition, currentBlock);
+                jitprintf("              ");
+                break;
+            }
+
+            case LsraDumpEvent.SPILL_EXTENDED_LIFETIME:
+            case LsraDumpEvent.END_BB:
             case LsraDumpEvent.FREE_REGS:
+            case LsraDumpEvent.INCREMENT_RANGE_END:
             case LsraDumpEvent.LAST_USE:
             case LsraDumpEvent.LAST_USE_DELAYED:
             {
@@ -149,7 +384,9 @@ public sealed partial class LinearScan
 
             default:
             {
-                throw new FatalJitException($"Unsupported LSRA allocation dump event: {dumpEvent}.");
+                jitprintf($"?????    {register.Name,-4} ");
+                dumpAllocationRegisterRecords();
+                break;
             }
         }
     }
@@ -162,36 +399,50 @@ public sealed partial class LinearScan
         }
 
 #if TARGET_AMD64
-        var smallIntegerSet = SRBM_RAX | SRBM_RCX | SRBM_RBX | SRBM_ETW_FRAMED_EBP | SRBM_RSI | SRBM_RDI;
-        var smallFloatSet = SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_XMM6 | SRBM_XMM7;
-        _allocationDumpRegisters = new regMaskTP(smallIntegerSet | smallFloatSet | SRBM_ARG_REGS);
+#if UNIX_AMD64_ABI
+        var smallIntegerSet = SRBM_RAX | SRBM_RCX | SRBM_RBX | SRBM_ETW_FRAMED_EBP | SRBM_R12 | SRBM_R13;
 #else
-        NYI("LSRA allocation table formatting outside AMD64");
+        var smallIntegerSet = SRBM_RAX | SRBM_RCX | SRBM_RBX | SRBM_ETW_FRAMED_EBP | SRBM_RSI | SRBM_RDI;
+#endif
+        var smallFloatSet = SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_XMM6 | SRBM_XMM7;
+        var argumentRegisters = SRBM_ARG_REGS;
+#elif TARGET_ARM
+        var smallIntegerSet = SRBM_R0 | SRBM_R1 | SRBM_R2 | SRBM_R3 | SRBM_R4 | SRBM_R5;
+        var smallFloatSet = SRBM_F0 | SRBM_F1 | SRBM_F2 | SRBM_F16 | SRBM_F17;
+        var argumentRegisters = SRBM_R0 | SRBM_R1 | SRBM_R2 | SRBM_R3;
+#elif TARGET_ARM64
+        var smallIntegerSet = SRBM_R0 | SRBM_R1 | SRBM_R2 | SRBM_R19 | SRBM_R20;
+        var smallFloatSet = SRBM_V0 | SRBM_V1 | SRBM_V2 | SRBM_V8 | SRBM_V9;
+        var argumentRegisters = SRBM_ARG_REGS;
+#elif TARGET_X86
+        var smallIntegerSet = SRBM_EAX | SRBM_ECX | SRBM_EDI;
+        var smallFloatSet = SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_XMM6 | SRBM_XMM7;
+        var argumentRegisters = SRBM_ECX | SRBM_EDX;
+#elif TARGET_LOONGARCH64
+        var smallIntegerSet = SRBM_T1 | SRBM_T3 | SRBM_A0 | SRBM_A1 | SRBM_T0;
+        var smallFloatSet = SRBM_F0 | SRBM_F1 | SRBM_F2 | SRBM_F8 | SRBM_F9;
+        var argumentRegisters = SRBM_A0 | SRBM_A1 | SRBM_A2 | SRBM_A3 | SRBM_A4 | SRBM_A5 | SRBM_A6 | SRBM_A7;
+#elif TARGET_RISCV64
+        var smallIntegerSet = SRBM_T1 | SRBM_T3 | SRBM_A0 | SRBM_A1 | SRBM_T0;
+        var smallFloatSet = SRBM_FT0 | SRBM_FT1 | SRBM_FT2 | SRBM_FS0 | SRBM_FS1;
+        var argumentRegisters = SRBM_A0 | SRBM_A1 | SRBM_A2 | SRBM_A3 | SRBM_A4 | SRBM_A5 | SRBM_A6 | SRBM_A7;
+#endif
+#if TARGET_AMD64 || TARGET_ARM || TARGET_ARM64 || TARGET_X86 || TARGET_LOONGARCH64 || TARGET_RISCV64
+        _allocationDumpRegisters = new regMaskTP(smallIntegerSet | smallFloatSet | argumentRegisters);
+#else
+        NYI("LSRA allocation table initial register set on this target");
         fatal(CORJIT_IMPLLIMITATION);
-        throw new FatalJitException("LSRA allocation table formatting outside AMD64.");
+        throw new FatalJitException("LSRA allocation table initial register set on this target.");
 #endif
 
-        var intervalNumberWidth = getDecimalWidth((uint)intervals.Count);
-        _allocationDumpRegColumnWidth = Math.Max(4, intervalNumberWidth + 2);
-        var maximumLocation = Math.Max(1, _maxNodeLocation);
-        var referenceCount = (uint)Math.Max(1, refPositions.Count);
-        _allocationDumpNodeLocationWidth = getDecimalWidth(maximumLocation);
-        _allocationDumpRefPositionWidth = getDecimalWidth(referenceCount);
-        _allocationDumpShortRefPositionWidth =
-            _allocationDumpNodeLocationWidth + 2 + _allocationDumpRefPositionWidth + 1 +
-            _allocationDumpRegColumnWidth + 1 + 7;
-        _allocationDumpTableIndent = 9 + _allocationDumpShortRefPositionWidth + 14;
-        _allocationDumpBbNumWidth = getDecimalWidth((uint)Math.Max(1, _compiler.fgBBNumMax));
-        _allocationDumpPredBbNumWidth = _allocationDumpTableIndent -
-            (_allocationDumpNodeLocationWidth + 2 + _allocationDumpRefPositionWidth + 1) -
-            _allocationDumpBbNumWidth - 9 - 9;
-        _allocationDumpLine = _compiler.ShouldDumpAsciiTrees ? "-" : "─";
-        _allocationDumpMiddleBox = _compiler.ShouldDumpAsciiTrees ? "+" : "┼";
-        _allocationDumpRightBox = _compiler.ShouldDumpAsciiTrees ? "+" : "┤";
-        _allocationDumpColumnSeparator = _compiler.ShouldDumpAsciiTrees ? "|" : "│";
-        _lastAllocationDumpRegisters = RBM_NONE;
-        _allocationDumpFormatInitialized = true;
         jitprintf("\n\nAllocating Registers\n--------------------\n");
+        dumpRegRecordHeader();
+        _allocationDumpFormatInitialized = true;
+        dumpAllocationIndentedText("");
+    }
+
+    private void dumpRegRecordHeader()
+    {
         jitprintf(
             "The following table has one or more rows for each RefPosition that is handled during allocation.\n" +
             "The columns are: (1) Loc: LSRA location, (2) RP#: RefPosition number, (3) Name, (4) Type (e.g. Def, Use,\n" +
@@ -205,8 +456,28 @@ public sealed partial class LinearScan
             "Columns are only printed up to the last modified register, which may increase during allocation,\n" +
             "in which case additional columns will appear. Registers which are not marked modified have ---- in\n" +
             "their column.\n\n");
+
+        var intervalNumberWidth = getDecimalWidth((uint)intervals.Count);
+        _allocationDumpRegColumnWidth = Math.Max(4, intervalNumberWidth + 2);
+        _maxNodeLocation = _maxNodeLocation == 0 ? 1 : _maxNodeLocation;
+        assert(_maxNodeLocation >= 1);
+        assert(refPositions.Count >= 1);
+        _allocationDumpNodeLocationWidth = getDecimalWidth(_maxNodeLocation);
+        _allocationDumpRefPositionWidth = getDecimalWidth((uint)refPositions.Count);
+        _allocationDumpShortRefPositionWidth =
+            _allocationDumpNodeLocationWidth + 2 + _allocationDumpRefPositionWidth + 1 +
+            _allocationDumpRegColumnWidth + 1 + 7;
+        _allocationDumpTableIndent = 9 + _allocationDumpShortRefPositionWidth + 14;
+        _allocationDumpBbNumWidth = getDecimalWidth((uint)Math.Max(1, _compiler.fgBBNumMax));
+        _allocationDumpPredBbNumWidth = _allocationDumpTableIndent -
+            (_allocationDumpNodeLocationWidth + 2 + _allocationDumpRefPositionWidth + 1) -
+            _allocationDumpBbNumWidth - 9 - 9;
+        _allocationDumpLine = _compiler.ShouldDumpAsciiTrees ? "-" : "─";
+        _allocationDumpMiddleBox = _compiler.ShouldDumpAsciiTrees ? "+" : "┼";
+        _allocationDumpRightBox = _compiler.ShouldDumpAsciiTrees ? "+" : "┤";
+        _allocationDumpColumnSeparator = _compiler.ShouldDumpAsciiTrees ? "|" : "│";
+        _lastAllocationDumpRegisters = RBM_NONE;
         dumpAllocationRegisterTitleIfNeeded();
-        dumpAllocationIndentedText("");
     }
 
     private static int getDecimalWidth(uint value)
@@ -321,10 +592,15 @@ public sealed partial class LinearScan
             }
             else if (_regsBusyUntilKill.IsSet(register))
             {
-                jitprintf("Busy".PadRight(_allocationDumpRegColumnWidth));
+                if (s_allocationDumpEmptyColumnWidth != 0)
+                {
+                    jitprintf("Busy".PadRight(s_allocationDumpEmptyColumnWidth));
+                }
             }
             else
             {
+                // Native's static column format is initialized only by an empty cell, and survives later dumps.
+                s_allocationDumpEmptyColumnWidth = _allocationDumpRegColumnWidth;
                 jitprintf(new string(' ', _allocationDumpRegColumnWidth));
             }
         }

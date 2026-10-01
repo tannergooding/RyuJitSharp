@@ -275,7 +275,7 @@ internal static class LinearScanLocalResolutionDriverTests
     [TestCase(true)]
     public static void ResolutionMoveVerboseRowsUseNativePrefixAndPadding(bool swap)
     {
-        WithDriver((compiler, allocator, _, firstInterval) =>
+        WithDriver((compiler, allocator, block, firstInterval) =>
         {
             firstInterval.physReg = REG_RCX;
             firstInterval.assignedReg = allocator.physRegs[(int)REG_RCX];
@@ -307,6 +307,7 @@ internal static class LinearScanLocalResolutionDriverTests
                 };
             }
             move._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
+            allocator.newRefPosition(null, 0, RefType.RefTypeBB, null, SRBM_NONE).bbNum = (uint)block.bbNum;
             compiler.verbose = true;
 
             var output = CodeGenLifeTransitionTests.Capture(() =>
@@ -352,6 +353,7 @@ internal static class LinearScanLocalResolutionDriverTests
                 Is.SameAs(outgoing));
             Assert.That(allocator.getOutVarToRegMap((uint)resolution.bbNum),
                 Is.SameAs(outgoing));
+            allocator.newRefPosition(null, 0, RefType.RefTypeBB, null, SRBM_NONE).bbNum = (uint)entry.bbNum;
             compiler.verbose = true;
 
             var output = CodeGenLifeTransitionTests.Capture(() => VerifyFinalWithLocals(allocator));

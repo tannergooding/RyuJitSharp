@@ -21,6 +21,7 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
             compiler.compFloatingPointUsed = false;
             var allocator = CreateAllocator(compiler);
             _ = NewInterval(allocator, TYP_INT);
+            _ = allocator.newRefPosition(null, 0, RefType.RefTypeBB, null, SRBM_NONE);
             MaxNodeLocation(allocator) = 10;
             compiler.verbose = true;
             var separator = compiler.ShouldDumpAsciiTrees ? "|" : "│";
@@ -46,6 +47,7 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
         WithCompiler((compiler, codeGen) => {
             var allocator = CreateAllocator(compiler);
             _ = NewInterval(allocator, TYP_DOUBLE);
+            _ = allocator.newRefPosition(null, 0, RefType.RefTypeBB, null, SRBM_NONE);
             compiler.verbose = true;
             var separator = compiler.ShouldDumpAsciiTrees ? "|" : "│";
 
@@ -101,6 +103,7 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
             var upperVector = NewInterval(allocator, TYP_SIMD16);
             upperVector.isUpperVector = true;
             upperVector.relatedInterval = local;
+            _ = allocator.newRefPosition(null, 0, RefType.RefTypeBB, null, SRBM_NONE);
             _ = Capture(() => InitializeAllocationDumpFormat(allocator));
 
             Assert.That(GetAllocationIntervalName(allocator, upperVector), Is.EqualTo("U03"));

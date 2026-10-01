@@ -16,6 +16,30 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: LSRA allocation-event and register-table diagnostics
+
+Completed the 33-event Debug allocation dispatcher, strict register-table header
+and register records. Native event ordinals, action/row ordering, scored
+allocations, stored location normalization and target-specific seed sets are
+preserved. Busy cells retain the native process-static format behavior: no text
+before the first empty cell, then the last initialized column width across
+allocator instances. Three existing title methods map unchanged.
+
+All 64 new Windows and 63 new Linux-target cases pass. The complete selected
+boundary passes 117/117 on Windows and 110/111 on Linux. Its sole failure remains
+B493's unchanged Windows-shaped header expectation; the corrected SysV seed
+prints R12/R13 and ten columns. This is a failed Linux selection, not a pass.
+Five existing fixture setups now provide the references required by the native
+header assertion, without changing expected output. ARM64 retains the exact
+39-diagnostic compilation baseline and no fixture execution credit.
+
+Retired six definitions, six declarations and the complete event enum:
+437 body, 11 declaration and 47 type lines, 495 total. The enum closing brace is
+included; unported diagnostic helpers remain. Full-analysis evidence, the
+immutable fixture-compilation failure and corrected acceptance are recorded in
+`artifacts/lsra-allocation-records-acceptance-c9cd5bb3/v2`. No Release execution,
+backend activation or generated-code parity is claimed.
+
 ## 2026-10-01: Compiler scope-list diagnostics
 
 Translated the whole Debug `compDispScopeLists` into `Compiler.ScopeDiagnostics`.
