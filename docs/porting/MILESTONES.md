@@ -16,6 +16,27 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: ARM64 SVE instruction sanity translation
+
+Translated the whole Debug SVE sanity dispatcher and 20 support algorithms.
+The 337 format labels retain native register, option, size and immediate
+predicates, assertion order, four fallthroughs and unexpected-format output.
+The signed-magnitude decoder preserves pointer-sized output writes, sign bits
+and final assertions. A continuing EE callback is not replaced by an exception.
+
+The exact six-path snapshot retains the 39 existing ARM64 compilation
+diagnostics, including locations, under full analysis. The 71 new Debug sanity
+cases and updated recorder controls remain uncompiled and unexecuted;
+122 Debug/50 Release are source projections, not successful tests or parity.
+No backend, feature gate, descriptor layout or D009 policy changed.
+The from-one signed-minimum case is managed-only because native subtraction
+overflows (B500); the earlier B498 shift uncertainty remains unchanged.
+
+Retired 21 definitions, five declarations and exclusive Debug scaffolding:
+2060 body lines, one template prefix, five declaration lines and eight exclusive
+lines, 2074 total. Exact oracle correspondence and native reconstruction are
+recorded in `artifacts/sve-sanity-acceptance-c3d0bccd`.
+
 ## 2026-10-01: Compiler local metadata and scope traversal
 
 Translated whole `compLocalVarName` and `compProcessScopesUntil` methods.

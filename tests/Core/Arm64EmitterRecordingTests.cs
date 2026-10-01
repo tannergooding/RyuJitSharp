@@ -1543,8 +1543,8 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void SveFormatsRetainTheirSeparateSanityDependency()
     {
         var descriptor = RecordingEmitter.Basic(INS_ldr, IF_EN5A);
-        var error = Assert.Throws<FatalJitException>(() => CheckSanity(CreateEmitter(), descriptor));
-        Assert.That(error, Has.Message.EqualTo("ARM64 SVE instruction sanity checking is not ported."));
+        var result = Arm64SveInstructionSanityTests.Capture(() => CheckSanity(CreateEmitter(), descriptor));
+        Arm64SveInstructionSanityTests.AssertUnexpectedFormat(result);
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsSanityCheck")]

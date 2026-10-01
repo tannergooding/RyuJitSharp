@@ -2003,12 +2003,17 @@ batch establishes Windows-x64 rationalization, not other-target execution.
 The ARM64 SVE immediate-only, single-register, register-immediate,
 floating-immediate and predicate-pattern recorders now retain their whole native
 algorithms and eight supporting predicates/bitmask/element-size helpers.
-Debug recording still terminates at the unported `emitInsSveSanityCheck`
-dependency before group append. The 50 source-selected new/updated cases remain
-unexecuted: the isolated target probe retains the exact 39 pre-existing compiler
-diagnostics. All changed bodies are ARM64-guarded; x64 preservation does not
-validate them. B498 records native undefined-shift uncertainty in MOV/DUPM alias
-selection. No SVE backend activation, emitted-code or diagnostic parity is claimed.
+The whole Debug `emitInsSveSanityCheck` dispatcher and 20 support algorithms are
+now translated, retaining assertion order, continuing-EE behavior and all four
+native fallthroughs. Valid Debug recording can reach group append at the source
+level; this is not execution evidence. The 122 Debug/50 Release candidate cases,
+including 71 new Debug sanity cases, remain uncompiled and unexecuted: the
+isolated Debug target probe retains the exact 39 pre-existing compiler diagnostic
+identities and locations. All changed bodies are ARM64-guarded; x64 preservation
+does not validate them. B498 records native undefined-shift uncertainty in
+MOV/DUPM alias selection; B500 records signed-minimum subtraction in the
+from-one immediate predicate. No SVE backend activation, emitted-code or
+diagnostic parity is claimed.
 
 ### D004: Separate local assertion application from global analysis
 

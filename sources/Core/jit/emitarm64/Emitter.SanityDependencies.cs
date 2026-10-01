@@ -18,11 +18,5 @@ public partial class Emitter
         var max = unchecked((nuint)(1 << bits));
         return (0 <= value) && (unchecked((nuint)value) < max);
     }
-
-#if DEBUG
-    private static void emitInsSveSanityCheck(instrDesc id)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SVE instruction sanity checking is not ported.");
-
-#endif
 }
 #endif

@@ -188,14 +188,13 @@ internal static unsafe class Arm64SveImmediateRecordingTests
     private static Emitter.instrDesc Record(Emitter emitter, Action record)
     {
 #if DEBUG
-        var error = Assert.Throws<FatalJitException>(() => record());
-        Assert.That(error, Has.Message.EqualTo("ARM64 SVE instruction sanity checking is not ported."));
-        Assert.That(error, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-        Assert.That(GroupSize(emitter), Is.Zero);
+        var result = Arm64SveInstructionSanityTests.Capture(record);
+        Assert.That(result.Assertions, Is.Empty);
+        Assert.That(result.Output, Is.Empty);
 #else
         record();
-        Assert.That(GroupSize(emitter), Is.EqualTo(4));
 #endif
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
         var id = LastInstruction(emitter) ?? throw new AssertionException("No descriptor was prepared.");
         Assert.That(id.idCodeSize(), Is.EqualTo(4u));
 
