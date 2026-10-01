@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Hardware-intrinsic value numbering
+
+Broadcasts, mask conversions and unary/binary intrinsic evaluation preserve
+whole-target algorithms, scalar-before-vector interning, NaN payloads and signed
+zero. SIMD12 long/double operations use native complete-element counts without
+touching incomplete tails. GetElement and WithElement reinterpret negative
+indices unsigned, retaining symbolic VNs instead of checked-overflow exceptions.
+
+Forty-nine new cases pass in each Windows/Linux Debug/Release configuration with
+existing intrinsic and SIMD controls. Seven definitions and two declarations
+retire 1,539 native lines; higher arities and shared native declarations remain.
+ARM64 and Wasm behavior is source-only behind existing target limitations.
+
 ## 2026-10-01: SIMD pair construction
 
 Narrow, Concat and Zip retain their complete target branches. ARM64 half

@@ -546,7 +546,7 @@ public static partial class Globals
     public static void EvaluateExtractMSB(var_types baseType, ref simdmask_t result, ReadOnlySpan<byte> arg0)
     {
         var elementSize = GetSimdElementSize(baseType);
-        assert((arg0.Length <= Unsafe.SizeOf<simd_t>()) && ((arg0.Length % elementSize) == 0));
+        assert(arg0.Length <= Unsafe.SizeOf<simd_t>());
         var count = arg0.Length / elementSize;
         ulong mask = 0;
         for (var index = 0; index < count; index++)
@@ -688,7 +688,7 @@ public static partial class Globals
     public static void EvaluateSimdCvtMaskToVector(var_types baseType, Span<byte> result, in simdmask_t arg0)
     {
         var elementSize = GetSimdElementSize(baseType);
-        assert((result.Length <= Unsafe.SizeOf<simd_t>()) && ((result.Length % elementSize) == 0));
+        assert(result.Length <= Unsafe.SizeOf<simd_t>());
         var count = result.Length / elementSize;
         var mask = unchecked((ulong)arg0.RawBits);
         for (var index = 0; index < count; index++)
@@ -712,7 +712,7 @@ public static partial class Globals
         EvaluateExtractMSB(baseType, ref result, arg0);
 #elif TARGET_ARM64
         var elementSize = GetSimdElementSize(baseType);
-        assert((arg0.Length <= Unsafe.SizeOf<simd_t>()) && ((arg0.Length % elementSize) == 0));
+        assert(arg0.Length <= Unsafe.SizeOf<simd_t>());
         var count = arg0.Length / elementSize;
         ulong mask = 0;
         for (var index = 0; index < count; index++)

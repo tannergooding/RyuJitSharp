@@ -2097,7 +2097,7 @@ public partial class Compiler
         return result;
     }
 
-    private static uint ReverseArm64Bits(uint value)
+    internal static uint ReverseArm64Bits(uint value)
     {
         // Reverse each byte's 1-, 2-, and 4-bit groups, then reverse byte order.
         value = ((value & 0x5555_5555u) << 1) | ((value >> 1) & 0x5555_5555u);
@@ -2106,7 +2106,7 @@ public partial class Compiler
         return BinaryPrimitives.ReverseEndianness(value);
     }
 
-    private static ulong ReverseArm64Bits(ulong value)
+    internal static ulong ReverseArm64Bits(ulong value)
     {
         value = ((value & 0x5555_5555_5555_5555UL) << 1) | ((value >> 1) & 0x5555_5555_5555_5555UL);
         value = ((value & 0x3333_3333_3333_3333UL) << 2) | ((value >> 2) & 0x3333_3333_3333_3333UL);
