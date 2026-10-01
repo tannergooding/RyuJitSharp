@@ -16,6 +16,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Compiler scope-list diagnostics
+
+Translated the whole Debug `compDispScopeLists` into `Compiler.ScopeDiagnostics`.
+It displays the existing enter/exit index order without sorting or mutating
+descriptors or cursors. Native headers, cursor arrows, integer/hexadecimal
+widths and null-only `UNKNOWN` names are preserved. Name padding counts UTF-8
+bytes, matching native `%10s`, rather than UTF-16 characters.
+
+Five new exact-output/purity cases and eight existing scope controls pass on
+both Windows and Linux-target Debug, 26 executions total. Both new files are
+entirely Debug-guarded; no Release execution is claimed. ARM64 retains the exact
+39-diagnostic compilation baseline, with no target fixture execution credit.
+
+Retired one 45-line definition, one declaration and seven exclusive guard/spacing
+lines, 53 total. The historically C#-shaped residual body has a distinct raw hash
+from the oracle; whole-flow correspondence and exact reconstruction are recorded
+in `artifacts/compiler-scope-display-acceptance-9687d9b9`. Existing
+`compDispLocalVars`, accepted local/scope metadata and shutdown WIP are unchanged.
+
 ## 2026-10-01: ARM64 SVE instruction sanity translation
 
 Translated the whole Debug SVE sanity dispatcher and 20 support algorithms.
