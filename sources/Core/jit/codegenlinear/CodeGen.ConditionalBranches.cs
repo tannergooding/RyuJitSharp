@@ -9,10 +9,12 @@ public sealed partial class CodeGen
 {
     public void genCodeForJcc(GenTreeCC jcc)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Flag branch generation requires AMD64.");
+#if TARGET_WASM || TARGET_LOONGARCH64 || TARGET_RISCV64
+        throw new FatalJitException(CORJIT_SKIPPED, "Flag branch generation has no native implementation for this target.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         var block = _compiler.compCurBB;
         assert(block is not null);
         assert(block.Kind is BBJ_COND);
@@ -29,10 +31,12 @@ public sealed partial class CodeGen
 
     public void inst_JCC(GenCondition condition, BasicBlock target)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Conditional branch sequences require AMD64.");
+#if TARGET_WASM || TARGET_LOONGARCH64 || TARGET_RISCV64
+        throw new FatalJitException(CORJIT_SKIPPED, "Conditional branch sequences have no native implementation for this target.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         var desc = GenConditionDesc.Get(condition);
         if (desc.Oper is GT_NONE)
         {
@@ -55,10 +59,12 @@ public sealed partial class CodeGen
 
     public void genCodeForSetcc(GenTreeCC setcc)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Flag-result generation requires AMD64.");
+#if TARGET_WASM || TARGET_LOONGARCH64 || TARGET_RISCV64
+        throw new FatalJitException(CORJIT_SKIPPED, "Flag-result generation has no native implementation for this target.");
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(setcc.Oper is GT_SETCC);
         inst_SETCC(setcc.Condition, setcc.Type, setcc.RegNum);
         genProduceReg(setcc);

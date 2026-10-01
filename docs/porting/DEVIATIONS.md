@@ -1389,6 +1389,14 @@ long-to-integer emission still terminate with `CORJIT_SKIPPED`. The focused
 Windows/Linux x64 fixtures do not activate x86 or other-target emission; genuine
 target declaration errors can mask downstream bodies.
 
+Shared flag-branch and condition-result callers now retain the complete native
+x86/ARM branches and their short-circuit/fallthrough ordering. Their three whole
+definitions are removed; shared declarations and independent ARM helpers remain.
+ARM `CodeGen.inst_SETCC` is a typed terminating dependency. LoongArch64,
+RISC-V64 and Wasm retain terminating callers where the pinned native bodies are
+excluded. Focused x64 fixtures and unchanged earlier target diagnostic identities
+do not establish other-target emission or downstream body compilation.
+
 Shared `genRecordAsyncResume`, `genEmitAsyncResumeInfoTable`,
 `genEmitAsyncResumeInfo` and `Emitter.emitAsyncResumeTable` retain the complete
 native metadata algorithms without their former Windows-AMD64 whole-body gates.

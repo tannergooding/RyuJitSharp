@@ -147,6 +147,72 @@ internal static class CodeGenConditionalTests
         });
     }
 
+    [TestCase(GenCondition.CodeKind.NE, true, false, INS_jne, INS_none)]
+    [TestCase(GenCondition.CodeKind.ULT, false, false, INS_jb, INS_none)]
+    [TestCase(GenCondition.CodeKind.FNEU, true, true, INS_jp, INS_jne)]
+    [TestCase(GenCondition.CodeKind.FEQ, true, true, INS_jp, INS_je)]
+    public static void FlagBranchesPreserveFallthroughAfterConditionSequences(
+        GenCondition.CodeKind condition, bool nextIsFalse, bool coldBoundary,
+        instruction first, instruction second)
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var (whenTrue, whenFalse) = SetConditionalBlock(compiler, nextIsFalse, coldBoundary);
+            var firstGroup = codeGen.Emitter.emitCurIG;
+            assert(firstGroup is not null);
+
+            codeGen.genCodeForJcc(new GenTreeCC(GT_JCC, TYP_VOID, new GenCondition(condition)));
+
+            var hasLabel = condition is GenCondition.CodeKind.FEQ;
+            var firstDescriptors = hasLabel
+                ? firstGroup.igData ?? throw new AssertionException("Missing condition group.")
+                : [.. Descriptors(codeGen)];
+            instruction[] expected = hasLabel
+                ? [first, second]
+                : second is not INS_none
+                    ? [first, second, INS_jmp]
+                    : nextIsFalse ? [first] : [first, INS_jmp];
+            Assert.That(firstDescriptors.Select(id => id.idIns()), Is.EqualTo(expected));
+            Assert.That(EmitterJumpInstructionTests.JumpView.Target(firstDescriptors[second is INS_none ? 0 : 1]),
+                Is.SameAs(whenTrue));
+
+            if (hasLabel)
+            {
+                var next = EmitterJumpInstructionTests.JumpView.Target(firstDescriptors[0]);
+                Assert.That(next, Is.Not.SameAs(whenTrue));
+                assert(next is not null);
+                Assert.That(next.bbEmitCookie, Is.SameAs(codeGen.Emitter.emitCurIG));
+                Assert.That(Descriptors(codeGen).Select(id => id.idIns()), Is.EqualTo((instruction[])[INS_jmp]));
+            }
+
+            if (!nextIsFalse || coldBoundary)
+            {
+                Assert.That(EmitterJumpInstructionTests.JumpView.Target(Descriptors(codeGen)[^1]),
+                    Is.SameAs(whenFalse));
+            }
+        });
+    }
+
+    [TestCase(GenCondition.CodeKind.EQ, INS_sete)]
+    [TestCase(GenCondition.CodeKind.NE, INS_setne)]
+    [TestCase(GenCondition.CodeKind.SLT, INS_setl)]
+    [TestCase(GenCondition.CodeKind.UGE, INS_setae)]
+    public static void SetccSingleConditionsRetainFlagMapping(GenCondition.CodeKind condition, instruction expected)
+    {
+        CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
+        {
+            var tree = new GenTreeCC(GT_SETCC, TYP_INT, new GenCondition(condition))
+            {
+                RegNum = REG_RAX,
+            };
+
+            codeGen.genCodeForSetcc(tree);
+
+            Assert.That(Descriptors(codeGen).Select(id => id.idIns()),
+                Is.EqualTo((instruction[])[expected, INS_movzx]));
+        });
+    }
+
     [Test]
     public static void SetccNodesProduceTheirRegisterResult()
     {

@@ -16,6 +16,27 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-09-30: Shared condition branches and result publication
+
+Whole `genCodeForJcc`, `inst_JCC` and `genCodeForSetcc` now preserve the native
+x86/ARM branches rather than requiring AMD64. Single, OR and AND condition
+sequences retain branch order, short-circuit labels, false-target fallthrough
+and result-register publication. The independent ARM `inst_SETCC` helper
+remains a typed terminating dependency.
+
+Four final Windows/Linux Debug/Release runs each pass twelve selected cases,
+including eight new fallthrough and signed/unsigned condition controls. Three
+fresh named target diagnostics preserve the exact fourteen x86, seventy-eight
+ARM32 and thirty-nine ARM64 errors against authenticated original-path cast
+baselines. Raw NUnit identities remain preserved; equal-valued condition enum
+aliases are matched to their exact source-typed cases, not accepted by count.
+
+Three whole callers retire 66 native lines, including their exclusive inner
+guard. The outer non-Wasm guard, shared declarations and independent ARM helpers
+remain. Exact oracle proof and residual reconstruction do not establish
+other-target execution or generated-code parity; early diagnostic failures can
+mask downstream bodies.
+
 ## 2026-09-30: Shared scalar casts and 32-bit long stores
 
 The shared cast dispatcher and integer-cast description now retain their native
