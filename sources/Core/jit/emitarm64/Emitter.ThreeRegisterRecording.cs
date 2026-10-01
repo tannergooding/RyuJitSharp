@@ -1278,10 +1278,6 @@ public partial class Emitter
         return sopt == insScalableOpts.INS_SCALABLE_OPTS_NONE;
     }
 
-    private static void emitInsSve_R_R_R_I(instruction ins, emitAttr attr, regNumber reg1,
-        regNumber reg2, regNumber reg3, nint imm, insOpts opt, insScalableOpts sopt)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SVE three-register/immediate recording is not ported.");
-
     public void emitIns_R_R_R_Ext(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         regNumber reg3, insOpts opt = INS_OPTS_NONE, int shiftAmount = -1)
     {
@@ -1373,11 +1369,5 @@ public partial class Emitter
         dispIns(id);
         appendToCurIG(id);
     }
-
-    public void emitInsSve_R_R_R(instruction ins, emitAttr attr, regNumber reg1,
-        regNumber reg2, regNumber reg3, insOpts opt = INS_OPTS_NONE,
-        insScalableOpts sopt = insScalableOpts.INS_SCALABLE_OPTS_NONE,
-        insSveMovOpts mopt = insSveMovOpts.INS_SVE_MOV_OPTS_UNPRED)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SVE three-register recording is not ported.");
 }
 #endif

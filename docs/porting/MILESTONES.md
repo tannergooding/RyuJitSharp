@@ -16,6 +16,28 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: ARM64 SVE three-register recording
+
+Translated the whole three-register and three-register/immediate SVE recorders,
+including instruction/format dispatch, aliases, register banks, widths/options,
+scaled immediates, prefix dependencies and display/sanity-before-append order.
+Coupled predicates, immediate validation and rotation decoding retain the native
+algorithms and signed/unsigned conversions.
+
+This is source-only ARM64 acceptance. The corrected snapshot retains the exact
+39-diagnostic compilation baseline; the new fixture has neither compiled nor
+executed, so its 199 Debug/197 Release cases remain source-count projections. Windows
+collateral controls pass 58 Debug and 58 Release cases, not SVE execution.
+The initial missing-helper failure is preserved alongside the corrected
+`isFloatReg` forwarding dependency and unchanged full-analysis settings.
+
+Retired 11 definitions and three declarations, 3,029 native lines. The new
+seven/eight-argument move overload contains the whole native algorithm, but
+unrelated callers still bind a six-argument terminating stub. Its native
+55-line body and eight-line declaration remain with no retirement credit.
+Evidence is under `artifacts/sve-three-register-acceptance-cabc2554/v2`.
+No backend activation, B498/D009 change or generated-code parity is claimed.
+
 ## 2026-10-01: Try-region construction and traversal
 
 Completed `FlowGraphTryRegion` and `FlowGraphTryRegions`, including construction,
