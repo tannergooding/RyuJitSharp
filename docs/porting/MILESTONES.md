@@ -16,6 +16,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Fresh helper captures and native repeat control
+
+A fresh Debug NativeAOT JIT from committed source `6d8ef365` executes the eleven
+selected static-init, TLS and UTF8 methods against the verified `33baf8ee` host.
+Nine captures preserve full named helper phases and raw method bytes, including
+independent native repeats. The strict comparer passes its twenty focused tests
+but the real comparison fails: five methods' bytes vary between native runs,
+and ten native/managed full-phase sections differ. Profile-check text retains
+B135; two UTF8 methods expose object-description NUL handling tracked as B475.
+Three explicit environment differences also remain in the report.
+
+These are diagnostic findings, not a parity pass or accepted output differences.
+No address masking is applied and no new native retirement is credited.
+Source porting and exact retirement continue independently. The three small
+corpus builds take 0.92-1.39 seconds each; the focused tooling tests take
+0.501 seconds. Historical captures and the accepted AOT publication remain
+unchanged. Reproduction inputs and differences are under
+`artifacts\windows-helper-parity-after-shared-codegen-1`.
+
 ## 2026-10-01: Shared operand, frame and debug-publication closure
 
 Operand adapters, frame initialization, OSR argument homing and stack-segment

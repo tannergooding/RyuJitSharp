@@ -111,6 +111,7 @@ $selector = "${TypeName}:*"
 
 $start = [Diagnostics.ProcessStartInfo]::new((Resolve-Path -LiteralPath $coreRun).Path)
 $start.UseShellExecute = $false
+$start.CreateNoWindow = $true
 $start.WorkingDirectory = (Resolve-Path -LiteralPath $CoreRoot).Path
 $start.RedirectStandardOutput = $true
 $start.RedirectStandardError = $true

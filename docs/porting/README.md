@@ -443,6 +443,20 @@ bytes in the dump. This is independent of `-ExecuteManagedCode`; raw bytes that
 contain relocated addresses can differ between processes and require
 relocation-aware comparison.
 
+`scripts\porting\compare_helper_captures.py` compares configured helper cohorts
+using `--config`, `--native-root`, `--native-repeat-root`, `--managed-root`,
+`--managed-source`, `--native-host-receipt`, and `--output`. Each capture root
+contains one directory per cohort produced by `Invoke-PortingCorpus.ps1`.
+It checks exact methods, inputs, positive helper work, complete named phases
+through the next phase start, and raw-byte coverage against complete method size.
+Only CRLF-to-LF normalization is applied. Missing cold bytes, fallback, invalid
+captures, differences, and native/native repeat variation produce a failing exit
+and a JSON report; no address or relocation masking is performed. Consequently,
+address-bearing methods can fail even the native repeat control. Referenced
+data and relocation-target contents are outside this comparison's coverage.
+The focused tooling tests run with
+`python -B .\tests\PortingTools\test_helper_capture_comparison.py`.
+
 Use `-GcStress` to request collections at every allowable JIT-compiled
 instruction (`GCStress=4`). Run a native baseline with the same switch; add
 `-ExecuteManagedCode` for the managed capture. A normal execution pass does not

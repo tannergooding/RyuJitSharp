@@ -537,6 +537,8 @@ existing deviation entries rather than maintaining competing descriptions.
 
 | B474 | Line-mapping diagnostic loop uses a signed count | `eeDispLineInfos` compares its signed loop index with the managed signed carrier for native unsigned `eeBoundariesCount`; high-bit counts consequently skip the diagnostic rows. | Preserve the native unsigned loop/index contract without changing callback layouts or allocating an enormous test array. | Recorded during shared debug-publication closure. The related `eeSetLIinfo` nonzero assertion is corrected and two high-bit metadata cases pass, accessing only the allocated first mapping cell; they do not enumerate or publish the fabricated extent. Ordinary generated mapping counts and full-phase dump reachability at this boundary remain unestablished. |
 
+| B475 | Object-description diagnostics do not stop at NUL | Fresh UTF8 helper captures print frozen-object descriptions beyond an embedded NUL, unlike native `eePrintObjectDescription`'s `%s` output. The managed helper bounds the EE-written span but decodes its entire contents. | Preserve the bounded EE read and newline replacement while applying native NUL termination before decoding; add direct callback regressions rather than weakening capture comparisons. | Confirmed against pinned `eeinterface.cpp:671-697`. Multibyte and invalid-surrogate helper phase captures expose this independently of B135 profile-check text. Correction and fresh capture remain pending; no accepted output exception. |
+
 Larger module decomposition and broad unit-test infrastructure belong to the
 post-port phase. Add concrete candidates here as evidence appears, rather than
 preemptively planning a redesign of every compiler subsystem.
