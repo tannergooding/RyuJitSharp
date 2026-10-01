@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Shared emitter diagnostics and costs
+
+Instruction-format names and address/offset helpers now live in shared emitter
+code. Address output follows native raw host-width formatting, and execution
+costs preserve target write latencies and first-operand `std::max` behavior,
+including negative zero. The unhandled-instruction diagnostic retains its
+whole target-independent body.
+
+Twenty-seven Debug/thirteen Release new cases pass on Windows and Linux targets
+with existing display and cost controls. Five definitions and five declarations
+retire 84 native lines. Other-target execution characteristics still terminate;
+unrelated xarch output algorithms and D009 are unchanged.
+
 ## 2026-10-01: LSRA sequencing and visitation
 
 LSRA now initializes reachable metadata before appending unreachable blocks and

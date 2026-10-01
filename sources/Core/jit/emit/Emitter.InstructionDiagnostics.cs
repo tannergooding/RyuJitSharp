@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 using System.Globalization;
 
 namespace RyuJitSharp;
@@ -21,5 +20,26 @@ public partial class Emitter
 
         return $"??{format.ToString(CultureInfo.InvariantCulture)}??";
     }
-}
+
+    private unsafe void emitDispInsAddr(byte* code)
+    {
+#if DEBUG
+        assert(_compiler is not null);
+        if (_compiler.opts.disAddr)
+        {
+            // FMT_ADDR/DBG_ADDR print the raw address, not the diffable FMT_PTR representation.
+            var address = unchecked((nuint)code);
+#if HOST_64BIT
+            jitprintf($" {unchecked((uint)(address >> 32)):x8}`{unchecked((uint)address):x8} ");
+#else
+            jitprintf($" {unchecked((uint)address):x8} ");
 #endif
+        }
+#endif
+    }
+
+    private void emitDispInsOffs(uint offset, bool display)
+    {
+        jitprintf(display ? $"{offset:X6}" : "      ");
+    }
+}

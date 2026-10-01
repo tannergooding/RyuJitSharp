@@ -3,8 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
-
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -88,6 +86,7 @@ public partial class Emitter
     private const float PERFSCORE_THROUGHPUT_RD = PERFSCORE_THROUGHPUT_2X;
     private const float PERFSCORE_THROUGHPUT_WR = PERFSCORE_THROUGHPUT_1C;
     private const float PERFSCORE_THROUGHPUT_RW = PERFSCORE_THROUGHPUT_1C;
+#if TARGET_XARCH
     private const float PERFSCORE_LATENCY_RD_STACK = PERFSCORE_LATENCY_2C;
     private const float PERFSCORE_LATENCY_WR_STACK = PERFSCORE_LATENCY_2C;
     private const float PERFSCORE_LATENCY_RD_WR_STACK = PERFSCORE_LATENCY_5C;
@@ -97,6 +96,19 @@ public partial class Emitter
     private const float PERFSCORE_LATENCY_RD_GENERAL = PERFSCORE_LATENCY_3C;
     private const float PERFSCORE_LATENCY_WR_GENERAL = PERFSCORE_LATENCY_3C;
     private const float PERFSCORE_LATENCY_RD_WR_GENERAL = PERFSCORE_LATENCY_6C;
+#elif TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
+    private const float PERFSCORE_LATENCY_RD_STACK = PERFSCORE_LATENCY_3C;
+    private const float PERFSCORE_LATENCY_WR_STACK = PERFSCORE_LATENCY_1C;
+    private const float PERFSCORE_LATENCY_RD_WR_STACK = PERFSCORE_LATENCY_3C;
+    private const float PERFSCORE_LATENCY_RD_CONST_ADDR = PERFSCORE_LATENCY_3C;
+    private const float PERFSCORE_LATENCY_WR_CONST_ADDR = PERFSCORE_LATENCY_1C;
+    private const float PERFSCORE_LATENCY_RD_WR_CONST_ADDR = PERFSCORE_LATENCY_3C;
+    private const float PERFSCORE_LATENCY_RD_GENERAL = PERFSCORE_LATENCY_4C;
+    private const float PERFSCORE_LATENCY_WR_GENERAL = PERFSCORE_LATENCY_1C;
+    private const float PERFSCORE_LATENCY_RD_WR_GENERAL = PERFSCORE_LATENCY_4C;
+#else
+#error Unknown TARGET
+#endif
 
     internal struct insExecutionCharacteristics
     {
@@ -108,6 +120,11 @@ public partial class Emitter
     internal float insEvaluateExecutionCost(instrDesc id)
     {
         var result = getInsExecutionCharacteristics(id);
+        return insEvaluateExecutionCost(result);
+    }
+
+    internal static float insEvaluateExecutionCost(insExecutionCharacteristics result)
+    {
         var throughput = result.insThroughput;
         var latency = result.insLatency;
         var memAccessKind = result.insMemoryAccessKind;
@@ -118,7 +135,8 @@ public partial class Emitter
         if (memAccessKind is PerfScoreMemoryAccessKind.Write or PerfScoreMemoryAccessKind.ReadWrite)
         {
             // A store is assumed not to be read back for the next WR_GENERAL cycles.
-            latency = MathF.Max(0.0f, latency - PERFSCORE_LATENCY_WR_GENERAL);
+            var adjustedLatency = latency - PERFSCORE_LATENCY_WR_GENERAL;
+            latency = 0.0f < adjustedLatency ? adjustedLatency : 0.0f;
         }
         else if (latency >= 1.0f)
         {
@@ -126,18 +144,15 @@ public partial class Emitter
             latency -= 1.0f;
         }
 
-        return MathF.Max(throughput, latency);
+        // std::max retains its first operand on equality, including negative zero.
+        return throughput < latency ? latency : throughput;
     }
 
     private void perfScoreUnhandledInstruction(instrDesc id, ref insExecutionCharacteristics result)
     {
 #if DEBUG
-#if TARGET_AMD64
         jitprintf($"PerfScore: unhandled instruction: {codeGen.genInsDisplayName(id)}, format {emitIfName(id.idInsFmt())}");
         assert(false, "PerfScore: unhandled instruction");
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Instruction performance diagnostics outside AMD64 are not ported.");
-#endif
 #endif
         result.insThroughput = PERFSCORE_THROUGHPUT_1C;
         result.insLatency = PERFSCORE_LATENCY_1C;

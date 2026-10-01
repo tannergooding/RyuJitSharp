@@ -10,21 +10,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private unsafe void emitDispInsAddr(byte* code)
-    {
-#if DEBUG
-        if (_compiler?.opts.disAddr == true)
-        {
-            jitprintf(FMT_PTR((void*)dspPtr(code)));
-        }
-#endif
-    }
-
-    private void emitDispInsOffs(uint offset, bool display)
-    {
-        jitprintf(display ? $"{offset:X6}" : "      ");
-    }
-
     private void emitDispFrameRef(int variable, int displacement, uint ilOffset, bool assembly)
     {
         var compiler = _compiler ?? throw new FatalJitException("Frame reference display requires an active compiler.");
