@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: SIMD rearrangement construction
+
+Unzip and Reverse retain ARM64 and Wasm target algorithms alongside existing
+xarch selection. The Wasm two-source helper constructs two scatter shuffles
+and combines them in native order. Single-lane paths preserve comma hoisting,
+temporary capture and exactly-once observable effects.
+
+Twenty-two new cases plus pair/constructor controls pass on Windows/Linux
+Debug and Release. Three definitions and three declarations retire 310 native
+lines. ARM64 retains 39 historical compiler diagnostics; nontrivial Wasm and
+general ARM64 shuffles still reach the independent single-source shuffle
+dependency. Other-target execution and generated-code parity remain unproven.
+
 ## 2026-10-01: LSRA constructor and register banks
 
 The constructor and caller/callee-save queries now retain their whole target

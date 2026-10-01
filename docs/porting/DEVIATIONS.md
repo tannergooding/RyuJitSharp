@@ -1821,6 +1821,13 @@ are implemented and retired, including the complete mask mapping and both SIMD
 widths with native saturation/duplication behavior. Target fixtures establish
 selected folds, not ARM64 generated-code execution.
 
+Unzip, Reverse and the Wasm two-source shuffle factory retain their whole
+target branches. The shared helper uses bounded selector spans and distinct
+index nodes while preserving native scatter/scatter/OR order. Nontrivial Wasm
+and general ARM64 shuffles now reach the independently unported single-source
+shuffle rather than the former two-source stub. Focused x64 construction
+controls do not establish other-target execution or generated-code parity.
+
 `GenTreeHWIntrinsic.GetLayout` now preserves its complete fixed and SVE aggregate
 layout dispatch and is retired. SVE cases call the typed, terminating
 `Compiler.getRuntimeVectorTByteLength` dependency; that native helper remains.

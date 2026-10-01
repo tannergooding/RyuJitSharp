@@ -397,13 +397,13 @@ internal static unsafe class SimdPairConstructionTests
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
-    public static void WasmCallersReachTheTrackedTwoSourceShuffleDependency(int operation)
+    public static void WasmCallersReachTheUnportedConstantShuffleDependency(int operation)
     {
         WithCompiler(compiler =>
         {
             var left = Local(compiler, TYP_SIMD16);
             var right = Local(compiler, TYP_SIMD16);
-            var exception = Assert.Throws<FatalJitException>(() =>
+            var exception = Assert.Throws<NotImplementedException>(() =>
             {
                 _ = operation switch
                 {
@@ -412,7 +412,7 @@ internal static unsafe class SimdPairConstructionTests
                     _ => compiler.gtNewSimdZipNode(TYP_SIMD16, left, right, TYP_SHORT, 16, true),
                 };
             });
-            Assert.That(exception!.Message, Does.Contain("Wasm two-source SIMD shuffle construction"));
+            Assert.That(exception!.Message, Is.EqualTo("Target-specific SIMD constant shuffle construction is not ported."));
         });
     }
 #endif

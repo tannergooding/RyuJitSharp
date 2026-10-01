@@ -239,7 +239,12 @@ public partial class Compiler
                 gtWrapWithSideEffects(resultLcl, op2, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF));
         }
 
-#if TARGET_XARCH
+#if TARGET_ARM64
+        // return odd ? AdvSimd.Arm64.UnzipOdd(op1, op2) : AdvSimd.Arm64.UnzipEven(op1, op2);
+
+        var intrinsic = odd ? NI_AdvSimd_Arm64_UnzipOdd : NI_AdvSimd_Arm64_UnzipEven;
+        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2);
+#elif TARGET_XARCH
         var elementSize = simdBaseType.Size;
         var indexType = UnsignedSimdIndexType(simdBaseType);
         if (simdSize == 16)
@@ -313,6 +318,22 @@ public partial class Compiler
         var convert = simdSize == 32 ? NI_Vector_ToVector256Unsafe : NI_Vector_ToVector512Unsafe;
         var widened = gtNewSimdHWIntrinsicNode(type, convert, simdBaseType, halfSize, lower);
         return gtNewSimdWithUpperNode(type, widened, higher, simdBaseType, simdSize);
+#elif TARGET_WASM
+        // WASM lacks a native deinterleave. The lower result half gathers op1's even/odd elements and
+        // the upper half gathers op2's, so build the selectors and let the shared two-source shuffle
+        // scatter them.
+        var half = count / 2;
+        var start = odd ? 1 : 0;
+        Span<uint> selectors = stackalloc uint[16];
+
+        for (var index = 0; index < count; index++)
+        {
+            selectors[index] = unchecked((uint)(index < half
+                ? start + (2 * index)
+                : count + start + (2 * (index - half))));
+        }
+
+        return gtNewSimdWasmTwoSourceShuffleNode(type, op1, op2, selectors, simdBaseType, simdSize);
 #else
         throw new FatalJitException("gtNewSimdUnzipNode requires its target-specific implementation.");
 #endif
@@ -327,18 +348,26 @@ public partial class Compiler
         {
             return op1;
         }
-#if TARGET_XARCH
+#if TARGET_ARM64
+        if ((simdSize == 8) && (simdBaseType is TYP_INT or TYP_UINT or TYP_FLOAT))
+        {
+            // return AdvSimd.ReverseElement32(op1.AsInt64()).As<T>();
+
+            return gtNewSimdHWIntrinsicNode(type, NI_AdvSimd_ReverseElement32, TYP_LONG, simdSize, op1);
+        }
+#endif
+
+        // return Shuffle(op1, indices);
+
         var shuffle = gtNewVconNode(type);
         var indexType = UnsignedSimdIndexType(simdBaseType);
         for (var index = 0; index < count; index++)
         {
             shuffle.SetElementIntegral(indexType, index, count - 1 - index);
         }
+
         assert(IsValidForShuffle(shuffle, simdSize, simdBaseType, out _, false));
         return gtNewSimdShuffleNode(type, op1, shuffle, simdBaseType, simdSize, false);
-#else
-        throw new FatalJitException("gtNewSimdReverseNode requires its target-specific implementation.");
-#endif
     }
 #endif
 }
