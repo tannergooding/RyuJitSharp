@@ -23,6 +23,21 @@ public partial class Compiler
 
         var intrinsic = simdSize == 32 ? NI_AVX_Ceiling : NI_X86Base_Ceiling;
         return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
+#elif TARGET_ARM64
+        NamedIntrinsic intrinsic;
+        if (simdBaseType == TYP_DOUBLE)
+        {
+            intrinsic = simdSize == 8 ? NI_AdvSimd_CeilingScalar : NI_AdvSimd_Arm64_Ceiling;
+        }
+        else
+        {
+            intrinsic = NI_AdvSimd_Ceiling;
+        }
+        assert(intrinsic != NI_Illegal);
+
+        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
+#elif TARGET_WASM
+        return gtNewSimdHWIntrinsicNode(type, NI_PackedSimd_Ceiling, simdBaseType, simdSize, op1);
 #else
         throw new FatalJitException("gtNewSimdCeilNode requires its target-specific implementation.");
 #endif
@@ -43,6 +58,21 @@ public partial class Compiler
 
         var intrinsic = simdSize == 32 ? NI_AVX_Floor : NI_X86Base_Floor;
         return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
+#elif TARGET_ARM64
+        NamedIntrinsic intrinsic;
+        if (simdBaseType == TYP_DOUBLE)
+        {
+            intrinsic = simdSize == 8 ? NI_AdvSimd_FloorScalar : NI_AdvSimd_Arm64_Floor;
+        }
+        else
+        {
+            intrinsic = NI_AdvSimd_Floor;
+        }
+        assert(intrinsic != NI_Illegal);
+
+        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
+#elif TARGET_WASM
+        return gtNewSimdHWIntrinsicNode(type, NI_PackedSimd_Floor, simdBaseType, simdSize, op1);
 #else
         throw new FatalJitException("gtNewSimdFloorNode requires its target-specific implementation.");
 #endif
@@ -63,6 +93,21 @@ public partial class Compiler
 
         var intrinsic = simdSize == 32 ? NI_AVX_RoundToNearestInteger : NI_X86Base_RoundToNearestInteger;
         return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
+#elif TARGET_ARM64
+        NamedIntrinsic intrinsic;
+        if (simdBaseType == TYP_DOUBLE)
+        {
+            intrinsic = simdSize == 8 ? NI_AdvSimd_RoundToNearestScalar : NI_AdvSimd_Arm64_RoundToNearest;
+        }
+        else
+        {
+            intrinsic = NI_AdvSimd_RoundToNearest;
+        }
+        assert(intrinsic != NI_Illegal);
+
+        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
+#elif TARGET_WASM
+        return gtNewSimdHWIntrinsicNode(type, NI_PackedSimd_RoundToNearest, simdBaseType, simdSize, op1);
 #else
         throw new FatalJitException("gtNewSimdRoundNode requires its target-specific implementation.");
 #endif
@@ -233,6 +278,27 @@ public partial class Compiler
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
         }
         return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2, op3);
+#elif TARGET_ARM64
+        NamedIntrinsic intrinsic;
+        if (simdBaseType == TYP_DOUBLE)
+        {
+            intrinsic = simdSize == 8 ? NI_AdvSimd_FusedMultiplyAddScalar : NI_AdvSimd_Arm64_FusedMultiplyAdd;
+        }
+        else
+        {
+            intrinsic = NI_AdvSimd_FusedMultiplyAdd;
+        }
+
+        // AdvSimd.FusedMultiplyAdd expects (addend, left, right), while the APIs take (left, right, addend).
+        // We expect op1 and op2 to have already been spilled.
+        (op1, op3) = (op3, op1);
+        assert(intrinsic != NI_Illegal);
+
+        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2, op3);
+#elif TARGET_WASM
+        // Wasm has no single rounding FMA, and this should be guarded against already in import.
+        unreached();
+        return null;
 #else
         throw new FatalJitException("gtNewSimdFmaNode requires its target-specific implementation.");
 #endif

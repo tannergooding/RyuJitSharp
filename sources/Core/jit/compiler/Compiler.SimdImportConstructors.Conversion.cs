@@ -74,6 +74,8 @@ public partial class Compiler
             return gtNewSimdCndSelNode(type, overMax, maxValDup, converted, simdTargetBaseType, simdSize);
         }
         return gtNewSimdCvtNativeNode(type, fixupVal, simdTargetBaseType, simdSourceBaseType, simdSize);
+#elif TARGET_ARM64 || TARGET_WASM
+        return gtNewSimdCvtNativeNode(type, op1, simdTargetBaseType, simdSourceBaseType, simdSize);
 #else
         throw new FatalJitException("gtNewSimdCvtNode requires its target-specific implementation.");
 #endif
@@ -142,6 +144,102 @@ public partial class Compiler
                 throw new FatalJitException("Unsupported SIMD conversion source.");
             }
         }
+        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdSourceBaseType, simdSize, op1);
+#elif TARGET_ARM64
+        assert(simdSize is 8 or 16);
+        var intrinsic = NI_Illegal;
+
+        switch (simdSourceBaseType)
+        {
+            case TYP_FLOAT:
+            {
+                switch (simdTargetBaseType)
+                {
+                    case TYP_INT:
+                    {
+                        intrinsic = NI_AdvSimd_ConvertToInt32RoundToZero;
+                        break;
+                    }
+
+                    case TYP_UINT:
+                    {
+                        intrinsic = NI_AdvSimd_ConvertToUInt32RoundToZero;
+                        break;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                        break;
+                    }
+                }
+                break;
+            }
+
+            case TYP_DOUBLE:
+            {
+                switch (simdTargetBaseType)
+                {
+                    case TYP_LONG:
+                    {
+                        intrinsic = simdSize == 8 ? NI_AdvSimd_Arm64_ConvertToInt64RoundToZeroScalar
+                            : NI_AdvSimd_Arm64_ConvertToInt64RoundToZero;
+                        break;
+                    }
+
+                    case TYP_ULONG:
+                    {
+                        intrinsic = simdSize == 8 ? NI_AdvSimd_Arm64_ConvertToUInt64RoundToZeroScalar
+                            : NI_AdvSimd_Arm64_ConvertToUInt64RoundToZero;
+                        break;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                        break;
+                    }
+                }
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+        assert(intrinsic != NI_Illegal);
+
+        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdSourceBaseType, simdSize, op1);
+#elif TARGET_WASM
+        var intrinsic = NI_Illegal;
+
+        switch (simdTargetBaseType)
+        {
+            case TYP_INT:
+            {
+                assert(simdSourceBaseType == TYP_FLOAT);
+                intrinsic = NI_PackedSimd_ConvertToInt32Saturate;
+                break;
+            }
+
+            case TYP_UINT:
+            {
+                assert(simdSourceBaseType == TYP_FLOAT);
+                intrinsic = NI_PackedSimd_ConvertToUInt32Saturate;
+                break;
+            }
+
+            default:
+            {
+                // Float/double -> LONG and ULONG conversions are not natively supported on Wasm.
+                unreached();
+                break;
+            }
+        }
+        assert(intrinsic != NI_Illegal);
+
         return gtNewSimdHWIntrinsicNode(type, intrinsic, simdSourceBaseType, simdSize, op1);
 #else
         throw new FatalJitException("gtNewSimdCvtNativeNode requires its target-specific implementation.");

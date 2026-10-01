@@ -43,6 +43,20 @@ public sealed partial class ValueNumStore
     }
 
 #if TARGET_ARM64
+#if FEATURE_HW_INTRINSICS
+    public simdscalable_t GetConstantSimdScalable(var_types baseType, ValueNum operand)
+    {
+        assert(IsVNConstant(operand));
+
+        if (TypeOfVN(operand) == TYP_SIMD)
+        {
+            return GetConstantSimdScalable(operand);
+        }
+
+        return BroadcastConstantToSimdScalable(baseType, operand);
+    }
+#endif
+
     private simdscalable_t BroadcastConstantToSimdScalable(var_types baseType, ValueNum operand)
     {
         assert(IsVNConstant(operand));

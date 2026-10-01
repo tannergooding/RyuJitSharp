@@ -16,6 +16,29 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: LSRA register states and numeric SIMD constructors
+
+Register-state/block-start retirement includes a Debug rotation correction:
+selecting or wrapping XMM31 preserves the signed enum's bit pattern under checked
+arithmetic. Eight unchanged bodies reuse established LSRA implementation and
+coverage, including the existing ARM paired-register helper placement.
+
+Ceiling, floor, rounding, conversion and FMA constructors retain complete
+ARM64/Wasm branches. ARM64 preserves native FMA operand order; Wasm retains
+unsupported FMA and long-conversion behavior rather than emulating different
+numeric semantics. The scalable-VN wrapper reuses stored constants or the
+existing scalar-broadcast helper.
+
+Full-analysis Windows fixtures pass 113 Debug/102 Release and Linux-target
+fixtures pass 45 Debug/41 Release, 301 executions. Four Debug rotation cases
+cover FLOAT/DOUBLE selection and wrap; 18 numeric constructor cases run per
+configuration. ARM64 retains its exact 39-diagnostic baseline; its 61 new cases
+and Wasm's 14 remain source-only.
+
+Sixteen whole definitions retire 772 native lines. All six constructor
+declarations remain for live intrinsic-import callers; no declarations or
+surrounding target guards are removed.
+
 ## 2026-10-01: Frame helpers and parameter homing
 
 Frame-size estimation, SP-relative conversions, temporary ordering and Async

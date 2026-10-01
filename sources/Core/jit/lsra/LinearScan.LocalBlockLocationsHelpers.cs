@@ -64,7 +64,7 @@ public sealed partial class LinearScan
             {
                 var bits = unchecked((ulong)(long)candidates);
                 var offset = BitOperations.TrailingZeroCount(bits);
-                candidates &= ~(SingleTypeRegSet)(1UL << offset);
+                candidates &= ~unchecked((SingleTypeRegSet)(1UL << offset));
                 var nextReg = (regNumber)(offset +
                     (interval.registerType is TYP_MASK ? REG_HIGH_BASE : REG_LOW_BASE));
                 if (nextReg > targetReg)
@@ -77,8 +77,13 @@ public sealed partial class LinearScan
                     firstReg = nextReg;
                 }
             }
-            assert((newReg != REG_NA) || (firstReg != REG_NA));
-            targetReg = newReg == REG_NA ? firstReg : newReg;
+            if (newReg == REG_NA)
+            {
+                assert(firstReg != REG_NA);
+                newReg = firstReg;
+            }
+
+            targetReg = newReg;
         }
         return targetReg;
     }
