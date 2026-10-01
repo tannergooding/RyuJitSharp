@@ -6265,6 +6265,8 @@ public partial class Compiler
                 {
                     id = NI_AdvSimd_Add;
                 }
+#elif TARGET_WASM
+                id = NI_PackedSimd_Add;
 #endif
                 break;
             }
@@ -6297,6 +6299,8 @@ public partial class Compiler
                 }
 #elif TARGET_ARM64
                 id = NI_AdvSimd_And;
+#elif TARGET_WASM
+                id = NI_PackedSimd_And;
 #endif
                 break;
             }
@@ -6340,6 +6344,8 @@ public partial class Compiler
                 assert(simdSize is 8 or 16);
 
                 id = NI_AdvSimd_BitwiseClear;
+#elif TARGET_WASM
+                id = NI_PackedSimd_AndNot;
 #endif
                 break;
             }
@@ -6378,6 +6384,8 @@ public partial class Compiler
                 {
                     id = NI_AdvSimd_Arm64_Divide;
                 }
+#elif TARGET_WASM
+                id = NI_PackedSimd_Divide;
 #endif
                 break;
             }
@@ -6430,6 +6438,8 @@ public partial class Compiler
                 {
                     id = op2.Oper.IsCnsIntOrI ? NI_AdvSimd_ShiftLeftLogical : NI_AdvSimd_ShiftLogical;
                 }
+#elif TARGET_WASM
+                id = NI_PackedSimd_ShiftLeft;
 #endif
                 break;
             }
@@ -6490,6 +6500,11 @@ public partial class Compiler
                 {
                     id = IsFullVectorOperand(op2) ? NI_AdvSimd_Multiply : NI_AdvSimd_MultiplyByScalar;
                 }
+#elif TARGET_WASM
+                if (!varTypeIsByte(simdBaseType))
+                {
+                    id = NI_PackedSimd_Multiply;
+                }
 #endif
                 break;
             }
@@ -6522,6 +6537,8 @@ public partial class Compiler
                 }
 #elif TARGET_ARM64
                 id = NI_AdvSimd_Or;
+#elif TARGET_WASM
+                id = NI_PackedSimd_Or;
 #endif
                 break;
             }
@@ -6607,6 +6624,8 @@ public partial class Compiler
                 {
                     id = op2.Oper.IsCnsIntOrI ? NI_AdvSimd_ShiftRightArithmetic : NI_AdvSimd_ShiftArithmetic;
                 }
+#elif TARGET_WASM
+                id = NI_PackedSimd_ShiftRightArithmetic;
 #endif
                 break;
             }
@@ -6659,6 +6678,8 @@ public partial class Compiler
                 {
                     id = varTypeIsInt(op2.Type) ? NI_AdvSimd_ShiftRightLogical : NI_AdvSimd_ShiftLogical;
                 }
+#elif TARGET_WASM
+                id = NI_PackedSimd_ShiftRightLogical;
 #endif
                 break;
             }
@@ -6701,6 +6722,8 @@ public partial class Compiler
                 {
                     id = NI_AdvSimd_Subtract;
                 }
+#elif TARGET_WASM
+                id = NI_PackedSimd_Subtract;
 #endif
                 break;
             }
@@ -6733,6 +6756,8 @@ public partial class Compiler
                 }
 #elif TARGET_ARM64
                 id = NI_AdvSimd_Xor;
+#elif TARGET_WASM
+                id = NI_PackedSimd_Xor;
 #endif
                 break;
             }
@@ -6860,6 +6885,8 @@ public partial class Compiler
                 {
                     id = NI_AdvSimd_CompareEqual;
                 }
+#elif TARGET_WASM
+                id = NI_PackedSimd_CompareEqual;
 #endif
                 break;
             }
@@ -6901,6 +6928,11 @@ public partial class Compiler
                 else
                 {
                     id = NI_AdvSimd_CompareGreaterThanOrEqual;
+                }
+#elif TARGET_WASM
+                if (simdBaseType != TYP_ULONG)
+                {
+                    id = NI_PackedSimd_CompareGreaterThanOrEqual;
                 }
 #endif
                     break;
@@ -6958,6 +6990,11 @@ public partial class Compiler
             {
                 id = NI_AdvSimd_CompareGreaterThan;
             }
+#elif TARGET_WASM
+                if (simdBaseType != TYP_ULONG)
+                {
+                    id = NI_PackedSimd_CompareGreaterThan;
+                }
 #endif
                         break;
             }
@@ -6999,6 +7036,11 @@ public partial class Compiler
                 else
                 {
                     id = NI_AdvSimd_CompareLessThanOrEqual;
+                }
+#elif TARGET_WASM
+                if (simdBaseType != TYP_ULONG)
+                {
+                    id = NI_PackedSimd_CompareLessThanOrEqual;
                 }
 #endif
                     break;
@@ -7058,6 +7100,11 @@ public partial class Compiler
                 {
                     id = NI_AdvSimd_CompareLessThan;
                 }
+#elif TARGET_WASM
+                if (simdBaseType != TYP_ULONG)
+                {
+                    id = NI_PackedSimd_CompareLessThan;
+                }
 #endif
                         break;
             }
@@ -7086,6 +7133,10 @@ public partial class Compiler
                 {
                     id = isScalar ? NI_X86Base_CompareScalarNotEqual : NI_X86Base_CompareNotEqual;
                 }
+#elif TARGET_ARM64
+                id = NI_Illegal;
+#elif TARGET_WASM
+                id = NI_PackedSimd_CompareNotEqual;
 #endif
                     break;
             }

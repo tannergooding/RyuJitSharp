@@ -1826,7 +1826,10 @@ target branches. The shared helper uses bounded selector spans and distinct
 index nodes while preserving native scatter/scatter/OR order. Constant and
 variable single-source shuffle bodies now retain ARM64/Wasm byte expansion,
 zero-fill, scaling and safe range masks. General Reverse constructs its native
-lookup; two-source Wasm operations still reach missing OR mappings (B476).
+lookup; two-source Wasm operations now retain their OR mapping. Binary and
+comparison mappers include all pinned Wasm branches (B476). Ordered unsigned-64
+comparison still reaches the separate caller's missing bias fallback (B478),
+so safe long/double variable shuffle is not yet complete.
 Focused x64 controls do not establish other-target execution or generated-code
 parity.
 

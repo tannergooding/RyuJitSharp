@@ -397,22 +397,45 @@ internal static unsafe class SimdPairConstructionTests
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
-    public static void WasmCallersReachTheUnportedBinaryOperationDependency(int operation)
+    public static void WasmCallersComposeTheExactTwoSourceByteSelectors(int operation)
     {
         WithCompiler(compiler =>
         {
             var left = Local(compiler, TYP_SIMD16);
             var right = Local(compiler, TYP_SIMD16);
-            var exception = Assert.Throws<FatalJitException>(() =>
+            var result = (operation switch
             {
-                _ = operation switch
-                {
-                    0 => compiler.gtNewSimdNarrowNode(TYP_SIMD16, left, right, TYP_UBYTE, 16),
-                    1 => compiler.gtNewSimdConcatNode(TYP_SIMD16, left, right, TYP_INT, 16, true, false),
-                    _ => compiler.gtNewSimdZipNode(TYP_SIMD16, left, right, TYP_SHORT, 16, true),
-                };
-            });
-            Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
+                0 => compiler.gtNewSimdNarrowNode(TYP_SIMD16, left, right, TYP_UBYTE, 16),
+                1 => compiler.gtNewSimdConcatNode(TYP_SIMD16, left, right, TYP_INT, 16, true, false),
+                _ => compiler.gtNewSimdZipNode(TYP_SIMD16, left, right, TYP_SHORT, 16, true),
+            }).AsHWIntrinsic();
+            byte[] selectors = operation switch
+            {
+                0 => [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30],
+                1 => [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
+                _ => [8, 9, 24, 25, 10, 11, 26, 27, 12, 13, 28, 29, 14, 15, 30, 31],
+            };
+            Assert.That(result.HWIntrinsicId, Is.EqualTo(NI_PackedSimd_Or));
+            Assert.That(result.SimdBaseType, Is.EqualTo(operation switch
+            {
+                0 => TYP_UBYTE,
+                1 => TYP_INT,
+                _ => TYP_SHORT,
+            }));
+            var first = result.GetOp(1).AsHWIntrinsic();
+            var second = result.GetOp(2).AsHWIntrinsic();
+            Assert.That(first.HWIntrinsicId, Is.EqualTo(NI_PackedSimd_Swizzle));
+            Assert.That(second.HWIntrinsicId, Is.EqualTo(NI_PackedSimd_Swizzle));
+            Assert.That(first.GetOp(1), Is.SameAs(left));
+            Assert.That(second.GetOp(1), Is.SameAs(right));
+            for (var index = 0; index < selectors.Length; index++)
+            {
+                var selector = selectors[index];
+                Assert.That(first.GetOp(2).AsVecCon().SimdVal.u8[index],
+                    Is.EqualTo(selector < 16 ? selector : (byte)0xFF));
+                Assert.That(second.GetOp(2).AsVecCon().SimdVal.u8[index],
+                    Is.EqualTo(selector >= 16 ? (byte)(selector - 16) : (byte)0xFF));
+            }
         });
     }
 #endif

@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Wasm SIMD operation mapping
+
+The binary and comparison mappers retain all 17 pinned Wasm branches, including
+LIR-only AndNot and native unsupported byte-multiply, rotate and ordered-ulong
+cases. Existing xarch/ARM64 selection is preserved. Wasm caller fixtures now
+assert exact two-source scatter masks and operand order rather than obsolete
+failure boundaries.
+
+Fifteen mapper controls and 151 constructor/shuffle controls pass in each
+Windows/Linux Debug/Release configuration, 664 cases total. ARM64 retains 39
+historical diagnostics. Wasm cases remain source-only: explicit-HW memory
+classification (B477) and the unsigned-64 comparison caller (B478) are separate
+limitations. Both mapper definitions were already absent from the residual;
+this repairs B476 without native retirement credit.
+
 ## 2026-10-01: Hardware-intrinsic value-number dispatch
 
 The whole dispatcher retains non-xarch execution paths, xarch-only barrier and

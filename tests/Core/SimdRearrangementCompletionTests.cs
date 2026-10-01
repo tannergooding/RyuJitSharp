@@ -8,8 +8,8 @@ using NUnit.Framework;
 using static RyuJitSharp.CORINFO_InstructionSet;
 #endif
 using static RyuJitSharp.Globals;
-#if TARGET_XARCH || TARGET_ARM64
 using static RyuJitSharp.NamedIntrinsic;
+#if TARGET_XARCH || TARGET_ARM64
 using static RyuJitSharp.genTreeOps;
 #endif
 using static RyuJitSharp.var_types;
@@ -234,15 +234,30 @@ internal static unsafe class SimdRearrangementCompletionTests
 #if TARGET_WASM
     [TestCase(false)]
     [TestCase(true)]
-    public static void WasmUnzipReachesTheUnportedBinaryOperationDependency(bool odd)
+    public static void WasmUnzipComposesTheExactEvenOrOddByteSelectors(bool odd)
     {
         WithCompiler(compiler =>
         {
             var left = Local(compiler, TYP_SIMD16);
             var right = Local(compiler, TYP_SIMD16);
-            var exception = Assert.Throws<FatalJitException>(() =>
-                compiler.gtNewSimdUnzipNode(TYP_SIMD16, left, right, TYP_SHORT, 16, odd));
-            Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
+            var result = compiler.gtNewSimdUnzipNode(TYP_SIMD16, left, right, TYP_SHORT, 16, odd)
+                .AsHWIntrinsic();
+            Assert.That(result.HWIntrinsicId, Is.EqualTo(NI_PackedSimd_Or));
+            Assert.That(result.SimdBaseType, Is.EqualTo(TYP_SHORT));
+            var first = result.GetOp(1).AsHWIntrinsic();
+            var second = result.GetOp(2).AsHWIntrinsic();
+            Assert.That(first.HWIntrinsicId, Is.EqualTo(NI_PackedSimd_Swizzle));
+            Assert.That(second.HWIntrinsicId, Is.EqualTo(NI_PackedSimd_Swizzle));
+            Assert.That(first.GetOp(1), Is.SameAs(left));
+            Assert.That(second.GetOp(1), Is.SameAs(right));
+            for (var index = 0; index < 16; index++)
+            {
+                var selector = (byte)(((index % 8) / 2 * 4) + (odd ? 2 : 0) + (index % 2));
+                Assert.That(first.GetOp(2).AsVecCon().SimdVal.u8[index],
+                    Is.EqualTo(index < 8 ? selector : (byte)0xFF));
+                Assert.That(second.GetOp(2).AsVecCon().SimdVal.u8[index],
+                    Is.EqualTo(index >= 8 ? selector : (byte)0xFF));
+            }
         });
     }
 
