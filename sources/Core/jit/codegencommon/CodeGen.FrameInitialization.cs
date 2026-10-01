@@ -13,10 +13,16 @@ public sealed partial class CodeGen
 
     public regMaskTP genGetParameterHomingTempRegisterCandidates()
     {
-#if !TARGET_AMD64
+#if TARGET_WASM
         throw new FatalJitException(CORJIT_SKIPPED, "Parameter homing register selection requires AMD64.");
 #else
+#if HAS_MORE_THAN_64_REGISTERS
         var calleeTrash = new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH, SRBM_MSK_CALLEE_TRASH);
+#elif TARGET_XARCH
+        var calleeTrash = new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH | SRBM_MSK_CALLEE_TRASH);
+#else
+        var calleeTrash = new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH);
+#endif
         var regs = calleeTrash | _calleeRegArgMaskLiveIn | _regSet.rsGetModifiedRegsMask();
         // Reserved registers may be needed to address stack locals during homing.
         regs &= ~_regSet.rsMaskResvd;

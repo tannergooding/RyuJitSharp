@@ -27,28 +27,39 @@ public partial class Compiler
 
     public uint lvaFrameSize(FrameLayoutState curState)
     {
-#if TARGET_AMD64 || TARGET_ARM64
         assert(curState < FINAL_FRAME_LAYOUT);
+#if HAS_FIXED_REGISTER_SET
         assert(codeGen is not null);
         compCalleeRegsPushed = CNT_CALLEE_SAVED;
-#if TARGET_ARM64
+#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
         if (compFloatingPointUsed)
         {
             compCalleeRegsPushed += CNT_CALLEE_SAVED_FLOAT;
         }
 
+        // LR/RA is always saved in addition to the ordinary callee-save set.
         compCalleeRegsPushed++;
-#else
+#elif TARGET_AMD64
         compCalleeFPRegsSavedMask = compFloatingPointUsed ? SRBM_FLT_CALLEE_SAVED : SRBM_NONE;
+#endif
+#if DOUBLE_ALIGN
+        if (genDoubleAlign)
+        {
+            // The x86 "and esp, -8" prolog can introduce one additional four-byte slot.
+            compCalleeRegsPushed++;
+        }
+#endif
+#if TARGET_XARCH
         if (codeGen.IsFramePointerUsed)
         {
             compCalleeRegsPushed--;
         }
 #endif
+#endif
 
         lvaAssignFrameOffsets(curState);
         uint calleeSavedRegMaxSz = CALLEE_SAVED_REG_MAXSZ;
-#if TARGET_ARM64
+#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
         if (compFloatingPointUsed)
         {
             calleeSavedRegMaxSz += CALLEE_SAVED_FLOAT_MAXSZ;
@@ -58,9 +69,6 @@ public partial class Compiler
 #endif
 
         return (uint)compLclFrameSize + calleeSavedRegMaxSz;
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Frame size estimation requires AMD64 or ARM64.");
-#endif
     }
 
 #if TARGET_ARM64
@@ -241,7 +249,9 @@ public partial class Compiler
         ref readonly var abiInfo = ref lvaGetParameterAbiInfo(lclNum);
         foreach (var segment in abiInfo.Segments)
         {
-            if (segment.IsPassedInRegister && (preSpillMask & new regMaskTP(segment.RegisterMask)) != RBM_NONE)
+            if (segment.IsPassedInRegister &&
+                (preSpillMask & new regMaskTP(
+                    (regMask)((ulong)segment.RegisterMask << segment.RegisterMaskBase))) != RBM_NONE)
             {
                 return true;
             }

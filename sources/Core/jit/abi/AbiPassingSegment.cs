@@ -45,7 +45,7 @@ public struct AbiPassingSegment
             if (Size == 8)
             {
                 assert(RegisterMaskBase == (int)(REG_FP_FIRST));
-                regMsk |= (regMsk << 1);
+                regMsk |= (regMask)((ulong)regMsk << 1);
             }
 #endif
 

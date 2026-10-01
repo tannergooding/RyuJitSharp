@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_AMD64
+#if !TARGET_WASM
 using System.Collections.Generic;
 
 namespace RyuJitSharp;
@@ -30,6 +30,19 @@ public sealed partial class CodeGen
     private sealed class RegGraph
     {
         private readonly List<RegNode> _nodes = [];
+
+        public RegNode? Get(regNumber reg)
+        {
+            foreach (var node in _nodes)
+            {
+                if (node.Reg == reg)
+                {
+                    return node;
+                }
+            }
+
+            return null;
+        }
 
         public RegNode GetOrAdd(regNumber reg)
         {

@@ -41,5 +41,8 @@ public partial class Globals
     public const int CNT_CALLEE_TRASH_FLOAT = 6;
     public const int CNT_CALLEE_TRASH_MASK_INIT = 0;
     public const int CNT_CALLEE_TRASH_MASK_EVEX = 7;
+
+    public const int CNT_CALLEE_SAVED = 4;
+    public const int CALLEE_SAVED_REG_MAXSZ = CNT_CALLEE_SAVED * REGSIZE_BYTES;
 }
 #endif

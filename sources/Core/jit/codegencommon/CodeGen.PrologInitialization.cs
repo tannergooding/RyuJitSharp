@@ -198,10 +198,9 @@ public sealed partial class CodeGen
 
     public unsafe void genReportGenericContextArg(regNumber initReg, ref bool initRegZeroed)
     {
-#if !TARGET_AMD64
+#if TARGET_WASM
         throw new FatalJitException(CORJIT_SKIPPED, "Prolog generic-context reporting requires AMD64.");
 #else
-        Emitter.RequireSupportedInstructionRecording();
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
         var reportArg = _compiler.lvaReportParamTypeArg();
         if (_compiler.opts.IsOSR)
@@ -222,17 +221,27 @@ public sealed partial class CodeGen
             return;
         }
 
-        if (!reportArg && !_compiler.lvaKeepAliveAndReportThis())
+        if (!reportArg)
         {
-            return;
+#if !JIT32_GCENCODER
+            if (!_compiler.lvaKeepAliveAndReportThis())
+#endif
+            {
+                return;
+            }
         }
 
         var contextArg = reportArg ? _compiler.info.compTypeCtxtArg : _compiler.info.compThisArg;
         noway_assert(contextArg != BAD_VAR_NUM);
         ref var local = ref _compiler.lvaGetDesc(contextArg);
+        var isPrespilledForProfiling = false;
+#if TARGET_ARM && PROFILING_SUPPORTED
+        isPrespilledForProfiling = _compiler.compIsProfilerHookNeeded
+            && _compiler.lvaIsPreSpilled(contextArg, _regSet.rsMaskPreSpillRegs(false));
+#endif
         ref readonly var abiInfo = ref _compiler.lvaGetParameterAbiInfo(contextArg);
         regNumber reg;
-        if (abiInfo.HasExactlyOneRegisterSegment)
+        if (abiInfo.HasExactlyOneRegisterSegment && !isPrespilledForProfiling)
         {
             reg = abiInfo.Segments[0].Register;
         }
@@ -244,8 +253,19 @@ public sealed partial class CodeGen
             _regSet.verifyRegUsed(reg);
         }
 
+#if TARGET_ARM64 || TARGET_RISCV64
+        genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
+            _compiler.lvaCachedGenericContextArgOffset(), rsGetRsvdReg());
+#elif TARGET_ARM
+        Emitter.emitIns_R_R_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
+            _compiler.lvaCachedGenericContextArgOffset());
+#elif TARGET_LOONGARCH64
+        genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
+            _compiler.lvaCachedGenericContextArgOffset(), REG_R21);
+#else
         Emitter.emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
             _compiler.lvaCachedGenericContextArgOffset());
+#endif
 #endif
     }
 }

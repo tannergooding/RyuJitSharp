@@ -92,10 +92,35 @@ public sealed partial class CodeGen
 
     public void genHomeStackPartOfSplitParameter(regNumber initReg, ref bool initRegStillZeroed)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Split-parameter stack homing requires AMD64.");
-#else
-        // Native AMD64 has no split-parameter stack homing; only RISC-V and LoongArch need it.
+#if TARGET_RISCV64 || TARGET_LOONGARCH64
+        for (var localNumber = 0; localNumber < _compiler.info.compArgsCount; localNumber++)
+        {
+            ref var local = ref _compiler.lvaGetDesc(localNumber);
+            if (!local.lvOnFrame || (local.Type != TYP_STRUCT))
+            {
+                continue;
+            }
+
+            ref readonly var abiInfo = ref _compiler.lvaGetParameterAbiInfo(localNumber);
+            if (abiInfo.IsSplitAcrossRegistersAndStack)
+            {
+                JITDUMP($"Homing stack part of split parameter V{localNumber:D2}\n");
+                assert(abiInfo.NumSegments == 2);
+                assert(abiInfo.Segments[0].Register == REG_ARG_LAST);
+                assert(abiInfo.Segments[1].StackOffset == 0);
+                ref readonly var segment = ref abiInfo.Segments[1];
+
+                genHomeStackSegment(localNumber, in segment, initReg, ref initRegStillZeroed);
+#if DEBUG
+                for (localNumber += 1; localNumber < _compiler.info.compArgsCount; localNumber++)
+                {
+                    ref readonly var otherAbiInfo = ref _compiler.lvaGetParameterAbiInfo(localNumber);
+                    assert(!otherAbiInfo.IsSplitAcrossRegistersAndStack);
+                }
+#endif
+                break;
+            }
+        }
 #endif
     }
 }

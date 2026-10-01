@@ -226,6 +226,13 @@ public sealed partial class CodeGen
         // Native genEmitStartBlock is empty outside Wasm.
         _compiler.compCurStmt = null;
         _compiler.compCurLifeTree = null;
+#if SWIFT_SUPPORT
+        // Reassembly can require arbitrary amounts of code, so it belongs in the first block after the prolog.
+        if (block.IsFirst && _compiler.lvaHasAnySwiftStackParamToReassemble())
+        {
+            genHomeSwiftStructStackParameters();
+        }
+#endif
         if (_compiler.compShouldPoisonFrame() && block.IsFirst)
         {
             genPoisonFrame(newLiveRegSet);

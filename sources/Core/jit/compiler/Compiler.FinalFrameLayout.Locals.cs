@@ -27,8 +27,13 @@ public partial class Compiler
 
     public bool lvaTempsHaveLargerOffsetThanVars()
     {
+#if TARGET_ARM
+        // ARM always places temps at lower stack addresses than variables.
+        return false;
+#else
         assert(codeGen is not null);
         return !compGSReorderStackLayout || codeGen.IsFramePointerUsed;
+#endif
     }
 
     public unsafe void lvaAssignVirtualFrameOffsetsToLocals()

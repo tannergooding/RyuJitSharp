@@ -7,6 +7,24 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public int lvaGetSPRelativeOffset(int varNum)
+    {
+        assert(!compLocallocUsed);
+        assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
+        ref var descriptor = ref lvaGetDesc(varNum);
+        assert(descriptor.lvOnFrame);
+
+        var spRelativeOffset = descriptor.StackOffset;
+        if (descriptor.lvFramePointerBased)
+        {
+            assert(codeGen is not null);
+            spRelativeOffset += codeGen.genSPtoFPdelta;
+        }
+
+        assert(spRelativeOffset >= 0);
+        return spRelativeOffset;
+    }
+
     public unsafe int lvaGetCallerSPRelativeOffset(int varNum)
     {
         assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
@@ -17,9 +35,6 @@ public partial class Compiler
 
     public unsafe int lvaToCallerSPRelativeOffset(int offset, bool isFpBased, bool forRootFrame = true)
     {
-#if !TARGET_AMD64 && !TARGET_ARM64
-        throw new FatalJitException(CORJIT_SKIPPED, "Caller-SP-relative frame offsets require AMD64 or ARM64.");
-#else
         assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
         assert(codeGen is not null);
         offset += isFpBased ? codeGen.genCallerSPtoFPdelta : codeGen.genCallerSPtoInitialSPdelta;
@@ -40,6 +55,32 @@ public partial class Compiler
 #endif
 
         return offset;
+    }
+
+    public int lvaGetInitialSPRelativeOffset(int varNum)
+    {
+        assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
+        ref var descriptor = ref lvaGetDesc(varNum);
+        assert(descriptor.lvOnFrame);
+
+        return lvaToInitialSPRelativeOffset(unchecked((uint)descriptor.StackOffset), descriptor.lvFramePointerBased);
+    }
+
+    public int lvaToInitialSPRelativeOffset(uint offset, bool isFpBased)
+    {
+        assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
+#if TARGET_AMD64
+        if (isFpBased)
+        {
+            // Native takes an unsigned offset even when the local's FP-relative offset is negative.
+            assert(codeGen is not null);
+            assert(codeGen.IsFramePointerUsed);
+            offset = unchecked(offset + (uint)codeGen.genSPtoFPdelta);
+        }
+#else
+        NYI("lvaToInitialSPRelativeOffset");
 #endif
+
+        return unchecked((int)offset);
     }
 }

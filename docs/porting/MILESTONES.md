@@ -16,6 +16,31 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Frame helpers and parameter homing
+
+Frame-size estimation, SP-relative conversions, temporary ordering and Async
+header allocation retain their whole native target branches. Initial-SP
+conversion preserves unsigned offset bits, and ARM prespill intersections
+normalize bank-relative masks while retaining both halves of a double.
+
+Register/stack parameter homing, split-parameter homing and generic-context
+reporting retain target-specific algorithms. Swift stack reassembly is restored
+at its native block-driver position. LoongArch address emission, RISC-V reserved
+register selection and the distinct Wasm local-load implementation remain
+explicit terminating dependencies rather than success-shaped fallbacks.
+
+Full-analysis Windows fixtures pass 102 Debug/83 Release and Linux-target
+fixtures pass 62 Debug/54 Release, 301 executions. Six direct Swift-body cases
+run on Linux-target; four Windows+Swift driver cases remain source-only because
+default Windows disables Swift and Linux block generation remains Windows-gated.
+ARM64 retains its exact 39-diagnostic baseline; other-target source projections
+are not execution or generated-code parity evidence.
+
+Eighteen definitions and one exclusive declaration retire 858 net native lines.
+Exact reconstruction preserves two live prototypes and the closing
+`!TARGET_WASM` guard included in the 861 selected lines. Historical C#-shaped
+frame spans are hashed separately from the pinned oracle.
+
 ## 2026-10-01: Emission finalization and hardware construction
 
 Emission finalization retains the whole target/feature body, including profile

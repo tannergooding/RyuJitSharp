@@ -158,9 +158,6 @@ public sealed partial class CodeGen
 
     public var_types genParamStackType(in LclVarDsc descriptor, in AbiPassingSegment segment)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Parameter stack type selection is not yet ported for this target.");
-#else
         assert(segment.IsPassedInRegister);
         switch (descriptor.Type)
         {
@@ -191,8 +188,16 @@ public sealed partial class CodeGen
                     return segment.GetRegisterType();
                 }
 
+#if TARGET_ARM64
+                // Struct stack slots are rounded to pointer size, allowing paired stores.
+                return TYP_I_IMPL;
+#elif TARGET_XARCH
                 // xarch uses the smallest instruction encoding, rounding small integer segments up.
                 return segment.GetRegisterType().ActualType;
+#else
+                // Packed fields and adjacent stack slots must not be overwritten by wider stores.
+                return segment.GetRegisterType();
+#endif
             }
 
             default:
@@ -200,6 +205,5 @@ public sealed partial class CodeGen
                 return segment.GetRegisterType().ActualType;
             }
         }
-#endif
     }
 }

@@ -1483,6 +1483,21 @@ loop remains a known boundary discrepancy (B474). Whole caller retirement,
 403 focused x64 cases and unchanged early target diagnostics do not establish
 complete target compilation, full dump/code parity or Linux runtime execution.
 
+Remaining frame-size/SP/temporary/Async and parameter-homing/context callers
+now retain whole native target branches. ARM prespill masks are normalized from
+bank-relative to full register positions without losing the second double bit.
+The common local-load helper remains excluded from Wasm; its distinct typed
+terminating dependency does not stand in for the native Wasm implementation.
+LoongArch address-constant emission and RISC-V reserved-register selection also
+remain terminating dependencies with native definitions retained.
+Non-AMD64 initial-SP conversion preserves native configurable `NYI` followed by
+return of the original offset bits; this path is not claimed always terminating.
+Six Swift stack-reassembly cases execute on Linux-target. Four Windows+Swift
+block-driver cases remain source-only under default feature settings (B480):
+Windows does not enable Swift, and Linux block generation remains Windows-gated.
+The 301 focused x64 executions and exact ARM64 diagnostic baseline do not
+establish other-target execution or broader block-driver support.
+
 Xarch callee-save push/pop, floating preservation/restoration, root epilog and
 AVX-clearing callers now include their native x86 paths. Caller-entry recording
 checks remain AMD64-only so x86 empty/no-op paths do not fail before reaching
