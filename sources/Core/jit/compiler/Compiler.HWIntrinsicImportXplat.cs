@@ -236,12 +236,29 @@ public partial class Compiler
                     {
                         if (intrinsic == NI_Vector_AsVector)
                         {
-                            convertIntrinsic = simdSize == 64 ? NI_Vector_GetLower128 : NI_Vector_GetLower;
-                            convertSize = simdSize;
+                            if (simdSize == 64)
+                            {
+                                convertIntrinsic = NI_Vector_GetLower128;
+                                convertSize = 64;
+                            }
+                            else
+                            {
+                                assert(simdSize == 32);
+                                convertIntrinsic = NI_Vector_GetLower;
+                                convertSize = 32;
+                            }
+                        }
+                        else if (intrinsic == NI_Vector_AsVector512)
+                        {
+                            assert(simdSize == 64);
+                            convertIntrinsic = NI_Vector_ToVector512;
+                            convertSize = 16;
                         }
                         else
                         {
-                            convertIntrinsic = simdSize == 64 ? NI_Vector_ToVector512 : NI_Vector_ToVector256;
+                            assert(intrinsic == NI_Vector_AsVector256);
+                            assert(simdSize == 32);
+                            convertIntrinsic = NI_Vector_ToVector256;
                             convertSize = 16;
                         }
                         break;
@@ -251,12 +268,22 @@ public partial class Compiler
                     {
                         if (intrinsic == NI_Vector_AsVector)
                         {
-                            convertIntrinsic = simdSize == 64 ? NI_Vector_GetLower : NI_Vector_ToVector256;
-                            convertSize = simdSize;
+                            if (simdSize == 64)
+                            {
+                                convertIntrinsic = NI_Vector_GetLower;
+                                convertSize = 64;
+                            }
+                            else
+                            {
+                                assert(simdSize == 16);
+                                convertIntrinsic = NI_Vector_ToVector256;
+                                convertSize = 16;
+                            }
                         }
                         else
                         {
-                            assert(intrinsic == NI_Vector_AsVector512 && simdSize == 64);
+                            assert(intrinsic == NI_Vector_AsVector512);
+                            assert(simdSize == 64);
                             convertIntrinsic = NI_Vector_ToVector512;
                             convertSize = 32;
                         }
@@ -267,12 +294,14 @@ public partial class Compiler
                     {
                         if (intrinsic == NI_Vector_AsVector)
                         {
+                            assert(simdSize is 16 or 32);
                             convertIntrinsic = NI_Vector_ToVector512;
                             convertSize = simdSize;
                         }
                         else
                         {
-                            assert(intrinsic == NI_Vector_AsVector256 && simdSize == 32);
+                            assert(intrinsic == NI_Vector_AsVector256);
+                            assert(simdSize == 32);
                             convertIntrinsic = NI_Vector_GetLower;
                             convertSize = 64;
                         }
@@ -286,7 +315,8 @@ public partial class Compiler
                     }
                 }
 
-                assert(convertIntrinsic != NI_Illegal && convertSize != 0);
+                assert(convertIntrinsic != NI_Illegal);
+                assert(convertSize != 0);
                 op1 = impSIMDPopStack();
                 retNode = gtNewSimdHWIntrinsicNode(retType, convertIntrinsic, simdBaseType, (byte)convertSize, op1);
                 break;
@@ -562,15 +592,14 @@ public partial class Compiler
                 var multiplierIsConst = impStackTop(0).val.Oper.IsConst;
                 var initialIsConst = impStackTop(1).val.Oper.IsConst;
                 var canGenerate = multiplierIsConst;
+#if !TARGET_XARCH
+                if (canGenerate && !initialIsConst)
+                {
 #if TARGET_ARM64
-                if (canGenerate && !initialIsConst)
-                {
                     canGenerate = !varTypeIsLong(simdBaseType) || simdSize == 8;
-                }
-#elif TARGET_WASM
-                if (canGenerate && !initialIsConst)
-                {
+#else
                     canGenerate = false;
+#endif
                 }
 #endif
                 if (!canGenerate)
@@ -997,9 +1026,10 @@ public partial class Compiler
                 }
                 else if (simdSize == 16 && simdBaseType is TYP_SHORT or TYP_INT)
                 {
-                    var resultBaseType = simdBaseType == TYP_SHORT ? TYP_BYTE : TYP_SHORT;
+                    // PackSignedSaturate uses the base type of the return for the simdBaseType.
+                    simdBaseType = simdBaseType == TYP_SHORT ? TYP_BYTE : TYP_SHORT;
                     retNode = gtNewSimdHWIntrinsicNode(retType,
-                        NI_X86Base_PackSignedSaturate, resultBaseType, simdSize, op1, op2);
+                        NI_X86Base_PackSignedSaturate, simdBaseType, simdSize, op1, op2);
                 }
                 else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
                 {
@@ -1106,11 +1136,31 @@ public partial class Compiler
 
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
+
 #if TARGET_XARCH
-                intrinsic = simdSize == 64 ? NI_AVX512_ShiftLeftLogicalVariable : NI_AVX2_ShiftLeftLogicalVariable;
+                if (simdSize == 64)
+                {
+                    intrinsic = NI_AVX512_ShiftLeftLogicalVariable;
+                }
+                else
+                {
+                    assert(simdSize is 16 or 32);
+                    intrinsic = NI_AVX2_ShiftLeftLogicalVariable;
+                }
 #elif TARGET_ARM64
-                intrinsic = simdSize == 8 && varTypeIsLong(simdBaseType)
-                    ? NI_AdvSimd_ShiftLogicalScalar : NI_AdvSimd_ShiftLogical;
+                if (simdSize == 16)
+                {
+                    intrinsic = NI_AdvSimd_ShiftLogical;
+                }
+                else
+                {
+                    assert(simdSize == 8);
+                    intrinsic = varTypeIsLong(simdBaseType)
+                        ? NI_AdvSimd_ShiftLogicalScalar : NI_AdvSimd_ShiftLogical;
+                }
+#elif TARGET_WASM
+                // Unreachable: WASM bails out to the software path above, before the operands are popped.
+                return null;
 #else
                 unreached();
 #endif
@@ -1484,9 +1534,16 @@ public partial class Compiler
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
-            retNode = isNative
-                ? gtNewSimdMinMaxNativeNode(retType, op1, op2, simdBaseType, simdSize, isMax)
-                : gtNewSimdMinMaxNode(retType, op1, op2, simdBaseType, simdSize, isMax, isMagnitude, isNumber);
+
+            if (isNative)
+            {
+                assert(!isMagnitude && !isNumber);
+                retNode = gtNewSimdMinMaxNativeNode(retType, op1, op2, simdBaseType, simdSize, isMax);
+            }
+            else
+            {
+                retNode = gtNewSimdMinMaxNode(retType, op1, op2, simdBaseType, simdSize, isMax, isMagnitude, isNumber);
+            }
         }
         else if (isConcatIntrinsic)
         {

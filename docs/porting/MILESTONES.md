@@ -16,6 +16,28 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Cross-platform intrinsic caller closure
+
+Completed the retained `impXplatIntrinsic` mapping, most of which was previously
+accepted implementation debt. The focused repairs restore Vector<T> destination
+identity and width assertions, signed-packing base-type state, per-lane shift
+width checks, the complete non-xarch geometric-sequence fallback and the native
+min/max invariant. Existing helper APIs, feature defaults and ABI remain unchanged.
+
+Full-analysis Windows and Linux-target selections each pass 28 Debug and
+27 Release cases, 110 executions total. New controls exercise conversion
+identity/assertion behavior and preserve narrowing/shift operand order.
+ARM64 retains the exact 39-diagnostic baseline; its 26 selected source cases
+remain uncompiled/unexecuted. No valid-input generated-code change or other-target
+execution parity has been demonstrated.
+
+Retired the 2888-line whole definition, its eight-line declaration and 24 exclusive
+heading lines. The now-empty `hwintrinsic.cpp` then contained only nine scaffold
+lines and was deleted, for 2929 native lines total. The whole body/declaration
+match the pin after newline normalization; exact span reconstruction and the
+subsequent scaffold-only deletion are recorded separately in
+`artifacts/xplat-caller-acceptance-1ab6f43e`.
+
 ## 2026-10-01: ARM64 SVE immediate recorder source completion
 
 Translated the five whole immediate-only, single-register, register-immediate,
