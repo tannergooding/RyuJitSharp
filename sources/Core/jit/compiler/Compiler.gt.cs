@@ -11986,8 +11986,10 @@ public partial class Compiler
 
         assert(varTypeIsArithmetic(simdBaseType) && !varTypeIsLong(simdBaseType));
 
+#if !TARGET_WASM
         GenTree tmp1;
         GenTree tmp2;
+#endif
 
 #if TARGET_XARCH
         GenTree tmp3;
@@ -12404,6 +12406,35 @@ public partial class Compiler
 
             return gtNewSimdHWIntrinsicNode(type, NI_AdvSimd_ExtractNarrowingLower, simdBaseType, simdSize, tmp2);
         }
+#elif TARGET_WASM
+        if (varTypeIsFloating(simdBaseType))
+        {
+            assert(simdBaseType == TYP_FLOAT);
+
+            // Demote each double vector to [f, f, 0, 0], then join the low pairs.
+            var lower = gtNewSimdHWIntrinsicNode(type, NI_PackedSimd_ConvertToSingle, TYP_DOUBLE, simdSize, op1);
+            var upper = gtNewSimdHWIntrinsicNode(type, NI_PackedSimd_ConvertToSingle, TYP_DOUBLE, simdSize, op2);
+            ReadOnlySpan<uint> selectors = [0, 1, 4, 5];
+
+            return gtNewSimdWasmTwoSourceShuffleNode(type, lower, upper, selectors, TYP_FLOAT, simdSize);
+        }
+
+        // Truncate wide elements to their low bytes in source-vector order.
+        var narrowSize = simdBaseType.Size;
+        var wideSize = narrowSize * 2;
+        var wideCount = simdSize / wideSize;
+        Span<uint> byteSelectors = stackalloc uint[16];
+
+        for (var index = 0; index < simdSize; index++)
+        {
+            var narrowElement = index / narrowSize;
+            var byteInElement = index % narrowSize;
+            var sourceElement = narrowElement < wideCount ? narrowElement : narrowElement - wideCount;
+            var sourceBase = narrowElement < wideCount ? 0 : simdSize;
+            byteSelectors[index] = unchecked((uint)(sourceBase + (sourceElement * wideSize) + byteInElement));
+        }
+
+        return gtNewSimdWasmTwoSourceShuffleNode(type, op1, op2, byteSelectors, TYP_UBYTE, simdSize);
 #else
 #error Unsupported platform
 #endif

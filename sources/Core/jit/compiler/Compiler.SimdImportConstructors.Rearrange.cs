@@ -3,6 +3,10 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+#if FEATURE_HW_INTRINSICS && TARGET_WASM
+using System;
+#endif
+
 namespace RyuJitSharp;
 
 public partial class Compiler
@@ -25,6 +29,23 @@ public partial class Compiler
     {
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
         assert(varTypeIsArithmetic(simdBaseType));
+
+#if TARGET_ARM64
+        if (simdSize == 8)
+        {
+            var result = op1;
+            if (leftUpper)
+            {
+                var resultDup = fgMakeMultiUse(ref result);
+                result = gtNewSimdHWIntrinsicNode(type, NI_AdvSimd_Arm64_InsertSelectedScalar, TYP_UINT, simdSize,
+                    result, gtNewIconNode(TYP_INT, 0), resultDup, gtNewIconNode(TYP_INT, 1));
+            }
+
+            return gtNewSimdHWIntrinsicNode(type, NI_AdvSimd_Arm64_InsertSelectedScalar, TYP_UINT, simdSize,
+                result, gtNewIconNode(TYP_INT, 1), op2, gtNewIconNode(TYP_INT, rightUpper ? 1 : 0));
+        }
+#endif
+
 #if TARGET_XARCH
         if (simdSize == 16)
         {
@@ -47,7 +68,26 @@ public partial class Compiler
             return gtNewSimdHWIntrinsicNode(type, NI_X86Base_Shuffle, TYP_FLOAT, simdSize,
                 op1, op2, gtNewIconNode(TYP_INT, immediate));
         }
+#elif TARGET_WASM
+        var elementCount = GenTreeVecCon.ElementCount(simdSize, simdBaseType);
+        var half = elementCount / 2;
+        var leftStart = leftUpper ? half : 0;
+        var rightStart = rightUpper ? half : 0;
+        Span<uint> selectors = stackalloc uint[16];
 
+        for (var index = 0; index < elementCount; index++)
+        {
+            selectors[index] = unchecked((uint)(index < half
+                ? leftStart + index
+                : elementCount + rightStart + index - half));
+        }
+
+        return gtNewSimdWasmTwoSourceShuffleNode(type, op1, op2, selectors, simdBaseType, simdSize);
+#elif !TARGET_ARM64
+        throw new FatalJitException("gtNewSimdConcatNode requires its target-specific implementation.");
+#endif
+
+#if TARGET_XARCH || TARGET_ARM64
         var halfSize = (byte)(simdSize / 2);
         var halfType = GetSimdTypeForSize(halfSize);
         if (!leftUpper)
@@ -67,11 +107,13 @@ public partial class Compiler
 
         var lower = gtNewSimdGetUpperNode(halfType, op1, simdBaseType, simdSize);
         var rightLower = gtNewSimdGetLowerNode(halfType, op2, simdBaseType, simdSize);
+#if TARGET_XARCH
         var convert = simdSize == 32 ? NI_Vector_ToVector256Unsafe : NI_Vector_ToVector512Unsafe;
+#else
+        var convert = NI_Vector_ToVector128Unsafe;
+#endif
         var widened = gtNewSimdHWIntrinsicNode(type, convert, simdBaseType, halfSize, lower);
         return gtNewSimdWithUpperNode(type, widened, rightLower, simdBaseType, simdSize);
-#else
-        throw new FatalJitException("gtNewSimdConcatNode requires its target-specific implementation.");
 #endif
     }
 
@@ -132,7 +174,25 @@ public partial class Compiler
             var intrinsic = upper ? NI_X86Base_UnpackHigh : NI_X86Base_UnpackLow;
             return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2);
         }
+#elif TARGET_ARM64
+        var intrinsic = upper ? NI_AdvSimd_Arm64_ZipHigh : NI_AdvSimd_Arm64_ZipLow;
+        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2);
+#elif TARGET_WASM
+        var start = upper ? count / 2 : 0;
+        Span<uint> selectors = stackalloc uint[16];
 
+        for (var index = 0; index < count; index++)
+        {
+            var element = start + index / 2;
+            selectors[index] = unchecked((uint)((index & 1) == 0 ? element : count + element));
+        }
+
+        return gtNewSimdWasmTwoSourceShuffleNode(type, op1, op2, selectors, simdBaseType, simdSize);
+#else
+        throw new FatalJitException("gtNewSimdZipNode requires its target-specific implementation.");
+#endif
+
+#if TARGET_XARCH
         var halfSize = (byte)(simdSize / 2);
         var halfType = GetSimdTypeForSize(halfSize);
         var left = upper
@@ -148,8 +208,6 @@ public partial class Compiler
         var convert = simdSize == 32 ? NI_Vector_ToVector256Unsafe : NI_Vector_ToVector512Unsafe;
         var widened = gtNewSimdHWIntrinsicNode(type, convert, simdBaseType, halfSize, lower);
         return gtNewSimdWithUpperNode(type, widened, higher, simdBaseType, simdSize);
-#else
-        throw new FatalJitException("gtNewSimdZipNode requires its target-specific implementation.");
 #endif
     }
 

@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: SIMD pair construction
+
+Narrow, Concat and Zip retain their complete target branches. ARM64 half
+extraction/insertion and selected-scalar ordering are restored; Wasm callers
+construct their native selectors before the explicit unported two-source shuffle
+dependency. Existing xarch algorithms and single-lane side-effect ordering remain.
+
+Forty-two pair-construction cases and 64 existing constructor controls pass in
+Windows/Linux Debug/Release. Three definitions and three declarations retire
+788 native lines. ARM64 remains behind the same 39 compiler diagnostics; Wasm
+shuffle execution and generated-code parity are not established.
+
 ## 2026-10-01: Shared emitter diagnostics and costs
 
 Instruction-format names and address/offset helpers now live in shared emitter

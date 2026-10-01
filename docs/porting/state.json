@@ -16,6 +16,14 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "simdPairConstruction": {
+      "scope": "Complete Narrow/Concat/Zip target bodies while preserving existing xarch algorithms. Restore ARM64 selected-scalar and half insertion, ZipLow/ZipHigh, Wasm truncation/demotion and byte selectors, and whole one-lane observable-effect ordering.",
+      "mapping": "gentree.cpp SIMD factories -> compiler/Compiler.gt.cs and Compiler.SimdImportConstructors.Rearrange.cs. The Wasm two-source shuffle remains an explicit terminating dependency in Compiler.SimdConstructionDependencies.cs; its native body and declaration remain.",
+      "validation": "Forty-two SIMD-pair cases and64 unchanged constructor controls pass per Windows/Linux Debug/Release configuration. Combined final snapshot shared-simd-vn-219fb19-final-v2 passes242 cases per configuration,968total, with49 hardware-VN,47 SIMD-value,33 intrinsic-evaluation and7 intrinsic controls. Full analysis/default compiler processors/conserve5 and12/8GiB memory guards unchanged.",
+      "evidence": "artifacts/shared-simd-vn-219fb19-final-v2: reviewed-inputs.json, four counts.json/shared.trx/receipt.json/build.binlog sets and ARM64 diagnostics. Original failed fixtures and the earlier Linux Release memory stop at7.53GiB remain immutable; the final fresh run completed normally.",
+      "retirement": "Three definitions and three declarations,788lines including770native source lines. Shared native consolidation57086446dd28a2b1c08cf031afbdd27a5c27aee5 retires2327lines together with hardware VN from365fa039; exact reconstruction succeeds and sole parent remains33baf8ee.",
+      "limits": "Final ARM64 Debug has exactly the same39 historical compiler diagnostics; new target fixtures did not execute. Wasm callers reach an explicit unported dependency by source inspection only. No generated-code parity or Wasm execution claim."
+    },
     "sharedReadyAcceptance": {
       "validation": "Scope publication, shared generation, LSRA sequencing and emitter diagnostics pass 200 Windows Debug,114 Windows Release,187 Linux-target Debug and109 Linux-target Release cases,610 total, with full analysis and exact per-fixture gates.",
       "evidence": "artifacts/shared-scope-generation-77fb43e-v3/win-debug and shared-scope-generation-77fb43e-v4/{win-release,linux-debug,linux-release}: shared.trx,counts.json,receipt.json,build.binlog. V4 changes only a DEBUG guard around the emitter fixture's Debug-only disAddr assignment; its Debug projection is identical to the passing V3. Failed earlier fixtures and snapshots remain immutable.",
