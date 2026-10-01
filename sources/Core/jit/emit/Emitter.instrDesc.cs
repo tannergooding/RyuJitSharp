@@ -43,6 +43,24 @@ public partial class Emitter
             return idIns() == ins;
         }
 
+        public bool idInsIs(instruction ins, params ReadOnlySpan<instruction> rest)
+        {
+            if (idInsIs(ins))
+            {
+                return true;
+            }
+
+            foreach (var candidate in rest)
+            {
+                if (idInsIs(candidate))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
 #if TARGET_XARCH
         public uint idCodeSize()
         {

@@ -16,6 +16,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Emitter descriptor primitive closure
+
+Added the retained variadic `instrDesc.idInsIs` predicate as ordered,
+short-circuit span membership. The constructor, single-instruction predicate
+and Debug GC predicates/names map to existing initialization, predicates and
+diagnostic behavior; no duplicate helpers or constructor changes were needed.
+
+Seven new descriptor cases preserve instruction identity across matching
+positions, misses and an empty tail. With existing initialization and invalid-GC
+diagnostic controls, full-analysis Windows and Linux-target selections each pass
+10 Debug and nine Release cases, 38 executions total. ARM64 retains the exact
+39-diagnostic compilation baseline and has no fixture execution credit.
+
+Retired five definitions, including one template prefix, and exclusive text:
+52 native lines, with no separate declarations. Source seals, the preserved
+first fixture analyzer failure, corrected acceptance and exact native
+reconstruction are recorded in `artifacts/emitter-primitives-acceptance-30b51a3b`.
+No generated-code or whole-runtime parity claim is made.
+
 ## 2026-10-01: Cross-platform intrinsic caller closure
 
 Completed the retained `impXplatIntrinsic` mapping, most of which was previously
