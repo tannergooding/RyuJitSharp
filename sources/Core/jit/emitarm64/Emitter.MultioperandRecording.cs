@@ -398,17 +398,5 @@ public partial class Emitter
             }
         }
     }
-
-    private static void emitInsSve_R_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1,
-        regNumber reg2, regNumber reg3, nint imm1, nint imm2, insOpts opt)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SVE three-register/two-immediate recording is not ported.");
-
-    private static void emitInsSve_R_R_R_R(instruction ins, emitAttr attr, regNumber reg1,
-        regNumber reg2, regNumber reg3, regNumber reg4, insOpts opt, insScalableOpts sopt)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SVE four-register recording is not ported.");
-
-    private static void emitInsSve_R_R_R_R_I(instruction ins, emitAttr attr, regNumber reg1,
-        regNumber reg2, regNumber reg3, regNumber reg4, nint imm, insOpts opt)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SVE four-register/immediate recording is not ported.");
 }
 #endif

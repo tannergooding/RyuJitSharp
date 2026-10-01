@@ -16,6 +16,27 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: ARM64 SVE multioperand recording
+
+Translated the whole three-register/two-immediate, four-register and
+four-register/immediate SVE recorders. Aliases and operand swaps, memory/address
+formats, immediate packing, prefix ordering/elision and native option forwarding
+are retained. Existing helpers are reused without changes.
+
+Source-only ARM64 acceptance retains the exact 39-diagnostic compilation
+baseline. The new fixture has not compiled or executed; its 151 Debug/143 Release
+cases remain source projections. Windows collateral controls pass 58 Debug and
+58 Release cases, not SVE execution. Two analyzer corrections remove a dead
+initializer and simplify a predicate while preserving its native assertion text.
+All gates remain enabled, and the failed initial snapshot is preserved.
+
+Retired three whole definitions and three declarations: 1,586 body and 27
+declaration lines, 1,613 total. Native `st1b` recorder/sanity assertion differences
+are preserved rather than relaxed. The unconditional PSEL failure and genuine
+remaining dependency boundaries also remain. Evidence is under
+`artifacts/sve-multioperand-acceptance-d691baa3/v2`; no backend activation or
+generated-code parity is claimed.
+
 ## 2026-10-01: ARM64 SVE three-register recording
 
 Translated the whole three-register and three-register/immediate SVE recorders,
