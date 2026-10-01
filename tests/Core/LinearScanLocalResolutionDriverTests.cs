@@ -325,6 +325,47 @@ internal static class LinearScanLocalResolutionDriverTests
             Assert.That((restoreNode.Flags & GTF_NOREG_AT_USE) != 0, Is.EqualTo(onStack));
         });
     }
+
+#if DEBUG && TARGET_AMD64
+    [TestCase(BBJ_COND)]
+    [TestCase(BBJ_SWITCH)]
+    public static void UpperVectorRestoreRejectsEmptyBranchWithRecoverableError(BBKinds kind)
+    {
+        LinearScanMinimalCandidatesTests.WithCompiler(compiler =>
+        {
+            compiler.lvaCount = 1;
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_SIMD32 }];
+            compiler.compRationalIRForm = true;
+            compiler.fgNodeThreading = NodeThreading.LIR;
+            compiler.fgSafeBasicBlockCreation = true;
+            var allocator = new LinearScan(compiler);
+            var block = BasicBlock.New(compiler, kind);
+            var local = new Interval(TYP_FLOAT, SRBM_XMM6)
+            {
+                isLocalVar = true,
+                varNum = 0,
+                physReg = REG_XMM6,
+            };
+            var upper = new Interval(TYP_FLOAT, SRBM_XMM8)
+            {
+                isUpperVector = true,
+                relatedInterval = local,
+                physReg = REG_XMM8,
+            };
+            var reference = new RefPosition((uint)block.bbNum, 2, null, RefType.RefTypeUpperVectorRestore);
+            reference.setInterval(upper);
+
+            Assert.That(block.IsEmpty, Is.True);
+            var exception = Assert.Throws<FatalJitException>(
+                () => RestoreUpper(allocator, null, reference, upper, block));
+
+            Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
+            Assert.That(block.IsEmpty, Is.True);
+            Assert.That(upper.physReg, Is.EqualTo(REG_XMM8));
+            Assert.That(local.physReg, Is.EqualTo(REG_XMM6));
+        }, minOpts: false);
+    }
+#endif
 #endif
 
     private static void WithDriver(Action<Compiler, LinearScan, BasicBlock, Interval> action,

@@ -16,6 +16,27 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Upper-vector state and SIMD sequences
+
+Upper-vector save/restore retains the native target predicates and the
+recoverable assertion before an empty conditional/switch block is inspected.
+The unchanged save algorithm reuses existing coverage; two new optimized-Debug
+cases verify the error class without inserting nodes or changing register homes.
+
+Index and sequence construction now retains fixed ARM64/Wasm and scalable ARM64
+branches. Reductions preserve native pairwise widths and Wasm shuffle/add
+grouping, including capture-before-reload ordering. The common ToScalar return
+is available to explicit-HW Wasm without enabling that feature by default.
+
+Full-analysis fixtures pass 17 Debug/15 Release on Windows and 12/12 on
+Linux-target, 56 executions. The exact 39-diagnostic ARM64 baseline remains;
+99 ARM64 and 28 Wasm sequence-fixture cases are source projections only.
+
+Seven whole definitions retire 803 native body lines, retaining live
+declarations, feature guards and the independently used vector-save type helper.
+The three LSRA bodies match the pinned oracle after line-ending normalization;
+four historical C#-shaped constructor bodies retain separate raw/oracle hashes.
+
 ## 2026-10-01: Loop alignment and root prologs
 
 Shared loop-alignment recording, sizing and adjustment retain the native x86

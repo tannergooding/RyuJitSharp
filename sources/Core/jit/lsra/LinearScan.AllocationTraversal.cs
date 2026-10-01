@@ -1018,7 +1018,7 @@ public sealed partial class LinearScan
             !getKillSetForProfilerHook().IsSet(localInterval.physReg) &&
             !new regMaskTP(SRBM_FLT_CALLEE_SAVED).IsSet(localInterval.physReg);
     }
-#elif FEATURE_PARTIAL_SIMD_CALLEE_SAVE && TARGET_AMD64
+#elif FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     private static bool canSkipUpperVectorSave(RefPosition reference, Interval localInterval)
     {
         assert(reference.refType is RefType.RefTypeUpperVectorSave);

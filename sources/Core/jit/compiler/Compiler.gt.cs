@@ -12570,7 +12570,7 @@ public partial class Compiler
 
         assert(varTypeIsArithmetic(simdBaseType));
 
-#if TARGET_XARCH || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_WASM
         return gtNewSimdHWIntrinsicNode(type, NI_Vector_ToScalar, simdBaseType, simdSize, op1);
 #else
 #error Unsupported platform

@@ -1350,6 +1350,12 @@ execution: the current ARM64 comparison still fails at its unchanged
 39-diagnostic baseline. Loop-padding runtime parity remains separate from the
 managed recording, arithmetic and diagnostic checks.
 
+Upper-vector save/restore and SIMD index/sequence/reduction constructors retain
+their native target branches. The common ToScalar return is available under
+explicit-HW Wasm, but removing that single preprocessing blocker is not a Wasm
+compilation claim. Default feature settings are unchanged; the new 99 ARM64 and
+28 Wasm sequence-fixture projections remain unexecuted.
+
 ARM64 target metadata, ABI classification, immediate predicates, fixed-width
 SIMD/mask queries, cross-platform intrinsic importing, FP/LR placement policy
 and two-register GC return layouts now compile and have managed unit coverage

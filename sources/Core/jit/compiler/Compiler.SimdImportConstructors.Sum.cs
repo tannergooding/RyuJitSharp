@@ -3,6 +3,10 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+#if TARGET_ARM64
+using System.Numerics;
+#endif
+
 namespace RyuJitSharp;
 
 public partial class Compiler
@@ -133,6 +137,101 @@ public partial class Compiler
             op1 = gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, shifted, tmp, simdBaseType, simdSize);
             shiftVal /= 2;
         }
+        return gtNewSimdToScalarNode(type, op1, simdBaseType, simdSize);
+#elif TARGET_ARM64
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            case TYP_SHORT:
+            case TYP_USHORT:
+            {
+                var sum = gtNewSimdHWIntrinsicNode(TYP_SIMD8, NI_AdvSimd_Arm64_AddAcross,
+                    simdBaseType, simdSize, op1);
+
+                return gtNewSimdToScalarNode(type, sum, simdBaseType, 8);
+            }
+
+            case TYP_INT:
+            case TYP_UINT:
+            {
+                GenTree sum;
+                if (simdSize == 8)
+                {
+                    var duplicate = fgMakeMultiUse(ref op1);
+                    sum = gtNewSimdHWIntrinsicNode(simdType, NI_AdvSimd_AddPairwise,
+                        simdBaseType, simdSize, op1, duplicate);
+                }
+                else
+                {
+                    sum = gtNewSimdHWIntrinsicNode(TYP_SIMD8, NI_AdvSimd_Arm64_AddAcross,
+                        simdBaseType, 16, op1);
+                }
+
+                return gtNewSimdToScalarNode(type, sum, simdBaseType, 8);
+            }
+
+            case TYP_FLOAT:
+            {
+                if (simdSize == 8)
+                {
+                    op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, NI_AdvSimd_Arm64_AddPairwiseScalar,
+                        simdBaseType, simdSize, op1);
+                }
+                else
+                {
+                    var haddCount = BitOperations.Log2((uint)GenTreeVecCon.ElementCount(simdSize, simdBaseType));
+                    for (var index = 0; index < haddCount; index++)
+                    {
+                        var duplicate = fgMakeMultiUse(ref op1);
+                        op1 = gtNewSimdHWIntrinsicNode(simdType, NI_AdvSimd_Arm64_AddPairwise,
+                            simdBaseType, simdSize, op1, duplicate);
+                    }
+                }
+
+                return gtNewSimdToScalarNode(type, op1, simdBaseType, simdSize);
+            }
+
+            case TYP_DOUBLE:
+            case TYP_LONG:
+            case TYP_ULONG:
+            {
+                if (simdSize == 16)
+                {
+                    op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, NI_AdvSimd_Arm64_AddPairwiseScalar,
+                        simdBaseType, simdSize, op1);
+                }
+
+                return gtNewSimdToScalarNode(type, op1, simdBaseType, 8);
+            }
+
+            default:
+            {
+                unreached();
+                return null;
+            }
+        }
+#elif TARGET_WASM
+        // Increasing shuffle strides preserve the software lower/upper reduction grouping.
+        // Out-of-range indices shuffle in zero; only lane zero is read.
+        var count = GenTreeVecCon.ElementCount(simdSize, simdBaseType);
+        var indexType = getUnsignedSimdBaseType(simdBaseType);
+
+        for (var stride = 1; stride < count; stride *= 2)
+        {
+            var duplicate = fgMakeMultiUse(ref op1);
+            var indices = gtNewVconNode(simdType);
+            for (var index = 0; index < count; index++)
+            {
+                indices.SetElementIntegral(indexType, index, index + stride);
+            }
+            assert(IsValidForShuffle(indices, simdSize, simdBaseType, out _, false));
+
+            var shifted = gtNewSimdShuffleNode(simdType, op1, indices, simdBaseType, simdSize, false);
+            // The shuffle contains the multi-use store and must precede the duplicate's load.
+            op1 = gtNewSimdBinOpNode(GT_ADD, simdType, shifted, duplicate, simdBaseType, simdSize);
+        }
+
         return gtNewSimdToScalarNode(type, op1, simdBaseType, simdSize);
 #else
         throw new FatalJitException("gtNewSimdSumNode requires its target-specific implementation.");

@@ -98,13 +98,13 @@ public sealed partial class LinearScan
         if (restoreReg == REG_NA)
         {
             assert(localInterval.isSpilled);
-#if TARGET_ARM64
+#if TARGET_AMD64
+            assert(reference.assignedReg() == REG_NA);
+            restore.Flags |= GTF_NOREG_AT_USE;
+#else
             restore.Flags |= GTF_SPILLED;
             assert(reference.assignedReg() != REG_NA);
             restoreReg = reference.assignedReg();
-#else
-            assert(reference.assignedReg() == REG_NA);
-            restore.Flags |= GTF_NOREG_AT_USE;
 #endif
         }
         restore.RegNum = restoreReg;
@@ -134,6 +134,7 @@ public sealed partial class LinearScan
             JITDUMP($"at end of {FMT_BB(block.bbNum)}:\n");
             if (block.Kind is BBJ_COND or BBJ_SWITCH)
             {
+                noway_assert(!block.IsEmpty);
                 var branch = block.LastNode
                     ?? throw new FatalJitException("A vector restore before a branch requires a terminator.");
                 assert(branch.Oper.IsConditionalJump || branch.Oper is GT_SWITCH_TABLE or GT_SWITCH);

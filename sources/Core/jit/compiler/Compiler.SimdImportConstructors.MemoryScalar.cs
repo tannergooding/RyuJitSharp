@@ -259,6 +259,8 @@ public partial class Compiler
         assert(simdSize != 64);
         assert(simdSize != 32 || varTypeIsFloating(simdBaseType) ||
             compIsaSupportedDebugOnly(InstructionSet_AVX2));
+#elif TARGET_ARM64
+        assert(!varTypeIsLong(simdBaseType));
 #endif
         return gtNewSimdHWIntrinsicNode(type, NI_Vector_Dot, simdBaseType, simdSize, op1, op2);
     }
