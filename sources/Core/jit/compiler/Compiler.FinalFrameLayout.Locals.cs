@@ -33,9 +33,6 @@ public partial class Compiler
 
     public unsafe void lvaAssignVirtualFrameOffsetsToLocals()
     {
-#if !TARGET_AMD64 && !TARGET_ARM64
-        throw new FatalJitException(CORJIT_SKIPPED, "Local stack layout requires AMD64 or ARM64.");
-#else
         assert(codeGen is not null);
         var stkOffs = 0;
         var originalFrameStkOffs = 0;
@@ -46,7 +43,7 @@ public partial class Compiler
             codeGen.IsFramePointerUsed = codeGen.IsFramePointerRequired;
         }
 
-#if TARGET_AMD64
+#if TARGET_XARCH
         stkOffs -= TARGET_POINTER_SIZE;
         if (lvaRetAddrVar != BAD_VAR_NUM)
         {
@@ -57,16 +54,30 @@ public partial class Compiler
         if (opts.IsOSR)
         {
             assert(info.compPatchpointInfo is not null);
+#if TARGET_LOONGARCH64 || TARGET_RISCV64
+            originalFrameStkOffs = info.compPatchpointInfo->TotalFrameSize;
+#else
             originalFrameSize = info.compPatchpointInfo->TotalFrameSize;
             originalFrameStkOffs = stkOffs;
             stkOffs -= originalFrameSize;
+#endif
         }
 
-#if TARGET_AMD64
-        if (codeGen.IsFramePointerUsed)
+#if TARGET_XARCH
+        if (lvaDoubleAlignOrFramePointerUsed())
         {
             stkOffs -= REGSIZE_BYTES;
         }
+#endif
+
+        var preSpillSize = 0;
+        var mustDoubleAlign = false;
+#if TARGET_ARM
+        mustDoubleAlign = true;
+        preSpillSize = BitOperations.PopCount(
+            unchecked((ulong)codeGen.RegSet.rsMaskPreSpillRegs(true).IntRegSet)) * REGSIZE_BYTES;
+#elif DOUBLE_ALIGN
+        mustDoubleAlign = genDoubleAlign;
 #endif
 
 #if TARGET_ARM64
@@ -77,9 +88,20 @@ public partial class Compiler
             initialStkOffs = MAX_REG_ARG * REGSIZE_BYTES;
             stkOffs -= initialStkOffs;
         }
+        stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+        assert(compCalleeRegsPushed >= 2);
+        stkOffs -= compCalleeRegsPushed << 3;
+#elif HAS_FIXED_REGISTER_SET
+#if TARGET_ARM
+        if (lvaRetAddrVar != BAD_VAR_NUM)
+        {
+            lvaTable[lvaRetAddrVar].StackOffset = stkOffs - REGSIZE_BYTES;
+        }
+#endif
+        stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
 #endif
 
-        stkOffs -= compCalleeRegsPushed * REGSIZE_BYTES;
         compLclFrameSize = 0;
 #if TARGET_AMD64
         if (MethodHasPatchpoint)
@@ -117,11 +139,44 @@ public partial class Compiler
                     lvaMonAcquired, lvaLclStackHomeSize(lvaMonAcquired), stkOffs);
             }
 
+#if !JIT32_GCENCODER
             stkOffs = lvaAllocAsyncContexts(stkOffs);
+#endif
         }
+
+        if (mustDoubleAlign)
+        {
+            if (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)
+            {
+                lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+                stkOffs -= TARGET_POINTER_SIZE;
+                lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+                stkOffs -= TARGET_POINTER_SIZE;
+            }
+            else
+            {
+                if (((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) != 0)
+                {
+                    lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+                    stkOffs -= TARGET_POINTER_SIZE;
+                }
+                noway_assert(((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) == 0);
+            }
+        }
+
+#if JIT32_GCENCODER
+        if (lvaLocAllocSPvar != BAD_VAR_NUM)
+        {
+            noway_assert(codeGen.IsFramePointerUsed);
+            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaLocAllocSPvar, TARGET_POINTER_SIZE, stkOffs);
+        }
+#endif
 
         if (lvaReportParamTypeArg())
         {
+#if JIT32_GCENCODER
+            noway_assert(codeGen.IsFramePointerUsed);
+#endif
             if (opts.IsOSR)
             {
                 assert(info.compPatchpointInfo is not null);
@@ -136,6 +191,7 @@ public partial class Compiler
                 lvaCachedGenericContextArgOffs = stkOffs;
             }
         }
+#if !JIT32_GCENCODER
         else if (lvaKeepAliveAndReportThis())
         {
             var canUseExistingSlot = false;
@@ -157,6 +213,12 @@ public partial class Compiler
                 lvaCachedGenericContextArgOffs = stkOffs;
             }
         }
+#endif
+
+#if JIT32_GCENCODER
+        assert(!opts.IsOSR);
+        stkOffs = lvaAllocAsyncContexts(stkOffs);
+#endif
 
         if (compGSReorderStackLayout)
         {
@@ -179,7 +241,7 @@ public partial class Compiler
         var tempsAllocated = false;
         if (lvaTempsHaveLargerOffsetThanVars() && !codeGen.IsFramePointerUsed)
         {
-            stkOffs = lvaAllocateTemps(stkOffs, mustDoubleAlign: false);
+            stkOffs = lvaAllocateTemps(stkOffs, mustDoubleAlign);
             tempsAllocated = true;
         }
 
@@ -202,6 +264,7 @@ public partial class Compiler
 
         noway_assert(count < allocOrder.Length);
         var assignMore = -1;
+        var haveLocalDoubleAlign = false;
         for (var pass = 0; pass < count; pass++)
         {
             if ((assignMore & allocOrder[pass]) == 0)
@@ -213,10 +276,23 @@ public partial class Compiler
             for (var lclNum = 0; lclNum < lvaCount; lclNum++)
             {
                 ref var dsc = ref lvaGetDesc(lclNum);
-                if (lvaIsFieldOfDependentlyPromotedStruct(in dsc) || (lclNum == lvaOutgoingArgSpaceVar))
+                if (lvaIsFieldOfDependentlyPromotedStruct(in dsc))
                 {
                     continue;
                 }
+#if FEATURE_FIXED_OUT_ARGS
+                if (lclNum == lvaOutgoingArgSpaceVar)
+                {
+                    continue;
+                }
+#endif
+#if TARGET_WASM
+                if ((lclNum == lvaWasmVirtualIP) || (lclNum == lvaWasmResumeIP) ||
+                    (lclNum == lvaWasmFunctionIndex))
+                {
+                    continue;
+                }
+#endif
 
                 var allocateOnFrame = dsc.lvOnFrame;
                 if (dsc.lvRegister && (lvaDoneFrameLayout == REGALLOC_FRAME_LAYOUT) &&
@@ -227,12 +303,21 @@ public partial class Compiler
 
                 if (lvaIsOSRLocal(lclNum))
                 {
-                    var originalOffset = dsc.lvIsStructField
-                        ? lvaOSRLocalTier0FrameOffset(dsc.lvParentLcl) + dsc.lvFldOffset
-                        : lvaOSRLocalTier0FrameOffset(lclNum);
-                    dsc.StackOffset = originalFrameStkOffs + originalOffset;
-                    JITDUMP($"---OSR--- V{lclNum:D2} (on tier0 frame) tier0 FP-rel offset {originalOffset} " +
-                        $"tier0 frame offset {originalFrameStkOffs} new virt offset {dsc.StackOffset}\n");
+                    if (dsc.lvIsStructField)
+                    {
+                        var parentOriginalOffset = lvaOSRLocalTier0FrameOffset(dsc.lvParentLcl);
+                        dsc.StackOffset = originalFrameStkOffs + parentOriginalOffset + dsc.lvFldOffset;
+                        JITDUMP($"---OSR--- V{lclNum:D2} (promoted field of V{dsc.lvParentLcl:D2}; on tier0 frame) " +
+                            $"tier0 FP-rel offset {parentOriginalOffset} frame offset {originalFrameStkOffs} " +
+                            $"field offset {dsc.lvFldOffset} new virt offset {dsc.StackOffset}\n");
+                    }
+                    else
+                    {
+                        var originalOffset = lvaOSRLocalTier0FrameOffset(lclNum);
+                        dsc.StackOffset = originalFrameStkOffs + originalOffset;
+                        JITDUMP($"---OSR--- V{lclNum:D2} (on tier0 frame) tier0 FP-rel offset {originalOffset} " +
+                            $"frame offset {originalFrameStkOffs} new virt offset {dsc.StackOffset}\n");
+                    }
                     continue;
                 }
 
@@ -260,13 +345,24 @@ public partial class Compiler
                     lvaAllocUnknownSizeLocal(lclNum);
                     continue;
 #else
-                    // On AMD64 all locals have a compile-time-known stack size.
-                    throw new FatalJitException(CORJIT_SKIPPED, "AMD64 unknown-size stack local is unsupported.");
+                    unreached();
+                    continue;
 #endif
                 }
 
-                if (lclNum == lvaRetAddrVar ||
-                    lclNum == lvaMonAcquired ||
+                if (
+#if JIT32_GCENCODER
+                    (lclNum == lvaLocAllocSPvar) ||
+#endif
+                    (lclNum == lvaRetAddrVar))
+                {
+#if DEBUG
+                    assert(dsc.StackOffset != BAD_STK_OFFS);
+#endif
+                    continue;
+                }
+
+                if (lclNum == lvaMonAcquired ||
                     lclNum == lvaResumedIndicator ||
                     lclNum == lvaAsyncThreadObjectVar ||
                     lclNum == lvaAsyncExecutionContextVar ||
@@ -331,8 +427,35 @@ public partial class Compiler
                     continue;
                 }
 
+                if (mustDoubleAlign && ((dsc.Type is TYP_DOUBLE)
+#if TARGET_ARM
+                    || (dsc.Type is TYP_LONG)
+#endif
+#if !TARGET_64BIT
+                    || dsc.lvStructDoubleAlign
+#endif
+                    ))
+                {
+                    noway_assert((compLclFrameSize % TARGET_POINTER_SIZE) == 0);
+                    if ((lvaDoneFrameLayout != FINAL_FRAME_LAYOUT) && !haveLocalDoubleAlign)
+                    {
+                        lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+                        stkOffs -= TARGET_POINTER_SIZE;
+                    }
+                    else
+                    {
+                        if (((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) != 0)
+                        {
+                            lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+                            stkOffs -= TARGET_POINTER_SIZE;
+                        }
+                        noway_assert(((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) == 0);
+                    }
+                    haveLocalDoubleAlign = true;
+                }
+
                 stkOffs = lvaAllocLocalAndSetVirtualOffset(lclNum, lvaLclStackHomeSize(lclNum), stkOffs);
-#if TARGET_ARM64
+#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
                 if (dsc.lvIsRegArg && dsc.lvPromoted)
                 {
                     for (var field = 0; field < dsc.lvFieldCnt; field++)
@@ -356,9 +479,41 @@ public partial class Compiler
 
         if (!tempsAllocated)
         {
-            stkOffs = lvaAllocateTemps(stkOffs, mustDoubleAlign: false);
+            stkOffs = lvaAllocateTemps(stkOffs, mustDoubleAlign);
         }
 
+#if JIT32_GCENCODER
+        if ((lvaGSSecurityCookie != BAD_VAR_NUM) && (lvaGetDesc(lvaGSSecurityCookie).StackOffset == stkOffs))
+        {
+            lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+            stkOffs -= TARGET_POINTER_SIZE;
+        }
+#endif
+
+        if (mustDoubleAlign)
+        {
+            if (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)
+            {
+                lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+                stkOffs -= TARGET_POINTER_SIZE;
+                if (haveLocalDoubleAlign)
+                {
+                    lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+                    stkOffs -= TARGET_POINTER_SIZE;
+                }
+            }
+            else
+            {
+                if (((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) != 0)
+                {
+                    lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+                    stkOffs -= TARGET_POINTER_SIZE;
+                }
+                noway_assert(((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) == 0);
+            }
+        }
+
+#if FEATURE_FIXED_OUT_ARGS
         if (lvaOutgoingArgSpaceSize.Value > 0)
         {
 #if WINDOWS_AMD64_ABI
@@ -368,15 +523,36 @@ public partial class Compiler
             stkOffs = lvaAllocLocalAndSetVirtualOffset(
                 lvaOutgoingArgSpaceVar, lvaLclStackHomeSize(lvaOutgoingArgSpaceVar), stkOffs);
         }
+#endif
 
+#if TARGET_WASM
+        if (lvaWasmResumeIP != BAD_VAR_NUM)
+        {
+            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaWasmResumeIP, TARGET_POINTER_SIZE, stkOffs);
+        }
+        if (lvaWasmVirtualIP != BAD_VAR_NUM)
+        {
+            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaWasmVirtualIP, TARGET_POINTER_SIZE, stkOffs);
+        }
+        if (lvaWasmFunctionIndex != BAD_VAR_NUM)
+        {
+            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaWasmFunctionIndex, TARGET_POINTER_SIZE, stkOffs);
+        }
+#endif
+
+#if HAS_FIXED_REGISTER_SET
         var pushedCount = compCalleeRegsPushed;
+#else
+        var pushedCount = 0;
+#endif
 #if TARGET_ARM64
         if (info.compIsVarArgs)
         {
             pushedCount += MAX_REG_ARG;
         }
-#else
-        if (codeGen.IsFramePointerUsed)
+#endif
+#if TARGET_XARCH
+        if (lvaDoubleAlignOrFramePointerUsed())
         {
             pushedCount++;
         }
@@ -408,16 +584,13 @@ public partial class Compiler
             codeGen.SetSaveFpLrWithAllCalleeSavedRegisters(true);
         }
 #endif
-#endif
     }
 
     public int lvaAllocLocalAndSetVirtualOffset(int lclNum, int size, int stkOffs)
     {
-#if !TARGET_AMD64 && !TARGET_ARM64
-        throw new FatalJitException(CORJIT_SKIPPED, "Local stack slot assignment requires AMD64 or ARM64.");
-#else
         noway_assert(lclNum != BAD_VAR_NUM);
         ref var local = ref lvaGetDesc(lclNum);
+#if TARGET_64BIT || TARGET_WASM
         if ((size >= 8) && ((lvaDoneFrameLayout != FINAL_FRAME_LAYOUT) ||
                             ((stkOffs % 8) != 0)
 #if FEATURE_SIMD && ALIGN_SIMD_TYPES
@@ -456,6 +629,7 @@ public partial class Compiler
             }
 #endif
         }
+#endif
 
         lvaIncrementFrameSize(size);
         stkOffs -= size;
@@ -469,7 +643,6 @@ public partial class Compiler
         }
 #endif
         return stkOffs;
-#endif
     }
 
     private static int FrameAlignmentPad(int value, int alignment)
@@ -479,9 +652,6 @@ public partial class Compiler
 
     public unsafe int lvaAllocAsyncContexts(int stkOffs)
     {
-#if !TARGET_AMD64 && !TARGET_ARM64
-        throw new FatalJitException(CORJIT_SKIPPED, "Async frame contexts require AMD64 or ARM64.");
-#else
         if (lvaResumedIndicator != BAD_VAR_NUM)
         {
             stkOffs = lvaAllocLocalAndSetVirtualOffset(
@@ -523,15 +693,12 @@ public partial class Compiler
         }
 
         return stkOffs;
-#endif
     }
 
     public void lvaAlignFrame()
     {
-#if !TARGET_AMD64 && !TARGET_ARM64
-        throw new FatalJitException(CORJIT_SKIPPED, "Frame alignment requires AMD64 or ARM64.");
-#else
         assert(codeGen is not null);
+#if TARGET_AMD64 || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
         if ((compLclFrameSize % REGSIZE_BYTES) != 0)
         {
             lvaIncrementFrameSize(REGSIZE_BYTES - (compLclFrameSize % REGSIZE_BYTES));
@@ -542,7 +709,7 @@ public partial class Compiler
         }
 
         assert((compLclFrameSize % REGSIZE_BYTES) == 0);
-#if TARGET_ARM64
+#if TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
         var regPushedCountAligned = (compCalleeRegsPushed % (STACK_ALIGN / REGSIZE_BYTES)) == 0;
         var lclFrameSizeAligned = (compLclFrameSize % STACK_ALIGN) == 0;
         if ((lvaDoneFrameLayout != FINAL_FRAME_LAYOUT) || (regPushedCountAligned != lclFrameSizeAligned))
@@ -563,17 +730,84 @@ public partial class Compiler
             lvaIncrementFrameSize(REGSIZE_BYTES);
         }
 #endif
+#elif TARGET_ARM
+        var lclFrameSizeAligned = (compLclFrameSize % sizeof(double)) == 0;
+        var preSpillCount = BitOperations.PopCount(
+            unchecked((ulong)codeGen.RegSet.rsMaskPreSpillRegs(true).IntRegSet));
+        var regPushedCountAligned = ((compCalleeRegsPushed + preSpillCount)
+            % (sizeof(double) / TARGET_POINTER_SIZE)) == 0;
+        if (regPushedCountAligned != lclFrameSizeAligned)
+        {
+            lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+        }
+#elif TARGET_X86
+#if DOUBLE_ALIGN
+        if (genDoubleAlign && (compLclFrameSize == 0))
+        {
+            lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+        }
+#endif
+        if (STACK_ALIGN > REGSIZE_BYTES)
+        {
+            if (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)
+            {
+                lvaIncrementFrameSize(STACK_ALIGN - REGSIZE_BYTES);
+            }
+
+            var adjustFrameSize = compLclFrameSize;
+#if UNIX_X86_ABI
+            var isEbpPushed = lvaDoubleAlignOrFramePointerUsed();
+            var adjustCount = compCalleeRegsPushed + 1 + (isEbpPushed ? 1 : 0);
+            adjustFrameSize += (adjustCount * REGSIZE_BYTES) % STACK_ALIGN;
+#endif
+            if ((adjustFrameSize % STACK_ALIGN) != 0)
+            {
+                lvaIncrementFrameSize(STACK_ALIGN - (adjustFrameSize % STACK_ALIGN));
+            }
+        }
+#elif TARGET_WASM
+        var pad = 0;
+        if ((compLclFrameSize % STACK_ALIGN) != 0)
+        {
+            pad = STACK_ALIGN - (compLclFrameSize % STACK_ALIGN);
+        }
+        else if (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)
+        {
+            pad = STACK_ALIGN;
+        }
+
+        if (pad != 0)
+        {
+            lvaIncrementFrameSize(pad);
+            ReadOnlySpan<int> ehSlots = [lvaWasmFunctionIndex, lvaWasmVirtualIP, lvaWasmResumeIP];
+            foreach (var ehSlot in ehSlots)
+            {
+                if (ehSlot != BAD_VAR_NUM)
+                {
+                    lvaGetDesc(ehSlot).StackOffset -= pad;
+                }
+            }
+        }
+        assert((compLclFrameSize % STACK_ALIGN) == 0);
+#else
+        NYI("TARGET specific lvaAlignFrame");
+        fatal(CORJIT_IMPLLIMITATION);
 #endif
     }
 
     public int lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
     {
-#if !TARGET_AMD64 && !TARGET_ARM64
-        throw new FatalJitException(CORJIT_SKIPPED, "Spill temp frame layout requires AMD64 or ARM64.");
-#else
+#if TARGET_ARM
+        var spillTempSize = 0;
+#endif
         if (lvaDoneFrameLayout == FINAL_FRAME_LAYOUT)
         {
             assert(codeGen is not null);
+            var preSpillSize = 0;
+#if TARGET_ARM
+            preSpillSize = BitOperations.PopCount(
+                unchecked((ulong)codeGen.RegSet.rsMaskPreSpillRegs(true).IntRegSet)) * TARGET_POINTER_SIZE;
+#endif
 #if DEBUG
             assert(codeGen.RegSet.tmpGetAllFree());
 #endif
@@ -585,10 +819,12 @@ public partial class Compiler
                     lvaAllocateUnknownSizeTemp(temp);
                     continue;
 #else
-                    throw new FatalJitException(CORJIT_SKIPPED, "AMD64 unknown-size spill temp is unsupported.");
+                    unreached();
+                    continue;
 #endif
                 }
 
+#if TARGET_64BIT
                 if (varTypeIsGC(temp.tdTempType) && ((stkOffs % TARGET_POINTER_SIZE) != 0))
                 {
                     var pad = FrameAlignmentPad(-stkOffs, TARGET_POINTER_SIZE);
@@ -596,18 +832,32 @@ public partial class Compiler
                     stkOffs -= pad;
                     noway_assert((stkOffs % TARGET_POINTER_SIZE) == 0);
                 }
+#endif
 
-                if (mustDoubleAlign && (temp.tdTempType == TYP_DOUBLE) &&
-                    ((stkOffs % (2 * TARGET_POINTER_SIZE)) != 0))
+                if (mustDoubleAlign && (temp.tdTempType == TYP_DOUBLE))
                 {
-                    lvaIncrementFrameSize(TARGET_POINTER_SIZE);
-                    stkOffs -= TARGET_POINTER_SIZE;
+                    noway_assert((compLclFrameSize % TARGET_POINTER_SIZE) == 0);
+                    if (((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) != 0)
+                    {
+#if TARGET_ARM
+                        spillTempSize += TARGET_POINTER_SIZE;
+#endif
+                        lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+                        stkOffs -= TARGET_POINTER_SIZE;
+                    }
+                    noway_assert(((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) == 0);
                 }
 
+#if TARGET_ARM
+                spillTempSize += temp.tdTempSize;
+#endif
                 lvaIncrementFrameSize(temp.tdTempSize);
                 stkOffs -= temp.tdTempSize;
                 temp.tdTempOffs = stkOffs;
             }
+#if TARGET_ARM
+            noway_assert(spillTempSize <= lvaMaxSpillTempSize);
+#endif
         }
         else
         {
@@ -617,14 +867,10 @@ public partial class Compiler
         }
 
         return stkOffs;
-#endif
     }
 
     public unsafe int lvaOSRLocalTier0FrameOffset(int varNum)
     {
-#if !TARGET_AMD64 && !TARGET_ARM64
-        throw new FatalJitException(CORJIT_SKIPPED, "OSR local frame offsets require AMD64 or ARM64.");
-#else
         assert(lvaIsOSRLocal(varNum));
         assert(info.compPatchpointInfo is not null);
         if (varNum == lvaMonAcquired)
@@ -654,6 +900,5 @@ public partial class Compiler
 
         assert(varNum < info.compPatchpointInfo->NumberOfLocals);
         return info.compPatchpointInfo->Offset(varNum);
-#endif
     }
 }

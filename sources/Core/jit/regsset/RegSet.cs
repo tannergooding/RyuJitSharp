@@ -31,6 +31,11 @@ public partial struct RegSet
 #if TARGET_ARM
     public regMaskTP rsMaskPreSpillRegArg;
     public regMaskTP rsMaskPreSpillAlign;
+
+    public readonly regMaskTP rsMaskPreSpillRegs(bool includeAlignment)
+    {
+        return includeAlignment ? (rsMaskPreSpillRegArg | rsMaskPreSpillAlign) : rsMaskPreSpillRegArg;
+    }
 #endif
 
 #if DEBUG

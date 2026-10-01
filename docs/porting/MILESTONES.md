@@ -16,6 +16,26 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Frame offsets and shared codegen
+
+Local and temporary frame layout now retains the complete target branches,
+including ARM prespills, 32-bit alignment and OSR diagnostic identity. Shared
+helper-call masks, stack adjustment and method exit preserve native policies;
+the already-complete lifetime transition body is also retired. Debug-only stack
+sentinel assertions retain their native configuration scope.
+
+Full-analysis Windows fixtures pass 122 Debug/98 Release; Linux-target fixtures
+pass 64 Debug/51 Release, 335 executions in total. All four exit return-root
+cases run on both ABIs after constructing the fixture's return descriptor.
+Existing Windows-only orchestration and ABI-specific controls remain selected
+on Windows. ARM64 retains 39 existing diagnostics; these results do not establish
+other-target execution or generated-code parity.
+
+Seventeen definitions and two declarations retire 2,060 net native lines:
+2,061 lines removed and one ARM prespill accessor prototype retained for live
+callers. The native Async helper remains. Historical C#-shaped residual bodies
+are separately hashed from the intact oracle, not treated as byte-equal.
+
 ## 2026-10-01: Emitter binding and SIMD comparisons
 
 Five shared emitter bodies now preserve whole target branches, Windows binding

@@ -9,19 +9,16 @@ public sealed partial class CodeGen
 {
     public void genExitCode(BasicBlock block)
     {
-#if !TARGET_AMD64 || EMITTER_STATS
-        throw new FatalJitException(CORJIT_SKIPPED, "Method exit generation requires AMD64 without emitter allocation statistics.");
-#else
-        Emitter.RequireSupportedInstructionRecording();
         // Epilog mappings deliberately allow duplicate locations.
         genIPmappingAdd(IPmappingDscKind.Epilog, default, true);
 
-#if EMIT_GENERATE_GCINFO && DEBUG
+#if EMIT_GENERATE_GCINFO && DEBUG && !TARGET_WASM
         if (!block.HasFlag(BBF_HAS_JMP))
         {
             if (_compiler.compMethodReturnsRetBufAddr)
             {
-                assert((GCInfo.gcRegByrefSetCur & new regMaskTP(SRBM_INTRET)) != RBM_NONE);
+                var returnRegisterMask = regMaskTP.CreateFromRegNum(REG_INTRET, REG_INTRET.SingleTypeMask);
+                assert((GCInfo.gcRegByrefSetCur & returnRegisterMask) != RBM_NONE);
             }
             else
             {
@@ -45,6 +42,5 @@ public sealed partial class CodeGen
         }
 
         genReserveEpilog(block);
-#endif
     }
 }

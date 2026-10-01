@@ -210,7 +210,7 @@ public sealed partial class CodeGen
         }
 
         assert(genStackLevel == 0);
-        // genAdjustStackLevel has no body with FEATURE_FIXED_OUT_ARGS.
+        genAdjustStackLevel(block);
         var savedStkLvl = genStackLevel;
         siBeginBlock(block);
         if (_compiler.opts.compDbgInfo && block.HasFlag(BBF_INTERNAL) && !block.IsFirst)

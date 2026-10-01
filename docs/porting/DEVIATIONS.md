@@ -1849,6 +1849,15 @@ reuses existing mask conversion and preserves native intermediate VN allocation;
 unrepresentable predicates remain symbolic. Only x64 numeric cases executed;
 other-target source projections do not remove existing execution limitations.
 
+Local/temporary frame offsets and shared helper-kill, lifetime, stack-adjustment
+and exit bodies retain their whole target branches. Managed Async/OSR frame
+helpers no longer reject otherwise supported caller branches, but the native
+Async helper remains in the residual. Native stack-adjustment NYI policy is
+preserved. Windows and Linux-target frame/life/exit fixtures pass; broader
+Windows-only block generation and frame poisoning are not thereby enabled on
+Linux. ARM64's existing compile diagnostics and other-target helper dependencies
+still prevent an execution/parity claim.
+
 Scalar math VN evaluation now retains whole target branches. The private
 floating min/max helper shares the pinned operand-selection algorithms through
 generic IEEE floating operations, preserving target NaN preference and signed

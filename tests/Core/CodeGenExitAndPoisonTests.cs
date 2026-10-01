@@ -129,7 +129,10 @@ internal static unsafe class CodeGenExitAndPoisonTests
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
+            compiler.compRetTypeDesc = new ReturnTypeDesc();
             compiler.compRetTypeDesc.InitializeReturnType(compiler, type, null, compiler.info.compCallConv);
+            Assert.That(compiler.compRetTypeDesc.ReturnRegCount, Is.EqualTo(type == TYP_VOID ? 0 : 1));
+
             var block = new BasicBlock(null, null) { Kind = BBJ_RETURN };
             compiler.compCurBB = block;
             compiler.opts.compDbgInfo = true;

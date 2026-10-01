@@ -13,6 +13,33 @@ public partial class Compiler
 
     internal AddCodeDscMap fgGetAddCodeDscMap() => fgAddCodeDscMap ??= [];
 
+    internal bool fgIsThrowHlpBlk(BasicBlock block) => block.HasFlag(BBF_THROW_HELPER);
+
+#if !FEATURE_FIXED_OUT_ARGS
+    internal uint fgThrowHlpBlkStkLevel(BasicBlock block)
+    {
+        foreach (var add in fgGetAddCodeDscMap().Values)
+        {
+            if (ReferenceEquals(block, add.acdDstBlk))
+            {
+                var validKind = add.acdKind is SCK_RNGCHK_FAIL or SCK_DIV_BY_ZERO or SCK_OVERFLOW or
+                    SCK_ARG_EXCPN or SCK_ARG_RNG_EXCPN or SCK_FAIL_FAST;
+                assert(validKind);
+#if DEBUG
+                assert(block.bbTgtStkDepth == add.acdStkLvl);
+#endif
+                return unchecked((uint)add.acdStkLvl);
+            }
+        }
+
+        noway_assert(false,
+            "fgThrowHlpBlkStkLevel should only be called if fgIsThrowHlpBlk() is true, but we can't find the " +
+            "block in the fgAddCodeDscMap");
+
+        return 0;
+    }
+#endif
+
     private AddCodeDsc fgCreateAddCodeDsc(BasicBlock source, SpecialCodeKind kind)
     {
         assert(!fgRngChkThrowAdded);
