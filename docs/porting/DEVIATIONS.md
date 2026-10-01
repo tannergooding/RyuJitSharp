@@ -74,6 +74,14 @@ C# helpers may replace native structure where appropriate. Examples include
 collection ordering, integer semantics, ownership, and native interop contracts.
 Larger algorithmic or architectural changes require separate approval.
 
+VN scalar extraction recognizes native pointer typedef aliases using actual
+host-backed element width, not the selected target ABI. Strict Debug extraction
+compares reinterpretation with coercion, bytewise for floating storage. The
+existing managed width preflight remains before reinterpretation so a continued
+assertion cannot cause an element overread. Floating-to-integer comparisons
+exclude NaN and out-of-range native-undefined conversions; retaining managed
+`CreateTruncating` outside that domain is not a native-equivalence claim.
+
 Profile diagnostic helpers retain native decimal digit counts and seven- or
 three-significant-digit lowercase general formats (B321/B323). Managed string
 formatting does not exempt column spacing, precision or exponent case.
@@ -1370,6 +1378,12 @@ ARM64/Wasm ordinary-load/store fallback and optimization assertion, including
 reverse-operand evaluation order. Their new target fixtures remain source-only.
 LSRA critical-edge and verification bodies also retain native ARM32 pairing;
 that branch is not covered by the current x64 executions or ARM64 baseline check.
+
+Retained register-selection bodies now preserve ARM paired-half costs and
+optional-register rules, raw unassigned-reference classification and ARM64
+consecutive-register exceptions. Their eleven new target-specific fixture
+entries remain source-only; existing Windows/Linux-target controls do not
+establish ARM instruction execution or allocation-output parity.
 
 ARM64 target metadata, ABI classification, immediate predicates, fixed-width
 SIMD/mask queries, cross-platform intrinsic importing, FP/LR placement policy

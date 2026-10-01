@@ -132,7 +132,11 @@ public sealed partial class LinearScan
             if (ordering is null)
             {
                 ordering = "ABCDEFGHIJKLMNOPQ";
-                if (!linearScan._enregisterLocalVars && linearScan._compiler.opts.OptimizationDisabled)
+                if (!linearScan._enregisterLocalVars && linearScan._compiler.opts.OptimizationDisabled
+#if TARGET_ARM64
+                    && !linearScan._compiler.info.compNeedsConsecutiveRegisters
+#endif
+                )
                 {
                     ordering = "MQQQQQQQQQQQQQQQQ";
                 }
@@ -463,7 +467,7 @@ public sealed partial class LinearScan
                 var candidateBit = genSingleTypeRegMask(regNum);
                 candidates ^= candidateBit;
 
-                if (_linearScan.getNextIntervalRef(regNum, _regType) > _lastLocation)
+                if (_linearScan._nextIntervalRef[(int)regNum] > _lastLocation)
                 {
                     _unassignedSet |= candidateBit;
                 }
@@ -522,7 +526,7 @@ public sealed partial class LinearScan
                     }
                 }
 
-                if (_linearScan.getNextIntervalRef(regNum, _regType) > _lastLocation)
+                if (_linearScan._nextIntervalRef[(int)regNum] > _lastLocation)
                 {
                     _unassignedSet |= candidateBit;
                 }
@@ -845,6 +849,14 @@ public sealed partial class LinearScan
                 if (currentSpillWeight == 0)
                 {
                     currentSpillWeight = _linearScan._spillCost[(int)regNum];
+#if TARGET_ARM
+                    if (CurrentInterval.registerType is TYP_DOUBLE)
+                    {
+                        var secondHalfCost = _linearScan._spillCost[(int)(regNum + 1)];
+                        currentSpillWeight = currentSpillWeight < secondHalfCost
+                            ? secondHalfCost : currentSpillWeight;
+                    }
+#endif
                 }
 
                 if (currentSpillWeight < bestSpillWeight)
@@ -913,20 +925,56 @@ public sealed partial class LinearScan
                 candidates ^= candidateBit;
 
                 var assignedInterval = _linearScan.physRegs[(int)regNum].assignedInterval;
-                var foundPrevRegOptReg = (assignedInterval is not null) &&
-                                         (assignedInterval.recentRefPosition is not null) &&
-                                         assignedInterval.recentRefPosition.reload &&
-                                         assignedInterval.recentRefPosition.RegOptional();
+                var foundPrevRegOptReg = true;
 #if DEBUG
-                if ((assignedInterval is null) || (assignedInterval.recentRefPosition is null))
+                var hasAssignedInterval = false;
+#endif
+                if (assignedInterval is not null && assignedInterval.recentRefPosition is RefPosition recentRefPosition)
                 {
-                    assert(false, "Spill candidate has no assignedInterval recentRefPosition.");
+                    foundPrevRegOptReg &= recentRefPosition.reload && recentRefPosition.RegOptional();
+#if DEBUG
+                    hasAssignedInterval = true;
+#endif
+                }
+#if !TARGET_ARM
+                else
+                {
+                    foundPrevRegOptReg = false;
+                }
+#endif
+#if TARGET_ARM
+                if (CurrentInterval.registerType is TYP_DOUBLE)
+                {
+                    var otherHalfRegNum = _linearScan.findAnotherHalfRegNum(regNum);
+                    assignedInterval = _linearScan.physRegs[(int)otherHalfRegNum].assignedInterval;
+                    if (assignedInterval is not null && assignedInterval.recentRefPosition is RefPosition otherRefPosition)
+                    {
+                        // Preserve the native asymmetric check: a nonmatching upper half does not veto.
+                        if (otherRefPosition.reload && otherRefPosition.RegOptional())
+                        {
+                            foundPrevRegOptReg &= otherRefPosition.reload && otherRefPosition.RegOptional();
+                        }
+#if DEBUG
+                        hasAssignedInterval = true;
+#endif
+                    }
                 }
 #endif
                 if (foundPrevRegOptReg)
                 {
                     prevRegOptSet = candidateBit;
                 }
+
+#if DEBUG
+                if (!hasAssignedInterval
+#if TARGET_ARM64
+                    && !CurrentRefPosition.needsConsecutive
+#endif
+                )
+                {
+                    assert(false, "Spill candidate has no assignedInterval recentRefPosition.");
+                }
+#endif
             }
 
             _found = applySelection(RegisterScore.PREV_REG_OPT, prevRegOptSet);

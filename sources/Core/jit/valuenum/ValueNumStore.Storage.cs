@@ -292,32 +292,121 @@ public sealed partial class ValueNumStore
 
     public T ConstantValue<T>(ValueNum vn) where T : unmanaged, INumberBase<T>
     {
-        var chunk = _chunks[GetChunkNum(vn)];
-        assert(chunk.Attribs is ChunkExtraAttribs.CEA_Const or ChunkExtraAttribs.CEA_Handle);
-        assert((chunk.Attribs == ChunkExtraAttribs.CEA_Handle) || (Unsafe.SizeOf<T>() == chunk.Type.Size));
-        assert((chunk.Attribs == ChunkExtraAttribs.CEA_Handle) ||
-            (varTypeIsFloating(chunk.Type) == ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))));
-        return CoercedConstantValue<T>(vn);
+        return ConstantValueInternal<T>(vn
+#if DEBUG
+            , coerce: false
+#endif
+            );
     }
 
     public T CoercedConstantValue<T>(ValueNum vn) where T : unmanaged, INumberBase<T>
     {
+        return ConstantValueInternal<T>(vn
+#if DEBUG
+            , coerce: true
+#endif
+            );
+    }
+
+    private T ConstantValueInternal<T>(ValueNum vn
+#if DEBUG
+        , bool coerce
+#endif
+        ) where T : unmanaged, INumberBase<T>
+    {
         var chunk = _chunks[GetChunkNum(vn)];
         var offset = ChunkOffset(vn);
         assert(chunk.Attribs is ChunkExtraAttribs.CEA_Const or ChunkExtraAttribs.CEA_Handle);
-        if (chunk.Attribs == ChunkExtraAttribs.CEA_Handle)
-        {
-            return T.CreateTruncating(((VNHandle[])chunk.Defs)[offset].Value);
-        }
 
+        switch (chunk.Type)
+        {
+            case TYP_REF:
+            {
+                assert((offset <= 1) || IsVNObjHandle(vn));
+                goto case TYP_BYREF;
+            }
+            case TYP_BYREF:
+            {
+#if HOST_WINDOWS
+                assert((typeof(T) == typeof(nuint)) || (typeof(T) == typeof(nint)) ||
+                    ((nuint.Size == 8) && ((typeof(T) == typeof(ulong)) || (typeof(T) == typeof(long)))) ||
+                    ((nuint.Size == 4) && ((typeof(T) == typeof(uint)) || (typeof(T) == typeof(int)))));
+#endif
+                goto case TYP_INT;
+            }
+            case TYP_INT:
+            case TYP_LONG:
+            case TYP_FLOAT:
+            case TYP_DOUBLE:
+            {
+                if (chunk.Attribs == ChunkExtraAttribs.CEA_Handle)
+                {
+                    return T.CreateTruncating(((VNHandle[])chunk.Defs)[offset].Value);
+                }
+
+#if DEBUG
+                if (!coerce)
+                {
+                    // Reference storage uses the host pointer width, even for a cross-target JIT.
+                    // Keep the width preflight rather than reading beyond an element on an invalid call.
+                    ReadOnlySpan<byte> storage = chunk.Type switch {
+                        TYP_REF or TYP_BYREF => MemoryMarshal.AsBytes(((nuint[])chunk.Defs).AsSpan(offset, 1)),
+                        TYP_INT => MemoryMarshal.AsBytes(((int[])chunk.Defs).AsSpan(offset, 1)),
+                        TYP_LONG => MemoryMarshal.AsBytes(((long[])chunk.Defs).AsSpan(offset, 1)),
+                        TYP_FLOAT => MemoryMarshal.AsBytes(((float[])chunk.Defs).AsSpan(offset, 1)),
+                        TYP_DOUBLE => MemoryMarshal.AsBytes(((double[])chunk.Defs).AsSpan(offset, 1)),
+                        _ => throw new UnreachableException(),
+                    };
+                    assert(Unsafe.SizeOf<T>() == storage.Length);
+                    if (Unsafe.SizeOf<T>() == storage.Length)
+                    {
+                        var value = MemoryMarshal.Read<T>(storage);
+                        var coercedValue = SafeGetConstantValue<T>(chunk, offset);
+                        // Numeric NaN equality would reject valid extraction; bytes also
+                        // distinguish signed zero and every NaN payload, as native memcmp does.
+                        var mismatch = varTypeIsFloating(chunk.Type)
+                            ? !storage.SequenceEqual(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref coercedValue, 1)))
+                            : value != coercedValue;
+                        assert(!mismatch,
+                            "Called ConstantValue<T>(vn), but type(T) != type(vn); Use CoercedConstantValue instead.");
+                    }
+                }
+#endif
+                return SafeGetConstantValue<T>(chunk, offset);
+            }
+            default:
+            {
+                assert(false);
+                throw new UnreachableException();
+            }
+        }
+    }
+
+    private static T SafeGetConstantValue<T>(Chunk chunk, int offset) where T : unmanaged, INumberBase<T>
+    {
         return chunk.Type switch {
-            TYP_REF or TYP_BYREF => T.CreateTruncating(((nuint[])chunk.Defs)[offset]),
+            TYP_REF => CoerceTypRefToT<T>(chunk, offset),
+            TYP_BYREF => T.CreateTruncating(((nuint[])chunk.Defs)[offset]),
             TYP_INT => T.CreateTruncating(((int[])chunk.Defs)[offset]),
             TYP_LONG => T.CreateTruncating(((long[])chunk.Defs)[offset]),
             TYP_FLOAT => T.CreateTruncating(((float[])chunk.Defs)[offset]),
             TYP_DOUBLE => T.CreateTruncating(((double[])chunk.Defs)[offset]),
             _ => throw new UnreachableException(),
         };
+    }
+
+    private static T CoerceTypRefToT<T>(Chunk chunk, int offset) where T : unmanaged, INumberBase<T>
+    {
+        if ((typeof(T) == typeof(nuint)) ||
+            ((nuint.Size == 8) && (typeof(T) == typeof(ulong))) ||
+            ((nuint.Size == 4) && (typeof(T) == typeof(uint))))
+        {
+            return T.CreateTruncating(((nuint[])chunk.Defs)[offset]);
+        }
+
+        noway_assert(Unsafe.SizeOf<T>() >= nuint.Size);
+        unreached();
+        throw new UnreachableException();
     }
 
     public bool IsVNIntegralConstant<T>(ValueNum vn, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>

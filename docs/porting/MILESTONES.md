@@ -16,6 +16,29 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: VN constant extraction and register selection
+
+Scalar and handle extraction now shares the native internal path, including
+reference-offset and Windows pointer-destination assertions, handle fast return,
+and strict reinterpretation-versus-coercion diagnostics. Floating comparisons
+preserve storage bits. Pointer aliases use actual host storage width; the
+existing width preflight prevents an overread after a continued assertion.
+Floating-to-integer equivalence is limited to native-defined inputs.
+
+Register selection retains all 24 native bodies. Five restore ARM paired-half
+cost and optional-register behavior, ARM64 consecutive-register exceptions,
+and raw next-reference classification; 19 are unchanged retirement debt.
+Native heuristic priorities and asymmetric tie rules remain unchanged.
+
+Full-analysis Windows and Linux-target fixtures each pass 82 Debug/66 Release:
+296 executions, including 39 Debug/27 Release VN cases per target. Fixture-only
+retries reused unchanged Core outputs. ARM64 retains its exact 39-diagnostic
+baseline; the eleven new ARM32/ARM64 selector entries remain unexecuted.
+
+Thirty definitions retire 854 native body lines, including template introducers.
+All bodies match the pinned oracle after line-ending normalization. Separate
+helper declarations, type scaffolding and selector drivers remain.
+
 ## 2026-10-01: LSRA resolution and SIMD memory constructors
 
 Critical-edge resolution now uses native ARM register-pair masks and the
