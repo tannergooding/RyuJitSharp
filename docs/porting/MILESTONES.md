@@ -16,6 +16,31 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Loop alignment and root prologs
+
+Shared loop-alignment recording, sizing and adjustment retain the native x86
+and ARM64 branches, including fixed-width descriptors and ARM64 adaptive
+budgets. Padding keeps native-sized offsets, and mismatch diagnostics preserve
+text and assertion ordering.
+
+Frame finalization and root prologs retain whole target branches and the
+native-empty non-Wasm begin hook. Signed register masks preserve their unsigned
+bit patterns during scratch selection and counting. ARM stack-allocation and
+push-mask unwind helpers, ARM64 unknown-size frames, target unwind padding and
+the distinct Wasm begin hook remain terminating dependencies. The existing
+SysV NativeAOT/varargs rejection policy is unchanged.
+
+Full-analysis Windows fixtures pass 144 Debug/134 Release; Linux-target Core
+fixtures pass 49 Debug/44 Release, with 12 existing SysV target controls in each
+configuration: 395 executions. Two subsequent corrections affect only
+non-x64 branches; the final ARM64 comparison retains exactly 39 diagnostics,
+including source locations. Other-target projections are not execution or
+generated-code parity evidence.
+
+Fourteen definitions retire 2,002 native lines: 1,854 body lines and 148
+exclusive headings, guards and spacing. Exact three-file reconstruction
+retains live declarations and native dependency implementations.
+
 ## 2026-10-01: LSRA register states and numeric SIMD constructors
 
 Register-state/block-start retirement includes a Debug rotation correction:

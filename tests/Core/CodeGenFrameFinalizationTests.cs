@@ -13,6 +13,38 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class CodeGenFrameFinalizationTests
 {
+#if TARGET_AMD64 && !UNIX_AMD64_ABI
+    [Test]
+    public static void HomingScratchSelectionPreservesTheFloatingMaskSignBit()
+    {
+        WithFrame((compiler, codeGen) =>
+        {
+            codeGen.IsFramePointerUsed = false;
+            AllFloatRegisters(compiler) = SRBM_XMM31;
+            codeGen.CopyRegisterInfo();
+            codeGen.CalleeRegArgMaskLiveIn = new regMaskTP(SRBM_FLT_CALLEE_TRASH_INIT);
+
+            codeGen.genFinalizeFrame();
+
+            Assert.That(codeGen.RegSet.rsGetModifiedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_XMM31)));
+            Assert.That(compiler.lvaDoneFrameLayout, Is.EqualTo(Compiler.FINAL_FRAME_LAYOUT));
+        });
+    }
+#endif
+
+#if !TARGET_WASM
+    [Test]
+    public static void EmptyTargetPrologHookDoesNotAccessFrameState()
+    {
+        var codeGen = (CodeGen)RuntimeHelpers.GetUninitializedObject(typeof(CodeGen));
+
+        BeginProlog(codeGen);
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genBeginFnProlog")]
+    private static extern void BeginProlog(CodeGen codeGen);
+#endif
+
     [TestCase(false)]
     [TestCase(true)]
     public static void FinalizationSeparatesIntegerPushesFromFloatingSaveSlots(bool framePointer)

@@ -3,8 +3,12 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_LOOP_ALIGN && TARGET_AMD64
+#if FEATURE_LOOP_ALIGN
 using System.Numerics;
+#if DEBUG
+using System.Globalization;
+using System.Text;
+#endif
 
 namespace RyuJitSharp;
 
@@ -30,13 +34,18 @@ public partial class Emitter
 #if DEBUG
                 if ((group.igLoopBackEdge is not null) && !ReferenceEquals(group.igLoopBackEdge, loopHeader))
                 {
-                    jitprintf("\n\nMismatch in align instruction.\n");
-                    jitprintf($"Containing IG: IG{containingIG.GetDisplayId():D2}\n");
-                    jitprintf($"loopHeadPredIG: IG{loopHeadPredIG.GetDisplayId():D2}\n");
-                    jitprintf($"loopHeadIG: IG{loopHeader.GetDisplayId():D2}\n");
-                    jitprintf($"igInLoop: IG{group.GetDisplayId():D2}\n");
-                    jitprintf($"igInLoop->igLoopBackEdge: IG{group.igLoopBackEdge.GetDisplayId():D2}\n");
+                    var buffer = new StringBuilder("Mismatch in align instruction.\n");
+                    buffer.Append(CultureInfo.InvariantCulture,
+                        $"Containing IG: IG{containingIG.GetDisplayId():D2}\n");
+                    buffer.Append(CultureInfo.InvariantCulture,
+                        $"loopHeadPredIG: IG{loopHeadPredIG.GetDisplayId():D2}\n");
+                    buffer.Append(CultureInfo.InvariantCulture,
+                        $"loopHeadIG: IG{loopHeader.GetDisplayId():D2}\n");
+                    buffer.Append(CultureInfo.InvariantCulture, $"igInLoop: IG{group.GetDisplayId():D2}\n");
+                    buffer.Append(CultureInfo.InvariantCulture,
+                        $"igInLoop->igLoopBackEdge: IG{group.igLoopBackEdge.GetDisplayId():D2}\n");
 
+#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
                     if (group.endsWithAlignInstr())
                     {
                         var lastAlign = group.igLastIns as instrDescAlign
@@ -44,22 +53,26 @@ public partial class Emitter
                         assert(ReferenceEquals(lastAlign.idaIG, group));
                         var targetGroup = lastAlign.idaLoopHeadPredIG?.igNext
                             ?? throw new FatalJitException("An alignment descriptor requires a loop-head group.");
-                        jitprintf($"igInLoop has align instruction for : IG{targetGroup.GetDisplayId():D2}\n");
+                        buffer.Append(CultureInfo.InvariantCulture,
+                            $"igInLoop has align instruction for : IG{targetGroup.GetDisplayId():D2}\n");
                     }
+#endif
 
-                    jitprintf("Loop:\n");
+                    buffer.Append("Loop:\n");
                     var current = loopHeader;
                     while ((current is not null) && !ReferenceEquals(current.igLoopBackEdge, loopHeader))
                     {
-                        jitprintf($"\tIG{current.GetDisplayId():D2}\n");
+                        buffer.Append(CultureInfo.InvariantCulture, $"\tIG{current.GetDisplayId():D2}\n");
                         current = current.igNext;
                     }
                     if (current is null)
                     {
-                        jitprintf($"Did not find IG with back edge to IG{loopHeader.GetDisplayId():D2}\n");
+                        buffer.Append(CultureInfo.InvariantCulture,
+                            $"Did not find IG with back edge to IG{loopHeader.GetDisplayId():D2}\n");
                     }
 
-                    assert(false);
+                    jitprintf("\n\n" + buffer);
+                    assert(false, "false && !\"Mismatch in align instruction\"");
                 }
 
                 if (isAlignAdjusted)
@@ -119,7 +132,7 @@ public partial class Emitter
         return loopSize;
     }
 
-    private uint emitCalculatePaddingForLoopAlignment(insGroup loopHeadIG, uint offset
+    private uint emitCalculatePaddingForLoopAlignment(insGroup loopHeadIG, nuint offset
 #if DEBUG
         , bool isAlignAdjusted, insGroup containingIG, insGroup loopHeadPredIG
 #endif
@@ -165,14 +178,19 @@ public partial class Emitter
 
         if (compiler.opts.compJitAlignLoopAdaptive)
         {
-            var maxPaddingBytes = (1u << (maxLoopBlocksAllowed - (int)minBlocksNeededForLoop + 1)) - 1;
+            var maxPaddingBytes = 1u << (maxLoopBlocksAllowed - (int)minBlocksNeededForLoop + 1);
+#if TARGET_XARCH
+            maxPaddingBytes--;
+#endif
             var paddingBytes = unchecked((uint)-(int)offset) & (alignmentBoundary - 1);
 
             if (paddingBytes > maxPaddingBytes)
             {
+#if TARGET_XARCH
                 alignmentBoundary >>= 1;
                 maxPaddingBytes = 1u << (maxLoopBlocksAllowed - (int)minBlocksNeededForLoop + 1);
                 paddingBytes = unchecked((uint)-(int)offset) & (alignmentBoundary - 1);
+#endif
 
                 if (paddingBytes == 0)
                 {
@@ -192,7 +210,7 @@ public partial class Emitter
             if (!skipPadding)
             {
                 var extraBytesNotInLoop = unchecked(
-                    ((uint)compiler.opts.compJitAlignLoopBoundary * minBlocksNeededForLoop) - loopSize);
+                    (nuint)((uint)compiler.opts.compJitAlignLoopBoundary * minBlocksNeededForLoop) - loopSize);
                 var currentOffset = offset % alignmentBoundary;
 
                 if (currentOffset > extraBytesNotInLoop)
@@ -209,12 +227,12 @@ public partial class Emitter
         else
         {
             var extraBytesNotInLoop = unchecked((alignmentBoundary * minBlocksNeededForLoop) - loopSize);
-            var currentOffset = offset % alignmentBoundary;
+            var currentOffset = unchecked((uint)(offset % alignmentBoundary));
 
 #if DEBUG
             if (compiler.opts.compJitAlignLoopForJcc)
             {
-                currentOffset++;
+                currentOffset = unchecked(currentOffset + 1);
             }
 #endif
             if (currentOffset > extraBytesNotInLoop)
@@ -230,7 +248,7 @@ public partial class Emitter
 
         JITDUMP($";; Calculated padding to add {paddingToAdd} bytes to align " +
             $"{emitLabelString(loopHeadIG)} at {alignmentBoundary}B boundary.\n");
-        assert((paddingToAdd == 0) || (((offset + paddingToAdd) & (alignmentBoundary - 1)) == 0));
+        assert((paddingToAdd == 0) || ((unchecked(offset + paddingToAdd) & (alignmentBoundary - 1)) == 0));
         return paddingToAdd;
     }
 }

@@ -200,6 +200,10 @@ public partial class Emitter
     {
         var id = emitAllocInstrAlign();
         id.idIns(instruction.INS_align);
+#if TARGET_ARM64
+        id.idInsFmt(insFormat.IF_SN_0A);
+        id.idInsOpt(INS_OPTS_ALIGN);
+#endif
 
         return id;
     }

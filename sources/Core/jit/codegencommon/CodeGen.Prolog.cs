@@ -3,7 +3,9 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+#if !TARGET_WASM
 using System.Numerics;
+#endif
 
 namespace RyuJitSharp;
 
@@ -48,13 +50,9 @@ public sealed partial class CodeGen
 
     public void genFnProlog()
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Root prolog generation requires AMD64.");
-#else
 #if UNIX_AMD64_ABI
         RequireSupportedRootPrologAbi();
 #endif
-        Emitter.RequireSupportedInstructionRecording();
         _compiler.funSetCurrentFunc(0);
         JITDUMP("*************** In genFnProlog()\n");
 #if DEBUG
@@ -81,7 +79,10 @@ public sealed partial class CodeGen
         {
             // Debuggers may replace the first instruction with INT3.
             instGen(INS_nop);
-            instGen(INS_int3);
+            instGen(INS_BREAKPOINT);
+#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+            _compiler.unwindPadding();
+#endif
         }
 #endif
         var untrLclLo = int.MaxValue;
@@ -90,10 +91,51 @@ public sealed partial class CodeGen
         var gcRefLo = int.MaxValue;
         var gcRefHi = -int.MaxValue;
         var hasGCRef = false;
+#if !TARGET_WASM
         var initRegs = RBM_NONE;
         var initFltRegs = RBM_NONE;
         var initDblRegs = RBM_NONE;
+#endif
 
+#if TARGET_WASM
+        for (var varNum = 0; varNum < _compiler.lvaCount; varNum++)
+        {
+            ref var local = ref _compiler.lvaGetDesc(varNum);
+            if (local.lvIsParam && !local.lvIsRegArg)
+            {
+                continue;
+            }
+            if (!local.lvOnFrame || !local.lvMustInit)
+            {
+                continue;
+            }
+            if (_compiler.lvaIsUnknownSizeLocal(varNum))
+            {
+                continue;
+            }
+            // The frame-header slots hold funclet state written by frame allocation.
+            if ((varNum == _compiler.lvaWasmFunctionIndex) || (varNum == _compiler.lvaWasmVirtualIP)
+                || (varNum == _compiler.lvaWasmResumeIP))
+            {
+                continue;
+            }
+
+            var loOffs = local.StackOffset;
+            var hiOffs = unchecked(loOffs + _compiler.lvaLclStackHomeSize(varNum));
+            hasUntrLcl = true;
+            if (loOffs < untrLclLo)
+            {
+                untrLclLo = loOffs;
+            }
+            if (hiOffs > untrLclHi)
+            {
+                untrLclHi = hiOffs;
+            }
+        }
+
+        assert(_regSet.tmpGetAllFree());
+        assert(_regSet.tmpListBeg() is null);
+#else
         for (var varNum = 0; varNum < _compiler.lvaCount; varNum++)
         {
             ref var local = ref _compiler.lvaGetDesc(varNum);
@@ -201,6 +243,9 @@ public sealed partial class CodeGen
 
             var loOffs = temp.tdTempOffs;
             var hiOffs = unchecked(loOffs + TARGET_POINTER_SIZE);
+#if !TARGET_AMD64
+            noway_assert(!IsFramePointerUsed || (loOffs != 0));
+#endif
             hasUntrLcl = true;
             if (loOffs < untrLclLo)
             {
@@ -211,19 +256,32 @@ public sealed partial class CodeGen
                 untrLclHi = hiOffs;
             }
         }
+#endif
         assert(_compiler.opts.IsOSR || ((InitStkLclCnt > 0) == hasUntrLcl));
         if (InitStkLclCnt > 0)
         {
             JITDUMP($"Found {InitStkLclCnt} lvMustInit int-sized stack slots, frame offsets {unchecked(-untrLclLo)} through {unchecked(-untrLclHi)}\n");
         }
 
+#if !TARGET_WASM
+#if TARGET_ARM
+        _calleeRegArgMaskLiveIn &= ~genPrespilledUnmappedRegs();
+#endif
         var initReg = REG_SCRATCH;
         var initRegZeroed = false;
         var excludeMask = _calleeRegArgMaskLiveIn;
+#if TARGET_AMD64
         if (!_compiler.canUseEvexEncoding())
         {
             excludeMask |= new regMaskTP(SRBM_HIGHINT);
         }
+#endif
+#if TARGET_ARM
+        if (_compiler.compLocallocUsed)
+        {
+            excludeMask |= new regMaskTP(SRBM_SAVED_LOCALLOC_SP);
+        }
+#endif
 
         var isRoot = _compiler.funCurrentFunc().funKind == FuncKind.FUNC_ROOT;
         var inheritsCalleeSaves = isRoot && _compiler.opts.IsOSR;
@@ -231,39 +289,62 @@ public sealed partial class CodeGen
         var tempMask = initRegs & allInt & ~excludeMask & ~_regSet.rsMaskResvd;
         if (tempMask.IsNonEmpty)
         {
-            initReg = (regNumber)BitOperations.TrailingZeroCount((ulong)tempMask.IntRegSet);
+            initReg = (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)tempMask.IntRegSet));
         }
         else
         {
             tempMask = _regSet.rsGetModifiedRegsMask() & allInt & ~excludeMask & ~_regSet.rsMaskResvd;
             if (tempMask.IsNonEmpty)
             {
-                initReg = (regNumber)BitOperations.TrailingZeroCount((ulong)tempMask.IntRegSet);
+                initReg = (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)tempMask.IntRegSet));
             }
         }
         if (inheritsCalleeSaves)
         {
             // Deferred callee saves cannot be used as scratch registers yet.
             initReg = REG_SCRATCH;
+#if TARGET_ARM64
+            initReg = REG_IP1;
+#endif
         }
+#if TARGET_AMD64
         if (_compiler.info.compIsVarArgs && !_compiler.opts.IsOSR)
         {
             Emitter.spillIntArgRegsToShadowSlots();
         }
+#endif
+#if TARGET_ARM
+        var preSpillMask = _regSet.rsMaskPreSpillRegs(true);
+        if (preSpillMask.IsNonEmpty)
+        {
+            inst_IV(INS_push, unchecked((int)preSpillMask.Lower));
+            _compiler.unwindPushMaskInt(preSpillMask);
+        }
+#endif
+#else
+        var initReg = REG_NA;
+        var initRegZeroed = false;
+        var inheritsCalleeSaves = false;
+#endif
 
-        var extraFrameSize = 0;
+#if !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
+        uint extraFrameSize = 0;
+#endif
         if (inheritsCalleeSaves)
         {
             genOSRHandleTier0CalleeSavedRegistersAndFrame();
-            extraFrameSize = _compiler.compCalleeRegsPushed * REGSIZE_BYTES;
+#if TARGET_AMD64
+            extraFrameSize = unchecked((uint)(_compiler.compCalleeRegsPushed * REGSIZE_BYTES));
             // Reproduce the return-address misalignment of an ordinary method entry.
             Emitter.emitIns_R(INS_push, EA_PTRSIZE, REG_RAX);
             _compiler.unwindAllocStack(REGSIZE_BYTES);
+#endif
         }
 
-        if (IsFramePointerUsed)
+#if TARGET_XARCH
+        if (doubleAlignOrFramePointerUsed())
         {
-            if (inheritsCalleeSaves)
+            if (inheritsCalleeSaves && IsFramePointerUsed)
             {
                 Emitter.emitIns_R_AR(INS_mov, EA_8BYTE, initReg, REG_FPBASE, 0);
                 inst_RV(INS_push, initReg, TYP_REF);
@@ -275,35 +356,111 @@ public sealed partial class CodeGen
                 inst_RV(INS_push, REG_FPBASE, TYP_REF);
                 _compiler.unwindPush(REG_FPBASE);
             }
+#if TARGET_X86
+            genEstablishFramePointer(0, reportUnwindData: true);
+#endif
+#if DOUBLE_ALIGN
+            if (_compiler.genDoubleAlign)
+            {
+                noway_assert(!IsFramePointerUsed);
+                noway_assert(!_regSet.rsRegsModified(new regMaskTP(SRBM_FPBASE)));
+                inst_RV_IV(INS_and, REG_SPBASE, -8, EA_PTRSIZE);
+            }
+#endif
         }
-        if (!inheritsCalleeSaves)
+#endif
+        var pushesCalleeSaves = true;
+#if TARGET_AMD64
+        pushesCalleeSaves = !inheritsCalleeSaves;
+#endif
+        if (pushesCalleeSaves)
         {
             genPushCalleeSavedRegisters(initReg, ref initRegZeroed);
         }
 
-        genAllocLclFrame(unchecked((uint)(_compiler.compLclFrameSize + extraFrameSize)),
-            initReg, ref initRegZeroed, _calleeRegArgMaskLiveIn);
+#if TARGET_ARM
+        var needToEstablishFP = false;
+        var afterFrameSPtoFPdelta = 0;
+        if (doubleAlignOrFramePointerUsed())
+        {
+            needToEstablishFP = true;
+            // Defer small-frame FP establishment past the OS-reported prolog to reduce unwind data.
+            var spToFPdelta = unchecked((_compiler.compCalleeRegsPushed - 2) * REGSIZE_BYTES);
+            afterFrameSPtoFPdelta = unchecked(spToFPdelta + _compiler.compLclFrameSize);
+            if (!arm_Valid_Imm_For_Add_SP(afterFrameSPtoFPdelta))
+            {
+                genEstablishFramePointer(spToFPdelta, reportUnwindData: true);
+                needToEstablishFP = false;
+            }
+        }
+#endif
+#if !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
+        var stackAllocMask = RBM_NONE;
+#if TARGET_ARM
+        stackAllocMask = genStackAllocRegisterMask(unchecked((uint)_compiler.compLclFrameSize + extraFrameSize),
+            _regSet.rsGetModifiedFltCalleeSavedRegsMask());
+#endif
+        if (stackAllocMask.IsEmpty)
+        {
+            genAllocLclFrame(unchecked((uint)_compiler.compLclFrameSize + extraFrameSize),
+                initReg, ref initRegZeroed, _calleeRegArgMaskLiveIn);
+        }
+#endif
+#if TARGET_AMD64
         if (inheritsCalleeSaves)
         {
             genOSRSaveRemainingCalleeSavedRegisters();
         }
+#endif
+#if TARGET_ARM
+        if (_compiler.compLocallocUsed)
+        {
+            Emitter.emitIns_Mov(INS_mov, EA_4BYTE, REG_SAVED_LOCALLOC_SP, REG_SPBASE, canSkip: false);
+            _regSet.verifyRegUsed(REG_SAVED_LOCALLOC_SP);
+            _compiler.unwindSetFrameReg(REG_SAVED_LOCALLOC_SP, 0);
+        }
+#endif
+#if TARGET_XARCH
         genClearAvxStateInProlog();
         genPreserveCalleeSavedFltRegs();
-        if (IsFramePointerUsed)
+#endif
+#if TARGET_AMD64
+        if (doubleAlignOrFramePointerUsed())
         {
             var reportUnwindData = _compiler.compLocallocUsed || _compiler.opts.compDbgEnC;
             genEstablishFramePointer(genSPtoFPdelta, reportUnwindData);
         }
+#endif
         _compiler.unwindEndProlog();
 
+#if TARGET_ARM64
+        if (_compiler.compUsesUnknownSizeFrame)
+        {
+            genUnknownSizeFrame();
+        }
+#endif
+#if TARGET_ARM
+        if (needToEstablishFP)
+        {
+            genEstablishFramePointer(afterFrameSPtoFPdelta, reportUnwindData: false);
+        }
+#endif
         genZeroInitFrame(untrLclHi, untrLclLo, initReg, ref initRegZeroed);
         genReportGenericContextArg(initReg, ref initRegZeroed);
+#if !TARGET_WASM
+#if JIT32_GCENCODER
+        if (_compiler.lvaLocAllocSPvar != BAD_VAR_NUM)
+        {
+            Emitter.emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, _compiler.lvaLocAllocSPvar, 0);
+        }
+#endif
         genSetGSSecurityCookie(initReg, ref initRegZeroed);
 #if PROFILING_SUPPORTED
         if (!_compiler.opts.IsOSR)
         {
             genProfilingEnterCallback(initReg, ref initRegZeroed);
         }
+#endif
 #endif
         if (_compiler.opts.IsOSR && (Emitter.emitGetCurrentCodeOffsetFrom(null) == 0)
             && (_compiler.lvaReportParamTypeArg() || _compiler.lvaKeepAliveAndReportThis()))
@@ -340,6 +497,7 @@ public sealed partial class CodeGen
             genEnregisterIncomingStackArgs();
         }
 
+#if !TARGET_WASM
         if (initRegs.IsNonEmpty)
         {
             for (var reg = REG_INT_FIRST; reg <= REG_INT_LAST; reg++)
@@ -366,8 +524,15 @@ public sealed partial class CodeGen
                 initReg = REG_SCRATCH;
                 initRegZeroed = false;
             }
+#if TARGET_ARM
+            if (!initRegZeroed)
+            {
+                instGen_Set_Reg_To_Zero(EA_PTRSIZE, initReg);
+            }
+#endif
             genZeroInitFltRegs(initFltRegs, initDblRegs, initReg);
         }
+#endif
 
         if (Interruptible)
         {
@@ -391,6 +556,36 @@ public sealed partial class CodeGen
         {
             jitprintf("\n");
         }
+#endif
+#if TARGET_X86
+        var argsStartVar = _compiler.lvaVarargsBaseOfStkArgs;
+        if (_compiler.info.compIsVarArgs && (_compiler.lvaGetDesc(argsStartVar).lvRefCnt() > 0))
+        {
+            ref var local = ref _compiler.lvaGetDesc(argsStartVar);
+            noway_assert(_compiler.info.compArgsCount > 0);
+            assert(_compiler.lvaVarargsHandleArg == _compiler.info.compArgsCount - 1);
+            Emitter.emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_SCRATCH, _compiler.lvaVarargsHandleArg, 0);
+            _regSet.verifyRegUsed(REG_SCRATCH);
+            Emitter.emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_SCRATCH, REG_SCRATCH, 0);
+
+            ref readonly var lastArg = ref _compiler.lvaGetDesc(_compiler.lvaVarargsHandleArg);
+            noway_assert(!lastArg.lvRegister);
+            var offset = lastArg.StackOffset;
+            assert(offset != BAD_STK_OFFS);
+            noway_assert(lastArg.lvFramePointerBased);
+            Emitter.emitIns_R_ARR(INS_lea, EA_PTRSIZE, REG_SCRATCH, genFramePointerReg(), REG_SCRATCH, offset);
+            if (local.lvIsInReg)
+            {
+                _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, local.RegNum, REG_SCRATCH, canSkip: true);
+                _regSet.verifyRegUsed(local.RegNum);
+            }
+            else
+            {
+                Emitter.emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SCRATCH, argsStartVar, 0);
+            }
+        }
+#endif
+#if DEBUG && TARGET_XARCH
         if (_compiler.opts.compStackCheckOnRet)
         {
             assert(_compiler.lvaReturnSpCheck != BAD_VAR_NUM);
@@ -400,12 +595,11 @@ public sealed partial class CodeGen
         }
 #endif
         Emitter.emitEndProlog();
-#endif
     }
 
     private void genBeginFnProlog()
     {
-#if !TARGET_AMD64
+#if TARGET_WASM
         throw new FatalJitException(CORJIT_SKIPPED, "The target-specific prolog hook is only ported for AMD64.");
 #endif
     }

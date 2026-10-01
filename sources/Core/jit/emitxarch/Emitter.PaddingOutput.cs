@@ -157,7 +157,7 @@ public partial class Emitter
             ?? throw new FatalJitException("Loop alignment requires an alignment descriptor.");
         var compiler = _compiler ?? throw new FatalJitException("Loop alignment requires an active compiler.");
 #if DEBUG
-        var offset = compiler.IsAot ? emitCurCodeOffs(dst) : unchecked((uint)(nuint)dst);
+        var offset = compiler.IsAot ? (nuint)emitCurCodeOffs(dst) : (nuint)dst;
         var validatePadding = !alignInstr.isPlacedAfterJmp;
 #endif
         assert(codeGen.ShouldAlignLoops);
@@ -202,9 +202,4 @@ public partial class Emitter
     }
 #endif
 
-#if TARGET_X86 && FEATURE_LOOP_ALIGN && DEBUG
-    private uint emitCalculatePaddingForLoopAlignment(insGroup loopHeadIG, uint offset,
-        bool isAlignAdjusted, insGroup containingIG, insGroup loopHeadPredIG)
-        => throw new FatalJitException(CORJIT_SKIPPED, "x86 loop-alignment padding calculation is not ported.");
-#endif
 }

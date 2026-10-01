@@ -8,6 +8,9 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+#if TARGET_ARM64
+    private const uint INSTR_ENCODED_SIZE = 4;
+#endif
     public bool emitEndsWithAlignInstr()
     {
         assert(emitCurIG is not null);
@@ -16,10 +19,9 @@ public partial class Emitter
 
     public void emitConnectAlignInstrWithCurIG()
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Loop alignment recording requires AMD64.");
-#else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         assert(_compiler is not null);
         assert(emitCurIG is not null);
         assert(emitAlignLastGroup is not null);
@@ -34,7 +36,6 @@ public partial class Emitter
         // Track the predecessor because the next group, not this one, will start the loop.
         emitAlignLastGroup.idaLoopHeadPredIG = emitCurIG;
         emitNxtIG();
-#endif
     }
 
     public void emitLoopAlignment(
@@ -43,12 +44,12 @@ public partial class Emitter
 #endif
         )
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Loop alignment recording requires AMD64.");
-#else
+#if TARGET_AMD64
         RequireSupportedInstructionRecording();
+#endif
         assert(_compiler is not null);
         uint paddingBytes;
+#if TARGET_XARCH
         if ((_compiler.opts.compJitAlignLoopBoundary > 16) && !_compiler.opts.compJitAlignLoopAdaptive)
         {
             paddingBytes = _compiler.opts.compJitAlignLoopBoundary;
@@ -68,6 +69,18 @@ public partial class Emitter
 #endif
                 );
         }
+#elif TARGET_ARM64
+        paddingBytes = _compiler.opts.compJitAlignLoopAdaptive
+            ? (uint)_compiler.opts.compJitAlignLoopBoundary >> 1
+            : _compiler.opts.compJitAlignLoopBoundary;
+        emitLongLoopAlign(paddingBytes
+#if DEBUG
+            , isPlacedBehindJmp
+#endif
+            );
+#else
+#error Unsupported loop-alignment target
+#endif
 
         assert(emitLastIns is not null);
         assert(emitLastIns.idIns() == INS_align);
@@ -78,14 +91,10 @@ public partial class Emitter
             jitprintf($"Adding 'align' instruction of {paddingBytes} bytes in {emitLabelString(emitCurIG)}.\n");
         }
 #endif
-#endif
     }
 
     public bool emitSetLoopBackEdge(BasicBlock loopTopBlock)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Loop back-edge recording requires AMD64.");
-#else
         assert(_compiler is not null);
         assert(emitCurIG is not null);
         assert(loopTopBlock.isLoopAlign);
@@ -210,10 +219,8 @@ public partial class Emitter
         }
 
         return backEdgeSet;
-#endif
     }
 
-#if TARGET_AMD64
     private void emitCheckAlignFitInCurIG(uint nAlignInstr)
     {
         var instrDescSize = unchecked(nAlignInstr * ((nuint)_debugInfoSize + DescriptorSizes.Align));
@@ -246,8 +253,12 @@ public partial class Emitter
             assert(emitCurIG.endsWithAlignInstr());
         }
 
+#if TARGET_XARCH
         assert(paddingBytes <= MAX_ENCODED_SIZE);
         id.idCodeSize(paddingBytes);
+#elif TARGET_ARM64
+        assert(paddingBytes == INSTR_ENCODED_SIZE);
+#endif
         id.idaIG = emitCurIG;
         if (isFirstAlign)
         {
@@ -273,16 +284,25 @@ public partial class Emitter
 #endif
         )
     {
+#if TARGET_XARCH
         var nPaddingBytes = unchecked(alignmentBoundary - 1);
         var nAlignInstr = unchecked(nPaddingBytes + (MAX_ENCODED_SIZE - 1)) / MAX_ENCODED_SIZE;
         var insAlignCount = nPaddingBytes / MAX_ENCODED_SIZE;
         var lastInsAlignSize = nPaddingBytes % MAX_ENCODED_SIZE;
+        var paddingBytes = MAX_ENCODED_SIZE;
+#elif TARGET_ARM64
+        var nAlignInstr = alignmentBoundary / INSTR_ENCODED_SIZE;
+        var insAlignCount = nAlignInstr;
+        var paddingBytes = INSTR_ENCODED_SIZE;
+#else
+#error Unsupported loop-alignment target
+#endif
         emitCheckAlignFitInCurIG(nAlignInstr);
 
         var isFirstAlign = true;
         while (insAlignCount != 0)
         {
-            emitLoopAlign(MAX_ENCODED_SIZE, isFirstAlign
+            emitLoopAlign(paddingBytes, isFirstAlign
 #if DEBUG
                 , isPlacedBehindJmp
 #endif
@@ -291,12 +311,14 @@ public partial class Emitter
             isFirstAlign = false;
         }
 
+#if TARGET_XARCH
         // Native also records the zero-sized remainder when padding is a multiple of 15.
         emitLoopAlign(lastInsAlignSize, isFirstAlign
 #if DEBUG
             , isPlacedBehindJmp
 #endif
             );
+#endif
     }
 
     private static instrDescAlign? emitAlignInNextIG(instrDescAlign alignInstr)
@@ -309,6 +331,5 @@ public partial class Emitter
 
         return alignInstr.idaNext;
     }
-#endif
 }
 #endif

@@ -14,6 +14,19 @@ public partial class Globals
     public const regNumber REG_FP_FIRST = REG_F0;
     public const regNumber REG_FP_LAST = REG_F31;
 
+    public const regNumber REG_OPT_RSVD = REG_R10;
+    public const regMask SRBM_OPT_RSVD = SRBM_R10;
+
+    // This saved SP register must match the InlinedCallFrame unwinding contract.
+    public const regNumber REG_SAVED_LOCALLOC_SP = REG_R9;
+    public const regMask SRBM_SAVED_LOCALLOC_SP = SRBM_R9;
+
+    public const regNumber REG_STACK_PROBE_HELPER_ARG = REG_R4;
+    public const regMask SRBM_STACK_PROBE_HELPER_ARG = SRBM_R4;
+    public const regNumber REG_STACK_PROBE_HELPER_CALL_TARGET = REG_R5;
+    public const regMask SRBM_STACK_PROBE_HELPER_CALL_TARGET = SRBM_R5;
+    public const regMask SRBM_STACK_PROBE_HELPER_TRASH = SRBM_R5 | SRBM_LR;
+
     public const regMask SRBM_FPBASE = SRBM_R11;
     public const regMask SRBM_INT_CALLEE_SAVED =
         SRBM_R4 | SRBM_R5 | SRBM_R6 | SRBM_R7 | SRBM_R8 | SRBM_R9 | SRBM_R10;

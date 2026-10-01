@@ -1340,6 +1340,16 @@ entries terminate with `CORJIT_SKIPPED` before changing unwind state in that
 mode, rather than substituting the CoreCLR format. Eleven rejection cases
 cover these boundaries in both Debug and Release.
 
+Shared frame finalization and root prologs now retain their whole native target
+branches, as does the loop-alignment lifecycle. ARM stack-allocation masks and
+push-mask unwind recording, ARM64 unknown-size-frame setup, target unwind
+padding and the distinct Wasm begin hook remain explicit terminating
+dependencies with their native implementations retained. The non-Wasm begin
+hook is natively empty. This source completion does not enable other-target
+execution: the current ARM64 comparison still fails at its unchanged
+39-diagnostic baseline. Loop-padding runtime parity remains separate from the
+managed recording, arithmetic and diagnostic checks.
+
 ARM64 target metadata, ABI classification, immediate predicates, fixed-width
 SIMD/mask queries, cross-platform intrinsic importing, FP/LR placement policy
 and two-register GC return layouts now compile and have managed unit coverage
