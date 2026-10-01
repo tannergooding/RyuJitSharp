@@ -147,8 +147,5 @@ public unsafe partial class Emitter
 
         return result;
     }
-
-    private static void emitInsSve_R_F(instruction ins, emitAttr attr, regNumber reg, double immDbl, insOpts opt)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SVE floating-immediate instruction recording is not ported.");
 }
 #endif

@@ -16,6 +16,28 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: ARM64 SVE immediate recorder source completion
+
+Translated the five whole immediate-only, single-register, register-immediate,
+floating-immediate and predicate-pattern recorders, with eight supporting
+bitmask, element-size and register/option helpers. Descriptor selection, alias
+preference, signed immediate shifting and display-before-append ordering retain
+the pinned algorithms. The independent Debug SVE sanity dispatcher still
+terminates before group append.
+
+The isolated ARM64 probe retains exactly 39 pre-existing compiler diagnostics,
+including locations. Consequently, the 46 new and four updated source-selected
+cases remain uncompiled and unexecuted; this is source completion, not a target
+build/test or generated-code parity pass. All changed bodies are ARM64-guarded.
+B498 records native undefined shifts affecting bitmask alias preference; the
+literal translation introduces no width-specific repair or native-parity claim.
+
+Thirteen definitions, six declarations and exclusive text retire 588 native
+lines: 530 body, 12 declaration and 46 heading/spacing lines. Exact mappings,
+sealed source, the guarded target probe and its diagnostic comparison are in
+`artifacts/sve-recording-acceptance-7334256e`. Unported sanity/output dependencies
+and unrelated working changes remain untouched.
+
 ## 2026-10-01: Intrinsic import and patchpoint callers
 
 Completed the whole `impHWIntrinsic` caller, retaining ARM64 struct/tuple,

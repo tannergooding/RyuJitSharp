@@ -155,35 +155,45 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
 
-    [TestCase(0, "ARM64 SVE immediate-only instruction recording is not ported.")]
-    [TestCase(1, "ARM64 SVE single-register instruction recording is not ported.")]
-    [TestCase(2, "ARM64 SVE register-immediate instruction recording is not ported.")]
-    public static void UnsupportedFormsReachTheirSeparateSveRecorders(int form, string message)
+    [TestCase(0)]
+    [TestCase(1)]
+    [TestCase(2)]
+    public static void UnsupportedFormsReachTheirSeparateSveRecorders(int form)
     {
-        var emitter = CreateEmitter();
-        var error = Assert.Throws<FatalJitException>(() =>
+        var previousConfig = Globals.JitConfig;
+        Globals.JitConfig = new JitConfigValues();
+        try
         {
-            switch (form)
+            var emitter = CreateEmitter();
+            var error = Assert.Throws<FatalJitException>(() =>
             {
-                case 0:
+                switch (form)
                 {
-                    emitter.emitIns_I(INS_nop, EA_8BYTE, 0);
-                    break;
+                    case 0:
+                    {
+                        emitter.emitIns_I(INS_nop, EA_8BYTE, 0);
+                        break;
+                    }
+                    case 1:
+                    {
+                        emitter.emitIns_R(INS_nop, EA_8BYTE, REG_R0);
+                        break;
+                    }
+                    default:
+                    {
+                        emitter.emitIns_R_I(INS_nop, EA_8BYTE, REG_R0, 0);
+                        break;
+                    }
                 }
-                case 1:
-                {
-                    emitter.emitIns_R(INS_nop, EA_8BYTE, REG_R0);
-                    break;
-                }
-                default:
-                {
-                    emitter.emitIns_R_I(INS_nop, EA_8BYTE, REG_R0, 0);
-                    break;
-                }
-            }
-        });
-        Assert.That(error, Has.Message.EqualTo(message));
-        Assert.That(GroupSize(emitter), Is.Zero);
+            });
+            Assert.That(error, Has.Property(nameof(FatalJitException.Result))
+                .EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
+            Assert.That(GroupSize(emitter), Is.Zero);
+        }
+        finally
+        {
+            Globals.JitConfig = previousConfig;
+        }
     }
 
     [TestCase(EA_4BYTE, INS_OPTS_NONE, IF_DV_1A)]
@@ -234,11 +244,21 @@ internal static unsafe class Arm64EmitterRecordingTests
     [Test]
     public static void FloatingFallbackRetainsItsSeparateSveRecorder()
     {
-        var emitter = CreateEmitter();
-        var error = Assert.Throws<FatalJitException>(() =>
-            RecordFloat(emitter, INS_nop, EA_8BYTE, REG_V0, 1.0, INS_OPTS_NONE));
-        Assert.That(error, Has.Message.EqualTo("ARM64 SVE floating-immediate instruction recording is not ported."));
-        Assert.That(GroupSize(emitter), Is.Zero);
+        var previousConfig = Globals.JitConfig;
+        Globals.JitConfig = new JitConfigValues();
+        try
+        {
+            var emitter = CreateEmitter();
+            var error = Assert.Throws<FatalJitException>(() =>
+                RecordFloat(emitter, INS_nop, EA_8BYTE, REG_V0, 1.0, INS_OPTS_NONE));
+            Assert.That(error, Has.Property(nameof(FatalJitException.Result))
+                .EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
+            Assert.That(GroupSize(emitter), Is.Zero);
+        }
+        finally
+        {
+            Globals.JitConfig = previousConfig;
+        }
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_R_F")]

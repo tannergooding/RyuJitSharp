@@ -44,9 +44,5 @@ public partial class Emitter
             }
         }
     }
-
-    public void emitIns_R_PATTERN(instruction ins, emitAttr attr, regNumber reg1, insOpts opt,
-        insSvePattern pattern = insSvePattern.SVE_PATTERN_ALL)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SVE register-pattern instruction recording is not ported.");
 }
 #endif
