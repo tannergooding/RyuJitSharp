@@ -16,6 +16,28 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Committed compiler-option mappings reconciled
+
+Reconciled the retained native Options members against already-committed managed
+code, without changing compiler behavior or using protected working-tree repairs
+as acceptance evidence. The complete archived Options source matches the current
+committed counterpart; its ten mapped constants also match.
+
+Retired 21 inline definitions (139 body lines), 72 field declarations and ten
+constants, plus 161 exclusive comment, guard and blank lines: 382 lines total.
+Inline signatures are included, with no separate prototype credit. Existing
+control-flow-guard evidence is reused; no new tests or broader execution coverage
+are claimed.
+
+The type container and six exception declarations remain: the nonprofiling
+callback constant whose managed initializer is still protected WIP, four
+unsigned numeric fields mapped to signed storage without full-domain evidence,
+and the fast-tailcall field with a wider managed Wasm guard. The callback
+constant's existing native initializer is retained. Exact reconstruction,
+protected-WIP hashes and the consolidated native commit's oracle parent are
+verified. Evidence is under
+`artifacts/residual-reconciliation/compiler-options-a828ad0f-*`.
+
 ## 2026-10-01: ARM64 SVE register-pair recording
 
 Translated the whole two-register and two-register/immediate SVE recorders and

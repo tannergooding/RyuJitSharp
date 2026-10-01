@@ -16,6 +16,19 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "compilerOptionsMappedRetirement": {
+      "status": "completed-with-retained-exceptions",
+      "mapping": "compiler.h nested Options maps to Compiler.Options in compiler/Compiler.Options.cs; its ten threshold/alignment constants map to compiler/Globals.cs. This reconciles already-committed mappings, not new compiler implementation.",
+      "sourceEvidence": "The existing register-pair-3390f65/base-rp archive is pinned to committed3390f656 and oracle33baf8ee. Its complete Options.cs matches committeda828ad0f after newline normalization, and all ten mapped Globals.cs constants match. Protected live Compiler.Options.cs was not used as accepted source.",
+      "retirement": "Nativee7f2f0041b03f221105a9e1ec42f0e841f64f56a retires21 inline definitions/139body lines,72 mapped field declarations,10 constants and161 exclusive comment/guard/blank lines:382total. Inline signatures are included; no separate prototype or whole-type credit. Exact reconstruction and the sole oracle parent33baf8ee are verified.",
+      "retainedExceptions": [
+        "The Options container and opts instance remain. The nonprofiling compNoPInvokeInlineCB declaration and existing out-of-line false initializer remain: the committed managed const lacks an initializer, while its correct false initializer is still protected unaccepted WIP.",
+        "instrCount, callInstrCount, lvRefCount and xarch preferredVectorByteLength remain because signed managed storage has not established the native unsigned numeric domain. compFlags is a separately reviewed bitset, not one of these numeric exceptions.",
+        "compFastTailCalls remains under its native FEATURE_FASTTAILCALL guard; the managed guard additionally admits TARGET_WASM without established acceptance of that difference."
+      ],
+      "evidence": "artifacts/residual-reconciliation/compiler-options-a828ad0f component, manifest, retirement and verification receipts. All original13 protected WIP hashes remain unchanged; unrelated staged/unstaged work is excluded.",
+      "validation": "Reused committed mappings and the existing cfgLoweringClosure evidence. No new build/test, per-field fixture, ABI measurement, feature activation or full-type execution coverage is claimed."
+    },
     "review49ReceiptEvidence": {
       "window": "Existing SQL review48 at2026-10-01T12:11:47Z through review49 trigger17:00:23Z,288.6minutes. Aggregate existing receipts only; no new timing probe or framework.",
       "completedFamilies": "shared-codegen-policy-fae87f68, lsra-diagnostic-acceptance-031482a9, intrinsic-patchpoint-acceptance-f845b543, sve-recording-acceptance-7334256e, xplat-caller-acceptance-1ab6f43e, emitter-primitives-acceptance-30b51a3b, lsra-copy-move-acceptance-30b51a3b, compiler-local-scope-acceptance-b80f5d67.",
