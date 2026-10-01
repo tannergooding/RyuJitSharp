@@ -213,14 +213,20 @@ internal static unsafe class SimdRearrangementCompletionTests
     }
 
     [Test]
-    public static void Arm64GeneralReverseReachesTheExistingConstantShuffleBoundary()
+    public static void Arm64GeneralReverseUsesTheNativeByteLookup()
     {
         WithCompiler(compiler =>
         {
             var source = Local(compiler, TYP_SIMD16);
-            var exception = Assert.Throws<NotImplementedException>(() =>
-                compiler.gtNewSimdReverseNode(TYP_SIMD16, source, TYP_INT, 16));
-            Assert.That(exception!.Message, Does.Contain("Target-specific SIMD constant shuffle"));
+            var result = compiler.gtNewSimdReverseNode(TYP_SIMD16, source, TYP_INT, 16).AsHWIntrinsic();
+            Assert.That(result.HWIntrinsicId, Is.EqualTo(NI_AdvSimd_Arm64_VectorTableLookup));
+            Assert.That(result.SimdBaseType, Is.EqualTo(TYP_BYTE));
+            Assert.That(result.GetOp(1), Is.SameAs(source));
+            for (var index = 0; index < 16; index++)
+            {
+                var expected = ((3 - (index / 4)) * 4) + (index % 4);
+                Assert.That(result.GetOp(2).AsVecCon().SimdVal.u8[index], Is.EqualTo((byte)expected));
+            }
         });
     }
 #endif
@@ -228,27 +234,33 @@ internal static unsafe class SimdRearrangementCompletionTests
 #if TARGET_WASM
     [TestCase(false)]
     [TestCase(true)]
-    public static void WasmUnzipReachesTheExistingSingleSourceShuffleBoundary(bool odd)
+    public static void WasmUnzipReachesTheUnportedBinaryOperationDependency(bool odd)
     {
         WithCompiler(compiler =>
         {
             var left = Local(compiler, TYP_SIMD16);
             var right = Local(compiler, TYP_SIMD16);
-            var exception = Assert.Throws<NotImplementedException>(() =>
+            var exception = Assert.Throws<FatalJitException>(() =>
                 compiler.gtNewSimdUnzipNode(TYP_SIMD16, left, right, TYP_SHORT, 16, odd));
-            Assert.That(exception!.Message, Does.Contain("Target-specific SIMD constant shuffle"));
+            Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
         });
     }
 
     [Test]
-    public static void WasmReverseReachesTheExistingSingleSourceShuffleBoundary()
+    public static void WasmReverseUsesTheNativeByteSwizzle()
     {
         WithCompiler(compiler =>
         {
             var source = Local(compiler, TYP_SIMD16);
-            var exception = Assert.Throws<NotImplementedException>(() =>
-                compiler.gtNewSimdReverseNode(TYP_SIMD16, source, TYP_INT, 16));
-            Assert.That(exception!.Message, Does.Contain("Target-specific SIMD constant shuffle"));
+            var result = compiler.gtNewSimdReverseNode(TYP_SIMD16, source, TYP_INT, 16).AsHWIntrinsic();
+            Assert.That(result.HWIntrinsicId, Is.EqualTo(NI_PackedSimd_Swizzle));
+            Assert.That(result.SimdBaseType, Is.EqualTo(TYP_BYTE));
+            Assert.That(result.GetOp(1), Is.SameAs(source));
+            for (var index = 0; index < 16; index++)
+            {
+                var expected = ((3 - (index / 4)) * 4) + (index % 4);
+                Assert.That(result.GetOp(2).AsVecCon().SimdVal.u8[index], Is.EqualTo((byte)expected));
+            }
         });
     }
 #endif

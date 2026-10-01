@@ -1823,10 +1823,12 @@ selected folds, not ARM64 generated-code execution.
 
 Unzip, Reverse and the Wasm two-source shuffle factory retain their whole
 target branches. The shared helper uses bounded selector spans and distinct
-index nodes while preserving native scatter/scatter/OR order. Nontrivial Wasm
-and general ARM64 shuffles now reach the independently unported single-source
-shuffle rather than the former two-source stub. Focused x64 construction
-controls do not establish other-target execution or generated-code parity.
+index nodes while preserving native scatter/scatter/OR order. Constant and
+variable single-source shuffle bodies now retain ARM64/Wasm byte expansion,
+zero-fill, scaling and safe range masks. General Reverse constructs its native
+lookup; two-source Wasm operations still reach missing OR mappings (B476).
+Focused x64 controls do not establish other-target execution or generated-code
+parity.
 
 Ternary HW-intrinsic VN evaluation retains whole ARM64/SVE and Wasm branches
 under the native HW feature scope. Integral WithElement uses bounded raw-byte

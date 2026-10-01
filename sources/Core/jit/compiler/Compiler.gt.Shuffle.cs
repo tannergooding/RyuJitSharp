@@ -32,6 +32,25 @@ public partial class Compiler
         else
         {
             assert(simdSize == 16);
+
+            var isVariableShuffle = !indices.Oper.IsCnsVec;
+            if (!isVariableShuffle && isShuffleNative)
+            {
+                // Out-of-range native constant shuffles use the variable implementation.
+                // Preserve the native scan even though eligibility is unchanged here.
+                var elementCount = simdSize / baseType.Size;
+                for (var index = 0; index < elementCount; index++)
+                {
+                    var value = indices.GetIntegralVectorConstElement(index, baseType);
+                    if (value >= (ulong)elementCount)
+                    {
+                        isVariableShuffle = true;
+                        break;
+                    }
+                }
+            }
+
+            _ = isVariableShuffle;
         }
 #endif
         canBecomeValid = true;
@@ -381,8 +400,47 @@ public partial class Compiler
             result = gtNewSimdBinOpNode(GT_AND, type, maskNode, result, baseType, simdSize);
         }
         return result;
+#elif TARGET_ARM64 || TARGET_WASM
+#if TARGET_WASM
+        assert(simdSize == 16);
+#endif
+        var indices = default(simd_t);
+
+        // Table lookup operates on bytes. An out-of-range element selector
+        // becomes 0xFF bytes, preserving the lookup's zero-fill behavior.
+        for (var index = 0; index < elementCount; index++)
+        {
+            var value = op2.GetIntegralVectorConstElement(index, baseType);
+
+            for (var offset = 0; offset < elementSize; offset++)
+            {
+                indices.u8[(index * elementSize) + offset] = value < (ulong)elementCount
+                    ? unchecked((byte)((value * (ulong)elementSize) + (ulong)offset))
+                    : (byte)0xFF;
+            }
+        }
+
+#if TARGET_ARM64
+        if ((simdSize == 16) &&
+            (indices.u64[0] == 0x0F0E0D0C0B0A0908) && (indices.u64[1] == 0x0706050403020100))
+        {
+            // A 64-bit half swap needs no table: extract from two uses of the source.
+            var duplicate = fgMakeMultiUse(ref op1);
+            return gtNewSimdHWIntrinsicNode(type, NI_AdvSimd_ExtractVector128, TYP_ULONG, simdSize,
+                op1, duplicate, gtNewIconNode(TYP_INT, 1));
+        }
+
+        var intrinsic = simdSize == 16 ? NI_AdvSimd_Arm64_VectorTableLookup : NI_AdvSimd_VectorTableLookup;
 #else
-        throw new NotImplementedException("Target-specific SIMD constant shuffle construction is not ported.");
+        var intrinsic = NI_PackedSimd_Swizzle;
+#endif
+        baseType = varTypeIsUnsigned(baseType) ? TYP_UBYTE : TYP_BYTE;
+        var byteIndices = gtNewVconNode(type);
+        byteIndices.SimdVal = indices;
+
+        return gtNewSimdHWIntrinsicNode(type, intrinsic, baseType, simdSize, op1, byteIndices);
+#else
+        throw new NotImplementedException("SIMD constant shuffle construction is unsupported on this target.");
 #endif
     }
 #endif

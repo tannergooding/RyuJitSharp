@@ -23,9 +23,9 @@ public partial class Compiler
         assert(varTypeIsSimd(type) && (GetSimdTypeForSize(simdSize) == type));
         assert((op1.Type == type) && (op2.Type == type));
         assert(!op2.Oper.IsCnsVec || isShuffleNative);
-#if TARGET_XARCH
         var elementSize = baseType.Size;
         var elementCount = simdSize / elementSize;
+#if TARGET_XARCH
         var safeIndices = isShuffleNative ? null : fgMakeMultiUse(ref op2);
         var signedComparisonHint = false;
         GenTree result;
@@ -224,7 +224,70 @@ public partial class Compiler
             result = gtNewSimdHWIntrinsicNode(type, NI_X86Base_Shuffle, baseType, simdSize, op1, op2);
         }
 
+#elif TARGET_ARM64 || TARGET_WASM
+        var safeIndices = (!isShuffleNative && (elementSize > 1)) ? fgMakeMultiUse(ref op2) : null;
+#if TARGET_ARM64
+        var lookupIntrinsic = simdSize == 16 ? NI_AdvSimd_Arm64_VectorTableLookup : NI_AdvSimd_VectorTableLookup;
+#else
+        assert(simdSize == 16);
+        var lookupIntrinsic = NI_PackedSimd_Swizzle;
+#endif
+
+        // Expand element indices into consecutive byte indices for the table lookup.
+        // Safe shuffles retain the original full-width indices for masking below.
+        if (elementSize > 1)
+        {
+            if (varTypeIsFloating(baseType))
+            {
+                baseType = elementSize == 4 ? TYP_INT : TYP_LONG;
+            }
+
+#if TARGET_ARM64
+            if ((simdSize == 16) && (baseType == TYP_INT))
+            {
+                baseType = TYP_UINT;
+            }
+
+            // A Vector64 of 64-bit elements uses the scalar shift encoding.
+            var shiftIntrinsic = ((simdSize == 8) && (elementSize == 8))
+                ? NI_AdvSimd_ShiftLeftLogicalScalar : NI_AdvSimd_ShiftLeftLogical;
+#else
+            var shiftIntrinsic = NI_PackedSimd_ShiftLeft;
+#endif
+            op2 = gtNewSimdHWIntrinsicNode(type, shiftIntrinsic, baseType, simdSize, op2,
+                gtNewIconNode(TYP_INT, int.TrailingZeroCount(elementSize)));
+            baseType = varTypeIsUnsigned(baseType) ? TYP_UBYTE : TYP_BYTE;
+
+            var selectors = gtNewVconNode(type);
+            for (var index = 0; index < elementCount; index++)
+            {
+                for (var offset = 0; offset < elementSize; offset++)
+                {
+                    selectors.SimdVal.u8[(index * elementSize) + offset] = unchecked((byte)(index * elementSize));
+                }
+            }
+
+            op2 = gtNewSimdHWIntrinsicNode(type, lookupIntrinsic, baseType, simdSize, op2, selectors);
+            var offsets = gtNewVconNode(type);
+            for (var index = 0; index < simdSize; index++)
+            {
+                offsets.SimdVal.u8[index] = unchecked((byte)(index & (elementSize - 1)));
+            }
+
+            op2 = gtNewSimdBinOpNode(GT_OR, type, op2, offsets, baseType, simdSize);
+        }
+
+        GenTree result = gtNewSimdHWIntrinsicNode(type, lookupIntrinsic, baseType, simdSize, op1, op2);
+#else
+        throw new NotImplementedException("SIMD variable shuffle construction is unsupported on this target.");
+#endif
+
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_WASM
+#if TARGET_XARCH
         if (!isShuffleNative)
+#else
+        if (!isShuffleNative && (elementSize > 1))
+#endif
         {
             assert(safeIndices is not null);
             var comparisonType = elementSize switch {
@@ -234,6 +297,7 @@ public partial class Compiler
                 _ => TYP_ULONG,
             };
             var subtractComparand = false;
+#if TARGET_XARCH
             if (!compOpportunisticallyDependsOn(InstructionSet_AVX512))
             {
                 comparisonType = elementSize switch {
@@ -253,6 +317,7 @@ public partial class Compiler
                     safeIndices = gtNewSimdBinOpNode(GT_SUB, type, safeIndices, subtraction, comparisonType, simdSize);
                 }
             }
+#endif
 
             var comparandValue = (ulong)elementCount;
             if (subtractComparand)
@@ -270,8 +335,6 @@ public partial class Compiler
             assert(safeIndices is null);
         }
         return result;
-#else
-        throw new NotImplementedException("Target-specific SIMD variable shuffle construction is not ported.");
 #endif
     }
 #endif

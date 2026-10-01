@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Shared SIMD shuffle construction
+
+Constant and variable shuffle builders retain complete ARM64/Wasm byte-index
+expansion, zero-fill, native/safe distinctions, shifts and capture ordering.
+ARM64 half swaps use the native extraction shortcut. Xarch selection and the
+native eligibility scan remain intact.
+
+Twenty-three new cases plus 128 existing constructor/pair/rearrangement controls
+pass per Windows/Linux Debug/Release configuration, 604 cases total. Three
+definitions and three declarations retire 1,359 exact residual lines. Historical
+C#-shaped residual bodies were compared with the intact oracle, not claimed
+byte-identical. ARM64 retains 39 compiler diagnostics; Wasm binary/comparison
+mapping gaps remain, including the unexpected native absence recorded in B476.
+
 ## 2026-10-01: Scalar math value numbering across targets
 
 Unary and binary math evaluation retain complete target branches and AOT
