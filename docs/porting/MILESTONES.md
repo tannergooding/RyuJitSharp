@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Ternary hardware-intrinsic value numbering
+
+Ternary evaluation preserves whole target branches, raw conditional-selection
+bits, integral lane replacement and the existing floating conversion boundary.
+SVE fixed-vector selection retains native predicate/AND/AND_NOT/OR interning
+order; unrepresentable predicates and unsupported folds retain symbolic VNs.
+
+Fifty-one new cases pass in each Windows/Linux Debug/Release configuration.
+Together with SIMD rearrangement and existing controls, 1,260 focused cases
+pass. Two whole definitions retire 224 native lines; declarations needed by
+remaining compiler callers stay. ARM64 retains 39 historical diagnostics,
+and SVE/Wasm numeric execution remains unverified.
+
 ## 2026-10-01: SIMD rearrangement construction
 
 Unzip and Reverse retain ARM64 and Wasm target algorithms alongside existing

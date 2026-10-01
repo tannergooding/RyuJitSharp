@@ -1828,6 +1828,13 @@ and general ARM64 shuffles now reach the independently unported single-source
 shuffle rather than the former two-source stub. Focused x64 construction
 controls do not establish other-target execution or generated-code parity.
 
+Ternary HW-intrinsic VN evaluation retains whole ARM64/SVE and Wasm branches
+under the native HW feature scope. Integral WithElement uses bounded raw-byte
+replacement, preserving complete-element rules and SIMD12 tails. SVE selection
+reuses existing mask conversion and preserves native intermediate VN allocation;
+unrepresentable predicates remain symbolic. Only x64 numeric cases executed;
+other-target source projections do not remove existing execution limitations.
+
 `GenTreeHWIntrinsic.GetLayout` now preserves its complete fixed and SVE aggregate
 layout dispatch and is retired. SVE cases call the typed, terminating
 `Compiler.getRuntimeVectorTByteLength` dependency; that native helper remains.

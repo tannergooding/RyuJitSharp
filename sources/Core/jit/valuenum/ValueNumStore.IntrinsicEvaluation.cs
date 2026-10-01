@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
@@ -1034,21 +1035,22 @@ public sealed partial class ValueNumStore
         return VNForFunc(type, func, arg0VN, arg1VN, resultTypeVN);
     }
 
-#if FEATURE_MASKED_HW_INTRINSICS
-
     public ValueNum EvalHWIntrinsicFunTernary(GenTreeHWIntrinsic tree, VNFunc func, ValueNum arg0VN,
         ValueNum arg1VN, ValueNum arg2VN, ValueNum resultTypeVN)
     {
-#if !TARGET_XARCH
-        throw new NotImplementedException("HW intrinsic VN ternary folding is not ported for this target.");
-#else
         var type = tree.Type;
         var baseType = tree.SimdBaseType;
         var simdSize = tree.SimdSize;
+        var id = tree.HWIntrinsicId;
 
-        switch (tree.HWIntrinsicId)
+        switch (id)
         {
+#if TARGET_XARCH || TARGET_WASM
             case NI_Vector_ConditionalSelect:
+#elif TARGET_ARM64
+            case NI_AdvSimd_BitwiseSelect:
+            case NI_Sve_ConditionalSelect:
+#endif
             {
                 if (IsVNConstant(arg0VN))
                 {
@@ -1064,6 +1066,25 @@ public sealed partial class ValueNumStore
 
                     if (IsVNConstant(arg1VN) && IsVNConstant(arg2VN))
                     {
+#if TARGET_ARM64
+                        if (id == NI_Sve_ConditionalSelect)
+                        {
+                            assert(TypeOfVN(arg0VN) == TYP_MASK);
+                            assert(type == TYP_SIMD16);
+
+                            var maskVN = EvaluateSimdCvtMaskToVectorVN(type, baseType, arg0VN);
+                            if (maskVN == NoVN)
+                            {
+                                break;
+                            }
+
+                            var trueVN = EvaluateBinarySimdVN(GT_AND, false, type, baseType, arg1VN, maskVN);
+                            var falseVN = EvaluateBinarySimdVN(GT_AND_NOT, false, type, baseType, arg2VN, maskVN);
+
+                            return EvaluateBinarySimdVN(GT_OR, false, type, baseType, trueVN, falseVN);
+                        }
+#endif
+
                         var selected = EvaluateBinarySimdVN(GT_AND, false, type, baseType, arg1VN, arg0VN);
                         var rejected = EvaluateBinarySimdVN(GT_AND_NOT, false, type, baseType, arg2VN, arg0VN);
                         return EvaluateBinarySimdVN(GT_OR, false, type, baseType, selected, rejected);
@@ -1089,20 +1110,16 @@ public sealed partial class ValueNumStore
                             return EvaluateSimdWithElementFloating(type, baseType, arg0VN, index, element);
                         }
 
-                        var vector = GetConstantSimd(arg0VN);
-                        var result = new byte[type.Size];
-                        vector.AsSpan<byte>()[..type.Size].CopyTo(result);
-                        var value = baseType switch {
-                            TYP_LONG or TYP_ULONG => BitConverter.GetBytes(GetConstantInt64(arg2VN)),
-                            _ => BitConverter.GetBytes(GetConstantInt32(arg2VN)),
-                        };
-                        value.AsSpan(0, baseType.Size).CopyTo(result.AsSpan(index * baseType.Size));
-                        return VNForGenericCon(type, result);
+                        assert(varTypeIsIntegral(baseType));
+                        var value = varTypeIsLong(baseType) ? GetConstantInt64(arg2VN) : GetConstantInt32(arg2VN);
+
+                        return EvaluateSimdWithElementIntegral(type, baseType, arg0VN, index, value);
                     }
                 }
                 break;
             }
 
+#if TARGET_XARCH
             case NI_X86Base_BlendVariable:
             case NI_AVX_BlendVariable:
             case NI_AVX2_BlendVariable:
@@ -1126,10 +1143,49 @@ public sealed partial class ValueNumStore
                 }
                 break;
             }
+#endif
+
+            default:
+            {
+                break;
+            }
         }
 
         return VNForFunc(type, func, arg0VN, arg1VN, arg2VN, resultTypeVN);
+    }
+
+    private ValueNum EvaluateSimdWithElementIntegral(var_types simdType, var_types baseType,
+        ValueNum vectorVN, int index, long value)
+    {
+        assert(varTypeIsIntegral(baseType));
+        assert(simdType == TypeOfVN(vectorVN));
+        assert(IsVNConstant(vectorVN));
+        assert(unchecked((uint)index) < (uint)GenTreeVecCon.ElementCount(simdType.Size, baseType));
+
+        switch (simdType)
+        {
+            case TYP_SIMD8:
+            case TYP_SIMD12:
+            case TYP_SIMD16:
+#if TARGET_XARCH
+            case TYP_SIMD32:
+            case TYP_SIMD64:
 #endif
+            {
+                var vector = GetConstantSimd(vectorVN);
+                var result = new byte[simdType.Size];
+                vector.AsSpan<byte>()[..simdType.Size].CopyTo(result);
+                var element = BitConverter.GetBytes(value);
+                element.AsSpan(0, baseType.Size).CopyTo(result.AsSpan(index * baseType.Size));
+
+                return VNForGenericCon(simdType, result);
+            }
+
+            default:
+            {
+                throw new UnreachableException();
+            }
+        }
     }
 
     // Keep the native double-valued call boundary: collapsing float -> double -> float
@@ -1151,6 +1207,5 @@ public sealed partial class ValueNumStore
 
         return VNForGenericCon(simdType, result);
     }
-#endif
 #endif
 }
