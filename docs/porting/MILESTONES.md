@@ -30,8 +30,16 @@ the included target definitions and format data were not removed. These three
 headers account for another 74 lines of previously mapped types and scaffolding,
 not new implementation or execution coverage.
 
-These are five verified findings from the bounded small-remnant review, not a
-claim that every small residual file has been reviewed.
+The final four removals were the empty `instr.cpp`, include-only
+`regallocimpl.h`, and the mapped `lsra_score.h` and `lsra_reftypes.h` tables.
+All 17 score values, order IDs and diagnostic labels match the handwritten
+register-selector/statistics mappings; all 13 reference values and labels match
+`RefType.cs` and allocation diagnostics. Neither table is a generator input or
+source/build dependency. This adds 146 lines, for nine files and 361 lines total.
+
+The bounded review covered 75 files. The other 66 contain untranslated work or
+have uncertain mappings and were not removed. Review coverage does not imply
+translation completeness or execution parity.
 
 ## 2026-10-01: LSRA tuple and record diagnostics
 
