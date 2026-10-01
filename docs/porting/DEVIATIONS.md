@@ -74,6 +74,13 @@ C# helpers may replace native structure where appropriate. Examples include
 collection ordering, integer semantics, ownership, and native interop contracts.
 Larger algorithmic or architectural changes require separate approval.
 
+Shared call and frame policy uses existing full-space `regMaskTP` construction
+for native register-mask aliases; ARM double argument segments include both
+register halves. Poison values preserve target pointer width and low-eight-bit
+signed `char` semantics through `sbyte`. Unknown-size ARM64 frame poisoning
+retains its typed terminating helper and native definition. These representation
+adaptations do not enable another backend or change ABI policy.
+
 Parameter-homing `RegGraph` maps its allocator-bearing native constructor to
 the implicit managed constructor and an initially empty readonly `List`.
 Insertion order matches native bottom-up traversal; incoming edges remain LIFO.

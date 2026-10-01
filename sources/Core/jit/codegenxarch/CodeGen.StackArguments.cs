@@ -156,7 +156,7 @@ public sealed partial class CodeGen
 
     public int getFirstArgWithStackSlot()
     {
-#if UNIX_AMD64_ABI
+#if UNIX_AMD64_ABI || TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
         for (var index = 0; index < _compiler.info.compArgsCount; index++)
         {
             assert(_compiler.lvaGetDesc(index).lvIsParam);

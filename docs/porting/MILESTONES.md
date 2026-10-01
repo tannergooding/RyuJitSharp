@@ -16,6 +16,29 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Shared call registers and frame initialization
+
+Shared bitcast, indirection-cell and tailcall checks retain their native target
+branches. Swift error-register production now preserves move, GC-state transfer
+and register-production order. ARM tailcall checks include both halves of a
+double register. Frame poisoning preserves native pointer widths, stack-slot
+selection, immediate reuse and target-specific large-local initialization;
+unknown-size ARM64 poisoning remains a terminating dependency.
+
+Full-analysis focused fixtures pass 27 Debug/17 Release on Windows and 23/23
+with the Linux target: 90 executions. Swift controls run with the existing
+Linux-target feature settings, not newly enabled Windows features. ARM64
+retains the exact 39-diagnostic baseline after correcting missing mask aliases.
+The final correction is confined to the non-xarch branch; an exact excluded-branch
+comparison supports reusing the x64 results. No generated-code parity is claimed.
+
+Seven whole definitions and 21 declarations retire 284 lines. Six declarations
+belong to this family; fifteen clear known graph/statistics and intrinsic/issue
+declaration debt using existing accepted evidence, without body re-audit or new
+tests for that debt. Residual callers are not a retention gate. The bitcast
+declaration shared with the unported Wasm definition and the unported ARM64
+poison-helper declaration remain for those definitions, not for callers.
+
 ## 2026-10-01: Parameter-homing graph and LSRA statistics
 
 The retained register-interference graph preserves insertion and incoming-edge

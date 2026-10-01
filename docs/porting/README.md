@@ -45,6 +45,12 @@ translation is complete. Windows-x64 execution does not require other targets to
 execute. Conversely, native retirement records translation, not a parity pass or
 a guarantee that the port has no bugs.
 
+The residual tree need not compile: dangling references from untranslated callers
+do not justify retaining completed definitions or their declarations. Retain a
+shared declaration only when it still represents an untranslated definition.
+Types and table data can also retire when their managed translation and, where
+applicable, generator mapping are established.
+
 Reuse the original translation review and focused evidence when retiring a
 definition; do not independently re-audit it for cleanup. Keep sparse records for
 active work, missing dependencies, unusual mappings, known defects and unresolved

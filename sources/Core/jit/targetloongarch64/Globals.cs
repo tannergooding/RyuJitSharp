@@ -21,5 +21,7 @@ public partial class Globals
     public const regNumber REG_ARG_1 = REG_A1;
 
     public const regNumber REG_INTRET = REG_A0;
+
+    public const regNumber REG_R2R_INDIRECT_PARAM = REG_T8;
 }
 #endif

@@ -17,9 +17,6 @@ public sealed partial class CodeGen
 
     public regNumber getCallIndirectionCellReg(GenTreeCall call)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Call indirection-cell selection requires AMD64.");
-#else
         var result = REG_NA;
         switch (call.IndirectionCellArgKind)
         {
@@ -58,21 +55,27 @@ public sealed partial class CodeGen
         }
 #endif
         return result;
-#endif
     }
 
 #if DEBUG
     public void genCheckTailCallEpilogRegisters(GenTreeCall call)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Tailcall epilog-register verification requires AMD64.");
+#if TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm tailcall epilog-register verification is not ported.");
 #else
         if (!call.IsFastTailCall)
         {
             return;
         }
 
+#if HAS_MORE_THAN_64_REGISTERS && TARGET_XARCH
+        var trashedByEpilog = new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED,
+            SRBM_MSK_CALLEE_SAVED);
+#elif TARGET_XARCH
+        var trashedByEpilog = new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED | SRBM_MSK_CALLEE_SAVED);
+#else
         var trashedByEpilog = new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED);
+#endif
         if (_compiler.NeedsGSSecurityCookie)
         {
             trashedByEpilog |= genGetGSCookieTempRegs(tailCall: true, call);
@@ -82,9 +85,17 @@ public sealed partial class CodeGen
         {
             foreach (ref readonly var segment in arg.AbiInfo.Segments)
             {
-                if (segment.IsPassedInRegister &&
-                    (trashedByEpilog & regMaskTP.CreateFromRegNum(
-                        segment.Register, segment.Register.SingleTypeMask)).IsNonEmpty)
+                if (!segment.IsPassedInRegister)
+                {
+                    continue;
+                }
+
+#if TARGET_ARM
+                var segmentMask = new regMaskTP(unchecked((regMask)((ulong)segment.RegisterMask << segment.RegisterMaskBase)));
+#else
+                var segmentMask = regMaskTP.CreateFromRegNum(segment.Register, segment.Register.SingleTypeMask);
+#endif
+                if ((trashedByEpilog & segmentMask).IsNonEmpty)
                 {
                     if (_compiler.verbose)
                     {

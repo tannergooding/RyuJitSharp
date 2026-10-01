@@ -9,8 +9,8 @@ public sealed partial class CodeGen
 {
     public void genBitCast(var_types targetType, regNumber targetReg, var_types srcType, regNumber srcReg)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Bitcast generation requires AMD64.");
+#if TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm register bitcast generation is not ported.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(varTypeUsesFloatReg(srcType) == genIsValidFloatReg(srcReg));
@@ -21,8 +21,8 @@ public sealed partial class CodeGen
 
     public void genCodeForBitCast(GenTreeUnOp tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Bitcast node generation requires AMD64.");
+#if TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm bitcast node generation is not ported.");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Type == tree.Type.ActualType);

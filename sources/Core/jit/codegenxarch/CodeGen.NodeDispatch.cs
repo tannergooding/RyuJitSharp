@@ -569,10 +569,19 @@ public sealed partial class CodeGen
 #endif
     }
 
-#if TARGET_XARCH && SWIFT_SUPPORT
+#if !TARGET_WASM && SWIFT_SUPPORT
     public void genCodeForSwiftErrorReg(GenTree tree)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Swift error register generation is not implemented.");
+        assert(tree.Oper == GT_SWIFT_ERROR);
+        var targetType = tree.Type;
+        var targetReg = tree.RegNum;
+
+        // LSRA also assigns the ABI error register as the destination (see LinearScan::BuildNode).
+        assert(targetReg == REG_SWIFT_ERROR);
+
+        inst_Mov(targetType, targetReg, REG_SWIFT_ERROR, canSkip: true);
+        genTransferRegGCState(targetReg, REG_SWIFT_ERROR);
+        genProduceReg(tree);
     }
 #endif
 }
