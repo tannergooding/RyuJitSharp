@@ -4,6 +4,7 @@ using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BBKinds;
@@ -24,6 +25,22 @@ internal static unsafe class VNIntrinsicExpansionTests
     private static int s_contentQueries;
 
 #if DEBUG
+    [TestCase("", "")]
+    [TestCase("Hello", "Hello")]
+    [TestCase("A\r\nB", "A  B")]
+    [TestCase("A\0B", "A")]
+    [TestCase("\0hidden", "")]
+    [TestCase("A\0\r\nB", "A")]
+    [TestCase("A\u00E9\u20AC", "A\u00E9\u20AC")]
+    public static void ObjectDescriptionMatchesNativeCString(string source, string expected)
+    {
+        WithCompiler(source, (compiler, _, _, _) =>
+        {
+            var output = CodeGenLifeTransitionTests.Capture(() => compiler.eePrintObjectDescription("object", null));
+            Assert.That(output, Is.EqualTo($"object '{expected}'"));
+        });
+    }
+
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
@@ -344,6 +361,7 @@ internal static unsafe class VNIntrinsicExpansionTests
         vtable.Base.Base.isObjectImmutable = &IsImmutable;
         vtable.Base.getObjectContent = &GetContent;
 #if DEBUG
+        vtable.Base.Base.printObjectDescription = &GetDescription;
         vtable.Base.Base.getStringLiteral = &GetLiteral;
         vtable.Base.Base.runWithSPMIErrorTrap = &RunTrap;
 #endif
@@ -412,6 +430,23 @@ internal static unsafe class VNIntrinsicExpansionTests
     private static byte IsImmutable(ICorJitInfo* self, CORINFO_OBJECT_STRUCT_* obj) => s_immutable ? (byte)1 : (byte)0;
 
 #if DEBUG
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static nint GetDescription(ICorJitInfo* self, CORINFO_OBJECT_STRUCT_* obj,
+        byte* buffer, nint bufferSize, nint* requiredBufferSize)
+    {
+        var bytes = new Span<byte>(buffer, (int)bufferSize);
+        bytes.Fill(0xCC);
+        var written = Encoding.UTF8.GetBytes(s_content.AsSpan(), bytes[..^1]);
+        bytes[written] = 0;
+
+        if (requiredBufferSize != null)
+        {
+            *requiredBufferSize = written + 1;
+        }
+
+        return written;
+    }
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte RunTrap(ICorJitInfo* self, delegate* unmanaged[Cdecl]<void*, void> callback, void* state)
     {

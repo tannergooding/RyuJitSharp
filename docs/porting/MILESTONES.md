@@ -16,6 +16,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Object-description NUL termination
+
+Frozen-object diagnostics now stop at the first NUL, matching native `%s`
+printing while retaining the bounded EE-written span and newline replacement.
+Seven direct callback cases cover leading/embedded NUL, bytes after the reported
+extent, empty/plain/UTF8 descriptions and newline replacement. Full-analysis
+Windows VN-intrinsic selections pass 38 Debug/24 Release cases. The native
+definition was already retired; this correction receives no new retirement
+credit. B475 is fixed in source, with fresh AOT capture still pending; the
+historical helper comparison and B135 remain unchanged.
+
 ## 2026-10-01: Fresh helper captures and native repeat control
 
 A fresh Debug NativeAOT JIT from committed source `6d8ef365` executes the eleven
