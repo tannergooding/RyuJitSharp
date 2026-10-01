@@ -79,7 +79,7 @@ public sealed partial class LinearScan
             spillTemps = unchecked(spillTemps + _maxSpill[index]);
         }
         streamWriter.Write("Total Number of spill temps created: ");
-        streamWriter.Write(spillTemps.ToString(CultureInfo.InvariantCulture));
+        streamWriter.Write(unchecked((int)spillTemps).ToString(CultureInfo.InvariantCulture));
         streamWriter.Write('\n');
         streamWriter.Write("..........\n");
 
@@ -114,9 +114,9 @@ public sealed partial class LinearScan
                     streamWriter.Write(", ");
                 }
 
-                streamWriter.Write(s_lsraStatNames[index]);
+                streamWriter.Write(getStatName((uint)index));
                 streamWriter.Write(" = ");
-                streamWriter.Write(value.ToString(CultureInfo.InvariantCulture));
+                streamWriter.Write(unchecked((int)value).ToString(CultureInfo.InvariantCulture));
                 sumStats[index] = unchecked(sumStats[index] + value);
                 weightedStats[index] += value * weight;
             }
@@ -148,7 +148,7 @@ public sealed partial class LinearScan
             if ((index < (int)LsraStat.STAT_FREE) || (sumStats[index] != 0))
             {
                 streamWriter.Write("Total ");
-                streamWriter.Write(s_lsraStatNames[index]);
+                streamWriter.Write(getStatName((uint)index));
                 if (index >= (int)LsraStat.STAT_FREE)
                 {
                     streamWriter.Write(" [#");
@@ -156,7 +156,7 @@ public sealed partial class LinearScan
                     streamWriter.Write(']');
                 }
                 streamWriter.Write(" : ");
-                streamWriter.Write(sumStats[index].ToString(CultureInfo.InvariantCulture));
+                streamWriter.Write(unchecked((int)sumStats[index]).ToString(CultureInfo.InvariantCulture));
                 streamWriter.Write("   Weighted: ");
                 streamWriter.Write(weightedStats[index].ToString("F6", CultureInfo.InvariantCulture));
                 streamWriter.Write('\n');

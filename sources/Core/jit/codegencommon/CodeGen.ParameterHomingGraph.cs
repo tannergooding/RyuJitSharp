@@ -114,7 +114,8 @@ public sealed partial class CodeGen
                     jitprintf($"\n    <- {edge.From.Reg.Name} ({edge.Type.Name})");
                     if (edge.DestOffset != 0)
                     {
-                        jitprintf($" (offset: {edge.DestOffset})");
+                        // Native prints this unsigned offset with %d.
+                        jitprintf($" (offset: {unchecked((int)edge.DestOffset)})");
                     }
                 }
 

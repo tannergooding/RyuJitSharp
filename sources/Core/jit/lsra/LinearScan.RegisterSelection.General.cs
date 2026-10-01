@@ -422,7 +422,7 @@ public sealed partial class LinearScan
         }
     }
 
-#if DEBUG && TRACK_LSRA_STATS
+#if TRACK_LSRA_STATS
     private static LsraStat getLsraStatFromScore(RegisterScore score) => score switch
     {
         RegisterScore.CONST_AVAILABLE => LsraStat.STAT_CONST_AVAILABLE,

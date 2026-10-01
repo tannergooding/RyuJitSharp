@@ -74,6 +74,14 @@ C# helpers may replace native structure where appropriate. Examples include
 collection ordering, integer semantics, ownership, and native interop contracts.
 Larger algorithmic or architectural changes require separate approval.
 
+Parameter-homing `RegGraph` maps its allocator-bearing native constructor to
+the implicit managed constructor and an initially empty readonly `List`.
+Insertion order matches native bottom-up traversal; incoming edges remain LIFO.
+The constructor's allocator parameter has no separate managed lifetime role.
+LSRA statistics retain lazily allocated per-block counter arrays and the
+existing writer lock; semantic counters, signed text and unsigned weighted
+inputs are not excluded by the arena-allocation statistics policy.
+
 VN scalar extraction recognizes native pointer typedef aliases using actual
 host-backed element width, not the selected target ABI. Strict Debug extraction
 compares reinterpretation with coercion, bytewise for floating storage. The

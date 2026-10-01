@@ -510,6 +510,14 @@ public sealed partial class LinearScan
         "REG_NUM",
     ];
 
+    private static string getStatName(uint stat)
+    {
+        assert(stat != (uint)LsraStat.COUNT);
+        assert(stat < (uint)s_lsraStatNames.Length);
+
+        return s_lsraStatNames[(int)stat];
+    }
+
     private void updateLsraStat(LsraStat stat, uint blockNumber)
     {
         if (blockNumber > _bbNumMaxBeforeResolution)
@@ -557,13 +565,13 @@ public sealed partial class LinearScan
     private void dumpLsraStatsCsvCore(StreamWriter streamWriter)
     {
         streamWriter.Flush();
-        if (!streamWriter.BaseStream.CanSeek || (streamWriter.BaseStream.Position == 0))
+        if (streamWriter.BaseStream.CanSeek && (streamWriter.BaseStream.Position == 0))
         {
             streamWriter.Write("\"Method Name\"");
-            foreach (var statName in s_lsraStatNames)
+            for (var statIndex = 0; statIndex < (int)LsraStat.COUNT; statIndex++)
             {
                 streamWriter.Write(",\"");
-                streamWriter.Write(statName);
+                streamWriter.Write(getStatName((uint)statIndex));
                 streamWriter.Write('"');
             }
 
@@ -573,24 +581,30 @@ public sealed partial class LinearScan
         var totalStats = new uint[(int)LsraStat.COUNT];
         var blockInfo = _blockInfo
             ?? throw new FatalJitException("LSRA statistics require initialized block information.");
-        var blockCount = checked((int)(_bbNumMaxBeforeResolution + 1));
-        if (blockCount > blockInfo.Length)
-        {
-            throw new FatalJitException("LSRA statistics do not cover all pre-resolution blocks.");
-        }
 
-        for (var blockIndex = 0; blockIndex < blockCount; blockIndex++)
+        void AddBlockStats(int blockNumber)
         {
-            var blockStats = blockInfo[blockIndex].stats;
+            var blockStats = blockInfo[blockNumber].stats;
             if (blockStats is null)
             {
-                continue;
+                return;
             }
 
             for (var statIndex = 0; statIndex < totalStats.Length; statIndex++)
             {
                 totalStats[statIndex] = unchecked(totalStats[statIndex] + blockStats[statIndex]);
             }
+        }
+
+        AddBlockStats(0);
+        foreach (var block in _compiler.Blocks)
+        {
+            if ((uint)block.bbNum > _bbNumMaxBeforeResolution)
+            {
+                continue;
+            }
+
+            AddBlockStats(block.bbNum);
         }
 
         streamWriter.Write('"');

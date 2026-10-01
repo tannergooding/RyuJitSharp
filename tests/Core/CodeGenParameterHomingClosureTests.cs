@@ -4,6 +4,10 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+#if DEBUG
+using System.IO;
+using System.Text;
+#endif
 using NUnit.Framework;
 using static RyuJitSharp.CorInfoOptions;
 using static RyuJitSharp.Globals;
@@ -42,6 +46,51 @@ internal static unsafe class CodeGenParameterHomingClosureTests
         Assert.That(get.Invoke(graph, [REG_FP_FIRST]), Is.SameAs(floatingNode));
         Assert.That(getOrAdd.Invoke(graph, [REG_INTRET]), Is.SameAs(integerNode));
     }
+
+#if DEBUG
+    [TestCase(0u, "")]
+    [TestCase(8u, " (offset: 8)")]
+    [TestCase(0x80000000u, " (offset: -2147483648)")]
+    [TestCase(uint.MaxValue, " (offset: -1)")]
+    public static void GraphDumpRetainsNativeSignedOffsetText(uint offset, string offsetText)
+    {
+        var graphType = typeof(CodeGen).GetNestedType("RegGraph", BindingFlags.NonPublic)
+            ?? throw new AssertionException("Missing parameter homing graph.");
+        var graph = Activator.CreateInstance(graphType, nonPublic: true)
+            ?? throw new AssertionException("Missing parameter homing graph instance.");
+        var getOrAdd = graphType.GetMethod("GetOrAdd")
+            ?? throw new AssertionException("Missing graph insertion.");
+        var addEdge = graphType.GetMethod("AddEdge")
+            ?? throw new AssertionException("Missing graph edge insertion.");
+        var dump = graphType.GetMethod("Dump")
+            ?? throw new AssertionException("Missing graph dump.");
+        var source = getOrAdd.Invoke(graph, [REG_INTRET])
+            ?? throw new AssertionException("Missing source register.");
+        var destination = getOrAdd.Invoke(graph, [REG_FP_FIRST])
+            ?? throw new AssertionException("Missing destination register.");
+        _ = addEdge.Invoke(graph, [source, destination, TYP_INT, offset]);
+
+        using var stream = new MemoryStream();
+        using var writer = new JitTextWriter(stream, leaveOpen: true);
+        var previous = s_jitstdout;
+        try
+        {
+            s_jitstdout = writer;
+            _ = dump.Invoke(graph, null);
+            writer.Flush();
+
+            var expected = $"2 registers in register parameter interference graph{Environment.NewLine}" +
+                $"  {REG_INTRET.Name}{Environment.NewLine}" +
+                $"  {REG_FP_FIRST.Name}{Environment.NewLine}" +
+                $"    <- {REG_INTRET.Name} ({TYP_INT.Name}){offsetText}{Environment.NewLine}";
+            Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo(expected));
+        }
+        finally
+        {
+            s_jitstdout = previous;
+        }
+    }
+#endif
 
 #if TARGET_LOONGARCH64
     [TestCase(long.MinValue, false)]

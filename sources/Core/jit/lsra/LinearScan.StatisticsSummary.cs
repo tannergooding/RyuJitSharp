@@ -45,7 +45,7 @@ public sealed partial class LinearScan
 
         for (var index = 0; index < sumStats.Length; index++)
         {
-            var name = s_lsraStatNames[index];
+            var name = getStatName((uint)index);
             streamWriter.Write(", ");
             streamWriter.Write(name);
             streamWriter.Write(' ');

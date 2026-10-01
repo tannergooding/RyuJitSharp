@@ -16,6 +16,30 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Parameter-homing graph and LSRA statistics
+
+The retained register-interference graph preserves insertion and incoming-edge
+order, first-sink/last-cycle selection, copied-register release and unsigned
+overlap checks. Its dump now prints unsigned destination offsets with native
+signed `%d` interpretation.
+
+LSRA statistics aggregate block zero and actual pre-resolution blocks, excluding
+detached slots and resolution blocks. Text counters preserve signed bit
+interpretation; CSV/summary counters remain unsigned, totals wrap at 32 bits,
+and weighted aggregation retains unsigned inputs. Name/score helpers retain the
+native `TRACK_LSRA_STATS` guard and the existing table and heuristic mapping.
+
+Full-analysis Windows fixtures pass 28 Debug/8 Release; Linux-target Release
+passes eight. Linux-target Debug executes 26 cases with 25 passing and one
+unchanged register-table-header failure, reproduced with identical error text
+on the committed baseline (B493). The failure is retained, not suppressed or
+counted as a pass. All four new graph and five new statistics cases pass in
+both Debug selections. ARM64 retains the exact 39-diagnostic baseline.
+
+Thirteen whole definitions retire 383 body lines, with no declaration credit.
+All match the pinned oracle after line-ending normalization; graph scaffolding,
+the separate `Get` declaration and the native statistics enclosure remain.
+
 ## 2026-10-01: Intrinsic properties and instruction-issue bookkeeping
 
 Six retained hardware-intrinsic property predicates preserve native containment,

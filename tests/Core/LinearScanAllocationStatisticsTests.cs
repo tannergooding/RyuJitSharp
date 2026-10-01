@@ -3,9 +3,10 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
+#if DEBUG && TRACK_LSRA_STATS
 using System;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using NUnit.Framework;
@@ -145,6 +146,174 @@ internal static unsafe class LinearScanAllocationStatisticsTests
         });
     }
 
+    [TestCase(0x80000000u, "-2147483648", "2147483648.000000")]
+    [TestCase(uint.MaxValue, "-1", "4294967295.000000")]
+    [SetCulture("fr-FR")]
+    public static void TextCountersPreserveNativeSignedBitsAndUnsignedWeights(
+        uint count, string signedCount, string weightedCount)
+    {
+        WithAllocator((compiler, allocator) => {
+            _ = CreateBlocks(compiler, 1);
+            compiler.info.compFullName = "Stats::Signed";
+            _ = StartBlockSequence(allocator);
+            var blockInfo = BlockInfo(allocator);
+            blockInfo[0].weight = 1;
+            var stats = blockInfo[0].stats
+                ?? throw new AssertionException("Missing entry statistics.");
+            stats[(int)LsraStat.STAT_SPILL] = count;
+            MaxSpill(allocator)[(int)TYP_INT] = count;
+
+            var output = Capture(allocator);
+
+            Assert.That(output, Does.Contain(
+                $"Total Number of spill temps created: {signedCount}{Environment.NewLine}"));
+            Assert.That(output, Does.Contain(
+                $"{FMT_BB(0)} [    1.00]: SpillCount = {signedCount}{Environment.NewLine}"));
+            Assert.That(output, Does.Contain(
+                $"Total SpillCount : {signedCount}   Weighted: {weightedCount}{Environment.NewLine}"));
+
+            using var stream = new MemoryStream();
+            using var writer = new StreamWriter(
+                stream, new UTF8Encoding(false), bufferSize: 1024, leaveOpen: true);
+            allocator.dumpLsraStatsCsv(writer);
+            writer.Flush();
+            var expectedStats = new uint[(int)LsraStat.COUNT];
+            expectedStats[(int)LsraStat.STAT_SPILL] = count;
+            var expectedRow = $"\"Stats::Signed\",{string.Join(',', expectedStats)},0.00";
+            Assert.That(Encoding.UTF8.GetString(stream.ToArray()),
+                Does.EndWith(expectedRow + Environment.NewLine));
+        });
+    }
+
+    [Test]
+    [SetCulture("fr-FR")]
+    public static void CsvCountsOnlyLivePreResolutionBlocksAndWritesTheHeaderOnce()
+    {
+        WithAllocator((compiler, allocator) => {
+            var blocks = CreateBlocks(compiler, 3);
+            var removed = blocks[1];
+            blocks[0].Next = blocks[2];
+            blocks[2].Prev = blocks[0];
+            removed.Next = null;
+            removed.Prev = null;
+            compiler.fgBBcount = 2;
+            compiler.info.compFullName = "Stats::Csv";
+            compiler.Metrics.PerfScore = 7.25;
+            _ = StartBlockSequence(allocator);
+            BbNumMaxBeforeResolution(allocator) = (uint)removed.bbNum;
+            var blockInfo = BlockInfo(allocator);
+            var entryStats = blockInfo[0].stats
+                ?? throw new AssertionException("Missing entry statistics.");
+            var firstStats = blockInfo[blocks[0].bbNum].stats
+                ?? throw new AssertionException("Missing block statistics.");
+            var resolutionStats = blockInfo[blocks[2].bbNum].stats
+                ?? throw new AssertionException("Missing resolution statistics.");
+            var removedStats = new uint[(int)LsraStat.COUNT];
+            blockInfo[removed.bbNum].stats = removedStats;
+            entryStats[(int)LsraStat.STAT_SPILL] = 2;
+            firstStats[(int)LsraStat.STAT_SPILL] = 3;
+            removedStats[(int)LsraStat.STAT_SPILL] = 101;
+            resolutionStats[(int)LsraStat.STAT_SPILL] = 103;
+
+            using var stream = new MemoryStream();
+            using var writer = new StreamWriter(
+                stream, new UTF8Encoding(false), bufferSize: 1024, leaveOpen: true);
+            allocator.dumpLsraStatsCsv(writer);
+            allocator.dumpLsraStatsCsv(writer);
+            writer.Flush();
+            var lines = Encoding.UTF8.GetString(stream.ToArray())
+                .Split(Environment.NewLine, StringSplitOptions.None);
+            var expectedStats = new uint[(int)LsraStat.COUNT];
+            expectedStats[(int)LsraStat.STAT_SPILL] = 5;
+            var expectedRow = $"\"Stats::Csv\",{string.Join(',', expectedStats)},7.25";
+
+            Assert.That(lines, Has.Length.EqualTo(4));
+            Assert.That(lines[0], Does.StartWith("\"Method Name\",\"SpillCount\""));
+            Assert.That(lines[0], Does.EndWith(",\"PerfScore\""));
+            Assert.That(lines[1], Is.EqualTo(expectedRow));
+            Assert.That(lines[2], Is.EqualTo(expectedRow));
+            Assert.That(lines[3], Is.Empty);
+        });
+    }
+
+    [Test]
+    public static void CounterAndTotalsWrapWithoutWrappingWeightedAggregation()
+    {
+        WithAllocator((compiler, allocator) => {
+            var blocks = CreateBlocks(compiler, 2);
+            compiler.info.compFullName = "Stats::Overflow";
+            _ = StartBlockSequence(allocator);
+            BbNumMaxBeforeResolution(allocator) = (uint)blocks[0].bbNum;
+            var blockInfo = BlockInfo(allocator);
+            blockInfo[0].weight = 1;
+            blocks[0].bbWeight = 1;
+            var entryStats = blockInfo[0].stats
+                ?? throw new AssertionException("Missing entry statistics.");
+            var firstStats = blockInfo[blocks[0].bbNum].stats
+                ?? throw new AssertionException("Missing block statistics.");
+            var resolutionStats = blockInfo[blocks[1].bbNum].stats
+                ?? throw new AssertionException("Missing resolution statistics.");
+            entryStats[(int)LsraStat.STAT_SPILL] = uint.MaxValue;
+            entryStats[(int)LsraStat.STAT_COPY_REG] = uint.MaxValue;
+            firstStats[(int)LsraStat.STAT_SPILL] = 1;
+
+            UpdateLsraStat(allocator, LsraStat.STAT_COPY_REG, 0);
+            UpdateLsraStat(allocator, LsraStat.STAT_SPILL, (uint)blocks[1].bbNum);
+
+            Assert.That(entryStats[(int)LsraStat.STAT_COPY_REG], Is.Zero);
+            Assert.That(resolutionStats[(int)LsraStat.STAT_SPILL], Is.Zero);
+            var output = Capture(allocator);
+            Assert.That(output, Does.Contain(
+                $"Total SpillCount : 0   Weighted: 4294967296.000000{Environment.NewLine}"));
+
+            using var summaryStream = new MemoryStream();
+            using var summaryWriter = new StreamWriter(
+                summaryStream, new UTF8Encoding(false), bufferSize: 1024, leaveOpen: true);
+            allocator.dumpLsraStatsSummary(summaryWriter);
+            summaryWriter.Flush();
+            Assert.That(Encoding.UTF8.GetString(summaryStream.ToArray()), Is.EqualTo(
+                ", SpillCount 0 SpillCountWt 4294967296.000000" +
+                ", CopyReg 0 CopyRegWt 0.000000" +
+                ", ResolutionMovs 0 ResolutionMovsWt 0.000000" +
+                ", SplitEdges 0 SplitEdgesWt 0.000000"));
+
+            using var csvStream = new MemoryStream();
+            using var csvWriter = new StreamWriter(
+                csvStream, new UTF8Encoding(false), bufferSize: 1024, leaveOpen: true);
+            allocator.dumpLsraStatsCsv(csvWriter);
+            csvWriter.Flush();
+            var expectedRow = $"\"Stats::Overflow\",{string.Join(',', new uint[(int)LsraStat.COUNT])},0.00";
+            Assert.That(Encoding.UTF8.GetString(csvStream.ToArray()),
+                Does.EndWith(expectedRow + Environment.NewLine));
+        });
+    }
+
+    [Test]
+    public static void ScoreStatisticsMapEveryNativeHeuristicAndDefaultToFree()
+    {
+        var method = typeof(LinearScan).GetMethod(
+            "getLsraStatFromScore", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new AssertionException("Missing score-to-statistic mapping.");
+        var scoreType = method.GetParameters()[0].ParameterType;
+        foreach (var name in Enum.GetNames(scoreType))
+        {
+            if (name == "NONE")
+            {
+                continue;
+            }
+
+            var score = Enum.Parse(scoreType, name);
+            var expected = Enum.Parse<LsraStat>("STAT_" + name);
+            Assert.That(method.Invoke(null, [score]), Is.EqualTo(expected));
+        }
+
+        foreach (var score in new[] { 0, -1, 0x10001 })
+        {
+            Assert.That(method.Invoke(null, [Enum.ToObject(scoreType, score)]),
+                Is.EqualTo(LsraStat.STAT_FREE));
+        }
+    }
+
     private static string Capture(LinearScan allocator)
     {
         using var stream = new MemoryStream();
@@ -187,6 +356,9 @@ internal static unsafe class LinearScanAllocationStatisticsTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "dumpLsraStats")]
     private static extern void DumpLsraStats(LinearScan allocator, StreamWriter writer);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "updateLsraStat")]
+    private static extern void UpdateLsraStat(LinearScan allocator, LsraStat stat, uint blockNumber);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "startBlockSequence")]
     private static extern BasicBlock StartBlockSequence(LinearScan allocator);
