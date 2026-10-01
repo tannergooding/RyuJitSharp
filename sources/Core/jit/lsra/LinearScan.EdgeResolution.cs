@@ -218,7 +218,7 @@ public sealed partial class LinearScan
             consumed = new regMaskTP(codeGen.InternalRegisters.GetAll(terminator).GetRegSetForType(TYP_INT));
             var first = terminator.AsOp().Op1;
             var second = terminator.AsOp().Op2;
-            assert(first is not null && second is not null);
+            noway_assert(first is not null && second is not null);
             assert(first.RegNum != REG_NA && second.RegNum != REG_NA);
             assert(varTypeIsIntegralOrI(first.Type) && varTypeIsIntegralOrI(second.Type));
             consumed |= regMaskTP.CreateFromRegNum(first.RegNum, genSingleTypeRegMask(first.RegNum));
@@ -301,7 +301,8 @@ public sealed partial class LinearScan
             }
             if (commonTarget is not REG_NA and not REG_STK)
             {
-                var targetMask = regMaskTP.CreateFromRegNum(commonTarget, genSingleTypeRegMask(commonTarget));
+                var targetMask = blockLiveRegMask(
+                    commonTarget, getIntervalForLocalVar(trackedIndex).registerType);
                 if ((liveOnSomeOnly && ((liveOutRegs & targetMask).IsNonEmpty ||
                     (sameWrites & targetMask).IsNonEmpty)) ||
                     (targetMask & consumed).IsNonEmpty ||
@@ -316,7 +317,7 @@ public sealed partial class LinearScan
                 VarSetOps.AddElemD(_compiler, different, index);
                 if (from != REG_STK)
                 {
-                    differentReads |= regMaskTP.CreateFromRegNum(from, genSingleTypeRegMask(from));
+                    differentReads |= blockLiveRegMask(from, getIntervalForLocalVar(trackedIndex).registerType);
                 }
             }
             else if (commonTarget != from)
@@ -325,7 +326,8 @@ public sealed partial class LinearScan
                 setVarReg(sharedMap, trackedIndex, commonTarget);
                 if (commonTarget != REG_STK)
                 {
-                    sameWrites |= regMaskTP.CreateFromRegNum(commonTarget, genSingleTypeRegMask(commonTarget));
+                    sameWrites |= blockLiveRegMask(
+                        commonTarget, getIntervalForLocalVar(trackedIndex).registerType);
                 }
             }
             return true;

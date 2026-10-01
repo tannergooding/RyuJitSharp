@@ -16,6 +16,26 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: LSRA resolution and SIMD memory constructors
+
+Critical-edge resolution now uses native ARM register-pair masks and the
+recoverable switch-operand assertion. Final verification preserves the native
+double-half skip and exact move, swap and resolution-block diagnostic rows.
+Existing classifier and verifier modes remain unchanged.
+
+Aligned and non-temporal SIMD memory constructors retain their ARM64/Wasm
+ordinary-load/store fallbacks, optimization assertions and operand ordering.
+The existing xarch algorithms and default features are unchanged.
+
+Full-analysis Windows and Linux-target fixtures each pass 30 Debug/8 Release:
+76 executions. Five new Debug cases per target cover the assertion and
+diagnostic corrections. ARM64 retains its exact 39-diagnostic baseline;
+ARM32 pairing and ARM64/Wasm memory projections remain source-only.
+
+Ten definitions retire 1,263 native body lines. Six LSRA bodies match the pinned
+oracle after line-ending normalization. Four historical memory-constructor
+bodies retain separate residual/oracle mappings and hashes; declarations remain.
+
 ## 2026-10-01: GC diagnostics and generation orchestration
 
 Shared emitter diagnostics retain native target indentation, assertion ordering,

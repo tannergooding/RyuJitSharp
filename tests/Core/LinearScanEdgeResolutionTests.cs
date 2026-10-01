@@ -2,6 +2,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.GenTreeFlags;
@@ -364,6 +365,161 @@ internal static class LinearScanEdgeResolutionTests
         });
     }
 
+#if DEBUG && TARGET_AMD64
+    [TestCase(true)]
+    [TestCase(false)]
+    public static unsafe void CriticalSwitchRequiresBothOperandsWithRecoverableError(bool missingFirst)
+    {
+        LinearScanLocalCandidatesTests.WithCandidates(1, (compiler, allocator) =>
+        {
+            compiler.compRationalIRForm = true;
+            compiler.fgPredsComputed = true;
+            compiler.fgSafeFlowEdgeCreation = true;
+            var source = BasicBlock.New(compiler, BBJ_SWITCH);
+            var firstTarget = BasicBlock.New(compiler, BBJ_RETURN);
+            var secondTarget = BasicBlock.New(compiler, BBJ_RETURN);
+            source.Next = firstTarget;
+            firstTarget.Next = secondTarget;
+            compiler.fgFirstBB = source;
+            compiler.fgLastBB = secondTarget;
+            var firstEdge = compiler.fgAddRefPred(firstTarget, source);
+            var secondEdge = compiler.fgAddRefPred(secondTarget, source);
+            source.SwitchTargets = new BBswtDesc([firstEdge, secondEdge], [0, 1], hasDefault: true);
+            var first = new GenTreeIntCon(TYP_INT, 0) { RegNum = REG_RAX };
+            var second = new GenTreeIntCon(TYP_INT, 0) { RegNum = REG_RDX };
+            var table = new GenTreeOp(GT_SWITCH_TABLE, TYP_VOID, first, second);
+            source.InsertAtEnd(table);
+            Setup(compiler, allocator);
+            _ = MapInterval(compiler, allocator, 0);
+            SetOps.AddElemD(compiler, ResolutionCandidates(allocator), 0);
+            SetOps.AddElemD(compiler, source.bbLiveOut, 0);
+            if (missingFirst)
+            {
+                FirstOperand(table) = null;
+            }
+            else
+            {
+                SecondOperand(table) = null;
+            }
+
+            var vtable = default(ICorJitInfo.Vtbl<ICorJitInfo>);
+            vtable.doAssert = &ContinueOperandAssertion;
+            var jitInfo = default(ICorJitInfo);
+            jitInfo.lpVtbl = &vtable;
+            var originalFlags = compiler.opts.jitFlags;
+            var flags = *originalFlags;
+            compiler.opts.jitFlags = &flags;
+            try
+            {
+                using var tls = new JitTls(&jitInfo);
+                JitTls.Compiler = compiler;
+                var exception = Assert.Throws<FatalJitException>(
+                    () => HandleOutgoingCriticalEdges(allocator, source));
+
+                Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
+                Assert.That(source.LastNode, Is.SameAs(table));
+                Assert.That(allocator.getOutVarToRegMap((uint)source.bbNum)![0], Is.EqualTo(REG_STK));
+            }
+            finally
+            {
+                compiler.opts.jitFlags = originalFlags;
+            }
+        });
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static unsafe int ContinueOperandAssertion(
+        ICorJitInfo* info, byte* filePath, int lineNumber, byte* expression) => 0;
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_op1")]
+    private static extern ref GenTree? FirstOperand(GenTreeUnOp node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_op2")]
+    private static extern ref GenTree? SecondOperand(GenTreeOp node);
+#endif
+
+#if TARGET_ARM
+    [TestCase(TYP_FLOAT, false)]
+    [TestCase(TYP_DOUBLE, true)]
+    public static void CriticalSharedTargetAccountsForLiveSecondFloatHalf(var_types type, bool reloadAtJoin)
+    {
+        LinearScanLocalCandidatesTests.WithCandidates(2, (compiler, allocator) =>
+        {
+            compiler.compRationalIRForm = true;
+            compiler.fgPredsComputed = true;
+            compiler.compHndBBtabCount = 1;
+            compiler.lvaTable[0].Type = type;
+            compiler.lvaTable[1].Type = TYP_FLOAT;
+#if DEBUG
+            compiler.fgSafeFlowEdgeCreation = true;
+#endif
+            var source = BasicBlock.New(compiler, BBJ_COND);
+            var split = BasicBlock.New(compiler, BBJ_RETURN);
+            var other = BasicBlock.New(compiler, BBJ_ALWAYS);
+            var join = BasicBlock.New(compiler, BBJ_RETURN);
+            source.Next = split;
+            split.Next = other;
+            other.Next = join;
+            compiler.fgFirstBB = source;
+            compiler.fgLastBB = join;
+            var joinEdge = compiler.fgAddRefPred(join, source);
+            var splitEdge = compiler.fgAddRefPred(split, source);
+            source.SetCond(joinEdge, splitEdge);
+            other.SetKindAndTargetEdge(BBJ_ALWAYS, compiler.fgAddRefPred(join, other));
+            var operand = new GenTreeIntCon(TYP_INT, 1) { RegNum = REG_R0 };
+            var branch = new GenTreeUnOp(GT_JTRUE, TYP_VOID, operand);
+            source.InsertAtEnd(operand);
+            source.InsertAtEnd(branch);
+            Setup(compiler, allocator);
+            var interval = new Interval(type, SRBM_F2)
+            {
+                isLocalVar = true,
+                varNum = 0,
+                isWriteThru = true,
+                isSpilled = true,
+                isSplit = true,
+            };
+            allocator.localVarIntervals![0] = interval;
+            allocator.localVarIntervals[1] = new Interval(TYP_FLOAT, SRBM_F1)
+            {
+                isLocalVar = true,
+                varNum = 1,
+            };
+            SetOps.AddElemD(compiler, ResolutionCandidates(allocator), 0);
+            SetOps.AddElemD(compiler, ExceptVars(allocator), 0);
+            SetOps.AddElemD(compiler, source.bbLiveOut, 0);
+            SetOps.AddElemD(compiler, source.bbLiveOut, 1);
+            SetOps.AddElemD(compiler, split.bbLiveIn, 1);
+            SetOps.AddElemD(compiler, join.bbLiveIn, 0);
+            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_F2);
+            allocator.setOutVarRegForBB((uint)source.bbNum, 1, REG_F1);
+            allocator.setInVarRegForBB((uint)join.bbNum, 0, REG_F0);
+            allocator.setInVarRegForBB((uint)split.bbNum, 1, REG_F1);
+
+            HandleOutgoingCriticalEdges(allocator, source);
+
+            Assert.That(allocator.getOutVarToRegMap((uint)source.bbNum)![0],
+                Is.EqualTo(reloadAtJoin ? REG_F2 : REG_F0));
+            Assert.That(allocator.getOutVarToRegMap((uint)source.bbNum)![1], Is.EqualTo(REG_F1));
+            Assert.That(allocator.getInVarToRegMap((uint)join.bbNum)![0],
+                Is.EqualTo(reloadAtJoin ? REG_STK : REG_F0));
+            Assert.That(join.FirstNode is not null, Is.EqualTo(reloadAtJoin));
+            if (reloadAtJoin)
+            {
+                var reload = join.FirstNode ?? throw new AssertionException("Missing EH reload.");
+                Assert.That(reload.RegNum, Is.EqualTo(REG_F0));
+                Assert.That((reload.Flags & GTF_SPILLED) != 0, Is.True);
+                Assert.That(branch.Prev, Is.SameAs(operand));
+            }
+            else
+            {
+                Assert.That(branch.Prev?.Oper, Is.EqualTo(GT_COPY));
+                Assert.That(branch.Prev?.RegNum, Is.EqualTo(REG_F0));
+            }
+        });
+    }
+#endif
+
     [Test]
     public static void CriticalEdgeWithOnlyEhVariablesReloadsAtJoinWithoutSplitting()
     {
@@ -553,6 +709,9 @@ internal static class LinearScanEdgeResolutionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "resolveEdges")]
     private static extern void ResolveEdges(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "handleOutgoingCriticalEdges")]
+    private static extern void HandleOutgoingCriticalEdges(LinearScan allocator, BasicBlock block);
 
 #if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "stressLimitRegs")]

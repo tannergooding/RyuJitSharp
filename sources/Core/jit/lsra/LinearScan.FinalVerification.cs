@@ -394,8 +394,7 @@ public sealed partial class LinearScan
                                 var local = interval.relatedInterval
                                     ?? throw new FatalJitException("Upper-vector references require a related interval.");
                                 assert((local.physReg is REG_NA) || local.isPartiallySpilled ||
-                                    (reference.refType is RefType.RefTypeUpperVectorSave &&
-                                        reference.IsExtraUpperVectorSave()));
+                                    reference.IsExtraUpperVectorSave());
                             }
                         }
 #endif

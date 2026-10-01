@@ -91,10 +91,10 @@ public sealed partial class LinearScan
     private void dumpVerificationResolutionMove(Interval interval, regNumber register,
         LsraLocation location, string action)
     {
-        jitprintf(new string(' ', 9));
         dumpAllocationLocation(location, 0);
         jitprintf(getAllocationIntervalName(interval));
-        jitprintf($"  {action,-4}          {register.Name,-4} ");
+        var padding = new string(' ', action == "Move" ? 12 : 9);
+        jitprintf($"  {action,-4}{padding}{register.Name,-4} ");
         dumpAllocationRegisterRecords();
     }
 }

@@ -269,6 +269,99 @@ internal static class LinearScanLocalResolutionDriverTests
             Assert.That(allocator.physRegs[(int)REG_RCX].assignedInterval, Is.SameAs(secondInterval));
         }, localCount: 2);
     }
+
+#if TARGET_AMD64
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ResolutionMoveVerboseRowsUseNativePrefixAndPadding(bool swap)
+    {
+        WithDriver((compiler, allocator, _, firstInterval) =>
+        {
+            firstInterval.physReg = REG_RCX;
+            firstInterval.assignedReg = allocator.physRegs[(int)REG_RCX];
+            firstInterval.assignedReg.assignedInterval = firstInterval;
+            var first = compiler.gtNewLclvNode(TYP_INT, 0);
+            first.RegNum = REG_RCX;
+            GenTree move;
+            if (swap)
+            {
+                var secondInterval = new Interval(TYP_INT, SRBM_RDX)
+                {
+                    isLocalVar = true,
+                    varNum = 1,
+                    physReg = REG_RDX,
+                    assignedReg = allocator.physRegs[(int)REG_RDX],
+                };
+                allocator.localVarIntervals![1] = secondInterval;
+                secondInterval.assignedReg.assignedInterval = secondInterval;
+                var second = compiler.gtNewLclvNode(TYP_INT, 1);
+                second.RegNum = REG_RDX;
+                move = new GenTreeOp(GT_SWAP, TYP_VOID, first, second);
+            }
+            else
+            {
+                move = new GenTreeCopyOrReload(GT_COPY, TYP_INT, first)
+                {
+                    RegNum = REG_RDX,
+                    IsUnusedValue = true,
+                };
+            }
+            move._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
+            compiler.verbose = true;
+
+            var output = CodeGenLifeTransitionTests.Capture(() =>
+            {
+                InitializeDumpFormat(allocator);
+                jitprintf("\n");
+                VerifyMove(allocator, move, 3);
+            });
+
+            var action = swap ? "Swap" : "Move";
+            var padding = new string(' ', swap ? 9 : 12);
+            var prefix = swap ? "\n" : $"\n[{move.TreeId:D6}] ";
+            Assert.That(output, Does.Contain($"{prefix}3.#0 V00  {action}{padding}{REG_RDX.Name,-4} "));
+            if (swap)
+            {
+                Assert.That(output,
+                    Does.Contain($"\n3.#0 V01  \"{new string(' ', 12)}{REG_RCX.Name,-4} "));
+            }
+            Assert.That(firstInterval.physReg, Is.EqualTo(REG_RDX));
+        }, localCount: swap ? 2 : 1);
+    }
+
+    [Test]
+    public static void ResolutionBlockVerboseHeaderUsesNativeLocationAndActualPredecessor()
+    {
+        WithDriver((compiler, allocator, entry, _) =>
+        {
+            var successor = entry.Next ?? throw new AssertionException("Missing successor block.");
+            MaxBlockBeforeResolution(allocator) = (uint)compiler.fgBBNumMax;
+            var resolution = compiler.fgSplitEdge(entry, successor);
+            allocator.getSplitBBNumToTargetBBNumMap().Add((uint)resolution.bbNum,
+                new LinearScan.SplitEdgeInfo
+                {
+                    fromBBNum = (uint)entry.bbNum,
+                    toBBNum = 0,
+                });
+            Assert.That(resolution.IsEmpty, Is.True);
+            Assert.That(resolution.GetUniquePred(compiler), Is.SameAs(entry));
+            Assert.That(resolution.UniqueSucc, Is.SameAs(successor));
+            var outgoing = allocator.getOutVarToRegMap((uint)entry.bbNum)
+                ?? throw new AssertionException("Missing original outgoing map.");
+            Assert.That(allocator.getInVarToRegMap((uint)resolution.bbNum),
+                Is.SameAs(outgoing));
+            Assert.That(allocator.getOutVarToRegMap((uint)resolution.bbNum),
+                Is.SameAs(outgoing));
+            compiler.verbose = true;
+
+            var output = CodeGenLifeTransitionTests.Capture(() => VerifyFinalWithLocals(allocator));
+
+            Assert.That(output,
+                Does.Contain($"0.#0 BB{resolution.bbNum} PredBB{entry.bbNum}{new string(' ', 15)}"));
+            Assert.That(resolution.Kind, Is.EqualTo(BBJ_ALWAYS));
+        }, twoBlocks: true);
+    }
+#endif
 #endif
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
@@ -431,6 +524,17 @@ internal static class LinearScanLocalResolutionDriverTests
 #if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "verifyResolutionMoveWithLocals")]
     private static extern void VerifyMove(LinearScan allocator, GenTree destination, uint location);
+
+#if TARGET_AMD64
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "initializeAllocationDumpFormat")]
+    private static extern void InitializeDumpFormat(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "verifyFinalAllocationWithLocals")]
+    private static extern void VerifyFinalWithLocals(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_bbNumMaxBeforeResolution")]
+    private static extern ref uint MaxBlockBeforeResolution(LinearScan allocator);
+#endif
 #endif
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE

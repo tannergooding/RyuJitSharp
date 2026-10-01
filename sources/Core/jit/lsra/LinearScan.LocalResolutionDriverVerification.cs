@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if DEBUG
+using System.Globalization;
 using System.Numerics;
 
 namespace RyuJitSharp;
@@ -410,8 +411,21 @@ public sealed partial class LinearScan
             {
                 initializeAllocationDumpFormat();
                 dumpAllocationRegisterTitle();
-                assert(resolutionBlock.PredEdges.GetEnumerator().MoveNext());
-                jitprintf($"         {FMT_BB(resolutionBlock.bbNum)}\n");
+                dumpAllocationLocation(0, 0);
+                var predecessors = resolutionBlock.PredEdges.GetEnumerator();
+                assert(predecessors.MoveNext());
+                if (_allocationDumpPredBbNumWidth < _allocationDumpBbNumWidth)
+                {
+                    jitprintf("BB" + resolutionBlock.bbNum.ToString(CultureInfo.InvariantCulture)
+                        .PadRight(_allocationDumpShortRefPositionWidth - 2));
+                }
+                else
+                {
+                    jitprintf("BB" + resolutionBlock.bbNum.ToString(CultureInfo.InvariantCulture)
+                        .PadRight(_allocationDumpBbNumWidth) + " PredBB" +
+                        predecessors.Current.SourceBlock.bbNum.ToString(CultureInfo.InvariantCulture)
+                            .PadRight(_allocationDumpPredBbNumWidth));
+                }
                 dumpAllocationRegisterRecords();
             }
             for (var index = 0; (int)_regIndices[index] < _availableRegCount; index++)

@@ -133,6 +133,12 @@ public partial class Compiler
             _ => NI_X86Base_LoadAlignedVector128,
         };
         return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
+#elif TARGET_ARM64 || TARGET_WASM
+        // ARM64/Wasm has no aligned loads. Alignment is validated with optimizations disabled,
+        // so only skip the intrinsic handling when optimizations are enabled.
+        assert(opts.OptimizationEnabled);
+
+        return gtNewSimdLoadNode(type, op1, simdBaseType, simdSize);
 #else
         throw new FatalJitException("gtNewSimdLoadAlignedNode requires its target-specific implementation.");
 #endif
@@ -181,6 +187,12 @@ public partial class Compiler
             }
         }
         return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
+#elif TARGET_ARM64 || TARGET_WASM
+        // ARM64/Wasm has no aligned loads. Alignment is validated with optimizations disabled,
+        // so only skip the intrinsic handling when optimizations are enabled.
+        assert(opts.OptimizationEnabled);
+
+        return gtNewSimdLoadNode(type, op1, simdBaseType, simdSize);
 #else
         throw new FatalJitException("gtNewSimdLoadNonTemporalNode requires its target-specific implementation.");
 #endif
@@ -218,6 +230,12 @@ public partial class Compiler
             gtPrepareOperandsForReordering(ref op2, ref op1);
         }
         return gtNewSimdHWIntrinsicNode(TYP_VOID, intrinsic, simdBaseType, simdSize, op1, op2);
+#elif TARGET_ARM64 || TARGET_WASM
+        // ARM64/Wasm has no aligned stores. Alignment is validated with optimizations disabled,
+        // so only skip the intrinsic handling when optimizations are enabled.
+        assert(opts.OptimizationEnabled);
+
+        return gtNewSimdStoreNode(op1, op2, simdBaseType, simdSize, reverseOps);
 #else
         throw new FatalJitException("gtNewSimdStoreAlignedNode requires its target-specific implementation.");
 #endif
@@ -242,6 +260,12 @@ public partial class Compiler
             gtPrepareOperandsForReordering(ref op2, ref op1);
         }
         return gtNewSimdHWIntrinsicNode(TYP_VOID, intrinsic, simdBaseType, simdSize, op1, op2);
+#elif TARGET_ARM64 || TARGET_WASM
+        // ARM64/Wasm has no aligned stores. Alignment is validated with optimizations disabled,
+        // so only skip the intrinsic handling when optimizations are enabled.
+        assert(opts.OptimizationEnabled);
+
+        return gtNewSimdStoreNode(op1, op2, simdBaseType, simdSize, reverseOps);
 #else
         throw new FatalJitException("gtNewSimdStoreNonTemporalNode requires its target-specific implementation.");
 #endif

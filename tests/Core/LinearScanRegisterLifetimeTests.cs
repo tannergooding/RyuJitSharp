@@ -209,6 +209,26 @@ internal static unsafe class LinearScanRegisterLifetimeTests
     }
 
 #if DEBUG
+#if TARGET_ARM
+    [TestCase(TYP_DOUBLE, 0)]
+    [TestCase(TYP_FLOAT, 1)]
+    public static void VerifyFreeRegistersTreatsDoubleSecondHalfAsPairedState(
+        var_types type, int expectedAssertions)
+    {
+        WithAllocator((_, allocator) =>
+        {
+            allocator.physRegs[(int)regNumber.REG_F0].assignedInterval = new Interval(type, SRBM_F0)
+            {
+                physReg = regNumber.REG_F0,
+            };
+            SetConstantReg(allocator, regNumber.REG_F1);
+
+            Assert.That(VerifyWithAssertCounter(allocator, new regMaskTP(SRBM_NONE)),
+                Is.EqualTo(expectedAssertions));
+        });
+    }
+#endif
+
     [Test]
     public static void VerifyFreeRegistersAcceptsNativeInactiveRetainedAndReleasedStates()
     {
@@ -397,14 +417,26 @@ internal static unsafe class LinearScanRegisterLifetimeTests
 
     private static int VerifyWithAssertCounter(LinearScan allocator, regMaskTP registersToFree)
     {
+        var compiler = JitTls.Compiler ?? throw new AssertionException("Missing assertion compiler.");
+        var originalFlags = compiler.opts.jitFlags;
+        var flags = *originalFlags;
+        compiler.opts.jitFlags = &flags;
         var vtable = default(ICorJitInfo.Vtbl<ICorJitInfo>);
         vtable.doAssert = &RecordAssertion;
         var jitInfo = default(ICorJitInfo);
         jitInfo.lpVtbl = &vtable;
-        using var tls = new JitTls(&jitInfo);
-        s_assertCount = 0;
-        VerifyFreeRegisters(allocator, registersToFree);
-        return s_assertCount;
+        try
+        {
+            using var tls = new JitTls(&jitInfo);
+            JitTls.Compiler = compiler;
+            s_assertCount = 0;
+            VerifyFreeRegisters(allocator, registersToFree);
+            return s_assertCount;
+        }
+        finally
+        {
+            compiler.opts.jitFlags = originalFlags;
+        }
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_currentAllocationLocation")]

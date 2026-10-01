@@ -1365,6 +1365,12 @@ its native implementation retained. GC/group diagnostics are shared, including
 real pinned field addresses and existing diffable masking; their source
 availability does not imply other-target instruction-display or runtime parity.
 
+Aligned and non-temporal SIMD memory constructors preserve the native
+ARM64/Wasm ordinary-load/store fallback and optimization assertion, including
+reverse-operand evaluation order. Their new target fixtures remain source-only.
+LSRA critical-edge and verification bodies also retain native ARM32 pairing;
+that branch is not covered by the current x64 executions or ARM64 baseline check.
+
 ARM64 target metadata, ABI classification, immediate predicates, fixed-width
 SIMD/mask queries, cross-platform intrinsic importing, FP/LR placement policy
 and two-register GC return layouts now compile and have managed unit coverage

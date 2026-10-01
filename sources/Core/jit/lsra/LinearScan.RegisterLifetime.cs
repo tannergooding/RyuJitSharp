@@ -209,58 +209,64 @@ public sealed partial class LinearScan
 
             var isAssignedRegister = assignedInterval.physReg == register;
             var recentRefPosition = assignedInterval.recentRefPosition;
-            if (recentRefPosition is null)
+            if (recentRefPosition is not null)
             {
-                continue;
-            }
-
-            if (recentRefPosition.refType is RefType.RefTypeExpUse)
-            {
-                continue;
-            }
-
-            if (recentRefPosition.copyReg || recentRefPosition.moveReg)
-            {
-                continue;
-            }
-
-            assert(assignedInterval.isConstant == isRegConstant(register, assignedInterval.registerType));
-            if (assignedInterval.isActive)
-            {
-                if (!isAssignedToInterval(assignedInterval, regRecord))
+                if (recentRefPosition.refType is RefType.RefTypeExpUse)
                 {
-                    var sanityCheck = assignedInterval.isLocalVar;
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                    sanityCheck |= assignedInterval.IsUpperVector() &&
-                        (recentRefPosition.refType is RefType.RefTypeUpperVectorSave or RefType.RefTypeUpperVectorRestore);
-#endif
-                    assert(sanityCheck);
+                    continue;
                 }
 
-                if (isAssignedRegister)
+                if (recentRefPosition.copyReg || recentRefPosition.moveReg)
+                {
+                    continue;
+                }
+
+                assert(assignedInterval.isConstant == isRegConstant(register, assignedInterval.registerType));
+                if (assignedInterval.isActive)
+                {
+                    if (!isAssignedToInterval(assignedInterval, regRecord))
+                    {
+                        var sanityCheck = assignedInterval.isLocalVar;
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+                        sanityCheck |= assignedInterval.IsUpperVector() &&
+                            (recentRefPosition.refType is RefType.RefTypeUpperVectorSave or RefType.RefTypeUpperVectorRestore);
+#endif
+                        assert(sanityCheck);
+                    }
+
+                    if (isAssignedRegister)
+                    {
+                        assert(getNextIntervalRef(register, assignedInterval.registerType) ==
+                            assignedInterval.getNextRefLocation());
+                        assert(!isRegAvailable(register, assignedInterval.registerType));
+                        assert(_spillCost[(int)register] == getSpillWeight(regRecord));
+                    }
+                    else
+                    {
+                        assert((getNextIntervalRef(register, assignedInterval.registerType) == MaxLocation) ||
+                            isRegBusy(register, assignedInterval.registerType));
+                    }
+                }
+                else if ((assignedInterval.physReg == register) && !assignedInterval.isConstant)
                 {
                     assert(getNextIntervalRef(register, assignedInterval.registerType) ==
                         assignedInterval.getNextRefLocation());
-                    assert(!isRegAvailable(register, assignedInterval.registerType));
-                    assert(_spillCost[(int)register] == getSpillWeight(regRecord));
                 }
                 else
                 {
-                    assert((getNextIntervalRef(register, assignedInterval.registerType) == MaxLocation) ||
-                        isRegBusy(register, assignedInterval.registerType));
+                    assert(getNextIntervalRef(register, assignedInterval.registerType) == MaxLocation);
+                    assert(isRegAvailable(register, assignedInterval.registerType));
+                    assert(_spillCost[(int)register] == 0);
                 }
             }
-            else if ((assignedInterval.physReg == register) && !assignedInterval.isConstant)
+
+#if TARGET_ARM
+            // A double occupies this register and the next floating-point register.
+            if (assignedInterval.registerType is TYP_DOUBLE)
             {
-                assert(getNextIntervalRef(register, assignedInterval.registerType) ==
-                    assignedInterval.getNextRefLocation());
+                index++;
             }
-            else
-            {
-                assert(getNextIntervalRef(register, assignedInterval.registerType) == MaxLocation);
-                assert(isRegAvailable(register, assignedInterval.registerType));
-                assert(_spillCost[(int)register] == 0);
-            }
+#endif
         }
 #endif
     }
