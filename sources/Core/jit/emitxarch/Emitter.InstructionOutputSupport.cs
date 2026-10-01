@@ -99,17 +99,5 @@ public partial class Emitter
         return emitAlignInstHasNoCode(id) || emitJmpInstHasNoCode(id);
     }
 
-#if DEBUG
-    private unsafe void emitRecordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle)
-    {
-        assert(_compiler is not null);
-        if (callSig == null && methodHandle != null && Compiler.eeGetHelperNum(methodHandle) == CORINFO_HELP_UNDEF)
-        {
-            _compiler.eeGetMethodSig(methodHandle, out var sigInfo);
-            callSig = &sigInfo;
-        }
-        emitCmpHandle->recordCallSite(unchecked((int)instrOffset), callSig, methodHandle);
-    }
-#endif
 #endif
 }

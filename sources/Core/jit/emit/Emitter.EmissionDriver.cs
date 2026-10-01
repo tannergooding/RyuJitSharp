@@ -21,7 +21,6 @@ public partial class Emitter
     private int[]? _emissionFrameOffsets;
     private byte[]? _emissionArgumentTracking;
 
-#if TARGET_AMD64
     private unsafe nuint emitIssue1Instr(insGroup ig, instrDesc id, byte** dp)
     {
         var compiler = _compiler ?? throw new FatalJitException("Instruction issue requires an active compiler.");
@@ -37,15 +36,16 @@ public partial class Emitter
 #if EMIT_TRACK_STACK_DEPTH
         assert(!emitFullGCinfo || (emitCurStackLvl != 0) || (u2.emitGcArgTrackCnt == 0));
 #endif
-        var actualSize = checked((uint)(*dp - curInsAdr));
+        var actualSize = unchecked((uint)(*dp - curInsAdr));
         var estimatedSize = id.idCodeSize();
         if (actualSize != estimatedSize)
         {
             noway_assert(estimatedSize >= actualSize);
 #if FEATURE_LOOP_ALIGN
-            assert((id.idIns() != INS_align) && ((emitLastAlignedIg is null) || ig.IsAfter(emitLastAlignedIg)));
+            assert(emitCurIG is not null);
+            assert((id.idIns() != INS_align) && ((emitLastAlignedIg is null) || emitCurIG.IsAfter(emitLastAlignedIg)));
 #endif
-#if DEBUG
+#if DEBUG || DEBUG_EMIT
             if (compiler.verbose)
             {
                 jitprintf($"Instruction predicted size = {estimatedSize}, actual = {actualSize}\n");
@@ -53,11 +53,17 @@ public partial class Emitter
 #endif
             // Adjust per instruction, not per group, so debug descriptor sizes cannot
             // affect the forward jump distances observed later in the same group.
-            var offsShrinkage = checked((int)(estimatedSize - actualSize));
-            JITDUMP($"Increasing size adj {emitOffsAdj} by {offsShrinkage} => {emitOffsAdj + offsShrinkage}\n");
-            emitOffsAdj += offsShrinkage;
+            var offsShrinkage = unchecked((int)(estimatedSize - actualSize));
+            JITDUMP($"Increasing size adj {emitOffsAdj} by {offsShrinkage} => {unchecked(emitOffsAdj + offsShrinkage)}\n");
+            emitOffsAdj = unchecked(emitOffsAdj + offsShrinkage);
             ig.igFlags |= InsGroupFlags.UpdatedInstructionSize;
+#if TARGET_XARCH
             id.idCodeSize(actualSize);
+#elif TARGET_ARM
+            // emitSetShortJump updates the ARM instruction size.
+#else
+            IMPL_LIMITATION("Over-estimated instruction size");
+#endif
         }
 
 #if DEBUG
@@ -65,18 +71,12 @@ public partial class Emitter
         {
             var debugInfo = id.idDebugOnlyInfo();
             assert(debugInfo is not null);
-            jitprintf($"{emitIfName(id.idInsFmt())} at {debugInfo.idNum}: Expected size = {size}, actual size = {emitSizeOfInsDsc(id)}\n");
+            jitprintf($"{emitIfName(id.idInsFmt())} at {debugInfo.idNum}: Expected size = {size} , actual size = {emitSizeOfInsDsc(id)}\n");
             assert(size == (nuint)emitSizeOfInsDsc(id));
         }
 #endif
         return size;
     }
-#else
-    private unsafe nuint emitIssue1Instr(insGroup ig, instrDesc id, byte** dp)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "Instruction issue outside AMD64 is not ported.");
-    }
-#endif
 
     public unsafe uint emitEndCodeGen(
         Compiler comp,

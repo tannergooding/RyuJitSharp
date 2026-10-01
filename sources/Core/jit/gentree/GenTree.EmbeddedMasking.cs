@@ -53,6 +53,7 @@ public partial class GenTree
     public bool IsRmwHWIntrinsic(Compiler compiler)
     {
         assert(Oper.IsHWIntrinsic);
+        assert(compiler is not null);
         var node = AsHWIntrinsic();
         var intrinsic = node.HWIntrinsicId;
 #if TARGET_XARCH

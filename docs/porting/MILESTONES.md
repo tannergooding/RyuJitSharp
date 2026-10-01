@@ -16,6 +16,29 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Intrinsic properties and instruction-issue bookkeeping
+
+Six retained hardware-intrinsic property predicates preserve native containment,
+RMW, EVEX, broadcast and embedded-masking decisions. The RMW predicate restores
+its compiler-context assertion. Focused cases cover all 256 ternary controls
+within one case and reject masking that would suppress a contained memory fault.
+
+Shared instruction issue preserves unsigned size deltas, signed adjustment wrap,
+target-specific descriptor updates and native diagnostic text. Instruction lookup
+retains first and one-past-end positions; Debug callsite recording preserves lazy
+signature queries, method-scoped storage and EE callback order.
+
+Full-analysis fixtures pass 92 Debug/89 Release on Windows and 75/74 with the
+Linux target: 330 executions, including 24 intrinsic-property cases per
+configuration and 13 Windows/10 Linux emitter cases. Fixture-only retries reuse
+unchanged Core outputs. ARM64 retains its exact 39-diagnostic baseline; these
+results do not establish generated-code or other-target runtime parity.
+
+Nine definitions retire 677 body lines and 15 exclusive heading lines.
+The six historical C#-shaped GenTree bodies retain separate residual/oracle
+hashes; three emitter bodies match after line-ending normalization. Live
+declarations, feature-disabled fallbacks and backend dependencies remain.
+
 ## 2026-10-01: VN constant extraction and register selection
 
 Scalar and handle extraction now shares the native internal path, including

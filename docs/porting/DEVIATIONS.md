@@ -143,6 +143,12 @@ reversal and append order without copying CLR objects into unmanaged storage.
 Actual emitted-code patch addresses remain native pointers; they are not
 narrowed to managed descriptor offsets.
 
+Shared instruction-position lookup uses managed descriptor identity and a null
+one-past-end marker while retaining native descriptor-size traversal, first/end
+matches and assertion-plus-unsigned-sentinel behavior. Debug callsite signature
+storage remains method-scoped through the EE callback; no pointer escapes that
+call. These mappings do not change descriptor sizes or EE ownership.
+
 ARM64 sizing follows native format categories and payload flags, including
 local-variable pairs. On the Windows 64-bit host, ARM64 fat-call descriptors
 reserve 80 bytes rather than AMD64's 72 because of native bitfield padding.
