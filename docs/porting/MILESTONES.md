@@ -16,6 +16,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Empty residual source files
+
+Removed `codegenxarch.cpp` and `jiteh.cpp` after confirming that only comments,
+includes and empty target guards remained. Existing accepted codegen/EH mappings
+provide the translation evidence; this removes 141 scaffold lines, not additional
+definitions or declarations. No new compiler or test run was needed.
+
+These are two verified findings from the bounded small-remnant review, not a
+claim that every small residual file has been reviewed.
+
 ## 2026-10-01: LSRA tuple and record diagnostics
 
 Definition-list sequence numbers retain native unsigned formatting; tuple local
