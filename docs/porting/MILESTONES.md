@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Shared scope publication
+
+Scope allocation, recording and publication now use their common algorithms
+outside Windows AMD64. EE storage ownership and publication order are unchanged.
+The x86 varargs branch preserves cookie-relative unsigned arithmetic and mutates
+the original live-range location rather than a copy.
+
+New scope cases pass 16 Debug/14 Release on Windows and Linux targets, alongside
+22 Debug/19 Release existing scope controls. One definition and one declaration
+retire 102 native lines; five already-absent bodies receive no duplicate credit.
+The x86 cases remain source-only behind existing parser failures. High-count
+signed diagnostic walks remain an independent limitation.
+
 ## 2026-10-01: Shared EH publication
 
 EH table construction, VM-order publication and emitter-cookie/offset helpers

@@ -41,9 +41,6 @@ public sealed partial class CodeGen
             return;
         }
 
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Scope reporting requires Windows AMD64.");
-#else
 #if DEBUG
         if (_compiler.verbose)
         {
@@ -89,14 +86,10 @@ public sealed partial class CodeGen
         }
 
         _compiler.eeSetLVdone();
-#endif
     }
 
     public unsafe void genSetScopeInfoUsingVariableRanges()
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Scope range reporting requires Windows AMD64.");
-#else
         var liveRangeIndex = 0u;
         var keeper = getVariableLiveKeeper();
 
@@ -110,7 +103,7 @@ public sealed partial class CodeGen
 
             var isParam = varDsc.lvIsParam;
 
-            void ReportRange(in siVarLoc loc, uint start, uint end)
+            void ReportRange(ref siVarLoc loc, uint start, uint end)
             {
                 if (loc.vlType == VLT_INVALID)
                 {
@@ -125,12 +118,12 @@ public sealed partial class CodeGen
 
                 if (start < end)
                 {
-                    genSetScopeInfo(liveRangeIndex, start, end - start, varNum, varNum, true, in loc);
+                    genSetScopeInfo(liveRangeIndex, start, end - start, varNum, varNum, true, ref loc);
                     liveRangeIndex = unchecked(liveRangeIndex + 1);
                 }
             }
 
-            siVarLoc? curLoc = null;
+            VariableLiveKeeper.VariableLiveRange? curRange = null;
             var curStart = 0u;
             var curEnd = 0u;
 
@@ -147,42 +140,70 @@ public sealed partial class CodeGen
                     assert(startOffs <= endOffs);
                     assert(startOffs >= curEnd);
 
-                    if (curLoc.HasValue && (startOffs == curEnd) &&
-                        siVarLoc.Equals(curLoc.Value, liveRange.m_VarLocation))
+                    if ((curRange is not null) && (startOffs == curEnd) &&
+                        siVarLoc.Equals(curRange.m_VarLocation, liveRange.m_VarLocation))
                     {
                         curEnd = endOffs;
                         continue;
                     }
 
-                    if (curLoc.HasValue)
+                    if (curRange is not null)
                     {
-                        ReportRange(curLoc.Value, curStart, curEnd);
+                        ReportRange(ref curRange.m_VarLocation, curStart, curEnd);
                     }
 
-                    curLoc = liveRange.m_VarLocation;
+                    curRange = liveRange;
                     curStart = startOffs;
                     curEnd = endOffs;
                 }
             }
 
-            if (curLoc.HasValue)
+            if (curRange is not null)
             {
-                ReportRange(curLoc.Value, curStart, curEnd);
+                ReportRange(ref curRange.m_VarLocation, curStart, curEnd);
             }
         }
 
         _compiler.eeVarsCount = unchecked((int)liveRangeIndex);
-#endif
     }
 
     public unsafe void genSetScopeInfo(uint which, uint startOffs, uint length, int varNum,
-        int LVnum, bool avail, in siVarLoc varLoc)
+        int LVnum, bool avail, ref siVarLoc varLoc)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Variable scope reporting requires Windows AMD64.");
-#else
         var ilVarNum = _compiler.compMap2ILvarNum(varNum);
         noway_assert(ilVarNum != ICorDebugInfo.UNKNOWN_ILNUM);
+
+#if TARGET_X86
+        // Non-x86 targets access arguments directly. Stack varargs instead use
+        // a cookie-relative location, replacing the original live-range home.
+        if (_compiler.info.compIsVarArgs && (varNum != _compiler.lvaVarargsHandleArg) &&
+            (varNum < _compiler.info.compArgsCount) && !_compiler.lvaGetDesc(varNum).lvIsRegArg)
+        {
+            noway_assert(varLoc.vlType is VLT_STK or VLT_STK2);
+
+            assert(_compiler.lvaVarargsHandleArg < _compiler.info.compArgsCount);
+            if (!_compiler.lvaGetDesc(_compiler.lvaVarargsHandleArg).lvOnFrame)
+            {
+                noway_assert(!_compiler.opts.compDbgCode);
+                return;
+            }
+
+            // Varargs stack arguments need not have lvOnFrame set: their
+            // locations are deliberately excluded from GC reporting.
+            noway_assert(!_compiler.lvaGetDesc(varNum).lvRegister);
+            var cookieOffset = unchecked((uint)_compiler.lvaGetDesc(_compiler.lvaVarargsHandleArg).StackOffset);
+            var varOffset = unchecked((uint)_compiler.lvaGetDesc(varNum).StackOffset);
+
+            noway_assert(cookieOffset < varOffset);
+            var offset = unchecked(varOffset - cookieOffset);
+            var stackArgSize = unchecked((uint)_compiler.lvaParameterStackSize);
+            noway_assert(offset < stackArgSize);
+            offset = unchecked(stackArgSize - offset);
+
+            varLoc.vlType = VLT_FIXED_VA;
+            varLoc.vlFixedVarArg.vlfvOffset = unchecked((int)offset);
+        }
+#endif
 
 #if DEBUG
         VarName? name = null;
@@ -204,6 +225,5 @@ public sealed partial class CodeGen
         tlvi.tlviVarLoc = varLoc;
 #endif
         _compiler.eeSetLVinfo(which, startOffs, unchecked(startOffs + length), 0, ilVarNum, in varLoc);
-#endif
     }
 }

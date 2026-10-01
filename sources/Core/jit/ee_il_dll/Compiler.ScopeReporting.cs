@@ -13,14 +13,11 @@ public partial class Compiler
 
     public unsafe void eeAllocateLVs(uint count)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Variable debug-info allocation requires Windows AMD64.");
-#else
         assert(opts.compScopeInfo);
 #if DEBUG
         if (verbose)
         {
-            jitprintf($"Allocating {count} VarLocInfo\n");
+            jitprintf($"Allocating {unchecked((int)count)} VarLocInfo\n");
         }
 #endif
         eeVarsCount = 0;
@@ -29,15 +26,11 @@ public partial class Compiler
             ? (ICorDebugInfo.NativeVarInfo*)info.compCompHnd->allocateArray(
                 unchecked((nint)((nuint)count * (nuint)sizeof(ICorDebugInfo.NativeVarInfo))))
             : null;
-#endif
     }
 
     public unsafe void eeSetLVinfo(uint which, uint startOffs, uint endOffs,
         uint callReturnValueILOffset, int varNum, in CodeGen.siVarLoc varLoc)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Variable debug-info recording requires Windows AMD64.");
-#else
         assert(opts.compScopeInfo);
         assert(which < eeVarsCapacity);
 
@@ -50,14 +43,10 @@ public partial class Compiler
             eeVars[which].varNumber = unchecked((uint)varNum);
             eeVars[which].loc = Unsafe.As<CodeGen.siVarLoc, ICorDebugInfo.VarLoc>(ref location);
         }
-#endif
     }
 
     public unsafe void eeSetLVdone()
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Variable debug-info publication requires Windows AMD64.");
-#else
         assert(opts.compScopeInfo);
 #if DEBUG
         if (verbose || opts.dspDebugInfo)
@@ -67,13 +56,14 @@ public partial class Compiler
 #endif
         if ((eeVarsCount == 0) && (eeVars != null))
         {
+            // The EE still receives a null table for zero records; release the
+            // unused allocation before transferring ownership.
             info.compCompHnd->freeArray(eeVars);
             eeVars = null;
         }
 
         info.compCompHnd->setVars(info.compMethodHnd, eeVarsCount, eeVars);
-        eeVars = null;
-#endif
+        eeVars = null; // We give up ownership after setVars().
     }
 
 #if DEBUG
