@@ -7,12 +7,18 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+#if !TARGET_WASM
+    // Architectural zero registers leave initReg and its zeroed state untouched.
     public regNumber genGetZeroReg(regNumber initReg, ref bool initRegZeroed)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Prolog zero-register initialization requires AMD64.");
+#if TARGET_ARM64
+        return REG_ZR;
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+        return REG_R0;
 #else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         if (!initRegZeroed)
         {
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, initReg);
@@ -25,11 +31,12 @@ public sealed partial class CodeGen
 
     public void genZeroInitFltRegs(regMaskTP initFltRegs, regMaskTP initDblRegs, regNumber initReg)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Prolog floating-register initialization requires AMD64.");
-#else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
+
+        // The first float/double reg initialized to 0 can initialize the remaining registers.
         var fltInitReg = REG_NA;
         var dblInitReg = REG_NA;
 
@@ -44,8 +51,29 @@ public sealed partial class CodeGen
                 }
                 else
                 {
+#if TARGET_ARM
+                    if (dblInitReg != REG_NA)
+                    {
+                        inst_RV_RV(INS_vcvt_d2f, reg, dblInitReg, TYP_FLOAT);
+                    }
+                    else
+                    {
+                        inst_Mov(TYP_FLOAT, reg, initReg, canSkip: false);
+                    }
+#elif TARGET_XARCH
+                    // XORPS is the fastest and smallest way to initialize a XMM register to zero.
                     Emitter.emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, reg, reg, reg, INS_OPTS_NONE);
                     dblInitReg = reg;
+#elif TARGET_ARM64
+                    // Zero the entire vector register, setting both double and float to zero.
+                    Emitter.emitIns_R_I(INS_movi, EA_16BYTE, reg, 0x00, INS_OPTS_16B);
+#elif TARGET_LOONGARCH64
+                    Emitter.emitIns_R_R(INS_movgr2fr_d, EA_8BYTE, reg, REG_R0);
+#elif TARGET_RISCV64
+                    Emitter.emitIns_R_R(INS_fmv_w_x, EA_4BYTE, reg, REG_R0);
+#else
+#error Unsupported or unset target architecture
+#endif
                     fltInitReg = reg;
                 }
             }
@@ -57,21 +85,38 @@ public sealed partial class CodeGen
                 }
                 else
                 {
+#if TARGET_ARM
+                    if (fltInitReg != REG_NA)
+                    {
+                        inst_RV_RV(INS_vcvt_f2d, reg, fltInitReg, TYP_DOUBLE);
+                    }
+                    else
+                    {
+                        inst_RV_RV_RV(INS_vmov_i2d, reg, initReg, initReg, EA_8BYTE);
+                    }
+#elif TARGET_XARCH
                     Emitter.emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, reg, reg, reg, INS_OPTS_NONE);
                     fltInitReg = reg;
+#elif TARGET_ARM64
+                    Emitter.emitIns_R_I(INS_movi, EA_16BYTE, reg, 0x00, INS_OPTS_16B);
+#elif TARGET_LOONGARCH64
+                    Emitter.emitIns_R_R(INS_movgr2fr_d, EA_8BYTE, reg, REG_R0);
+#elif TARGET_RISCV64
+                    Emitter.emitIns_R_R(INS_fmv_d_x, EA_8BYTE, reg, REG_R0);
+#else
+#error Unsupported or unset target architecture
+#endif
                     dblInitReg = reg;
                 }
             }
         }
-#endif
     }
 
     public void genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, ref bool initRegZeroed)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Prolog stack initialization requires AMD64.");
-#else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
         if (UseBlockInit)
         {
@@ -91,6 +136,7 @@ public sealed partial class CodeGen
                 noway_assert(local.lvOnFrame);
                 if (_compiler.lvaIsUnknownSizeLocal(varNum))
                 {
+                    // This local belongs on the UnknownSizeFrame, which handles zeroing instead.
                     continue;
                 }
 
@@ -99,6 +145,7 @@ public sealed partial class CodeGen
                 if ((local.Type == TYP_STRUCT) && !_compiler.info.compInitMem
                     && (local.lvExactSize >= TARGET_POINTER_SIZE))
                 {
+                    // Only initialize the GC slots of a struct when initlocals was not requested.
                     var slots = _compiler.lvaLclStackHomeSize(varNum) / REGSIZE_BYTES;
                     var layout = local.Layout;
                     assert(layout is not null);
@@ -114,6 +161,7 @@ public sealed partial class CodeGen
                 else
                 {
                     var zeroReg = genGetZeroReg(initReg, ref initRegZeroed);
+                    // Zero the whole home rounded up to a single stack slot size.
                     var size = roundUp(_compiler.lvaLclStackHomeSize(varNum), sizeof(int));
                     var i = 0;
                     for (; i + REGSIZE_BYTES <= size; i += REGSIZE_BYTES)
@@ -121,12 +169,14 @@ public sealed partial class CodeGen
                         Emitter.emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, varNum, i);
                     }
 
+#if TARGET_64BIT
                     assert((i == size) || (i + sizeof(int) == size));
                     if (i != size)
                     {
                         Emitter.emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, varNum, i);
                         i += sizeof(int);
                     }
+#endif
                     assert(i == size);
                 }
             }
@@ -143,8 +193,8 @@ public sealed partial class CodeGen
                 }
             }
         }
-#endif
     }
+#endif
 
     public unsafe void genReportGenericContextArg(regNumber initReg, ref bool initRegZeroed)
     {

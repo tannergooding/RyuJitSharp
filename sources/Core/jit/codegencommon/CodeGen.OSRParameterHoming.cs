@@ -7,11 +7,9 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+#if !TARGET_WASM
     public unsafe void genEnregisterOSRArgsAndLocals(regNumber initReg, ref bool initRegZeroed)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "OSR argument and local enregistration requires AMD64.");
-#else
         assert(_compiler.opts.IsOSR);
         var patchpoint = _compiler.info.compPatchpointInfo;
         assert(patchpoint->NumberOfLocals == _compiler.info.compLocalsCount);
@@ -53,6 +51,7 @@ public sealed partial class CodeGen
             var size = localType.EmitActualSize;
             var tier0Offset = _compiler.lvaOSRLocalTier0FrameOffset(localNumber) + fieldOffset;
 
+#if TARGET_AMD64
             // Tier0's FP-relative slot is reached via the original frame size,
             // plus either the OSR saved FP or this frame's SP-to-FP delta.
             var offset = originalFrameSize + tier0Offset;
@@ -73,9 +72,23 @@ public sealed partial class CodeGen
             }
 #endif
             Emitter.emitIns_R_AR(ins_Load(localType), size, local.RegNum, genFramePointerReg(), offset);
-        }
+#elif TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+            // Patchpoint offset is from top of Tier0 frame. Convert through the
+            // bottoms of both frames, then subtract the OSR SP-to-FP delta.
+            var tier0FrameSize = patchpoint->TotalFrameSize;
+            var osrFrameSize = genTotalFrameSize;
+            var osrSpToFpDelta = genSPtoFPdelta;
+            var offset = tier0Offset + tier0FrameSize + osrFrameSize - osrSpToFpDelta;
+
+            JITDUMP($"---OSR--- V{varNum:D2} (reg) Tier0 virtual offset {tier0Offset} OSR frame size " +
+                $"{osrFrameSize} OSR sp-fp delta {osrSpToFpDelta} total offset {offset} (0x{offset:x})\n");
+
+            genInstrWithConstant(ins_Load(localType), size, local.RegNum, genFramePointerReg(), offset, initReg);
+            initRegZeroed = false;
 #endif
+        }
     }
+#endif
 
     public void genHomeStackPartOfSplitParameter(regNumber initReg, ref bool initRegStillZeroed)
     {

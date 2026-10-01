@@ -158,9 +158,6 @@ public sealed partial class CodeGen
 
     public unsafe void genReportRichDebugInfo()
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Rich debug-info publication requires Windows AMD64.");
-#else
 #if DEBUG
         genReportRichDebugInfoToFile();
 #endif
@@ -228,6 +225,5 @@ public sealed partial class CodeGen
 #endif
 
         jitInfo->reportRichMappings(inlineTree, unchecked((int)numContexts), mappings, unchecked((int)numRichMappings));
-#endif
     }
 }

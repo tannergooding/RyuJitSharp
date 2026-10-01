@@ -1468,6 +1468,21 @@ The nineteen retained Linux profiler failures are preexisting register and
 frame-delta assertions, not newly exposed NYIs. Failed target builds can still
 mask later body diagnostics; this closure does not establish runtime parity.
 
+Shared operand adapters, frame initialization/OSR/stack-segment homing and
+line/rich-debug publication now retain their whole native target branches.
+ARM prespill and other-64-bit constant emission remain typed terminating
+dependencies. LoongArch64/RISC-V64/Wasm use the native unsigned flags carrier
+and `INS_FLAGS_DONT_CARE=0x02`; other targets retain their existing enum signature.
+The DEBUG stack-reference adapter rejects a local-address node whose managed
+representation does not contain the required local-variable IL-offset storage,
+rather than reinterpreting it or inventing an offset.
+EE line-mapping allocation, recording and ownership transfer are shared;
+the nonzero assertion preserves native unsigned count bits. Existing callback
+layouts and Windows algorithms remain unchanged. The signed high-count dump
+loop remains a known boundary discrepancy (B474). Whole caller retirement,
+403 focused x64 cases and unchanged early target diagnostics do not establish
+complete target compilation, full dump/code parity or Linux runtime execution.
+
 Xarch callee-save push/pop, floating preservation/restoration, root epilog and
 AVX-clearing callers now include their native x86 paths. Caller-entry recording
 checks remain AMD64-only so x86 empty/no-op paths do not fail before reaching

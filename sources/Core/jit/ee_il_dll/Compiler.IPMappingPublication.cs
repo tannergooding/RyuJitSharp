@@ -9,9 +9,6 @@ public partial class Compiler
 {
     public unsafe void eeSetLIcount(uint count)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "IP mapping allocation requires Windows AMD64.");
-#else
         assert(opts.compDbgInfo);
 
         eeBoundariesCount = unchecked((int)count);
@@ -19,16 +16,12 @@ public partial class Compiler
             ? (ICorDebugInfo.OffsetMapping*)info.compCompHnd->allocateArray(
                 unchecked((nint)((nuint)count * (nuint)sizeof(ICorDebugInfo.OffsetMapping))))
             : null;
-#endif
     }
 
     public unsafe void eeSetLIinfo(uint which, uint nativeOffset, IPmappingDscKind kind, in ILLocation loc)
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "IP mapping recording requires Windows AMD64.");
-#else
         assert(opts.compDbgInfo);
-        assert((eeBoundariesCount > 0) && (eeBoundaries != null));
+        assert((eeBoundariesCount != 0) && (eeBoundaries != null));
         assert(which < unchecked((uint)eeBoundariesCount));
 
         eeBoundaries[which].nativeOffset = unchecked((int)nativeOffset);
@@ -69,14 +62,10 @@ public partial class Compiler
                 throw new FatalJitException(CORJIT_SKIPPED, "Unknown IP mapping kind.");
             }
         }
-#endif
     }
 
     public unsafe void eeSetLIdone()
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "IP mapping publication requires Windows AMD64.");
-#else
         assert(opts.compDbgInfo);
 #if DEBUG
         if (verbose || opts.dspDebugInfo)
@@ -88,7 +77,6 @@ public partial class Compiler
 
         info.compCompHnd->setBoundaries(info.compMethodHnd, eeBoundariesCount, eeBoundaries);
         eeBoundaries = null;
-#endif
     }
 
 #if DEBUG

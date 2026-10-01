@@ -9,9 +9,6 @@ public sealed partial class CodeGen
 {
     public void genIPmappingGen()
     {
-#if !TARGET_AMD64 || UNIX_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "IP mapping publication requires Windows AMD64.");
-#else
         if (!_compiler.opts.compDbgInfo)
         {
             return;
@@ -105,6 +102,5 @@ public sealed partial class CodeGen
         }
 
         _compiler.eeSetLIdone();
-#endif
     }
 }

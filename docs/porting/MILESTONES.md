@@ -16,6 +16,35 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Shared operand, frame and debug-publication closure
+
+Operand adapters, frame initialization, OSR argument homing and stack-segment
+homing now retain their whole native target branches. Float-mask overlap keeps
+native seed reuse and copy instructions; zero-register selection preserves
+target-specific scratch state. Stack segments retain rounded native store widths
+and optional zero-state updates rather than exact-width copies.
+
+Line and rich-debug publication no longer require Windows AMD64. The three EE
+line-mapping dependencies preserve allocation, recording and ownership transfer
+on the shared path. High-bit count tests retain native unsigned nonzero semantics.
+Rich mappings preserve allocation order, inline ordinals, coincident offsets and
+unsigned offset bits. Existing Windows algorithms and callback layouts remain.
+
+One combined full-analysis matrix passes 117 Debug/109 Release Windows cases and
+90 Debug/87 Release Linux-target cases. All 403 cases are matched to their exact
+source-typed identities. Six named diagnostic pairs retain the existing
+14/78/39/87/87/85 x86/ARM32/ARM64/LoongArch64/RISC-V64/Wasm errors, with no warnings.
+The non-xarch flags correction changes only those three target signatures;
+unchanged x64 results are reused, not replayed.
+
+Twelve whole definitions and nine exclusive declarations retire 1008 native
+lines, with full residual reconstruction and the pinned oracle preserved.
+Three previously absent EE definitions receive no additional retirement credit.
+ARM prespill and other-64-bit constant-emission helpers remain terminating
+dependencies. Linux-target fixtures are Windows-host tests, not Linux runtime
+or generated-code parity; early target failures can mask downstream bodies.
+The existing high-count diagnostic-loop discrepancy is tracked as B474.
+
 ## 2026-09-30: Shared condition branches and result publication
 
 Whole `genCodeForJcc`, `inst_JCC` and `genCodeForSetcc` now preserve the native
