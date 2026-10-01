@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: LSRA constructor and register banks
+
+The constructor and caller/callee-save queries now retain their whole target
+contracts. Separate float/double availability preserves ARM32 even-register
+homes; target exclusions, xarch EVEX/APX choices, EnC and patchpoint restrictions
+remain intact. Minimal handwritten register-bank constants match pinned target
+headers, including legacy x86 and LoongArch64 count/mask distinctions.
+
+Nineteen new cases pass in each Windows/Linux Debug/Release configuration.
+With construction, sequencing, selection and stress controls, 156 focused cases
+pass. Three definitions and one declaration retire 239 native lines. ARM64
+retains 39 historical compiler diagnostics and x86 four preexisting parser
+diagnostics; other-target execution and full allocator parity remain unproven.
+
 ## 2026-10-01: Hardware-intrinsic value numbering
 
 Broadcasts, mask conversions and unary/binary intrinsic evaluation preserve

@@ -96,45 +96,52 @@ public sealed partial class LinearScan : IRegAlloc
 
         _needNonIntegerRegisters = false;
 
-#if TARGET_AMD64
+#if TARGET_XARCH
         _evexIsSupported = compiler.canUseEvexEncoding();
+#else
+        _evexIsSupported = false;
+#endif
+
+#if TARGET_AMD64
         _rbmAllFloat = compiler.SRBM_ALLFLOAT;
         _rbmFltCalleeTrash = compiler.SRBM_FLT_CALLEE_TRASH;
         _rbmAllInt = compiler.SRBM_ALLINT;
         _rbmIntCalleeTrash = compiler.SRBM_INT_CALLEE_TRASH;
         _regIntLast = compiler.REG_INT_LAST;
         _apxIsSupported = compiler.canUseApxEncoding();
-
-        initializeRegisterIndices();
-        _rbmAllMask = compiler.SRBM_ALLMASK;
-        _rbmMskCalleeTrash = compiler.SRBM_MSK_CALLEE_TRASH;
-        initializeVarTypeCalleeTrashRegs();
-
-        if (!_evexIsSupported)
-        {
-            _availableRegCount -= CNT_HIGHFLOAT + CNT_MASK_REGS;
-        }
-#elif TARGET_ARM64
-        _evexIsSupported = false;
+#elif TARGET_WASM
+        _rbmAllFloat = RBM_ALLFLOAT.FltRegSet;
+        _rbmFltCalleeTrash = RBM_FLT_CALLEE_TRASH.FltRegSet;
+        _rbmAllInt = RBM_ALLINT.IntRegSet;
+        _rbmIntCalleeTrash = RBM_INT_CALLEE_TRASH.IntRegSet;
+        _regIntLast = REG_INT_LAST;
         _apxIsSupported = false;
+#else
         _rbmAllFloat = SRBM_ALLFLOAT;
         _rbmFltCalleeTrash = SRBM_FLT_CALLEE_TRASH;
         _rbmAllInt = SRBM_ALLINT;
         _rbmIntCalleeTrash = SRBM_INT_CALLEE_TRASH;
         _regIntLast = REG_INT_LAST;
+        _apxIsSupported = false;
+#endif
+
+        initializeRegisterIndices();
+
+#if TARGET_XARCH
+        _rbmAllMask = compiler.SRBM_ALLMASK;
+        _rbmMskCalleeTrash = compiler.SRBM_MSK_CALLEE_TRASH;
+#elif TARGET_ARM64
         _rbmAllMask = SRBM_ALLMASK;
         _rbmMskCalleeTrash = SRBM_MSK_CALLEE_TRASH;
+#endif
+
         initializeVarTypeCalleeTrashRegs();
 
-        _regIndices = new regNumber[(int)ACTUAL_REG_COUNT + 1];
-        for (var index = 0; index < _regIndices.Length; index++)
+#if TARGET_XARCH
+        if (!_evexIsSupported)
         {
-            _regIndices[index] = (regNumber)index;
+            _availableRegCount -= CNT_HIGHFLOAT + CNT_MASK_REGS;
         }
-#else
-        NYI("LinearScan constructor outside AMD64/ARM64");
-        fatal(CORJIT_IMPLLIMITATION);
-        throw new FatalJitException("LinearScan constructor outside AMD64/ARM64.");
 #endif
 
         _firstColdLocation = MaxLocation;
@@ -160,6 +167,8 @@ public sealed partial class LinearScan : IRegAlloc
 
 #if TARGET_AMD64
         _lowGprRegs = _availableIntRegs & SRBM_LOWINT;
+#elif TARGET_X86
+        _lowGprRegs = _availableIntRegs;
 #endif
 
         compiler.rpFrameType = FT_NOT_SET;
@@ -174,9 +183,9 @@ public sealed partial class LinearScan : IRegAlloc
         _targetPreferredUse = null;
     }
 
-#if TARGET_AMD64
     private void initializeRegisterIndices()
     {
+#if TARGET_AMD64
         if (_apxIsSupported)
         {
             _regIndices = new regNumber[(int)ACTUAL_REG_COUNT + 1];
@@ -199,10 +208,15 @@ public sealed partial class LinearScan : IRegAlloc
                 REG_COUNT,
             ];
         }
-    }
+#else
+        _regIndices = new regNumber[(int)ACTUAL_REG_COUNT + 1];
+        for (var index = 0; index < _regIndices.Length; index++)
+        {
+            _regIndices[index] = (regNumber)index;
+        }
 #endif
+    }
 
-#if TARGET_AMD64 || TARGET_ARM64
     private void initializeVarTypeCalleeTrashRegs()
     {
         for (var index = 0; index < (int)TYP_COUNT; index++)
@@ -218,14 +232,13 @@ public sealed partial class LinearScan : IRegAlloc
             _varTypeCalleeTrashRegs[index] = varTypeUsesFloatReg(type) ? _rbmFltCalleeTrash : _rbmIntCalleeTrash;
         }
     }
-#endif
 
     private void initializeAvailableRegs()
     {
         for (var index = 0; index < (int)TYP_COUNT; index++)
         {
             var type = (var_types)index;
-            if (type is TYP_DOUBLE)
+            if (type is TYP_DOUBLE || varTypeIsSimd(type))
             {
                 _availableRegs[index] = _availableDoubleRegs;
             }
@@ -273,22 +286,33 @@ public sealed partial class LinearScan : IRegAlloc
 
     private void initializeRegisterSets(ICodeGen codeGen)
     {
-#if TARGET_AMD64
-        _availableIntRegs = _compiler.SRBM_ALLINT & ~codeGen.RegSet.rsMaskResvd.IntRegSet;
-#elif TARGET_ARM64
+#if TARGET_ARM64
         // NativeAOT depends on LR not being used as a GPR (dotnet/runtime#101932).
-        _availableIntRegs = SRBM_ALLINT & ~(SRBM_PR | SRBM_FP | SRBM_LR) &
+        _availableIntRegs = _rbmAllInt & ~(SRBM_PR | SRBM_FP | SRBM_LR) &
             ~codeGen.RegSet.rsMaskResvd.IntRegSet;
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+        _availableIntRegs = _rbmAllInt & ~(SRBM_FP | SRBM_RA) &
+            ~codeGen.RegSet.rsMaskResvd.IntRegSet;
+#else
+        _availableIntRegs = _rbmAllInt & ~codeGen.RegSet.rsMaskResvd.IntRegSet;
 #endif
 
-#if TARGET_AMD64 || TARGET_ARM64
 #if ETW_EBP_FRAMED
         _availableIntRegs &= ~SRBM_FPBASE;
 #endif
         _availableFloatRegs = _rbmAllFloat;
+#if TARGET_AMD64
         _availableDoubleRegs = _rbmAllFloat;
+#elif TARGET_WASM
+        _availableDoubleRegs = RBM_ALLDOUBLE.FltRegSet;
+#else
+        _availableDoubleRegs = SRBM_ALLDOUBLE;
+#endif
+#if TARGET_XARCH || TARGET_ARM64
         _availableMaskRegs = _rbmAllMask;
+#endif
 
+#if TARGET_AMD64 || TARGET_ARM64
         if (_compiler.opts.compDbgEnC)
         {
             _availableIntRegs &= (~SRBM_INT_CALLEE_SAVED | SRBM_ENC_CALLEE_SAVED);
@@ -298,6 +322,7 @@ public sealed partial class LinearScan : IRegAlloc
             _availableMaskRegs &= ~SRBM_MSK_CALLEE_SAVED;
 #endif
         }
+#endif
 
 #if TARGET_AMD64
         if (_compiler.MethodHasPatchpoint)
@@ -312,11 +337,6 @@ public sealed partial class LinearScan : IRegAlloc
             _availableFloatRegs |= SRBM_HIGHFLOAT;
             _availableDoubleRegs |= SRBM_HIGHFLOAT;
         }
-#endif
-#else
-        NYI("LinearScan register sets outside AMD64/ARM64");
-        fatal(CORJIT_IMPLLIMITATION);
-        throw new FatalJitException("LinearScan register sets outside AMD64/ARM64.");
 #endif
     }
 

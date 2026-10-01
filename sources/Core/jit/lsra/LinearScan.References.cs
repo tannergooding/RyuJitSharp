@@ -43,12 +43,18 @@ public sealed partial class LinearScan
 
     public static SingleTypeRegSet calleeSaveRegs(RegisterType registerType)
     {
-#if TARGET_AMD64 || TARGET_ARM64
+        assert((uint)registerType < (uint)TYP_COUNT);
+
         // typelist.h chooses callee-save sets by this generated register classification.
         return registerType.Register switch
         {
+#if TARGET_WASM
+            VTR_INT => RBM_INT_CALLEE_SAVED.IntRegSet,
+            VTR_FLOAT => RBM_FLT_CALLEE_SAVED.FltRegSet,
+#else
             VTR_INT => SRBM_INT_CALLEE_SAVED,
             VTR_FLOAT => SRBM_FLT_CALLEE_SAVED,
+#endif
 #if FEATURE_MASKED_HW_INTRINSICS
             VTR_MASK => SRBM_MSK_CALLEE_SAVED,
 #endif
@@ -59,10 +65,5 @@ public sealed partial class LinearScan
             fatal(CORJIT_INTERNALERROR);
             return SRBM_NONE;
         }
-#else
-        NYI("LinearScan.calleeSaveRegs outside AMD64/ARM64");
-        fatal(CORJIT_IMPLLIMITATION);
-        return SRBM_NONE;
-#endif
     }
 }
