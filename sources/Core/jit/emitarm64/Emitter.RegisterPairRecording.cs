@@ -849,9 +849,5 @@ public partial class Emitter
 
         return result;
     }
-
-    public void emitInsSve_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
-        insOpts opt = INS_OPTS_NONE, insScalableOpts sopt = insScalableOpts.INS_SCALABLE_OPTS_NONE)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SVE two-register recording is not ported.");
 }
 #endif

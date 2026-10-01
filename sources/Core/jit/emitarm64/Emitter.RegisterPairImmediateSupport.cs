@@ -106,10 +106,6 @@ public partial class Emitter
                (size == EA_2BYTE) || (size == EA_1BYTE);
     }
 
-    public void emitInsSve_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
-        nint imm, insOpts opt = INS_OPTS_NONE, insScalableOpts sopt = insScalableOpts.INS_SCALABLE_OPTS_NONE)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SVE two-register/immediate instruction recording is not ported.");
-
     private static bool TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
         => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 relocatable page-offset load folding is not ported.");
 

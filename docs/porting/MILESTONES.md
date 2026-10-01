@@ -16,6 +16,26 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: ARM64 SVE register-pair recording
+
+Translated the whole two-register and two-register/immediate SVE recorders and
+their 90/270-degree rotation decoder. Aliases, register-bank and SP encoding,
+descriptor allocation, immediate reduction/packing, delegation and diagnostic
+ordering retain the native algorithms. The decoder deliberately accepts encoded
+values 2 and 3 through the native two-bit assertion and returns zero.
+
+Source-only ARM64 acceptance retains the exact 39-diagnostic compilation
+baseline. The fixture has not compiled or executed; its 178 Debug/168 Release
+cases are source projections. Windows collateral controls pass 58 Debug and
+58 Release cases, not SVE execution. The only acceptance correction removes a
+blank line left by stub deletion; the initial failed snapshot is preserved.
+
+Retired three whole definitions and three declarations: 888 body and 14
+declaration lines, 902 total. Prior recorder fixtures remain unchanged; the old
+six-argument move dependency and its native body/declaration remain separate.
+Evidence is under `artifacts/sve-register-pair-acceptance-605023a8/v2`.
+No backend activation, B498/D009 change or generated-code parity is claimed.
+
 ## 2026-10-01: ARM64 SVE multioperand recording
 
 Translated the whole three-register/two-immediate, four-register and
