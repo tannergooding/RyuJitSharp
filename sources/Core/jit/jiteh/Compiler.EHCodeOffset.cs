@@ -9,23 +9,17 @@ public partial class Compiler
 {
     public insGroup ehEmitCookie(BasicBlock block)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "EH code cookies require Windows AMD64.");
-#else
         noway_assert(block is not null);
-        return block.bbEmitCookie
-            ?? throw new FatalJitException(CORJIT_SKIPPED, "EH block has no emitter code cookie.");
-#endif
+        var cookie = block.bbEmitCookie;
+        noway_assert(cookie is not null);
+
+        return cookie;
     }
 
     public uint ehCodeOffset(BasicBlock block)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "EH code offsets require Windows AMD64.");
-#else
         var emitter = codeGen?.Emitter
             ?? throw new FatalJitException(CORJIT_SKIPPED, "EH code offset requires an emitter.");
         return emitter.emitCodeOffset(ehEmitCookie(block), 0);
-#endif
     }
 }

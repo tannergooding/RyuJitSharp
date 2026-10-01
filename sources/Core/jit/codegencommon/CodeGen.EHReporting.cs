@@ -17,8 +17,8 @@ public sealed partial class CodeGen
 {
     public void genReportEH()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "EH reporting requires Windows AMD64.");
+#if TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "genReportEH is not implemented for Wasm.");
 #else
         var count = _compiler.compHndBBtabCount;
         if (count == 0)
@@ -78,9 +78,6 @@ public sealed partial class CodeGen
 
     public unsafe void genReportEHClauses(EHClauseInfo[] clauses)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "EH clause reporting requires Windows AMD64.");
-#else
 #if DEBUG
         var lastFuncletIndex = 0u;
 #endif
@@ -120,7 +117,6 @@ public sealed partial class CodeGen
                 _compiler.eeSetEHinfo((uint)vmIndex, clausePtr);
             }
         }
-#endif
     }
 
     private static CORINFO_EH_CLAUSE_FLAGS ToCORINFO_EH_CLAUSE_FLAGS(EHHandlerType type)

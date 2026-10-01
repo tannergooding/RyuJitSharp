@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Shared EH publication
+
+EH table construction, VM-order publication and emitter-cookie/offset helpers
+now retain their common target paths. Count publication precedes clause
+publication; filter offsets, native end-offset fields, same-try identity,
+unsigned offset bits and metrics ordering remain unchanged. The missing cookie
+assertion is restored with its native recoverable-failure regression.
+
+Focused full-analysis selections pass 18 Debug/16 Release Windows and
+12 Debug/12 Release Linux-target cases, including twelve EH cases in every run.
+Four definitions retire 145 native lines; shared declarations and the
+independent Wasm publisher remain. Reconstruction also removes the single
+blank line left at the end of the emptied `jiteh.cpp` body to satisfy Git's
+whitespace check. Existing EE dependencies receive no duplicate retirement
+credit. These Windows-host fixtures do not establish target execution or parity.
+
 ## 2026-10-01: Register-set constructor retirement debt
 
 The existing complete `RegSet` constructor and its exclusive declaration retire
