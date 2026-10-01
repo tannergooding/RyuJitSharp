@@ -52,9 +52,6 @@ public sealed partial class ValueNumStore
 
     public ValueNum EvalMathFuncUnary(var_types type, NamedIntrinsic intrinsic, ValueNum argument)
     {
-#if !TARGET_XARCH
-        throw new NotImplementedException("Math intrinsic VN evaluation is not ported for this target.");
-#else
         assert(argument == VNNormalValue(argument));
         assert(_compiler.IsMathIntrinsic(intrinsic) || intrinsic is
             NI_PRIMITIVE_LeadingZeroCount or NI_PRIMITIVE_TrailingZeroCount or NI_PRIMITIVE_PopCount);
@@ -128,7 +125,8 @@ public sealed partial class ValueNumStore
                 return VNForFloatCon(floatResult);
             }
 
-            assert(type is TYP_INT or TYP_LONG);
+            assert((type is TYP_INT) || ((type is TYP_LONG) && (intrinsic is
+                NI_PRIMITIVE_LeadingZeroCount or NI_PRIMITIVE_TrailingZeroCount or NI_PRIMITIVE_PopCount)));
             int result;
             if (intrinsic is NI_System_Math_ILogB or NI_System_Math_Round)
             {
@@ -155,6 +153,11 @@ public sealed partial class ValueNumStore
 
             return type is TYP_LONG ? VNForLongCon(result) : VNForIntCon(result);
         }
+
+        assert((type is TYP_DOUBLE or TYP_FLOAT) ||
+            ((type is TYP_INT) && (intrinsic is NI_System_Math_ILogB or NI_System_Math_Round)) ||
+            ((type is TYP_INT or TYP_LONG) && (intrinsic is
+                NI_PRIMITIVE_LeadingZeroCount or NI_PRIMITIVE_TrailingZeroCount or NI_PRIMITIVE_PopCount)));
 
         var func = intrinsic switch {
             NI_System_Math_Abs => VNF_Abs,
@@ -190,14 +193,10 @@ public sealed partial class ValueNumStore
         };
 
         return VNForFunc(type, func, argument);
-#endif
     }
 
     public ValueNum EvalMathFuncBinary(var_types type, NamedIntrinsic intrinsic, ValueNum left, ValueNum right)
     {
-#if !TARGET_XARCH
-        throw new NotImplementedException("Math intrinsic VN evaluation is not ported for this target.");
-#else
         assert(varTypeIsArithmetic(type));
         assert((left == VNNormalValue(left)) && (right == VNNormalValue(right)));
         assert(_compiler.IsMathIntrinsic(intrinsic));
@@ -208,9 +207,20 @@ public sealed partial class ValueNumStore
             if (type is TYP_DOUBLE)
             {
                 assert((TypeOfVN(left) == type) && (TypeOfVN(right) == type));
+                var leftDouble = GetConstantDouble(left);
+                var rightDouble = GetConstantDouble(right);
                 var result = intrinsic switch {
-                    NI_System_Math_Atan2 => Math.Atan2(GetConstantDouble(left), GetConstantDouble(right)),
-                    NI_System_Math_Pow => Math.Pow(GetConstantDouble(left), GetConstantDouble(right)),
+                    NI_System_Math_Atan2 => Math.Atan2(leftDouble, rightDouble),
+#if TARGET_ARM || TARGET_ARM64
+                    // Match the ARM CRT subnormal fixup: https://github.com/dotnet/runtime/issues/12139.
+                    NI_System_Math_Pow => rightDouble == 1.0 ? leftDouble : Math.Pow(leftDouble, rightDouble),
+#else
+                    NI_System_Math_Pow => Math.Pow(leftDouble, rightDouble),
+#endif
+#if TARGET_RISCV64 || TARGET_WASM
+                    NI_System_Math_MaxNative => EvaluateMathMinMaxNative(leftDouble, rightDouble, true),
+                    NI_System_Math_MinNative => EvaluateMathMinMaxNative(leftDouble, rightDouble, false),
+#endif
                     _ => throw new InvalidOperationException($"Unsupported binary double intrinsic: {intrinsic}"),
                 };
                 return VNForDoubleCon(result);
@@ -219,26 +229,91 @@ public sealed partial class ValueNumStore
             if (type is TYP_FLOAT)
             {
                 assert((TypeOfVN(left) == type) && (TypeOfVN(right) == type));
+                var leftSingle = GetConstantSingle(left);
+                var rightSingle = GetConstantSingle(right);
                 var result = intrinsic switch {
-                    NI_System_Math_Atan2 => MathF.Atan2(GetConstantSingle(left), GetConstantSingle(right)),
-                    NI_System_Math_Pow => MathF.Pow(GetConstantSingle(left), GetConstantSingle(right)),
+                    NI_System_Math_Atan2 => MathF.Atan2(leftSingle, rightSingle),
+#if TARGET_ARM || TARGET_ARM64
+                    NI_System_Math_Pow => rightSingle == 1.0f ? leftSingle : MathF.Pow(leftSingle, rightSingle),
+#else
+                    NI_System_Math_Pow => MathF.Pow(leftSingle, rightSingle),
+#endif
+#if TARGET_RISCV64 || TARGET_WASM
+                    NI_System_Math_MaxNative => EvaluateMathMinMaxNative(leftSingle, rightSingle, true),
+                    NI_System_Math_MinNative => EvaluateMathMinMaxNative(leftSingle, rightSingle, false),
+#endif
                     _ => throw new InvalidOperationException($"Unsupported binary float intrinsic: {intrinsic}"),
                 };
                 return VNForFloatCon(result);
             }
 
-            unreached();
-            return NoVN;
+#if TARGET_RISCV64
+            assert((TypeOfVN(left) == type) && (TypeOfVN(right) == type));
+            var leftValue = GetConstantInt64(left);
+            var rightValue = GetConstantInt64(right);
+            var integerResult = intrinsic switch
+            {
+                NI_System_Math_Min => leftValue < rightValue ? leftValue : rightValue,
+                NI_System_Math_Max => leftValue > rightValue ? leftValue : rightValue,
+                NI_System_Math_MinUnsigned => unchecked((ulong)leftValue) < unchecked((ulong)rightValue)
+                    ? leftValue : rightValue,
+                NI_System_Math_MaxUnsigned => unchecked((ulong)leftValue) > unchecked((ulong)rightValue)
+                    ? leftValue : rightValue,
+                _ => throw new UnreachableException(),
+            };
+
+            return type is TYP_LONG or TYP_ULONG
+                ? VNForLongCon(integerResult)
+                : VNForIntCon(unchecked((int)integerResult));
+#else
+            throw new UnreachableException();
+#endif
         }
 
         var func = intrinsic switch {
             NI_System_Math_Atan2 => VNF_Atan2,
+#if TARGET_RISCV64
+            NI_System_Math_Max => VNF_MaxInt,
+            NI_System_Math_MaxUnsigned => VNF_MaxInt_UN,
+            NI_System_Math_Min => VNF_MinInt,
+            NI_System_Math_MinUnsigned => VNF_MinInt_UN,
+#endif
+#if TARGET_WASM
+            NI_System_Math_MaxNative => VNF_Max,
+            NI_System_Math_MinNative => VNF_Min,
+#elif TARGET_RISCV64
+            NI_System_Math_MaxNative => VNF_MaxNumber,
+            NI_System_Math_MinNative => VNF_MinNumber,
+#endif
             NI_System_Math_Pow => VNF_Pow,
             _ => throw new InvalidOperationException($"Unsupported binary math intrinsic: {intrinsic}"),
         };
         return VNForFunc(type, func, left, right);
-#endif
     }
+
+#if TARGET_RISCV64 || TARGET_WASM
+    private static T EvaluateMathMinMaxNative<T>(T left, T right, bool maximum)
+        where T : IFloatingPointIeee754<T>
+    {
+        if (left != right)
+        {
+#if TARGET_WASM
+            if (!T.IsNaN(left))
+#else
+            if (!T.IsNaN(right))
+#endif
+            {
+                return maximum
+                    ? (right < left ? left : right)
+                    : (left < right ? left : right);
+            }
+
+            return left;
+        }
+
+        return T.IsNegative(maximum ? right : left) ? left : right;
+    }
+#endif
 
 #if FEATURE_SIMD
     private byte[] GetSimdArgumentBytes(var_types type, var_types baseType, ValueNum operand)

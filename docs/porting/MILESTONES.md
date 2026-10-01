@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Scalar math value numbering across targets
+
+Unary and binary math evaluation retain complete target branches and AOT
+folding predicates. ARM power-by-one preserves the native subnormal fixup;
+RISC-V integer min/max retains signed/unsigned comparisons. Floating min/max
+keeps Wasm NaN propagation and RISC-V number preference, including native
+operand selection and signed-zero ordering.
+
+Seventy-six new cases plus 40 controls pass in each Windows/Linux Debug/Release
+configuration, 464 cases total. Two definitions and two declarations retire
+694 native lines. ARM64 retains 39 historical diagnostics; other-target numeric
+execution and transcendental parity remain unverified. Existing libm and
+unchecked integer-round conversion policy are unchanged.
+
 ## 2026-10-01: Ternary hardware-intrinsic value numbering
 
 Ternary evaluation preserves whole target branches, raw conditional-selection

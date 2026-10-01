@@ -1835,6 +1835,14 @@ reuses existing mask conversion and preserves native intermediate VN allocation;
 unrepresentable predicates remain symbolic. Only x64 numeric cases executed;
 other-target source projections do not remove existing execution limitations.
 
+Scalar math VN evaluation now retains whole target branches. The private
+floating min/max helper shares the pinned operand-selection algorithms through
+generic IEEE floating operations, preserving target NaN preference and signed
+zero. ARM power-by-one and RISC-V signed/unsigned integer cases are retained.
+Existing libm and unchecked integer-round conversion policy are unchanged;
+valid-domain x64 regressions do not define native NaN/out-of-range C++ integer
+conversion results or establish other-target numeric parity.
+
 `GenTreeHWIntrinsic.GetLayout` now preserves its complete fixed and SVE aggregate
 layout dispatch and is retired. SVE cases call the typed, terminating
 `Compiler.getRuntimeVectorTByteLength` dependency; that native helper remains.
