@@ -16,6 +16,30 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Intrinsic import and patchpoint callers
+
+Completed the whole `impHWIntrinsic` caller, retaining ARM64 struct/tuple,
+scalar-variant, immediate-validation and masking branches, and Wasm lane handling.
+Two ARM64 flag queries are implemented; genuinely unported special/fallback,
+scalar-variant and immediate-bound helpers remain typed terminating dependencies.
+
+`generatePatchpointInfo` now preserves ARM64, LoongArch and RISC-V frame adjustments,
+special local offsets and FP/LR/RA save masks without changing EE allocation or
+publication ordering. The AMD64 fixture independently checks ABI-specific XMM6
+preservation and initializes its non-Swift register masks before recording usage.
+
+Full-analysis Windows and Linux-target Debug/Release each pass 18 focused cases,
+72 executions total. ARM64 retains the exact 39-diagnostic negative baseline;
+the new intrinsic/patchpoint ARM fixtures remain source-only. This is not a
+generated-code or other-target execution-parity claim.
+
+Four definitions, one associated declaration and exclusive headings/spacing retire
+1011 native lines. The patchpoint residual was historically C#-shaped, so its
+evidence uses whole-flow review and distinct native/oracle hashes rather than byte
+equality. Reproduce the focused selections and exact ARM diagnostic comparison
+from `artifacts/intrinsic-patchpoint-acceptance-f845b543`, whose sealed snapshot
+excludes independent SVE/Xplat and protected WIP.
+
 ## 2026-10-01: Residual source remnants
 
 Removed `codegenxarch.cpp` and `jiteh.cpp` after confirming that only comments,

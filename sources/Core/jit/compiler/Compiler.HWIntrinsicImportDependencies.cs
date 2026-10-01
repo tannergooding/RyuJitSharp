@@ -1,0 +1,31 @@
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+#if FEATURE_HW_INTRINSICS && FEATURE_SIMD && !TARGET_XARCH
+namespace RyuJitSharp;
+
+public partial class Compiler
+{
+    private unsafe GenTree? impSpecialIntrinsic(
+        NamedIntrinsic intrinsic,
+        CORINFO_CLASS_HANDLE clsHnd,
+        CORINFO_METHOD_HANDLE method,
+        in CORINFO_SIG_INFO sig,
+        in CORINFO_CONST_LOOKUP entryPoint,
+        var_types simdBaseType,
+        var_types retType,
+        byte simdSize,
+        bool mustExpand)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic special import outside xarch is not ported.");
+    }
+
+    private GenTreeHWIntrinsic? impNonConstFallback(
+        NamedIntrinsic intrinsic, var_types simdType, var_types simdBaseType)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic nonconstant fallback outside xarch is not ported.");
+    }
+}
+#endif
