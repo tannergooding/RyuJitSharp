@@ -10356,6 +10356,8 @@ public partial class Compiler
         assert(varTypeIsIntegral(simdBaseType));
         assert(!canUseEvexEncodingDebugOnly());
         assert((simdSize is 16) || ((simdSize is 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2)));
+#elif TARGET_WASM
+        assert(simdBaseType == TYP_ULONG);
 #endif
 
         switch (op)
@@ -10412,7 +10414,13 @@ public partial class Compiler
                     return gtNewSimdBinOpNode(GT_OR, type, op1, op2, simdBaseType, simdSize);
                 }
             }
+#endif
 
+#if TARGET_XARCH || TARGET_WASM
+#if TARGET_WASM
+            case GT_GE:
+            case GT_LE:
+#endif
             case GT_GT:
             case GT_LT:
             {
@@ -10433,46 +10441,77 @@ public partial class Compiler
                 // the transformation.
 
                 var opType = simdBaseType;
+#if TARGET_WASM
+                GenTree vecCon1;
+#else
                 var vecCon1 = gtNewVconNode(type);
+#endif
 
                 switch (simdBaseType)
                 {
                     case TYP_UBYTE:
                     {
                         simdBaseType = TYP_BYTE;
+#if TARGET_WASM
+                        vecCon1 = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(TYP_INT, sbyte.MinValue),
+                            opType, simdSize);
+#else
                         vecCon1.EvaluateBroadcastInPlace(simdBaseType, sbyte.MinValue);
+#endif
                         break;
                     }
 
                     case TYP_USHORT:
                     {
                         simdBaseType = TYP_SHORT;
+#if TARGET_WASM
+                        vecCon1 = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(TYP_INT, short.MinValue),
+                            opType, simdSize);
+#else
                         vecCon1.EvaluateBroadcastInPlace(simdBaseType, short.MinValue);
+#endif
                         break;
                     }
 
                     case TYP_UINT:
                     {
                         simdBaseType = TYP_INT;
+#if TARGET_WASM
+                        vecCon1 = gtNewSimdCreateBroadcastNode(type, gtNewIconNode(TYP_INT, int.MinValue),
+                            opType, simdSize);
+#else
                         vecCon1.EvaluateBroadcastInPlace(simdBaseType, int.MinValue);
+#endif
                         break;
                     }
 
                     case TYP_ULONG:
                     {
                         simdBaseType = TYP_LONG;
+#if TARGET_WASM
+                        vecCon1 = gtNewSimdCreateBroadcastNode(type, gtNewLconNode(long.MinValue), opType, simdSize);
+#else
                         vecCon1.EvaluateBroadcastInPlace(simdBaseType, long.MinValue);
+#endif
                         break;
                     }
 
                     default:
                     {
                         unreached();
+#if TARGET_WASM
+                        return null;
+#else
                         break;
+#endif
                     }
                 }
 
+#if TARGET_WASM
+                var vecCon2 = gtCloneExpr(vecCon1);
+#else
                 var vecCon2 = gtCloneCnsVec(vecCon1);
+#endif
 
                 // op1 = op1 - constVector
                 op1 = gtNewSimdBinOpNode(GT_SUB, type, op1, vecCon1, opType, simdSize);
@@ -10555,7 +10594,7 @@ public partial class Compiler
                 }
                 break;
             }
-#elif TARGET_ARM64
+#elif TARGET_ARM64 || TARGET_WASM
             case GT_EQ:
             {
                 break;

@@ -170,7 +170,7 @@ internal static class EmitterJumpRemovalTests
     }
 
     [Test]
-    public static void SingleRemovedJumpClearsBothListEndpointsAndRetainsGcState()
+    public static void SingleRemovedJumpRetainsTheNativeLastDescriptorCacheAndGcState()
     {
         WithEmitter((_, emitter) =>
         {
@@ -192,7 +192,7 @@ internal static class EmitterJumpRemovalTests
             emitter.emitRemoveJumpToNextInst();
 
             Assert.That(JumpView.First(emitter), Is.Null);
-            Assert.That(JumpView.Last(emitter), Is.Null);
+            Assert.That(JumpView.Last(emitter), Is.SameAs(jump));
             Assert.That(jump.idCodeSize(), Is.Zero);
             Assert.That(source.igGCregs, Is.EqualTo(sourceGcRegs));
             Assert.That(successor.igGCregs, Is.EqualTo(targetGcRegs));

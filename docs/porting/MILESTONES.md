@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Emitter binding and SIMD comparisons
+
+Five shared emitter bodies now preserve whole target branches, Windows binding
+diagnostics and native last-jump cache behavior. The main and All SIMD comparison
+callers also retain Wasm's unsigned-64 signed-bias fallback. Other-target emitter
+classification/encoding helpers remain explicit terminating dependencies.
+
+Combined Windows/Linux Debug runs pass 346 cases each and Release runs pass 320,
+1,332 executions. ARM64 retains its 39 existing diagnostics. Five definitions and
+two declarations retire 1,171 native lines; B478 has no new retirement credit.
+Live-caller declarations remain. Explicit-HW-Wasm broadcast and memory
+classification blockers remain; source completion is not Wasm execution parity.
+
 ## 2026-10-01: LSRA lifetime, spills and kills
 
 Twelve whole retained definitions are closed: ten reuse their accepted

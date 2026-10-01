@@ -1827,11 +1827,20 @@ index nodes while preserving native scatter/scatter/OR order. Constant and
 variable single-source shuffle bodies now retain ARM64/Wasm byte expansion,
 zero-fill, scaling and safe range masks. General Reverse constructs its native
 lookup; two-source Wasm operations now retain their OR mapping. Binary and
-comparison mappers include all pinned Wasm branches (B476). Ordered unsigned-64
-comparison still reaches the separate caller's missing bias fallback (B478),
-so safe long/double variable shuffle is not yet complete.
+comparison mappers include all pinned Wasm branches (B476). Main and All comparison
+callers now retain the ordered unsigned-64 signed-bias fallback (B478), including
+the safe long/double shuffle path. Explicit-HW-Wasm still cannot compile because
+the broadcast factory contains `#error` and memory classification is incomplete
+(B477); reaching the constant broadcast fast path does not bypass preprocessing.
 Focused x64 controls do not establish other-target execution or generated-code
 parity.
+
+Shared emitter jump binding, removal, offset recomputation and funclet checking
+retain whole target branches and native diagnostics. ARM/ARM64/RISC-V jump
+classification and short/medium encoding helpers remain typed, terminating
+dependencies with their native definitions retained. The separate LoongArch
+binder and other-target group diagnostics remain unported; x64 fixture results
+do not establish their execution or generated-code parity.
 
 Ternary HW-intrinsic VN evaluation retains whole ARM64/SVE and Wasm branches
 under the native HW feature scope. Integral WithElement uses bounded raw-byte

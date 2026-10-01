@@ -7,31 +7,64 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private insGroup emitBindJump(instrDescJmp jump)
+    private unsafe insGroup emitBindJump(instrDescJmp jump)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Jump target binding requires AMD64.");
+#if TARGET_LOONGARCH64
+        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 jump target binding is not ported.");
 #else
         assert(!jump.idIsBound());
         var block = jump.idjTarget ?? throw new FatalJitException("An unbound jump requires a basic-block target.");
+#if DEBUG
+        var compiler = _compiler ?? throw new FatalJitException("Jump target binding requires an active compiler.");
+        if (compiler.verbose)
+        {
+            jitprintf("Binding: ");
+            emitDispIns(jump, false, false, false);
+            jitprintf($"Binding L_M{unchecked((uint)compiler.compMethodID):D3}_{FMT_BB(block.bbNum)}");
+        }
+#endif
+
+        var target = emitCodeGetCookie(block);
+#if DEBUG
+        if (compiler.verbose)
+        {
+            if (target is not null)
+            {
+                jitprintf($" to {emitLabelString(target)}\n");
+            }
+            else
+            {
+                jitprintf($"-- ERROR, no emitter cookie for {FMT_BB(block.bbNum)}; it is probably missing BBF_HAS_LABEL.\n");
+            }
+        }
+#endif
+
         assert(block.HasFlag(BBF_HAS_LABEL));
-        var target = emitCodeGetCookie(block)
-            ?? throw new FatalJitException("A jump target requires an emitter label cookie.");
-        jump.idjTargetIG = target;
+        var boundTarget = target ?? throw new FatalJitException("A jump target requires an emitter label cookie.");
+        jump.idjTargetIG = boundTarget;
         jump.idSetIsBound();
-        return target;
+        return boundTarget;
 #endif
     }
 
-#if DEBUG && TARGET_AMD64
     private void emitCheckFuncletBranch(instrDescJmp jump, insGroup jumpIG)
     {
-        var compiler = _compiler ?? throw new FatalJitException("Funclet branch checking requires an active compiler.");
+#if TARGET_LOONGARCH64 || TARGET_RISCV64
+        // Native does not yet record the debug information needed for these targets.
+        return;
+#elif DEBUG
         assert(jump.idIsBound());
+#if TARGET_XARCH
         if (jump.idIns() == INS_lea)
         {
             return;
         }
+#elif TARGET_ARM64
+        if (emitIsLoadLabel(jump) || emitIsLoadConstant(jump))
+        {
+            return;
+        }
+#endif
 
         var targetIG = jump.idjTargetIG
             ?? throw new FatalJitException("A bound branch requires an instruction-group target.");
@@ -40,6 +73,7 @@ public partial class Emitter
             return;
         }
 
+        var compiler = _compiler ?? throw new FatalJitException("Funclet branch checking requires an active compiler.");
         var debugInfo = jump.idDebugOnlyInfo()
             ?? throw new FatalJitException("Funclet branch validation requires debug information.");
         if (debugInfo.idFinallyCall)
@@ -73,8 +107,54 @@ public partial class Emitter
         }
         else
         {
+            jitprintf("Hit an illegal branch between funclets!");
             assert(targetIG.igFuncIdx == jumpIG.igFuncIdx);
         }
+#endif
+    }
+
+#if TARGET_ARM || TARGET_ARM64
+    private static bool emitIsCondJump(instrDesc jump)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM jump-format classification is not ported.");
+    }
+
+    private static bool emitIsLoadLabel(instrDesc jump)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM label-load classification is not ported.");
+    }
+#endif
+
+#if TARGET_ARM || TARGET_ARM64 || TARGET_RISCV64
+    private static bool emitIsUncondJump(instrDesc jump)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Non-xarch unconditional-jump classification is not ported.");
+    }
+#endif
+
+#if TARGET_ARM || TARGET_RISCV64
+    private static bool emitIsCmpJump(instrDesc jump)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM/RISC-V compare-and-jump classification is not ported.");
+    }
+
+    private static void emitSetMediumJump(instrDescJmp jump)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM/RISC-V medium-jump selection is not ported.");
+    }
+#endif
+
+#if TARGET_ARM64
+    private static bool emitIsLoadConstant(instrDesc jump)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 constant-load classification is not ported.");
+    }
+#endif
+
+#if !TARGET_XARCH && !TARGET_LOONGARCH64
+    private static void emitSetShortJump(instrDescJmp jump)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Non-xarch short-jump selection is not ported.");
     }
 #endif
 }
