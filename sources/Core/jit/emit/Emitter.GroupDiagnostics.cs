@@ -4,7 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if DEBUG
-using System;
 using System.Globalization;
 #endif
 
@@ -70,9 +69,6 @@ public partial class Emitter
 
     public unsafe void emitDispIG(insGroup ig, bool displayFunc = false, bool displayInstructions = false, bool displayLocation = true)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Instruction-group diagnostics outside AMD64 are not implemented.");
-#else
         var compiler = _compiler ?? throw new FatalJitException("Instruction-group diagnostics require an active compiler.");
         var label = emitLabelString(ig) + ":        ";
         jitprintf(label + "; ");
@@ -150,7 +146,8 @@ public partial class Emitter
             emitDispRegSet(placeholder.igPhInitByrefRegs);
             jitprintf("\n");
 
-            assert((ig.igFlags & (InsGroupFlags.GCVars | InsGroupFlags.ByrefRegs)) == 0);
+            assert((ig.igFlags & InsGroupFlags.GCVars) == 0);
+            assert((ig.igFlags & InsGroupFlags.ByrefRegs) == 0);
         }
         else
         {
@@ -221,38 +218,50 @@ public partial class Emitter
 
             jitprintf("\n");
 
-            if (displayInstructions && (ig.igInsCnt != 0))
+            if (displayInstructions)
             {
-                var instructions = ig.igData.AsSpan();
-                assert(instructions.Length >= ig.igInsCnt);
+                var storage = ig.igData;
+                var instruction = storage is not null ? emitFirstInstrDesc(storage) : null;
                 var offset = ig.igOffs;
-                jitprintf("\n");
-                for (var index = 0; index < ig.igInsCnt; index++)
-                {
-                    var instruction = instructions[index];
-                    if (emitJmpInstHasNoCode(instruction))
-                    {
-                        assert(index == ig.igInsCnt - 1);
-                        break;
-                    }
+                uint count = ig.igInsCnt;
 
-                    emitDispIns(instruction, false, true, false, offset, null, 0, ig);
-                    offset = unchecked(offset + instruction.idCodeSize());
+                if (count != 0)
+                {
+                    assert(storage is not null);
+                    assert(storage.Length >= count);
+                    jitprintf("\n");
+                    do
+                    {
+                        assert(instruction is not null);
+#if TARGET_XARCH
+                        if (emitJmpInstHasNoCode(instruction))
+                        {
+                            assert(count == 1);
+                            break;
+                        }
+#endif
+
+                        emitDispIns(instruction, false, true, false, offset, null, 0, ig);
+                        offset = unchecked(offset + instruction.idCodeSize());
+                        var descriptorSize = (nuint)emitSizeOfInsDsc(instruction);
+                        emitAdvanceInstrDesc(ref instruction, descriptorSize);
+                    }
+                    while (--count != 0);
+
+                    jitprintf("\n");
                 }
-                jitprintf("\n");
             }
         }
-#endif
     }
 
     public void emitDispIGlist(bool displayInstructions = false)
     {
-#if !EMIT_BACKWARDS_NAVIGATION
+#if !TARGET_XARCH && !EMIT_BACKWARDS_NAVIGATION
         insGroup? previous = null;
 #endif
         for (var ig = emitIGlist; ig is not null; ig = ig.igNext)
         {
-#if EMIT_BACKWARDS_NAVIGATION
+#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
             var displayFunc = (ig.igPrev is null) || (ig.igPrev.igFuncIdx != ig.igFuncIdx);
 #else
             var displayFunc = (previous is null) || (previous.igFuncIdx != ig.igFuncIdx);

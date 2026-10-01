@@ -35,10 +35,17 @@ public partial class Emitter
         assert((descriptor is null) || (descriptor.StorageOffset == nextOffset));
     }
 
+#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
     private static instrDesc? emitFirstInstrDesc(IReadOnlyList<instrDesc> storage)
     {
         return storage.Count == 0 ? null : storage[0];
     }
+#else
+    private static instrDesc? emitFirstInstrDesc(instrDesc[] storage)
+    {
+        return storage.Length == 0 ? null : storage[0];
+    }
+#endif
 
 #if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
     private void emitGetInstrDescs(insGroup group, out instrDesc? descriptor, out int count)

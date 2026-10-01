@@ -213,7 +213,7 @@ internal static unsafe class EmitterGroupDiagnosticsTests
         var third = new insGroup { igFuncIdx = 1, igWeight = 100 };
         first.igNext = second;
         second.igNext = third;
-#if EMIT_BACKWARDS_NAVIGATION
+#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
         second.igPrev = first;
         third.igPrev = second;
 #endif

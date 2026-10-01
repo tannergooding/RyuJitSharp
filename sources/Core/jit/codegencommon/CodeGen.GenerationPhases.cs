@@ -22,9 +22,6 @@ public sealed partial class CodeGen
 
     internal unsafe void genGenerateMachineCode()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Machine-code generation requires Windows AMD64.");
-#else
 #if LATE_DISASM
         RequireSupportedLateDisassembly();
 #endif
@@ -67,6 +64,7 @@ public sealed partial class CodeGen
 
             // Inspect the selected ISA directly; opportunistic dependency queries
             // here would add JIT/EE calls to diagnostic-only execution.
+#if TARGET_XARCH
             if (_compiler.opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX))
             {
                 jitprintf(" + VEX");
@@ -79,6 +77,12 @@ public sealed partial class CodeGen
             {
                 jitprintf(" + APX");
             }
+#elif TARGET_ARM64
+            if (_compiler.opts.compSupportsISA.HasInstructionSet(InstructionSet_Sve))
+            {
+                jitprintf(" + SVE");
+            }
+#endif
             if (TargetOS.IsWindows)
             {
                 jitprintf(" on Windows");
@@ -123,7 +127,16 @@ public sealed partial class CodeGen
             {
                 jitprintf($"; optimized using {_compiler.compPgoSourceName}\n");
             }
-            jitprintf($"; {(IsFramePointerUsed ? STR_FPBASE : STR_SPBASE)} based frame\n");
+#if DOUBLE_ALIGN
+            if (_compiler.genDoubleAlign)
+            {
+                jitprintf("; double-aligned frame\n");
+            }
+            else
+#endif
+            {
+                jitprintf($"; {(IsFramePointerUsed ? STR_FPBASE : STR_SPBASE)} based frame\n");
+            }
             jitprintf(Interruptible ? "; fully interruptible\n" : "; partially interruptible\n");
 
             if (_compiler.fgHaveProfileWeights)
@@ -165,18 +178,16 @@ public sealed partial class CodeGen
 #endif
         genGeneratePrologsAndEpilogs();
         Emitter.emitRemoveJumpToNextInst();
+#if !TARGET_WASM
         Emitter.emitJumpDistBind();
+#endif
 #if FEATURE_LOOP_ALIGN
         Emitter.emitLoopAlignAdjustments();
-#endif
 #endif
     }
 
     internal unsafe void genEmitMachineCode()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Machine-code emission requires Windows AMD64.");
-#else
 #if LATE_DISASM
         RequireSupportedLateDisassembly();
 #endif
@@ -197,6 +208,20 @@ public sealed partial class CodeGen
         uint instrCount;
 #endif
         _compiler.unwindReserve();
+#if TARGET_WASM
+        Emitter.emitUpdateFuncletLocations();
+#endif
+#if TARGET_64BIT
+        var trackedStackPtrsContig = false;
+#else
+        var trackedStackPtrsContig = !_compiler.opts.compDbgEnC
+            && (_compiler.lvaAsyncThreadObjectVar == BAD_VAR_NUM)
+            && (_compiler.lvaAsyncExecutionContextVar == BAD_VAR_NUM)
+            && (_compiler.lvaAsyncSynchronizationContextVar == BAD_VAR_NUM);
+#if TARGET_ARM
+        trackedStackPtrsContig &= !_compiler.compIsProfilerHookNeeded;
+#endif
+#endif
         if (_compiler.opts.disAsm && _compiler.opts.disTesting)
         {
             jitprintf($"; BEGIN METHOD {_compiler.eeGetMethodFullName(_compiler.info.compMethodHnd)}\n");
@@ -205,7 +230,7 @@ public sealed partial class CodeGen
         fixed (uint* prologSize = &_prologSize, epilogSize = &_epilogSize)
         fixed (void** codePtrRW = &_codePtrRW, coldCodePtr = &_coldCodePtr, coldCodePtrRW = &_coldCodePtrRW)
         {
-            _codeSize = Emitter.emitEndCodeGen(_compiler, false, Interruptible, IsFullPtrRegMapRequired,
+            _codeSize = Emitter.emitEndCodeGen(_compiler, trackedStackPtrsContig, Interruptible, IsFullPtrRegMapRequired,
                 _compiler.compHndBBtabCount, prologSize, epilogSize, _codePtr, codePtrRW, coldCodePtr, coldCodePtrRW
 #if DEBUG
                 , &instrCount
@@ -273,7 +298,6 @@ public sealed partial class CodeGen
 #endif
         *_nativeSizeOfCode = unchecked((int)_codeSize);
         _compiler.info.compNativeCodeSize = unchecked((int)_codeSize);
-#endif
     }
 
 #if LATE_DISASM

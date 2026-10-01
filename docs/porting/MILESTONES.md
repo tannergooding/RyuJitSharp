@@ -16,6 +16,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: GC diagnostics and generation orchestration
+
+Shared emitter diagnostics retain native target indentation, assertion ordering,
+descriptor traversal and GC delta cursor updates. The GC state dump prints six
+real pinned field addresses with the existing diffable masking policy.
+
+Generation, emission, metadata and prolog orchestration retain their native
+target branches. A guarded first-phase callback preserves unsupported-backend
+rejection, phase tracking and borrowed-output cleanup. Wasm funclet-location
+updates remain a terminating dependency; publication and ABI policies are unchanged.
+
+Full-analysis fixtures pass 111 Debug/49 Release on Windows, 100/44 in
+Linux-target Core and 5/5 in SysV Targets: 314 executions. ARM64 retains exactly
+39 existing diagnostics. These checks do not establish other-target runtime parity.
+
+Thirteen whole definitions retire 955 native lines: 907 body lines and 48
+exclusive headings and spacing. All bodies match the pinned oracle after
+line-ending normalization; live declarations and native dependencies remain.
+
 ## 2026-10-01: Upper-vector state and SIMD sequences
 
 Upper-vector save/restore retains the native target predicates and the

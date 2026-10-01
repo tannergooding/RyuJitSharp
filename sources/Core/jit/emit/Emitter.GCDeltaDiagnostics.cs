@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG && TARGET_XARCH
+#if DEBUG
 using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.GCInfo.rpdArgType_t;
 
@@ -16,12 +16,23 @@ public partial class Emitter
 #if TARGET_AMD64
         const int basicIndent = 7;
         const int hexEncodingSize = 21;
-#else
+#elif TARGET_X86
         const int basicIndent = 7;
         const int hexEncodingSize = 13;
+#elif TARGET_ARM
+        const int basicIndent = 12;
+        const int hexEncodingSize = 11;
+#elif TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
+        const int basicIndent = 12;
+        const int hexEncodingSize = 19;
+#else
+#error Unsupported instruction indentation target
 #endif
         var compiler = _compiler ?? throw new FatalJitException("GC delta diagnostics require an active compiler.");
-        jitprintf(new string(' ', basicIndent + (compiler.opts.disDiffable ? 0 : hexEncodingSize)));
+        // Native %.*s cannot print past its 29-character space literal.
+        const string indentation = "                             ";
+        var indent = compiler.opts.disDiffable ? basicIndent : basicIndent + hexEncodingSize;
+        jitprintf(indentation[..System.Math.Min(indent, indentation.Length)]);
     }
 
     private void emitDispGCDeltaTitle(string title)
@@ -63,6 +74,7 @@ public partial class Emitter
         }
 
         emitDispGCDeltaTitle("GC ptr vars");
+        _ = VarSetOps.Intersection(compiler, debugPrevGCrefVars, debugThisGCrefVars);
         var removed = VarSetOps.Diff(compiler, debugPrevGCrefVars, debugThisGCrefVars);
         var added = VarSetOps.Diff(compiler, debugThisGCrefVars, debugPrevGCrefVars);
         if (!VarSetOps.IsEmpty(compiler, removed))
@@ -96,13 +108,34 @@ public partial class Emitter
                 continue;
             }
 
-            var title = descriptor.rpdGCtypeGet() switch
+            string title;
+            switch (descriptor.rpdGCtypeGet())
             {
-                GCT_NONE => "npt",
-                GCT_GCREF => "gcr",
-                GCT_BYREF => "byr",
-                _ => throw new FatalJitException("Invalid GC type in register pointer descriptor."),
-            };
+                case GCT_NONE:
+                {
+                    title = "npt";
+                    break;
+                }
+
+                case GCT_GCREF:
+                {
+                    title = "gcr";
+                    break;
+                }
+
+                case GCT_BYREF:
+                {
+                    title = "byr";
+                    break;
+                }
+
+                default:
+                {
+                    assert(false, "!\"Invalid GCtype\"");
+                    title = "err";
+                    break;
+                }
+            }
             emitDispGCDeltaTitle(title);
             var arg = descriptor.rpdCallData.rpdPtrArg;
             switch (descriptor.rpdArgTypeGet())
@@ -138,7 +171,7 @@ public partial class Emitter
             jitprintf("\n");
         }
 
-        debugPrevRegPtrDsc = last;
+        debugPrevRegPtrDsc = codeGen.GCInfo.DiagnosticRegPtrLast;
     }
 
     private void emitDispGCInfoDelta()
@@ -149,6 +182,49 @@ public partial class Emitter
         debugPrevByrefRegs = new regMaskTP(emitThisByrefRegs);
         emitDispGCVarDelta();
         emitDispRegPtrListDelta();
+    }
+
+    public unsafe void emitDispGCinfo()
+    {
+        var compiler = _compiler ?? throw new FatalJitException("GC tracking diagnostics require an active compiler.");
+        // Keep the diagnostic field addresses stable while formatting can allocate.
+        fixed (regMask* previousGCref = &emitPrevGCrefRegs, previousByref = &emitPrevByrefRegs,
+            initialGCref = &emitInitGCrefRegs, initialByref = &emitInitByrefRegs,
+            currentGCref = &emitThisGCrefRegs, currentByref = &emitThisByrefRegs)
+        {
+            jitprintf("Emitter GC tracking info:");
+            jitprintf("\n  emitPrevGCrefVars ");
+            dumpConvertedVarSet(compiler, emitPrevGCrefVars);
+            jitprintf($"\n  emitPrevGCrefRegs(0x{FMT_PTR((void*)dspPtr(previousGCref))})=");
+            var registers = new regMaskTP(emitPrevGCrefRegs);
+            printRegMaskInt(registers);
+            emitDispRegSet(registers);
+            jitprintf($"\n  emitPrevByrefRegs(0x{FMT_PTR((void*)dspPtr(previousByref))})=");
+            registers = new regMaskTP(emitPrevByrefRegs);
+            printRegMaskInt(registers);
+            emitDispRegSet(registers);
+            jitprintf("\n  emitInitGCrefVars ");
+            dumpConvertedVarSet(compiler, emitInitGCrefVars);
+            jitprintf($"\n  emitInitGCrefRegs(0x{FMT_PTR((void*)dspPtr(initialGCref))})=");
+            registers = new regMaskTP(emitInitGCrefRegs);
+            printRegMaskInt(registers);
+            emitDispRegSet(registers);
+            jitprintf($"\n  emitInitByrefRegs(0x{FMT_PTR((void*)dspPtr(initialByref))})=");
+            registers = new regMaskTP(emitInitByrefRegs);
+            printRegMaskInt(registers);
+            emitDispRegSet(registers);
+            jitprintf("\n  emitThisGCrefVars ");
+            dumpConvertedVarSet(compiler, emitThisGCrefVars);
+            jitprintf($"\n  emitThisGCrefRegs(0x{FMT_PTR((void*)dspPtr(currentGCref))})=");
+            registers = new regMaskTP(emitThisGCrefRegs);
+            printRegMaskInt(registers);
+            emitDispRegSet(registers);
+            jitprintf($"\n  emitThisByrefRegs(0x{FMT_PTR((void*)dspPtr(currentByref))})=");
+            registers = new regMaskTP(emitThisByrefRegs);
+            printRegMaskInt(registers);
+            emitDispRegSet(registers);
+            jitprintf("\n\n");
+        }
     }
 }
 #endif

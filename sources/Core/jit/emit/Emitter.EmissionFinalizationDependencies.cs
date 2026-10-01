@@ -24,15 +24,4 @@ public partial class Emitter
     }
 #endif
 
-#if DEBUG && !TARGET_XARCH
-    private void emitDispGCInfoDelta()
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "Non-xarch GC delta diagnostics are not ported.");
-    }
-
-    private void emitDispInsIndent()
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "Non-xarch instruction indentation is not ported.");
-    }
-#endif
 }

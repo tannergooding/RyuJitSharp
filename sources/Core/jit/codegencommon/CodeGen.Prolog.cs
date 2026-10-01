@@ -13,13 +13,9 @@ public sealed partial class CodeGen
 {
     public void genGeneratePrologsAndEpilogs()
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Prolog and epilog materialization requires AMD64.");
-#else
 #if UNIX_AMD64_ABI
         RequireSupportedRootPrologAbi();
 #endif
-        Emitter.RequireSupportedInstructionRecording();
 #if DEBUG
         if (_verbose)
         {
@@ -44,7 +40,6 @@ public sealed partial class CodeGen
             jitprintf("*************** After prolog / epilog generation\n");
             Emitter.emitDispIGlist(displayInstructions: false);
         }
-#endif
 #endif
     }
 

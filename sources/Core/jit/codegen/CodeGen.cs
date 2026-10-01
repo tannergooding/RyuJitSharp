@@ -1028,7 +1028,7 @@ public sealed partial class CodeGen : ICodeGen
         _nativeSizeOfCode = &generatedSize;
         try
         {
-            DoPhase(_compiler, PHASE_GENERATE_CODE, genGenerateMachineCode);
+            DoPhase(_compiler, PHASE_GENERATE_CODE, genGenerateMachineCodeForEntry);
             DoPhase(_compiler, PHASE_EMIT_CODE, genEmitMachineCode);
             DoPhase(_compiler, PHASE_EMIT_GCEH, genEmitUnwindDebugGCandEH);
 
@@ -1052,6 +1052,15 @@ public sealed partial class CodeGen : ICodeGen
             _codePtr = null;
             _nativeSizeOfCode = null;
         }
+    }
+
+    private void genGenerateMachineCodeForEntry()
+    {
+#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
+        throw new FatalJitException(CORJIT_SKIPPED, "Machine-code generation requires Windows AMD64.");
+#else
+        genGenerateMachineCode();
+#endif
     }
 
 #if TARGET_WASM

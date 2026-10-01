@@ -13,9 +13,6 @@ public sealed partial class CodeGen
 {
     internal unsafe void genEmitUnwindDebugGCandEH()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Final runtime metadata publication requires Windows AMD64.");
-#else
 #if LATE_DISASM
         RequireSupportedLateDisassembly();
 #endif
@@ -96,7 +93,6 @@ public sealed partial class CodeGen
         grossVMsize = unchecked(grossVMsize + (uint)_compiler.info.compILCodeSize);
         totalNCsize = unchecked(totalNCsize + _codeSize + dataSize + (nuint)_compiler.compInfoBlkSize);
         grossNCsize = unchecked(grossNCsize + _codeSize + dataSize);
-#endif
 #endif
     }
 }
