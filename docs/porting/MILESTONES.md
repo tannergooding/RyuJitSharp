@@ -16,14 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
-## 2026-10-01: Empty residual source files
+## 2026-10-01: Residual source remnants
 
 Removed `codegenxarch.cpp` and `jiteh.cpp` after confirming that only comments,
 includes and empty target guards remained. Existing accepted codegen/EH mappings
 provide the translation evidence; this removes 141 scaffold lines, not additional
 definitions or declarations. No new compiler or test run was needed.
 
-These are two verified findings from the bounded small-remnant review, not a
+Also removed `regalloc.h` after matching both enum definitions, conditional
+members and the default alias to `regalloc/FrameType.cs`. Removed `emitdef.h`
+and `emitfmts.h`, which contained only target-selected include dispatch;
+the included target definitions and format data were not removed. These three
+headers account for another 74 lines of previously mapped types and scaffolding,
+not new implementation or execution coverage.
+
+These are five verified findings from the bounded small-remnant review, not a
 claim that every small residual file has been reviewed.
 
 ## 2026-10-01: LSRA tuple and record diagnostics
