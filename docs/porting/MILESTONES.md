@@ -16,6 +16,27 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Compiler local metadata and scope traversal
+
+Translated whole `compLocalVarName` and `compProcessScopesUntil` methods.
+Name lookup preserves counted-array order, unsigned half-open lifetimes and
+the first matching null name. Scope traversal preserves deferred enter/exit
+cursors, equal-offset exit-before-entry ordering, descriptor identity and
+callback replacement of the bitmap reference. Method-scope labels retain the
+native control flow without an unsupported jump into a C# loop body.
+
+The retained parameter-register lookup maps to the existing private
+`LinearScan.findParameterRegisterLocalMappingByLocal`; no duplicate API or
+caller rewiring was introduced. Its historical acceptance is not new execution
+credit. The two new methods and existing scope controls pass 21 Debug and
+12 Release cases on each x64 target, 66 executions total. ARM64 retains the exact
+39-diagnostic compilation baseline and no fixture execution credit.
+
+Retired three definitions and three associated declarations, 146 native lines.
+The historically C#-shaped residual text has distinct raw hashes from the oracle;
+whole-flow correspondence and exact retirement reconstruction are recorded in
+`artifacts/compiler-local-scope-acceptance-b80f5d67`.
+
 ## 2026-10-01: LSRA copy/move busy-reference helper
 
 Translated the whole `copyOrMoveRegInUse` helper into `LsraGlobals`, preserving
