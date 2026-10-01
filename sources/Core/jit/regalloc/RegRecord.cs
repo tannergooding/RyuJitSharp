@@ -57,6 +57,11 @@ public sealed class RegRecord : Referenceable
     }
 
 #if DEBUG
+    public void dump()
+    {
+        tinyDump();
+    }
+
     public void tinyDump()
     {
         jitprintf($"<Reg:{regNum.Name,-3}> ");

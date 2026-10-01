@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Globalization;
 
 namespace RyuJitSharp;
@@ -10,10 +11,12 @@ namespace RyuJitSharp;
 public sealed partial class RefPosition
 {
 #if DEBUG
+    private static string? getRefTypeName(RefType refType) => Enum.GetName(refType);
+
     public void dump(LinearScan linearScan)
     {
         jitprintf($"<RefPosition #{rpNum,-3} @{nodeLocation,-3}");
-        jitprintf($" {refType} ");
+        jitprintf($" {getRefTypeName(refType) ?? "(null)"} ");
 
         if (IsPhysRegRef())
         {
@@ -49,7 +52,7 @@ public sealed partial class RefPosition
             compiler.dumpRegMask(registerAssignment, type);
         }
 
-        jitprintf($" minReg={minRegCandidateCount}");
+        jitprintf($" minReg={unchecked((int)minRegCandidateCount).ToString(CultureInfo.InvariantCulture)}");
         if (lastUse)
         {
             jitprintf(" last");

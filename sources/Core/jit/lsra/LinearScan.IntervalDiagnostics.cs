@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if DEBUG
+using System.Globalization;
 using System.Text;
 
 namespace RyuJitSharp;
@@ -105,7 +106,8 @@ public sealed partial class LinearScan
                 if (mode is LsraTupleDumpMode.LSRA_DUMP_REFPOS)
                 {
                     var varIndex = _compiler.lvaGetDesc(localNumber)._varIndex;
-                    jitprintf($"  V{localNumber:D2}(L{getIntervalForLocalVar(varIndex).intervalIndex})");
+                    var intervalIndex = unchecked((int)getIntervalForLocalVar(varIndex).intervalIndex);
+                    jitprintf($"  V{localNumber:D2}(L{intervalIndex.ToString(CultureInfo.InvariantCulture)})");
                 }
                 else
                 {
@@ -235,7 +237,8 @@ public sealed partial class LinearScan
 
             var interval = reference.getInterval();
             assert(interval.isLocalVar);
-            jitprintf($" V{interval.varNum:D2}");
+            var localNumber = unchecked((int)interval.varNum);
+            jitprintf($" V{localNumber.ToString(CultureInfo.InvariantCulture).PadLeft(2, '0')}");
 
             if (mode is LsraTupleDumpMode.LSRA_DUMP_POST)
             {

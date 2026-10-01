@@ -460,7 +460,8 @@ public sealed partial class LinearScan
         {
             var treeNode = node.treeNode
                 ?? throw new FatalJitException("A definition-list entry must retain its defining node.");
-            jitprintf($"{(first ? "" : "; ")}N{treeNode._seqNum:D3}.t{treeNode.TreeId}. {treeNode.Oper.Name}");
+            var sequenceNumber = unchecked((uint)treeNode._seqNum);
+            jitprintf($"{(first ? "" : "; ")}N{sequenceNumber:D3}.t{treeNode.TreeId}. {treeNode.Oper.Name}");
             first = false;
         }
 

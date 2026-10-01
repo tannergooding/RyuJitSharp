@@ -89,8 +89,8 @@ public sealed partial class LinearScan
         }
         else if (interval.IsUpperVector())
         {
-            var relatedInterval = interval.relatedInterval
-                ?? throw new FatalJitException("An upper-vector interval requires a related interval.");
+            var relatedInterval = interval.relatedInterval;
+            assert(relatedInterval is not null);
             jitprintf($" (U{relatedInterval.varNum:D2})");
         }
 

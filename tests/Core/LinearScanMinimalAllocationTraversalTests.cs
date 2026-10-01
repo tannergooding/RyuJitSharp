@@ -164,6 +164,84 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
         });
     }
 
+    [TestCase(0x03)]
+    [TestCase(0xFF)]
+    public static void UnknownReferenceNamesRetainNativeNullStringFormatting(int refType)
+    {
+        WithAllocator((compiler, allocator) => {
+            var block = CreateBlocks(compiler, BBJ_RETURN)[0];
+            compiler.fgPredsComputed = true;
+            SetBlockSequence(allocator);
+            CurrentBlockNumber(allocator) = (uint)block.bbNum;
+
+            var interval = NewInterval(allocator, TYP_INT);
+            var reference = allocator.newRefPosition(interval, 2, RefType.RefTypeDef, null, SRBM_RAX);
+            reference.refType = (RefType)refType;
+
+            var output = Capture(() => reference.dump(allocator));
+
+            Assert.That(GetRefTypeShortName(allocator, reference.refType), Is.Null);
+            Assert.That(output, Does.StartWith(
+                $"<RefPosition #{reference.rpNum,-3} @2   (null) <Ivl:{interval.intervalIndex}> "));
+            Assert.That(output, Does.EndWith($">{Environment.NewLine}"));
+
+#if TARGET_AMD64
+            _ = Capture(() => InitializeAllocationDumpFormat(allocator));
+            var intervalRow = Capture(() => DumpRefPositionShort(allocator, reference));
+            var withoutInterval = new RefPosition(reference.bbNum, reference.nodeLocation, null, reference.refType);
+            var nonIntervalRow = Capture(() => DumpRefPositionShort(allocator, withoutInterval));
+
+            Assert.That(intervalRow, Does.EndWith("  (null)   "));
+            Assert.That(nonIntervalRow, Does.EndWith(" (null)   "));
+#endif
+        });
+    }
+
+    [TestCase(0x80000000u, "-2147483648")]
+    [TestCase(0xFFFFFFFFu, "-1")]
+    public static void CandidateCountUsesNativeSignedBitsAndInvariantNegativeSign(uint count, string expected)
+    {
+        var culture = new CultureInfo("fr-FR");
+        culture.NumberFormat.NegativeSign = "~";
+        var previous = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = culture;
+            WithAllocator((compiler, allocator) => {
+                var block = CreateBlocks(compiler, BBJ_RETURN)[0];
+                compiler.fgPredsComputed = true;
+                SetBlockSequence(allocator);
+                CurrentBlockNumber(allocator) = (uint)block.bbNum;
+
+                var interval = NewInterval(allocator, TYP_INT);
+                var reference = allocator.newRefPosition(interval, 2, RefType.RefTypeDef, null, SRBM_RAX);
+                reference.minRegCandidateCount = count;
+
+                var output = Capture(() => reference.dump(allocator));
+
+                Assert.That(output, Does.Contain($" minReg={expected} "));
+                Assert.That(output, Does.Not.Contain("~"));
+                Assert.That(output, Does.Contain(
+                    $" wt={allocator.GetReferenceDiagnosticWeight(reference).ToString("F2", CultureInfo.InvariantCulture)}>"));
+            });
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previous;
+        }
+    }
+
+    [Test]
+    public static void RegisterDumpRetainsNativeTinyDumpWithoutAddingANewline()
+    {
+        var register = new RegRecord { regNum = regNumber.REG_RAX };
+
+        var output = Capture(register.dump);
+
+        Assert.That(output, Is.EqualTo($"<Reg:{register.regNum.Name,-3}> "));
+        Assert.That(output, Is.EqualTo(Capture(register.tinyDump)));
+    }
+
     [Test]
     public static void MinimalAllocationVariableReferenceDumpMatchesNativeShape()
     {
@@ -638,6 +716,17 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
     private static extern void SetBlockSequence(LinearScan allocator);
 
 #if DEBUG
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "getRefTypeShortName")]
+    private static extern string? GetRefTypeShortName(LinearScan allocator, RefType refType);
+
+#if TARGET_AMD64
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "initializeAllocationDumpFormat")]
+    private static extern void InitializeAllocationDumpFormat(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "dumpRefPositionShort")]
+    private static extern void DumpRefPositionShort(LinearScan allocator, RefPosition? reference, BasicBlock? block = null);
+#endif
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "dumpLsraIntervals")]
     private static extern void DumpLsraIntervals(LinearScan allocator, string message);
 

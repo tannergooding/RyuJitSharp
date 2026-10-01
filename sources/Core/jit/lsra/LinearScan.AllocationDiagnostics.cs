@@ -451,21 +451,21 @@ public sealed partial class LinearScan
             jitprintf(getAllocationIntervalName(refPosition.getInterval()));
             var lastUse = refPosition.lastUse ? '*' : ' ';
             var delay = refPosition.lastUse && refPosition.delayRegFree ? 'D' : ' ';
-            jitprintf($"  {getRefTypeShortName(refPosition.refType)}{lastUse}{delay} ");
+            jitprintf($"  {getRefTypeShortName(refPosition.refType) ?? "(null)"}{lastUse}{delay} ");
         }
         else if (refPosition.IsPhysRegRef())
         {
             jitprintf(refPosition.getReg().regNum.Name.PadRight(_allocationDumpRegColumnWidth));
-            jitprintf($" {getRefTypeShortName(refPosition.refType)}   ");
+            jitprintf($" {getRefTypeShortName(refPosition.refType) ?? "(null)"}   ");
         }
         else
         {
             jitprintf(new string(' ', _allocationDumpRegColumnWidth));
-            jitprintf($" {getRefTypeShortName(refPosition.refType)}   ");
+            jitprintf($" {getRefTypeShortName(refPosition.refType) ?? "(null)"}   ");
         }
     }
 
-    private static string getRefTypeShortName(RefType refType) => refType switch
+    private static string? getRefTypeShortName(RefType refType) => refType switch
     {
         RefType.RefTypeInvalid => "Invl",
         RefType.RefTypeDef => "Def ",
@@ -480,7 +480,7 @@ public sealed partial class LinearScan
         RefType.RefTypeUpperVectorSave => "UVSv",
         RefType.RefTypeUpperVectorRestore => "UVRs",
         RefType.RefTypeKillGCRefs => "KlGC",
-        _ => throw new FatalJitException($"Unsupported LSRA reference type: {refType}."),
+        _ => null,
     };
 #endif
 

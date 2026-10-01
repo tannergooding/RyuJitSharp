@@ -148,6 +148,58 @@ internal static unsafe class LinearScanIntervalDiagnosticsTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void DefinitionListPreservesUnsignedSequenceNumbersAndVerboseOrdering(bool verbose)
+    {
+        WithAllocator((compiler, allocator) => {
+            compiler.verbose = verbose;
+            var first = compiler.gtNewIconNode(TYP_INT, 7);
+            first._seqNum = -1;
+            var second = compiler.gtNewIconNode(TYP_INT, 9);
+            second._seqNum = 3;
+            var definitions = DefinitionList(allocator);
+            definitions.Append(new RefInfoListNode { treeNode = first });
+            definitions.Append(new RefInfoListNode { treeNode = second });
+
+            var text = Capture(() => DumpDefList(allocator));
+
+            Assert.That(text, Is.EqualTo(verbose
+                ? $"DefList: {{ N4294967295.t{first.TreeId}. CNS_INT; N003.t{second.TreeId}. CNS_INT }}{Environment.NewLine}"
+                : ""));
+        });
+    }
+
+    [TestCase(0x80000000u, "-2147483648")]
+    [TestCase(uint.MaxValue, "-1")]
+    [SetCulture("fr-FR")]
+    public static void RefPositionTuplePreservesNativeSignedLocalAndIntervalFields(uint bits, string signedValue)
+    {
+        WithAllocator((compiler, allocator) => {
+            var block = CreateBlocks(compiler, 1)[0];
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_INT, lvLRACandidate = true, _varIndex = 0 }];
+            compiler.lvaCount = 1;
+            compiler.lvaTrackedCount = 1;
+            allocator.localVarIntervals = [new Interval(TYP_INT, SRBM_ALLINT_INIT) { intervalIndex = bits }];
+            var node = new GenTreeLclVar(TYP_INT, 0) { _seqNum = 2 };
+            block.InsertAtEnd(node);
+            var incoming = new Interval(TYP_INT, SRBM_ALLINT_INIT) { isLocalVar = true, varNum = bits };
+            _ = AddRef(allocator, RefType.RefTypeParamDef, 0, incoming);
+            _ = AddRef(allocator, RefType.RefTypeBB, 0);
+            var header = Capture(() => block.dspBlockHeader());
+            var newline = Environment.NewLine;
+
+            var text = Capture(() => TupleStyleDump(allocator, LinearScan.LsraTupleDumpMode.LSRA_DUMP_REFPOS));
+
+            Assert.That(text, Is.EqualTo(
+                $"TUPLE STYLE DUMP WITH REF POSITIONS{newline}" +
+                $"Incoming Parameters:  V{signedValue}{newline}" +
+                header + $"====={newline}" +
+                $"  N002. {Destination("")}  V00(L{signedValue}){newline}" +
+                $"{newline}{newline}{newline}"));
+        });
+    }
+
     [Test]
     public static void ResolutionBlockPrintsItsOriginalEdge()
     {
@@ -610,6 +662,12 @@ internal static unsafe class LinearScanIntervalDiagnosticsTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "lsraDispNode")]
     private static extern void LsraDispNode(LinearScan allocator, GenTree tree, LinearScan.LsraTupleDumpMode mode, bool hasDestination);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "dumpDefList")]
+    private static extern void DumpDefList(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_definitionList")]
+    private static extern ref RefInfoList DefinitionList(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "startBlockSequence")]
     private static extern BasicBlock StartBlockSequence(LinearScan allocator);

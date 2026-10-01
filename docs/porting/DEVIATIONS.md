@@ -89,6 +89,13 @@ LSRA statistics retain lazily allocated per-block counter arrays and the
 existing writer lock; semantic counters, signed text and unsigned weighted
 inputs are not excluded by the arena-allocation statistics policy.
 
+Native `Interval.dump(Compiler*)` continues to map to the existing private
+`LinearScan.dumpInterval(Interval)`, using its compiler context. Reference-name
+lookup preserves null for unknown values and native `(null)` diagnostic output.
+Diagnostic `%d` fields reinterpret unsigned bits as signed integers; sequence
+numbers printed with `%u` retain unsigned bits. No column-layout exception or
+new public interval-dump API is introduced.
+
 VN scalar extraction recognizes native pointer typedef aliases using actual
 host-backed element width, not the selected target ABI. Strict Debug extraction
 compares reinterpretation with coercion, bytewise for floating storage. The

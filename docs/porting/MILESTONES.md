@@ -16,6 +16,30 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: LSRA tuple and record diagnostics
+
+Definition-list sequence numbers retain native unsigned formatting; tuple local
+and interval fields and reference candidate counts retain native signed-bit
+interpretation. Unknown reference names now follow native null-name output.
+Interval diagnostics restore the related-upper-vector assertion, and register
+records expose the native forwarding dump without adding a newline.
+
+The existing private `LinearScan.dumpInterval` remains the canonical mapping of
+native `Interval.dump`; no public API relocation or duplicate algorithm is added.
+Tuple traversal, operand ordering, score names and tiny/micro dumps retain their
+existing algorithms.
+
+Full-analysis fixtures pass 39 Debug/4 Release on Windows and 38/4 with the
+Linux target: 85 executions, including nine new cases in each Debug selection.
+Release runs unchanged allocation controls, not Debug-only diagnostic cases.
+ARM64 retains its exact 39-diagnostic baseline. B493 remains unmodified and outside
+this focused selection; no generated-code or other-target execution is claimed.
+
+Sixteen whole definitions and fourteen associated declarations retire 798 lines:
+771 body lines, 15 declaration lines and 12 exclusive heading/guard lines.
+Retirement preserves actual untranslated work, not declarations needed only
+to compile residual callers.
+
 ## 2026-10-01: Shared call registers and frame initialization
 
 Shared bitcast, indirection-cell and tailcall checks retain their native target
