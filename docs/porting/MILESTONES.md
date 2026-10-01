@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Register-set constructor retirement debt
+
+The existing complete `RegSet` constructor and its exclusive declaration retire
+35 retained native lines. Spill initialization, reserved/callee-saved/prespill
+masks, Swift support and debug state already have their managed equivalents;
+no compiler source changes or new capability are credited. Current Windows
+fixture construction and accepted Windows/Linux shared-codegen execution are
+reused without a retirement-only build.
+
+Exact reconstruction preserves the native register-mask table, x86 FP-stack
+spill and ARM32 prespill-mask helper. A recovery ref protects the preceding
+residual revision; native history remains the pinned oracle plus one removal
+commit. The non-obvious `regset` to `regsset` directory mapping is recorded in
+the checkpoint. This clears one concrete historical debt item, not all debt or
+an execution/parity milestone.
+
 ## 2026-10-01: Object-description NUL termination
 
 Frozen-object diagnostics now stop at the first NUL, matching native `%s`
