@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Shared generation initialization and driver
+
+The merged code-generator constructors retain native target initialization and
+owner aliases. The common driver preserves Wasm rejection predicates, generation
+phase and SPMI query order, and borrowed output lifetimes. Unsupported machine
+and emission dependencies still terminate; D009 is unchanged.
+
+Generation cases pass 3 Debug/2 Release on Windows and 4 Debug/3 Release on the
+Linux target, with Windows metadata and emission controls. Three definitions
+and four declarations retire 140 native lines. Wasm predicates and ARM64
+initialization remain source-only; this does not establish target code generation.
+
 ## 2026-10-01: Shared scope publication
 
 Scope allocation, recording and publication now use their common algorithms

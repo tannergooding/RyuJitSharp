@@ -64,15 +64,29 @@ public sealed partial class CodeGen : ICodeGen
 
     private RegSet _regSet;
 
+#if TARGET_ARM64
+    internal bool genReverseAndPairCalleeSavedRegisters;
+#endif
+
+#if DEBUG && TARGET_WASM
+    private static ConfigMethodRange s_jitR2RUnsupportedRange;
+#endif
+
     public CodeGen(Compiler compiler)
     {
         _compiler = compiler;
         _gcInfo = new GCInfo(this);
         _regSet = new RegSet(this);
         _internalRegisters = new NodeInternalRegisters();
+        treeLifeUpdater = null;
 
 #if !TARGET_X86
         _stkArgVarNum = BAD_VAR_NUM;
+#endif
+
+#if UNIX_X86_ABI
+        curNestedAlignment = 0;
+        maxNestedAlignment = 0;
 #endif
 
         _cgEmitter = new Emitter(this);
@@ -109,6 +123,12 @@ public sealed partial class CodeGen : ICodeGen
 #if DEBUG
         _genInterruptibleUsed = false;
         _genCurDispOffset = uint.MaxValue;
+#endif
+
+#if TARGET_ARM64
+        genSaveFpLrWithAllCalleeSavedRegisters = false;
+        genForceFuncletFrameType5 = false;
+        genReverseAndPairCalleeSavedRegisters = false;
 #endif
     }
 
@@ -987,11 +1007,11 @@ public sealed partial class CodeGen : ICodeGen
 
     public unsafe void genGenerateCode(out void* codePtr, out int nativeSizeOfCode)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Machine-code generation requires Windows AMD64.");
-#else
 #if LATE_DISASM
         RequireSupportedLateDisassembly();
+#endif
+#if TARGET_WASM
+        genCheckWasmFunclets();
 #endif
 #if DEBUG
         if (_verbose)
@@ -1021,6 +1041,9 @@ public sealed partial class CodeGen : ICodeGen
                 }
             }
 #endif
+#if DEBUG && TARGET_WASM
+            genCheckWasmR2RRange();
+#endif
             codePtr = generatedCode;
             nativeSizeOfCode = generatedSize;
         }
@@ -1029,8 +1052,45 @@ public sealed partial class CodeGen : ICodeGen
             _codePtr = null;
             _nativeSizeOfCode = null;
         }
-#endif
     }
+
+#if TARGET_WASM
+    private void genCheckWasmFunclets()
+    {
+        // Reject before generating relocations: an optimized funclet method may
+        // subsequently succeed in MinOpts without those relocations.
+        if (JitConfig.JitWasmFunclets == 0)
+        {
+            assert(_compiler.fgFuncletsCreated);
+
+            if (_compiler.compFuncInfoCount > 1)
+            {
+                JITDUMP("Failing R2R codegen because method has funclets.\n");
+                implReadyToRunUnsupported();
+            }
+        }
+    }
+#endif
+
+#if DEBUG && TARGET_WASM
+    private unsafe void genCheckWasmR2RRange()
+    {
+        s_jitR2RUnsupportedRange.EnsureInit(JitConfig.JitR2RUnsupportedRange);
+        assert(!s_jitR2RUnsupportedRange.Error);
+        var hash = _compiler.impInlineRoot.info.compMethodHash();
+        var inRange = !s_jitR2RUnsupportedRange.IsEmpty && s_jitR2RUnsupportedRange.Contains(hash);
+
+        if (inRange)
+        {
+            JITDUMP($"Failing R2R codegen because of JitR2RUnsupportedRange. Hash is 0x{unchecked((uint)hash):x8}, range is ");
+            if (VERBOSE)
+            {
+                s_jitR2RUnsupportedRange.Dump();
+            }
+            implReadyToRunUnsupported();
+        }
+    }
+#endif
 
 #if HAS_FIXED_REGISTER_SET
     public regNumber GetFramePointerReg(int funcletIndex) => REG_FPBASE;

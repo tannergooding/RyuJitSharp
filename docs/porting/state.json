@@ -32,6 +32,12 @@
       "retirement": "One whole definition and one declaration,102lines. Five previously absent scope/EE bodies receive no new retirement credit.",
       "limits": "X86-specific source cases remain unexecuted behind recorded baseline parser failures. The independent signed eeVarsCount high-count diagnostic-walk gap remains; no ABI or storage redesign."
     },
+    "sharedGenerationDriver": {
+      "scope": "Merged CodeGen/CodeGenInterface constructors retain owner aliases, UNIX_X86 alignment and ARM64 policy initialization. The common driver retains target predicates, phase and SPMI order, stack-local output lifetimes and finally cleanup; D009 remains unchanged.",
+      "validation": "Generation fixture passes3Debug/2Release Windows and4Debug/3Release Linux-target cases, including actual unsupported-machine-phase termination and output-address cleanup on Linux. Existing Windows metadata6/4 and emission8/2 controls also pass within sharedReadyAcceptance.",
+      "retirement": "Three definitions and four declarations,140lines including136body lines. Previously absent CodeGenInterface compiler-owner initialization receives zero new credit. Unfinished machine/emission helpers remain native and explicit terminating dependencies.",
+      "limits": "Wasm flag-zero/funclet-count and debug inline-root range predicates are whole source translations, not Wasm execution. ARM64 initialization cases remain unexecuted behind historical compiler failures; no target generation or parity claim."
+    },
     "sharedEhPublication": {
       "scope": "Whole common genReportEH/genReportEHClauses and ehEmitCookie/ehCodeOffset retain native target branches, publication order, VM permutation, end-offset fields, same-try identity, unsigned bits and existing EE ownership.",
       "correction": "Restored native emitter-cookie noway assertion and recoverable-error callback regression; valid Windows behavior remains unchanged.",
