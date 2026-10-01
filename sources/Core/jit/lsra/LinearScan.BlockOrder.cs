@@ -43,23 +43,6 @@ public sealed partial class LinearScan
             }
 
             _compiler.fgVisitBlocksInLoopAwareRPO(dfsTree, loops, AddBlock);
-
-            var block = _compiler.fgLastBB
-                ?? throw new FatalJitException("LSRA requires a last block when completing its block sequence.");
-            while (_blockSequenceCount < blockCount)
-            {
-                if (!dfsTree.Contains(block))
-                {
-                    block.bbPostorderNum = _blockSequenceCount;
-                    _blockSequence![_blockSequenceCount++] = block;
-                }
-
-                if (_blockSequenceCount < blockCount)
-                {
-                    block = block.Prev
-                        ?? throw new FatalJitException("The LSRA block sequence does not cover the compiler flow graph.");
-                }
-            }
         }
         else
         {
@@ -68,12 +51,6 @@ public sealed partial class LinearScan
                 block.bbPostorderNum = _blockSequenceCount;
                 _blockSequence[_blockSequenceCount++] = block;
             }
-        }
-
-        assert(_blockSequenceCount == blockCount);
-        if (_blockSequenceCount != blockCount)
-        {
-            throw new FatalJitException("The LSRA block sequence does not cover every compiler block.");
         }
 
         _bbNumMaxBeforeResolution = (uint)_compiler.fgBBNumMax;
@@ -95,6 +72,31 @@ public sealed partial class LinearScan
         for (var index = 0; index < _blockSequenceCount; index++)
         {
             visitBlock(_blockSequence[index]);
+        }
+
+        // Initialize reachable metadata before appending unreachable blocks, as in native LSRA.
+        for (var block = _compiler.fgLastBB; _blockSequenceCount < blockCount; block = block.Prev)
+        {
+            assert(_compiler.opts.OptimizationEnabled);
+            assert(block is not null);
+            assert(_compiler._dfsTree is not null);
+            if (block is null || _compiler._dfsTree is null)
+            {
+                throw new FatalJitException("The LSRA block sequence does not cover the compiler flow graph.");
+            }
+
+            if (!_compiler._dfsTree.Contains(block))
+            {
+                block.bbPostorderNum = _blockSequenceCount;
+                visitBlock(block);
+                _blockSequence[_blockSequenceCount++] = block;
+            }
+        }
+
+        assert(_blockSequenceCount == blockCount);
+        if (_blockSequenceCount != blockCount)
+        {
+            throw new FatalJitException("The LSRA block sequence does not cover every compiler block.");
         }
 
         _blockSequencingDone = true;
@@ -160,7 +162,7 @@ public sealed partial class LinearScan
                 info.hasEHBoundaryOut = true;
             }
 
-            var uniquePred = getUniquePred(block) is not null;
+            var uniquePred = block.GetUniquePred(_compiler) is not null;
             foreach (var predEdge in block.PredEdges)
             {
                 var predBlock = predEdge.SourceBlock;
@@ -201,7 +203,7 @@ public sealed partial class LinearScan
             {
                 foreach (var successor in block.Succs)
                 {
-                    if (getUniquePred(successor) is null)
+                    if (successor.GetUniquePred(_compiler) is null)
                     {
                         info.hasCriticalOutEdge = true;
                         _hasCriticalEdges = true;
@@ -210,23 +212,6 @@ public sealed partial class LinearScan
                 }
             }
         }
-    }
-
-    private BasicBlock? getUniquePred(BasicBlock block)
-    {
-        if (block == _compiler.fgFirstBB)
-        {
-            return null;
-        }
-
-        var predEdges = block.PredEdges.GetEnumerator();
-        if (!predEdges.MoveNext())
-        {
-            return null;
-        }
-
-        var predBlock = predEdges.Current.SourceBlock;
-        return predEdges.MoveNext() ? null : predBlock;
     }
 
     private BasicBlock startBlockSequence()

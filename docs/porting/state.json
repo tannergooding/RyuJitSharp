@@ -38,6 +38,13 @@
       "retirement": "Three definitions and four declarations,140lines including136body lines. Previously absent CodeGenInterface compiler-owner initialization receives zero new credit. Unfinished machine/emission helpers remain native and explicit terminating dependencies.",
       "limits": "Wasm flag-zero/funclet-count and debug inline-root range predicates are whole source translations, not Wasm execution. ARM64 initialization cases remain unexecuted behind historical compiler failures; no target generation or parity claim."
     },
+    "lsraSequencingClosure": {
+      "scope": "Initialize reachable block metadata before appending unreachable blocks; visit each unreachable block before publishing its sequence entry. Use BasicBlock.GetUniquePred to retain the implicit entry-prolog predecessor and native critical-edge/EH-boundary behavior.",
+      "validation": "Six Debug/five Release sequencing cases and four existing block-order cases pass in both Windows and Linux target selections. Coverage includes restart/peek semantics, entry backedges, call-finally boundaries and observation of publication order.",
+      "retirement": "Eight whole definitions and five declarations,355lines. Includes unchanged complete fixed-reference conflict and visitation helpers; their retirement is not new implementation. Native constructor and its declaration remain for the separate register-bank prerequisite closure.",
+      "evidence": "sharedReadyAcceptance; sources/Core/jit/lsra/LinearScan.BlockOrder.cs and tests/Core/LinearScanSequencingInitializationTests.cs.",
+      "limits": "No full allocator execution or other-target generated-code parity is inferred."
+    },
     "sharedEhPublication": {
       "scope": "Whole common genReportEH/genReportEHClauses and ehEmitCookie/ehCodeOffset retain native target branches, publication order, VM permutation, end-offset fields, same-try identity, unsigned bits and existing EE ownership.",
       "correction": "Restored native emitter-cookie noway assertion and recoverable-error callback regression; valid Windows behavior remains unchanged.",

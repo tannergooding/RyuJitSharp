@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: LSRA sequencing and visitation
+
+LSRA now initializes reachable metadata before appending unreachable blocks and
+visits each unreachable block before publishing its sequence entry. Critical-edge
+classification uses the shared unique-predecessor contract, including the
+implicit entry-prolog predecessor.
+
+Six Debug/five Release new cases and four existing block-order cases pass on
+Windows and Linux targets. Eight definitions and five declarations retire 355
+native lines, including unchanged complete visitation/conflict helpers. The
+constructor remains separate pending exact target register-bank prerequisites.
+
 ## 2026-10-01: Shared generation initialization and driver
 
 The merged code-generator constructors retain native target initialization and
