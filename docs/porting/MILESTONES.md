@@ -16,6 +16,28 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Try-region construction and traversal
+
+Completed `FlowGraphTryRegion` and `FlowGraphTryRegions`, including construction,
+membership, entry edges, runtime-resumption flags, reverse-postorder traversal
+and Debug dumps. The port preserves EH table-slot identity, stable-ID gaps,
+mutual-protection ancestry, handler exclusion, unreachable-block handling,
+predecessor order and visitor abortion.
+
+Windows and Linux-target selections each pass 103 Debug and 98 Release cases:
+402 executions, including 170 new cases and 232 DFS controls. ARM64 retains
+the exact 39-diagnostic compilation baseline; no target tests ran. Full-analysis
+gates remained enabled. Integration corrected property invocation, discarded
+visitor results, fixture lambda/discard binding and collection syntax without
+changing the algorithm or case selection.
+
+Retired 462 native lines across the two complete types, their forward
+declaration and implementations: 27 definitions (nine out-of-line, one template
+and 17 inline) and ten function declarations. Evidence and preserved failed
+snapshots are under `artifacts/try-regions-acceptance-a92829d5`, with final
+acceptance in `v5`. No phase activation, Wasm execution or generated-code parity
+is claimed.
+
 ## 2026-10-01: LSRA allocation-event and register-table diagnostics
 
 Completed the 33-event Debug allocation dispatcher, strict register-table header
