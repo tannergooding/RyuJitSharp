@@ -2349,10 +2349,15 @@ public partial class Compiler
     ///   <para>This method literally checks if the runtime had a profile schema, from which we can derive weights.</para>
     ///   <para>Schema-based data comes from Tier0 methods, which currently do not do any inlining; thus inlinee profile data should be available and representative.</para>
     /// </remarks>
-    protected unsafe bool fgHaveProfileData => fgPgoSchema is not null;
+    protected internal unsafe bool fgHaveProfileData => fgPgoSchema is not null;
 
     /// <summary>true if we have real profile data for this method or if we have some fake profile data for the stress mode</summary>
     public bool fgIsUsingProfileWeights => fgHaveProfileWeights || (fgStressBBProf() != 0);
+
+    public uint fgProfileRunsCount()
+    {
+        return fgIsUsingProfileWeights ? unchecked((uint)fgNumProfileRuns) : BB_UNITY_WEIGHT_UNSIGNED;
+    }
 
     /// <summary>Answers does the inlinee need to spill all returns as a temp.</summary>
     public bool fgNeedReturnSpillTemp

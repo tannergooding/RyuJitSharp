@@ -34,7 +34,7 @@ public partial class Emitter
     }
 #endif
 
-    public unsafe byte* emitOutputLJ(insGroup ig, byte* dst, instrDesc i)
+    public unsafe byte* emitOutputLJ(insGroup? ig, byte* dst, instrDesc i)
     {
 #if !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Label output requires xarch.");

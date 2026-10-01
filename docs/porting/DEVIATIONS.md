@@ -1829,11 +1829,12 @@ zero-fill, scaling and safe range masks. General Reverse constructs its native
 lookup; two-source Wasm operations now retain their OR mapping. Binary and
 comparison mappers include all pinned Wasm branches (B476). Main and All comparison
 callers now retain the ordered unsigned-64 signed-bias fallback (B478), including
-the safe long/double shuffle path. Explicit-HW-Wasm still cannot compile because
-the broadcast factory contains `#error` and memory classification is incomplete
-(B477); reaching the constant broadcast fast path does not bypass preprocessing.
-Focused x64 controls do not establish other-target execution or generated-code
-parity.
+the safe long/double shuffle path. Broadcast now includes ARM64 scalable repeated
+constants and the native Wasm nonconstant path. The whole load/store classifiers
+include Wasm metadata/address selection and null-on-false semantics (B477).
+Default Wasm HW remains disabled; closing these selected prerequisites and
+passing focused x64 controls do not establish explicit-HW-Wasm compilation,
+other-target execution or generated-code parity.
 
 Shared emitter jump binding, removal, offset recomputation and funclet checking
 retain whole target branches and native diagnostics. ARM/ARM64/RISC-V jump
@@ -1841,6 +1842,12 @@ classification and short/medium encoding helpers remain typed, terminating
 dependencies with their native definitions retained. The separate LoongArch
 binder and other-target group diagnostics remain unported; x64 fixture results
 do not establish their execution or generated-code parity.
+
+Emission finalization retains its whole target/feature body and native unsigned
+allocation/offset semantics. Other-target issuing, label output, ARM64 pair
+checking and non-xarch GC-delta/indentation diagnostics remain typed terminating
+dependencies. Their native implementations remain in the residual; ordinary
+validation does not enable optional `EMITTER_STATS`.
 
 Ternary HW-intrinsic VN evaluation retains whole ARM64/SVE and Wasm branches
 under the native HW feature scope. Integral WithElement uses bounded raw-byte
@@ -1870,9 +1877,9 @@ Hardware-intrinsic VN dispatch retains its whole target-independent body and
 native xarch-only barrier/imprecise-address cases. Mask-conversion uniqueness
 allocates fresh opaque VNs while preserving operand exceptions. The dispatcher
 and now-exclusive evaluator declarations are retired; the independent scalable
-constant wrapper remains native. Explicit-HW-Wasm memory classification still
-lacks target branches and definite assignment (B477); default Wasm HW is disabled.
-Focused x64 dispatcher results do not establish non-xarch execution parity.
+constant wrapper remains native. The separate B477 classification completion
+preserves Wasm memory semantics; default Wasm HW is still disabled. Focused x64
+dispatcher results do not establish non-xarch execution parity.
 
 `GenTreeHWIntrinsic.GetLayout` now preserves its complete fixed and SVE aggregate
 layout dispatch and is retired. SVE cases call the typed, terminating

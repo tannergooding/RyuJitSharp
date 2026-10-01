@@ -14,7 +14,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
     // These native-pointer tables share the emitter's lifetime. Retain their pinned
     // owners across EE callbacks, instruction issue, and later emitter queries.
     private AllocMemChunk[]? _emissionDataChunks;
@@ -22,6 +21,7 @@ public partial class Emitter
     private int[]? _emissionFrameOffsets;
     private byte[]? _emissionArgumentTracking;
 
+#if TARGET_AMD64
     private unsafe nuint emitIssue1Instr(insGroup ig, instrDesc id, byte** dp)
     {
         var compiler = _compiler ?? throw new FatalJitException("Instruction issue requires an active compiler.");
@@ -71,6 +71,11 @@ public partial class Emitter
 #endif
         return size;
     }
+#else
+    private unsafe nuint emitIssue1Instr(insGroup ig, instrDesc id, byte** dp)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Instruction issue outside AMD64 is not ported.");
+    }
 #endif
 
     public unsafe uint emitEndCodeGen(
@@ -90,9 +95,6 @@ public partial class Emitter
 #endif
         )
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Final instruction emission requires AMD64.");
-#else
         var compiler = _compiler ?? throw new FatalJitException("Final instruction emission requires an active compiler.");
 #if DEBUG
         if (compiler.verbose)
@@ -114,15 +116,25 @@ public partial class Emitter
 
             emitFullyInt = fullyInt;
             emitFullGCinfo = fullPtrMap;
+#if TARGET_X86
+            emitFullArgInfo = fullPtrMap;
+#else
             emitFullArgInfo = !emitHasFramePtr;
+#endif
+#if EMITTER_STATS
+            GCrefsTable.record(unchecked((uint)emitGCrFrameOffsCnt));
+            emitSizeTable.record(unchecked((uint)emitSizeMethod));
+            stkDepthTable.record(unchecked((uint)emitMaxStackDepth));
+#endif
+
             emitSimpleStkUsed = true;
             u1.emitSimpleStkMask = 0;
             u1.emitSimpleByrefStkMask = 0;
 
 #if EMIT_TRACK_STACK_DEPTH
-            var maxStackDepthIn4ByteElements = emitMaxStackDepth / sizeof(int);
+            var maxStackDepthIn4ByteElements = unchecked((uint)emitMaxStackDepth) / sizeof(int);
             JITDUMP($"Converting emitMaxStackDepth from bytes ({emitMaxStackDepth}) to elements ({maxStackDepthIn4ByteElements})\n");
-            emitMaxStackDepth = maxStackDepthIn4ByteElements;
+            emitMaxStackDepth = unchecked((int)maxStackDepthIn4ByteElements);
             if ((emitMaxStackDepth > MAX_SIMPLE_STK_DEPTH) || emitFullGCinfo)
             {
                 emitSimpleStkUsed = false;
@@ -142,9 +154,14 @@ public partial class Emitter
             if (emitEpilogCnt == 0)
             {
                 emitEpilogSize = 0;
+#if TARGET_XARCH
                 emitExitSeqSize = 0;
+#endif
             }
-            *epilogSize = unchecked((uint)(emitEpilogSize + emitExitSeqSize));
+            *epilogSize = unchecked((uint)emitEpilogSize);
+#if TARGET_XARCH
+            *epilogSize = unchecked(*epilogSize + (uint)emitExitSeqSize);
+#endif
 
 #if DEBUG
             emitCheckIGList();
@@ -155,13 +172,31 @@ public partial class Emitter
                 size = emitTotalHotCodeSize,
                 flags = CORJIT_ALLOCMEM_HOT_CODE,
             };
-            if (codeGen.ShouldAlignLoops && (emitTotalHotCodeSize > 16) && compiler.fgHasLoops)
+#if TARGET_X86
+            // Profiled methods align when called more than 256 times per scenario;
+            // without profile data only methods at most 16 bytes receive this alignment.
+            if (compiler.fgHaveProfileData)
+            {
+                const weight_t scenarioHotWeight = 256.0;
+                if (compiler.fgCalledCount > (scenarioHotWeight * compiler.fgProfileRunsCount()))
+                {
+                    codeChunk.alignment = 16;
+                }
+            }
+            else if (unchecked((uint)emitTotalHotCodeSize) <= 16)
+            {
+                codeChunk.alignment = 16;
+            }
+#endif
+#if TARGET_XARCH || TARGET_ARM64
+            if (codeGen.ShouldAlignLoops && (unchecked((uint)emitTotalHotCodeSize) > 16) && compiler.fgHasLoops)
             {
                 codeChunk.alignment = 32;
             }
+#endif
 
             AllocMemChunk coldCodeChunk = default;
-            if (emitTotalColdCodeSize > 0)
+            if (emitTotalColdCodeSize != 0)
             {
                 coldCodeChunk.alignment = 1;
                 coldCodeChunk.size = emitTotalColdCodeSize;
@@ -202,18 +237,23 @@ public partial class Emitter
 
             comp.Metrics.AllocatedHotCodeBytes = emitTotalHotCodeSize;
             comp.Metrics.AllocatedColdCodeBytes = emitTotalColdCodeSize;
-            compiler.eeAllocMem(ref codeChunk, coldCodeChunk.size > 0 ? &coldCodeChunk : null,
+            compiler.eeAllocMem(ref codeChunk, coldCodeChunk.size != 0 ? &coldCodeChunk : null,
                 emitDataChunks, (uint)numDataChunks, xcptnsCount);
 
             *codeAddr = emitCodeBlock = codeChunk.block;
             *codeAddrRW = codeChunk.blockRW;
-            *coldCodeAddr = emitColdCodeBlock = coldCodeChunk.size > 0 ? coldCodeChunk.block : null;
-            *coldCodeAddrRW = coldCodeChunk.size > 0 ? coldCodeChunk.blockRW : null;
+            *coldCodeAddr = emitColdCodeBlock = coldCodeChunk.size != 0 ? coldCodeChunk.block : null;
+            *coldCodeAddrRW = coldCodeChunk.size != 0 ? coldCodeChunk.blockRW : null;
 
 #if EMIT_TRACK_STACK_DEPTH
             emitCurStackLvl = 0;
 #endif
             VarSetOps.ClearD(compiler, emitThisGCrefVars);
+#if DEBUG && JIT32_ENCODER
+            VarSetOps.ClearD(compiler, debugThisGCrefVars);
+            VarSetOps.ClearD(compiler, debugPrevGCrefVars);
+            debugPrevRegPtrDsc = null;
+#endif
             emitThisGCrefRegs = (regMask)RBM_NONE;
             emitThisByrefRegs = (regMask)RBM_NONE;
             emitThisGCrefVset = true;
@@ -230,6 +270,25 @@ public partial class Emitter
             codeGen.GCInfo.gcVarPtrSetInit();
             emitSyncThisObjOffs = -1;
             emitSyncThisObjReg = REG_NA;
+#if JIT32_GCENCODER
+            if (compiler.lvaKeepAliveAndReportThis())
+            {
+                assert(compiler.lvaIsOriginalThisArg(0));
+                ref var thisDsc = ref compiler.lvaGetDesc(0);
+                if (thisDsc.lvRegister)
+                {
+                    emitSyncThisObjReg = thisDsc.RegNum;
+                    if ((emitSyncThisObjReg == REG_ARG_0)
+                        && !(codeGen.CalleeRegArgMaskLiveIn & genRegMask(REG_ARG_0)).IsEmpty)
+                    {
+                        if (emitFullGCinfo)
+                        {
+                            emitGCregLiveSet(GCT_GCREF, genRegMask(REG_ARG_0), emitCodeBlock, true);
+                        }
+                    }
+                }
+            }
+#endif
             emitContTrkPtrLcls = contTrkPtrLcls;
 
             if (emitGCrFrameOffsCnt != 0)
@@ -298,13 +357,30 @@ public partial class Emitter
             *instrCount = 0;
             var nextMapping = compiler.genRichIPmappings.First;
 #endif
+#if DEBUG && TARGET_ARM64
+            instrDesc? previousId = null;
+#endif
             for (var ig = emitIGlist; ig is not null; ig = ig.igNext)
             {
+#if DEBUG && TARGET_ARM64
+                var groupDescriptors = ig.igData.AsSpan();
+                for (var index = 0; index < ig.igInsCnt; index++)
+                {
+                    var currentId = groupDescriptors[index];
+                    emitInsPairSanityCheck(previousId, currentId);
+                    previousId = currentId;
+                }
+                if (ig.igNext is null)
+                {
+                    assert(previousId is not null);
+                    assert(previousId.idIns() != INS_sve_movprfx);
+                }
+#endif
                 assert((ig.igFlags & InsGroupFlags.Placeholder) == 0);
                 if (ig == emitFirstColdIG)
                 {
                     assert(emitCurCodeOffs(cp) == (uint)emitTotalHotCodeSize);
-                    assert(coldCodeChunk.size > 0);
+                    assert(coldCodeChunk.size != 0);
                     cp = coldCodeChunk.block;
                     writeableOffset = unchecked((nint)(coldCodeChunk.blockRW - coldCodeChunk.block));
                     emitOffsAdj = 0;
@@ -467,8 +543,13 @@ public partial class Emitter
                             compiler.opts.disAlignment))
                         {
                             var afterInstrAddr = (nuint)cp;
+#if TARGET_XARCH
                             var curIns = id.idIns();
+#else
+                            _ = id.idIns();
+#endif
                             var isJccAffectedIns = false;
+#if TARGET_XARCH
                             const nuint jccAlignBoundary = 32;
                             const nuint jccAlignBoundaryMask = jccAlignBoundary - 1;
                             var jccLastBoundaryAddr = afterInstrAddr & ~jccAlignBoundaryMask;
@@ -494,6 +575,9 @@ public partial class Emitter
                                     jitprintf($"; ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ({codeGen.genInsDisplayName(id)}: {bytesCrossedBoundary} ; jcc erratum) {jccAlignBoundary}B boundary ...............................\n");
                                 }
                             }
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+                            isJccAffectedIns = true;
+#endif
                             if (!isJccAffectedIns)
                             {
                                 var alignBoundaryMask = (nuint)compiler.opts.compJitAlignLoopBoundary - 1;
@@ -584,7 +668,9 @@ public partial class Emitter
             {
                 for (var jmp = emitJumpList; jmp is not null; jmp = jmp.idjNext)
                 {
+#if TARGET_XARCH
                     assert(jmp.idInsFmt() is IF_LABEL or IF_RWR_LABEL or IF_SWR_LABEL);
+#endif
                     var target = jmp.idjTargetIG;
                     assert(target is not null);
                     if (jmp.idjAddr is null)
@@ -595,12 +681,19 @@ public partial class Emitter
                     {
                         var adr = jmp.idjAddr;
                         var adj = unchecked((int)(jmp.idjOffs - target.igOffs));
+#if TARGET_ARM
+                        adj >>= 1;
+#endif
 #if DEBUG
                         var debugInfo = jmp.idDebugOnlyInfo();
                         assert(debugInfo is not null);
                         if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) ||
                             (INTERESTING_JUMP_NUM == 0))
                         {
+#if TARGET_ARM
+                            jitprintf("[5] This output is broken for ARM, since it doesn't properly decode the jump offsets of " +
+                                "the instruction at adr\n");
+#endif
                             if (INTERESTING_JUMP_NUM == 0)
                             {
                                 jitprintf($"[5] Jump {debugInfo.idNum}:\n");
@@ -619,13 +712,32 @@ public partial class Emitter
 #endif
                         if (jmp.idjShort)
                         {
+#if TARGET_XARCH
                             var patch = unchecked(adr + writeableOffset);
                             *patch = unchecked((byte)(*patch - (byte)adj));
+#elif TARGET_ARM
+                            var patch = (short*)unchecked(adr + writeableOffset);
+                            *patch = unchecked((short)(*patch - (short)adj));
+#elif TARGET_ARM64
+                            _ = emitOutputLJ(null, adr, jmp);
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
+                            unreached();
+#else
+#error Unsupported or unset target architecture
+#endif
                         }
                         else
                         {
+#if TARGET_XARCH
                             var patch = (int*)unchecked(adr + writeableOffset);
                             *patch = unchecked(*patch - adj);
+#elif TARGET_ARMARCH
+                            _ = emitOutputLJ(null, adr, jmp);
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
+                            unreached();
+#else
+#error Unsupported or unset target architecture
+#endif
                         }
                     }
                 }
@@ -638,7 +750,15 @@ public partial class Emitter
             }
 #endif
             var actualCodeSize = emitCurCodeOffs(cp);
+#if TARGET_ARM64
+            assert((uint)emitTotalCodeSize == actualCodeSize);
+#else
             assert((uint)emitTotalCodeSize >= actualCodeSize);
+#endif
+#if EMITTER_STATS
+            totAllocdSize = unchecked(totAllocdSize + (uint)emitTotalCodeSize);
+            totActualSize = unchecked(totActualSize + actualCodeSize);
+#endif
             var unusedSize = (uint)emitTotalCodeSize - actualCodeSize;
             JITDUMP($"\n\nAllocated method code size = {emitTotalCodeSize,4} , actual size = {actualCodeSize,4}, unused size = {unusedSize,4}\n");
 
@@ -667,6 +787,5 @@ public partial class Emitter
 
             return actualCodeSize;
         }
-#endif
     }
 }

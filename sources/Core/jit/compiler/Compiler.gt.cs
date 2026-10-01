@@ -10219,8 +10219,37 @@ public partial class Compiler
     /// <returns>The created CreateBroadcast node</returns>
     public GenTree gtNewSimdCreateBroadcastNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
     {
-        if (op1.Oper.IsConst)
+        if (op1.Oper.IsIntegralConst || op1.Oper.IsCnsFltOrDbl)
         {
+#if TARGET_ARM64
+            if (type == TYP_SIMD)
+            {
+                var scalableVecCon = gtNewSimdVconNode(type, simdBaseType, SimdScalableKind.SimdScalableRepeated, 0);
+
+                if (varTypeIsIntegral(simdBaseType))
+                {
+                    var elementBitSize = simdBaseType.Size * 8;
+                    var elementMask = elementBitSize == 64 ? ulong.MaxValue : (1UL << elementBitSize) - 1;
+                    scalableVecCon.SimdScalableVal.Index.u64[0] =
+                        unchecked((ulong)op1.AsIntConCommon().IntegralValue) & elementMask;
+                }
+                else if (simdBaseType == TYP_FLOAT)
+                {
+                    scalableVecCon.SimdScalableVal.Index.f32[0] = (float)op1.AsDblCon().DconVal;
+                }
+                else if (simdBaseType == TYP_DOUBLE)
+                {
+                    scalableVecCon.SimdScalableVal.Index.f64[0] = op1.AsDblCon().DconVal;
+                }
+                else
+                {
+                    unreached();
+                }
+
+                return scalableVecCon;
+            }
+#endif
+
             var vecCon = gtNewVconNode(type);
 
             if (op1.Oper.IsIntegralConst)
@@ -10235,11 +10264,7 @@ public partial class Compiler
             return vecCon;
         }
 
-#if TARGET_XARCH || TARGET_ARM64
         return gtNewSimdHWIntrinsicNode(type, NI_Vector_Create, simdBaseType, simdSize, op1);
-#else
-#error Unsupported platform
-#endif
     }
 
     public GenTree gtNewSimdCreateGeometricSequenceNode(

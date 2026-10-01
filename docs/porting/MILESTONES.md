@@ -16,6 +16,26 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Emission finalization and hardware construction
+
+Emission finalization retains the whole target/feature body, including profile
+alignment, GC state, forward patches and statistics. Unsigned allocation sizes
+remain unsigned through code-offset bounds and arithmetic. Unsupported-target
+issuing and diagnostic dependencies terminate explicitly; the existing label
+output helper is reused.
+
+Broadcast construction now includes ARM64 scalable repeated constants and the
+native Wasm nonconstant path. Load/store classification retains native Wasm
+metadata and address selection, while preserving all xarch/ARM64 cases. This
+closes B477 without enabling default Wasm hardware intrinsics.
+
+Full-analysis Windows fixtures pass 88 Debug/86 Release and Linux-target fixtures
+pass 64 Debug/66 Release, 304 executions. High-bit hot/cold allocation regressions
+exercise bounded buffers. ARM64 retains its exact 39-diagnostic baseline; its
+89 new cases and Wasm's 54 remain source projections, not execution evidence.
+Two definitions retire 1,023 native lines; the already-absent broadcast and
+classification bodies receive no new retirement credit.
+
 ## 2026-10-01: Frame offsets and shared codegen
 
 Local and temporary frame layout now retains the complete target branches,

@@ -291,7 +291,7 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
 
     public bool IsMemoryLoad([NotNullWhen(true)] out GenTree? addr)
     {
-#if TARGET_XARCH || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_WASM
         var intrinsicId = HWIntrinsicId;
         var category = HWIntrinsicInfo.lookupCategory(intrinsicId);
 
@@ -510,6 +510,8 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
         {
             addr = null;
         }
+#else
+        addr = null;
 #endif
 
         if (addr is not null)
@@ -559,7 +561,7 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
     /// <returns>Whether this intrinsic may mutate heap state and/or throw a NullReferenceException if the address is "null".</returns>
     public bool IsMemoryStore([NotNullWhen(true)] out GenTree? addr)
     {
-#if TARGET_XARCH || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_WASM
         var intrinsicId = HWIntrinsicId;
         var category = HWIntrinsicInfo.lookupCategory(intrinsicId);
 
@@ -652,6 +654,8 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
         {
             addr = null;
         }
+#else
+        addr = null;
 #endif
 
         if (addr is not null)

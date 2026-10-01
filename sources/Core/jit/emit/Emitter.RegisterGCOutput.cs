@@ -12,15 +12,15 @@ public partial class Emitter
     private unsafe uint emitCurCodeOffs(byte* dst)
     {
         nuint distance;
-        if (dst >= emitCodeBlock && dst <= emitCodeBlock + emitTotalHotCodeSize)
+        if (dst >= emitCodeBlock && dst <= emitCodeBlock + unchecked((uint)emitTotalHotCodeSize))
         {
             distance = (nuint)(dst - emitCodeBlock);
         }
         else
         {
             assert(emitFirstColdIG is not null && emitColdCodeBlock != null);
-            assert(dst >= emitColdCodeBlock && dst <= emitColdCodeBlock + emitTotalColdCodeSize);
-            distance = (nuint)(dst - emitColdCodeBlock + emitTotalHotCodeSize);
+            assert(dst >= emitColdCodeBlock && dst <= emitColdCodeBlock + unchecked((uint)emitTotalColdCodeSize));
+            distance = (nuint)(dst - emitColdCodeBlock + unchecked((uint)emitTotalHotCodeSize));
         }
         noway_assert(distance <= uint.MaxValue);
         return unchecked((uint)distance);
