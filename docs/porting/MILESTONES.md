@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-02: ARM64 call and long-jump output
+
+Bound the ARM64 call and long-jump production paths to their completed output
+cores. The 82 focused call/long-jump tests pass in Debug and Release using the
+Windows ARM64 target on a Windows x64 host, including call GC bookkeeping,
+branch-range boundaries, label relocations and literal loads.
+
+Native `0bbeacfe` retires seven complete output definitions, seven declarations
+and their exclusive headings (722 lines), each verified against the pinned
+oracle. The consolidated residual retains its sole oracle parent and a recovery
+ref. Non-Windows ARM64 call-descriptor layout remains an explicit terminating
+dependency; `emitOutput_Instr` remains outside this unit. These are managed
+target tests, not ARM64 execution or generated-code parity. Evidence:
+`artifacts/tst/{Debug,Release}/Arm64CallAndLongJump.WinArm64.*.trx`.
+
 ## 2026-10-02: ARM64 intrinsic codegen and opcode emission
 
 Completed ARM64 hardware-intrinsic codegen and the ordinary `emitInsCode`

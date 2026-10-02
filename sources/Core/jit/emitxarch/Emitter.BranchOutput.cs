@@ -36,7 +36,9 @@ public partial class Emitter
 
     public unsafe byte* emitOutputLJ(insGroup? ig, byte* dst, instrDesc i)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM64
+        return emitOutputLJArm64Core(ig, dst, i);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Label output requires xarch.");
 #else
         var id = i as instrDescJmp ?? throw new FatalJitException("Label output requires a jump descriptor.");

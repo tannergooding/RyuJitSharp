@@ -1581,7 +1581,7 @@ public partial class Emitter
 
     private unsafe uint emitOutputCallArm64(insGroup ig, byte* dst, instrDesc id, uint code)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 call output is not ported.");
+        return emitOutputCallArm64Core(ig, dst, id, code);
     }
 
     private static uint insEncodeCond(insCond cond)
