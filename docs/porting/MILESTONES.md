@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Floating-point bit copies
+
+Completed all four single/double bit-copy helpers using same-width bit
+reinterpretation. Both directions retain signed zero, subnormal and finite
+boundaries, infinities and signed quiet/signaling NaN payloads; no floating
+arithmetic or canonicalization is introduced.
+
+All 32 cases pass Debug and Release on the actual Windows64 host. Each direction
+is checked independently against raw bitcasts, including every one-hot position.
+No x86-host or target-runtime parity is claimed.
+
+Retired four whole definitions and four declarations, 28 lines. Evidence:
+`artifacts/bit-conversions-15eec733/v1` and
+`artifacts/residual-reconciliation/bit-conversions-15eec733-*`.
+
 ## 2026-10-01: Scalar bit positions and zero counts
 
 Completed eight primitive forward-scan, leading/trailing-zero-count and integer
