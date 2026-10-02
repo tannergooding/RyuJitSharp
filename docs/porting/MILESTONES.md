@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Shared register-parameter and GC type queries
+
+Completed `isRegParamType` and DEBUG `varTypeGCstring`, preserving the x86
+type-order rule, unrestricted other-target result and exact diagnostic tokens.
+Existing ABI classifiers, generated type tables and callers remain unchanged.
+
+Windows passes 48 Debug/24 Release cases; ARM64-target passes 46 Debug/23 Release,
+covering every declared target type and the default byte value. The x86 branch
+is source-reviewed only under the existing protected parser limit. Retired two
+bodies and the DEBUG guard block, 24 lines. Evidence:
+`artifacts/type-queries-1162be15/v1` and
+`artifacts/residual-reconciliation/type-queries-1162be15-*`.
+
 ## 2026-10-01: Little-endian scalar readers
 
 Completed all nine byte-stream readers for unsigned, signed and floating values.
