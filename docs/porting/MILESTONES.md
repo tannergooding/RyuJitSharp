@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Local and argument type queries
+
+Completed local parameter/register-argument predicates, actual-type normalization
+and ARM varargs type mangling. The latter retains Windows-varargs/softFP selection,
+float-to-int, double-to-long and SIMD-to-struct mappings. Existing callers,
+ABI storage and option definitions remain unchanged.
+
+Windows-x64 passes 62 Debug/62 Release cases. Windows-ARM64 and Linux-ARM64 target
+selections each pass 60 Debug/60 Release on the Windows host, exercising the
+OS-dependent branch without feature overrides. ARM32 softFP remains source-only.
+Retired four bodies and their declarations, 42 lines. Evidence:
+`artifacts/local-type-queries-04be8f2d/v1` and
+`artifacts/residual-reconciliation/local-type-queries-04be8f2d-*`.
+
 ## 2026-10-01: Shared register-parameter and GC type queries
 
 Completed `isRegParamType` and DEBUG `varTypeGCstring`, preserving the x86
