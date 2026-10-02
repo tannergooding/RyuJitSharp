@@ -145,6 +145,33 @@ public partial class Compiler
         return funcIndex;
     }
 
+    // Unlike funGetFuncIdx, this accepts interior blocks and the main method.
+    public uint bbFuncletRegionOf(BasicBlock block)
+    {
+        assert(fgFuncletsCreated);
+
+        if (!block.hasHndIndex)
+        {
+            return 0;
+        }
+
+        ref var eh = ref ehGetDsc(block.HndIndex);
+        uint funcIdx = eh.ebdFuncIndex;
+
+        if (eh.HasFilter && eh.InFilterRegionBBRange(block))
+        {
+            // The filter is the funclet immediately preceding its filter-handler.
+            funcIdx = unchecked(funcIdx - 1);
+        }
+
+        return funcIdx;
+    }
+
+    public bool bbIsInSameFunclet(BasicBlock block1, BasicBlock block2)
+    {
+        return bbFuncletRegionOf(block1) == bbFuncletRegionOf(block2);
+    }
+
     private void fgCreateFuncletPrologBlocks()
     {
         noway_assert(fgPredsComputed);

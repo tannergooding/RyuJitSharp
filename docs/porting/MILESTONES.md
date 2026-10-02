@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Arbitrary-block funclet region queries
+
+Completed `bbFuncletRegionOf` and `bbIsInSameFunclet`. Unlike the existing
+entry-only query, these handle main-method and interior blocks, including the
+physical distinction between a filter and its filter-handler.
+
+Windows and ARM64-target selections each pass 24 Debug/22 Release cases using
+the existing EH descriptor and linked-range implementation. Coverage includes
+main/try/catch/filter/handler interiors, symmetric equality and the post-creation
+assertion on each query. Retired two bodies and their declarations, 26 lines.
+Evidence: `artifacts/funclet-region-90bf0d50/v1` and
+`artifacts/residual-reconciliation/funclet-region-90bf0d50-*`.
+
 ## 2026-10-01: Bit counts and exclusive bit intervals
 
 Completed the scalar/full-mask `genCountBits` wrappers and `BitsBetween`.
