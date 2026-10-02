@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Floating conversion helpers
+
+Completed unsigned64-to-floating conversions, double-to-unsigned64 truncation
+and single-to-double widening. Widening preserves the native RISC-V-host
+NaN payload expansion branch; existing narrowing and caller contracts are
+unchanged.
+
+All 36 cases pass Debug and Release on the actual Windows64 host, covering
+precision boundaries, native-defined truncation limits and signed raw widening
+encodings. RISC-V host execution and native-undefined integer conversion results
+are not claimed.
+
+Retired four whole definitions and four declarations, 32 lines. Evidence:
+`artifacts/fp-conversions-6bc9ec00/v1` and
+`artifacts/residual-reconciliation/fp-conversions-6bc9ec00-*`.
+
 ## 2026-10-01: Floating rounding and special values
 
 Completed both ties-to-even rounding algorithms, positive-infinity constructors
