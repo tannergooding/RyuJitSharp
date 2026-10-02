@@ -48,10 +48,6 @@ public sealed partial class CodeGen
 
     public void genCodeForFunclet(in FuncInfoDsc funcInfo)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Funclet block generation requires Windows AMD64.");
-#else
-        Emitter.RequireSupportedInstructionRecording();
         JITDUMP(funcInfo.funKind == FuncKind.FUNC_ROOT
             ? "\n=============== Generating code for main function\n"
             : "\n=============== Generating code for funclet\n");
@@ -59,7 +55,6 @@ public sealed partial class CodeGen
         {
             genCodeForBlock(block);
         }
-#endif
     }
 
     public unsafe void genCodeForBlock(BasicBlock block)

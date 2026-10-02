@@ -15,14 +15,14 @@ internal static unsafe class CodeGenBlockDriverTargetTests
 {
 #if TARGET_ARM64
     [Test]
-    public static void DriverInitializesBeforeTheUnsupportedFuncletBoundary()
+    public static void DriverInitializesBeforeTheUnsupportedBlockBoundary()
     {
         WithDriver((compiler, codeGen, block) =>
         {
             var failure = Assert.Throws<FatalJitException>(codeGen.genCodeForBBlist) ??
-                throw new AssertionException("Missing funclet-generation dependency failure.");
+                throw new AssertionException("Missing block-generation dependency failure.");
 
-            Assert.That(failure.Message, Is.EqualTo("Funclet block generation requires Windows AMD64."));
+            Assert.That(failure.Message, Is.EqualTo("Basic-block generation requires Windows AMD64."));
 #if DEBUG
             Assert.That(compiler.fgSafeBasicBlockCreation, Is.False);
 #endif
