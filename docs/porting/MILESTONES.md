@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Shared GS-cookie temporary masks
+
+Completed the shared selector's ARM32, LoongArch64 and RISC-V64 return branch
+with the exact native temporary masks. Existing xarch and ARM64 selection,
+Wasm exclusion and all caller contracts remain unchanged.
+
+Windows passes seven Debug/seven Release cases, including the existing
+secret-stub/tailcall controls. ARM64-target passes six/six cases on Windows,
+including actual LSRA call-target exclusions. The newly enabled target branches
+are source-reviewed, not claimed as positive target builds or runtime execution.
+
+Retired one whole definition, its declaration and three mask aliases, 46 lines.
+Evidence: `artifacts/gs-cookie-temp-masks-9b20e33d/v2` and
+`artifacts/residual-reconciliation/gs-cookie-temp-masks-9b20e33d-*`.
+
 ## 2026-10-01: High-resolution performance counter
 
 Completed the whole `PerfCounter` type under its native feature guard. It retains

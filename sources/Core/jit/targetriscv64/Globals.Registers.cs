@@ -14,6 +14,8 @@ public partial class Globals
     public const regNumber REG_FP_FIRST = REG_FT0;
     public const regNumber REG_FP_LAST = REG_FT11;
 
+    public const regMask SRBM_GSCOOKIE_TMP = SRBM_T0 | SRBM_T1;
+
     public const regMask SRBM_FPBASE = SRBM_FP;
     public const regMask SRBM_INT_CALLEE_SAVED =
         SRBM_S1 | SRBM_S2 | SRBM_S3 | SRBM_S4 | SRBM_S5 | SRBM_S6 |

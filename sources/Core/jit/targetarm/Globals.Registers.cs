@@ -17,6 +17,8 @@ public partial class Globals
     public const regNumber REG_OPT_RSVD = REG_R10;
     public const regMask SRBM_OPT_RSVD = SRBM_R10;
 
+    public const regMask SRBM_GSCOOKIE_TMP = SRBM_R12 | SRBM_LR;
+
     // This saved SP register must match the InlinedCallFrame unwinding contract.
     public const regNumber REG_SAVED_LOCALLOC_SP = REG_R9;
     public const regMask SRBM_SAVED_LOCALLOC_SP = SRBM_R9;
