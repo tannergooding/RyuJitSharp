@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: High-resolution performance counter
+
+Completed the whole `PerfCounter` type under its native feature guard. It retains
+frequency-to-milliseconds conversion, restart behavior and signed integer tick
+subtraction before floating conversion. `Stopwatch` uses the same Windows clock
+APIs; its pinned Unix implementation calls the native minipal clock directly.
+No production caller or feature configuration changed.
+
+All eight cases pass Debug and Release on Windows64. Clock-bracketed checks cover
+capture, restart, independent instances and elapsed arithmetic at positive and
+negative offsets without sleeps or machine-speed thresholds.
+
+Retired two definitions and the complete native class, 22 lines. Evidence:
+`artifacts/performance-counter-ce409700/v1` and
+`artifacts/residual-reconciliation/performance-counter-ce409700-*`.
+
 ## 2026-10-01: Existing raw-hex diagnostic mapping
 
 Retired the existing Debug-only `hexDump` mapping without source changes or a
