@@ -104,4 +104,28 @@ public static partial class Globals
 
         return BitScanForward(value);
     }
+
+    public static uint genCountBits(regMaskTP mask)
+    {
+        return PopCount(mask);
+    }
+
+    public static uint genCountBits(uint bits)
+    {
+        return (uint)BitOperations.PopCount(bits);
+    }
+
+    // Return the bits of value strictly between the single-bit start and end masks.
+    public static ulong BitsBetween(ulong value, ulong end, ulong start)
+    {
+        unchecked
+        {
+            assert(start != 0);
+            assert(start < end);
+            assert((start & (start - 1)) == 0);
+            assert((end & (end - 1)) == 0);
+
+            return value & ~((start - 1) | start) & (end - 1);
+        }
+    }
 }

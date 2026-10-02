@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Bit counts and exclusive bit intervals
+
+Completed the scalar/full-mask `genCountBits` wrappers and `BitsBetween`.
+Counts reuse the accepted primitives; interval extraction retains unsigned
+arithmetic, exclusive endpoints and all four ordered native assertions.
+
+Windows and ARM64-target selections each pass 35 Debug/30 Release cases,
+including both mask banks, 12 endpoint pairs across five value patterns and
+invalid-input diagnostics. The focused selection excludes earlier accepted
+bit-shape tests. Retired three whole definitions, 18 lines. Evidence:
+`artifacts/bit-count-intervals-9539dfb8/v1` and
+`artifacts/residual-reconciliation/bit-count-intervals-9539dfb8-*`.
+
 ## 2026-10-01: Shared scalar and full-mask bit shapes
 
 Completed lowest-bit, at-most-one and exactly-one queries plus the unsigned
