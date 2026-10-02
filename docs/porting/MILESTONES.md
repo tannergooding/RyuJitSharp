@@ -16,6 +16,24 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Shared write-barrier dispatch
+
+Completed the shared caller rather than replacing non-AMD64 execution wholesale
+with NYI. All targets select the native helper and invoke the genuine helper-call
+dependency; AMD64 recording remains unchanged. The existing terminating helper
+declaration now also covers Wasm without changing jump scope or helper bodies.
+Both native optimized-policy overloads map the existing unused-input predicate.
+
+Windows passes 18 Debug/18 Release cases, including direct helper-call recording
+and existing GC-store controls. ARM64-target passes 15/15 selection and typed
+dependency-boundary cases on Windows; these do not claim successful ARM64 calls.
+Full analysis remains enabled with default compiler processors and telemetry-only
+memory observation.
+
+Retired two whole bodies and three declarations, 19 lines. Evidence:
+`artifacts/shared-write-barrier-165a2ddd/v1` and
+`artifacts/residual-reconciliation/shared-write-barrier-165a2ddd-*`.
+
 ## 2026-10-01: EH frame requirement mapping
 
 Retired the existing frame-pointer/EH interruptibility setter without changing

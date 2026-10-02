@@ -39,12 +39,10 @@ public sealed partial class CodeGen
 
     public void genGCWriteBarrier(GCInfo.WriteBarrierForm writeBarrierForm)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Write-barrier generation requires AMD64.");
-#else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
+#endif
         var helper = genWriteBarrierHelperForWriteBarrierForm(writeBarrierForm);
         genEmitHelperCall(helper, 0, EA_PTRSIZE);
-#endif
     }
 }
