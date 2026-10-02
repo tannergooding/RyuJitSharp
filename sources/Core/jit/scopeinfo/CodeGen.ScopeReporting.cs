@@ -29,8 +29,18 @@ public sealed partial class CodeGen
     [Conditional("DEBUG")]
     public static void checkICodeDebugInfo()
     {
-        // siVarLoc uses ICorDebugInfo's enum and union directly: the native enum
-        // identity checks are guaranteed by the managed field/property types.
+#if TARGET_X86
+        assert((uint)ICorDebugInfo.RegNum.REGNUM_EAX == (uint)regNumber.REG_EAX);
+        assert((uint)ICorDebugInfo.RegNum.REGNUM_ECX == (uint)regNumber.REG_ECX);
+        assert((uint)ICorDebugInfo.RegNum.REGNUM_EDX == (uint)regNumber.REG_EDX);
+        assert((uint)ICorDebugInfo.RegNum.REGNUM_EBX == (uint)regNumber.REG_EBX);
+        assert((uint)ICorDebugInfo.RegNum.REGNUM_ESP == (uint)regNumber.REG_ESP);
+        assert((uint)ICorDebugInfo.RegNum.REGNUM_EBP == (uint)regNumber.REG_EBP);
+        assert((uint)ICorDebugInfo.RegNum.REGNUM_ESI == (uint)regNumber.REG_ESI);
+        assert((uint)ICorDebugInfo.RegNum.REGNUM_EDI == (uint)regNumber.REG_EDI);
+#endif
+
+        // Managed siVarLoc uses the EE's VarLoc and VLT enum directly.
         assert(Unsafe.SizeOf<siVarLoc>() == Unsafe.SizeOf<ICorDebugInfo.VarLoc>());
     }
 
