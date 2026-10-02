@@ -16,6 +16,17 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "funcInfoMetadataAcceptance": {
+      "status": "completed-with-retained-unwind-dependencies",
+      "scope": "FuncInfoDsc metadata, WasmValueType, CFI_CODE declaration/constructor, typed UnwindInfo boundaries and the coupled whole Compiler.generateCFIUnwindCodes policy query.",
+      "representation": "D002: GetFuncletIdx requires an actual owned-array entry, uses GC-tracked byrefs and CLR element stride, preserves logical-count bounds and same-entry assertion, and never substitutes value equality or native sizeof. Wasm exception index uses a full-domain unchecked biased uint property so default/new/array-zero storage reads UINT_MAX; no native-addressable field or ABI consumer was changed.",
+      "validation": "Six-input v4 over79bed296 passes full-analysis Windows16Debug/15Release and CFI-enabled linux-x64 target25Debug/24Release, all on Windows host. Each includes5existing funclet-creation controls. CFI checks actual managed/marshaled offsets0/1/2/4, extent8, embedded offset4/trailing offset12/extent16 and six constructor-value cases; two ABI policy cases cover native false/true choices.",
+      "configuration": "Stock projects do not define FEATURE_CFI_SUPPORT. The isolated Directory.Build.targets appends only that symbol for linux-x64, with its own sealed hash; no production feature activation. Missing generateCFIUnwindCodes was a concrete compile prerequisite, implemented whole using existing TargetOS/IsTargetAbi APIs. Earlier analyzer/missing-query failures remain immutable.",
+      "retirement": "Nativeeb6dc4a84800320521ee975793bb1b0955f83451 removes5whole methods26lines,3complete types37lines including the CFI constructor,2declarations and7metadata fields:72lines. Exact spans authenticated against oracle with explicit preexisting residual spelling substitutions; exact reconstruction/recovery/sole parent/clean residual verified.",
+      "mapping": "compiler.h -> compiler/FuncInfoDsc.Metadata.cs and Compiler.CfiUnwindPolicy.cs; registeropswasm.h -> registeropswasm/WasmValueType.cs; src/coreclr/inc/cfi.h -> sources/Core/inc/cfi/CFI_CODE.cs. UnwindInfo.cs is typed terminating support, not a completed native algorithm.",
+      "evidence": "artifacts/func-info-acceptance-79bed296/v4 source-seal-v1.json and v3-results; runner87a00c42, outerv3/defaultCPU/conserve5, telemetry without memory thresholds. artifacts/residual-reconciliation/func-info-79bed296-*.",
+      "limits": "No Wasm or non-xarch unwind execution, complete FuncInfoDsc native layout, CFI emission/publication, B395 resolution or generated-code parity claim. Native UnwindInfo and embedded hot/cold fields, locations, CFI opcode/alias and unrelated Wasm operators remain."
+    },
     "regMaskOperationAcceptance": {
       "status": "completed",
       "scope": "Nine internal static-ref mutators and three instance queries in target/regMaskTP.cs; whole remaining12 native regMaskTPOps algorithms including ARM overloads.",
@@ -2961,10 +2972,10 @@
     "activeBatch": {
       "currentUnit": {
         "status": "accepted; completing local commit before the next unit",
-        "scope": "Whole12 remaining regMask operations in existing target/regMaskTP.cs plus RegMaskOperationFamilyTests.cs over committedba11eab2. Readonly representation/public APIs remain unchanged; internal static-ref methods implement established caller-owned writeback.",
-        "doneWhen": "All whole target branches reviewed, selected Windows Debug/Release checks pass, exact native definitions/declarations retired and source/records locally committed.",
-        "validation": "New25Debug/22Release projections plus10existing RegisterTracking bank controls; hidden serial full-analysis defaultCPU/conserve5 with telemetry and neither memory gate. Preserve original diagnostics for the new AddGprRegs assertion.",
-        "deferred": "Existing public IsSet single-bank limitation, accepted GetRegSetForType, shared callers, ARM32 four-path closure, metadata/shutdown and SVE generation/output/driver. Preserve original13WIP and shared ownership."
+        "scope": "Five frozen FuncInfoDsc metadata inputs over committed79bed296, embedded CFI alignment test, and whole eight-line Compiler.generateCFIUnwindCodes prerequisite in new Compiler.CfiUnwindPolicy.cs. The CFI-enabled v2 compile exposed its missing declaration/body; existing IsTargetAbi/TargetOS APIs implement it without new storage. Array-entry identity uses GC-tracked byrefs/CLR stride; biased Wasm property preserves UINT_MAX zero-initialized defaults without changing an ABI field.",
+        "doneWhen": "Selected full-analysis Windows identity/funclet controls and explicit CFI layout/alignment scenarios pass, eligible whole native definitions/declarations retire, and source/records commit.",
+        "validation": "Windows Debug/Release metadata plus existing funclet-creation controls. Linux-x64 configuration with validation-only FEATURE_CFI_SUPPORT appended in isolated Directory.Build.targets exercises real CFI field offsets, extent and embedded alignment; stock projects do not currently define this optional feature. Hidden serial defaultCPU/conserve5 with telemetry and no memory gates.",
+        "deferred": "No production CFI activation or native publication/B395 change. Wasm and non-xarch unwind branches retain source-only/terminating limits. ARM32 four-path closure, shutdown and SVE generation/output/driver remain separate; preserve13WIP/shared ownership."
       },
       "restartRecovery": {
         "status": "Resumed after explicit user continuation on2026-09-30T15:43-07:00;20minute review automation restored.",
@@ -3530,7 +3541,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Commit accepted regMask12 source/tests/records, then continue frozen FuncInfoDsc metadata acceptance: inspect actual five inputs and existing identity/default contracts, add the missing distinct embedded CFI alignment4 check in the owned fixture, seal the coherent revision and perform selected Windows plus compiled CFI target checks without claiming unsupported unwind execution. ARM32 four-path closure, shutdown and coherent SVE generation/output/driver remain separately pending. Do not replay traversal/LSRA/descriptors/regMask. Hidden serial defaultCPU/conserve5, telemetry without memory gates, original13WIP/shared ownership, READY bound2 and no publication remain in force.",
+    "nextAction": "Commit accepted metadata/CFI six-input closure and records. Next consume the existing shutdown11 frozen source revision; inspect its actual seal and completed handoff, preserve B501's standalone Release PTRTAB limitation, and perform coherent Windows acceptance without inventing optional-feature success. ARM32 four-path and SVE generation/output/driver remain pending, not missing-source grants. Continue hidden serial gate-free full analysis/defaultCPU/conserve5 with telemetry; preserve original13WIP and native oracle-plus-one, and do not publish.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

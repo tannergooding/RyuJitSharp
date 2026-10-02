@@ -16,6 +16,28 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Funclet metadata identity and CFI record layout
+
+Completed funclet kind/index metadata, Wasm metadata declarations and the
+CFI record declaration/constructor. Funclet indices use actual owned-array
+identity and GC-tracked byrefs, including across compacting collection.
+The internal Wasm exception-index property preserves the native `UINT_MAX`
+default for zero-initialized structs and arrays.
+
+Full-analysis checks passed 16 Debug/15 Release Windows cases and 25/24 cases
+with a validation-only CFI-enabled Linux-x64 target configuration on Windows.
+The latter checks the eight-byte CFI record's field offsets and independently
+verifies four-byte embedded alignment. A missing whole native CFI policy query
+was implemented using existing OS and runtime-ABI APIs; production feature
+selection remains unchanged.
+
+Retired five methods, three types, two declarations and seven fields: 72 native
+lines, counting the CFI constructor within its type only. Native unwind
+algorithms and embedded hot/cold state remain unported. No Wasm execution,
+native unwind publication or whole-funclet-layout parity is claimed. Evidence:
+`artifacts/func-info-acceptance-79bed296/v4` and
+`artifacts/residual-reconciliation/func-info-79bed296-*`.
+
 ## 2026-10-01: Immutable register-mask operation family
 
 Completed the twelve remaining native register-mask operations, including typed
