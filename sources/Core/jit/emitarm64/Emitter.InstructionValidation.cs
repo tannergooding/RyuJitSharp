@@ -59,12 +59,12 @@ public partial class Emitter
         return (reg >= REG_INT_FIRST) && (reg <= REG_LR);
     }
 
-    private static bool isGeneralRegisterOrZR(regNumber reg)
+    internal static bool isGeneralRegisterOrZR(regNumber reg)
     {
         return (reg >= REG_INT_FIRST) && (reg <= REG_ZR);
     }
 
-    private static bool isVectorRegister(regNumber reg)
+    internal static bool isVectorRegister(regNumber reg)
     {
         return (reg >= REG_FP_FIRST && reg <= REG_FP_LAST);
     }

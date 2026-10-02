@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-02: ARM64 intrinsic codegen and opcode emission
+
+Completed ARM64 hardware-intrinsic codegen and the ordinary `emitInsCode`
+selector. `GenerateTables` now emits all nine compact opcode columns from
+`instrsarm64.h`; an isolated regeneration matches the checked-in table exactly.
+Full-analysis ARM64-target tests pass 98 Debug/94 Release opcode cases and 72
+Debug/72 Release intrinsic codegen/immediate cases. Windows-x64 controls pass
+125 cases in each configuration.
+
+Native `544f5216` retires the complete oracle-matching `emitInsCode` definition
+and its `emitarm64.h` declaration before the C# completion commit, retaining the
+pinned oracle as the residual commit's sole parent. These are managed
+ARM64-target tests on a Windows x64 host, not ARM64 execution or generated-code
+parity. Evidence: `artifacts/tst/{Debug,Release}/Arm64InstructionCode.*.trx`.
+
 ## 2026-10-02: Primitive rotation retirement
 
 Closed the four retained 32/64-bit left/right rotation mappings to the existing

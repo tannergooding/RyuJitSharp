@@ -1579,11 +1579,6 @@ public partial class Emitter
         }
     }
 
-    private uint emitInsCode(instruction ins, insFormat fmt)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "Ordinary ARM64 instruction encoding tables are not ported.");
-    }
-
     private unsafe uint emitOutputCallArm64(insGroup ig, byte* dst, instrDesc id, uint code)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "ARM64 call output is not ported.");

@@ -1684,6 +1684,70 @@ public static partial class Globals
 """);
 
         GenerateSveInstructionOpcodes();
+        GenerateArm64InstructionOpcodes();
+    }
+
+    private static void GenerateArm64InstructionOpcodes()
+    {
+        const string inputFile = @"Inputs\instrsarm64.h";
+        ReadOnlySpan<string> prefixes = [
+            "INST1(", "INST2(", "INST3(", "INST4(", "INST5(", "INST6(", "INST9(",
+        ];
+        var tables = new StringBuilder();
+
+        for (var encoding = 1; encoding <= 9; encoding++)
+        {
+            var previousArity = 9;
+            var entries = ProcessMacroBasedFile(inputFile, prefixes, (builder, file, line, prefix, parts) =>
+            {
+                var arity = int.Parse(prefix.AsSpan(4, prefix.Length - 5), NumberStyles.None,
+                    CultureInfo.InvariantCulture);
+                var arguments = SplitOpcodeArguments(line);
+                if (arguments.Length != arity + 4)
+                {
+                    throw new InvalidDataException($"Invalid ARM64 opcode table entry: '{line}'");
+                }
+
+                // Filtering must leave an instruction-order prefix, since the native
+                // selector indexes every encoding array directly by instruction.
+                if (arity > previousArity)
+                {
+                    throw new InvalidDataException($"ARM64 opcode arity is not descending: '{line}'");
+                }
+                previousArity = arity;
+
+                if (arity >= encoding)
+                {
+                    var opcode = arguments[3 + encoding];
+                    _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                        $"        unchecked((uint)({opcode})), // INS_{arguments[0]}");
+                }
+            });
+
+            _ = tables.AppendLine(CultureInfo.InvariantCulture,
+                $"    private static ReadOnlySpan<uint> ordinaryInsCodes{encoding} => [");
+            _ = tables.Append(entries);
+            _ = tables.AppendLine("    ];");
+            _ = tables.AppendLine();
+        }
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\emitarm64");
+        File.WriteAllText(@"Outputs\jit\emitarm64\Emitter.InstructionOpcodes.generated.cs", $$"""
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+
+namespace RyuJitSharp;
+
+public partial class Emitter
+{
+#if TARGET_ARM64
+{{tables}}#endif
+}
+""");
     }
 
     private static void GenerateSveInstructionOpcodes()

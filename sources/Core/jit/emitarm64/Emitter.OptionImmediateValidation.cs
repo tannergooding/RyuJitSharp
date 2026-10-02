@@ -75,7 +75,7 @@ public partial class Emitter
         return false;
     }
 
-    private static emitAttr optGetElemsize(insOpts arrangement)
+    internal static emitAttr optGetElemsize(insOpts arrangement)
     {
         if ((arrangement == INS_OPTS_8B) || (arrangement == INS_OPTS_16B))
         {
@@ -184,7 +184,7 @@ public partial class Emitter
         }
     }
 
-    private static bool isValidVectorIndex(emitAttr datasize, emitAttr elemsize, nint index)
+    internal static bool isValidVectorIndex(emitAttr datasize, emitAttr elemsize, nint index)
     {
         assert(isValidVectorDatasize(datasize));
         assert(isValidVectorElemsize(elemsize));

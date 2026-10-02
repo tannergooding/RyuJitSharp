@@ -94,7 +94,7 @@ public partial class Emitter
         return 0;
     }
 
-    private void emitInsSve_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg,
+    internal void emitInsSve_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg,
         bool canSkip, insOpts opt, insSveMovOpts mopt, regNumber mskReg = REG_NA)
     {
         assert(IsMovInstruction(ins));
