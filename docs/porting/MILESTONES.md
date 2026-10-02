@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Scalar numeric queries
+
+Completed generic power-of-two and sign queries plus the unsigned arbitrary-base
+digit counter. Native ordered comparisons retain zero for NaNs and signed zero;
+the digit counter preserves its Debug guard, default base and assertion text.
+Existing signed and floating digit helpers remain unchanged.
+
+All 62 Debug/40 Release cases pass full analysis on the actual Windows64 host,
+including 23 existing profile diagnostic controls per configuration. New coverage
+checks ten integral types, floating encodings and every valid radix at its power
+boundaries.
+
+Retired three whole definitions and one declaration, 33 lines. Evidence:
+`artifacts/scalar-queries-751995f7/v1` and
+`artifacts/residual-reconciliation/scalar-queries-751995f7-*`.
+
 ## 2026-10-01: Fixed bit-vector type
 
 Completed the whole fixed bit-vector type with zero-initialized managed chunk
