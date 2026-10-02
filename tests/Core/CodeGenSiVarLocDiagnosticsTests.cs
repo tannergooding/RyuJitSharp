@@ -12,6 +12,7 @@ using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.ICorDebugInfo.VarLocType;
 using static RyuJitSharp.regNumber;
+using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -82,6 +83,99 @@ internal static class CodeGenSiVarLocDiagnosticsTests
         var fixedVarArg = new CodeGen.siVarLoc { vlType = VLT_FIXED_VA };
         fixedVarArg.vlFixedVarArg.vlfvOffset = 24;
         AssertOutput(codeGen, fixedVarArg, "fxd_va[24]");
+#endif
+    }
+
+    [Test]
+    public static void RegisterLocationEncodingPreservesTargetDebugRegisterNumbers()
+    {
+        Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_INT_FIRST),
+            Is.EqualTo((ICorDebugInfo.RegNum)REG_INT_FIRST));
+        Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_NA),
+            Is.EqualTo(ICorDebugInfo.RegNum.REGNUM_COUNT));
+
+#if TARGET_AMD64
+        var highestEncodedRegister = (regNumber)((int)REG_FP_FIRST + 15);
+        Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_FIRST),
+            Is.EqualTo(ICorDebugInfo.RegNum.REGNUM_FP_FIRST));
+        Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(highestEncodedRegister),
+            Is.EqualTo((ICorDebugInfo.RegNum)((int)ICorDebugInfo.RegNum.REGNUM_FP_FIRST + 15)));
+        Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_XMM16),
+            Is.EqualTo(ICorDebugInfo.RegNum.REGNUM_COUNT));
+#elif TARGET_ARM64
+        Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_FIRST),
+            Is.EqualTo(ICorDebugInfo.RegNum.REGNUM_FP_FIRST));
+        Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_LAST),
+            Is.EqualTo((ICorDebugInfo.RegNum)((int)ICorDebugInfo.RegNum.REGNUM_FP_FIRST + 31)));
+#else
+        Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_FIRST), Is.EqualTo((ICorDebugInfo.RegNum)0));
+        Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_LAST),
+            Is.EqualTo((ICorDebugInfo.RegNum)((int)REG_FP_LAST - (int)REG_FP_FIRST)));
+#endif
+    }
+
+    [Test]
+    public static void RegisterLocationsPreserveTargetRegisterPairRules()
+    {
+        var location = new CodeGen.siVarLoc();
+        location.storeVariableInRegisters(REG_INT_FIRST, REG_NA);
+        Assert.That(location.vlType, Is.EqualTo(VLT_REG));
+        Assert.That(location.vlReg.vlrReg, Is.EqualTo((ICorDebugInfo.RegNum)REG_INT_FIRST));
+
+        location.storeVariableInRegisters(REG_FP_FIRST, REG_NA);
+        Assert.That(location.vlType, Is.EqualTo(VLT_REG_FP));
+        Assert.That(location.vlReg.vlrReg, Is.EqualTo(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_FIRST)));
+
+        var secondIntegerRegister = (regNumber)((int)REG_INT_FIRST + 1);
+        location.storeVariableInRegisters(REG_INT_FIRST, secondIntegerRegister);
+        Assert.That(location.vlType, Is.EqualTo(VLT_REG_REG));
+        Assert.That(location.vlRegReg.vlrrReg1,
+            Is.EqualTo(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_INT_FIRST)));
+        Assert.That(location.vlRegReg.vlrrReg2,
+            Is.EqualTo(CodeGen.siVarLoc.mapRegNumToDebugRegNum(secondIntegerRegister)));
+
+        location.storeVariableInRegisters(REG_INT_FIRST, REG_FP_FIRST);
+#if TARGET_AMD64 || TARGET_ARM64
+        Assert.That(location.vlType, Is.EqualTo(VLT_REG_REG));
+        Assert.That(location.vlRegReg.vlrrReg2,
+            Is.EqualTo(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_FIRST)));
+#else
+        Assert.That(location.vlType, Is.EqualTo(VLT_INVALID));
+#endif
+
+        location.storeVariableInRegisters(REG_NA, REG_NA);
+        Assert.That(location.vlType, Is.EqualTo(VLT_INVALID));
+    }
+
+    [Test]
+    public static void VariableLocationConstructionPreservesTargetStackRepresentations()
+    {
+        var stackLocal = new LclVarDsc { Type = TYP_DOUBLE };
+        var location = new CodeGen.siVarLoc(in stackLocal, REG_SPBASE, 24, isFramePointerUsed: false);
+#if TARGET_64BIT
+        Assert.That(location.vlType, Is.EqualTo(VLT_STK));
+        Assert.That(location.vlStk.vlsBaseReg, Is.EqualTo(ICorDebugInfo.RegNum.REGNUM_AMBIENT_SP));
+        Assert.That(location.vlStk.vlsOffset, Is.EqualTo(24));
+#else
+        Assert.That(location.vlType, Is.EqualTo(VLT_STK2));
+        Assert.That(location.vlStk2.vls2BaseReg, Is.EqualTo(ICorDebugInfo.RegNum.REGNUM_AMBIENT_SP));
+        Assert.That(location.vlStk2.vls2Offset, Is.EqualTo(24));
+#endif
+
+        var floatingLocal = new LclVarDsc
+        {
+            Type = TYP_FLOAT,
+            lvLRACandidate = true,
+            RegNum = REG_FP_FIRST,
+        };
+        location = new CodeGen.siVarLoc(in floatingLocal, REG_SPBASE, 8, isFramePointerUsed: true);
+#if TARGET_64BIT
+        Assert.That(location.vlType, Is.EqualTo(VLT_REG_FP));
+        Assert.That(location.vlReg.vlrReg,
+            Is.EqualTo(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_FIRST)));
+#else
+        Assert.That(location.vlType, Is.EqualTo(VLT_FPSTK));
+        Assert.That(location.vlFPstk.vlfReg, Is.EqualTo((int)REG_FP_FIRST));
 #endif
     }
 
