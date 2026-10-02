@@ -16,6 +16,24 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Argument-register mappings and coupled tables
+
+Completed eight argument-index/register/mask mappings, including floating and
+generic reverse dispatch. Existing signed fixed-buffer and integer reverse APIs
+remain unchanged. The new callers preserve unsigned conversions, native
+diagnostics, ARM double-pair masks and all target branches; missing small
+register tables follow the pinned target data.
+
+Windows passes 39 Debug/28 Release cases; Linux-x64 target passes 45/34;
+Windows-ARM64 and Linux-ARM64 targets each pass 48/37 on Windows. Coverage includes
+ordinary/fixed-buffer round trips, SIMD/mask routing, table boundaries and
+diagnostic ordering. Other target branches remain source-reviewed, and their
+existing integer reverse dependency is still explicitly unimplemented.
+
+Retired eight bodies plus coupled data/declarations, 169 lines. Evidence:
+`artifacts/argument-register-maps-afa82027/v2` and
+`artifacts/residual-reconciliation/argument-register-maps-afa82027-*`.
+
 ## 2026-10-01: Local and argument type queries
 
 Completed local parameter/register-argument predicates, actual-type normalization
