@@ -9,9 +9,7 @@ public sealed partial class CodeGen
 {
     public void genSpillVar(GenTree tree)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Local-variable spill generation outside AMD64 is not implemented.");
-#else
+#if HAS_FIXED_REGISTER_SET
         var varNum = tree.AsLclVarCommon().LclNum;
         ref var varDsc = ref _compiler.lvaGetDesc(varNum);
         assert(varDsc.lvIsRegCandidate);
@@ -84,6 +82,9 @@ public sealed partial class CodeGen
             // The live-range location must observe the new stack home, not the old register.
             getVariableLiveKeeper().siUpdateVariableLiveRange(in varDsc, varNum);
         }
+#else
+        // ICodeGen exposes this entry point even on targets without a fixed register set.
+        throw new FatalJitException(CORJIT_SKIPPED, "Local-variable spills require a fixed register set.");
 #endif
     }
 }

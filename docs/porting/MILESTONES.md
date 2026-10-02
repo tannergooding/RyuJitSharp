@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Shared local-variable spills
+
+Restored the complete fixed-register-target scope of local spilling, retaining
+stack-home normalization, GC/liveness updates, spill-flag handling and location
+updates before live-range reporting. The existing AMD64 algorithm is unchanged.
+
+Windows passes 57 Debug/57 Release cases; ARM64-target passes 18 Debug/38 Release.
+ARM64 Release exercises real scalar, GC, vector and narrow OSR stores. Debug
+currently retains the store-classification dependency boundary; SIMD12 emission
+and enabled non-AMD64 location reporting also remain explicit dependencies.
+Retired one complete body and declaration, 87 lines. Evidence:
+`artifacts/shared-local-spill-baf6db94/v2` and
+`artifacts/residual-reconciliation/shared-local-spill-baf6db94-*`.
+
 ## 2026-10-01: Shared struct argument setup
 
 Restored the native shared scope of struct-stack source setup and field-list
