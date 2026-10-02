@@ -9,17 +9,21 @@ public sealed partial class CodeGen
 {
     public unsafe void genCodeForBBlist()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Block-list generation requires Windows AMD64.");
-#else
-        Emitter.RequireSupportedInstructionRecording();
 #if DEBUG
         _genInterruptibleUsed = true;
         _compiler.fgSafeBasicBlockCreation = false;
+#if TARGET_X86
+        if (Interruptible && _compiler.opts.compStackCheckOnCall)
+        {
+            _compiler.opts.compStackCheckOnCall = false;
+        }
+#endif
+#if TARGET_XARCH
         if ((Interruptible || _compiler.compTailCallUsed) && _compiler.opts.compStackCheckOnRet)
         {
             _compiler.opts.compStackCheckOnRet = false;
         }
+#endif
 #endif
         genMarkLabelsForCodegen();
         genInitialize();
@@ -39,7 +43,6 @@ public sealed partial class CodeGen
             jitprintf($"\n# compCycleEstimate = {unchecked((nuint)_compiler.compCycleEstimate),6}, " +
                 $"compSizeEstimate = {unchecked((nuint)_compiler.compSizeEstimate),5} {_compiler.info.compFullName}\n");
         }
-#endif
 #endif
     }
 

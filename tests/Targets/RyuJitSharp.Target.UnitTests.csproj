@@ -20,6 +20,7 @@
 
   <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-arm64')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-arm64')))">
     <Compile Include="..\Core\CodeGenLabelTests.cs" Link="CodeGenLabelTests.cs" />
+    <Compile Include="..\Core\CodeGenBlockDriverTargetTests.cs" Link="CodeGenBlockDriverTargetTests.cs" />
     <Compile Include="..\Core\ControlFlowGuardLoweringTests.cs" Link="ControlFlowGuardLoweringTests.cs" />
     <Compile Include="..\Core\PInvokeCallLoweringTests.cs" Link="PInvokeCallLoweringTests.cs" />
     <Compile Include="..\Core\PInvokeFrameLoweringTests.cs" Link="PInvokeFrameLoweringTests.cs" />
@@ -48,6 +49,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-wasm')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-wasm')))">
+    <Compile Include="..\Core\CodeGenBlockDriverTargetTests.cs" Link="CodeGenBlockDriverTargetTests.cs" />
     <Compile Include="..\Core\WasmCallArgumentMorphTests.cs" Link="WasmCallArgumentMorphTests.cs" />
     <Compile Include="..\Core\WasmClassifierTests.cs" Link="WasmClassifierTests.cs" />
   </ItemGroup>

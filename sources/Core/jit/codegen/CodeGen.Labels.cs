@@ -161,5 +161,28 @@ public sealed partial class CodeGen
         }
 #endif
     }
+#else
+    private void genMarkLabelsForCodegen()
+    {
+#if DEBUG
+        assert(!_compiler.fgSafeBasicBlockCreation);
+#endif
+        JITDUMP("Mark labels for codegen\n");
+
+#if DEBUG
+        foreach (var block in _compiler.Blocks)
+        {
+            assert(!block.HasFlag(BBF_HAS_LABEL));
+        }
+#endif
+
+        foreach (ref readonly var func in _compiler.Funcs)
+        {
+            var firstBlock = func.GetStartBlock(_compiler);
+            firstBlock.SetFlags(BBF_HAS_LABEL);
+            var name = func.funKind == FuncKind.FUNC_ROOT ? "method" : "funclet";
+            JITDUMP($"  {FMT_BB(firstBlock.bbNum)} : {name} begin\n");
+        }
+    }
 #endif
 }
