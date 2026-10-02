@@ -92,6 +92,8 @@ public partial class Compiler
             // Xarch immediate operands occupy the last position on the importer stack.
             immOp1 = impStackTop().val;
         }
+#elif TARGET_ARM64
+        getHWIntrinsicImmOpsArm64Core(intrinsic, in sig, ref immOp1, ref immOp2);
 #else
         NYI("Hardware-intrinsic immediate discovery outside xarch");
         fatal(CORJIT_IMPLLIMITATION);

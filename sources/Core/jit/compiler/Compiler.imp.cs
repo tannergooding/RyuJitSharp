@@ -23565,19 +23565,24 @@ public partial class Compiler
             return InstructionSet_SveSm4;
         }
 
-        if (NameEquals(className, "Vector"u8) || NameEquals(className, "Vector`1"u8))
+        if (NameStartsWith(className, "Vector"u8))
         {
-            return InstructionSet_VectorT;
-        }
+            var suffix = className[6..];
 
-        if (NameEquals(className, "Vector64"u8) || NameEquals(className, "Vector64`1"u8))
-        {
-            return InstructionSet_Vector64;
-        }
+            if (suffix.IsEmpty || NameEquals(suffix, "`1"u8))
+            {
+                return InstructionSet_VectorT;
+            }
 
-        if (NameEquals(className, "Vector128"u8) || NameEquals(className, "Vector128`1"u8))
-        {
-            return InstructionSet_Vector128;
+            if (NameStartsWith(suffix, "64"u8))
+            {
+                return InstructionSet_Vector64;
+            }
+
+            if (NameStartsWith(suffix, "128"u8))
+            {
+                return InstructionSet_Vector128;
+            }
         }
 #elif TARGET_WASM
         if (NameEquals(className, "WasmBase"u8))

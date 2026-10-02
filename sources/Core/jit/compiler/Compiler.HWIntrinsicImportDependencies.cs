@@ -19,13 +19,22 @@ public partial class Compiler
         byte simdSize,
         bool mustExpand)
     {
+#if TARGET_ARM64
+        return impSpecialIntrinsicArm64Core(intrinsic, clsHnd, method, in sig, in entryPoint,
+            simdBaseType, retType, simdSize, mustExpand);
+#else
         throw new FatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic special import outside xarch is not ported.");
+#endif
     }
 
     private GenTreeHWIntrinsic? impNonConstFallback(
         NamedIntrinsic intrinsic, var_types simdType, var_types simdBaseType)
     {
+#if TARGET_ARM64
+        return impNonConstFallbackArm64Core(intrinsic, simdType, simdBaseType);
+#else
         throw new FatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic nonconstant fallback outside xarch is not ported.");
+#endif
     }
 }
 #endif
