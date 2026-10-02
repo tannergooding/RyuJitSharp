@@ -16,6 +16,16 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "regMaskOperationAcceptance": {
+      "status": "completed",
+      "scope": "Nine internal static-ref mutators and three instance queries in target/regMaskTP.cs; whole remaining12 native regMaskTPOps algorithms including ARM overloads.",
+      "ownership": "Readonly struct/fields and public APIs are unchanged. Native receiver mutation maps to explicit ref same-owner replacement, reusing committed LinearScan.MinimalAllocationTraversal.removeRegisterSetForType precedent under D002. No caller activation or by-value mutation substitute.",
+      "review": "Preserves bank selection, zero/sentinel lookup, bit63, other-bank bits, ARM first-half gen masks versus normalized get masks, and assertion-before-owner-writeback. AddGprRegs preserves zero-or-intersection rather than subset and the exact native assertion expression; upper-bank availability is irrelevant.",
+      "validation": "Isolated ba11eab2 plus exactly two overlays; full-analysis Windows35Debug/32Release pass, including25/22new cases and10existing bank controls each. Local/array-entry/field owner updates preserve independent copies. Runneraa4bb709 uses gate-free outerv3/defaultCPU/compiler-only conserve5 with telemetry.",
+      "retirement": "Native2021a03465691718314bcf000f58f4c803eaae86 removes12whole oracle-identical definitions119lines and12declarations plus one exclusive EOF blank line,132total. Exact reconstruction includes the declared EOF replacement; recovery ref, clean tree and sole oracle parent verified. Existing helper definitions/structural scaffolding remain; no whole-file or GetRegSetForType repeat credit.",
+      "evidence": "artifacts/regmask-operations-acceptance-ba11eab2 source-seal-v1.json and v3-results; artifacts/residual-reconciliation/regmask-operations-ba11eab2-*.",
+      "limits": "ARM/other-target branches are source-reviewed, not executed. Existing public IsSet single-bank guard limitation is unchanged, as are caller mappings, ABI and storage. No generated-code parity claim."
+    },
     "tryAwareTraversalAcceptance": {
       "status": "completed",
       "scope": "Whole Compiler.fgVisitBlocksInTryAwareLoopAwareRPO in Compiler.TryRegionTraversal.cs with CompilerTryRegionTraversalTests.cs; existing try-region types and loop-aware traversal unchanged.",
@@ -2951,10 +2961,10 @@
     "activeBatch": {
       "currentUnit": {
         "status": "accepted; completing local commit before the next unit",
-        "scope": "Whole try-aware/loop-aware reverse-postorder traversal: existing Compiler.TryRegionTraversal.cs and CompilerTryRegionTraversalTests.cs over managedcf92ffc9.",
-        "doneWhen": "Whole pinned algorithm reviewed, isolated Windows Debug/Release acceptance completed, exact retained definition/declaration retired, related documentation and source committed.",
-        "validation": "All13 traversal cases, existing FlowGraphTryRegionTests and the five BlockLayout loop-aware/acyclic traversal controls; hidden serial full-analysis defaultCPU/conserve5 runs with memory telemetry and neither memory gate.",
-        "deferred": "Separate source-complete regMask12, ARM32 four-path closure, metadata/shutdown and SVE generation/output/driver. Preserve original13WIP and shared ownership; no replay of accepted LSRA/types/descriptor families."
+        "scope": "Whole12 remaining regMask operations in existing target/regMaskTP.cs plus RegMaskOperationFamilyTests.cs over committedba11eab2. Readonly representation/public APIs remain unchanged; internal static-ref methods implement established caller-owned writeback.",
+        "doneWhen": "All whole target branches reviewed, selected Windows Debug/Release checks pass, exact native definitions/declarations retired and source/records locally committed.",
+        "validation": "New25Debug/22Release projections plus10existing RegisterTracking bank controls; hidden serial full-analysis defaultCPU/conserve5 with telemetry and neither memory gate. Preserve original diagnostics for the new AddGprRegs assertion.",
+        "deferred": "Existing public IsSet single-bank limitation, accepted GetRegSetForType, shared callers, ARM32 four-path closure, metadata/shutdown and SVE generation/output/driver. Preserve original13WIP and shared ownership."
       },
       "restartRecovery": {
         "status": "Resumed after explicit user continuation on2026-09-30T15:43-07:00;20minute review automation restored.",
@@ -3520,7 +3530,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Commit accepted two-file try-aware traversal and related records; then accept the existing two-file whole12 regMask operation family with established immutable static-ref owner-writeback. Review native ARM gen/get pair differences, bank preservation and assertion/write order; seal exact source, run focused full-analysis Windows Debug/Release with existing bank controls, retire only completed whole bodies/declarations, and commit. GetRegSetForType is already accepted/retired; do not repeat it or rewrite public IsSet. ARM32 four-path closure, metadata/shutdown and SVE generation/output/driver remain separately pending. Hidden serial defaultCPU/conserve5, telemetry with neither memory gate, original13WIP/shared ownership, READY bound2 and no publication remain in force.",
+    "nextAction": "Commit accepted regMask12 source/tests/records, then continue frozen FuncInfoDsc metadata acceptance: inspect actual five inputs and existing identity/default contracts, add the missing distinct embedded CFI alignment4 check in the owned fixture, seal the coherent revision and perform selected Windows plus compiled CFI target checks without claiming unsupported unwind execution. ARM32 four-path closure, shutdown and coherent SVE generation/output/driver remain separately pending. Do not replay traversal/LSRA/descriptors/regMask. Hidden serial defaultCPU/conserve5, telemetry without memory gates, original13WIP/shared ownership, READY bound2 and no publication remain in force.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

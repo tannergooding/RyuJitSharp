@@ -68,6 +68,158 @@ public readonly struct regMaskTP : IEquatable<regMaskTP>
     public static regMaskTP CreateFromRegNum(regNumber reg, regMask mask) => new regMaskTP(mask);
 #endif
 
+    internal static void AddRegNumInMask(ref regMaskTP destination, regNumber reg)
+    {
+        var value = reg.SingleTypeMask;
+        destination |= CreateFromRegNum(reg, value);
+    }
+
+#if TARGET_ARM
+    internal static void AddRegNumInMask(ref regMaskTP destination, regNumber reg, var_types type)
+    {
+        var value = GenSingleTypeRegMask(reg, type);
+        destination |= new regMaskTP(value);
+    }
+
+    internal static void RemoveRegNumFromMask(ref regMaskTP destination, regNumber reg, var_types type)
+    {
+        var value = GenSingleTypeRegMask(reg, type);
+        destination &= ~new regMaskTP(value);
+    }
+
+    internal bool IsRegNumInMask(regNumber reg, var_types type)
+    {
+        return (_lower & GenSingleTypeRegMask(reg, type)) != SRBM_NONE;
+    }
+#endif
+
+    internal static void AddGprRegs(ref regMaskTP destination, SingleTypeRegSet gprRegs
+#if DEBUG
+        , regMaskTP availableIntRegs
+#endif
+    )
+    {
+#if DEBUG
+        assert((gprRegs == SRBM_NONE) || ((gprRegs & availableIntRegs._lower) != SRBM_NONE),
+            "(gprRegs == RBM_NONE) || ((gprRegs & availableIntRegs) != RBM_NONE)");
+#endif
+        destination |= new regMaskTP(gprRegs);
+    }
+
+    internal static void AddRegNum(ref regMaskTP destination, regNumber reg, var_types type)
+    {
+#if TARGET_ARM
+        var value = GetSingleTypeRegMask(reg, type);
+        destination |= new regMaskTP(value);
+#else
+        AddRegNumInMask(ref destination, reg);
+#endif
+    }
+
+    internal static void AddRegsetForType(ref regMaskTP destination, SingleTypeRegSet regsToAdd, var_types type)
+    {
+#if HAS_MORE_THAN_64_REGISTERS
+        if (!varTypeIsMask(type))
+        {
+            destination |= new regMaskTP(regsToAdd);
+        }
+        else
+        {
+            destination |= new regMaskTP(SRBM_NONE, regsToAdd);
+        }
+#else
+        destination |= new regMaskTP(regsToAdd);
+#endif
+    }
+
+    internal bool IsRegNumInMask(regNumber reg)
+    {
+        var value = reg.SingleTypeMask;
+#if HAS_MORE_THAN_64_REGISTERS
+        if ((int)reg < 64)
+        {
+            return (_lower & value) != SRBM_NONE;
+        }
+        else
+        {
+            return (_upper & value) != SRBM_NONE;
+        }
+#else
+        return (_lower & value) != SRBM_NONE;
+#endif
+    }
+
+    internal bool IsRegNumPresent(regNumber reg, var_types type)
+    {
+#if TARGET_ARM
+        return (_lower & GetSingleTypeRegMask(reg, type)) != SRBM_NONE;
+#else
+        return IsRegNumInMask(reg);
+#endif
+    }
+
+    internal static void RemoveRegNumFromMask(ref regMaskTP destination, regNumber reg)
+    {
+        var value = reg.SingleTypeMask;
+        destination &= ~CreateFromRegNum(reg, value);
+    }
+
+    internal static void RemoveRegNum(ref regMaskTP destination, regNumber reg, var_types type)
+    {
+#if TARGET_ARM
+        var value = GetSingleTypeRegMask(reg, type);
+        destination &= ~new regMaskTP(value);
+#else
+        RemoveRegNumFromMask(ref destination, reg);
+#endif
+    }
+
+    internal static void RemoveRegsetForType(ref regMaskTP destination, SingleTypeRegSet regsToRemove, var_types type)
+    {
+#if HAS_MORE_THAN_64_REGISTERS
+        if (!varTypeIsMask(type))
+        {
+            destination &= ~new regMaskTP(regsToRemove);
+        }
+        else
+        {
+            destination &= ~new regMaskTP(SRBM_NONE, regsToRemove);
+        }
+#else
+        destination &= ~new regMaskTP(regsToRemove);
+#endif
+    }
+
+#if TARGET_ARM
+    private static SingleTypeRegSet GenSingleTypeRegMask(regNumber reg, var_types type)
+    {
+        if (varTypeUsesIntReg(type))
+        {
+            return reg.SingleTypeMask;
+        }
+
+        assert(varTypeUsesFloatReg(type));
+        return reg.GetSingleTypeFloatMask(type);
+    }
+
+    private static SingleTypeRegSet GetSingleTypeRegMask(regNumber reg, var_types type)
+    {
+        if ((type == TYP_DOUBLE) && !genIsValidDoubleReg(reg))
+        {
+            reg--;
+        }
+
+        var mask = reg.SingleTypeMask;
+        if (type == TYP_DOUBLE)
+        {
+            assert(genIsValidDoubleReg(reg));
+            mask |= (regMask)((long)mask << 1);
+        }
+
+        return mask;
+    }
+#endif
+
     public static explicit operator regMask(regMaskTP mask)
     {
 #if HAS_MORE_THAN_64_REGISTERS

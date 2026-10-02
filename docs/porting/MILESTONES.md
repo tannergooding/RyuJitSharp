@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Immutable register-mask operation family
+
+Completed the twelve remaining native register-mask operations, including typed
+ARM pairs and register-bank queries. Mutators use the established explicit
+`ref regMaskTP` owner-writeback pattern; readonly fields, layout, existing public
+APIs and callers remain unchanged. GPR availability keeps native intersection
+semantics and assertion-before-write ordering.
+
+Full-analysis Windows checks passed 35 Debug and 32 Release cases, including
+25/22 new cases and ten existing bank controls each. The twelve definitions and
+declarations were retired together: 119 body lines, twelve declaration lines
+and one exclusive trailing blank. ARM branches were source-reviewed, not
+executed; the existing public `IsSet` single-bank limitation is unchanged.
+Evidence: `artifacts/regmask-operations-acceptance-ba11eab2` and
+`artifacts/residual-reconciliation/regmask-operations-ba11eab2-*`.
+
 ## 2026-10-01: Try-aware loop-aware traversal
 
 Completed the whole reverse-postorder visitor that keeps catch-protected regions
