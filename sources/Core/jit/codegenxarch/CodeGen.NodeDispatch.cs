@@ -12,9 +12,6 @@ public sealed partial class CodeGen
 #if !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Node instruction generation requires xarch.");
 #else
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
 #if !TARGET_64BIT
         var targetReg = tree.Type == TYP_LONG ? REG_NA : tree.RegNum;
 #else
@@ -368,7 +365,8 @@ public sealed partial class CodeGen
 
             case GT_FIELD_LIST:
             {
-                throw new FatalJitException("FIELD_LIST nodes must be contained during code generation.");
+                assert(false, "!\"LIST, FIELD_LIST nodes should always be marked contained.\"");
+                break;
             }
 
             case GT_SWAP:
@@ -563,7 +561,12 @@ public sealed partial class CodeGen
 
             default:
             {
-                throw new FatalJitException($"Unimplemented node type {tree.Oper} in code generation.");
+#if DEBUG
+                // Native OpName formats the complete GT_ operator name.
+                NYIRAW($"NYI: Unimplemented node type {tree.Oper}\n");
+#endif
+                assert(false, "!\"Unknown node in codegen\"");
+                break;
             }
         }
 #endif

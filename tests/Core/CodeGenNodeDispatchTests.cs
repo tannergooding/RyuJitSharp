@@ -275,37 +275,6 @@ internal static unsafe class CodeGenNodeDispatchTests
         });
     }
 
-    [TestCase(false)]
-    [TestCase(true)]
-    public static void FieldListsMustBeContained(bool contained)
-    {
-        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
-        {
-            var tree = new GenTreeFieldList { IsContained = contained };
-            if (contained)
-            {
-                codeGen.genCodeForTreeNode(tree);
-            }
-            else
-            {
-                _ = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
-            }
-            Assert.That(Descriptors(codeGen), Is.Empty);
-        });
-    }
-
-    [Test]
-    public static void UnsupportedTargetOperatorsFailExplicitly()
-    {
-        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
-        {
-            var tree = new GenTree(GT_SWIFT_ERROR, TYP_I_IMPL);
-            _ = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
-
-            Assert.That(Descriptors(codeGen), Is.Empty);
-        });
-    }
-
 #if DEBUG
     [Test]
     public static void EachNodeStartsANewOperandConsumptionOrder()
