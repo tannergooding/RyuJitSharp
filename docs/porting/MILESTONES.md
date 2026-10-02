@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Little-endian scalar readers
+
+Completed all nine byte-stream readers for unsigned, signed and floating values.
+Unaligned integer reads reuse the repository's `BinaryPrimitives` pattern;
+floating reads retain the integer-read/bit-reinterpretation sequence.
+
+Windows passes 264 Debug/264 Release cases covering every offset modulo eight,
+signed extrema, byte order, signed zero, subnormals, infinities and signaling/
+quiet NaN payloads. Input bytes remain unchanged. These are Windows-host results,
+not other-host or generated-code parity. Retired nine definitions, 38 lines.
+Evidence: `artifacts/little-endian-9c10e424/v1` and
+`artifacts/residual-reconciliation/little-endian-9c10e424-*`.
+
 ## 2026-10-01: Arbitrary-block funclet region queries
 
 Completed `bbFuncletRegionOf` and `bbIsInSameFunclet`. Unlike the existing
