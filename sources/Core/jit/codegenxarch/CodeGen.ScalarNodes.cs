@@ -7,6 +7,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+#if !TARGET_ARM64
     public void genCodeForIncSaturate(GenTree tree)
     {
 #if !TARGET_XARCH
@@ -27,6 +28,7 @@ public sealed partial class CodeGen
         genProduceReg(tree);
 #endif
     }
+#endif
 
     public void genCodeForBitOp(GenTreeOp tree)
     {
