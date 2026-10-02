@@ -17,7 +17,6 @@ public partial class Emitter
         private regNumber _idReg2;
         private bool _idCnsReloc;
         private bool _idDspReloc;
-        private bool _idBound;
 #if !TARGET_XARCH
         private bool _idTlsGD;
 #endif
@@ -34,13 +33,13 @@ public partial class Emitter
         public bool idIsBound()
         {
             assert(!IsSimdInstruction(idIns()));
-            return _idBound;
+            return (_idCustomBits & 1) != 0;
         }
 
         public void idSetIsBound()
         {
             assert(!IsSimdInstruction(idIns()));
-            _idBound = true;
+            _idCustomBits |= 1;
         }
 
         public emitAttr idOpSize()

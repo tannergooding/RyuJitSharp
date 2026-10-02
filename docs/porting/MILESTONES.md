@@ -16,6 +16,31 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Descriptor bound-bit aliases and target payloads
+
+The bound flag now uses the native shared custom-payload bit instead of
+independent Boolean storage. Writes through the bound, EVEX mask and custom
+payload views agree without disturbing adjacent bits. Completed target payload
+accessors preserve ARM instruction-size/flag semantics and LoongArch/RISC-V
+register, option and code-size widths. LoongArch's register and local-address
+views share the second union word; RISC-V uses the first.
+
+Full-analysis Windows Debug passes 221 cases and Release passes 225, including
+18 new payload cases in each configuration. Coverage includes bidirectional
+aliases, unrelated-bit preservation, Debug assertion ordering and Release
+truncation. Runs retain memory telemetry and the full correctness checks without
+either free-memory threshold.
+
+Retired 28 whole inline definitions (141 body lines) and four complete
+prerequisite enums (43 lines), 184 native lines total. Wasm code-size computation
+remains a typed terminating dependency with its native body/declaration retained.
+Descriptor container/layout fields, encoding helpers and the independent format
+family are not retired by this batch. Other-target source controls do not imply
+compilation, execution or physical-layout parity.
+
+Evidence is under `artifacts/descriptor-payload-acceptance-8aab5675` and
+`artifacts/residual-reconciliation/descriptor-payload-8aab5675-*`.
+
 ## 2026-10-01: Local per-element SIMD mask contracts
 
 Completed the local mask element-width mapper's native `unreached()` failure

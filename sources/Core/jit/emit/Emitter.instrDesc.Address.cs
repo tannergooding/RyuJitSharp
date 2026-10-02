@@ -20,7 +20,11 @@ public partial class Emitter
 #endif
         public partial struct idAddrUnion
         {
+#if TARGET_LOONGARCH64
+            [FieldOffset(4)]
+#else
             [FieldOffset(0)]
+#endif
             public emitLclVarAddr iiaLclVar;
 
 #if TARGET_XARCH

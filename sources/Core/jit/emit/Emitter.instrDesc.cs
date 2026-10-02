@@ -130,7 +130,7 @@ public partial class Emitter
 #else
         public uint idCodeSize()
         {
-            throw new PlatformNotSupportedException("Instruction descriptor code size is not yet ported for this target.");
+            return GetTargetCodeSize();
         }
 #endif
 
