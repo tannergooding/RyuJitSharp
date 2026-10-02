@@ -13,7 +13,6 @@ public sealed partial class CodeGen
 {
     public void dumpSiVarLoc(in siVarLoc varLoc)
     {
-#if TARGET_AMD64
         switch (varLoc.vlType)
         {
             case VLT_REG:
@@ -28,8 +27,12 @@ public sealed partial class CodeGen
             }
             case VLT_REG_FP:
             {
+#if TARGET_AMD64 || TARGET_ARM64
                 var reg = (regNumber)((int)REG_FP_FIRST + (int)varLoc.vlReg.vlrReg -
                     (int)ICorDebugInfo.RegNum.REGNUM_FP_FIRST);
+#else
+                var reg = (regNumber)((int)REG_FP_FIRST + (int)varLoc.vlReg.vlrReg);
+#endif
                 jitprintf(reg.Name);
                 break;
             }
@@ -52,17 +55,68 @@ public sealed partial class CodeGen
             }
             case VLT_REG_REG:
             {
+#if TARGET_AMD64 || TARGET_ARM64
                 var reg1 = ToJitReg(varLoc.vlRegReg.vlrrReg1);
                 var reg2 = ToJitReg(varLoc.vlRegReg.vlrrReg2);
+#else
+                var reg1 = (regNumber)varLoc.vlRegReg.vlrrReg1;
+                var reg2 = (regNumber)varLoc.vlRegReg.vlrrReg2;
+#endif
                 jitprintf($"{reg1.Name}-{reg2.Name}");
                 break;
             }
+#if !TARGET_AMD64
+            case VLT_REG_STK:
+            {
+                var reg = (regNumber)varLoc.vlRegStk.vlrsReg;
+                var baseReg = varLoc.vlRegStk.vlrsStk.vlrssBaseReg;
+                var offset = varLoc.vlRegStk.vlrsStk.vlrssOffset;
+                if (baseReg != ICorDebugInfo.RegNum.REGNUM_AMBIENT_SP)
+                {
+                    jitprintf($"{reg.Name}-{((regNumber)baseReg).Name}[{offset}]");
+                }
+                else
+                {
+                    jitprintf($"{reg.Name}-{STR_SPBASE}'[{offset}]");
+                }
+                break;
+            }
+            case VLT_STK_REG:
+            {
+                unreached();
+                break;
+            }
+            case VLT_STK2:
+            {
+                if (varLoc.vlStk2.vls2BaseReg != ICorDebugInfo.RegNum.REGNUM_AMBIENT_SP)
+                {
+                    jitprintf($"{((regNumber)varLoc.vlStk2.vls2BaseReg).Name}[{varLoc.vlStk2.vls2Offset}] (2 slots)");
+                }
+                else
+                {
+                    jitprintf($"{STR_SPBASE}'[{varLoc.vlStk2.vls2Offset}] (2 slots)");
+                }
+                break;
+            }
+            case VLT_FPSTK:
+            {
+                jitprintf($"ST(L-{varLoc.vlFPstk.vlfReg})");
+                break;
+            }
+            case VLT_FIXED_VA:
+            {
+                jitprintf($"fxd_va[{varLoc.vlFixedVarArg.vlfvOffset}]");
+                break;
+            }
+#endif
             default:
             {
-                throw new FatalJitException("Invalid variable location kind for AMD64 diagnostics.");
+                unreached();
+                break;
             }
         }
 
+#if TARGET_AMD64 || TARGET_ARM64
         static regNumber ToJitReg(ICorDebugInfo.RegNum reg)
         {
             if (reg >= ICorDebugInfo.RegNum.REGNUM_FP_FIRST)
@@ -72,8 +126,6 @@ public sealed partial class CodeGen
 
             return (regNumber)reg;
         }
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Variable location diagnostics outside AMD64 are not implemented.");
 #endif
     }
 
