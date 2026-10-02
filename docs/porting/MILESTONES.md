@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Accepted register-bank selector reconciled
+
+Retired the already-accepted `regMaskTP::GetRegSetForType` definition and its
+declaration: 15 body lines, eight attached documentation lines and one
+declaration, 24 total. The committed managed method matches the original
+allocation-activation patch; its ten bank-selection cases passed in each
+historical Debug/Release run. No compiler or test replay was needed.
+
+The remaining AMD64 argument-mask tables, x86 tables/classifier and other
+register-mask operations are retained. Register arrays, aggregate masks and
+partial immutable operations do not establish those complete mappings.
+Evidence is under
+`artifacts/residual-reconciliation/register-bank-selection-bc6a48dd-*`.
+
 ## 2026-10-01: Descriptor format headers and xarch classification
 
 Completed the native format-header target branches while preserving the existing

@@ -29,6 +29,18 @@
       "evidence": "artifacts/residual-reconciliation/compiler-options-a828ad0f component, manifest, retirement and verification receipts. All original13 protected WIP hashes remain unchanged; unrelated staged/unstaged work is excluded.",
       "validation": "Reused committed mappings and the existing cfgLoweringClosure evidence. No new build/test, per-field fixture, ABI measurement, feature activation or full-type execution coverage is claimed."
     },
+    "registerBankMappedRetirement": {
+      "status": "completed",
+      "scope": "Reconciled only the already-accepted regMaskTP.GetRegSetForType bank selector and its declaration; no new compiler implementation.",
+      "sourceEvidence": "Committed target/regMaskTP.cs matches the method added by lsra-integrated-source.patch731-746 over e0745f8. Existing allocationActivation records529Debug/452Release; lsra-driver-debug.trx and lsra-driver-release.trx each contain all10 bank-selection cases passed. No new execution or WIP mapping credit.",
+      "retirement": "Nativeed563e0a90514aa09847849a5e3703e6af517e88 removes regMaskTPOps.cpp111-133 (15body plus8attached heading lines) and target.h31 (one declaration),24lines total. Exact pinned oracle/preimage matches, reconstruction, recovery ref, sole oracle parent and clean residual verified. Evidence: artifacts/residual-reconciliation/register-bank-selection-bc6a48dd-*.",
+      "retainedExceptions": [
+        "All targetamd64.cpp ordered argument-mask tables remain: accepted register arrays and aggregate masks are not ordered mask-table counterparts.",
+        "All targetx86.cpp CPU/order globals, argument tables and X86Classifier remain, with associated targetx86.h and abi.h declarations. Protected argument-order WIP supplies no retirement evidence.",
+        "All other12regMaskTPOps definitions/declarations remain: immutable operators and partial IsSet/CreateFromRegNum mappings do not establish their whole target guards or ARM paired-register semantics."
+      ],
+      "limits": "No whole-file deletion, new parity claim or unrelated source/index mutation."
+    },
     "validationResourcePolicy": {
       "status": "user-override-active",
       "freeMemoryAdmission": "disabled for new runs",
