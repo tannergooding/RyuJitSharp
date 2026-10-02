@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Floating register diagnostics
+
+Completed target-aware floating register names through `GetFloatName`, reusing
+unchanged generated base names. Cached x/y/z tables preserve native width
+selection for every register entry. ARM32 retains its exact even-register
+literal switch, while ARM64 and LoongArch retain their base names.
+
+Windows-x64 Debug passes 26 new cases; ARM64-target Debug passes 23 on Windows.
+Release builds pass 26/25 existing classification controls. Other target
+branches remain source-reviewed, and no ARM64 machine-code execution is claimed.
+Existing register-name APIs, callers and generator files remain unchanged.
+
+Retired the whole 120-line native definition and its declaration, 121 lines.
+Evidence: `artifacts/floating-register-names-dac55795/v2` and
+`artifacts/residual-reconciliation/floating-register-names-dac55795-*`.
+
 ## 2026-10-01: Scalar numeric queries
 
 Completed generic power-of-two and sign queries plus the unsigned arbitrary-base
