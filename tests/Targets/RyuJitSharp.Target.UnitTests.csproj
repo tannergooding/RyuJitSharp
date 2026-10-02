@@ -26,6 +26,10 @@
     <Compile Include="..\Core\PInvokeFrameLoweringTests.cs" Link="PInvokeFrameLoweringTests.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-arm')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-arm')))">
+    <Compile Include="..\Core\Arm32CodeGenUnsupportedNodesTests.cs" Link="Arm32CodeGenUnsupportedNodesTests.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-arm64')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-arm64'))) or ('$(RyuJitTargetRuntimeIdentifier)' == 'linux-x64') or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'linux-x64')">
     <Compile Include="..\Core\FastTailCallLoweringTests.cs" Link="FastTailCallLoweringTests.cs" />
   </ItemGroup>

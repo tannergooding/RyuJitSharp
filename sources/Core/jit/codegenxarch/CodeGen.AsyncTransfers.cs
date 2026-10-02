@@ -48,7 +48,10 @@ public sealed partial class CodeGen
 
     public void genNonLocalJmp(GenTreeUnOp tree)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM
+        NYI_ARM("GT_NONLOCAL_JMP is not supported on arm32");
+        throw new FatalJitException(CORJIT_SKIPPED);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Nonlocal jump generation requires Windows AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
@@ -59,7 +62,10 @@ public sealed partial class CodeGen
 
     public void genFtnEntry(GenTree tree)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM
+        NYI_ARM("GT_FTN_ENTRY is not supported on arm32");
+        throw new FatalJitException(CORJIT_SKIPPED);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Function-entry address generation requires Windows AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
