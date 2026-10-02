@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Scalar bit positions and zero counts
+
+Completed eight primitive forward-scan, leading/trailing-zero-count and integer
+logarithm overloads. Scans preserve native nonzero assertions and host-specific
+fallbacks. The total functions preserve zero results explicitly: counts return
+the input width, while logarithms return zero. Existing mask overloads and BCL
+callers remain unchanged.
+
+Actual Windows64-host checks pass 155 Debug/151 Release cases, including
+120/118 new cases and 35/33 existing mask-bit controls for overload compatibility.
+All one-hot positions, mixed boundaries and distinct zero contracts are covered.
+Other host branches remain source-reviewed, not executed.
+
+Retired eight whole definitions and six declarations, 122 lines. Evidence:
+`artifacts/bit-positions-41196dd4/v1` and
+`artifacts/residual-reconciliation/bit-positions-41196dd4-*`.
+
 ## 2026-10-01: Reverse bit scans
 
 Completed both unsigned reverse-scan overloads, preserving nonzero assertions,
