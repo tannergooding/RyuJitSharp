@@ -44,6 +44,8 @@ public partial class Globals
 
     public const regNumber REG_INTRET = REG_R0;
 
+    public const regMask SRBM_INTRET = SRBM_R0;
+
     public const regNumber REG_LNGRET_LO = REG_R0;
 
     public const regNumber REG_LNGRET_HI = REG_R1;
