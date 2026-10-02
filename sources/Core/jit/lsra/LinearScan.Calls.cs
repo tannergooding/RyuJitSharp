@@ -273,9 +273,20 @@ public sealed partial class LinearScan
     };
 #endif
 
+    private bool supportsSpecialPutArg()
+    {
+#if DEBUG && TARGET_X86
+        // Caller-only stress leaves EAX, ECX and EDX. Reserving a pass-through ECX/EDX
+        // can leave too few registers for operands computed before the remaining arguments.
+        return (_lsraStressMask & 0x3) != 0x2;
+#else
+        return true;
+#endif
+    }
+
     private int buildPutArgReg(GenTreeUnOp node)
     {
-#if TARGET_AMD64 || TARGET_ARM64
+        assert(node is not null);
         assert(node.Oper.IsPutArgReg);
         var argReg = node.RegNum;
         assert(argReg is not REG_NA);
@@ -284,9 +295,11 @@ public sealed partial class LinearScan
         var use = buildUse(op1, argMask);
 
         _placedArgumentRegisters |= regMaskTP.CreateFromRegNum(argReg, argMask);
-        var isSpecialPutArg = isCandidateLocalRef(op1) && ((op1.Flags & GTF_VAR_DEATH) == 0);
+        var isSpecialPutArg = supportsSpecialPutArg() && isCandidateLocalRef(op1) &&
+            ((op1.Flags & GTF_VAR_DEATH) == 0);
         if (isSpecialPutArg)
         {
+            JITDUMP("Setting putarg_reg as a pass-through of a non-last use lclVar\n");
             var localInterval = use.getInterval();
             assert(localInterval.isLocalVar);
             assert(_placedArgumentLocalCount < _placedArgumentLocals.Length);
@@ -305,9 +318,6 @@ public sealed partial class LinearScan
         }
 
         return 1;
-#else
-        throw new FatalJitException("LSRA register argument reference building is not implemented outside AMD64.");
-#endif
     }
 
     private int buildGCWriteBarrier(GenTree tree)

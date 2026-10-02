@@ -68,10 +68,12 @@ public sealed partial class LinearScan
         }
 
         var sourceUse = buildUse(source, candidates);
+#if TARGET_64BIT
         if ((source.Type is TYP_LONG) && (cast.Type is TYP_INT))
         {
             _targetPreferredUse = sourceUse;
         }
+#endif
 
         return 1;
     }

@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
@@ -68,7 +69,13 @@ public sealed partial class LinearScan
     private void buildCallDefs(GenTree tree, int destinationCount, regMaskTP destinationCandidates)
     {
         var call = tree.AsCall();
-        var returnTypeDesc = call.ReturnTypeDesc;
+        ref readonly var returnTypeDesc = ref call.ReturnTypeDesc;
+        assert(!Unsafe.IsNullRef(in returnTypeDesc));
+        if (Unsafe.IsNullRef(in returnTypeDesc))
+        {
+            return;
+        }
+
         assert(destinationCount > 0);
         assert(countRegisterMaskBits(destinationCandidates) == destinationCount);
         assert(tree.IsMultiRegCall);
@@ -85,7 +92,7 @@ public sealed partial class LinearScan
 
     private void buildKills(GenTree tree, regMaskTP killMask)
     {
-#if DEBUG && (TARGET_AMD64 || TARGET_ARM64)
+#if DEBUG
         assert(killMask == getKillSetForNode(tree));
 #endif
         var killLocation = _referenceBuildLocation + 1;
@@ -311,7 +318,7 @@ public sealed partial class LinearScan
     private void buildDefWithKills(GenTree tree, SingleTypeRegSet destinationCandidates, regMaskTP killMask)
     {
         assert(!tree.AsCall().HasMultiRegRetVal);
-        assert(genMaxOneBit(destinationCandidates));
+        assert(isSingleRegister(destinationCandidates));
         buildKills(tree, killMask);
         _ = buildDef(tree, destinationCandidates);
     }
@@ -337,12 +344,16 @@ public sealed partial class LinearScan
     }
 #endif
 
-#if !TARGET_64BIT
     private void buildDefs(GenTree tree, int destinationCount, SingleTypeRegSet destinationCandidates)
     {
         assert(destinationCount > 0);
+#if TARGET_X86
+        var candidateCount = BitOperations.PopCount(unchecked((uint)destinationCandidates));
+#else
+        var candidateCount = BitOperations.PopCount(unchecked((ulong)destinationCandidates));
+#endif
         if ((destinationCandidates == SRBM_NONE) ||
-            (BitOperations.PopCount(unchecked((uint)destinationCandidates)) != destinationCount))
+            (candidateCount != destinationCount))
         {
             for (var index = 0; index < destinationCount; index++)
             {
@@ -354,14 +365,18 @@ public sealed partial class LinearScan
 
         for (var index = 0; index < destinationCount; index++)
         {
+#if TARGET_X86
             var bits = unchecked((uint)destinationCandidates);
             var lowestBit = bits & unchecked(0u - bits);
-            var candidate = (SingleTypeRegSet)lowestBit;
+#else
+            var bits = unchecked((ulong)destinationCandidates);
+            var lowestBit = bits & unchecked(0ul - bits);
+#endif
+            var candidate = unchecked((SingleTypeRegSet)lowestBit);
             _ = buildDef(tree, candidate, index);
             destinationCandidates &= ~candidate;
         }
     }
-#endif
 
     private static int countRegisterMaskBits(regMaskTP registers)
     {

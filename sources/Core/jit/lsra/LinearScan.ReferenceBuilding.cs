@@ -232,7 +232,7 @@ public sealed partial class LinearScan
         }
 
 #if TARGET_X86
-        else if (varTypeIsByte(type))
+        else if (varTypeIsByte(tree.Type))
         {
             if (destinationCandidates == SRBM_NONE)
             {
@@ -261,9 +261,11 @@ public sealed partial class LinearScan
             _definitionList.Append(_listNodePool.GetNode(definition, tree));
         }
 
+#if !TARGET_ARM
         setTgtPref(interval, _targetPreferredUse);
         setTgtPref(interval, _targetPreferredUse2);
         setTgtPref(interval, _targetPreferredUse3);
+#endif
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         assert(!interval.isPartiallySpilled);

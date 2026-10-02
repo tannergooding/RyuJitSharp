@@ -160,53 +160,71 @@ public sealed partial class LinearScan
     {
 #if TARGET_AMD64
         assert(tree.Oper.IsCompare || tree.Oper is GT_CMP or GT_TEST or GT_BT or GT_CCMP);
-        var srcCount = buildCmpOperands(tree);
-        if (tree.Type is not TYP_VOID)
-        {
-            _ = buildDef(tree, SRBM_NONE);
-        }
-        return srcCount;
+#elif TARGET_X86
+        assert(tree.Oper.IsCompare || tree.Oper is GT_CMP or GT_TEST or GT_BT);
 #elif TARGET_ARM64
         assert(tree.Oper.IsCompare || tree.Oper is GT_CMP or GT_TEST or GT_CCMP or GT_JCMP or GT_JTEST);
+#elif TARGET_RISCV64
+        assert(tree.Oper.IsCmpCompare || tree.Oper is GT_JCMP);
+#else
+        assert(tree.Oper.IsCompare || tree.Oper is GT_CMP or GT_TEST or GT_JCMP);
+#endif
+
         var sourceCount = buildCmpOperands(tree);
         if (tree.Type is not TYP_VOID)
         {
-            _ = buildDef(tree, SRBM_NONE);
+            var destinationCandidates = SRBM_NONE;
+#if TARGET_X86
+            // A materialized condition uses SETcc, which needs a byte-addressable destination.
+            destinationCandidates = _availableIntRegs & (SRBM_EAX | SRBM_ECX | SRBM_EDX | SRBM_EBX);
+#endif
+            _ = buildDef(tree, destinationCandidates);
         }
 
         return sourceCount;
-#else
-        NYI("LinearScan.buildCmp outside AMD64");
-        throw new FatalJitException("LinearScan.buildCmp outside AMD64.");
-#endif
     }
 
     private int buildCmpOperands(GenTree tree)
     {
-#if TARGET_AMD64
         var op1Candidates = SRBM_NONE;
         var op2Candidates = SRBM_NONE;
         var op1 = tree.AsOp().Op1;
         var op2 = tree.AsOp().Op2;
 
-        if (op2.IsContainedIndir && varTypeUsesFloatReg(op1.Type))
+#if TARGET_X86
+        var needByteRegs = (varTypeIsByte(tree.Type) && varTypeUsesIntReg(op1.Type)) ||
+            (tree.AsOp().GetCompareSize() == 1);
+        if (needByteRegs)
+        {
+            var byteCandidates = _availableIntRegs & (SRBM_EAX | SRBM_ECX | SRBM_EDX | SRBM_EBX);
+            if (!op1.IsContained)
+            {
+                op1Candidates = byteCandidates;
+            }
+
+            if (!op2.IsContained)
+            {
+                op2Candidates = byteCandidates;
+            }
+        }
+#endif
+
+#if TARGET_AMD64
+        if (op2.IsContainedIndir && varTypeUsesFloatReg(op1.Type) && (op2Candidates == SRBM_NONE))
         {
             op2Candidates = _lowGprRegs;
         }
-        if (op1.IsContainedIndir && varTypeUsesFloatReg(op2.Type))
+
+        if (op1.IsContainedIndir && varTypeUsesFloatReg(op2.Type) && (op1Candidates == SRBM_NONE))
         {
             op1Candidates = _lowGprRegs;
         }
+#endif
 
         var srcCount = buildOperandUses(op1, op1Candidates);
         srcCount += buildOperandUses(op2, op2Candidates);
+
         return srcCount;
-#elif TARGET_ARM64
-        return buildBinaryUses(tree.AsOp());
-#else
-        NYI("LinearScan.buildCmpOperands outside AMD64");
-        throw new FatalJitException("LinearScan.buildCmpOperands outside AMD64.");
-#endif
     }
 
     private int buildLclHeap(GenTree tree)

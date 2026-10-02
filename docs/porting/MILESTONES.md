@@ -16,6 +16,33 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Shared LSRA definition and kill builders
+
+Completed the shared definition, call-result, kill, cast-use, register-argument
+and comparison builders across their native target branches. Native register
+masks, argument preferences, fixed-register ordering and contained-operand flow
+are preserved. The new high-register fixture initializes the real EVEX register
+banks before constructing the allocator rather than modifying only its available
+register mask.
+
+Corrected Windows Debug/Release selections pass 121/108 cases. Linux Debug
+passes 115/121 and Release passes 103/108; all 33/23 new cases pass. The six
+Debug and five Release control failures match an unmodified baseline exactly,
+including full messages, and remain recorded as B502 rather than suppressed.
+ARM64 retains the exact 39-diagnostic compilation baseline; no ARM64 fixture
+execution or generated-code parity is claimed.
+
+An explicit resource-policy change removes free-memory admission and running
+abort thresholds for new versioned runners, while retaining memory telemetry,
+hidden serial execution, full analysis, source/test checks, default compiler
+processors and compiler-only GCConserveMemory5. Historical runners, failures and
+admission timeouts are unchanged.
+
+Retired 13 whole definitions and 12 declarations: 392 body lines, 52 exclusive
+body-envelope lines, 12 declaration lines and three header-guard lines, 459
+total. Evidence is under `artifacts/shared-lsra-builders-acceptance-a828ad0f/v2`
+and `artifacts/residual-reconciliation/shared-lsra-builders-a828ad0f-*`.
+
 ## 2026-10-01: Committed compiler-option mappings reconciled
 
 Reconciled the retained native Options members against already-committed managed
