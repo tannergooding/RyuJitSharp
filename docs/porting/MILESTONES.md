@@ -16,6 +16,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Numeric register-mask operations
+
+Completed boolean and unsigned-integer conversion, the integer-mask factory,
+logical right shift and shift assignment. Boolean conversion reads both banks;
+integer conversion truncates only the lower bank. Right shift deliberately
+discards the upper bank even when shifting by zero. The native assignment's
+returned owner reference maps to a static-ref helper without changing the
+readonly representation.
+
+All 43 cases pass Debug and Release for Windows-x64, Linux-x64 and Linux-ARM64
+configurations hosted on Windows, including returned-alias identity and updates.
+Only native-defined shift counts are covered. Existing 32-bit compilation
+boundaries remain, with no claimed fixture execution.
+
+Retired six whole definitions, 33 lines. This includes the already implemented
+complement, whose original mask-operation evidence is reused without rewriting
+or replaying it. Evidence: `artifacts/mask-numeric-b0c76ca2/v2` and
+`artifacts/residual-reconciliation/mask-numeric-b0c76ca2-*`.
+
 ## 2026-10-01: Register classification
 
 Completed floating-register type classification and target-specific byte-register

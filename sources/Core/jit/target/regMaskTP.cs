@@ -31,6 +31,8 @@ public readonly struct regMaskTP : IEquatable<regMaskTP>
 
     public regMask IntRegSet => _lower;
 
+    public static regMaskTP FromIntRegSet(SingleTypeRegSet intRegs) => new regMaskTP(intRegs);
+
     public regMask FltRegSet => _lower;
 
 #if HAS_MORE_THAN_64_REGISTERS
@@ -190,12 +192,35 @@ public readonly struct regMaskTP : IEquatable<regMaskTP>
 #endif
     }
 
+    public static explicit operator bool(regMaskTP mask) => !mask.IsEmpty;
+
+#if !REGMASK_BITS_32
+    public static explicit operator uint(regMaskTP mask) => unchecked((uint)mask._lower);
+#endif
+
     public static explicit operator regMask(regMaskTP mask)
     {
 #if HAS_MORE_THAN_64_REGISTERS
         assert(mask._upper == SRBM_NONE);
 #endif
         return mask._lower;
+    }
+
+    public static regMaskTP operator >>(regMaskTP mask, int count)
+    {
+#if REGMASK_BITS_32
+        var lower = unchecked((uint)mask._lower) >> count;
+#else
+        var lower = unchecked((ulong)mask._lower) >> count;
+#endif
+        return new regMaskTP(unchecked((regMask)lower));
+    }
+
+    internal static ref regMaskTP ShiftRightAssign(ref regMaskTP destination, int count)
+    {
+        destination >>= count;
+
+        return ref destination;
     }
 
 #if HAS_MORE_THAN_64_REGISTERS
