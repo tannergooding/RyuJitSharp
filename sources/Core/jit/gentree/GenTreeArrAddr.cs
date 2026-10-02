@@ -40,7 +40,7 @@ public sealed class GenTreeArrAddr : GenTreeUnOp
     {
         array = null;
         var scaledIndexVN = ValueNumStore.NoVN;
-        target_ssize_t offset = 0;
+        var offset = (target_ssize_t)0;
         ParseArrayAddressWork(Addr, compiler, 1, ref array, ref scaledIndexVN, ref offset);
         if (array is null)
         {
@@ -170,7 +170,7 @@ public sealed class GenTreeArrAddr : GenTreeUnOp
 
                 case GT_MUL:
                 {
-                    target_ssize_t subMul = 0;
+                    var subMul = (target_ssize_t)0;
                     GenTree? nonConst = null;
                     var op = tree.AsOp();
                     if (op.Op1.Oper.IsCnsIntOrI)

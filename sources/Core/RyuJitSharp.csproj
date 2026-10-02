@@ -325,6 +325,7 @@
     <!-- FEATURE_HW_INTRINSICS -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_HW_INTRINSICS</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);FEATURE_HW_INTRINSICS</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'wasm'">$(DefineConstants);FEATURE_HW_INTRINSICS</DefineConstants>
     
     <!-- FEATURE_IJW -->
     <DefineConstants Condition="'$(RyuJitTargetOS)' == 'win'">$(DefineConstants);FEATURE_IJW</DefineConstants>
@@ -389,6 +390,7 @@
     <!-- FEATURE_SIMD -->
     <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);FEATURE_SIMD</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_SIMD</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'wasm'">$(DefineConstants);FEATURE_SIMD</DefineConstants>
 
     <!-- FEATURE_TAILCALL_OPT: opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls -->
     <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_TAILCALL_OPT</DefineConstants>

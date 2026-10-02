@@ -108,7 +108,9 @@ public partial class Compiler
                         2 => TYP_USHORT,
                         4 => TYP_INT,
                         8 => TYP_LONG,
+#if FEATURE_SIMD
                         16 when compiler.GetPreferredVectorByteLength() >= 16 => TYP_SIMD16,
+#endif
 #if TARGET_XARCH
                         32 when compiler.GetPreferredVectorByteLength() >= 32 => TYP_SIMD32,
                         64 when compiler.GetPreferredVectorByteLength() >= 64 => TYP_SIMD64,
@@ -359,7 +361,7 @@ public partial class Compiler
 
             var remainderFirst = RemainderOverwritesDestinationWithStaleBits(remainder, dstDeaths);
             GenTree? address = null;
-            target_ssize_t baseOffset = 0;
+            var baseOffset = (target_ssize_t)0;
             FieldSeq? baseFields = null;
             var flags = GTF_EMPTY;
             var copyableFlags = GTF_IND_COPYABLE_FLAGS | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP;

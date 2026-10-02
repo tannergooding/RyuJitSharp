@@ -10,7 +10,11 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
+#if FEATURE_SIMD
     private GenTree NewMemcmpBinaryOp(genTreeOps operation, var_types type, GenTree left, GenTree right)
+#else
+    private GenTreeOp NewMemcmpBinaryOp(genTreeOps operation, var_types type, GenTree left, GenTree right)
+#endif
     {
 #if FEATURE_SIMD
         if (varTypeIsSimd(left.Type))

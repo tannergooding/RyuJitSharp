@@ -65,8 +65,12 @@ public sealed partial class LinearScan
                 var bits = unchecked((ulong)(long)candidates);
                 var offset = BitOperations.TrailingZeroCount(bits);
                 candidates &= ~unchecked((SingleTypeRegSet)(1UL << offset));
-                var nextReg = (regNumber)(offset +
-                    (interval.registerType is TYP_MASK ? REG_HIGH_BASE : REG_LOW_BASE));
+#if HAS_MORE_THAN_64_REGISTERS
+                var registerBase = interval.registerType is TYP_MASK ? REG_HIGH_BASE : REG_LOW_BASE;
+#else
+                var registerBase = REG_LOW_BASE;
+#endif
+                var nextReg = (regNumber)(offset + registerBase);
                 if (nextReg > targetReg)
                 {
                     newReg = nextReg;

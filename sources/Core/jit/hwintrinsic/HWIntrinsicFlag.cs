@@ -179,6 +179,9 @@ public enum HWIntrinsicFlag : ulong
     HW_Flag_ReturnsPerElementMask = 0x800,
     HW_Flag_HasImmediateOperand = 0x1000,
 
+#elif TARGET_ARM
+    // Arm32 does not enable FEATURE_HW_INTRINSICS, so it has no target-specific flags.
+
 #else
 #error Unsupported platform
 #endif

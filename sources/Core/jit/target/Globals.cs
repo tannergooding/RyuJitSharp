@@ -213,6 +213,15 @@ public static partial class Globals
     public static bool genIsValidDoubleReg(regNumber reg) => genIsValidFloatReg(reg) && ((reg - REG_FP_FIRST) & 0x1) is 0;
 #endif
 
+#if TARGET_WASM
+    public static bool genIsValidFloatReg(regNumber reg) => regNumberExtensions.IsValidWasmFloatReg(reg);
+
+    public static bool genIsValidIntOrFakeReg(regNumber reg) => genIsValidIntReg(reg);
+
+    public static bool genIsValidIntReg(regNumber reg) => regNumberExtensions.IsValidWasmIntReg(reg);
+
+    public static bool genIsValidReg(regNumber reg) => regNumberExtensions.IsValidWasmReg(reg);
+#else
     public static bool genIsValidFloatReg(regNumber reg) => reg is >= REG_FP_FIRST and <= REG_FP_LAST;
 
 #if TARGET_ARM64
@@ -223,12 +232,16 @@ public static partial class Globals
 
     public static bool genIsValidIntReg(regNumber reg) => reg is >= REG_INT_FIRST and <= REG_INT_LAST;
 
+#endif
+
 #if FEATURE_MASKED_HW_INTRINSICS
     public static bool genIsValidMaskReg(regNumber reg) => reg is >= REG_MASK_FIRST and <= REG_MASK_LAST;
 #endif
 
+#if !TARGET_WASM
     /// <summary>Return true if the register number is valid</summary>
     /// <param name="reg"></param>
     /// <returns></returns>
     public static bool genIsValidReg(regNumber reg) => reg < REG_COUNT;
+#endif
 }

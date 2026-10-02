@@ -132,6 +132,99 @@ public partial class Emitter
         IF_RWR_RWR_ARD,
         IF_RWR_RRD_ARD_CNS,
         IF_RWR_RRD_ARD_RRD,
+#elif TARGET_ARM
+        IF_NONE,
+        IF_LABEL,
+        IF_LARGEJMP,
+        IF_EN9,
+        IF_EN8,
+        IF_EN6A,
+        IF_EN6B,
+        IF_EN5A,
+        IF_EN5B,
+        IF_EN4A,
+        IF_EN4B,
+        IF_EN4C,
+        IF_EN3A,
+        IF_EN3B,
+        IF_EN3C,
+        IF_EN3D,
+        IF_EN3E,
+        IF_EN2A,
+        IF_EN2B,
+        IF_EN2C,
+        IF_EN2D,
+        IF_EN2E,
+        IF_EN2F,
+        IF_EN2G,
+        IF_T1_A,
+        IF_T1_B,
+        IF_T1_C,
+        IF_T1_D0,
+        IF_T1_D1,
+        IF_T1_D2,
+        IF_T1_E,
+        IF_T1_F,
+        IF_T1_G,
+        IF_T1_H,
+        IF_T1_I,
+        IF_T1_J0,
+        IF_T1_J1,
+        IF_T1_J2,
+        IF_T1_J3,
+        IF_T1_K,
+        IF_T1_L0,
+        IF_T1_L1,
+        IF_T1_M,
+        IF_T2_A,
+        IF_T2_B,
+        IF_T2_C0,
+        IF_T2_C1,
+        IF_T2_C2,
+        IF_T2_C3,
+        IF_T2_C4,
+        IF_T2_C5,
+        IF_T2_C6,
+        IF_T2_C7,
+        IF_T2_C8,
+        IF_T2_C9,
+        IF_T2_C10,
+        IF_T2_D0,
+        IF_T2_D1,
+        IF_T2_E0,
+        IF_T2_E1,
+        IF_T2_E2,
+        IF_T2_F1,
+        IF_T2_F2,
+        IF_T2_G0,
+        IF_T2_G1,
+        IF_T2_H0,
+        IF_T2_H1,
+        IF_T2_H2,
+        IF_T2_I0,
+        IF_T2_I1,
+        IF_T2_J1,
+        IF_T2_J2,
+        IF_T2_J3,
+        IF_T2_K1,
+        IF_T2_K2,
+        IF_T2_K3,
+        IF_T2_K4,
+        IF_T2_L0,
+        IF_T2_L1,
+        IF_T2_L2,
+        IF_T2_M0,
+        IF_T2_M1,
+        IF_T2_N,
+        IF_T2_N1,
+        IF_T2_N2,
+        IF_T2_N3,
+        IF_T2_VLDST,
+        IF_T2_VFP2,
+        IF_T2_VFP3,
+        IF_T2_VMOVS,
+        IF_T2_VMOVD,
+        IF_INVALID,
 #elif TARGET_ARM64
         IF_NONE,
         IF_LABEL,
@@ -736,9 +829,102 @@ public partial class Emitter
         IF_COUNT,
     }
 
-#if TARGET_XARCH || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64
     internal static ReadOnlySpan<byte> emitFmtToOps => [
-#if TARGET_ARM64
+#if TARGET_ARM
+        (byte)ID_OP_NONE, // IF_NONE
+        (byte)ID_OP_JMP, // IF_LABEL
+        (byte)ID_OP_JMP, // IF_LARGEJMP
+        (byte)ID_OP_NONE, // IF_EN9
+        (byte)ID_OP_NONE, // IF_EN8
+        (byte)ID_OP_NONE, // IF_EN6A
+        (byte)ID_OP_NONE, // IF_EN6B
+        (byte)ID_OP_NONE, // IF_EN5A
+        (byte)ID_OP_NONE, // IF_EN5B
+        (byte)ID_OP_NONE, // IF_EN4A
+        (byte)ID_OP_NONE, // IF_EN4B
+        (byte)ID_OP_NONE, // IF_EN4C
+        (byte)ID_OP_NONE, // IF_EN3A
+        (byte)ID_OP_NONE, // IF_EN3B
+        (byte)ID_OP_NONE, // IF_EN3C
+        (byte)ID_OP_NONE, // IF_EN3D
+        (byte)ID_OP_NONE, // IF_EN3E
+        (byte)ID_OP_NONE, // IF_EN2A
+        (byte)ID_OP_NONE, // IF_EN2B
+        (byte)ID_OP_NONE, // IF_EN2C
+        (byte)ID_OP_NONE, // IF_EN2D
+        (byte)ID_OP_NONE, // IF_EN2E
+        (byte)ID_OP_NONE, // IF_EN2F
+        (byte)ID_OP_NONE, // IF_EN2G
+        (byte)ID_OP_NONE, // IF_T1_A
+        (byte)ID_OP_NONE, // IF_T1_B
+        (byte)ID_OP_NONE, // IF_T1_C
+        (byte)ID_OP_NONE, // IF_T1_D0
+        (byte)ID_OP_SPEC, // IF_T1_D1
+        (byte)ID_OP_SPEC, // IF_T1_D2
+        (byte)ID_OP_NONE, // IF_T1_E
+        (byte)ID_OP_NONE, // IF_T1_F
+        (byte)ID_OP_NONE, // IF_T1_G
+        (byte)ID_OP_NONE, // IF_T1_H
+        (byte)ID_OP_JMP, // IF_T1_I
+        (byte)ID_OP_NONE, // IF_T1_J0
+        (byte)ID_OP_NONE, // IF_T1_J1
+        (byte)ID_OP_NONE, // IF_T1_J2
+        (byte)ID_OP_LBL, // IF_T1_J3
+        (byte)ID_OP_JMP, // IF_T1_K
+        (byte)ID_OP_NONE, // IF_T1_L0
+        (byte)ID_OP_NONE, // IF_T1_L1
+        (byte)ID_OP_JMP, // IF_T1_M
+        (byte)ID_OP_NONE, // IF_T2_A
+        (byte)ID_OP_NONE, // IF_T2_B
+        (byte)ID_OP_NONE, // IF_T2_C0
+        (byte)ID_OP_NONE, // IF_T2_C1
+        (byte)ID_OP_NONE, // IF_T2_C2
+        (byte)ID_OP_NONE, // IF_T2_C3
+        (byte)ID_OP_NONE, // IF_T2_C4
+        (byte)ID_OP_NONE, // IF_T2_C5
+        (byte)ID_OP_NONE, // IF_T2_C6
+        (byte)ID_OP_NONE, // IF_T2_C7
+        (byte)ID_OP_NONE, // IF_T2_C8
+        (byte)ID_OP_NONE, // IF_T2_C9
+        (byte)ID_OP_NONE, // IF_T2_C10
+        (byte)ID_OP_NONE, // IF_T2_D0
+        (byte)ID_OP_NONE, // IF_T2_D1
+        (byte)ID_OP_NONE, // IF_T2_E0
+        (byte)ID_OP_NONE, // IF_T2_E1
+        (byte)ID_OP_NONE, // IF_T2_E2
+        (byte)ID_OP_NONE, // IF_T2_F1
+        (byte)ID_OP_NONE, // IF_T2_F2
+        (byte)ID_OP_NONE, // IF_T2_G0
+        (byte)ID_OP_NONE, // IF_T2_G1
+        (byte)ID_OP_NONE, // IF_T2_H0
+        (byte)ID_OP_NONE, // IF_T2_H1
+        (byte)ID_OP_NONE, // IF_T2_H2
+        (byte)ID_OP_NONE, // IF_T2_I0
+        (byte)ID_OP_NONE, // IF_T2_I1
+        (byte)ID_OP_JMP, // IF_T2_J1
+        (byte)ID_OP_JMP, // IF_T2_J2
+        (byte)ID_OP_CALL, // IF_T2_J3
+        (byte)ID_OP_NONE, // IF_T2_K1
+        (byte)ID_OP_NONE, // IF_T2_K2
+        (byte)ID_OP_NONE, // IF_T2_K3
+        (byte)ID_OP_NONE, // IF_T2_K4
+        (byte)ID_OP_NONE, // IF_T2_L0
+        (byte)ID_OP_NONE, // IF_T2_L1
+        (byte)ID_OP_NONE, // IF_T2_L2
+        (byte)ID_OP_NONE, // IF_T2_M0
+        (byte)ID_OP_LBL, // IF_T2_M1
+        (byte)ID_OP_NONE, // IF_T2_N
+        (byte)ID_OP_JMP, // IF_T2_N1
+        (byte)ID_OP_NONE, // IF_T2_N2
+        (byte)ID_OP_NONE, // IF_T2_N3
+        (byte)ID_OP_NONE, // IF_T2_VLDST
+        (byte)ID_OP_NONE, // IF_T2_VFP2
+        (byte)ID_OP_NONE, // IF_T2_VFP3
+        (byte)ID_OP_NONE, // IF_T2_VMOVS
+        (byte)ID_OP_NONE, // IF_T2_VMOVD
+        (byte)ID_OP_NONE, // IF_INVALID
+#elif TARGET_ARM64
         (byte)ID_OP_NONE, // IF_NONE
         (byte)ID_OP_JMP, // IF_LABEL
         (byte)ID_OP_JMP, // IF_LARGEJMP

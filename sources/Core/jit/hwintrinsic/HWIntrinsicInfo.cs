@@ -155,8 +155,13 @@ public readonly partial struct HWIntrinsicInfo
 
     private static int GetTableIndex(NamedIntrinsic id)
     {
+#if FEATURE_HW_INTRINSICS
         assert(id is > NI_HW_INTRINSIC_START and < NI_HW_INTRINSIC_END);
         return id - NI_HW_INTRINSIC_START - 1;
+#else
+        Globals.NYI("Hardware-intrinsic metadata without hardware-intrinsic support");
+        throw new FatalJitException("Hardware-intrinsic metadata is unsupported on this target.");
+#endif
     }
 
     public static byte GetMultiRegCount(NamedIntrinsic id)
@@ -328,9 +333,14 @@ public readonly partial struct HWIntrinsicInfo
             }
         }
 
+#if FEATURE_SIMD
         var simdBaseType = compiler.getBaseTypeAndSizeOfSimdType(typeHnd, out var sizeBytes);
         assert((sizeBytes > 0) && (simdBaseType != TYP_UNDEF));
         return unchecked((uint)sizeBytes);
+#else
+        Globals.NYI("Hardware-intrinsic SIMD size lookup without SIMD support");
+        throw new FatalJitException("Hardware-intrinsic SIMD size lookup is unsupported on this target.");
+#endif
     }
 
     public static bool BaseTypeFromFirstArg(NamedIntrinsic id) =>
@@ -341,7 +351,11 @@ public readonly partial struct HWIntrinsicInfo
 
     public static bool ReturnsBoolean(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_ReturnsBoolean) != 0;
 
+#if FEATURE_MASKED_HW_INTRINSICS
     public static bool ReturnsPerElementMask(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_ReturnsPerElementMask) != 0;
+#else
+    public static bool ReturnsPerElementMask(NamedIntrinsic id) => false;
+#endif
 
     public static bool IsFloatingPointUsed(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_NoFloatingPointUsed) == 0;
 

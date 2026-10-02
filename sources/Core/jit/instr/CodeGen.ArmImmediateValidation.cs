@@ -92,6 +92,16 @@ public sealed partial class CodeGen
         return result;
     }
 
+    public bool validImmForInstr(instruction ins, nint imm, insFlags flags = INS_FLAGS_DONT_CARE)
+    {
+        if ((imm < int.MinValue) || (imm > int.MaxValue))
+        {
+            return false;
+        }
+
+        return validImmForInstr(ins, checked((int)imm), flags);
+    }
+
     public bool validDispForLdSt(int disp, var_types type)
     {
         if (varTypeIsFloating(type))

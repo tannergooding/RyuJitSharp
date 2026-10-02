@@ -348,7 +348,7 @@ public partial class Compiler
         {
             GenTree? result = null;
             GenTree? address = null;
-            target_ssize_t addressBaseOffset = 0;
+            var addressBaseOffset = (target_ssize_t)0;
             FieldSeq? addressBaseFields = null;
             GenTree? addressSpill = null;
             var addressSpillTemp = BAD_VAR_NUM;

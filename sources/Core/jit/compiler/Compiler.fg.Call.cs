@@ -98,7 +98,9 @@ public partial class Compiler
             return null;
         }
 #endif
+#if FEATURE_TAILCALL_OPT
         var hasStructParam = false;
+#endif
         for (var localNumber = 0; localNumber < lvaCount; localNumber++)
         {
             ref var descriptor = ref lvaTable[localNumber];
@@ -144,10 +146,12 @@ public partial class Compiler
                 }
             }
 
+#if FEATURE_TAILCALL_OPT
             if (varTypeIsStruct(descriptor.Type) && descriptor.lvIsParam)
             {
                 hasStructParam = true;
             }
+#endif
         }
 
         var canFastTailCall = fgCanFastTailCall(call, out var failReason);

@@ -22,7 +22,7 @@ public partial class Emitter
             var varNum = id.idAddr().iiaLclVar.lvaVarNum();
             var offs = unchecked((int)id.idAddr().iiaLclVar.lvaOffset());
 #if TARGET_ARM
-            var adr = _compiler.lvaFrameAddress(varNum, id.idIsLclFPBase(), out regNumber baseReg, offs,
+            var adr = _compiler.lvaFrameAddress(varNum, id.idIsLclFPBase(), out var baseReg, offs,
                 CodeGen.instIsFP(id.idIns()));
             var dsp = unchecked(adr + offs);
             if ((id.idIns() == INS_sub) || (id.idIns() == INS_subw))

@@ -947,6 +947,7 @@ public partial class Compiler
         }
     }
 
+#if FEATURE_SIMD
     private bool UsesSimdTypes
     {
         get
@@ -959,7 +960,9 @@ public partial class Compiler
             _usesSimdTypes = value;
         }
     }
+#endif
 
+#if FEATURE_SIMD
     /// <summary>Returns the codegen type for a given simd size.</summary>
     /// <param name="size"></param>
     /// <returns></returns>
@@ -975,6 +978,7 @@ public partial class Compiler
 #endif
         _ => TYP_UNDEF,
     };
+#endif
 
     [Conditional("DEBUG")]
     public void assertImp([DoesNotReturnIf(false)] bool condition, GenTree? op1 = null, GenTree? op2 = null, [CallerArgumentExpression(nameof(condition))] string conditionExpression = "", [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
@@ -1430,7 +1434,9 @@ public partial class Compiler
     public unsafe CORINFO_CLASS_HANDLE getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, int index)
         => info.compCompHnd->getMethodInstantiationArgument(ftn, index);
 
+#if FEATURE_SIMD
     public int GetMinVectorByteLength() => (int)(TYP_SIMD8.EmitSize);
+#endif
 
     /// <summary>Get the "primitive" type that is used for a struct of size 'structSize'.</summary>
     /// <param name="structSize">the size of the struct type, cannot be zero</param>
@@ -1978,11 +1984,13 @@ public partial class Compiler
         return result;
     }
 
+#if FEATURE_SIMD
     public unsafe int GetSimdTypeSizeInBytes(CORINFO_CLASS_HANDLE typeHnd)
     {
         _ = getBaseTypeAndSizeOfSimdType(typeHnd, out var sizeBytes);
         return sizeBytes;
     }
+#endif
 
     public unsafe CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, int index)
         => info.compCompHnd->getTypeInstantiationArgument(cls, index);
@@ -2466,7 +2474,7 @@ public partial class Compiler
             }
         }
         return maxSize;
-#elif TARGET_ARM64
+#elif TARGET_ARM64 || TARGET_WASM
         assert(GetMaxVectorByteLength() is FP_REGSIZE_BYTES);
         return FP_REGSIZE_BYTES;
 #else
@@ -3065,10 +3073,8 @@ public partial class Compiler
         return threshold;
     }
 
-#if FEATURE_SIMD
     private unsafe bool isIntrinsicType(CORINFO_CLASS_HANDLE clsHnd)
         => info.compCompHnd->isIntrinsicType(clsHnd);
-#endif
 
     private unsafe bool notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported, bool preserveNegativeDependency = false)
     {

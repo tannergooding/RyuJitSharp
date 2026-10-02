@@ -251,7 +251,11 @@ public readonly struct regMaskTP : IEquatable<regMaskTP>
 
     public readonly bool IsSet(regNumber regNum)
     {
+#if HAS_MORE_THAN_64_REGISTERS
         var mask = ((int)(regNum) < 64) ? _lower : _upper;
+#else
+        var mask = _lower;
+#endif
         return ((long)(mask) & (1L << (int)(regNum))) is not 0;
     }
 

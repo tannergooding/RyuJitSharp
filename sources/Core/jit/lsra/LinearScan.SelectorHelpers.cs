@@ -560,8 +560,13 @@ public sealed partial class LinearScan
     private void updateNextFixedRef(RegRecord regRecord, RefPosition? nextRefPosition, RefPosition? nextKill)
     {
         var regNum = regRecord.regNum;
+#if HAS_MORE_THAN_64_REGISTERS
         var isLow = (int)regNum < 64;
         var regMask = genSingleTypeRegMask(isLow ? regNum : (regNumber)((int)regNum - REG_HIGH_BASE));
+#else
+        var isLow = true;
+        var regMask = genSingleTypeRegMask(regNum);
+#endif
         var nextLocation = nextRefPosition?.nodeLocation ?? MaxLocation;
         for (var kill = nextKill; (kill is not null) && (kill.nodeLocation < nextLocation); kill = kill.nextRefPosition)
         {

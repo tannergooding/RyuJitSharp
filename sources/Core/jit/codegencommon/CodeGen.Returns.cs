@@ -70,7 +70,7 @@ public sealed partial class CodeGen
             }
             else
 #elif TARGET_ARM
-            if (varTypeUsesFloatReg(type) && (_compiler.opts.compUseSoftFP || _compiler.info.compIsVarArgs))
+            if (varTypeUsesFloatReg(type) && (Compiler.Options.compUseSoftFP || _compiler.info.compIsVarArgs))
             {
                 if (type == TYP_FLOAT)
                 {

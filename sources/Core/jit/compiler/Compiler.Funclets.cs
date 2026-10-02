@@ -111,6 +111,11 @@ public partial class Compiler
         return ref funGetFunc(compCurrFuncIdx);
     }
 
+    public ushort funCurrentFuncIdx()
+    {
+        return compCurrFuncIdx;
+    }
+
     public void funSetCurrentFunc(uint funcIndex)
     {
         assert(fgFuncletsCreated);

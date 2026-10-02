@@ -9,7 +9,14 @@ namespace RyuJitSharp;
 
 public enum ID_OPS
 {
-#if TARGET_ARM64
+#if TARGET_ARM
+    ID_OP_NONE,                             // no additional arguments
+    ID_OP_SCNS,                             // small const  operand (21-bits or less, no reloc)
+    ID_OP_JMP,                              // local jump
+    ID_OP_LBL,                              // label operand
+    ID_OP_CALL,                             // direct method call
+    ID_OP_SPEC,                             // special handling required
+#elif TARGET_ARM64
     ID_OP_NONE, // no additional arguments
     ID_OP_SCNS, // small const  operand (21-bits or less, no reloc)
     ID_OP_JMP,  // local jump

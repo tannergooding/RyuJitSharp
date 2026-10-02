@@ -19,7 +19,7 @@ public sealed partial class LinearScan
 
         if (varTypeIsFloating(sourceType) && !varTypeIsFloating(castType))
         {
-            _ = buildInternalFloatRegisterDefForNode(cast, _compiler.SRBM_ALLFLOAT);
+            _ = buildInternalFloatRegisterDefForNode(cast, Globals.SRBM_ALLFLOAT);
             _setInternalRegistersDelayFree = true;
         }
 

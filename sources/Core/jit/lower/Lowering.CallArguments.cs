@@ -29,7 +29,7 @@ public sealed partial class Lowering
 #endif
 
 #if !TARGET_64BIT && !TARGET_WASM
-        if (CompilerInstance.opts.compUseSoftFP && (arg.Type is TYP_DOUBLE))
+        if (Compiler.Options.compUseSoftFP && (arg.Type is TYP_DOUBLE))
         {
             // Doubles remain primitive until lowering, unlike decomposed integer longs.
             var argLclNum = CompilerInstance.lvaGrabTemp(false, "double arg on softFP");

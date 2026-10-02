@@ -41,7 +41,7 @@ public enum DoNotEnregisterReason
 
 #if !TARGET_64BIT
     /// <summary>It is a decomposed field of a long parameter.</summary>
-    LongParamField
+    LongParamField,
 #endif
 
     PinningRef,

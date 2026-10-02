@@ -571,6 +571,7 @@ public partial class Compiler
                         ? gtNewScalarHWIntrinsicNode(nodeRetType, intrinsic, op1, op2, op3)
                         : gtNewSimdHWIntrinsicNode(nodeRetType, intrinsic, simdBaseType, simdSize, op1, op2, op3);
 
+#if TARGET_XARCH || TARGET_ARM64
                     switch (intrinsic)
                     {
 #if TARGET_XARCH
@@ -628,6 +629,7 @@ public partial class Compiler
                         }
 #endif
                     }
+#endif
                     break;
                 }
 

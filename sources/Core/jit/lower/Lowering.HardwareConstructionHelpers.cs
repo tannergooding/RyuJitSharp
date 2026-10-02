@@ -7,6 +7,7 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
+#if FEATURE_SIMD
     private GenTree InsertNewSimdCreateScalarUnsafeNode(var_types simdType, GenTree operand, var_types simdBaseType, byte simdSize)
     {
         assert(varTypeIsSimd(simdType));
@@ -29,6 +30,7 @@ public sealed partial class Lowering
         _ = LowerNode(result);
         return result;
     }
+#endif
 
     private GenTreeLclVar ReplaceWithLclVar(LIR.Use use, int tempNum = BAD_VAR_NUM)
     {

@@ -14,8 +14,10 @@ public class GenTreeOpCC : GenTreeOp
     {
 #if TARGET_ARM64
         assert(oper is GT_JCMP or GT_JTEST or GT_SELECTCC or GT_CCMP or GT_SELECT_INCCC or GT_SELECT_INVCC or GT_SELECT_NEGCC);
-#else
+#elif TARGET_AMD64
         assert(oper is GT_JCMP or GT_JTEST or GT_SELECTCC or GT_CCMP);
+#else
+        assert(oper is GT_JCMP or GT_JTEST or GT_SELECTCC);
 #endif
 
         _condition = condition;
@@ -27,8 +29,10 @@ public class GenTreeOpCC : GenTreeOp
     {
 #if TARGET_ARM64
         assert(oper is GT_JCMP or GT_JTEST or GT_SELECTCC or GT_CCMP or GT_SELECT_INCCC or GT_SELECT_INVCC or GT_SELECT_NEGCC);
-#else
+#elif TARGET_AMD64
         assert(oper is GT_JCMP or GT_JTEST or GT_SELECTCC or GT_CCMP);
+#else
+        assert(oper is GT_JCMP or GT_JTEST or GT_SELECTCC);
 #endif
 
         _condition = condition;

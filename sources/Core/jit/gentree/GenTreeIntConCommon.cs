@@ -59,7 +59,7 @@ public abstract class GenTreeIntConCommon : GenTree
 #if TARGET_32BIT
             if (Oper is GT_CNS_LNG)
             {
-                return _value.Lcon
+                return _value.Lcon;
             }
 #endif
 
@@ -70,13 +70,13 @@ public abstract class GenTreeIntConCommon : GenTree
         set
         {
 #if TARGET_32BIT
-            if (OperIs(GT_CNS_LNG))
+            if (Oper is GT_CNS_LNG)
             {
                 _value.Lcon = value;
                 return;
             }
 
-            assert((nint)(value) == value));
+            assert((nint)(value) == value);
 #endif
 
             assert(Oper.IsCnsIntOrI);

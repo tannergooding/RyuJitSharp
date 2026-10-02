@@ -185,7 +185,8 @@ public sealed partial class CodeGen : ICodeGen
 
 #if TARGET_ARM
             // On ARM, we first push the prespill registers, then store LR, then R11 (FP), and point R11 at the saved R11.
-            callerSPtoFPdelta -= (int.PopCount(regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES);
+            callerSPtoFPdelta -= (System.Numerics.BitOperations.PopCount(
+                unchecked((ulong)(long)(regMask)_regSet.rsMaskPreSpillRegs(true))) * REGSIZE_BYTES);
             callerSPtoFPdelta -= (2 * REGSIZE_BYTES);
 #elif TARGET_X86
             // Thanks to ebp chaining, the difference between ebp-based addresses
@@ -211,7 +212,8 @@ public sealed partial class CodeGen : ICodeGen
             var callerSPtoSPdelta = -genTotalFrameSize;
 
 #if TARGET_ARM
-            callerSPtoSPdelta -= (int.PopCount(regSet.rsMaskPreSpillRegs(true)) * REGSIZE_BYTES);
+            callerSPtoSPdelta -= (System.Numerics.BitOperations.PopCount(
+                unchecked((ulong)(long)(regMask)_regSet.rsMaskPreSpillRegs(true))) * REGSIZE_BYTES);
 #elif TARGET_XARCH
             // caller-pushed return address
             callerSPtoSPdelta -= REGSIZE_BYTES;
@@ -295,6 +297,9 @@ public sealed partial class CodeGen : ICodeGen
             {
                 delta -= TARGET_POINTER_SIZE;
             }
+#elif TARGET_WASM
+            unreached();
+            delta = 0;
 #endif
 
             assert(delta >= 0);
@@ -463,6 +468,14 @@ public sealed partial class CodeGen : ICodeGen
     public regMask SRBM_ALLMASK => _srbmAllMask;
 
     public regMask SRBM_MSK_CALLEE_TRASH => _srbmMskCalleeTrash;
+#endif
+
+#if TARGET_ARM
+    public regMask SRBM_FLT_CALLEE_TRASH => Globals.SRBM_FLT_CALLEE_TRASH;
+
+    public regMask SRBM_INT_CALLEE_TRASH => Globals.SRBM_INT_CALLEE_TRASH;
+
+    public regMask SRBM_MSK_CALLEE_TRASH => SRBM_NONE;
 #endif
 
     public ref RegSet RegSet => ref _regSet;

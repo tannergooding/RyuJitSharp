@@ -9,6 +9,13 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
+#if FEATURE_HW_INTRINSICS && TARGET_WASM
+    private void ContainCheckHWIntrinsic(GenTreeHWIntrinsic node)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "WebAssembly hardware-intrinsic containment is not ported.");
+    }
+#endif
+
     private void ContainCheckRange(LIR.ReadOnlyRange range)
     {
         foreach (var node in range)

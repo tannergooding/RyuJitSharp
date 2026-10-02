@@ -170,6 +170,22 @@ public struct AbiPassingSegment
     public readonly var_types GetRegisterType()
     {
         var regNum = _register;
+#if TARGET_WASM
+        return regNumberExtensions.WasmRegToType(regNum) switch {
+            WasmValueType.I32 => Size switch {
+                1 => TYP_UBYTE,
+                2 => TYP_USHORT,
+                3 => TYP_INT,
+                4 => TYP_INT,
+                _ => TYP_UNDEF,
+            },
+            WasmValueType.I64 => TYP_LONG,
+            WasmValueType.F32 => TYP_FLOAT,
+            WasmValueType.F64 => TYP_DOUBLE,
+            WasmValueType.V128 => TYP_SIMD16,
+            _ => InvalidWasmRegisterType(),
+        };
+#else
         var regMskBase = RegisterMaskBase;
 
 #if FEATURE_MASKED_HW_INTRINSICS
@@ -210,11 +226,16 @@ public struct AbiPassingSegment
 #endif
             _ => TYP_UNDEF,
         };
+#endif
     }
 
     public readonly var_types GetRegisterType(ClassLayout? layout)
     {
+#if TARGET_WASM
+        if ((layout is not null) && regNumberExtensions.IsValidWasmIntReg(_register))
+#else
         if ((layout is not null) && (RegisterMaskBase == (int)(REG_INT_FIRST)))
+#endif
         {
             assert(Offset < layout.Size);
 
@@ -225,4 +246,12 @@ public struct AbiPassingSegment
         }
         return GetRegisterType();
     }
+
+#if TARGET_WASM
+    private static var_types InvalidWasmRegisterType()
+    {
+        unreached();
+        return TYP_UNDEF;
+    }
+#endif
 }

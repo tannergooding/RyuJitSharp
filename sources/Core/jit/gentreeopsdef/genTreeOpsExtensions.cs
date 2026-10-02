@@ -270,7 +270,7 @@ public static partial class genTreeOpsExtensions
         public bool IsLocalStore => oper is GT_STORE_LCL_VAR or GT_STORE_LCL_FLD;
 
 #if TARGET_32BIT
-        public bool IsLong => oper is GT_CNS_LONG;
+        public bool IsLong => oper is GT_CNS_LNG;
 #else
         public bool IsLong => false;
 #endif

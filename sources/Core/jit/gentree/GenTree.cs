@@ -718,7 +718,7 @@ public partial class GenTree
             }
 #endif
 
-#if FEATURE_MULTIREG_RET && TARGET_32BIT
+#if FEATURE_MULTIREG_RET && TARGET_X86
             if (OperIsMultiRegOp())
             {
                 return AsMultiRegOp().RegCount > 1;
@@ -1048,7 +1048,9 @@ public partial class GenTree
         GT_STOREIND => true,
         GT_STORE_BLK => true,
         GT_CALL => AsCall().IsOptimizingRetBufAsLocal,
+#if FEATURE_HW_INTRINSICS
         GT_HWINTRINSIC => AsHWIntrinsic().IsMemoryStoreOrBarrier,
+#endif
         _ => false,
     };
 
@@ -1221,6 +1223,8 @@ public partial class GenTree
             _flags = value;
         }
     }
+
+    public bool Is64RsltMul => (Flags & GTF_MUL_64RSLT) != 0;
 
     public static unsafe bool Compare(GenTree? op1, GenTree? op2, bool swapOk = false)
     {
@@ -2374,7 +2378,11 @@ public partial class GenTree
         return ((_flags & GTF_IND_NONFAULTING) == 0) && compiler.fgAddrCouldBeNull(IndirOrArrMetaDataAddr);
     }
 
+#if FEATURE_HW_INTRINSICS
     public bool IsHWIntrinsic(NamedIntrinsic intrinsicId) => _oper.IsHWIntrinsic && (AsHWIntrinsic().HWIntrinsicId == intrinsicId);
+#else
+    public bool IsHWIntrinsic(NamedIntrinsic intrinsicId) => false;
+#endif
 
 #if TARGET_XARCH
     public bool IsConvertMaskToVector => IsHWIntrinsic(NI_AVX512_ConvertMaskToVector);
@@ -2493,7 +2501,11 @@ public partial class GenTree
     public bool IsTrueMask(var_types simdBaseType) => false;
 #endif
 
+#if FEATURE_SIMD
     public bool IsVectorBroadcast(var_types simdBaseType) => _oper.IsCnsVec && AsVecCon().IsBroadcast(simdBaseType);
+#else
+    public bool IsVectorBroadcast(var_types simdBaseType) => false;
+#endif
 
     public bool IsVectorPerElementMask(Compiler compiler, var_types simdBaseType, byte simdSize)
     {
@@ -2574,9 +2586,15 @@ public partial class GenTree
         return false;
     }
 
+#if FEATURE_SIMD
     public bool IsVectorNaN(var_types simdBaseType) => _oper.IsCnsVec && AsVecCon().IsNaN(simdBaseType);
 
     public bool IsVectorNegativeZero(var_types simdBaseType) => _oper.IsCnsVec && AsVecCon().IsNegativeZero(simdBaseType);
+#else
+    public bool IsVectorNaN(var_types simdBaseType) => false;
+
+    public bool IsVectorNegativeZero(var_types simdBaseType) => false;
+#endif
 
     /// <summary>Check whether the operation may throw.</summary>
     /// <param name="comp">Compiler instance</param>
@@ -2664,9 +2682,9 @@ public partial class GenTree
         // could mark the trees just before argument processing, but it would require a full
         // tree walk of the argument tree, so we just do it when morphing, instead, even though we'll
         // mark non-argument trees (that will still get converted to calls, anyway).
-        case GT_LSH => TypeIs(TYP_LONG) && !gtGetOp2()->OperIs(GT_CNS_INT)
-        case GT_RSH => TypeIs(TYP_LONG) && !gtGetOp2()->OperIs(GT_CNS_INT)
-        case GT_RSZ => TypeIs(TYP_LONG) && !gtGetOp2()->OperIs(GT_CNS_INT)
+        GT_LSH => Type is TYP_LONG && (AsOp().Op2.Oper is not GT_CNS_INT),
+        GT_RSH => Type is TYP_LONG && (AsOp().Op2.Oper is not GT_CNS_INT),
+        GT_RSZ => Type is TYP_LONG && (AsOp().Op2.Oper is not GT_CNS_INT),
 #endif
         _ => false,
     };

@@ -89,5 +89,9 @@ public partial class Globals
     public const NamedIntrinsic SPECIAL_NI_Sve = NI_Sve_ConditionalExtractAfterLastActiveElementScalar;
     public const NamedIntrinsic FIRST_NI_VectorT = NI_Illegal;
     public const NamedIntrinsic LAST_NI_VectorT = NI_Illegal;
+#elif TARGET_WASM
+    public const NamedIntrinsic FIRST_NI_Vector = NI_Vector_Abs;
+    public const NamedIntrinsic LAST_NI_Vector = NI_Vector_op_UnsignedRightShift;
+    public const NamedIntrinsic FIRST_NI_PackedSimd = NI_PackedSimd_Abs;
 #endif
 }

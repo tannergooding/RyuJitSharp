@@ -7,7 +7,11 @@ global using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp;
 
+#if TARGET_WASM
+public enum regNumber : uint
+#else
 public enum regNumber : byte
+#endif
 {
 #if TARGET_X86
     REG_EAX = 0,

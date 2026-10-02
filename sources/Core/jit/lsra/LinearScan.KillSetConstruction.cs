@@ -112,6 +112,8 @@ public sealed partial class LinearScan
 #if TARGET_ARM64
             killMask = removeRegisterSets(killMask, SRBM_NONE, SRBM_FLT_CALLEE_TRASH,
                 SRBM_MSK_CALLEE_TRASH);
+#elif TARGET_WASM
+            assert(killMask.IsEmpty);
 #else
             var codeGen = _compiler.codeGen
                 ?? throw new FatalJitException("Call kill-set construction requires initialized CodeGen.");
@@ -282,6 +284,8 @@ public sealed partial class LinearScan
     {
 #if TARGET_ARM64
         return SRBM_CALLEE_TRASH;
+#elif TARGET_WASM
+        return RBM_NONE;
 #else
         var codeGen = _compiler.codeGen
             ?? throw new FatalJitException("Call kill-set construction requires initialized CodeGen.");

@@ -92,4 +92,15 @@ public enum insFlags : ulong
     INS_FLAGS_HasPseudoName = 1UL << 52,
     INS_FLAGS_DONT_CARE = 0,
 }
+#elif TARGET_WASM
+global using static RyuJitSharp.insFlags;
+
+namespace RyuJitSharp;
+
+public enum insFlags : uint
+{
+    INS_FLAGS_NOT_SET = 0x00,
+    INS_FLAGS_SET = 0x01,
+    INS_FLAGS_DONT_CARE = 0x02,
+}
 #endif

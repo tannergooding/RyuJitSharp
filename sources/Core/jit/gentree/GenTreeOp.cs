@@ -184,6 +184,14 @@ public class GenTreeOp : GenTreeUnOp
         return true;
     }
 
+#if TARGET_ARM
+    public void DebugCheckLongMul()
+    {
+        Globals.NYI("TARGET_ARM DebugCheckLongMul");
+        throw new FatalJitException(CORJIT_IMPLLIMITATION, "TARGET_ARM long multiplication checks are not ported.");
+    }
+#endif
+
 #nullable disable
     public ref GenTree Op2Ref => ref _op2;
 #nullable restore

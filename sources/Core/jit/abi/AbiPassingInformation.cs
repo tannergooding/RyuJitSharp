@@ -138,7 +138,8 @@ public partial struct AbiPassingInformation
         if (passedByRef)
         {
             assert(segment.Size == TARGET_POINTER_SIZE);
-            assert(!segment.IsPassedInRegister || (segment.GetRegisterType() == TYP_I_IMPL));
+            assert(!segment.IsPassedInRegister ||
+                   (segment.GetRegisterType().ActualType == TYP_I_IMPL.ActualType));
         }
 #endif
 

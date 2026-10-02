@@ -3392,10 +3392,11 @@
     },
     "activeBatch": {
       "currentUnit": {
-        "status": "source-wip-in-progress",
-        "scope": "ARM64 callee-save construction and production caller bindings are accepted; ARM32 source/test is complete but its target build is blocked before discovery. Wasm support remains as applied WIP. Preserve the unrelated B501 backlog note.",
+        "status": "completed",
+        "scope": "Accepted the preserved ARM64/ARM32 callee-save and Wasm ABI/register-support WIP with production caller bindings. Preserve the unrelated B501 backlog note.",
         "doneWhen": "For each unit, complete whole functions and caller bindings, preserve target branches and genuine terminating dependencies, pass focused full-analysis validation, retire its eligible native definitions/declarations, update the checkpoint and commit the completed C# batch. An accepted translation with eligible native text still present is unfinished.",
-        "validation": "Use repository commands and fresh configurations in the current worktree. Validate Windows x64 and affected target configurations; distinguish actual executed regressions, compilation and unchanged baseline failures. Source projections and native retirement are not generated-code parity.",
+        "validation": "Full-analysis target tests pass on the current source: Windows x64 125/125 Debug and Release; ARM32 80/80 Debug and 76/76 Release; browser-Wasm Debug 93/93. Tests are managed target tests on the Windows x64 host, not ARM/Wasm machine-code execution or generated-code parity. Earlier Windows full-suite Debug failures remain separately baseline-reproduced.",
+        "wasmCompileBlocker": "Resolved. WasmClassifierTests and WasmCallArgumentMorphTests plus the target suite pass 93/93 in browser-Wasm Debug. Packed-register caller bindings route genIsValidReg/genIsValidIntReg/genIsValidIntOrFakeReg/genIsValidFloatReg through Wasm type bits; invalid and exception-reference tags and native local-name behavior are covered.",
         "deferred": "After clearing source WIP, resume genInitializeRegisterState/genInitialize from deferredSharedInitializationUnit. Do not replay completed rotation work or depend on old workers, handoff documents or cached snapshots."
       },
       "acceptedUnits": {
@@ -3426,7 +3427,7 @@
           "limits": "Non-Windows ARM64 call-descriptor layout remains an explicit terminating dependency. emitOutput_Instr and global historical native retirement debt remain outside this unit."
         },
         "armCalleeSaveConstruction": {
-          "status": "source-complete-arm64-validated-arm32-build-blocked",
+          "status": "completed",
           "scope": "Completed ARM32/ARM64 callee-save push/pop, floating-register save/restore, stack-allocation masks, ARM64 frame-type save/restore helpers and production caller bindings. ARM64 retains its distinct genPopCalleeSavedRegistersAndFreeLclFrame entry point. Genuine unwind and pointer-authentication dependencies remain terminating.",
           "mapping": {
             "sharedCallers": "src/coreclr/jit/codegenarmarch.cpp -> sources/Core/jit/codegenxarch/CodeGen.CalleeSaveRecording.cs and CodeGen.Epilog.cs.",
@@ -3437,10 +3438,18 @@
           "validation": {
             "arm64Target": "Full-analysis Windows-host win-arm64 runs pass 74/74 Debug and 74/74 Release: artifacts/callee-save-arm64/Debug/Arm64CalleeSaved.Debug.trx and Release/Arm64CalleeSaved.Release.trx.",
             "windowsX64Controls": "Full-analysis Windows-x64 controls pass 125/125 Debug and 125/125 Release: artifacts/callee-save-windows-x64/Debug/CalleeSaved.WindowsX64.Debug.trx and Release/CalleeSaved.WindowsX64.Release.trx.",
-            "arm32": "The win-arm target test attempt failed during project compilation before test discovery: unsupported-platform errors at HWIntrinsicCategory.cs:77 and HWIntrinsicFlag.cs:183 plus conditional syntax errors at GenTree.cs:2667-2669. No ARM32 tests executed."
+            "arm32": "Full-analysis win-arm target tests pass 80/80 Debug and 76/76 Release on the Windows x64 host: artifacts/arm32-build/arm32-target-full-20261002-112632.trx and arm32-target-full-20261002-112649.trx."
           },
           "retirement": "Native 9b3a6d652a4d35492fa4512336c619b78f4f07ca amends the consolidated Remove ported code commit, whose sole parent is pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. It removes 19 complete definitions and ARM/ARM64-specific declarations; all selected bodies match the oracle after line-ending normalization. Recovery ref refs/copilot-recovery/arm-callee-save-before is retained.",
-          "limits": "Managed ARM64-target descriptor tests and Windows-x64 controls are not ARM execution or generated-code parity. ARM32 remains source-only until its target project compiles; ARM/ARM64 unwind and ARM64 pointer-authentication helpers remain explicit terminating dependencies."
+          "limits": "Managed ARM32/ARM64-target tests and Windows-x64 controls are not ARM execution or generated-code parity. ARM/ARM64 unwind and ARM64 pointer-authentication helpers remain explicit terminating dependencies."
+        },
+        "wasmAbiAndRegisterEncoding": {
+          "status": "completed",
+          "scope": "Whole WasmClassifier constructor, ToJitType and Classify mapped; Wasm packed-register creation, type mapping, unpacking, register-name and validity helpers bound to managed code. The generic target caller predicates now dispatch to the Wasm tag checks. Non-xarch dependencies remain explicit terminating stubs.",
+          "validation": "Full-analysis browser-Wasm Debug target suite passes 93/93, including scalar and struct ABI classification, wider lowered values, by-reference fallback, packed indices, every Wasm type tag and invalid-tag handling, native local-name semantics, and caller predicate bindings. Windows x64 and ARM32 target controls pass as recorded in currentUnit validation.",
+          "retirement": "Native c2831d55df83d67126a82301e99c48f95eec893c amends Remove ported code with sole parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e. Removes three complete targetwasm.cpp classifier definitions, the WasmClassifier class declaration, twelve complete registeropswasm.cpp functions, the mapped encoding constants/assertions, and their eleven declarations. Selected method bodies and class declaration match the pinned oracle. Retained WasmValueTypeName because native emitwasm callers remain, and retained the enum increment operator without a managed counterpart. Recovery ref refs/copilot-recovery/wasm-classifier-register-mappings-before retained the prior residual commit.",
+          "evidence": "artifacts/arm32-build/wasm-retirement-preimages.json; artifacts/arm32-build/browser-wasm-full-20261002-112250.trx; final Windows x64 and ARM32 target TRX paths in currentUnit validation.",
+          "limits": "Managed Wasm-target tests on a Windows x64 host, not Wasm execution, emitted-code parity, or generated-code parity. The native residual may retain dangling caller references by design."
         }
       },
       "deferredSharedInitializationUnit": {
@@ -4025,7 +4034,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Continue the remaining applied source WIP with Wasm support. Preserve the real emitInsSve_Mov overload algorithm and genuine terminating dependencies. Keep validation serial, retire eligible native definitions before each C# completion commit. The prior compiler-header fgTrysContiguous cursor is complete; do not re-audit it or claim global debt clearance. After WIP completion resume deferredSharedInitializationUnit. No old worktree, handoff document, worker or artifact archive is required; no publication.",
+    "nextAction": "The applied ARM32/Wasm source WIP now passes full-analysis target suites: Windows-x64 125/125 Debug and Release; win-arm 80/80 Debug and 76/76 Release; browser-Wasm 93/93 Debug. The exact Wasm classifier/register helper definitions and declarations were removed from runtime-port in native commit c2831d55df83d67126a82301e99c48f95eec893c, whose sole parent remains oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e; the recovery ref and WasmValueTypeName caller remain. Commit this validated C# WIP with its tests and checkpoint, preserving B501. Then resume deferredSharedInitializationUnit at genInitializeRegisterState/genInitialize. Keep Windows x64 first; serial full-analysis validation and native retirement are complete for this WIP. The five selected Windows-x64 Debug full-suite failures remain reproduced on clean HEAD 021c637c and are not regressions. Do not re-audit compiler.h:fgTrysContiguous or claim global debt clearance; managed target tests are not generated-code parity.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

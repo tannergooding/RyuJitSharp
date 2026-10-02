@@ -877,6 +877,7 @@ public partial class Compiler
             {
                 if (oper != GT_NONE)
                 {
+#if FEATURE_MASKED_HW_INTRINSICS
                     if (varTypeIsMask(retType))
                     {
                         if (varTypeIsMask(cnsNode.Type))
@@ -890,6 +891,7 @@ public partial class Compiler
                         }
                     }
                     else
+#endif
                     {
                         if ((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ))
                         {

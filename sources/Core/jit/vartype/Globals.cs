@@ -165,7 +165,7 @@ public partial class Globals
         assert((vt == TYP_MASK) || (vt.Register != VTR_MASK));
         return vt == TYP_MASK;
 #else
-        assert(GetRegister(vt) != VTR_MASK);
+        assert(vt.Register != VTR_MASK);
         return false;
 #endif
     }

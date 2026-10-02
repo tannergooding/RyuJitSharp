@@ -771,6 +771,7 @@ public partial class Compiler
                     break;
                 }
 
+#if TARGET_AMD64 || TARGET_ARM64
                 case GT_CCMP:
                 {
                     var ccmp = tree.AsCCMP();
@@ -783,6 +784,7 @@ public partial class Compiler
                     );
                     break;
                 }
+#endif
 
                 default:
                 {
@@ -1030,7 +1032,9 @@ public partial class Compiler
 #endif
                     }
                     hwintrinsicCopy.AuxiliaryType = hwintrinsic.AuxiliaryType;
+#if TARGET_XARCH || TARGET_ARM64
                     hwintrinsicCopy.CopyOtherRegs(hwintrinsic);
+#endif
 
                     for (var i = 0; i < operands.Length; i++)
                     {
@@ -3176,7 +3180,7 @@ public partial class Compiler
 #if TARGET_WASM
                         case GenTreeBlk.BlkOpKindNativeOpcode:
                         {
-                            jitprintf($" (memory.{(tree.Oper.IsCopyBlkOp ? "copy" : "fill")})");
+                            jitprintf($" (memory.{(tree.IsCopyBlkOp ? "copy" : "fill")})");
                             break;
                         }
 #endif
@@ -3709,7 +3713,7 @@ public partial class Compiler
                 }
                 else
                 {
-                    PrintRegs(firstReg, lastReg, stringBuilder);
+                    PrintRegs(stringBuilder, firstReg, lastReg);
                     firstReg = reg;
                     lastReg  = reg;
                 }
@@ -7299,7 +7303,7 @@ public partial class Compiler
             }
         }
 #elif TARGET_ARM
-        else if (varTypeIsFloating(node))
+        else if (varTypeIsFloating(node.Type))
         {
             costEx = IND_COST_EX;
             costSz = 4;
@@ -7842,7 +7846,7 @@ public partial class Compiler
             addrModeCostEx += baseAddr!.CostEx;
             addrModeCostSz += baseAddr!.CostSz;
 
-            for (nuint value = unchecked((nuint)cns); value >= 0x80; value >>= 7)
+            for (var value = unchecked((nuint)cns); value >= 0x80; value >>= 7)
             {
                 addrModeCostSz++;
             }
@@ -8471,9 +8475,11 @@ public partial class Compiler
 #if !TARGET_64BIT
         if (varTypeIsLong(node.Type))
         {
+#if FEATURE_MULTIREG_RET
             // Initialize Return type descriptor of call node
             assert(node._returnType == node.Type);
-            node.InitializeLongReturnType();
+            node._returnTypeDesc.InitializeLongReturnType();
+#endif
         }
 #endif
 
@@ -9574,6 +9580,8 @@ public partial class Compiler
         assert(intrinsic != NI_Illegal);
 #pragma warning restore CA1508
         return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
+#elif TARGET_WASM
+        return gtNewSimdHWIntrinsicNode(type, NI_PackedSimd_Abs, simdBaseType, simdSize, op1);
 #else
 #error Unsupported platform
 #endif
@@ -9609,7 +9617,7 @@ public partial class Compiler
         }
 
         var needsReverseOps = false;
-        var op2ForLookup = null as GenTree;
+        GenTree? op2ForLookup = null;
 
         switch (op)
         {
@@ -10687,6 +10695,8 @@ public partial class Compiler
         return gtNewSimdHWIntrinsicNode(type, NI_Vector_ConditionalSelect, simdBaseType, simdSize, op1, op2, op3);
 #elif TARGET_ARM64
         return gtNewSimdHWIntrinsicNode(type, NI_AdvSimd_BitwiseSelect, simdBaseType, simdSize, op1, op2, op3);
+#elif TARGET_WASM
+        return gtNewSimdHWIntrinsicNode(type, NI_Vector_ConditionalSelect, simdBaseType, simdSize, op1, op2, op3);
 #else
 #error Unsupported platform
 #endif
@@ -10722,6 +10732,8 @@ public partial class Compiler
         var hwIntrinsicId = ((simdSize is 8) && (simdBaseType.Size is 8))
             ? NI_Vector_Create
             : NI_Vector_CreateScalar;
+#elif TARGET_WASM
+        var hwIntrinsicId = NI_Vector_CreateScalar;
 #else
 #error Unsupported platform
 #endif
@@ -10766,6 +10778,8 @@ public partial class Compiler
         var hwIntrinsicId = ((simdSize is 8) && (simdBaseType.Size is 8))
             ? NI_Vector_Create
             : NI_Vector_CreateScalarUnsafe;
+#elif TARGET_WASM
+        var hwIntrinsicId = NI_Vector_CreateScalarUnsafe;
 #else
 #error Unsupported platform
 #endif
@@ -10874,11 +10888,16 @@ public partial class Compiler
         }
 #elif TARGET_ARM64
         assert((type == TYP_SIMD8) && (simdSize is 16));
+#elif TARGET_WASM
 #else
 #error Unsupported platform
 #endif
 
+#if TARGET_XARCH || TARGET_ARM64
         return gtNewSimdHWIntrinsicNode(type, NI_Vector_GetLower, simdBaseType, simdSize, op1);
+#elif TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm vector get-lower support is not ported.");
+#endif
     }
 
     public GenTree gtNewSimdGetUpperNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
@@ -10896,11 +10915,16 @@ public partial class Compiler
         }
 #elif TARGET_ARM64
         assert((type == TYP_SIMD8) && (simdSize is 16));
+#elif TARGET_WASM
 #else
 #error Unsupported platform
 #endif
 
+#if TARGET_XARCH || TARGET_ARM64
         return gtNewSimdHWIntrinsicNode(type, NI_Vector_GetUpper, simdBaseType, simdSize, op1);
+#elif TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm vector get-upper support is not ported.");
+#endif
     }
 
     /// <summary>Creates a new simd IsEvenInteger node</summary>
@@ -12059,6 +12083,24 @@ public partial class Compiler
                 intrinsic = isMax ? NI_AdvSimd_Max : NI_AdvSimd_Min;
             }
         }
+#elif TARGET_WASM
+        if (isScalar)
+        {
+            simdSize = 16;
+            type = TYP_SIMD16;
+
+            op1 = gtNewSimdCreateScalarUnsafeNode(type, op1, simdBaseType, simdSize);
+            op2 = gtNewSimdCreateScalarUnsafeNode(type, op2, simdBaseType, simdSize);
+        }
+
+        if (varTypeIsFloating(simdBaseType))
+        {
+            intrinsic = isMax ? NI_PackedSimd_PseudoMax : NI_PackedSimd_PseudoMin;
+        }
+        else if (!varTypeIsLong(simdBaseType))
+        {
+            intrinsic = isMax ? NI_PackedSimd_Max : NI_PackedSimd_Min;
+        }
 #else
 #error Unsupported platform
 #endif
@@ -12618,6 +12660,8 @@ public partial class Compiler
         {
             intrinsic = NI_AdvSimd_RoundToZero;
         }
+#elif TARGET_WASM
+        intrinsic = NI_PackedSimd_Truncate;
 #else
 #error Unsupported platform
 #endif
@@ -12879,6 +12923,25 @@ public partial class Compiler
             tmp1 = gtNewSimdGetLowerNode(TYP_SIMD8, tmp1, simdBaseType, 16);
         }
         return tmp1;
+#elif TARGET_WASM
+        if (varTypeIsFloating(simdBaseType))
+        {
+            assert(simdBaseType == TYP_FLOAT);
+            intrinsic = NI_PackedSimd_ConvertToDoubleLower;
+        }
+        else if (varTypeIsSigned(simdBaseType))
+        {
+            intrinsic = NI_PackedSimd_SignExtendWideningLower;
+        }
+        else
+        {
+            intrinsic = NI_PackedSimd_ZeroExtendWideningLower;
+        }
+
+#pragma warning disable CA1508 // Retain the native intrinsic-selection assertion.
+        assert(intrinsic != NI_Illegal);
+#pragma warning restore CA1508
+        return gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsic, simdBaseType, simdSize, op1);
 #else
 #error Unsupported platform
 #endif
@@ -13093,6 +13156,38 @@ public partial class Compiler
             var tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsic, simdBaseType, simdSize, op1);
             return gtNewSimdGetUpperNode(TYP_SIMD8, tmp1, simdBaseType, 16);
         }
+#elif TARGET_WASM
+        if (varTypeIsFloating(simdBaseType))
+        {
+            assert(simdBaseType == TYP_FLOAT);
+
+            var indexType = getUnsignedSimdBaseType(simdBaseType);
+            var simdCount = getSIMDVectorLength(simdSize, simdBaseType);
+            var indices = gtNewVconNode(type);
+
+            for (var index = 0; index < simdCount; index++)
+            {
+                indices.SetElementIntegral(indexType, index, (simdCount / 2) + (index % (simdCount / 2)));
+            }
+
+            assert(IsValidForShuffle(indices, simdSize, simdBaseType, out _, false));
+
+            op1 = gtNewSimdShuffleNode(type, op1, indices, simdBaseType, simdSize, false);
+            return gtNewSimdHWIntrinsicNode(type, NI_PackedSimd_ConvertToDoubleLower, simdBaseType, simdSize, op1);
+        }
+        else if (varTypeIsSigned(simdBaseType))
+        {
+            intrinsic = NI_PackedSimd_SignExtendWideningUpper;
+        }
+        else
+        {
+            intrinsic = NI_PackedSimd_ZeroExtendWideningUpper;
+        }
+
+#pragma warning disable CA1508 // Retain the native intrinsic-selection assertion.
+        assert(intrinsic != NI_Illegal);
+#pragma warning restore CA1508
+        return gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsic, simdBaseType, simdSize, op1);
 #else
 #error Unsupported platform
 #endif
@@ -13182,11 +13277,16 @@ public partial class Compiler
         }
 #elif TARGET_ARM64
         assert((type == TYP_SIMD16) && (simdSize is 16));
+#elif TARGET_WASM
 #else
 #error Unsupported platform
 #endif
 
+#if TARGET_XARCH || TARGET_ARM64
         return gtNewSimdHWIntrinsicNode(type, NI_Vector_WithLower, simdBaseType, simdSize, op1, op2);
+#elif TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm vector with-lower support is not ported.");
+#endif
     }
 
     public GenTree gtNewSimdWithUpperNode(var_types type, GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize)
@@ -13204,11 +13304,16 @@ public partial class Compiler
         }
 #elif TARGET_ARM64
         assert((type == TYP_SIMD16) && (simdSize is 16));
+#elif TARGET_WASM
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
+#if TARGET_XARCH || TARGET_ARM64
         return gtNewSimdHWIntrinsicNode(type, NI_Vector_WithUpper, simdBaseType, simdSize, op1, op2);
+#elif TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm vector with-upper support is not ported.");
+#endif
     }
 #endif
 
@@ -14094,7 +14199,9 @@ public partial class Compiler
         return cmpTree;
     }
 
-    /// <inheritdoc cref="gtPeelOffsets(ref GenTree, out long, out FieldSeq)" />
+    /// <summary>Peel all constant offsets off the specified address node.</summary>
+    /// <param name="addr">The address node.</param>
+    /// <param name="offset">The sum of offsets peeled from the address.</param>
     public void gtPeelOffsets(ref GenTree addr, out target_ssize_t offset)
         => gtPeelOffsetsCore(ref addr, out offset, out _, includeFieldSeq: false);
 
@@ -14127,7 +14234,7 @@ public partial class Compiler
 
                     if (!intCon.IsIconHandle())
                     {
-                        offset += intCon.IconValue;
+                        offset += unchecked((target_ssize_t)intCon.IconValue);
 
                         if (includeFieldSeq)
                         {
@@ -14145,7 +14252,7 @@ public partial class Compiler
 
                     if (!intCon.IsIconHandle())
                     {
-                        offset += intCon.IconValue;
+                        offset += unchecked((target_ssize_t)intCon.IconValue);
 
                         if (includeFieldSeq)
                         {
@@ -14316,6 +14423,11 @@ public partial class Compiler
             return gtSetEvalOrderMinOpts(tree);
         }
 
+#if TARGET_ARM
+        var codeGen = this.codeGen
+            ?? throw new FatalJitException(CORJIT_IMPLLIMITATION, "ARM32 cost estimation requires a target code generator.");
+#endif
+
         // TODO-LoongArch64-CQ: tune the costs.
         // TODO-RISCV64-CQ: tune the costs.
 
@@ -14410,6 +14522,9 @@ public partial class Compiler
                         costEx = 1 + 1;
                         costSz = 4 + 4;
                     }
+#elif TARGET_WASM
+                    costEx = 1;
+                    costSz = 1 + Emitter.SizeOfSLEB128(lconVal);
 #endif
                     return CommonCns(lngCon, costEx, costSz);
                 }
@@ -14550,7 +14665,7 @@ public partial class Compiler
                     }
 #elif TARGET_WASM
                     costEx = 1;
-                    costSz = 1 + Emitter.SizeOfSLEB128(imm);
+                    costSz = 1 + Emitter.SizeOfSLEB128((long)iconVal);
 #endif
 
                     return CommonCns(intCon, costEx, costSz);
@@ -15183,7 +15298,7 @@ public partial class Compiler
                         // Some operations may use 2-byte opcodes, and some operations may need
                         // multiple wasm instructions.
                         costEx = 2;
-                        costSz = varTypeIsFloating(op1) && !varTypeIsFloating(unOp.Type) ? 2 : 1;
+                        costSz = varTypeIsFloating(op1.Type) && !varTypeIsFloating(unOp.Type) ? 2 : 1;
 #else
 #error "Unknown TARGET"
 #endif

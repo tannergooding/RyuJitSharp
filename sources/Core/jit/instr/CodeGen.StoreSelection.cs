@@ -186,7 +186,9 @@ public sealed partial class CodeGen
 #elif TARGET_ARM64
         return INS_str;
 #elif TARGET_ARM
+#if FEATURE_SIMD
         assert(!varTypeIsSIMD(dstType));
+#endif
         return INS_vstr;
 #elif TARGET_LOONGARCH64
         assert(!varTypeIsSIMD(dstType));

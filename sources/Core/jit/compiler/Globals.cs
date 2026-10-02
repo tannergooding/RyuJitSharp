@@ -337,8 +337,10 @@ public partial class Globals
         CORINFO_HFA_ELEM_NONE => TYP_UNDEF,
         CORINFO_HFA_ELEM_FLOAT => TYP_FLOAT,
         CORINFO_HFA_ELEM_DOUBLE => TYP_DOUBLE,
+#if FEATURE_SIMD
         CORINFO_HFA_ELEM_VECTOR64 => TYP_SIMD8,
         CORINFO_HFA_ELEM_VECTOR128 => TYP_SIMD16,
+#endif
         _ => TYP_UNKNOWN,
     };
 

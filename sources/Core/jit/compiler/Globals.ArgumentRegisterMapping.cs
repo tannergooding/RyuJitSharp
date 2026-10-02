@@ -80,7 +80,7 @@ public static partial class Globals
             if (type == TYP_DOUBLE)
             {
                 assert((result & new regMaskTP(SRBM_ALLDOUBLE)) != RBM_NONE, "(result & RBM_ALLDOUBLE) != 0");
-                result |= result << 1;
+                result |= new regMaskTP(unchecked((regMask)((long)result.Lower << 1)));
             }
 #endif
         }

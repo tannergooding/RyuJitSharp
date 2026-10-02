@@ -338,7 +338,7 @@ public partial class Emitter
             else
             {
 #if TARGET_ARM && PROFILING_SUPPORTED
-                if (!_compiler.compIsProfilerHookNeeded())
+                if (!_compiler.compIsProfilerHookNeeded)
                 {
 #endif
 #if TARGET_AMD64

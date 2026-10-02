@@ -80,7 +80,7 @@ public partial struct LclVarDsc
         }
     }
 #else
-    public bool IsImplicitByRef => false;
+    public readonly bool IsImplicitByRef => false;
 #endif
 
     /// <summary>The local is known to be never negative</summary>

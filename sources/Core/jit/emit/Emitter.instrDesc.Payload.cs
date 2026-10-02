@@ -119,7 +119,7 @@ public partial class Emitter
         private uint GetTargetCodeSize()
         {
 #if TARGET_ARM
-            uint result = _idInsSize == insSize.ISZ_16BIT ? 2u : _idInsSize == insSize.ISZ_32BIT ? 4u : 6u;
+            var result = _idInsSize == insSize.ISZ_16BIT ? 2u : _idInsSize == insSize.ISZ_32BIT ? 4u : 6u;
             return result;
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64
             return _idCodeSize;

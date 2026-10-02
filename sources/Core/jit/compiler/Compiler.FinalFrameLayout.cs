@@ -97,6 +97,15 @@ public partial class Compiler
     }
 #endif
 
+#if TARGET_ARM
+    public bool compRsvdRegCheck(FrameLayoutState curState)
+    {
+        NYI("TARGET_ARM compRsvdRegCheck");
+        fatal(CORJIT_IMPLLIMITATION);
+        throw new FatalJitException("TARGET_ARM compRsvdRegCheck is not ported.");
+    }
+#endif
+
     public void lvaAssignFrameOffsets(FrameLayoutState curState)
     {
         noway_assert((lvaDoneFrameLayout < curState) || (curState == REGALLOC_FRAME_LAYOUT));

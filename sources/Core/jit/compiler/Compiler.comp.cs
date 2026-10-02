@@ -211,6 +211,8 @@ public partial class Compiler
     ///   <para>In case of Amd64 this doesn't include float regs saved on stack.</para>
     /// </remarks>
     public int compCalleeRegsPushed = -1;
+#elif TARGET_WASM
+    public int compCalleeRegsPushed;
 #endif
 
 #if TARGET_XARCH

@@ -1453,6 +1453,13 @@ public sealed partial class CodeGen
         var formatLines = ReadInstructionFormatLines(formatInput);
         var formatBuilder = ProcessMacroBasedFile(formatInput, formatLines, ["IF_DEF("],
             AppendInstructionFormat);
+        const string armFormatInput = @"Inputs\emitfmtsarm.h";
+        var armFormatLines = ReadInstructionFormatLines(armFormatInput);
+        var armFormatBuilder = ProcessMacroBasedFile(armFormatInput, armFormatLines, ["IF_DEF("],
+            AppendInstructionFormat);
+        var armOperandBuilder = ProcessMacroBasedFile(armFormatInput, armFormatLines, ["IF_DEF("],
+            (builder, inputFile, line, prefix, parts) => _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        (byte)ID_OP_{parts[2].Trim()}, // IF_{parts[0].Trim()}"));
         var arm64FormatBuilder = new StringBuilder();
         var arm64OperandBuilder = new StringBuilder();
         string[] arm64Inputs = [@"Inputs\emitfmtsarm64.h", @"Inputs\emitfmtsarm64sve.h"];
@@ -1509,14 +1516,16 @@ public partial class Emitter
     public enum insFormat : uint
     {
 #if TARGET_XARCH
-{{formatBuilder}}#elif TARGET_ARM64
+{{formatBuilder}}#elif TARGET_ARM
+{{armFormatBuilder}}#elif TARGET_ARM64
 {{arm64FormatBuilder}}#endif
         IF_COUNT,
     }
 
-#if TARGET_XARCH || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64
     internal static ReadOnlySpan<byte> emitFmtToOps => [
-#if TARGET_ARM64
+#if TARGET_ARM
+{{armOperandBuilder}}#elif TARGET_ARM64
 {{arm64OperandBuilder}}#else
 {{operandBuilder}}#endif
     ];
@@ -1551,6 +1560,7 @@ public partial class Emitter
 """);
 
         var xarchOperandKinds = ReadNativeEnumBody(formatInput, "ID_OPS");
+        var armOperandKinds = ReadNativeEnumBody(armFormatInput, "ID_OPS");
         var arm64OperandKinds = ReadNativeEnumBody(arm64Inputs[0], "ID_OPS");
         File.WriteAllText(@"Outputs\jit\emit\ID_OPS.generated.cs", $$"""
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
@@ -1564,7 +1574,8 @@ namespace RyuJitSharp;
 
 public enum ID_OPS
 {
-#if TARGET_ARM64
+#if TARGET_ARM
+{{armOperandKinds}}#elif TARGET_ARM64
 {{arm64OperandKinds}}#else
 {{xarchOperandKinds}}#endif
 }
@@ -2864,7 +2875,11 @@ global using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp;
 
+#if TARGET_WASM
+public enum regNumber : uint
+#else
 public enum regNumber : byte
+#endif
 {
 {{builder}}    REG_COUNT,
 

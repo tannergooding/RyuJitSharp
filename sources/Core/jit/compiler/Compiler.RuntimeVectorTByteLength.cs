@@ -7,6 +7,15 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+#if TARGET_ARM && !FEATURE_HW_INTRINSICS
+    private uint getCompileTimeVectorTByteLength()
+    {
+        NYI("getCompileTimeVectorTByteLength on ARM32");
+        fatal(CORJIT_IMPLLIMITATION);
+        throw new FatalJitException("getCompileTimeVectorTByteLength is unsupported on ARM32.");
+    }
+#endif
+
     public unsafe uint getRuntimeVectorTByteLength()
     {
         var compileTimeLength = getCompileTimeVectorTByteLength();

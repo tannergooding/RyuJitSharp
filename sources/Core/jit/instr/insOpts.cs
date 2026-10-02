@@ -55,4 +55,13 @@ public enum insOpts : uint
     INS_OPTS_EVEX_zu = 1 << 14,
     INS_OPTS_EVEX_zu_MASK = 0x4000,
 }
+#elif TARGET_WASM
+global using static RyuJitSharp.insOpts;
+
+namespace RyuJitSharp;
+
+public enum insOpts : uint
+{
+    INS_OPTS_NONE,
+}
 #endif

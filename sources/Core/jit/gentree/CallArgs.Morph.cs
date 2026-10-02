@@ -439,12 +439,11 @@ public partial struct CallArgs
             throw new NotImplementedException("Morphing Vararg call not yet implemented on non Windows targets.");
         }
 
-#if TARGET_WASM
-        throw new NotImplementedException("Wasm shadow-stack call arguments are not yet ported.");
-#else
         // Keep the non-standard argument insertion rules in sync with fast tail-call mapping.
         var addStubCellArg = true;
-#if TARGET_X86
+#if TARGET_WASM
+        addStubCellArg = false;
+#elif TARGET_X86
         addStubCellArg = compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI);
 #endif
         if (call.IsVirtualStub && addStubCellArg && !call.IsTailCallViaJitHelper)
@@ -455,7 +454,9 @@ public partial struct CallArgs
         }
 
 #if FEATURE_READYTORUN
-#if TARGET_XARCH
+#if TARGET_WASM
+        var needsIndirectionCell = false;
+#elif TARGET_XARCH
         // Ordinary xarch calls recover the cell from the return address, but fast tail calls cannot.
         var needsIndirectionCell = call.IsR2RRelativeIndir && !call.IsDelegateInvoke && call.IsFastTailCall;
 #else
@@ -475,6 +476,15 @@ public partial struct CallArgs
 #endif
             _ = InsertAfterThisOrFirst(
                 NewCallArg.CreateForPrimitive(address).WithWellKnownArg(WellKnownArg.R2RIndirectionCell));
+        }
+#endif
+
+#if TARGET_WASM
+        if (!call.IsUnmanaged)
+        {
+            var stackPointer = compiler.gtNewLclVarNode(TYP_I_IMPL, compiler.lvaWasmSpArg);
+            _ = PushFront(NewCallArg.CreateForPrimitive(stackPointer)
+                .WithWellKnownArg(WellKnownArg.WasmShadowStackPointer));
         }
 #endif
 
@@ -530,7 +540,6 @@ public partial struct CallArgs
         }
 #endif
         _flags |= Flags.AbiInformationDetermined | Flags.HasAddedFinalArgs;
-#endif
     }
 
     /// <summary>Reclassify arguments without adding arguments or changing their IR.</summary>

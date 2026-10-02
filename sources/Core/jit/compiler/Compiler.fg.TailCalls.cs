@@ -69,7 +69,7 @@ public partial class Compiler
 
         for (var localNumber = 0; localNumber < info.compArgsCount; localNumber++)
         {
-            var abiInfo = lvaGetParameterABIInfo(localNumber);
+            var abiInfo = lvaGetParameterAbiInfo(localNumber);
             if (abiInfo.IsSplitAcrossRegistersAndStack)
             {
                 ReportFastTailCallDecision("Argument splitting in caller is not supported on " + TARGET_READABLE_NAME,

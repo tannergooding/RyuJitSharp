@@ -27,7 +27,7 @@ public sealed partial class CodeGen
         }
 #endif
 #if TARGET_ARM
-        if (_compiler.compLclFrameSize >= _compiler.eeGetPageSize())
+        if ((nuint)_compiler.compLclFrameSize >= _compiler.eeGetPageSize())
         {
             var probeMask = new regMaskTP(SRBM_STACK_PROBE_HELPER_ARG
                 | SRBM_STACK_PROBE_HELPER_CALL_TARGET | SRBM_STACK_PROBE_HELPER_TRASH);

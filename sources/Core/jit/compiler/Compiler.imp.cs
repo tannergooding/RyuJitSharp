@@ -623,7 +623,14 @@ public partial class Compiler
 
     /// <summary>check whether PInvoke inlining should enabled in current method.</summary>
     /// <remarks>Checks a number of ambient conditions where we could pinvoke but choose not to</remarks>
-    public bool impCanPInvokeInline => InlinePInvokeEnabled && (!opts.compDbgCode) && (compCodeOpt is not SMALL_CODE) && !opts.compNoPInvokeInlineCB;
+    public bool impCanPInvokeInline
+        => InlinePInvokeEnabled
+            && !opts.compDbgCode
+            && (compCodeOpt is not SMALL_CODE)
+#if TARGET_XARCH
+            && !opts.compNoPInvokeInlineCB
+#endif
+            ;
 
     public NodeToUnsignedMap ImpEnumeratorGdvLocalMap
     {
@@ -3820,6 +3827,8 @@ public partial class Compiler
             var simdSize = (byte)(16);
 #elif TARGET_ARM64
             var simdSize = (byte)((simdType is TYP_SIMD8) ? 8 : 16);
+#elif TARGET_WASM
+            var simdSize = (byte)16;
 #endif
 
             var simdBaseType = callJitType.PreciseVarType;
@@ -16212,7 +16221,9 @@ public partial class Compiler
             return null;
         }
 
+#if TARGET_XARCH || TARGET_ARM64
         var hwintrinsic = NI_Illegal;
+#endif
 
         var args = sigInfo.args;
         assert(sigInfo.numArgs is 1 or 2);
@@ -18240,6 +18251,7 @@ public partial class Compiler
 #endif
     }
 
+#if FEATURE_SIMD
     /// <summary>Creates a new Vector128.CreateScalar node for a System.Half value</summary>
     /// <param name="op1">The System.Half value</param>
     /// <returns>The Vector128.CreateScalar node that contains op1</returns>
@@ -18278,6 +18290,7 @@ public partial class Compiler
         _ = impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
         return gtNewLclvNode(TYP_STRUCT, resTmp);
     }
+#endif
 
     /// <summary>Spill all trees referencing the given local.</summary>
     /// <param name="lclNum">The local's number</param>
@@ -19226,9 +19239,9 @@ public partial class Compiler
                     lvaSetVarDoNotEnregister(destAddr.AsLclVarCommon().LclNum, DoNotEnregisterReason.HiddenBufferStructArg);
                 }
 
-#if !TARGET_ARM
                 ref var args = ref call.Args;
 
+#if !TARGET_ARM
                 // Unmanaged instance methods on Windows or Unix X86 need the retbuf arg after the first (this) parameter
                 if ((TargetOS.IsWindows || compUnixX86Abi()) && call.IsUnmanaged)
                 {

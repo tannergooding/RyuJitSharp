@@ -73,6 +73,8 @@ public enum HWIntrinsicCategory : byte
     HW_Category_MemoryStore,
     HW_Category_Helper,
     HW_Category_Special
+#elif TARGET_ARM
+    // Arm32 does not enable FEATURE_HW_INTRINSICS, so it has no intrinsic categories.
 #else
 #error Unsupported platform
 #endif

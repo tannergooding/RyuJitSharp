@@ -338,7 +338,7 @@ public partial class Compiler
         if (opts.OptimizationEnabled && argument.AbiInfo.IsPassedByReference)
         {
             GenTree? implicitAddress = null;
-            target_ssize_t implicitOffset = 0;
+            var implicitOffset = (target_ssize_t)0;
             var implicitLocal = value.IsImplicitByrefParameterValuePostMorph(this, ref implicitAddress, ref implicitOffset);
             GenTreeLclVarCommon? local = implicitLocal;
             if ((local is null) && value.Oper.IsLocal)

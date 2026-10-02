@@ -472,7 +472,11 @@ public sealed partial class LinearScan
         _needNonIntegerRegisters |= _compiler.compFloatingPointUsed;
         if (!_needNonIntegerRegisters)
         {
+#if HAS_FIXED_REGISTER_SET
             _availableRegCount = _regIntLast - REG_INT_FIRST + 1;
+#else
+            _availableRegCount = 0;
+#endif
         }
 
         const int maskBitCount = sizeof(ulong) * 8;

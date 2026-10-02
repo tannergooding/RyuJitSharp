@@ -76,6 +76,18 @@ public interface ICodeGen
     regNumber REG_INT_LAST { get; }
 #endif
 
+#if TARGET_ARM
+    regMask SRBM_FLT_CALLEE_TRASH { get; }
+
+    regMask SRBM_INT_CALLEE_TRASH { get; }
+
+    regMask SRBM_MSK_CALLEE_TRASH { get; }
+
+    bool validImmForInstr(instruction ins, int imm, insFlags flags = INS_FLAGS_DONT_CARE);
+
+    bool validImmForInstr(instruction ins, nint imm, insFlags flags = INS_FLAGS_DONT_CARE);
+#endif
+
 #if TARGET_XARCH
     bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree operand);
 

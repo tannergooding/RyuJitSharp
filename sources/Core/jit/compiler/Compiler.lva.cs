@@ -492,12 +492,15 @@ public partial class Compiler
         lvaParameterStackSize = classifier.StackSize;
 
 #if TARGET_ARM
+        assert(codeGen is not null);
+        ref var armRegSet = ref codeGen.RegSet;
+
         // Prespill all argument regs on to stack in case of Arm when under profiler.
         // We do this as the arm32 CORINFO_HELP_FCN_ENTER helper does not preserve
         // these registers, and is called very early.
         if (compIsProfilerHookNeeded)
         {
-            codeGen.RegSet.rsMaskPreSpillRegArg |= SRBM_ARG_REGS;
+            armRegSet.rsMaskPreSpillRegArg |= new regMaskTP(SRBM_ARG_REGS);
         }
 
         var doubleAlignMask = SRBM_NONE;
@@ -505,10 +508,10 @@ public partial class Compiler
         // Also prespill struct parameters.
         for (var i = 0; i < info.compArgsCount; i++)
         {
-            ref readonly var abiInfo  = ref lvaGetParameterABIInfo(i);
+            ref readonly var abiInfo  = ref lvaGetParameterAbiInfo(i);
             ref var varDsc   = ref lvaGetDesc(i);
-            var preSpill = opts.compUseSoftFP && varTypeIsFloating(varDsc);
-            preSpill |= varDsc.TypeIs(TYP_STRUCT);
+            var preSpill = Options.compUseSoftFP && varTypeIsFloating(varDsc.Type);
+            preSpill |= varDsc.Type is TYP_STRUCT;
 
             if (!preSpill)
             {
@@ -525,7 +528,7 @@ public partial class Compiler
                 }
             }
 
-            codeGen.RegSet.rsMaskPreSpillRegArg |= regs;
+            armRegSet.rsMaskPreSpillRegArg |= new regMaskTP(regs);
 
             if (varDsc.lvStructDoubleAlign || (varDsc.Type is TYP_DOUBLE))
             {
@@ -535,7 +538,7 @@ public partial class Compiler
 
         if (doubleAlignMask != SRBM_NONE)
         {
-            assert(SRBM_ARG_REGS is 0xF);
+            assert(SRBM_ARG_REGS == (regMask)0xF);
             assert((doubleAlignMask & SRBM_ARG_REGS) == doubleAlignMask);
 
             if ((doubleAlignMask != SRBM_NONE) && (doubleAlignMask != SRBM_ARG_REGS))
@@ -543,8 +546,8 @@ public partial class Compiler
                 // 'double aligned types' can begin only at r0 or r2 and we always expect at least two registers to be used
                 // Note that in rare cases, we can have double-aligned structs of 12 bytes (if specified explicitly with
                 // attributes)
-                assert((doubleAlignMask is 0b0011) || (doubleAlignMask is 0b1100) ||
-                       (doubleAlignMask is 0b0111) /* || 0b1111 is if'ed out */);
+                assert((doubleAlignMask == (regMask)0b0011) || (doubleAlignMask == (regMask)0b1100) ||
+                       (doubleAlignMask == (regMask)0b0111) /* || 0b1111 is if'ed out */);
 
                 // Now if doubleAlignMask is xyz1 i.e., the struct starts in r0, and we prespill r2 or r3
                 // but not both, then the stack would be misaligned for r0. So spill both
@@ -555,12 +558,13 @@ public partial class Compiler
                 // ; -8 r1    r1
                 // ; -c r0    r0   <-- misaligned.
                 // ; callee saved regs
-                var startsAtR0 = (doubleAlignMask & 1) is 1;
-                var r2XorR3    = ((codeGen.RegSet.rsMaskPreSpillRegArg & SRBM_R2) is 0) !=
-                                 ((codeGen.RegSet.rsMaskPreSpillRegArg & SRBM_R3) is 0);
+                var startsAtR0 = (doubleAlignMask & (regMask)1) is not 0;
+                var r2XorR3    = ((armRegSet.rsMaskPreSpillRegArg & new regMaskTP(SRBM_R2)) == RBM_NONE) !=
+                                 ((armRegSet.rsMaskPreSpillRegArg & new regMaskTP(SRBM_R3)) == RBM_NONE);
                 if (startsAtR0 && r2XorR3)
                 {
-                    codeGen.RegSet.rsMaskPreSpillAlign = (~codeGen.RegSet.rsMaskPreSpillRegArg & ~doubleAlignMask) & SRBM_ARG_REGS;
+                    armRegSet.rsMaskPreSpillAlign =
+                        (~armRegSet.rsMaskPreSpillRegArg & ~new regMaskTP(doubleAlignMask)) & new regMaskTP(SRBM_ARG_REGS);
                 }
             }
         }
@@ -956,6 +960,11 @@ public partial class Compiler
         assert(lvaDoneFrameLayout != NO_FRAME_LAYOUT);
 
         int varOffset;
+
+#if TARGET_ARM
+        bool fpBased;
+        assert(codeGen is not null);
+#endif
 
 #if TARGET_ARM
         var fConservative = false;
@@ -1609,7 +1618,8 @@ public partial class Compiler
         // these registers, and is called very early.
         if (compIsProfilerHookNeeded)
         {
-            codeGen.RegSet.rsMaskPreSpillRegArg |= SRBM_ARG_REGS;
+            assert(codeGen is not null);
+            codeGen.RegSet.rsMaskPreSpillRegArg |= new regMaskTP(SRBM_ARG_REGS);
         }
 #endif
 
@@ -1621,7 +1631,7 @@ public partial class Compiler
         if (!opts.IsReversePInvoke)
         {
             // Wasm stack pointer is first arg
-            lvaInitWasmStackPtrArg(&varNum);
+            lvaInitWasmStackPtrArg(ref varNum);
         }
 #endif
 
@@ -1692,7 +1702,7 @@ public partial class Compiler
         if (!opts.IsReversePInvoke)
         {
             // Wasm portable entry point is the very last arg
-            lvaInitWasmPortableEntryPtr(&varNum);
+            lvaInitWasmPortableEntryPtr(ref varNum);
         }
 #endif
 
@@ -1743,6 +1753,45 @@ public partial class Compiler
 
         curVarNum++;
     }
+
+#if TARGET_WASM
+    public void lvaInitWasmStackPtrArg(ref int curVarNum)
+    {
+        ref var varDsc = ref lvaGetDesc(curVarNum);
+        varDsc.Type = TYP_I_IMPL;
+        varDsc.lvIsParam = true;
+        varDsc.lvOnFrame = true;
+        varDsc.lvImplicitlyReferenced = true;
+        lvaWasmSpArg = curVarNum;
+        curVarNum++;
+    }
+
+    public void lvaAllocWasmStackPtr()
+    {
+        if (lvaWasmSpArg is BAD_VAR_NUM)
+        {
+            lvaWasmSpArg = lvaGrabTemp(shortLifetime: false, "SP");
+            ref var varDsc = ref lvaGetDesc(lvaWasmSpArg);
+            varDsc.Type = TYP_I_IMPL;
+            varDsc.lvImplicitlyReferenced = true;
+            // The prolog initializes this local from __stack_pointer; otherwise value numbering can
+            // fold its pre-use value to zero and pass a null shadow-stack base.
+            varDsc.lvHasExplicitInit = true;
+        }
+    }
+
+    public unsafe void lvaInitWasmPortableEntryPtr(ref int curVarNum)
+    {
+        if (opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PORTABLE_ENTRY_POINTS))
+        {
+            ref var varDsc = ref lvaGetDesc(curVarNum);
+            varDsc.Type = TYP_I_IMPL;
+            varDsc.lvIsParam = true;
+            varDsc.lvOnFrame = true;
+            curVarNum++;
+        }
+    }
+#endif
 
     public unsafe void lvaInitGenericsCtxt(ref int curVarNum)
     {
@@ -2563,8 +2612,6 @@ public partial class Compiler
         if (!layout.IsCustomLayout)
         {
 #if !TARGET_64BIT
-
-
 #if TARGET_X86
             var fDoubleAlignHint = true;
 #else
@@ -2579,7 +2626,7 @@ public partial class Compiler
                     jitprintf($"Marking struct in V{varNum:D2} with double align flag\n");
                 }
 #endif
-                varDsc.lvStructDoubleAlign = 1;
+                varDsc.lvStructDoubleAlign = true;
             }
 #endif
 

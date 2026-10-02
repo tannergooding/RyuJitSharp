@@ -275,5 +275,10 @@ public partial class Compiler
             }
         }
     }
+#elif TARGET_WASM
+    public regMaskTP compHelperCallKillSet(CorInfoHelpFunc helper)
+    {
+        return RBM_CALLEE_TRASH;
+    }
 #endif
 }

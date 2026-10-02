@@ -34,6 +34,8 @@ public sealed class GenTreeVecCon : GenTree
 #if TARGET_ARM64
         TYP_SIMD16 => _simdVal.IsAllBitsSet,
         TYP_SIMD => _simdScalableVal.IsAllBitsSet,
+#elif TARGET_WASM
+        TYP_SIMD16 => _simdVal.IsAllBitsSet,
 #else
         TYP_SIMD16 => _simdVal.v128[0].IsAllBitsSet,
 #endif
@@ -58,6 +60,8 @@ public sealed class GenTreeVecCon : GenTree
 #if TARGET_ARM64
         TYP_SIMD16 => _simdVal.IsZero,
         TYP_SIMD => _simdScalableVal.IsZero,
+#elif TARGET_WASM
+        TYP_SIMD16 => _simdVal.IsZero,
 #else
         TYP_SIMD16 => _simdVal.v128[0].IsZero,
 #endif

@@ -81,8 +81,16 @@ public partial struct NodeInternalRegisters
     }
 
 #else  // !HAS_FIXED_REGISTER_SET
-    // void Add(GenTree* tree, regNumber reg);
-    // InternalRegs* GetAll(GenTree* tree);
+    public readonly void Add(GenTree tree, regMaskTP registers)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Internal register tracking is not ported for targets without a fixed register set.");
+    }
+
+    public readonly regMaskTP GetAll(GenTree tree)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Internal register tracking is not ported for targets without a fixed register set.");
+    }
+
     // NodeInternalRegistersTable::KeyValueIteration Iterate();
 #endif
 }

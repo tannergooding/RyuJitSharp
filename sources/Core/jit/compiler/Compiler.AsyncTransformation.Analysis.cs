@@ -437,8 +437,14 @@ public partial class Compiler
 
         public bool IsLive(int lclNum)
         {
-            if ((lclNum == _compiler.lvaOutgoingArgSpaceVar) ||
-                (lclNum == _compiler.info.compRetBuffArg) ||
+#if FEATURE_FIXED_OUT_ARGS
+            if (lclNum == _compiler.lvaOutgoingArgSpaceVar)
+            {
+                return false;
+            }
+#endif
+
+            if ((lclNum == _compiler.info.compRetBuffArg) ||
                 (lclNum == _compiler.lvaGSSecurityCookie) ||
                 (lclNum == _compiler.info.compLvFrameListRoot) ||
                 (lclNum == _compiler.lvaInlinedPInvokeFrameVar) ||

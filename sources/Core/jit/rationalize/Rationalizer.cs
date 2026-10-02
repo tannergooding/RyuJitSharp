@@ -37,7 +37,7 @@ public sealed partial class Rationalizer : Phase
         var compiler = CompilerInstance;
         var mapParameters = compiler.opts.OptimizationEnabled && !compiler.opts.IsOSR && (compiler.info.compArgsCount > 0);
 #if TARGET_ARM
-        mapParameters &= !compiler.compIsProfilerHookNeeded();
+        mapParameters &= !compiler.compIsProfilerHookNeeded;
 #endif
         if (mapParameters)
         {

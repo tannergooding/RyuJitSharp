@@ -1336,6 +1336,12 @@ public partial class Compiler
                     assert((LAST_NI_Vector + 1) == FIRST_NI_AdvSimd);
 
                     if (ni <= LAST_NI_Vector)
+#elif TARGET_WASM
+                    // We can't guarantee that all overloads for the xplat intrinsics can be
+                    // handled by the AltJit, so limit only the platform specific intrinsics
+                    assert((LAST_NI_Vector + 1) == FIRST_NI_PackedSimd);
+
+                    if (ni <= LAST_NI_Vector)
 #else
 #error Unsupported platform
 #endif

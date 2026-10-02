@@ -203,7 +203,7 @@ public partial class Compiler
 #if PROFILING_SUPPORTED
         public bool compNoPInvokeInlineCB;
 #else
-        public const bool compNoPInvokeInlineCB;
+        public const bool compNoPInvokeInlineCB = false;
 #endif
 
 #if DEBUG

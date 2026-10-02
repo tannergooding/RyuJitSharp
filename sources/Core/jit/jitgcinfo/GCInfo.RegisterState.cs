@@ -73,7 +73,11 @@ public partial struct GCInfo
 #endif
     }
 
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     public void gcMarkRegPtrVal(regNumber reg, var_types type)
+#else
+    public readonly void gcMarkRegPtrVal(regNumber reg, var_types type)
+#endif
     {
 #if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
         var mask = regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);

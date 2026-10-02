@@ -77,7 +77,13 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
         set
         {
             assert(!IsUserCall);
+#if FEATURE_HW_INTRINSICS
             Flags |= (GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL);
+#else
+            NYI("Hardware-intrinsic user call without hardware-intrinsic support");
+            fatal(CORJIT_IMPLLIMITATION);
+            throw new FatalJitException("Hardware-intrinsic user calls are unsupported on this target.");
+#endif
             _methodHandle = value;
         }
     }
@@ -116,11 +122,13 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
         }
     }
 
+#if TARGET_XARCH || TARGET_ARM64
     public void CopyOtherRegs(GenTreeHWIntrinsic tree)
     {
         _otherReg = tree._otherReg;
         _spillFlags = tree._spillFlags;
     }
+#endif
 
 #if TARGET_ARM64
     private bool NeedsConsecutiveRegisters =>

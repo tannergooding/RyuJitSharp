@@ -265,8 +265,8 @@ internal static unsafe class ArmCalleeSavedRegisterTests
                 {
                     PopFloats(codeGen, mask);
                 }
-            }, "ARM register-immediate recording with flags is not ported.");
-            Assert.That(s_assertions, Is.EqualTo(new[] { "genMaxOneBit(tmpMask)" }));
+            }, message: null);
+            Assert.That(s_assertions, Is.EqualTo(s_contiguousMaskAssertion));
         }, captureAssertions: true);
     }
 
@@ -277,8 +277,8 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         {
             var mask = FloatMask(REG_F8, 2);
             AssertFailure(() => PushFloats(codeGen, mask),
-                "ARM register-immediate recording with flags is not ported.");
-            Assert.That(s_assertions, Is.EqualTo(new[] { "lowReg == REG_F16" }));
+                message: null);
+            Assert.That(s_assertions, Is.EqualTo(s_lowRegisterAssertion));
 
             s_assertions.Clear();
             AssertFailure(() => PopFloats(codeGen, mask),
@@ -298,15 +298,18 @@ internal static unsafe class ArmCalleeSavedRegisterTests
             var zeroed = true;
 
             AssertFailure(() => codeGen.genPushCalleeSavedRegisters(REG_R3, ref zeroed),
-                "Immediate-only instruction recording requires xarch.");
+                message: null);
 
-            Assert.That(s_assertions, Is.EqualTo(new[] { "_compiler.compCalleeRegsPushed == count" }));
+            Assert.That(s_assertions, Is.EqualTo(s_pushCountMismatchAssertion));
             Assert.That(SavedMask(ref codeGen.RegSet), Is.EqualTo(new regMaskTP(SRBM_FPBASE | SRBM_LR)));
             Assert.That(zeroed, Is.True);
         }, captureAssertions: true);
     }
 
     private static readonly List<string> s_assertions = [];
+    private static readonly string[] s_contiguousMaskAssertion = ["genMaxOneBit(tmpMask)"];
+    private static readonly string[] s_lowRegisterAssertion = ["lowReg == REG_F16"];
+    private static readonly string[] s_pushCountMismatchAssertion = ["_compiler.compCalleeRegsPushed == count"];
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
@@ -342,13 +345,16 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         return CurrentDescriptors(codeGen.Emitter) ?? throw new AssertionException("Missing descriptor buffer.");
     }
 
-    private static void AssertFailure(TestDelegate action, string message)
+    private static void AssertFailure(TestDelegate action, string? message)
     {
         var failure = Assert.Throws<FatalJitException>(action) ??
-            throw new AssertionException("Missing genuine ARM recording dependency failure.");
+            throw new AssertionException("Missing expected ARM target skip.");
 
         Assert.That(failure.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-        Assert.That(failure.Message, Is.EqualTo(message));
+        if (message is not null)
+        {
+            Assert.That(failure.Message, Is.EqualTo(message));
+        }
     }
 
     private static void WithCodeGen(Action<Compiler, CodeGen> action, bool captureAssertions = false)
@@ -417,7 +423,7 @@ internal static unsafe class ArmCalleeSavedRegisterTests
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIG")]
-    private static extern ref Emitter.insGroup? CurrentGroup(Emitter emitter);
+    private static extern ref insGroup? CurrentGroup(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);

@@ -12,7 +12,7 @@ public partial class Compiler
     public void fgMarkAddrModeForFieldAddr(GenTreeIndir indirection)
     {
         var address = indirection.Addr;
-        target_ssize_t totalOffset = 0;
+        var totalOffset = (target_ssize_t)0;
         var storeWithEffects = indirection.Oper.IsStore && ((indirection.Data.Flags & GTF_SIDE_EFFECT) != 0);
         while (true)
         {
@@ -36,13 +36,13 @@ public partial class Compiler
 
             var field = address.AsFieldAddr();
 #if TARGET_64BIT
-            target_ssize_t fieldOffset = unchecked((uint)field.FldOffset);
+            var fieldOffset = unchecked((target_ssize_t)(uint)field.FldOffset);
 #else
             if (field.FldOffset < 0)
             {
                 return;
             }
-            target_ssize_t fieldOffset = field.FldOffset;
+            var fieldOffset = (target_ssize_t)field.FldOffset;
 #endif
             if (!CheckedOps.TryAdd(totalOffset, fieldOffset, out totalOffset))
             {
