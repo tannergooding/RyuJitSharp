@@ -16,6 +16,14 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "hfaCountRetirement": {
+      "status": "completed-existing-mapping",
+      "scope": "Current-retained GetHfaCount reconciled to unchanged whole Compiler.cs body from accepted a5c0f9dc; no new implementation or caller changes.",
+      "validation": "Reused original artifacts/parallel-port/arm64-target-debug-10.trx and arm64-target-release-1.trx:185total per run,8explicit HFA/HVA count cases passed per run. Current method body matches accepted source exactly; no rerun.",
+      "retirement": "Native2c5bb3fb9731d2cc58acfb59b21eedfd548ef1f7 removes1whole15-line body,1trailing blank and1declaration:17lines. Exact body/oracle match; declaration uint/unsigned spelling recorded. Reconstruction/recovery/sole oracle parent verified.",
+      "evidence": "artifacts/residual-reconciliation/hfa-count-76490085-*; original crossTargetAbi/arm64Prerequisites source and test evidence retained.",
+      "limits": "Original ARM64-target managed unit evidence only; ARM32 weighting source-reviewed, no new execution or generated-code parity claim."
+    },
     "sharedStackRegisterAcceptance": {
       "status": "completed",
       "scope": "Whole genSinglePop/genPushRegs/genPopRegs preserve non-Wasm scope, native fixed-output NYI and continuation policy, empty-mask paths, ref-output writes, variable-output register/type order, emission and GC updates. Accepted genRegMask and stack helpers reused without RegisterIteration WIP.",
@@ -3341,8 +3349,8 @@
     },
     "activeBatch": {
       "currentUnit": {
-        "status": "Shared stack register operations accepted; reconciling retained HFA count",
-        "scope": "Whole stack trio passed12Debug12Release on Windows and ARM64 target;118native lines retired. Actual retained codegencommon.cpp GetHfaCount has a whole Compiler.cs counterpart and Arm64ClassifierTests coverage, originally mapped in crossTargetAbi. Reuse original acceptance rather than reimplementing or rerunning an accepted family; authenticate exact remaining body/declaration and keep ARM32 weighting.",
+        "status": "Retained HFA count reconciled; continuing shared block-operation operand setup",
+        "scope": "Unchanged accepted HFA-count mapping retired with original evidence. Next actual retained codegenlinear.cpp genSetBlockSize/genConsumeBlockSrc/genSetBlockSrc/genConsumeBlockOp have no named managed counterparts. Port whole operand-setup family with existing block nodes, register consumption and emitter helpers; preserve target branches, argument/register ordering and GC lifetime effects.",
         "scopedVariableDecision": "ScopedSetVariable has no actual instantiation in the pinned JIT beyond its bool documentation example, and no named managed counterpart. Generic native operator== cannot be replaced unconditionally by EqualityComparer<T>.Default (NaN and reference equality differ); retain the whole native type pending a concrete typed caller or approved equality representation. No scope implementation or caller changes.",
         "sharedDependencies": "Approved ce500 exact fifth production input: remove only TARGET_ARM64 from the genInstrWithConstant stub guard in codegencommon/CodeGen.FrameInitializationDependencies.cs; implement whole native ARM64312-409 using the existing unsuffixed signature/default in the owned partial, so all ARM64 callers bind the real algorithm. LoongArch/RISC-V stub bodies unchanged. Existing unwindPadding/unwindSetFrameReg remain explicit terminating boundaries with native bodies retained; no AddCode/UnwindInfo storage or successful metadata simulation. Private ARM64 pair-offset predicate and native512 probe threshold are included.",
         "branchPrerequisite": "Whole ARM64 emitIns_J/ShortJ/inst_JMP recording, emitSetShortJump and three classifiers are integrated. Existing jump-table ARM64 visibility and xarch-only call sentinel are generated together; v2 verifies exact guard-only changes and six unchanged outputs. All109Debug98Release branch cases actually pass in v9. No shared unwind storage or other-target stub replacement.",
@@ -3914,7 +3922,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Shared stack trio accepted12D12R Windows and ARM64 target at nativeb2b608c2. Continue actual retained codegencommon.cpp GetHfaCount: whole counterpart Compiler.cs1283-1297, original crossTargetAbi source1b621375 and Arm64ClassifierTests coverage. Locate bounded original ARM64 acceptance, authenticate unchanged mapping and exact residual body/declaration; retire with original evidence, no reimplementation or routine rerun. Preserve ARM32 double weighting, EE ordering, unsigned class size and denominator lower bound. Then select next useful retained normal Windows/shared unit; no global census or replay. Protected13/concurrent WIP unchanged; hidden serial/defaultCPU/conserve5/telemetry without floors; no publication.",
+    "nextAction": "HFA count reconciled to unchanged accepted source at native2c5bb3fb with original8D8R count cases, no rerun. Continue current-retained codegenlinear.cpp genSetBlockSize1248/genConsumeBlockSrc1264/genSetBlockSrc1301/genConsumeBlockOp1341, no managed named counterparts. Read whole four-method operand-setup family and bind existing GenTreeBlk/register-consumption/emitter contracts; preserve target branches and GC/order/width semantics. Implement focused Windows/shared normal paths, meaningful target checks, exact retirement and local commit. Do not expand into adjacent struct-putarg, full codegen initialization, emitter self-tests or protected concurrent WIP. Hidden serial/defaultCPU/conserve5/telemetry without floors; no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

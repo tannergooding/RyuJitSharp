@@ -16,6 +16,16 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Retained HFA count reconciliation
+
+Removed the retained native `GetHfaCount` body and declaration after confirming
+the existing managed body is unchanged from its accepted source. Reused the
+original eight HFA/HVA count cases in each ARM64-target Debug/Release run; no
+implementation change or test rerun. ARM32 weighting remains source-reviewed.
+The retirement removes 17 lines, including one trailing blank. Evidence:
+`artifacts/residual-reconciliation/hfa-count-76490085-*` and the original
+`artifacts/parallel-port/arm64-target-{debug-10,release-1}.trx`.
+
 ## 2026-10-01: Shared stack register operations
 
 Completed `genSinglePop`, `genPushRegs` and `genPopRegs`, preserving output-mask
