@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: EH frame requirement mapping
+
+Retired the existing frame-pointer/EH interruptibility setter without changing
+its implementation or rerunning the accepted family. Its original `225573e`
+archive entry and extracted source were authenticated, and the current method
+is unchanged. Original EH evidence passes 18 Debug/16 Release cases; this is not
+a new direct-setter execution claim.
+
+Retired one whole definition and one declaration, 26 lines. Evidence:
+`artifacts/shared-eh-validation-225573e` and
+`artifacts/residual-reconciliation/eh-frame-requirement-1347036d-*`.
+
 ## 2026-10-01: Phase-variable initialization and override
 
 Completed the initial-value constructor and forced assignment for `PhasedVar<T>`.
