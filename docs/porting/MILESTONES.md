@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Existing raw-hex diagnostic mapping
+
+Retired the existing Debug-only `hexDump` mapping without source changes or a
+compiler rerun. The implementation and fixture match the original accepted
+async-publication snapshot byte-for-byte. Its passing direct test confirms
+zero-length null input and uppercase byte order without separators or newlines.
+The original Windows Debug run passed 32 cases.
+
+Retired one whole definition and one declaration, 15 lines. Evidence:
+`artifacts/async-transfer-helpers-1aaf363` and
+`artifacts/residual-reconciliation/hex-dump-ddfb555e-*`.
+
 ## 2026-10-01: Shared write-barrier dispatch
 
 Completed the shared caller rather than replacing non-AMD64 execution wholesale

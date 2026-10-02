@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "hexDumpMappingAcceptance": {
+      "status": "retired-against-original-evidence",
+      "scope": "Existing DEBUG Globals.hexDump whole mapping; source and caller behavior unchanged.",
+      "contracts": "Zero size returns before pointer access; nonzero pointer assertion, unsigned count and sequential invariant uppercase two-digit byte output without separators or newline. Existing managed diagnostic writer ownership unchanged.",
+      "validation": "Current implementation and focused fixture byte-identical to authenticated async-transfer-helpers-1aaf363/work-ah-v2 inventory. Original WindowsDebug receipt exit0,32passed includes direct RawHexPreservesByteOrderWithoutSeparatorsOrNewlines Passed. No compiler rerun.",
+      "retirement": "Native0ec7a9cf5d397ad7c65b2686af610d0a176a891d removes1whole14line definition and1declaration:15lines. Exact oracle spans, reconstruction, recovery and sole oracle parent verified.",
+      "evidence": "artifacts/async-transfer-helpers-1aaf363 immutable source/results; artifacts/residual-reconciliation/hex-dump-ddfb555e-*.",
+      "limits": "Existing direct byte-output test only; no new runtime/codegen parity claim. Source, protected13 and unrelated WIP unchanged."
+    },
     "sharedWriteBarrierDispatchAcceptance": {
       "status": "completed",
       "scope": "Whole shared genGCWriteBarrier caller and existing optimized-policy counterpart; AMD64 recording behavior unchanged.",
@@ -3214,8 +3223,8 @@
     },
     "activeBatch": {
       "currentUnit": {
-        "status": "Shared write-barrier dispatch accepted; continuing retained hex-dump counterpart decision",
-        "scope": "Shared caller and optimized-policy mapping accepted18D18R Windows and15D15R ARM64-target;19native lines retired. Next retained utils.cpp hexDump120-133 and utils.h declaration have an existing Globals.HexDump.cs counterpart and focused CodeGenAsyncDebugInfoPublicationTests. Establish exact whole mapping and original direct evidence; retire without rerunning the accepted async family if authenticated. No new dump policy, writer ownership or formatting changes.",
+        "status": "Hex-dump mapping retired; continuing shared scoped-variable whole-type decision",
+        "scope": "Existing hexDump retired15native lines against original direct passing evidence, no compiler rerun. Next retained utils.h ScopedSetVariable whole type: establish existing ref-backed scope conventions and exact equality/lifetime contract before implementation. Preserve constructor save/set, Debug unchanged-value assertion and disposal restore, including nested scopes and exceptional exits. No production caller rewrites or allocator/ABI redesign.",
         "sharedDependencies": "Approved ce500 exact fifth production input: remove only TARGET_ARM64 from the genInstrWithConstant stub guard in codegencommon/CodeGen.FrameInitializationDependencies.cs; implement whole native ARM64312-409 using the existing unsuffixed signature/default in the owned partial, so all ARM64 callers bind the real algorithm. LoongArch/RISC-V stub bodies unchanged. Existing unwindPadding/unwindSetFrameReg remain explicit terminating boundaries with native bodies retained; no AddCode/UnwindInfo storage or successful metadata simulation. Private ARM64 pair-offset predicate and native512 probe threshold are included.",
         "branchPrerequisite": "Whole ARM64 emitIns_J/ShortJ/inst_JMP recording, emitSetShortJump and three classifiers are integrated. Existing jump-table ARM64 visibility and xarch-only call sentinel are generated together; v2 verifies exact guard-only changes and six unchanged outputs. All109Debug98Release branch cases actually pass in v9. No shared unwind storage or other-target stub replacement.",
         "doneWhen": "Preserve xarch semantics and complete ARM64 algorithms/bindings without disabling features or substituting stubs; attain positive ARM64 compilation and execute actual SVE opcode/output/driver plus eight corrected recording cases. Resolve concrete failures and commit each coherent accepted unit. Integrate the independent Windows family when ready.",
@@ -3786,7 +3795,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Shared write-barrier dispatch accepted18D18R Windows/15D15R ARM64-target at native08af8f10, preserving actual non-xarch helper-call termination. Continue current-retained utils.cpp hexDump120-133 (oracle1420-1433) and utils.h declaration: Globals.HexDump.cs and CodeGenAsyncDebugInfoPublicationTests already exist. Resolve exact whole mapping and original direct evidence using the existing async-metadata packet; do not replay the accepted async family or broaden into diagnostics audit. If authenticated, retire only that body/declaration and commit. Preserve original13/concurrent WIP and recorded boundaries; hidden serial/defaultCPU/conserve5/telemetry without floors; no publication.",
+    "nextAction": "Hex-dump existing mapping retired at native0ec7a9cf using original direct32case WindowsDebug evidence without rerun. Continue current-retained utils.h ScopedSetVariable whole-type counterpart decision: no named managed counterpart found. Inspect existing ref-backed scope conventions and actual native instantiations to determine equality/lifetime representation without redesign. Implement whole constructor/Debug invariant/disposal restore with focused nested and exceptional-exit cases if straightforward; otherwise record exact representation blocker and select another retained normal shared unit. Do not broaden into scope/global census or touch protected13/concurrent WIP. Hidden serial/defaultCPU/conserve5/telemetry without floors; no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
