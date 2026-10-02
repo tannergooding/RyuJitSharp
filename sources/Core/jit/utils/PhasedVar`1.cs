@@ -20,6 +20,15 @@ public struct PhasedVar<T>
     private bool _readPhase;
 #endif
 
+    public PhasedVar(T value)
+    {
+        _value = value;
+#if DEBUG
+        _initialized = true;
+        _readPhase = false;
+#endif
+    }
+
 #if DEBUG
     public readonly bool HasFinalValue => _readPhase == true;
 #else
@@ -57,6 +66,15 @@ public struct PhasedVar<T>
 
             _value = value;
         }
+    }
+
+    // Override the value without reopening a read phase or asserting write-phase ownership.
+    public void OverrideAssign(T value)
+    {
+#if DEBUG
+        _initialized = true;
+#endif
+        _value = value;
     }
 
 #if DEBUG

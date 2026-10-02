@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Phase-variable initialization and override
+
+Completed the initial-value constructor and forced assignment for `PhasedVar<T>`.
+Forced assignment preserves the current phase, including after a read; existing
+accessors, resets and the unconstrained generic contract remain unchanged.
+
+All 11 cases pass Debug and Release on the actual Windows64 host, covering
+integer, Boolean and nullable-reference values, default initialization, phase
+transitions and independent copies without EE assertions.
+
+Retired two whole inline definitions, 15 lines. Evidence:
+`artifacts/phase-variable-1342eb3e/v1` and
+`artifacts/residual-reconciliation/phase-variable-1342eb3e-*`.
+
 ## 2026-10-01: Floating register diagnostics
 
 Completed target-aware floating register names through `GetFloatName`, reusing
