@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Population-count primitive mapping
+
+Retired the two retained native population-count primitives and their declarations
+against the existing BCL mappings, without changing compiler source or rerunning
+accepted tests. Original source seals and receipt hashes match; the prior Windows
+79 Debug/74 Release runs include 17 population-count cases per configuration.
+Unsigned input widths and bounded result conversions remain unchanged.
+
+The retirement removes 44 lines. Evidence:
+`artifacts/primitive-popcount-e467bb37/mapping.json` and
+`artifacts/residual-reconciliation/primitive-popcount-e467bb37-*`.
+The separate rotation mappings remain retained because their referenced original
+TRXs are unavailable; no replacement evidence or execution claim was invented.
+
 ## 2026-10-01: Fixed-width bit reversal
 
 Completed the 32-bit and 64-bit bit-reversal algorithms, retaining the native
