@@ -16,6 +16,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Register-mask population and first-set-bit operations
+
+Completed the four shared scalar/full-mask population-count and forward-scan
+overloads. Unsigned reinterpretation preserves the target's bank width and
+signed high bits. Counts include both raw banks; scans prioritize the lower
+bank and offset upper-bank positions by 64. Existing callers and the readonly
+mask representation are unchanged.
+
+Full-analysis Windows checks pass 79 Debug/74 Release cases, including
+35 Debug/33 Release new cases covering bank priority, all bits, high ordinals
+and the native nonzero assertion. Native zero scanning has no defined numerical
+result after assertion; the fixture checks only the assertion contract.
+Other-target guards are preserved without an execution claim.
+
+Retired four whole native definitions, 31 lines, with no separate declaration
+or underlying utility retirement. Evidence:
+`artifacts/register-mask-bits-06f419d7` and
+`artifacts/residual-reconciliation/register-mask-bits-06f419d7-*`.
+
 ## 2026-10-01: SVE opcode generation and ARM64 output source closure
 
 Completed SVE opcode generation, lookup and output together with the whole
