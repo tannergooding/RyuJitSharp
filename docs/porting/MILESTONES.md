@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Register classification
+
+Completed floating-register type classification and target-specific byte-register
+classification. The latter deliberately remains unconditional on targets without
+restricted byte registers; it is not a general register-validity check. Native
+target guards and type-table classification remain unchanged.
+
+Full-analysis checks pass 26 Debug/26 Release for Windows-x64 and Linux-x64,
+and 25/25 for Linux-ARM64, including scalable-vector classification. An unmasked
+x86 attempt stops before tests at four existing parser diagnostics in two
+protected files. Their live WIP was excluded; restricted-byte fixture branches
+are not claimed executed.
+
+Retired three whole target bodies covering two helpers, 13 lines.
+Evidence: `artifacts/register-classification-3a9e8074/v2` and
+`artifacts/residual-reconciliation/register-classification-3a9e8074-*`.
+
 ## 2026-10-01: Register-mask construction
 
 Completed scalar and typed mask construction using the accepted scalar lookup
