@@ -77,19 +77,19 @@ public readonly struct regMaskTP : IEquatable<regMaskTP>
 #if TARGET_ARM
     internal static void AddRegNumInMask(ref regMaskTP destination, regNumber reg, var_types type)
     {
-        var value = GenSingleTypeRegMask(reg, type);
+        var value = genSingleTypeRegMask(reg, type);
         destination |= new regMaskTP(value);
     }
 
     internal static void RemoveRegNumFromMask(ref regMaskTP destination, regNumber reg, var_types type)
     {
-        var value = GenSingleTypeRegMask(reg, type);
+        var value = genSingleTypeRegMask(reg, type);
         destination &= ~new regMaskTP(value);
     }
 
     internal bool IsRegNumInMask(regNumber reg, var_types type)
     {
-        return (_lower & GenSingleTypeRegMask(reg, type)) != SRBM_NONE;
+        return (_lower & genSingleTypeRegMask(reg, type)) != SRBM_NONE;
     }
 #endif
 
@@ -189,19 +189,6 @@ public readonly struct regMaskTP : IEquatable<regMaskTP>
         destination &= ~new regMaskTP(regsToRemove);
 #endif
     }
-
-#if TARGET_ARM
-    private static SingleTypeRegSet GenSingleTypeRegMask(regNumber reg, var_types type)
-    {
-        if (varTypeUsesIntReg(type))
-        {
-            return reg.SingleTypeMask;
-        }
-
-        assert(varTypeUsesFloatReg(type));
-        return reg.GetSingleTypeFloatMask(type);
-    }
-#endif
 
     public static explicit operator regMask(regMaskTP mask)
     {

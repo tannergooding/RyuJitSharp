@@ -16,6 +16,24 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Register-mask construction
+
+Completed scalar and typed mask construction using the accepted scalar lookup
+and static-ref mask operations. The existing scalar wrapper remains in
+`LsraGlobals`; three missing wrappers now share the target implementation.
+ARM typed operations retain first-half pairing rather than normalizing a double
+register, while other targets ignore the type. Bank-local scalar bits remain
+distinct from full-register-space masks.
+
+All 17 Debug/13 Release cases pass for Windows-x64, Linux-x64 and Linux-ARM64
+configurations hosted on Windows. ARM32's existing compilation boundaries remain;
+its guarded fixture branches are not execution evidence. No LSRA caller, ABI,
+register representation or protected source changed.
+
+Retired four whole definitions and two associated declarations, 39 lines.
+Evidence: `artifacts/mask-construction-814faec7/v2` and
+`artifacts/residual-reconciliation/mask-construction-814faec7-*`.
+
 ## 2026-10-01: Typed register masks and iteration
 
 Completed register capacity, type normalization, bank-local mask generation
