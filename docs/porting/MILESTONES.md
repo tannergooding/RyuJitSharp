@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Fixed-width bit reversal
+
+Completed the 32-bit and 64-bit bit-reversal algorithms, retaining the native
+sequence of adjacent-bit, pair, nibble, byte and larger-group swaps. The utility
+overloads live in the existing `Globals` layout rather than introducing a type
+that would shadow accepted BCL bit operations.
+
+All 18 cases pass Debug and Release for Windows-x64, Linux-x64 and Linux-ARM64
+configurations hosted on Windows. Both numeric widths cover fixed patterns,
+involution and every one-hot input position. This is utility execution evidence,
+not target machine-code parity.
+
+Retired two whole definitions and two associated declarations, 53 lines.
+Evidence: `artifacts/bit-reversal-35e79b71/v1` and
+`artifacts/residual-reconciliation/bit-reversal-35e79b71-*`.
+
 ## 2026-10-01: Numeric register-mask operations
 
 Completed boolean and unsigned-integer conversion, the integer-mask factory,
