@@ -10,6 +10,10 @@ public partial class Globals
 {
     public const int TARGET_POINTER_SIZE = 4;
 
+    public const regNumber FIRST_FP_ARGREG = REG_F0;
+
+    public const regNumber LAST_FP_ARGREG = REG_F15;
+
     public const int TARGET_MASKS_SHIFTS = 0;
 
     public const int TARGET_HAS_MULHI = 0;

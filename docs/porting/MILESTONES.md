@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Argument-register validity
+
+Completed the integer and floating argument-register predicates and eight
+missing target endpoint constants. Integer classification preserves the native
+bank-local mask lookup, including overlapping bank positions; it does not
+substitute a general register-class check. Floating classification excludes
+`REG_NA` before testing the inclusive argument-register range.
+
+All 16 focused cases pass Debug and Release on Windows-x64, Linux-x64 and
+Linux-ARM64 configurations hosted on Windows. Other-target constants match
+pinned headers and generated enum bindings without claiming their execution.
+ABI, feature flags and existing argument-mask contracts remain unchanged.
+
+Retired two whole definitions and eight constant declarations, 23 lines.
+Evidence: `artifacts/argument-validity-bffd7a6c` and
+`artifacts/residual-reconciliation/argument-validity-bffd7a6c-*`.
+
 ## 2026-10-01: Fixed return-buffer argument masks
 
 Completed the fixed return-buffer mask helper and connected the existing full
