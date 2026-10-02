@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Floating rounding and special values
+
+Completed both ties-to-even rounding algorithms, positive-infinity constructors
+and all-one-bit predicates. Rounding retains width-specific integer boundaries
+and signed offset arithmetic, including final sign restoration for negative
+zero. Existing BCL rounding callers and tree predicates remain unchanged.
+
+All 48 cases pass Debug and Release on the actual Windows64 host. They cover
+92 signed rounding inputs, including adjacent ties, integer boundaries and NaN
+encodings, both infinity constructors, and every single-bit-clear rejection for
+the all-one predicates. Other hosts and nondefault rounding modes are not claimed.
+
+Retired six whole definitions and six declarations, 104 lines. Evidence:
+`artifacts/fp-rounding-ae496f62/v2` and
+`artifacts/residual-reconciliation/fp-rounding-ae496f62-*`.
+
 ## 2026-10-01: IEEE floating-point selection
 
 Completed all sixteen single/double maximum/minimum variants, including
