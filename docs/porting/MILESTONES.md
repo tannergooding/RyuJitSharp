@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Fixed bit-vector type
+
+Completed the whole fixed bit-vector type with zero-initialized managed chunk
+storage, set/clear/test, union/intersection, and ascending non-destructive and
+destructive scans. Native 32-bit chunks, unsigned sentinel, mutation order and
+assertion text remain intact, including the inclusive size boundary.
+
+All 108 Debug/91 Release cases pass full analysis on the actual Windows64 host.
+Coverage includes ten sizes around chunk boundaries, empty/full/sparse vectors,
+self-aliasing set algebra and safe assertion continuations. No native
+out-of-storage access or allocator-byte parity is claimed.
+
+Retired eleven out-of-line definitions and the complete native type containing
+the twelfth inline method, storage and declarations: 220 lines. Evidence:
+`artifacts/fixed-bit-vector-9a05c00b/v3` and
+`artifacts/residual-reconciliation/fixed-bit-vector-9a05c00b-*`.
+
 ## 2026-10-01: Floating conversion helpers
 
 Completed unsigned64-to-floating conversions, double-to-unsigned64 truncation
