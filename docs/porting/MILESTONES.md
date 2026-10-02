@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Scalar narrowing and word extraction
+
+Completed both forced narrowing helpers and unsigned low/high word extraction.
+Narrowing materializes a width-specific local before its volatile read, matching
+the native wrapper rather than relying on a widened intermediate. Existing
+callers remain unchanged.
+
+All 108 cases pass Debug and Release on Windows64: signed-zero, tie, subnormal,
+finite and infinity bit patterns; NaN classification; native-defined UInt32
+truncation; and unsigned word extraction across every bit. Out-of-range UInt32
+behavior and NaN payload parity are not claimed.
+
+Retired four whole inline definitions, 18 lines. Two pre-existing residual
+`uint`/oracle `unsigned` spelling differences were accounted explicitly without
+changing adjacent bodies. Evidence: `artifacts/scalar-narrowing-74c0a78b/v3` and
+`artifacts/residual-reconciliation/scalar-narrowing-74c0a78b-*`.
+
 ## 2026-10-01: Existing frame-state mappings
 
 Retired both frame-pointer phase-reset methods and the JIT32-only GC setter
