@@ -1798,19 +1798,21 @@ internal static unsafe class Arm64EmitterRecordingTests
         }
 
 #if DEBUG
-        Assert.That(Record, Throws.TypeOf<FatalJitException>().With.Message.Contains("SVE instruction sanity checking"));
-        Assert.That(GroupSize(emitter), Is.Zero);
+        var capture = Arm64SveInstructionSanityTests.Capture(Record);
+        Assert.That(capture.Assertions, Is.Empty);
 #else
         Record();
+#endif
         var id = LastInstruction(emitter) ?? throw new AssertionException("No scalable access was recorded.");
+        Assert.That(id.idIns(), Is.EqualTo(store ? INS_sve_str : INS_sve_ldr));
         Assert.That(id.idInsFmt(), Is.EqualTo(format));
+        Assert.That(id.idOpSize(), Is.EqualTo(EA_SCALABLE));
         Assert.That(id.idReg1(), Is.EqualTo(reg));
         Assert.That(id.idReg2(), Is.EqualTo(REG_UNKBASE));
         Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)(-5)));
         Assert.That(id.idIsLclVar(), Is.True);
         Assert.That(id.idAddr().iiaLclVar.lvaVarNum(), Is.EqualTo(varx));
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
-#endif
     }
 
     [TestCase(INS_add, 4095)]
@@ -1948,16 +1950,22 @@ internal static unsafe class Arm64EmitterRecordingTests
         }
 
 #if DEBUG
-        Assert.That(Record, Throws.TypeOf<FatalJitException>().With.Message.Contains("SVE instruction sanity checking"));
-        Assert.That(GroupSize(emitter), Is.EqualTo(4));
+        var capture = Arm64SveInstructionSanityTests.Capture(Record);
+        Assert.That(capture.Assertions, Is.Empty);
 #else
         Record();
+#endif
         Assert.That(GroupSize(emitter), Is.EqualTo(8));
+        Assert.That(CurrentInstructions(emitter), Has.Count.EqualTo(2));
         var access = LastInstruction(emitter) ?? throw new AssertionException("Missing scalable access.");
+        Assert.That(access.idIns(), Is.EqualTo(store ? INS_sve_str : INS_sve_ldr));
         Assert.That(access.idInsFmt(), Is.EqualTo(format));
+        Assert.That(access.idOpSize(), Is.EqualTo(EA_SCALABLE));
+        Assert.That(access.idReg1(), Is.EqualTo(reg));
         Assert.That(access.idReg2(), Is.EqualTo(REG_OPT_RSVD));
         Assert.That(Emitter.emitGetInsSC(access), Is.EqualTo((nint)0));
-#endif
+        Assert.That(access.idIsLclVar(), Is.True);
+        Assert.That(access.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
         var address = CurrentInstructions(emitter)[0];
         Assert.That(address.idIns(), Is.EqualTo(INS_add));
         Assert.That(address.idReg1(), Is.EqualTo(REG_OPT_RSVD));

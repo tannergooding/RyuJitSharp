@@ -16,6 +16,34 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: SVE opcode generation and ARM64 output source closure
+
+Completed SVE opcode generation, lookup and output together with the whole
+ARM64 instruction-output driver and its coupled encoding/GC helpers. All 606
+pinned instruction rows match the generated 13 compact opcode arrays and
+1,123 entries; five existing xarch outputs remain unchanged. Generator and
+generated output are updated together.
+
+Windows output controls pass 119 Debug/119 Release cases. The final ARM64
+candidate retains exactly the fresh baseline's 40 Debug/32 Release diagnostics.
+Its fixtures have not compiled or executed, and early baseline failures can
+mask later errors. The three new fixtures project 268 Debug/251 Release cases,
+not execution coverage. Eight existing recording cases now perform their full
+checks in Debug instead of expecting the removed SVE sanity NYI; fixed-frame
+recorders normalize incoming `EA_8BYTE` to `EA_SCALABLE` before sanity checking.
+
+Retired 76 whole native definitions and 62 standalone declarations: 6,747 lines.
+Native `emitOutputInstr` maps to `emitOutputInstrArm64`, and six architecture
+classification/GC helpers use `Arm64`-suffixed names. Ordinary opcode, call and
+long-jump output, shared descriptor sizing/layout and other-target output remain.
+The shared native output-entry declaration was already absent before this batch;
+that residual exception receives no deletion credit. No ARM64 generated-byte
+execution or runtime parity is claimed.
+
+Evidence: `artifacts/sve-output-acceptance-f5af4ea9` (generation verification,
+v2 Windows controls and final v3 source/diagnostic comparison) and
+`artifacts/residual-reconciliation/sve-output-f5af4ea9-*`.
+
 ## 2026-10-01: ARM32 node-reference construction source closure
 
 Translated the whole ARM32 node dispatcher, long-shift carry handling and six

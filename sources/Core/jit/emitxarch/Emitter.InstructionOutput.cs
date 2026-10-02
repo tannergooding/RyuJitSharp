@@ -12,7 +12,9 @@ public partial class Emitter
 {
     public unsafe nuint emitOutputInstr(insGroup ig, instrDesc id, byte** dp)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM64
+        return emitOutputInstrArm64(ig, id, dp);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Instruction output requires xarch.");
 #else
         assert(_compiler is not null);
