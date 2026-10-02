@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Register-mask string diagnostics
+
+Completed DEBUG `regMaskToString` and `regMaskIntToString` using the existing
+format definitions. Output retains unsigned width, uppercase/minimum padding,
+lower-bank-only behavior and the native integer mask, including AMD64 APX bits.
+Existing printing helpers remain unchanged.
+
+Windows-x64 and ARM64-target Debug selections each pass 17 cases. Tests cover
+high-bit patterns, integer filtering, ignored upper-bank bits, fixed-buffer
+capacity and independent returned strings. No Release execution is claimed for
+DEBUG-only APIs. Retired two bodies and their guards, 24 lines. Evidence:
+`artifacts/mask-string-diagnostics-3d027fbc/v1` and
+`artifacts/residual-reconciliation/mask-string-diagnostics-3d027fbc-*`.
+
 ## 2026-10-01: Argument-register mappings and coupled tables
 
 Completed eight argument-index/register/mask mappings, including floating and
