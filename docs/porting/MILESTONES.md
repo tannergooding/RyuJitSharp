@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Shared scalar and full-mask bit shapes
+
+Completed lowest-bit, at-most-one and exactly-one queries plus the unsigned
+logarithm overloads. Narrow signed predicates retain C++ integer promotion;
+full masks retain bank-width guards and lower-bank priority. Logarithms reuse
+the existing scan primitive and its ordered assertion contract. Accepted LSRA
+overloads and callers remain unchanged.
+
+Windows and ARM64-target builds each pass 226 Debug/218 Release cases on Windows.
+Coverage includes native-defined signed/unsigned inputs, both mask banks, every
+32/64-bit logarithm position and invalid-input diagnostics. Zero-scan numeric
+continuation and signed overflow are deliberately not claimed as parity.
+
+Retired eight definitions and the platform forwarding guards, 59 lines. Evidence:
+`artifacts/shared-bit-shapes-3c23a9a7/v2` and
+`artifacts/residual-reconciliation/shared-bit-shapes-3c23a9a7-*`.
+
 ## 2026-10-01: Scalar narrowing and word extraction
 
 Completed both forced narrowing helpers and unsigned low/high word extraction.
