@@ -268,6 +268,50 @@ internal static unsafe class Arm64FrameLayoutTests
         Assert.That(frame.GetOffset(vectorIndex), Is.EqualTo(-maskVectors - 1));
     }
 
+    [Test]
+    public static void PrologParameterScopeUsesArm64StackLocation()
+    {
+        WithFrame((compiler, codeGen) =>
+        {
+            compiler.opts.compDbgInfo = true;
+            compiler.info.compArgsCount = 1;
+            compiler.info.compLocalsCount = 1;
+            compiler.lvaCount = 1;
+            compiler.lvaTable = [new() {
+                Type = TYP_LONG,
+                lvIsParam = true,
+                lvOnFrame = true,
+                lvFramePointerBased = true,
+                StackOffset = 16,
+                RegNum = REG_STK,
+            }];
+            compiler.lvaParameterPassingInfo = [AbiPassingInformation.FromSegment(compiler, false,
+                AbiPassingSegment.OnStack(0, 0, 8))];
+            compiler.info.compVarScopes = [
+                new() { vsdVarNum = 0, vsdLVnum = 0, vsdLifeBeg = 0, vsdLifeEnd = 10 },
+            ];
+            compiler.info.compVarScopesCount = 1;
+            compiler.compInitScopeLists();
+            codeGen.initializeVariableLiveKeeper();
+            compiler.lvaTrackedCount = 1;
+            compiler.lvaTrackedCountInSizeTUnits = 1;
+            compiler.lvaTrackedToVarNum = [0];
+            codeGen.Emitter.emitBegCG(compiler, default);
+            codeGen.Emitter.Init();
+            codeGen.Emitter.emitBegFN(false
+#if DEBUG
+                , true
+#endif
+                );
+            codeGen.Emitter.emitBegProlog();
+
+            codeGen.psiBegProlog();
+
+            var range = codeGen.getVariableLiveKeeper().getLiveRangesForVarForProlog(0)[0];
+            Assert.That(range.m_VarLocation.vlIsOnStack(REG_SPBASE, 8), Is.True);
+        });
+    }
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "setFrameType")]
     private static extern void SetFrameType(LinearScan allocator);
 

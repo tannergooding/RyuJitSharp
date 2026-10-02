@@ -25,9 +25,6 @@ public sealed partial class CodeGen
 
     public void psiBegProlog()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Prolog variable scopes require Windows AMD64.");
-#else
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
         _compiler.compResetScopeLists();
         while (true)
@@ -44,29 +41,44 @@ public sealed partial class CodeGen
                 continue;
             }
 
-            var reg = REG_NA;
+            var reg1 = REG_NA;
+            var reg2 = REG_NA;
             var abiInfo = _compiler.lvaGetParameterAbiInfo(scope.vsdVarNum);
             foreach (var segment in abiInfo.Segments)
             {
-                if (segment.IsPassedInRegister)
+                if (!segment.IsPassedInRegister)
                 {
-                    reg = segment.Register;
+                    break;
                 }
-                break;
+
+                if (reg1 == REG_NA)
+                {
+                    reg1 = segment.Register;
+                }
+                else
+                {
+                    reg2 = segment.Register;
+                    break;
+                }
             }
 
+            // Prolog scopes expose multiple registers only on the SysV x64 ABI.
+#if !UNIX_AMD64_ABI
+            reg2 = REG_NA;
+#endif
+
             siVarLoc location = default;
-            if ((reg != REG_NA) && (genIsValidIntReg(reg) || genIsValidFloatReg(reg)))
+            if ((reg1 != REG_NA) && (genIsValidIntReg(reg1) || genIsValidFloatReg(reg1)))
             {
-                location.storeVariableInRegisters(reg, REG_NA);
+                location.storeVariableInRegisters(reg1, reg2);
             }
             else
             {
                 location.storeVariableOnStack(REG_SPBASE, psiGetVarStackOffset(in local));
             }
+
             getVariableLiveKeeper().psiStartVariableLiveRange(location, scope.vsdVarNum);
         }
-#endif
     }
 
     public void psiEndProlog()

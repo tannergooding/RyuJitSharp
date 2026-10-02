@@ -8,6 +8,7 @@ using NUnit.Framework;
 using static RyuJitSharp.CorInfoGCType;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.SystemVClassificationType;
+using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
@@ -243,6 +244,73 @@ internal static unsafe class SysVX64ClassifierTests
             Assert.That(classifier.StackSize, Is.Zero);
             AssertStack(classifier.Classify(compiler, TYP_STRUCT, layout, WellKnownArg.None), 0, -1);
             Assert.That(metadata.QueryCount, Is.EqualTo(2));
+        });
+    }
+
+    [Test]
+    public static void PrologParameterScopeCapturesBothSysVRegisters()
+    {
+        WithCompiler(default, 0, (compiler, _, _) =>
+        {
+            CORINFO_METHOD_INFO methodInfo = default;
+            JitFlags flags = default;
+            compiler.info.compMethodInfo = &methodInfo;
+            compiler.info.compRetBuffArg = BAD_VAR_NUM;
+            compiler.opts.jitFlags = &flags;
+            compiler.opts.SetMinOpts(true);
+            compiler.opts.compDbgInfo = true;
+            compiler.info.compIsStatic = true;
+            compiler.info.compArgsCount = 1;
+            compiler.info.compLocalsCount = 2;
+            compiler.lvaTable = [
+                new() {
+                    Type = TYP_STRUCT,
+                    Layout = new ClassLayout(16),
+                    lvIsParam = true,
+                    lvTracked = true,
+                    lvOnFrame = true,
+                    lvFramePointerBased = true,
+                    RegNum = REG_STK,
+                },
+                new() { Type = TYP_STRUCT, Layout = new ClassLayout(0), lvOnFrame = true, RegNum = REG_STK },
+            ];
+            compiler.lvaCount = 2;
+            compiler.lvaTrackedCount = 1;
+            compiler.lvaTrackedCountInSizeTUnits = 1;
+            compiler.lvaTrackedToVarNum = [0];
+            compiler.lvaOutgoingArgSpaceVar = 1;
+            compiler.lvaOutgoingArgSpaceSize.ResetWritePhase();
+            compiler.lvaOutgoingArgSpaceSize.Value = 0;
+            compiler.lvaRetAddrVar = BAD_VAR_NUM;
+            compiler.lvaGSSecurityCookie = BAD_VAR_NUM;
+            compiler.lvaSecretStubArg = BAD_VAR_NUM;
+            compiler.lvaParameterPassingInfo = [AbiPassingInformation.FromSegments(compiler,
+                AbiPassingSegment.InRegister(REG_RDI, 0, 8), AbiPassingSegment.InRegister(REG_XMM0, 8, 8))];
+            compiler.info.compVarScopes = [
+                new() { vsdVarNum = 0, vsdLVnum = 0, vsdLifeBeg = 0, vsdLifeEnd = 10 },
+            ];
+            compiler.info.compVarScopesCount = 1;
+            compiler.compInitScopeLists();
+            var codeGen = new CodeGen(compiler);
+            compiler.codeGen = codeGen;
+            codeGen.initializeVariableLiveKeeper();
+            codeGen.Emitter.emitBegCG(compiler, default);
+            codeGen.Emitter.Init();
+            codeGen.Emitter.emitBegFN(false
+#if DEBUG
+                , true
+#endif
+                );
+            codeGen.Emitter.emitBegProlog();
+
+            codeGen.psiBegProlog();
+
+            var range = codeGen.getVariableLiveKeeper().getLiveRangesForVarForProlog(0)[0];
+            Assert.That(range.m_VarLocation.vlType, Is.EqualTo(ICorDebugInfo.VarLocType.VLT_REG_REG));
+            Assert.That(range.m_VarLocation.vlRegReg.vlrrReg1,
+                Is.EqualTo(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_RDI)));
+            Assert.That(range.m_VarLocation.vlRegReg.vlrrReg2,
+                Is.EqualTo(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_XMM0)));
         });
     }
 
