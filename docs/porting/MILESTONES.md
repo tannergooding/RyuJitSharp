@@ -16,6 +16,26 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Typed register masks and iteration
+
+Completed register capacity, type normalization, bank-local mask generation
+and next-register iteration. The shared implementation reuses the existing ARM
+normalization algorithm and three static-ref mask-operation callers, preserving
+lookup/assertion ordering before owner updates. It retains native double pairing,
+unchecked register arithmetic, xarch-only mask bounds and nonARM type ignoring.
+The directly used ARM double-register predicate's malformed closing parenthesis
+is corrected without changing its algorithm.
+
+Full-analysis checks pass 593 Debug/593 Release for Windows-x64 and Linux-x64,
+and 633/633 for Linux-ARM64, hosted on Windows. ARM32 compilation still stops
+before fixtures at 12 existing parser/platform diagnostics, including two
+protected source files. No protected WIP or parser-only mask was used as
+accepted code; its 464 fixture cases remain unexecuted projections.
+
+Retired five whole target definitions covering four helpers, 91 lines.
+Evidence: `artifacts/typed-registers-e46ebf41/v3` and
+`artifacts/residual-reconciliation/typed-registers-e46ebf41-*`.
+
 ## 2026-10-01: Argument-register validity
 
 Completed the integer and floating argument-register predicates and eight

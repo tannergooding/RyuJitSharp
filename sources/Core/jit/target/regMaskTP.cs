@@ -109,7 +109,7 @@ public readonly struct regMaskTP : IEquatable<regMaskTP>
     internal static void AddRegNum(ref regMaskTP destination, regNumber reg, var_types type)
     {
 #if TARGET_ARM
-        var value = GetSingleTypeRegMask(reg, type);
+        var value = getSingleTypeRegMask(reg, type);
         destination |= new regMaskTP(value);
 #else
         AddRegNumInMask(ref destination, reg);
@@ -152,7 +152,7 @@ public readonly struct regMaskTP : IEquatable<regMaskTP>
     internal bool IsRegNumPresent(regNumber reg, var_types type)
     {
 #if TARGET_ARM
-        return (_lower & GetSingleTypeRegMask(reg, type)) != SRBM_NONE;
+        return (_lower & getSingleTypeRegMask(reg, type)) != SRBM_NONE;
 #else
         return IsRegNumInMask(reg);
 #endif
@@ -167,7 +167,7 @@ public readonly struct regMaskTP : IEquatable<regMaskTP>
     internal static void RemoveRegNum(ref regMaskTP destination, regNumber reg, var_types type)
     {
 #if TARGET_ARM
-        var value = GetSingleTypeRegMask(reg, type);
+        var value = getSingleTypeRegMask(reg, type);
         destination &= ~new regMaskTP(value);
 #else
         RemoveRegNumFromMask(ref destination, reg);
@@ -200,23 +200,6 @@ public readonly struct regMaskTP : IEquatable<regMaskTP>
 
         assert(varTypeUsesFloatReg(type));
         return reg.GetSingleTypeFloatMask(type);
-    }
-
-    private static SingleTypeRegSet GetSingleTypeRegMask(regNumber reg, var_types type)
-    {
-        if ((type == TYP_DOUBLE) && !genIsValidDoubleReg(reg))
-        {
-            reg--;
-        }
-
-        var mask = reg.SingleTypeMask;
-        if (type == TYP_DOUBLE)
-        {
-            assert(genIsValidDoubleReg(reg));
-            mask |= (regMask)((long)mask << 1);
-        }
-
-        return mask;
     }
 #endif
 
