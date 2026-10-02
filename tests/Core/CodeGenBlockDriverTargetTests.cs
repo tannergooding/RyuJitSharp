@@ -16,14 +16,11 @@ internal static unsafe class CodeGenBlockDriverTargetTests
 {
 #if TARGET_ARM64
     [Test]
-    public static void DriverInitializesBeforeTheUnsupportedBlockEndBoundary()
+    public static void DriverInitializesBeforeBlockEndEmission()
     {
         WithDriver((compiler, codeGen, block) =>
         {
-            var failure = Assert.Throws<FatalJitException>(codeGen.genCodeForBBlist) ??
-                throw new AssertionException("Missing block-end dependency failure.");
-
-            Assert.That(failure.Message, Is.EqualTo("Block-end generation requires Windows AMD64."));
+            codeGen.genCodeForBBlist();
 #if DEBUG
             Assert.That(compiler.fgSafeBasicBlockCreation, Is.False);
 #endif

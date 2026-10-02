@@ -9,9 +9,7 @@ public sealed partial class CodeGen
 {
     public void genEmitEndBlock(BasicBlock block)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Block-end generation requires Windows AMD64.");
-#else
+#if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
         var emitNopBeforeEHRegion = false;
         // Keep return addresses inside their EH region when an eliminated jump follows a call.
@@ -38,12 +36,16 @@ public sealed partial class CodeGen
                     break;
                 }
 
+                case BBJ_COND:
+                case BBJ_SWITCH:
                 default:
                 {
-                    throw new FatalJitException("Unexpected block kind after a call at an EH boundary.");
+                    assert(false, conditionExpression: "Unexpected block kind after a call at an EH boundary.");
+                    break;
                 }
             }
         }
+#endif
 #if FEATURE_LOOP_ALIGN
         void SetLoopAlignBackEdge(BasicBlock source, BasicBlock target)
         {
@@ -55,7 +57,7 @@ public sealed partial class CodeGen
             }
         }
 #endif
-#if DEBUG
+#if DEBUG && FEATURE_LOOP_ALIGN
         var removedJmp = false;
 #endif
         switch (block.Kind)
@@ -68,21 +70,29 @@ public sealed partial class CodeGen
 
             case BBJ_THROW:
             {
+#if TARGET_WASM
+                Emitter.emitIns(INS_unreachable);
+                if (block.IsLast || _compiler.bbIsFuncletBeg(block.Next))
+                {
+                    genEmitFunctionEnd(emitTerminalUnreachable: false);
+                }
+#else
                 // The unreachable breakpoint keeps the unwinder's return address in the right region.
                 if (block.IsLast || !BasicBlock.sameEHRegion(block, block.Next) ||
-                    (!IsFramePointerUsed && block.Next.HasFlag(BBF_THROW_HELPER)) ||
+                    (!IsFramePointerUsed && _compiler.fgIsThrowHlpBlk(block.Next)) ||
                     _compiler.bbIsFuncletBeg(block.Next) || block.IsLastHotBlock(_compiler))
                 {
-                    instGen(INS_int3);
+                    instGen(INS_BREAKPOINT);
                 }
                 else
                 {
                     var call = block.LastNode;
                     if ((call is GenTreeCall callNode) && callNode.IsNoReturn)
                     {
-                        instGen(INS_int3);
+                        instGen(INS_BREAKPOINT);
                     }
                 }
+#endif
                 break;
             }
 
@@ -122,19 +132,31 @@ public sealed partial class CodeGen
 #endif
                 if (block.CanRemoveJumpToNext(_compiler))
                 {
+#if TARGET_AMD64
                     if (emitNopBeforeEHRegion)
                     {
                         instGen(INS_nop);
                     }
-#if DEBUG
+#endif
+#if DEBUG && FEATURE_LOOP_ALIGN
                     removedJmp = true;
 #endif
                     break;
                 }
+#if TARGET_XARCH
                 var isRemovableJmpCandidate = !_compiler.fgInDifferentRegions(block, block.Target);
                 inst_JMP(EJ_jmp, block.Target, isRemovableJmpCandidate);
+#else
+                inst_JMP(EJ_jmp, block.Target);
+#endif
 #if FEATURE_LOOP_ALIGN
                 SetLoopAlignBackEdge(block, block.Target);
+#endif
+#if TARGET_WASM
+                if (block.IsLast || _compiler.bbIsFuncletBeg(block.Next))
+                {
+                    genEmitFunctionEnd();
+                }
 #endif
                 break;
             }
@@ -170,6 +192,17 @@ public sealed partial class CodeGen
             Emitter.emitConnectAlignInstrWithCurIG();
         }
 #endif
-#endif
     }
+
+#if TARGET_WASM
+    private void inst_JMP(emitJumpKind jump, BasicBlock target)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm jump instruction generation is not ported.");
+    }
+
+    private void genEmitFunctionEnd(bool emitTerminalUnreachable = true)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm function-end emission is not ported.");
+    }
+#endif
 }
