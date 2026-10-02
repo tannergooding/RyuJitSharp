@@ -9,16 +9,19 @@ public partial class Emitter
 {
     public abstract partial class instrDesc
     {
-#if TARGET_XARCH || TARGET_ARM64
+#if !TARGET_LOONGARCH64 && !TARGET_RISCV64
         private insFormat _idInsFmt;
 #endif
 
         public insFormat idInsFmt()
         {
-#if TARGET_XARCH || TARGET_ARM64
-            return _idInsFmt;
+#if TARGET_LOONGARCH64
+            return (insFormat)0;
+#elif TARGET_RISCV64
+            NYI_RISCV64("idInsFmt-----unimplemented on RISCV64 yet----");
+            return (insFormat)0;
 #else
-            throw new FatalJitException(CORJIT_SKIPPED, "Instruction descriptor formats outside xarch are not implemented.");
+            return _idInsFmt;
 #endif
         }
 
@@ -33,8 +36,14 @@ public partial class Emitter
             noway_assert(insFmt != insFormat.IF_NONE);
             assert(insFmt < insFormat.IF_COUNT);
             _idInsFmt = (insFormat)((uint)insFmt & 0x3FF);
+#elif TARGET_LOONGARCH64
+            // Native does not use or store instruction formats on LoongArch64.
+#elif TARGET_RISCV64
+            NYI_RISCV64("idInsFmt-----unimplemented on RISCV64 yet----");
 #else
-            throw new FatalJitException(CORJIT_SKIPPED, "Instruction descriptor formats outside xarch are not implemented.");
+            assert((uint)insFormat.IF_COUNT <= 256);
+            assert(insFmt < insFormat.IF_COUNT);
+            _idInsFmt = (insFormat)((uint)insFmt & 0xFF);
 #endif
         }
 

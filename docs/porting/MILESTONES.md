@@ -16,6 +16,29 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Descriptor format headers and xarch classification
+
+Completed the native format-header target branches while preserving the existing
+xarch register/memory classification and scheduling-table behavior. Stored
+formats retain their target widths and assertion-before-write ordering;
+LoongArch retains its native zero/no-op behavior, and RISC-V retains the existing
+configurable NYI policy.
+
+The independent source review found no concrete defect. Full-analysis Windows
+Debug and Release each pass 52 cases, including 33 new header/classification
+cases and 19 existing schema/primitive controls. The checks distinguish
+operand kinds rather than inferring memory/constant behavior from format names.
+No fixture correction or replay was required after review.
+
+Retired 31 whole inline definitions, 151 lines: six target-specific header
+alternatives and 25 xarch classification queries. The already-retired scheduling
+helper receives no additional credit. ARM/Wasm generated format metadata remains
+unported; raw-width source controls are not valid-format execution coverage.
+No table or descriptor-layout retirement is claimed.
+
+Evidence is under `artifacts/descriptor-format-acceptance-8aab5675` and
+`artifacts/residual-reconciliation/descriptor-format-8aab5675-*`.
+
 ## 2026-10-01: Descriptor bound-bit aliases and target payloads
 
 The bound flag now uses the native shared custom-payload bit instead of
