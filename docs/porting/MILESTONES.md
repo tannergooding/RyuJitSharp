@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Shared stack register operations
+
+Completed `genSinglePop`, `genPushRegs` and `genPopRegs`, preserving output-mask
+write order, target/feature branches, register order, GC classification and stack
+accounting. The native fixed-output-argument NYI and its configured continuation
+remain unchanged; this does not enable nonempty Windows-x64 register pushes.
+
+Windows-x64 and ARM64-target selections each pass 12 Debug and 12 Release cases,
+covering empty/aliased outputs, stack decrements and native NYI behavior.
+Variable-output x86 paths remain source-reviewed under existing target blockers.
+Retired three bodies and three declarations, 118 lines. Evidence:
+`artifacts/shared-stack-operations-54c11278/v1` and
+`artifacts/residual-reconciliation/shared-stack-operations-54c11278-*`.
+
 ## 2026-10-01: Register-mask string diagnostics
 
 Completed DEBUG `regMaskToString` and `regMaskIntToString` using the existing
