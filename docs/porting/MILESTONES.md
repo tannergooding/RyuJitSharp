@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Existing frame-state mappings
+
+Retired both frame-pointer phase-reset methods and the JIT32-only GC setter
+without source changes or a compiler rerun. All three methods match the original
+accepted EH source. Original ARM64 localloc cases also execute the used-frame
+reset during setup; their saved result hashes remain unchanged.
+
+This reuses existing evidence, not new direct required-reset/GC-setter or JIT32
+execution. Retired three whole inline definitions, 14 lines. Evidence:
+`artifacts/shared-eh-validation-225573e`,
+`artifacts/arm64-compile-closure-06f419d7/v9` and
+`artifacts/residual-reconciliation/frame-state-e6ce501f-*`.
+
 ## 2026-10-01: Shared GS-cookie temporary masks
 
 Completed the shared selector's ARM32, LoongArch64 and RISC-V64 return branch

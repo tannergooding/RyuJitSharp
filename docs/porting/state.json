@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "frameStateMappingAcceptance": {
+      "status": "retired-against-original-evidence",
+      "scope": "Existing used/required frame-pointer phase resets and JIT32-only GC frame-pointer setter; no implementation or caller changes.",
+      "contracts": "Same PhasedVar field reset calls and exact JIT32_GCENCODER-guarded assignment. All three methods match original authenticated225573e archive source.",
+      "validation": "Reuse accepted original EH18Debug16Release evidence. Original ARM64 closure v9 receipt/TRX hashes authenticated; five passing localloc cases in each configuration invoke used-reset during setup. No compiler rerun.",
+      "retirement": "Nativef661e19cc4b23e1a5af9ea9cbca0cb55436b31c3 removes3whole inline definitions14lines; no separate declarations. Exact oracle spans/reconstruction/recovery/sole parent verified.",
+      "evidence": "artifacts/shared-eh-validation-225573e; artifacts/arm64-compile-closure-06f419d7/v9; artifacts/residual-reconciliation/frame-state-e6ce501f-*.",
+      "limits": "No new direct required-reset/GC-setter or JIT32 execution claim. Older standalone backend TRXs unavailable; no broad evidence hunt or rerun. Source/protected13/concurrent WIP unchanged."
+    },
     "gsCookieTemporaryMaskAcceptance": {
       "status": "completed",
       "scope": "Whole genGetGSCookieTempRegs now returns native ARM32/LoongArch64/RISC-V64 masks rather than replacing their branches with NYI. Three exact scalar mask aliases added.",
@@ -3241,8 +3250,8 @@
     },
     "activeBatch": {
       "currentUnit": {
-        "status": "Shared GS-cookie masks accepted; continuing retained frame-state counterpart decision",
-        "scope": "Shared cookie mask accepted7D7R Windows/6D6R ARM64-target and retired46native lines. Next current-retained codegeninterface.h resetFramePointerUsedWritePhase/resetWritePhaseForFramePointerRequired/setFramePointerRequiredGCInfo already have managed counterparts. Resolve whole mapping and original frame/initialization evidence; retire only authenticated methods without rerunning accepted families. No new frame/GC policy.",
+        "status": "Frame-state mappings retired; continuing shared scalar narrowing helpers",
+        "scope": "Three existing frame-state methods retired14lines against original source/evidence, no rerun. Next current-retained compiler.hpp ulo32/uhi32/forceCastToFloat/forceCastToUInt32 have no named managed counterparts. Establish width/materialization semantics for the native Volatile wrappers, implement whole coherent conversion helpers with raw-bit and native-defined-range cases, validate Windows Debug/Release and retire exact bodies. No existing caller rewrites.",
         "scopedVariableDecision": "ScopedSetVariable has no actual instantiation in the pinned JIT beyond its bool documentation example, and no named managed counterpart. Generic native operator== cannot be replaced unconditionally by EqualityComparer<T>.Default (NaN and reference equality differ); retain the whole native type pending a concrete typed caller or approved equality representation. No scope implementation or caller changes.",
         "sharedDependencies": "Approved ce500 exact fifth production input: remove only TARGET_ARM64 from the genInstrWithConstant stub guard in codegencommon/CodeGen.FrameInitializationDependencies.cs; implement whole native ARM64312-409 using the existing unsuffixed signature/default in the owned partial, so all ARM64 callers bind the real algorithm. LoongArch/RISC-V stub bodies unchanged. Existing unwindPadding/unwindSetFrameReg remain explicit terminating boundaries with native bodies retained; no AddCode/UnwindInfo storage or successful metadata simulation. Private ARM64 pair-offset predicate and native512 probe threshold are included.",
         "branchPrerequisite": "Whole ARM64 emitIns_J/ShortJ/inst_JMP recording, emitSetShortJump and three classifiers are integrated. Existing jump-table ARM64 visibility and xarch-only call sentinel are generated together; v2 verifies exact guard-only changes and six unchanged outputs. All109Debug98Release branch cases actually pass in v9. No shared unwind storage or other-target stub replacement.",
@@ -3814,7 +3823,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "GS-cookie mask family accepted7D7R Windows/6D6R ARM64-target at native72204d0a. Continue current-retained codegeninterface.h frame-state methods resetFramePointerUsedWritePhase/resetWritePhaseForFramePointerRequired/setFramePointerRequiredGCInfo: managed CodeGen.FrameLayoutHelpers.cs and CodeGen.cs counterparts exist. Establish exact whole mapping and original direct frame/initialization evidence; retire only covered mappings, no accepted-family replay or broad evidence hunt. ScopedSetVariable stays native for unresolved generic equality with no pinned caller. Preserve protected13/concurrent WIP; hidden serial/defaultCPU/conserve5/telemetry without floors; no publication.",
+    "nextAction": "Frame-state whole mappings retired at nativef661e19c against original evidence. Continue retained compiler.hpp scalar narrowing family ulo32/uhi32/forceCastToFloat/forceCastToUInt32: named managed counterparts absent. Resolve native Volatile width-materialization binding using existing conversion patterns; implement whole four-helper family with focused raw-bit/native-defined uint conversion cases, Windows Debug/Release validation, exact native retirement and local commit. Authenticate selected spans against oracle; adjacent pre-existing transformed residual bodies are out of scope, not retirement evidence. ScopedSetVariable remains native pending equality representation. Preserve protected13/concurrent WIP; hidden serial/defaultCPU/conserve5/telemetry without floors; no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
