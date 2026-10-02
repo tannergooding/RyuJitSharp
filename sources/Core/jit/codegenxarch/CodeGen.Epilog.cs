@@ -21,7 +21,9 @@ public sealed partial class CodeGen
 
     public unsafe void genPopCalleeSavedRegisters(bool jmpEpilog = false)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM
+        genPopCalleeSavedRegistersArmCore(jmpEpilog);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Callee-save restoration requires xarch.");
 #else
 #if TARGET_AMD64

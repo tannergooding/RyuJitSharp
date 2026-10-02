@@ -12,7 +12,11 @@ public sealed partial class CodeGen
 {
     public void genPushCalleeSavedRegisters(regNumber initReg, ref bool initRegZeroed)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM64
+        genPushCalleeSavedRegistersArm64Core(initReg, ref initRegZeroed);
+#elif TARGET_ARM
+        genPushCalleeSavedRegistersArmCore(initReg, ref initRegZeroed);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Callee-save pushes require xarch.");
 #else
 #if TARGET_AMD64

@@ -16,6 +16,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-02: ARM/ARM64 callee-save construction
+
+Completed ARM32/ARM64 callee-save algorithms and bound the production
+prolog/epilog entry points. ARM64 retains its distinct
+`genPopCalleeSavedRegistersAndFreeLclFrame` contract; frame types, register
+pairing, save-next handling, varargs saves and frame-pointer restoration retain
+the native ordering. Unwind and pointer-authentication helpers remain explicit
+terminating dependencies.
+
+Full-analysis ARM64-target tests pass 74 Debug/74 Release cases, and Windows-x64
+controls pass 125 Debug/125 Release cases. The `win-arm` attempt fails during
+project compilation before test discovery at the existing unsupported-platform
+and conditional-syntax errors; no ARM32 tests ran. Native `9b3a6d65` retires
+19 complete oracle-matching definitions and ARM/ARM64-specific declarations in
+the consolidated cleanup commit. The residual keeps the pinned oracle as its
+sole parent and retains the pre-retirement recovery ref. This is managed target
+coverage, not ARM execution or generated-code parity. Evidence is recorded in
+`state.json` and `artifacts/callee-save-{arm64,windows-x64}`.
+
 ## 2026-10-02: ARM64 call and long-jump output
 
 Bound the ARM64 call and long-jump production paths to their completed output

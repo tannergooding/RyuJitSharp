@@ -3393,7 +3393,7 @@
     "activeBatch": {
       "currentUnit": {
         "status": "source-wip-in-progress",
-        "scope": "Continue the applied source WIP in coherent units. ARM64 importer, ISA lookup, HW classification, intrinsic codegen, opcode generation and call/long-jump output are accepted; callee-save and Wasm units remain. Preserve the unrelated B501 backlog note.",
+        "scope": "ARM64 callee-save construction and production caller bindings are accepted; ARM32 source/test is complete but its target build is blocked before discovery. Wasm support remains as applied WIP. Preserve the unrelated B501 backlog note.",
         "doneWhen": "For each unit, complete whole functions and caller bindings, preserve target branches and genuine terminating dependencies, pass focused full-analysis validation, retire its eligible native definitions/declarations, update the checkpoint and commit the completed C# batch. An accepted translation with eligible native text still present is unfinished.",
         "validation": "Use repository commands and fresh configurations in the current worktree. Validate Windows x64 and affected target configurations; distinguish actual executed regressions, compilation and unchanged baseline failures. Source projections and native retirement are not generated-code parity.",
         "deferred": "After clearing source WIP, resume genInitializeRegisterState/genInitialize from deferredSharedInitializationUnit. Do not replay completed rotation work or depend on old workers, handoff documents or cached snapshots."
@@ -3424,6 +3424,23 @@
           "retirement": "Native 0bbeacfe amends Remove ported code with sole parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e. Seven whole definitions and seven declarations, including their exclusive function headings, are removed (722 lines); each residual definition/declaration matched the pinned oracle, and exact reconstruction is verified. Recovery ref refs/copilot-recovery/arm64-call-longjump-before retains prior HEAD 544f5216388279f691313227f2a988680c3f58d6; the residual worktree is clean.",
           "evidence": "artifacts/tst/Debug/Arm64CallAndLongJump.WinArm64.Debug.trx and artifacts/tst/Release/Arm64CallAndLongJump.WinArm64.Release.trx. Run the focused FullyQualifiedName~Arm64CallOutputTests|FullyQualifiedName~Arm64LongJumpOutputTests selection in tests/Targets/RyuJitSharp.Target.UnitTests.csproj with -r win-x64 and -p:TargetRuntimeIdentifier=win-arm64; analyzers remain enabled.",
           "limits": "Non-Windows ARM64 call-descriptor layout remains an explicit terminating dependency. emitOutput_Instr and global historical native retirement debt remain outside this unit."
+        },
+        "armCalleeSaveConstruction": {
+          "status": "source-complete-arm64-validated-arm32-build-blocked",
+          "scope": "Completed ARM32/ARM64 callee-save push/pop, floating-register save/restore, stack-allocation masks, ARM64 frame-type save/restore helpers and production caller bindings. ARM64 retains its distinct genPopCalleeSavedRegistersAndFreeLclFrame entry point. Genuine unwind and pointer-authentication dependencies remain terminating.",
+          "mapping": {
+            "sharedCallers": "src/coreclr/jit/codegenarmarch.cpp -> sources/Core/jit/codegenxarch/CodeGen.CalleeSaveRecording.cs and CodeGen.Epilog.cs.",
+            "arm32": "src/coreclr/jit/codegenarm.cpp -> sources/Core/jit/codegenarm/CodeGen.CalleeSavedRegisters.cs.",
+            "arm64": "src/coreclr/jit/codegenarm64.cpp -> sources/Core/jit/codegenarm64/CodeGen.CalleeSavedRegisters.cs.",
+            "frameAndRegisterState": "compiler.h frame-state fields -> sources/Core/jit/compiler/Compiler.FrameInfo.cs; regset callee-save ownership -> sources/Core/jit/regsset/RegSet.CalleeSavedRegisterTracking.cs."
+          },
+          "validation": {
+            "arm64Target": "Full-analysis Windows-host win-arm64 runs pass 74/74 Debug and 74/74 Release: artifacts/callee-save-arm64/Debug/Arm64CalleeSaved.Debug.trx and Release/Arm64CalleeSaved.Release.trx.",
+            "windowsX64Controls": "Full-analysis Windows-x64 controls pass 125/125 Debug and 125/125 Release: artifacts/callee-save-windows-x64/Debug/CalleeSaved.WindowsX64.Debug.trx and Release/CalleeSaved.WindowsX64.Release.trx.",
+            "arm32": "The win-arm target test attempt failed during project compilation before test discovery: unsupported-platform errors at HWIntrinsicCategory.cs:77 and HWIntrinsicFlag.cs:183 plus conditional syntax errors at GenTree.cs:2667-2669. No ARM32 tests executed."
+          },
+          "retirement": "Native 9b3a6d652a4d35492fa4512336c619b78f4f07ca amends the consolidated Remove ported code commit, whose sole parent is pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. It removes 19 complete definitions and ARM/ARM64-specific declarations; all selected bodies match the oracle after line-ending normalization. Recovery ref refs/copilot-recovery/arm-callee-save-before is retained.",
+          "limits": "Managed ARM64-target descriptor tests and Windows-x64 controls are not ARM execution or generated-code parity. ARM32 remains source-only until its target project compiles; ARM/ARM64 unwind and ARM64 pointer-authentication helpers remain explicit terminating dependencies."
         }
       },
       "deferredSharedInitializationUnit": {
@@ -4008,7 +4025,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Continue the remaining applied source WIP with ARM64/ARM32 callee-save construction, then Wasm support. Preserve the real emitInsSve_Mov overload algorithm and genuine terminating dependencies. Keep validation serial, retire eligible native definitions before each C# completion commit. The prior compiler-header fgTrysContiguous cursor is complete; do not re-audit it or claim global debt clearance. After WIP completion resume deferredSharedInitializationUnit. No old worktree, handoff document, worker or artifact archive is required; no publication.",
+    "nextAction": "Continue the remaining applied source WIP with Wasm support. Preserve the real emitInsSve_Mov overload algorithm and genuine terminating dependencies. Keep validation serial, retire eligible native definitions before each C# completion commit. The prior compiler-header fgTrysContiguous cursor is complete; do not re-audit it or claim global debt clearance. After WIP completion resume deferredSharedInitializationUnit. No old worktree, handoff document, worker or artifact archive is required; no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
