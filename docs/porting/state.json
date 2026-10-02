@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "arm32NodeBuildingAcceptance": {
+      "status": "source-complete-target-compilation-and-execution-blocked",
+      "scope": "Exact four-input final revision: ARM32 BuildNode/BuildShiftLongCarry, six real BuildIndir/BuildCall/BuildPutArgStk/BuildBlockStore/BuildCast/BuildLclHeap algorithms, private support and TARGET_ARM routing hook. Independent pinned-oracle source/fixture review found no blocker.",
+      "validation": "Committed88a8563f plus4overlays: full-analysis Windows-x64 node/reference/call/memory controls79Debug/78Release pass. Actual Linux-ARM Debug/Release attempts retain exactly14baseline parser diagnostics. Existing eight-file parser-only masks expose exactly4distinct/8reported declaration errors in both candidate/baseline Windows-ARM and Linux-ARM configurations, zero warnings. Comparisons retain message/location/multiplicity ordinally after replacing only snapshot roots.",
+      "targetBlocker": "Arm32Classifier, MAX_MULTIREG_COUNT, MAX_RET_REG_COUNT and Target.ArgOrder declarations are absent in the baseline configurations. No new target error is observed, but early errors can mask later body errors. All168Debug/166Release fixture projections remain uncompiled/unexecuted; no ARM32 successful build or parity claim.",
+      "retirement": "Nativead6ecb35ed155a1b70288fab7d0afc8f59c89ead removes8whole bodies1232lines and1ARM-exclusive carry declaration. All exact oracle spans authenticated; existing accepted ARM64 Calls/BlockAndStackArguments/MemoryAndComparisons/ScalarConversions cover the five shared ARMARCH counterparts. Shared declarations and independent helper definitions remain.",
+      "evidence": "artifacts/arm32-builders-acceptance-88a8563f source-seal.json, stock results, exact baseline pairs and v2-diagnostics; artifacts/residual-reconciliation/arm32-builders-88a8563f-*. Original and masked evidence remain distinct; no masked code executed. DefaultCPU/compiler conserve5, serial full analysis and telemetry without memory thresholds.",
+      "limits": "Swift ARM32 ABI mapping remains typed terminating CORJIT_SKIPPED. No new ABI storage, other-target activation or shared helper retirement. Windows controls establish preservation, not ARM32 algorithm execution."
+    },
     "shutdownFamilyAcceptance": {
       "status": "completed-with-retained-statistics-dependencies",
       "scope": "Whole compShutdown and ten original coupled source/test inputs, plus the existing structure-name accessor/table/generator guard needed by Release MEASURE_NODE_SIZE.",
@@ -2980,11 +2989,11 @@
     },
     "activeBatch": {
       "currentUnit": {
-        "status": "shutdown accepted; completing local commit before ARM32 acceptance",
-        "scope": "Existing eleven frozen shutdown caller/support inputs over committedd01ea182; all original hashes match. Independent Sol source review found no blocker in whole compShutdown and its exact coupled sites.",
-        "doneWhen": "Completed stock14Debug/7Release and combined-statistics36Debug/37Release; native370line caller retired. Commit exact source and generator guard without SVE WIP, then consume ARM32 four-path handoff.",
-        "validation": "CompilerShutdownFamilyTests plus existing CompilerShutdownTests in stock Windows configurations; additional validation-only combined eight-statistics flags exercise typed terminating dependencies and native sorting. Distinct build outputs, full analysis, serial defaultCPU/conserve5 and gate-free memory telemetry.",
-        "deferred": "Standalone Release PTRTAB B501 remains; combined measurement flags supply its native counter guard without changing it. No optional statistics implementation/output parity or helper retirement. ARM32/SVE source remains separate; preserve13WIP/shared ownership."
+        "status": "ARM32 source closure accepted with explicit baseline compilation limit; committing before SVE",
+        "scope": "Exact four-file final ARM32 dispatcher/carry plus six real builder revision over committed88a8563f. Independent whole source/fixture review found no blocker; optional Swift register mapping remains terminating.",
+        "doneWhen": "Windows79Debug/78Release passed; raw and established parser-only paired target diagnostics match exactly with no observed candidate-specific error. Retired8whole bodies/1declaration; commit four inputs and explicit target-execution limits.",
+        "validation": "Windows Debug/Release existing node/reference/call/memory controls; linux-arm target selects all168Debug/166Release projected new cases if baseline compilation permits. Pair target failures without normalizing diagnostics. Full analysis, serial defaultCPU/conserve5, no memory gates.",
+        "deferred": "Known earlier ARM32 declaration failures can mask later bodies; do not claim test execution from source projections. Shared ARMARCH retirement requires accepted ARM64 coverage. Preserve13WIP, optional Swift boundary and SVE source/generator ownership."
       },
       "restartRecovery": {
         "status": "Resumed after explicit user continuation on2026-09-30T15:43-07:00;20minute review automation restored.",
@@ -3550,7 +3559,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Complete accepted shutdown14input commit with only the one-line generator guard staged from shared Program.cs; preserve its unrelated SVE hunk. Nativeed4c66f2 and v4 stock14D/7R/combined36D/37R are accepted. Then seal the existing FOUR ARM32 inputs (dispatcher/carry and six real builders,168D166R source projections), review shared ARMARCH retirement eligibility and run coherent isolated ARM32 acceptance using existing guarded serial facilities. Preserve optional Swift boundary,13WIP, source-ready SVE/generator ownership and native oracle-plus-one. No memory gate, competing compiler or publication.",
+    "nextAction": "Commit four-input ARM32 source closure and records: nativead6ecb35, Windows79D/78R; target execution remains blocked by exact baseline declarations, not a memory wait. Next consume the existing coherent SVE generator/opcode/output/driver handoffs, authenticate the shared generator delta and generate only in an isolated directory. Two stale recording-fixture Debug methods still need the previously identified exact eight-case correction with root-owned routing. Do not rereview completed ARM32/shutdown/metadata/mask/traversal families. Preserve13WIP, native oracle-plus-one, sole hidden serial execution and no publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

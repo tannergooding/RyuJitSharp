@@ -658,6 +658,8 @@ public sealed partial class LinearScan
         assert(!tree.IsValue || (destinationCount != 0));
         assert(destinationCount == tree.GetRegisterDstCount(_compiler));
         return sourceCount;
+#elif TARGET_ARM
+        return buildNodeArm(tree);
 #elif TARGET_ARM64
         return buildNodeArm64(tree);
 #else

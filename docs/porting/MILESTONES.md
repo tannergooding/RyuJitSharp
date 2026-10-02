@@ -16,6 +16,29 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: ARM32 node-reference construction source closure
+
+Translated the whole ARM32 node dispatcher, long-shift carry handling and six
+normal support builders: indirect access, calls, stack arguments, block stores,
+casts and local heap allocation. Register-reference ordering and ARM masks
+follow the pinned algorithms. Optional Swift register mapping remains an
+explicit terminating dependency.
+
+Full-analysis Windows-x64 controls passed 79 Debug/78 Release cases. ARM32
+execution remains blocked: untouched and candidate Linux-ARM builds report the
+same 14 parser diagnostics. Reusing the existing eight-file diagnostic-only
+parser overlay, Windows-ARM and Linux-ARM Debug/Release pairs each retain the
+same four declaration errors, with zero warnings. Missing declarations are
+`Arm32Classifier`, `MAX_MULTIREG_COUNT`, `MAX_RET_REG_COUNT` and `Target.ArgOrder`.
+These failures precede later body checking; the fixture's 168 Debug/166 Release
+projections are not executed tests or proof of successful ARM32 compilation.
+
+Retired eight whole native bodies and the ARM-exclusive carry declaration:
+1,233 lines. Shared ARMARCH bodies also map to the previously accepted ARM64
+implementations; shared declarations and independent helpers remain. Evidence:
+`artifacts/arm32-builders-acceptance-88a8563f` and
+`artifacts/residual-reconciliation/arm32-builders-88a8563f-*`.
+
 ## 2026-10-01: Whole compiler shutdown and optional-statistics boundaries
 
 Completed the whole shutdown caller, preserving cleanup, zero-method return,
