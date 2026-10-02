@@ -15,6 +15,16 @@ public sealed partial class CodeGen
     private List<EmittedCallReturnInfo>? emittedCallReturnInfo;
     private BasicBlock? genPendingCallLabel;
 
+#if TARGET_WASM
+    private WasmControlFlowStack? wasmControlFlowStack;
+    private uint wasmCursor;
+
+    // The stack's managed representation remains an explicit dependency boundary.
+    private sealed class WasmControlFlowStack
+    {
+    }
+#endif
+
     private struct EmittedCallReturnInfo
     {
         public IL_OFFSET callILOffset;
@@ -47,9 +57,6 @@ public sealed partial class CodeGen
 
     public void genInitializeRegisterState()
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Code-generation register initialization outside AMD64 is not implemented.");
-#else
         _regSet.rsSpillBeg();
 
         for (var varNum = 0; varNum < _compiler.lvaCount; varNum++)
@@ -77,14 +84,10 @@ public sealed partial class CodeGen
                 _regSet.verifyRegUsed(reg);
             }
         }
-#endif
     }
 
     public void genInitialize()
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Block-list code-generation initialization outside AMD64 is not implemented.");
-#else
         if (_compiler.opts.compScopeInfo)
         {
             siInit();
@@ -96,10 +99,26 @@ public sealed partial class CodeGen
         _gcInfo.gcRegPtrSetInit();
         _gcInfo.gcVarPtrSetInit();
         genInitializeRegisterState();
-        _compiler.compCurLife = VarSetOps.MakeEmpty(_compiler);
+
+        // Keep an empty set ready for the allocation-free liveness reset at each block.
+        VarSetOps.AssignNoCopy(_compiler, ref _compiler.compCurLife, VarSetOps.MakeEmpty(_compiler));
+
+        // Stack-home diagnostics may run before the first block is emitted.
         SetStackLevel(0);
+
+#if TARGET_WASM
+        wasmControlFlowStack = CreateWasmControlFlowStack();
+        wasmCursor = 0;
 #endif
     }
+
+#if TARGET_WASM
+    private static WasmControlFlowStack CreateWasmControlFlowStack()
+    {
+        // Do not let Wasm initialization succeed until its control-flow stack is ported.
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm control-flow stack initialization is not ported.");
+    }
+#endif
 
     public void genUpdateLife(GenTree tree)
     {
