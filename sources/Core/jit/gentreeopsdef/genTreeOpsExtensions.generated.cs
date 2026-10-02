@@ -592,7 +592,7 @@ public static partial class genTreeOpsExtensions
     ];
 #endif
 
-#if DEBUG
+#if DEBUG || MEASURE_NODE_SIZE
     private static readonly Type[] s_structTypes = [
         typeof(char), // GT_NONE
         typeof(GenTreePhi), // GT_PHI

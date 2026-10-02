@@ -16,6 +16,15 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "shutdownFamilyAcceptance": {
+      "status": "completed-with-retained-statistics-dependencies",
+      "scope": "Whole compShutdown and ten original coupled source/test inputs, plus the existing structure-name accessor/table/generator guard needed by Release MEASURE_NODE_SIZE.",
+      "validation": "Isolated d01ea182 plus14inputs: full-analysis stock Windows14Debug/7Release and validation-only combined-statistics36Debug/37Release pass. Combined flags exercise all26direct terminating dependency cases, zero-method/first-report ordering and native unsigned comparator/sort behavior. Stock controls remain selected.",
+      "configuration": "Eight optional flags exist only in sealed isolated Directory.Build.targets; no production feature activation. Existing StructType/table guards now include MEASURE_NODE_SIZE, matching StructName availability. Regenerated output differs only in this guard; unrelated SVE generator WIP is excluded from snapshot and commit.",
+      "retirement": "Nativeed4c66f24d8ffe6b152a9e6f7408debc6e194c7a removes the whole370line compShutdown caller. Declaration already absent; zero helper retirement. Exact oracle comparison with existing residual spelling substitutions, reconstruction, recovery ref, sole oracle parent and clean residual verified.",
+      "evidence": "artifacts/shutdown-acceptance-d01ea182/v4 and artifacts/residual-reconciliation/shutdown-d01ea182-*. Runnerdd161b70, outerv3/defaultCPU/compiler conserve5, telemetry without memory thresholds. Earlier failures preserved. After an isolated v3 copy contained65536zero bytes, v4 verified every untouched archive file and every overlay against authoritative bytes before successful execution; live/original/v2 source remained intact.",
+      "limits": "Optional statistics storage, logical native sizes and report helpers remain terminating CORJIT_SKIPPED with native bodies retained. B501 standalone Release PTRTAB counter guard remains. No complete statistics output, other-target execution or generated-code parity claim."
+    },
     "funcInfoMetadataAcceptance": {
       "status": "completed-with-retained-unwind-dependencies",
       "scope": "FuncInfoDsc metadata, WasmValueType, CFI_CODE declaration/constructor, typed UnwindInfo boundaries and the coupled whole Compiler.generateCFIUnwindCodes policy query.",
@@ -2971,11 +2980,11 @@
     },
     "activeBatch": {
       "currentUnit": {
-        "status": "accepted; completing local commit before the next unit",
-        "scope": "Five frozen FuncInfoDsc metadata inputs over committed79bed296, embedded CFI alignment test, and whole eight-line Compiler.generateCFIUnwindCodes prerequisite in new Compiler.CfiUnwindPolicy.cs. The CFI-enabled v2 compile exposed its missing declaration/body; existing IsTargetAbi/TargetOS APIs implement it without new storage. Array-entry identity uses GC-tracked byrefs/CLR stride; biased Wasm property preserves UINT_MAX zero-initialized defaults without changing an ABI field.",
-        "doneWhen": "Selected full-analysis Windows identity/funclet controls and explicit CFI layout/alignment scenarios pass, eligible whole native definitions/declarations retire, and source/records commit.",
-        "validation": "Windows Debug/Release metadata plus existing funclet-creation controls. Linux-x64 configuration with validation-only FEATURE_CFI_SUPPORT appended in isolated Directory.Build.targets exercises real CFI field offsets, extent and embedded alignment; stock projects do not currently define this optional feature. Hidden serial defaultCPU/conserve5 with telemetry and no memory gates.",
-        "deferred": "No production CFI activation or native publication/B395 change. Wasm and non-xarch unwind branches retain source-only/terminating limits. ARM32 four-path closure, shutdown and SVE generation/output/driver remain separate; preserve13WIP/shared ownership."
+        "status": "shutdown accepted; completing local commit before ARM32 acceptance",
+        "scope": "Existing eleven frozen shutdown caller/support inputs over committedd01ea182; all original hashes match. Independent Sol source review found no blocker in whole compShutdown and its exact coupled sites.",
+        "doneWhen": "Completed stock14Debug/7Release and combined-statistics36Debug/37Release; native370line caller retired. Commit exact source and generator guard without SVE WIP, then consume ARM32 four-path handoff.",
+        "validation": "CompilerShutdownFamilyTests plus existing CompilerShutdownTests in stock Windows configurations; additional validation-only combined eight-statistics flags exercise typed terminating dependencies and native sorting. Distinct build outputs, full analysis, serial defaultCPU/conserve5 and gate-free memory telemetry.",
+        "deferred": "Standalone Release PTRTAB B501 remains; combined measurement flags supply its native counter guard without changing it. No optional statistics implementation/output parity or helper retirement. ARM32/SVE source remains separate; preserve13WIP/shared ownership."
       },
       "restartRecovery": {
         "status": "Resumed after explicit user continuation on2026-09-30T15:43-07:00;20minute review automation restored.",
@@ -3541,7 +3550,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Commit accepted metadata/CFI six-input closure and records. Next consume the existing shutdown11 frozen source revision; inspect its actual seal and completed handoff, preserve B501's standalone Release PTRTAB limitation, and perform coherent Windows acceptance without inventing optional-feature success. ARM32 four-path and SVE generation/output/driver remain pending, not missing-source grants. Continue hidden serial gate-free full analysis/defaultCPU/conserve5 with telemetry; preserve original13WIP and native oracle-plus-one, and do not publish.",
+    "nextAction": "Complete accepted shutdown14input commit with only the one-line generator guard staged from shared Program.cs; preserve its unrelated SVE hunk. Nativeed4c66f2 and v4 stock14D/7R/combined36D/37R are accepted. Then seal the existing FOUR ARM32 inputs (dispatcher/carry and six real builders,168D166R source projections), review shared ARMARCH retirement eligibility and run coherent isolated ARM32 acceptance using existing guarded serial facilities. Preserve optional Swift boundary,13WIP, source-ready SVE/generator ownership and native oracle-plus-one. No memory gate, competing compiler or publication.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",

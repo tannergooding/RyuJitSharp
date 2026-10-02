@@ -88,7 +88,7 @@ public partial class GenTree
         _vnPair = new ValueNumPair();
 
 #if COUNT_AST_OPERS
-        Interlocked.Increment(ref s_gtNodeCounts[oper]);
+        System.Threading.Interlocked.Increment(ref GetNodeCount((uint)oper));
 #endif
 
 #if DEBUG

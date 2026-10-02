@@ -2633,7 +2633,7 @@ public partial class Compiler
 
 #if MEASURE_BLOCK_SIZE
             genFlowNodeCnt += 1;
-            genFlowNodeSize += sizeof(FlowEdge);
+            genFlowNodeSize += NativeFlowEdgeSize;
 #endif
 
             // Any changes to the flow graph invalidate the dominator sets.

@@ -428,7 +428,7 @@ public static partial class genTreeOpsExtensions
         public string StructName => oper.StructType.Name;
 #endif
 
-#if DEBUG
+#if DEBUG || MEASURE_NODE_SIZE
         public Type StructType
         {
             get

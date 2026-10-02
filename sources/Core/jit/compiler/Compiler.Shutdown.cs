@@ -49,26 +49,98 @@ public partial class Compiler
         }
 #endif
 
-#if COUNT_BASIC_BLOCKS
-        jitprintf("--------------------------------------------------\n");
-        jitprintf("Basic block count frequency table:\n");
-        jitprintf("--------------------------------------------------\n");
-        bbCntTable.dump(jitstdout());
-        jitprintf("--------------------------------------------------\n");
+#if NODEBASH_STATS
+        GenTree.ReportOperBashing(jitstdout());
+#endif
 
-        jitprintf("\n");
+#if FEATURE_JIT_METHOD_PERF
+        if (compJitTimeLogFilename != 0)
+        {
+            var path = Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)compJitTimeLogFilename));
+            using var file = OpenJitOutputFile(path);
+            if (file is not null)
+            {
+                using var writer = new JitTextWriter(file, leaveOpen: true);
+                CompTimeSummaryInfo.s_compTimeSummary.Print(writer);
+            }
+        }
 
-        jitprintf("--------------------------------------------------\n");
-        jitprintf("IL method size frequency table for methods with a single basic block:\n");
-        jitprintf("--------------------------------------------------\n");
-        bbOneBBSizeTable.dump(jitstdout());
-        jitprintf("--------------------------------------------------\n");
+        JitTimer.Shutdown();
+#endif
 
-        jitprintf("--------------------------------------------------\n");
-        jitprintf("fgComputeReachabilitySets `while (change)` iterations:\n");
-        jitprintf("--------------------------------------------------\n");
-        computeReachabilitySetsIterationTable.dump(jitstdout());
-        jitprintf("--------------------------------------------------\n");
+#if COUNT_AST_OPERS
+        unchecked
+        {
+            uint totalCount = 0;
+            for (uint op = 0; op < (uint)GT_COUNT; op++)
+            {
+                totalCount += GenTree.GetNodeCount(op);
+            }
+
+            if (totalCount > 0)
+            {
+                Span<OperInfo> opers = stackalloc OperInfo[(int)GT_COUNT];
+                for (uint op = 0; op < (uint)GT_COUNT; op++)
+                {
+                    opers[(int)op] = new OperInfo(GenTree.GetNodeCount(op), GenTree.GetTrueSize(op), (genTreeOps)op);
+                }
+
+                SortNative(opers, new OperInfoLess());
+
+                var remainingCount = totalCount;
+                uint remainingCountLarge = 0;
+                uint remainingCountSmall = 0;
+                uint countLarge = 0;
+                uint countSmall = 0;
+
+                jitprintf("\nGenTree operator counts (approximate):\n\n");
+
+                foreach (var oper in opers)
+                {
+                    var size = oper.Size;
+                    var count = oper.Count;
+                    var percentage = 100.0 * count / totalCount;
+
+                    if (size > TREE_NODE_SZ_SMALL)
+                    {
+                        countLarge += count;
+                    }
+                    else
+                    {
+                        countSmall += count;
+                    }
+
+                    if (percentage >= 0.5)
+                    {
+                        jitprintf($"    GT_{oper.Oper.Name,-17}   {count,7} ({formatFloat(percentage, "F1"),4}%) {size,3} bytes each\n");
+                        remainingCount -= count;
+                    }
+                    else
+                    {
+                        if (size > TREE_NODE_SZ_SMALL)
+                        {
+                            remainingCountLarge += count;
+                        }
+                        else
+                        {
+                            remainingCountSmall += count;
+                        }
+                    }
+                }
+
+                if (remainingCount > 0)
+                {
+                    jitprintf($"    All other GT_xxx ...   {remainingCount,7} ({formatFloat(100.0 * remainingCount / totalCount, "F1"),4}%) ... " +
+                        $"{formatFloat(100.0 * remainingCountSmall / totalCount, "F1"),4}% small + " +
+                        $"{formatFloat(100.0 * remainingCountLarge / totalCount, "F1"),4}% large\n");
+                }
+
+                jitprintf("    -----------------------------------------------------\n");
+                jitprintf($"    Total    .......   {totalCount,11} --ALL-- ... {formatFloat(100.0 * countSmall / totalCount, "F1"),4}% small + " +
+                    $"{formatFloat(100.0 * countLarge / totalCount, "F1"),4}% large\n");
+                jitprintf("\n");
+            }
+        }
 #endif
 
 #if DISPLAY_SIZES
@@ -117,19 +189,92 @@ public partial class Compiler
         }
 #endif
 
-#if FEATURE_JIT_METHOD_PERF
-        if (compJitTimeLogFilename != 0)
-        {
-            var path = Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)compJitTimeLogFilename));
-            using var file = OpenJitOutputFile(path);
-            if (file is not null)
-            {
-                using var writer = new JitTextWriter(file, leaveOpen: true);
-                CompTimeSummaryInfo.s_compTimeSummary.Print(writer);
-            }
-        }
+#if CALL_ARG_STATS
+        compDispCallArgStats(jitstdout());
+#endif
 
-        JitTimer.Shutdown();
+#if COUNT_BASIC_BLOCKS
+        jitprintf("--------------------------------------------------\n");
+        jitprintf("Basic block count frequency table:\n");
+        jitprintf("--------------------------------------------------\n");
+        bbCntTable.dump(jitstdout());
+        jitprintf("--------------------------------------------------\n");
+
+        jitprintf("\n");
+
+        jitprintf("--------------------------------------------------\n");
+        jitprintf("IL method size frequency table for methods with a single basic block:\n");
+        jitprintf("--------------------------------------------------\n");
+        bbOneBBSizeTable.dump(jitstdout());
+        jitprintf("--------------------------------------------------\n");
+
+        jitprintf("--------------------------------------------------\n");
+        jitprintf("fgComputeReachabilitySets `while (change)` iterations:\n");
+        jitprintf("--------------------------------------------------\n");
+        computeReachabilitySetsIterationTable.dump(jitstdout());
+        jitprintf("--------------------------------------------------\n");
+#endif
+
+#if MEASURE_NODE_SIZE
+        unchecked
+        {
+            jitprintf("\n");
+            jitprintf("---------------------------------------------------\n");
+            jitprintf("GenTree node allocation stats\n");
+            jitprintf("---------------------------------------------------\n");
+
+            jitprintf($"Allocated {genNodeSizeStats.genTreeNodeCnt,6} tree nodes ({genNodeSizeStats.genTreeNodeSize,7} bytes total, " +
+                $"avg {genNodeSizeStats.genTreeNodeSize / genMethodCnt,4} bytes per method)\n");
+            jitprintf($"Allocated {genNodeSizeStats.genTreeNodeSize - genNodeSizeStats.genTreeNodeActualSize,7} bytes of unused tree node space " +
+                $"({formatFloat((float)(100 * (genNodeSizeStats.genTreeNodeSize - genNodeSizeStats.genTreeNodeActualSize)) / genNodeSizeStats.genTreeNodeSize, "F2"),3}%)\n");
+
+            jitprintf("\n");
+            jitprintf("---------------------------------------------------\n");
+            jitprintf("Distribution of per-method GenTree node counts:\n");
+            genTreeNcntHist.dump(jitstdout());
+
+            jitprintf("\n");
+            jitprintf("---------------------------------------------------\n");
+            jitprintf("Distribution of per-method GenTree node  allocations (in bytes):\n");
+            genTreeNsizHist.dump(jitstdout());
+        }
+#endif
+
+#if MEASURE_BLOCK_SIZE
+        unchecked
+        {
+            jitprintf("\n");
+            jitprintf("---------------------------------------------------\n");
+            jitprintf("BasicBlock and FlowEdge/BasicBlockList allocation stats\n");
+            jitprintf("---------------------------------------------------\n");
+
+            // Existing signed storage represents native size_t bits, not signed division.
+            jitprintf($"Allocated {(uint)BasicBlock.s_Count,6} basic blocks ({(uint)BasicBlock.s_Size,7} bytes total, " +
+                $"avg {(uint)((nuint)BasicBlock.s_Size / genMethodCnt),4} bytes per method)\n");
+            jitprintf($"Allocated {(uint)genFlowNodeCnt,6} flow nodes ({(uint)genFlowNodeSize,7} bytes total, " +
+                $"avg {(uint)(genFlowNodeSize / genMethodCnt),4} bytes per method)\n");
+        }
+#endif
+
+#if MEASURE_MEM_ALLOC
+        if (s_dspMemStats)
+        {
+            jitprintf("\nAll allocations:\n");
+            JitMemStatsInfo.dumpAggregateMemStats(jitstdout());
+
+            jitprintf("\nLargest method:\n");
+            JitMemStatsInfo.dumpMaxMemStats(jitstdout());
+
+            jitprintf("\n");
+            jitprintf("---------------------------------------------------\n");
+            jitprintf("Distribution of total memory allocated per method (in KB):\n");
+            memAllocHist.dump(jitstdout());
+
+            jitprintf("\n");
+            jitprintf("---------------------------------------------------\n");
+            jitprintf("Distribution of total memory used      per method (in KB):\n");
+            memUsedHist.dump(jitstdout());
+        }
 #endif
 
 #if LOOP_HOIST_STATS
@@ -148,17 +293,38 @@ public partial class Compiler
         }
 #endif
 
-#if DISPLAY_SIZES
+#if MEASURE_PTRTAB_SIZE
+        unchecked
+        {
+            jitprintf("\n");
+            jitprintf("---------------------------------------------------\n");
+            jitprintf("GC pointer table stats\n");
+            jitprintf("---------------------------------------------------\n");
+
+            jitprintf($"Reg pointer descriptor size (internal): {(uint)GCInfo.s_gcRegPtrDscSize,8} " +
+                $"(avg {(uint)(GCInfo.s_gcRegPtrDscSize / genMethodCnt),4} per method)\n");
+            jitprintf($"Total pointer table size: {(uint)GCInfo.s_gcTotalPtrTabSize,8} " +
+                $"(avg {(uint)(GCInfo.s_gcTotalPtrTabSize / genMethodCnt),4} per method)\n");
+        }
+#endif
+
+#if MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || MEASURE_PTRTAB_SIZE || DISPLAY_SIZES
         if (genMethodCnt != 0)
         {
             jitprintf("\n");
             jitprintf($"A total of {genMethodCnt,6} methods compiled");
+#if DISPLAY_SIZES
             if ((genMethodICnt != 0) || (genMethodNCnt != 0))
             {
                 jitprintf($" ({genMethodICnt} interruptible, {genMethodNCnt} non-interruptible)");
             }
+#endif
             jitprintf(".\n");
         }
+#endif
+
+#if EMITTER_STATS
+        emitterStats(jitstdout());
 #endif
 
 #if MEASURE_FATAL

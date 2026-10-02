@@ -16,6 +16,28 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Whole compiler shutdown and optional-statistics boundaries
+
+Completed the whole shutdown caller, preserving cleanup, zero-method return,
+timing-file closure, report order, unsigned statistics arithmetic and native
+operator sorting. Unported collectors, native logical sizes and optional
+reports terminate explicitly rather than supplying invented data.
+
+Full-analysis Windows checks passed 14 Debug/7 Release stock cases and
+36 Debug/37 Release cases with eight combined optional-statistics flags enabled
+only in the isolated validation configuration. The latter covers early exit,
+the first unsupported report, all 26 direct dependency boundaries and native
+sorting. A Release measurement prerequisite now enables the existing structure
+type table alongside its accessor; the generator and regenerated output agree.
+Production feature selection is unchanged.
+
+Retired the whole 370-line native caller; its declaration was already absent.
+All unported helper bodies remain. Standalone Release pointer-table measurement
+still has the pinned counter-guard limitation B501; successful combined flags
+do not establish that configuration or complete statistics-output parity.
+Evidence: `artifacts/shutdown-acceptance-d01ea182/v4` and
+`artifacts/residual-reconciliation/shutdown-d01ea182-*`.
+
 ## 2026-10-01: Funclet metadata identity and CFI record layout
 
 Completed funclet kind/index metadata, Wasm metadata declarations and the

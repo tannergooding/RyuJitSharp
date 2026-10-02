@@ -607,7 +607,7 @@ public static partial class genTreeOpsExtensions
 {{namesBuilder}}    ];
 #endif
 
-#if DEBUG
+#if DEBUG || MEASURE_NODE_SIZE
     private static readonly Type[] s_structTypes = [
 {{structTypesBuilder}}    ];
 #endif

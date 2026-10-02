@@ -1334,7 +1334,7 @@ public sealed partial class BasicBlock : LIR.Range
 
 #if MEASURE_BLOCK_SIZE
         s_Count += 1;
-        s_Size += sizeof(BasicBlock);
+        s_Size += unchecked((nint)NativeBasicBlockSize);
 #endif
 
 #if DEBUG
