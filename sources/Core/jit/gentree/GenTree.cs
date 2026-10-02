@@ -2270,6 +2270,38 @@ public partial class GenTree
     }
 #nullable restore
 
+#if DEBUG
+    public static string gtGetHandleKindString(GenTreeFlags flags)
+    {
+        var handleKind = flags & GTF_ICON_HDL_MASK;
+        return handleKind switch
+        {
+            0 => "",
+            GTF_ICON_SCOPE_HDL => nameof(GTF_ICON_SCOPE_HDL),
+            GTF_ICON_CLASS_HDL => nameof(GTF_ICON_CLASS_HDL),
+            GTF_ICON_METHOD_HDL => nameof(GTF_ICON_METHOD_HDL),
+            GTF_ICON_FIELD_HDL => nameof(GTF_ICON_FIELD_HDL),
+            GTF_ICON_STATIC_HDL => nameof(GTF_ICON_STATIC_HDL),
+            GTF_ICON_STR_HDL => nameof(GTF_ICON_STR_HDL),
+            GTF_ICON_OBJ_HDL => nameof(GTF_ICON_OBJ_HDL),
+            GTF_ICON_CONST_PTR => nameof(GTF_ICON_CONST_PTR),
+            GTF_ICON_GLOBAL_PTR => nameof(GTF_ICON_GLOBAL_PTR),
+            GTF_ICON_VARG_HDL => nameof(GTF_ICON_VARG_HDL),
+            GTF_ICON_TOKEN_HDL => nameof(GTF_ICON_TOKEN_HDL),
+            GTF_ICON_TLS_HDL => nameof(GTF_ICON_TLS_HDL),
+            GTF_ICON_FTN_ADDR => nameof(GTF_ICON_FTN_ADDR),
+            GTF_ICON_CIDMID_HDL => nameof(GTF_ICON_CIDMID_HDL),
+            GTF_ICON_BBC_PTR => nameof(GTF_ICON_BBC_PTR),
+            GTF_ICON_STATIC_BOX_PTR => nameof(GTF_ICON_STATIC_BOX_PTR),
+            GTF_ICON_FIELD_SEQ => nameof(GTF_ICON_FIELD_SEQ),
+            GTF_ICON_STATIC_ADDR_PTR => nameof(GTF_ICON_STATIC_ADDR_PTR),
+            GTF_ICON_SECREL_OFFSET => nameof(GTF_ICON_SECREL_OFFSET),
+            GTF_ICON_TLSGD_OFFSET => nameof(GTF_ICON_TLSGD_OFFSET),
+            _ => "ILLEGAL!",
+        };
+    }
+#endif
+
     /// <summary>Returns true if the data pointed to by a handle address is guaranteed to be invariant.</summary>
     /// <param name="flags">the handle kind</param>
     /// <returns></returns>

@@ -3,19 +3,14 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if CALL_ARG_STATS || COUNT_AST_OPERS
-#if CALL_ARG_STATS
-using System.IO;
-#endif
-
 namespace RyuJitSharp;
 
 public partial class Compiler
 {
 #if CALL_ARG_STATS
-    internal static void compDispCallArgStats(StreamWriter output)
+    internal static void compDispCallArgStats(System.IO.StreamWriter output)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Compiler::compDispCallArgStats is not ported.");
+        throw new FatalJitException(CORJIT_SKIPPED, "Call argument statistics are not implemented.");
     }
 #endif
 
@@ -32,4 +27,3 @@ public partial class Compiler
     }
 #endif
 }
-#endif

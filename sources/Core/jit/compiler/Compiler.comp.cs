@@ -2744,7 +2744,9 @@ public partial class Compiler
 
     public void compJitStats()
     {
-        // TODO: Port Compiler.compJitStats
+#if CALL_ARG_STATS
+        throw new FatalJitException(CORJIT_SKIPPED, "Call argument statistics are not implemented.");
+#endif
     }
 
     public ref VarScopeDsc compGetNextEnterScope(int offs, bool scan = false)
