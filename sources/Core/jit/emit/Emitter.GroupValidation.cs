@@ -13,18 +13,19 @@ public partial class Emitter
 {
     private void emitCheckIGList()
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Instruction-group validation outside AMD64 is not ported.");
-#else
+#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
         List<(insGroup Group, instrDesc Descriptor)> instructions = [];
-        ulong currentOffset = 0;
+#endif
+        nuint currentOffset = 0;
         insGroup? previous = null;
         const InsGroupFlags prologEpilogFlags = InsGroupFlags.Prolog | InsGroupFlags.FuncletProlog
             | InsGroupFlags.FuncletEpilog | InsGroupFlags.Epilog;
 
         for (var current = emitIGlist; current is not null; previous = current, current = current.igNext)
         {
+#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
             assert(ReferenceEquals(previous, current.igPrev));
+#endif
 
             if (current.igOffs != currentOffset)
             {
@@ -32,7 +33,7 @@ public partial class Emitter
                 assert(false);
             }
 
-            currentOffset += current.igSize;
+            currentOffset = unchecked(currentOffset + current.igSize);
 
             if (previous is null)
             {
@@ -67,6 +68,7 @@ public partial class Emitter
                 }
             }
 
+#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
             if (current.igInsCnt != 0)
             {
                 var descriptors = current.igData
@@ -90,6 +92,7 @@ public partial class Emitter
                     assert(descriptor.idPrevSize() == previousSize);
                 }
             }
+#endif
         }
 
         if ((emitTotalCodeSize != 0) && (unchecked((uint)emitTotalCodeSize) != currentOffset))
@@ -98,6 +101,7 @@ public partial class Emitter
             assert(false);
         }
 
+#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
         if (emitGetLastIns(out var group, out var id))
         {
             var index = instructions.Count - 1;

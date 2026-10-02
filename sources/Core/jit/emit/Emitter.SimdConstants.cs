@@ -63,10 +63,6 @@ public partial class Emitter
 
     public unsafe void emitSimdConstCompressedLoad(in simd_t constValue, emitAttr attr, regNumber targetReg)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD constant-load recording requires AMD64.");
-#else
-        RequireSupportedInstructionRecording();
         assert(_compiler is not null);
         assert((EA_SIZE(attr) >= EA_8BYTE) && (EA_SIZE(attr) <= EA_64BYTE));
 
@@ -139,7 +135,6 @@ public partial class Emitter
         attr = (emitAttr)dataSize;
         var cnum = emitSimdConst(in constValue, attr);
         emitIns_R_C(ins, attr, targetReg, cnum, 0);
-#endif
     }
 #endif
 
