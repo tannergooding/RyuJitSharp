@@ -21,7 +21,7 @@ public partial class Emitter
 
     public static instruction emitJumpKindToIns(emitJumpKind jumpKind)
     {
-#if !TARGET_XARCH
+#if !TARGET_XARCH && !TARGET_ARM64
         throw new FatalJitException(CORJIT_SKIPPED, "Jump-kind instruction mapping requires xarch.");
 #else
         assert(unchecked((uint)jumpKind) < (uint)emitJumpKindInstructions.Length);
@@ -84,7 +84,9 @@ public partial class Emitter
 
     public void emitIns_J(instruction ins, BasicBlock dst, bool keepShort = false, bool isRemovableJmpCandidate = false)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM64
+        emitIns_JArm64(ins, dst, keepShort);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Label jump instruction recording requires xarch.");
 #else
 #if TARGET_AMD64

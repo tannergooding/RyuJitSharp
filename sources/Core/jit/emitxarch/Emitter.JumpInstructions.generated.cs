@@ -9,7 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
     private static ReadOnlySpan<instruction> emitJumpKindInstructions => [
         INS_nop, // EJ_NONE
 #if TARGET_XARCH
@@ -61,7 +61,9 @@ public partial class Emitter
 #error Unsupported or unset target architecture
 #endif
 
+#if TARGET_XARCH
         INS_call, // EJ_COUNT
+#endif
     ];
 
     private static ReadOnlySpan<emitJumpKind> emitReverseJumpKinds => [

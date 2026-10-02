@@ -335,7 +335,7 @@ internal static class FuncInfoDscMetadataTests
     public static void EmbeddedHotUnwindReadTerminatesInsteadOfInventingState()
     {
         FuncInfoDsc descriptor = default;
-        var exception = Assert.Throws<FatalJitException>(() => _ = descriptor.uwi);
+        var exception = Assert.Throws<FatalJitException>(() => _ = descriptor.GetUnwindInfo());
         Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
         Assert.That(descriptor.uwiCold, Is.Null);
     }

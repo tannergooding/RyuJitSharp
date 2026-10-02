@@ -248,7 +248,11 @@ internal static unsafe class HWIntrinsicXplatImportTests
 #elif TARGET_ARM64
             var expected = NI_AdvSimd_ShiftLogical;
 #endif
+#if TARGET_ARM64
+            var type = size == 8 ? TYP_SIMD8 : TYP_SIMD16;
+#else
             var type = size == 8 ? TYP_SIMD8 : size == 16 ? TYP_SIMD16 : TYP_SIMD32;
+#endif
             compiler.lvaTable[0].Type = type;
             compiler.lvaTable[1].Type = type;
             CORINFO_SIG_INFO sig = default;

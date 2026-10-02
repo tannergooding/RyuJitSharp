@@ -16,6 +16,35 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: ARM64 stack and branch execution
+
+Completed ARM64 localloc, frame-pointer establishment, frame probing and
+constant-instruction emission with the native probe boundaries, SP ordering
+and register/reference updates. Public dispatch preserves existing xarch
+algorithms. Whole ARM64 branch recording and short-form selection use the
+existing generated jump mappings, now visible to ARM64; the generator and
+generated output changed together. The throwing unwind property is now an
+explicit method with the same terminating contract, not simulated metadata.
+
+Full-analysis ARM64-target checks on Windows pass **422 Debug/394 Release**.
+These execute the SVE opcode, output and driver fixtures, all eight corrected
+scalable-recording cases, 109/98 branch cases and 36 stack cases. They establish
+managed descriptor/encoding-byte/algorithm behavior, not ARM machine-code or
+runtime parity. Earlier compilation and execution failures remain preserved.
+
+Windows controls pass 153 of 154 Debug cases and all 140 Release cases. The
+single Debug assertion-message mismatch is reproduced exactly from the
+untouched committed baseline. Release's process exits successfully; a later
+runner check incorrectly demanded a Debug-only fixture. Exact independent
+five-fixture accounting verifies the 140 executed cases without suppressing
+tests or claiming a clean Debug baseline.
+
+Retired ten whole definitions and two declarations, **672 native lines**.
+Unwind metadata, shared ARMARCH probes, private-only helper copies and ordinary
+opcode/call/long-jump output remain untranslated dependencies. Evidence:
+`artifacts/arm64-compile-closure-06f419d7/v9` and
+`artifacts/residual-reconciliation/arm64-stack-branch-490e46d4-*`.
+
 ## 2026-10-01: Register-mask population and first-set-bit operations
 
 Completed the four shared scalar/full-mask population-count and forward-scan

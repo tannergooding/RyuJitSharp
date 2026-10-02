@@ -321,13 +321,13 @@ internal static unsafe class Arm64SveInstructionOutputTests
     {
         var emitter = NewEmitter();
         emitter.writeableOffset = alias;
-        byte* buffer = stackalloc byte[32];
+        var buffer = stackalloc byte[32];
         new Span<byte>(buffer, 32).Fill(0xA5);
         var dst = buffer + 13;
         var end = unchecked(dst + emitter.emitOutputLong(dst, 0xFE123456u));
         Assert.That((nuint)end, Is.EqualTo((nuint)(dst + 4)));
-        Assert.That(new ReadOnlySpan<byte>(dst + alias, 4).ToArray(),
-            Is.EqualTo(new byte[] { 0x56, 0x34, 0x12, 0xFE }));
+        Assert.That(new ReadOnlySpan<byte>(unchecked(dst + alias), 4).ToArray(),
+            Is.EqualTo<byte[]>([0x56, 0x34, 0x12, 0xFE]));
         for (var i = 0; i < 32; i++)
         {
             if (i < 13 + alias || i >= 17 + alias)
@@ -351,7 +351,7 @@ internal static unsafe class Arm64SveInstructionOutputTests
         id.idInsOpt(INS_OPTS_SCALABLE_S);
         id.idReg2(format is IF_SVE_AA_3A or IF_SVE_BV_2B ? REG_P0 : REG_V31);
         id.idReg3(REG_V31);
-        byte* buffer = stackalloc byte[12];
+        var buffer = stackalloc byte[12];
         new Span<byte>(buffer, 12).Fill(0xA5);
         var end = Output(emitter, buffer + 4, id);
         Assert.That((nuint)end, Is.EqualTo((nuint)(buffer + 8)));
@@ -365,13 +365,13 @@ internal static unsafe class Arm64SveInstructionOutputTests
     {
         var emitter = NewEmitter();
         var id = OutputEmitter.Descriptor(IF_EN5A);
-        byte* buffer = stackalloc byte[12];
+        var buffer = stackalloc byte[12];
         new Span<byte>(buffer, 12).Fill(0xA5);
         byte* end = null;
 #if DEBUG
-        var capture = Arm64SveInstructionSanityTests.Capture(() => end = Output(emitter, buffer + 4, id));
-        Assert.That(capture.Assertions, Is.EqualTo(new[] { "!\"Unexpected format\"" }));
-        Assert.That(capture.Output, Is.Empty);
+        var (output, assertions) = Arm64SveInstructionSanityTests.Capture(() => end = Output(emitter, buffer + 4, id));
+        Assert.That(assertions, Is.EqualTo<string[]>(["!\"Unexpected format\""]));
+        Assert.That(output, Is.Empty);
 #else
         end = Output(emitter, buffer + 4, id);
 #endif
@@ -387,24 +387,24 @@ internal static unsafe class Arm64SveInstructionOutputTests
         emitAttr size, int index, uint expected)
     {
         uint result = 0;
-        var capture = Arm64SveInstructionSanityTests.Capture(() => result = BroadcastIndex(null, size, index));
-        Assert.That(capture.Assertions, Is.EqualTo(new[] { "genExactlyOneBit(value)" }));
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => result = BroadcastIndex(null, size, index));
+        Assert.That(assertions, Is.EqualTo<string[]>(["genExactlyOneBit(value)"]));
         Assert.That(result, Is.EqualTo(expected));
     }
 
     [Test]
     public static void ZeroIndexedDupLaneSizePreservesBothNativeAssertionsInOrder()
     {
-        var capture = Arm64SveInstructionSanityTests.Capture(() => BroadcastIndex(null, (emitAttr)0, 0));
-        Assert.That(capture.Assertions, Is.EqualTo(new[] { "genExactlyOneBit(value)", "value != 0" }));
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => BroadcastIndex(null, (emitAttr)0, 0));
+        Assert.That(assertions, Is.EqualTo<string[]>(["genExactlyOneBit(value)", "value != 0"]));
     }
 
     [Test]
     public static void UnsignedOverflowAssertsThenPreservesNativeUnmaskedContinuation()
     {
         uint result = 0;
-        var capture = Arm64SveInstructionSanityTests.Capture(() => result = Unsigned(null, -1, 20, 16));
-        Assert.That(capture.Assertions, Is.EqualTo(new[] { "imm < imm_max", "(result >> lo) == imm" }));
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => result = Unsigned(null, -1, 20, 16));
+        Assert.That(assertions, Is.EqualTo<string[]>(["imm < imm_max", "(result >> lo) == imm"]));
         Assert.That(result, Is.EqualTo(0xFFFF0000u));
     }
 
@@ -412,8 +412,8 @@ internal static unsafe class Arm64SveInstructionOutputTests
     public static void SignedOverflowAssertsThenMasksTheField()
     {
         uint result = 0;
-        var capture = Arm64SveInstructionSanityTests.Capture(() => result = Signed(null, 16, 20, 16));
-        Assert.That(capture.Assertions, Is.EqualTo(new[] { "imm_min <= imm && imm < imm_max" }));
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => result = Signed(null, 16, 20, 16));
+        Assert.That(assertions, Is.EqualTo<string[]>(["imm_min <= imm && imm < imm_max"]));
         Assert.That(result, Is.EqualTo(0x100000u));
     }
 
@@ -421,8 +421,8 @@ internal static unsafe class Arm64SveInstructionOutputTests
     public static void OddPairRegisterAssertsBeforeNativeDivision()
     {
         uint result = 0;
-        var capture = Arm64SveInstructionSanityTests.Capture(() => result = EvenVector(null, REG_V31));
-        Assert.That(capture.Assertions, Is.EqualTo(new[] { "ureg % 2 == 0" }));
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => result = EvenVector(null, REG_V31));
+        Assert.That(assertions, Is.EqualTo<string[]>(["ureg % 2 == 0"]));
         Assert.That(result, Is.EqualTo(0x3C0u));
     }
 
@@ -430,12 +430,11 @@ internal static unsafe class Arm64SveInstructionOutputTests
     public static void InvalidWordDtypeSizePreservesBothNativeAssertionsAndTheOriginalCode()
     {
         uint result = 0;
-        var capture = Arm64SveInstructionSanityTests.Capture(
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
             () => result = DtypeWord(null, INS_sve_ld1w, IF_SVE_IH_3A_F, EA_1BYTE, 0xA5000001));
-        Assert.That(capture.Assertions, Is.EqualTo(new[]
-        {
+        Assert.That(assertions, Is.EqualTo<string[]>([
             "!\"Invalid size for encoding dtype.\"", "!\"Invalid instruction format\"",
-        }));
+        ]));
         Assert.That(result, Is.EqualTo(0xA5000001u));
     }
 
@@ -444,20 +443,19 @@ internal static unsafe class Arm64SveInstructionOutputTests
     {
         var id = OutputEmitter.Descriptor(IF_SVE_GA_2A);
         var emitter = NewEmitter();
-        byte* buffer = stackalloc byte[4];
+        var buffer = stackalloc byte[4];
         new Span<byte>(buffer, 4).Fill(0xA5);
         byte* end = null;
-        var capture = Arm64SveInstructionSanityTests.Capture(() => end = Output(emitter, buffer, id));
-        Assert.That(capture.Assertions, Is.EqualTo(new[]
-        {
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => end = Output(emitter, buffer, id));
+        // The pinned validator accepts zero through its second arm; encoding rejects it later.
+        Assert.That(assertions, Is.EqualTo<string[]>([
             "id.idInsOpt() == INS_OPTS_SCALABLE_H",
             "emitInsIsVectorRightShift(id.idIns())",
-            "isValidVectorShiftAmount(imm, EA_4BYTE, true)",
             "encoding_found",
             "(code != BAD_CODE)",
             "(shiftAmount > 0) && (shiftAmount <= getBitWidth(size))",
             "ureg % 2 == 0",
-        }));
+        ]));
         Assert.That((nuint)end, Is.EqualTo((nuint)(buffer + 4)));
         Assert.That(Unsafe.ReadUnaligned<uint>(buffer), Is.EqualTo(uint.MaxValue));
     }
@@ -465,10 +463,10 @@ internal static unsafe class Arm64SveInstructionOutputTests
 
     private static Emitter NewEmitter()
     {
-        return (OutputEmitter)RuntimeHelpers.GetUninitializedObject(typeof(OutputEmitter));
+        return (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
     }
 
-    private sealed class OutputEmitter(CodeGen codeGen) : Emitter(codeGen)
+    private abstract class OutputEmitter(CodeGen codeGen) : Emitter(codeGen)
     {
         internal static instrDesc Descriptor(Emitter.insFormat format)
         {

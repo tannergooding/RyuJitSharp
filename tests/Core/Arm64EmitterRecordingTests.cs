@@ -1798,8 +1798,8 @@ internal static unsafe class Arm64EmitterRecordingTests
         }
 
 #if DEBUG
-        var capture = Arm64SveInstructionSanityTests.Capture(Record);
-        Assert.That(capture.Assertions, Is.Empty);
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(Record);
+        Assert.That(assertions, Is.Empty);
 #else
         Record();
 #endif
@@ -1950,8 +1950,8 @@ internal static unsafe class Arm64EmitterRecordingTests
         }
 
 #if DEBUG
-        var capture = Arm64SveInstructionSanityTests.Capture(Record);
-        Assert.That(capture.Assertions, Is.Empty);
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(Record);
+        Assert.That(assertions, Is.Empty);
 #else
         Record();
 #endif

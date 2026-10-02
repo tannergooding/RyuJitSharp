@@ -14,7 +14,7 @@ public sealed partial class CodeGen
     }
 #endif
 
-#if TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+#if TARGET_LOONGARCH64 || TARGET_RISCV64
     private bool genInstrWithConstant(instruction ins, emitAttr attr, regNumber reg1,
         regNumber reg2, nint imm, regNumber tmpReg, bool inUnwindRegion = false)
     {

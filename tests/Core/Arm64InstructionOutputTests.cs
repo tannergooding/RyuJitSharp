@@ -28,15 +28,15 @@ internal static unsafe class Arm64InstructionOutputTests
         {
             id.idSetIsSmallDsc();
         }
-        byte* buffer = stackalloc byte[32];
+        var buffer = stackalloc byte[32];
         foreach (var usePublicEntry in new[] { false, true })
         {
             new Span<byte>(buffer, 32).Fill(0xA5);
-            byte* cursor = buffer + 12;
+            var cursor = buffer + 12;
             var result = Output(emitter, new insGroup(), id, &cursor, usePublicEntry);
             Assert.That(result, Is.EqualTo((nuint)descriptorSize));
             Assert.That((nuint)cursor, Is.EqualTo((nuint)(buffer + 16)));
-            Assert.That(Unsafe.ReadUnaligned<uint>(buffer + 12 + alias), Is.EqualTo(0x252C9000u));
+            Assert.That(Unsafe.ReadUnaligned<uint>(unchecked(buffer + 12 + alias)), Is.EqualTo(0x252C9000u));
             for (var i = 0; i < 32; i++)
             {
                 if (i < 12 + alias || i >= 16 + alias)
@@ -56,11 +56,11 @@ internal static unsafe class Arm64InstructionOutputTests
     {
         var emitter = NewEmitter();
         var id = OutputEmitter.Descriptor(ins, format, EA_8BYTE);
-        byte* buffer = stackalloc byte[12];
+        var buffer = stackalloc byte[12];
         foreach (var usePublicEntry in new[] { false, true })
         {
             new Span<byte>(buffer, 12).Fill(0xA5);
-            byte* cursor = buffer + 4;
+            var cursor = buffer + 4;
             var slot = (nint)(&cursor);
             var error = Assert.Throws<FatalJitException>(
                 () => Output(emitter, new insGroup(), id, (byte**)slot, usePublicEntry));
@@ -80,11 +80,11 @@ internal static unsafe class Arm64InstructionOutputTests
         var emitter = NewEmitter();
         var id = OutputEmitter.Descriptor(ins, format, EA_8BYTE);
         id.idSetIsBound();
-        byte* buffer = stackalloc byte[12];
+        var buffer = stackalloc byte[12];
         foreach (var usePublicEntry in new[] { false, true })
         {
             new Span<byte>(buffer, 12).Fill(0xA5);
-            byte* cursor = buffer + 4;
+            var cursor = buffer + 4;
             var slot = (nint)(&cursor);
             var error = Assert.Throws<FatalJitException>(
                 () => Output(emitter, new insGroup(), id, (byte**)slot, usePublicEntry));
@@ -102,15 +102,15 @@ internal static unsafe class Arm64InstructionOutputTests
         var emitter = NewEmitter();
         var id = OutputEmitter.EmptyAlignment();
         var group = new insGroup { igFlags = hasAlign ? InsGroupFlags.HasAlign : 0 };
-        byte* buffer = stackalloc byte[12];
+        var buffer = stackalloc byte[12];
         new Span<byte>(buffer, 12).Fill(0xA5);
-        byte* cursor = buffer + 4;
+        var cursor = buffer + 4;
 #if DEBUG
         nuint result = 0;
         var slot = (nint)(&cursor);
-        var capture = Arm64SveInstructionSanityTests.Capture(
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
             () => result = emitter.emitOutputInstr(group, id, (byte**)slot));
-        Assert.That(capture.Assertions, Is.Empty);
+        Assert.That(assertions, Is.Empty);
         Assert.That(result, Is.EqualTo((nuint)48));
 #else
         var result = emitter.emitOutputInstr(group, id, &cursor);
@@ -216,8 +216,8 @@ internal static unsafe class Arm64InstructionOutputTests
     public static void InvalidConvertOptionAssertsAndRetainsNativeZeroContinuation()
     {
         var result = uint.MaxValue;
-        var capture = Arm64SveInstructionSanityTests.Capture(() => result = Convert(null, IF_DV_2J, INS_OPTS_NONE));
-        Assert.That(capture.Assertions, Is.EqualTo(new[] { "!\"Invalid 'conversion' value\"" }));
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => result = Convert(null, IF_DV_2J, INS_OPTS_NONE));
+        Assert.That(assertions, Is.EqualTo<string[]>(["!\"Invalid 'conversion' value\""]));
         Assert.That(result, Is.Zero);
     }
 
@@ -225,9 +225,9 @@ internal static unsafe class Arm64InstructionOutputTests
     public static void NonTemporalPairAssertsInvalidWritebackBeforeReturningNativeZeroBits()
     {
         var result = uint.MaxValue;
-        var capture = Arm64SveInstructionSanityTests.Capture(
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
             () => result = PairIndexed(null, INS_stnp, INS_OPTS_PRE_INDEX));
-        Assert.That(capture.Assertions, Is.EqualTo(new[] { "insOptsNone(opt)" }));
+        Assert.That(assertions, Is.EqualTo<string[]>(["insOptsNone(opt)"]));
         Assert.That(result, Is.Zero);
     }
 
@@ -235,9 +235,9 @@ internal static unsafe class Arm64InstructionOutputTests
     public static void WrongConversionFormatAssertsBeforeReturningTheNativeSelectedEncoding()
     {
         uint result = 0;
-        var capture = Arm64SveInstructionSanityTests.Capture(
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
             () => result = Convert(null, IF_DV_2I, INS_OPTS_H_TO_S));
-        Assert.That(capture.Assertions, Is.EqualTo(new[] { "fmt == IF_DV_2J" }));
+        Assert.That(assertions, Is.EqualTo<string[]>(["fmt == IF_DV_2J"]));
         Assert.That(result, Is.EqualTo(0x00C00000u));
     }
 
@@ -245,9 +245,9 @@ internal static unsafe class Arm64InstructionOutputTests
     public static void InvalidLaneAssertsWithoutMaskingItIntoAValidLane()
     {
         uint result = 0;
-        var capture = Arm64SveInstructionSanityTests.Capture(
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
             () => result = VectorIndex(null, EA_1BYTE, 16));
-        Assert.That(capture.Assertions, Is.EqualTo(new[] { "(bits >= 1) && (bits <= 0x1F)" }));
+        Assert.That(assertions, Is.EqualTo<string[]>(["(bits >= 1) && (bits <= 0x1F)"]));
         Assert.That(result, Is.EqualTo(0x00210000u));
     }
 
@@ -256,16 +256,16 @@ internal static unsafe class Arm64InstructionOutputTests
     {
         var emitter = NewEmitter();
         var id = OutputEmitter.Descriptor(INS_b, IF_BI_0A, EA_8BYTE);
-        byte* buffer = stackalloc byte[12];
+        var buffer = stackalloc byte[12];
         foreach (var usePublicEntry in new[] { false, true })
         {
             new Span<byte>(buffer, 12).Fill(0xA5);
-            byte* cursor = buffer + 4;
+            var cursor = buffer + 4;
             var slot = (nint)(&cursor);
-            var capture = Arm64SveInstructionSanityTests.Capture(
+            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
                 () => Assert.Throws<FatalJitException>(
                     () => Output(emitter, new insGroup(), id, (byte**)slot, usePublicEntry)));
-            Assert.That(capture.Assertions, Is.EqualTo(new[] { "id.idIsBound()" }));
+            Assert.That(assertions, Is.EqualTo<string[]>(["id.idIsBound()"]));
             Assert.That((nuint)cursor, Is.EqualTo((nuint)(buffer + 4)));
             Assert.That(new ReadOnlySpan<byte>(buffer, 12).ToArray(), Is.All.EqualTo(0xA5));
         }

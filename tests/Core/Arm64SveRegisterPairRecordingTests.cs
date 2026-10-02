@@ -13,6 +13,7 @@ using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.insOpts;
 using static RyuJitSharp.insScalableOpts;
+using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -261,7 +262,7 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
     {
         WithEmitter(emitter =>
         {
-            var shifted = (immediate < -128) || (immediate > 127);
+            var shifted = immediate is < -128 or > 127;
             var reduced = shifted ? immediate >> 8 : immediate;
             var sopt = merge ? INS_SCALABLE_OPTS_PREDICATE_MERGE : INS_SCALABLE_OPTS_NONE;
             var id = Record(emitter, () => emitter.emitInsSve_R_R_I(
@@ -426,9 +427,9 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
     public static void RotationDecoderPreservesNativeReturns(int encoded, int expected)
     {
 #if DEBUG
-        var result = Arm64SveInstructionSanityTests.Capture(() =>
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() =>
             Assert.That(DecodeRotation(null, encoded), Is.EqualTo((nint)expected)));
-        Assert.That(result.Assertions, Is.Empty);
+        Assert.That(assertions, Is.Empty);
 #else
         Assert.That(DecodeRotation(null, encoded), Is.EqualTo((nint)expected));
 #endif
@@ -439,9 +440,9 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
     [TestCase(4)]
     public static void ContinuingEeKeepsDecoderAssertionAndZeroReturn(int encoded)
     {
-        var result = Arm64SveInstructionSanityTests.Capture(() =>
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() =>
             Assert.That(DecodeRotation(null, encoded), Is.EqualTo((nint)0)));
-        Assert.That(result.Assertions, Is.EqualTo(new[] { "emitIsValidEncodedRotationImm0_to_270(imm)" }));
+        Assert.That(assertions, Is.EqualTo<string[]>(["emitIsValidEncodedRotationImm0_to_270(imm)"]));
     }
 
     [TestCase(129, 0)]
@@ -450,9 +451,9 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
     {
         WithEmitter(emitter =>
         {
-            var result = Arm64SveInstructionSanityTests.Capture(() => emitter.emitInsSve_R_R_I(
+            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => emitter.emitInsSve_R_R_I(
                 INS_sve_cpy, EA_SCALABLE, REG_V0, REG_P15, immediate, INS_OPTS_SCALABLE_S));
-            Assert.That(result.Assertions, Is.EqualTo(new[] { "isValidSimm_MultipleOf(imm, 8, 256)" }));
+            Assert.That(assertions, Is.EqualTo<string[]>(["isValidSimm_MultipleOf(imm, 8, 256)"]));
             Assert.That(GroupSize(emitter), Is.EqualTo(4));
             var id = LastInstruction(emitter) ?? throw new AssertionException("No descriptor was prepared.");
             AssertDescriptor(id, INS_sve_mov, EA_SCALABLE, IF_SVE_BV_2A, INS_OPTS_SCALABLE_S, REG_V0, REG_P15);
@@ -466,7 +467,7 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
     {
         WithEmitter(emitter =>
         {
-            var result = Arm64SveInstructionSanityTests.Capture(() =>
+            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() =>
             {
                 if (immediate)
                 {
@@ -477,7 +478,7 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
                     emitter.emitInsSve_R_R(ins, EA_SCALABLE, REG_V0, REG_V31);
                 }
             });
-            Assert.That(result.Assertions, Is.EqualTo(new[] { "isEvenRegister(reg2)", "isEvenRegister(id.idReg2())" }));
+            Assert.That(assertions, Is.EqualTo<string[]>(["isEvenRegister(reg2)", "isEvenRegister(id.idReg2())"]));
             Assert.That(GroupSize(emitter), Is.EqualTo(4));
         });
     }
@@ -488,9 +489,9 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
     {
         WithEmitter(emitter =>
         {
-            var result = Arm64SveInstructionSanityTests.Capture(() => emitter.emitInsSve_R_R_I(
+            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => emitter.emitInsSve_R_R_I(
                 INS_sve_cadd, EA_SCALABLE, REG_V0, REG_V31, immediate, INS_OPTS_SCALABLE_B));
-            Assert.That(result.Assertions, Is.EqualTo(new[] { "emitIsValidEncodedRotationImm90_or_270(emitGetInsSC(id))" }));
+            Assert.That(assertions, Is.EqualTo<string[]>(["emitIsValidEncodedRotationImm90_or_270(emitGetInsSC(id))"]));
             Assert.That(GroupSize(emitter), Is.EqualTo(4));
             var id = LastInstruction(emitter) ?? throw new AssertionException("No descriptor was prepared.");
             AssertConstant(id, immediate, false);
@@ -536,9 +537,9 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
     private static Emitter.instrDesc Record(Emitter emitter, Action record, int expectedSize = 4)
     {
 #if DEBUG
-        var result = Arm64SveInstructionSanityTests.Capture(record);
-        Assert.That(result.Assertions, Is.Empty);
-        Assert.That(result.Output, Is.Empty);
+        var (output, assertions) = Arm64SveInstructionSanityTests.Capture(record);
+        Assert.That(assertions, Is.Empty);
+        Assert.That(output, Is.Empty);
 #else
         record();
 #endif
@@ -552,8 +553,9 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
     private static void ExpectFailure(Action record)
     {
 #if DEBUG
-        var result = Arm64SveInstructionSanityTests.Capture(() => Assert.Throws<FatalJitException>(() => record()));
-        Assert.That(result.Assertions, Is.Empty);
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
+            () => Assert.Throws<FatalJitException>(() => record()));
+        Assert.That(assertions, Is.Empty);
 #else
         Assert.Throws<FatalJitException>(() => record());
 #endif

@@ -116,7 +116,14 @@ public sealed partial class CodeGen
 #if !TARGET_XARCH && !TARGET_WASM
     public void inst_JMP(emitJumpKind jump, BasicBlock target, bool isRemovableJmpCandidate = false)
     {
+#if TARGET_ARM64
+#if !FEATURE_FIXED_OUT_ARGS
+        assert((target.bbTgtStkDepth * sizeof(int) == genStackLevel) || IsFramePointerUsed);
+#endif
+        Emitter.emitIns_J(RyuJitSharp.Emitter.emitJumpKindToIns(jump), target);
+#else
         throw new FatalJitException(CORJIT_SKIPPED, "Jump instruction generation is not implemented for this target.");
+#endif
     }
 
     public void genEmitHelperCall(CorInfoHelpFunc helper, int argSize, emitAttr retSize,

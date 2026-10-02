@@ -85,8 +85,11 @@ public partial struct FuncInfoDsc
 #endif
 
 #if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
-    public readonly UnwindInfo uwi => throw new FatalJitException(
-        CorJitResult.CORJIT_SKIPPED, "FuncInfoDsc::uwi embedded unwind information is not ported.");
+    public readonly UnwindInfo GetUnwindInfo()
+    {
+        throw new FatalJitException(
+            CorJitResult.CORJIT_SKIPPED, "FuncInfoDsc::uwi embedded unwind information is not ported.");
+    }
 
     public UnwindInfo? uwiCold;
 #endif

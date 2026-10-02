@@ -116,12 +116,21 @@ public partial class Emitter
 #if TARGET_ARM || TARGET_ARM64
     private static bool emitIsCondJump(instrDesc jump)
     {
+#if TARGET_ARM64
+        return jump.idInsFmt() is insFormat.IF_BI_0B or insFormat.IF_BI_1A
+            or insFormat.IF_BI_1B or insFormat.IF_LARGEJMP;
+#else
         throw new FatalJitException(CORJIT_SKIPPED, "ARM jump-format classification is not ported.");
+#endif
     }
 
     private static bool emitIsLoadLabel(instrDesc jump)
     {
+#if TARGET_ARM64
+        return jump.idInsFmt() is insFormat.IF_DI_1E or insFormat.IF_LARGEADR;
+#else
         throw new FatalJitException(CORJIT_SKIPPED, "ARM label-load classification is not ported.");
+#endif
     }
 #endif
 
@@ -147,14 +156,63 @@ public partial class Emitter
 #if TARGET_ARM64
     private static bool emitIsLoadConstant(instrDesc jump)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 constant-load classification is not ported.");
+        return jump.idInsFmt() is insFormat.IF_LS_1A or insFormat.IF_LARGELDC;
     }
 #endif
 
 #if !TARGET_XARCH && !TARGET_LOONGARCH64
     private static void emitSetShortJump(instrDescJmp jump)
     {
+#if TARGET_ARM64
+        if (jump.idjKeepLong)
+        {
+            return;
+        }
+
+        var format = insFormat.IF_NONE;
+        if (emitIsCondJump(jump))
+        {
+            switch (jump.idIns())
+            {
+                case INS_cbz:
+                case INS_cbnz:
+                {
+                    format = insFormat.IF_BI_1A;
+                    break;
+                }
+
+                case INS_tbz:
+                case INS_tbnz:
+                {
+                    format = insFormat.IF_BI_1B;
+                    break;
+                }
+
+                default:
+                {
+                    format = insFormat.IF_BI_0B;
+                    break;
+                }
+            }
+        }
+        else if (emitIsLoadLabel(jump))
+        {
+            format = insFormat.IF_DI_1E;
+        }
+        else if (emitIsLoadConstant(jump))
+        {
+            format = insFormat.IF_LS_1A;
+        }
+        else
+        {
+            unreached();
+        }
+
+        jump.idInsFmt(format);
+        jump.idjShort = true;
+#else
         throw new FatalJitException(CORJIT_SKIPPED, "Non-xarch short-jump selection is not ported.");
+#endif
     }
 #endif
 }

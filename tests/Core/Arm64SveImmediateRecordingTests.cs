@@ -188,9 +188,9 @@ internal static unsafe class Arm64SveImmediateRecordingTests
     private static Emitter.instrDesc Record(Emitter emitter, Action record)
     {
 #if DEBUG
-        var result = Arm64SveInstructionSanityTests.Capture(record);
-        Assert.That(result.Assertions, Is.Empty);
-        Assert.That(result.Output, Is.Empty);
+        var (output, assertions) = Arm64SveInstructionSanityTests.Capture(record);
+        Assert.That(assertions, Is.Empty);
+        Assert.That(output, Is.Empty);
 #else
         record();
 #endif

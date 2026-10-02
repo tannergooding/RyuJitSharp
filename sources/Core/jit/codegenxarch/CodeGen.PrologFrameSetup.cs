@@ -9,6 +9,11 @@ public sealed partial class CodeGen
 {
     public void genEstablishFramePointer(int delta, bool reportUnwindData)
     {
+#if TARGET_ARM64
+        genEstablishFramePointerArm64(delta, reportUnwindData);
+#elif !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Frame pointer establishment is not ported for this target.");
+#else
         Emitter.RequireSupportedInstructionRecording();
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
         if (delta == 0)
@@ -24,10 +29,16 @@ public sealed partial class CodeGen
         {
             _compiler.unwindSetFrameReg(REG_FPBASE, (uint)delta);
         }
+#endif
     }
 
     public void genAllocLclFrame(uint frameSize, regNumber initReg, ref bool initRegZeroed, regMaskTP maskArgRegsLiveIn)
     {
+#if TARGET_ARM64
+        genAllocLclFrameArm64(frameSize, initReg, ref initRegZeroed, maskArgRegsLiveIn);
+#elif !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Local frame allocation is not ported for this target.");
+#else
         Emitter.RequireSupportedInstructionRecording();
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
         if (frameSize == 0)
@@ -94,6 +105,7 @@ public sealed partial class CodeGen
                 initRegZeroed = false;
             }
         }
+#endif
     }
 
     public void genClearAvxStateInProlog()

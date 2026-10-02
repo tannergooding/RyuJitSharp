@@ -412,13 +412,17 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
     {
         WithEmitter(emitter =>
         {
-            Action record = () => emitter.emitInsSve_R_R_R_R(
-                ins, EA_SCALABLE, REG_V0, REG_V0, REG_V1, REG_V31, INS_OPTS_SCALABLE_D);
+            void RecordOperands()
+            {
+                emitter.emitInsSve_R_R_R_R(
+                    ins, EA_SCALABLE, REG_V0, REG_V0, REG_V1, REG_V31, INS_OPTS_SCALABLE_D);
+            }
 #if DEBUG
-            var result = Arm64SveInstructionSanityTests.Capture(() => Assert.Throws<FatalJitException>(() => record()));
-            Assert.That(result.Assertions, Is.Empty);
+            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
+                () => Assert.Throws<FatalJitException>(() => RecordOperands()));
+            Assert.That(assertions, Is.Empty);
 #else
-            Assert.Throws<FatalJitException>(() => record());
+            Assert.Throws<FatalJitException>(() => RecordOperands());
 #endif
             Assert.That(GroupSize(emitter), Is.Zero);
         });
@@ -430,7 +434,7 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
     {
         WithEmitter(emitter =>
         {
-            Action record = () =>
+            void RecordOperands()
             {
                 if (immediate)
                 {
@@ -442,8 +446,9 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
                     emitter.emitInsSve_R_R_R_R(INS_sve_add, EA_SCALABLE,
                         REG_V0, REG_P7, REG_V1, REG_V31, INS_OPTS_SCALABLE_S);
                 }
-            };
-            var id = Record(emitter, record, 8);
+            }
+
+            var id = Record(emitter, RecordOperands, 8);
             var instructions = CurrentInstructions(emitter)
                 ?? throw new AssertionException("No descriptor buffer was prepared.");
             Assert.That(instructions.Count, Is.EqualTo(2));
@@ -477,7 +482,7 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
     {
         WithEmitter(emitter =>
         {
-            Action record = () =>
+            void RecordOperands()
             {
                 switch (recorder)
                 {
@@ -502,11 +507,11 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
                         break;
                     }
                 }
-            };
+            }
 #if DEBUG
-            Arm64SveInstructionSanityTests.Capture(() => Assert.Throws<FatalJitException>(() => record()));
+            Arm64SveInstructionSanityTests.Capture(() => Assert.Throws<FatalJitException>(() => RecordOperands()));
 #else
-            Assert.Throws<FatalJitException>(() => record());
+            Assert.Throws<FatalJitException>(() => RecordOperands());
 #endif
             Assert.That(GroupSize(emitter), Is.Zero);
             Assert.That(LastInstruction(emitter), Is.Null);
@@ -523,7 +528,7 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
         {
             var compiler = JitTls.Compiler ?? throw new AssertionException("No test compiler is installed.");
             compiler.opts.dspCode = true;
-            Action record = () =>
+            void RecordOperands()
             {
                 switch (recorder)
                 {
@@ -548,9 +553,10 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
                         break;
                     }
                 }
-            };
-            var result = Arm64SveInstructionSanityTests.Capture(() => Assert.Throws<FatalJitException>(() => record()));
-            Assert.That(result.Assertions, Is.Empty);
+            }
+            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
+                () => Assert.Throws<FatalJitException>(() => RecordOperands()));
+            Assert.That(assertions, Is.Empty);
             Assert.That(GroupSize(emitter), Is.Zero);
             var id = LastInstruction(emitter) ?? throw new AssertionException("No descriptor was prepared.");
             switch (recorder)
@@ -585,13 +591,13 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
     {
         WithEmitter(emitter =>
         {
-            var result = Arm64SveInstructionSanityTests.Capture(() => emitter.emitInsSve_R_R_R_I_I(
+            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => emitter.emitInsSve_R_R_R_I_I(
                 INS_sve_cdot, EA_SCALABLE, REG_V0, REG_V31, REG_V7, 4, 0, INS_OPTS_SCALABLE_B));
 
-            Assert.That(result.Assertions, Is.EqualTo(new[] {
+            Assert.That(assertions, Is.EqualTo<string[]>([
                 "isValidUimm(imm1, 2)",
                 "isValidUimm(emitGetInsSC(id), 4)"
-            }));
+            ]));
             Assert.That(GroupSize(emitter), Is.EqualTo(4));
             Assert.That(Emitter.emitGetInsSC(LastInstruction(emitter)
                 ?? throw new AssertionException("No descriptor was prepared.")), Is.EqualTo((nint)16));
@@ -603,10 +609,10 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
     {
         WithEmitter(emitter =>
         {
-            var result = Arm64SveInstructionSanityTests.Capture(() => emitter.emitInsSve_R_R_R_R(
+            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => emitter.emitInsSve_R_R_R_R(
                 INS_sve_st1b, EA_SCALABLE, REG_V0, REG_P7, REG_R0, REG_V31, INS_OPTS_SCALABLE_B));
 
-            Assert.That(result.Assertions, Is.EqualTo(new[] { "id.idInsOpt() == INS_OPTS_SCALABLE_D" }));
+            Assert.That(assertions, Is.EqualTo<string[]>(["id.idInsOpt() == INS_OPTS_SCALABLE_D"]));
             Assert.That(GroupSize(emitter), Is.EqualTo(4));
             var id = LastInstruction(emitter) ?? throw new AssertionException("No descriptor was prepared.");
             AssertDescriptor(id, INS_sve_st1b, IF_SVE_JK_4B, INS_OPTS_SCALABLE_B, REG_V0, REG_P7, REG_R0, REG_V31);
@@ -622,12 +628,12 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
         {
             var compiler = JitTls.Compiler ?? throw new AssertionException("No test compiler is installed.");
             compiler.opts.dspCode = true;
-            var result = Arm64SveInstructionSanityTests.Capture(() =>
+            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() =>
                 Assert.Throws<FatalJitException>(() => emitter.emitInsSve_R_R_R_R(
                     INS_sve_fcvt, EA_SCALABLE, REG_V0, REG_P7, REG_V1, REG_V31,
                     opt, mopt: INS_SVE_MOV_OPTS_MERGING)));
 
-            Assert.That(result.Assertions, Is.Empty);
+            Assert.That(assertions, Is.Empty);
             Assert.That(GroupSize(emitter), Is.Zero);
             var id = LastInstruction(emitter) ?? throw new AssertionException("No prefix descriptor was prepared.");
             AssertDescriptor(id, INS_sve_movprfx, IF_SVE_AH_3A, prefixOpt, REG_V0, REG_P7, REG_V1);
@@ -639,9 +645,9 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
     private static Emitter.instrDesc Record(Emitter emitter, Action record, int expectedSize = 4)
     {
 #if DEBUG
-        var result = Arm64SveInstructionSanityTests.Capture(record);
-        Assert.That(result.Assertions, Is.Empty);
-        Assert.That(result.Output, Is.Empty);
+        var (output, assertions) = Arm64SveInstructionSanityTests.Capture(record);
+        Assert.That(assertions, Is.Empty);
+        Assert.That(output, Is.Empty);
 #else
         record();
 #endif

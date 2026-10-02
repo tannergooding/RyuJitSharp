@@ -97,8 +97,8 @@ internal static class Arm64SveInstructionCodeTests
     public static void WrongFormatRetainsNativeAssertionAndBadCodeContinuation(instruction ins)
     {
         uint result = 0;
-        var capture = Arm64SveInstructionSanityTests.Capture(() => result = Code(NewEmitter(), ins, IF_EN5A));
-        Assert.That(capture.Assertions, Is.EqualTo(new[] { "encoding_found", "(code != BAD_CODE)" }));
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => result = Code(NewEmitter(), ins, IF_EN5A));
+        Assert.That(assertions, Is.EqualTo<string[]>(["encoding_found", "(code != BAD_CODE)"]));
         Assert.That(result, Is.EqualTo(BAD_CODE));
     }
 
@@ -106,12 +106,11 @@ internal static class Arm64SveInstructionCodeTests
     public static void InvalidEntryRetainsFormatAndBadCodeAssertions()
     {
         uint result = 0;
-        var capture = Arm64SveInstructionSanityTests.Capture(
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
             () => result = Code(NewEmitter(), INS_sve_invalid, IF_NONE));
-        Assert.That(capture.Assertions, Is.EqualTo(new[]
-        {
+        Assert.That(assertions, Is.EqualTo<string[]>([
             "s_instructionFormats[(int)ins] != IF_NONE", "(code != BAD_CODE)",
-        }));
+        ]));
         Assert.That(result, Is.EqualTo(BAD_CODE));
     }
 #endif

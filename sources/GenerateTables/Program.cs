@@ -1112,11 +1112,13 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
     private static ReadOnlySpan<instruction> emitJumpKindInstructions => [
         INS_nop, // EJ_NONE
 {{instructionBuilder}}
+#if TARGET_XARCH
         INS_call, // EJ_COUNT
+#endif
     ];
 
     private static ReadOnlySpan<emitJumpKind> emitReverseJumpKinds => [

@@ -57,10 +57,10 @@ internal static unsafe class Arm64SveInstructionSanityTests
         regNumber third, regNumber fourth, emitAttr size, int immediate)
     {
         var id = SanityEmitter.Descriptor(format, ins, opt, first, second, third, fourth, size, immediate);
-        var result = Capture(() => Check(EmitterInstance(), id));
+        var (output, assertions) = Capture(() => Check(EmitterInstance(), id));
 
-        Assert.That(result.Assertions, Is.Empty);
-        Assert.That(result.Output, Is.Empty);
+        Assert.That(assertions, Is.Empty);
+        Assert.That(output, Is.Empty);
     }
 
     [Test]
@@ -68,16 +68,16 @@ internal static unsafe class Arm64SveInstructionSanityTests
     {
         var id = SanityEmitter.Descriptor(IF_SVE_AA_3A, INS_sve_add, INS_OPTS_NONE,
             REG_R0, REG_P8, REG_R1, REG_R0, EA_4BYTE, 0);
-        var result = Capture(() => Check(EmitterInstance(), id));
+        var (output, assertions) = Capture(() => Check(EmitterInstance(), id));
 
-        Assert.That(result.Assertions, Is.EqualTo(new[] {
+        Assert.That(assertions, Is.EqualTo<string[]>([
             "insOptsScalableStandard(id.idInsOpt())",
             "isVectorRegister(id.idReg1())",
             "isLowPredicateRegister(id.idReg2())",
             "isVectorRegister(id.idReg3())",
             "isScalableVectorSize(id.idOpSize())"
-        }));
-        Assert.That(result.Output, Is.Empty);
+        ]));
+        Assert.That(output, Is.Empty);
     }
 
     [TestCase(IF_SVE_DU_3A, INS_OPTS_SCALABLE_B, REG_P0, REG_R0, REG_R1, EA_4BYTE, 0, "id.idOpSize() == EA_8BYTE")]
@@ -89,9 +89,9 @@ internal static unsafe class Arm64SveInstructionSanityTests
     {
         var id = SanityEmitter.Descriptor(format, INS_sve_add, opt,
             first, second, third, REG_R0, size, immediate);
-        var result = Capture(() => Check(EmitterInstance(), id));
+        var (_, assertions) = Capture(() => Check(EmitterInstance(), id));
 
-        Assert.That(result.Assertions, Is.EqualTo(new[] { assertion }));
+        Assert.That(assertions, Is.EqualTo<string[]>([assertion]));
     }
 
     [TestCase(IF_SVE_GA_2A, INS_OPTS_SCALABLE_H)]
@@ -101,9 +101,9 @@ internal static unsafe class Arm64SveInstructionSanityTests
     {
         var id = SanityEmitter.Descriptor(format, INS_sve_mov, opt,
             REG_V0, REG_V31, REG_V0, REG_V0, EA_SCALABLE, 0);
-        var result = Capture(() => Check(EmitterInstance(), id));
+        var (_, assertions) = Capture(() => Check(EmitterInstance(), id));
 
-        Assert.That(result.Assertions, Is.EqualTo(new[] { "isEvenRegister(id.idReg2())" }));
+        Assert.That(assertions, Is.EqualTo<string[]>(["isEvenRegister(id.idReg2())"]));
     }
 
     [TestCase(INS_sve_ld2b, -16, 16, 2)]
@@ -118,10 +118,10 @@ internal static unsafe class Arm64SveInstructionSanityTests
         {
             var id = SanityEmitter.Descriptor(IF_SVE_IH_3A, ins, INS_OPTS_SCALABLE_B,
                 REG_V0, REG_P0, REG_R0, REG_R0, EA_SCALABLE, immediate);
-            var result = Capture(() => Check(EmitterInstance(), id));
+            var (_, assertions) = Capture(() => Check(EmitterInstance(), id));
             var valid = (immediate == minimum) || (immediate == excludedMaximum - multiple);
 
-            Assert.That(result.Assertions.Length, Is.EqualTo(valid ? 0 : 1));
+            Assert.That(assertions.Length, Is.EqualTo(valid ? 0 : 1));
         }
     }
 
@@ -136,12 +136,12 @@ internal static unsafe class Arm64SveInstructionSanityTests
         {
             var id = SanityEmitter.Descriptor(IF_SVE_BW_2A, INS_sve_dup, opt,
                 REG_V0, REG_V31, REG_R0, REG_R0, EA_SCALABLE, immediate);
-            var result = Capture(() => Check(EmitterInstance(), id));
+            var (_, assertions) = Capture(() => Check(EmitterInstance(), id));
             var valid = (immediate >= 0) && (immediate < excludedMaximum);
 
-            Assert.That(result.Assertions, Is.EqualTo(valid ? Array.Empty<string>() : new[] {
+            Assert.That(assertions, Is.EqualTo<string[]>(valid ? [] : [
                 "isValidBroadcastImm(imm, optGetSveElemsize(id.idInsOpt()))"
-            }));
+            ]));
         }
     }
 
@@ -162,7 +162,7 @@ internal static unsafe class Arm64SveInstructionSanityTests
     {
         var id = SanityEmitter.Descriptor(format, INS_sve_add, INS_OPTS_SCALABLE_H,
             REG_V0, format == IF_SVE_HM_2A ? REG_P0 : REG_V1, REG_V2, REG_V0, EA_SCALABLE, immediate);
-        var result = Capture(() => Check(EmitterInstance(), id));
+        var (_, assertions) = Capture(() => Check(EmitterInstance(), id));
         var assertion = format switch
         {
             IF_SVE_HM_2A => "emitIsValidEncodedSmallFloatImm(unchecked((nuint)imm))",
@@ -170,7 +170,7 @@ internal static unsafe class Arm64SveInstructionSanityTests
             _ => "emitIsValidEncodedRotationImm0_to_270(emitGetInsSC(id))",
         };
 
-        Assert.That(result.Assertions, Is.EqualTo(valid ? Array.Empty<string>() : new[] { assertion }));
+        Assert.That(assertions, Is.EqualTo<string[]>(valid ? [] : [assertion]));
     }
 
     [TestCase(0x000, 0, 0)]
@@ -196,7 +196,7 @@ internal static unsafe class Arm64SveInstructionSanityTests
     [Test]
     public static void InvalidTwoImmediateEncodingRetainsOutputsAndFinalAssertionOrder()
     {
-        var result = Capture(() =>
+        var (_, assertions) = Capture(() =>
         {
             nint first = 0;
             nint second = 0;
@@ -205,10 +205,10 @@ internal static unsafe class Arm64SveInstructionSanityTests
             Assert.That(second, Is.EqualTo((nint)31));
         });
 
-        Assert.That(result.Assertions, Is.EqualTo(new[] {
+        Assert.That(assertions, Is.EqualTo<string[]>([
             "isValidSimm(*imm1, 5)",
             "isValidSimm(*imm2, 5)"
-        }));
+        ]));
     }
 
     [TestCase(0L, false)]
@@ -240,7 +240,7 @@ internal static unsafe class Arm64SveInstructionSanityTests
         const string newline = "\n";
 #endif
         Assert.That(result.Output, Is.EqualTo($"unexpected format IF_EN5A{newline}"));
-        Assert.That(result.Assertions, Is.EqualTo(new[] { "!\"Unexpected format\"" }));
+        Assert.That(result.Assertions, Is.EqualTo<string[]>(["!\"Unexpected format\""]));
     }
 
     internal static (string Output, string[] Assertions) Capture(Action action)
@@ -289,10 +289,10 @@ internal static unsafe class Arm64SveInstructionSanityTests
 
     private static Emitter EmitterInstance()
     {
-        return (SanityEmitter)RuntimeHelpers.GetUninitializedObject(typeof(SanityEmitter));
+        return (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
     }
 
-    private sealed class SanityEmitter(CodeGen codeGen) : Emitter(codeGen)
+    private abstract class SanityEmitter(CodeGen codeGen) : Emitter(codeGen)
     {
         public static instrDesc Descriptor(Emitter.insFormat format, instruction ins, insOpts opt,
             regNumber first, regNumber second, regNumber third, regNumber fourth, emitAttr size, nint immediate)

@@ -12,6 +12,7 @@ public sealed partial class CodeGen
         Emitter.emitIns_I(ins, EA_PTRSIZE, value);
     }
 
+#if TARGET_XARCH
     public void genStackPointerConstantAdjustment(nint spDelta, bool trackSpAdjustments)
     {
         Emitter.RequireSupportedInstructionRecording();
@@ -83,9 +84,15 @@ public sealed partial class CodeGen
         inst_JMP(EJ_jae, loop);
         inst_Mov(TYP_I_IMPL, REG_SPBASE, regSpDelta, canSkip: false);
     }
+#endif
 
     public void genLclHeap(GenTree tree)
     {
+#if TARGET_ARM64
+        genLclHeapArm64(tree);
+#elif !TARGET_XARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "Local heap generation is not ported for this target.");
+#else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper == GT_LCLHEAP);
         assert(_compiler.compLocallocUsed);
@@ -247,5 +254,6 @@ public sealed partial class CodeGen
         }
 #endif
         genProduceReg(tree);
+#endif
     }
 }
