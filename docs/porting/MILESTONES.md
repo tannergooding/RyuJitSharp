@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Try-aware loop-aware traversal
+
+Completed the whole reverse-postorder visitor that keeps catch-protected regions
+and loop bodies together. It marks blocks before invoking the callback, reads
+catch state after the callback, visits catch regions before loops, and visits
+each reachable block once. Methods without catch regions delegate to the existing
+loop-aware traversal before allocating visited state.
+
+Isolated full-analysis Windows checks passed 63 Debug and 58 Release cases,
+including all 13 new traversal cases in each configuration, existing try-region
+controls and five loop-aware/acyclic controls. The native template definition
+and declaration were retired together: 80 lines. This is managed traversal
+coverage, not generated-code parity. Evidence:
+`artifacts/try-traversal-acceptance-cf92ffc9/v2` and
+`artifacts/residual-reconciliation/try-traversal-cf92ffc9-*`.
+
 ## 2026-10-01: Accepted register-bank selector reconciled
 
 Retired the already-accepted `regMaskTP::GetRegSetForType` definition and its

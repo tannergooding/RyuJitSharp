@@ -16,6 +16,14 @@
       "remaining": "General lowering/LSRA/code generation and Linux runtime parity remain separate; the shared ARM64 activeBatch and Windows execution checkpoint are unchanged."
     },
     "stage": "continuing-port",
+    "tryAwareTraversalAcceptance": {
+      "status": "completed",
+      "scope": "Whole Compiler.fgVisitBlocksInTryAwareLoopAwareRPO in Compiler.TryRegionTraversal.cs with CompilerTryRegionTraversalTests.cs; existing try-region types and loop-aware traversal unchanged.",
+      "review": "Preserves no-catch delegation before visited allocation, mark-before-callback, callback-before-dynamic-catch lookup, catch-before-loop recursion, descending DFS order and exactly-once visits. Recursive local function replaces the native stack visitor without changing ordering or ownership.",
+      "validation": "Isolated committedcf92ffc9 plus exactly two overlays: full-analysis Windows63Debug/58Release pass, including13new cases each,45/40try-region controls and5loop-aware/acyclic controls. One fixture IDE0007 correction only; initial failed snapshot/logs remain immutable. Runnera1025d90 uses outerv3/defaultCPU/compiler-only conserve5, telemetry and neither memory gate.",
+      "evidence": "artifacts/try-traversal-acceptance-cf92ffc9/v2 source-seal-v1.json and v3-results contain exact hashes, receipts, TRX, counts and binlogs. No observer failures; minimum free4084793344/4292792320bytes. No generated-code or other-target execution claim.",
+      "retirement": "Nativee1e810332e519c1ad3aa7d93b3a2e14e18b26b05 retires78definition/template lines from compiler.hpp and2declaration lines from compiler.h. Whole oracle spans5647-5724/7018-7019 matched after explicit preexisting residual C# token substitutions only. Exact reconstruction, recovery ref, clean residual and sole oracle parent verified; artifacts/residual-reconciliation/try-traversal-cf92ffc9-*."
+    },
     "compilerOptionsMappedRetirement": {
       "status": "completed-with-retained-exceptions",
       "mapping": "compiler.h nested Options maps to Compiler.Options in compiler/Compiler.Options.cs; its ten threshold/alignment constants map to compiler/Globals.cs. This reconciles already-committed mappings, not new compiler implementation.",
@@ -2941,6 +2949,13 @@
       "caution": "Current backend allocation/codegen/emitter exclusions checked in this pass target non-Windows or non-AMD64 configurations. Commented callback declarations and historical baseline gaps are not an inventory of missing Windows implementations."
     },
     "activeBatch": {
+      "currentUnit": {
+        "status": "accepted; completing local commit before the next unit",
+        "scope": "Whole try-aware/loop-aware reverse-postorder traversal: existing Compiler.TryRegionTraversal.cs and CompilerTryRegionTraversalTests.cs over managedcf92ffc9.",
+        "doneWhen": "Whole pinned algorithm reviewed, isolated Windows Debug/Release acceptance completed, exact retained definition/declaration retired, related documentation and source committed.",
+        "validation": "All13 traversal cases, existing FlowGraphTryRegionTests and the five BlockLayout loop-aware/acyclic traversal controls; hidden serial full-analysis defaultCPU/conserve5 runs with memory telemetry and neither memory gate.",
+        "deferred": "Separate source-complete regMask12, ARM32 four-path closure, metadata/shutdown and SVE generation/output/driver. Preserve original13WIP and shared ownership; no replay of accepted LSRA/types/descriptor families."
+      },
       "restartRecovery": {
         "status": "Resumed after explicit user continuation on2026-09-30T15:43-07:00;20minute review automation restored.",
         "handoff": "artifacts/session-handoff/RESTART-20260930-compiler-policy.md",
@@ -3505,7 +3520,7 @@
       "execution": "primaryParameterPermutations uses the current aacf581e compiler as the primary JIT. Its managed dump records FullOpts methods with local resolution candidates, alongside 2048 successful results and 22 native-matching complete instruction traces.",
       "limits": "Classifies the public optimized-allocation mode as implemented. The older fullAllocationIntegration.optimizedFrontier describes its historical loop-alignment blocker, not current reachability. Other-target phase activation and exhaustive stress coverage remain separate."
     },
-    "nextAction": "Windows descriptor payload and format/header acceptance are complete (221D/225R and52D/52R); native221dfc03 includes their exact retirements. Next consume the existing source-complete two-file Compiler.TryRegionTraversal/CompilerTryRegionTraversalTests unit: seal its actual current source and perform focused Windows Debug/Release acceptance with existing try-region/loop-aware controls, then retire the whole retained helper only after review/results. Do not repeat the accepted try-region types, LSRA13builders or SVE recorders. Root owns independent targetamd64/targetx86/regMaskTPOps retirement prep and ARM32 node-building implementation; do not duplicate those lanes. Keep hidden serial defaultCPU/conserve5 runs with telemetry and neither memory gate, preserve13WIP, and do not publish.",
+    "nextAction": "Commit accepted two-file try-aware traversal and related records; then accept the existing two-file whole12 regMask operation family with established immutable static-ref owner-writeback. Review native ARM gen/get pair differences, bank preservation and assertion/write order; seal exact source, run focused full-analysis Windows Debug/Release with existing bank controls, retire only completed whole bodies/declarations, and commit. GetRegSetForType is already accepted/retired; do not repeat it or rewrite public IsSet. ARM32 four-path closure, metadata/shutdown and SVE generation/output/driver remain separately pending. Hidden serial defaultCPU/conserve5, telemetry with neither memory gate, original13WIP/shared ownership, READY bound2 and no publication remain in force.",
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
       "mapping": "lsraarm64.cpp construction workers and lsraarmarch.cpp shared ARM builders -> LinearScan.Arm64NodeBuilding.cs, LinearScan.Arm64HardwareIntrinsics.cs, LinearScan.Arm64ConsecutiveRegisters.cs and existing lsra partials; codegencommon.cpp:2978-3021 -> CodeGen.genGetGSCookieTempRegs.",
