@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: ARM64 Debug spill classification
+
+Connected shared store classification to the existing committed ARM64 predicate,
+preserving false results for negative and out-of-table instruction values.
+The private emitter implementation and concurrent emitter WIP remain unchanged.
+
+ARM64-target passes 50 Debug/50 Release cases, including 38 spill/lifecycle cases
+and 12 classification cases. Normal scalar, GC, vector and narrow OSR spills now
+record in Debug as well as Release. Windows passes 57 cases per configuration.
+SIMD12 emission and enabled non-AMD64 location reporting remain separate
+dependencies. No native retirement is credited for an already translated
+predicate. Evidence: `artifacts/arm64-store-binding-e4389c55/v2`.
+
 ## 2026-10-01: Shared local-variable spills
 
 Restored the complete fixed-register-target scope of local spilling, retaining

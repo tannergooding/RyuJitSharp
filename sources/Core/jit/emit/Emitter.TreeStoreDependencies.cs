@@ -11,7 +11,12 @@ public partial class Emitter
 #if CPU_LOAD_STORE_ARCH
     public bool emitInsIsStore(instruction ins)
     {
+#if TARGET_ARM64
+        // The encoder-only predicate uses a checked unsigned conversion.
+        return ((int)ins >= 0) && emitInsIsStoreArm64(ins);
+#else
         throw new FatalJitException(CORJIT_SKIPPED, "Target instruction store classification is not implemented.");
+#endif
     }
 #endif
 

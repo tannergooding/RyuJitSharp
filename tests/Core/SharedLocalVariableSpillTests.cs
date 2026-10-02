@@ -31,8 +31,6 @@ internal static unsafe class SharedLocalVariableSpillTests
     private const regNumber ByrefRegister = REG_R3;
 #endif
 
-    // ARM64 DEBUG stores still reach the terminating instruction-classification dependency.
-#if TARGET_AMD64 || !DEBUG
 #if TARGET_AMD64
     private const instruction IntegerStore = INS_mov;
     private const instruction FloatStore = INS_movss;
@@ -150,8 +148,6 @@ internal static unsafe class SharedLocalVariableSpillTests
             Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
         });
     }
-#endif
-
     [TestCase(TYP_INT, false)]
     [TestCase(TYP_INT, true)]
     [TestCase(TYP_REF, false)]
@@ -255,33 +251,6 @@ internal static unsafe class SharedLocalVariableSpillTests
     }
 
 #if TARGET_ARM64
-#if DEBUG
-    [Test]
-    public static void ScalarStoreClassificationTerminatesBeforeRecordingOrChangingSpillState()
-    {
-        WithCompiler(TYP_REF, IntegerRegister, (compiler, codeGen, tree) =>
-        {
-            VarSetOps.AddElemD(compiler, codeGen.GCInfo.gcTrkStkPtrLcls, 0);
-            codeGen.GCInfo.gcMarkRegPtrVal(IntegerRegister, TYP_REF);
-            var mask = codeGen.RegSet.GetMaskVars();
-            var refs = codeGen.GCInfo.gcRegGCrefSetCur;
-            var flags = tree.Flags;
-
-            var error = Assert.Throws<FatalJitException>(() => codeGen.genSpillVar(tree));
-
-            Assert.That(error, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(error, Has.Message.EqualTo("Target instruction store classification is not implemented."));
-            Assert.That(CurrentCount(codeGen.Emitter), Is.Zero);
-            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(mask));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(refs));
-            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(ByrefRegister)));
-            Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.False);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(IntegerRegister));
-            Assert.That(tree.Flags, Is.EqualTo(flags));
-        });
-    }
-#endif
-
 #if FEATURE_SIMD
     [Test]
     public static void Simd12TerminatesAtItsEmitterDependencyBeforeAnySpillStateChanges()
@@ -401,7 +370,7 @@ internal static unsafe class SharedLocalVariableSpillTests
 
         try
         {
-            var codeGen = new CodeGen(compiler) { IsFramePointerUsed = true };
+            var codeGen = new CodeGen(compiler) { IsFramePointerUsed = true, IsFramePointerRequired = true };
             compiler.codeGen = codeGen;
             codeGen.initializeVariableLiveKeeper();
             codeGen.RegSet.rsClearRegsModified();
