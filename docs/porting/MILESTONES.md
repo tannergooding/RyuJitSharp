@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Reverse bit scans
+
+Completed both unsigned reverse-scan overloads, preserving nonzero assertions,
+highest-bit priority, the Windows32-host split and the non-Windows leading-zero
+conversion. The existing BCL operations provide native compiler-intrinsic
+equivalents without shadowing the BCL type or changing accepted callers.
+
+Actual Windows64-host checks pass 118 Debug/116 Release cases, including all
+96 one-hot positions. Zero checks cover assertion count and text only, not the
+native undefined continuation result. Other host branches are source-reviewed;
+changing a target RID alone would not execute them.
+
+Retired two whole definitions and two declarations, 48 lines. Evidence:
+`artifacts/reverse-scan-70af055c/v1` and
+`artifacts/residual-reconciliation/reverse-scan-70af055c-*`.
+
 ## 2026-10-01: Population-count primitive mapping
 
 Retired the two retained native population-count primitives and their declarations
