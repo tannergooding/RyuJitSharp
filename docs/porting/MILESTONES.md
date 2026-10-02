@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Shared block-operation operand setup
+
+Completed four block operand helpers, preserving source selection, unsigned
+pointer-size materialization and consumption of both operands before fixed
+register moves. Coverage checks emitted descriptors, GC classification, source
+home lifetime, local offsets and unsigned size boundaries.
+
+Windows and Linux-x64-target selections each pass 24 Debug and 23 Release cases.
+Other targets remain source-reviewed; LoongArch64/RISC-V immediate materialization
+is an explicit terminating dependency whose native bodies remain. Retired four
+bodies and four declarations, 96 lines. Evidence:
+`artifacts/block-operand-setup-985e50af/v2` and
+`artifacts/residual-reconciliation/block-operand-setup-985e50af-*`.
+
 ## 2026-10-01: Retained HFA count reconciliation
 
 Removed the retained native `GetHfaCount` body and declaration after confirming
