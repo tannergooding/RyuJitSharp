@@ -2,6 +2,7 @@
 
 #if TARGET_ARM64
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
@@ -114,6 +115,28 @@ internal static unsafe class Arm64FrameLayoutTests
             Assert.That(compiler.compLclFrameSize, Is.Zero);
             Assert.That(codeGen.genTotalFrameSize, Is.EqualTo(80));
             Assert.That(compiler.lvaGetCallerSPRelativeOffset(0), Is.EqualTo(callerSpOffset));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void PrologStackVariableOffsetUsesFramePointerOrTotalFrameSize(bool framePointer)
+    {
+        WithFrame((compiler, codeGen) =>
+        {
+            compiler.compLclFrameSize = 40;
+            codeGen.IsFramePointerUsed = framePointer;
+
+            var local = new LclVarDsc { Type = TYP_LONG, StackOffset = 128 };
+            var getStackOffset = typeof(CodeGen).GetMethod("psiGetVarStackOffset", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new AssertionException("Missing prolog stack-offset helper.");
+            var actual = (int)(getStackOffset.Invoke(codeGen, [local]) ??
+                throw new AssertionException("Missing prolog stack offset result."));
+            var expected = framePointer
+                ? local.StackOffset - REGSIZE_BYTES
+                : local.StackOffset - ((2 * REGSIZE_BYTES) + 40);
+
+            Assert.That(actual, Is.EqualTo(expected));
         });
     }
 

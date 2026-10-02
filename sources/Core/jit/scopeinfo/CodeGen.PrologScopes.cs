@@ -11,10 +11,15 @@ public sealed partial class CodeGen
 {
     private int psiGetVarStackOffset(in LclVarDsc local)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Prolog stack-variable locations require AMD64.");
-#else
+#if TARGET_AMD64
         return _compiler.lvaToCallerSPRelativeOffset(local.StackOffset, local.lvFramePointerBased) + REGSIZE_BYTES;
+#else
+        if (doubleAlignOrFramePointerUsed())
+        {
+            return local.StackOffset - REGSIZE_BYTES;
+        }
+
+        return local.StackOffset - genTotalFrameSize;
 #endif
     }
 
