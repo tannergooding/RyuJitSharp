@@ -34,6 +34,19 @@ public static partial class Globals
 #endif
     }
 
+    public static regMaskTP theFixedRetBuffMask(CorInfoCallConvExtension callConv)
+    {
+        assert(hasFixedRetBuffReg(callConv));
+#if TARGET_ARM64
+        return new regMaskTP(SRBM_ARG_RET_BUFF);
+#elif TARGET_AMD64 && SWIFT_SUPPORT
+        assert(callConv == CorInfoCallConvExtension.Swift, "callConv == CorInfoCallConvExtension::Swift");
+        return new regMaskTP(SRBM_SWIFT_ARG_RET_BUFF);
+#else
+        return RBM_NONE;
+#endif
+    }
+
     public static int theFixedRetBuffArgNum(CorInfoCallConvExtension callConv)
     {
         assert(hasFixedRetBuffReg(callConv));
@@ -52,8 +65,7 @@ public static partial class Globals
         var result = new regMaskTP(SRBM_ARG_REGS);
         if (hasFixedRetBuffReg(callConv))
         {
-            var reg = theFixedRetBuffReg(callConv);
-            result |= regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
+            result |= theFixedRetBuffMask(callConv);
         }
 
 #if SWIFT_SUPPORT

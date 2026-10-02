@@ -16,6 +16,26 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Fixed return-buffer argument masks
+
+Completed the fixed return-buffer mask helper and connected the existing full
+integer-argument mask algorithm to it. Ordinary argument registers, ARM64's
+fixed return buffer, AMD64 Swift's return buffer and Swift self/error registers
+retain their native masks and target conditions. No ABI, argument-number
+representation or feature defaults changed.
+
+Full-analysis checks pass 12 Debug/9 Release on stock Windows, 29/26 for
+Linux-x64 and 26/26 for Linux-ARM64, all hosted on Windows. Unix x64 and ARM64
+use their existing Swift configuration and include all 17 Swift ABI controls;
+stock Windows does not enable Swift. Tests cover all nine calling conventions
+and native Debug assertion ordering/continuation. These are policy and
+descriptor checks, not target runtime parity.
+
+Retired the two complete native definitions, 35 lines. The separate signed
+argument-number mapping remains outside this batch. Evidence:
+`artifacts/fixed-retbuf-c46a68bb/v3` and
+`artifacts/residual-reconciliation/fixed-retbuf-c46a68bb-*`.
+
 ## 2026-10-01: ARM64 stack and branch execution
 
 Completed ARM64 localloc, frame-pointer establishment, frame probing and
