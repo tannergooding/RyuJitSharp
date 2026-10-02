@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-02: Primitive rotation retirement
+
+Closed the four retained 32/64-bit left/right rotation mappings to the existing
+BCL and compiler/VN callers. Fresh Windows-x64 full-analysis runs pass 128 Debug
+and 128 Release cases, with 320 independently derived equality checks per
+configuration. Both native shift counts are masked, including zero and
+oversized offsets; production callers are unchanged.
+
+Native `36204bee` removes four complete definitions, four declarations and their
+exclusive documentation: 64 lines. Exact reconstruction and the sole oracle
+parent are verified. This replaces missing historical rotation evidence without
+reopening scalar folding. It is helper/VN execution, not generated-code parity.
+Evidence: `artifacts/primitive-rotations-review52/v2` and
+`artifacts/residual-reconciliation/primitive-rotations-review52-*`.
+
 ## 2026-10-01: ARM64 Debug spill classification
 
 Connected shared store classification to the existing committed ARM64 predicate,
@@ -501,8 +516,8 @@ Unsigned input widths and bounded result conversions remain unchanged.
 The retirement removes 44 lines. Evidence:
 `artifacts/primitive-popcount-e467bb37/mapping.json` and
 `artifacts/residual-reconciliation/primitive-popcount-e467bb37-*`.
-The separate rotation mappings remain retained because their referenced original
-TRXs are unavailable; no replacement evidence or execution claim was invented.
+The separate rotation debt was subsequently closed with fresh focused evidence;
+see the 2026-10-02 primitive rotation retirement entry.
 
 ## 2026-10-01: Fixed-width bit reversal
 
