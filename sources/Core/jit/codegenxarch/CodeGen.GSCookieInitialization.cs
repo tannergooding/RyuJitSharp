@@ -9,9 +9,43 @@ public sealed partial class CodeGen
 {
     public unsafe void genSetGSSecurityCookie(regNumber initReg, ref bool initRegZeroed)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "GS-cookie initialization requires xarch.");
-#else
+#if TARGET_ARMARCH
+        assert(Emitter.emitGeneratingPrologOrFuncletProlog());
+        if (!_compiler.NeedsGSSecurityCookie)
+        {
+            return;
+        }
+
+        if (_compiler.opts.IsOSR && _compiler.info.compPatchpointInfo->HasSecurityCookie)
+        {
+            // The original frame already owns the initialized security cookie.
+            return;
+        }
+
+        if (_compiler.gsGlobalSecurityCookieAddr is null)
+        {
+            var cookie = _compiler.gsGlobalSecurityCookieVal;
+            noway_assert(cookie != 0);
+            // Store the cookie value from initReg into the stack frame.
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, cookie);
+            Emitter.emitIns_S_R(INS_str, EA_PTRSIZE, initReg, _compiler.lvaGSSecurityCookie, 0);
+        }
+        else
+        {
+            // The AOT cookie address must be loaded indirectly.
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE | EA_DSP_RELOC_FLG, initReg,
+                unchecked((nint)_compiler.gsGlobalSecurityCookieAddr), INS_FLAGS_DONT_CARE
+#if DEBUG
+                , (nuint)THT_SetGSCookie, GTF_EMPTY
+#endif
+                );
+            Emitter.emitIns_R_R_I(INS_ldr, EA_PTRSIZE, initReg, initReg, 0);
+            _regSet.verifyRegUsed(initReg);
+            Emitter.emitIns_S_R(INS_str, EA_PTRSIZE, initReg, _compiler.lvaGSSecurityCookie, 0);
+        }
+
+        initRegZeroed = false;
+#elif TARGET_XARCH
         Emitter.RequireSupportedInstructionRecording();
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
         if (!_compiler.NeedsGSSecurityCookie)
@@ -52,6 +86,8 @@ public sealed partial class CodeGen
                 initRegZeroed = false;
             }
         }
+#else
+        throw new FatalJitException(CORJIT_SKIPPED, "GS-cookie initialization requires xarch.");
 #endif
     }
 }

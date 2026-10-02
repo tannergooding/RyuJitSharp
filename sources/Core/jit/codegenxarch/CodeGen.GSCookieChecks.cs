@@ -11,9 +11,46 @@ public sealed partial class CodeGen
 {
     public unsafe void genEmitGSCookieCheck(bool tailCall)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "GS-cookie checks require xarch.");
-#else
+#if TARGET_ARMARCH
+        noway_assert((_compiler.gsGlobalSecurityCookieAddr is not null) ||
+            (_compiler.gsGlobalSecurityCookieVal != 0));
+
+        // The check has no IR node, so LSRA cannot reserve registers for it.
+        // Keep tailcall argument registers intact and use callee-trash registers.
+        var tempRegs = genGetGSCookieTempRegs(tailCall, null);
+        assert(tempRegs != RBM_NONE);
+        var regGSConst = (regNumber)BitOperations.TrailingZeroCount((ulong)tempRegs.IntRegSet);
+        tempRegs &= ~regMaskTP.CreateFromRegNum(regGSConst, regGSConst.SingleTypeMask);
+        assert(tempRegs != RBM_NONE);
+        var regGSValue = (regNumber)BitOperations.TrailingZeroCount((ulong)tempRegs.IntRegSet);
+
+        if (_compiler.gsGlobalSecurityCookieAddr is null)
+        {
+            // Load the cookie constant into a register.
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, regGSConst, _compiler.gsGlobalSecurityCookieVal);
+        }
+        else
+        {
+            // AOT cookie constants are accessed through an indirection.
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE | EA_CNS_RELOC_FLG, regGSConst,
+                unchecked((nint)_compiler.gsGlobalSecurityCookieAddr), INS_FLAGS_DONT_CARE
+#if DEBUG
+                , (nuint)THT_GSCookieCheck, GTF_EMPTY
+#endif
+                );
+            Emitter.emitIns_R_R_I(INS_ldr, EA_PTRSIZE, regGSConst, regGSConst, 0);
+        }
+
+        // Load this method's cookie from the stack frame and compare it to the constant.
+        Emitter.emitIns_R_S(INS_ldr, EA_PTRSIZE, regGSValue, _compiler.lvaGSSecurityCookie, 0);
+        Emitter.emitIns_R_R(INS_cmp, EA_PTRSIZE, regGSConst, regGSValue);
+
+        var gsCheckBlk = genCreateTempLabel();
+        inst_JMP(EJ_eq, gsCheckBlk);
+        // These registers are dead after the comparison and can be reused by the helper call.
+        genEmitHelperCall(CORINFO_HELP_FAIL_FAST, 0, EA_UNKNOWN, regGSConst);
+        genDefineTempLabel(gsCheckBlk);
+#elif TARGET_XARCH
         Emitter.RequireSupportedInstructionRecording();
         noway_assert((_compiler.gsGlobalSecurityCookieAddr != null) || (_compiler.gsGlobalSecurityCookieVal != 0));
 
@@ -65,6 +102,8 @@ public sealed partial class CodeGen
         inst_JMP(EJ_je, gsCheckBlk);
         genEmitHelperCall(CORINFO_HELP_FAIL_FAST, 0, EA_UNKNOWN);
         genDefineTempLabel(gsCheckBlk);
+#else
+        throw new FatalJitException(CORJIT_SKIPPED, "GS-cookie checks require xarch.");
 #endif
     }
 }
