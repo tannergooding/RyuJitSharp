@@ -59,10 +59,6 @@ public sealed partial class CodeGen
 
     public unsafe void genCodeForBlock(BasicBlock block)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Basic-block generation requires Windows AMD64.");
-#else
-        Emitter.RequireSupportedInstructionRecording();
         if (block.Kind == BBJ_CALLFINALLYRET)
         {
             return;
@@ -83,7 +79,7 @@ public sealed partial class CodeGen
         assert(allocator is not null);
         allocator.recordVarLocationsAtStartOfBB(block);
         genUpdateLife(block.bbLiveIn);
-
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
         // Liveness transitions alone do not restore unchanged register roots after the reset.
         var newLiveRegSet = RBM_NONE;
         var newRegGCrefSet = RBM_NONE;
@@ -172,6 +168,7 @@ public sealed partial class CodeGen
                 }
             }
         }
+#endif
 
         genLogLabel(block);
         _compiler.compCurBB = block;
@@ -221,7 +218,7 @@ public sealed partial class CodeGen
             genReserveFuncletProlog(block);
         }
 
-        // Native genEmitStartBlock is empty outside Wasm.
+        genEmitStartBlock(block);
         _compiler.compCurStmt = null;
         _compiler.compCurLifeTree = null;
 #if SWIFT_SUPPORT
@@ -231,10 +228,18 @@ public sealed partial class CodeGen
             genHomeSwiftStructStackParameters();
         }
 #endif
+#if TARGET_ARM64
+        if (_compiler.compUsesUnknownSizeFrame && block.IsFirst)
+        {
+            genZeroInitializeUnknownSizeFrame();
+        }
+#endif
+#if !TARGET_WASM
         if (_compiler.compShouldPoisonFrame() && block.IsFirst)
         {
             genPoisonFrame(newLiveRegSet);
         }
+#endif
 #if DEBUG
         var useNum = 0;
         foreach (var node in block)
@@ -280,7 +285,15 @@ public sealed partial class CodeGen
 #if DEBUG
                 assert((ilOffset.StmtLastILOffset <= _compiler.info.compILCodeSize) ||
                     (ilOffset.StmtLastILOffset == BAD_IL_OFFSET));
-                // Requested immediate disassembly is rejected before block mutation by D005.
+                if (_compiler.opts.dspCode && _compiler.opts.dspInstrs &&
+                    ilOffset.StmtLastILOffset != BAD_IL_OFFSET)
+                {
+                    while (_genCurDispOffset <= ilOffset.StmtLastILOffset)
+                    {
+                        _genCurDispOffset = unchecked(_genCurDispOffset +
+                            (uint)dumpSingleInstr(_compiler.info.compCode, (IL_OFFSET)_genCurDispOffset, ">    "));
+                    }
+                }
 #endif
             }
             genCodeForTreeNode(node);
@@ -291,6 +304,7 @@ public sealed partial class CodeGen
         }
 #if DEBUG
         _regSet.rsSpillChk();
+#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
         var ptrRegs = _gcInfo.gcRegGCrefSetCur | _gcInfo.gcRegByrefSetCur;
         var nonVarPtrRegs = ptrRegs & ~_regSet.GetMaskVars();
         if (_compiler.compMethodReturnsRetBufAddr)
@@ -330,6 +344,9 @@ public sealed partial class CodeGen
             jitprintf("\n");
         }
         noway_assert(nonVarPtrRegs.IsEmpty);
+#endif
+#endif
+#if DEBUG
         if (block.IsLast)
         {
             genEmitterUnitTests();
@@ -386,8 +403,23 @@ public sealed partial class CodeGen
         }
 #endif
         _compiler.compCurBB = null;
+    }
+
+    private void genEmitStartBlock(BasicBlock block)
+    {
+#if TARGET_WASM
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm block-start emission is not ported.");
+#else
+        // The native implementation is empty outside Wasm.
 #endif
     }
+
+#if TARGET_ARM64
+    private void genZeroInitializeUnknownSizeFrame()
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 unknown-size frame initialization is not ported.");
+    }
+#endif
 
     private void SubtractStackLevel(uint adjustment)
     {

@@ -7,9 +7,9 @@ namespace RyuJitSharp;
 
 public partial struct RegSet
 {
-#if HAS_FIXED_REGISTER_SET
     private regMaskTP _rsMaskVars;
 
+#if HAS_FIXED_REGISTER_SET
     public readonly regMaskTP GetMaskVars() => _rsMaskVars;
 
     public void SetMaskVars(regMaskTP newMaskVars)
@@ -51,7 +51,7 @@ public partial struct RegSet
     public void AddMaskVars(regMaskTP mask) => SetMaskVars(_rsMaskVars | mask);
 
     public void RemoveMaskVars(regMaskTP mask) => SetMaskVars(_rsMaskVars & ~mask);
+#endif
 
     public void ClearMaskVars() => _rsMaskVars = RBM_NONE;
-#endif
 }

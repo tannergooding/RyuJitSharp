@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
@@ -15,14 +16,14 @@ internal static unsafe class CodeGenBlockDriverTargetTests
 {
 #if TARGET_ARM64
     [Test]
-    public static void DriverInitializesBeforeTheUnsupportedBlockBoundary()
+    public static void DriverInitializesBeforeTheUnsupportedBlockEndBoundary()
     {
         WithDriver((compiler, codeGen, block) =>
         {
             var failure = Assert.Throws<FatalJitException>(codeGen.genCodeForBBlist) ??
-                throw new AssertionException("Missing block-generation dependency failure.");
+                throw new AssertionException("Missing block-end dependency failure.");
 
-            Assert.That(failure.Message, Is.EqualTo("Basic-block generation requires Windows AMD64."));
+            Assert.That(failure.Message, Is.EqualTo("Block-end generation requires Windows AMD64."));
 #if DEBUG
             Assert.That(compiler.fgSafeBasicBlockCreation, Is.False);
 #endif
@@ -61,8 +62,10 @@ internal static unsafe class CodeGenBlockDriverTargetTests
 #endif
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        CORINFO_METHOD_INFO methodInfo = default;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
+        compiler.info.compMethodInfo = &methodInfo;
         compiler.opts.SetMinOpts(true);
         compiler.lvaCount = 1;
         compiler.lvaTrackedCount = 1;
@@ -88,18 +91,49 @@ internal static unsafe class CodeGenBlockDriverTargetTests
         compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT }];
         compiler.compFuncInfoCount = 1;
         compiler.compCurLife = VarSetOps.MakeSingleton(compiler, 0);
+        compiler.genIPmappings = [];
+        compiler.genRichIPmappings = [];
+        compiler.compRetTypeDesc.InitializeReturnType(compiler, TYP_VOID, null, compiler.info.compCallConv);
         JitTls.Compiler = compiler;
 
+#if DEBUG
+        var previousEmitterTests = EmitterTests(ref JitConfig);
+        EmitterTests(ref JitConfig) = new JitConfigValues.MethodSet(null, null);
+#endif
         try
         {
             var codeGen = new CodeGen(compiler);
             compiler.codeGen = codeGen;
+            codeGen.Emitter.emitBegCG(compiler, default);
+            codeGen.Emitter.Init();
+            codeGen.Emitter.emitBegFN(true
+#if DEBUG
+                , false
+#endif
+                );
+#if HAS_FIXED_REGISTER_SET
+            compiler.lvaTable[0].RegNum = REG_STK;
+            Allocator(compiler) = new LinearScan(compiler);
+#endif
             codeGen.RegSet.rsClearRegsModified();
             action(compiler, codeGen, block);
         }
         finally
         {
+#if DEBUG
+            EmitterTests(ref JitConfig) = previousEmitterTests;
+#endif
             JitTls.Compiler = previous;
         }
     }
+
+#if HAS_FIXED_REGISTER_SET
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regAlloc")]
+    private static extern ref IRegAlloc? Allocator(Compiler compiler);
+#endif
+
+#if DEBUG
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitEmitUnitTests")]
+    private static extern ref JitConfigValues.MethodSet EmitterTests(ref JitConfigValues config);
+#endif
 }
