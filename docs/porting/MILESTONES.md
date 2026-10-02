@@ -16,6 +16,26 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Local per-element SIMD mask contracts
+
+Completed the local mask element-width mapper's native `unreached()` failure
+contract. Existing compatibility queries still short-circuit on an unset marker,
+and repeated annotations retain the maximum element width without changing
+unrelated flags. Callers and the logical one-bit marker/two-bit width encoding
+are unchanged.
+
+Full-analysis Windows Debug and Release each pass 51 focused cases: 27 new
+local-mask cases, 20 existing hardware-intrinsic recognition controls and four
+value-number/phi propagation controls. Both runs retain memory telemetry,
+default compiler processors and compiler-only GCConserveMemory5 without
+free-memory admission or abort thresholds.
+
+Retired three whole inline definitions (42 body lines), two mapped flag
+declarations and nine exclusive surrounding lines from `compiler.h`, 53 total.
+Evidence is under `artifacts/local-mask-acceptance-8aab5675` and
+`artifacts/residual-reconciliation/local-mask-8aab5675-*`. No other-target
+execution, physical-layout equivalence or generated-code parity is claimed.
+
 ## 2026-10-01: Shared LSRA definition and kill builders
 
 Completed the shared definition, call-result, kill, cast-use, register-argument

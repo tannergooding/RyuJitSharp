@@ -1212,13 +1212,43 @@ public partial struct LclVarDsc
         _flags |= Flags.IsVectorPerElementMask;
     }
 
-    private static int GetVectorPerElementMaskElemSizeLog2(var_types simdBaseType) => simdBaseType switch {
-        TYP_BYTE or TYP_UBYTE => 0,
-        TYP_SHORT or TYP_USHORT => 1,
-        TYP_INT or TYP_UINT or TYP_FLOAT => 2,
-        TYP_LONG or TYP_ULONG or TYP_DOUBLE => 3,
-        _ => throw new UnreachableException(),
-    };
+    private static int GetVectorPerElementMaskElemSizeLog2(var_types simdBaseType)
+    {
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            {
+                return 0;
+            }
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+            {
+                return 1;
+            }
+
+            case TYP_INT:
+            case TYP_UINT:
+            case TYP_FLOAT:
+            {
+                return 2;
+            }
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            case TYP_DOUBLE:
+            {
+                return 3;
+            }
+
+            default:
+            {
+                unreached();
+                throw new UnreachableException();
+            }
+        }
+    }
 #endif
 
     public bool IsSpan
