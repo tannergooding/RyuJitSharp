@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: IEEE floating-point selection
+
+Completed all sixteen single/double maximum/minimum variants, including
+magnitude and Number forms. Native comparison order, signed-zero and equal-
+magnitude ties, numeric preference and original selected NaN payloads remain
+intact; no BCL Min/Max substitution or caller changes were made.
+
+All 96 cases pass Debug and Release on the actual Windows64 host. Explicit
+operand expectations cover 768 selections per configuration, including finite
+ordering, infinities, subnormals, signed zeros and signed quiet/signaling NaNs.
+This is helper execution evidence, not target-runtime parity.
+
+Retired sixteen whole definitions and sixteen declarations, 264 lines. Evidence:
+`artifacts/fp-selection-83936c2e/v1` and
+`artifacts/residual-reconciliation/fp-selection-83936c2e-*`.
+
 ## 2026-10-01: Floating-point classification and normalization
 
 Completed normal/finite/sign/NaN classification, double signed-zero predicates
