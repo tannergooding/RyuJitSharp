@@ -462,48 +462,6 @@ public sealed partial class CodeGen
     }
 #endif
 
-#if TARGET_AMD64
-    private void genPutArgStkFieldList(GenTreePutArgStk putArgStk, int outArgVarNum)
-    {
-        assert(putArgStk.Op1.Oper is GT_FIELD_LIST);
-        var argOffset = putArgStk.ArgOffset;
-
-        foreach (var use in putArgStk.Op1.AsFieldList().Uses)
-        {
-            var nextArgNode = use.Node;
-            _ = genConsumeReg(nextArgNode);
-            var reg = nextArgNode.RegNum;
-            var type = use.Type;
-            var thisFieldOffset = unchecked(argOffset + use.Offset);
-
-#if FEATURE_SIMD
-            if (type == TYP_SIMD12)
-            {
-                Emitter.emitStoreSimd12ToLclOffset(unchecked((uint)outArgVarNum),
-                    unchecked((uint)thisFieldOffset), reg, nextArgNode);
-            }
-            else
-#endif
-            {
-                Emitter.emitIns_S_R(ins_Store(type), type.EmitSize, reg, outArgVarNum, thisFieldOffset);
-            }
-
-#if DEBUG
-            var areaSize = _compiler.lvaLclStackHomeSize(outArgVarNum);
-#if FEATURE_FASTTAILCALL
-            var call = putArgStk.Call;
-            assert(call is not null);
-            if (call.IsFastTailCall)
-            {
-                areaSize = _compiler.lvaParameterStackSize;
-            }
-#endif
-            assert(unchecked((uint)(thisFieldOffset + type.Size)) <= unchecked((uint)areaSize));
-#endif
-        }
-    }
-#endif
-
 #if TARGET_XARCH
 #if TARGET_X86
     private bool _pushStkArg;
@@ -703,51 +661,6 @@ public sealed partial class CodeGen
             offset += genMove2IfNeeded(loadSize, intTmpReg, src, offset);
             offset += genMove1IfNeeded(loadSize, intTmpReg, src, offset);
             assert(offset == loadSize);
-        }
-    }
-
-    private void genConsumePutStructArgStk(GenTreePutArgStk putArgNode,
-        regNumber dstReg, regNumber srcReg, regNumber sizeReg)
-    {
-        var src = putArgNode.Data;
-        assert(src.IsContained);
-        assert(varTypeIsStruct(src.Type));
-        assert((src.Oper is GT_BLK) || src.Oper.IsLocalRead ||
-            ((src.Oper is GT_IND) && varTypeIsSimd(src.Type)));
-        assert(dstReg != REG_NA);
-        assert(srcReg != REG_NA);
-        var srcAddrReg = REG_NA;
-
-        if (src.Oper.IsIndir)
-        {
-            srcAddrReg = genConsumeReg(src.AsIndir().Addr);
-        }
-
-#if TARGET_X86
-        assert(dstReg != REG_SPBASE);
-        _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, dstReg, REG_SPBASE, canSkip: false);
-#else
-        if (putArgNode.RegNum != dstReg)
-        {
-            // The destination is always a stack address, including incoming homes for tail calls.
-            assert(_stkArgVarNum != BAD_VAR_NUM);
-            Emitter.emitIns_R_S(INS_lea, EA_PTRSIZE, dstReg, _stkArgVarNum, putArgNode.ArgOffset);
-        }
-#endif
-
-        if (srcAddrReg != REG_NA)
-        {
-            _ = Emitter.emitIns_Mov(INS_mov, EA_BYREF, srcReg, srcAddrReg, canSkip: true);
-        }
-        else
-        {
-            var local = src.AsLclVarCommon();
-            Emitter.emitIns_R_S(INS_lea, EA_PTRSIZE, srcReg, local.LclNum, local.LclOffs);
-        }
-
-        if (sizeReg != REG_NA)
-        {
-            inst_RV_IV(INS_mov, sizeReg, putArgNode.StackByteSize, EA_PTRSIZE);
         }
     }
 

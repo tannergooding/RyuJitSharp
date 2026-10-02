@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-01: Shared struct argument setup
+
+Restored the native shared scope of struct-stack source setup and field-list
+stores while preserving existing Windows callers. Source consumption precedes
+destination moves; local addresses retain their GC attributes, field stores
+retain width/order, and optional sizes preserve unsigned native semantics.
+
+Windows passes 53 Debug/51 Release cases, including 14 new cases per configuration
+and existing caller controls. ARM64-target passes 11 cases per configuration,
+including normal scalar/address recording and the genuine SIMD12 termination
+boundary. Retired two complete bodies and declarations, 112 lines including one
+trailing blank. Native SIMD12 helpers remain unported. Evidence:
+`artifacts/shared-struct-setup-64f99aa2/v2` and the final
+`artifacts/residual-reconciliation/shared-struct-setup-64f99aa2-v2-*` records.
+
 ## 2026-10-01: Shared block-operation operand setup
 
 Completed four block operand helpers, preserving source selection, unsigned
