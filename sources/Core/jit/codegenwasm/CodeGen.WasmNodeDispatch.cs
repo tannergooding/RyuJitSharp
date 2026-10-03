@@ -346,7 +346,24 @@ public sealed partial class CodeGen
 
     private void genCodeForLclAddr(GenTreeLclFld tree)
     {
-        WasmCodegenDependencyNotPorted(tree, nameof(genCodeForLclAddr));
+        assert(tree.OperIs(GT_LCL_ADDR));
+
+        var lclNum = tree.LclNum;
+        var lclOffset = tree.LclOffs;
+
+        // This matches the Wasm-only LIR::Flags::FoldedAddr bit in src/coreclr/jit/lir.h.
+        const LIR.Flags WasmFoldedAddr = (LIR.Flags)0x10;
+
+        GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetFramePointerRegIndex()));
+
+        if (((tree._lirFlags & WasmFoldedAddr) == LIR.Flags.None) &&
+            ((lclOffset != 0) || (_compiler.lvaFrameAddress(lclNum, out _) != 0)))
+        {
+            GetEmitter().emitIns_S(INS_I_const, EA_PTRSIZE, lclNum, lclOffset);
+            GetEmitter().emitIns(INS_I_add);
+        }
+
+        WasmProduceReg(tree);
     }
 
     private void genCodeForLclFld(GenTreeLclFld tree)
