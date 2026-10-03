@@ -107,8 +107,69 @@ public partial class Emitter
                (size == EA_2BYTE) || (size == EA_1BYTE);
     }
 
-    private static bool TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 relocatable page-offset load folding is not ported.");
+    private bool TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
+    {
+        assert(_compiler is not null);
+
+        if (ins != INS_ldr)
+        {
+            return false;
+        }
+
+        // The base register must be dead after the load so the preceding address add can be removed.
+        if (reg1 != reg2)
+        {
+            return false;
+        }
+
+        // PAGEOFFSET_12L scales by eight, so it only supports 64-bit general-register loads.
+        if ((EA_SIZE(attr) != EA_8BYTE) || !isGeneralRegister(reg1))
+        {
+            return false;
+        }
+
+        if (!emitCanPeepholeLastIns())
+        {
+            return false;
+        }
+
+        if (_compiler.compGeneratingUnwindProlog || _compiler.compGeneratingUnwindEpilog)
+        {
+            // Keep the original instructions so their unwind effects remain reportable.
+            return false;
+        }
+
+        assert(emitLastIns is not null);
+        var prevId = emitLastIns;
+        // The previous instruction must be the relocatable low-page add from the same adrp/add pair.
+        if ((prevId.idIns() != INS_add) || (prevId.idInsFmt() != IF_DI_2A) || !prevId.idIsReloc() ||
+            prevId.idIsTlsGD() || (prevId.idReg1() != reg1) || (prevId.idReg2() != reg1))
+        {
+            return false;
+        }
+
+        var sym = prevId.idAddr().iiaAddr;
+        // Only fold when the VM guarantees the alignment required by the scaled 64-bit relocation.
+        if (_compiler.eeGetAddressAlignment(sym) < 8)
+        {
+            return false;
+        }
+
+        // The adrp already materialized the page base; replace the add with its page-offset load.
+        emitRemoveLastInstruction();
+
+        var id = emitNewInstrSC(attr, (nint)sym);
+        id.idIns(INS_ldr);
+        id.idInsFmt(IF_LS_2A);
+        id.idInsOpt(INS_OPTS_NONE);
+        id.idReg1(reg1);
+        id.idReg2(reg1);
+        id.idSetIsDspReloc();
+
+        dispIns(id);
+        appendToCurIG(id);
+        return true;
+    }
 
     private enum RegisterOrder
     {

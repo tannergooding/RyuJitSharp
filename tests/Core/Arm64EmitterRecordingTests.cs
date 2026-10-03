@@ -456,6 +456,28 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)0x12345));
     }
 
+    [Test]
+    public static void PageOffsetLoadFoldRequiresGuaranteedAddressAlignment()
+    {
+        var emitter = CreateEmitter(reloc: true);
+        var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
+        compiler.info.compMatchedVM = false;
+
+        EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(EA_8BYTE | EA_CNS_RELOC_FLG, REG_R19, 0x1234);
+        RecordPair(emitter, INS_ldr, EA_8BYTE, REG_R19, REG_R19, 0,
+            INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+
+        var instructions = CurrentInstructions(emitter);
+        Assert.That(instructions, Has.Count.EqualTo(3));
+        Assert.That(instructions[0].idIns(), Is.EqualTo(INS_adrp));
+        Assert.That(instructions[1].idIns(), Is.EqualTo(INS_add));
+        Assert.That(instructions[1].idIsReloc(), Is.True);
+        Assert.That(compiler.eeGetAddressAlignment((void*)0x1234), Is.EqualTo(1u));
+        Assert.That(instructions[2].idIns(), Is.EqualTo(INS_ldr));
+        Assert.That(instructions[2].idInsFmt(), Is.EqualTo(IF_LS_2A));
+        Assert.That(instructions[2].idIsReloc(), Is.False);
+    }
+
     [TestCase(false, REG_R19, REG_R21)]
     [TestCase(true, REG_R21, REG_R19)]
     public static void AdjacentLoadsCombineInAddressOrder(bool descending, regNumber firstExpected, regNumber secondExpected)
@@ -532,7 +554,6 @@ internal static unsafe class Arm64EmitterRecordingTests
     }
 
     [TestCase(INS_nop, 1, false, false, REG_R20, "SVE two-register/immediate")]
-    [TestCase(INS_ldr, 0, false, true, REG_R20, "relocatable page-offset load folding")]
     public static void PairImmediateDependenciesRemainExplicit(instruction ins, int imm,
         bool optimized, bool reloc, regNumber reg2, string dependency)
     {
