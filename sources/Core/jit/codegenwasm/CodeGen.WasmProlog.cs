@@ -154,5 +154,172 @@ public sealed partial class CodeGen
         Emitter.emitIns_I(INS_I_const, EA_PTRSIZE, untrLclHi - untrLclLo);
         Emitter.emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
     }
+
+    internal static instruction WasmBitCastInstruction(var_types toType, var_types fromType)
+    {
+        toType = toType.ActualType;
+        fromType = fromType.ActualType;
+
+        if (toType is TYP_REF or TYP_BYREF)
+        {
+            toType = TYP_I_IMPL;
+        }
+        if (fromType is TYP_REF or TYP_BYREF)
+        {
+            fromType = TYP_I_IMPL;
+        }
+
+        if (toType == fromType)
+        {
+            return INS_none;
+        }
+
+        return (toType, fromType) switch {
+            (TYP_INT, TYP_FLOAT) => INS_i32_reinterpret_f32,
+            (TYP_FLOAT, TYP_INT) => INS_f32_reinterpret_i32,
+            (TYP_LONG, TYP_DOUBLE) => INS_i64_reinterpret_f64,
+            (TYP_DOUBLE, TYP_LONG) => INS_f64_reinterpret_i64,
+            _ => throw new FatalJitException(CORJIT_INTERNALERROR, "Unsupported Wasm bitcast."),
+        };
+    }
+
+    internal var_types genParamStackTypeWasm(in LclVarDsc descriptor, in AbiPassingSegment segment)
+    {
+        assert(segment.IsPassedInRegister);
+
+        switch (descriptor.Type)
+        {
+            case TYP_BYREF:
+            case TYP_REF:
+            {
+                assert((segment.Offset == 0) && (segment.Size == TARGET_POINTER_SIZE));
+                return descriptor.Type;
+            }
+
+            case TYP_STRUCT:
+            {
+                if (genIsValidFloatReg(segment.Register))
+                {
+                    return segment.GetRegisterType();
+                }
+
+                var layout = descriptor.Layout;
+                assert(layout is not null);
+                assert((segment.Offset >= 0) && ((uint)segment.Offset < layout.Size));
+                if (((segment.Offset % TARGET_POINTER_SIZE) == 0) && (segment.Size == TARGET_POINTER_SIZE))
+                {
+                    return layout.GetGCPtrType(segment.Offset / TARGET_POINTER_SIZE);
+                }
+
+                if (_compiler.info.compCallConv == CorInfoCallConvExtension.Swift)
+                {
+                    return segment.GetRegisterType();
+                }
+
+                return segment.GetRegisterType();
+            }
+
+            default:
+            {
+                return segment.GetRegisterType().ActualType;
+            }
+        }
+    }
+
+    private void genHomeRegisterParamsWasm()
+    {
+#if DEBUG
+        if (_verbose)
+        {
+            jitprintf("*************** In genHomeRegisterParams()\n");
+        }
+#endif
+        // Wasm assigns homed values to newly declared locals, so register cycles cannot occur.
+        void SpillParameter(int localNumber, int offset, int parameterLocalNumber, in AbiPassingSegment segment)
+        {
+            assert(segment.IsPassedInRegister);
+
+            ref var local = ref _compiler.lvaGetDesc(localNumber);
+            ref var parameter = ref _compiler.lvaGetDesc(parameterLocalNumber);
+            var sourceType = genParamStackTypeWasm(in parameter, in segment);
+
+            if (local.lvTracked)
+            {
+                assert(_compiler.fgFirstBB is not null);
+                // On-frame GC locals are reported as untracked, so their homes must still be initialized.
+                if (!VarSetOps.IsMember(_compiler, _compiler.fgFirstBB.bbLiveIn, local._varIndex)
+                    && !(local.lvOnFrame && local.HasGCPtr))
+                {
+                    return;
+                }
+            }
+
+            if (local.lvOnFrame && (!local.lvIsInReg || local.IsLiveInOutOfHandler()))
+            {
+                var storeType = sourceType;
+                if ((local.Type != TYP_STRUCT) && (local.Type.ActualType.Size < storeType.Size))
+                {
+                    storeType = local.Type.ActualType;
+                }
+
+                Emitter.emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetFramePointerRegIndex()));
+                Emitter.emitIns_I(INS_local_get, storeType.EmitActualSize,
+                    unchecked((nint)regNumberExtensions.WasmRegToIndex(segment.Register)));
+                Emitter.emitIns_S(ins_Store(storeType), storeType.EmitActualSize, localNumber, offset);
+            }
+
+            if (local.lvIsInReg)
+            {
+                var sourceReg = segment.Register;
+                var targetReg = local.RegNum;
+                if (targetReg != sourceReg)
+                {
+                    var targetType = local.GetRegisterType();
+                    assert(regNumberExtensions.WasmRegToType(sourceReg)
+                        == regNumberExtensions.ActualTypeToWasmValueType(sourceType));
+                    assert(regNumberExtensions.WasmRegToType(targetReg)
+                        == regNumberExtensions.ActualTypeToWasmValueType(targetType));
+                    assert(((sourceType == TYP_FLOAT) && (targetType == TYP_INT))
+                        || ((sourceType == TYP_DOUBLE) && (targetType == TYP_LONG)));
+
+                    Emitter.emitIns_I(INS_local_get, sourceType.EmitActualSize,
+                        unchecked((nint)regNumberExtensions.WasmRegToIndex(sourceReg)));
+                    Emitter.emitIns(WasmBitCastInstruction(targetType, sourceType));
+                    Emitter.emitIns_I(INS_local_set, targetType.EmitActualSize,
+                        unchecked((nint)regNumberExtensions.WasmRegToIndex(targetReg)));
+                }
+            }
+        }
+
+        for (var localNumber = 0; localNumber < _compiler.info.compArgsCount; localNumber++)
+        {
+            ref var local = ref _compiler.lvaGetDesc(localNumber);
+            ref readonly var abiInfo = ref _compiler.lvaGetParameterAbiInfo(localNumber);
+
+            foreach (ref readonly var segment in abiInfo.Segments)
+            {
+                if (!segment.IsPassedInRegister)
+                {
+                    continue;
+                }
+
+                var mapping = _compiler.FindParameterRegisterLocalMappingByRegister(segment.Register);
+                var spillToBaseLocal = true;
+                if (mapping is ParameterRegisterLocalMapping mapped)
+                {
+                    SpillParameter(mapped.LclNum, mapped.Offset, localNumber, in segment);
+                    if (local.lvPromoted)
+                    {
+                        spillToBaseLocal = false;
+                    }
+                }
+
+                if (spillToBaseLocal)
+                {
+                    SpillParameter(localNumber, segment.Offset, localNumber, in segment);
+                }
+            }
+        }
+    }
 }
 #endif

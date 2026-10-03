@@ -14,7 +14,7 @@ public sealed partial class CodeGen
     public void genHomeRegisterParams(regNumber initReg, ref bool initRegStillZeroed)
     {
 #if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "Incoming parameter homing requires AMD64.");
+        genHomeRegisterParamsWasm();
 #else
 #if DEBUG
         if (_verbose)

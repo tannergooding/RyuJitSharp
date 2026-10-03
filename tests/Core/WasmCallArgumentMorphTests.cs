@@ -59,6 +59,54 @@ internal static unsafe class WasmCallArgumentMorphTests
         });
     }
 
+    [TestCase(TYP_INT, TYP_FLOAT, RyuJitSharp.instruction.INS_i32_reinterpret_f32)]
+    [TestCase(TYP_FLOAT, TYP_INT, RyuJitSharp.instruction.INS_f32_reinterpret_i32)]
+    [TestCase(TYP_LONG, TYP_DOUBLE, RyuJitSharp.instruction.INS_i64_reinterpret_f64)]
+    [TestCase(TYP_DOUBLE, TYP_LONG, RyuJitSharp.instruction.INS_f64_reinterpret_i64)]
+    [TestCase(TYP_BYREF, TYP_REF, RyuJitSharp.instruction.INS_none)]
+    [TestCase(TYP_INT, TYP_INT, RyuJitSharp.instruction.INS_none)]
+    public static void WasmBitCastInstructionMatchesValueTypes(var_types targetType, var_types sourceType,
+        RyuJitSharp.instruction expected)
+    {
+        Assert.That(CodeGen.WasmBitCastInstruction(targetType, sourceType), Is.EqualTo(expected));
+    }
+
+    [TestCase(TYP_BYTE, WasmValueType.I32, TYP_INT)]
+    [TestCase(TYP_FLOAT, WasmValueType.F32, TYP_FLOAT)]
+    [TestCase(TYP_LONG, WasmValueType.I64, TYP_LONG)]
+    public static void WasmParameterStackTypeUsesTheIncomingRegisterType(
+        var_types parameterType, WasmValueType registerType, var_types expectedType)
+    {
+        WithCompiler(compiler => {
+            var descriptor = new LclVarDsc { Type = parameterType };
+            var segment = AbiPassingSegment.InRegister(
+                regNumberExtensions.MakeWasmReg(0, registerType), 0, parameterType.Size);
+            var codeGen = new CodeGen(compiler);
+
+            Assert.That(codeGen.genParamStackTypeWasm(in descriptor, in segment), Is.EqualTo(expectedType));
+        });
+    }
+
+    [Test]
+    public static void RegisterParameterHomingLeavesMatchingIncomingLocalInPlace()
+    {
+        WithCompiler(compiler => {
+            compiler.info.compArgsCount = 1;
+            var register = regNumberExtensions.MakeWasmReg(0, WasmValueType.F32);
+            var segment = AbiPassingSegment.InRegister(register, 0, TYP_FLOAT.Size);
+            compiler.lvaParameterPassingInfo =
+                [AbiPassingInformation.FromSegmentByValue(compiler, in segment)];
+            compiler.lvaTable[0].Type = TYP_FLOAT;
+            compiler.lvaTable[0].lvLRACandidate = true;
+            compiler.lvaTable[0].RegNum = register;
+
+            var initRegStillZeroed = true;
+            new CodeGen(compiler).genHomeRegisterParams(REG_NA, ref initRegStillZeroed);
+
+            Assert.That(initRegStillZeroed, Is.True);
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void ShadowStackArgumentPrecedesClassificationOnlyForManagedCalls(bool unmanaged)
