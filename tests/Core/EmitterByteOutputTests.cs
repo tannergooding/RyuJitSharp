@@ -63,8 +63,9 @@ internal static unsafe class EmitterByteOutputTests
     }
 
 #if TARGET_X86
-    [Test]
-    public static void X86SizeTOutputUsesTheNativePointerWidth()
+    [TestCase(4294967295L)]
+    [TestCase(long.MaxValue)]
+    public static void X86SizeTOutputUsesTheNativePointerWidth(long value)
     {
         CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
         {
@@ -73,7 +74,7 @@ internal static unsafe class EmitterByteOutputTests
             new Span<byte>(buffer, 8).Fill(0xA5);
             emitter.writeableOffset = 0;
 
-            var count = emitter.emitOutputSizeT(buffer + 1, 4294967295L);
+            var count = emitter.emitOutputSizeT(buffer + 1, value);
 
             Assert.That(count, Is.EqualTo(sizeof(int)));
             Assert.That(new ReadOnlySpan<byte>(buffer + 1, count).ToArray(),
