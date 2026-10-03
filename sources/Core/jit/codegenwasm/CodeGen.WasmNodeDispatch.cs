@@ -1401,9 +1401,196 @@ public sealed partial class CodeGen
         WasmProduceReg(lea);
     }
 
-    private void genCodeForStoreBlk(GenTreeBlk node)
+    private unsafe void genCodeForStoreBlk(GenTreeBlk blkOp)
     {
-        WasmCodegenDependencyNotPorted(node, nameof(genCodeForStoreBlk));
+        assert(blkOp.OperIs(GT_STORE_BLK));
+
+        var isCopyBlk = blkOp.IsCopyBlkOp;
+        var isNativeOp = blkOp._kind is GenTreeBlk.BlkOpKindNativeOpcode;
+        var dstOnStack = blkOp.IsAddressNotOnHeap(_compiler);
+
+        if (blkOp._kind is GenTreeBlk.BlkOpKindLoop)
+        {
+            assert(!isCopyBlk);
+            genCodeForInitBlkLoop(blkOp);
+            genUpdateLife(blkOp);
+            return;
+        }
+
+        // Stack destinations do not need write barriers and must use a native memory operation.
+        assert(!dstOnStack || isNativeOp);
+
+#if DEBUG
+        // Without a native memory operation, this path must be copying a type with GC pointers.
+        assert(isNativeOp || blkOp.Layout.HasGCPtr);
+#endif
+
+        var nullCheckDest = (blkOp.Flags & GTF_IND_NONFAULTING) == 0;
+        var nullCheckSrc = false;
+        GenTree dest = blkOp.Addr;
+        GenTree src = blkOp.Data;
+        var destReg = REG_NA;
+        var srcReg = REG_NA;
+        uint destOffset = 0;
+        uint srcOffset = 0;
+
+        // Unwrap a contained GT_INIT_VAL so its fill value, not the wrapper, is pushed onto the value stack.
+        var srcForConsume = src.Oper is GT_INIT_VAL ? src.AsUnOp().Op1 : src;
+        assert(src.Oper is not GT_INIT_VAL || src.IsContained);
+
+        genConsumeRegs(dest);
+        genConsumeRegs(srcForConsume);
+
+        if (src.Oper is GT_IND)
+        {
+            // A byref or pointer source is a GT_IND; unwrap it to get the address to load from.
+            nullCheckSrc = (src.Flags & GTF_IND_NONFAULTING) == 0;
+            src = src.AsUnOp().Op1;
+
+            // Match lowering by fetching a register only when this source is expected to need one.
+            if (!isNativeOp || nullCheckSrc)
+            {
+                srcReg = GetMultiUseOperandReg(src);
+            }
+
+            assert(!src.IsContained);
+        }
+        else if (src.OperIs(GT_CNS_INT, GT_INIT_VAL))
+        {
+            if (src.Oper is GT_INIT_VAL)
+            {
+                src = src.AsUnOp().Op1;
+            }
+
+            assert(!src.IsContained);
+            assert(!isCopyBlk);
+            assert(isNativeOp);
+        }
+        else
+        {
+            assert(src.OperIs(GT_LCL_VAR, GT_LCL_FLD));
+            var lclVar = src.AsLclVarCommon();
+            var framePointerBased = false;
+            srcReg = GetFramePointerReg(_compiler.funCurrentFuncIdx());
+            var frameOffset = _compiler.lvaFrameAddress(lclVar.LclNum, out framePointerBased);
+            srcOffset = unchecked((uint)(frameOffset + lclVar.LclOffs));
+            assert(framePointerBased);
+        }
+
+        if (dest.Oper is GT_LCL_ADDR)
+        {
+            var lclVar = dest.AsLclVarCommon();
+            var framePointerBased = false;
+            destReg = GetFramePointerReg(_compiler.funCurrentFuncIdx());
+            var frameOffset = _compiler.lvaFrameAddress(lclVar.LclNum, out framePointerBased);
+            destOffset = unchecked((uint)(frameOffset + lclVar.LclOffs));
+            assert(framePointerBased);
+        }
+        else if (isNativeOp && !nullCheckDest)
+        {
+            // Native memory.fill with no null check has no multiply-used destination register to fetch.
+        }
+        else if (isCopyBlk || nullCheckDest)
+        {
+            destReg = GetMultiUseOperandReg(dest);
+        }
+        else
+        {
+            assert(isNativeOp);
+        }
+
+        if (nullCheckDest)
+        {
+            genEmitNullCheck(destReg);
+        }
+
+        if (nullCheckSrc)
+        {
+            genEmitNullCheck(srcReg);
+        }
+
+        var emit = GetEmitter();
+
+        if (isNativeOp)
+        {
+            if (src.IsContained)
+            {
+                assert(isCopyBlk);
+                assert(srcReg != REG_NA);
+                // A contained source may not be on the value stack, so manufacture its address.
+                genEmitLocalGet(srcReg, WasmValueType.I);
+                if (srcOffset != 0)
+                {
+                    emit.emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)srcOffset));
+                    emit.emitIns(INS_I_add);
+                }
+            }
+
+            emit.emitIns_I(INS_i32_const, EA_4BYTE, unchecked((nint)blkOp.Size));
+            emit.emitIns_I(isCopyBlk ? INS_memory_copy : INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+            genUpdateLife(blkOp);
+            return;
+        }
+
+        assert(!dest.IsContained);
+        // The operands may be on the evaluation stack, but cannot be reliably used here, so drop them.
+        emit.emitIns(INS_drop);
+        if (!src.IsContained)
+        {
+            emit.emitIns(INS_drop);
+        }
+
+        if (blkOp.IsVolatile)
+        {
+            // TODO-WASM: Memory barrier
+        }
+
+        var layout = blkOp.Layout;
+        var slots = layout.SlotCount;
+        var gcPtrCount = unchecked((uint)layout.GCPtrCount);
+        var i = 0;
+
+        while (i < slots)
+        {
+            if (!layout.IsGCPtr(i))
+            {
+                // Copy non-GC slots with pointer-sized loads and stores.
+                genEmitLocalGet(destReg, WasmValueType.I);
+                genEmitLocalGet(srcReg, WasmValueType.I);
+                emit.emitIns_I(INS_I_load, EA_PTRSIZE, unchecked((nint)srcOffset));
+                emit.emitIns_I(INS_I_store, EA_PTRSIZE, unchecked((nint)destOffset));
+            }
+            else
+            {
+                // Compute the slot address and use a write barrier for each GC pointer.
+                genEmitLocalGet(destReg, WasmValueType.I);
+                emit.emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)destOffset));
+                emit.emitIns(INS_I_add);
+                genEmitLocalGet(srcReg, WasmValueType.I);
+                emit.emitIns_I(INS_I_load, EA_PTRSIZE, unchecked((nint)srcOffset));
+                // The helper omits SP/PEP, so only the destination and reference go on the stack.
+                genEmitHelperCallWasm(CORINFO_HELP_CHECKED_ASSIGN_REF, 0, EA_PTRSIZE);
+                gcPtrCount = unchecked(gcPtrCount - 1u);
+            }
+
+            i++;
+            destOffset = unchecked(destOffset + TARGET_POINTER_SIZE);
+            srcOffset = unchecked(srcOffset + TARGET_POINTER_SIZE);
+        }
+
+        assert(gcPtrCount == 0);
+
+        if (blkOp.IsVolatile)
+        {
+            // TODO-WASM: Memory barrier
+        }
+
+        genUpdateLife(blkOp);
+    }
+
+    private void genCodeForInitBlkLoop(GenTreeBlk blkOp)
+    {
+        WasmCodegenDependencyNotPorted(blkOp, nameof(genCodeForInitBlkLoop));
     }
 
     private static uint PackIntrinsicAndType(NamedIntrinsic intrinsic, var_types type)
