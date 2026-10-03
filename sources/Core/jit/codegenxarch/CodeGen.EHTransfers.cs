@@ -9,7 +9,43 @@ public sealed partial class CodeGen
 {
     public void genCallFinally(BasicBlock block)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM64
+        Emitter.RequireSupportedInstructionRecording();
+        assert(block.Kind == BBJ_CALLFINALLY);
+        var nextBlock = block.Next;
+
+        if (block.HasFlag(BBF_RETLESS_CALL))
+        {
+            Emitter.emitIns_J(INS_bl_local, block.Target);
+
+            // Keep the call's return address in its EH region for unwind lookup.
+            if ((nextBlock is null) || !BasicBlock.sameEHRegion(block, nextBlock))
+            {
+                instGen(INS_BREAKPOINT);
+            }
+        }
+        else
+        {
+            // The handler's last uses are not represented by liveness at this call site.
+            Emitter.emitDisableGC();
+            Emitter.emitIns_J(INS_bl_local, block.Target);
+
+            assert(nextBlock is not null);
+            assert(nextBlock.Kind == BBJ_CALLFINALLYRET);
+            var finallyContinuation = nextBlock.Target;
+            if ((nextBlock.Next == finallyContinuation) && !_compiler.fgInDifferentRegions(nextBlock, finallyContinuation))
+            {
+                // Keep a return address in this EH region for stack walking from the handler.
+                instGen(INS_nop);
+            }
+            else
+            {
+                inst_JMP(EJ_jmp, finallyContinuation);
+            }
+
+            Emitter.emitEnableGC();
+        }
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Finally-call generation requires xarch.");
 #else
         Emitter.RequireSupportedInstructionRecording();
@@ -55,7 +91,11 @@ public sealed partial class CodeGen
 
     public void genEHCatchRet(BasicBlock block)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM64
+        Emitter.RequireSupportedInstructionRecording();
+        // The emitter selects ADR or ADRP+ADD after laying out the target.
+        Emitter.emitIns_R_L(INS_adr, EA_PTRSIZE, block.Target, REG_INTRET);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Catch-return generation requires xarch.");
 #else
         Emitter.RequireSupportedInstructionRecording();
