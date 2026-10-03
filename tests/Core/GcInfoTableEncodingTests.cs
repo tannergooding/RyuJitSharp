@@ -66,6 +66,23 @@ internal static unsafe class GcInfoTableEncodingTests
             Assert.That(Member<uint>(encoder, "m_StackBaseRegister"), Is.EqualTo((uint)REG_FPBASE));
             Assert.That(Member<bool>(encoder, "m_IsVarArg"), Is.True);
             Assert.That(Member<uint>(encoder, "m_SizeOfStackOutgoingAndScratchArea"), Is.EqualTo(32u));
+            Assert.That(Member<bool>(encoder, "m_WantsReportOnlyLeaf"), Is.False);
+        }, minopts: false);
+    }
+
+    [Test]
+    public static void HeaderRequestsLeafOnlyReportingWhenExceptionHandlersExist()
+    {
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
+        {
+            compiler.compHndBBtabCount = 1;
+            ICorJitInfo jitInfo = default;
+            CORINFO_METHOD_INFO method = default;
+            var encoder = new GcInfoEncoder(&jitInfo, &method);
+
+            codeGen.GCInfo.gcInfoBlockHdrSave(encoder, 20, 2);
+
+            Assert.That(Member<bool>(encoder, "m_WantsReportOnlyLeaf"), Is.True);
         }, minopts: false);
     }
 
@@ -273,7 +290,8 @@ internal static unsafe class GcInfoTableEncodingTests
         {
             "m_SlotTable" or "m_LifetimeTransitions" or "m_InterruptibleRanges" or
                 "m_CallSites" or "m_CallSiteSizes" or "m_CodeLength" or "m_StackBaseRegister" or
-                "m_IsVarArg" or "m_SizeOfStackOutgoingAndScratchArea" => typeof(GcInfoEncoder),
+                "m_IsVarArg" or "m_SizeOfStackOutgoingAndScratchArea" or "m_WantsReportOnlyLeaf" =>
+                typeof(GcInfoEncoder),
             "CodeOffset" or "SlotId" or "BecomesLive" =>
                 typeof(GcInfoEncoder).GetNestedType("LifetimeTransition", BindingFlags.NonPublic),
             "NormStartOffset" or "NormStopOffset" =>

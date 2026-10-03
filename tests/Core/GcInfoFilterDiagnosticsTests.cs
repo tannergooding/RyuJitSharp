@@ -2,6 +2,7 @@
 
 #if DEBUG && TARGET_AMD64 && WINDOWS_AMD64_ABI
 using System;
+using System.Collections.Generic;
 using NUnit.Framework;
 using static RyuJitSharp.EHHandlerType;
 using static RyuJitSharp.regNumber;
@@ -69,6 +70,60 @@ internal static class GcInfoFilterDiagnosticsTests
                 _ => "",
             };
             Assert.That(actual, Is.EqualTo(expected));
+        });
+    }
+
+    [Test]
+    public static void FilterSplittingPreservesDescriptorRangesAndListOrder()
+    {
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
+        {
+            var filterGroup = new insGroup { igOffs = 4 };
+            var handlerGroup = new insGroup { igOffs = 8 };
+            filterGroup.igSelf = filterGroup;
+            handlerGroup.igSelf = handlerGroup;
+            compiler.compHndBBtab =
+            [
+                new EHblkDsc
+                {
+                    ebdHandlerType = EH_HANDLER_FILTER,
+                    ebdFilter = new BasicBlock(null, null) { bbEmitCookie = filterGroup },
+                    ebdHndBeg = new BasicBlock(null, null) { bbEmitCookie = handlerGroup },
+                },
+            ];
+            compiler.compHndBBtabCount = 1;
+            var original = new GCInfo.varPtrDsc
+            {
+                vpdVarNum = unchecked((uint)-16) | 1u,
+                vpdBegOfs = 2,
+                vpdEndOfs = 12,
+            };
+            codeGen.GCInfo.gcVarPtrList = original;
+
+            codeGen.GCInfo.gcMarkFilterVarsPinned();
+
+            var actual = new List<(uint Begin, uint End, bool Pinned, bool Byref)>();
+            for (var descriptor = codeGen.GCInfo.gcVarPtrList; descriptor is not null; descriptor = descriptor.vpdNext)
+            {
+                actual.Add((
+                    descriptor.vpdBegOfs,
+                    descriptor.vpdEndOfs,
+                    (descriptor.vpdVarNum & 2u) != 0,
+                    (descriptor.vpdVarNum & 1u) != 0));
+            }
+
+            Assert.That(actual, Is.EqualTo(new[]
+            {
+                (8u, 12u, false, true),
+                (4u, 8u, true, true),
+                (2u, 4u, false, true),
+            }));
+            var tail = codeGen.GCInfo.gcVarPtrList;
+            while ((tail is not null) && (tail.vpdNext is not null))
+            {
+                tail = tail.vpdNext;
+            }
+            Assert.That(tail, Is.SameAs(original));
         });
     }
 

@@ -158,9 +158,13 @@ public partial struct GCInfo
 
     private void gcInsertVarPtrDscSplit(varPtrDsc descriptor, varPtrDsc begin)
     {
+#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI || JIT32_GCENCODER
+        throw new FatalJitException(CORJIT_SKIPPED, "GC filter lifetimes require Windows AMD64.");
+#else
         assert(begin is not null);
         descriptor.vpdNext = gcVarPtrList;
         gcVarPtrList = descriptor;
+#endif
     }
 
 #if DEBUG
