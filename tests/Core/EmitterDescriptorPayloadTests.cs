@@ -142,6 +142,16 @@ internal static unsafe class EmitterDescriptorPayloadTests
     }
 
     [Test]
+    public static void AddressAccessorReturnsMutableDescriptorStorage()
+    {
+        var descriptor = new Descriptor();
+        ref var address = ref descriptor.idAddr();
+        address.iiaSecRel = true;
+
+        Assert.That(descriptor.idAddr().iiaSecRel, Is.True);
+    }
+
+    [Test]
     public static void SmallDisplacementFlagClearsLargeDisplacementFlag()
     {
         var descriptor = new Descriptor();
