@@ -1590,7 +1590,18 @@ public sealed partial class CodeGen
 
     private void genCodeForInitBlkLoop(GenTreeBlk blkOp)
     {
-        WasmCodegenDependencyNotPorted(blkOp, nameof(genCodeForInitBlkLoop));
+        // TODO-WASM: In multi-threaded Wasm we will need to generate a for loop that atomically zeroes one GC ref
+        //  at a time. Right now we're single-threaded, so we can just use memory.fill.
+        assert(!WasmThreadSupport);
+
+        // FIXME-WASM: We're missing a null check here.
+
+        genConsumeOperands(blkOp);
+        // Emit the value constant expected by the memory.fill opcode (zero)
+        GetEmitter().emitIns_I(INS_i32_const, EA_4BYTE, 0);
+        // Emit the size constant expected by the memory.copy and memory.fill opcodes
+        GetEmitter().emitIns_I(INS_i32_const, EA_4BYTE, unchecked((nint)blkOp.Size));
+        GetEmitter().emitIns_I(INS_memory_fill, EA_8BYTE, LINEAR_MEMORY_INDEX);
     }
 
     private static uint PackIntrinsicAndType(NamedIntrinsic intrinsic, var_types type)
