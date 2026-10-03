@@ -72,6 +72,20 @@ internal static unsafe class CallLoweringTests
         });
     }
 
+    [Test]
+    public static void PutArgRegFactoryPreservesItsOperandTypeAndRegister()
+    {
+        WithCompiler(compiler => {
+            var arg = compiler.gtNewIconNode(var_types.TYP_INT, 42);
+            var putArg = compiler.gtNewPutArgReg(var_types.TYP_INT, arg, regNumber.REG_RCX);
+
+            Assert.That(putArg.Oper, Is.EqualTo(genTreeOps.GT_PUTARG_REG));
+            Assert.That(putArg.Type, Is.EqualTo(var_types.TYP_INT));
+            Assert.That(putArg.Op1, Is.SameAs(arg));
+            Assert.That(putArg.RegNum, Is.EqualTo(regNumber.REG_RCX));
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void ArgumentPlacementPreservesOrderAcrossInterferingCalls(bool interference)

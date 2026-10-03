@@ -13737,6 +13737,15 @@ public partial class Compiler
         return gtNewIconNode(TYP_INT, 1);
     }
 
+    public GenTreeUnOp gtNewPutArgReg(var_types type, GenTree arg, regNumber argReg)
+    {
+        assert(arg is not null);
+
+        var node = gtNewUnaryNode(GT_PUTARG_REG, type, arg);
+        node.RegNum = argReg;
+        return node;
+    }
+
     public GenTreeUnOp gtNewUnaryNode(genTreeOps oper, var_types type, GenTree? op1)
     {
         return new GenTreeUnOp(oper, type, op1);

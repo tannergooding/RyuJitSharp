@@ -178,9 +178,7 @@ public sealed partial class Lowering
         InsertBitCastIfNecessary(ref argNode, in registerSegment);
 
 #if HAS_FIXED_REGISTER_SET
-        var putArg = new GenTreeUnOp(GT_PUTARG_REG, argNode.Type.ActualType, argNode) {
-            RegNum = registerSegment.Register,
-        };
+        var putArg = CompilerInstance.gtNewPutArgReg(argNode.Type.ActualType, argNode, registerSegment.Register);
         BlockRange().InsertAfter(argNode, putArg);
         argNode = putArg;
 #endif
