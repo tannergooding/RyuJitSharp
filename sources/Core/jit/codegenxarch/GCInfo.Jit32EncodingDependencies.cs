@@ -13,6 +13,11 @@ public partial struct GCInfo
     {
     }
 
+    internal static void gcInitEncoderLookupTable()
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "JIT32 GC encoder lookup initialization is not ported.");
+    }
+
     internal readonly unsafe nuint gcInfoBlockHdrSave(byte* destination, int write,
         uint codeSize, uint prologSize, uint epilogSize, ref InfoHdr header, ref int cached)
     {
