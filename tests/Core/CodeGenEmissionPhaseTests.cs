@@ -28,6 +28,21 @@ internal static unsafe class CodeGenEmissionPhaseTests
 #endif
 
     [Test]
+    public static void RegisterInfoCopyUsesInitializedCompilerState()
+    {
+        CompilerFinalFrameLayoutTests.WithFrame((compiler, codeGen) =>
+        {
+            Assert.That(codeGen.SRBM_ALLFLOAT, Is.EqualTo(compiler.SRBM_ALLFLOAT));
+            Assert.That(codeGen.SRBM_FLT_CALLEE_TRASH, Is.EqualTo(compiler.SRBM_FLT_CALLEE_TRASH));
+            Assert.That(codeGen.SRBM_ALLINT, Is.EqualTo(compiler.SRBM_ALLINT));
+            Assert.That(codeGen.SRBM_INT_CALLEE_TRASH, Is.EqualTo(compiler.SRBM_INT_CALLEE_TRASH));
+            Assert.That(codeGen.REG_INT_LAST, Is.EqualTo(compiler.REG_INT_LAST));
+            Assert.That(codeGen.SRBM_ALLMASK, Is.EqualTo(compiler.SRBM_ALLMASK));
+            Assert.That(codeGen.SRBM_MSK_CALLEE_TRASH, Is.EqualTo(compiler.SRBM_MSK_CALLEE_TRASH));
+        });
+    }
+
+    [Test]
     public static void GenerationFinalizesFrameAndMaterializesReturnBeforeBinding()
     {
         CompilerFinalFrameLayoutTests.WithFrame((compiler, codeGen) =>

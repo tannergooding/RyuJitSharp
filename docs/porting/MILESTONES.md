@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: xarch register-info binding
+
+Reconciled the native `CodeGenInterface::CopyRegisterInfo` binding with the
+existing `CodeGen.CopyRegisterInfo` implementation. The managed method copies
+the initialized AMD64 floating-point/integer register masks, callee-trash masks,
+last integer register, and xarch mask-register state. Added a Windows-x64
+regression that checks all seven copied values against the compiler state.
+`CodeGenEmissionPhaseTests` passes 9/9 Debug and 3/3 Release, with zero skips.
+
+The residual contained only a seven-line empty `TARGET_XARCH` definition; the
+native declaration was already absent. Consolidated native HEAD `e01ac74f`
+removes the definition and remains sole-parented to the pinned oracle. Recovery
+ref `refs/copilot-recovery/copy-register-info-before-b390652e` preserves the
+previous native HEAD. This binding-level test is not generated-code or runtime
+parity.
+
 ## 2026-10-03: LSRA kill-reference construction
 
 Reconciled the existing managed `LinearScan.addKillForRegs` helper with its
