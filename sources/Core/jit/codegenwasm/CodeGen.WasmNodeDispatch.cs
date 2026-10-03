@@ -429,11 +429,6 @@ public sealed partial class CodeGen
         WasmCodegenDependencyNotPorted(tree, nameof(genIntrinsic));
     }
 
-    private void genCkfinite(GenTree tree)
-    {
-        WasmCodegenDependencyNotPorted(tree, nameof(genCkfinite));
-    }
-
     private void genCodeForAsyncContinuation(GenTree tree)
     {
         WasmCodegenDependencyNotPorted(tree, nameof(genCodeForAsyncContinuation));
