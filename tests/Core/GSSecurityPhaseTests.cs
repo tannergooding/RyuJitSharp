@@ -218,6 +218,29 @@ internal static unsafe class GSSecurityPhaseTests
         });
     }
 
+#if TARGET_X86 && FEATURE_IJW
+    [Test]
+    public static void NonSpecialStructArgumentUsesDirectShadowCopy()
+    {
+        WithCompiler(2, compiler => {
+            compiler.info.compArgsCount = 1;
+            var layout = new ClassLayout(24);
+            compiler.lvaGetDesc(0).Type = TYP_STRUCT;
+            compiler.lvaGetDesc(0).Layout = layout;
+            compiler.lvaGetDesc(1).Type = TYP_STRUCT;
+            compiler.lvaGetDesc(1).Layout = layout;
+            var block = Block(compiler);
+
+            compiler.gsCopyIntoShadow(0, 1);
+
+            var source = block.FirstNode ?? throw new InvalidOperationException("The source local was not emitted.");
+            var store = source.Next ?? throw new InvalidOperationException("The shadow store was not emitted.");
+            Assert.That(source.AsLclVar().LclNum, Is.Zero);
+            Assert.That(store.AsLclVar().LclNum, Is.EqualTo(1));
+        });
+    }
+#endif
+
     private static bool s_indirect;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]

@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: GS shadow-copy helper retirement
+
+Completed the managed `Compiler::gsCopyIntoShadow` binding used by
+`gsParamsToShadows`, including the Windows-x64 LIR insertion and debug tree-range
+dump. The x86 IJW branch now checks `argRequiresSpecialCopy` and rejects only
+the unported special-copy helper path; ordinary struct arguments retain the
+native direct-copy path. Full-analysis Windows-x64 `GSSecurityPhaseTests` pass
+14/14 in Debug and Release, with no skips.
+
+Native `a7b5d0b0` amends the consolidated residual commit, sole-parented to the
+pinned oracle, and removes the complete `gschecks.cpp` definition and its
+exclusive `compiler.h` declaration. Recovery ref
+`refs/copilot-recovery/gs-copy-into-shadow-before-c96fd54` preserves the prior
+native HEAD. The guarded x86 regression is source-only because the existing x86
+target build is blocked by unrelated missing definitions; no x86 execution or
+generated-code parity is claimed.
+
 ## 2026-10-03: Error-trap forwarding wrappers
 
 Added direct tests for the existing typed managed error-trap wrappers,

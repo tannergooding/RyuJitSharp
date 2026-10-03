@@ -407,8 +407,9 @@ public partial class Compiler
         }
 
 #if TARGET_X86 && FEATURE_IJW
-        if ((lclNum < info.compArgsCount) && (descriptor.Type is TYP_STRUCT))
+        if ((lclNum < info.compArgsCount) && argRequiresSpecialCopy(lclNum) && (descriptor.Type is TYP_STRUCT))
         {
+            JITDUMP($"arg{lclNum:D2} requires special copy; the x86 special-copy helper is not ported.\n");
             throw new FatalJitException(CORJIT_SKIPPED, "IJW struct-argument shadow copies require the x86 special-copy helper.");
         }
 #endif
@@ -418,5 +419,6 @@ public partial class Compiler
         var firstBlock = fgFirstBB ?? throw new InvalidOperationException("GS shadow copies require an entry block.");
         firstBlock.InsertAtBeginning(LIR.SeqTree(this, store));
         JITDUMP($"Created shadow param copy for V{lclNum:D2} to V{shadowLclNum:D2}\n");
+        DISPTREERANGE(firstBlock, store);
     }
 }

@@ -1359,6 +1359,14 @@ and missing behavior when introducing such a deferral. Windows-x64 behavior
 within the function must not be replaced by stubs. Verify that the selected
 failure path cannot continue as if implemented in Debug or Release.
 
+`Compiler::gsCopyIntoShadow` retains the `TARGET_X86 && FEATURE_IJW` branch,
+but the special-copy helper, call morphing and reverse-P/Invoke insertion remain
+unported. That branch terminates with `CORJIT_SKIPPED` only when
+`argRequiresSpecialCopy(lclNum)` is true for a struct argument; ordinary struct
+arguments use the native direct LIR copy. Windows-x64 behavior is covered by
+`GSSecurityPhaseTests`; the guarded x86 regression is source-only because the
+existing x86 target build still fails on unrelated missing definitions.
+
 `LowerTailCallViaJitHelper` remains deferred to Windows x86. Its native body
 assumes four 4-byte special stack arguments and x86 register-restoration flags;
 native `fgCanTailCallViaJitHelper` rejects every other target. The generic call
