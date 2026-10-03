@@ -23,6 +23,20 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LoongArchRiscVLocalCodeGenTests
 {
+#if TARGET_LOONGARCH64
+    [Test]
+    public static void TreeNodeDispatchPreservesTheLoongArchConstantBoundary()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var tree = new GenTreeIntCon(TYP_INT, 1) { RegNum = REG_S0 };
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
+
+            Assert.That(failure?.Message, Does.Contain("LoongArch64 constant materialization is not ported."));
+        });
+    }
+#endif
+
     [Test]
     public static void LocalLoadsSkipAllocatorManagedRegisters()
     {
@@ -555,6 +569,18 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         {
             var node = new GenTreeVecCon(TYP_SIMD16);
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genSIMDIntrinsicBinOp(node));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+        });
+    }
+
+    [Test]
+    public static void SimdRelationalIntrinsicPreservesTheRiscVNyiBoundary()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var node = new GenTreeVecCon(TYP_SIMD16);
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genSIMDIntrinsicRelOp(node));
 
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
         });

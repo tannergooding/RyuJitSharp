@@ -10,6 +10,485 @@ public sealed partial class CodeGen
     public unsafe void genCodeForTreeNode(GenTree tree)
     {
 #if !TARGET_XARCH
+#if TARGET_LOONGARCH64
+        var targetReg = tree.RegNum;
+        var targetType = tree.Type;
+        var emit = GetEmitter();
+
+#if DEBUG
+        lastConsumedNode = null;
+        if (_compiler.verbose)
+        {
+            _compiler.gtDispLIRNode(tree, "Generating: ");
+        }
+#endif
+
+        if (tree.IsReuseRegVal)
+        {
+            assert(tree.Oper is GT_CNS_INT or GT_CNS_DBL);
+            JITDUMP("  TreeNode is marked ReuseReg\n");
+            return;
+        }
+
+        if (tree.IsContained)
+        {
+            return;
+        }
+
+        switch (tree.Oper)
+        {
+            case GT_START_NONGC:
+            {
+                emit.emitDisableGC();
+                break;
+            }
+
+            case GT_START_PREEMPTGC:
+            {
+                _gcInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_INT_CALLEE_SAVED));
+                genDefineTempLabel(genCreateTempLabel());
+                break;
+            }
+
+            case GT_PROF_HOOK:
+            {
+                noway_assert(_compiler.compIsProfilerHookNeeded);
+#if PROFILING_SUPPORTED
+                genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_TAILCALL);
+#endif
+                break;
+            }
+
+            case GT_LCLHEAP:
+            {
+                genLclHeap(tree);
+                break;
+            }
+
+            case GT_CNS_INT:
+            {
+                if (targetType is TYP_DOUBLE or TYP_FLOAT)
+                {
+                    tree.Oper = GT_CNS_DBL;
+                }
+                goto case GT_CNS_DBL;
+            }
+
+            case GT_CNS_DBL:
+            {
+                genSetRegToConst(targetReg, targetType, tree);
+                genProduceReg(tree);
+                break;
+            }
+
+            case GT_NOT:
+            case GT_NEG:
+            {
+                genCodeForNegNot(tree.AsOp());
+                break;
+            }
+
+            case GT_BSWAP:
+            case GT_BSWAP16:
+            {
+                genCodeForBswap(tree);
+                break;
+            }
+
+            case GT_MOD:
+            case GT_UMOD:
+            case GT_DIV:
+            case GT_UDIV:
+            {
+                genCodeForDivMod(tree.AsOp());
+                break;
+            }
+
+            case GT_OR:
+            case GT_XOR:
+            case GT_AND:
+            case GT_AND_NOT:
+            {
+                assert(varTypeIsIntegralOrI(tree));
+                goto case GT_ADD;
+            }
+
+            case GT_ADD:
+            case GT_SUB:
+            case GT_MUL:
+            {
+                genConsumeOperands(tree.AsOp());
+                genCodeForBinary(tree.AsOp());
+                break;
+            }
+
+            case GT_LSH:
+            case GT_RSH:
+            case GT_RSZ:
+            case GT_ROR:
+            {
+                genCodeForShift(tree);
+                break;
+            }
+
+            case GT_CAST:
+            {
+                genCodeForCast(tree.AsCast());
+                break;
+            }
+
+            case GT_BITCAST:
+            {
+                genCodeForBitCast(tree.AsUnOp());
+                break;
+            }
+
+            case GT_LCL_ADDR:
+            {
+                genCodeForLclAddr(tree.AsLclFld());
+                break;
+            }
+
+            case GT_LCL_FLD:
+            {
+                genCodeForLclFld(tree.AsLclFld());
+                break;
+            }
+
+            case GT_LCL_VAR:
+            {
+                genCodeForLclVar(tree.AsLclVar());
+                break;
+            }
+
+            case GT_STORE_LCL_FLD:
+            {
+                genCodeForStoreLclFld(tree.AsLclFld());
+                break;
+            }
+
+            case GT_STORE_LCL_VAR:
+            {
+                genCodeForStoreLclVar(tree.AsLclVar());
+                break;
+            }
+
+            case GT_RETFILT:
+            case GT_RETURN:
+            {
+                genReturn(tree);
+                break;
+            }
+
+            case GT_LEA:
+            {
+                genLeaInstruction(tree.AsAddrMode());
+                break;
+            }
+
+            case GT_INDEX_ADDR:
+            {
+                genCodeForIndexAddr(tree.AsIndexAddr());
+                break;
+            }
+
+            case GT_IND:
+            {
+                genCodeForIndir(tree.AsIndir());
+                break;
+            }
+
+            case GT_INC_SATURATE:
+            {
+                genCodeForIncSaturate(tree);
+                break;
+            }
+
+            case GT_MULHI:
+            {
+                genCodeForMulHi(tree.AsOp());
+                break;
+            }
+
+            case GT_SWAP:
+            {
+                genCodeForSwap(tree.AsOp());
+                break;
+            }
+
+            case GT_JMP:
+            {
+                genJmpPlaceArgs(tree);
+                break;
+            }
+
+            case GT_CKFINITE:
+            {
+                genCkfinite(tree);
+                break;
+            }
+
+            case GT_INTRINSIC:
+            {
+                genIntrinsic(tree.AsIntrinsic());
+                break;
+            }
+
+#if FEATURE_HW_INTRINSICS
+            case GT_HWINTRINSIC:
+            {
+                genHWIntrinsic(tree.AsHWIntrinsic());
+                break;
+            }
+#endif
+
+            case GT_EQ:
+            case GT_NE:
+            case GT_LT:
+            case GT_LE:
+            case GT_GE:
+            case GT_GT:
+            {
+                genConsumeOperands(tree.AsOp());
+                genCodeForCompare(tree.AsOp());
+                break;
+            }
+
+            case GT_JCC:
+            {
+                var targetBlock = _compiler.compCurBB.KindIs(BBJ_COND)
+                    ? _compiler.compCurBB.TrueTarget
+                    : _compiler.compCurBB.Target;
+#if !FEATURE_FIXED_OUT_ARGS
+                assert((unchecked((uint)targetBlock.bbTgtStkDepth * sizeof(int)) == genStackLevel)
+                    || IsFramePointerUsed);
+#endif
+
+                var jcc = tree.AsCC();
+                assert(jcc.Condition.Is(GenCondition.EQ, GenCondition.NE));
+                var ins = jcc.Condition.Is(GenCondition.EQ) ? INS_bceqz : INS_bcnez;
+                emit.emitIns_J(ins, targetBlock, 1);
+
+                if (_compiler.compCurBB.KindIs(BBJ_COND))
+                {
+                    var falseTarget = _compiler.compCurBB.FalseTarget;
+                    if (!_compiler.compCurBB.CanRemoveJumpToTarget(falseTarget, _compiler))
+                    {
+                        inst_JMP(EJ_jmp, falseTarget);
+                    }
+                }
+                break;
+            }
+
+            case GT_JCMP:
+            {
+                genCodeForJumpCompare(tree.AsOpCC());
+                break;
+            }
+
+            case GT_RETURNTRAP:
+            {
+                genCodeForReturnTrap(tree.AsUnOp());
+                break;
+            }
+
+            case GT_STOREIND:
+            {
+                genCodeForStoreInd(tree.AsStoreInd());
+                break;
+            }
+
+            case GT_COPY:
+            {
+                break;
+            }
+
+            case GT_FIELD_LIST:
+            {
+                assert(false, "LIST, FIELD_LIST nodes should always be marked contained.");
+                break;
+            }
+
+            case GT_PUTARG_STK:
+            {
+                genPutArgStk(tree.AsPutArgStk());
+                break;
+            }
+
+            case GT_PUTARG_REG:
+            {
+                genPutArgReg(tree.AsUnOp());
+                break;
+            }
+
+            case GT_CALL:
+            {
+                genCall(tree.AsCall());
+                break;
+            }
+
+            case GT_MEMORYBARRIER:
+            {
+                var barrierKind = (tree.Flags & GTF_MEMORYBARRIER_LOAD) != 0
+                    ? BarrierKind.BARRIER_LOAD_ONLY
+                    : (tree.Flags & GTF_MEMORYBARRIER_STORE) != 0
+                        ? BarrierKind.BARRIER_STORE_ONLY
+                        : BarrierKind.BARRIER_FULL;
+                instGen_MemoryBarrier(barrierKind);
+                break;
+            }
+
+            case GT_XCHG:
+            case GT_XADD:
+            {
+                genLockedInstructions(tree.AsOp());
+                break;
+            }
+
+            case GT_CMPXCHG:
+            {
+                genCodeForCmpXchg(tree.AsCmpXchg());
+                break;
+            }
+
+            case GT_RELOAD:
+            {
+                break;
+            }
+
+            case GT_NOP:
+            {
+                break;
+            }
+
+            case GT_KEEPALIVE:
+            {
+                var operand = tree.AsOp().Op1;
+                if (operand.IsContained)
+                {
+                    genUpdateLife(operand);
+                }
+                else
+                {
+                    genConsumeReg(operand);
+                }
+                break;
+            }
+
+            case GT_NO_OP:
+            {
+                instGen(INS_nop);
+                break;
+            }
+
+            case GT_BOUNDS_CHECK:
+            {
+                genRangeCheck(tree);
+                break;
+            }
+
+            case GT_PHYSREG:
+            {
+                genCodeForPhysReg(tree.AsPhysReg());
+                break;
+            }
+
+            case GT_NULLCHECK:
+            {
+                genCodeForNullCheck(tree.AsIndir());
+                break;
+            }
+
+            case GT_CATCH_ARG:
+            {
+                genCodeForCatchArg(tree);
+                break;
+            }
+
+            case GT_LABEL:
+            {
+                genPendingCallLabel = genCreateTempLabel();
+                emit.emitIns_R_L(INS_ld_d, EA_PTRSIZE, genPendingCallLabel, targetReg);
+                break;
+            }
+
+            case GT_RETURN_SUSPEND:
+            {
+                genReturnSuspend(tree.AsUnOp());
+                break;
+            }
+
+            case GT_ASYNC_CONTINUATION:
+            {
+                genCodeForAsyncContinuation(tree);
+                break;
+            }
+
+            case GT_ASYNC_RESUME_INFO:
+            {
+                genAsyncResumeInfo(tree.AsVal());
+                break;
+            }
+
+            case GT_RECORD_ASYNC_RESUME:
+            {
+                genRecordAsyncResume(tree.AsVal());
+                break;
+            }
+
+            case GT_FTN_ENTRY:
+            {
+                genFtnEntry(tree);
+                break;
+            }
+
+            case GT_NONLOCAL_JMP:
+            {
+                genNonLocalJmp(tree.AsUnOp());
+                break;
+            }
+
+            case GT_STORE_BLK:
+            {
+                genCodeForStoreBlk(tree.AsBlk());
+                break;
+            }
+
+            case GT_JMPTABLE:
+            {
+                genJumpTable(tree);
+                break;
+            }
+
+            case GT_SWITCH_TABLE:
+            {
+                genTableBasedSwitch(tree);
+                break;
+            }
+
+            case GT_IL_OFFSET:
+            {
+                break;
+            }
+
+            case GT_PATCHPOINT:
+            case GT_PATCHPOINT_FORCED:
+            {
+                genPatchpoint(tree.AsUnOp());
+                break;
+            }
+
+            default:
+            {
+#if DEBUG
+                NYIRAW($"NYI: Unimplemented node type {tree.Oper}\n");
+#else
+                NYI("unimplemented node");
+#endif
+                break;
+            }
+        }
+#else
 #if TARGET_ARM64
         if (tree.Oper is GT_DIV or GT_UDIV or GT_MOD or GT_UMOD)
         {
@@ -170,6 +649,7 @@ public sealed partial class CodeGen
         throw new FatalJitException(CORJIT_SKIPPED, "Node instruction generation requires xarch.");
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Node instruction generation requires xarch.");
+#endif
 #endif
 #else
 #if !TARGET_64BIT
