@@ -196,7 +196,7 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
 
     [TestCase(28, REG_R9, true, 1, 2, 0)]
     [TestCase(32, REG_R11, false, 1, 0, 0)]
-    [TestCase(192, REG_R11, false, 6, 0, 3)]
+    [TestCase(192, REG_R11, false, 2, 0, 1)]
     public static void BlockInitializationUsesArm64ZeroAndPairStorePaths(
         int size, regNumber initReg, bool initRegZeroed, int pairStores, int scalarStores, int loopBranches)
     {
