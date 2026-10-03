@@ -10,6 +10,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+#if !TARGET_WASM
     public void genCodeForStoreBlk(GenTreeBlk node)
     {
 #if !TARGET_XARCH
@@ -69,6 +70,7 @@ public sealed partial class CodeGen
         }
 #endif
     }
+#endif
 
     public void genCodeForMemmove(GenTreeBlk node)
     {
@@ -181,6 +183,7 @@ public sealed partial class CodeGen
 #endif
     }
 
+#if !TARGET_WASM
     public void genCodeForInitBlkLoop(GenTreeBlk node)
     {
 #if !TARGET_XARCH
@@ -214,6 +217,7 @@ public sealed partial class CodeGen
         }
 #endif
     }
+#endif
 
     public void genCodeForInitBlkUnroll(GenTreeBlk node)
     {

@@ -19,6 +19,7 @@ public partial class Emitter
 #endif
     }
 
+#if !TARGET_WASM
     public static instruction emitJumpKindToIns(emitJumpKind jumpKind)
     {
 #if !TARGET_XARCH && !TARGET_ARM64
@@ -28,6 +29,7 @@ public partial class Emitter
         return emitJumpKindInstructions[(int)jumpKind];
 #endif
     }
+#endif
 
 #if DEBUG || DEBUG_EMIT
 #pragma warning disable CA1802 // Keep the native debug selector non-constant so disabled tracing has no unreachable branches.

@@ -584,7 +584,7 @@
 
   <!-- xarch folders retain terminating dependencies for non-xarch callers. -->
   <!-- Pure target-owned source groups are excluded from other target builds. -->
-  <ItemGroup Condition="'$(RyuJitTargetArchitecture)' != 'arm'">
+  <ItemGroup Condition="'$(RyuJitTargetIsArm)' != 'true'">
     <Compile Remove="jit\codegenarm\**\*.cs" />
     <Compile Remove="jit\emitarm\**\*.cs" />
     <Compile Remove="jit\targetarm\**\*.cs" />
@@ -624,6 +624,75 @@
   <ItemGroup Condition="'$(RyuJitTargetArchitecture)' != 'x86'">
     <Compile Remove="jit\targetx86\**\*.cs" />
     <Compile Remove="jit\unwindx86\**\*.cs" />
+  </ItemGroup>
+
+  <!-- Filter xarch folders as a unit, then retain files that provide cross-target dependencies. -->
+  <ItemGroup Condition="'$(RyuJitTargetArchitecture)' != 'x64' And '$(RyuJitTargetArchitecture)' != 'x86'">
+    <Compile Remove="jit\*xarch\**\*.cs" />
+    <Compile Include="jit\*xarch\**\*.cs"
+             Exclude="jit\codegenxarch\CodeGen.AddressChecks.cs;
+                      jit\codegenxarch\CodeGen.Binary.cs;
+                      jit\codegenxarch\CodeGen.ByteSwap.cs;
+                      jit\codegenxarch\CodeGen.Comparisons.cs;
+                      jit\codegenxarch\CodeGen.ConditionalSelection.cs;
+                      jit\codegenxarch\CodeGen.Conditions.cs;
+                      jit\codegenxarch\CodeGen.Constants.cs;
+                      jit\codegenxarch\CodeGen.Division.cs;
+                      jit\codegenxarch\CodeGen.HelperCalls.cs;
+                      jit\codegenxarch\CodeGen.ImmediateValues.cs;
+                      jit\codegenxarch\CodeGen.IndirectLoads.cs;
+                      jit\codegenxarch\CodeGen.IndirectStores.cs;
+                      jit\codegenxarch\CodeGen.IntegerCasts.cs;
+                      jit\codegenxarch\CodeGen.Intrinsics.cs;
+                      jit\codegenxarch\CodeGen.LocalLoads.cs;
+                      jit\codegenxarch\CodeGen.LocalStores.cs;
+                      jit\codegenxarch\CodeGen.Multiplication.cs;
+                      jit\codegenxarch\CodeGen.OperationInstructions.cs;
+                      jit\codegenxarch\CodeGen.RegisterSwaps.cs;
+                      jit\codegenxarch\CodeGen.Shifts.cs;
+                      jit\codegenxarch\CodeGen.Switches.cs;
+                      jit\codegenxarch\CodeGen.Unary.cs;
+                      jit\emitxarch\Emitter.AddressMode.cs;
+                      jit\emitxarch\Emitter.AddressOutput.cs;
+                      jit\emitxarch\Emitter.ConstantAccess.cs;
+                      jit\emitxarch\Emitter.cs;
+                      jit\emitxarch\Emitter.instrDesc.PrefixContexts.cs;
+                      jit\emitxarch\Emitter.InstructionDisplay.cs;
+                      jit\emitxarch\Emitter.InstructionDisplay.Formats.cs;
+                      jit\emitxarch\Emitter.InstructionDisplay.Names.cs;
+                      jit\emitxarch\Emitter.InstructionDisplay.Registers.cs;
+                      jit\emitxarch\Emitter.MemoryOperandSize.cs;
+                      jit\emitxarch\Emitter.MultiRegisterMemoryDependencies.cs;
+                      jit\emitxarch\Emitter.PrefixDecisions.cs;
+                      jit\emitxarch\Emitter.PrefixExtraction.cs;
+                      jit\emitxarch\Emitter.PrefixInstructionQueries.cs;
+                      jit\emitxarch\Emitter.PrefixOutput.cs;
+                      jit\emitxarch\Emitter.PrefixRegisters.cs;
+                      jit\emitxarch\Emitter.PrefixSizes.cs;
+                      jit\emitxarch\Emitter.SimdBlendRecording.cs;
+                      jit\emitxarch\Emitter.StackInstructionSizes.cs;
+                      jit\emitxarch\Emitter.StackLoads.cs;
+                      jit\emitxarch\Emitter.StackOutput.cs;
+                      jit\emitxarch\Emitter.StackStores.cs;
+                      jit\emitxarch\Emitter.StaticOutput.cs;
+                      jit\emitxarch\Emitter.ZeroOperandInstructions.cs;
+                      jit\hwintrinsiccodegenxarch\CodeGen.BaseIntrinsics.cs;
+                      jit\hwintrinsiccodegenxarch\CodeGen.HardwareImmediateFallback.cs;
+                      jit\hwintrinsiccodegenxarch\CodeGen.HardwareIntrinsics.cs;
+                      jit\hwintrinsiccodegenxarch\CodeGen.HardwareOperands.cs;
+                      jit\hwintrinsiccodegenxarch\CodeGen.HardwareOptions.cs;
+                      jit\hwintrinsiccodegenxarch\CodeGen.X86BaseIntrinsics.cs;
+                      jit\simdcodegenxarch\CodeGen.IndirectStores.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RyuJitTargetArchitecture)' != 'arm' And '$(RyuJitTargetArchitecture)' != 'arm64' And '$(RyuJitTargetArchitecture)' != 'armv6'">
+    <Compile Remove="jit\*armarch\**\*.cs" />
+    <Compile Remove="jit\**\*ArmConditionDependencies.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RyuJitTargetArchitecture)' == 'wasm'">
+    <Compile Remove="jit\*xarch\CodeGen.FloatingCasts.cs" />
+    <Compile Remove="jit\*xarch\Emitter.ImmediateOnlyInstructions.cs" />
   </ItemGroup>
 
 </Project>

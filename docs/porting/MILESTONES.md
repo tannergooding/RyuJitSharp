@@ -16,16 +16,54 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Physical-promotion remainder strategy
+
+Completed `DecompositionPlan::DetermineRemainderStrategy` with the native
+`TARGET_64BIT`, `FEATURE_SIMD`, and nested `TARGET_XARCH` selection gates.
+Focused Windows-x64 `PhysicalPromotionTests` passed 60/60 in Debug and 59/59
+in Release, with zero skipped tests. The runs retained `AnalysisLevel=latest-all`
+and analyzers, but set `EnforceCodeStyleInBuild=false` and
+`TreatWarningsAsErrors=false`; temporary imports excluded only unselected,
+pre-existing compile-broken fixtures (`EmitterPrefixTests.cs` in both
+configurations and `EmitterRegisterInstructionTests.cs` in Release). This is
+focused regression evidence, not a clean full-project pass or generated-code
+parity claim.
+
+The consolidated native residual retires the complete 133-line
+`promotiondecomposition.cpp` file. Native HEAD `5c045e8f` is sole-parented to
+the pinned oracle, and recovery ref
+`refs/heads/recovery/decomposition-remainder-11154dd6104f` preserves the prior
+residual HEAD.
+
 ## 2026-10-03: Target-owned source filtering
 
 Conditional compile-item filters exclude pure ARM, ARM64, LoongArch64,
 RISC-V64, Wasm, AMD64, and x86 source folders from nonmatching target builds.
-Shared and xarch folders remain included where they provide common behavior or
-terminating cross-target dependencies. MSBuild item evaluation was checked for
-`win-x64`, `win-x86`, `linux-arm`, `linux-arm64`, `linux-armv6`,
-`linux-loongarch64`, `linux-riscv64`, and `browser-wasm`; the focused Windows-x64
-Debug suite passes 63/63. This verifies source selection and selected Windows
-tests, not build or execution parity for the other targets.
+On non-xarch targets, the `jit\*xarch\**\*.cs` folder glob is followed by
+re-inclusion of mixed fallback sources, leaving the 53 complete
+`TARGET_XARCH`-only files excluded. There is no `*armarch` folder in this
+revision; the single complete `TARGET_ARMARCH` source is covered by a recursive
+filename glob. ARMv6 is included in the ARM32 source group. MSBuild item
+evaluation was checked for `win-x64`, `win-x86`, `linux-arm`, `linux-arm64`,
+`linux-armv6`, `linux-loongarch64`, `linux-riscv64`, and `browser-wasm`; the focused
+Windows-x64 Debug suite passes 63/63. The browser-Wasm rebuild no longer reports
+the 14 duplicate xarch definitions, but remains blocked by 263 compilation and
+analyzer diagnostics, and no tests ran. This verifies source selection and
+selected Windows tests, not build or execution parity for the other targets.
+
+## 2026-10-03: Call-argument ABI reclassification
+
+The complete managed `CallArgs.AddFinalArgsAndDetermineABIInfo` method and both
+caller bindings match the pinned native method across all 217 lines. A
+regression reclassifies a call from five integer arguments to one and verifies
+register/stack flags and outgoing stack size are recomputed. Focused Windows-x64
+`CallArgumentMorphTests` passed 71/71 Debug and 69/69 Release, with zero skips.
+Native HEAD `7738d438` is sole-parented to the pinned oracle and removes the
+complete `morph.cpp` definition and now-unused `gentree.h` declaration.
+Recovery refs `recovery/add-final-args-5c045e8f-20261003-0841` and
+`recovery/add-final-args-body-a4217c0ab4-20261003` preserve the prior native
+state. The Wasm shadow-stack branch is source-preserved but not validated by
+these Windows-x64 tests; no other-target parity is claimed.
 
 ## 2026-10-03: Shared and AMD64 CFI unwind
 
@@ -52,13 +90,23 @@ existing managed implementations. The focused Windows-x64
 `HardwareConstructionLoweringTests` passed together, 130/130 in Debug and
 130/130 in Release, with zero skips.
 
-Native HEAD `36d2722e` amends the consolidated residual commit, sole-parented to
-the pinned oracle. It removes the now-empty residual `lower.cpp` and all three
-exclusive `lower.h` declarations. Recovery ref
-`refs/copilot-recovery/lowering-helpers-before-e01ac74` preserves the previous
-HEAD. The residual `lowerwasm.cpp` caller remains as unported Wasm code; this
-focused Windows-x64 coverage does not establish other-target or full-pipeline
-parity.
+The complete helpers and their exclusive declarations are retired from the
+native residual. The residual `lowerwasm.cpp` caller remains as unported Wasm
+code; this focused Windows-x64 coverage does not establish other-target or
+full-pipeline parity.
+
+## 2026-10-03: Shared block fall-through predicate
+
+Retired `BasicBlock::CanRemoveJumpToTarget` after preserving the native
+fall-through guards and Wasm interval-boundary branch. The Windows-x64
+`FlowGraphBranchOptimizationTests` passed 22/22 in Debug. The browser-Wasm
+rebuild after the xarch guards reports no CS0111 duplicates but remains blocked
+before test discovery by 263 compiler/analyzer diagnostics, including missing
+`GetEmitter`, `genActualType`, and Wasm opcode/tree/register APIs; zero tests ran.
+The complete managed
+`WasmInterval` class is implemented and its native class definition retired;
+target coverage remains pending combined validation. This does not establish
+Wasm execution parity.
 
 ## 2026-10-03: xarch register-info binding
 

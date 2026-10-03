@@ -1795,16 +1795,6 @@ public sealed partial class CodeGen
         WasmProduceReg(tree);
     }
 
-    private void genCodeForAsyncContinuation(GenTree tree)
-    {
-        WasmCodegenDependencyNotPorted(tree, nameof(genCodeForAsyncContinuation));
-    }
-
-    private void genReturnSuspend(GenTreeUnOp tree)
-    {
-        WasmCodegenDependencyNotPorted(tree, nameof(genReturnSuspend));
-    }
-
     private static void WasmCodegenDependencyNotPorted(GenTree tree, string dependency)
     {
         throw new FatalJitException(CORJIT_SKIPPED, $"Wasm {dependency} is not ported for {tree.Oper}.");

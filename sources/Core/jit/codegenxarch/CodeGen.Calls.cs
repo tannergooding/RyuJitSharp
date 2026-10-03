@@ -7,6 +7,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+#if !TARGET_WASM
     public unsafe void genCall(GenTreeCall call)
     {
 #if !TARGET_XARCH
@@ -201,6 +202,7 @@ public sealed partial class CodeGen
         genRemoveAlignmentAfterCall(call, stackAdjustBias);
 #endif
     }
+#endif
 
     private static regNumber genGetThisArgReg(GenTreeCall call) => REG_ARG_0;
 

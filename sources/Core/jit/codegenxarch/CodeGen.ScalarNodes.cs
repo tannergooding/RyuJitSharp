@@ -56,6 +56,7 @@ public sealed partial class CodeGen
 #endif
     }
 
+#if !TARGET_WASM
     public void genCodeForPhysReg(GenTreePhysReg tree)
     {
 #if !TARGET_XARCH
@@ -70,6 +71,7 @@ public sealed partial class CodeGen
         genProduceReg(tree);
 #endif
     }
+#endif
 
     public void genCodeForCatchArg(GenTree tree)
     {

@@ -9,6 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+#if !TARGET_WASM
     public void emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
     {
 #if !TARGET_XARCH
@@ -38,6 +39,7 @@ public partial class Emitter
 #endif
 #endif
     }
+#endif
 
     public void emitIns_S_I(instruction ins, emitAttr attr, int varx, int offs, int val)
     {

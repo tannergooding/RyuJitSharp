@@ -86,6 +86,7 @@ public sealed partial class CodeGen
     }
 #endif
 
+#if !TARGET_WASM
     public void genLclHeap(GenTree tree)
     {
 #if TARGET_ARM64
@@ -260,4 +261,5 @@ public sealed partial class CodeGen
         genProduceReg(tree);
 #endif
     }
+#endif
 }

@@ -32,6 +32,7 @@ public sealed partial class CodeGen
 #endif
     }
 
+#if !TARGET_WASM
     public void genAllocLclFrame(uint frameSize, regNumber initReg, ref bool initRegZeroed, regMaskTP maskArgRegsLiveIn)
     {
 #if TARGET_ARM64
@@ -107,6 +108,7 @@ public sealed partial class CodeGen
         }
 #endif
     }
+#endif
 
     public void genClearAvxStateInProlog()
     {

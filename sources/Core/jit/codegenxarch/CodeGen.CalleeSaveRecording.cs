@@ -10,6 +10,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+#if !TARGET_WASM
     public void genPushCalleeSavedRegisters(regNumber initReg, ref bool initRegZeroed)
     {
 #if TARGET_ARM64
@@ -74,6 +75,7 @@ public sealed partial class CodeGen
         }
 #endif
     }
+#endif
 
     public void genPushCalleeSavedRegistersFromMaskAPX(regMaskTP pushRegs)
     {
