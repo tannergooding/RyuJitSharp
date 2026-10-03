@@ -115,6 +115,17 @@ public sealed partial class CodeGen
                 genCkfinite(tree);
                 return;
             }
+            case GT_EQ:
+            case GT_NE:
+            case GT_LT:
+            case GT_LE:
+            case GT_GE:
+            case GT_GT:
+            {
+                genConsumeOperands(tree.AsOp());
+                genCodeForCompare(tree.AsOp());
+                return;
+            }
             case GT_JMPTABLE:
             {
                 genJumpTable(tree);

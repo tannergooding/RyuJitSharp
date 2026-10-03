@@ -595,6 +595,50 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         });
     }
 
+    [Test]
+    public static void IntegerCompareDispatchReachesTheTargetImmediateBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+
+            var op1 = CodeGenShiftTests.Register(compiler, TYP_LONG, REG_S0);
+            var op2 = new GenTreeIntCon(TYP_LONG, 5) { IsContained = true };
+            var tree = compiler.gtNewBinaryNode(GT_LT, TYP_INT, op1, op2) { RegNum = REG_S1 };
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
+
+            Assert.That(failure?.Message,
+                Does.Contain("Target two-register-immediate instruction recording is not implemented."));
+        });
+    }
+
+    [TestCase(TYP_FLOAT)]
+    [TestCase(TYP_DOUBLE)]
+    public static void FloatingCompareDispatchPreservesUnorderedTargetBoundary(var_types type)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+
+            var op1 = compiler.gtNewDconNode(type, 1.0);
+            op1.RegNum = REG_F0;
+            var op2 = compiler.gtNewDconNode(type, 2.0);
+            op2.RegNum = REG_F1;
+            var tree = compiler.gtNewBinaryNode(GT_LT, TYP_INT, op1, op2) { RegNum = REG_S1 };
+            tree.Flags |= GTF_RELOP_NAN_UN;
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
+#if TARGET_LOONGARCH64
+            Assert.That(failure?.Message,
+                Does.Contain("Target two-register-immediate instruction recording is not implemented."));
+#else
+            Assert.That(failure?.Message,
+                Does.Contain("RISC-V three-register instruction recording is not implemented."));
+#endif
+        });
+    }
+
 #if FEATURE_SIMD
     [Test]
     public static void Simd12LocalVariableStoreStopsAtTheTargetBoundary()
