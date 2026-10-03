@@ -59,6 +59,28 @@ internal static unsafe class EmitterByteOutputTests
         });
     }
 
+#if TARGET_X86
+    [Test]
+    public static void X86SizeTOutputUsesTheNativePointerWidth()
+    {
+        CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            var buffer = stackalloc byte[8];
+            new Span<byte>(buffer, 8).Fill(0xA5);
+            emitter.writeableOffset = 0;
+
+            var count = emitter.emitOutputSizeT(buffer + 1, 4294967295L);
+
+            Assert.That(count, Is.EqualTo(sizeof(int)));
+            Assert.That(new ReadOnlySpan<byte>(buffer + 1, count).ToArray(),
+                Is.EqualTo(Convert.FromHexString("FFFFFFFF")));
+            Assert.That(buffer[0], Is.EqualTo(0xA5));
+            Assert.That(buffer[5], Is.EqualTo(0xA5));
+        });
+    }
+#endif
+
     [TestCase(INS_mov, 0x000000000000C08BUL, "", 0xC08BUL)]
     [TestCase(INS_mov, 0x000000480000C08BUL, "48", 0xC08BUL)]
     [TestCase(INS_mov, 0x000000480066C00FUL, "66", 0x48C00FUL)]
