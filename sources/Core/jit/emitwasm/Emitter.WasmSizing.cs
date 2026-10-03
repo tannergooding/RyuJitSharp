@@ -73,5 +73,10 @@ public partial class Emitter
     {
         throw new FatalJitException(CORJIT_SKIPPED, "Wasm v128 immediate emission is not ported.");
     }
+
+    public void emitDataOffsetConstant(nuint dataOffset)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm JIT data-offset constant emission is not ported.");
+    }
 }
 #endif

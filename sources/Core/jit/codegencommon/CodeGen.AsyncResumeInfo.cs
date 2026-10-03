@@ -23,7 +23,18 @@ public sealed partial class CodeGen
 
     public unsafe void genAsyncResumeInfo(GenTreeVal treeNode)
     {
-#if !TARGET_XARCH
+#if TARGET_WASM
+        assert(treeNode.Oper is GT_ASYNC_RESUME_INFO);
+        assert(treeNode.Type is TYP_I_IMPL);
+
+        var field = genEmitAsyncResumeInfo(unchecked((uint)treeNode.Val1));
+        assert(Compiler.eeIsJitDataOffs(field));
+        var dataOffset = Compiler.eeGetJitDataOffs(field);
+        assert(dataOffset >= 0);
+
+        GetEmitter().emitDataOffsetConstant(unchecked((nuint)dataOffset));
+        WasmProduceReg(treeNode);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Async resume address generation requires Windows AMD64.");
 #else
         Emitter.RequireSupportedInstructionRecording();
