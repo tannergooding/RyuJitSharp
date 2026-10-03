@@ -121,6 +121,26 @@ internal static unsafe class EmitterDescriptorPayloadTests
 #endif
 
 #if TARGET_XARCH
+    [TestCase(EA_4BYTE, false, false)]
+    [TestCase(EA_4BYTE | EA_CNS_RELOC_FLG, true, false)]
+    [TestCase(EA_4BYTE | EA_DSP_RELOC_FLG, false, true)]
+    [TestCase(EA_4BYTE | EA_CNS_RELOC_FLG | EA_DSP_RELOC_FLG, true, true)]
+    public static void RelocationFlagAccessorsReplaceBothFlags(emitAttr attr, bool constant, bool displacement)
+    {
+        var descriptor = new Descriptor();
+        descriptor.idSetIsCnsReloc();
+        descriptor.idSetIsDspReloc(false);
+        descriptor.idSetIsDspReloc();
+
+        Assert.That(descriptor.idIsDspReloc(), Is.True);
+
+        descriptor.idSetRelocFlags(attr);
+
+        Assert.That(descriptor.idIsCnsReloc(), Is.EqualTo(constant));
+        Assert.That(descriptor.idIsDspReloc(), Is.EqualTo(displacement));
+        Assert.That(descriptor.idIsReloc(), Is.EqualTo(constant || displacement));
+    }
+
     [Test]
     public static void SmallDisplacementFlagClearsLargeDisplacementFlag()
     {
