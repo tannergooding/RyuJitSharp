@@ -19,5 +19,12 @@ public partial class Emitter
         throw new FatalJitException(CORJIT_SKIPPED, "Target two-register-immediate instruction recording is not implemented.");
     }
 #endif
+
+#if TARGET_RISCV64
+    public void emitLoadImmediateAddress(emitAttr attr, regNumber reg, nint immediate)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 address constant materialization is not ported.");
+    }
+#endif
 }
 #endif

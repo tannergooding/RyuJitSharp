@@ -171,6 +171,44 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         });
     }
 
+    [TestCase(GT_DIV, TYP_DOUBLE)]
+    [TestCase(GT_UDIV, TYP_LONG)]
+    public static void DivisionCodegenReachesTheTargetInstructionBoundary(genTreeOps oper, var_types type)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+
+            var isFloating = type is TYP_FLOAT or TYP_DOUBLE;
+            GenTree dividend = isFloating
+                ? compiler.gtNewDconNode(type, 1.0)
+                : compiler.gtNewLconNode(7);
+            GenTree divisor = isFloating
+                ? compiler.gtNewDconNode(type, 2.0)
+                : compiler.gtNewLconNode(3);
+
+            dividend.RegNum = isFloating ? REG_F0 : REG_S0;
+            divisor.RegNum = isFloating ? REG_F1 : REG_S1;
+
+            var tree = compiler.gtNewBinaryNode(oper, type, dividend, divisor);
+            tree.RegNum = isFloating ? REG_F2 : REG_S2;
+            if (oper is GT_UDIV)
+            {
+                tree.Flags |= GenTreeFlags.GTF_DIV_MOD_NO_BY_ZERO;
+            }
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForDivMod(tree));
+#if TARGET_LOONGARCH64
+            Assert.That(failure?.Message,
+                Does.Contain("LoongArch64 three-register instruction recording is not ported."));
+#else
+            Assert.That(failure?.Message,
+                Does.Contain("RISC-V three-register instruction recording is not implemented."));
+#endif
+        });
+    }
+
 #if FEATURE_SIMD
     [Test]
     public static void Simd12LocalVariableStoreStopsAtTheTargetBoundary()

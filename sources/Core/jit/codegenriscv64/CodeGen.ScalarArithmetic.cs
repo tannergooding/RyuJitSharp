@@ -61,6 +61,137 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
+    public void genCodeForDivMod(GenTreeOp tree)
+    {
+        assert(tree.Oper is GT_MOD or GT_UMOD or GT_DIV or GT_UDIV);
+
+        var targetType = tree.Type;
+        var emit = Emitter;
+
+        genConsumeOperands(tree);
+
+        if (varTypeIsFloating(targetType))
+        {
+            assert(varTypeIsFloating(tree.Op1.Type));
+            assert(varTypeIsFloating(tree.Op2.Type));
+            assert(tree.Oper is GT_DIV);
+
+            var ins = genGetInsForOper(tree);
+            emit.emitIns_R_R_R(ins, targetType.EmitActualSize, tree.RegNum,
+                tree.Op1.RegNum, tree.Op2.RegNum);
+        }
+        else
+        {
+            var dividend = tree.Op1;
+            var divisor = tree.Op2;
+            var dividendReg = dividend.RegNum;
+            var divisorReg = divisor.RegNum;
+
+            assert(!dividend.IsContained && !dividend.IsContainedIntOrIImmed);
+            assert(!divisor.IsContained || divisor.IsContainedIntOrIImmed);
+
+            var exceptions = tree.Exceptions(_compiler);
+            if ((exceptions & ExceptionSetFlags.DivideByZeroException) is not ExceptionSetFlags.None)
+            {
+                if (divisor.IsIntegralConst(0) || (divisorReg == REG_R0))
+                {
+                    genJumpToThrowHlpBlk(EJ_jmp, SCK_DIV_BY_ZERO);
+                    genProduceReg(tree);
+                    return;
+                }
+                else
+                {
+                    assert(Emitter.isGeneralRegister(divisorReg));
+                    genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
+                }
+            }
+
+            assert(!divisor.IsIntegralConst(0));
+
+            var tempReg = REG_NA;
+            instruction ins;
+
+            if (divisor.IsContainedIntOrIImmed)
+            {
+                var immediate = unchecked((nint)(int)divisor.AsIntCon().IconValue);
+                if (!Emitter.isGeneralRegister(divisorReg))
+                {
+                    tempReg = _internalRegisters.GetSingle(tree);
+                    divisorReg = tempReg;
+                }
+
+                emit.emitLoadImmediateAddress(EA_PTRSIZE, divisorReg, immediate);
+            }
+            else
+            {
+                assert(!dividend.IsContained);
+                assert(Emitter.isGeneralRegister(dividendReg));
+                assert(Emitter.isGeneralRegister(divisorReg));
+            }
+
+            var size = tree.Type.EmitActualSize;
+            var sizeCode = EA_SIZE(size);
+            var is4 = sizeCode == EA_4BYTE;
+            assert(is4 || sizeCode == EA_8BYTE);
+
+            if (tree.Oper is GT_DIV or GT_MOD)
+            {
+                if ((exceptions & ExceptionSetFlags.ArithmeticException) is not ExceptionSetFlags.None)
+                {
+                    if (tempReg == REG_NA)
+                    {
+                        tempReg = _internalRegisters.GetSingle(tree);
+                    }
+
+                    emit.emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, REG_R0, -1);
+                    var sdivLabel = genCreateTempLabel();
+                    emit.emitIns_J_cond_la(INS_bne, sdivLabel, tempReg, divisorReg);
+
+                    var checkedDividendReg = dividend.RegNum;
+                    var shiftIns = is4 ? INS_slliw : INS_slli;
+                    var shiftBy = is4 ? 31 : 63;
+                    emit.emitIns_R_R_I(shiftIns, size, tempReg, tempReg, shiftBy);
+
+                    genJumpToThrowHlpBlk_la(SCK_ARITH_EXCPN, INS_beq, tempReg, null,
+                        checkedDividendReg);
+                    genDefineTempLabel(sdivLabel);
+                }
+
+                if (tree.Oper is GT_DIV)
+                {
+                    ins = is4 ? INS_divw : INS_div;
+                }
+                else
+                {
+                    ins = is4 ? INS_remw : INS_rem;
+                }
+
+                emit.emitIns_R_R_R(ins, size, tree.RegNum, dividendReg, divisorReg);
+            }
+            else
+            {
+                if (tree.Oper is GT_UDIV)
+                {
+                    ins = is4 ? INS_divuw : INS_divu;
+                }
+                else
+                {
+                    ins = is4 ? INS_remuw : INS_remu;
+                }
+
+                emit.emitIns_R_R_R(ins, size, tree.RegNum, dividendReg, divisorReg);
+            }
+        }
+
+        genProduceReg(tree);
+    }
+
+    public void genJumpToThrowHlpBlk_la(SpecialCodeKind codeKind, instruction ins, regNumber reg1,
+        BasicBlock? failBlk = null, regNumber reg2 = REG_R0)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 conditional exception-branch generation is not ported.");
+    }
+
     public void genCodeForIncSaturate(GenTree tree)
     {
         var targetReg = tree.RegNum;
