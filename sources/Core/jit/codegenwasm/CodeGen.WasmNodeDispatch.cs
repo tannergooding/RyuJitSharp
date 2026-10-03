@@ -391,7 +391,21 @@ public sealed partial class CodeGen
 
     private void genCodeForNullCheck(GenTreeIndir tree)
     {
-        WasmCodegenDependencyNotPorted(tree, nameof(genCodeForNullCheck));
+        genConsumeAddress(tree.Addr);
+
+        if ((tree.Flags & GTF_IND_NONFAULTING) == 0)
+        {
+            genEmitNullCheck(REG_NA);
+        }
+        else
+        {
+            GetEmitter().emitIns(INS_drop);
+        }
+    }
+
+    private void genEmitNullCheck(regNumber reg)
+    {
+        WasmCodegenDependencyNotPorted(nameof(genEmitNullCheck));
     }
 
     private void genRangeCheck(GenTree tree)
@@ -437,6 +451,11 @@ public sealed partial class CodeGen
     private static void WasmCodegenDependencyNotPorted(GenTree tree, string dependency)
     {
         throw new FatalJitException(CORJIT_SKIPPED, $"Wasm {dependency} is not ported for {tree.Oper}.");
+    }
+
+    private static void WasmCodegenDependencyNotPorted(string dependency)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, $"Wasm {dependency} is not ported.");
     }
 }
 #endif
