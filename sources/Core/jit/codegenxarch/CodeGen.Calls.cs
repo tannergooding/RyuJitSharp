@@ -204,8 +204,6 @@ public sealed partial class CodeGen
     }
 #endif
 
-    private static regNumber genGetThisArgReg(GenTreeCall call) => REG_ARG_0;
-
     private void genAlignStackBeforeCall(GenTreePutArgStk putArgStk)
     {
 #if UNIX_X86_ABI
@@ -261,41 +259,6 @@ public sealed partial class CodeGen
 #endif
 #else
         assert(bias == 0);
-#endif
-    }
-
-    public unsafe void genDefinePendingCallLabel(GenTreeCall call)
-    {
-#if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "Pending call labels require a native target.");
-#else
-        if (genPendingCallLabel is null)
-        {
-            return;
-        }
-
-        if (call.IsHelperCall())
-        {
-            switch (call.HelperNum)
-            {
-                case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
-                case CORINFO_HELP_VIRTUAL_FUNC_PTR:
-                case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
-                case CORINFO_HELP_MEMSET:
-                case CORINFO_HELP_MEMCPY:
-                {
-                    return;
-                }
-
-                default:
-                {
-                    break;
-                }
-            }
-        }
-
-        genDefineInlineTempLabel(genPendingCallLabel);
-        genPendingCallLabel = null;
 #endif
     }
 

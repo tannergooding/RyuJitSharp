@@ -7,6 +7,8 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+    private static regNumber genGetThisArgReg(GenTreeCall call) => REG_ARG_0;
+
     public static unsafe GenTree? getCallTarget(GenTreeCall call, out CORINFO_METHOD_HANDLE methHnd)
     {
         methHnd = call._callType != CT_INDIRECT ? call._callMethHnd : NO_METHOD_HANDLE;

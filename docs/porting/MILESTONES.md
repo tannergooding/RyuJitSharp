@@ -32,6 +32,19 @@ unsupported HWIntrinsic platform directives, with no block-memory duplicate
 reported. This is source-selection evidence, not non-xarch compilation or
 runtime parity.
 
+## 2026-10-03: Shared call-label helpers
+
+Moved `CodeGenInterface::genGetThisArgReg` to the shared call-target partial and
+`CodeGen::genDefinePendingCallLabel` to shared label generation, matching their
+native ownership in `codegencommon.cpp`. The helper-call exclusions and pending
+label reset order are unchanged. Both native definitions were already retired
+from `runtime-port`; this change only aligns managed source ownership.
+Windows-x64 `CodeGenCallTests` passed 42/42 Debug and 31/31 Release. The focused
+SysV x64 pending-call-label cases passed 6/6 in each configuration with no
+skips. An unrelated varargs case failed when the entire SysV orchestration
+fixture was tried; it is outside this helper change and is not counted as
+acceptance evidence.
+
 ## 2026-10-03: LSRA multi-register definition-list removal
 
 The complete native `RefInfoList::removeListNode(GenTree*, unsigned)` overload

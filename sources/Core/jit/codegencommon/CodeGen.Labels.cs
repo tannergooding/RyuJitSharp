@@ -60,5 +60,36 @@ public sealed partial class CodeGen
         genLogLabel(label);
         label.bbEmitCookie = Emitter.emitAddInlineLabel();
     }
+
+    public unsafe void genDefinePendingCallLabel(GenTreeCall call)
+    {
+        if (genPendingCallLabel is null)
+        {
+            return;
+        }
+
+        if (call.IsHelperCall())
+        {
+            switch (call.HelperNum)
+            {
+                case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
+                case CORINFO_HELP_VIRTUAL_FUNC_PTR:
+                case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
+                case CORINFO_HELP_MEMSET:
+                case CORINFO_HELP_MEMCPY:
+                {
+                    return;
+                }
+
+                default:
+                {
+                    break;
+                }
+            }
+        }
+
+        genDefineInlineTempLabel(genPendingCallLabel);
+        genPendingCallLabel = null;
+    }
 #endif
 }
