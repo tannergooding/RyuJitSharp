@@ -174,7 +174,29 @@ public sealed partial class CodeGen
 
     public void genJumpToThrowHlpBlk(SpecialCodeKind codeKind)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Wasm throw-helper block generation is not ported.");
+        // The i32 predicate is on top of the Wasm stack. Values below it remain on fall-through;
+        // the throwing path unwinds to its helper block or discards them in the inline if.
+        if (_compiler.fgUseThrowHelperBlocks())
+        {
+            var currentBlock = _compiler.compCurBB;
+            assert(currentBlock is not null);
+
+            var add = _compiler.fgGetExcptnTarget(codeKind, currentBlock);
+            assert(add.acdUsed);
+
+            var target = add.acdDstBlk;
+            assert(target is not null);
+            inst_JMP(EJ_jmpif, target);
+        }
+        else
+        {
+            genEmitIf();
+            // Managed throw helpers need the Wasm stack pointer as their argument.
+            GetEmitter().emitIns_I(
+                INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
+            genEmitHelperCall(Compiler.acdHelper(codeKind), 0, EA_UNKNOWN);
+            genEmitEndIf();
+        }
     }
 }
 #endif
