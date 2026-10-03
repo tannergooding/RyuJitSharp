@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Block reachability accessor retirement
+
+Closed the existing `BlockReachabilitySets` mapping by removing its final
+residual native class shell, including the oracle-identical `GetDfsTree`
+accessor and constructor. Reused the committed full-analysis block-statistics
+selection, which includes `BlockWeightTests` and passes 98 Debug / 46 Release;
+its reachability test asserts that the accessor returns the identical DFS-tree
+instance. No managed source changed in this retirement-only follow-up.
+
+The remaining native shell was removed from the consolidated residual at HEAD
+`3df89eb47bab90710556d80be3576ee74abadc5e`, solely parented to pinned oracle
+`33baf8ee337b20dd0f184b69a6f09be92850bf9e`. Recovery refs
+`refs/copilot-recovery/blockreach-getdfs-before-060e787` and
+`refs/copilot-recovery/blockreach-shell-before-eec6fe7` preserve the prior
+residual states. This does not establish global retirement debt clearance or
+runtime/codegen parity.
+
 ## 2026-10-03: Shared xarch IMUL helper retirement
 
 Completed the shared three-operand IMUL register-selection and reverse-decoding
