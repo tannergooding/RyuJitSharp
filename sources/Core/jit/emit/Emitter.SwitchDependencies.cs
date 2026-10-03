@@ -8,6 +8,20 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+#if TARGET_LOONGARCH64
+    public unsafe void emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, regNumber addrReg,
+        CORINFO_FIELD_HANDLE fieldHandle, int offset)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 embedded-data instruction recording is not ported.");
+    }
+#else
+    public unsafe void emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, regNumber addrReg,
+        CORINFO_FIELD_HANDLE fieldHandle)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 embedded-data instruction recording is not ported.");
+    }
+#endif
+
     public void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock target, regNumber reg)
     {
 #if TARGET_LOONGARCH64

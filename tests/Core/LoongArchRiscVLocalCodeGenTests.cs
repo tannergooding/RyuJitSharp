@@ -154,7 +154,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var tree = new GenTreeOp(GT_SWITCH_TABLE, TYP_VOID, index, table);
             codeGen.InternalRegisters.Add(tree, regMaskTP.CreateFromRegNum(REG_S2, REG_S2.SingleTypeMask));
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genTableBasedSwitch(tree));
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
 #if TARGET_LOONGARCH64
             Assert.That(failure?.Message,
                 Does.Contain("Target two-register-immediate instruction recording is not implemented."));
@@ -181,6 +181,38 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 #else
             Assert.That(failure?.Message,
                 Does.Contain("RISC-V64 block-relative address recording is not ported."));
+#endif
+        });
+    }
+
+    [Test]
+    public static void JumpTableGenerationStopsAtTheSharedRecordingBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var tree = new GenTree(GT_JMPTABLE, TYP_I_IMPL) { RegNum = REG_S0 };
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
+
+            Assert.That(failure?.Message, Does.Contain("Instruction recording outside AMD64 is not ported."));
+        });
+    }
+
+    [Test]
+    public static void JumpTableAddressRecordingStopsAtTheTargetEmitterBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var fieldHandle = Compiler.eeFindJitDataOffs(0);
+#if TARGET_LOONGARCH64
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.Emitter.emitIns_R_C(
+                INS_bl, EA_PTRSIZE, REG_S0, REG_NA, fieldHandle, 0));
+            Assert.That(failure?.Message,
+                Does.Contain("LoongArch64 embedded-data instruction recording is not ported."));
+#else
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.Emitter.emitIns_R_C(
+                INS_addi, EA_PTRSIZE, REG_S0, REG_NA, fieldHandle));
+            Assert.That(failure?.Message,
+                Does.Contain("RISC-V64 embedded-data instruction recording is not ported."));
 #endif
         });
     }

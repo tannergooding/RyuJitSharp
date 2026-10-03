@@ -7,6 +7,15 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+    public unsafe void genJumpTable(GenTree tree)
+    {
+        var tableBase = genEmitJumpTable(tree, relativeAddr: true);
+        // The handle identifies inline jump-table data, not an EE static field.
+        Emitter.emitIns_R_C(INS_addi, EA_PTRSIZE, tree.RegNum, REG_NA,
+            Compiler.eeFindJitDataOffs(tableBase));
+        genProduceReg(tree);
+    }
+
     public void genTableBasedSwitch(GenTree tree)
     {
         var operands = tree.AsOp();

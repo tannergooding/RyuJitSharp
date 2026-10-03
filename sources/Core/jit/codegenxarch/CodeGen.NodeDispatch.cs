@@ -10,7 +10,24 @@ public sealed partial class CodeGen
     public unsafe void genCodeForTreeNode(GenTree tree)
     {
 #if !TARGET_XARCH
+#if TARGET_LOONGARCH64 || TARGET_RISCV64
+        switch (tree.Oper)
+        {
+            case GT_JMPTABLE:
+            {
+                genJumpTable(tree);
+                return;
+            }
+            case GT_SWITCH_TABLE:
+            {
+                genTableBasedSwitch(tree);
+                return;
+            }
+        }
         throw new FatalJitException(CORJIT_SKIPPED, "Node instruction generation requires xarch.");
+#else
+        throw new FatalJitException(CORJIT_SKIPPED, "Node instruction generation requires xarch.");
+#endif
 #else
 #if !TARGET_64BIT
         var targetReg = tree.Type == TYP_LONG ? REG_NA : tree.RegNum;
