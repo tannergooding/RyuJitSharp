@@ -40,6 +40,17 @@ public partial class Compiler
         return CorInfoReloc.NONE;
     }
 
+    public unsafe uint eeGetAddressAlignment(void* address)
+    {
+        if (info.compMatchedVM)
+        {
+            return info.compCompHnd->getAddressAlignment(address);
+        }
+
+        // A mismatched VM cannot guarantee target-specific data alignment.
+        return 1;
+    }
+
 #if TARGET_WASM
     public unsafe ref CORINFO_WASM_WELLKNOWN_GLOBALS eeGetWasmWellKnownGlobals()
     {
