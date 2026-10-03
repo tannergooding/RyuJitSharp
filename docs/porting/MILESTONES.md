@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Late liveness native retirement
+
+Restored the omitted `assert(backendRequiresLocalVarLifetimes())` in the already
+translated whole `Compiler::fgLateLiveness` method. Full-analysis focused
+Windows-x64 `LoweringPhaseTests` and `LivenessOrchestrationLIRTests` pass 35/35
+Debug and 32/32 Release.
+
+Native `5792c511` amends the consolidated residual commit, sole-parented to the
+pinned oracle, and removes the complete residual `lower.cpp` definition (48
+deletion lines). Recovery ref
+`refs/copilot-recovery/fg-late-liveness-before-2ab01486` preserves its previous
+HEAD. These phase tests do not establish generated-code or whole-runtime parity;
+the remaining optional debt cursor is recorded in `state.json`.
+
 ## 2026-10-03: Cross-target local reference counting
 
 Removed the Windows-AMD64-only rejection from the whole

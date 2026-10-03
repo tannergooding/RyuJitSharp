@@ -15,6 +15,7 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
+        assert(backendRequiresLocalVarLifetimes());
         assert(_dfsTree is not null);
         lvaComputeRefCounts(isRecompute: true, setSlotNumbers: false);
         assert(opts.OptimizationEnabled);
