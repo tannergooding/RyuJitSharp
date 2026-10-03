@@ -43,6 +43,13 @@ public sealed partial class CodeGen
                 return;
             }
 
+            case GT_JCMP:
+            case GT_JTEST:
+            {
+                genCodeForJumpCompare(tree.AsOpCC());
+                return;
+            }
+
             case GT_XCHG:
             case GT_XADD:
             case GT_XORR:

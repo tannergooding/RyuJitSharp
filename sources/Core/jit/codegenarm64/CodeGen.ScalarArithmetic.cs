@@ -284,6 +284,56 @@ public sealed partial class CodeGen
         }
     }
 
+    public void genCodeForJumpCompare(GenTreeOpCC tree)
+    {
+        assert(_compiler.compCurBB is not null);
+        var block = _compiler.compCurBB!;
+        assert(block.KindIs(BBJ_COND));
+
+        var op1 = tree.Op1;
+        var op2 = tree.Op2 ?? throw new NullReferenceException();
+
+        assert(tree.Oper is GT_JCMP or GT_JTEST);
+        assert(!varTypeIsFloating(tree.Type));
+        assert(!op1.IsUsedFromMemory);
+        assert(!op2.IsUsedFromMemory);
+        assert(op2.Oper.IsCnsIntOrI);
+        assert(op2.IsContained);
+
+        var condition = tree.Condition.Code;
+        assert(condition is GenCondition.EQ or GenCondition.NE);
+
+        genConsumeOperands(tree);
+
+        var reg = op1.RegNum;
+        var attr = emitActualTypeSize(op1);
+
+        if (tree.Oper is GT_JTEST)
+        {
+            var compareImm = op2.AsIntConCommon().IconValue;
+            var unsignedCompareImm = unchecked((ulong)(nuint)compareImm);
+
+            assert(System.Numerics.BitOperations.IsPow2(unsignedCompareImm));
+
+            var ins = condition is GenCondition.EQ ? INS_tbz : INS_tbnz;
+            var bitIndex = System.Numerics.BitOperations.Log2(unsignedCompareImm);
+            Arm64EmitRegisterBranchImmediate(ins, attr, block.TrueTarget, reg, bitIndex);
+        }
+        else
+        {
+            assert(op2.IsIntegralConst(0));
+
+            var ins = condition is GenCondition.EQ ? INS_cbz : INS_cbnz;
+            Arm64EmitRegisterBranch(ins, attr, block.TrueTarget, reg);
+        }
+
+        var falseTarget = block.FalseTarget;
+        if (!block.CanRemoveJumpToTarget(falseTarget, _compiler))
+        {
+            inst_JMP(EJ_jmp, falseTarget);
+        }
+    }
+
     private void genJumpToThrowHlpBlk(SpecialCodeKind codeKind, Action<BasicBlock, bool> emitJumpCode,
         BasicBlock? throwBlock = null)
     {
@@ -320,6 +370,13 @@ public sealed partial class CodeGen
     private static void Arm64EmitRegisterBranch(instruction ins, emitAttr attr, BasicBlock target, regNumber reg)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "ARM64 emitIns_J_R recording is not ported.");
+    }
+
+    private static void Arm64EmitRegisterBranchImmediate(
+        instruction ins, emitAttr attr, BasicBlock target, regNumber reg, int immediate)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED,
+            $"ARM64 emitIns_J_R_I recording is not ported ({ins}, {immediate}).");
     }
 }
 #endif
