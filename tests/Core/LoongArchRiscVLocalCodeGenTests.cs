@@ -222,6 +222,24 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     }
 
     [Test]
+    public static void NonlocalJumpDispatchPreservesTailCallStateAtTheInstructionBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+            var operand = CodeGenShiftTests.Register(compiler, TYP_I_IMPL, REG_S0);
+            var tree = new GenTreeUnOp(GT_NONLOCAL_JMP, TYP_VOID, operand);
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
+
+            Assert.That(codeGen.HasTailCalls, Is.True);
+            Assert.That(failure?.Message,
+                Does.Contain("Target two-register-immediate instruction recording is not implemented."));
+        });
+    }
+
+    [Test]
     public static void JumpTableAddressRecordingStopsAtTheTargetEmitterBoundary()
     {
         WithCodeGen((compiler, codeGen) =>

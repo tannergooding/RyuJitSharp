@@ -111,6 +111,16 @@ public sealed partial class CodeGen
 #if TARGET_ARM
         NYI_ARM("GT_NONLOCAL_JMP is not supported on arm32");
         throw new FatalJitException(CORJIT_SKIPPED);
+#elif TARGET_LOONGARCH64
+        HasTailCalls = true;
+        genConsumeOperands(tree);
+        // jirl with rd=r0 is an indirect jump (no link).
+        Emitter.emitIns_R_R_I(INS_jirl, EA_PTRSIZE, REG_R0, tree.Op1.RegNum, (nint)0);
+#elif TARGET_RISCV64
+        HasTailCalls = true;
+        genConsumeOperands(tree);
+        // jalr with rd=x0 is an indirect jump (no link).
+        Emitter.emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_R0, tree.Op1.RegNum, (nint)0);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Nonlocal jump generation requires Windows AMD64.");
 #else
