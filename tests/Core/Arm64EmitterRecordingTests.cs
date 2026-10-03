@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using NUnit.Framework;
@@ -476,6 +477,49 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(instructions[2].idIns(), Is.EqualTo(INS_ldr));
         Assert.That(instructions[2].idInsFmt(), Is.EqualTo(IF_LS_2A));
         Assert.That(instructions[2].idIsReloc(), Is.False);
+    }
+
+    [TestCase(4u, false)]
+    [TestCase(8u, true)]
+    [TestCase(16u, true)]
+    public static void PageOffsetLoadFoldUsesMatchedVmAlignment(uint alignment, bool expectedFold)
+    {
+        var emitter = CreateEmitter(reloc: true);
+        var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.Base.Base.getAddressAlignment = &GetAddressAlignment;
+        var state = new AddressAlignmentState {
+            Info = new ICorJitInfo { lpVtbl = &vtable },
+            Alignment = alignment,
+        };
+        compiler.info.compCompHnd = &state.Info;
+        compiler.info.compMatchedVM = true;
+#if DEBUG
+        using var tls = new JitTls(null);
+        JitTls.Compiler = compiler;
+#endif
+
+        EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(EA_8BYTE | EA_CNS_RELOC_FLG, REG_R19, 0x1234);
+        RecordPair(emitter, INS_ldr, EA_8BYTE, REG_R19, REG_R19, 0,
+            INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+
+        var instructions = CurrentInstructions(emitter);
+        Assert.That(instructions, Has.Count.EqualTo(expectedFold ? 2 : 3));
+        Assert.That(instructions[0].idIns(), Is.EqualTo(INS_adrp));
+
+        var load = instructions[expectedFold ? 1 : 2];
+        Assert.That(load.idIns(), Is.EqualTo(INS_ldr));
+        Assert.That(load.idInsFmt(), Is.EqualTo(IF_LS_2A));
+        Assert.That(load.idIsReloc(), Is.EqualTo(expectedFold));
+        if (expectedFold)
+        {
+            Assert.That(Emitter.emitGetInsSC(load), Is.EqualTo((nint)0x1234));
+        }
+        else
+        {
+            Assert.That(instructions[1].idIns(), Is.EqualTo(INS_add));
+            Assert.That(instructions[1].idIsReloc(), Is.True);
+        }
     }
 
     [TestCase(false, REG_R19, REG_R21)]
@@ -2580,6 +2624,16 @@ internal static unsafe class Arm64EmitterRecordingTests
             );
         return emitter;
     }
+
+    private struct AddressAlignmentState
+    {
+        public ICorJitInfo Info;
+        public uint Alignment;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static uint GetAddressAlignment(ICorJitInfo* self, void* address)
+        => ((AddressAlignmentState*)self)->Alignment;
 
     private sealed class RecordingEmitter(CodeGen codeGen) : Emitter(codeGen)
     {
