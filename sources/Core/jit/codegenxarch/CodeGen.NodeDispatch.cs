@@ -16,6 +16,21 @@ public sealed partial class CodeGen
             genCodeForDivMod(tree.AsOp());
             return;
         }
+
+        switch (tree.Oper)
+        {
+            case GT_JMPTABLE:
+            {
+                genJumpTable(tree);
+                return;
+            }
+
+            case GT_SWITCH_TABLE:
+            {
+                genTableBasedSwitch(tree);
+                return;
+            }
+        }
 #endif
 #if TARGET_LOONGARCH64 || TARGET_RISCV64
         switch (tree.Oper)
