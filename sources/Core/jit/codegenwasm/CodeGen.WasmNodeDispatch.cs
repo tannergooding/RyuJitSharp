@@ -525,7 +525,57 @@ public sealed partial class CodeGen
 
     private void genCodeForStoreInd(GenTreeStoreInd tree)
     {
-        WasmCodegenDependencyNotPorted(tree, nameof(genCodeForStoreInd));
+        var data = tree.Data;
+        var addr = tree.Addr;
+
+        assert(!addr.IsContained || addr.Oper is GT_LEA);
+        var offset = genWasmMemargOffset(addr);
+
+        // Consume the address before the data to update liveness in execution order.
+        genConsumeAddress(addr);
+        genConsumeRegs(data);
+
+        if ((tree.Flags & GTF_IND_NONFAULTING) == 0)
+        {
+            // The base is the address itself unless this is a contained address mode, which is never materialized.
+            var baseNode = tree.Base
+                ?? throw new FatalJitException(
+                    CORJIT_INTERNALERROR,
+                    "GT_STOREIND base is unavailable for null-check codegen.");
+            genEmitNullCheck(GetMultiUseOperandReg(baseNode));
+        }
+
+        var writeBarrierForm = GCInfo.gcIsWriteBarrierCandidate(tree);
+        if (writeBarrierForm is not GCInfo.WriteBarrierForm.WBF_NoBarrier)
+        {
+            genGCWriteBarrier(writeBarrierForm);
+        }
+        else // A normal store, not a write-barrier store
+        {
+            var type = tree.Type;
+
+            // TODO-WASM: Memory barriers
+            if (type is TYP_SIMD8)
+            {
+                // The stack is [address, value]; store the low 8 bytes.
+                WasmCodegenDependencyNotPorted(tree, "Emitter.emitIns_MemargLane");
+            }
+            else if (type is TYP_SIMD12)
+            {
+                genStoreIndTypeSimd12(tree);
+            }
+            else
+            {
+                GetEmitter().emitIns_I(ins_Store(type), type.EmitActualSize, offset);
+            }
+        }
+
+        genUpdateLife(tree);
+    }
+
+    private void genStoreIndTypeSimd12(GenTreeStoreInd tree)
+    {
+        WasmCodegenDependencyNotPorted(tree, nameof(genStoreIndTypeSimd12));
     }
 
     private void genCall(GenTreeCall call)
