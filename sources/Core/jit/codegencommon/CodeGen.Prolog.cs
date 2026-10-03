@@ -595,7 +595,7 @@ public sealed partial class CodeGen
     private void genBeginFnProlog()
     {
 #if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "The target-specific prolog hook is only ported for AMD64.");
+        genBeginFnPrologWasm();
 #endif
     }
 

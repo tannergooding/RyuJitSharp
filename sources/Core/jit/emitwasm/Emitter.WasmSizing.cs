@@ -16,5 +16,20 @@ public partial class Emitter
         var significantBits = 1 + 6 + 64 - BitOperations.LeadingZeroCount(signAdjustedValue);
         return (significantBits * 37) >> 8;
     }
+
+    public void emitIns_I_Ty(instruction ins, uint immediate, WasmValueType valueType, int localIndex)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm local declaration emission is not ported.");
+    }
+
+    public void emitIns_S(instruction ins, emitAttr attr, int localNum, int offset)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm stack-slot instruction emission is not ported.");
+    }
+
+    public void emitFuncletAddressConstant(nint funcletId)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm funclet address emission is not ported.");
+    }
 }
 #endif

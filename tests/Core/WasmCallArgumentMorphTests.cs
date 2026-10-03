@@ -13,6 +13,52 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class WasmCallArgumentMorphTests
 {
+    [TestCase(0u, WasmValueType.I32)]
+    [TestCase(21u, WasmValueType.I64)]
+    [TestCase(100_000u, WasmValueType.V128)]
+    public static void StackPointerRegisterIndexUsesTheWasmLocalIndex(uint index, WasmValueType type)
+    {
+        WithCompiler(compiler => {
+            compiler.compFuncInfos = [new FuncInfoDsc {
+                funStackPointerReg = regNumberExtensions.MakeWasmReg(index, type),
+            }];
+            compiler.compFuncInfoCount = 1;
+            var codeGen = new CodeGen(compiler);
+
+            Assert.That(codeGen.GetStackPointerRegIndex(), Is.EqualTo(index));
+        });
+    }
+
+    [Test]
+    public static void UnwindableFrameHelperMarksCurrentFunction()
+    {
+        WithCompiler(compiler => {
+            compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT }];
+            compiler.compFuncInfoCount = 1;
+            compiler.fgFuncletsCreated = true;
+            var codeGen = new CodeGen(compiler);
+
+            codeGen.ensureCurrentFuncIsUnwindable();
+
+            Assert.That(compiler.compFuncInfos[0].needsUnwindableFrame, Is.True);
+        });
+    }
+
+    [Test]
+    public static void UnportedWasmPrologEmitterOperationsFailExplicitly()
+    {
+        WithCompiler(compiler => {
+            var emitter = new CodeGen(compiler).Emitter;
+
+            Assert.Throws<FatalJitException>(() =>
+                emitter.emitIns_I_Ty(instruction.INS_local_decl, 1, WasmValueType.I32, 0));
+            Assert.Throws<FatalJitException>(() =>
+                emitter.emitIns_S(instruction.INS_i32_store, EA_4BYTE, 0, 0));
+            Assert.Throws<FatalJitException>(() =>
+                emitter.emitFuncletAddressConstant((nint)0));
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void ShadowStackArgumentPrecedesClassificationOnlyForManagedCalls(bool unmanaged)
