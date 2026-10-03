@@ -477,7 +477,50 @@ public sealed partial class CodeGen
 
     private void genCodeForIndir(GenTreeIndir tree)
     {
-        WasmCodegenDependencyNotPorted(tree, nameof(genCodeForIndir));
+        assert(tree.Oper is GT_IND);
+        var type = tree.Type;
+        var addr = tree.Addr;
+
+        genConsumeAddress(addr);
+
+        if ((tree.Flags & GTF_IND_NONFAULTING) == 0)
+        {
+            // The base is the address itself unless this is a contained address mode, which is never materialized.
+            var baseNode = tree.Base
+                ?? throw new FatalJitException(CORJIT_INTERNALERROR, "GT_IND base is unavailable for null-check codegen.");
+            genEmitNullCheck(GetMultiUseOperandReg(baseNode));
+        }
+
+        // TODO-WASM: Memory barriers
+
+        if (addr.IsContained && addr.Oper is not GT_LEA)
+        {
+            assert(addr.IsIconHandle() && type is not TYP_SIMD12);
+            assert(addr.AsIntConCommon().ImmedValNeedsReloc(_compiler));
+            WasmCodegenDependencyNotPorted(tree, "Emitter.emitImageBase and Emitter.emitIns_MemargAddress");
+        }
+        else if (type is TYP_SIMD12)
+        {
+            genLoadIndTypeSimd12(tree);
+        }
+        else
+        {
+            GetEmitter().emitIns_I(ins_Load(type), type.EmitActualSize, genWasmMemargOffset(addr));
+        }
+
+        WasmProduceReg(tree);
+    }
+
+    private void genLoadIndTypeSimd12(GenTreeIndir tree)
+    {
+        WasmCodegenDependencyNotPorted(tree, nameof(genLoadIndTypeSimd12));
+    }
+
+    private nint genWasmMemargOffset(GenTree addr)
+    {
+        throw new FatalJitException(
+            CORJIT_SKIPPED,
+            $"Wasm {nameof(genWasmMemargOffset)} is not ported for {addr.Oper}.");
     }
 
     private void genCodeForStoreInd(GenTreeStoreInd tree)
