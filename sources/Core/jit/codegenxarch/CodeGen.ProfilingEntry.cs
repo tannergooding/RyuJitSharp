@@ -10,7 +10,43 @@ public sealed partial class CodeGen
 {
     public unsafe void genProfilingEnterCallback(regNumber initReg, ref bool initRegZeroed)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM64
+        assert(Emitter.emitGeneratingPrologOrFuncletProlog());
+
+        if (!_compiler.compIsProfilerHookNeeded)
+        {
+            return;
+        }
+
+        const regNumber profilerFuncIdReg = REG_R10;
+        const regNumber profilerCallerSpReg = REG_R11;
+        if (_compiler.compProfilerMethHndIndirected)
+        {
+            instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, profilerFuncIdReg,
+                unchecked((nint)_compiler.compProfilerMethHnd));
+            Emitter.emitIns_R_R(INS_ldr, EA_PTRSIZE, profilerFuncIdReg, profilerFuncIdReg);
+        }
+        else
+        {
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, profilerFuncIdReg,
+                unchecked((nint)_compiler.compProfilerMethHnd));
+        }
+
+        var callerSPOffset = _compiler.lvaToCallerSPRelativeOffset(0, IsFramePointerUsed);
+        genInstrWithConstant(INS_add, EA_PTRSIZE, profilerCallerSpReg, genFramePointerReg(),
+            unchecked(-(nint)callerSPOffset), profilerCallerSpReg);
+
+        genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER, 0, EA_UNKNOWN);
+
+        var initRegMask = genRegMask(initReg);
+        var profilerClobberMask = _compiler.compHelperCallKillSet(CORINFO_HELP_PROF_FCN_ENTER)
+            | genRegMask(profilerFuncIdReg)
+            | genRegMask(profilerCallerSpReg);
+        if ((profilerClobberMask & initRegMask).IsNonEmpty)
+        {
+            initRegZeroed = false;
+        }
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Profiler enter callbacks require xarch.");
 #else
 #if TARGET_AMD64
