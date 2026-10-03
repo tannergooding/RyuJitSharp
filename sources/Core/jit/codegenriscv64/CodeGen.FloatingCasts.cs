@@ -95,5 +95,101 @@ public sealed partial class CodeGen
         Emitter.emitIns_R_R(ins, dstType.EmitActualSize, targetReg, op1.RegNum);
         genProduceReg(cast);
     }
+
+    public void genFloatToIntCast(GenTreeCast treeNode)
+    {
+        assert(treeNode.Oper is GT_CAST);
+        assert(!treeNode.HasOverflowCheck);
+        assert(genIsValidIntReg(treeNode.RegNum));
+
+        var op1 = treeNode.CastOp;
+        assert(!op1.IsContained);
+        assert(genIsValidFloatReg(op1.RegNum));
+
+        var dstType = treeNode.CastType;
+        var srcType = op1.Type.ActualType;
+        assert(varTypeIsFloating(srcType) && !varTypeIsFloating(dstType));
+
+        var dstSize = dstType.EmitSize;
+        noway_assert((dstSize == EA_4BYTE) || (dstSize == EA_8BYTE));
+
+        var isUnsigned = varTypeIsUnsigned(dstType);
+        instruction ins = INS_invalid;
+
+        if (isUnsigned)
+        {
+            if (srcType is TYP_DOUBLE)
+            {
+                if (dstSize == EA_4BYTE)
+                {
+                    ins = INS_fcvt_wu_d;
+                }
+                else
+                {
+                    ins = INS_fcvt_lu_d;
+                }
+            }
+            else
+            {
+                assert(srcType is TYP_FLOAT);
+                if (dstSize == EA_4BYTE)
+                {
+                    ins = INS_fcvt_wu_s;
+                }
+                else
+                {
+                    ins = INS_fcvt_lu_s;
+                }
+            }
+        }
+        else
+        {
+            if (srcType is TYP_DOUBLE)
+            {
+                if (dstSize == EA_4BYTE)
+                {
+                    ins = INS_fcvt_w_d;
+                }
+                else
+                {
+                    ins = INS_fcvt_l_d;
+                }
+            }
+            else
+            {
+                assert(srcType is TYP_FLOAT);
+                if (dstSize == EA_4BYTE)
+                {
+                    ins = INS_fcvt_w_s;
+                }
+                else
+                {
+                    ins = INS_fcvt_l_s;
+                }
+            }
+        }
+
+        genConsumeOperands(treeNode);
+
+        var tempReg = InternalRegisters.GetSingle(treeNode);
+        assert(tempReg != treeNode.RegNum);
+        assert(tempReg != op1.RegNum);
+
+        Emitter.emitIns_R_R(ins, dstSize, treeNode.RegNum, op1.RegNum);
+
+        // This emulates the "flush to zero" option because the RISC-V specification does not provide it.
+        instruction feqIns = INS_feq_s;
+        if (srcType is TYP_DOUBLE)
+        {
+            feqIns = INS_feq_d;
+        }
+
+        // feq returns zero for NaN and one for every other value; negating it yields a mask for valid conversions.
+        Emitter.emitIns_R_R_R(feqIns, dstSize, tempReg, op1.RegNum, op1.RegNum);
+        Emitter.emitIns_R_R_R(INS_sub, dstSize, tempReg, REG_ZERO, tempReg);
+        Emitter.emitIns_R_R_R(INS_and, dstSize, treeNode.RegNum, treeNode.RegNum, tempReg);
+
+        genProduceReg(treeNode);
+    }
 }
 #endif

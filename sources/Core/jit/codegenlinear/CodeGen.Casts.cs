@@ -41,10 +41,12 @@ public sealed partial class CodeGen
     }
 
 #if !TARGET_XARCH && !TARGET_WASM
+#if !TARGET_LOONGARCH64 && !TARGET_RISCV64
     private void genFloatToIntCast(GenTreeCast tree)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "Floating-to-integer cast generation outside xarch is not ported.");
     }
+#endif
 
     private void genIntToIntCast(GenTreeCast tree)
     {

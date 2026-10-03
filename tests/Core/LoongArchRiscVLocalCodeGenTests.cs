@@ -537,6 +537,40 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         });
     }
 
+    [TestCase(TYP_FLOAT, TYP_INT, false)]
+    [TestCase(TYP_DOUBLE, TYP_LONG, false)]
+    [TestCase(TYP_FLOAT, TYP_UINT, true)]
+    [TestCase(TYP_DOUBLE, TYP_ULONG, true)]
+    public static void FloatToIntCastDispatchReachesTheTargetInstructionBoundary(
+        var_types sourceType, var_types destinationType, bool isUnsigned)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+            var source = compiler.gtNewDconNode(sourceType, 1.5);
+            source.RegNum = REG_F0;
+
+            var cast = new GenTreeCast(destinationType, source, isUnsigned, destinationType)
+            {
+                RegNum = REG_S0,
+            };
+
+#if TARGET_RISCV64
+            codeGen.InternalRegisters.Add(cast, regMaskTP.CreateFromRegNum(REG_S2, REG_S2.SingleTypeMask));
+#endif
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForCast(cast));
+#if TARGET_LOONGARCH64
+            var expectedMessage = isUnsigned
+                ? "Target two-register-immediate instruction recording is not implemented."
+                : "Target two-register instruction recording is not implemented.";
+#else
+            const string expectedMessage = "Target two-register instruction recording is not implemented.";
+#endif
+            Assert.That(failure?.Message, Does.Contain(expectedMessage));
+        });
+    }
+
 #if FEATURE_SIMD
     [Test]
     public static void Simd12LocalVariableStoreStopsAtTheTargetBoundary()

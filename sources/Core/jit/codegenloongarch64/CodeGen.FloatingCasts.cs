@@ -113,5 +113,153 @@ public sealed partial class CodeGen
 
         genProduceReg(cast);
     }
+
+    public void genFloatToIntCast(GenTreeCast treeNode)
+    {
+        assert(treeNode.Oper is GT_CAST);
+        assert(!treeNode.HasOverflowCheck);
+
+        var targetReg = treeNode.RegNum;
+        assert(genIsValidIntReg(targetReg));
+
+        var op1 = treeNode.CastOp;
+        assert(!op1.IsContained);
+        assert(genIsValidFloatReg(op1.RegNum));
+
+        var dstType = treeNode.CastType;
+        var srcType = op1.Type;
+        assert(varTypeIsFloating(srcType) && !varTypeIsFloating(dstType));
+
+        var emit = Emitter;
+        var dstSize = dstType.EmitSize;
+        noway_assert((dstSize == EA_4BYTE) || (dstSize == EA_8BYTE));
+
+        instruction ins1 = INS_invalid;
+        instruction ins2 = INS_invalid;
+        var isUnsigned = varTypeIsUnsigned(dstType);
+
+        var tempReg = REG_SCRATCH_FLT;
+        assert(tempReg != op1.RegNum);
+
+        if (srcType is TYP_DOUBLE)
+        {
+            if (dstSize == EA_4BYTE)
+            {
+                ins1 = INS_ftintrz_w_d;
+                ins2 = INS_movfr2gr_s;
+            }
+            else
+            {
+                assert(dstSize == EA_8BYTE);
+                ins1 = INS_ftintrz_l_d;
+                ins2 = INS_movfr2gr_d;
+            }
+        }
+        else
+        {
+            assert(srcType is TYP_FLOAT);
+            if (dstSize == EA_4BYTE)
+            {
+                ins1 = INS_ftintrz_w_s;
+                ins2 = INS_movfr2gr_s;
+            }
+            else
+            {
+                assert(dstSize == EA_8BYTE);
+                ins1 = INS_ftintrz_l_s;
+                ins2 = INS_movfr2gr_d;
+            }
+        }
+
+        genConsumeOperands(treeNode);
+
+        // Convert unsigned values above the signed limit relative to that limit, then restore the high bit.
+        if (isUnsigned)
+        {
+            nint imm = 0;
+            if (srcType is TYP_DOUBLE)
+            {
+                if (dstSize == EA_4BYTE)
+                {
+                    imm = 0x41e00;
+                }
+                else
+                {
+                    imm = 0x43e00;
+                }
+            }
+            else
+            {
+                assert(srcType is TYP_FLOAT);
+                if (dstSize == EA_4BYTE)
+                {
+                    imm = 0x4f000;
+                }
+                else
+                {
+                    imm = 0x5f000;
+                }
+            }
+
+            emit.emitIns_R_R_I(INS_ori, dstSize, targetReg, REG_R0, 0);
+            var intToFloatIns = srcType is TYP_DOUBLE ? INS_movgr2fr_d : INS_movgr2fr_w;
+            emit.emitIns_R_R(intToFloatIns, EA_8BYTE, tempReg, REG_R0);
+
+            emit.emitIns_R_R_I(
+                srcType is TYP_DOUBLE ? INS_fcmp_cult_d : INS_fcmp_cult_s, EA_8BYTE, op1.RegNum, tempReg, 2);
+
+            nint skipUnsignedCase = dstType is TYP_UINT ? 16 << 2 : 13 << 2;
+            emit.emitIns_I_I(INS_bcnez, EA_PTRSIZE, 2, skipUnsignedCase);
+
+            if (srcType is TYP_DOUBLE)
+            {
+                emit.emitIns_R_R_I(INS_lu52i_d, EA_8BYTE, REG_R21, REG_R0, imm >> 8);
+            }
+            else
+            {
+                emit.emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, imm);
+            }
+
+            emit.emitIns_R_R(intToFloatIns, EA_8BYTE, tempReg, REG_R21);
+
+            emit.emitIns_R_R_I(
+                srcType is TYP_DOUBLE ? INS_fcmp_clt_d : INS_fcmp_clt_s, EA_8BYTE, op1.RegNum, tempReg, 2);
+
+            emit.emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R0, 0);
+            emit.emitIns_I_I(INS_bcnez, EA_PTRSIZE, 2, 4 << 2);
+
+            var floatSubtractIns = srcType is TYP_DOUBLE ? INS_fsub_d : INS_fsub_s;
+            emit.emitIns_R_R_R(floatSubtractIns, EA_8BYTE, tempReg, op1.RegNum, tempReg);
+
+            emit.emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R0, 1);
+            emit.emitIns_R_R_I(
+                dstSize == EA_8BYTE ? INS_slli_d : INS_slli_w,
+                EA_PTRSIZE,
+                REG_R21,
+                REG_R21,
+                dstSize == EA_8BYTE ? 63 : 31);
+
+            emit.emitIns_R_R_R_I(INS_fsel, EA_PTRSIZE, tempReg, tempReg, op1.RegNum, 2);
+
+            emit.emitIns_R_R(ins1, dstSize, tempReg, tempReg);
+            emit.emitIns_R_R(ins2, dstSize, targetReg, tempReg);
+
+            if (dstType is TYP_UINT)
+            {
+                emit.emitIns_R_R_I(INS_addu16i_d, EA_PTRSIZE, REG_RA, REG_R0, -32768);
+                emit.emitIns_R_R_I(INS_bne, EA_PTRSIZE, targetReg, REG_RA, 2 << 2);
+                emit.emitIns_R_R_I(INS_ori, dstSize, targetReg, REG_R0, 0);
+            }
+
+            emit.emitIns_R_R_R(INS_or, dstSize, targetReg, REG_R21, targetReg);
+        }
+        else
+        {
+            emit.emitIns_R_R(ins1, dstSize, tempReg, op1.RegNum);
+            emit.emitIns_R_R(ins2, dstSize, targetReg, tempReg);
+        }
+
+        genProduceReg(treeNode);
+    }
 }
 #endif
