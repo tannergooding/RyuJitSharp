@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Register-allocation stack-home method retirement
+
+Accepted the existing whole `Compiler::raMarkStkVars` implementation after
+confirming its managed LSRA callers and matching the pinned native method.
+Focused Windows-x64 `RegisterAllocationStackHomeTests` pass 5/5 in Debug and
+Release, covering stack homes, register locals, dependent promoted fields,
+frame-pointer classification and zero-sized outgoing argument space.
+
+Native `00cad7dc` amends the consolidated residual commit, sole-parented to the
+pinned oracle, and removes the complete 119-line `regalloc.cpp` definition.
+The `compiler.h` declaration remains for the unported `regallocwasm.cpp` caller.
+Recovery ref `refs/copilot-recovery/ra-mark-stk-vars-before-a7b5d0b` preserves
+the previous native HEAD. Other-target callers still terminate through the
+managed NYI boundary; no non-Windows-x64 runtime parity is claimed.
+
 ## 2026-10-03: GS shadow-copy helper retirement
 
 Completed the managed `Compiler::gsCopyIntoShadow` binding used by
