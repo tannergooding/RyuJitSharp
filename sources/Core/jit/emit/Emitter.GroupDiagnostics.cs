@@ -273,9 +273,6 @@ public partial class Emitter
 
     public void emitDispJumpList()
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Jump-list diagnostics require AMD64.");
-#else
         jitprintf("Emitter Jump List:\n");
         uint jumpCount = 0;
 
@@ -284,22 +281,23 @@ public partial class Emitter
             var group = jump.idjIG ?? throw new FatalJitException("A saved jump must belong to an instruction group.");
             var debugInfo = jump.idDebugOnlyInfo()
                 ?? throw new FatalJitException("Jump-list diagnostics require descriptor debug information.");
-            var instructionName = jump.idIns() switch
-            {
-                INS_push_hide => "push",
-                INS_lea or INS_push or INS_call or INS_jmp
-                    or INS_jo or INS_jno or INS_jb or INS_jae or INS_je or INS_jne or INS_jbe or INS_ja
-                    or INS_js or INS_jns or INS_jp or INS_jnp or INS_jl or INS_jge or INS_jle or INS_jg
-                    => jump.idIns().ToString()[4..],
-                _ => throw new FatalJitException(CORJIT_SKIPPED, "Jump-list instruction name is not implemented."),
-            };
 
-            jitprintf($"IG{group.GetDisplayId():D2} IN{debugInfo.idNum:x4} {instructionName,3}[{jump.idCodeSize()}]");
+            jitprintf(
+                $"IG{group.GetDisplayId():D2} IN{debugInfo.idNum:x4} {codeGen.genInsDisplayName(jump),3}[{jump.idCodeSize()}]");
 
             if (!jump.idIsBound())
             {
-                var target = jump.idjTarget is BasicBlock block ? emitCodeGetCookie(block) : null;
-                jitprintf(target is null ? " -> ILLEGAL" : $" -> IG{target.GetDisplayId():D2}");
+#if TARGET_ARM64
+                if (jump.idInsFmt() is insFormat.IF_LARGEADR or insFormat.IF_LARGELDC)
+                {
+                    jitprintf($" -> {jump.idReg1().Name}");
+                }
+                else
+#endif
+                {
+                    var target = jump.idjTarget is BasicBlock block ? emitCodeGetCookie(block) : null;
+                    jitprintf(target is null ? " -> ILLEGAL" : $" -> IG{target.GetDisplayId():D2}");
+                }
 
                 if (jump.idjShort)
                 {
@@ -309,22 +307,25 @@ public partial class Emitter
                 {
                     jitprintf(" (long)");
                 }
+#if TARGET_XARCH
                 if (jump.idjIsRemovableJmpCandidate)
                 {
                     jitprintf(" ; removal candidate");
                 }
+#endif
+#if TARGET_AMD64
                 if (jump.idjIsAfterCallBeforeEpilog)
                 {
                     jitprintf(" ; after call before epilog");
                 }
+#endif
             }
 
             jitprintf("\n");
-            jumpCount++;
+            jumpCount = unchecked(jumpCount + 1);
         }
 
         jitprintf($"  total jump count: {jumpCount}\n");
-#endif
     }
 #endif
 }

@@ -355,6 +355,44 @@ internal static class EmitterJumpInstructionTests
             Assert.That(target.bbEmitCookie, Is.Null);
         });
     }
+
+    [Test]
+    public static void JumpListDiagnosticDisplaysNativeInstructionNamesAndUnboundMetadata()
+    {
+        WithEmitter((_, emitter) =>
+        {
+            var target = Label();
+            emitter.emitIns_J(INS_call, target, keepShort: false);
+            var call = Last(emitter);
+            emitter.emitIns_J(INS_jmp, target, keepShort: true, isRemovableJmpCandidate: true);
+            var jump = Last(emitter);
+            JumpView.Next(jump, null);
+            JumpView.Next(call, jump);
+            JumpView.First(emitter, call);
+
+            var diagnostic = InstructionRecordingTestSupport.Capture(emitter.emitDispJumpList);
+
+            Assert.That(diagnostic, Does.Contain("IN0001 call[5] -> ILLEGAL"));
+            Assert.That(diagnostic,
+                Does.Contain("IN0002 jmp[5] -> ILLEGAL (short) ; removal candidate ; after call before epilog"));
+            Assert.That(diagnostic, Does.Contain("  total jump count: 2"));
+
+            var targetGroup = emitter.emitCurIG ?? throw new AssertionException("Missing target instruction group.");
+            target.bbEmitCookie = targetGroup;
+            diagnostic = InstructionRecordingTestSupport.Capture(emitter.emitDispJumpList);
+            Assert.That(diagnostic,
+                Does.Contain($"IN0002 jmp[5] -> IG{targetGroup.GetDisplayId():D2} (short) ; removal candidate ; after call before epilog"));
+
+            jump.idSetIsBound();
+            diagnostic = InstructionRecordingTestSupport.Capture(emitter.emitDispJumpList);
+
+            var boundJumpIndex = diagnostic.IndexOf("IN0002 jmp[5]", StringComparison.Ordinal);
+            Assert.That(boundJumpIndex, Is.GreaterThanOrEqualTo(0));
+            var boundJumpLine = diagnostic[boundJumpIndex..].Split('\n')[0];
+            Assert.That(boundJumpLine, Does.Not.Contain(" ->"));
+            Assert.That(boundJumpLine, Does.Not.Contain("removal candidate"));
+        });
+    }
 #endif
 
     private static BasicBlock Label()
@@ -384,6 +422,11 @@ internal static class EmitterJumpInstructionTests
         public static bool KeepLong(instrDesc id) => ((instrDescJmp)id).idjKeepLong;
         public static bool IsRemovable(instrDesc id) => ((instrDescJmp)id).idjIsRemovableJmpCandidate;
         public static bool AfterCall(instrDesc id) => ((instrDescJmp)id).idjIsAfterCallBeforeEpilog;
+        public static void First(Emitter emitter, instrDesc jump) => FirstJumps(emitter) = (instrDescJmp)jump;
+        public static void Next(instrDesc jump, instrDesc? next) => ((instrDescJmp)jump).idjNext = (instrDescJmp?)next;
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitJumpList")]
+        private static extern ref instrDescJmp? FirstJumps(Emitter emitter);
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]

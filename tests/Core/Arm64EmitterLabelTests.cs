@@ -50,6 +50,23 @@ internal static unsafe class Arm64EmitterLabelTests
         Assert.That(ThisByrefs(emitter), Is.EqualTo((regMask)2));
     }
 
+#if DEBUG
+    [TestCase(Emitter.insFormat.IF_LARGEADR, INS_adrp)]
+    [TestCase(Emitter.insFormat.IF_LARGELDC, INS_ldr)]
+    public static void JumpListDiagnosticDisplaysArm64LargeAddressRegisters(Emitter.insFormat format, instruction ins)
+    {
+        var (_, emitter) = CreateEmitter();
+        var descriptor = LabelEmitter.LargeAddressJump(emitter, format, ins, regNumber.REG_R5);
+
+        var diagnostic = Arm64SveInstructionSanityTests.Capture(emitter.emitDispJumpList).Output;
+
+        Assert.That(descriptor.idCodeSize(), Is.GreaterThan(0));
+        Assert.That(diagnostic, Does.Contain($"{ins.ToString()[4..]}["));
+        Assert.That(diagnostic, Does.Contain(" -> x5"));
+        Assert.That(diagnostic, Does.Contain("  total jump count: 1"));
+    }
+#endif
+
     [TestCase(false)]
     [TestCase(true)]
     public static void LastCallGcClassificationTracksDescriptorContext(bool noGc)
@@ -135,6 +152,22 @@ internal static unsafe class Arm64EmitterLabelTests
             descriptor.idIns(ins);
             return descriptor;
         }
+
+        public static instrDesc LargeAddressJump(
+            Emitter emitter, insFormat format, instruction ins, regNumber targetReg)
+        {
+            var descriptor = new instrDescJmp { idjIG = emitter.emitCurIG };
+            descriptor.idIns(ins);
+            descriptor.idInsFmt(format);
+            descriptor.idReg1(targetReg);
+            descriptor.idDebugOnlyInfo(new instrDescDebugInfo { idNum = 1 });
+            FirstJump(emitter) = descriptor;
+
+            return descriptor;
+        }
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitJumpList")]
+        private static extern ref instrDescJmp? FirstJump(Emitter emitter);
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGenIG")]

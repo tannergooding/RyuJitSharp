@@ -16,6 +16,26 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Jump-list diagnostic retirement
+
+Completed the whole DEBUG `emitter::emitDispJumpList` mapping in
+`Emitter.GroupDiagnostics.cs`, preserving the native common target-cookie
+display, ARM64 `IF_LARGEADR`/`IF_LARGELDC` register branch, xarch removable-jump
+marker, AMD64 after-call marker, and target-aware instruction names.
+Full-analysis Windows-x64 `EmitterJumpInstructionTests` pass 78/78 Debug and
+70/70 Release. ARM64-target projections cover both large-address formats (2/2
+Debug); they execute managed target logic on Windows x64, not ARM64 code.
+
+The complete 60-line residual method matches the pinned oracle exactly
+(SHA-256 `4A60C9C96B35B7D37CB61DB6A87BBCE14C9E431E66C68D98F3D4E8A0D759DA1D`).
+Native `dbb6f11a` amends the consolidated residual commit, sole-parented to the
+pinned oracle, and removes the definition/rationale plus its exclusive
+declaration (65 deletions). Recovery ref
+`refs/copilot-recovery/emit-disp-jump-list-before-60dcfd8a` preserves the prior
+native HEAD. A broader ARM64 label-class selection has two failures in
+`ChangedCallLivenessReachesTheRequiredPaddingDependency`, outside this
+diagnostic; no generated-code or runtime parity is claimed.
+
 ## 2026-10-03: Instruction-group allocator retirement
 
 Accepted the existing complete `emitter::emitAllocIG` mapping in
