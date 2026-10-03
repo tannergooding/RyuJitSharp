@@ -8,6 +8,7 @@ using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.CorJitResult;
+using static RyuJitSharp.CORINFO_InstructionSet;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
@@ -144,6 +145,29 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 #else
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_INTERNALERROR));
 #endif
+        });
+    }
+
+    [TestCase(GT_BSWAP, TYP_INT)]
+    [TestCase(GT_BSWAP16, TYP_INT)]
+    [TestCase(GT_BSWAP, TYP_LONG)]
+    public static void ByteSwapCodegenReachesTheTargetInstructionBoundary(genTreeOps oper, var_types type)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+#if TARGET_RISCV64
+            compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_Zbb);
+            compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_Zbb);
+            compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_Zbb);
+#endif
+            var operand = compiler.gtNewIconNode(type, 1);
+            operand.RegNum = REG_S0;
+            var tree = compiler.gtNewUnaryNode(oper, type, operand);
+            tree.RegNum = REG_S1;
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForBswap(tree));
+
+            Assert.That(failure?.Message, Does.Contain("Target two-register instruction recording is not implemented."));
         });
     }
 

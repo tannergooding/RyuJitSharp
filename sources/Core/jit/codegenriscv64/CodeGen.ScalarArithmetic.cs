@@ -37,6 +37,30 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
+    public void genCodeForBswap(GenTree tree)
+    {
+        assert(tree.Oper is GT_BSWAP or GT_BSWAP16);
+
+        var operand = tree.AsUnOp().Op1;
+        var attr = operand.Type.EmitSize;
+        var targetReg = tree.RegNum;
+        var operandReg = genConsumeReg(operand);
+
+        assert(_compiler.compOpportunisticallyDependsOn(InstructionSet_Zbb));
+        Emitter.emitIns_R_R(INS_rev8, attr, targetReg, operandReg);
+
+        if (attr < EA_PTRSIZE)
+        {
+            var shiftAmount = tree.Oper is GT_BSWAP16 ? 48 : 32;
+            // TODO: we need to right-shift the byte-reversed register anyway. Remove the cast (in Lowering::LowerCast?)
+            // wrapping GT_BSWAP16 and pass the exact destination type here, so that this codegen could leave the register
+            // properly extended.
+            Emitter.emitIns_R_R_I(INS_srli, attr, targetReg, targetReg, shiftAmount);
+        }
+
+        genProduceReg(tree);
+    }
+
     public void genCodeForIncSaturate(GenTree tree)
     {
         var targetReg = tree.RegNum;

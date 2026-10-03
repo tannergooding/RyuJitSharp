@@ -53,6 +53,41 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
+    public void genCodeForBswap(GenTree tree)
+    {
+        assert(tree.Oper is GT_BSWAP or GT_BSWAP16);
+
+        var attr = emitActualTypeSize(tree);
+        var targetReg = tree.RegNum;
+        var operand = tree.AsUnOp().Op1;
+        assert(!operand.IsContained);
+        var operandReg = genConsumeReg(operand);
+
+        instruction ins;
+        if (tree.Oper is GT_BSWAP16)
+        {
+            ins = INS_revb_4h;
+        }
+        else if (attr == EA_8BYTE)
+        {
+            ins = INS_revb_d;
+        }
+        else
+        {
+            assert(attr == EA_4BYTE);
+            ins = INS_revb_2w;
+        }
+
+        Emitter.emitIns_R_R(ins, attr, targetReg, operandReg);
+
+        if (tree.Oper is GT_BSWAP16 && !genCanOmitNormalizationForBswap16(tree))
+        {
+            Emitter.emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, targetReg, targetReg, 15, 0);
+        }
+
+        genProduceReg(tree);
+    }
+
     public void genCodeForIncSaturate(GenTree tree)
     {
         var targetReg = tree.RegNum;

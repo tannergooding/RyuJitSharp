@@ -12,5 +12,10 @@ public partial class Emitter
     {
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 three-register instruction recording is not ported.");
     }
+
+    public void emitIns_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 two-register/two-immediate instruction recording is not ported.");
+    }
 }
 #endif
