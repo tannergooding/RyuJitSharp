@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Instruction-group allocator retirement
+
+Accepted the existing complete `emitter::emitAllocIG` mapping in
+`Emitter.InstructionGroups.cs`, preserving DEBUG initialization,
+`EMITTER_STATS` accounting, and the `emitInitIG` call order. Focused
+full-analysis Windows-x64 `EmitterInstructionGroupTests` pass 10/10 in Debug
+and Release, covering group metadata, initialization, flags, and allocation
+linking.
+
+The 26-line native method matches the pinned oracle exactly. Native
+`60dcfd8a` amends the consolidated residual commit, sole-parented to the pinned
+oracle, and removes the method/rationale plus its exclusive declaration (33
+deletions). Recovery ref
+`refs/copilot-recovery/emit-alloc-ig-before-279c8d19` preserves the previous
+native HEAD. No generated-code or runtime parity is claimed; unsupported
+`EMITTER_STATS` sizing remains an explicit terminating target boundary.
+
 ## 2026-10-03: Shared handle-comment formatting
 
 Moved the complete `emitter::emitDispCommentForHandle` binding from the xarch
