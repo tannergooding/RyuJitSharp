@@ -639,8 +639,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(RyuJitTargetArchitecture)' == 'wasm'">
-    <Compile Remove="jit\*xarch\CodeGen.FloatingCasts.cs" />
-    <Compile Remove="jit\*xarch\Emitter.ImmediateOnlyInstructions.cs" />
+    <Compile Remove="jit\codegencommon\CodeGen.FloatingCasts.cs" />
+    <Compile Remove="jit\emit\Emitter.ImmediateOnlyInstructions.cs" />
   </ItemGroup>
 
 </Project>
