@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
@@ -530,6 +531,91 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             Assert.That(failure?.Message, Does.Contain("LoongArch64 SIMD12 local-store recording is not ported."));
 #else
             Assert.That(failure?.Message, Does.Contain("RISC-V SIMD12 local-store recording is not ported."));
+#endif
+        });
+    }
+#endif
+
+    [Test]
+    public static void IndirectStorePreservesVolatileBarrierBeforeTargetRecording()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var address = Register(compiler, TYP_BYREF, REG_S0);
+            var data = Register(compiler, TYP_INT, REG_S1);
+            var store = new GenTreeStoreInd(TYP_INT, address, data)
+            {
+                Flags = GTF_IND_VOLATILE,
+            };
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreInd(store));
+
+#if TARGET_LOONGARCH64
+            Assert.That(failure?.Message, Does.Contain("LoongArch64 memory barrier emission is not ported."));
+#else
+            Assert.That(failure?.Message, Does.Contain("RISC-V64 memory barrier emission is not ported."));
+#endif
+        });
+    }
+
+    [Test]
+    public static void IndirectStoreReachesTheTargetRecordingBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var address = Register(compiler, TYP_BYREF, REG_S0);
+            var data = Register(compiler, TYP_INT, REG_S1);
+            var store = new GenTreeStoreInd(TYP_INT, address, data);
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreInd(store));
+
+#if TARGET_LOONGARCH64
+            Assert.That(failure?.Message,
+                Does.Contain("LoongArch64 indirect-store instruction recording is not ported."));
+#else
+            Assert.That(failure?.Message,
+                Does.Contain("RISC-V64 indirect-store instruction recording is not ported."));
+#endif
+        });
+    }
+
+    [Test]
+    public static void GcIndirectStorePreservesWriteBarrierHelperDispatch()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var address = Register(compiler, TYP_BYREF, REG_WRITE_BARRIER_DST);
+            var data = Register(compiler, TYP_REF, REG_WRITE_BARRIER_SRC);
+            var store = new GenTreeStoreInd(TYP_REF, address, data)
+            {
+                Flags = GTF_IND_TGT_HEAP,
+            };
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreInd(store));
+
+            Assert.That(failure?.Message, Does.Contain("Helper call generation is not implemented for this target."));
+        });
+    }
+
+#if FEATURE_SIMD
+    [Test]
+    public static void Simd12IndirectStoreRetainsTheTargetDependencyBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
+            var data = new GenTreeVecCon(TYP_SIMD12);
+            var store = new GenTreeStoreInd(TYP_SIMD12, address, data);
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreInd(store));
+
+#if TARGET_LOONGARCH64
+            Assert.That(failure?.Message, Does.Contain("LoongArch64 SIMD12 indirect stores are not ported."));
+#else
+            Assert.That(failure?.Message, Does.Contain("RISC-V64 SIMD12 indirect stores are not ported."));
 #endif
         });
     }
