@@ -8,6 +8,7 @@ using NUnit.Framework;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
+using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
@@ -64,6 +65,158 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             Assert.That(Descriptors(codeGen.Emitter), Is.Empty);
         });
     }
+
+    [Test]
+    public static void StackFieldStoresUseTheSourceRegisterAndFieldOffset()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaTable[0].Type = TYP_LONG;
+            var source = compiler.gtNewIconNode(TYP_INT, 7);
+            source.RegNum = REG_R3;
+            var tree = compiler.gtNewStoreLclFldNode(TYP_INT, 0, 4, source);
+            tree.RegNum = REG_NA;
+
+            codeGen.genCodeForStoreLclFld(tree);
+
+            var descriptors = Descriptors(codeGen.Emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            var descriptor = descriptors[0];
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_str));
+            Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_4BYTE));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R3));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_FPBASE));
+            Assert.That(descriptor.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
+            Assert.That(descriptor.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(4u));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+        });
+    }
+
+    [Test]
+    public static void ContainedZeroFieldStoresUseTheZeroRegister()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaTable[0].Type = TYP_LONG;
+            var source = compiler.gtNewIconNode(TYP_INT, 0);
+            source.IsContained = true;
+            var tree = compiler.gtNewStoreLclFldNode(TYP_INT, 0, 4, source);
+            tree.RegNum = REG_NA;
+
+            codeGen.genCodeForStoreLclFld(tree);
+
+            var descriptors = Descriptors(codeGen.Emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_str));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ZR));
+            Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(4u));
+        });
+    }
+
+    [Test]
+    public static void ContainedBitcastFieldStoresUseTheUncontainedSourceRegister()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaTable[0].Type = TYP_DOUBLE;
+            var source = compiler.gtNewIconNode(TYP_INT, 7);
+            source.RegNum = REG_R3;
+            var bitcast = new GenTreeUnOp(GT_BITCAST, TYP_FLOAT, source)
+            {
+                IsContained = true,
+            };
+            var tree = compiler.gtNewStoreLclFldNode(TYP_FLOAT, 0, 4, bitcast);
+            tree.RegNum = REG_NA;
+
+            codeGen.genCodeForStoreLclFld(tree);
+
+            var descriptors = Descriptors(codeGen.Emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_str));
+            Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_4BYTE));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3));
+            Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(4u));
+        });
+    }
+
+#if FEATURE_SIMD
+    [Test]
+    public static void ContainedSimd12FieldStoresWriteTwoZeroChunks()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaTable[0].Type = TYP_SIMD16;
+            var source = new GenTreeVecCon(TYP_SIMD12)
+            {
+                IsContained = true,
+            };
+            var tree = compiler.gtNewStoreLclFldNode(TYP_SIMD12, 0, 4, source);
+            tree.RegNum = REG_NA;
+
+            codeGen.genCodeForStoreLclFld(tree);
+
+            var descriptors = Descriptors(codeGen.Emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(2));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_str));
+            Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_8BYTE));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ZR));
+            Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(4u));
+            Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_str));
+            Assert.That(descriptors[1].idOpSize(), Is.EqualTo(EA_4BYTE));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_ZR));
+            Assert.That(descriptors[1].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(12u));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+        });
+    }
+
+    [Test]
+    public static void Simd12FieldRegisterStoresCopyToTheAssignedRegister()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaTable[0].Type = TYP_SIMD16;
+            var source = new GenTreeVecCon(TYP_SIMD12)
+            {
+                RegNum = REG_V1,
+            };
+            source.SimdVal.u32[0] = 1;
+            compiler.lvaTable[0].lvLRACandidate = true;
+            compiler.lvaTable[0].RegNum = REG_V0;
+            var tree = compiler.gtNewStoreLclFldNode(TYP_SIMD12, 0, 4, source);
+            tree.RegNum = REG_V0;
+
+            codeGen.genCodeForStoreLclFld(tree);
+
+            var descriptors = Descriptors(codeGen.Emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_mov));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_V0));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_V1));
+        });
+    }
+
+    [Test]
+    public static void Simd12FieldStackStoresTerminateAtTheUnportedEmitterDependency()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaTable[0].Type = TYP_SIMD16;
+            var source = new GenTreeVecCon(TYP_SIMD12)
+            {
+                RegNum = REG_V1,
+            };
+            source.SimdVal.u32[0] = 1;
+            var tree = compiler.gtNewStoreLclFldNode(TYP_SIMD12, 0, 4, source);
+            tree.RegNum = REG_NA;
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreLclFld(tree)) ??
+                throw new AssertionException("The unported SIMD12 stack-store dependency did not fail.");
+
+            Assert.That(failure.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure.Message, Does.Contain("Target SIMD12 local-stack store recording is not yet ported."));
+        });
+    }
+#endif
 
     private static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
