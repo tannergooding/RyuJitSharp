@@ -16,6 +16,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Memory SSA accessor retirement
+
+Retired the residual `Compiler::GetMemoryPerSsaData` accessor after confirming
+the existing managed ref-return reaches the same 1-based `SsaDefArray` storage
+slot for valid allocated memory-SSA numbers. Direct tests verify stable
+same-slot references, distinct slots, and reset/reallocation behavior. The
+focused Windows-x64 `ValueNum`/`MemorySsa`/`SsaMemory` selection passes 869
+Debug and 811 Release tests with no skips, and Debug/Release compiler builds pass
+with full analysis. The ordinary Core test project remains blocked by unrelated
+test-source compile/analyzer failures; the focused run excluded those fixtures
+without changing the project.
+
+The getter and its comment were removed from the consolidated native residual
+at HEAD `86b0cad45b83454d4c125ca2f594d03405498aa9`, solely parented to pinned
+oracle `33baf8ee337b20dd0f184b69a6f09be92850bf9e`. Recovery ref
+`refs/copilot-recovery/memory-ssa-before-3df89eb` preserves the prior HEAD.
+This does not establish runtime, generated-code, phase-dump, or global
+retirement-debt parity.
+
 ## 2026-10-03: Block reachability accessor retirement
 
 Closed the existing `BlockReachabilitySets` mapping by removing its final
