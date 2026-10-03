@@ -91,6 +91,125 @@ public sealed partial class CodeGen
         varDsc.RegNum = REG_STK;
     }
 
+    public void genCodeForStoreLclVar(GenTreeLclVar lclNode)
+    {
+        assert(lclNode.Oper is GT_STORE_LCL_VAR);
+
+        var data = lclNode.Op1;
+        if (data.SkipCopyOrReload.IsMultiRegNode)
+        {
+            genMultiRegStoreToLocal(lclNode);
+            return;
+        }
+
+        ref var varDsc = ref _compiler.lvaGetDesc(lclNode.LclNum);
+        if (lclNode.IsMultiReg)
+        {
+            assert(varTypeIsSIMD(data.Type));
+
+            var operandReg = genConsumeReg(data);
+            var regCount = varDsc.lvFieldCnt;
+            for (byte i = 0; i < regCount; i++)
+            {
+                var varReg = lclNode.GetRegByIndex(i);
+                assert(varReg != REG_NA);
+
+                var fieldLclNum = varDsc.lvFieldLclStart + i;
+                ref var fieldVarDsc = ref _compiler.lvaGetDesc(fieldLclNum);
+                assert(fieldVarDsc.TypeIs(TYP_FLOAT));
+
+                Emitter.emitIns_R_R_I(INS_dup, emitTypeSize(TYP_FLOAT), varReg, operandReg, i);
+            }
+
+            genProduceReg(lclNode);
+            return;
+        }
+
+        var targetReg = lclNode.RegNum;
+        var varNum = lclNode.LclNum;
+        var targetType = varDsc.GetRegisterType(lclNode);
+
+#if FEATURE_SIMD
+        if (targetType is TYP_SIMD12)
+        {
+            genStoreLclTypeSimd12(lclNode);
+            return;
+        }
+#endif
+
+        genConsumeRegs(data);
+
+        var dataReg = REG_NA;
+        if (data.IsContained)
+        {
+            var zeroInit = data.IsIntegralConst(0) || data.IsVectorZero;
+            assert(zeroInit || data.Oper is GT_BITCAST);
+
+            if (zeroInit && varTypeIsSIMD(targetType))
+            {
+                if (targetReg != REG_NA)
+                {
+                    Emitter.emitIns_R_I(INS_movi, emitActualTypeSize(targetType), targetReg, 0x00, INS_OPTS_16B);
+                }
+                else if (targetType is TYP_SIMD16)
+                {
+                    Emitter.emitIns_S_S_R_R(INS_stp, EA_8BYTE, EA_8BYTE, REG_ZR, REG_ZR, varNum, 0);
+                }
+                else
+                {
+                    assert(targetType is TYP_SIMD8);
+                    Emitter.emitIns_S_R(INS_str, EA_8BYTE, REG_ZR, varNum, 0);
+                }
+
+                genUpdateLifeStore(lclNode, targetReg, ref varDsc);
+                return;
+            }
+
+            if (zeroInit)
+            {
+                dataReg = REG_ZR;
+            }
+            else
+            {
+                var bitcastSrc = data.AsUnOp().Op1;
+                assert(!bitcastSrc.IsContained);
+                dataReg = bitcastSrc.RegNum;
+            }
+        }
+        else
+        {
+            assert(!data.IsContained);
+            dataReg = data.RegNum;
+        }
+
+        assert(dataReg != REG_NA);
+
+        if (targetReg == REG_NA)
+        {
+            inst_set_SV_var(lclNode);
+
+            var ins = ins_StoreFromSrc(dataReg, targetType);
+            Emitter.emitIns_S_R(ins, emitActualTypeSize(targetType), dataReg, varNum, 0);
+        }
+        else if (varTypeIsIntegral(targetType) && Emitter.isGeneralRegister(targetReg) &&
+            Emitter.isGeneralRegister(dataReg))
+        {
+            inst_Mov_Extend(targetType, srcInReg: true, targetReg, dataReg, canSkip: true,
+                emitActualTypeSize(targetType));
+        }
+        else if (TargetOS.IsUnix && data.IsIconHandle(GTF_ICON_TLS_HDL))
+        {
+            assert(data.AsIntCon().IconValue == 0);
+            Emitter.emitIns_R(INS_mrs_tpid0, emitActualTypeSize(targetType), targetReg);
+        }
+        else
+        {
+            inst_Mov(targetType, targetReg, dataReg, canSkip: true);
+        }
+
+        genUpdateLifeStore(lclNode, targetReg, ref varDsc);
+    }
+
 #if FEATURE_SIMD
     private void genStoreLclTypeSimd12(GenTreeLclVarCommon treeNode)
     {
@@ -130,6 +249,7 @@ public sealed partial class CodeGen
 
         genUpdateLifeStore(treeNode, targetReg, ref varDsc);
     }
+#endif
 
     private void genUpdateLifeStore(GenTree tree, regNumber targetReg, ref LclVarDsc varDsc)
     {
@@ -143,6 +263,5 @@ public sealed partial class CodeGen
             varDsc.RegNum = REG_STK;
         }
     }
-#endif
 }
 #endif

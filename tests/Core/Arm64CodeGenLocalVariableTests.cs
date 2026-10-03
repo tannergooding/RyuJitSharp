@@ -139,7 +139,105 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
         });
     }
 
+    [Test]
+    public static void StackLocalStoresUseTheSourceRegisterAndUpdateTheLocalHome()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaTable[0].Type = TYP_INT;
+            var source = compiler.gtNewIconNode(TYP_INT, 7);
+            source.RegNum = REG_R3;
+            var tree = compiler.gtNewStoreLclVarNode(0, source);
+            tree.RegNum = REG_NA;
+
+            codeGen.genCodeForStoreLclVar(tree);
+
+            var descriptors = Descriptors(codeGen.Emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_str));
+            Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_4BYTE));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3));
+            Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.Zero);
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+        });
+    }
+
+    [Test]
+    public static void RegisterLocalStoresUseTheAssignedRegisterAndExtendIntegerValues()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaTable[0].Type = TYP_INT;
+            compiler.lvaTable[0].lvLRACandidate = true;
+            compiler.lvaTable[0].RegNum = REG_R4;
+            var source = compiler.gtNewIconNode(TYP_INT, 7);
+            source.RegNum = REG_R3;
+            var tree = compiler.gtNewStoreLclVarNode(0, source);
+            tree.RegNum = REG_R4;
+
+            codeGen.genCodeForStoreLclVar(tree);
+
+            var descriptors = Descriptors(codeGen.Emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_mov));
+            Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_4BYTE));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R4));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R3));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_R4));
+        });
+    }
+
 #if FEATURE_SIMD
+    [Test]
+    public static void ContainedSimd16LocalStoresUsePairOfZeroRegisters()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaTable[0].Type = TYP_SIMD16;
+            var source = new GenTreeVecCon(TYP_SIMD16)
+            {
+                IsContained = true,
+            };
+            var tree = compiler.gtNewStoreLclVarNode(0, source);
+            tree.RegNum = REG_NA;
+
+            codeGen.genCodeForStoreLclVar(tree);
+
+            var descriptors = Descriptors(codeGen.Emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_stp));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ZR));
+            Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_ZR));
+            Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.Zero);
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+        });
+    }
+
+    [Test]
+    public static void ContainedSimdRegisterLocalStoresUseMoveImmediate()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaTable[0].Type = TYP_SIMD8;
+            compiler.lvaTable[0].lvLRACandidate = true;
+            compiler.lvaTable[0].RegNum = REG_V0;
+            var source = new GenTreeVecCon(TYP_SIMD8)
+            {
+                IsContained = true,
+            };
+            var tree = compiler.gtNewStoreLclVarNode(0, source);
+            tree.RegNum = REG_V0;
+
+            codeGen.genCodeForStoreLclVar(tree);
+
+            var descriptors = Descriptors(codeGen.Emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_movi));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_V0));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_V0));
+        });
+    }
+
     [Test]
     public static void ContainedSimd12FieldStoresWriteTwoZeroChunks()
     {
