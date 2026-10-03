@@ -75,6 +75,59 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         });
     }
 
+    [TestCase(false, 0)]
+    [TestCase(false, 1)]
+    [TestCase(false, 2)]
+    [TestCase(true, 0)]
+    public static void InitBlockUnrollPreservesVolatileAndAddressBoundaries(bool isVolatile, int destinationKind)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaTable[0].Type = TYP_STRUCT;
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+            GenTree destination;
+            if (destinationKind is 2)
+            {
+                var baseAddress = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0) { RegNum = REG_S0 };
+                destination = new GenTreeAddrMode(TYP_BYREF, baseAddress, null, 0, 8)
+                {
+                    IsContained = true,
+                };
+            }
+            else
+            {
+                destination = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0)
+                {
+                    IsContained = destinationKind is 0,
+                    RegNum = destinationKind is 0 ? REG_NA : REG_S0,
+                };
+            }
+
+            var zero = new GenTreeIntCon(TYP_INT, 0) { IsContained = true };
+            var tree = new GenTreeBlk(TYP_STRUCT, destination, zero, new ClassLayout(16)) { RegNum = REG_NA };
+            if (isVolatile)
+            {
+                tree.Flags |= GenTreeFlags.GTF_IND_VOLATILE;
+            }
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForInitBlkUnroll(tree));
+#if TARGET_LOONGARCH64
+            var expectedBoundary = isVolatile
+                ? "LoongArch64 memory barrier emission is not ported."
+                : destinationKind is 0
+                    ? "Target local-stack store recording is not implemented."
+                    : "Target two-register-immediate instruction recording is not implemented.";
+#else
+            var expectedBoundary = isVolatile
+                ? "RISC-V64 memory barrier emission is not ported."
+                : destinationKind is 0
+                    ? "Target local-stack store recording is not implemented."
+                    : "Target two-register-immediate instruction recording is not implemented.";
+#endif
+            Assert.That(failure?.Message, Does.Contain(expectedBoundary));
+        });
+    }
+
     [Test]
     public static void LocalVariableStoreStopsAtTheTargetConstantEmitterBoundary()
     {
