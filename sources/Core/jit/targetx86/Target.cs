@@ -3,18 +3,14 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
+#if TARGET_X86
 namespace RyuJitSharp;
 
 public sealed partial class Target
 {
-#if TARGET_WASM32
-    public static readonly string TgtCpuName = "wasm32";
-#else
-    public static readonly string TgtCpuName = "wasm64";
-#endif
+    public static readonly string TgtCpuName = "x86";
 
-    public static readonly ArgOrder TgtArgOrder = ARG_ORDER_R2L;
+    public static readonly ArgOrder TgtArgOrder = ARG_ORDER_L2R;
 
     public static readonly ArgOrder TgtUnmanagedArgOrder = ARG_ORDER_R2L;
 }

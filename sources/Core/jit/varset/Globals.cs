@@ -7,6 +7,8 @@ namespace RyuJitSharp;
 
 public partial class Globals
 {
+    public const uint UInt64Bits = sizeof(ulong) * 8;
+
     /// <summary>default value for JitConfig.JitMaxLocalsToTrack</summary>
     public const int lclMAX_ALLSET_TRACKED = 0x400;
 }
