@@ -290,6 +290,21 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
         });
     }
+
+    [Test]
+    public static void SimdUpperRestorePreservesTheLoongArchNyiBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaTable[0].Type = TYP_SIMD16;
+            var source = compiler.gtNewLclvNode(TYP_SIMD16, 0);
+            var node = new GenTreeIntrinsic(TYP_SIMD16, source, NamedIntrinsic.NI_SIMD_UpperRestore, null);
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genSimdUpperRestore(node));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+        });
+    }
 #endif
 
 #if TARGET_LOONGARCH64 || TARGET_RISCV64
@@ -456,6 +471,18 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         {
             var failure = Assert.Throws<FatalJitException>(() =>
                 codeGen.genGetSimdInsOpt(EA_16BYTE, TYP_SIMD16));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+        });
+    }
+
+    [Test]
+    public static void SimdOpcodeLookupPreservesTheRiscVNyiBoundary()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var failure = Assert.Throws<FatalJitException>(() =>
+                codeGen.getOpForSIMDIntrinsic(0, TYP_INT));
 
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
         });

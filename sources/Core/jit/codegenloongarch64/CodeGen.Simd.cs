@@ -21,5 +21,10 @@ public sealed partial class CodeGen
     {
         NYI("unimplemented on LOONGARCH64 yet");
     }
+
+    public void genSimdUpperRestore(GenTreeIntrinsic node)
+    {
+        NYI("unimplemented on LOONGARCH64 yet");
+    }
 }
 #endif

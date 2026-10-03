@@ -16,5 +16,12 @@ public sealed partial class CodeGen
         NYI_RISCV64("genGetSimdInsOpt-----unimplemented/unused on RISCV64 yet----");
         return INS_OPTS_NONE;
     }
+
+    // The native SIMDIntrinsicID type is unported; this unused NYI path never inspects its value.
+    public unsafe instruction getOpForSIMDIntrinsic(int intrinsicId, var_types baseType, uint* ival = null)
+    {
+        NYI_RISCV64("getOpForSIMDIntrinsic-----unimplemented/unused on RISCV64 yet----");
+        return INS_invalid;
+    }
 }
 #endif
