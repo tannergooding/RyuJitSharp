@@ -86,6 +86,25 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
         });
     }
 
+    [TestCase(0, INS_mov)]
+    [TestCase(16, INS_add)]
+    public static void FramePointerSetupPreservesTheUnwindRequestUntilTheUnportedRecorder(
+        int delta, instruction expectedInstruction)
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            codeGen.Emitter.emitBegProlog();
+
+            var failure = Assert.Throws<FatalJitException>(() =>
+                codeGen.genEstablishFramePointer(delta, reportUnwindData: true)) ??
+                throw new AssertionException("The unported ARM64 unwind recorder did not fail.");
+
+            Assert.That(failure.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure.Message, Is.EqualTo("Unwind recording requires Windows AMD64."));
+            Assert.That(Descriptors(codeGen).Single().idIns(), Is.EqualTo(expectedInstruction));
+        });
+    }
+
     [TestCase(0, INS_mov, 1)]
     [TestCase(16, INS_ldr, 2)]
     [TestCase(256, INS_ldr, 2)]
