@@ -51,7 +51,173 @@ public sealed partial class CodeGen
 
     public void genLockedInstructions(GenTreeOp node)
     {
-#if TARGET_LOONGARCH64
+#if TARGET_ARM64
+        var data = node.Op2;
+        var addr = node.Op1;
+        var targetReg = node.RegNum;
+        var dataReg = data.RegNum;
+        var addrReg = addr.RegNum;
+
+        genConsumeAddress(addr);
+        genConsumeRegs(data);
+
+        assert((node.Oper is GT_XCHG) || !varTypeIsSmall(node.Type));
+
+        var dataSize = emitActualTypeSize(data);
+
+        if (_compiler.compOpportunisticallyDependsOn(InstructionSet_Atomics))
+        {
+            assert(!data.IsContainedIntOrIImmed);
+            assert((targetReg != REG_NA) && (targetReg != REG_ZR));
+
+            // These instructions change semantics when targetReg is ZR (the memory ordering becomes weaker).
+            // See atomicBarrierDroppedOnZero in LLVM.
+            switch (node.Oper)
+            {
+                case GT_XORR:
+                {
+                    Emitter.emitIns_R_R_R(INS_ldsetal, dataSize, dataReg, targetReg, addrReg);
+                    break;
+                }
+
+                case GT_XAND:
+                {
+                    var tempReg = InternalRegisters.GetSingle(node);
+                    Emitter.emitIns_R_R(INS_mvn, dataSize, tempReg, dataReg);
+                    Emitter.emitIns_R_R_R(INS_ldclral, dataSize, tempReg, targetReg, addrReg);
+                    break;
+                }
+
+                case GT_XCHG:
+                {
+                    var ins = INS_swpal;
+                    if (varTypeIsByte(node.Type))
+                    {
+                        ins = INS_swpalb;
+                    }
+                    else if (varTypeIsShort(node.Type))
+                    {
+                        ins = INS_swpalh;
+                    }
+
+                    Emitter.emitIns_R_R_R(ins, dataSize, dataReg, targetReg, addrReg);
+                    break;
+                }
+
+                case GT_XADD:
+                {
+                    Emitter.emitIns_R_R_R(INS_ldaddal, dataSize, dataReg, targetReg, addrReg);
+                    break;
+                }
+
+                default:
+                {
+                    assert(false, "Unexpected operation in locked instruction generation.");
+                    break;
+                }
+            }
+        }
+        else
+        {
+            assert((node.Oper is not GT_XORR) && (node.Oper is not GT_XAND));
+
+            var exResultReg = InternalRegisters.Extract(node, RBM_ALLINT);
+            var storeDataReg = (node.Oper is GT_XCHG) ? dataReg : InternalRegisters.Extract(node, RBM_ALLINT);
+            var loadReg = (targetReg != REG_NA) ? targetReg : storeDataReg;
+
+            // Check allocator assumptions: store-exclusive unpredictable cases must be avoided.
+            noway_assert(addrReg != targetReg);
+            noway_assert(addrReg != loadReg);
+            noway_assert(dataReg != loadReg);
+            noway_assert(addrReg != storeDataReg);
+            noway_assert((node.Oper is GT_XCHG) || (addrReg != dataReg));
+            assert(addr.IsUsedFromReg);
+            noway_assert(exResultReg != REG_NA);
+            noway_assert(exResultReg != targetReg);
+            noway_assert((targetReg != REG_NA) || (node.Oper is not GT_XCHG));
+            noway_assert(exResultReg != storeDataReg);
+            noway_assert(exResultReg != addrReg);
+
+            // genConsumeAddress marks the address non-pointer at first use, but the retry loop uses it
+            // repeatedly. Keep it reported as a GC pointer until the loop has completed.
+            _gcInfo.gcMarkRegPtrVal(addrReg, addr.Type);
+
+            // Emit code like this:
+            //   retry:
+            //     ldaxr loadReg, [addrReg]
+            //     add storeDataReg, loadReg, dataReg         # Only for GT_XADD
+            //                                                # GT_XCHG storeDataReg === dataReg
+            //     stlxr exResultReg, storeDataReg, [addrReg]
+            //     cbnz exResultReg, retry
+            //     dmb ish
+            var labelRetry = genCreateTempLabel();
+            genDefineTempLabel(labelRetry);
+
+            var insLd = INS_ldaxr;
+            var insSt = INS_stlxr;
+            if (varTypeIsByte(node.Type))
+            {
+                insLd = INS_ldaxrb;
+                insSt = INS_stlxrb;
+            }
+            else if (varTypeIsShort(node.Type))
+            {
+                insLd = INS_ldaxrh;
+                insSt = INS_stlxrh;
+            }
+
+            // The load instruction includes an acquire half barrier.
+            Emitter.emitIns_R_R(insLd, dataSize, loadReg, addrReg);
+
+            switch (node.Oper)
+            {
+                case GT_XADD:
+                {
+                    if (data.IsContainedIntOrIImmed)
+                    {
+                        _ = genInstrWithConstant(INS_add, dataSize, storeDataReg, loadReg,
+                            data.AsIntConCommon().IconValue, REG_NA);
+                    }
+                    else
+                    {
+                        Emitter.emitIns_R_R_R(INS_add, dataSize, storeDataReg, loadReg, dataReg);
+                    }
+
+                    break;
+                }
+
+                case GT_XCHG:
+                {
+                    assert(!data.IsContained);
+                    storeDataReg = dataReg;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+
+            // The store instruction includes a release half barrier.
+            Emitter.emitIns_R_R_R(insSt, dataSize, exResultReg, storeDataReg, addrReg);
+            Arm64EmitRegisterBranch(INS_cbnz, EA_4BYTE, labelRetry, exResultReg);
+            instGen_MemoryBarrier(BARRIER_FULL);
+            _gcInfo.gcMarkRegSetNpt(addr.RegMask);
+        }
+
+        if (targetReg != REG_NA)
+        {
+            if (varTypeIsSmall(node.Type) && varTypeIsSigned(node.Type))
+            {
+                var mov = varTypeIsShort(node.Type) ? INS_sxth : INS_sxtb;
+                Emitter.emitIns_Mov(mov, EA_4BYTE, targetReg, targetReg, canSkip: false);
+            }
+
+            genProduceReg(node);
+        }
+#elif TARGET_LOONGARCH64
         NYI("unimplemented on LOONGARCH64 yet");
         throw new FatalJitException(CORJIT_SKIPPED, "unimplemented on LOONGARCH64 yet");
 #elif TARGET_RISCV64

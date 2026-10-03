@@ -43,6 +43,15 @@ public sealed partial class CodeGen
                 return;
             }
 
+            case GT_XCHG:
+            case GT_XADD:
+            case GT_XORR:
+            case GT_XAND:
+            {
+                genLockedInstructions(tree.AsOp());
+                return;
+            }
+
             case GT_JMPTABLE:
             {
                 genJumpTable(tree);
