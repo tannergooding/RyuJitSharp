@@ -23,7 +23,7 @@ public sealed partial class CodeGen
         var operand = tree.AsUnOp().Op1;
         assert(!operand.IsContained);
         var operandReg = genConsumeReg(operand);
-        var attr = emitActualTypeSize(tree);
+        var attr = tree.Type.EmitActualSize;
         assert(EA_SIZE(attr) == EA_PTRSIZE);
         noway_assert(targetReg != operandReg, "lifetime of the operand register should have been extended");
 
@@ -43,7 +43,7 @@ public sealed partial class CodeGen
         var targetReg = treeNode.RegNum;
         var targetType = treeNode.Type;
         var emit = Emitter;
-        var attr = emitActualTypeSize(treeNode);
+        var attr = treeNode.Type.EmitActualSize;
         var isUnsigned = treeNode.IsUnsigned;
 
         var op1 = treeNode.Op1;

@@ -23,10 +23,10 @@ public sealed partial class CodeGen
         assert(!operand.IsContained);
         var operandReg = genConsumeReg(operand);
 
-        Emitter.emitIns_R_R_I(INS_addi_d, emitActualTypeSize(tree), targetReg, operandReg, 1);
+        Emitter.emitIns_R_R_I(INS_addi_d, tree.Type.EmitActualSize, targetReg, operandReg, 1);
         // Only a wrapped increment is zero; invert that result to saturate at all ones.
-        Emitter.emitIns_R_R_I(INS_bne, emitActualTypeSize(tree), targetReg, REG_R0, 8);
-        Emitter.emitIns_R_R_R(INS_orn, emitActualTypeSize(tree), targetReg, REG_R0, targetReg);
+        Emitter.emitIns_R_R_I(INS_bne, tree.Type.EmitActualSize, targetReg, REG_R0, 8);
+        Emitter.emitIns_R_R_R(INS_orn, tree.Type.EmitActualSize, targetReg, REG_R0, targetReg);
 
         genProduceReg(tree);
     }
@@ -40,7 +40,7 @@ public sealed partial class CodeGen
         var targetReg = treeNode.RegNum;
         var targetType = treeNode.Type;
         var emit = Emitter;
-        var attr = emitActualTypeSize(treeNode);
+        var attr = treeNode.Type.EmitActualSize;
         var isUnsigned = treeNode.IsUnsigned;
 
         var op1 = treeNode.Op1;
