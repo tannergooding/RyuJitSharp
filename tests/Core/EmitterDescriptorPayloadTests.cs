@@ -134,6 +134,29 @@ internal static unsafe class EmitterDescriptorPayloadTests
         Assert.That(descriptor.idIsLargeDsp(), Is.False);
     }
 
+    [Test]
+    public static void EvexDescriptorContextAccessorsPreserveEncodingFields()
+    {
+        var descriptor = new Descriptor();
+        descriptor.idIns(INS_addps);
+        descriptor.idSetEvexbContext(3u);
+        descriptor.idSetEvexAaaContext(7u << 2);
+        descriptor.idSetEvexZContext();
+
+        Assert.That(descriptor.idIsEvexbContextSet(), Is.True);
+        Assert.That(descriptor.idGetEvexbContext(), Is.EqualTo(3u));
+        Assert.That(descriptor.idIsEvexAaaContextSet(), Is.True);
+        Assert.That(descriptor.idGetEvexAaaContext(), Is.EqualTo(7u));
+        Assert.That(descriptor.idIsEvexZContextSet(), Is.True);
+        Assert.That(descriptor.idGetEvexDFV(), Is.EqualTo(15u));
+
+        var compressed = new Descriptor();
+        compressed.idSetEvexCompressedDisplacementBit();
+
+        Assert.That(compressed.idIsEvexbContextSet(), Is.True);
+        Assert.That(compressed.idGetEvexbContext(), Is.EqualTo(2u));
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void BoundFlagUsesTheSharedCustomBitWithoutChangingOtherPayloads(bool bound)
