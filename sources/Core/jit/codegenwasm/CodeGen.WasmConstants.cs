@@ -16,7 +16,7 @@ public sealed partial class CodeGen
 {
     public void genCodeForConstant(GenTree treeNode)
     {
-        var ins = INS_none;
+        instruction ins;
         long bits = 0;
         var type = treeNode.Type is TYP_REF or TYP_BYREF ? TYP_I_IMPL : treeNode.Type;
 

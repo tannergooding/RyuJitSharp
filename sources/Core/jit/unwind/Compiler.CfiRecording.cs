@@ -16,17 +16,13 @@ public partial class Compiler
     private const byte CFI_REL_OFFSET = 2;
     private const byte CFI_NEGATE_RA_STATE = 4;
 
-    private static regMaskTP CfiCalleeSavedMask
-    {
-        get
-        {
 #if TARGET_AMD64
-            return new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED, SRBM_MSK_CALLEE_SAVED);
+    private static regMaskTP CfiCalleeSavedMask =>
+        new(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED, SRBM_MSK_CALLEE_SAVED);
 #else
-            return new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED);
+    private static regMaskTP CfiCalleeSavedMask =>
+        new(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED);
 #endif
-        }
-    }
 
     private static void createCfiCode(in FuncInfoDsc func, uint codeOffset, byte cfiOpcode, short dwarfReg, int offset = 0)
     {
@@ -80,7 +76,7 @@ public partial class Compiler
             unwindGetFuncLocations(in func, false, out func.coldStartLoc, out func.coldEndLoc);
         }
 
-        func.cfiCodes = new List<CFI_CODE>();
+        func.cfiCodes = [];
     }
 
     private void unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)

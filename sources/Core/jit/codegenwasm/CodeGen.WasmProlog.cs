@@ -91,7 +91,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            ref readonly var abiInfo = ref _compiler.lvaGetParameterABIInfo(_compiler.lvaWasmSpArg);
+            ref readonly var abiInfo = ref _compiler.lvaGetParameterAbiInfo(_compiler.lvaWasmSpArg);
             initialSpLocalIndex = regNumberExtensions.WasmRegToIndex(abiInfo.Segments[0].Register);
         }
 
@@ -254,7 +254,7 @@ public sealed partial class CodeGen
                 }
             }
 
-            if (local.lvOnFrame && (!local.lvIsInReg || local.IsLiveInOutOfHandler()))
+            if (local.lvOnFrame && (!local.lvIsInReg || local.IsLiveInOutOfHandler))
             {
                 var storeType = sourceType;
                 if ((local.Type != TYP_STRUCT) && (local.Type.ActualType.Size < storeType.Size))
@@ -307,7 +307,7 @@ public sealed partial class CodeGen
                 var spillToBaseLocal = true;
                 if (mapping is ParameterRegisterLocalMapping mapped)
                 {
-                    SpillParameter(mapped.LclNum, mapped.Offset, localNumber, in segment);
+                    SpillParameter(mapped.LclNum, unchecked((int)mapped.Offset), localNumber, in segment);
                     if (local.lvPromoted)
                     {
                         spillToBaseLocal = false;
@@ -349,6 +349,8 @@ public sealed partial class CodeGen
 
     private unsafe void genFnEpilogWasm(BasicBlock block)
     {
+        var nextBlock = block.Next;
+
 #if DEBUG
         if (_verbose)
         {
@@ -362,7 +364,7 @@ public sealed partial class CodeGen
         var jmpEpilog = block.HasFlag(BBF_HAS_JMP);
         if (jmpEpilog)
         {
-            if (block.IsLast() || _compiler.bbIsFuncletBeg(block.Next()))
+            if ((nextBlock is null) || _compiler.bbIsFuncletBeg(nextBlock))
             {
                 instGen(INS_end);
             }
@@ -370,7 +372,7 @@ public sealed partial class CodeGen
             return;
         }
 
-        if (_compiler.opts.IsReversePInvoke())
+        if (_compiler.opts.IsReversePInvoke)
         {
             assert(_compiler.funCurrentFuncIdx() == ROOT_FUNC_IDX);
             var framePointer = GetFramePointerReg(ROOT_FUNC_IDX);
@@ -391,7 +393,7 @@ public sealed partial class CodeGen
         }
 
         // A final block without an epilog still needs an INS_end to close its Wasm function body.
-        if (block.IsLast() || _compiler.bbIsFuncletBeg(block.Next()))
+        if ((nextBlock is null) || _compiler.bbIsFuncletBeg(nextBlock))
         {
             instGen(INS_end);
         }
@@ -449,7 +451,8 @@ public sealed partial class CodeGen
 
     private void genFuncletEpilogWasm(BasicBlock block)
     {
-        if (block.IsLast() || _compiler.bbIsFuncletBeg(block.Next()))
+        var nextBlock = block.Next;
+        if ((nextBlock is null) || _compiler.bbIsFuncletBeg(nextBlock))
         {
             instGen(INS_end);
         }

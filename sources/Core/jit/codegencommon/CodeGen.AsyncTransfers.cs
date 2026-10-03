@@ -88,7 +88,7 @@ public sealed partial class CodeGen
 #endif
     }
 
-    public void genCodeForAsyncContinuation(GenTree tree)
+    public unsafe void genCodeForAsyncContinuation(GenTree tree)
     {
 #if TARGET_WASM
         assert(tree.Oper is GT_ASYNC_CONTINUATION);

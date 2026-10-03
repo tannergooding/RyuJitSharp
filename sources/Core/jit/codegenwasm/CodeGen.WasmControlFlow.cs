@@ -70,7 +70,8 @@ public sealed partial class CodeGen
             GetEmitter().emitIns(INS_unreachable);
 
             // Every Wasm function body must end with `end`, even when a retless call ends the block.
-            if (block.IsLast() || _compiler.bbIsFuncletBeg(block.Next))
+            var nextBlock = block.Next;
+            if ((nextBlock is null) || _compiler.bbIsFuncletBeg(nextBlock))
             {
                 GetEmitter().emitIns(INS_end);
             }
@@ -79,7 +80,8 @@ public sealed partial class CodeGen
         }
 
         assert(block.isBBCallFinallyPair);
-        var callFinallyRet = block.Next;
+        var callFinallyRet = block.Next ?? throw new FatalJitException(
+            CORJIT_INTERNALERROR, "Wasm finally call is missing its return block.");
         assert(callFinallyRet.Kind is BBJ_CALLFINALLYRET);
 
         var continuation = callFinallyRet.Target;

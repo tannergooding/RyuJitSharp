@@ -7,6 +7,14 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
+    public const emitAttr EA_4BYTE_DSP_RELOC = EA_4BYTE | EA_DSP_RELOC_FLG;
+
+    public const emitAttr EA_PTR_DSP_RELOC = EA_PTRSIZE | EA_DSP_RELOC_FLG;
+
+    public const emitAttr EA_HANDLE_CNS_RELOC = EA_PTRSIZE | EA_CNS_RELOC_FLG;
+
+    public static emitAttr EA_SET_FLG(emitAttr attr, emitAttr flags) => (emitAttr)((int)attr | (int)flags);
+
     public static emitAttr EA_SIZE(emitAttr attr) => attr & EA_SIZE_MASK;
 
     public static uint EA_SIZE_IN_BYTES(emitAttr attr) => (uint)EA_SIZE(attr);

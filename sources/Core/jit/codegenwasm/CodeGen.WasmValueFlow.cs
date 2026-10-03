@@ -17,7 +17,7 @@ public sealed partial class CodeGen
         WasmProduceReg(treeNode);
     }
 
-    private void genStoreAsyncContinuationGlobal()
+    private unsafe void genStoreAsyncContinuationGlobal()
     {
         // The continuation is already on the Wasm operand stack.
         var asyncContinuation = unchecked((nint)_compiler.eeGetWasmWellKnownGlobals().asyncContinuation);

@@ -128,8 +128,10 @@ public sealed partial class CodeGen
             }
         }
 
+#if DEBUG
         assert(_regSet.tmpGetAllFree());
         assert(_regSet.tmpListBeg() is null);
+#endif
 #else
         for (var varNum = 0; varNum < _compiler.lvaCount; varNum++)
         {

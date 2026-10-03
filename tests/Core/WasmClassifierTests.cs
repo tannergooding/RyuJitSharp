@@ -38,6 +38,24 @@ internal static unsafe class WasmClassifierTests
         Assert.That(regNumberExtensions.TypeToWasmValueType(type), Is.EqualTo(wasmType));
     }
 
+    [TestCase(0u, WasmValueType.I32)]
+    [TestCase(19u, WasmValueType.I64)]
+    [TestCase(100_000u, WasmValueType.V128)]
+    public static void FramePointerRegisterIndexUsesTheWasmLocalIndex(uint index, WasmValueType type)
+    {
+        WithCompiler(compiler => {
+            compiler.compFuncInfos = [new FuncInfoDsc {
+                funFramePointerReg = regNumberExtensions.MakeWasmReg(index, type),
+            }];
+            compiler.compFuncInfoCount = 1;
+            compiler.compCurrFuncIdx = 0;
+
+            var codeGen = new CodeGen(compiler);
+
+            Assert.That(codeGen.GetFramePointerRegIndex(), Is.EqualTo(index));
+        });
+    }
+
     [TestCase(TYP_BYTE, WasmValueType.I32)]
     [TestCase(TYP_UBYTE, WasmValueType.I32)]
     [TestCase(TYP_SHORT, WasmValueType.I32)]

@@ -983,6 +983,26 @@ public partial class GenTree
 
     public genTreeOps Oper => _oper;
 
+    public bool OperIs(genTreeOps oper)
+    {
+        return Oper == oper;
+    }
+
+    public bool OperIs(genTreeOps first, genTreeOps second)
+    {
+        return OperIs(first) || OperIs(second);
+    }
+
+    public static bool OperIsCmpCompare(genTreeOps oper)
+    {
+        return oper is GT_EQ or GT_NE or GT_LT or GT_LE or GT_GE or GT_GT;
+    }
+
+    public bool OperIsCmpCompare()
+    {
+        return OperIsCmpCompare(Oper);
+    }
+
     public GenTreeOperandsList Operands => new GenTreeOperandsList(this);
 
     public GenTree? Prev

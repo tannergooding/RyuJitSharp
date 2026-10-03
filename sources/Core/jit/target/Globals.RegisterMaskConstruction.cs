@@ -3,11 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if HAS_FIXED_REGISTER_SET
 namespace RyuJitSharp;
 
 public static partial class Globals
 {
+#if HAS_FIXED_REGISTER_SET
     public static SingleTypeRegSet genSingleTypeRegMask(regNumber regNum, var_types type)
     {
 #if TARGET_ARM
@@ -22,6 +22,7 @@ public static partial class Globals
         return LsraGlobals.genSingleTypeRegMask(regNum);
 #endif
     }
+#endif
 
     public static regMaskTP genRegMask(regNumber reg)
     {
@@ -43,4 +44,3 @@ public static partial class Globals
         return result;
     }
 }
-#endif

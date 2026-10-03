@@ -102,6 +102,21 @@ public partial class Globals
 #endif
     }
 
+    public static var_types genActualType(var_types type)
+    {
+        return type.ActualType;
+    }
+
+    public static var_types genActualType(GenTree tree)
+    {
+        return tree.Type.ActualType;
+    }
+
+    public static uint genTypeSize(var_types type)
+    {
+        return type.Size;
+    }
+
     public static bool genActualTypeIsInt(var_types vt) => vt is >= TYP_BYTE && vt <= TYP_UINT;
 
     public static bool genActualTypeIsIntOrI(var_types vt) => vt is >= TYP_BYTE && vt <= TYP_U_IMPL;

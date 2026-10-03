@@ -217,7 +217,7 @@ public sealed partial class CodeGen
 #endif
 
 #if TARGET_WASM
-    public void genClearAsyncContinuationGlobal()
+    public unsafe void genClearAsyncContinuationGlobal()
     {
         var emit = GetEmitter();
         emit.emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)0));
@@ -251,7 +251,33 @@ public sealed partial class CodeGen
     public void genStructReturn(GenTree tree)
     {
 #if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "WebAssembly struct-return generation is not implemented.");
+        assert(tree.Oper is GT_RETURN);
+
+        var value = tree.AsUnOp().Op1;
+        var actualValue = value.SkipCopyOrReload;
+        var descriptor = _compiler.compRetTypeDesc;
+        var regCount = descriptor.ReturnRegCount;
+
+        assert(regCount <= MAX_RET_REG_COUNT);
+
+        if (actualValue.Oper is GT_FIELD_LIST)
+        {
+            // Consume each field so liveness is correct.
+            var regIndex = 0u;
+            foreach (var use in actualValue.AsFieldList().Uses)
+            {
+                _ = genConsumeReg(use.Node);
+                regIndex = unchecked(regIndex + 1u);
+            }
+
+            // The field list should have one field, and MAX_RET_REG_COUNT is 1 on Wasm.
+            assert(regIndex == regCount);
+            assert(regIndex == 1);
+
+            return;
+        }
+
+        WasmCodegenDependencyNotPorted(tree, "genStructReturn non-fieldlist cases");
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_RETURN or GT_SWIFT_ERROR_RET);

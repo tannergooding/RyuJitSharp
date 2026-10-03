@@ -140,6 +140,11 @@ public sealed partial class CodeGen : ICodeGen
 
     public Emitter Emitter => _cgEmitter;
 
+    public Emitter GetEmitter()
+    {
+        return _cgEmitter;
+    }
+
     public ref GCInfo GCInfo => ref _gcInfo;
 
     public ref regMaskTP CalleeRegArgMaskLiveIn => ref _calleeRegArgMaskLiveIn;

@@ -15,6 +15,28 @@ public sealed partial class CodeGen
     // Native Wasm codegen currently builds without WASM_THREAD_SUPPORT.
     private const bool WasmThreadSupport = false;
 
+#if TARGET_64BIT
+    private const instruction INS_I_load = INS_i64_load;
+    private const instruction INS_I_store = INS_i64_store;
+    private const instruction INS_I_and = INS_i64_and;
+    private const instruction INS_I_eqz = INS_i64_eqz;
+    private const instruction INS_I_mul = INS_i64_mul;
+    private const instruction INS_I_sub = INS_i64_sub;
+    private const instruction INS_I_le_u = INS_i64_le_u;
+    private const instruction INS_I_ge_u = INS_i64_ge_u;
+    private const instruction INS_I_gt_u = INS_i64_gt_u;
+#else
+    private const instruction INS_I_load = INS_i32_load;
+    private const instruction INS_I_store = INS_i32_store;
+    private const instruction INS_I_and = INS_i32_and;
+    private const instruction INS_I_eqz = INS_i32_eqz;
+    private const instruction INS_I_mul = INS_i32_mul;
+    private const instruction INS_I_sub = INS_i32_sub;
+    private const instruction INS_I_le_u = INS_i32_le_u;
+    private const instruction INS_I_ge_u = INS_i32_ge_u;
+    private const instruction INS_I_gt_u = INS_i32_gt_u;
+#endif
+
     private unsafe void genCodeForTreeNodeWasm(GenTree treeNode)
     {
 #if DEBUG
@@ -443,8 +465,7 @@ public sealed partial class CodeGen
 
             default:
             {
-                unreached();
-                break;
+                throw new FatalJitException(CORJIT_INTERNALERROR, "Unsupported Wasm integer comparison.");
             }
         }
 
@@ -557,8 +578,7 @@ public sealed partial class CodeGen
 
             default:
             {
-                unreached();
-                break;
+                throw new FatalJitException(CORJIT_INTERNALERROR, "Unsupported Wasm floating-point comparison.");
             }
         }
 
@@ -1039,7 +1059,9 @@ public sealed partial class CodeGen
         parameters.argSize = argSize;
         parameters.retSize = retSize;
 
+#pragma warning disable IDE0007
         CorInfoWasmType* types = stackalloc CorInfoWasmType[4];
+#pragma warning restore IDE0007
         nint typeCount = 0;
         var helperIsManaged = false;
 
@@ -1245,7 +1267,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            genConsumeReg(size);
+            _ = genConsumeReg(size);
 
             if (genTypeSize(genActualType(size.Type)) < TARGET_POINTER_SIZE)
             {
@@ -1256,7 +1278,7 @@ public sealed partial class CodeGen
             var internalRegisterCount = GetWasmInternalRegisterCount(tree);
             assert(internalRegisterCount == 1);
             var sizeReg = ExtractWasmInternalRegister(tree);
-            assert(regNumberExtensions.WasmRegToType(sizeReg) == TypeToWasmValueType(TYP_I_IMPL));
+            assert(regNumberExtensions.WasmRegToType(sizeReg) == regNumberExtensions.TypeToWasmValueType(TYP_I_IMPL));
 
             GetEmitter().emitIns_I(
                 INS_local_tee,
@@ -1427,8 +1449,8 @@ public sealed partial class CodeGen
 
         var nullCheckDest = (blkOp.Flags & GTF_IND_NONFAULTING) == 0;
         var nullCheckSrc = false;
-        GenTree dest = blkOp.Addr;
-        GenTree src = blkOp.Data;
+        var dest = blkOp.Addr;
+        var src = blkOp.Data;
         var destReg = REG_NA;
         var srcReg = REG_NA;
         uint destOffset = 0;
@@ -1470,9 +1492,8 @@ public sealed partial class CodeGen
         {
             assert(src.OperIs(GT_LCL_VAR, GT_LCL_FLD));
             var lclVar = src.AsLclVarCommon();
-            var framePointerBased = false;
             srcReg = GetFramePointerReg(_compiler.funCurrentFuncIdx());
-            var frameOffset = _compiler.lvaFrameAddress(lclVar.LclNum, out framePointerBased);
+            var frameOffset = _compiler.lvaFrameAddress(lclVar.LclNum, out var framePointerBased);
             srcOffset = unchecked((uint)(frameOffset + lclVar.LclOffs));
             assert(framePointerBased);
         }
@@ -1480,9 +1501,8 @@ public sealed partial class CodeGen
         if (dest.Oper is GT_LCL_ADDR)
         {
             var lclVar = dest.AsLclVarCommon();
-            var framePointerBased = false;
             destReg = GetFramePointerReg(_compiler.funCurrentFuncIdx());
-            var frameOffset = _compiler.lvaFrameAddress(lclVar.LclNum, out framePointerBased);
+            var frameOffset = _compiler.lvaFrameAddress(lclVar.LclNum, out var framePointerBased);
             destOffset = unchecked((uint)(frameOffset + lclVar.LclOffs));
             assert(framePointerBased);
         }

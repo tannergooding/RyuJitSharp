@@ -16,6 +16,27 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Wasm struct-return field-list acceptance
+
+Completed the `TARGET_WASM` field-list branch of `CodeGen::genStructReturn`,
+including return-register liveness consumption and the single-register
+assertions. Non-field-list shapes still terminate through the explicit Wasm
+dependency boundary. The same Wasm build closure adds its missing managed
+emitter/type/register-mask accessors and target-specific control-flow/prolog
+bindings. Focused full-analysis browser-Wasm target tests pass 58/58 in Debug
+and Release; the full Wasm target suites pass 142/143 Debug and 143/144 Release
+with one known fixture failure in each configuration. The full Windows-x64
+target controls pass 146/146 Debug and 147/147 Release.
+
+The exact Wasm method body was removed from the consolidated native residual at
+HEAD `dad0c5310e69f95bfab4d99e20b1f78dc148cc5e`, solely parented to pinned
+oracle `33baf8ee337b20dd0f184b69a6f09be92850bf9e`. The shared
+`genStructReturn` declaration remains for the native common implementation.
+Recovery ref `refs/copilot-recovery/wasm-gen-struct-return-before-253f1e51`
+preserves the prior native HEAD. The full Wasm target suite still has one
+independent `CodeGenBlockDriverTargetTests` fixture failure; this acceptance
+does not claim Wasm backend or generated-code parity.
+
 ## 2026-10-03: Funclet-count accessor retirement
 
 Completed the shared `Compiler::compFuncCount` binding with its native
