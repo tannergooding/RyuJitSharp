@@ -35,6 +35,7 @@ public sealed partial class CodeGen
         GetEmitter().emitDataOffsetConstant(unchecked((nuint)dataOffset));
         WasmProduceReg(treeNode);
 #elif TARGET_LOONGARCH64
+        // INS_bl/b are placeholders that is not the final instruction.
         var ins = INS_bl;
         var attr = EA_PTRSIZE;
         if (_compiler.eeDataWithCodePointersNeedsRelocs())
