@@ -31,12 +31,6 @@ public sealed partial class CodeGen
                 return;
             }
 
-            case GT_FTN_ENTRY:
-            {
-                genFtnEntry(tree);
-                return;
-            }
-
             case GT_JMPTABLE:
             {
                 genJumpTable(tree);
@@ -76,6 +70,11 @@ public sealed partial class CodeGen
 #endif
             {
                 genLockedInstructions(tree.AsOp());
+                return;
+            }
+            case GT_CMPXCHG:
+            {
+                genCodeForCmpXchg(tree.AsCmpXchg());
                 return;
             }
             case GT_JMPTABLE:

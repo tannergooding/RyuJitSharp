@@ -21,6 +21,11 @@ public partial class Emitter
     }
 
 #if TARGET_RISCV64
+    public void emitIns_J_cond_la(instruction ins, BasicBlock target, regNumber reg)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V one-register conditional-branch recording is not implemented.");
+    }
+
     public static bool isValidSimm12(nint value)
     {
         return (-2048 <= value) && (value < 2048);

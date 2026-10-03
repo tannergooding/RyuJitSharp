@@ -152,7 +152,70 @@ public sealed partial class CodeGen
 
     public void genCodeForCmpXchg(GenTreeCmpXchg tree)
     {
-#if !TARGET_XARCH
+#if TARGET_LOONGARCH64
+        NYI("unimplemented on LOONGARCH64 yet");
+        throw new FatalJitException(CORJIT_SKIPPED, "unimplemented on LOONGARCH64 yet");
+#elif TARGET_RISCV64
+        assert(tree.Oper is GT_CMPXCHG);
+        assert(!varTypeIsSmall(tree.Type));
+
+        var locOp = tree.Addr;
+        var valOp = tree.Data;
+        var comparandOp = tree.Comparand;
+
+        var target = tree.RegNum;
+        var loc = locOp.RegNum;
+        var val = !valOp.IsContained ? valOp.RegNum : REG_ZERO;
+        var comparand = REG_ZERO;
+        if (!comparandOp.IsContained)
+        {
+            comparand = comparandOp.RegNum;
+            if (comparandOp.Type is TYP_INT or TYP_UINT)
+            {
+                var signExtendedComparand = InternalRegisters.Extract(tree);
+                Emitter.emitIns_R_R(INS_sext_w, EA_4BYTE, signExtendedComparand, comparand);
+                comparand = signExtendedComparand;
+            }
+        }
+        var storeErr = InternalRegisters.GetSingle(tree);
+
+        // Register allocation extends all input and internal register lifetimes; the registers must be distinct.
+        noway_assert(target != loc);
+        noway_assert(target != val);
+        noway_assert(target != comparand);
+        noway_assert(target != storeErr);
+        noway_assert(loc != val);
+        noway_assert(loc != comparand);
+        noway_assert(loc != storeErr);
+        noway_assert((val != comparand) || (val == REG_ZERO));
+        noway_assert(val != storeErr);
+        noway_assert(comparand != storeErr);
+        noway_assert(target != REG_NA);
+        noway_assert(storeErr != REG_NA);
+
+        genConsumeAddress(locOp);
+        genConsumeRegs(valOp);
+        genConsumeRegs(comparandOp);
+
+        // genConsumeAddress marks the location non-pointer at first use, but this operation reuses it across the retry loop.
+        _gcInfo.gcMarkRegPtrVal(loc, locOp.Type);
+
+        var retry = genCreateTempLabel();
+        var fail = genCreateTempLabel();
+        var size = emitActualTypeSize(valOp);
+        var is4 = size == EA_4BYTE;
+
+        genDefineTempLabel(retry);
+        // Load the current value, fail on a mismatch, and retry only if the store-conditional fails.
+        Emitter.emitIns_R_R_R(is4 ? INS_lr_w : INS_lr_d, size, target, loc, REG_R0);
+        Emitter.emitIns_J_cond_la(INS_bne, fail, target, comparand);
+        Emitter.emitIns_R_R_R(is4 ? INS_sc_w : INS_sc_d, size, storeErr, loc, val);
+        Emitter.emitIns_J_cond_la(INS_bnez, retry, storeErr);
+        genDefineTempLabel(fail);
+
+        _gcInfo.gcMarkRegSetNpt(regMaskTP.CreateFromRegNum(loc, loc.SingleTypeMask));
+        genProduceReg(tree);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Compare-exchange generation outside xarch is not implemented.");
 #else
 #if TARGET_AMD64

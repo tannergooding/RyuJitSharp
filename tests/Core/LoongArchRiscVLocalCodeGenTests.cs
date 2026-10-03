@@ -268,6 +268,53 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         });
     }
 
+#if TARGET_RISCV64
+    [TestCase(TYP_LONG, "RISC-V three-register instruction recording is not implemented.")]
+    [TestCase(TYP_INT, "Target two-register instruction recording is not implemented.")]
+#else
+    [TestCase(TYP_LONG, "unimplemented on LOONGARCH64 yet")]
+#endif
+    public static void CompareExchangeDispatchPreservesTargetAtomicBoundaries(
+        var_types comparandType,
+        string expectedBoundary)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+
+            var address = CodeGenShiftTests.Register(compiler, TYP_BYREF, REG_S0);
+            var value = CodeGenShiftTests.Register(compiler, TYP_LONG, REG_S1);
+            var comparand = CodeGenShiftTests.Register(compiler, comparandType, REG_S2);
+            var tree = new GenTreeCmpXchg(TYP_LONG, address, value, comparand) { RegNum = REG_S4 };
+            var internalRegisters = regMaskTP.CreateFromRegNum(REG_S3, REG_S3.SingleTypeMask);
+            if (comparandType is TYP_INT)
+            {
+                internalRegisters |= regMaskTP.CreateFromRegNum(REG_S5, REG_S5.SingleTypeMask);
+            }
+            codeGen.InternalRegisters.Add(tree, internalRegisters);
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
+            Assert.That(failure?.Message, Does.Contain(expectedBoundary));
+        });
+    }
+
+#if TARGET_RISCV64
+    [Test]
+    public static void CompareExchangeRetryBranchStopsAtTheTargetConditionalBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var target = new BasicBlock(null, null);
+            var failure = Assert.Throws<FatalJitException>(() =>
+                codeGen.Emitter.emitIns_J_cond_la(INS_bnez, target, REG_S3));
+
+            Assert.That(failure?.Message,
+                Does.Contain("RISC-V one-register conditional-branch recording is not implemented."));
+        });
+    }
+#endif
+
     [Test]
     public static void JumpTableAddressRecordingStopsAtTheTargetEmitterBoundary()
     {
