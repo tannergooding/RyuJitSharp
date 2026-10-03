@@ -132,6 +132,26 @@ Recovery ref
 `refs/porting/recovery/2026-10-03-remove-list-node-single-before-amend`
 preserves pre-amend HEAD `3f4d6f6dc96dfb1fb590b0ecfa58447bc5c6e9d5`.
 
+## 2026-10-03: EE scope-name release stubs
+
+The two retained non-DEBUG `LATE_DISASM` null stubs for
+`CodeGen::siRegVarName` and `CodeGen::siStackVarName` matched the pinned
+oracle exactly. Their managed implementations preserve the DEBUG scope lookup
+and null fallback; `ScopeReportingTests` already covers register- and
+stack-variable name lookup. Only the release stub block was removed here: the
+original DEBUG bodies in `scopeinfo.cpp` were already absent, and the native
+`codegen.h` declarations were already absent. Three unported `disasm.cpp`
+call sites remain in the non-buildable residual. No new test run, parity claim,
+or credit for the earlier DEBUG-body retirement.
+
+The consolidated native residual is now HEAD
+`dc3a4c3c765cb442714c1c8926fb3fb180e137f1` (tree
+`7d5ea8e33a2a8414e69ff955a7aa7e336f9bf25d`), sole-parented to the pinned
+oracle. The amendment removes the 30-line stub block and adjacent trailing
+blank lines from `codegencommon.cpp`. Recovery ref
+`refs/porting/recovery/2026-10-03-scope-var-name-stubs-before-amend`
+preserves pre-amend HEAD `b142eedc8ee2131af89d4085f75ea76cf9048dec`.
+
 ## 2026-10-03: Physical-promotion remainder strategy
 
 Completed `DecompositionPlan::DetermineRemainderStrategy` with the native
