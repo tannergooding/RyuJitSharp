@@ -16,21 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
-## 2026-10-03: Xarch memory-operand size retirement
+## 2026-10-03: Bounded peephole history traversal
 
-The complete `emitter::emitGetMemOpSize` tuple-width calculation is mapped to
-`Emitter.MemoryOperandSize.cs`, with the managed instruction-display and static
-output callers still bound. Its 3,925-byte native definition matches the pinned
-oracle (SHA-256
-`3E47A474CDBA60EA5CE635C12CD1B457AC0A57FFEF899DE99844CFBB691D9933`).
+The managed emitter now preserves the complete instruction-history traversal
+used by xarch register peepholes: it visits a bounded sequence of prior
+instructions and stops at unsafe group or GC-interrupt boundaries. Other
+targets retain the native direct-last-instruction fallback. Existing caller
+semantics and peephole candidate rules are unchanged.
 
-The existing full-analysis Windows-x64 `memoryAndBranchByteOutput` selection
-passes 635 Debug / 609 Release with zero skips; it includes
-`EmitterMemoryOutputTests` and tuple memory-width cases. Native `40a3784d`
-retires the whole xarch definition and its declaration (144 lines) in the
-consolidated residual commit, sole-parented to the pinned oracle. Recovery ref
-`refs/copilot-recovery/emit-mem-op-size-before-20a01c44` preserves prior native
-HEAD `20a01c44`. No new generated-code or runtime parity is claimed.
+## 2026-10-03: Xarch memory-operand size calculation
+
+The managed xarch emitter now handles memory-operand widths for tuple-encoded
+instructions, including embedded broadcasts and immediate-dependent forms.
+Instruction display and static output continue to share the native sizing
+rules. The complete definition and its exclusive declaration are retired from
+the residual native tree; retirement alone does not claim runtime or
+generated-code parity.
 
 ## 2026-10-03: Jump-list diagnostic retirement
 

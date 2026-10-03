@@ -11,13 +11,13 @@ public partial class Emitter
 {
 #if TARGET_XARCH
     private const int EMIT_MAX_PEEPHOLE_INS_COUNT = 32;
+#endif
 
     private enum emitPeepholeResult
     {
         PEEPHOLE_ABORT,
         PEEPHOLE_CONTINUE,
     }
-#endif
 
 #if TARGET_XARCH
     private bool emitGetLastIns(out insGroup? group, out instrDesc? descriptor)
@@ -81,10 +81,10 @@ public partial class Emitter
     }
 #endif
 
-#if TARGET_XARCH
     private void emitPeepholeIterateLastInstrs(Func<instrDesc, emitPeepholeResult> action)
     {
         assert(emitCanPeepholeLastIns());
+#if TARGET_XARCH
         if (!emitGetLastIns(out var curInsIG, out var id))
         {
             return;
@@ -127,8 +127,14 @@ public partial class Emitter
                 }
             }
         }
+#else
+        var lastIns = emitLastIns
+            ?? throw new FatalJitException("Peephole iteration requires a last instruction.");
+        _ = action(lastIns);
+#endif
     }
 
+#if TARGET_XARCH
 #if TARGET_AMD64
     public bool AreUpperBitsZero(regNumber reg, emitAttr size)
     {
