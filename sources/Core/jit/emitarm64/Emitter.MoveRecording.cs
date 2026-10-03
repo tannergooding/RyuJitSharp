@@ -129,7 +129,8 @@ public partial class Emitter
 
             default:
             {
-                emitInsSve_Mov(ins, attr, dstReg, srcReg, canSkip, opt);
+                emitInsSve_Mov(ins, attr, dstReg, srcReg, canSkip, opt,
+                    insSveMovOpts.INS_SVE_MOV_OPTS_UNPRED);
                 return;
             }
         }

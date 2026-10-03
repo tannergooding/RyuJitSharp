@@ -121,6 +121,63 @@ public partial class Emitter
 
     public void emitInsSve_R_I_I(instruction ins, emitAttr attr, regNumber reg,
         nint imm1, nint imm2, insOpts opt = INS_OPTS_NONE)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SVE register/two-immediate instruction recording is not ported.");
+    {
+        var fmt = IF_NONE;
+        nint immOut = 0;
+
+        switch (ins)
+        {
+            case INS_sve_index:
+            {
+                assert(insOptsScalableStandard(opt));
+                assert(isVectorRegister(reg));
+                assert(isValidSimm(imm1, 5));
+                assert(isValidSimm(imm2, 5));
+                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
+                immOut = insSveEncodeTwoSimm5(imm1, imm2);
+                fmt = IF_SVE_AX_1A;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+
+        assert(fmt != IF_NONE);
+        var id = emitNewInstrSC(attr, immOut);
+        id.idIns(ins);
+        id.idInsFmt(fmt);
+        id.idInsOpt(opt);
+        id.idReg1(reg);
+        dispIns(id);
+        appendToCurIG(id);
+    }
+
+    private static nint insSveEncodeTwoSimm5(nint imm1, nint imm2)
+    {
+        assert(isValidSimm(imm1, 5));
+        assert(isValidSimm(imm2, 5));
+
+        // IF_SVE_AX_1A stores signs separately from the two 5-bit magnitudes.
+        nint immOut = 0;
+        if (imm1 < 0)
+        {
+            immOut |= 0x20;
+            imm1 = -imm1;
+        }
+
+        if (imm2 < 0)
+        {
+            immOut |= 0x800;
+            imm2 = -imm2;
+        }
+
+        immOut |= imm1;
+        immOut |= imm2 << 6;
+        return immOut;
+    }
 }
 #endif

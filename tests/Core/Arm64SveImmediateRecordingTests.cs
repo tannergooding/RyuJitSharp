@@ -87,6 +87,24 @@ internal static unsafe class Arm64SveImmediateRecordingTests
         });
     }
 
+    [TestCase(-16, 15, 0x3F0)]
+    [TestCase(15, -16, 0xC0F)]
+    [TestCase(-16, -16, 0xC30)]
+    public static void TwoSignedImmediatesPreserveSignAndMagnitudeEncoding(int imm1, int imm2, int encoded)
+    {
+        WithEmitter(emitter =>
+        {
+            var id = Record(emitter, () => emitter.emitIns_R_I_I(
+                INS_sve_index, EA_SCALABLE, REG_V0, imm1, imm2, INS_OPTS_SCALABLE_S));
+
+            Assert.That(id.idIns(), Is.EqualTo(INS_sve_index));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_SVE_AX_1A));
+            Assert.That(id.idInsOpt(), Is.EqualTo(INS_OPTS_SCALABLE_S));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_V0));
+            Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)encoded));
+        });
+    }
+
     [TestCase(INS_sve_and, 255L, INS_SCALABLE_OPTS_NONE, INS_sve_and, IF_SVE_BS_1A, 4103)]
     [TestCase(INS_sve_bic, -256L, INS_SCALABLE_OPTS_NONE, INS_sve_and, IF_SVE_BS_1A, 4103)]
     [TestCase(INS_sve_eon, -256L, INS_SCALABLE_OPTS_NONE, INS_sve_eor, IF_SVE_BS_1A, 4103)]

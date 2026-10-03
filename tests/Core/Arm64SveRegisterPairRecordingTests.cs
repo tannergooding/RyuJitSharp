@@ -74,6 +74,19 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
         });
     }
 
+    [TestCase(INS_sve_mov, INS_OPTS_SCALABLE_B, IF_SVE_AU_3A)]
+    [TestCase(INS_sve_movprfx, INS_OPTS_NONE, IF_SVE_BI_2A)]
+    public static void GenericMoveRecordingDispatchesUnpredicatedSVEForms(
+        instruction ins, insOpts opt, Emitter.insFormat format)
+    {
+        WithEmitter(emitter =>
+        {
+            var id = Record(emitter, () => emitter.emitIns_Mov(ins, EA_SCALABLE, REG_V0, REG_V31, false, opt));
+            AssertDescriptor(id, ins, EA_SCALABLE, format, opt, REG_V0, REG_V31);
+            Assert.That(id.idIsSmallDsc(), Is.True);
+        });
+    }
+
     [TestCase(INS_sve_mov, EA_4BYTE, INS_OPTS_SCALABLE_B, REG_R0)]
     [TestCase(INS_sve_mov, EA_4BYTE, INS_OPTS_SCALABLE_H, REG_SP)]
     [TestCase(INS_sve_dup, EA_4BYTE, INS_OPTS_SCALABLE_S, REG_R30)]
