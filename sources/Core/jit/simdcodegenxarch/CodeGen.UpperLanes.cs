@@ -48,6 +48,7 @@ public sealed partial class CodeGen
     }
 #endif
 
+#if !TARGET_ARM64
     public void genSimdUpperRestore(GenTreeIntrinsic node)
     {
 #if !TARGET_XARCH || !FEATURE_SIMD
@@ -84,4 +85,5 @@ public sealed partial class CodeGen
         }
 #endif
     }
+#endif
 }

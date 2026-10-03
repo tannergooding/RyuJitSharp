@@ -43,5 +43,38 @@ public sealed partial class CodeGen
             genProduceReg(node);
         }
     }
+
+    // The local child owns the destination; the intrinsic register contains the saved upper lane.
+    public void genSimdUpperRestore(GenTreeIntrinsic node)
+    {
+        assert(node.IntrinsicName == NI_SIMD_UpperRestore);
+
+        var op1 = node.Op1;
+        assert(op1.Oper.IsLocal);
+
+        var lclNode = op1.AsLclVar();
+        ref var varDsc = ref _compiler.lvaGetDesc(lclNode);
+        assert(emitTypeSize(varDsc.GetRegisterType(lclNode)) == 16);
+
+        var srcReg = node.RegNum;
+        assert(srcReg != REG_NA);
+
+        var lclVarReg = genConsumeReg(lclNode);
+        assert(lclVarReg != REG_NA);
+
+        var varNum = lclNode.LclNum;
+
+        if ((node.Flags & GTF_SPILLED) != 0)
+        {
+            // Reload the saved lane from the upper half of the local's stack home.
+            assert(varDsc.lvOnFrame);
+
+            const int offset = 8;
+            var attr = emitTypeSize(TYP_SIMD8);
+            Emitter.emitIns_R_S(INS_ldr, attr, srcReg, varNum, offset);
+        }
+
+        Emitter.emitIns_R_R_I_I(INS_mov, EA_8BYTE, lclVarReg, srcReg, 1, 0);
+    }
 }
 #endif
