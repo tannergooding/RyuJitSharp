@@ -10,6 +10,14 @@ public partial class Emitter
 #if EMITTER_STATS
     private const int SMALL_CNS_TSZ = 256;
 
+    private static uint emitTotalIDescCnsCnt;
+    private static uint emitTotalIDescDspCnt;
+    private static uint emitTotalIDescCnsDspCnt;
+#if TARGET_XARCH
+    private static uint emitTotalIDescAmdCnt;
+    private static uint emitTotalIDescCnsAmdCnt;
+#endif
+
     private static readonly uint[] emitSmallCns = new uint[SMALL_CNS_TSZ];
     private static uint emitSmallCnsCnt;
     private static uint emitLargeCnsCnt;
@@ -91,6 +99,10 @@ public partial class Emitter
 
     private instrDescCns emitAllocInstrCns(emitAttr attr)
     {
+#if EMITTER_STATS
+        emitTotalIDescCnsCnt = unchecked(emitTotalIDescCnsCnt + 1);
+#endif
+
         return emitAllocAnyInstr<instrDescCns>(ConstantDescriptorSizes.Constant, attr);
     }
 
@@ -105,22 +117,38 @@ public partial class Emitter
 
     private instrDescDsp emitAllocInstrDsp(emitAttr attr)
     {
+#if EMITTER_STATS
+        emitTotalIDescDspCnt = unchecked(emitTotalIDescDspCnt + 1);
+#endif
+
         return emitAllocAnyInstr<instrDescDsp>(ConstantDescriptorSizes.Displacement, attr);
     }
 
     private instrDescCnsDsp emitAllocInstrCnsDsp(emitAttr attr)
     {
+#if EMITTER_STATS
+        emitTotalIDescCnsDspCnt = unchecked(emitTotalIDescCnsDspCnt + 1);
+#endif
+
         return emitAllocAnyInstr<instrDescCnsDsp>(ConstantDescriptorSizes.ConstantDisplacement, attr);
     }
 
 #if TARGET_XARCH
     private instrDescAmd emitAllocInstrAmd(emitAttr attr)
     {
+#if EMITTER_STATS
+        emitTotalIDescAmdCnt = unchecked(emitTotalIDescAmdCnt + 1);
+#endif
+
         return emitAllocAnyInstr<instrDescAmd>(ConstantDescriptorSizes.AddressMode, attr);
     }
 
     private instrDescCnsAmd emitAllocInstrCnsAmd(emitAttr attr)
     {
+#if EMITTER_STATS
+        emitTotalIDescCnsAmdCnt = unchecked(emitTotalIDescCnsAmdCnt + 1);
+#endif
+
         return emitAllocAnyInstr<instrDescCnsAmd>(ConstantDescriptorSizes.ConstantAddressMode, attr);
     }
 #endif

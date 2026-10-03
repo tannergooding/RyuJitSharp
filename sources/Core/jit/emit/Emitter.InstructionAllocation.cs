@@ -13,7 +13,12 @@ public partial class Emitter
 
 #if EMITTER_STATS
     private static uint emitTotalInsCnt;
+    private static uint emitTotalIDescCnt;
     private static uint emitTotalIDescSmallCnt;
+    private static uint emitTotalIDescJmpCnt;
+#if FEATURE_LOOP_ALIGN
+    private static uint emitTotalIDescAlignCnt;
+#endif
 #endif
 
     private void emitRecordMemAllocation(nuint size)
@@ -163,17 +168,29 @@ public partial class Emitter
 
     private instrDescBasic emitAllocInstr(emitAttr attr)
     {
+#if EMITTER_STATS
+        emitTotalIDescCnt = unchecked(emitTotalIDescCnt + 1);
+#endif
+
         return emitAllocAnyInstr<instrDescBasic>(INSTR_DESC_SIZE, attr);
     }
 
     private instrDescJmp emitAllocInstrJmp()
     {
+#if EMITTER_STATS
+        emitTotalIDescJmpCnt = unchecked(emitTotalIDescJmpCnt + 1);
+#endif
+
         return emitAllocAnyInstr<instrDescJmp>(DescriptorSizes.Jump, EA_1BYTE);
     }
 
 #if FEATURE_LOOP_ALIGN
     private instrDescAlign emitAllocInstrAlign()
     {
+#if EMITTER_STATS
+        emitTotalIDescAlignCnt = unchecked(emitTotalIDescAlignCnt + 1);
+#endif
+
         return emitAllocAnyInstr<instrDescAlign>(DescriptorSizes.Align, EA_1BYTE);
     }
 #endif

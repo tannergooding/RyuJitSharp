@@ -151,6 +151,10 @@ internal static unsafe class EmitterMethodStatisticsTests
     public static void ConstantAndDisplacementAllocationCountsNativeStatistics()
     {
         var smallCnsBuckets = SmallCnsBuckets(null);
+        var previousBasicDescriptors = TotalBasicDescriptors(null);
+        var previousConstantDescriptors = TotalConstantDescriptors(null);
+        var previousDisplacementDescriptors = TotalDisplacementDescriptors(null);
+        var previousConstantDisplacementDescriptors = TotalConstantDisplacementDescriptors(null);
         var previousSmallCnsBuckets = (uint[])smallCnsBuckets.Clone();
         var previousSmallConstants = TotalSmallConstants(null);
         var previousLargeConstants = TotalLargeConstants(null);
@@ -167,6 +171,10 @@ internal static unsafe class EmitterMethodStatisticsTests
 
         try
         {
+            TotalBasicDescriptors(null) = 0;
+            TotalConstantDescriptors(null) = 0;
+            TotalDisplacementDescriptors(null) = 0;
+            TotalConstantDisplacementDescriptors(null) = 0;
             Array.Clear(smallCnsBuckets, 0, smallCnsBuckets.Length);
             TotalSmallConstants(null) = 0;
             TotalLargeConstants(null) = 0;
@@ -211,11 +219,19 @@ internal static unsafe class EmitterMethodStatisticsTests
             Assert.That(PowerOfTwoConstants(null), Is.EqualTo(6u));
             Assert.That(SmallDisplacements(null), Is.EqualTo(3u));
             Assert.That(LargeDisplacements(null), Is.EqualTo(3u));
+            Assert.That(TotalBasicDescriptors(null), Is.EqualTo(3u));
+            Assert.That(TotalConstantDescriptors(null), Is.EqualTo(4u));
+            Assert.That(TotalDisplacementDescriptors(null), Is.EqualTo(2u));
+            Assert.That(TotalConstantDisplacementDescriptors(null), Is.EqualTo(1u));
             Assert.That(TotalSmallDescriptors(null), Is.EqualTo(previousSmallDescriptors + 3));
             Assert.That(TotalInstructions(null), Is.EqualTo(previousInstructions + 13));
         }
         finally
         {
+            TotalBasicDescriptors(null) = previousBasicDescriptors;
+            TotalConstantDescriptors(null) = previousConstantDescriptors;
+            TotalDisplacementDescriptors(null) = previousDisplacementDescriptors;
+            TotalConstantDisplacementDescriptors(null) = previousConstantDisplacementDescriptors;
             Array.Copy(previousSmallCnsBuckets, smallCnsBuckets, smallCnsBuckets.Length);
             TotalSmallConstants(null) = previousSmallConstants;
             TotalLargeConstants(null) = previousLargeConstants;
@@ -229,6 +245,103 @@ internal static unsafe class EmitterMethodStatisticsTests
             TotalSmallDescriptors(null) = previousSmallDescriptors;
             TotalInstructions(null) = previousInstructions;
             TotalMemory(null) = previousMemory;
+        }
+    }
+
+    [Test]
+    public static void DescriptorKindAllocationsCountNativeStatistics()
+    {
+        var previousBasicDescriptors = TotalBasicDescriptors(null);
+        var previousJumpDescriptors = TotalJumpDescriptors(null);
+#if !TARGET_WASM
+        var previousCallDescriptors = TotalCallDescriptors(null);
+#endif
+        var previousInstructions = TotalInstructions(null);
+        var previousMemory = TotalMemory(null);
+#if TARGET_XARCH
+        var previousAddressModeDescriptors = TotalAddressModeDescriptors(null);
+        var previousConstantAddressModeDescriptors = TotalConstantAddressModeDescriptors(null);
+#endif
+#if FEATURE_LOOP_ALIGN
+        var previousAlignmentDescriptors = TotalAlignmentDescriptors(null);
+#endif
+
+        try
+        {
+            TotalBasicDescriptors(null) = 0;
+            TotalJumpDescriptors(null) = 0;
+#if !TARGET_WASM
+            TotalCallDescriptors(null) = 0;
+#endif
+            TotalInstructions(null) = 0;
+#if TARGET_XARCH
+            TotalAddressModeDescriptors(null) = 0;
+            TotalConstantAddressModeDescriptors(null) = 0;
+#endif
+#if FEATURE_LOOP_ALIGN
+            TotalAlignmentDescriptors(null) = 0;
+#endif
+
+            var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+            var emitter = new AllocationEmitter(new CodeGen(compiler));
+            emitter.emitBegCG(compiler, default);
+            emitter.Init();
+            Begin(emitter);
+
+            _ = emitter.AllocateDescriptor(emitAttr.EA_4BYTE);
+            _ = emitter.AllocateJumpDescriptor();
+#if !TARGET_WASM
+            _ = emitter.AllocateCallDescriptor(emitAttr.EA_4BYTE);
+#endif
+#if TARGET_XARCH
+            _ = emitter.AllocateAddressModeDescriptor(emitAttr.EA_4BYTE);
+            _ = emitter.AllocateConstantAddressModeDescriptor(emitAttr.EA_4BYTE);
+#endif
+#if FEATURE_LOOP_ALIGN
+            _ = emitter.AllocateAlignmentDescriptor();
+#endif
+
+            Assert.That(TotalBasicDescriptors(null), Is.EqualTo(1u));
+            Assert.That(TotalJumpDescriptors(null), Is.EqualTo(1u));
+#if !TARGET_WASM
+            Assert.That(TotalCallDescriptors(null), Is.EqualTo(1u));
+#endif
+            Assert.That(TotalInstructions(null), Is.EqualTo((uint)(
+                2
+#if !TARGET_WASM
+                + 1
+#endif
+#if TARGET_XARCH
+                + 2
+#endif
+#if FEATURE_LOOP_ALIGN
+                + 1
+#endif
+            )));
+#if TARGET_XARCH
+            Assert.That(TotalAddressModeDescriptors(null), Is.EqualTo(1u));
+            Assert.That(TotalConstantAddressModeDescriptors(null), Is.EqualTo(1u));
+#endif
+#if FEATURE_LOOP_ALIGN
+            Assert.That(TotalAlignmentDescriptors(null), Is.EqualTo(1u));
+#endif
+        }
+        finally
+        {
+            TotalBasicDescriptors(null) = previousBasicDescriptors;
+            TotalJumpDescriptors(null) = previousJumpDescriptors;
+#if !TARGET_WASM
+            TotalCallDescriptors(null) = previousCallDescriptors;
+#endif
+            TotalInstructions(null) = previousInstructions;
+            TotalMemory(null) = previousMemory;
+#if TARGET_XARCH
+            TotalAddressModeDescriptors(null) = previousAddressModeDescriptors;
+            TotalConstantAddressModeDescriptors(null) = previousConstantAddressModeDescriptors;
+#endif
+#if FEATURE_LOOP_ALIGN
+            TotalAlignmentDescriptors(null) = previousAlignmentDescriptors;
+#endif
         }
     }
 
@@ -340,6 +453,42 @@ internal static unsafe class EmitterMethodStatisticsTests
             return NewDisplacementConstant(this, attr, constant, displacement);
         }
 
+        public instrDesc AllocateDescriptor(emitAttr attr)
+        {
+            return NewDescriptor(this, attr);
+        }
+
+        public instrDesc AllocateJumpDescriptor()
+        {
+            return NewJumpDescriptor(this);
+        }
+
+#if !TARGET_WASM
+        public instrDesc AllocateCallDescriptor(emitAttr attr)
+        {
+            return NewCallDescriptor(this, attr);
+        }
+#endif
+
+#if TARGET_XARCH
+        public instrDesc AllocateAddressModeDescriptor(emitAttr attr)
+        {
+            return NewAddressModeDescriptor(this, attr);
+        }
+
+        public instrDesc AllocateConstantAddressModeDescriptor(emitAttr attr)
+        {
+            return NewConstantAddressModeDescriptor(this, attr);
+        }
+#endif
+
+#if FEATURE_LOOP_ALIGN
+        public instrDesc AllocateAlignmentDescriptor()
+        {
+            return NewAlignmentDescriptor(this);
+        }
+#endif
+
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitAllocAnyInstr")]
         private static extern T Allocate<T>(Emitter emitter, nuint size, emitAttr attr)
             where T : instrDesc, new();
@@ -358,6 +507,30 @@ internal static unsafe class EmitterMethodStatisticsTests
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNewInstrCnsDsp")]
         private static extern instrDesc NewDisplacementConstant(Emitter emitter, emitAttr attr, nint constant, int displacement);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitAllocInstr")]
+        private static extern instrDescBasic NewDescriptor(Emitter emitter, emitAttr attr);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitAllocInstrJmp")]
+        private static extern instrDescJmp NewJumpDescriptor(Emitter emitter);
+
+#if !TARGET_WASM
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitAllocInstrCGCA")]
+        private static extern instrDescCGCA NewCallDescriptor(Emitter emitter, emitAttr attr);
+#endif
+
+#if TARGET_XARCH
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitAllocInstrAmd")]
+        private static extern instrDescAmd NewAddressModeDescriptor(Emitter emitter, emitAttr attr);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitAllocInstrCnsAmd")]
+        private static extern instrDescCnsAmd NewConstantAddressModeDescriptor(Emitter emitter, emitAttr attr);
+#endif
+
+#if FEATURE_LOOP_ALIGN
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitAllocInstrAlign")]
+        private static extern instrDescAlign NewAlignmentDescriptor(Emitter emitter);
+#endif
     }
 
     private static void Begin(Emitter emitter)
@@ -404,6 +577,39 @@ internal static unsafe class EmitterMethodStatisticsTests
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescSmallCnt")]
     private static extern ref uint TotalSmallDescriptors(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescCnt")]
+    private static extern ref uint TotalBasicDescriptors(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescCnsCnt")]
+    private static extern ref uint TotalConstantDescriptors(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescDspCnt")]
+    private static extern ref uint TotalDisplacementDescriptors(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescCnsDspCnt")]
+    private static extern ref uint TotalConstantDisplacementDescriptors(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescJmpCnt")]
+    private static extern ref uint TotalJumpDescriptors(Emitter? emitter);
+
+#if !TARGET_WASM
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescCGCACnt")]
+    private static extern ref uint TotalCallDescriptors(Emitter? emitter);
+#endif
+
+#if TARGET_XARCH
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescAmdCnt")]
+    private static extern ref uint TotalAddressModeDescriptors(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescCnsAmdCnt")]
+    private static extern ref uint TotalConstantAddressModeDescriptors(Emitter? emitter);
+#endif
+
+#if FEATURE_LOOP_ALIGN
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescAlignCnt")]
+    private static extern ref uint TotalAlignmentDescriptors(Emitter? emitter);
+#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitSmallCns")]
     private static extern ref uint[] SmallCnsBuckets(Emitter? emitter);
