@@ -5,12 +5,37 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    public void emitIns_J_cond_la(instruction ins, BasicBlock target, regNumber reg1, regNumber reg2)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Target conditional-branch recording is not implemented.");
+    }
+
+    public void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, nint imm)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Target register-immediate recording is not implemented.");
+    }
+
     public void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "Target two-register instruction recording is not implemented.");
     }
 
 #if TARGET_RISCV64
+    public static bool isValidSimm12(nint value)
+    {
+        return (-2048 <= value) && (value < 2048);
+    }
+
+    public void emitIns_R_AR(instruction ins, emitAttr attr, regNumber reg, regNumber baseReg, int displacement)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 register-address instruction recording is not ported.");
+    }
+
+    public void emitIns_Mov(emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 register move recording is not ported.");
+    }
+
     public void emitIns_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "RISC-V three-register instruction recording is not implemented.");

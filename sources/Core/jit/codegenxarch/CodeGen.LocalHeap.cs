@@ -90,6 +90,10 @@ public sealed partial class CodeGen
     {
 #if TARGET_ARM64
         genLclHeapArm64(tree);
+#elif TARGET_LOONGARCH64
+        genLclHeapLoongArch64(tree);
+#elif TARGET_RISCV64
+        genLclHeapRiscV64(tree);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Local heap generation is not ported for this target.");
 #else

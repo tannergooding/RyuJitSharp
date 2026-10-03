@@ -95,6 +95,24 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         });
     }
 
+    [Test]
+    public static void LocalHeapDispatchReachesTheTargetEmitterBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compLocallocUsed = true;
+            codeGen.resetFramePointerUsedWritePhase();
+            codeGen.IsFramePointerUsed = true;
+            var size = new GenTreeIntCon(TYP_I_IMPL, 16) { IsContained = true };
+            var tree = new GenTreeUnOp(GT_LCLHEAP, TYP_I_IMPL, size) { RegNum = REG_S0 };
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genLclHeap(tree));
+
+            Assert.That(failure?.Message, Does.Contain(
+                "Target two-register-immediate instruction recording is not implemented."));
+        });
+    }
+
 #if FEATURE_SIMD
     [Test]
     public static void Simd12LocalVariableStoreStopsAtTheTargetBoundary()

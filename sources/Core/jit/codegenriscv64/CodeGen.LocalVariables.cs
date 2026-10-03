@@ -15,6 +15,8 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+    private const uint StackProbeBoundaryThresholdBytes = 0;
+
     public void genCodeForLclVar(GenTreeLclVar tree)
     {
         var varNum = tree.LclNum;
@@ -185,6 +187,283 @@ public sealed partial class CodeGen
             }
 
             genProduceReg(lclNode);
+        }
+    }
+
+    private void genLclHeapRiscV64(GenTree tree)
+    {
+        unchecked
+        {
+            assert(tree.Oper is GT_LCLHEAP);
+            assert(_compiler.compLocallocUsed);
+
+            var size = tree.AsOp().Op1;
+            noway_assert(size.Type.ActualType is TYP_INT or TYP_I_IMPL);
+
+            var targetReg = tree.RegNum;
+            var regCnt = REG_NA;
+            var tempReg = REG_NA;
+            var spSourceReg = REG_SPBASE;
+            var type = size.Type.ActualType;
+            var attr = type.EmitSize;
+            BasicBlock? endLabel = null;
+            uint stackAdjustment = 0;
+            const nint IllegalLastTouchDelta = -1;
+            var lastTouchDelta = IllegalLastTouchDelta;
+            noway_assert(IsFramePointerUsed);
+            noway_assert(genStackLevel == 0);
+
+            var pageSize = _compiler.eeGetPageSize();
+            // The RISC-V privileged ISA uses a 4 KiB base page.
+            noway_assert(pageSize == 0x1000);
+
+            nuint amount = 0;
+            if (size.Oper.IsCnsIntOrI)
+            {
+                assert(size.IsContained);
+                amount = unchecked((nuint)size.AsIntCon().IconValue);
+                if (amount == 0)
+                {
+                    instGen_Set_Reg_To_Zero(EA_PTRSIZE, targetReg);
+                    goto BAILOUT;
+                }
+
+                amount = unchecked((amount + STACK_ALIGN - 1) & ~((nuint)STACK_ALIGN - 1));
+            }
+            else
+            {
+                genConsumeRegAndCopy(size, targetReg);
+                endLabel = genCreateTempLabel();
+                Emitter.emitIns_J_cond_la(INS_beq, endLabel, targetReg, REG_R0);
+
+                if (_compiler.info.compInitMem)
+                {
+                    regCnt = targetReg;
+                }
+                else
+                {
+                    regCnt = InternalRegisters.Extract(tree);
+                    if (regCnt != targetReg)
+                    {
+                        Emitter.emitIns_R_R(INS_mov, attr, regCnt, targetReg);
+                    }
+                }
+
+                inst_RV_IV(INS_addi, regCnt, STACK_ALIGN - 1, type.EmitActualSize);
+                Emitter.emitIns_R_R_I(INS_andi, type.EmitActualSize, regCnt, regCnt,
+                    unchecked(~((nint)STACK_ALIGN - 1)));
+            }
+
+            if (_compiler.lvaOutgoingArgSpaceSize.Value > 0)
+            {
+                var outgoingArgSpaceAligned = unchecked((uint)(((nuint)_compiler.lvaOutgoingArgSpaceSize.Value +
+                    STACK_ALIGN - 1) & ~((nuint)STACK_ALIGN - 1)));
+                tempReg = InternalRegisters.Extract(tree);
+                _ = genInstrWithConstant(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE,
+                    (nint)outgoingArgSpaceAligned, tempReg);
+                stackAdjustment = unchecked(stackAdjustment + outgoingArgSpaceAligned);
+            }
+
+            if (size.Oper.IsCnsIntOrI)
+            {
+                assert(amount > 0);
+                nint immediate = -16;
+                assert(STACK_ALIGN == (REGSIZE_BYTES * 2));
+                assert(amount % (REGSIZE_BYTES * 2) == 0);
+                nuint storePairCount = amount / (REGSIZE_BYTES * 2);
+
+                if (_compiler.info.compInitMem && (storePairCount <= 4))
+                {
+                    immediate = unchecked(-16 * (nint)storePairCount);
+                    Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, immediate);
+
+                    immediate = -immediate;
+                    while (storePairCount != 0)
+                    {
+                        immediate -= 8;
+                        Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, REG_SPBASE, immediate);
+                        immediate -= 8;
+                        Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, REG_SPBASE, immediate);
+                        storePairCount--;
+                    }
+
+                    lastTouchDelta = 0;
+                    goto ALLOC_DONE;
+                }
+                else if (!_compiler.info.compInitMem && (amount < pageSize))
+                {
+                    // Probe the current SP before subtracting a sub-page allocation.
+                    Emitter.emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, REG_SP, 0);
+                    lastTouchDelta = (nint)amount;
+                    immediate = unchecked(-(nint)amount);
+                    if (Emitter.isValidSimm12(immediate))
+                    {
+                        Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, immediate);
+                    }
+                    else
+                    {
+                        if (tempReg == REG_NA)
+                        {
+                            tempReg = InternalRegisters.Extract(tree);
+                        }
+
+                        _ = genEmitRiscvLoadImmediate(true, EA_PTRSIZE, tempReg, (nint)amount);
+                        Emitter.emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tempReg);
+                    }
+
+                    goto ALLOC_DONE;
+                }
+
+                assert(regCnt == REG_NA);
+                if (_compiler.info.compInitMem)
+                {
+                    regCnt = targetReg;
+                }
+                else
+                {
+                    regCnt = InternalRegisters.Extract(tree);
+                }
+
+                instGen_Set_Reg_To_Imm((uint)amount == amount ? EA_4BYTE : EA_8BYTE, regCnt,
+                    (nint)amount);
+            }
+
+            if (_compiler.info.compInitMem)
+            {
+                var loop = genCreateTempLabel();
+                genDefineTempLabel(loop);
+                Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -16);
+                Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, REG_SPBASE, 8);
+                Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, REG_SPBASE, 0);
+
+                assert(genIsValidIntReg(regCnt));
+                Emitter.emitIns_R_R_I(INS_addi, type.EmitActualSize, regCnt, regCnt, -16);
+                Emitter.emitIns_J_cond_la(INS_bne, loop, regCnt, REG_R0);
+                lastTouchDelta = 0;
+            }
+            else
+            {
+                if (tempReg == REG_NA)
+                {
+                    tempReg = InternalRegisters.Extract(tree);
+                }
+
+                assert(regCnt != tempReg);
+                // Clamp subtraction underflow before entering the page-probe loop.
+                if (_compiler.compOpportunisticallyDependsOn(InstructionSet_Zbb))
+                {
+                    Emitter.emitIns_R_R_R(INS_maxu, EA_PTRSIZE, tempReg, REG_SPBASE, regCnt);
+                    Emitter.emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, tempReg, regCnt);
+                }
+                else
+                {
+                    Emitter.emitIns_R_R_R(INS_sltu, EA_PTRSIZE, tempReg, REG_SPBASE, regCnt);
+                    Emitter.emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, REG_SPBASE, regCnt);
+                    Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, tempReg, -1);
+                    Emitter.emitIns_R_R_R(INS_and, EA_PTRSIZE, regCnt, regCnt, tempReg);
+                }
+
+                var pageSizeReg = InternalRegisters.GetSingle(tree);
+                noway_assert(pageSizeReg != tempReg);
+                Emitter.emitIns_R_I(INS_lui, EA_PTRSIZE, pageSizeReg, unchecked((nint)(pageSize >> 12)));
+                _regSet.verifyRegUsed(pageSizeReg);
+                Emitter.emitIns_R_R(INS_mov, EA_PTRSIZE, tempReg, REG_SPBASE);
+
+                // Touch each current page before stepping SP toward the final allocation address.
+                var loop = genCreateTempLabel();
+                genDefineTempLabel(loop);
+                Emitter.emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, tempReg, 0);
+                Emitter.emitIns_R_R_R(INS_sub, EA_4BYTE, tempReg, tempReg, pageSizeReg);
+                Emitter.emitIns_J_cond_la(INS_bgeu, loop, tempReg, regCnt);
+                Emitter.emitIns_R_R(INS_mov, EA_PTRSIZE, REG_SPBASE, regCnt);
+                spSourceReg = regCnt;
+            }
+
+        ALLOC_DONE:
+            if (stackAdjustment != 0)
+            {
+                assert((stackAdjustment % STACK_ALIGN) == 0);
+                assert((lastTouchDelta == IllegalLastTouchDelta) || (lastTouchDelta >= 0));
+
+                if ((lastTouchDelta == IllegalLastTouchDelta) ||
+                    (unchecked(stackAdjustment + (uint)lastTouchDelta + StackProbeBoundaryThresholdBytes) >
+                        pageSize))
+                {
+                    genStackPointerConstantAdjustmentLoopWithProbe(unchecked(-(nint)stackAdjustment), tempReg);
+                }
+                else
+                {
+                    genStackPointerConstantAdjustment(unchecked(-(nint)stackAdjustment), tempReg);
+                }
+
+                _ = genInstrWithConstant(INS_addi, EA_PTRSIZE, targetReg, REG_SPBASE,
+                    (nint)stackAdjustment, tempReg);
+            }
+            else
+            {
+                Emitter.emitIns_Mov(EA_PTRSIZE, targetReg, spSourceReg, true);
+            }
+
+        BAILOUT:
+            if (endLabel is not null)
+            {
+                genDefineTempLabel(endLabel);
+            }
+
+            genProduceReg(tree);
+        }
+    }
+
+    private void genStackPointerConstantAdjustment(nint spDelta, regNumber regTmp)
+    {
+        unchecked
+        {
+            assert(spDelta < 0);
+            assert((nuint)(-spDelta) <= _compiler.eeGetPageSize());
+
+            if (Emitter.isValidSimm12(spDelta))
+            {
+                Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spDelta);
+            }
+            else
+            {
+                _ = genEmitRiscvLoadImmediate(true, EA_PTRSIZE, regTmp, spDelta);
+                Emitter.emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, regTmp);
+            }
+        }
+    }
+
+    private void genStackPointerConstantAdjustmentWithProbe(nint spDelta, regNumber regTmp)
+    {
+        Emitter.emitIns_R_R_I(INS_lw, EA_4BYTE, regTmp, REG_SP, 0);
+        genStackPointerConstantAdjustment(spDelta, regTmp);
+    }
+
+    private nint genStackPointerConstantAdjustmentLoopWithProbe(nint spDelta, regNumber regTmp)
+    {
+        unchecked
+        {
+            assert(spDelta < 0);
+            var pageSize = _compiler.eeGetPageSize();
+            var remaining = spDelta;
+
+            do
+            {
+                var oneDelta = -(nint)nuint.Min((nuint)(-remaining), pageSize);
+                genStackPointerConstantAdjustmentWithProbe(oneDelta, regTmp);
+                remaining -= oneDelta;
+            }
+            while (remaining < 0);
+
+            var lastTouchDelta = (nuint)(-spDelta) % pageSize;
+            if ((lastTouchDelta == 0) ||
+                (lastTouchDelta + StackProbeBoundaryThresholdBytes > pageSize))
+            {
+                Emitter.emitIns_R_R_I(INS_lw, EA_4BYTE, regTmp, REG_SP, 0);
+                lastTouchDelta = 0;
+            }
+
+            return (nint)lastTouchDelta;
         }
     }
 
