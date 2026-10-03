@@ -10,15 +10,6 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    private bool doubleAlignOrFramePointerUsed()
-    {
-#if DOUBLE_ALIGN
-        return IsFramePointerUsed || _compiler.genDoubleAlign;
-#else
-        return IsFramePointerUsed;
-#endif
-    }
-
     public unsafe void genPopCalleeSavedRegisters(bool jmpEpilog = false)
     {
 #if TARGET_ARM

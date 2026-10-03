@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Isolating xarch epilog sources
+
+Moved the x86/x64 root epilog and callee-save restoration implementation into
+`codegenxarch/CodeGen.Epilog.cs`. The shared frame-pointer helper and
+non-xarch/Wasm entry-point dependencies remain in
+`codegencommon/CodeGen.EpilogDependencies.cs`, preserving the existing
+target-specific behavior. The eight-RID compile-item check includes the xarch
+implementation only for x64 and x86 while retaining the common dependency file
+for all targets. `CodeGenEpilogTests` passed 11/11 Debug and Release with no
+skips using the existing validation import for unrelated emitter-test compile
+failures. The xarch native definitions were already absent; declarations
+remain for unported non-xarch definitions, so this source-ownership change
+adds no native-retirement credit or other-target parity claim.
+
 ## 2026-10-03: Isolating AMD64 APX epilog emission
 
 Moved the complete `genPopCalleeSavedRegistersFromMaskAPX` implementation from
