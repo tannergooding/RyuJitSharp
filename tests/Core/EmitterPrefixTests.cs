@@ -82,6 +82,46 @@ internal static unsafe class EmitterPrefixTests
         Assert.That(context.Assertions, Is.EqualTo(expectedAssertions));
     }
 
+    [TestCase(REG_XMM15, false)]
+    [TestCase(REG_XMM16, true)]
+    [TestCase(REG_XMM31, true)]
+    public static void HighSimdRegisterClassifierMatchesExtendedRegisterRange(regNumber reg, bool expected)
+    {
+        Assert.That(Emitter.isHighSimdReg(reg), Is.EqualTo(expected));
+    }
+
+    [TestCase(REG_R15, false)]
+    [TestCase(REG_R16, true)]
+    [TestCase(REG_R31, true)]
+    public static void HighGeneralPurposeRegisterClassifierMatchesApxRegisterRange(regNumber reg, bool expected)
+    {
+        Assert.That(IsHighGPReg(reg), Is.EqualTo(expected));
+    }
+
+    [TestCase(0UL, false, false)]
+    [TestCase(0x4800000000UL, true, false)]
+    [TestCase(0xFF00000000UL, true, false)]
+    [TestCase(0xD40000000000UL, false, false)]
+    [TestCase(0xD50000000000UL, false, true)]
+    [TestCase(0xD5FF00000000UL, false, true)]
+    public static void RexAndRex2ClassifiersMatchEncodedPrefixBytes(ulong code, bool expectedRex, bool expectedRex2)
+    {
+        Assert.That(IsRexPrefix(code), Is.EqualTo(expectedRex));
+        Assert.That(IsRex2Prefix(code), Is.EqualTo(expectedRex2));
+    }
+
+    [TestCase(INS_pcmpgtb, true)]
+    [TestCase(INS_vpgatherqq, true)]
+    [TestCase(INS_kmovq_msk, true)]
+    [TestCase(INS_add, false)]
+    public static void KMaskDestinationClassifierMatchesEvexInstructionSet(instruction ins, bool expected)
+    {
+        var emitter = CreateEmitter();
+        emitter.UseEvexEncodings = true;
+
+        Assert.That(HasKMaskRegisterDest(emitter, ins), Is.EqualTo(expected));
+    }
+
     private struct AssertionContext
     {
         public ICorJitInfo JitInfo;
@@ -315,6 +355,18 @@ internal static unsafe class EmitterPrefixTests
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "HasEmbeddedBroadcast")]
     private static extern bool HasBroadcast(Emitter emitter, Emitter.instrDesc descriptor);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "isHighGPReg")]
+    private static extern bool IsHighGPReg(Emitter emitter, regNumber reg);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "hasRexPrefix")]
+    private static extern bool IsRexPrefix(Emitter emitter, ulong code);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "hasRex2Prefix")]
+    private static extern bool IsRex2Prefix(Emitter emitter, ulong code);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "HasKMaskRegisterDest")]
+    private static extern bool HasKMaskRegisterDest(Emitter emitter, instruction ins);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "SetEvexCompressedDisplacement")]
     private static extern void SetCompressedDisplacement(Emitter emitter, Emitter.instrDesc descriptor);

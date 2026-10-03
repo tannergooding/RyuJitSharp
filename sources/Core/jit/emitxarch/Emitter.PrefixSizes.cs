@@ -8,11 +8,25 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private static bool hasRexPrefix(ulong code) => (code & 0xFF00000000UL) != 0;
+    private static bool hasRexPrefix(ulong code)
+    {
+#if TARGET_AMD64
+        return (code & 0xFF00000000UL) != 0;
+#else
+        return false;
+#endif
+    }
 
     private static bool hasVexPrefix(ulong code) => (code & 0xFF000000000000UL) == 0xC4000000000000UL;
 
-    private static bool hasRex2Prefix(ulong code) => (code & 0xFF0000000000UL) == 0xD50000000000UL;
+    private static bool hasRex2Prefix(ulong code)
+    {
+#if TARGET_AMD64
+        return (code & 0xFF0000000000UL) == 0xD50000000000UL;
+#else
+        return false;
+#endif
+    }
 
     private static bool hasEvexPrefix(ulong code) => (code & 0xFF00000000000000UL) == 0x6200000000000000UL;
 

@@ -8,9 +8,23 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    internal static bool isHighSimdReg(regNumber reg) => reg >= REG_XMM16 && reg <= REG_XMM31;
+    internal static bool isHighSimdReg(regNumber reg)
+    {
+#if TARGET_AMD64
+        return reg >= REG_XMM16 && reg <= REG_XMM31;
+#else
+        return false;
+#endif
+    }
 
-    private static bool isHighGPReg(regNumber reg) => reg >= REG_R16 && reg <= REG_R31;
+    private static bool isHighGPReg(regNumber reg)
+    {
+#if TARGET_AMD64
+        return reg >= REG_R16 && reg <= REG_R31;
+#else
+        return false;
+#endif
+    }
 
     private static bool isMaskReg(regNumber reg) => reg >= REG_K0 && reg <= REG_K7;
 
