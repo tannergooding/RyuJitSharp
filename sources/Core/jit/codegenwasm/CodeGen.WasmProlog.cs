@@ -321,5 +321,142 @@ public sealed partial class CodeGen
             }
         }
     }
+
+    private void genReportGenericContextArgWasm()
+    {
+        assert(Emitter.emitGeneratingPrologOrFuncletProlog());
+
+        var reportArg = _compiler.lvaReportParamTypeArg();
+        var reportThis = _compiler.lvaKeepAliveAndReportThis();
+        if (!reportArg && !reportThis)
+        {
+            return;
+        }
+
+        var contextArg = reportArg ? _compiler.info.compTypeCtxtArg : _compiler.info.compThisArg;
+        noway_assert(contextArg != BAD_VAR_NUM);
+
+        ref readonly var abiInfo = ref _compiler.lvaGetParameterAbiInfo(contextArg);
+        assert(abiInfo.HasExactlyOneRegisterSegment);
+        var register = abiInfo.Segments[0].Register;
+
+        Emitter.emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetFramePointerRegIndex()));
+        Emitter.emitIns_I(INS_local_get, EA_PTRSIZE,
+            unchecked((nint)regNumberExtensions.WasmRegToIndex(register)));
+        Emitter.emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE,
+            unchecked((nint)_compiler.lvaCachedGenericContextArgOffset()));
+    }
+
+    private unsafe void genFnEpilogWasm(BasicBlock block)
+    {
+#if DEBUG
+        if (_verbose)
+        {
+            jitprintf("*************** In genFnEpilog()\n");
+        }
+        if (_compiler.opts.dspCode)
+        {
+            jitprintf("\n__epilog:\n");
+        }
+#endif
+        var jmpEpilog = block.HasFlag(BBF_HAS_JMP);
+        if (jmpEpilog)
+        {
+            if (block.IsLast() || _compiler.bbIsFuncletBeg(block.Next()))
+            {
+                instGen(INS_end);
+            }
+
+            return;
+        }
+
+        if (_compiler.opts.IsReversePInvoke())
+        {
+            assert(_compiler.funCurrentFuncIdx() == ROOT_FUNC_IDX);
+            var framePointer = GetFramePointerReg(ROOT_FUNC_IDX);
+            var stackPointer = GetStackPointerReg(ROOT_FUNC_IDX);
+            assert(stackPointer is not REG_NA);
+
+            var frameBase = (framePointer is not REG_NA) ? framePointer : stackPointer;
+            Emitter.emitIns_I(INS_local_get, EA_PTRSIZE,
+                unchecked((nint)regNumberExtensions.WasmRegToIndex(frameBase)));
+            if (genTotalFrameSize != 0)
+            {
+                Emitter.emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)genTotalFrameSize));
+                Emitter.emitIns(INS_I_add);
+            }
+
+            var stackPointerGlobal = unchecked((nint)_compiler.eeGetWasmWellKnownGlobals().stackPointer);
+            Emitter.emitIns_I(INS_global_set, EA_HANDLE_CNS_RELOC, stackPointerGlobal);
+        }
+
+        // A final block without an epilog still needs an INS_end to close its Wasm function body.
+        if (block.IsLast() || _compiler.bbIsFuncletBeg(block.Next()))
+        {
+            instGen(INS_end);
+        }
+        else
+        {
+            instGen(INS_return);
+        }
+    }
+
+    private void genFuncletPrologWasm(BasicBlock block)
+    {
+        assert(_compiler.bbIsFuncletBeg(block));
+#if DEBUG
+        if (_verbose)
+        {
+            jitprintf("*************** In genFuncletProlog()\n");
+        }
+#endif
+
+        Emitter.emitIns(INS_code_size);
+
+        var funcletIndex = _compiler.funCurrentFuncIdx();
+        assert(funcletIndex > 0);
+        ref var func = ref _compiler.funGetFunc(funcletIndex);
+        var localDeclarations = func.funWasmLocalDecls
+            ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Wasm funclet local declarations are missing.");
+        Emitter.emitIns_I(INS_local_cnt, EA_8BYTE, localDeclarations.Count);
+
+        uint localsCount = 0;
+        foreach (var declaration in localDeclarations)
+        {
+            Emitter.emitIns_I_Ty(
+                INS_local_decl, declaration.Count, declaration.Type, unchecked((int)localsCount));
+            localsCount = unchecked(localsCount + declaration.Count);
+        }
+
+        if (!func.needsUnwindableFrame)
+        {
+            return;
+        }
+
+        var frameSize = roundUp(2 * TARGET_POINTER_SIZE, STACK_ALIGN);
+        _compiler.unwindAllocStack(unchecked((uint)frameSize));
+
+        var stackPointerIndex = unchecked((nint)GetStackPointerRegIndex());
+        Emitter.emitIns_I(INS_local_get, EA_PTRSIZE, stackPointerIndex);
+        Emitter.emitIns_I(INS_I_const, EA_PTRSIZE, frameSize);
+        Emitter.emitIns(INS_I_sub);
+        Emitter.emitIns_I(INS_local_set, EA_PTRSIZE, stackPointerIndex);
+
+        Emitter.emitIns_I(INS_local_get, EA_PTRSIZE, stackPointerIndex);
+        Emitter.emitFuncletAddressConstant(unchecked((nint)funcletIndex));
+        Emitter.emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
+    }
+
+    private void genFuncletEpilogWasm(BasicBlock block)
+    {
+        if (block.IsLast() || _compiler.bbIsFuncletBeg(block.Next()))
+        {
+            instGen(INS_end);
+        }
+        else
+        {
+            instGen(INS_return);
+        }
+    }
 }
 #endif

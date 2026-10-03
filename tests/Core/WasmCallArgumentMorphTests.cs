@@ -107,6 +107,12 @@ internal static unsafe class WasmCallArgumentMorphTests
         });
     }
 
+    [Test]
+    public static void WasmFuncletFrameCaptureMatchesTheNativeNoOp()
+    {
+        WithCompiler(compiler => new CodeGen(compiler).genCaptureFuncletPrologEpilogInfo());
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void ShadowStackArgumentPrecedesClassificationOnlyForManagedCalls(bool unmanaged)

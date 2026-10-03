@@ -165,7 +165,9 @@ public sealed partial class CodeGen
 
     public unsafe void genFnEpilog(BasicBlock block)
     {
-#if !TARGET_XARCH
+#if TARGET_WASM
+        genFnEpilogWasm(block);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Root epilog generation requires xarch.");
 #else
 #if TARGET_AMD64

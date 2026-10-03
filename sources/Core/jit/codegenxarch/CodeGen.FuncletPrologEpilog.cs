@@ -16,7 +16,9 @@ public sealed partial class CodeGen
 
     public void genFuncletProlog(BasicBlock block)
     {
-#if !TARGET_XARCH
+#if TARGET_WASM
+        genFuncletPrologWasm(block);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Funclet prologs require xarch.");
 #else
 #if TARGET_AMD64
@@ -62,7 +64,9 @@ public sealed partial class CodeGen
 
     public void genFuncletEpilog(BasicBlock block)
     {
-#if !TARGET_XARCH
+#if TARGET_WASM
+        genFuncletEpilogWasm(block);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Funclet epilogs require xarch.");
 #else
 #if TARGET_AMD64
@@ -86,7 +90,9 @@ public sealed partial class CodeGen
 
     public void genCaptureFuncletPrologEpilogInfo()
     {
-#if !TARGET_XARCH
+#if TARGET_WASM
+        // Wasm has no funclet stack delta to capture.
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Funclet frame capture requires xarch.");
 #else
         // Native ehAnyFunclets() is compHndBBtabCount > 0.

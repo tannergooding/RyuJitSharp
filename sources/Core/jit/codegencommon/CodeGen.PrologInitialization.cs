@@ -199,7 +199,7 @@ public sealed partial class CodeGen
     public unsafe void genReportGenericContextArg(regNumber initReg, ref bool initRegZeroed)
     {
 #if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "Prolog generic-context reporting requires AMD64.");
+        genReportGenericContextArgWasm();
 #else
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
         var reportArg = _compiler.lvaReportParamTypeArg();
