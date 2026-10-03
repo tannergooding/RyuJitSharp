@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Error-trap forwarding wrappers
+
+Added direct tests for the existing typed managed error-trap wrappers,
+verifying the selected normal/SPMI EE callback, opaque parameter forwarding,
+successful invocation and EE rejection. Full-analysis Windows-x64
+`ErrorTrapTests` pass 17/17 in Debug and Release.
+
+Native `c96fd54f` amends the consolidated residual commit, sole-parented to the
+pinned oracle, and removes both complete `eeRunWithErrorTrapImp` and
+`eeRunWithSPMIErrorTrapImp` definitions. Their declarations remain for native
+template callers that are not yet ported. Recovery ref
+`refs/copilot-recovery/error-trap-before-be5f661d` preserves the previous
+native HEAD. Existing managed callback exception, terminal-HRESULT and
+SPMI-only behavior is unchanged.
+
 ## 2026-10-03: Unwind EE callback wrappers
 
 Retired the native definitions for `Compiler::eeReserveUnwindInfo` and
