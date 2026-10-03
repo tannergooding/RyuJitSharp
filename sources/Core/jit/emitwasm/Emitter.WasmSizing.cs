@@ -31,5 +31,30 @@ public partial class Emitter
     {
         throw new FatalJitException(CORJIT_SKIPPED, "Wasm funclet address emission is not ported.");
     }
+
+    public void emitIns_BlockTy(instruction ins)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm block-type emission is not ported.");
+    }
+
+    public void emitIns_I(instruction ins, emitAttr attr, nint immediate)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm instruction-immediate emission is not ported.");
+    }
+
+    public void emitIns_BlockTy(instruction ins, WasmValueType blockType)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm typed block emission is not ported.");
+    }
+
+    public void emitIns_Ty_I(instruction ins, WasmValueType type, uint immediate)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm typed immediate emission is not ported.");
+    }
+
+    public void emitIns_J(instruction ins, emitAttr attr, uint depth, BasicBlock target)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm catch-reference emission is not ported.");
+    }
 }
 #endif

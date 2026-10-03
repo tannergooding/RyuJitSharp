@@ -202,7 +202,7 @@ public sealed partial class CodeGen
 
     private void genEmitFunctionEnd(bool emitTerminalUnreachable = true)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Wasm function-end emission is not ported.");
+        genEmitFunctionEndWasm(emitTerminalUnreachable);
     }
 #endif
 }

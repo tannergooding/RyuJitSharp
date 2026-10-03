@@ -16,13 +16,8 @@ public sealed partial class CodeGen
     private BasicBlock? genPendingCallLabel;
 
 #if TARGET_WASM
-    private WasmControlFlowStack? wasmControlFlowStack;
+    private ArrayStack<WasmInterval>? wasmControlFlowStack;
     private uint wasmCursor;
-
-    // The stack's managed representation remains an explicit dependency boundary.
-    private sealed class WasmControlFlowStack
-    {
-    }
 #endif
 
     private struct EmittedCallReturnInfo
@@ -107,18 +102,10 @@ public sealed partial class CodeGen
         SetStackLevel(0);
 
 #if TARGET_WASM
-        wasmControlFlowStack = CreateWasmControlFlowStack();
+        wasmControlFlowStack = new ArrayStack<WasmInterval>();
         wasmCursor = 0;
 #endif
     }
-
-#if TARGET_WASM
-    private static WasmControlFlowStack CreateWasmControlFlowStack()
-    {
-        // Do not let Wasm initialization succeed until its control-flow stack is ported.
-        throw new FatalJitException(CORJIT_SKIPPED, "Wasm control-flow stack initialization is not ported.");
-    }
-#endif
 
     public void genUpdateLife(GenTree tree)
     {

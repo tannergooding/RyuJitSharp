@@ -408,7 +408,7 @@ public sealed partial class CodeGen
     private void genEmitStartBlock(BasicBlock block)
     {
 #if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "Wasm block-start emission is not ported.");
+        genEmitStartBlockWasm(block);
 #else
         // The native implementation is empty outside Wasm.
 #endif
