@@ -128,6 +128,11 @@ public sealed partial class CodeGen
                 genCodeForSelect(tree.AsConditional());
                 return;
             }
+            case GT_JCMP:
+            {
+                genCodeForJumpCompare(tree.AsOpCC());
+                return;
+            }
 #endif
             case GT_EQ:
             case GT_NE:

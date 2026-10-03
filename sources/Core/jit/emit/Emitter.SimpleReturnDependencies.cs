@@ -1,6 +1,8 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 #if TARGET_LOONGARCH64 || TARGET_RISCV64
+using static RyuJitSharp.GenTreeFlags;
+
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -19,6 +21,11 @@ public partial class Emitter
         throw new FatalJitException(CORJIT_SKIPPED, "Target conditional-branch recording is not implemented.");
     }
 
+    public unsafe void emitIns_Call(in EmitCallParams parameters)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Target call instruction recording is not implemented.");
+    }
+
     public void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, nint imm)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "Target register-immediate recording is not implemented.");
@@ -30,7 +37,11 @@ public partial class Emitter
     }
 
 #if TARGET_LOONGARCH64
-    public void emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, nint disp)
+    public void emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, nint disp
+#if DEBUG
+        , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY
+#endif
+        )
     {
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 relocated-address instruction recording is not ported.");
     }

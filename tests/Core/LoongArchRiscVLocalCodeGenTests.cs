@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.CorInfoHelpFunc;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
@@ -230,6 +231,48 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
 
             Assert.That(failure?.Message, Does.Contain(expectedBoundary));
+        });
+    }
+#endif
+
+#if TARGET_RISCV64
+    [TestCase(GenCondition.CodeKind.EQ)]
+    [TestCase(GenCondition.CodeKind.SGT)]
+    [TestCase(GenCondition.CodeKind.ULE)]
+    public static void JumpCompareDispatchPreservesRiscVConditionalBranchBoundary(
+        GenCondition.CodeKind conditionCode)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+            var trueTarget = new BasicBlock(null, null);
+            var falseTarget = new BasicBlock(null, null);
+            var block = new BasicBlock(null, null);
+            block.SetCond(new FlowEdge(block, trueTarget, null), new FlowEdge(block, falseTarget, null));
+            compiler.compCurBB = block;
+            var first = CodeGenShiftTests.Register(compiler, TYP_LONG, REG_S0);
+            var second = CodeGenShiftTests.Register(compiler, TYP_LONG, REG_S1);
+            var tree = new GenTreeOpCC(GT_JCMP, TYP_VOID, new GenCondition(conditionCode), first, second);
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
+
+            Assert.That(failure?.Message,
+                Does.Contain("Target conditional-branch recording is not implemented."));
+        });
+    }
+#endif
+
+#if TARGET_LOONGARCH64
+    [Test]
+    public static void HelperCallGenerationReachesTheTargetCallRecordingBoundary()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var failure = Assert.Throws<FatalJitException>(() =>
+                codeGen.genEmitHelperCall(CORINFO_HELP_ASSIGN_REF, 0, EA_PTRSIZE));
+
+            Assert.That(failure?.Message,
+                Does.Contain("Target call instruction recording is not implemented."));
         });
     }
 #endif

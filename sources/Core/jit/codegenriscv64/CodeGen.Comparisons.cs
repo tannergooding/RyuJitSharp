@@ -138,5 +138,83 @@ public sealed partial class CodeGen
 
         genProduceReg(tree);
     }
+
+    public void genCodeForJumpCompare(GenTreeOpCC tree)
+    {
+        var block = _compiler.compCurBB;
+        assert(block is not null);
+        assert(block!.KindIs(BBJ_COND));
+        assert(tree.Oper is GT_JCMP);
+        assert(tree.TypeIs(TYP_VOID));
+        assert(tree.RegNum is REG_NA);
+
+        var op1 = tree.Op1;
+        var op2 = tree.Op2;
+        assert(!op1.IsUsedFromMemory);
+        assert(!op2.IsUsedFromMemory);
+        assert(!op1.IsContainedIntOrIImmed || op1.IsIntegralConst(0));
+        assert(!op2.IsContainedIntOrIImmed || op2.IsIntegralConst(0));
+
+        var condition = tree.Condition;
+        genConsumeOperands(tree);
+        var reg1 = op1.IsContainedIntOrIImmed ? REG_R0 : op1.RegNum;
+        var reg2 = op2.IsContainedIntOrIImmed ? REG_R0 : op2.RegNum;
+        if (condition.Code is GenCondition.CodeKind.SGT or GenCondition.CodeKind.UGT or
+            GenCondition.CodeKind.SLE or GenCondition.CodeKind.ULE)
+        {
+            condition = GenCondition.Swap(condition);
+            (reg1, reg2) = (reg2, reg1);
+        }
+
+        instruction ins = INS_invalid;
+        switch (condition.Code)
+        {
+            case GenCondition.CodeKind.EQ:
+            {
+                ins = INS_beq;
+                break;
+            }
+            case GenCondition.CodeKind.NE:
+            {
+                ins = INS_bne;
+                break;
+            }
+            case GenCondition.CodeKind.SGE:
+            {
+                ins = INS_bge;
+                break;
+            }
+            case GenCondition.CodeKind.UGE:
+            {
+                ins = INS_bgeu;
+                break;
+            }
+            case GenCondition.CodeKind.SLT:
+            {
+                ins = INS_blt;
+                break;
+            }
+            case GenCondition.CodeKind.ULT:
+            {
+                ins = INS_bltu;
+                break;
+            }
+            default:
+            {
+                NO_WAY("unexpected branch condition");
+                break;
+            }
+        }
+
+        assert((reg1 is REG_R0) || Emitter.isGeneralRegister(reg1));
+        assert((reg2 is REG_R0) || Emitter.isGeneralRegister(reg2));
+        Emitter.emitIns_J_cond_la(ins, block!.TrueTarget, reg1, reg2);
+
+        var falseTarget = block.FalseTarget;
+        if (!block.CanRemoveJumpToTarget(falseTarget, _compiler))
+        {
+            inst_JMP(EJ_jmp, falseTarget);
+        }
+    }
 }
 #endif

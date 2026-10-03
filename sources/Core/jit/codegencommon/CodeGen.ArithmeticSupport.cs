@@ -128,7 +128,7 @@ public sealed partial class CodeGen
 
 #endif
 
-#if !TARGET_XARCH && !TARGET_ARM64
+#if !TARGET_XARCH && !TARGET_ARM64 && !TARGET_LOONGARCH64
     public void genEmitHelperCall(CorInfoHelpFunc helper, int argSize, emitAttr retSize,
         regNumber callTargetReg = REG_NA)
     {
