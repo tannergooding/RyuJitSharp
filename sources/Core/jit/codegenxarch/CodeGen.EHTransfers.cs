@@ -97,6 +97,11 @@ public sealed partial class CodeGen
         Emitter.RequireSupportedInstructionRecording();
         // The emitter selects ADR or ADRP+ADD after laying out the target.
         Emitter.emitIns_R_L(INS_adr, EA_PTRSIZE, block.Target, REG_INTRET);
+#elif TARGET_WASM
+        // TODO-WASM: return the actual ResumeIP here?
+        // The runtime expects a return value from a catch funclet,
+        // but nothing will depend on it.
+        GetEmitter().emitIns_I(INS_i32_const, EA_4BYTE, 0);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Catch-return generation requires xarch.");
 #else
