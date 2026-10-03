@@ -23,6 +23,7 @@ internal static unsafe class EmitterByteOutputTests
     [TestCase(2, 0x12345678L, "7856", 16)]
 #if TARGET_X86
     [TestCase(4, 4294967295L, "FFFFFFFF", 16)]
+    [TestCase(4, long.MaxValue, "FFFFFFFF", 16)]
 #endif
     [TestCase(4, 0xFEDCBA98L, "98BADCFE", 16)]
     [TestCase(8, 0x123456789ABCDEFL, "EFCDAB8967452301", 16)]
