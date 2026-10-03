@@ -30,6 +30,13 @@ pinned oracle `33baf8ee337b20dd0f184b69a6f09be92850bf9e`. Recovery ref
 HEAD. Untranslated Wasm register-allocation call sites remain; no Wasm
 execution or global retirement-debt claim is made.
 
+## 2026-10-03: ARM64 condition mapping
+
+Added the complete mapping from ARM64 jump kinds to instruction condition
+codes, preserving the native invalid-condition assertion path. This is a
+scoped managed utility; the full ARM64 backend still has unrelated compilation
+blockers, so this milestone does not claim ARM64 code-generation parity.
+
 ## 2026-10-03: Memory SSA accessor retirement
 
 Retired the residual `Compiler::GetMemoryPerSsaData` accessor after confirming
