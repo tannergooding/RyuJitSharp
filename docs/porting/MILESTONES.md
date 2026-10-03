@@ -52,11 +52,11 @@ remain blocked by unrelated unsupported-platform/compiler diagnostics and are
 not claimed as passing.
 
 Native ARM, ARM64, LoongArch64, and RISC-V definitions were each verified
-byte-identical to the pinned oracle before retirement (107 deletion lines
-total). Native `99901ba4` amends the consolidated residual commit, sole-parented
-to the pinned oracle. The shared `emit.h` declaration remains for untranslated
-ARM/ARM64 callers. Recovery ref
-`refs/copilot-recovery/emit-frame-reference-before-0803f7da` preserves the
+byte-identical to the pinned oracle before retirement. Native `09779822` retires
+the four definitions and shared `emit.h` declaration (108 lines total) in the
+consolidated residual commit, sole-parented to the pinned oracle. Residual
+ARM/ARM64 callers intentionally need no retained declaration. Recovery ref
+`refs/copilot-recovery/emit-frame-reference-decl-before-99901ba` preserves the
 prior native HEAD. No new runtime or emitted-code parity is claimed.
 
 ## 2026-10-03: GC diagnostic prototype reconciliation

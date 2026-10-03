@@ -12004,7 +12004,7 @@
       "native": ["src\\coreclr\\jit\\emitxarch.cpp:emitDispFrameRef", "src\\coreclr\\jit\\emitarm.cpp:emitDispFrameRef", "src\\coreclr\\jit\\emitarm64.cpp:emitDispFrameRef", "src\\coreclr\\jit\\emitloongarch64.cpp:emitDispFrameRef", "src\\coreclr\\jit\\emitriscv64.cpp:emitDispFrameRef", "src\\coreclr\\jit\\emit.h:emitDispFrameRef"],
       "csharp": ["sources\\Core\\jit\\emitxarch\\Emitter.InstructionDisplay.Support.cs:emitDispFrameRef"],
       "sourceCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
-      "status": "Complete xarch/ARM/ARM64 formatting and terminating LoongArch64/RISC-V NYI branches. All four retained native definitions were retired at 99901ba4; preserve the shared emit.h declaration only because residual ARM/ARM64 callers remain. Windows-x64 tests pass and ARM target checks are managed projections, not runtime/generated-code parity."
+      "status": "Complete xarch/ARM/ARM64 formatting and terminating LoongArch64/RISC-V NYI branches. Native 09779822 retires all four definitions and the completed shared emit.h declaration (108 lines total); residual callers do not require a declaration in the non-building work list. Windows-x64 tests pass and ARM target checks are managed projections, not runtime/generated-code parity."
     },
     {
       "area": "native-debug-map-publication",
