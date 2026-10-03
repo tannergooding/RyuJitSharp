@@ -3,6 +3,10 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+#if DEBUG
+using System.Runtime.CompilerServices;
+#endif
+
 #if TARGET_WASM
 namespace RyuJitSharp;
 
@@ -612,9 +616,182 @@ public sealed partial class CodeGen
         WasmProduceReg(call);
     }
 
-    private void genCallInstruction(GenTreeCall call)
+    private unsafe void genCallInstruction(GenTreeCall call)
     {
-        WasmCodegenDependencyNotPorted(call, nameof(genCallInstruction));
+        ensureCurrentFuncIsUnwindable();
+
+        var parameters = new EmitCallParams
+        {
+            isJump = call.IsFastTailCall,
+            hasAsyncRet = call.IsAsync,
+            returnValueCall = call,
+        };
+
+#if DEBUG
+        if (!call.IsHelperCall())
+        {
+            parameters.sigInfo = new StrongBox<CORINFO_SIG_INFO>(call._callSig);
+        }
+#endif
+
+        var target = getCallTarget(call, out parameters.methHnd);
+        var typeStack = new ArrayStack<CorInfoWasmType>();
+
+        // Fast tailcalls overwrite the node type with TYP_VOID, but the return_call_indirect
+        // signature must still match the current function's return type.
+        var callRetType = call.IsFastTailCall ? call._returnType : genActualType(call);
+        if (call.ShouldHaveRetBufArg || (callRetType is TYP_VOID))
+        {
+            typeStack.Push(CORINFO_WASM_TYPE_VOID);
+        }
+        else if (callRetType is TYP_STRUCT)
+        {
+            var retWasmType = _compiler.info.compCompHnd->getWasmLowering(call.RetClsHnd);
+            // A wider struct is returned through a hidden buffer and must take the branch above.
+            assert(retWasmType is not CORINFO_WASM_TYPE_VOID);
+            assert(_compiler.info.compCompHnd->getClassSize(call.RetClsHnd) <=
+                genTypeSize(WasmClassifier.ToJitType(retWasmType)));
+            typeStack.Push(retWasmType);
+        }
+        else
+        {
+            // Normalize small integer return types.
+            typeStack.Push(WasmValueTypeToCorInfoWasmType(
+                regNumberExtensions.ActualTypeToWasmValueType(callRetType)));
+        }
+
+        foreach (var arg in call.Args.Args)
+        {
+            foreach (ref readonly var segment in arg.AbiInfo.Segments)
+            {
+                assert(segment.IsPassedInRegister);
+                var wasmType = regNumberExtensions.WasmRegToType(segment.Register);
+                assert(wasmType < WasmValueType.Count);
+                typeStack.Push(WasmValueTypeToCorInfoWasmType(wasmType));
+            }
+        }
+
+        // Report managed call signatures to R2R so it can generate Wasm thunks.
+        if (!call.IsHelperCall() && !call.IsUnmanaged)
+        {
+            CORINFO_SIG_INFO sigInfoLocal = default;
+            CORINFO_SIG_INFO* sigInfoCall = null;
+
+            if ((call._callSig.pSig is not null) || (call._callSig.methodSignature is not null))
+            {
+                sigInfoLocal = call._callSig;
+                sigInfoCall = &sigInfoLocal;
+            }
+
+            if ((sigInfoCall is null) &&
+                (parameters.methHnd != NO_METHOD_HANDLE) &&
+                (Compiler.eeGetHelperNum(parameters.methHnd) is CORINFO_HELP_UNDEF))
+            {
+                _compiler.eeGetMethodSig(parameters.methHnd, out sigInfoLocal);
+                sigInfoCall = &sigInfoLocal;
+
+                if ((callRetType is TYP_REF) &&
+                    (sigInfoLocal.retType is CORINFO_TYPE_VOID) &&
+                    (sigInfoLocal.callConv is CORINFO_CALLCONV_HASTHIS))
+                {
+                    var methodFlags = _compiler.info.compCompHnd->getMethodAttribs(parameters.methHnd);
+                    var stringClass = _compiler.info.compCompHnd->getBuiltinClass(CLASSID_STRING);
+
+                    if (((methodFlags & CORINFO_FLG_CONSTRUCTOR) != 0) &&
+                        (stringClass != NO_CLASS_HANDLE) &&
+                        (_compiler.info.compCompHnd->getMethodClass(parameters.methHnd) == stringClass))
+                    {
+                        // String constructors are emitted as static string-returning calls.
+                        sigInfoLocal.retType = CORINFO_TYPE_CLASS;
+                        sigInfoLocal.callConv = CORINFO_CALLCONV_DEFAULT;
+                    }
+                }
+            }
+
+            if (sigInfoCall is not null)
+            {
+                _compiler.info.compCompHnd->recordWasmManagedCallSig(sigInfoCall);
+            }
+        }
+
+        CORINFO_WASM_TYPE_SYMBOL_HANDLE wasmSignature;
+        fixed (CorInfoWasmType* types = typeStack.Data())
+        {
+            wasmSignature = _compiler.info.compCompHnd->getWasmTypeSymbol(types, typeStack.Height());
+        }
+
+        // SuppressGCTransition skips the P/Invoke prolog that normally publishes the shadow SP.
+        // Publish it here so the native callee allocates below this frame.
+        if (call.IsUnmanaged && call.IsSuppressGCTransition)
+        {
+            GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((int)GetStackPointerRegIndex()));
+            var stackPointer = unchecked((nint)_compiler.eeGetWasmWellKnownGlobals().stackPointer);
+            GetEmitter().emitIns_I(INS_global_set, EA_HANDLE_CNS_RELOC, stackPointer);
+        }
+
+        if (target is not null)
+        {
+            // Wasm targets are table indices and must be consumed for call_indirect.
+            genConsumeReg(target);
+
+            parameters.callType = EC_INDIR_R;
+            genEmitWasmCallWithCurrentGC(call, wasmSignature, ref parameters);
+        }
+        else
+        {
+            assert(call.IsHelperCall() || (call._callType is CT_USER_FUNC));
+
+            if (call.IsHelperCall())
+            {
+                assert(!call.IsFastTailCall);
+
+                if (call._directCallAddress is not null)
+                {
+                    parameters.addr = call._directCallAddress;
+                }
+                else
+                {
+                    var helperNum = Compiler.eeGetHelperNum(parameters.methHnd);
+                    noway_assert(helperNum is not CORINFO_HELP_UNDEF);
+                    var helperLookup = _compiler.compGetHelperFtn(helperNum);
+                    assert(helperLookup.accessType is IAT_VALUE);
+                    parameters.addr = helperLookup.addr;
+                }
+            }
+            else
+            {
+                parameters.addr = call._directCallAddress;
+            }
+
+            parameters.callType = EC_FUNC_TOKEN;
+            genEmitWasmCallWithCurrentGC(call, wasmSignature, ref parameters);
+        }
+    }
+
+    private unsafe void genEmitWasmCallWithCurrentGC(
+        GenTreeCall call, CORINFO_WASM_TYPE_SYMBOL_HANDLE wasmSignature, ref EmitCallParams parameters)
+    {
+        parameters.ptrVars = GCInfo.gcVarPtrSetCur;
+        parameters.gcrefRegs = GCInfo.gcRegGCrefSetCur;
+        parameters.byrefRegs = GCInfo.gcRegByrefSetCur;
+        _ = wasmSignature;
+        // The managed Wasm emitter has no call-instruction entry point yet.
+        WasmCodegenDependencyNotPorted(call, "Emitter.emitIns_Call");
+    }
+
+    private static CorInfoWasmType WasmValueTypeToCorInfoWasmType(WasmValueType type)
+    {
+        return type switch
+        {
+            WasmValueType.I32 => CORINFO_WASM_TYPE_I32,
+            WasmValueType.I64 => CORINFO_WASM_TYPE_I64,
+            WasmValueType.F32 => CORINFO_WASM_TYPE_F32,
+            WasmValueType.F64 => CORINFO_WASM_TYPE_F64,
+            WasmValueType.V128 => CORINFO_WASM_TYPE_V128,
+            // ExnRef is a valid Wasm type code but is not named in CorInfoWasmType.
+            WasmValueType.ExnRef => unchecked((CorInfoWasmType)0x69),
+            _ => throw new FatalJitException(CORJIT_INTERNALERROR, "Invalid WebAssembly value type."),
+        };
     }
 
     private void genCodeForNullCheck(GenTreeIndir tree)
