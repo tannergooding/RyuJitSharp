@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Funclet-count accessor retirement
+
+Completed the shared `Compiler::compFuncCount` binding with its native
+`fgFuncletsCreated` assertion and added a direct assertion to the root-only
+funclet test. Full-analysis Windows-x64 Debug and Release compiler builds pass,
+and the focused test passes 1/1 in both configurations.
+
+The exact 5-line inline accessor was removed from the consolidated native
+residual at HEAD `2f7bc1c5b189d663a7f09ea11c35de6dbd0478b3`, solely parented to
+pinned oracle `33baf8ee337b20dd0f184b69a6f09be92850bf9e`. Recovery ref
+`refs/copilot-recovery/comp-func-count-before-86b0cad` preserves the prior
+HEAD. Untranslated Wasm register-allocation call sites remain; no Wasm
+execution or global retirement-debt claim is made.
+
 ## 2026-10-03: Memory SSA accessor retirement
 
 Retired the residual `Compiler::GetMemoryPerSsaData` accessor after confirming

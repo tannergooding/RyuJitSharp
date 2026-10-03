@@ -25,6 +25,7 @@ internal static class FuncletCreationTests
             Assert.That(compiler.fgCreateFunclets(), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
             Assert.That(compiler.fgFuncletsCreated, Is.True);
             Assert.That(compiler.compFuncInfoCount, Is.EqualTo(1));
+            Assert.That(compiler.compFuncCount(), Is.EqualTo(1));
             Assert.That(compiler.funCurrentFunc().funKind, Is.EqualTo(FUNC_ROOT));
             Assert.That(compiler.funCurrentFunc().GetStartBlock(compiler), Is.SameAs(root));
             Assert.That(compiler.compVMClauseOrderToEHTabOrder, Is.Null);

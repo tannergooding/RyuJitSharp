@@ -126,6 +126,12 @@ public partial class Compiler
         return compCurrFuncIdx;
     }
 
+    public ushort compFuncCount()
+    {
+        assert(fgFuncletsCreated);
+        return compFuncInfoCount;
+    }
+
     public void funSetCurrentFunc(uint funcIndex)
     {
         assert(fgFuncletsCreated);
