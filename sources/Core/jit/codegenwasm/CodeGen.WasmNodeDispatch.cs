@@ -431,7 +431,33 @@ public sealed partial class CodeGen
 
     private void genCodeForStoreLclVar(GenTreeLclVar tree)
     {
-        WasmCodegenDependencyNotPorted(tree, nameof(genCodeForStoreLclVar));
+        assert(tree.Oper is GT_STORE_LCL_VAR);
+        var op1 = tree.Op1;
+        assert(!op1.IsMultiRegNode);
+        genConsumeRegs(op1);
+
+        // Stack stores are rewritten to STOREIND because their address must be first on the Wasm operand stack.
+        ref var varDsc = ref _compiler.lvaGetDesc(tree.LclNum);
+        var targetReg = tree.RegNum;
+        var type = varDsc.GetRegisterType(tree);
+        assert(genIsValidReg(targetReg) && varDsc.lvIsRegCandidate);
+
+        var wasmLclIndex = regNumberExtensions.WasmRegToIndex(targetReg);
+        GetEmitter().emitIns_I(INS_local_set, type.EmitSize, unchecked((nint)wasmLclIndex));
+        genUpdateLifeStore(tree, targetReg, ref varDsc);
+    }
+
+    private void genUpdateLifeStore(GenTree tree, regNumber targetReg, ref LclVarDsc varDsc)
+    {
+        if (targetReg != REG_NA)
+        {
+            genProduceReg(tree);
+        }
+        else
+        {
+            genUpdateLife(tree);
+            varDsc.RegNum = REG_STK;
+        }
     }
 
     private void genCodeForPhysReg(GenTreePhysReg tree)
