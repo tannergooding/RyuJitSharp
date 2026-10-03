@@ -392,7 +392,41 @@ public sealed partial class CodeGen
 
     private void genCodeForLclVar(GenTreeLclVar tree)
     {
-        WasmCodegenDependencyNotPorted(tree, nameof(genCodeForLclVar));
+        assert(tree.OperIs(GT_LCL_VAR) && !tree.IsMultiReg);
+        ref var varDsc = ref _compiler.lvaGetDesc(tree.LclNum);
+
+        // Wasm cannot reload at the point of use without inserting into an emitted instruction group.
+        // Lowering orders nodes to obey the value-stack constraints, so only non-candidates need WasmProduceReg.
+        if (!varDsc.lvIsRegCandidate)
+        {
+            var type = varDsc.GetRegisterType(tree);
+
+            if (type is TYP_SIMD12)
+            {
+                genLoadLclTypeSimd12(tree);
+            }
+            else
+            {
+                GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetFramePointerRegIndex()));
+                GetEmitter().emitIns_S(ins_Load(type), type.EmitSize, tree.LclNum, 0);
+            }
+
+            WasmProduceReg(tree);
+        }
+        else
+        {
+            assert(genIsValidReg(varDsc.RegNum));
+            var type = varDsc.GetRegisterType(tree);
+            var wasmLclIndex = regNumberExtensions.WasmRegToIndex(varDsc.RegNum);
+
+            GetEmitter().emitIns_I(INS_local_get, type.EmitSize, unchecked((nint)wasmLclIndex));
+
+            // A register local may have a different type than the tree, so truncate when needed.
+            if (tree.Type is TYP_INT && varDsc.Type is TYP_LONG)
+            {
+                GetEmitter().emitIns(INS_i32_wrap_i64);
+            }
+        }
     }
 
     private void genCodeForStoreLclVar(GenTreeLclVar tree)
