@@ -7,6 +7,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
@@ -113,6 +114,39 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         });
     }
 
+    [TestCase(GT_NEG, TYP_INT)]
+    [TestCase(GT_NOT, TYP_INT)]
+#if TARGET_LOONGARCH64
+    [TestCase(GT_NEG, TYP_FLOAT)]
+    [TestCase(GT_NEG, TYP_DOUBLE)]
+#endif
+    public static void UnaryCodegenReachesTheTargetInstructionBoundary(genTreeOps oper, var_types type)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+
+            var isFloating = type is TYP_FLOAT or TYP_DOUBLE;
+            GenTree operand = isFloating
+                ? compiler.gtNewDconNode(type, 1.0)
+                : compiler.gtNewIconNode(type, 1);
+            operand.RegNum = isFloating ? REG_F0 : REG_S0;
+            var tree = compiler.gtNewUnaryNode(oper, type, operand);
+            tree.RegNum = isFloating ? REG_F2 : REG_S1;
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForNegNot(tree.AsUnOp()));
+#if TARGET_LOONGARCH64
+            var expectedBoundary = oper is GT_NOT
+                ? "Target two-register instruction recording is not implemented."
+                : "LoongArch64 three-register instruction recording is not ported.";
+            Assert.That(failure?.Message, Does.Contain(expectedBoundary));
+#else
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_INTERNALERROR));
+#endif
+        });
+    }
+
 #if FEATURE_SIMD
     [Test]
     public static void Simd12LocalVariableStoreStopsAtTheTargetBoundary()
@@ -174,5 +208,8 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             JitTls.Compiler = previous;
         }
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
+    private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
 }
 #endif

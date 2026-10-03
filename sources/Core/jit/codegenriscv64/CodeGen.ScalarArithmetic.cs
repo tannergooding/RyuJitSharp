@@ -6,6 +6,7 @@
 #if TARGET_RISCV64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
+using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
@@ -14,6 +15,28 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+    public void genCodeForNegNot(GenTreeUnOp tree)
+    {
+        assert(tree.Oper is GT_NEG or GT_NOT);
+
+        var targetType = tree.Type;
+        assert(tree.Oper is not GT_NOT || !varTypeIsFloating(targetType));
+
+        var targetReg = tree.RegNum;
+        var ins = genGetInsForOper(tree);
+
+        assert(!tree.IsContained);
+        assert(targetReg != REG_NA);
+
+        var operand = tree.Op1;
+        assert(!operand.IsContained);
+        var operandReg = genConsumeReg(operand);
+        var attr = emitActualTypeSize(tree);
+        Emitter.emitIns_R_R(ins, attr, targetReg, operandReg);
+
+        genProduceReg(tree);
+    }
+
     public void genCodeForIncSaturate(GenTree tree)
     {
         var targetReg = tree.RegNum;
