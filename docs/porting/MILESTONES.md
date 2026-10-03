@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Unwind EE callback wrappers
+
+Retired the native definitions for `Compiler::eeReserveUnwindInfo` and
+`Compiler::eeAllocUnwindInfo` after confirming the complete managed wrappers
+preserve debug diagnostics, matched-VM gating and callback arguments.
+Full-analysis Windows-x64 `UnwindPublicationTests` pass 11/11 Debug and 6/6
+Release, covering reservations, allocations, hot/cold records, funclets and
+diagnostics.
+
+Native `be5f661d` amends the consolidated residual commit, sole-parented to the
+pinned oracle, and removes both complete wrapper definitions. The declarations
+remain because native callers in the unported unwind implementations still
+depend on them. Recovery ref
+`refs/copilot-recovery/unwind-ee-wrappers-before-1f5cb902` preserves the
+previous native HEAD. Other-target unwind generation, B395 CFI and runtime
+parity are not claimed.
+
 ## 2026-10-03: Cross-target code allocation
 
 Completed the whole `Compiler::eeAllocMem` method and its relocation-policy

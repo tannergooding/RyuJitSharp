@@ -1418,7 +1418,9 @@ compilation claim. Default feature settings are unchanged; the new 99 ARM64 and
 Shared generation, emission, metadata and prolog orchestration retain their
 native target branches. Unsupported backends still reject inside the first
 `genGenerateCode` phase, preserving output borrowing and cleanup; this does not
-activate a backend or change the `eeAllocMem`, late-disassembly or B395 policies.
+activate a backend or change late-disassembly or B395 policies. The complete
+`eeAllocMem` allocation and relocation policy has since been ported across its
+native target branches.
 Wasm `emitUpdateFuncletLocations` remains a typed terminating dependency with
 its native implementation retained. GC/group diagnostics are shared, including
 real pinned field addresses and existing diffable masking; their source
