@@ -60,6 +60,12 @@ public sealed partial class CodeGen
         NYI_RISCV64("genSIMDIntrinsicBinOp-----unimplemented/unused on RISCV64 yet----");
     }
 
+    // The upstream implementation is an unused NYI path and does not inspect the unported SIMD node.
+    public void genSIMDIntrinsicGetItem(GenTree simdNode)
+    {
+        NYI_RISCV64("genSIMDIntrinsicGetItem-----unimplemented/unused on RISCV64 yet----");
+    }
+
     // GenTreeSIMD is not ported, and this unused helper terminates before inspecting its node.
     public void genSIMDIntrinsicRelOp(GenTree simdNode)
     {

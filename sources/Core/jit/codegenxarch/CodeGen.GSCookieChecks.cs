@@ -102,6 +102,46 @@ public sealed partial class CodeGen
         inst_JMP(EJ_je, gsCheckBlk);
         genEmitHelperCall(CORINFO_HELP_FAIL_FAST, 0, EA_UNKNOWN);
         genDefineTempLabel(gsCheckBlk);
+#elif TARGET_LOONGARCH64
+        noway_assert((_compiler.gsGlobalSecurityCookieAddr is not null) ||
+            (_compiler.gsGlobalSecurityCookieVal != 0));
+
+        var tempRegs = genGetGSCookieTempRegs(tailCall, null);
+        assert(tempRegs != RBM_NONE);
+        var regGSConst = (regNumber)BitOperations.TrailingZeroCount((ulong)tempRegs.IntRegSet);
+        tempRegs &= ~regMaskTP.CreateFromRegNum(regGSConst, regGSConst.SingleTypeMask);
+        assert(tempRegs != RBM_NONE);
+        var regGSValue = (regNumber)BitOperations.TrailingZeroCount((ulong)tempRegs.IntRegSet);
+
+        if (_compiler.gsGlobalSecurityCookieAddr is null)
+        {
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, regGSConst, _compiler.gsGlobalSecurityCookieVal);
+        }
+        else
+        {
+            var cookieAddress = unchecked((nint)_compiler.gsGlobalSecurityCookieAddr);
+            if (_compiler.opts.compReloc)
+            {
+                Emitter.emitIns_R_AI(INS_bl, EA_PTR_DSP_RELOC, regGSConst, cookieAddress);
+            }
+            else
+            {
+                Emitter.emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, regGSConst,
+                    (cookieAddress & unchecked((nint)0xfffff000u)) >> 12);
+                Emitter.emitIns_R_I(INS_lu32i_d, EA_PTRSIZE, regGSConst, cookieAddress >> 32);
+                Emitter.emitIns_R_R_I(INS_ldptr_d, EA_PTRSIZE, regGSConst, regGSConst,
+                    (cookieAddress & 0xfff) >> 2);
+            }
+
+            _regSet.verifyRegUsed(regGSConst);
+        }
+
+        Emitter.emitIns_R_S(INS_ld_d, EA_PTRSIZE, regGSValue, _compiler.lvaGSSecurityCookie, 0);
+
+        var gsCheckBlk = genCreateTempLabel();
+        Emitter.emitIns_J_cond_la(INS_beq, gsCheckBlk, regGSConst, regGSValue);
+        genEmitHelperCall(CORINFO_HELP_FAIL_FAST, 0, EA_UNKNOWN, regGSConst);
+        genDefineTempLabel(gsCheckBlk);
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "GS-cookie checks require xarch.");
 #endif

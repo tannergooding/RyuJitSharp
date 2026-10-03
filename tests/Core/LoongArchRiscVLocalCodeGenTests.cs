@@ -25,6 +25,19 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 {
 #if TARGET_LOONGARCH64
     [Test]
+    public static void GSCookieCheckReachesTheLoongArchEmissionBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.gsGlobalSecurityCookieVal = 0x1234;
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genEmitGSCookieCheck(false));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+        });
+    }
+
+    [Test]
     public static void TreeNodeDispatchPreservesTheLoongArchConstantBoundary()
     {
         WithCodeGen((_, codeGen) =>
@@ -569,6 +582,18 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         {
             var node = new GenTreeVecCon(TYP_SIMD16);
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genSIMDIntrinsicBinOp(node));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+        });
+    }
+
+    [Test]
+    public static void SimdGetItemPreservesTheRiscVNyiBoundary()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var node = new GenTreeVecCon(TYP_SIMD16);
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genSIMDIntrinsicGetItem(node));
 
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
         });
