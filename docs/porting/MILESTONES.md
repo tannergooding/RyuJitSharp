@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Xarch memory-operand size retirement
+
+The complete `emitter::emitGetMemOpSize` tuple-width calculation is mapped to
+`Emitter.MemoryOperandSize.cs`, with the managed instruction-display and static
+output callers still bound. Its 3,925-byte native definition matches the pinned
+oracle (SHA-256
+`3E47A474CDBA60EA5CE635C12CD1B457AC0A57FFEF899DE99844CFBB691D9933`).
+
+The existing full-analysis Windows-x64 `memoryAndBranchByteOutput` selection
+passes 635 Debug / 609 Release with zero skips; it includes
+`EmitterMemoryOutputTests` and tuple memory-width cases. Native `40a3784d`
+retires the whole xarch definition and its declaration (144 lines) in the
+consolidated residual commit, sole-parented to the pinned oracle. Recovery ref
+`refs/copilot-recovery/emit-mem-op-size-before-20a01c44` preserves prior native
+HEAD `20a01c44`. No new generated-code or runtime parity is claimed.
+
 ## 2026-10-03: Jump-list diagnostic retirement
 
 Completed the whole DEBUG `emitter::emitDispJumpList` mapping in
@@ -52,12 +68,13 @@ remain blocked by unrelated unsupported-platform/compiler diagnostics and are
 not claimed as passing.
 
 Native ARM, ARM64, LoongArch64, and RISC-V definitions were each verified
-byte-identical to the pinned oracle before retirement. Native `09779822` retires
-the four definitions and shared `emit.h` declaration (108 lines total) in the
-consolidated residual commit, sole-parented to the pinned oracle. Residual
-ARM/ARM64 callers intentionally need no retained declaration. Recovery ref
-`refs/copilot-recovery/emit-frame-reference-decl-before-99901ba` preserves the
-prior native HEAD. No new runtime or emitted-code parity is claimed.
+byte-identical to the pinned oracle before retirement. Native `20a01c44`
+retires the four definitions and shared `emit.h` declaration (108 lines total)
+in the consolidated residual commit, sole-parented to the pinned oracle.
+Residual ARM/ARM64 callers intentionally need no retained declaration.
+Recovery ref
+`refs/copilot-recovery/emit-frame-reference-decl-before-99901ba` preserves
+prior native HEAD `09779822`. No new runtime or emitted-code parity is claimed.
 
 ## 2026-10-03: GC diagnostic prototype reconciliation
 
@@ -83,8 +100,14 @@ residual native body and callers were already absent; native `43f9ce50` removes
 the final one-line `emit.h` prototype, amending the consolidated residual
 commit. Recovery ref
 `refs/copilot-recovery/emit-disp-iglist-decl-before-dbb6f11a` preserves the prior
-native HEAD. This declaration-only reconciliation required no new managed test
-run and makes no new parity claim.
+native HEAD. The accepted `emitDispIG` implementation in the same managed
+partial was also already absent, along with its residual native callers; native
+`20a01c44` removes its stale four-line shared prototype. Recovery ref
+`refs/copilot-recovery/emit-disp-ig-decl-before-09779822` preserves the prior
+native HEAD `09779822`. Both declaration-only reconciliations reuse existing
+full-analysis Windows-x64 `EmitterGroupDiagnosticsTests` evidence (298 Debug /
+281 Release); they required no new managed test run and make no new parity
+claim.
 
 ## 2026-10-03: Instruction-group allocator retirement
 
