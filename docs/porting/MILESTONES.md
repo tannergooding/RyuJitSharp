@@ -36,6 +36,20 @@ native HEAD. A broader ARM64 label-class selection has two failures in
 `ChangedCallLivenessReachesTheRequiredPaddingDependency`, outside this
 diagnostic; no generated-code or runtime parity is claimed.
 
+## 2026-10-03: GC diagnostic prototype reconciliation
+
+Reused the accepted shared-GC diagnostic mapping and its full-analysis evidence:
+111 Debug / 49 Release Windows executions, 100 / 44 Linux-target Core
+executions, and 5/5 SysV target executions. `EmitterSharedGCDiagnosticClosureTests`
+directly exercises the managed `emitDispGCinfo` implementation. The pinned
+oracle has no native call sites for this standalone diagnostic, and the native
+body was already absent from `runtime-port`; native `0803f7da` removes its last
+one-line `emit.h` prototype while amending the consolidated residual commit.
+Recovery ref
+`refs/copilot-recovery/emit-disp-gcinfo-decl-before-43f9ce50` preserves the
+prior native HEAD. This declaration-only reconciliation reuses prior evidence
+and makes no new parity claim.
+
 ## 2026-10-03: Group-list prototype reconciliation
 
 Reused the accepted `Emitter.GroupDiagnostics.cs::emitDispIGlist` mapping and
