@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Retiring the LSRA reference-node pool
+
+The committed managed `RefInfoListNodePool` and `LinearScan` reference-building
+call sites match the retained native pool contract. Its 70-line constructor,
+`GetNode`, and `ReturnNode` source block matched the pinned oracle exactly
+(SHA-256 `ebebdbd75d2e9743d89887f3c16a00a5a89301190d36b8e24a42fdb92c8ed8ce`).
+The existing LIFO reuse test passed 1/1 in Debug and Release. Consolidated
+native HEAD `4ae417c8b07522b8e11f19703aa9942d6db4ea1b` removes the three bodies,
+pool class/member, and exclusive friendship declarations (119 lines); no
+`RefInfoListNodePool` or `listNodePool` references remain in `runtime-port`.
+The commit remains solely parented to pinned oracle `33baf8ee337b20dd0f184b69a6f09be92850bf9e`;
+recovery ref `refs/copilot-recovery/lsra-refinfo-pool-before-dc3a4c3c`
+preserves prior HEAD. No new managed behavior or parity claim is made.
+
 ## 2026-10-03: Isolating xarch epilog sources
 
 Moved the x86/x64 root epilog and callee-save restoration implementation into
