@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Runtime.CompilerServices;
+
 namespace RyuJitSharp;
 
 public partial class Compiler
@@ -16,10 +18,49 @@ public partial class Compiler
 #endif
 
 #if TARGET_RISCV64 || TARGET_LOONGARCH64
+    /// <remarks>Boxed records keep returned references stable when the cache grows.</remarks>
     public unsafe ref CORINFO_FPSTRUCT_LOWERING GetFpStructLowering(CORINFO_CLASS_HANDLE structHandle)
     {
-        NYI("Compiler::GetFpStructLowering (compiler.cpp), RISC-V64/LoongArch64 ABI runtime lowering cache");
-        throw new FatalJitException(CORJIT_IMPLLIMITATION, "RISC-V64/LoongArch64 floating-point struct lowering is not ported.");
+        var cache = _fpStructLoweringCache ??= [];
+        var key = new Pointer<CORINFO_CLASS_STRUCT_>(structHandle);
+
+        if (!cache.TryGetValue(key, out var lowering))
+        {
+            lowering = new StrongBox<CORINFO_FPSTRUCT_LOWERING>();
+
+            fixed (CORINFO_FPSTRUCT_LOWERING* loweringPointer = &lowering.Value)
+            {
+                info.compCompHnd->getFpStructLowering(structHandle, loweringPointer);
+            }
+
+            cache[key] = lowering;
+
+#if DEBUG
+            if (verbose)
+            {
+                jitprintf($"**** getFpStructInRegistersInfo({FMT_PTR((void*)dspPtr(structHandle))} " +
+                    $"({eeGetClassName(structHandle)}, {info.compCompHnd->getClassSize(structHandle)} bytes)) =>\n");
+
+                if (lowering.Value.byIntegerCallConv)
+                {
+                    jitprintf("        pass by integer calling convention\n");
+                }
+                else
+                {
+                    jitprintf($"        may be passed by floating-point calling convention " +
+                        $"({lowering.Value.numLoweredElements} fields):\n");
+
+                    for (nint i = 0; i < lowering.Value.numLoweredElements; i++)
+                    {
+                        var fieldType = lowering.Value.loweredElements[(int)i].VarType;
+                        jitprintf($"         * field[{i}]: type {fieldType.Name} at offset {lowering.Value.offsets[(int)i]}\n");
+                    }
+                }
+            }
+#endif
+        }
+
+        return ref lowering.Value;
     }
 #endif
 }

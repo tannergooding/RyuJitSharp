@@ -54,5 +54,5 @@ global using NodeToIntMap = System.Collections.Generic.Dictionary<RyuJitSharp.Ge
 #endif
 
 #if TARGET_RISCV64 || TARGET_LOONGARCH64
-global using FpStructLoweringMap = System.Collections.Generic.Dictionary<RyuJitSharp.Pointer<RyuJitSharp.CORINFO_CLASS_STRUCT_>, RyuJitSharp.Pointer<RyuJitSharp.CORINFO_FPSTRUCT_LOWERING>>;
+global using FpStructLoweringMap = System.Collections.Generic.Dictionary<RyuJitSharp.Pointer<RyuJitSharp.CORINFO_CLASS_STRUCT_>, System.Runtime.CompilerServices.StrongBox<RyuJitSharp.CORINFO_FPSTRUCT_LOWERING>>;
 #endif

@@ -4,8 +4,15 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.CorInfoGCType;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
+
+#if TARGET_RISCV64
+using PlatformClassifier = RyuJitSharp.RiscV64Classifier;
+#elif TARGET_LOONGARCH64
+using PlatformClassifier = RyuJitSharp.LoongArch64Classifier;
+#endif
 
 namespace RyuJitSharp.UnitTests;
 
@@ -401,23 +408,78 @@ internal static unsafe class AbiHeaderTests
     }
 
     [Test]
-    public static void FloatingStructLoweringDependencyTerminates()
+    public static void FloatingStructLoweringPreservesClassifierAndReturnMetadata()
     {
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.Base.Base.getClassSize = &GetFpStructClassSize;
+        vtable.Base.Base.getClassGClayout = &GetFpStructGcLayout;
+        vtable.Base.Base.getFpStructLowering = &GetFpStructLowering;
+        FpStructLoweringState state = new() {
+            Runtime = new ICorJitInfo { lpVtbl = &vtable },
+            StructSize = 16,
+            GcType1 = TYPE_GC_REF,
+        };
         var compiler = NewCompiler();
-        var layout = new ClassLayout((CORINFO_CLASS_STRUCT_*)1, true, 12, TYP_STRUCT, "Struct", "Struct");
+        compiler.info.compCompHnd = &state.Runtime;
+        var handle = (CORINFO_CLASS_STRUCT_*)1;
+        var layout = new ClassLayout(handle, false, 16, TYP_STRUCT, "Struct", "Struct");
         var classifier = new PlatformClassifier(new ClassifierInfo());
-        FatalJitException? error = null;
+        var first = classifier.Classify(compiler, TYP_STRUCT, layout, WellKnownArg.None);
+        var second = classifier.Classify(compiler, TYP_STRUCT, layout, WellKnownArg.None);
 
-        try
-        {
-            _ = classifier.Classify(compiler, TYP_STRUCT, layout, WellKnownArg.None);
-        }
-        catch (FatalJitException exception)
-        {
-            error = exception;
-        }
+        Assert.That(first.NumSegments, Is.EqualTo(2));
+        Assert.That(first.Segments[0].Register, Is.EqualTo(FltArgRegs[0]));
+        Assert.That(first.Segments[0].Offset, Is.Zero);
+        Assert.That(first.Segments[0].Size, Is.EqualTo(4));
+        Assert.That(first.Segments[1].Register, Is.EqualTo(IntArgRegs[0]));
+        Assert.That(first.Segments[1].Offset, Is.EqualTo(8));
+        Assert.That(first.Segments[1].Size, Is.EqualTo(8));
 
-        Assert.That(error, Is.Not.Null);
+        var descriptor = new ReturnTypeDesc();
+        descriptor.InitializeStructReturnType(compiler, handle, CorInfoCallConvExtension.Managed);
+        Assert.That(descriptor.ReturnRegCount, Is.EqualTo(2));
+        Assert.That(descriptor.GetReturnRegType(0), Is.EqualTo(TYP_FLOAT));
+        Assert.That(descriptor.GetReturnFieldOffset(0), Is.Zero);
+        Assert.That(descriptor.GetReturnRegType(1), Is.EqualTo(TYP_REF));
+        Assert.That(descriptor.GetReturnFieldOffset(1), Is.EqualTo(8));
+        Assert.That(compiler.compFloatingPointUsed, Is.True);
+        Assert.That(second.NumSegments, Is.EqualTo(2));
+        Assert.That(state.CallCount, Is.EqualTo(1));
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int GetFpStructClassSize(ICorJitInfo* runtime, CORINFO_CLASS_STRUCT_* handle)
+        => ((FpStructLoweringState*)runtime)->StructSize;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int GetFpStructGcLayout(ICorJitInfo* runtime, CORINFO_CLASS_STRUCT_* handle, CorInfoGCType* layout)
+    {
+        var state = (FpStructLoweringState*)runtime;
+        layout[0] = state->GcType0;
+        layout[1] = state->GcType1;
+        return (state->GcType0 is TYPE_GC_NONE ? 0 : 1) + (state->GcType1 is TYPE_GC_NONE ? 0 : 1);
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void GetFpStructLowering(ICorJitInfo* runtime, CORINFO_CLASS_STRUCT_* handle, CORINFO_FPSTRUCT_LOWERING* lowering)
+    {
+        var state = (FpStructLoweringState*)runtime;
+        state->CallCount++;
+        *lowering = default;
+        lowering->numLoweredElements = 2;
+        lowering->loweredElements[0] = CorInfoType.CORINFO_TYPE_FLOAT;
+        lowering->loweredElements[1] = CorInfoType.CORINFO_TYPE_LONG;
+        lowering->offsets[1] = 8;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct FpStructLoweringState
+    {
+        public ICorJitInfo Runtime;
+        public int CallCount;
+        public int StructSize;
+        public CorInfoGCType GcType0;
+        public CorInfoGCType GcType1;
     }
 #endif
 
