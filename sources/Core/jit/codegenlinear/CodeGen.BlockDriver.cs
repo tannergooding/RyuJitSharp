@@ -296,7 +296,11 @@ public sealed partial class CodeGen
                 }
 #endif
             }
+#if TARGET_WASM
+            genCodeForTreeNodeWasm(node);
+#else
             genCodeForTreeNode(node);
+#endif
             if (node.HasReg(_compiler) && node.IsUnusedValue)
             {
                 _ = genConsumeReg(node);

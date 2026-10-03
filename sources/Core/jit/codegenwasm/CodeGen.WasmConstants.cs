@@ -6,6 +6,9 @@
 #if TARGET_WASM
 using System;
 using System.Diagnostics;
+#if FEATURE_SIMD
+using System.Runtime.InteropServices;
+#endif
 
 namespace RyuJitSharp;
 
@@ -77,5 +80,23 @@ public sealed partial class CodeGen
         GetEmitter().emitIns_I(ins, treeNode.Type.EmitSize, unchecked((nint)bits));
         WasmProduceReg(treeNode);
     }
+
+#if FEATURE_SIMD
+    public void genCodeForVectorConstant(GenTree treeNode)
+    {
+        assert(treeNode.Oper is GT_CNS_VEC);
+        var vecCon = treeNode.AsVecCon();
+        ref var simdValue = ref vecCon.SimdVal;
+
+        Span<byte> bytes = stackalloc byte[16];
+        bytes.Clear();
+        MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref simdValue, 1))[..treeNode.Type.Size]
+            .CopyTo(bytes);
+
+        // v128.const has one byte-array encoding; consumers reinterpret the payload for each vector operation.
+        GetEmitter().emitIns_V128Imm(INS_v128_const, bytes);
+        WasmProduceReg(treeNode);
+    }
+#endif
 }
 #endif
