@@ -20,6 +20,13 @@ public partial class Emitter
         throw new FatalJitException(CORJIT_SKIPPED, "Target two-register instruction recording is not implemented.");
     }
 
+#if TARGET_LOONGARCH64
+    public void emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, nint disp)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 relocated-address instruction recording is not ported.");
+    }
+#endif
+
 #if TARGET_RISCV64
     public void emitIns_J_cond_la(instruction ins, BasicBlock target, regNumber reg)
     {
@@ -44,6 +51,16 @@ public partial class Emitter
     public void emitIns_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "RISC-V three-register instruction recording is not implemented.");
+    }
+
+    public unsafe void emitIns_R_R_Addr(
+        instruction ins,
+        emitAttr attr,
+        regNumber regDest,
+        regNumber regAddr,
+        void* addr)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 helper-address load recording is not ported.");
     }
 #endif
 }

@@ -89,6 +89,11 @@ public sealed partial class CodeGen
                 genCodeForCmpXchg(tree.AsCmpXchg());
                 return;
             }
+            case GT_RETURNTRAP:
+            {
+                genCodeForReturnTrap(tree.AsUnOp());
+                return;
+            }
             case GT_JMPTABLE:
             {
                 genJumpTable(tree);

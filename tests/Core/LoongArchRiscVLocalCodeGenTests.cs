@@ -316,6 +316,51 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 #endif
 
     [Test]
+    public static void ReturnTrapDispatchStopsAtTheTargetConditionalBranchBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+            var data = CodeGenShiftTests.Register(compiler, TYP_I_IMPL, REG_S0);
+            var tree = new GenTreeUnOp(GT_RETURNTRAP, TYP_VOID, data);
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
+
+            Assert.That(failure?.Message,
+                Does.Contain("Target conditional-branch recording is not implemented."));
+        });
+    }
+
+#if TARGET_LOONGARCH64
+    [Test]
+    public static void ReturnTrapRelocatedAddressStopsAtTheTargetEmitterBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var failure = Assert.Throws<FatalJitException>(() =>
+                codeGen.Emitter.emitIns_R_AI(INS_bl, EA_PTR_DSP_RELOC, REG_S3, 0));
+
+            Assert.That(failure?.Message,
+                Does.Contain("LoongArch64 relocated-address instruction recording is not ported."));
+        });
+    }
+#else
+    [Test]
+    public static void ReturnTrapHelperAddressLoadStopsAtTheTargetEmitterBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var failure = Assert.Throws<FatalJitException>(() =>
+                codeGen.Emitter.emitIns_R_R_Addr(INS_ld, EA_PTRSIZE, REG_S3, REG_S3, null));
+
+            Assert.That(failure?.Message,
+                Does.Contain("RISC-V64 helper-address load recording is not ported."));
+        });
+    }
+#endif
+
+    [Test]
     public static void JumpTableAddressRecordingStopsAtTheTargetEmitterBoundary()
     {
         WithCodeGen((compiler, codeGen) =>
