@@ -11,6 +11,7 @@ using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.CORINFO_InstructionSet;
 using static RyuJitSharp.CorInfoHelpFunc;
 using static RyuJitSharp.GenTreeFlags;
+using static RyuJitSharp.InfoAccessType;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
@@ -262,7 +263,21 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     }
 #endif
 
-#if TARGET_LOONGARCH64
+#if TARGET_LOONGARCH64 && FEATURE_SIMD
+    [Test]
+    public static void SimdInstructionOptionsPreserveTheLoongArchNyiBoundary()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var failure = Assert.Throws<FatalJitException>(() =>
+                codeGen.genGetSimdInsOpt(EA_16BYTE, TYP_SIMD16));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+        });
+    }
+#endif
+
+#if TARGET_LOONGARCH64 || TARGET_RISCV64
     [Test]
     public static void HelperCallGenerationReachesTheTargetCallRecordingBoundary()
     {
@@ -278,6 +293,30 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 #endif
 
 #if TARGET_RISCV64
+    [TestCase(true, "RISC-V64 relocated-address load recording is not ported.")]
+    [TestCase(false, "RISC-V64 helper-address load recording is not ported.")]
+    public static void IndirectHelperLookupPreservesRiscVAddressBoundaries(bool useRelocation, string expectedBoundary)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.getHelperFtn = &GetHelperFtn;
+            var context = new HelperContext
+            {
+                JitInfo = new ICorJitInfo { lpVtbl = &vtable },
+                Address = (void*)0x1234,
+            };
+            compiler.info.compCompHnd = &context.JitInfo;
+            compiler.info.compMatchedVM = true;
+            compiler.opts.compReloc = useRelocation;
+
+            var failure = Assert.Throws<FatalJitException>(() =>
+                codeGen.genEmitHelperCall(CORINFO_HELP_ASSIGN_REF, 0, EA_PTRSIZE));
+
+            Assert.That(failure?.Message, Does.Contain(expectedBoundary));
+        });
+    }
+
     [Test]
     public static void ZicondSelectDispatchReachesRiscVInstructionRecordingBoundary()
     {
@@ -879,6 +918,25 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             JitTls.Compiler = previous;
         }
     }
+
+#if TARGET_RISCV64
+    private struct HelperContext
+    {
+        public ICorJitInfo JitInfo;
+        public void* Address;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void* GetHelperFtn(ICorJitInfo* self, CorInfoHelpFunc helper,
+        CORINFO_CONST_LOOKUP* lookup, CORINFO_METHOD_STRUCT_** method)
+    {
+        var context = (HelperContext*)self;
+        lookup->accessType = IAT_PVALUE;
+        lookup->addr = context->Address;
+
+        return context->Address;
+    }
+#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);

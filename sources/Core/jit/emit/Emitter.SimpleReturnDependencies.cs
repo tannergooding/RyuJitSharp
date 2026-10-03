@@ -48,6 +48,16 @@ public partial class Emitter
 #endif
 
 #if TARGET_RISCV64
+    public void emitIns_R_AI(
+        instruction ins,
+        emitAttr attr,
+        regNumber reg1,
+        regNumber reg2,
+        nint disp)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 relocated-address load recording is not ported.");
+    }
+
     public void emitIns_J_cond_la(instruction ins, BasicBlock target, regNumber reg)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "RISC-V one-register conditional-branch recording is not implemented.");
