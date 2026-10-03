@@ -462,7 +462,10 @@ public sealed partial class CodeGen
 
     private void genCodeForPhysReg(GenTreePhysReg tree)
     {
-        WasmCodegenDependencyNotPorted(tree, nameof(genCodeForPhysReg));
+        assert(genIsValidReg(tree.SrcReg));
+        var wasmLclIndex = regNumberExtensions.WasmRegToIndex(tree.SrcReg);
+        GetEmitter().emitIns_I(INS_local_get, tree.Type.EmitActualSize, unchecked((nint)wasmLclIndex));
+        WasmProduceReg(tree);
     }
 
     private void genCodeForFrameSize(GenTree tree)
