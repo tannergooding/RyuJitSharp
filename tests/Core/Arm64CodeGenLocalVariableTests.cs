@@ -316,7 +316,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
     }
 #endif
 
-    private static void WithCodeGen(Action<Compiler, CodeGen> action)
+    internal static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -366,7 +366,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
         }
     }
 
-    private static List<Emitter.instrDesc> Descriptors(Emitter emitter)
+    internal static List<Emitter.instrDesc> Descriptors(Emitter emitter)
     {
         return CurrentDescriptors(emitter) ?? throw new AssertionException("Missing descriptor buffer.");
     }

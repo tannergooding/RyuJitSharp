@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if TARGET_ARM64
+using System;
 using static RyuJitSharp.insCond;
 
 namespace RyuJitSharp;
@@ -196,6 +197,129 @@ public sealed partial class CodeGen
         Emitter.emitIns_R_R_I_I(INS_ubfx, size, tree.RegNum, src.RegNum, (int)lsb, (int)width);
 
         genProduceReg(tree);
+    }
+
+    public void genCodeForDivMod(GenTreeOp tree)
+    {
+        assert(tree.Oper is GT_DIV or GT_UDIV);
+
+        var targetType = tree.Type;
+        genConsumeOperands(tree);
+
+        if (varTypeIsFloating(targetType))
+        {
+            // Floating point divide never raises an exception.
+            genCodeForBinary(tree);
+        }
+        else
+        {
+            var divisor = tree.Op2;
+            var size = emitActualTypeSize(tree);
+            var divisorReg = divisor.RegNum;
+            var exceptionFlags = tree.Exceptions(_compiler);
+
+            if ((exceptionFlags & ExceptionSetFlags.DivideByZeroException) != ExceptionSetFlags.None)
+            {
+                if (divisor.IsIntegralConst(0))
+                {
+                    // The operation always throws, but its result still needs to be marked produced.
+                    genJumpToThrowHlpBlk(emitJumpKind.EJ_jmp, SCK_DIV_BY_ZERO);
+                    genProduceReg(tree);
+                    return;
+                }
+
+                genJumpToThrowHlpBlk(SCK_DIV_BY_ZERO, (target, invert) =>
+                {
+                    var condition = invert ? GenCondition.NE : GenCondition.EQ;
+                    genCompareImmAndJump(condition, divisorReg, 0, size, target);
+                });
+            }
+
+            if ((exceptionFlags & ExceptionSetFlags.ArithmeticException) != ExceptionSetFlags.None)
+            {
+                genCodeForDivModOverflowCheck(tree);
+            }
+
+            genCodeForBinary(tree);
+        }
+    }
+
+    private void genCodeForDivModOverflowCheck(GenTreeOp tree)
+    {
+        assert(tree.Oper is GT_DIV);
+        assert(!tree.Op2.IsIntegralConst(0));
+
+        var size = emitActualTypeSize(tree);
+        var divisorReg = tree.Op2.RegNum;
+        var dividendReg = tree.Op1.RegNum;
+        var sdivLabel = genCreateTempLabel();
+
+        // If the divisor is not -1, skip the signed division overflow check.
+        Emitter.emitIns_R_I(INS_cmp, size, divisorReg, -1);
+        inst_JMP(emitJumpKind.EJ_ne, sdivLabel);
+
+        // Comparing dividendReg with 1 sets V exactly when dividendReg is MinInt.
+        Emitter.emitIns_R_I(INS_cmp, size, dividendReg, 1);
+        genJumpToThrowHlpBlk(emitJumpKind.EJ_vs, SCK_ARITH_EXCPN);
+
+        genDefineTempLabel(sdivLabel);
+    }
+
+    private void genCompareImmAndJump(GenCondition.CodeKind condition, regNumber reg,
+        nint compareImm, emitAttr size, BasicBlock target)
+    {
+        assert(condition is GenCondition.EQ or GenCondition.NE);
+
+        if (compareImm == 0)
+        {
+            // Use CBZ/CBNZ for comparisons against zero.
+            var ins = condition is GenCondition.EQ ? INS_cbz : INS_cbnz;
+            Arm64EmitRegisterBranch(ins, size, target, reg);
+        }
+        else
+        {
+            var jumpKind = condition is GenCondition.EQ ? emitJumpKind.EJ_eq : emitJumpKind.EJ_ne;
+            Emitter.emitIns_R_I(INS_cmp, size, reg, compareImm);
+            inst_JMP(jumpKind, target);
+        }
+    }
+
+    private void genJumpToThrowHlpBlk(SpecialCodeKind codeKind, Action<BasicBlock, bool> emitJumpCode,
+        BasicBlock? throwBlock = null)
+    {
+        if (throwBlock is null)
+        {
+            if (_compiler.fgUseThrowHelperBlocks())
+            {
+                assert(_compiler.compCurBB is not null);
+                var add = _compiler.fgGetExcptnTarget(codeKind, _compiler.compCurBB);
+                assert(add.acdUsed);
+                throwBlock = add.acdDstBlk;
+#if !FEATURE_FIXED_OUT_ARGS
+                assert(add.acdStkLvlInit || IsFramePointerUsed);
+#endif
+                noway_assert(throwBlock is not null);
+            }
+        }
+
+        if (throwBlock is not null)
+        {
+            // Branch to the shared throw block on the matching condition.
+            emitJumpCode(throwBlock, false);
+        }
+        else
+        {
+            // Inline the throw and invert the condition to branch around it.
+            var continuation = genCreateTempLabel();
+            emitJumpCode(continuation, true);
+            genEmitHelperCall(Compiler.acdHelper(codeKind), 0, EA_UNKNOWN);
+            genDefineTempLabel(continuation);
+        }
+    }
+
+    private static void Arm64EmitRegisterBranch(instruction ins, emitAttr attr, BasicBlock target, regNumber reg)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 emitIns_J_R recording is not ported.");
     }
 }
 #endif

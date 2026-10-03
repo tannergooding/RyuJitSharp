@@ -10,6 +10,13 @@ public sealed partial class CodeGen
     public unsafe void genCodeForTreeNode(GenTree tree)
     {
 #if !TARGET_XARCH
+#if TARGET_ARM64
+        if (tree.Oper is GT_DIV or GT_UDIV or GT_MOD or GT_UMOD)
+        {
+            genCodeForDivMod(tree.AsOp());
+            return;
+        }
+#endif
 #if TARGET_LOONGARCH64 || TARGET_RISCV64
         switch (tree.Oper)
         {
