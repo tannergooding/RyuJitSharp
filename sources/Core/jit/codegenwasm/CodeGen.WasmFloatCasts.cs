@@ -106,5 +106,48 @@ public sealed partial class CodeGen
         GetEmitter().emitIns(ins);
         WasmProduceReg(tree);
     }
+
+    public void genFloatToFloatCast(GenTree tree)
+    {
+        var toType = tree.Type;
+        var fromType = tree.AsCast().CastOp.Type;
+        var ins = INS_none;
+
+        genConsumeOperands(tree.AsCast());
+
+        switch ((toType, fromType))
+        {
+            case (TYP_FLOAT, TYP_DOUBLE):
+            {
+                ins = INS_f32_demote_f64;
+                break;
+            }
+
+            case (TYP_DOUBLE, TYP_FLOAT):
+            {
+                ins = INS_f64_promote_f32;
+                break;
+            }
+
+            case (TYP_FLOAT, TYP_FLOAT):
+            case (TYP_DOUBLE, TYP_DOUBLE):
+            {
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+
+        if (ins != INS_none)
+        {
+            GetEmitter().emitIns(ins);
+        }
+
+        WasmProduceReg(tree);
+    }
 }
 #endif
