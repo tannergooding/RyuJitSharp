@@ -53,9 +53,10 @@ internal static class Arm64CodeGenEHTransferTargetTests
         Assert.That(NoGcRequests(emitter), Is.Zero);
     }
 
-    [TestCase(true)]
-    [TestCase(false)]
-    public static void ReturningFinallyCallsPreserveTheContinuationPath(bool fallsThrough)
+    [TestCase(true, false)]
+    [TestCase(false, false)]
+    [TestCase(true, true)]
+    public static void ReturningFinallyCallsPreserveTheContinuationPath(bool adjacent, bool differentRegions)
     {
         var (compiler, codeGen, emitter) = CreateEmitter();
         var target = Label();
@@ -63,11 +64,18 @@ internal static class Arm64CodeGenEHTransferTargetTests
         var block = Transfer(BBJ_CALLFINALLY, target);
         var finallyReturn = Transfer(BBJ_CALLFINALLYRET, continuation);
         block.Next = finallyReturn;
-        finallyReturn.Next = fallsThrough ? continuation : Label();
+        finallyReturn.Next = adjacent ? continuation : Label();
+        if (differentRegions)
+        {
+            continuation.SetFlags(BBF_COLD);
+            compiler.fgFirstColdBlock = continuation;
+        }
+
         compiler.compCurBB = block;
 
         codeGen.genCallFinally(block);
 
+        var fallsThrough = adjacent && !differentRegions;
         var descriptors = Descriptors(emitter);
         Assert.That(descriptors.Select(descriptor => descriptor.idIns()),
             Is.EqualTo(fallsThrough ? new[] { INS_bl_local, INS_nop } : [INS_bl_local, INS_b]));
