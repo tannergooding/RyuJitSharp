@@ -114,6 +114,24 @@ oracle. Recovery ref
 `refs/porting/recovery/2026-10-03-remove-list-node-before-amend` preserves
 prior HEAD `7738d438682246a7b2126461c6dc026f8bd75cef`.
 
+## 2026-10-03: LSRA single-register definition-list removal
+
+The remaining native `RefInfoList::removeListNode(GenTree*)` body and its inline
+unlink helper matched the pinned oracle. The managed
+`RemoveListNode(tree, 0)` path is covered by the existing focused LSRA tests,
+including index-0 removal and list-order preservation. The native helper,
+overload, and exclusive declaration were retired together; no native residual
+callers remain. This is the same focused test evidence recorded above, not a
+new test run or a parity claim.
+
+The consolidated native residual is now HEAD
+`b142eedc8ee2131af89d4085f75ea76cf9048dec` (tree
+`1e0f76fb6b9b5ad475793f7bbb70043bdef935bf`), sole-parented to the pinned
+oracle. The deletion removes 52 lines across `lsrabuild.cpp` and `lsra.h`.
+Recovery ref
+`refs/porting/recovery/2026-10-03-remove-list-node-single-before-amend`
+preserves pre-amend HEAD `3f4d6f6dc96dfb1fb590b0ecfa58447bc5c6e9d5`.
+
 ## 2026-10-03: Physical-promotion remainder strategy
 
 Completed `DecompositionPlan::DetermineRemainderStrategy` with the native
