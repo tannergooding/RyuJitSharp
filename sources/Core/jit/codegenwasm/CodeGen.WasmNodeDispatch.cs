@@ -552,7 +552,7 @@ public sealed partial class CodeGen
         var writeBarrierForm = GCInfo.gcIsWriteBarrierCandidate(tree);
         if (writeBarrierForm is not GCInfo.WriteBarrierForm.WBF_NoBarrier)
         {
-            genGCWriteBarrier(writeBarrierForm);
+            genGCWriteBarrierWasm(writeBarrierForm);
         }
         else // A normal store, not a write-barrier store
         {
@@ -777,6 +777,141 @@ public sealed partial class CodeGen
         _ = wasmSignature;
         // The managed Wasm emitter has no call-instruction entry point yet.
         WasmCodegenDependencyNotPorted(call, "Emitter.emitIns_Call");
+    }
+
+    private unsafe void genEmitWasmCallWithCurrentGC(
+        CORINFO_WASM_TYPE_SYMBOL_HANDLE wasmSignature, ref EmitCallParams parameters)
+    {
+        parameters.ptrVars = GCInfo.gcVarPtrSetCur;
+        parameters.gcrefRegs = GCInfo.gcRegGCrefSetCur;
+        parameters.byrefRegs = GCInfo.gcRegByrefSetCur;
+        _ = wasmSignature;
+        WasmCodegenDependencyNotPorted("Emitter.emitIns_Call");
+    }
+
+    // Keep Wasm helper signatures and target setup separate from the common helper-call NYI.
+    private unsafe void genEmitHelperCallWasm(
+        CorInfoHelpFunc helper, int argSize, emitAttr retSize, regNumber callTargetReg = REG_NA)
+    {
+        ensureCurrentFuncIsUnwindable();
+
+        var parameters = new EmitCallParams();
+        var helperFunction = _compiler.compGetHelperFtn(helper);
+        parameters.ireg = callTargetReg;
+
+        if (helperFunction.accessType is IAT_VALUE)
+        {
+            parameters.callType = EC_FUNC_TOKEN;
+            parameters.addr = helperFunction.addr;
+        }
+        else
+        {
+            assert(helperFunction.accessType is IAT_PVALUE);
+            parameters.addr = null;
+            parameters.callType = EC_INDIR_R;
+        }
+
+        parameters.methHnd = Compiler.eeFindHelper(helper);
+        parameters.argSize = argSize;
+        parameters.retSize = retSize;
+
+        CorInfoWasmType* types = stackalloc CorInfoWasmType[4];
+        nint typeCount = 0;
+        var helperIsManaged = false;
+
+#if TARGET_64BIT
+        const CorInfoWasmType wasmPointerType = CORINFO_WASM_TYPE_I64;
+#else
+        const CorInfoWasmType wasmPointerType = CORINFO_WASM_TYPE_I32;
+#endif
+
+        switch (helper)
+        {
+            // Managed throw helpers have no explicit arguments; their stack and PEP arguments follow the result.
+            case CORINFO_HELP_RNGCHKFAIL:
+            case CORINFO_HELP_OVERFLOW:
+            case CORINFO_HELP_THROWDIVZERO:
+            case CORINFO_HELP_THROWNULLREF:
+            case CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
+            case CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION:
+            case CORINFO_HELP_THROW_NOT_IMPLEMENTED:
+            case CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
+            case CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED:
+            {
+                types[0] = CORINFO_WASM_TYPE_VOID;
+                types[1] = wasmPointerType;
+                types[2] = wasmPointerType;
+                typeCount = 3;
+                helperIsManaged = true;
+                break;
+            }
+
+            // RhpAssignRef and RhpCheckedAssignRef.
+            case CORINFO_HELP_ASSIGN_REF:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF:
+            {
+                types[0] = CORINFO_WASM_TYPE_VOID;
+                types[1] = wasmPointerType;
+                types[2] = wasmPointerType;
+                typeCount = 3;
+                break;
+            }
+
+            // RhBulkMoveWithWriteBarrier helpers.
+            case CORINFO_HELP_BULK_WRITEBARRIER:
+            case CORINFO_HELP_BULK_WRITEBARRIER_SMALL:
+            {
+                types[0] = CORINFO_WASM_TYPE_VOID;
+                types[1] = wasmPointerType;
+                types[2] = wasmPointerType;
+                types[3] = wasmPointerType;
+                typeCount = 4;
+                break;
+            }
+
+            default:
+            {
+                JITDUMP(
+                    $"Helper '{_compiler.eeGetMethodFullName(parameters.methHnd)}' has no hard-coded signature\n");
+                throw new FatalJitException(
+                    CORJIT_INTERNALERROR, $"Wasm helper {helper} has no hard-coded signature.");
+            }
+        }
+
+        // The managed helper signature includes PEP as its last parameter.
+        var helperUsesPep = helperIsManaged &&
+            _compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PORTABLE_ENTRY_POINTS);
+        if (helperIsManaged && !helperUsesPep)
+        {
+            typeCount--;
+        }
+
+        var wasmSignature = _compiler.info.compCompHnd->getWasmTypeSymbol(types, typeCount);
+
+        if (helperUsesPep)
+        {
+            // Push the PEP value from the helper's indirection cell.
+            assert(helperFunction.accessType is IAT_PVALUE);
+            GetEmitter().emitAddressConstant(unchecked((nint)helperFunction.addr));
+            GetEmitter().emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+        }
+
+        if (parameters.callType is EC_INDIR_R)
+        {
+            // Push the call target by dereferencing the cell and then the PEP address.
+            assert(helperFunction.accessType is IAT_PVALUE);
+            GetEmitter().emitAddressConstant(unchecked((nint)helperFunction.addr));
+            GetEmitter().emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+            GetEmitter().emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+        }
+
+        genEmitWasmCallWithCurrentGC(wasmSignature, ref parameters);
+    }
+
+    private void genGCWriteBarrierWasm(GCInfo.WriteBarrierForm writeBarrierForm)
+    {
+        var helper = genWriteBarrierHelperForWriteBarrierForm(writeBarrierForm);
+        genEmitHelperCallWasm(helper, 0, EA_PTRSIZE);
     }
 
     private static CorInfoWasmType WasmValueTypeToCorInfoWasmType(WasmValueType type)

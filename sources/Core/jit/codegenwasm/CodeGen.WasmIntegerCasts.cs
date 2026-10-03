@@ -194,7 +194,7 @@ public sealed partial class CodeGen
             // Managed throw helpers need the Wasm stack pointer as their argument.
             GetEmitter().emitIns_I(
                 INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
-            genEmitHelperCall(Compiler.acdHelper(codeKind), 0, EA_UNKNOWN);
+            genEmitHelperCallWasm(Compiler.acdHelper(codeKind), 0, EA_UNKNOWN);
             genEmitEndIf();
         }
     }
