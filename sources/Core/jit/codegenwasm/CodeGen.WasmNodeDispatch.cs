@@ -580,7 +580,41 @@ public sealed partial class CodeGen
 
     private void genCall(GenTreeCall call)
     {
-        WasmCodegenDependencyNotPorted(call, nameof(genCall));
+        var thisReg = REG_NA;
+
+        if (call.NeedsNullCheck)
+        {
+            var thisArg = call.Args.ThisArg
+                ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Call requiring a null check has no this argument.");
+            thisReg = GetMultiUseOperandReg(thisArg.Node);
+        }
+
+        foreach (var arg in call.Args.EarlyArgs)
+        {
+            var earlyNode = arg.EarlyNode
+                ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Early call argument has no node.");
+            genConsumeRegs(earlyNode);
+        }
+
+        foreach (var arg in call.Args.LateArgs)
+        {
+            var lateNode = arg.LateNode
+                ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Late call argument has no node.");
+            genConsumeRegs(lateNode);
+        }
+
+        if (call.NeedsNullCheck)
+        {
+            genEmitNullCheck(thisReg);
+        }
+
+        genCallInstruction(call);
+        WasmProduceReg(call);
+    }
+
+    private void genCallInstruction(GenTreeCall call)
+    {
+        WasmCodegenDependencyNotPorted(call, nameof(genCallInstruction));
     }
 
     private void genCodeForNullCheck(GenTreeIndir tree)
