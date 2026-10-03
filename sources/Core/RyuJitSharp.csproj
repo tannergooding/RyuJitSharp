@@ -582,7 +582,7 @@
     <!-- <DefineConstants>$(DefineConstants);NODEBASH_STATS</DefineConstants> -->
   </PropertyGroup>
 
-  <!-- xarch folders retain terminating dependencies for non-xarch callers. -->
+  <!-- Mixed xarch files retain cross-target fallback methods until they move to shared folders. -->
   <!-- Pure target-owned source groups are excluded from other target builds. -->
   <ItemGroup Condition="'$(RyuJitTargetIsArm)' != 'true'">
     <Compile Remove="jit\codegenarm\**\*.cs" />
@@ -619,6 +619,8 @@
 
   <ItemGroup Condition="'$(RyuJitTargetArchitecture)' != 'x64'">
     <Compile Remove="jit\targetamd64\**\*.cs" />
+    <Compile Remove="jit\unwindamd64\Compiler.PrologRecording.cs" />
+    <Compile Remove="jit\unwindamd64\Compiler.UnwindPublication.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(RyuJitTargetArchitecture)' != 'x86'">
@@ -626,8 +628,8 @@
     <Compile Remove="jit\unwindx86\**\*.cs" />
   </ItemGroup>
 
-  <!-- Filter xarch folders as a unit, then retain files that provide cross-target dependencies. -->
-  <ItemGroup Condition="'$(RyuJitTargetArchitecture)' != 'x64' And '$(RyuJitTargetArchitecture)' != 'x86'">
+  <!-- Filter xarch folders as a unit, then retain the mixed fallback files. -->
+  <ItemGroup Condition="'$(RyuJitTargetIsXarch)' != 'true'">
     <Compile Remove="jit\*xarch\**\*.cs" />
     <Compile Include="jit\*xarch\**\*.cs"
              Exclude="jit\codegenxarch\CodeGen.AddressChecks.cs;
@@ -685,7 +687,7 @@
                       jit\simdcodegenxarch\CodeGen.IndirectStores.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(RyuJitTargetArchitecture)' != 'arm' And '$(RyuJitTargetArchitecture)' != 'arm64' And '$(RyuJitTargetArchitecture)' != 'armv6'">
+  <ItemGroup Condition="'$(RyuJitTargetIsArmarch)' != 'true'">
     <Compile Remove="jit\*armarch\**\*.cs" />
     <Compile Remove="jit\**\*ArmConditionDependencies.cs" />
   </ItemGroup>

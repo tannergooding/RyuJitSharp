@@ -67,8 +67,11 @@ re-inclusion of mixed fallback sources, leaving the 53 complete
 revision; the single complete `TARGET_ARMARCH` source is covered by a recursive
 filename glob. ARMv6 is included in the ARM32 source group. MSBuild item
 evaluation was checked for `win-x64`, `win-x86`, `linux-arm`, `linux-arm64`,
-`linux-armv6`, `linux-loongarch64`, `linux-riscv64`, and `browser-wasm`; the focused
-Windows-x64 Debug suite passes 63/63. The browser-Wasm rebuild no longer reports
+`linux-armv6`, `linux-loongarch64`, `linux-riscv64`, and `browser-wasm`.
+AMD64 unwind sources are now selected only for `win-x64`; the xarch and
+ARMARCH groups use `RyuJitTargetIsXarch` and `RyuJitTargetIsArmarch`, while
+the ARM32 group uses `RyuJitTargetIsArm`. The focused Windows-x64 Debug suite
+passes 63/63. The browser-Wasm rebuild no longer reports
 the 14 duplicate xarch definitions, but remains blocked by 263 compilation and
 analyzer diagnostics, and no tests ran. This verifies source selection and
 selected Windows tests, not build or execution parity for the other targets.
