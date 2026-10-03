@@ -3880,6 +3880,13 @@
         },
         "lsraIntervalValidation": {
           "status": "completed-existing-mapping",
+        "targetSourceFiltering": {
+          "status": "completed",
+          "scope": "Exclude pure target-owned ARM, ARM64, LoongArch64, RISC-V64, Wasm, AMD64, and x86 source folders from nonmatching target builds while retaining common and fallback-bearing sources.",
+          "mapping": "sources/Core/RyuJitSharp.csproj compile-item groups.",
+          "validation": "MSBuild item evaluation verified win-x64, win-x86, linux-arm, linux-arm64, linux-armv6, linux-loongarch64, linux-riscv64, and browser-wasm; the focused Windows-x64 Debug selection passed 63/63. No other-target build or execution parity is claimed.",
+          "retirement": "None; this is target-specific managed compile-item filtering."
+        },
           "scope": "Reconcile the complete DEBUG-only LinearScan.validateIntervals mapping with its retained native definition and declaration.",
           "mapping": "src/coreclr/jit/lsrabuild.cpp::LinearScan::validateIntervals and lsra.h -> sources/Core/jit/lsra/LinearScan.LocalIntervalValidation.cs::validateIntervals.",
           "validation": "Focused Windows-x64 LinearScanBuildIntervalsTests and LinearScanLocalIntervalConstructionTests pass 18/18 Debug and 17/17 Release, zero skips; Debug exercises the validator. TRXs: artifacts/tst/Debug/lsra-validate-intervals-debug.trx and artifacts/tst/Release/lsra-validate-intervals-release.trx.",

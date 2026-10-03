@@ -582,4 +582,48 @@
     <!-- <DefineConstants>$(DefineConstants);NODEBASH_STATS</DefineConstants> -->
   </PropertyGroup>
 
+  <!-- xarch folders retain terminating dependencies for non-xarch callers. -->
+  <!-- Pure target-owned source groups are excluded from other target builds. -->
+  <ItemGroup Condition="'$(RyuJitTargetArchitecture)' != 'arm'">
+    <Compile Remove="jit\codegenarm\**\*.cs" />
+    <Compile Remove="jit\emitarm\**\*.cs" />
+    <Compile Remove="jit\targetarm\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RyuJitTargetArchitecture)' != 'arm64'">
+    <Compile Remove="jit\codegenarm64\**\*.cs" />
+    <Compile Remove="jit\emitarm64\**\*.cs" />
+    <Compile Remove="jit\hwintrinsiccodegenarm64\**\*.cs" />
+    <Compile Remove="jit\targetarm64\**\*.cs" />
+    <Compile Remove="jit\unwindarm64\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RyuJitTargetArchitecture)' != 'loongarch64'">
+    <Compile Remove="jit\codegenloongarch64\**\*.cs" />
+    <Compile Remove="jit\emitloongarch64\**\*.cs" />
+    <Compile Remove="jit\targetloongarch64\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RyuJitTargetArchitecture)' != 'riscv64'">
+    <Compile Remove="jit\codegenriscv64\**\*.cs" />
+    <Compile Remove="jit\emitriscv64\**\*.cs" />
+    <Compile Remove="jit\targetriscv64\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RyuJitTargetArchitecture)' != 'wasm'">
+    <Compile Remove="jit\codegenwasm\**\*.cs" />
+    <Compile Remove="jit\emitwasm\**\*.cs" />
+    <Compile Remove="jit\registeropswasm\**\*.cs" />
+    <Compile Remove="jit\targetwasm\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RyuJitTargetArchitecture)' != 'x64'">
+    <Compile Remove="jit\targetamd64\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(RyuJitTargetArchitecture)' != 'x86'">
+    <Compile Remove="jit\targetx86\**\*.cs" />
+    <Compile Remove="jit\unwindx86\**\*.cs" />
+  </ItemGroup>
+
 </Project>

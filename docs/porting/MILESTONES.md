@@ -16,6 +16,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Target-owned source filtering
+
+Conditional compile-item filters exclude pure ARM, ARM64, LoongArch64,
+RISC-V64, Wasm, AMD64, and x86 source folders from nonmatching target builds.
+Shared and xarch folders remain included where they provide common behavior or
+terminating cross-target dependencies. MSBuild item evaluation was checked for
+`win-x64`, `win-x86`, `linux-arm`, `linux-arm64`, `linux-armv6`,
+`linux-loongarch64`, `linux-riscv64`, and `browser-wasm`; the focused Windows-x64
+Debug suite passes 63/63. This verifies source selection and selected Windows
+tests, not build or execution parity for the other targets.
+
 ## 2026-10-03: Shared lowering helper retirement
 
 Retired the complete shared `Lowering` helper family: `ContainCheckLclHeap`,
