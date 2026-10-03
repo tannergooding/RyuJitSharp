@@ -515,6 +515,28 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         });
     }
 
+    [TestCase(TYP_INT, TYP_FLOAT, false)]
+    [TestCase(TYP_LONG, TYP_DOUBLE, false)]
+    [TestCase(TYP_UINT, TYP_FLOAT, true)]
+    [TestCase(TYP_ULONG, TYP_DOUBLE, true)]
+    public static void IntToFloatCastDispatchReachesTheTargetInstructionBoundary(
+        var_types sourceType, var_types destinationType, bool isUnsigned)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+            var source = CodeGenShiftTests.Register(compiler, sourceType, REG_S0);
+            var cast = new GenTreeCast(destinationType, source, isUnsigned, destinationType)
+            {
+                RegNum = REG_F0,
+            };
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForCast(cast));
+
+            Assert.That(failure?.Message, Does.Contain("Target two-register instruction recording is not implemented."));
+        });
+    }
+
 #if FEATURE_SIMD
     [Test]
     public static void Simd12LocalVariableStoreStopsAtTheTargetBoundary()
