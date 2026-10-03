@@ -23,5 +23,11 @@ public sealed partial class CodeGen
         NYI_RISCV64("getOpForSIMDIntrinsic-----unimplemented/unused on RISCV64 yet----");
         return INS_invalid;
     }
+
+    // GenTreeSIMD is not ported, and this unused helper terminates before inspecting its node.
+    public void genSIMDIntrinsicInit(GenTree simdNode)
+    {
+        NYI_RISCV64("genSIMDIntrinsicInit-----unimplemented/unused on RISCV64 yet----");
+    }
 }
 #endif
