@@ -16,6 +16,20 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Cross-target funclet creation
+
+Completed the whole `Compiler::fgCreateFunclets` method without the prior
+AMD64-only rejection. The common EH ordering and relocation algorithm is retained,
+with native non-fixed-register and Wasm descriptor defaults. Full-analysis
+Windows-x64 funclet tests pass 6/6 in Debug and Release; target-neutral descriptor
+tests pass 1/1 Debug and Release for linux-arm64 and 1/1 Debug for browser-wasm.
+The browser-wasm source build has no warnings or errors.
+
+Native `b1054b98` retires the complete 126-line residual definition before this
+managed completion. The recovery ref preserves the prior consolidated native
+HEAD. Cross-target tests cover descriptor defaults, not generated-code or EH
+runtime parity; `FuncInfoRange` remains required by the unported Wasm allocator.
+
 ## 2026-10-03: Emitter method statistics
 
 Ported the whole `emitterStats(FILE*)` report for xarch and bound the shutdown

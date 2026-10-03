@@ -5,6 +5,7 @@
 
 using System;
 using static RyuJitSharp.FuncKind;
+using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp;
 
@@ -12,9 +13,6 @@ public partial class Compiler
 {
     public PhaseStatus fgCreateFunclets()
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Funclet creation outside AMD64 is not implemented.");
-#else
         assert(!fgFuncletsCreated);
         var funcCount = ehFuncletCount() + 1;
         if (funcCount > ushort.MaxValue)
@@ -23,6 +21,19 @@ public partial class Compiler
         }
 
         var funcInfo = new FuncInfoDsc[funcCount];
+#if !HAS_FIXED_REGISTER_SET || TARGET_WASM
+        for (uint index = 0; index < funcCount; index++)
+        {
+#if !HAS_FIXED_REGISTER_SET
+            funcInfo[index].funStackPointerReg = REG_NA;
+            funcInfo[index].funFramePointerReg = REG_NA;
+#endif
+#if TARGET_WASM
+            funcInfo[index].funWasmLocalDecls = null;
+            funcInfo[index].funWasmExnRefLocalIndex = uint.MaxValue;
+#endif
+        }
+#endif
         assert(funcInfo[0].funKind == FUNC_ROOT);
         ushort[]? vmClauseOrderToEHTabOrder = null;
         ushort[]? ehTabOrderToVMClauseOrder = null;
@@ -82,7 +93,6 @@ public partial class Compiler
         fgFuncletsCreated = true;
 
         return compHndBBtabCount > 0 ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
-#endif
     }
 
     public uint ehFuncletCount()
