@@ -206,6 +206,42 @@ internal static unsafe class CodeGenPrologInitializationTests
         });
     }
 
+#if TARGET_LOONGARCH64
+    [Test]
+    public static void LoongArchCookieInitializationSkipsWhenNoCookieIsNeeded()
+    {
+        WithProlog((compiler, codeGen) =>
+        {
+            compiler.compNeedsGSSecurityCookie = false;
+            var zeroed = true;
+
+            codeGen.genSetGSSecurityCookie(REG_S0, ref zeroed);
+
+            Assert.That(Descriptors(codeGen), Is.Empty);
+            Assert.That(zeroed, Is.True);
+        });
+    }
+
+    [Test]
+    public static void LoongArchCookieInitializationPreservesRelocationBoundary()
+    {
+        WithProlog((compiler, codeGen) =>
+        {
+            compiler.compNeedsGSSecurityCookie = true;
+            compiler.lvaGSSecurityCookie = 0;
+            compiler.gsGlobalSecurityCookieAddr = (nint*)0x12345678;
+            compiler.opts.compReloc = true;
+            var zeroed = true;
+
+            var failure = Assert.Throws<FatalJitException>(() =>
+                codeGen.genSetGSSecurityCookie(REG_S0, ref zeroed));
+
+            Assert.That(failure?.Message,
+                Does.Contain("LoongArch64 relocated-address instruction recording is not ported."));
+        });
+    }
+#endif
+
     [TestCase(REG_RAX)]
     [TestCase(REG_R10)]
     public static void IndirectCookiesAlwaysLoadThroughRax(regNumber scratch)

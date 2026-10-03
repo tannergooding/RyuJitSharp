@@ -65,5 +65,11 @@ public sealed partial class CodeGen
     {
         NYI_RISCV64("genSIMDIntrinsicRelOp-----unimplemented/unused on RISCV64 yet----");
     }
+
+    public void genSIMDIntrinsicDotProduct(GenTree simdNode)
+    {
+        NYI_RISCV64("genSIMDIntrinsicDotProduct-----unimplemented/unused on RISCV64 yet----");
+        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 dot-product SIMD intrinsic generation is not ported.");
+    }
 }
 #endif
