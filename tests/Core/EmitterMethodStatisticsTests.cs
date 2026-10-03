@@ -118,6 +118,36 @@ internal static unsafe class EmitterMethodStatisticsTests
     }
 
     [Test]
+    public static void SmallDescriptorAllocationCountsNativeSmallDescriptors()
+    {
+        var previousSmallDescriptors = TotalSmallDescriptors(null);
+        var previousInstructions = TotalInstructions(null);
+        var previousMemory = TotalMemory(null);
+
+        try
+        {
+            TotalSmallDescriptors(null) = 11;
+
+            var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+            var emitter = new AllocationEmitter(new CodeGen(compiler));
+            emitter.emitBegCG(compiler, default);
+            emitter.Init();
+            Begin(emitter);
+
+            _ = emitter.AllocateSmall(emitAttr.EA_4BYTE);
+
+            Assert.That(TotalSmallDescriptors(null), Is.EqualTo(12u));
+            Assert.That(TotalInstructions(null), Is.EqualTo(previousInstructions + 1));
+        }
+        finally
+        {
+            TotalSmallDescriptors(null) = previousSmallDescriptors;
+            TotalInstructions(null) = previousInstructions;
+            TotalMemory(null) = previousMemory;
+        }
+    }
+
+    [Test]
     public static void RawEmitterMemoryCountsTheRequestedNativeBytes()
     {
         var previousMemory = TotalMemory(null);
@@ -200,9 +230,17 @@ internal static unsafe class EmitterMethodStatisticsTests
             return Allocate<instrDescBasic>(this, 16, emitAttr.EA_4BYTE);
         }
 
+        public instrDescBasic AllocateSmall(emitAttr attr)
+        {
+            return NewSmall(this, attr);
+        }
+
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitAllocAnyInstr")]
         private static extern T Allocate<T>(Emitter emitter, nuint size, emitAttr attr)
             where T : instrDesc, new();
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNewInstrSmall")]
+        private static extern instrDescBasic NewSmall(Emitter emitter, emitAttr attr);
     }
 
     private static void Begin(Emitter emitter)
@@ -246,6 +284,9 @@ internal static unsafe class EmitterMethodStatisticsTests
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalInsCnt")]
     private static extern ref uint TotalInstructions(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescSmallCnt")]
+    private static extern ref uint TotalSmallDescriptors(Emitter? emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_debugInfoSize")]
     private static extern ref int DebugPrefix(Emitter emitter);

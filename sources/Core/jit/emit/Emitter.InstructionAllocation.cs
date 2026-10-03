@@ -13,6 +13,7 @@ public partial class Emitter
 
 #if EMITTER_STATS
     private static uint emitTotalInsCnt;
+    private static uint emitTotalIDescSmallCnt;
 #endif
 
     private void emitRecordMemAllocation(nuint size)
@@ -181,6 +182,10 @@ public partial class Emitter
     {
         var id = emitAllocAnyInstr<instrDescBasic>(SMALL_IDSC_SIZE, attr);
         id.idSetIsSmallDsc();
+
+#if EMITTER_STATS
+        emitTotalIDescSmallCnt = unchecked(emitTotalIDescSmallCnt + 1);
+#endif
 
         return id;
     }
