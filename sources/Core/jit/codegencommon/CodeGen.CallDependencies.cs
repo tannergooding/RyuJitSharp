@@ -12,5 +12,10 @@ public sealed partial class CodeGen
     {
         throw new FatalJitException(CORJIT_SKIPPED, "Call generation requires xarch.");
     }
+
+    public unsafe void genCallInstruction(GenTreeCall call, int stackArgBytes = 0)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Call-instruction generation requires xarch.");
+    }
 }
 #endif

@@ -13,9 +13,6 @@ public sealed partial class CodeGen
 {
     public unsafe void genCallInstruction(GenTreeCall call, int stackArgBytes = 0)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Call-instruction generation requires xarch.");
-#else
 #if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
 #endif
@@ -173,6 +170,5 @@ public sealed partial class CodeGen
                 genEmitCallWithCurrentGC(ref parameters);
             }
         }
-#endif
     }
 }

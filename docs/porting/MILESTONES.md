@@ -57,6 +57,18 @@ evaluation across eight RIDs selects `CodeGen.Calls.cs` only for `win-x64` and
 `CodeGenCallTests` passed 42/42 Debug and 31/31 Release, with no skips. This
 does not establish non-xarch compilation or runtime parity.
 
+## 2026-10-03: Isolating xarch call-instruction emission
+
+`CodeGen.CallInstructions.cs` now follows the same xarch-only source boundary.
+Its terminating non-xarch `genCallInstruction` dependency remains in the shared
+call-dependency partial because the mixed epilog binding can reference it;
+Wasm continues to use its own call-instruction implementation. The xarch
+emission algorithm is unchanged. Eight-RID item evaluation selects both xarch
+call source files only for `win-x64` and `win-x86`. Windows-x64
+`CodeGenCallTests` and `CodeGenCallInstructionTests` passed 72/72 Debug and
+55/55 Release, with no skips. This is focused test/source-selection evidence,
+not non-xarch compilation or parity.
+
 ## 2026-10-03: LSRA multi-register definition-list removal
 
 The complete native `RefInfoList::removeListNode(GenTree*, unsigned)` overload
