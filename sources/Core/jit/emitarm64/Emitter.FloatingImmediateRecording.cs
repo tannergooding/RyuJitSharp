@@ -86,6 +86,12 @@ public unsafe partial class Emitter
         appendToCurIG(id);
     }
 
+    public void emitIns_R_R_F(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
+        double immDbl, insOpts opt = INS_OPTS_NONE)
+    {
+        emitInsSve_R_R_F(ins, attr, reg1, reg2, immDbl, opt);
+    }
+
     private struct floatImm8
     {
         public uint immFPIVal;

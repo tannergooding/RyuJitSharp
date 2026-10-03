@@ -105,6 +105,31 @@ internal static unsafe class Arm64SveImmediateRecordingTests
         });
     }
 
+    [TestCase(INS_sve_fadd, REG_P0, 0.5, INS_OPTS_SCALABLE_H, INS_sve_fadd, IF_SVE_HM_2A, 0)]
+    [TestCase(INS_sve_fsubr, REG_P7, 1.0, INS_OPTS_SCALABLE_D, INS_sve_fsubr, IF_SVE_HM_2A, 1)]
+    [TestCase(INS_sve_fmaxnm, REG_P0, 0.0, INS_OPTS_SCALABLE_S, INS_sve_fmaxnm, IF_SVE_HM_2A, 0)]
+    [TestCase(INS_sve_fmul, REG_P7, 2.0, INS_OPTS_SCALABLE_H, INS_sve_fmul, IF_SVE_HM_2A, 1)]
+    [TestCase(INS_sve_fcpy, REG_P15, -10.0, INS_OPTS_SCALABLE_D, INS_sve_fmov, IF_SVE_BU_2A, 0xA4)]
+    [TestCase(INS_sve_fmov, REG_P0, 2.0, INS_OPTS_SCALABLE_H, INS_sve_fmov, IF_SVE_BU_2A, 0)]
+    public static void RegisterFloatConstantFormsPreserveImmediateEncodingsAndAliases(
+        instruction ins, regNumber predicate, double immediate, insOpts opt, instruction expectedIns,
+        Emitter.insFormat format, int encoded)
+    {
+        WithEmitter(emitter =>
+        {
+            var id = Record(emitter, () => emitter.emitIns_R_R_F(
+                ins, EA_SCALABLE, REG_V0, predicate, immediate, opt));
+
+            Assert.That(id.idIns(), Is.EqualTo(expectedIns));
+            Assert.That(id.idOpSize(), Is.EqualTo(EA_SCALABLE));
+            Assert.That(id.idInsFmt(), Is.EqualTo(format));
+            Assert.That(id.idInsOpt(), Is.EqualTo(opt));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_V0));
+            Assert.That(id.idReg2(), Is.EqualTo(predicate));
+            Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)encoded));
+        });
+    }
+
     [TestCase(INS_sve_and, 255L, INS_SCALABLE_OPTS_NONE, INS_sve_and, IF_SVE_BS_1A, 4103)]
     [TestCase(INS_sve_bic, -256L, INS_SCALABLE_OPTS_NONE, INS_sve_and, IF_SVE_BS_1A, 4103)]
     [TestCase(INS_sve_eon, -256L, INS_SCALABLE_OPTS_NONE, INS_sve_eor, IF_SVE_BS_1A, 4103)]

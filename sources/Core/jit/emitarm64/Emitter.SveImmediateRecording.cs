@@ -387,5 +387,113 @@ public unsafe partial class Emitter
         dispIns(id);
         appendToCurIG(id);
     }
+
+    private void emitInsSve_R_R_F(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
+        double immDbl, insOpts opt)
+    {
+        var size = EA_SIZE(attr);
+        nint imm = 0;
+        var fmt = IF_NONE;
+
+        switch (ins)
+        {
+            case INS_sve_fmul:
+            case INS_sve_fmaxnm:
+            case INS_sve_fadd:
+            case INS_sve_fmax:
+            case INS_sve_fminnm:
+            case INS_sve_fsub:
+            case INS_sve_fmin:
+            case INS_sve_fsubr:
+            {
+                assert(insOptsScalableAtLeastHalf(opt));
+                assert(isVectorRegister(reg1));
+                assert(isLowPredicateRegister(reg2));
+                assert(isScalableVectorSize(size));
+                imm = emitEncodeSmallFloatImm(immDbl, ins);
+                fmt = IF_SVE_HM_2A;
+                break;
+            }
+
+            case INS_sve_fmov:
+            case INS_sve_fcpy:
+            {
+                assert(insOptsScalableAtLeastHalf(opt));
+                assert(isVectorRegister(reg1));
+                assert(isPredicateRegister(reg2));
+                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
+                floatImm8 fpi;
+                fpi.immFPIVal = 0;
+                canEncodeFloatImm8(immDbl, &fpi);
+                imm = (nint)fpi.immFPIVal;
+                fmt = IF_SVE_BU_2A;
+
+                // FMOV is an alias for FCPY, and is always the preferred disassembly.
+                ins = INS_sve_fmov;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+
+        assert(fmt != IF_NONE);
+        var id = emitNewInstrSC(attr, imm);
+        id.idIns(ins);
+        id.idInsFmt(fmt);
+        id.idInsOpt(opt);
+        id.idReg1(reg1);
+        id.idReg2(reg2);
+        dispIns(id);
+        appendToCurIG(id);
+    }
+
+    private static nint emitEncodeSmallFloatImm(double immDbl, instruction ins)
+    {
+#if DEBUG
+        switch (ins)
+        {
+            case INS_sve_fadd:
+            case INS_sve_fsub:
+            case INS_sve_fsubr:
+            {
+                assert((immDbl == 0.5) || (immDbl == 1.0));
+                break;
+            }
+
+            case INS_sve_fmax:
+            case INS_sve_fmaxnm:
+            case INS_sve_fmin:
+            case INS_sve_fminnm:
+            {
+                assert((immDbl == 0.0) || (immDbl == 1.0));
+                break;
+            }
+
+            case INS_sve_fmul:
+            {
+                assert((immDbl == 0.5) || (immDbl == 2.0));
+                break;
+            }
+
+            default:
+            {
+                assert(false, "!\"Invalid instruction\"");
+                break;
+            }
+        }
+#endif
+
+        // Each supported instruction uses one immediate bit to distinguish its two legal constants.
+        if (immDbl < 1.0)
+        {
+            return 0;
+        }
+
+        return 1;
+    }
 }
 #endif
