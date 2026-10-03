@@ -45,6 +45,18 @@ skips. An unrelated varargs case failed when the entire SysV orchestration
 fixture was tried; it is outside this helper change and is not counted as
 acceptance evidence.
 
+## 2026-10-03: Isolating xarch call generation
+
+`CodeGen.Calls.cs` now stays in the xarch source set instead of being
+re-included for other targets. Its terminating non-xarch `genCall` dependency
+is declared in `codegencommon/CodeGen.CallDependencies.cs` for non-Wasm,
+non-xarch targets; Wasm retains its separate call implementation. The xarch
+call algorithm and its x86/AMD64 branches are unchanged. Compile-item
+evaluation across eight RIDs selects `CodeGen.Calls.cs` only for `win-x64` and
+`win-x86`, while retaining the common dependency source. Focused Windows-x64
+`CodeGenCallTests` passed 42/42 Debug and 31/31 Release, with no skips. This
+does not establish non-xarch compilation or runtime parity.
+
 ## 2026-10-03: LSRA multi-register definition-list removal
 
 The complete native `RefInfoList::removeListNode(GenTree*, unsigned)` overload

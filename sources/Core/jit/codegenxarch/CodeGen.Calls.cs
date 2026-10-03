@@ -7,12 +7,8 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if !TARGET_WASM
     public unsafe void genCall(GenTreeCall call)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Call generation requires xarch.");
-#else
 #if TARGET_AMD64
         Emitter.RequireSupportedInstructionRecording();
 #endif
@@ -200,9 +196,7 @@ public sealed partial class CodeGen
         SubtractStackLevel(unchecked((uint)stackArgBytes));
 #endif
         genRemoveAlignmentAfterCall(call, stackAdjustBias);
-#endif
     }
-#endif
 
     private void genAlignStackBeforeCall(GenTreePutArgStk putArgStk)
     {

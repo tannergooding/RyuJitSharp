@@ -636,6 +636,7 @@
                       jit\codegenxarch\CodeGen.Binary.cs;
                       jit\codegenxarch\CodeGen.BlockMemory.cs;
                       jit\codegenxarch\CodeGen.ByteSwap.cs;
+                      jit\codegenxarch\CodeGen.Calls.cs;
                       jit\codegenxarch\CodeGen.Comparisons.cs;
                       jit\codegenxarch\CodeGen.ConditionalSelection.cs;
                       jit\codegenxarch\CodeGen.Conditions.cs;
