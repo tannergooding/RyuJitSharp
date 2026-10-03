@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using NUnit.Framework;
@@ -10,6 +11,8 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class BitSetSupportTests
 {
+    private static readonly uint[] s_expectedBitIndexes = [0, 10, 63, 64, 129];
+
     [Test]
     public static void OperationCounterWritesSortedCountsAtTheNativeInterval()
     {
@@ -50,5 +53,60 @@ internal static class BitSetSupportTests
                 File.Delete(path);
             }
         }
+    }
+
+    [Test]
+    public static void IteratorTraversesEveryWordAndPreservesOutputOnEnd()
+    {
+        var environment = new TestEnvironment(size: 130);
+        var bitSet = BitSetOps<TestEnvironment, TestBitSetTraits>.MakeEmpty(environment);
+
+        foreach (var bitIndex in s_expectedBitIndexes)
+        {
+            BitSetOps<TestEnvironment, TestBitSetTraits>.AddElemD(environment, bitSet, (int)bitIndex);
+        }
+
+        var iterator = new BitSetOps<TestEnvironment, TestBitSetTraits>.Iter(environment, bitSet);
+        var visited = new List<uint>();
+        var bit = uint.MaxValue;
+
+        while (iterator.NextElem(ref bit))
+        {
+            visited.Add(bit);
+        }
+
+        Assert.That(visited, Is.EqualTo(s_expectedBitIndexes));
+        Assert.That(iterator.NextElem(ref bit), Is.False);
+        Assert.That(bit, Is.EqualTo(s_expectedBitIndexes[^1]));
+
+        var emptyEnvironment = new TestEnvironment(size: 0);
+        var emptyBitSet = BitSetOps<TestEnvironment, TestBitSetTraits>.MakeEmpty(emptyEnvironment);
+        var emptyIterator = new BitSetOps<TestEnvironment, TestBitSetTraits>.Iter(emptyEnvironment, emptyBitSet);
+        bit = 73;
+        Assert.That(emptyIterator.NextElem(ref bit), Is.False);
+        Assert.That(bit, Is.EqualTo(73));
+    }
+
+    private sealed class TestEnvironment
+    {
+        public TestEnvironment(int size)
+        {
+            Size = size;
+        }
+
+        public int Size { get; }
+    }
+
+    private readonly struct TestBitSetTraits : IBitSetTraits<TestEnvironment>
+    {
+        public static int GetArrSize(TestEnvironment env)
+        {
+            var bitsPerWord = IntPtr.Size * 8;
+            return (env.Size + bitsPerWord - 1) / bitsPerWord;
+        }
+
+        public static int GetEpoch(TestEnvironment env) => 0;
+
+        public static int GetSize(TestEnvironment env) => env.Size;
     }
 }

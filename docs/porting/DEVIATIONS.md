@@ -90,6 +90,13 @@ C# helpers may replace native structure where appropriate. Examples include
 collection ordering, integer semantics, ownership, and native interop contracts.
 Larger algorithmic or architectural changes require separate approval.
 
+The native short/long bitset representation stores small sets directly in a
+pointer-sized value and larger sets in allocator-backed words. Managed
+`BitSetOps` uses `nint[]` words for both cases. Its `Iter` reads exactly the
+trait-reported word count and yields increasing unsigned bit indexes without
+allocating; this internal representation change does not accept diagnostic or
+generated-code differences.
+
 Shared call and frame policy uses existing full-space `regMaskTP` construction
 for native register-mask aliases; ARM double argument segments include both
 register halves. Poison values preserve target pointer width and low-eight-bit
@@ -2124,6 +2131,22 @@ that RyuJIT's callbacks write to the selected output stream. The native callback
 are variadic and cannot be supplied directly by `UnmanagedCallersOnly`. A native
 callback bridge or another exact ABI solution needs approval; the buffered draft
 is not used as a success-shaped approximation (B241).
+
+### D010: Deferred bitset operation-count tracking
+
+**Status:** explicit NYI boundary for disabled instrumentation; not an accepted
+output exception.
+
+Native `BitSetOps::Iter::NextElem` contains a `BITSET_TRACK_OPCOUNTS` branch that
+calls `BitSetStaticsImpl::RecordOp`. The pinned oracle has only that call site:
+no definition or declaration of `BitSetStaticsImpl` and no definition of
+`BITSET_TRACK_OPCOUNTS` were found. Managed `Iter.NextElem` preserves the branch
+and throws `NotImplementedException` if the symbol is explicitly enabled. The
+pinned Windows-x64 configuration does not enable it, so ordinary iteration is
+unaffected. `BitSetOpsWithCounter` remains untranslated and `VARSET_COUNTOPS` is
+zero. Implement exact tracking before enabling either instrumentation path.
+Full-analysis Windows-x64 `BitSetSupportTests` pass 2/2 in Debug and Release;
+these are helper tests, not runtime or generated-code parity.
 
 ## Implementation notes and parity findings
 

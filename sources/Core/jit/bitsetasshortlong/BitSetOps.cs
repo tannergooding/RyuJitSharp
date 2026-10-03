@@ -400,4 +400,56 @@ public struct BitSetOps<TEnv, TBitSetTraits>
 
         return true;
     }
+
+    public ref struct Iter
+    {
+        private readonly ReadOnlySpan<nint> _bitSet;
+        private nint _bits;
+        private int _bitSetIndex;
+        private uint _bitNum;
+
+        public Iter(TEnv env, ReadOnlySpan<nint> bitSet)
+        {
+            var arraySize = TBitSetTraits.GetArrSize(env);
+            assert(!bitSet.IsEmpty || arraySize == 0);
+
+            _bitSet = bitSet[..arraySize];
+            _bits = _bitSet.IsEmpty ? 0 : _bitSet[0];
+            _bitSetIndex = 0;
+            _bitNum = 0;
+        }
+
+        public bool NextElem(ref uint element)
+        {
+#if BITSET_TRACK_OPCOUNTS
+            RecordNextBit();
+#endif
+            while (true)
+            {
+                if (_bits != 0)
+                {
+                    var nextBit = (uint)nint.TrailingZeroCount(_bits);
+                    element = unchecked(_bitNum + nextBit);
+                    _bits &= ~((nint)1 << (int)nextBit);
+                    return true;
+                }
+
+                _bitSetIndex++;
+                if (_bitSetIndex >= _bitSet.Length)
+                {
+                    return false;
+                }
+
+                _bitNum = unchecked(_bitNum + (uint)(Unsafe.SizeOf<nint>() * 8));
+                _bits = _bitSet[_bitSetIndex];
+            }
+        }
+
+#if BITSET_TRACK_OPCOUNTS
+        private static void RecordNextBit()
+        {
+            throw new NotImplementedException("BITSET_TRACK_OPCOUNTS is not ported.");
+        }
+#endif
+    }
 }

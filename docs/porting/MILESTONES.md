@@ -16,6 +16,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-02: Managed bitset iterator
+
+Added the stateful `BitSetOps<TEnv, TBitSetTraits>.Iter` over the existing
+managed word representation. It preserves ascending bit order, unsigned bit
+indexes, native word-width advancement and the caller's output value when
+iteration ends. Full-analysis focused Windows-x64 `BitSetSupportTests` pass 2/2
+in Debug and Release. Native `018dc5cb` retires the remaining
+`bitsetasshortlong.h` specialization from the consolidated residual commit.
+The disabled `BITSET_TRACK_OPCOUNTS` hook remains an explicit NYI boundary under
+D010; the optional counter wrapper is not wired into production.
+
 ## 2026-10-02: Managed bitset operation counter
 
 Ported `BitSetSupport.Operation`, the operation-name table, and the complete
