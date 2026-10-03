@@ -3,12 +3,30 @@
 #if TARGET_ARM64
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.emitAttr;
+using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.instruction;
+using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm64EmitterInstructionRemovalTests
 {
+    [Test]
+    public static void LoadStoreOptimizationReturnsFalseWithoutMatchingPreviousInstruction()
+    {
+        var (_, emitter) = CreateEmitter();
+
+        Assert.That(TryOptimizeLdrStr(emitter), Is.False);
+        Assert.That(LastInstruction(emitter), Is.Null);
+
+        emitter.emitIns(INS_nop);
+        var previousInstruction = LastInstruction(emitter);
+
+        Assert.That(TryOptimizeLdrStr(emitter), Is.False);
+        Assert.That(LastInstruction(emitter), Is.SameAs(previousInstruction));
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void RemovingTheLastInstructionUpdatesCurrentOrSavedStorage(bool saveBeforeRemoval)
@@ -73,6 +91,23 @@ internal static unsafe class Arm64EmitterInstructionRemovalTests
 
         return (compiler, emitter);
     }
+
+    private static bool TryOptimizeLdrStr(Emitter emitter)
+    {
+        return OptimizeLdrStr(emitter, INS_ldr, EA_8BYTE, REG_R0, REG_SP, 0, EA_8BYTE, IF_LS_2A, false, -1, -1
+#if DEBUG
+            , false
+#endif
+        );
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "OptimizeLdrStr")]
+    private static extern bool OptimizeLdrStr(Emitter emitter, instruction ins, emitAttr reg1Attr, regNumber reg1,
+        regNumber reg2, nint imm, emitAttr size, Emitter.insFormat fmt, bool localVar, int varx, int offs
+#if DEBUG
+        , bool useRsvdReg
+#endif
+    );
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitRemoveLastInstruction")]
     private static extern void RemoveLastInstruction(Emitter emitter);

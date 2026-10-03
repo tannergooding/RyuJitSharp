@@ -456,10 +456,83 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)0x12345));
     }
 
+    [TestCase(false, REG_R19, REG_R21)]
+    [TestCase(true, REG_R21, REG_R19)]
+    public static void AdjacentLoadsCombineInAddressOrder(bool descending, regNumber firstExpected, regNumber secondExpected)
+    {
+        var emitter = CreateEmitter(optimized: true);
+#if DEBUG
+        using var tls = new JitTls(null);
+        JitTls.Compiler = EmitterCompiler(emitter);
+#endif
+
+        RecordPair(emitter, INS_ldr, EA_4BYTE, REG_R19, REG_R20, descending ? 4 : 0,
+            INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+        RecordPair(emitter, INS_ldr, EA_4BYTE, REG_R21, REG_R20, descending ? 0 : 4,
+            INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+
+        var instructions = CurrentInstructions(emitter);
+        Assert.That(instructions, Has.Count.EqualTo(1));
+        var pair = instructions[0];
+        Assert.That(pair.idIns(), Is.EqualTo(INS_ldp));
+        Assert.That(pair.idInsFmt(), Is.EqualTo(IF_LS_3B));
+        Assert.That(pair.idReg1(), Is.EqualTo(firstExpected));
+        Assert.That(pair.idReg2(), Is.EqualTo(secondExpected));
+        Assert.That(pair.idReg3(), Is.EqualTo(REG_R20));
+        Assert.That(Emitter.emitGetInsSC(pair), Is.Zero);
+    }
+
+    [Test]
+    public static void RepeatedLoadFromSameAddressBecomesMove()
+    {
+        var emitter = CreateEmitter(optimized: true);
+#if DEBUG
+        using var tls = new JitTls(null);
+        JitTls.Compiler = EmitterCompiler(emitter);
+#endif
+
+        RecordPair(emitter, INS_ldr, EA_8BYTE, REG_R19, REG_R20, 0,
+            INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+        RecordPair(emitter, INS_ldr, EA_8BYTE, REG_R21, REG_R20, 0,
+            INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+
+        var instructions = CurrentInstructions(emitter);
+        Assert.That(instructions, Has.Count.EqualTo(2));
+        Assert.That(instructions[0].idIns(), Is.EqualTo(INS_ldr));
+        Assert.That(instructions[1].idIns(), Is.EqualTo(INS_mov));
+        Assert.That(instructions[1].idReg1(), Is.EqualTo(REG_R21));
+        Assert.That(instructions[1].idReg2(), Is.EqualTo(REG_R19));
+        Assert.That(instructions[1].idOpSize(), Is.EqualTo(EA_8BYTE));
+    }
+
+    [TestCase(INS_add, 8, 8)]
+    [TestCase(INS_sub, 8, -8)]
+    public static void StackPointerAdjustmentCombinesWithPreviousLoad(instruction ins, int immediate, int expectedOffset)
+    {
+        var emitter = CreateEmitter(optimized: true);
+#if DEBUG
+        using var tls = new JitTls(null);
+        JitTls.Compiler = EmitterCompiler(emitter);
+#endif
+
+        RecordPair(emitter, INS_ldr, EA_8BYTE, REG_R19, REG_R20, 0,
+            INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+        RecordPair(emitter, ins, EA_8BYTE, REG_R20, REG_R20, immediate,
+            INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+
+        var instructions = CurrentInstructions(emitter);
+        Assert.That(instructions, Has.Count.EqualTo(1));
+        var postIndexed = instructions[0];
+        Assert.That(postIndexed.idIns(), Is.EqualTo(INS_ldr));
+        Assert.That(postIndexed.idInsFmt(), Is.EqualTo(IF_LS_2C));
+        Assert.That(postIndexed.idInsOpt(), Is.EqualTo(INS_OPTS_POST_INDEX));
+        Assert.That(postIndexed.idReg1(), Is.EqualTo(REG_R19));
+        Assert.That(postIndexed.idReg2(), Is.EqualTo(REG_R20));
+        Assert.That(Emitter.emitGetInsSC(postIndexed), Is.EqualTo((nint)expectedOffset));
+    }
+
     [TestCase(INS_nop, 1, false, false, REG_R20, "SVE two-register/immediate")]
     [TestCase(INS_ldr, 0, false, true, REG_R20, "relocatable page-offset load folding")]
-    [TestCase(INS_ldr, 8, true, false, REG_R20, "load/store instruction optimization")]
-    [TestCase(INS_add, 8, true, false, REG_R19, "post-indexed instruction optimization")]
     public static void PairImmediateDependenciesRemainExplicit(instruction ins, int imm,
         bool optimized, bool reloc, regNumber reg2, string dependency)
     {
@@ -1864,26 +1937,26 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(id.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(8));
     }
 
-    [TestCase(false)]
-    [TestCase(true)]
-    public static void LocalStackOptimizationRemainsAnExplicitDependency(bool store)
+    [TestCase(false, INS_ldr)]
+    [TestCase(true, INS_str)]
+    public static void LocalStackLoadStoreRecordsWithoutAnOptimizationCandidate(bool store, instruction expected)
     {
         var emitter = CreateLocalStackEmitter(0, false);
         var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
         compiler.opts.compMinOpts = false;
         compiler.opts.canUseAllOpts = true;
-        Assert.That(() =>
+        if (store)
         {
-            if (store)
-            {
-                RecordLocalStore(emitter, INS_str, EA_8BYTE, REG_R4, 0, 0);
-            }
-            else
-            {
-                RecordLocalLoad(emitter, INS_ldr, EA_8BYTE, REG_R4, 0, 0);
-            }
-        }, Throws.TypeOf<FatalJitException>().With.Message.Contains("load/store instruction optimization"));
-        Assert.That(GroupSize(emitter), Is.Zero);
+            RecordLocalStore(emitter, expected, EA_8BYTE, REG_R4, 0, 0);
+        }
+        else
+        {
+            RecordLocalLoad(emitter, expected, EA_8BYTE, REG_R4, 0, 0);
+        }
+
+        var instruction = LastInstruction(emitter) ?? throw new AssertionException("No local stack access was recorded.");
+        Assert.That(instruction.idIns(), Is.EqualTo(expected));
+        Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
 
     [TestCase(31, "SVE", 0)]
