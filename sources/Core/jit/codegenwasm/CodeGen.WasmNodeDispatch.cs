@@ -339,11 +339,6 @@ public sealed partial class CodeGen
     }
 #endif
 
-    private void genCodeForShift(GenTree tree)
-    {
-        WasmCodegenDependencyNotPorted(tree, nameof(genCodeForShift));
-    }
-
     private void genCodeForCompare(GenTreeOp tree)
     {
         WasmCodegenDependencyNotPorted(tree, nameof(genCodeForCompare));
