@@ -36,6 +36,29 @@ native HEAD. A broader ARM64 label-class selection has two failures in
 `ChangedCallLivenessReachesTheRequiredPaddingDependency`, outside this
 diagnostic; no generated-code or runtime parity is claimed.
 
+## 2026-10-03: Frame-reference diagnostic retirement
+
+Completed the target-family `emitter::emitDispFrameRef` mapping in
+`Emitter.InstructionDisplay.Support.cs`. The existing xarch frame-layout
+formatter is unchanged; ARM/ARM64 preserve temporary/local names, lowercase
+hex displacements, and optional scoped local names. LoongArch64/RISC-V retain
+their terminating target-specific NYI boundaries.
+
+Full-analysis Windows-x64 `EmitterXarchDiagnosticHelpersTests` pass 25/25 in
+Debug and Release. ARM32- and ARM64-target output tests pass 3/3 Debug and 1/1
+Release each on a Windows-x64 host; these validate managed target logic, not
+target execution or generated-code parity. LoongArch64/RISC-V target builds
+remain blocked by unrelated unsupported-platform/compiler diagnostics and are
+not claimed as passing.
+
+Native ARM, ARM64, LoongArch64, and RISC-V definitions were each verified
+byte-identical to the pinned oracle before retirement (107 deletion lines
+total). Native `99901ba4` amends the consolidated residual commit, sole-parented
+to the pinned oracle. The shared `emit.h` declaration remains for untranslated
+ARM/ARM64 callers. Recovery ref
+`refs/copilot-recovery/emit-frame-reference-before-0803f7da` preserves the
+prior native HEAD. No new runtime or emitted-code parity is claimed.
+
 ## 2026-10-03: GC diagnostic prototype reconciliation
 
 Reused the accepted shared-GC diagnostic mapping and its full-analysis evidence:

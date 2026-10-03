@@ -3,13 +3,14 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 using System.Globalization;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
+#if TARGET_XARCH
     private void emitDispFrameRef(int variable, int displacement, uint ilOffset, bool assembly)
     {
         var compiler = _compiler ?? throw new FatalJitException("Frame reference display requires an active compiler.");
@@ -80,7 +81,70 @@ public partial class Emitter
         }
 #endif
     }
+#elif TARGET_ARM || TARGET_ARM64
+    private void emitDispFrameRef(int variable, int displacement, uint ilOffset, bool assembly)
+    {
+#if DEBUG
+        var compiler = _compiler ?? throw new FatalJitException("Frame reference display requires an active compiler.");
+        jitprintf("[");
+        if (variable < 0)
+        {
+            var temporary = unchecked(-variable).ToString("D2", CultureInfo.InvariantCulture);
+            jitprintf($"TEMP_{temporary}");
+        }
+        else
+        {
+            compiler.gtDispLclVar(variable, false);
+        }
 
+        if (displacement < 0)
+        {
+            var magnitude = unchecked(-displacement).ToString("x2", CultureInfo.InvariantCulture);
+            jitprintf($"-0x{magnitude}");
+        }
+        else if (displacement > 0)
+        {
+            jitprintf($"+0x{displacement.ToString("x2", CultureInfo.InvariantCulture)}");
+        }
+
+        jitprintf("]");
+
+        if (variable >= 0 && compiler.opts.varNames && ilOffset != unchecked((uint)BAD_IL_OFFSET))
+        {
+            var variableName = compiler.compLocalVarName(variable, unchecked((int)ilOffset));
+            if (variableName is not null)
+            {
+                jitprintf($"'{variableName}");
+                if (displacement < 0)
+                {
+                    jitprintf($"-{unchecked(-displacement).ToString(CultureInfo.InvariantCulture)}");
+                }
+                else if (displacement > 0)
+                {
+                    jitprintf($"+{displacement.ToString(CultureInfo.InvariantCulture)}");
+                }
+                jitprintf("'");
+            }
+        }
+#endif
+    }
+#elif TARGET_LOONGARCH64
+#if DEBUG
+    private void emitDispFrameRef(int variable, int displacement, uint ilOffset, bool assembly)
+    {
+        throw new FatalJitException("emitDispFrameRef-----unused on LoongArch64.");
+    }
+#endif
+#elif TARGET_RISCV64
+#if DEBUG
+    private void emitDispFrameRef(int variable, int displacement, uint ilOffset, bool assembly)
+    {
+        throw new FatalJitException("emitDispFrameRef-----unimplemented/unused on RISCV64 yet----");
+    }
+#endif
+#endif
+
+#if TARGET_XARCH
     private unsafe void emitDispClsVar(CORINFO_FIELD_HANDLE field, nint offset, bool reloc)
     {
         var compiler = _compiler ?? throw new FatalJitException("Static reference display requires an active compiler.");
@@ -133,5 +197,6 @@ public partial class Emitter
         }
 #endif
     }
+#endif
 }
 #endif
