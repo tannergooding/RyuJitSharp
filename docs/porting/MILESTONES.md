@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Cross-target local reference counting
+
+Removed the Windows-AMD64-only rejection from the whole
+`Compiler::lvaComputeRefCounts` method, retaining its native imprecise fast path
+and shared precise-refcount dispatch. Full-analysis Windows-x64
+`LocalReferenceAccountingTests` plus the target-neutral fixture pass 34/34
+Debug and 33/33 Release. The target fixture passes 2/2 Debug and Release for
+linux-arm64 and 2/2 Debug for browser-wasm.
+
+Native `2ab01486` retires the complete 100-line residual definition and its
+declaration; the two `lower.cpp` callsites remain because their caller is
+unported. Cross-target cases exercise MinOpts initialization and precise
+accounting with an empty block list, not whole-pipeline or generated-code
+parity. Evidence is recorded in `state.json`.
+
 ## 2026-10-03: Cross-target funclet creation
 
 Completed the whole `Compiler::fgCreateFunclets` method without the prior
@@ -25,10 +40,11 @@ Windows-x64 funclet tests pass 6/6 in Debug and Release; target-neutral descript
 tests pass 1/1 Debug and Release for linux-arm64 and 1/1 Debug for browser-wasm.
 The browser-wasm source build has no warnings or errors.
 
-Native `b1054b98` retires the complete 126-line residual definition before this
-managed completion. The recovery ref preserves the prior consolidated native
-HEAD. Cross-target tests cover descriptor defaults, not generated-code or EH
-runtime parity; `FuncInfoRange` remains required by the unported Wasm allocator.
+Native `2ab01486` retains the complete 126-line residual definition retirement
+before this managed completion. The recovery ref preserves the prior
+consolidated native HEAD. Cross-target tests cover descriptor defaults, not
+generated-code or EH runtime parity; `FuncInfoRange` remains required by the
+unported Wasm allocator.
 
 ## 2026-10-03: Emitter method statistics
 

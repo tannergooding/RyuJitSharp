@@ -85,7 +85,6 @@ public partial class Compiler
 
     public void lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
     {
-#if WINDOWS_AMD64_ABI
         JITDUMP("\n*** lvaComputeRefCounts ***\n");
         if (!PreciseRefCountsRequired)
         {
@@ -135,9 +134,6 @@ public partial class Compiler
         }
 
         lvaComputePreciseRefCounts(isRecompute, setSlotNumbers);
-#else
-        throw new System.NotImplementedException("Local reference accounting outside Windows AMD64 is not ported.");
-#endif
     }
 
     private void lvaComputePreciseRefCounts(bool isRecompute, bool setSlotNumbers)
