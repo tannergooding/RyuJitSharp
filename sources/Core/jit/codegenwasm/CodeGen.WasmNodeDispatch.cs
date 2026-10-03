@@ -470,7 +470,9 @@ public sealed partial class CodeGen
 
     private void genCodeForFrameSize(GenTree tree)
     {
-        WasmCodegenDependencyNotPorted(tree, nameof(genCodeForFrameSize));
+        assert(tree.Oper is GT_FRAME_SIZE);
+        GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)_compiler.compLclFrameSize));
+        WasmProduceReg(tree);
     }
 
     private void genCodeForIndir(GenTreeIndir tree)
