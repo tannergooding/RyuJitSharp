@@ -489,7 +489,33 @@ public sealed partial class CodeGen
 
     private void genLeaInstruction(GenTreeAddrMode lea)
     {
-        WasmCodegenDependencyNotPorted(lea, nameof(genLeaInstruction));
+        genConsumeOperands(lea);
+        assert(lea.HasIndex || lea.HasBaseAddress);
+
+        if (lea.HasIndex)
+        {
+            var scale = lea.Scale;
+
+            if (scale > 1)
+            {
+                GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, scale);
+                GetEmitter().emitIns(INS_I_mul);
+            }
+
+            if (lea.HasBaseAddress)
+            {
+                GetEmitter().emitIns(INS_I_add);
+            }
+        }
+
+        var offset = lea.Offset;
+        if (offset != 0)
+        {
+            GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, offset);
+            GetEmitter().emitIns(INS_I_add);
+        }
+
+        WasmProduceReg(lea);
     }
 
     private void genCodeForStoreBlk(GenTreeBlk node)
