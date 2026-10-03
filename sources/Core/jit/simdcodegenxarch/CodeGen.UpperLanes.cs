@@ -7,6 +7,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+#if !TARGET_ARM64
     public void genSimdUpperSave(GenTreeIntrinsic node)
     {
 #if !TARGET_XARCH || !FEATURE_SIMD
@@ -45,6 +46,7 @@ public sealed partial class CodeGen
         }
 #endif
     }
+#endif
 
     public void genSimdUpperRestore(GenTreeIntrinsic node)
     {
