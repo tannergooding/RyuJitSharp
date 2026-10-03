@@ -55,6 +55,41 @@ internal static unsafe class StructPromotionTests
         });
     }
 
+    [TestCase(1, 0, 8, 0, 8, CORINFO_TYPE_LONG, TYP_LONG)]
+    [TestCase(1, 4, 4, 4, 4, CORINFO_TYPE_INT, TYP_INT)]
+    [TestCase(2, 0, 8, 0, 8, CORINFO_TYPE_LONG, TYP_UNDEF)]
+    [TestCase(1, 0, 8, 4, 8, CORINFO_TYPE_LONG, TYP_UNDEF)]
+    [TestCase(1, 0, 8, 0, 4, CORINFO_TYPE_LONG, TYP_UNDEF)]
+    [TestCase(1, 0, 16, 0, 16, CORINFO_TYPE_LONG, TYP_UNDEF)]
+    [TestCase(1, 2, 4, 2, 4, CORINFO_TYPE_INT, TYP_UNDEF)]
+    [TestCase(1, 0, 8, 0, 8, CORINFO_TYPE_VALUECLASS, TYP_UNDEF)]
+    public static void PrimitiveWrapperPromotionRequiresMatchingAlignedStorage(
+        int fieldCount, int wrapperOffset, int wrapperSize, int fieldOffset, int fieldSize,
+        CorInfoType fieldType, var_types expected)
+    {
+        WithCompiler((compiler, _) => {
+            var nodes = stackalloc CORINFO_TYPE_LAYOUT_NODE[2];
+            nodes[0] = new CORINFO_TYPE_LAYOUT_NODE
+            {
+                type = CORINFO_TYPE_VALUECLASS,
+                numFields = fieldCount,
+                offset = wrapperOffset,
+                size = wrapperSize,
+                simdTypeHnd = NO_CLASS_HANDLE,
+            };
+            nodes[1] = new CORINFO_TYPE_LAYOUT_NODE
+            {
+                type = fieldType,
+                offset = fieldOffset,
+                size = fieldSize,
+                simdTypeHnd = NO_CLASS_HANDLE,
+            };
+
+            var helper = compiler.structPromotionHelper ?? throw new AssertionException("Missing promotion helper.");
+            Assert.That(TryPromoteValueClassAsPrimitive(helper, nodes, 2, 0), Is.EqualTo(expected));
+        });
+    }
+
     [Test]
     public static void ClearsConservativeInlineTypeCacheBeforePromotion()
     {
@@ -227,6 +262,10 @@ internal static unsafe class StructPromotionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgPromoteStructs")]
     private static extern PhaseStatus Promote(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "TryPromoteValueClassAsPrimitive")]
+    private static extern var_types TryPromoteValueClassAsPrimitive(Compiler.StructPromotionHelper helper,
+        CORINFO_TYPE_LAYOUT_NODE* treeNodes, nint maxTreeNodes, nint index);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitMaxLocalsToTrack")]
     private static extern ref int MaxLocals(ref JitConfigValues config);

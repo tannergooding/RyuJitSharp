@@ -16,6 +16,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Retiring primitive-wrapper struct promotion
+
+Added eight data-driven cases for `TryPromoteValueClassAsPrimitive`, covering
+valid integer and long wrappers plus field-count, offset, storage-size,
+pointer-size, alignment, and non-primitive rejection boundaries. The focused
+Windows-x64 selection passes 25/25 Debug and 21/21 Release with no skips; its
+temporary test import excludes unrelated test files with existing compile and
+analyzer failures. The full-analysis Windows-x64 compiler build also passes
+after the `IDE0007` fix in `fa7dcc25`.
+
+The 108-line `Compiler::TryPromoteValueClassAsPrimitive` body in `lclvars.cpp`
+matched the pinned oracle and managed implementation; no native caller or
+declaration remained. It was removed from the consolidated native residual at
+HEAD `90fee7a580d10628500cbd8a341ef8e0ac1e5b83`, solely parented to pinned
+oracle `33baf8ee337b20dd0f184b69a6f09be92850bf9e`. Recovery ref
+`refs/copilot-recovery/struct-promotion-helper-before-4ae417c8` preserves the
+prior HEAD. This records focused helper coverage and retirement, not broader
+runtime or other-target parity.
+
 ## 2026-10-03: Retiring the LSRA reference-node pool
 
 The committed managed `RefInfoListNodePool` and `LinearScan` reference-building
