@@ -191,5 +191,33 @@ public sealed partial class CodeGen
 
         genProduceReg(treeNode);
     }
+
+    public void genCkfinite(GenTree treeNode)
+    {
+        assert(treeNode.Oper is GT_CKFINITE);
+
+        var op1 = treeNode.AsOp().Op1;
+        var targetType = treeNode.Type;
+        var expMask = 0x381; // fclass bits 0 and 7-9 identify infinities and NaNs.
+
+        var emit = Emitter;
+        var attr = targetType.EmitActualSize;
+
+        var intReg = InternalRegisters.GetSingle(treeNode);
+        var fpReg = genConsumeReg(op1);
+
+        var classifyIns = attr == EA_4BYTE ? INS_fclass_s : INS_fclass_d;
+        emit.emitIns_R_R(classifyIns, attr, intReg, fpReg);
+        emit.emitIns_R_R_I(INS_andi, EA_PTRSIZE, intReg, intReg, expMask);
+
+        genJumpToThrowHlpBlk_la(SCK_ARITH_EXCPN, INS_bne, intReg);
+
+        if (treeNode.RegNum != fpReg)
+        {
+            inst_Mov(targetType, treeNode.RegNum, fpReg, canSkip: true);
+        }
+
+        genProduceReg(treeNode);
+    }
 }
 #endif

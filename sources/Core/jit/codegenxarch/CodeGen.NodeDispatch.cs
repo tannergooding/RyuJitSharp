@@ -110,6 +110,11 @@ public sealed partial class CodeGen
                 genCodeForReturnTrap(tree.AsUnOp());
                 return;
             }
+            case GT_CKFINITE:
+            {
+                genCkfinite(tree);
+                return;
+            }
             case GT_JMPTABLE:
             {
                 genJumpTable(tree);

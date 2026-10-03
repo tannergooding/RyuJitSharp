@@ -261,5 +261,45 @@ public sealed partial class CodeGen
 
         genProduceReg(treeNode);
     }
+
+    public void genCkfinite(GenTree treeNode)
+    {
+        assert(treeNode.Oper is GT_CKFINITE);
+
+        var op1 = treeNode.AsOp().Op1;
+        var targetType = treeNode.Type;
+        nint expMask = targetType is TYP_FLOAT ? 0xFF : 0x7FF;
+        var exponentSize = targetType is TYP_FLOAT ? 8 : 11;
+        var exponentPosition = targetType is TYP_FLOAT ? 23 : 52;
+
+        var emit = Emitter;
+        var attr = targetType.EmitActualSize;
+
+        var intReg = InternalRegisters.GetSingle(treeNode);
+        var fpReg = genConsumeReg(op1);
+
+        // Extract the exponent and compare it with the all-ones representation for infinity or NaN.
+        var moveIns = attr == EA_8BYTE ? INS_movfr2gr_d : INS_movfr2gr_s;
+        emit.emitIns_R_R(moveIns, attr, intReg, fpReg);
+
+        var extractExponentIns = targetType is TYP_FLOAT ? INS_bstrpick_w : INS_bstrpick_d;
+        emit.emitIns_R_R_I_I(
+            extractExponentIns,
+            EA_PTRSIZE,
+            intReg,
+            intReg,
+            exponentPosition + exponentSize - 1,
+            exponentPosition);
+
+        emit.emitIns_R_R_I(INS_xori, attr, intReg, intReg, expMask);
+        genJumpToThrowHlpBlk_la(SCK_ARITH_EXCPN, INS_beq, intReg);
+
+        if (treeNode.RegNum != fpReg)
+        {
+            emit.emitIns_R_R(ins_Copy(targetType), attr, treeNode.RegNum, fpReg);
+        }
+
+        genProduceReg(treeNode);
+    }
 }
 #endif

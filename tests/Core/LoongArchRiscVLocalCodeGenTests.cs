@@ -571,6 +571,30 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         });
     }
 
+    [TestCase(TYP_FLOAT)]
+    [TestCase(TYP_DOUBLE)]
+    public static void CkfiniteDispatchReachesTheTargetInstructionBoundary(var_types type)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+            var operand = compiler.gtNewDconNode(type, -0.0);
+            operand.RegNum = REG_F0;
+
+            var tree = compiler.gtNewUnaryNode(GT_CKFINITE, type, operand);
+            tree.RegNum = REG_F1;
+#if TARGET_LOONGARCH64
+            codeGen.InternalRegisters.Add(tree, regMaskTP.CreateFromRegNum(REG_R21, REG_R21.SingleTypeMask));
+#else
+            codeGen.InternalRegisters.Add(tree, regMaskTP.CreateFromRegNum(REG_S2, REG_S2.SingleTypeMask));
+#endif
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
+
+            Assert.That(failure?.Message, Does.Contain("Target two-register instruction recording is not implemented."));
+        });
+    }
+
 #if FEATURE_SIMD
     [Test]
     public static void Simd12LocalVariableStoreStopsAtTheTargetBoundary()
