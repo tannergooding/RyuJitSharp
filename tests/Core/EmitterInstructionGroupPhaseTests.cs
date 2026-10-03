@@ -22,10 +22,32 @@ internal static class EmitterInstructionGroupPhaseTests
 
         Assert.That(emitter.emitGeneratingPrologOrFuncletProlog(), Is.False);
         Assert.That(emitter.emitGeneratingEpilogOrFuncletEpilog(), Is.False);
+        Assert.That(IsInProlog(emitter, null), Is.False);
+        Assert.That(IsInEpilog(emitter, null), Is.False);
+        Assert.That(IsInFuncletProlog(emitter, null), Is.False);
+        Assert.That(IsInFuncletEpilog(emitter, null), Is.False);
 
         emitter.emitCurIG = new insGroup { igFlags = flags };
 
         Assert.That(emitter.emitGeneratingPrologOrFuncletProlog(), Is.EqualTo(expectedProlog));
         Assert.That(emitter.emitGeneratingEpilogOrFuncletEpilog(), Is.EqualTo(expectedEpilog));
+        Assert.That(IsInProlog(emitter, emitter.emitCurIG), Is.EqualTo((flags & InsGroupFlags.Prolog) != 0));
+        Assert.That(IsInEpilog(emitter, emitter.emitCurIG), Is.EqualTo((flags & InsGroupFlags.Epilog) != 0));
+        Assert.That(IsInFuncletProlog(emitter, emitter.emitCurIG),
+            Is.EqualTo((flags & InsGroupFlags.FuncletProlog) != 0));
+        Assert.That(IsInFuncletEpilog(emitter, emitter.emitCurIG),
+            Is.EqualTo((flags & InsGroupFlags.FuncletEpilog) != 0));
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitIGisInProlog")]
+    private static extern bool IsInProlog(Emitter emitter, insGroup? group);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitIGisInEpilog")]
+    private static extern bool IsInEpilog(Emitter emitter, insGroup? group);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitIGisInFuncletProlog")]
+    private static extern bool IsInFuncletProlog(Emitter emitter, insGroup? group);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitIGisInFuncletEpilog")]
+    private static extern bool IsInFuncletEpilog(Emitter emitter, insGroup? group);
 }

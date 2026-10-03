@@ -7,6 +7,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    // Currently, we only allow one instruction group for the prolog.
     private static bool emitIGisInProlog(insGroup? ig)
         => ig is not null && (ig.igFlags & InsGroupFlags.Prolog) != 0;
 
