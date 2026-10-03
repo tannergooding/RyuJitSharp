@@ -16,6 +16,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: LSRA kill-reference construction
+
+Reconciled the existing managed `LinearScan.addKillForRegs` helper with its
+retained native definition. The complete native body matched the pinned oracle
+exactly (720 bytes, 18 lines; SHA-256
+`1c168d1a7a512a10ac3955b52d9acef063f1cd91778fde4690e667a47154f2cd`). Managed
+register tracking preserves the full mask, the native `DEBUGARG(true)` dump
+suppression, the low-bank initial assignment, and kill-list insertion order.
+
+The focused Windows-x64
+`KillBuilderLinksInLocationOrderAndMarksFullMasksModified` fixture passes 1/1
+in Debug and Release, with zero skips. Native `b390652e` amends the consolidated
+residual commit, sole-parented to the pinned oracle, and removes the complete
+definition and its exclusive `lsra.h` declaration (27 deletion lines). No
+native callers remained in the residual tree. Recovery ref
+`refs/copilot-recovery/lsra-add-kill-for-regs-before-4e92683f` preserves the
+previous native HEAD. This helper-level result does not establish full
+compiler-pipeline, runtime, or generated-code parity.
+
 ## 2026-10-03: LSRA async-continuation busy reference
 
 Reconciled the retained shared `LinearScan::MarkAsyncContinuationBusyForCall`
