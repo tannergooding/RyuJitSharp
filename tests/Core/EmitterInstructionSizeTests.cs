@@ -15,6 +15,19 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterInstructionSizeTests
 {
+    [TestCase(0)]
+    [TestCase(1)]
+    [TestCase(byte.MaxValue)]
+    public static void EmitCodeWithInstructionSizeReturnsAfterAndStoresTheByteCount(int length)
+    {
+        byte* before = stackalloc byte[byte.MaxValue + 1];
+        byte* after = before + length;
+        byte size = 0;
+
+        Assert.That((nint)EmitCodeWithInstructionSize(before, after, &size), Is.EqualTo((nint)after));
+        Assert.That(size, Is.EqualTo((byte)length));
+    }
+
 #if TARGET_X86
     [TestCase(INS_addps, EA_16BYTE, IF_RWR_SRD, 4, 256, 16, true)]
     [TestCase(INS_pslld, EA_16BYTE, IF_RWR_RRD_SRD, 4, 16, 1, true)]
@@ -253,4 +266,7 @@ internal static unsafe class EmitterInstructionSizeTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "TakesEvexPrefix")]
     private static extern bool TakesEvexPrefix(Emitter emitter, Emitter.instrDesc id);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitCodeWithInstructionSize")]
+    private static extern byte* EmitCodeWithInstructionSize(byte* before, byte* after, byte* size);
 }
