@@ -145,6 +145,45 @@ internal static unsafe class FlowGraphDumpTests
     }
 
     [Test]
+    public static void EdgeWeightDumpPreservesPredecessorOrderAndMaxSentinel()
+    {
+        WithGraph(compiler => {
+            var entry = compiler.fgFirstBB;
+            var body = entry?.Next;
+            var exit = compiler.fgLastBB;
+            assert(entry is not null);
+            assert(body is not null);
+            assert(exit is not null);
+
+            entry.bbWeight = 6;
+            body.bbWeight = 5;
+            exit.bbWeight = BB_MAX_WEIGHT;
+            var maxEdge = new FlowEdge(exit, body, body.bbPreds) { Likelihood = 1 };
+            body.bbPreds = maxEdge;
+            exit.bbPreds = null;
+
+            using var memory = new MemoryStream();
+            using var writer = new StreamWriter(memory, new UTF8Encoding(false), leaveOpen: true);
+            var previous = s_jitstdout;
+            s_jitstdout = writer;
+            try
+            {
+                compiler.fgPrintEdgeWeights();
+                writer.Flush();
+
+                Assert.That(Encoding.UTF8.GetString(memory.ToArray()), Is.EqualTo(
+                    $"    Edge weights into {FMT_BB(entry.bbNum)} :{FMT_BB(body.bbNum)} (5.000000)\n" +
+                    $"    Edge weights into {FMT_BB(body.bbNum)} :{FMT_BB(exit.bbNum)} (MAX), " +
+                    $"{FMT_BB(entry.bbNum)} (3.000000)\n"));
+            }
+            finally
+            {
+                s_jitstdout = previous;
+            }
+        });
+    }
+
+    [Test]
     public static void XmlPreservesNativeLabelsEscapingWeightsAndEdges()
     {
         WithGraph(compiler => {

@@ -13,6 +13,29 @@ namespace RyuJitSharp;
 public partial class Compiler
 {
 #if DEBUG
+    public void fgPrintEdgeWeights()
+    {
+        foreach (var destination in Blocks)
+        {
+            if (destination.bbPreds is not null)
+            {
+                jitprintf($"    Edge weights into {FMT_BB(destination.bbNum)} :");
+                foreach (var edge in destination.PredEdges)
+                {
+                    jitprintf($"{FMT_BB(edge.SourceBlock.bbNum)} ");
+
+                    var weight = edge.LikelyWeight;
+                    jitprintf(weight < BB_MAX_WEIGHT ? $"({formatFloat(weight, "F6")})" : "(MAX)");
+                    if (edge.NextPredEdge is not null)
+                    {
+                        jitprintf(", ");
+                    }
+                }
+                jitprintf("\n");
+            }
+        }
+    }
+
     public void fgDebugCheckNodeLinks(BasicBlock block, Statement stmt)
     {
         assert(fgNodeThreading is not NodeThreading.None);

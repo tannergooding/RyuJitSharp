@@ -16,6 +16,21 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Managed edge-weight diagnostics
+
+Added the DEBUG-only `Compiler.fgPrintEdgeWeights` binding, preserving block
+and predecessor traversal order, `BB_MAX_WEIGHT` formatting, and six-digit
+finite weights. The focused Windows-x64 `FlowGraphDumpTests` selection passes
+55/55 Debug with zero skips.
+
+The exact native DEBUG body and its exclusive `compiler.h` declaration were
+removed from the consolidated residual (46 deletion lines). Native HEAD
+`2d65721c8cc3d98ef6ebb81a74176ca4a3b24ef6` remains solely parented to the
+pinned oracle; recovery ref
+`refs/copilot-recovery/fg-print-edge-weights-before-90fee7a` preserves the
+previous HEAD. This focused diagnostic result does not establish runtime,
+generated-code, or other-target parity.
+
 ## 2026-10-03: Retiring primitive-wrapper struct promotion
 
 Added eight data-driven cases for `TryPromoteValueClassAsPrimitive`, covering
