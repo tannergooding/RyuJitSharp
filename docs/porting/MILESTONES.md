@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: EE variable diagnostic retirement
+
+Accepted the existing Debug-only `Compiler::eeDispVar` binding, used by the
+managed `eeDispVars` reporter. `ScopeReportingTests` and
+`CodeGenSiVarLocDiagnosticsTests` pass 30/30 Debug and 19/19 Release. New
+focused cases cover the varargs, return-buffer and type-context names and the
+unknown-variable fallback; existing location tests cover Windows-x64 register,
+floating-register, stack and register-pair formatting.
+
+Native `6d229a56` amends the consolidated residual commit, sole-parented to the
+pinned oracle, and removes the complete 135-line method plus its DEBUG guard
+and exclusive `compiler.h` declaration. Recovery ref
+`refs/copilot-recovery/ee-disp-var-before-00cad7dc` preserves the previous
+native HEAD. The method is Debug-only diagnostic output; no runtime or
+non-Windows-x64 parity is claimed.
+
 ## 2026-10-03: Register-allocation stack-home method retirement
 
 Accepted the existing whole `Compiler::raMarkStkVars` implementation after

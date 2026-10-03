@@ -349,6 +349,33 @@ internal static unsafe class ScopeReportingTests
         });
     }
 
+    [TestCase(unchecked((int)ICorDebugInfo.VARARGS_HND_ILNUM), "varargsHandle")]
+    [TestCase(unchecked((int)ICorDebugInfo.RETBUF_ILNUM), "retBuff")]
+    [TestCase(unchecked((int)ICorDebugInfo.TYPECTXT_ILNUM), "typeCtx")]
+    [TestCase(123, "UNKNOWN")]
+    public static void DebugVariableDiagnosticsRetainSpecialNamesAndUnknownFallback(int variableNumber, string name)
+    {
+        WithCompiler((compiler, _, _) =>
+        {
+            var location = Register(REG_RCX);
+            var nativeLocation = Unsafe.As<CodeGen.siVarLoc, ICorDebugInfo.VarLoc>(ref location);
+
+            var dump = Capture(() =>
+            {
+                var variable = new ICorDebugInfo.NativeVarInfo
+                {
+                    startOffset = 2,
+                    endOffset = 11,
+                    varNumber = unchecked((uint)variableNumber),
+                    loc = nativeLocation,
+                };
+                compiler.eeDispVar(&variable);
+            });
+
+            Assert.That(dump, Is.EqualTo($"({name,8}) : From 00000002h to 0000000Bh, in rcx{Environment.NewLine}"));
+        });
+    }
+
     [Test]
     public static void DebugLayoutCheckUsesTheEEStorage()
     {
