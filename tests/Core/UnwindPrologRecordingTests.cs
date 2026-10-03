@@ -38,6 +38,16 @@ internal static class UnwindPrologRecordingTests
         });
     }
 
+    [Test]
+    public static void BeginningPrologRejectsNestedProlog()
+    {
+        WithProlog((compiler, _) =>
+        {
+            Assert.That(() => compiler.unwindBegProlog(), Throws.Exception);
+            Assert.That(compiler.compGeneratingUnwindProlog, Is.True);
+        });
+    }
+
     [TestCase(8u, 2u)]
     [TestCase(128u, 2u)]
     [TestCase(136u, 4u)]

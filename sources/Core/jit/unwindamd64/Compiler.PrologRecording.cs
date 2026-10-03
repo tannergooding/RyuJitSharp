@@ -41,8 +41,49 @@ public partial class Compiler
         RequireSupportedUnwindFormat();
         noway_assert(!compGeneratingUnwindProlog);
         compGeneratingUnwindProlog = true;
-        unwindBegPrologWindows();
+#if UNIX_AMD64_ABI
+        if (generateCFIUnwindCodes())
+        {
+            unwindBegPrologCFI();
+        }
+        else
+#endif
+        {
+            unwindBegPrologWindows();
+        }
     }
+
+#if UNIX_AMD64_ABI
+    private void unwindBegPrologCFI()
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "AMD64 CFI unwind prolog recording is not implemented.");
+    }
+
+    private void unwindPushPopCFI(regNumber reg)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "AMD64 CFI register-push recording is not implemented.");
+    }
+
+    private void unwindPush2Pop2CFI(regNumber reg1, regNumber reg2)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "AMD64 CFI paired-register-push recording is not implemented.");
+    }
+
+    private void unwindAllocStackCFI(uint size)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "AMD64 CFI stack-allocation recording is not implemented.");
+    }
+
+    private void unwindSetFrameRegCFI(regNumber reg, uint offset)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "AMD64 CFI frame-register recording is not implemented.");
+    }
+
+    private void unwindSaveRegCFI(regNumber reg, uint offset)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "AMD64 CFI register-save recording is not implemented.");
+    }
+#endif
 
     private void unwindBegPrologWindows()
     {
@@ -96,13 +137,31 @@ public partial class Compiler
     public void unwindPush(regNumber reg)
     {
         RequireSupportedUnwindFormat();
-        unwindPushWindows(reg);
+#if UNIX_AMD64_ABI
+        if (generateCFIUnwindCodes())
+        {
+            unwindPushPopCFI(reg);
+        }
+        else
+#endif
+        {
+            unwindPushWindows(reg);
+        }
     }
 
     public void unwindPush2(regNumber reg1, regNumber reg2)
     {
         RequireSupportedUnwindFormat();
-        unwindPush2Windows(reg1, reg2);
+#if UNIX_AMD64_ABI
+        if (generateCFIUnwindCodes())
+        {
+            unwindPush2Pop2CFI(reg1, reg2);
+        }
+        else
+#endif
+        {
+            unwindPush2Windows(reg1, reg2);
+        }
     }
 
     private void unwindPush2Windows(regNumber reg1, regNumber reg2)
@@ -135,7 +194,16 @@ public partial class Compiler
     public void unwindAllocStack(uint size)
     {
         RequireSupportedUnwindFormat();
-        unwindAllocStackWindows(size);
+#if UNIX_AMD64_ABI
+        if (generateCFIUnwindCodes())
+        {
+            unwindAllocStackCFI(size);
+        }
+        else
+#endif
+        {
+            unwindAllocStackWindows(size);
+        }
     }
 
     private void unwindAllocStackWindows(uint size)
@@ -174,7 +242,16 @@ public partial class Compiler
     public void unwindSetFrameReg(regNumber reg, uint offset)
     {
         RequireSupportedUnwindFormat();
-        unwindSetFrameRegWindows(reg, offset);
+#if UNIX_AMD64_ABI
+        if (generateCFIUnwindCodes())
+        {
+            unwindSetFrameRegCFI(reg, offset);
+        }
+        else
+#endif
+        {
+            unwindSetFrameRegWindows(reg, offset);
+        }
     }
 
     private void unwindSetFrameRegWindows(regNumber reg, uint offset)
@@ -207,7 +284,16 @@ public partial class Compiler
     public void unwindSaveReg(regNumber reg, uint offset)
     {
         RequireSupportedUnwindFormat();
-        unwindSaveRegWindows(reg, offset);
+#if UNIX_AMD64_ABI
+        if (generateCFIUnwindCodes())
+        {
+            unwindSaveRegCFI(reg, offset);
+        }
+        else
+#endif
+        {
+            unwindSaveRegWindows(reg, offset);
+        }
     }
 
     private void unwindSaveRegWindows(regNumber reg, uint offset)
