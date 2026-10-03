@@ -148,6 +148,91 @@ internal static unsafe class EmitterMethodStatisticsTests
     }
 
     [Test]
+    public static void ConstantAndDisplacementAllocationCountsNativeStatistics()
+    {
+        var smallCnsBuckets = SmallCnsBuckets(null);
+        var previousSmallCnsBuckets = (uint[])smallCnsBuckets.Clone();
+        var previousSmallConstants = TotalSmallConstants(null);
+        var previousLargeConstants = TotalLargeConstants(null);
+        var previousInt8Constants = Int8Constants(null);
+        var previousInt16Constants = Int16Constants(null);
+        var previousInt32Constants = Int32Constants(null);
+        var previousNegativeConstants = NegativeConstants(null);
+        var previousPowerOfTwoConstants = PowerOfTwoConstants(null);
+        var previousSmallDisplacements = SmallDisplacements(null);
+        var previousLargeDisplacements = LargeDisplacements(null);
+        var previousSmallDescriptors = TotalSmallDescriptors(null);
+        var previousInstructions = TotalInstructions(null);
+        var previousMemory = TotalMemory(null);
+
+        try
+        {
+            Array.Clear(smallCnsBuckets, 0, smallCnsBuckets.Length);
+            TotalSmallConstants(null) = 0;
+            TotalLargeConstants(null) = 0;
+            Int8Constants(null) = 0;
+            Int16Constants(null) = 0;
+            Int32Constants(null) = 0;
+            NegativeConstants(null) = 0;
+            PowerOfTwoConstants(null) = 0;
+            SmallDisplacements(null) = 0;
+            LargeDisplacements(null) = 0;
+
+            var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+            var emitter = new AllocationEmitter(new CodeGen(compiler));
+            emitter.emitBegCG(compiler, default);
+            emitter.Init();
+            Begin(emitter);
+
+            _ = emitter.AllocateSmallConstant(emitAttr.EA_4BYTE, -16);
+            _ = emitter.AllocateSmallConstant(emitAttr.EA_4BYTE, 15);
+            _ = emitter.AllocateSmallConstant(emitAttr.EA_4BYTE, 1);
+            _ = emitter.AllocateSmallConstant(emitAttr.EA_4BYTE, 16);
+            _ = emitter.AllocateConstant(emitAttr.EA_4BYTE, -1);
+            _ = emitter.AllocateConstant(emitAttr.EA_4BYTE, 128);
+            _ = emitter.AllocateConstant(emitAttr.EA_8BYTE, nint.MinValue);
+            _ = emitter.AllocateDisplacement(emitAttr.EA_4BYTE, 0);
+            _ = emitter.AllocateDisplacement(emitAttr.EA_4BYTE, 1);
+            _ = emitter.AllocateDisplacementConstant(emitAttr.EA_4BYTE, -16, 0);
+            _ = emitter.AllocateDisplacementConstant(emitAttr.EA_4BYTE, 32768, 0);
+            _ = emitter.AllocateDisplacementConstant(emitAttr.EA_4BYTE, 1, 4);
+            _ = emitter.AllocateDisplacementConstant(emitAttr.EA_4BYTE, 32768, 4);
+
+            Assert.That(TotalSmallConstants(null), Is.EqualTo(6u));
+            Assert.That(TotalLargeConstants(null), Is.EqualTo(5u));
+            Assert.That(smallCnsBuckets[112], Is.EqualTo(2u));
+            Assert.That(smallCnsBuckets[127], Is.EqualTo(1u));
+            Assert.That(smallCnsBuckets[129], Is.EqualTo(2u));
+            Assert.That(smallCnsBuckets[143], Is.EqualTo(1u));
+            Assert.That(Int8Constants(null), Is.EqualTo(7u));
+            Assert.That(Int16Constants(null), Is.EqualTo(1u));
+            Assert.That(Int32Constants(null), Is.EqualTo(2u));
+            Assert.That(NegativeConstants(null), Is.EqualTo(4u));
+            Assert.That(PowerOfTwoConstants(null), Is.EqualTo(6u));
+            Assert.That(SmallDisplacements(null), Is.EqualTo(3u));
+            Assert.That(LargeDisplacements(null), Is.EqualTo(3u));
+            Assert.That(TotalSmallDescriptors(null), Is.EqualTo(previousSmallDescriptors + 3));
+            Assert.That(TotalInstructions(null), Is.EqualTo(previousInstructions + 13));
+        }
+        finally
+        {
+            Array.Copy(previousSmallCnsBuckets, smallCnsBuckets, smallCnsBuckets.Length);
+            TotalSmallConstants(null) = previousSmallConstants;
+            TotalLargeConstants(null) = previousLargeConstants;
+            Int8Constants(null) = previousInt8Constants;
+            Int16Constants(null) = previousInt16Constants;
+            Int32Constants(null) = previousInt32Constants;
+            NegativeConstants(null) = previousNegativeConstants;
+            PowerOfTwoConstants(null) = previousPowerOfTwoConstants;
+            SmallDisplacements(null) = previousSmallDisplacements;
+            LargeDisplacements(null) = previousLargeDisplacements;
+            TotalSmallDescriptors(null) = previousSmallDescriptors;
+            TotalInstructions(null) = previousInstructions;
+            TotalMemory(null) = previousMemory;
+        }
+    }
+
+    [Test]
     public static void RawEmitterMemoryCountsTheRequestedNativeBytes()
     {
         var previousMemory = TotalMemory(null);
@@ -230,9 +315,29 @@ internal static unsafe class EmitterMethodStatisticsTests
             return Allocate<instrDescBasic>(this, 16, emitAttr.EA_4BYTE);
         }
 
-        public instrDescBasic AllocateSmall(emitAttr attr)
+        public instrDesc AllocateSmall(emitAttr attr)
         {
             return NewSmall(this, attr);
+        }
+
+        public instrDesc AllocateConstant(emitAttr attr, nint constant)
+        {
+            return NewConstant(this, attr, constant);
+        }
+
+        public instrDesc AllocateSmallConstant(emitAttr attr, nint constant)
+        {
+            return NewSmallConstant(this, attr, constant);
+        }
+
+        public instrDesc AllocateDisplacement(emitAttr attr, nint displacement)
+        {
+            return NewDisplacement(this, attr, displacement);
+        }
+
+        public instrDesc AllocateDisplacementConstant(emitAttr attr, nint constant, int displacement)
+        {
+            return NewDisplacementConstant(this, attr, constant, displacement);
         }
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitAllocAnyInstr")]
@@ -241,6 +346,18 @@ internal static unsafe class EmitterMethodStatisticsTests
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNewInstrSmall")]
         private static extern instrDescBasic NewSmall(Emitter emitter, emitAttr attr);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNewInstrCns")]
+        private static extern instrDesc NewConstant(Emitter emitter, emitAttr attr, nint constant);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNewInstrSC")]
+        private static extern instrDesc NewSmallConstant(Emitter emitter, emitAttr attr, nint constant);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNewInstrDsp")]
+        private static extern instrDesc NewDisplacement(Emitter emitter, emitAttr attr, nint displacement);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNewInstrCnsDsp")]
+        private static extern instrDesc NewDisplacementConstant(Emitter emitter, emitAttr attr, nint constant, int displacement);
     }
 
     private static void Begin(Emitter emitter)
@@ -287,6 +404,36 @@ internal static unsafe class EmitterMethodStatisticsTests
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescSmallCnt")]
     private static extern ref uint TotalSmallDescriptors(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitSmallCns")]
+    private static extern ref uint[] SmallCnsBuckets(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitSmallCnsCnt")]
+    private static extern ref uint TotalSmallConstants(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitLargeCnsCnt")]
+    private static extern ref uint TotalLargeConstants(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitInt8CnsCnt")]
+    private static extern ref uint Int8Constants(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitInt16CnsCnt")]
+    private static extern ref uint Int16Constants(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitInt32CnsCnt")]
+    private static extern ref uint Int32Constants(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitNegCnsCnt")]
+    private static extern ref uint NegativeConstants(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitPow2CnsCnt")]
+    private static extern ref uint PowerOfTwoConstants(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitSmallDspCnt")]
+    private static extern ref uint SmallDisplacements(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitLargeDspCnt")]
+    private static extern ref uint LargeDisplacements(Emitter? emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_debugInfoSize")]
     private static extern ref int DebugPrefix(Emitter emitter);
