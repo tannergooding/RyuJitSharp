@@ -1152,10 +1152,20 @@ public sealed partial class BasicBlock : LIR.Range
         }
 
 #if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "Wasm interval-aware jump elision is not implemented.");
-#else
-        return true;
+        var intervals = compiler.fgWasmIntervals;
+        if (intervals is not null)
+        {
+            var targetIndex = target.bbPreorderNum;
+            foreach (var interval in intervals)
+            {
+                if ((interval.IsTry() || interval.IsExnRefWrapper()) && (interval.End() == targetIndex))
+                {
+                    return false;
+                }
+            }
+        }
 #endif
+        return true;
     }
 
     /// <summary>gives the number of successors, and GetSucc() returns a given numbered successor.</summary>

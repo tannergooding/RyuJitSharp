@@ -50,11 +50,11 @@ internal static unsafe class WasmCallArgumentMorphTests
         WithCompiler(compiler => {
             var emitter = new CodeGen(compiler).Emitter;
 
-            Assert.Throws<FatalJitException>(() =>
+            _ = Assert.Throws<FatalJitException>(() =>
                 emitter.emitIns_I_Ty(instruction.INS_local_decl, 1, WasmValueType.I32, 0));
-            Assert.Throws<FatalJitException>(() =>
-                emitter.emitIns_S(instruction.INS_i32_store, EA_4BYTE, 0, 0));
-            Assert.Throws<FatalJitException>(() =>
+            _ = Assert.Throws<FatalJitException>(() =>
+                emitter.emitIns_S(instruction.INS_i32_store, RyuJitSharp.emitAttr.EA_4BYTE, 0, 0));
+            _ = Assert.Throws<FatalJitException>(() =>
                 emitter.emitFuncletAddressConstant((nint)0));
         });
     }
@@ -101,7 +101,7 @@ internal static unsafe class WasmCallArgumentMorphTests
             compiler.lvaTable[0].RegNum = register;
 
             var initRegStillZeroed = true;
-            new CodeGen(compiler).genHomeRegisterParams(REG_NA, ref initRegStillZeroed);
+            new CodeGen(compiler).genHomeRegisterParams(RyuJitSharp.regNumber.REG_NA, ref initRegStillZeroed);
 
             Assert.That(initRegStillZeroed, Is.True);
         });

@@ -9570,6 +9570,15 @@ Added scalar and floating-point constant folding, integral ranges, assertion
 tables and invalidation, scalar value-number storage, non-negativity reasoning
 through cyclic SSA definitions, and conditional bounds assertions.
 
+## 2026-10-03: Wasm interval-aware jump elision
+
+Basic-block jump elision now preserves Wasm try and exception-reference wrapper
+boundaries while retaining the existing shared fall-through decisions. The
+Windows-x64 branch-optimization fixture passes 22/22, and the focused Wasm
+target tests pass 81/81 with a clean full-analysis Wasm Core build. These tests
+run Wasm-targeted managed logic on the Windows host; they do not establish
+browser-Wasm execution or generated-code parity.
+
 ## Earlier port milestones
 
 | Date | Development |

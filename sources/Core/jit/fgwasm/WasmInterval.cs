@@ -122,10 +122,11 @@ public sealed class WasmInterval
     // Construct the [exnref]-result wrapper paired with a Try interval.
     public static WasmInterval NewExnRefWrapper(BasicBlock start, BasicBlock end)
     {
-        var result = new WasmInterval(
-            unchecked((uint)start.bbPreorderNum), unchecked((uint)end.bbPreorderNum), Kind.Block);
-        result._isExnRefWrapper = true;
-        return result;
+        return new WasmInterval(
+            unchecked((uint)start.bbPreorderNum), unchecked((uint)end.bbPreorderNum), Kind.Block)
+        {
+            _isExnRefWrapper = true,
+        };
     }
 
 #if DEBUG

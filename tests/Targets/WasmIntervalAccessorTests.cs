@@ -1,9 +1,13 @@
 #if TARGET_WASM
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.BBKinds;
 
 namespace RyuJitSharp.Target.UnitTests;
 
-internal static class WasmIntervalAccessorTests
+internal static unsafe class WasmIntervalAccessorTests
 {
     [Test]
     public static void IntervalAccessorsExposeBoundaryAndKindMetadata()
@@ -50,6 +54,73 @@ internal static class WasmIntervalAccessorTests
         Assert.That(root.ChainEnd(), Is.EqualTo(12u));
         Assert.That(first.FetchAndUpdateChain(), Is.SameAs(root));
         Assert.That(first.Chain(), Is.SameAs(root));
+    }
+
+    [Test]
+    public static void JumpElisionPreservesWasmIntervalBoundaries()
+    {
+        WithCompiler(compiler => {
+            var jump = NewBlock(compiler, BBJ_ALWAYS);
+            var target = NewBlock(compiler, BBJ_RETURN);
+            var otherTarget = NewBlock(compiler, BBJ_RETURN);
+            jump.bbPreorderNum = 0;
+            target.bbPreorderNum = 1;
+            otherTarget.bbPreorderNum = 2;
+            jump.Next = target;
+            compiler.fgFirstBB = jump;
+            compiler.fgLastBB = target;
+            jump.TargetEdge = compiler.fgAddRefPred(target, jump);
+            var intervals = new List<WasmInterval> {
+                WasmInterval.NewBlock(jump, target)
+            };
+            compiler.fgWasmIntervals = intervals;
+
+            Assert.That(jump.CanRemoveJumpToTarget(target, compiler), Is.True);
+
+            intervals[0] = WasmInterval.NewLoop(jump, target);
+            Assert.That(jump.CanRemoveJumpToTarget(target, compiler), Is.True);
+
+            intervals[0] = WasmInterval.NewTry(jump, target);
+            Assert.That(jump.CanRemoveJumpToTarget(target, compiler), Is.False);
+
+            intervals[0] = WasmInterval.NewExnRefWrapper(jump, target);
+            Assert.That(jump.CanRemoveJumpToTarget(target, compiler), Is.False);
+
+            intervals[0] = WasmInterval.NewTry(jump, otherTarget);
+            Assert.That(jump.CanRemoveJumpToTarget(target, compiler), Is.True);
+        });
+    }
+
+    private static BasicBlock NewBlock(Compiler compiler, BBKinds kind)
+    {
+        var block = BasicBlock.New(compiler, kind);
+        block.bbRefs = 0;
+        return block;
+    }
+
+    private static void WithCompiler(Action<Compiler> action)
+    {
+#if DEBUG
+        using var tls = new JitTls(null);
+#endif
+        var previous = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        compiler.fgPredsComputed = true;
+        compiler.fgWasmIntervals = [];
+#if DEBUG
+        compiler.fgSafeBasicBlockCreation = true;
+        compiler.fgSafeFlowEdgeCreation = true;
+#endif
+        JitTls.Compiler = compiler;
+
+        try
+        {
+            action(compiler);
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
     }
 }
 #endif
