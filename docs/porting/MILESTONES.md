@@ -16,6 +16,18 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Isolating AMD64 APX epilog emission
+
+Moved the complete `genPopCalleeSavedRegistersFromMaskAPX` implementation from
+the mixed xarch epilog partial to `codegenamd64/CodeGen.CalleeSavedRegisters.cs`.
+Its native definition in `codegenxarch.cpp` is guarded by `TARGET_AMD64`, and
+its managed caller is likewise AMD64-only; the new source glob is excluded when
+`RyuJitTargetArchitecture` is not `x64`. The native definition was already
+absent from `runtime-port`, so no new retirement is claimed. The eight-RID
+compile-item check includes the new source only for x64. Windows-x64
+`CodeGenEpilogTests` passed 11/11 Debug and 11/11 Release with no skips. This
+source-ownership change does not claim other-target or generated-code parity.
+
 ## 2026-10-03: Isolating xarch block-memory sources
 
 The pinned native CMake source set includes `codegenxarch.cpp` only for AMD64

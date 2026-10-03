@@ -618,6 +618,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(RyuJitTargetArchitecture)' != 'x64'">
+    <Compile Remove="jit\codegenamd64\**\*.cs" />
     <Compile Remove="jit\targetamd64\**\*.cs" />
     <Compile Remove="jit\unwindamd64\Compiler.PrologRecording.cs" />
     <Compile Remove="jit\unwindamd64\Compiler.UnwindPublication.cs" />
