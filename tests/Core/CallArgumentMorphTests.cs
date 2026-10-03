@@ -171,6 +171,36 @@ internal static unsafe class CallArgumentMorphTests
     }
 
     [Test]
+    public static void ReclassificationRecomputesRegisterAndStackArgumentFlags()
+    {
+        WithCompiler(compiler => {
+            var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
+            var arguments = new CallArg[5];
+            for (var index = 0; index < 5; index++)
+            {
+                arguments[index] = call.Args.PushBack(
+                    NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, index)));
+            }
+
+            call.Args.AddFinalArgsAndDetermineAbiInfo(compiler, call);
+            Assert.That(call.Args.HasRegArgs, Is.True);
+            Assert.That(call.Args.HasStackArgs, Is.True);
+            Assert.That(call.Args.OutgoingArgsStackSize, Is.EqualTo(40));
+
+            call.Args.ResetFinalArgsAndAbiInfo();
+            for (var index = 1; index < arguments.Length; index++)
+            {
+                call.Args.Remove(arguments[index]);
+            }
+
+            call.Args.AddFinalArgsAndDetermineAbiInfo(compiler, call);
+            Assert.That(call.Args.HasRegArgs, Is.True);
+            Assert.That(call.Args.HasStackArgs, Is.False);
+            Assert.That(call.Args.OutgoingArgsStackSize, Is.EqualTo(32));
+        });
+    }
+
+    [Test]
     public static void SignatureTypesAndPseudoArgumentsDriveClassification()
     {
         WithCompiler(compiler => {
