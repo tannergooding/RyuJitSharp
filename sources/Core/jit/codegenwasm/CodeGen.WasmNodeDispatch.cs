@@ -995,7 +995,126 @@ public sealed partial class CodeGen
 
     private void genLclHeap(GenTree tree)
     {
-        WasmCodegenDependencyNotPorted(tree, nameof(genLclHeap));
+        assert(tree.OperIs(GT_LCLHEAP));
+        assert(_compiler.compLocallocUsed);
+        assert(IsFramePointerUsed);
+
+        var needsZeroing = _compiler.info.compInitMem;
+        var size = tree.AsOp().Op1;
+        nuint reservedSpace = STACK_ALIGN;
+
+        if (size.IsContainedIntOrIImmed)
+        {
+            var amount = unchecked((nuint)size.AsIntCon().IconValue);
+            if (amount == 0)
+            {
+                GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+            }
+            else
+            {
+                var alignmentMask = unchecked((nuint)(STACK_ALIGN - 1));
+                amount = unchecked((amount + reservedSpace + alignmentMask) & ~alignmentMask);
+
+                GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
+                GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)amount));
+                GetEmitter().emitIns(INS_I_sub);
+                GetEmitter().emitIns_I(INS_local_set, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
+
+                if (needsZeroing)
+                {
+                    GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
+                    GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+                    GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)amount));
+                    GetEmitter().emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+                }
+
+                GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
+                GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetFramePointerRegIndex()));
+                GetEmitter().emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, TARGET_POINTER_SIZE);
+
+                GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
+                GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+                GetEmitter().emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
+
+                GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
+                GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)reservedSpace));
+                GetEmitter().emitIns(INS_I_add);
+            }
+        }
+        else
+        {
+            genConsumeReg(size);
+
+            if (genTypeSize(genActualType(size.Type)) < TARGET_POINTER_SIZE)
+            {
+                assert(TARGET_POINTER_SIZE == 8);
+                GetEmitter().emitIns(INS_i64_extend_u_i32);
+            }
+
+            var internalRegisterCount = GetWasmInternalRegisterCount(tree);
+            assert(internalRegisterCount == 1);
+            var sizeReg = ExtractWasmInternalRegister(tree);
+            assert(regNumberExtensions.WasmRegToType(sizeReg) == TypeToWasmValueType(TYP_I_IMPL));
+
+            GetEmitter().emitIns_I(
+                INS_local_tee,
+                EA_PTRSIZE,
+                unchecked((nint)regNumberExtensions.WasmRegToIndex(sizeReg)));
+            GetEmitter().emitIns(INS_I_eqz);
+            genEmitIf(WasmValueType.I);
+            GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+            GetEmitter().emitIns(INS_else);
+
+            GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
+            GetEmitter().emitIns_I(
+                INS_local_get,
+                EA_PTRSIZE,
+                unchecked((nint)regNumberExtensions.WasmRegToIndex(sizeReg)));
+            GetEmitter().emitIns_I(
+                INS_I_const,
+                EA_PTRSIZE,
+                unchecked((nint)(reservedSpace + (nuint)STACK_ALIGN - (nuint)1)));
+            GetEmitter().emitIns(INS_I_add);
+            GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)~(nint)(STACK_ALIGN - 1)));
+            GetEmitter().emitIns(INS_I_and);
+
+            if (needsZeroing)
+            {
+                GetEmitter().emitIns_I(
+                    INS_local_tee,
+                    EA_PTRSIZE,
+                    unchecked((nint)regNumberExtensions.WasmRegToIndex(sizeReg)));
+            }
+
+            GetEmitter().emitIns(INS_I_sub);
+            GetEmitter().emitIns_I(INS_local_set, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
+
+            if (needsZeroing)
+            {
+                GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
+                GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+                GetEmitter().emitIns_I(
+                    INS_local_get,
+                    EA_PTRSIZE,
+                    unchecked((nint)regNumberExtensions.WasmRegToIndex(sizeReg)));
+                GetEmitter().emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
+            }
+
+            GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
+            GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetFramePointerRegIndex()));
+            GetEmitter().emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, TARGET_POINTER_SIZE);
+
+            GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
+            GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+            GetEmitter().emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
+
+            GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
+            GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)reservedSpace));
+            GetEmitter().emitIns(INS_I_add);
+            genEmitEndIf();
+        }
+
+        WasmProduceReg(tree);
     }
 
     private void genCodeForIndexAddr(GenTreeIndexAddr tree)
