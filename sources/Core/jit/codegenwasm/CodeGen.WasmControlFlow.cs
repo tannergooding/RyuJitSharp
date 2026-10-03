@@ -29,6 +29,67 @@ public sealed partial class CodeGen
         }
     }
 
+    private unsafe void genCallFinallyWasm(BasicBlock block)
+    {
+        assert(block.Kind is BBJ_CALLFINALLY);
+
+        var finallyTarget = block.Target;
+        ref var ehDsc = ref _compiler.ehGetBlockHndDsc(finallyTarget);
+        assert(ehDsc.ebdHandlerType is EH_HANDLER_FINALLY);
+        assert(ehDsc.ebdHndBeg == finallyTarget);
+
+        var funcletIndex = ehDsc.ebdFuncIndex;
+        assert((funcletIndex >= 1) && (funcletIndex < _compiler.compFuncCount()));
+
+        var parameters = new EmitCallParams
+        {
+            callType = EC_INDIR_R,
+        };
+
+        // A finally takes SP and FP as arguments, and returns nothing.
+        var pointerType = TARGET_POINTER_SIZE == 4 ? CORINFO_WASM_TYPE_I32 : CORINFO_WASM_TYPE_I64;
+        var typeStack = new ArrayStack<CorInfoWasmType>();
+        typeStack.Push(CORINFO_WASM_TYPE_VOID);
+        typeStack.Push(pointerType);
+        typeStack.Push(pointerType);
+
+        CORINFO_WASM_TYPE_SYMBOL_HANDLE wasmSignature;
+        fixed (CorInfoWasmType* types = typeStack.Data())
+        {
+            wasmSignature = _compiler.info.compCompHnd->getWasmTypeSymbol(types, typeStack.Height());
+        }
+
+        GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
+        GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetFramePointerRegIndex()));
+        GetEmitter().emitFuncletAddressConstant(unchecked((nint)funcletIndex));
+
+        genEmitWasmCallWithCurrentGC(wasmSignature, ref parameters);
+
+        if (block.HasFlag(BBF_RETLESS_CALL))
+        {
+            GetEmitter().emitIns(INS_unreachable);
+
+            // Every Wasm function body must end with `end`, even when a retless call ends the block.
+            if (block.IsLast() || _compiler.bbIsFuncletBeg(block.Next))
+            {
+                GetEmitter().emitIns(INS_end);
+            }
+
+            return;
+        }
+
+        assert(block.isBBCallFinallyPair);
+        var callFinallyRet = block.Next;
+        assert(callFinallyRet.Kind is BBJ_CALLFINALLYRET);
+
+        var continuation = callFinallyRet.Target;
+        // Branch to the continuation block if it is not the next block.
+        if (continuation != callFinallyRet.Next)
+        {
+            inst_JMP(EJ_jmp, continuation);
+        }
+    }
+
     public void genTableBasedSwitch(GenTree treeNode)
     {
         var block = _compiler.compCurBB;

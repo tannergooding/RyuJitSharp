@@ -45,6 +45,8 @@ public sealed partial class CodeGen
 
             Emitter.emitEnableGC();
         }
+#elif TARGET_WASM
+        genCallFinallyWasm(block);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Finally-call generation requires xarch.");
 #else
