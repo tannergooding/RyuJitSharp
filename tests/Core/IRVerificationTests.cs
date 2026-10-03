@@ -5,7 +5,9 @@ using System;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.GenTreeFlags;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
@@ -74,6 +76,65 @@ internal static class IRVerificationTests
             var negation = new GenTreeUnOp(GT_NEG, TYP_INT, compiler.gtNewIconNode(TYP_INT, 1));
             negation.Flags |= GTF_REVERSE_OPS;
             Assert.That(() => compiler.fgDebugCheckFlagsAndTypes(negation, block), Throws.Exception);
+        });
+    }
+
+    [Test]
+    public static void PhysicalRegisterFactoryPreservesTheSourceRegister()
+    {
+        SsaLivenessTests.WithCompiler(0, compiler => {
+            var node = compiler.gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
+            Assert.That(node.Oper, Is.EqualTo(GT_PHYSREG));
+            Assert.That(node.Type, Is.EqualTo(TYP_I_IMPL));
+            Assert.That(node.SrcReg, Is.EqualTo(REG_SPBASE));
+
+#if TARGET_ARM64
+            Assert.That(genIsValidIntReg(REG_FFR), Is.False);
+            var ffrNode = compiler.gtNewPhysRegNode(REG_FFR, TYP_MASK);
+            Assert.That(ffrNode.SrcReg, Is.EqualTo(REG_FFR));
+#endif
+
+            Assert.That(() => compiler.gtNewPhysRegNode(REG_NA, TYP_I_IMPL), Throws.Exception);
+        });
+    }
+
+    [Test]
+    public static void ConditionalFactoryPreservesOperandsAndEffects()
+    {
+        SsaLivenessTests.WithCompiler(0, compiler => {
+            var condition = compiler.gtNewIconNode(TYP_INT, 1);
+            var trueValue = compiler.gtNewIconNode(TYP_INT, 2);
+            var falseValue = compiler.gtNewIconNode(TYP_INT, 3);
+            condition.Flags |= GTF_EXCEPT;
+            trueValue.Flags |= GTF_ASG;
+            falseValue.Flags |= GTF_CALL;
+
+            var node = compiler.gtNewConditionalNode(GT_SELECT, condition, trueValue, falseValue, TYP_INT);
+
+            Assert.That(node.Oper, Is.EqualTo(GT_SELECT));
+            Assert.That(node.Type, Is.EqualTo(TYP_INT));
+            Assert.That(node.Cond, Is.SameAs(condition));
+            Assert.That(node.Op1, Is.SameAs(trueValue));
+            Assert.That(node.Op2, Is.SameAs(falseValue));
+            Assert.That(node.Flags & GTF_ALL_EFFECT, Is.EqualTo(GTF_EXCEPT | GTF_ASG | GTF_CALL));
+
+            Assert.That(
+                () => compiler.gtNewConditionalNode(GT_ADD, condition, trueValue, falseValue, TYP_INT),
+                Throws.Exception);
+        });
+    }
+
+    [Test]
+    public static void FieldListFactoryCreatesContainedStructNodes()
+    {
+        SsaLivenessTests.WithCompiler(0, compiler => {
+            var first = compiler.gtNewFieldList();
+            var second = compiler.gtNewFieldList();
+
+            Assert.That(first.Oper, Is.EqualTo(GT_FIELD_LIST));
+            Assert.That(first.Type, Is.EqualTo(TYP_STRUCT));
+            Assert.That(first.IsContained, Is.True);
+            Assert.That(first, Is.Not.SameAs(second));
         });
     }
 
