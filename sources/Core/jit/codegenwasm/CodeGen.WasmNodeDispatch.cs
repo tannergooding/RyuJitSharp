@@ -438,7 +438,53 @@ public sealed partial class CodeGen
 
     private void genCodeForIndexAddr(GenTreeIndexAddr tree)
     {
-        WasmCodegenDependencyNotPorted(tree, nameof(genCodeForIndexAddr));
+        genConsumeOperands(tree);
+
+        var baseAddress = tree.Arr;
+        var index = tree.Index;
+
+        assert(varTypeIsIntegral(index.Type));
+        var indexType = genActualType(index.Type);
+
+        // Generate the bounds check if necessary.
+        if (tree.IsBoundsChecked)
+        {
+            var baseReg = GetMultiUseOperandReg(baseAddress);
+            var indexReg = GetMultiUseOperandReg(index);
+
+            // Fetch the index, then the array length.
+            genEmitLocalGet(indexReg, index.Type);
+            genEmitLocalGet(baseReg, WasmValueType.I);
+            GetEmitter().emitIns_I(ins_Load(TYP_INT), EA_4BYTE, tree.LenOffset);
+
+            // If the index type is long, extend the array length.
+            if (indexType == TYP_LONG)
+            {
+                GetEmitter().emitIns(INS_i64_extend_u_i32);
+            }
+
+            GetEmitter().emitIns(indexType == TYP_LONG ? INS_i64_ge_u : INS_i32_ge_u);
+            genJumpToThrowHlpBlk(SCK_RNGCHK_FAIL);
+        }
+
+        // Zero extend the index if necessary.
+        if (indexType != TYP_I_IMPL)
+        {
+            GetEmitter().emitIns(INS_i64_extend_u_i32);
+        }
+
+        // The result is the address of the array element.
+        var scale = tree.ElemSize;
+        if (scale > 1)
+        {
+            GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, scale);
+            GetEmitter().emitIns(INS_I_mul);
+        }
+
+        GetEmitter().emitIns(INS_I_add);
+        GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, tree.ElemOffset);
+        GetEmitter().emitIns(INS_I_add);
+        WasmProduceReg(tree);
     }
 
     private void genLeaInstruction(GenTreeAddrMode lea)
