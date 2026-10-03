@@ -18,6 +18,45 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterSimdMultioperandInstructionTests
 {
+    [TestCase(INS_vblendmps, true)]
+    [TestCase(INS_vblendmpd, true)]
+    [TestCase(INS_vpblendmb, true)]
+    [TestCase(INS_vpblendmd, true)]
+    [TestCase(INS_vpblendmq, true)]
+    [TestCase(INS_vpblendmw, true)]
+    [TestCase(INS_vblendvps, false)]
+    public static void Avx512BlendClassifierMatchesInstructionSet(instruction ins, bool expected)
+    {
+        WithEmitter((_, emitter) =>
+        {
+            Assert.That(IsAvx512Blendv(emitter, ins), Is.EqualTo(expected));
+        });
+    }
+
+    [TestCase(INS_vblendvps, true)]
+    [TestCase(INS_vblendvpd, true)]
+    [TestCase(INS_vpblendvb, true)]
+    [TestCase(INS_blendvps, false)]
+    public static void AvxBlendClassifierMatchesInstructionSet(instruction ins, bool expected)
+    {
+        WithEmitter((_, emitter) =>
+        {
+            Assert.That(IsAvxBlendv(emitter, ins), Is.EqualTo(expected));
+        });
+    }
+
+    [TestCase(INS_blendvps, true)]
+    [TestCase(INS_blendvpd, true)]
+    [TestCase(INS_pblendvb, true)]
+    [TestCase(INS_vblendvps, false)]
+    public static void Sse41BlendClassifierMatchesInstructionSet(instruction ins, bool expected)
+    {
+        WithEmitter((_, emitter) =>
+        {
+            Assert.That(IsSse41Blendv(emitter, ins), Is.EqualTo(expected));
+        });
+    }
+
     [Test]
     public static void BlendAddressWrapperRecordsItsOperands()
     {
@@ -867,6 +906,15 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetInsDsp")]
     private static extern nint FieldDisplacement(Emitter emitter, Emitter.instrDesc descriptor);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "isAvx512Blendv")]
+    private static extern bool IsAvx512Blendv(Emitter emitter, instruction ins);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "isAvxBlendv")]
+    private static extern bool IsAvxBlendv(Emitter emitter, instruction ins);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "isSse41Blendv")]
+    private static extern bool IsSse41Blendv(Emitter emitter, instruction ins);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? Buffer(Emitter emitter);
