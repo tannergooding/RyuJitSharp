@@ -59,31 +59,47 @@ public partial class Compiler
 
         if (isHotCode || isFunclet)
         {
-            var codes = func.unwindCodes ?? throw new InvalidOperationException("The prolog unwind codes have not been recorded.");
-            noway_assert(func.unwindHeader.Version == 1);
-            noway_assert(func.unwindHeader.CountOfUnwindCodes == 0);
-
-            if (func.unwindCodeSlot < codes.Length)
+#if UNIX_AMD64_ABI
+            if (generateCFIUnwindCodes())
             {
-                func.unwindHeader.SizeOfProlog = codes[func.unwindCodeSlot];
+                unwindReserveFuncHelperCFI(ref func, isHotCode);
             }
             else
+#endif
             {
-                func.unwindHeader.SizeOfProlog = 0;
+                var codes = func.unwindCodes ?? throw new InvalidOperationException("The prolog unwind codes have not been recorded.");
+                noway_assert(func.unwindHeader.Version == 1);
+                noway_assert(func.unwindHeader.CountOfUnwindCodes == 0);
+
+                if (func.unwindCodeSlot < codes.Length)
+                {
+                    func.unwindHeader.SizeOfProlog = codes[func.unwindCodeSlot];
+                }
+                else
+                {
+                    func.unwindHeader.SizeOfProlog = 0;
+                }
+
+                noway_assert(func.unwindCodeSlot >= 4);
+                noway_assert((codes.Length - func.unwindCodeSlot) % 2 == 0);
+                func.unwindHeader.CountOfUnwindCodes = checked((byte)((codes.Length - func.unwindCodeSlot) / 2));
+                func.unwindCodeSlot -= 4;
+
+                var header = func.unwindHeader;
+                MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref header, 1)).CopyTo(codes.AsSpan((int)func.unwindCodeSlot, 4));
+                unwindCodeBytes = codes.Length - (int)func.unwindCodeSlot;
             }
-
-            noway_assert(func.unwindCodeSlot >= 4);
-            noway_assert((codes.Length - func.unwindCodeSlot) % 2 == 0);
-            func.unwindHeader.CountOfUnwindCodes = checked((byte)((codes.Length - func.unwindCodeSlot) / 2));
-            func.unwindCodeSlot -= 4;
-
-            var header = func.unwindHeader;
-            MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref header, 1)).CopyTo(codes.AsSpan((int)func.unwindCodeSlot, 4));
-            unwindCodeBytes = codes.Length - (int)func.unwindCodeSlot;
         }
 
         eeReserveUnwindInfo(isFunclet, !isHotCode, unwindCodeBytes);
     }
+
+#if UNIX_AMD64_ABI
+    private void unwindReserveFuncHelperCFI(ref FuncInfoDsc func, bool isHotCode)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "AMD64 CFI unwind reservation is not implemented.");
+    }
+#endif
 
     public unsafe void unwindEmit(void* pHotCode, void* pColdCode)
     {
@@ -130,55 +146,72 @@ public partial class Compiler
         var endLocation = isHotCode ? func.endLoc : func.coldEndLoc;
         var startOffset = startLocation?.CodeOffset(emitter) ?? 0u;
         var endOffset = endLocation?.CodeOffset(emitter) ?? checked((uint)info.compNativeCodeSize);
-        var unwindCodeBytes = 0;
-        byte[]? unwindCodes = null;
 
-        if (isHotCode || (func.funKind != FuncKind.FUNC_ROOT))
+#if UNIX_AMD64_ABI
+        if (generateCFIUnwindCodes())
         {
-            unwindCodes = func.unwindCodes ?? throw new InvalidOperationException("The prolog unwind codes have not been reserved.");
-            noway_assert(func.unwindCodeSlot <= unwindCodes.Length - 4);
-            unwindCodeBytes = unwindCodes.Length - (int)func.unwindCodeSlot;
-            noway_assert(unwindCodeBytes == 4 + (unwindCodes[func.unwindCodeSlot + 2] * 2));
-        }
-
-#if DEBUG
-        if (opts.dspUnwind)
-        {
-            DumpUnwindInfo(isHotCode, startOffset, endOffset, unwindCodes, func.unwindCodeSlot);
-        }
-#endif
-
-        if (isHotCode)
-        {
-#if DEBUG
-            if ((JitConfig.JitFakeProcedureSplitting != 0) && (fgFirstColdBlock is not null))
-            {
-                noway_assert(endOffset <= info.compNativeCodeSize);
-            }
-            else
-#endif
-            {
-                noway_assert(endOffset <= info.compTotalHotCodeSize);
-            }
-
-            pColdCode = null;
+            unwindEmitFuncHelperCFI(in func, pHotCode, pColdCode, isHotCode);
         }
         else
+#endif
         {
-            noway_assert(fgFirstColdBlock is not null);
-            noway_assert(startOffset >= info.compTotalHotCodeSize);
-            startOffset -= checked((uint)info.compTotalHotCodeSize);
-            endOffset -= checked((uint)info.compTotalHotCodeSize);
-        }
+            var unwindCodeBytes = 0;
+            byte[]? unwindCodes = null;
 
-        // The EE consumes the unwind block during this call; pin the managed storage for its full duration.
-        fixed (byte* pStorage = unwindCodes)
-        {
-            var pUnwindBlock = unwindCodes is null ? null : pStorage + func.unwindCodeSlot;
-            eeAllocUnwindInfo((byte*)pHotCode, (byte*)pColdCode, unchecked((int)startOffset), unchecked((int)endOffset),
-                unwindCodeBytes, pUnwindBlock, (CorJitFuncKind)func.funKind);
+            if (isHotCode || (func.funKind != FuncKind.FUNC_ROOT))
+            {
+                unwindCodes = func.unwindCodes ?? throw new InvalidOperationException("The prolog unwind codes have not been reserved.");
+                noway_assert(func.unwindCodeSlot <= unwindCodes.Length - 4);
+                unwindCodeBytes = unwindCodes.Length - (int)func.unwindCodeSlot;
+                noway_assert(unwindCodeBytes == 4 + (unwindCodes[func.unwindCodeSlot + 2] * 2));
+            }
+
+#if DEBUG
+            if (opts.dspUnwind)
+            {
+                DumpUnwindInfo(isHotCode, startOffset, endOffset, unwindCodes, func.unwindCodeSlot);
+            }
+#endif
+
+            if (isHotCode)
+            {
+#if DEBUG
+                if ((JitConfig.JitFakeProcedureSplitting != 0) && (fgFirstColdBlock is not null))
+                {
+                    noway_assert(endOffset <= info.compNativeCodeSize);
+                }
+                else
+#endif
+                {
+                    noway_assert(endOffset <= info.compTotalHotCodeSize);
+                }
+
+                pColdCode = null;
+            }
+            else
+            {
+                noway_assert(fgFirstColdBlock is not null);
+                noway_assert(startOffset >= info.compTotalHotCodeSize);
+                startOffset -= checked((uint)info.compTotalHotCodeSize);
+                endOffset -= checked((uint)info.compTotalHotCodeSize);
+            }
+
+            // The EE consumes the unwind block during this call; pin the managed storage for its full duration.
+            fixed (byte* pStorage = unwindCodes)
+            {
+                var pUnwindBlock = unwindCodes is null ? null : pStorage + func.unwindCodeSlot;
+                eeAllocUnwindInfo((byte*)pHotCode, (byte*)pColdCode, unchecked((int)startOffset), unchecked((int)endOffset),
+                    unwindCodeBytes, pUnwindBlock, (CorJitFuncKind)func.funKind);
+            }
         }
     }
+
+#if UNIX_AMD64_ABI
+    private unsafe void unwindEmitFuncHelperCFI(in FuncInfoDsc func, void* pHotCode, void* pColdCode, bool isHotCode)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "AMD64 CFI unwind publication is not implemented.");
+    }
+#endif
 
     private unsafe void eeReserveUnwindInfo(bool isFunclet, bool isColdCode, int unwindSize)
     {
