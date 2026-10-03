@@ -958,6 +958,22 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     }
 #endif
 
+#if TARGET_LOONGARCH64 && FEATURE_SIMD
+    [Test]
+    public static void Simd12IndirectLoadRetainsTheTargetDependencyBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
+            var load = new GenTreeIndir(GT_IND, TYP_SIMD12, address);
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForIndir(load));
+
+            Assert.That(failure?.Message, Does.Contain("LoongArch64 SIMD12 indirect loads are not ported."));
+        });
+    }
+#endif
+
     private static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
 #if DEBUG
