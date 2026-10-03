@@ -50,6 +50,34 @@ internal static class IRVerificationTests
     }
 
     [Test]
+    public static void ReverseOperationFlagsRequireSupportedOperandOrder()
+    {
+        SsaLivenessTests.WithCompiler(0, compiler => {
+            var block = AddBlock(compiler);
+            var addition = new GenTreeOp(GT_ADD, TYP_INT,
+                compiler.gtNewIconNode(TYP_INT, 1),
+                compiler.gtNewIconNode(TYP_INT, 2));
+            addition.Flags |= GTF_REVERSE_OPS;
+
+#if TARGET_WASM
+            Assert.That(() => compiler.fgDebugCheckFlagsAndTypes(addition, block), Throws.Exception);
+#else
+            Assert.That(() => compiler.fgDebugCheckFlagsAndTypes(addition, block), Throws.Nothing);
+#endif
+
+            var comma = new GenTreeOp(GT_COMMA, TYP_INT,
+                compiler.gtNewIconNode(TYP_INT, 1),
+                compiler.gtNewIconNode(TYP_INT, 2));
+            comma.Flags |= GTF_REVERSE_OPS;
+            Assert.That(() => compiler.fgDebugCheckFlagsAndTypes(comma, block), Throws.Exception);
+
+            var negation = new GenTreeUnOp(GT_NEG, TYP_INT, compiler.gtNewIconNode(TYP_INT, 1));
+            negation.Flags |= GTF_REVERSE_OPS;
+            Assert.That(() => compiler.fgDebugCheckFlagsAndTypes(negation, block), Throws.Exception);
+        });
+    }
+
+    [Test]
     public static void ExtraFlagIsCountedOnlyInRelaxedMode()
     {
         SsaLivenessTests.WithCompiler(0, compiler => {
