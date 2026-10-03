@@ -34,6 +34,22 @@ HEAD. `addKillForRegs` remains because residual LoongArch64/RISC-V callers are
 unported. This is a mapped-retirement reconciliation, not a new runtime or
 generated-code parity claim.
 
+## 2026-10-03: LSRA call-argument-use native retirement
+
+Reconciled the existing `LinearScan.buildCallArgUses` mapping with its retained
+native definition. Focused Windows-x64 `LinearScanOperandAndCallUsesTests` pass
+6/6 Debug and 6/6 Release, with zero skips.
+
+The complete 58-line native body matched the pinned oracle exactly (1,901
+bytes; SHA-256
+`79974608a86b03b96f7315b9671acb7f24605833da46fa263c367fe8f726bf45`).
+Native `5c8d0cb5` amends the consolidated residual commit and removes the body
+and rationale (65 deletion lines). Recovery ref
+`refs/copilot-recovery/lsra-call-args-before-df0cda1e` preserves the previous
+native HEAD. The shared `lsra.h` declaration remains for untranslated
+LoongArch64 and RISC-V callers. This mapped retirement is not a new runtime or
+generated-code parity claim.
+
 ## 2026-10-03: Bounded peephole history traversal
 
 The managed emitter now preserves the complete instruction-history traversal
