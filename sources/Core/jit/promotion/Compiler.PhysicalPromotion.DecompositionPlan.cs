@@ -107,13 +107,15 @@ public partial class Compiler
                         1 => TYP_UBYTE,
                         2 => TYP_USHORT,
                         4 => TYP_INT,
+#if TARGET_64BIT
                         8 => TYP_LONG,
+#endif
 #if FEATURE_SIMD
                         16 when compiler.GetPreferredVectorByteLength() >= 16 => TYP_SIMD16,
-#endif
 #if TARGET_XARCH
                         32 when compiler.GetPreferredVectorByteLength() >= 32 => TYP_SIMD32,
                         64 when compiler.GetPreferredVectorByteLength() >= 64 => TYP_SIMD64,
+#endif
 #endif
                         _ => TYP_UNDEF,
                     };

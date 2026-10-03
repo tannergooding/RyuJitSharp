@@ -13,6 +13,7 @@ using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
+using BitVecOps = RyuJitSharp.BitSetOps<RyuJitSharp.BitVecTraits, RyuJitSharp.BitVecTraits>;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -598,6 +599,210 @@ internal static class PhysicalPromotionTests
                 Assert.That(strategy.Type, Is.EqualTo(TYP_I_IMPL));
             }
         });
+    }
+
+#if TARGET_64BIT
+    [TestCase(8, TYP_LONG)]
+#endif
+    [TestCase(1, TYP_UBYTE)]
+    [TestCase(2, TYP_USHORT)]
+    [TestCase(4, TYP_INT)]
+    public static void DecompositionSelectsSupportedScalarRemainderWidths(int layoutSize, var_types expectedType)
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler => {
+            SetStructLayout(compiler, new ClassLayout(layoutSize));
+            var plan = CreateRemainderPlan(compiler, compiler.gtNewLclvNode(TYP_STRUCT, 1));
+
+            var strategy = plan.DetermineRemainderStrategy(default);
+
+            Assert.That(strategy.Kind, Is.EqualTo(Compiler.PhysicalPromotionDecompositionPlan.RemainderKind.Primitive));
+            Assert.That(strategy.Offset, Is.Zero);
+            Assert.That(strategy.Type, Is.EqualTo(expectedType));
+        });
+    }
+
+#if FEATURE_SIMD
+    [TestCase(16, TYP_SIMD16)]
+#if TARGET_XARCH
+    [TestCase(32, TYP_SIMD32)]
+    [TestCase(64, TYP_SIMD64)]
+#endif
+    public static void DecompositionSelectsOnlyAvailableSimdRemainderWidths(int size, var_types expectedType)
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler => {
+            SetStructLayout(compiler, new ClassLayout(size));
+            var plan = CreateRemainderPlan(compiler, compiler.gtNewLclvNode(TYP_STRUCT, 1));
+
+            var strategy = plan.DetermineRemainderStrategy(default);
+            if (compiler.GetPreferredVectorByteLength() >= size)
+            {
+                Assert.That(strategy.Kind,
+                    Is.EqualTo(Compiler.PhysicalPromotionDecompositionPlan.RemainderKind.Primitive));
+                Assert.That(strategy.Type, Is.EqualTo(expectedType));
+            }
+            else
+            {
+                Assert.That(strategy.Kind,
+                    Is.EqualTo(Compiler.PhysicalPromotionDecompositionPlan.RemainderKind.FullBlock));
+            }
+        });
+    }
+#endif
+
+    [Test]
+    public static void DecompositionAllowsNonzeroScalarRemainderInitialization()
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler => {
+            SetStructLayout(compiler, new ClassLayout(4));
+            var source = compiler.gtNewUnaryNode(GT_INIT_VAL, TYP_INT,
+                compiler.gtNewIconNode(TYP_INT, 1));
+            var plan = CreateRemainderPlan(compiler, source);
+
+            var strategy = plan.DetermineRemainderStrategy(default);
+
+            Assert.That(strategy.Kind, Is.EqualTo(Compiler.PhysicalPromotionDecompositionPlan.RemainderKind.Primitive));
+            Assert.That(strategy.Type, Is.EqualTo(TYP_INT));
+        });
+    }
+
+#if FEATURE_SIMD
+    [TestCase(0)]
+    [TestCase(1)]
+    public static void DecompositionChecksInitPatternBeforeChoosingSimdRemainder(int initPattern)
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler => {
+            SetStructLayout(compiler, new ClassLayout(16));
+            var source = compiler.gtNewUnaryNode(GT_INIT_VAL, TYP_INT,
+                compiler.gtNewIconNode(TYP_INT, initPattern));
+            var plan = CreateRemainderPlan(compiler, source);
+
+            var strategy = plan.DetermineRemainderStrategy(default);
+            var supported = compiler.GetPreferredVectorByteLength() >= 16;
+            if ((initPattern == 0) && supported)
+            {
+                Assert.That(strategy.Kind,
+                    Is.EqualTo(Compiler.PhysicalPromotionDecompositionPlan.RemainderKind.Primitive));
+                Assert.That(strategy.Type, Is.EqualTo(TYP_SIMD16));
+            }
+            else
+            {
+                Assert.That(strategy.Kind,
+                    Is.EqualTo(Compiler.PhysicalPromotionDecompositionPlan.RemainderKind.FullBlock));
+            }
+        });
+    }
+#endif
+
+    [TestCase(TYP_REF, false, 0, Compiler.PhysicalPromotionDecompositionPlan.RemainderKind.Primitive)]
+    [TestCase(TYP_BYREF, false, 0, Compiler.PhysicalPromotionDecompositionPlan.RemainderKind.Primitive)]
+    [TestCase(TYP_REF, true, 0, Compiler.PhysicalPromotionDecompositionPlan.RemainderKind.Primitive)]
+    [TestCase(TYP_REF, true, 1, Compiler.PhysicalPromotionDecompositionPlan.RemainderKind.FullBlock)]
+    public static void DecompositionPreservesGcPointerRemainderTypes(
+        var_types pointerType, bool isInit, int initPattern,
+        Compiler.PhysicalPromotionDecompositionPlan.RemainderKind expectedKind)
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler => {
+            var builder = new ClassLayoutBuilder(compiler, TARGET_POINTER_SIZE);
+            builder.SetGCPtrType(0, pointerType);
+            SetStructLayout(compiler, ClassLayout.Create(compiler, builder));
+            var source = isInit
+                ? compiler.gtNewUnaryNode(GT_INIT_VAL, TYP_INT, compiler.gtNewIconNode(TYP_INT, initPattern))
+                : compiler.gtNewLclvNode(TYP_STRUCT, 1);
+            var plan = CreateRemainderPlan(compiler, source);
+
+            var strategy = plan.DetermineRemainderStrategy(default);
+
+            Assert.That(strategy.Kind, Is.EqualTo(expectedKind));
+            if (expectedKind is Compiler.PhysicalPromotionDecompositionPlan.RemainderKind.Primitive)
+            {
+                Assert.That(strategy.Offset, Is.Zero);
+                Assert.That(strategy.Type, Is.EqualTo(pointerType));
+            }
+        });
+    }
+
+    [Test]
+    public static void DecompositionDoesNotReinterpretGcPointerIntersectionsAsPrimitives()
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler => {
+            var builder = new ClassLayoutBuilder(compiler, 16);
+            builder.SetGCPtrType(1, TYP_REF);
+            SetStructLayout(compiler, ClassLayout.Create(compiler, builder));
+            var plan = CreateRemainderPlan(compiler, compiler.gtNewLclvNode(TYP_STRUCT, 1));
+            plan.InitReplacement(new Compiler.PhysicalPromotionReplacement(0, TYP_INT), 0);
+            plan.InitReplacement(new Compiler.PhysicalPromotionReplacement(12, TYP_INT), 12);
+
+            var strategy = plan.DetermineRemainderStrategy(default);
+
+            Assert.That(strategy.Kind, Is.EqualTo(Compiler.PhysicalPromotionDecompositionPlan.RemainderKind.FullBlock));
+        });
+    }
+
+    [Test]
+    public static void DecompositionKeepsDyingRemainderOnlyWhenThereAreNoOtherStructUses()
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler => {
+            SetStructLayout(compiler, new ClassLayout(16));
+            var aggregateMap = new Compiler.PhysicalPromotionAggregateInfoMap(compiler.lvaCount);
+            var aggregate = new Compiler.PhysicalPromotionAggregateInfo(0)
+            {
+                UnpromotedMin = 8,
+                UnpromotedMax = 16,
+            };
+            var replacement = new Compiler.PhysicalPromotionReplacement(0, TYP_LONG) { LclNum = 1 };
+            aggregate.Replacements.Add(replacement);
+            aggregateMap.Add(aggregate);
+
+            var liveness = new Compiler.PhysicalPromotionLiveness(compiler, aggregateMap);
+            var replacer = new Compiler.PhysicalPromotionReplaceVisitor(compiler, aggregateMap, liveness);
+            var source = compiler.gtNewLclvNode(TYP_STRUCT, 1);
+            var store = compiler.gtNewStoreLclVarNode(0, source);
+            var plan = new Compiler.PhysicalPromotionDecompositionPlan(
+                compiler, replacer, aggregateMap, liveness, store, source, true, false);
+            plan.InitReplacement(replacement, 0);
+
+            var traits = new BitVecTraits(compiler, 2);
+            var deaths = BitVecOps.MakeEmpty(traits);
+            BitVecOps.AddElemD(traits, deaths, 0);
+            var structDeaths = new Compiler.PhysicalPromotionStructDeaths(deaths, aggregate, traits);
+
+            Assert.That(plan.DetermineRemainderStrategy(structDeaths).Kind,
+                Is.EqualTo(Compiler.PhysicalPromotionDecompositionPlan.RemainderKind.None));
+
+            var planWithOtherUse = new Compiler.PhysicalPromotionDecompositionPlan(
+                compiler, replacer, aggregateMap, liveness, store, source, true, false);
+            planWithOtherUse.InitReplacement(replacement, 0);
+            planWithOtherUse.MarkNonRemainderUseOfStructLocal();
+            var strategy = planWithOtherUse.DetermineRemainderStrategy(structDeaths);
+
+            Assert.That(strategy.Kind,
+                Is.EqualTo(Compiler.PhysicalPromotionDecompositionPlan.RemainderKind.Primitive));
+            Assert.That(strategy.Offset, Is.EqualTo(8));
+            Assert.That(strategy.Type, Is.EqualTo(TYP_LONG));
+        });
+    }
+
+    private static Compiler.PhysicalPromotionDecompositionPlan CreateRemainderPlan(Compiler compiler, GenTree source)
+    {
+        compiler.lvaTable[0].Type = TYP_STRUCT;
+        compiler.lvaTable[1].Type = TYP_STRUCT;
+        compiler.lvaTable[1].Layout = compiler.lvaTable[0].Layout;
+        var aggregateMap = new Compiler.PhysicalPromotionAggregateInfoMap(compiler.lvaCount);
+        var aggregate = new Compiler.PhysicalPromotionAggregateInfo(0);
+        aggregateMap.Add(aggregate);
+        var liveness = new Compiler.PhysicalPromotionLiveness(compiler, aggregateMap);
+        var replacer = new Compiler.PhysicalPromotionReplaceVisitor(compiler, aggregateMap, liveness);
+        var store = compiler.gtNewStoreLclVarNode(0, source);
+        return new Compiler.PhysicalPromotionDecompositionPlan(
+            compiler, replacer, aggregateMap, liveness, store, source, false, false);
+    }
+
+    private static void SetStructLayout(Compiler compiler, ClassLayout layout)
+    {
+        compiler.lvaTable[0].Type = TYP_STRUCT;
+        compiler.lvaTable[0].Layout = layout;
+        compiler.lvaTable[1].Type = TYP_STRUCT;
+        compiler.lvaTable[1].Layout = layout;
     }
 
     [Test]
