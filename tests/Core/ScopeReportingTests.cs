@@ -330,6 +330,53 @@ internal static unsafe class ScopeReportingTests
         });
     }
 
+#if LATE_DISASM
+    [Test]
+    public static void RegisterVariableNamesRespectScopeAvailabilityAndInstructionBounds()
+    {
+        WithCompiler((compiler, codeGen, _) =>
+        {
+            compiler.info.compVarScopes[0].vsdLVnum = 0;
+            compiler.info.compVarScopes[0].vsdName = "local";
+            AddRange(codeGen, 0, 2, 9, Register(REG_RCX));
+            codeGen.genSetScopeInfo();
+
+            Assert.That(((ICodeGen)codeGen).siRegVarName(0, 2, (uint)REG_RCX), Is.EqualTo("local"));
+            Assert.That(((ICodeGen)codeGen).siRegVarName(8, 0, (uint)REG_RCX), Is.EqualTo("local"));
+            Assert.That(((ICodeGen)codeGen).siRegVarName(9, 0, (uint)REG_RCX), Is.Null);
+            Assert.That(((ICodeGen)codeGen).siRegVarName(0, 1, (uint)REG_RCX), Is.Null);
+            Assert.That(((ICodeGen)codeGen).siRegVarName(0, 2, (uint)REG_RDX), Is.Null);
+
+            SetTranslationField(codeGen, 0, "tlviAvailable", false);
+            Assert.That(((ICodeGen)codeGen).siRegVarName(0, 2, (uint)REG_RCX), Is.Null);
+
+            compiler.opts.compScopeInfo = false;
+            Assert.That(((ICodeGen)codeGen).siRegVarName(0, 2, (uint)REG_RCX), Is.Null);
+            compiler.opts.compScopeInfo = true;
+            compiler.info.compVarScopesCount = 0;
+            Assert.That(((ICodeGen)codeGen).siRegVarName(0, 2, (uint)REG_RCX), Is.Null);
+        });
+    }
+
+    [Test]
+    public static void StackVariableNamesMatchTheirRegisterAndDisplacement()
+    {
+        WithCompiler((compiler, codeGen, _) =>
+        {
+            compiler.info.compVarScopes[0].vsdLVnum = 0;
+            compiler.info.compVarScopes[0].vsdName = "stackLocal";
+            CodeGen.siVarLoc location = default;
+            location.storeVariableOnStack(REG_SPBASE, 16);
+            AddRange(codeGen, 0, 2, 9, location);
+            codeGen.genSetScopeInfo();
+
+            Assert.That(((ICodeGen)codeGen).siStackVarName(8, 1, (uint)REG_SPBASE, 16), Is.EqualTo("stackLocal"));
+            Assert.That(((ICodeGen)codeGen).siStackVarName(8, 1, (uint)REG_SPBASE, 17), Is.Null);
+            Assert.That(((ICodeGen)codeGen).siStackVarName(8, 1, (uint)REG_FPBASE, 16), Is.Null);
+        });
+    }
+#endif
+
     [Test]
     public static void DebugPublicationRetainsCallAndSpecialVariableDiagnostics()
     {
@@ -385,6 +432,15 @@ internal static unsafe class ScopeReportingTests
 
     private static object? Field(object value, string name) =>
         typeof(CodeGen).GetNestedType("TrnslLocalVarInfo", BindingFlags.NonPublic)!.GetField(name)!.GetValue(value);
+
+    private static void SetTranslationField(CodeGen codeGen, int index, string name, object value)
+    {
+        var translations = (Array)typeof(CodeGen).GetField("genTrnslLocalVarInfo", PrivateFields)!.GetValue(codeGen)!;
+        var translation = translations.GetValue(index)!;
+        var translationType = typeof(CodeGen).GetNestedType("TrnslLocalVarInfo", BindingFlags.NonPublic)!;
+        translationType.GetField(name)!.SetValue(translation, value);
+        translations.SetValue(translation, index);
+    }
 
     private static string Capture(Action action)
     {
