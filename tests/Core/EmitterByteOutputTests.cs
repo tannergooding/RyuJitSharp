@@ -15,6 +15,7 @@ internal static unsafe class EmitterByteOutputTests
     [TestCase(1, -1L, "FF", 16)]
 #if TARGET_X86
     [TestCase(1, 4294967295L, "FF", 16)]
+    [TestCase(2, 4294967295L, "FFFF", 16)]
 #endif
     [TestCase(2, -2L, "FEFF", 16)]
     [TestCase(2, 0x12345678L, "7856", 16)]
