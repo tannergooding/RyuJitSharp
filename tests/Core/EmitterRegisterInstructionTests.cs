@@ -167,6 +167,21 @@ internal static class EmitterRegisterInstructionTests
     }
 
     [Test]
+    public static void RegisterGcTypeReadsTheCurrentReferenceAndByrefMasks()
+    {
+        WithEmitter((_, emitter) =>
+        {
+            emitter.emitIssuing = true;
+            GCrefRegs(emitter) = regMask.SRBM_RAX;
+            ByrefRegs(emitter) = regMask.SRBM_RCX;
+
+            Assert.That(RegisterGCtype(emitter, REG_RAX), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
+            Assert.That(RegisterGCtype(emitter, REG_RCX), Is.EqualTo(GCInfo.GCtype.GCT_BYREF));
+            Assert.That(RegisterGCtype(emitter, REG_RDX), Is.EqualTo(GCInfo.GCtype.GCT_NONE));
+        });
+    }
+
+    [Test]
     public static void LegacySseAndMaskMovesUseTheirNativeSizingPaths()
     {
         WithEmitter((_, emitter) =>
@@ -446,6 +461,15 @@ internal static class EmitterRegisterInstructionTests
     {
         return LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitRegGCtype")]
+    private static extern GCInfo.GCtype RegisterGCtype(Emitter emitter, regNumber reg);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisGCrefRegs")]
+    private static extern ref regMask GCrefRegs(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisByrefRegs")]
+    private static extern ref regMask ByrefRegs(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetInsCns")]
     private static extern nint Constant(Emitter emitter, Emitter.instrDesc descriptor);
