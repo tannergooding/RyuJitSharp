@@ -126,12 +126,13 @@ internal static unsafe class WasmClassifierTests
     [TestCase(TYP_SIMD8, 8, WasmValueType.V128)]
     [TestCase(TYP_SIMD12, 12, WasmValueType.V128)]
     [TestCase(TYP_SIMD16, 16, WasmValueType.V128)]
-    public static void ScalarArgumentsUseActualWasmTypesAndOriginalSizes(
+    public static void ArgumentsUseActualWasmTypesAndOriginalSizes(
         var_types type, int size, WasmValueType wasmType)
     {
         WithCompiler(compiler => {
             var classifier = new WasmClassifier(new ClassifierInfo());
-            var info = classifier.Classify(compiler, type, null, WellKnownArg.None);
+            var layout = varTypeIsStruct(type) ? NewLayout((uint)size, CORINFO_WASM_TYPE_V128) : null;
+            var info = classifier.Classify(compiler, type, layout, WellKnownArg.None);
 
             Assert.That(info.IsPassedByReference, Is.False);
             Assert.That(info.NumSegments, Is.EqualTo(1));

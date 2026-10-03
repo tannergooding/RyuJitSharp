@@ -38,13 +38,12 @@ public struct AbiPassingSegment
     {
         get
         {
-            var regNum = _register;
+            var regNum = Register;
             var regMsk = (regMask)(1L << ((int)(regNum) - RegisterMaskBase));
 
 #if TARGET_ARM
-            if (Size == 8)
+            if (genIsValidFloatReg(regNum) && (Size == 8))
             {
-                assert(RegisterMaskBase == (int)(REG_FP_FIRST));
                 regMsk |= (regMask)((ulong)regMsk << 1);
             }
 #endif
@@ -169,22 +168,9 @@ public struct AbiPassingSegment
 
     public readonly var_types GetRegisterType()
     {
-        var regNum = _register;
+        var regNum = Register;
 #if TARGET_WASM
-        return regNumberExtensions.WasmRegToType(regNum) switch {
-            WasmValueType.I32 => Size switch {
-                1 => TYP_UBYTE,
-                2 => TYP_USHORT,
-                3 => TYP_INT,
-                4 => TYP_INT,
-                _ => TYP_UNDEF,
-            },
-            WasmValueType.I64 => TYP_LONG,
-            WasmValueType.F32 => TYP_FLOAT,
-            WasmValueType.F64 => TYP_DOUBLE,
-            WasmValueType.V128 => TYP_SIMD16,
-            _ => InvalidWasmRegisterType(),
-        };
+        var isFloatReg = genIsValidFloatReg(regNum);
 #else
         var regMskBase = RegisterMaskBase;
 
@@ -196,7 +182,10 @@ public struct AbiPassingSegment
         }
 #endif
 
-        if (regMskBase == (int)(REG_FP_FIRST))
+        var isFloatReg = regMskBase == (int)REG_FP_FIRST;
+#endif
+
+        if (isFloatReg)
         {
             return Size switch {
                 4 => TYP_FLOAT,
@@ -207,11 +196,13 @@ public struct AbiPassingSegment
 #if FEATURE_SIMD
                 16 => TYP_SIMD16,
 #endif
-                _ => TYP_UNDEF,
+                _ => UnexpectedRegisterSize(true),
             };
         }
         
+#if !TARGET_WASM
         assert(regMskBase == (int)(REG_INT_FIRST));
+#endif
 
         return Size switch {
             1 => TYP_UBYTE,
@@ -224,9 +215,17 @@ public struct AbiPassingSegment
             7 => TYP_LONG,
             8 => TYP_LONG,
 #endif
-            _ => TYP_UNDEF,
+            _ => UnexpectedRegisterSize(false),
         };
-#endif
+    }
+
+    private static var_types UnexpectedRegisterSize(bool floating)
+    {
+        assert(false, floating
+            ? "Unexpected size for floating point register"
+            : "Unexpected size for integer register");
+
+        return TYP_UNDEF;
     }
 
     public readonly var_types GetRegisterType(ClassLayout? layout)
@@ -246,12 +245,4 @@ public struct AbiPassingSegment
         }
         return GetRegisterType();
     }
-
-#if TARGET_WASM
-    private static var_types InvalidWasmRegisterType()
-    {
-        unreached();
-        return TYP_UNDEF;
-    }
-#endif
 }

@@ -13,10 +13,13 @@ public partial struct AbiPassingInformation
     private readonly AbiPassingSegment[]? _segments;
     private AbiPassingSegment _singleSegment;
     private bool _passedByRef;
+    private readonly int _numSegments;
 
     public AbiPassingInformation(int numSegments)
     {
-        if (numSegments != 1)
+        _numSegments = numSegments;
+
+        if (numSegments > 1)
         {
             _segments = new AbiPassingSegment[numSegments];
         }
@@ -32,7 +35,7 @@ public partial struct AbiPassingInformation
     ///     <item>On loongarch64/riscv64, structs can be passed in two registers or can be split out over register and stack, giving multiple register segments and a struct segment.</item>
     ///   </list>
     /// </remarks>
-    public readonly int NumSegments => (_segments is not null) ? _segments.Length : 1;
+    public readonly int NumSegments => _numSegments;
 
     public bool HasExactlyOneStackSegment => (NumSegments == 1) && Segments[0].IsPassedOnStack;
 
@@ -70,15 +73,49 @@ public partial struct AbiPassingInformation
         }
     }
 
-    public int CountRegsAndStackSlots()
+    public bool HasAnyFloatingRegisterSegment
     {
-        var count = 0;
+        get
+        {
+            foreach (ref readonly var segment in Segments)
+            {
+                if (segment.IsPassedInRegister && genIsValidFloatReg(segment.Register))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    public int StackBytesConsumed()
+    {
+        uint numBytes = 0;
+
         foreach (ref readonly var segment in Segments)
         {
-            count += segment.IsPassedInRegister ? 1 : (segment.Size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+            if (segment.IsPassedOnStack)
+            {
+                numBytes = unchecked(numBytes + (uint)segment.StackSize);
+            }
         }
 
-        return count;
+        return unchecked((int)numBytes);
+    }
+
+    public int CountRegsAndStackSlots()
+    {
+        uint count = 0;
+
+        foreach (ref readonly var segment in Segments)
+        {
+            count = unchecked(count + (segment.IsPassedInRegister
+                ? 1u
+                : ((uint)segment.Size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE));
+        }
+
+        return unchecked((int)count);
     }
 
     public bool IsSplitAcrossRegistersAndStack
@@ -112,7 +149,7 @@ public partial struct AbiPassingInformation
     {
         get
         {
-            var result = new Span<AbiPassingSegment>(ref _singleSegment);
+            var result = NumSegments == 1 ? new Span<AbiPassingSegment>(ref _singleSegment) : [];
 
             if (_segments is not null)
             {
@@ -129,7 +166,7 @@ public partial struct AbiPassingInformation
     /// <returns>An instance of AbiPassingInformation.</returns>
     public static AbiPassingInformation FromSegment(Compiler comp, bool passedByRef, in AbiPassingSegment segment)
     {
-        var info = new AbiPassingInformation {
+        var info = new AbiPassingInformation(1) {
             _passedByRef = passedByRef,
             _singleSegment = segment,
         };
@@ -144,6 +181,11 @@ public partial struct AbiPassingInformation
 #endif
 
         return info;
+    }
+
+    public static AbiPassingInformation FromSegmentByValue(Compiler comp, in AbiPassingSegment segment)
+    {
+        return FromSegment(comp, false, segment);
     }
 
     /// <summary>Create by-value passing information from two segments in order.</summary>

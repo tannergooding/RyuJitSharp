@@ -92,6 +92,38 @@ internal static unsafe class CodeGenThrowHelperTests
         });
     }
 
+    [Test]
+    public static void StackLevelSetterLeavesMethodsWithoutRequestedHelpersUnmodified()
+    {
+        EmitterCallInstructionTests.WithEmitter((compiler, _) =>
+        {
+            compiler.opts.compDbgCode = true;
+            var phase = new StackLevelSetter(compiler);
+
+            Assert.That(RunStackLevelSetter(phase), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(compiler.compUsesThrowHelper, Is.False);
+            Assert.That(compiler.fgRngChkThrowAdded, Is.True);
+        });
+    }
+
+#if !FEATURE_FIXED_OUT_ARGS && !JIT32_GCENCODER && !TARGET_WASM
+    [Test]
+    public static void StackLevelSetterDoesNotForceFullInterruptibilityForFramePointer()
+    {
+        EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
+        {
+            compiler.opts.compDbgCode = true;
+            codeGen.IsFramePointerRequired = true;
+            codeGen.Interruptible = false;
+            var phase = new StackLevelSetter(compiler);
+
+            Assert.That(RunStackLevelSetter(phase), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(codeGen.IsFramePointerRequired, Is.True);
+            Assert.That(codeGen.Interruptible, Is.False);
+        });
+    }
+#endif
+
 #if DEBUG
     [Test]
     public static void DisassemblyRecordsInlineThrowAndContinuation()
@@ -133,6 +165,9 @@ internal static unsafe class CodeGenThrowHelperTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisByrefRegs")]
     private static extern ref regMask ThisByrefs(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "DoPhase")]
+    private static extern PhaseStatus RunStackLevelSetter(StackLevelSetter phase);
 
     private struct HelperContext
     {

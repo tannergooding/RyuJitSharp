@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+#if WINDOWS_AMD64_ABI
 namespace RyuJitSharp;
 
 public ref struct WinX64Classifier
@@ -72,3 +73,4 @@ public ref struct WinX64Classifier
         return AbiPassingInformation.FromSegment(comp, passedByRef, segment);
     }
 }
+#endif

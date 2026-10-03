@@ -22,7 +22,7 @@ public ref struct WasmClassifier
     public unsafe AbiPassingInformation Classify(
         Compiler comp, var_types type, ClassLayout? structLayout, WellKnownArg wellKnownParam)
     {
-        if (type is TYP_STRUCT)
+        if (varTypeIsStruct(type))
         {
             var layout = structLayout ?? throw new ArgumentNullException(nameof(structLayout));
             var classHandle = layout.ClassHandle;

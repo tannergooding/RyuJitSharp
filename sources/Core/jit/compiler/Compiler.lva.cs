@@ -360,8 +360,8 @@ public partial class Compiler
 #if SWIFT_SUPPORT
         if (info.compCallConv == CorInfoCallConvExtension.Swift)
         {
-            NYI("SwiftABIClassifier in Compiler.lvaClassifyParameterAbi");
-            throw new FatalJitException(CORJIT_SKIPPED, "Swift parameter ABI classification is not ported.");
+            var classifier = new SwiftABIClassifier(cInfo);
+            lvaClassifyParameterAbi(ref classifier);
         }
         else
 #endif

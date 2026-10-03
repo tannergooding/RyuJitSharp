@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\sources\Core\RyuJitSharp.csproj" />
+    <Compile Include="..\Core\AbiHeaderTests.cs" Link="AbiHeaderTests.cs" />
     <Compile Include="..\Core\AbiPassingInformationTests.cs" Link="AbiPassingInformationTests.cs" />
     <Compile Include="..\Core\ArmCalleeSavedRegisterTests.cs" Link="ArmCalleeSavedRegisterTests.cs" />
     <Compile Include="..\Core\Arm64*Tests.cs" Link="%(Filename)%(Extension)" />
