@@ -192,6 +192,7 @@ public partial class Emitter
 
     private instrDescBasic emitNewInstr(emitAttr attr)
     {
+        // This always allocates a full instruction descriptor.
         return emitAllocInstr(attr);
     }
 
