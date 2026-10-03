@@ -95,6 +95,36 @@ public sealed class GenTreeIntCon : GenTreeIntConCommon
         }
     }
 
+    public void FixupInitBlkValue(var_types type)
+    {
+        assert(varTypeIsIntegralOrI(type));
+
+        var size = type.Size;
+        if (size > 1)
+        {
+            nuint value = unchecked((nuint)IconValue);
+            value &= (nuint)0xFF;
+            value |= value << 8;
+            if (size >= 4)
+            {
+                value |= value << 16;
+#if TARGET_64BIT
+                if (size is 8)
+                {
+                    value |= value << 32;
+                }
+#endif
+                // Match the store type for evaluation types.
+                Type = type;
+
+                // GC stores must be initialized with null.
+                assert(!varTypeIsGC(type) || (value is 0));
+            }
+
+            IconValue = unchecked((nint)value);
+        }
+    }
+
 #if DEBUG
     public nint TargetHandle
     {

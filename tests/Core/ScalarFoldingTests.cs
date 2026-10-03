@@ -478,6 +478,36 @@ internal static unsafe class ScalarFoldingTests
         });
     }
 
+    [Test]
+    public static void InitBlockConstantsRepeatTheirByteToTheStoreWidth()
+    {
+        WithCompiler(compiler => {
+            var byteValue = new GenTreeIntCon(TYP_I_IMPL, 0x1AB);
+            byteValue.FixupInitBlkValue(TYP_UBYTE);
+            Assert.That(byteValue.IconValue, Is.EqualTo((nint)0x1AB));
+            Assert.That(byteValue.Type, Is.EqualTo(TYP_I_IMPL));
+
+            var shortValue = new GenTreeIntCon(TYP_I_IMPL, 0x1AB);
+            shortValue.FixupInitBlkValue(TYP_USHORT);
+            Assert.That(shortValue.IconValue, Is.EqualTo((nint)0xABAB));
+            Assert.That(shortValue.Type, Is.EqualTo(TYP_I_IMPL));
+
+            var intValue = new GenTreeIntCon(TYP_I_IMPL, 0x1AB);
+            intValue.FixupInitBlkValue(TYP_INT);
+            Assert.That(intValue.IconValue, Is.EqualTo(unchecked((nint)0xABABABABu)));
+            Assert.That(intValue.Type, Is.EqualTo(TYP_INT));
+
+            var longValue = new GenTreeIntCon(TYP_I_IMPL, 0x1AB);
+            longValue.FixupInitBlkValue(TYP_LONG);
+#if TARGET_64BIT
+            Assert.That(longValue.IconValue, Is.EqualTo(unchecked((nint)0xABABABABABABABABUL)));
+#else
+            Assert.That(longValue.IconValue, Is.EqualTo(unchecked((nint)0xABABABABu)));
+#endif
+            Assert.That(longValue.Type, Is.EqualTo(TYP_LONG));
+        });
+    }
+
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]
