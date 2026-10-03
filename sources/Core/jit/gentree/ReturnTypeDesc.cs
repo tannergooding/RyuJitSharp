@@ -5,6 +5,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
@@ -212,10 +213,10 @@ public struct ReturnTypeDesc
 #if TARGET_RISCV64 || TARGET_LOONGARCH64
                 var lowering = compiler.GetFpStructLowering(retClsHnd);
 
-                if (!lowering->byIntegerCallConv)
+                if (!lowering.byIntegerCallConv)
                 {
-                    assert(lowering->numLoweredElements == 1);
-                    _fieldOffset[0] = lowering->offsets[0];
+                    assert(lowering.numLoweredElements == 1);
+                    _fieldOffset[0] = lowering.offsets[0];
                 }
 #endif
                 break;
@@ -282,23 +283,30 @@ public struct ReturnTypeDesc
                 assert(structSize is > sizeof(float) and <= (2 * TARGET_POINTER_SIZE));
 
                 Unsafe.SkipInit(out InlineArray2<CorInfoGCType> inlineGcPtrs);
-                compiler.info.compCompHnd->getClassGClayout(retClsHnd, (byte*)(&gcPtrs.e0));
+                var gcPtrs = (Span<CorInfoGCType>)inlineGcPtrs;
+                gcPtrs[0] = TYPE_GC_NONE;
+                gcPtrs[1] = TYPE_GC_NONE;
+
+                fixed (CorInfoGCType* gcPtrsPointer = gcPtrs)
+                {
+                    compiler.info.compCompHnd->getClassGClayout(retClsHnd, gcPtrsPointer);
+                }
 
                 var lowering = compiler.GetFpStructLowering(retClsHnd);
 
-                if (!lowering.ByIntegerCallConv)
+                if (!lowering.byIntegerCallConv)
                 {
-                    compiler.FloatingPointUsed = true;
+                    compiler.compFloatingPointUsed = true;
 
-                    assert(lowering.NumLoweredElements == MAX_RET_REG_COUNT);
+                    assert(lowering.numLoweredElements == MAX_RET_REG_COUNT);
                     assert(MAX_RET_REG_COUNT == MAX_FPSTRUCT_LOWERED_ELEMENTS);
 
                     var foundFloatingPointReg = false;
 
                     for (byte i = 0; i < MAX_RET_REG_COUNT; i++)
                     {
-                        var regType = JitType2VarType(lowering.LoweredElements[i]);
-                        var fieldOffset = lowering->offsets[i];
+                        var regType = lowering.loweredElements[i].VarType;
+                        var fieldOffset = lowering.offsets[i];
 
                         _regType[i] = regType;
                         _fieldOffset[i] = fieldOffset;
@@ -306,7 +314,7 @@ public struct ReturnTypeDesc
                         if ((regType is TYP_LONG) && ((fieldOffset % TARGET_POINTER_SIZE) == 0))
                         {
                             var slot = fieldOffset / TARGET_POINTER_SIZE;
-                            _regType[i] = compiler.GetJitGCType(gcPtrs[slot]);
+                            _regType[i] = compiler.getJitGCType(gcPtrs[slot]);
                         }
                         else if (varTypeIsFloating(regType))
                         {
@@ -320,7 +328,7 @@ public struct ReturnTypeDesc
                 {
                     for (byte i = 0; i < 2; i++)
                     {
-                        _regType[i] = compiler.GetJitGCType(gcPtrs[i]);
+                        _regType[i] = compiler.getJitGCType(gcPtrs[i]);
                         _fieldOffset[i] = i * TARGET_POINTER_SIZE;
                     }
                 }
