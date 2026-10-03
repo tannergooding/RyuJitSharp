@@ -16,6 +16,19 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-02: Managed allocation statistics
+
+Enabled optional `MEASURE_MEM_ALLOC` reporting from per-root-compilation managed
+GC-allocation deltas, with thread-safe aggregate/maximum summaries and a
+rounded-up KB histogram. Shutdown explicitly reports native arena-used bytes as
+unavailable, consistent with D001. Full-analysis focused Windows-x64 shutdown
+tests pass 4/4 Debug and 3/3 Release with the feature enabled, and 2/2 Debug and
+1/1 Release with the normal configuration. Native `edb48985` retires the
+corresponding `JitMemStatsInfo` declarations/definitions and histogram globals
+from the consolidated residual commit. Evidence is recorded in `state.json`;
+these results are diagnostic unit coverage, not runtime or generated-code
+parity.
+
 ## 2026-10-02: ARM/ARM64 callee-save construction
 
 Completed ARM32/ARM64 callee-save algorithms and bound the production

@@ -37,9 +37,7 @@ public partial class Globals
 #endif
 
 #if MEASURE_MEM_ALLOC
-    internal static Histogram memAllocHist => throw new FatalJitException(CORJIT_SKIPPED, "memAllocHist collection is not ported.");
-
-    internal static Histogram memUsedHist => throw new FatalJitException(CORJIT_SKIPPED, "memUsedHist collection is not ported.");
+    internal static readonly Histogram memAllocHist = new([64, 128, 192, 256, 512, 1024, 4096, 8192, 0]);
 #endif
 
 #if EMITTER_STATS

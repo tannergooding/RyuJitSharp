@@ -267,13 +267,12 @@ public partial class Compiler
 
             jitprintf("\n");
             jitprintf("---------------------------------------------------\n");
-            jitprintf("Distribution of total memory allocated per method (in KB):\n");
+            jitprintf("Distribution of total managed memory allocated per method (in KB):\n");
             memAllocHist.dump(jitstdout());
 
             jitprintf("\n");
             jitprintf("---------------------------------------------------\n");
-            jitprintf("Distribution of total memory used      per method (in KB):\n");
-            memUsedHist.dump(jitstdout());
+            jitprintf("Native arena memory used per method is unavailable for managed allocations.\n");
         }
 #endif
 

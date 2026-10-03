@@ -89,7 +89,7 @@ internal static class CompilerShutdownFamilyTests
     }
 #endif
 
-#if NODEBASH_STATS || COUNT_AST_OPERS || CALL_ARG_STATS || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || MEASURE_MEM_ALLOC || MEASURE_PTRTAB_SIZE || EMITTER_STATS
+#if NODEBASH_STATS || COUNT_AST_OPERS || CALL_ARG_STATS || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || MEASURE_PTRTAB_SIZE || EMITTER_STATS
     [Test]
     public static void ShutdownRetainsTheFirstUnportedStatisticsCallAndItsOutputPosition()
     {
@@ -142,9 +142,6 @@ internal static class CompilerShutdownFamilyTests
                 "BasicBlock and FlowEdge/BasicBlockList allocation stats\n" +
                 "---------------------------------------------------\n" +
                 $"Allocated      9 basic blocks (4294967295 bytes total, avg {average,4} bytes per method)\n"));
-#elif MEASURE_MEM_ALLOC
-            Assert.That(exception?.Message, Is.EqualTo("JitMemStatsInfo::dumpAggregateMemStats is not ported."));
-            Assert.That(text, Does.EndWith("\nAll allocations:\n"));
 #elif MEASURE_PTRTAB_SIZE
             Assert.That(exception?.Message, Is.EqualTo("GCInfo::s_gcRegPtrDscSize collection is not ported."));
             Assert.That(text, Does.EndWith(
@@ -158,7 +155,51 @@ internal static class CompilerShutdownFamilyTests
             Assert.That(text, Does.Not.Contain("Fatal errors stats"));
         });
     }
+#endif
 
+#if MEASURE_MEM_ALLOC
+    [Test]
+    public static void ManagedAllocationStatsAggregateConcurrentCompilationsAndTrackTheMaximum()
+    {
+        var stats = new ManagedAllocationStats();
+        _ = System.Threading.Tasks.Parallel.For(1, 101, bytes => stats.Add(bytes));
+
+        using var output = new MemoryStream();
+        using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
+
+        stats.dumpAggregateMemStats(writer);
+        stats.dumpMaxMemStats(writer);
+        writer.Flush();
+
+        var text = Encoding.UTF8.GetString(output.ToArray());
+        Assert.That(text, Does.Contain("100 method compilations"));
+        Assert.That(text, Does.Contain("managed bytes allocated:"));
+        Assert.That(text, Does.Contain("5050"));
+        Assert.That(text, Does.Contain("50 per compilation"));
+        Assert.That(text, Does.Contain("maximum managed allocation: 100 bytes"));
+    }
+
+    [Test]
+    public static void ShutdownReportsManagedAllocationStatsWithoutInventingArenaUsage()
+    {
+        WithShutdownState(() => {
+            using var output = new MemoryStream();
+            using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
+            s_jitstdout = writer;
+            Compiler.s_dspMemStats = true;
+
+            Compiler.compShutdown();
+            writer.Flush();
+
+            var text = Encoding.UTF8.GetString(output.ToArray());
+            Assert.That(text, Does.Contain("\nAll allocations:\n"));
+            Assert.That(text, Does.Contain("Distribution of total managed memory allocated per method (in KB):"));
+            Assert.That(text, Does.Contain("Native arena memory used per method is unavailable for managed allocations."));
+        });
+    }
+#endif
+
+#if NODEBASH_STATS || COUNT_AST_OPERS || CALL_ARG_STATS || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || MEASURE_PTRTAB_SIZE || EMITTER_STATS
 #if NODEBASH_STATS
     [TestCase("OperBashing")]
 #endif
@@ -189,12 +230,6 @@ internal static class CompilerShutdownFamilyTests
     [TestCase("FlowSizeWrite")]
     [TestCase("BasicBlockSize")]
     [TestCase("FlowEdgeSize")]
-#endif
-#if MEASURE_MEM_ALLOC
-    [TestCase("AggregateMemory")]
-    [TestCase("MaximumMemory")]
-    [TestCase("AllocatedMemoryHistogram")]
-    [TestCase("UsedMemoryHistogram")]
 #endif
 #if MEASURE_PTRTAB_SIZE
     [TestCase("RegisterPointerSize")]
@@ -323,28 +358,6 @@ internal static class CompilerShutdownFamilyTests
             case "FlowEdgeSize":
             {
                 _ = NativeFlowEdgeSize;
-                break;
-            }
-#endif
-#if MEASURE_MEM_ALLOC
-            case "AggregateMemory":
-            {
-                JitMemStatsInfo.dumpAggregateMemStats(writer);
-                break;
-            }
-            case "MaximumMemory":
-            {
-                JitMemStatsInfo.dumpMaxMemStats(writer);
-                break;
-            }
-            case "AllocatedMemoryHistogram":
-            {
-                _ = memAllocHist;
-                break;
-            }
-            case "UsedMemoryHistogram":
-            {
-                _ = memUsedHist;
                 break;
             }
 #endif
