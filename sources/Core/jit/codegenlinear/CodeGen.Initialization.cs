@@ -18,6 +18,7 @@ public sealed partial class CodeGen
 #if TARGET_WASM
     private ArrayStack<WasmInterval>? wasmControlFlowStack;
     private uint wasmCursor;
+    private uint wasmExtraControlFlowDepth;
 #endif
 
     private struct EmittedCallReturnInfo
@@ -104,6 +105,7 @@ public sealed partial class CodeGen
 #if TARGET_WASM
         wasmControlFlowStack = new ArrayStack<WasmInterval>();
         wasmCursor = 0;
+        wasmExtraControlFlowDepth = 0;
 #endif
     }
 

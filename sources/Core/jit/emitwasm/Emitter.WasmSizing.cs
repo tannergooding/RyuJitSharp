@@ -10,6 +10,17 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    public static instruction emitJumpKindToIns(emitJumpKind jumpKind)
+    {
+        return jumpKind switch
+        {
+            EJ_NONE => INS_nop,
+            EJ_jmp => INS_br,
+            EJ_jmpif => INS_br_if,
+            _ => throw new FatalJitException(CORJIT_INTERNALERROR, $"Unexpected Wasm jump kind {jumpKind}."),
+        };
+    }
+
     public static int SizeOfSLEB128(long value)
     {
         var signAdjustedValue = unchecked((ulong)(value ^ (value >> 63))) | 1UL;
@@ -54,7 +65,7 @@ public partial class Emitter
 
     public void emitIns_J(instruction ins, emitAttr attr, uint depth, BasicBlock target)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Wasm catch-reference emission is not ported.");
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm depth-indexed instruction emission is not ported.");
     }
 }
 #endif

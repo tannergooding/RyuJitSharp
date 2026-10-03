@@ -197,7 +197,9 @@ public sealed partial class CodeGen
 #if TARGET_WASM
     private void inst_JMP(emitJumpKind jump, BasicBlock target)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Wasm jump instruction generation is not ported.");
+        var instruction = Emitter.emitJumpKindToIns(jump);
+        var depth = unchecked(findTargetDepth(target) + wasmExtraControlFlowDepth);
+        GetEmitter().emitIns_J(instruction, EA_4BYTE, depth, target);
     }
 
     private void genEmitFunctionEnd(bool emitTerminalUnreachable = true)

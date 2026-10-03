@@ -8,6 +8,52 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+    public void genCodeForJTrue(GenTreeUnOp jtrue)
+    {
+        var block = _compiler.compCurBB;
+        assert(block is not null);
+        assert(block.Kind is BBJ_COND);
+
+        genConsumeOperands(jtrue);
+
+        var trueTarget = block.TrueTarget;
+        var falseTarget = block.FalseTarget;
+        assert(trueTarget != falseTarget);
+        assert(trueTarget != block.Next);
+
+        inst_JMP(EJ_jmpif, trueTarget);
+
+        if (!block.CanRemoveJumpToTarget(falseTarget, _compiler))
+        {
+            inst_JMP(EJ_jmp, falseTarget);
+        }
+    }
+
+    public void genTableBasedSwitch(GenTree treeNode)
+    {
+        var block = _compiler.compCurBB;
+        assert(block is not null);
+        assert(block.Kind is BBJ_SWITCH);
+
+        genConsumeOperands(treeNode.AsOp());
+
+        var switchDescriptor = block.SwitchTargets;
+        var cases = switchDescriptor.Cases;
+        var caseCount = unchecked((uint)cases.Length);
+        assert(caseCount > 0);
+        assert(switchDescriptor.HasDefaultCase);
+
+        // br_table's immediate is the number of non-default entries; the default target is listed last.
+        GetEmitter().emitIns_I(INS_br_table, EA_4BYTE, unchecked((nint)(caseCount - 1)));
+
+        for (var caseNum = 0u; caseNum < caseCount; caseNum++)
+        {
+            var caseTarget = cases[unchecked((int)caseNum)].DestinationBlock;
+            var depth = findTargetDepth(caseTarget);
+            GetEmitter().emitIns_J(INS_label, EA_4BYTE, depth, caseTarget);
+        }
+    }
+
     private static uint GetWasmBlockIndex(BasicBlock block)
     {
         return unchecked((uint)block.bbPreorderNum);
@@ -66,6 +112,49 @@ public sealed partial class CodeGen
 
         assert(false, conditionExpression: "Can't find target in control stack");
         return uint.MaxValue;
+    }
+
+    private void genEmitIf(WasmValueType blockType = WasmValueType.Invalid)
+    {
+        // These labels are not represented in wasmControlFlowStack, but they still affect branch depths.
+        wasmExtraControlFlowDepth = unchecked(wasmExtraControlFlowDepth + 1);
+
+        if (blockType != WasmValueType.Invalid)
+        {
+            GetEmitter().emitIns_BlockTy(INS_if, blockType);
+        }
+        else
+        {
+            GetEmitter().emitIns(INS_if);
+        }
+    }
+
+    private void genEmitEndIf()
+    {
+        assert(wasmExtraControlFlowDepth > 0);
+        wasmExtraControlFlowDepth = unchecked(wasmExtraControlFlowDepth - 1);
+        GetEmitter().emitIns(INS_end);
+    }
+
+    private void genEmitBeginBlock(WasmValueType blockType = WasmValueType.Invalid)
+    {
+        wasmExtraControlFlowDepth = unchecked(wasmExtraControlFlowDepth + 1);
+
+        if (blockType != WasmValueType.Invalid)
+        {
+            GetEmitter().emitIns_BlockTy(INS_block, blockType);
+        }
+        else
+        {
+            GetEmitter().emitIns(INS_block);
+        }
+    }
+
+    private void genEmitEndBlock()
+    {
+        assert(wasmExtraControlFlowDepth > 0);
+        wasmExtraControlFlowDepth = unchecked(wasmExtraControlFlowDepth - 1);
+        GetEmitter().emitIns(INS_end);
     }
 
     private void genEmitStartBlockWasm(BasicBlock block)
