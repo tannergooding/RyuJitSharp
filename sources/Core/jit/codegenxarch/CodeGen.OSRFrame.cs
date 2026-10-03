@@ -13,9 +13,7 @@ public sealed partial class CodeGen
 {
     public unsafe void genOSRHandleTier0CalleeSavedRegistersAndFrame()
     {
-#if !TARGET_AMD64
-        unreached();
-#else
+#if TARGET_AMD64
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
         assert(_compiler.opts.IsOSR);
         assert(_compiler.funCurrentFunc().funKind == FuncKind.FUNC_ROOT);
@@ -54,6 +52,94 @@ public sealed partial class CodeGen
         var tier0FrameSize = patchpoint->TotalFrameSize - REGSIZE_BYTES + REGSIZE_BYTES;
         var tier0NetSize = tier0FrameSize - tier0SavedSize;
         _compiler.unwindAllocStack(unchecked((uint)tier0NetSize));
+#elif TARGET_ARM64
+        assert(Emitter.emitGeneratingPrologOrFuncletProlog());
+        assert(_compiler.opts.IsOSR);
+        assert(_compiler.funCurrentFunc().funKind == FuncKind.FUNC_ROOT);
+
+        var patchpoint = _compiler.info.compPatchpointInfo;
+        var tier0CalleeSaves = new regMaskTP((regMask)patchpoint->CalleeSaveRegisters);
+
+#if DEBUG
+        if (_verbose)
+        {
+            jitprintf("--OSR--- tier0 has already saved ");
+            dspRegMask(tier0CalleeSaves);
+            jitprintf("\nEmitting restores\n");
+        }
+#endif
+
+        var restoreRegsFrame = tier0CalleeSaves & new regMaskTP(SRBM_FP | SRBM_LR);
+        var restoreRegsFloat = tier0CalleeSaves & new regMaskTP(SRBM_ALLFLOAT);
+        var restoreRegsInt = tier0CalleeSaves & ~restoreRegsFrame & ~restoreRegsFloat;
+
+        regNumber baseReg;
+        int topOfCalleeSaves;
+        if (restoreRegsFrame.IsNonEmpty)
+        {
+            // FP/LR are always at the top of the callee saves, so restore the rest relative to FP.
+            baseReg = REG_FP;
+            topOfCalleeSaves = 0;
+        }
+        else
+        {
+            // The offset from FP is unknown, but the SP-relative offset is known.
+            baseReg = REG_SPBASE;
+            topOfCalleeSaves = unchecked((int)patchpoint->TotalFrameSize);
+            if (_compiler.info.compIsVarArgs)
+            {
+                topOfCalleeSaves -= MAX_REG_ARG * REGSIZE_BYTES;
+            }
+
+            if (topOfCalleeSaves > 504 && (restoreRegsInt.IsNonEmpty || restoreRegsFloat.IsNonEmpty))
+            {
+                // LDP cannot encode this offset from SP. Unwind padding below accounts for the extra instruction.
+                genInstrWithConstant(INS_add, EA_PTRSIZE, REG_IP0, REG_SPBASE, topOfCalleeSaves, REG_IP0,
+                    inUnwindRegion: false);
+                baseReg = REG_IP0;
+                topOfCalleeSaves = 0;
+            }
+        }
+
+        if (restoreRegsInt.IsNonEmpty)
+        {
+            genRestoreCalleeSavedRegisterGroupArm64(restoreRegsInt, baseReg, 0, topOfCalleeSaves,
+                reportUnwindData: false);
+            topOfCalleeSaves -= genCalleeSaveCountArm64(restoreRegsInt) * REGSIZE_BYTES;
+        }
+
+        if (restoreRegsFloat.IsNonEmpty)
+        {
+            genRestoreCalleeSavedRegisterGroupArm64(restoreRegsFloat, baseReg, 0, topOfCalleeSaves,
+                reportUnwindData: false);
+            topOfCalleeSaves -= genCalleeSaveCountArm64(restoreRegsFloat) * REGSIZE_BYTES;
+        }
+
+        // FP always points to the saved FP/LR pair for frame-pointer chaining.
+        // Restoring LR relies on Tier0 having been unhijacked when the OSR prolog runs.
+        // The transition helper does this; direct OSR entry without it does not support
+        // Tier0 hijacking, matching the tailcall behavior recorded by SetHasTailCalls.
+        genRestoreRegPairArm64(REG_FP, REG_LR, REG_FP, 0, 0, false, REG_IP1, null,
+            reportUnwindData: false);
+
+        if (JitConfig.JitPacEnabled != 0)
+        {
+            // Tier0 signed LR with the caller SP before allocating its frame.
+            // Recreate that SP to authenticate LR before the OSR prolog re-signs it.
+            // TODO-PAC: Avoid authenticating and re-signing so the signing SP points to
+            // the frame start; this may require a phantom pac_sign_lr unwind code.
+            genInstrWithConstant(INS_add, EA_PTRSIZE, REG_IP0, REG_SPBASE,
+                unchecked((nint)patchpoint->TotalFrameSize), REG_IP0, inUnwindRegion: false);
+            Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_IP1, REG_LR, canSkip: false);
+            Emitter.emitIns(TargetOS.IsWindows ? INS_autib1716 : INS_autia1716);
+            Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_LR, REG_IP1, canSkip: false);
+        }
+
+        // Record the phantom Tier0 frame allocation and pad the prolog for ARM64 unwind codes.
+        _compiler.unwindAllocStack(unchecked((uint)patchpoint->TotalFrameSize));
+        _compiler.unwindPadding();
+#else
+        unreached();
 #endif
     }
 
