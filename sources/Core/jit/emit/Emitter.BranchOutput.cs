@@ -20,7 +20,6 @@ public partial class Emitter
         return emitColdCodeBlock + (offset - emitTotalHotCodeSize);
     }
 
-#if TARGET_XARCH
     private bool emitJumpCrossHotColdBoundary(uint srcOffset, uint dstOffset)
     {
         if (emitTotalColdCodeSize == 0)
@@ -32,7 +31,6 @@ public partial class Emitter
         assert(dstOffset < (emitTotalHotCodeSize + emitTotalColdCodeSize));
         return (srcOffset < emitTotalHotCodeSize) != (dstOffset < emitTotalHotCodeSize);
     }
-#endif
 
     public unsafe byte* emitOutputLJ(insGroup? ig, byte* dst, instrDesc i)
     {

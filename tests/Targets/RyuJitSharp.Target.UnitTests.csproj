@@ -21,6 +21,7 @@
     <Compile Include="..\Core\Arm64*Tests.cs" Link="%(Filename)%(Extension)" />
     <Compile Include="..\Core\CSELiveAcrossCallCostTests.cs" Link="CSELiveAcrossCallCostTests.cs" />
     <Compile Include="..\Core\EnumUtilityTests.cs" Link="EnumUtilityTests.cs" />
+    <Compile Include="..\Core\EmitterHotColdBoundaryTests.cs" Link="EmitterHotColdBoundaryTests.cs" />
     <Compile Include="..\Core\EmitterHandleCommentTests.cs" Link="EmitterHandleCommentTests.cs" />
     <Compile Include="..\Core\FuncletCreationTargetTests.cs" Link="FuncletCreationTargetTests.cs" />
     <Compile Include="..\Core\HWIntrinsicCodegenClassificationTests.cs" Link="HWIntrinsicCodegenClassificationTests.cs" />
