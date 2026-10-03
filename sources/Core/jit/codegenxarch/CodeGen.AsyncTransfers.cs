@@ -144,6 +144,9 @@ public sealed partial class CodeGen
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64
         Emitter.emitIns_R_L(INS_lea, EA_PTRSIZE, Emitter.emitGetFirstPrologIG(), tree.RegNum);
         genProduceReg(tree);
+#elif TARGET_ARM64
+        Emitter.emitIns_R_L(INS_adr, EA_PTRSIZE, Emitter.emitGetFirstPrologIG(), tree.RegNum);
+        genProduceReg(tree);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Function-entry address generation requires Windows AMD64.");
 #else

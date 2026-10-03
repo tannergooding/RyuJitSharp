@@ -31,6 +31,12 @@ public sealed partial class CodeGen
                 return;
             }
 
+            case GT_FTN_ENTRY:
+            {
+                genFtnEntry(tree);
+                return;
+            }
+
             case GT_JMPTABLE:
             {
                 genJumpTable(tree);
