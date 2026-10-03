@@ -4,6 +4,7 @@
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
@@ -12,8 +13,11 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
+[NonParallelizable]
 internal static unsafe class LinearScanAllocationDiagnosticsTests
 {
+    private static int s_assertionCount;
+
     [Test]
     public static void CompactAllocationTableUsesNativeHeaderAndInitialRecordIndent()
     {
@@ -89,6 +93,29 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
             Assert.That(output, Does.Contain($"         1.#1 I0   Def    {separator}"));
             Assert.That(output, Does.Contain(
                 new string(' ', 26) + separator + "    " + separator));
+        });
+    }
+
+    [Test]
+    public static void ShortReferenceAssertsWhenAnUnassociatedKindIsNotAKill()
+    {
+        WithCompiler((compiler, codeGen) => {
+            var allocator = CreateAllocator(compiler);
+            _ = allocator.newRefPosition(null, 1, RefType.RefTypeKill, null, SRBM_NONE);
+            var reference = new RefPosition(0, 1, null, RefType.RefTypeInvalid);
+            compiler.verbose = true;
+            _ = Capture(() => InitializeAllocationDumpFormat(allocator));
+
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.doAssert = &RecordAssertion;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            using var tls = new JitTls(&jitInfo);
+            JitTls.Compiler = compiler;
+            s_assertionCount = 0;
+
+            _ = Capture(() => DumpRefPositionShort(allocator, reference));
+
+            Assert.That(s_assertionCount, Is.EqualTo(1));
         });
     }
 
@@ -243,6 +270,13 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
         }
 
         return Encoding.UTF8.GetString(stream.ToArray());
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
+    {
+        s_assertionCount++;
+        return 0;
     }
 
     private static void WithCompiler(Action<Compiler, CodeGen> action)

@@ -736,6 +736,7 @@ public sealed partial class LinearScan
         }
         else
         {
+            assert(refPosition.refType is RefType.RefTypeKill or RefType.RefTypeKillGCRefs);
             jitprintf(new string(' ', _allocationDumpRegColumnWidth));
             jitprintf($" {getRefTypeShortName(refPosition.refType) ?? "(null)"}   ");
         }

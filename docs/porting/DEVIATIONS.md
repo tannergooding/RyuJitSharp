@@ -2158,6 +2158,23 @@ zero. Implement exact tracking before enabling either instrumentation path.
 Full-analysis Windows-x64 `BitSetSupportTests` pass 2/2 in Debug and Release;
 these are helper tests, not runtime or generated-code parity.
 
+### D011: LSRA reference-row duplicate state
+
+**Status:** bounded diagnostic lifetime adaptation; no cross-instance output
+parity is claimed.
+
+Native `LinearScan::dumpRefPositionShort` in `src/coreclr/jit/lsra.cpp` keeps
+`lastPrintedRefPosition` in function-static pointer storage. The managed
+`LinearScan.dumpRefPositionShort` in
+`sources/Core/jit/lsra/LinearScan.AllocationDiagnostics.cs` keeps the last row
+on its owning `LinearScan` instance. Repeated rows within one allocator retain
+the same blank-row behavior. Per-instance state avoids carrying a dangling
+native address into a later compilation, where allocator address reuse could
+suppress that compilation's first row. The difference is limited to DEBUG
+diagnostics across allocator lifetimes; no generated-code or runtime behavior
+is involved. Focused allocation/interval diagnostic fixtures pass 117 Debug
+and 17 Release cases with zero skips.
+
 ## Implementation notes and parity findings
 
 ### R001: Temporary serialization for debugging

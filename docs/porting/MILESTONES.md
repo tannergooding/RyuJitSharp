@@ -16,6 +16,34 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: LSRA allocation reference-row diagnostics
+
+Reconciled the complete DEBUG reference-row formatter family with its existing
+managed mappings in `LinearScan.AllocationDiagnostics.cs`. The managed short
+reference formatter now asserts that an unassociated reference is a kill or
+kill-GC-refs reference, matching the native diagnostic contract.
+Focused Windows-x64 allocation, record, traversal, and interval diagnostic
+fixtures pass 117/117 Debug and 17/17 Release, with zero skips.
+
+All five native bodies matched the pinned oracle byte-for-byte. Their
+SHA-256 hashes are `d7673ff473915fe8aab3d4522ca491a3a8057799f402890ec22737b078927a40`
+(`dumpIntervalName`), `56113963fcca54a1caa0f95746f2239d910e9b87279aa7ac836070903bcfdaa4`
+(`dumpEmptyTreeID`), `219bf42dc5ebba5e9c111a764fb4d7a28734210dabd4cae2e767164b5b525f40`
+(`dumpEmptyRefPosition`), `ab331300d0084d95793de85d8ad64558234e1aeeee2ec105805d03b76de86ba9`
+(`dumpNewBlock`), and `6fe449e1565efabcadde3afa9735301ddb4aa3caba072dfd586e231811aa5b39`
+(`dumpRefPositionShort`).
+
+Native `18ed4305` amends the consolidated residual commit, sole-parented to
+the pinned oracle, and removes all five definitions and their exclusive
+DEBUG declarations (158 deletion lines). No native callers remain outside
+the helper cluster. Recovery ref
+`refs/copilot-recovery/lsra-reference-dump-before-fd8d2384` preserves the
+previous native HEAD. The managed formatter keeps duplicate-row suppression
+per `LinearScan` instance rather than reproducing the native function-static
+pointer's stale cross-instance behavior; see [D011](DEVIATIONS.md#d011-lsra-reference-row-duplicate-state).
+These DEBUG-only checks establish neither cross-instance dump parity nor
+generated-code or runtime parity.
+
 ## 2026-10-03: LSRA interval and def-use native retirement
 
 Reconciled the already-implemented `LinearScan.newInterval` and
