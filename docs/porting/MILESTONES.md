@@ -28,6 +28,17 @@ compile-item check includes the new source only for x64. Windows-x64
 `CodeGenEpilogTests` passed 11/11 Debug and 11/11 Release with no skips. This
 source-ownership change does not claim other-target or generated-code parity.
 
+## 2026-10-03: Keeping ARM64 block initialization target-owned
+
+Guarded the xarch block-initialization implementation out of `TARGET_ARM64`,
+where `codegenarm64/CodeGen.BlockInitialization.cs` supplies the target-owned
+method. The residual native ARM64 implementation was already retired, so this
+avoids a duplicate managed definition without claiming new native retirement.
+Windows-x64 `CodeGenPrologInitializationTests` passed 47/47 Debug and 42/42
+Release with no skips. The focused ARM64 target build still stops before test
+discovery on the existing backend/API gaps recorded in `activeBatch.filePortWave`;
+no ARM64 test or parity claim is made.
+
 ## 2026-10-03: Isolating xarch block-memory sources
 
 The pinned native CMake source set includes `codegenxarch.cpp` only for AMD64
