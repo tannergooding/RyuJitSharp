@@ -121,6 +121,19 @@ internal static unsafe class EmitterDescriptorPayloadTests
 #endif
 
 #if TARGET_XARCH
+    [Test]
+    public static void SmallDisplacementFlagClearsLargeDisplacementFlag()
+    {
+        var descriptor = new Descriptor();
+        descriptor.idSetIsLargeDsp();
+
+        Assert.That(descriptor.idIsLargeDsp(), Is.True);
+
+        descriptor.idSetIsSmallDsp();
+
+        Assert.That(descriptor.idIsLargeDsp(), Is.False);
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void BoundFlagUsesTheSharedCustomBitWithoutChangingOtherPayloads(bool bound)
