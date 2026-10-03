@@ -3,6 +3,10 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+#if TARGET_ARM64
+using static RyuJitSharp.insBarrier;
+#endif
+
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
@@ -420,7 +424,26 @@ public sealed partial class CodeGen
 
     public void instGen_MemoryBarrier(BarrierKind barrierKind)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM64
+#if DEBUG
+        if (JitConfig.JitNoMemoryBarriers == 1)
+        {
+            return;
+        }
+#endif
+        if (barrierKind == BARRIER_STORE_ONLY)
+        {
+            // ISHST is too weak because loads must not move across a store barrier.
+            barrierKind = BARRIER_FULL;
+        }
+
+        var barrier = barrierKind == BARRIER_LOAD_ONLY ? INS_BARRIER_ISHLD : INS_BARRIER_ISH;
+        if (!_compiler.opts.OptimizationEnabled ||
+            !Emitter.emitTryCoalesceLastMemBarrier(barrier))
+        {
+            Emitter.emitIns_BARR(INS_dmb, barrier);
+        }
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Memory barrier generation outside xarch is not implemented.");
 #else
 #if TARGET_AMD64

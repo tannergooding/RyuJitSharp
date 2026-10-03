@@ -70,6 +70,17 @@ public sealed partial class CodeGen
                 genTableBasedSwitch(tree);
                 return;
             }
+
+            case GT_MEMORYBARRIER:
+            {
+                var barrierKind = (tree.Flags & GTF_MEMORYBARRIER_LOAD) != 0
+                    ? BarrierKind.BARRIER_LOAD_ONLY
+                    : (tree.Flags & GTF_MEMORYBARRIER_STORE) != 0
+                        ? BarrierKind.BARRIER_STORE_ONLY
+                        : BarrierKind.BARRIER_FULL;
+                instGen_MemoryBarrier(barrierKind);
+                return;
+            }
         }
 #endif
 #if TARGET_LOONGARCH64 || TARGET_RISCV64

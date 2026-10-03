@@ -75,7 +75,7 @@ public sealed partial class CodeGen
 
                 if (needsBarrier)
                 {
-                    instGen_MemoryBarrierNotPorted();
+                    instGen_MemoryBarrier(BARRIER_FULL);
                 }
             }
 
@@ -111,11 +111,6 @@ public sealed partial class CodeGen
         instruction currentIns, regNumber targetReg, GenTreeIndir indir, ref bool needsBarrier)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "ARM64 volatile indirect-store instruction selection is not yet ported.");
-    }
-
-    private void instGen_MemoryBarrierNotPorted()
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 indirect-store memory-barrier recording is not yet ported.");
     }
 
     private void emitInsLoadStoreOpNotPorted(instruction ins, emitAttr attr, regNumber dataReg, GenTreeStoreInd tree)
