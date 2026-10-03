@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Isolating xarch block-memory sources
+
+The pinned native CMake source set includes `codegenxarch.cpp` only for AMD64
+and I386; block-memory implementations for ARM, LoongArch64, RISC-V64, and Wasm
+belong to their respective target sources. The managed xarch algorithms remain
+in `CodeGen.BlockMemory.cs`, while terminating unported-target dependencies
+move to `codegencommon/CodeGen.BlockMemoryDependencies.cs`. The xarch file is
+no longer re-included for non-xarch targets, avoiding a duplicate
+`genCodeForInitBlkUnroll` alongside the LoongArch implementation. Eight-RID
+compile-item evaluation confirms the intended source ownership. The Windows-x64
+Debug compiler build passes with code-style enforcement disabled for an
+unrelated existing IDE0007 diagnostic; the LoongArch build remains blocked by
+unsupported HWIntrinsic platform directives, with no block-memory duplicate
+reported. This is source-selection evidence, not non-xarch compilation or
+runtime parity.
+
 ## 2026-10-03: LSRA multi-register definition-list removal
 
 The complete native `RefInfoList::removeListNode(GenTree*, unsigned)` overload

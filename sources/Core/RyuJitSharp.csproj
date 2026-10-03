@@ -634,6 +634,7 @@
     <Compile Include="jit\*xarch\**\*.cs"
              Exclude="jit\codegenxarch\CodeGen.AddressChecks.cs;
                       jit\codegenxarch\CodeGen.Binary.cs;
+                      jit\codegenxarch\CodeGen.BlockMemory.cs;
                       jit\codegenxarch\CodeGen.ByteSwap.cs;
                       jit\codegenxarch\CodeGen.Comparisons.cs;
                       jit\codegenxarch\CodeGen.ConditionalSelection.cs;

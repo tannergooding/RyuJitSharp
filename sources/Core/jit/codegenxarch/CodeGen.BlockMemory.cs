@@ -10,12 +10,8 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if !TARGET_WASM
     public void genCodeForStoreBlk(GenTreeBlk node)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Block memory generation requires Windows AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(node.Oper == GT_STORE_BLK);
         var isCopy = node.IsCopyBlkOp;
@@ -68,15 +64,10 @@ public sealed partial class CodeGen
                 break;
             }
         }
-#endif
     }
-#endif
 
     public void genCodeForMemmove(GenTreeBlk node)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Unrolled memmove requires Windows AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(TARGET_POINTER_SIZE == 8);
         var srcIndir = node.Data.AsIndir();
@@ -180,15 +171,10 @@ public sealed partial class CodeGen
                 EmitScalarLoadStore(false, width, reg2, size - width);
             }
         }
-#endif
     }
 
-#if !TARGET_WASM
     public void genCodeForInitBlkLoop(GenTreeBlk node)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Loop block initialization requires Windows AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         var dstNode = node.Addr;
         var zeroNode = node.Data;
@@ -215,15 +201,10 @@ public sealed partial class CodeGen
             inst_JMP(EJ_jne, loop);
             GCInfo.gcMarkRegSetNpt(regMaskTP.CreateFromRegNum(dstReg, dstReg.SingleTypeMask));
         }
-#endif
     }
-#endif
 
     public void genCodeForInitBlkUnroll(GenTreeBlk node)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Unrolled block initialization requires Windows AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(node.Oper == GT_STORE_BLK);
         var dst = genConsumeBlockAddress(node.Addr);
@@ -379,14 +360,10 @@ public sealed partial class CodeGen
             EmitStore(INS_mov, scalarSize, srcIntReg);
         }
 #endif
-#endif
     }
 
     public void genCodeForCpBlkUnroll(GenTreeBlk node)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Unrolled block copy requires Windows AMD64.");
-#else
         Emitter.RequireSupportedInstructionRecording();
         assert(node.Oper == GT_STORE_BLK);
         var dst = genConsumeBlockAddress(node.Addr);
@@ -492,7 +469,6 @@ public sealed partial class CodeGen
             }
 #endif
         }
-#endif
     }
 
 #if TARGET_XARCH
