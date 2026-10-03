@@ -16,6 +16,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-02: Managed ArrayStack
+
+Ported the complete `ArrayStack<T>` helper, including growth, push/emplace/pop,
+indexed access and references, reset/reverse, contiguous active data, and
+bottom-up/top-down views with Debug mutation checks. Managed `T[]` storage
+replaces the native allocator-backed buffer under D001. Focused `ArrayStackTests`
+pass 3/3 in Debug and Release. Native `33b0adc9` retires `arraystack.h`, its
+allocation-kind entry and the associated forward declaration in the consolidated
+residual commit. Remaining native callsites are untranslated; no generated-code
+or runtime parity is claimed. Evidence is recorded in `state.json`.
+
 ## 2026-10-02: Managed allocation statistics
 
 Enabled optional `MEASURE_MEM_ALLOC` reporting from per-root-compilation managed

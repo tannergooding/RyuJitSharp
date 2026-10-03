@@ -37,6 +37,16 @@ histogram. It does not synthesize native allocation-call counts, per-kind totals
 or arena capacity/used bytes; shutdown states explicitly that arena usage is not
 available under managed allocation.
 
+Native `src/coreclr/jit/arraystack.h::ArrayStack<T>` maps to
+`sources/Core/jit/arraystack/ArrayStack.cs`. The managed helper preserves its
+minimum capacity, doubling growth, stack order and by-reference element access,
+but uses a managed `T[]` instead of inline/`CompAllocator` storage. Its `Emplace`
+factory runs after capacity growth, and `Data()` exposes the active elements as a
+`Span<T>`. These are internal representation/API adaptations covered by D001;
+they do not accept generated-code or diagnostic differences. The new helper has
+no production C# callers yet, and remaining native callsites are still
+untranslated. Focused `ArrayStackTests` pass 3/3 in Debug and Release.
+
 Optional `DISPLAY_SIZES` totals measure emitted IL, code/data and GC payloads,
 not managed compiler allocations. They retain native arithmetic and diagnostic
 formatting and are not covered by the allocation-statistics exclusion.
