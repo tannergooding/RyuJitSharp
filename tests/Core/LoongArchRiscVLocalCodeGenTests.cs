@@ -198,6 +198,18 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     }
 
     [Test]
+    public static void AsyncResumeInfoDispatchReachesTheSharedRecordingBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var tree = new GenTreeVal(GT_ASYNC_RESUME_INFO, TYP_I_IMPL, 0) { RegNum = REG_S0 };
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
+
+            Assert.That(failure?.Message, Does.Contain("Instruction recording outside AMD64 is not ported."));
+        });
+    }
+
+    [Test]
     public static void JumpTableAddressRecordingStopsAtTheTargetEmitterBoundary()
     {
         WithCodeGen((compiler, codeGen) =>

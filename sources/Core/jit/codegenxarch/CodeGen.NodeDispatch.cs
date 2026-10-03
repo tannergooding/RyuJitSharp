@@ -13,6 +13,11 @@ public sealed partial class CodeGen
 #if TARGET_LOONGARCH64 || TARGET_RISCV64
         switch (tree.Oper)
         {
+            case GT_ASYNC_RESUME_INFO:
+            {
+                genAsyncResumeInfo(tree.AsVal());
+                return;
+            }
             case GT_JMPTABLE:
             {
                 genJumpTable(tree);

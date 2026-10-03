@@ -34,6 +34,28 @@ public sealed partial class CodeGen
 
         GetEmitter().emitDataOffsetConstant(unchecked((nuint)dataOffset));
         WasmProduceReg(treeNode);
+#elif TARGET_LOONGARCH64
+        var ins = INS_bl;
+        var attr = EA_PTRSIZE;
+        if (_compiler.eeDataWithCodePointersNeedsRelocs())
+        {
+            ins = INS_b;
+            attr = EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG);
+        }
+
+        GetEmitter().emitIns_R_C(ins, attr, treeNode.RegNum, REG_NA,
+            genEmitAsyncResumeInfo(unchecked((uint)treeNode.Val1)), 0);
+        genProduceReg(treeNode);
+#elif TARGET_RISCV64
+        var attr = EA_PTRSIZE;
+        if (_compiler.eeDataWithCodePointersNeedsRelocs())
+        {
+            attr = EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG);
+        }
+
+        GetEmitter().emitIns_R_C(INS_addi, attr, treeNode.RegNum, REG_NA,
+            genEmitAsyncResumeInfo(unchecked((uint)treeNode.Val1)));
+        genProduceReg(treeNode);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Async resume address generation requires Windows AMD64.");
 #else
