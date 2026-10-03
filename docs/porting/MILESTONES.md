@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Shared lowering helper retirement
+
+Retired the complete shared `Lowering` helper family: `ContainCheckLclHeap`,
+`ContainCheckRet`, and `InsertNewSimdCreateScalarUnsafeNode`, mapped to their
+existing managed implementations. The focused Windows-x64
+`LocalHeapLoweringTests`, `ReturnLoweringTests`, and
+`HardwareConstructionLoweringTests` passed together, 130/130 in Debug and
+130/130 in Release, with zero skips.
+
+Native HEAD `36d2722e` amends the consolidated residual commit, sole-parented to
+the pinned oracle. It removes the now-empty residual `lower.cpp` and all three
+exclusive `lower.h` declarations. Recovery ref
+`refs/copilot-recovery/lowering-helpers-before-e01ac74` preserves the previous
+HEAD. The residual `lowerwasm.cpp` caller remains as unported Wasm code; this
+focused Windows-x64 coverage does not establish other-target or full-pipeline
+parity.
+
 ## 2026-10-03: xarch register-info binding
 
 Reconciled the native `CodeGenInterface::CopyRegisterInfo` binding with the
