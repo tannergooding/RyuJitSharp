@@ -41,7 +41,7 @@ public sealed partial class CodeGen
     }
 
 #if FEATURE_SIMD
-    private void genLoadIndTypeSimd12(GenTreeIndir tree)
+    private void genLoadIndTypeSimd12(GenTree tree)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 SIMD12 indirect loads are not ported.");
     }
