@@ -16,6 +16,25 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Shared handle-comment formatting
+
+Moved the complete `emitter::emitDispCommentForHandle` binding from the xarch
+partial into the shared `Emitter` partial, preserving the native cookie and
+handle cases, DEBUG object descriptions, and xarch (`;`), Wasm (`;;`) and
+other-target (`//`) comment prefixes. Full-analysis Windows-x64
+instruction-display and handle-comment selections pass 95 Debug / 52 Release;
+ARM64-target and browser-Wasm target-prefix projections pass 8/8 Debug each.
+
+The residual and pinned oracle definitions match after line-ending
+normalization. Native `279c8d19` amends the consolidated residual commit,
+sole-parented to the pinned oracle, and removes the complete method with its
+attached rationale plus the exclusive declaration (119 deletion lines).
+Recovery ref
+`refs/copilot-recovery/emit-handle-display-before-555d7a3d` preserves the prior
+native HEAD. These target tests exercise managed target logic on Windows x64;
+no ARM64/Wasm machine execution, generated-code, runtime, or whole-pipeline dump
+parity is claimed.
+
 ## 2026-10-03: SIMD local-alignment retirement
 
 Revalidated the existing whole `Compiler::isSIMDTypeLocalAligned` mapping in
