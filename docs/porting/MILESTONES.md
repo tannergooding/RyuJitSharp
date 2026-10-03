@@ -16,6 +16,30 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: LSRA async-continuation busy reference
+
+Reconciled the retained shared `LinearScan::MarkAsyncContinuationBusyForCall`
+with the existing AMD64 and ARM managed caller paths. The complete native body
+matched the pinned oracle exactly (640 bytes, 12 lines; SHA-256
+`7f852e4d7b7138d09e53e9e9c4f970e2949943e58a2bb432f0f3c1677cf103e7`). The
+AMD64 path reserves the async-continuation return register and delays its kill
+until after the call; the managed regression confirms location and ordering.
+
+The focused Windows-x64 `AsyncContinuationKillIsDelayedBeforeTheCallKill`
+fixture passes 1/1 in Debug and Release with zero skips. A broader Debug class
+filter also encountered four `WindowsVarargsFloatsReserveTheCorrespondingIntegerRegister`
+`IndexOutOfRangeException` failures at the existing fixture's line 291; these
+are outside the async-continuation case and were not changed.
+
+Native `4e92683f` amends the consolidated residual commit, sole-parented to
+the pinned oracle, and removes the complete method and its `lsra.h` declaration
+(22 deletion lines). Recovery ref
+`refs/copilot-recovery/lsra-async-continuation-before-18ed4305` preserves the
+previous native HEAD. Unported LoongArch64/RISC-V caller definitions remain in
+the residual ledger without this translated declaration. This is focused call
+reference validation, not full compiler-pipeline, runtime, or generated-code
+parity.
+
 ## 2026-10-03: LSRA allocation reference-row diagnostics
 
 Reconciled the complete DEBUG reference-row formatter family with its existing
