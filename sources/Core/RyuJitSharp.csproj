@@ -226,9 +226,9 @@
     <DefineConstants Condition="'$(RyuJitTargetIs64Bit)' == 'true'">$(DefineConstants);TARGET_64BIT</DefineConstants>
 
     <DefineConstants Condition="'$(RyuJitTargetIsApple)' == 'true'">$(DefineConstants);TARGET_APPLE</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);TARGET_UNIX;TARGET_UNIX_POSSIBLY_SUPPORTED</DefineConstants>
-
-    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'anyos'">$(DefineConstants);TARGET_OS_RUNTIMEDETERMINED;TARGET_UNIX_POSSIBLY_SUPPORTED;TARGET_WINDOWS_POSSIBLY_SUPPORTED</DefineConstants>
+    <!-- Native target.h enables FEATURE_CFI_SUPPORT when TARGET_UNIX_POSSIBLY_SUPPORTED is set. -->
+    <DefineConstants Condition="'$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);TARGET_UNIX;TARGET_UNIX_POSSIBLY_SUPPORTED;FEATURE_CFI_SUPPORT</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'anyos'">$(DefineConstants);TARGET_OS_RUNTIMEDETERMINED;TARGET_UNIX_POSSIBLY_SUPPORTED;TARGET_WINDOWS_POSSIBLY_SUPPORTED;FEATURE_CFI_SUPPORT</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetOS)' == 'android'">$(DefineConstants);TARGET_ANDROID</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetOS)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetOS)' == 'ios'">$(DefineConstants);TARGET_IOS</DefineConstants>

@@ -224,6 +224,31 @@ internal static class UnwindPrologRecordingTests
     }
 
     [Test]
+    public static void LastFuncletUsesNullEndLocationAndItsOwnPrologOffset()
+    {
+        WithProlog((compiler, codeGen) =>
+        {
+            var group = codeGen.Emitter.emitGetFirstPrologIG();
+            var startBlock = new BasicBlock(null, null) { bbEmitCookie = group };
+            var lastBlock = new BasicBlock(null, null);
+            compiler.compHndBBtab = [new EHblkDsc { ebdHndBeg = startBlock, ebdHndLast = lastBlock }];
+            compiler.compHndBBtabCount = 1;
+            compiler.funCurrentFunc().funKind = FuncKind.FUNC_HANDLER;
+            compiler.funCurrentFunc().funEHIndex = 0;
+            compiler.unwindEndProlog();
+            compiler.unwindBegProlog();
+            CurrentSize(codeGen.Emitter) = 17;
+            compiler.unwindAllocStack(8);
+
+            var func = compiler.funCurrentFunc();
+            Assert.That(func.startLoc?.GetIG(), Is.SameAs(group));
+            Assert.That(func.endLoc, Is.Null);
+            byte[] expected = [17, 2];
+            Assert.That(Codes(in func), Is.EqualTo(expected));
+        });
+    }
+
+    [Test]
     public static void EpilogStateTransitionsRequireEpilogGroup()
     {
         WithProlog((compiler, codeGen) =>

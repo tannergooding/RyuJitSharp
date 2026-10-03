@@ -15,7 +15,6 @@ public partial class Compiler
 #if TARGET_AMD64
     public void unwindReserve()
     {
-        RequireSupportedUnwindFormat();
         var emitter = codeGen?.Emitter ?? throw new InvalidOperationException("An emitter is required to reserve unwind information.");
         assert(!emitter.emitGeneratingPrologOrFuncletProlog());
         assert(!emitter.emitGeneratingEpilogOrFuncletEpilog());
@@ -62,7 +61,8 @@ public partial class Compiler
 #if UNIX_AMD64_ABI
             if (generateCFIUnwindCodes())
             {
-                unwindReserveFuncHelperCFI(ref func, isHotCode);
+                noway_assert(func.cfiCodes is not null);
+                unwindCodeBytes = unchecked(func.cfiCodes.Count * 8);
             }
             else
 #endif
@@ -94,16 +94,8 @@ public partial class Compiler
         eeReserveUnwindInfo(isFunclet, !isHotCode, unwindCodeBytes);
     }
 
-#if UNIX_AMD64_ABI
-    private void unwindReserveFuncHelperCFI(ref FuncInfoDsc func, bool isHotCode)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "AMD64 CFI unwind reservation is not implemented.");
-    }
-#endif
-
     public unsafe void unwindEmit(void* pHotCode, void* pColdCode)
     {
-        RequireSupportedUnwindFormat();
         var emitter = codeGen?.Emitter ?? throw new InvalidOperationException("An emitter is required to publish unwind information.");
         assert(!emitter.emitGeneratingPrologOrFuncletProlog());
         assert(!emitter.emitGeneratingEpilogOrFuncletEpilog());
@@ -142,6 +134,11 @@ public partial class Compiler
     private unsafe void unwindEmitFuncHelper(in FuncInfoDsc func, void* pHotCode, void* pColdCode, bool isHotCode)
     {
         var emitter = codeGen?.Emitter ?? throw new InvalidOperationException("An emitter is required to resolve unwind locations.");
+        if (!isHotCode)
+        {
+            assert(fgFirstColdBlock is not null);
+        }
+
         var startLocation = isHotCode ? func.startLoc : func.coldStartLoc;
         var endLocation = isHotCode ? func.endLoc : func.coldEndLoc;
         var startOffset = startLocation?.CodeOffset(emitter) ?? 0u;
@@ -150,7 +147,46 @@ public partial class Compiler
 #if UNIX_AMD64_ABI
         if (generateCFIUnwindCodes())
         {
-            unwindEmitFuncHelperCFI(in func, pHotCode, pColdCode, isHotCode);
+            var codes = (isHotCode || (func.funKind != FuncKind.FUNC_ROOT)) ? func.cfiCodes : null;
+            noway_assert(!(isHotCode || (func.funKind != FuncKind.FUNC_ROOT)) || codes is not null);
+            var cfiCodes = codes is null ? default : CollectionsMarshal.AsSpan(codes);
+            var unwindCodeBytes = unchecked(cfiCodes.Length * 8);
+
+#if DEBUG
+            if (opts.dspUnwind)
+            {
+                DumpCfiInfo(isHotCode, startOffset, endOffset, cfiCodes);
+            }
+#endif
+
+            if (isHotCode)
+            {
+#if DEBUG
+                if ((JitConfig.JitFakeProcedureSplitting != 0) && (fgFirstColdBlock is not null))
+                {
+                    assert(endOffset <= info.compNativeCodeSize);
+                }
+                else
+#endif
+                {
+                    assert(endOffset <= info.compTotalHotCodeSize);
+                }
+
+                pColdCode = null;
+            }
+            else
+            {
+                assert(startOffset >= info.compTotalHotCodeSize);
+                startOffset = unchecked(startOffset - (uint)info.compTotalHotCodeSize);
+                endOffset = unchecked(endOffset - (uint)info.compTotalHotCodeSize);
+            }
+
+            // The EE consumes the vector during the call; keep its backing array pinned.
+            fixed (CFI_CODE* pCfiCodes = cfiCodes)
+            {
+                eeAllocUnwindInfo((byte*)pHotCode, (byte*)pColdCode, unchecked((int)startOffset), unchecked((int)endOffset),
+                    unwindCodeBytes, (byte*)pCfiCodes, (CorJitFuncKind)func.funKind);
+            }
         }
         else
 #endif
@@ -205,13 +241,6 @@ public partial class Compiler
             }
         }
     }
-
-#if UNIX_AMD64_ABI
-    private unsafe void unwindEmitFuncHelperCFI(in FuncInfoDsc func, void* pHotCode, void* pColdCode, bool isHotCode)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "AMD64 CFI unwind publication is not implemented.");
-    }
-#endif
 
     private unsafe void eeReserveUnwindInfo(bool isFunclet, bool isColdCode, int unwindSize)
     {

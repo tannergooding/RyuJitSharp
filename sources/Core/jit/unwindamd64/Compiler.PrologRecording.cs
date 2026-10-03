@@ -21,16 +21,6 @@ public partial class Compiler
     private const byte UWOP_SET_FPREG_LARGE = 11;
 #endif
 
-    private void RequireSupportedUnwindFormat()
-    {
-#if UNIX_AMD64_ABI
-        if (IsTargetAbi(CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI))
-        {
-            throw new FatalJitException(CORJIT_SKIPPED, "NativeAOT CFI unwind recording is not implemented for Unix AMD64.");
-        }
-#endif
-    }
-
     private const byte UWOP_SAVE_NONVOL = 4;
     private const byte UWOP_SAVE_NONVOL_FAR = 5;
     private const byte UWOP_SAVE_XMM128 = 8;
@@ -38,8 +28,7 @@ public partial class Compiler
 
     public void unwindBegProlog()
     {
-        RequireSupportedUnwindFormat();
-        noway_assert(!compGeneratingUnwindProlog);
+        assert(!compGeneratingUnwindProlog);
         compGeneratingUnwindProlog = true;
 #if UNIX_AMD64_ABI
         if (generateCFIUnwindCodes())
@@ -54,34 +43,77 @@ public partial class Compiler
     }
 
 #if UNIX_AMD64_ABI
-    private void unwindBegPrologCFI()
+    private static short mapRegNumToDwarfReg(regNumber reg)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "AMD64 CFI unwind prolog recording is not implemented.");
-    }
+        short dwarfReg = DWARF_REG_ILLEGAL;
 
-    private void unwindPushPopCFI(regNumber reg)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "AMD64 CFI register-push recording is not implemented.");
-    }
+        switch (reg)
+        {
+            case regNumber.REG_RAX:
+            {
+                dwarfReg = 0;
+                break;
+            }
+            case regNumber.REG_RCX:
+            {
+                dwarfReg = 2;
+                break;
+            }
+            case regNumber.REG_RDX:
+            {
+                dwarfReg = 1;
+                break;
+            }
+            case regNumber.REG_RBX:
+            {
+                dwarfReg = 3;
+                break;
+            }
+            case regNumber.REG_RSP:
+            {
+                dwarfReg = 7;
+                break;
+            }
+            case regNumber.REG_RBP:
+            {
+                dwarfReg = 6;
+                break;
+            }
+            case regNumber.REG_RSI:
+            {
+                dwarfReg = 4;
+                break;
+            }
+            case regNumber.REG_RDI:
+            {
+                dwarfReg = 5;
+                break;
+            }
+            case >= regNumber.REG_R8 and <= regNumber.REG_R31:
+            {
+                dwarfReg = (short)reg;
+                break;
+            }
+            default:
+            {
+                noway_assert(false, "!\"unexpected REG_NUM\"");
+                break;
+            }
+        }
 
-    private void unwindPush2Pop2CFI(regNumber reg1, regNumber reg2)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "AMD64 CFI paired-register-push recording is not implemented.");
-    }
-
-    private void unwindAllocStackCFI(uint size)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "AMD64 CFI stack-allocation recording is not implemented.");
-    }
-
-    private void unwindSetFrameRegCFI(regNumber reg, uint offset)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "AMD64 CFI frame-register recording is not implemented.");
+        return dwarfReg;
     }
 
     private void unwindSaveRegCFI(regNumber reg, uint offset)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "AMD64 CFI register-save recording is not implemented.");
+        assert(UnwindEmitter().emitGeneratingPrologOrFuncletProlog());
+
+        if ((bool)(CfiCalleeSavedMask & genRegMask(reg)))
+        {
+            ref var func = ref funCurrentFunc();
+            var cbProlog = unwindGetCurrentOffset(in func);
+            createCfiCode(in func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg), unchecked((int)offset));
+        }
     }
 #endif
 
@@ -112,7 +144,6 @@ public partial class Compiler
 
     public void unwindEndProlog()
     {
-        RequireSupportedUnwindFormat();
         noway_assert(codeGen?.Emitter.emitGeneratingPrologOrFuncletProlog() == true);
         noway_assert(compGeneratingUnwindProlog);
         compGeneratingUnwindProlog = false;
@@ -120,7 +151,6 @@ public partial class Compiler
 
     public void unwindBegEpilog()
     {
-        RequireSupportedUnwindFormat();
         noway_assert(codeGen?.Emitter.emitGeneratingEpilogOrFuncletEpilog() == true);
         noway_assert(!compGeneratingUnwindEpilog);
         compGeneratingUnwindEpilog = true;
@@ -128,7 +158,6 @@ public partial class Compiler
 
     public void unwindEndEpilog()
     {
-        RequireSupportedUnwindFormat();
         noway_assert(codeGen?.Emitter.emitGeneratingEpilogOrFuncletEpilog() == true);
         noway_assert(compGeneratingUnwindEpilog);
         compGeneratingUnwindEpilog = false;
@@ -136,7 +165,6 @@ public partial class Compiler
 
     public void unwindPush(regNumber reg)
     {
-        RequireSupportedUnwindFormat();
 #if UNIX_AMD64_ABI
         if (generateCFIUnwindCodes())
         {
@@ -151,7 +179,6 @@ public partial class Compiler
 
     public void unwindPush2(regNumber reg1, regNumber reg2)
     {
-        RequireSupportedUnwindFormat();
 #if UNIX_AMD64_ABI
         if (generateCFIUnwindCodes())
         {
@@ -193,7 +220,6 @@ public partial class Compiler
 
     public void unwindAllocStack(uint size)
     {
-        RequireSupportedUnwindFormat();
 #if UNIX_AMD64_ABI
         if (generateCFIUnwindCodes())
         {
@@ -241,7 +267,6 @@ public partial class Compiler
 
     public void unwindSetFrameReg(regNumber reg, uint offset)
     {
-        RequireSupportedUnwindFormat();
 #if UNIX_AMD64_ABI
         if (generateCFIUnwindCodes())
         {
@@ -283,7 +308,6 @@ public partial class Compiler
 
     public void unwindSaveReg(regNumber reg, uint offset)
     {
-        RequireSupportedUnwindFormat();
 #if UNIX_AMD64_ABI
         if (generateCFIUnwindCodes())
         {
@@ -324,62 +348,6 @@ public partial class Compiler
             noway_assert(unwindRegNum <= 15);
             UnwindWriteCode(ref func, code, unwindGetCurrentOffset(in func), op, (byte)unwindRegNum);
         }
-    }
-
-    private void unwindGetFuncLocations(
-        in FuncInfoDsc func, bool getHotSectionData, out emitLocation? startLoc, out emitLocation? endLoc)
-    {
-        if (func.funKind == FuncKind.FUNC_ROOT)
-        {
-            if (getHotSectionData)
-            {
-                startLoc = null;
-
-#if DEBUG
-                if ((fgFirstColdBlock is not null) && (JitConfig.JitFakeProcedureSplitting != 0))
-                {
-                    endLoc = UnwindBlockLocation(fgFirstFuncletBB);
-                    return;
-                }
-#endif
-
-                endLoc = UnwindBlockLocation(fgFirstColdBlock ?? fgFirstFuncletBB);
-            }
-            else
-            {
-                noway_assert(fgFirstColdBlock is not null);
-                startLoc = UnwindBlockLocation(fgFirstColdBlock);
-                endLoc = UnwindBlockLocation(fgFirstFuncletBB);
-            }
-        }
-        else
-        {
-            var startBlock = func.GetStartBlock(this);
-            var lastBlock = func.GetLastBlock(this);
-            startLoc = UnwindBlockLocation(startBlock);
-            endLoc = UnwindBlockLocation(lastBlock.Next);
-        }
-    }
-
-    private static emitLocation? UnwindBlockLocation(BasicBlock? block)
-    {
-        if (block is null)
-        {
-            return null;
-        }
-
-        noway_assert(block.bbEmitCookie is not null);
-        return new emitLocation(block.bbEmitCookie);
-    }
-
-    private uint unwindGetCurrentOffset(in FuncInfoDsc func)
-    {
-        var emitter = codeGen?.Emitter;
-        noway_assert(emitter is not null && emitter.emitGeneratingPrologOrFuncletProlog());
-
-        var location = func.startLoc;
-        noway_assert(location is null || location.Value.GetInsOffset() == 0);
-        return emitter.emitGetCurrentCodeOffsetFrom(location?.GetIG());
     }
 
     private ref FuncInfoDsc UnwindCurrentProlog()

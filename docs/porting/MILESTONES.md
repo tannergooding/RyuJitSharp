@@ -27,6 +27,22 @@ terminating cross-target dependencies. MSBuild item evaluation was checked for
 Debug suite passes 63/63. This verifies source selection and selected Windows
 tests, not build or execution parity for the other targets.
 
+## 2026-10-03: Shared and AMD64 CFI unwind
+
+Completed the shared function-location, CFI recording, debug-dump, and
+publication paths together with AMD64 DWARF mapping and unwind dispatch. The
+Unix CFI feature symbol follows native `target.h`; Windows x64 continues to use
+its existing unwind encoding. Focused Windows-x64 Debug tests passed 63/63.
+Unix x64 CFI/frame target selections passed 66/66 in both Debug and Release,
+with zero skips.
+
+The consolidated native residual now removes 13 complete definitions and 12
+exclusive declarations, retaining the shared DWARF-map declaration for other
+unported targets. Native HEAD `11154dd6` remains sole-parented to the pinned
+oracle; recovery ref `refs/heads/recovery/unwind-shared-amd64-503e8263795e`
+preserves its prior HEAD. These tests validate selected recording/publication
+contracts, not Linux generated-code execution or general target parity.
+
 ## 2026-10-03: Shared lowering helper retirement
 
 Retired the complete shared `Lowering` helper family: `ContainCheckLclHeap`,

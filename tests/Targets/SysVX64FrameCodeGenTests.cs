@@ -16,41 +16,31 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class SysVX64FrameCodeGenTests
 {
-    [TestCase(nameof(Compiler.unwindBegProlog))]
-    [TestCase(nameof(Compiler.unwindEndProlog))]
-    [TestCase(nameof(Compiler.unwindBegEpilog))]
-    [TestCase(nameof(Compiler.unwindEndEpilog))]
-    [TestCase(nameof(Compiler.unwindPush))]
-    [TestCase(nameof(Compiler.unwindPush2))]
-    [TestCase(nameof(Compiler.unwindAllocStack))]
-    [TestCase(nameof(Compiler.unwindSetFrameReg))]
-    [TestCase(nameof(Compiler.unwindSaveReg))]
-    [TestCase(nameof(Compiler.unwindReserve))]
-    [TestCase(nameof(Compiler.unwindEmit))]
-    public static unsafe void NativeAotCfiUnwindRejectsBeforeRecordingOrPublication(string method)
+    [Test]
+    public static unsafe void NativeAotCfiUnwindUsesRecordingAndPublicationLifecycle()
     {
-        WithProlog((compiler, _) =>
+        WithProlog((compiler, codeGen) =>
         {
             compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI;
-            Action<Compiler> record = method switch
-            {
-                nameof(Compiler.unwindBegProlog) => c => c.unwindBegProlog(),
-                nameof(Compiler.unwindEndProlog) => c => c.unwindEndProlog(),
-                nameof(Compiler.unwindBegEpilog) => c => c.unwindBegEpilog(),
-                nameof(Compiler.unwindEndEpilog) => c => c.unwindEndEpilog(),
-                nameof(Compiler.unwindPush) => c => c.unwindPush(REG_RBX),
-                nameof(Compiler.unwindPush2) => c => c.unwindPush2(REG_RBX, REG_R12),
-                nameof(Compiler.unwindAllocStack) => c => c.unwindAllocStack(16),
-                nameof(Compiler.unwindSetFrameReg) => c => c.unwindSetFrameReg(REG_RBP, 0),
-                nameof(Compiler.unwindSaveReg) => c => c.unwindSaveReg(REG_RBX, 0),
-                nameof(Compiler.unwindReserve) => c => c.unwindReserve(),
-                nameof(Compiler.unwindEmit) => c => c.unwindEmit(null, null),
-                _ => throw new ArgumentOutOfRangeException(nameof(method)),
-            };
+            compiler.unwindBegProlog();
+            compiler.unwindPush(REG_RBX);
+            compiler.unwindPush2(REG_R12, REG_R13);
+            compiler.unwindAllocStack(16);
+            compiler.unwindSetFrameReg(REG_RBP, 0);
+            compiler.unwindSaveReg(REG_RBX, 0);
+            compiler.unwindEndProlog();
 
-            var exception = Assert.Throws<FatalJitException>(() => record(compiler));
-            Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(exception?.Message, Does.Contain("CFI"));
+            var group = codeGen.Emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");
+            group.igFlags &= ~InsGroupFlags.Prolog;
+            group.igFlags |= InsGroupFlags.Epilog;
+            compiler.unwindBegEpilog();
+            compiler.unwindEndEpilog();
+            group.igFlags &= ~InsGroupFlags.Epilog;
+            compiler.info.compMatchedVM = false;
+            compiler.unwindReserve();
+            compiler.unwindEmit(null, null);
+
+            Assert.That(compiler.funCurrentFunc().cfiCodes, Has.Count.EqualTo(9));
             Assert.That(compiler.compGeneratingUnwindProlog, Is.False);
             Assert.That(compiler.compGeneratingUnwindEpilog, Is.False);
             Assert.That(compiler.funCurrentFunc().unwindCodes, Is.Null);
