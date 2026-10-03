@@ -374,11 +374,6 @@ public sealed partial class CodeGen
         WasmCodegenDependencyNotPorted(tree, nameof(genCodeForFrameSize));
     }
 
-    private void genCodeForNegNot(GenTreeUnOp tree)
-    {
-        WasmCodegenDependencyNotPorted(tree, nameof(genCodeForNegNot));
-    }
-
     private void genCodeForIndir(GenTreeIndir tree)
     {
         WasmCodegenDependencyNotPorted(tree, nameof(genCodeForIndir));
