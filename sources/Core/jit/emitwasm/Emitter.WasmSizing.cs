@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if TARGET_WASM
+using System;
 using System.Numerics;
 
 namespace RyuJitSharp;
@@ -66,6 +67,11 @@ public partial class Emitter
     public void emitIns_J(instruction ins, emitAttr attr, uint depth, BasicBlock target)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "Wasm depth-indexed instruction emission is not ported.");
+    }
+
+    public void emitIns_V128Imm(instruction ins, ReadOnlySpan<byte> immediate)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm v128 immediate emission is not ported.");
     }
 }
 #endif

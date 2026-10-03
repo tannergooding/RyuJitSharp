@@ -219,7 +219,11 @@ public sealed partial class CodeGen
 #if TARGET_WASM
     public void genClearAsyncContinuationGlobal()
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Wasm async continuation clearing is not implemented.");
+        var emit = GetEmitter();
+        emit.emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)0));
+
+        var asyncContinuation = unchecked((nint)_compiler.eeGetWasmWellKnownGlobals().asyncContinuation);
+        emit.emitIns_I(INS_global_set, EA_SET_FLG(EA_GCREF, EA_CNS_RELOC_FLG), asyncContinuation);
     }
 #endif
 

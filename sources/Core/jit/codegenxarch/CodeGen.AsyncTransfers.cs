@@ -10,7 +10,62 @@ public sealed partial class CodeGen
     public void genReturnSuspend(GenTreeUnOp tree)
     {
 #if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "Suspension return generation requires AMD64.");
+        assert(tree.Oper is GT_RETURN_SUSPEND);
+
+        var op = tree.Op1;
+        assert(op.Type is TYP_REF);
+        genConsumeReg(op);
+        genStoreAsyncContinuationGlobal();
+
+        var retNativeType = _compiler.info.compRetNativeType;
+        if ((retNativeType is not TYP_VOID) && (_compiler.info.compRetBuffArg == BAD_VAR_NUM))
+        {
+            // Keep the Wasm return stack well-typed after transferring the continuation to its global.
+            var emit = GetEmitter();
+            switch (genActualType(retNativeType))
+            {
+                case TYP_INT:
+                case TYP_REF:
+                case TYP_BYREF:
+                {
+                    emit.emitIns_I(INS_i32_const, retNativeType.EmitActualSize, unchecked((nint)0));
+                    break;
+                }
+
+                case TYP_LONG:
+                {
+                    emit.emitIns_I(INS_i64_const, EA_8BYTE, unchecked((nint)0));
+                    break;
+                }
+
+                case TYP_FLOAT:
+                {
+                    emit.emitIns_I(INS_f32_const, EA_4BYTE, unchecked((nint)0));
+                    break;
+                }
+
+                case TYP_DOUBLE:
+                {
+                    emit.emitIns_I(INS_f64_const, EA_8BYTE, unchecked((nint)0));
+                    break;
+                }
+
+#if FEATURE_SIMD
+                case TYP_SIMD16:
+                {
+                    var zero = new byte[16];
+                    emit.emitIns_V128Imm(INS_v128_const, zero);
+                    break;
+                }
+#endif
+
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+        }
 #else
         Emitter.RequireSupportedInstructionRecording();
         var op = tree.Op1;
@@ -36,7 +91,12 @@ public sealed partial class CodeGen
     public void genCodeForAsyncContinuation(GenTree tree)
     {
 #if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "Async continuation generation requires AMD64.");
+        assert(tree.Oper is GT_ASYNC_CONTINUATION);
+        assert(tree.Type is TYP_REF);
+
+        var asyncContinuation = unchecked((nint)_compiler.eeGetWasmWellKnownGlobals().asyncContinuation);
+        GetEmitter().emitIns_I(INS_global_get, EA_SET_FLG(EA_GCREF, EA_CNS_RELOC_FLG), asyncContinuation);
+        WasmProduceReg(tree);
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper == GT_ASYNC_CONTINUATION);

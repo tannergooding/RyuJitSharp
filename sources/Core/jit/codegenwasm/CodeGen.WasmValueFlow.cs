@@ -8,6 +8,22 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+    private void genCatchArg(GenTree treeNode)
+    {
+        assert(treeNode.Oper is GT_CATCH_ARG);
+
+        // The catch argument is the third Wasm function parameter.
+        Emitter.emitIns_I(INS_local_get, EA_GCREF, unchecked((nint)2));
+        WasmProduceReg(treeNode);
+    }
+
+    private void genStoreAsyncContinuationGlobal()
+    {
+        // The continuation is already on the Wasm operand stack.
+        var asyncContinuation = unchecked((nint)_compiler.eeGetWasmWellKnownGlobals().asyncContinuation);
+        GetEmitter().emitIns_I(INS_global_set, EA_SET_FLG(EA_GCREF, EA_CNS_RELOC_FLG), asyncContinuation);
+    }
+
     private void WasmProduceReg(GenTree node)
     {
         assert(!genIsRegCandidateLocal(node)); // Candidate liveness is handled by genConsumeReg.
