@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Cross-target code allocation
+
+Completed the whole `Compiler::eeAllocMem` method and its relocation-policy
+helper, preserving the Windows-x64 separate-chunk path and the ARM64, LoongArch,
+and RISC-V aligned embedded-data and relocation-chunk branches. Full-analysis
+Windows-x64 allocation tests pass 6/6 Debug and 4/4 Release; focused
+linux-arm64-target tests pass 2/2 Debug and 2/2 Release.
+
+Native `1f5cb902` amends the consolidated residual commit, sole-parented to the
+pinned oracle, and retires both complete `ee_il_dll.cpp` definitions and the
+eligible `eeAllocMem` declaration. The relocation-helper declaration remains
+for three unported native codegen callers. Recovery ref
+`refs/copilot-recovery/ee-alloc-mem-before-5792c511` preserves the previous
+native HEAD. This validates allocation-policy fixtures, not generated-code or
+runtime parity; the remaining native callers are not claimed as ported.
+
 ## 2026-10-03: Late liveness native retirement
 
 Restored the omitted `assert(backendRequiresLocalVarLifetimes())` in the already

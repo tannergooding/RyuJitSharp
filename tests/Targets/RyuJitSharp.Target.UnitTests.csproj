@@ -26,6 +26,7 @@
     <Compile Include="..\Core\CodeGenBlockDriverTargetTests.cs" Link="CodeGenBlockDriverTargetTests.cs" />
     <Compile Include="..\Core\CodeGenSiVarLocDiagnosticsTests.cs" Link="CodeGenSiVarLocDiagnosticsTests.cs" />
     <Compile Include="..\Core\ControlFlowGuardLoweringTests.cs" Link="ControlFlowGuardLoweringTests.cs" />
+    <Compile Include="..\Core\CompilerCodeAllocationTests.cs" Link="CompilerCodeAllocationTests.cs" />
     <Compile Include="..\Core\PInvokeCallLoweringTests.cs" Link="PInvokeCallLoweringTests.cs" />
     <Compile Include="..\Core\PInvokeFrameLoweringTests.cs" Link="PInvokeFrameLoweringTests.cs" />
   </ItemGroup>

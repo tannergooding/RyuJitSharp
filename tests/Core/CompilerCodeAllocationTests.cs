@@ -13,6 +13,7 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CompilerCodeAllocationTests
 {
+#if !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
     [TestCase(false, 0, 5u)]
     [TestCase(true, 0, 5u)]
     [TestCase(false, 2, 5u)]
@@ -111,8 +112,9 @@ internal static unsafe class CompilerCodeAllocationTests
             }
         });
     }
+#endif
 
-#if DEBUG
+#if DEBUG && !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
     [TestCase(19, 26)]
     [TestCase(unchecked((int)0x80000013u), unchecked((int)0x8000001Au))]
     public static void FakeSplittingCombinesAllocationThenRestoresColdExecutableAndWritableOffsets(
@@ -177,6 +179,102 @@ internal static unsafe class CompilerCodeAllocationTests
     private static extern ref int FakeProcedureSplitting(ref JitConfigValues config);
 #endif
 
+#if TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void TargetDataChunksAreEmbeddedOrRelocated(bool compReloc)
+    {
+        WithAllocation((compiler, context) =>
+        {
+            compiler.opts.compReloc = compReloc;
+
+            var captured = stackalloc AllocMemChunk[3];
+            var executable = stackalloc byte*[3];
+            var writable = stackalloc byte*[3];
+            var executableStorage = stackalloc byte[96];
+            var writableStorage = stackalloc byte[96];
+            for (var i = 0; i < 3; i++)
+            {
+                executable[i] = executableStorage + (32 * i);
+                writable[i] = writableStorage + (32 * i);
+            }
+            context->Captured = captured;
+            context->Executable = executable;
+            context->Writable = writable;
+            context->Capacity = 3;
+
+            var hot = new AllocMemChunk
+            {
+                alignment = 32,
+                size = 19,
+                flags = CorJitAllocMemFlag.CORJIT_ALLOCMEM_HOT_CODE,
+                block = (byte*)1,
+                blockRW = (byte*)2,
+            };
+            var cold = new AllocMemChunk
+            {
+                alignment = 1,
+                size = 7,
+                flags = CorJitAllocMemFlag.CORJIT_ALLOCMEM_COLD_CODE,
+                block = (byte*)3,
+                blockRW = (byte*)4,
+            };
+            var data = stackalloc AllocMemChunk[2];
+            data[0] = new AllocMemChunk
+            {
+                alignment = 16,
+                size = 12,
+                flags = CorJitAllocMemFlag.CORJIT_ALLOCMEM_READONLY_DATA,
+            };
+            data[1] = new AllocMemChunk
+            {
+                alignment = 64,
+                size = 8,
+                flags = CorJitAllocMemFlag.CORJIT_ALLOCMEM_READONLY_DATA |
+                    CorJitAllocMemFlag.CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE,
+                block = (byte*)7,
+                blockRW = (byte*)8,
+            };
+
+            compiler.eeAllocMem(ref hot, &cold, data, 2, 9);
+
+            var expectsRelocations = compReloc && !TargetOS.IsWindows;
+            var expectedHotSize = expectsRelocations ? 44 : 72;
+            var expectedHotAlignment = expectsRelocations ? 32 : 64;
+            Assert.That(context->Calls, Is.EqualTo(1));
+            Assert.That(context->InvalidCount, Is.False);
+            Assert.That(context->ChunkCount, Is.EqualTo(expectsRelocations ? 3 : 2));
+            Assert.That(context->ExceptionCount, Is.EqualTo(9));
+            AssertChunk(captured[0], expectedHotAlignment, expectedHotSize,
+                CorJitAllocMemFlag.CORJIT_ALLOCMEM_HOT_CODE, 1, 2);
+            AssertChunk(captured[1], 1, 7,
+                CorJitAllocMemFlag.CORJIT_ALLOCMEM_COLD_CODE, 3, 4);
+            Assert.That(hot.size, Is.EqualTo(19));
+            Assert.That(hot.alignment, Is.EqualTo(32));
+            Assert.That(hot.block == executable[0], Is.True);
+            Assert.That(hot.blockRW == writable[0], Is.True);
+            Assert.That(cold.block == executable[1], Is.True);
+            Assert.That(cold.blockRW == writable[1], Is.True);
+            Assert.That(data[0].block == executable[0] + 32, Is.True);
+            Assert.That(data[0].blockRW == writable[0] + 32, Is.True);
+
+            if (expectsRelocations)
+            {
+                AssertChunk(captured[2], 64, 8,
+                    CorJitAllocMemFlag.CORJIT_ALLOCMEM_READONLY_DATA |
+                        CorJitAllocMemFlag.CORJIT_ALLOCMEM_HAS_POINTERS_TO_CODE, 7, 8);
+                Assert.That(data[1].block == executable[2], Is.True);
+                Assert.That(data[1].blockRW == writable[2], Is.True);
+            }
+            else
+            {
+                Assert.That(data[1].block == executable[0] + 64, Is.True);
+                Assert.That(data[1].blockRW == writable[0] + 64, Is.True);
+            }
+        });
+    }
+#endif
+
     private static void AssertChunk(AllocMemChunk chunk, int alignment, int size,
         CorJitAllocMemFlag flags, int initialBlock, int initialBlockRW)
     {
@@ -195,7 +293,7 @@ internal static unsafe class CompilerCodeAllocationTests
         try
         {
             var config = default(JitConfigValues);
-#if DEBUG
+#if DEBUG && !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
             if (fakeSplitting)
             {
                 FakeProcedureSplitting(ref config) = 1;
