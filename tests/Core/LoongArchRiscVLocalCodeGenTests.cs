@@ -210,6 +210,18 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     }
 
     [Test]
+    public static void FunctionEntryDispatchReachesTheInstructionGroupRecordingBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var tree = new GenTree(GT_FTN_ENTRY, TYP_I_IMPL) { RegNum = REG_S0 };
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
+
+            Assert.That(failure?.Message, Does.Contain("Instruction-group address recording requires xarch."));
+        });
+    }
+
+    [Test]
     public static void JumpTableAddressRecordingStopsAtTheTargetEmitterBoundary()
     {
         WithCodeGen((compiler, codeGen) =>

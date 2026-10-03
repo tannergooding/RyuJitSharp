@@ -125,6 +125,9 @@ public sealed partial class CodeGen
 #if TARGET_ARM
         NYI_ARM("GT_FTN_ENTRY is not supported on arm32");
         throw new FatalJitException(CORJIT_SKIPPED);
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+        Emitter.emitIns_R_L(INS_lea, EA_PTRSIZE, Emitter.emitGetFirstPrologIG(), tree.RegNum);
+        genProduceReg(tree);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Function-entry address generation requires Windows AMD64.");
 #else

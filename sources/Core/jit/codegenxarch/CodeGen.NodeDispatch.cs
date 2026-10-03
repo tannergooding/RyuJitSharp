@@ -25,6 +25,11 @@ public sealed partial class CodeGen
                 genAsyncResumeInfo(tree.AsVal());
                 return;
             }
+            case GT_FTN_ENTRY:
+            {
+                genFtnEntry(tree);
+                return;
+            }
             case GT_JMPTABLE:
             {
                 genJumpTable(tree);
