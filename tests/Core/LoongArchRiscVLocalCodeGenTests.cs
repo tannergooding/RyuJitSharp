@@ -11,6 +11,7 @@ using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.CORINFO_InstructionSet;
 using static RyuJitSharp.CorInfoHelpFunc;
 using static RyuJitSharp.GenTreeFlags;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.InfoAccessType;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
@@ -34,6 +35,46 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genEmitGSCookieCheck(false));
 
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+        });
+    }
+
+    [Test]
+    public static void IntrinsicSaturationDispatchReachesTheLoongArchImmediateBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var operand = Register(compiler, TYP_INT, REG_S0);
+            var tree = new GenTreeIntrinsic(TYP_INT, operand, NamedIntrinsic.NI_PRIMITIVE_SaturateToInt8, null)
+            {
+                RegNum = REG_S1,
+            };
+            codeGen.InternalRegisters.Add(tree, regMaskTP.CreateFromRegNum(REG_S2, REG_S2.SingleTypeMask));
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
+
+            Assert.That(failure?.Message,
+                Does.Contain("Two-register-immediate instruction recording requires xarch."));
+        });
+    }
+
+    [Test]
+    public static void FloatingIntrinsicDispatchReachesTheLoongArchInstructionBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var op1 = compiler.gtNewDconNode(TYP_FLOAT, 1.0);
+            op1.RegNum = REG_F0;
+            var op2 = compiler.gtNewDconNode(TYP_FLOAT, 2.0);
+            op2.RegNum = REG_F1;
+            var tree = new GenTreeIntrinsic(TYP_FLOAT, op1, op2, NamedIntrinsic.NI_System_Math_MaxNative, null)
+            {
+                RegNum = REG_F2,
+            };
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
+
+            Assert.That(failure?.Message,
+                Does.Contain("LoongArch64 three-register instruction recording is not ported."));
         });
     }
 
@@ -1122,6 +1163,13 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         }
         finally
         {
+    private static GenTreeIntCon Register(Compiler compiler, var_types type, regNumber reg)
+    {
+        var node = compiler.gtNewIconNode(type, 7);
+        node.RegNum = reg;
+        return node;
+    }
+
             JitTls.Compiler = previous;
         }
     }
@@ -1140,12 +1188,14 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         var context = (HelperContext*)self;
         lookup->accessType = IAT_PVALUE;
         lookup->addr = context->Address;
+        compiler.compCurBB = new BasicBlock(null, null);
 
         return context->Address;
     }
 #endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
 }
 #endif
