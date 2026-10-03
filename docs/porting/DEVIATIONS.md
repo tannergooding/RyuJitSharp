@@ -2293,6 +2293,31 @@ must identify and exclude timing/cycle/frequency fields rather than claiming
 performance or complete timing-report parity. Native-compatible RDTSC collection
 and calibration remain open.
 
+### R006: Leading-zero histogram bounds and native out-of-bounds dump
+
+**Status:** managed safety correction for undefined native behavior; native
+output parity is not claimed for these buckets.
+
+The pinned native `src/coreclr/jitshared/histogram.cpp::Histogram::dump` stops
+counting bounds at the first zero, but the pinned native
+`src/coreclr/jit/emit.cpp::GCrefsBuckets` and `stkDepthBuckets` begin with zero
+and also end with a zero sentinel. Their managed counterparts are in
+`sources/Core/jit/emit/Emitter.EmissionFinalizationDependencies.cs`. Once either
+histogram contains data, `dump` uses `_sizeTable[-1]` for its overflow row:
+managed code throws, while native code reads out of bounds. Managed
+`sources/Core/jitshared/histogram/Histogram.cs` now treats a leading zero as a
+real upper bound when later bounds follow, preserving the final zero as the
+terminator. This produces a defined `<= 0` bucket and subsequent ranges without
+changing non-zero-first tables.
+
+`tests/Core/HistogramTests.cs::LeadingZeroIsAValidUpperBoundWhenFollowedByOtherBounds`
+validates the resulting output. The focused statistics suites pass 27 Debug and
+26 Release cases in `artifacts\emit-stat-report\stats-enabled-focused-*`.
+This does not establish parity with the undefined native read; native behavior
+must be corrected or explicitly accepted before claiming parity for these rows.
+The native reporter and its report-only histogram tables are now retired from
+`runtime-port`; this deviation describes the pinned oracle behavior only.
+
 ## Incomplete implementation, not intentional deviations
 
 | ID | Evidence at the recorded C# baseline | Required action |

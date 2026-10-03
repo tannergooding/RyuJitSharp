@@ -43,7 +43,7 @@ public partial class Globals
 #if EMITTER_STATS
     internal static void emitterStats(StreamWriter output)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "emitterStats is not ported.");
+        Emitter.emitterStats(output);
     }
 #endif
 }

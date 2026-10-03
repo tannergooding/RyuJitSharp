@@ -16,6 +16,43 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Emitter method statistics
+
+Ported the whole `emitterStats(FILE*)` report for xarch and bound the shutdown
+caller. Unsupported targets terminate explicitly until their counter sources are
+ported. Focused stats-enabled Windows-x64 tests pass 27/27 Debug and 26/26
+Release. The full stats-enabled suites retain 18 Debug and 13 Release failures
+outside the reporter and histogram paths; these are not full-suite passes.
+Deviation R006 records the managed safety correction for the pinned native
+histogram's undefined leading-zero behavior, so those rows do not claim native
+output parity.
+
+Native `98392fc2` amends the consolidated residual commit, preserving the
+pinned oracle as its sole parent. It retires the complete reporter, its global
+prototype/friend, and reporter-only native storage before this managed
+completion. Evidence is recorded in `state.json` and
+`artifacts\emit-stat-report`.
+
+## 2026-10-03: Small support helpers and native census
+
+Completed the remaining target metadata and Wasm value-name/reference-increment
+helpers, `LIR.InsertBeforeTerminator`/`dumpLIRFlags`, and host-allocation
+wrappers in managed commits `20992fa8` and `b7e75c7d`. Focused full-analysis
+support tests pass 40/40 in Debug and Release; six target metadata selections
+pass in both configurations (12 executions). These are helper/metadata checks,
+not backend execution or generated-code parity.
+
+The pinned-residual census checked 159 files (151 direct plus eight `jitstd`
+headers), including all 61 files at or below 10,240 bytes. It retired 31 files,
+modified 107, and removed 3,257 lines before the subsequent reporter retirement;
+14 of the 61 small files were retired and 47 retained with concrete blockers.
+The final native delta also includes the reporter. `valuenum.cpp` contained
+only dead scaffolding and `s_specialRefConsts[] = {nullptr, nullptr, nullptr}`,
+represented by the accepted zero-initialized three-entry `TYP_REF` chunk
+(reserved VNs 0/1/2). The original acceptance receipt was reused. The scan
+does not claim global debt clearance. Exact dispositions and receipts are in
+`artifacts\native-retirement-census`.
+
 ## 2026-10-02: Managed bitset iterator
 
 Added the stateful `BitSetOps<TEnv, TBitSetTraits>.Iter` over the existing

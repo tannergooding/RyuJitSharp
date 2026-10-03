@@ -413,6 +413,64 @@ internal static unsafe class EmitterMethodStatisticsTests
         }
     }
 
+#if TARGET_XARCH
+    [Test]
+    public static void StatisticsReportFormatsFrequencyDescriptorAndExceptionalCounts()
+    {
+        var formats = InstructionFormats(null);
+        var previousFormats = (uint[])formats.Clone();
+        var previousMethods = TotalMethods(null);
+        var previousGroups = TotalGroups(null);
+        var previousGroupInstructions = TotalGroupInstructions(null);
+        var previousGroupBytes = TotalGroupBytes(null);
+        var previousInstructions = TotalInstructions(null);
+        var previousBasicDescriptors = TotalBasicDescriptors(null);
+        var previousAllocatedSize = TotalAllocatedSize(null);
+        var previousActualSize = TotalActualSize(null);
+
+        try
+        {
+            Array.Clear(formats, 0, formats.Length);
+            formats[0] = 1;
+            formats[1] = 1;
+            TotalMethods(null) = 1;
+            TotalGroups(null) = 1;
+            TotalGroupInstructions(null) = 0;
+            TotalGroupBytes(null) = 64;
+            TotalInstructions(null) = 2;
+            TotalBasicDescriptors(null) = 1;
+            TotalAllocatedSize(null) = 0;
+            TotalActualSize(null) = 0;
+
+            using var stream = new MemoryStream();
+            using var output = new StreamWriter(stream, new UTF8Encoding(false), bufferSize: 1024, leaveOpen: true);
+            Emitter.emitterStats(output);
+            output.Flush();
+
+            var text = Encoding.UTF8.GetString(stream.ToArray());
+            Assert.That(text, Does.Contain(
+                $"          {Emitter.emitIfName((uint)0),-14}        1 (50.00%)\n"));
+            Assert.That(text, Does.Contain(
+                $"          {Emitter.emitIfName((uint)1),-14}        1 (50.00%)\n"));
+            Assert.That(text, Does.Contain("Total shown"));
+            Assert.That(Regex.IsMatch(text, @"(?m)^Total instrDesc:\s+1 \(50\.00%\)$"), Is.True);
+            Assert.That(text, Does.Contain("Average of      inf bytes        per instrDesc\n"));
+        }
+        finally
+        {
+            Array.Copy(previousFormats, formats, formats.Length);
+            TotalMethods(null) = previousMethods;
+            TotalGroups(null) = previousGroups;
+            TotalGroupInstructions(null) = previousGroupInstructions;
+            TotalGroupBytes(null) = previousGroupBytes;
+            TotalInstructions(null) = previousInstructions;
+            TotalBasicDescriptors(null) = previousBasicDescriptors;
+            TotalAllocatedSize(null) = previousAllocatedSize;
+            TotalActualSize(null) = previousActualSize;
+        }
+    }
+#endif
+
     private static void AssertField(string report, string name, int offset, int size)
     {
         var match = Regex.Match(report, $@"(?m)^Offset / size of {Regex.Escape(name)}\s+=\s*(\d+)\s*/\s*(\d+)\s*$");
@@ -575,11 +633,23 @@ internal static unsafe class EmitterMethodStatisticsTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalInsCnt")]
     private static extern ref uint TotalInstructions(Emitter? emitter);
 
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIGicnt")]
+    private static extern ref uint TotalGroupInstructions(Emitter? emitter);
+
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescSmallCnt")]
     private static extern ref uint TotalSmallDescriptors(Emitter? emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescCnt")]
     private static extern ref uint TotalBasicDescriptors(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitIFcounts")]
+    private static extern ref uint[] InstructionFormats(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "totAllocdSize")]
+    private static extern ref uint TotalAllocatedSize(Emitter? emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "totActualSize")]
+    private static extern ref uint TotalActualSize(Emitter? emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescCnsCnt")]
     private static extern ref uint TotalConstantDescriptors(Emitter? emitter);

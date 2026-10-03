@@ -91,7 +91,7 @@ internal static class CompilerShutdownFamilyTests
 
 #if NODEBASH_STATS || COUNT_AST_OPERS || CALL_ARG_STATS || MEASURE_NODE_SIZE || MEASURE_BLOCK_SIZE || MEASURE_PTRTAB_SIZE || EMITTER_STATS
     [Test]
-    public static void ShutdownRetainsTheFirstUnportedStatisticsCallAndItsOutputPosition()
+    public static void ShutdownPreservesStatisticsCallOrderAndUnportedDependencies()
     {
         WithShutdownState(() => {
             using var output = new MemoryStream();
@@ -108,8 +108,12 @@ internal static class CompilerShutdownFamilyTests
             BasicBlock.s_Size = -1;
             Compiler.genMethodCnt = 3;
 #endif
+#if EMITTER_STATS && TARGET_XARCH && !NODEBASH_STATS && !COUNT_AST_OPERS && !CALL_ARG_STATS && !MEASURE_NODE_SIZE && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE
+            Compiler.compShutdown();
+#else
             var exception = Assert.Throws<FatalJitException>(Compiler.compShutdown);
             Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+#endif
             writer.Flush();
             var text = Encoding.UTF8.GetString(output.ToArray());
 
@@ -149,7 +153,13 @@ internal static class CompilerShutdownFamilyTests
                 "GC pointer table stats\n" +
                 "---------------------------------------------------\n"));
 #elif EMITTER_STATS
-            Assert.That(exception?.Message, Is.EqualTo("emitterStats is not ported."));
+#if TARGET_XARCH
+            Assert.That(text, Does.Contain("\nInstruction format frequency table:\n"));
+            Assert.That(text, Does.Contain("Descriptor size distribution:\n"));
+            Assert.That(text, Does.EndWith(" bytes allocated in the emitter\n"));
+#else
+            Assert.That(exception?.Message, Is.EqualTo("emitterStats outside xarch is not ported."));
+#endif
 #endif
 #endif
             Assert.That(text, Does.Not.Contain("Fatal errors stats"));
@@ -238,15 +248,22 @@ internal static class CompilerShutdownFamilyTests
 #if EMITTER_STATS
     [TestCase("EmitterStatistics")]
 #endif
-    public static void UnportedStatisticsDependenciesTerminateWithoutInventingData(string dependency)
+    public static void StatisticsDependenciesTerminateOrReportWithoutInventingData(string dependency)
     {
         using var output = new MemoryStream();
         using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
 
+#if EMITTER_STATS && TARGET_XARCH
+        AccessDependency(dependency, writer);
+        writer.Flush();
+        var text = Encoding.UTF8.GetString(output.ToArray());
+        Assert.That(text, Does.Contain("\nInstruction format frequency table:\n"));
+#else
         var exception = Assert.Throws<FatalJitException>(() => AccessDependency(dependency, writer));
         Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
         writer.Flush();
         Assert.That(output.Length, Is.Zero);
+#endif
     }
 
     private static void AccessDependency(string dependency, StreamWriter writer)

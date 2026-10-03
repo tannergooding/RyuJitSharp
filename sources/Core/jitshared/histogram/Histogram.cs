@@ -19,7 +19,11 @@ public sealed class Histogram : Dumpable
         _sizeTable = sizeTable;
         var sizeCount = 0;
 
-        while ((sizeTable[sizeCount] != 0) && (sizeCount < HISTOGRAM_MAX_SIZE_COUNT - 1))
+        var hasLeadingZeroBound = (sizeTable.Length > 1) && (sizeTable[0] == 0) && (sizeTable[1] != 0);
+
+        while ((sizeCount < HISTOGRAM_MAX_SIZE_COUNT - 1) &&
+               (sizeCount < sizeTable.Length) &&
+               ((sizeTable[sizeCount] != 0) || ((sizeCount == 0) && hasLeadingZeroBound)))
         {
             sizeCount++;
         }

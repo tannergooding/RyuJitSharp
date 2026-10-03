@@ -35,6 +35,24 @@ internal static class HistogramTests
     }
 
     [Test]
+    public static void LeadingZeroIsAValidUpperBoundWhenFollowedByOtherBounds()
+    {
+        var histogram = new Histogram([0, 1, 2, 0]);
+        uint[] values = [0, 1, 2, 3];
+
+        foreach (var value in values)
+        {
+            histogram.record(value);
+        }
+
+        Assert.That(Capture(histogram), Is.EqualTo(
+            "     <=          0 ===>       1 count ( 25% of total)\n" +
+            "      1 ..       1 ===>       1 count ( 50% of total)\n" +
+            "      2 ..       2 ===>       1 count ( 75% of total)\n" +
+            "      >          2 ===>       1 count (100% of total)\n"));
+    }
+
+    [Test]
     public static void EmptyOverflowBucketIsNotPrinted()
     {
         var histogram = new Histogram([1, 2, 0]);
