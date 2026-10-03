@@ -368,7 +368,26 @@ public sealed partial class CodeGen
 
     private void genCodeForLclFld(GenTreeLclFld tree)
     {
-        WasmCodegenDependencyNotPorted(tree, nameof(genCodeForLclFld));
+        assert(tree.OperIs(GT_LCL_FLD));
+        _ = _compiler.lvaGetDesc(tree.LclNum);
+
+        var type = tree.Type;
+        if (type is TYP_SIMD12)
+        {
+            genLoadLclTypeSimd12(tree);
+        }
+        else
+        {
+            GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetFramePointerRegIndex()));
+            GetEmitter().emitIns_S(ins_Load(type), type.EmitSize, tree.LclNum, tree.LclOffs);
+        }
+
+        WasmProduceReg(tree);
+    }
+
+    private void genLoadLclTypeSimd12(GenTreeLclVarCommon tree)
+    {
+        WasmCodegenDependencyNotPorted(tree, nameof(genLoadLclTypeSimd12));
     }
 
     private void genCodeForLclVar(GenTreeLclVar tree)
