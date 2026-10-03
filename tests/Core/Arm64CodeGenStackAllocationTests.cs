@@ -194,6 +194,29 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
         });
     }
 
+    [TestCase(28, REG_R9, true, 1, 2, 0)]
+    [TestCase(32, REG_R11, false, 1, 0, 0)]
+    [TestCase(192, REG_R11, false, 6, 0, 3)]
+    public static void BlockInitializationUsesArm64ZeroAndPairStorePaths(
+        int size, regNumber initReg, bool initRegZeroed, int pairStores, int scalarStores, int loopBranches)
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            codeGen.Emitter.emitBegProlog();
+            SetUseBlockInit(codeGen, true);
+
+            codeGen.genZeroInitFrameUsingBlockInit(size, 0, initReg, ref initRegZeroed);
+
+            var descriptors = Descriptors(codeGen);
+            Assert.That(descriptors.Count(id => id.idIns() == INS_stp), Is.EqualTo(pairStores));
+            Assert.That(descriptors.Count(id => id.idIns() == INS_str), Is.EqualTo(scalarStores));
+            Assert.That(descriptors.Count(id => id.idIns() == INS_movi), Is.EqualTo(size == 28 ? 0 : 1));
+            Assert.That(descriptors.Count(id => id.idIns() == INS_bge), Is.EqualTo(loopBranches));
+            Assert.That(descriptors.Any(id => id.idIns() == INS_dczva), Is.False);
+            Assert.That(initRegZeroed, Is.False);
+        });
+    }
+
     [TestCase(-512L, EA_8BYTE, true)]
     [TestCase(-520L, EA_8BYTE, false)]
     [TestCase(504L, EA_8BYTE, true)]
@@ -284,5 +307,8 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "genRegNumFromMaskArm64")]
     private static extern regNumber RegisterFromMask(CodeGen? codeGen, regMaskTP mask);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_UseBlockInit")]
+    private static extern void SetUseBlockInit(CodeGen codeGen, bool value);
 }
 #endif
