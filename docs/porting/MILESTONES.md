@@ -36,6 +36,19 @@ native HEAD. A broader ARM64 label-class selection has two failures in
 `ChangedCallLivenessReachesTheRequiredPaddingDependency`, outside this
 diagnostic; no generated-code or runtime parity is claimed.
 
+## 2026-10-03: Group-list prototype reconciliation
+
+Reused the accepted `Emitter.GroupDiagnostics.cs::emitDispIGlist` mapping and
+existing full-analysis Windows-x64 `EmitterGroupDiagnosticsTests` evidence
+(298 Debug / 281 Release, zero skips in the prolog-materialization selection).
+The managed method is unchanged from the committed `8d85aa87` version. The
+residual native body and callers were already absent; native `43f9ce50` removes
+the final one-line `emit.h` prototype, amending the consolidated residual
+commit. Recovery ref
+`refs/copilot-recovery/emit-disp-iglist-decl-before-dbb6f11a` preserves the prior
+native HEAD. This declaration-only reconciliation required no new managed test
+run and makes no new parity claim.
+
 ## 2026-10-03: Instruction-group allocator retirement
 
 Accepted the existing complete `emitter::emitAllocIG` mapping in
