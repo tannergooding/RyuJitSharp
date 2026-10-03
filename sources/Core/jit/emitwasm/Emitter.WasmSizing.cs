@@ -44,6 +44,11 @@ public partial class Emitter
         throw new FatalJitException(CORJIT_SKIPPED, "Wasm funclet address emission is not ported.");
     }
 
+    public void emitAddressConstant(nint address)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Wasm handle address constant emission is not ported.");
+    }
+
     public void emitIns_BlockTy(instruction ins)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "Wasm block-type emission is not ported.");
