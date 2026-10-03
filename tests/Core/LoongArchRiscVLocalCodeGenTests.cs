@@ -58,6 +58,64 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         });
     }
 
+    [Test]
+    public static void LocalVariableStoreStopsAtTheTargetStackEmitterBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaTable[0].Type = TYP_INT;
+            var zero = new GenTreeIntCon(TYP_INT, 0) { IsContained = true };
+            var tree = new GenTreeLclVar(TYP_INT, 0, zero) { RegNum = REG_NA };
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreLclVar(tree));
+
+            Assert.That(failure?.Message, Does.Contain("Target local-stack store recording is not implemented."));
+        });
+    }
+
+    [Test]
+    public static void LocalVariableStoreStopsAtTheTargetConstantEmitterBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaTable[0].Type = TYP_INT;
+            var constant = new GenTreeIntCon(TYP_INT, 12) { IsContained = true };
+#if TARGET_LOONGARCH64
+            var tree = new GenTreeLclVar(TYP_INT, 0, constant) { RegNum = REG_NA };
+#else
+            var tree = new GenTreeLclVar(TYP_INT, 0, constant) { RegNum = REG_S0 };
+#endif
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreLclVar(tree));
+#if TARGET_LOONGARCH64
+            Assert.That(failure?.Message, Does.Contain("LoongArch64 address constant recording is not ported."));
+#else
+            Assert.That(failure?.Message, Does.Contain("RISC-V64 immediate materialization is not ported."));
+#endif
+        });
+    }
+
+#if FEATURE_SIMD
+    [Test]
+    public static void Simd12LocalVariableStoreStopsAtTheTargetBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaTable[0].Type = TYP_SIMD12;
+            var zero = new GenTreeIntCon(TYP_INT, 0) { IsContained = true };
+            var tree = new GenTreeLclVar(TYP_SIMD12, 0, zero) { RegNum = REG_NA };
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreLclVar(tree));
+
+#if TARGET_LOONGARCH64
+            Assert.That(failure?.Message, Does.Contain("LoongArch64 SIMD12 local-store recording is not ported."));
+#else
+            Assert.That(failure?.Message, Does.Contain("RISC-V SIMD12 local-store recording is not ported."));
+#endif
+        });
+    }
+#endif
+
     private static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
 #if DEBUG
