@@ -523,9 +523,195 @@ public sealed partial class CodeGen
         WasmCodegenDependencyNotPorted(node, nameof(genCodeForStoreBlk));
     }
 
+    private static uint PackIntrinsicAndType(NamedIntrinsic intrinsic, var_types type)
+    {
+        if (type is TYP_BYREF or TYP_REF)
+        {
+            type = TYP_I_IMPL;
+        }
+
+        // Reserve enough low bits for every var_types value, matching ConstLog2<TYP_COUNT>::value + 1.
+        var shift = System.Numerics.BitOperations.Log2((uint)TYP_COUNT) + 1;
+        return unchecked(((uint)intrinsic << shift) | (uint)type);
+    }
+
     private void genIntrinsic(GenTreeIntrinsic tree)
     {
-        WasmCodegenDependencyNotPorted(tree, nameof(genIntrinsic));
+        genConsumeOperands(tree);
+
+        var ins = INS_invalid;
+        var canHaveMixedTypes = false;
+        var intrinsicAndType = PackIntrinsicAndType(tree.IntrinsicName, tree.Type);
+
+        // Native case labels use constexpr calls; guarded patterns preserve those packed-key comparisons.
+        switch (intrinsicAndType)
+        {
+            case var _ when intrinsicAndType == PackIntrinsicAndType(NI_System_Math_Abs, TYP_FLOAT):
+            {
+                ins = INS_f32_abs;
+                break;
+            }
+            case var _ when intrinsicAndType == PackIntrinsicAndType(NI_System_Math_Abs, TYP_DOUBLE):
+            {
+                ins = INS_f64_abs;
+                break;
+            }
+            case var _ when intrinsicAndType == PackIntrinsicAndType(NI_System_Math_Ceiling, TYP_FLOAT):
+            {
+                ins = INS_f32_ceil;
+                break;
+            }
+            case var _ when intrinsicAndType == PackIntrinsicAndType(NI_System_Math_Ceiling, TYP_DOUBLE):
+            {
+                ins = INS_f64_ceil;
+                break;
+            }
+            case var _ when intrinsicAndType == PackIntrinsicAndType(NI_System_Math_Floor, TYP_FLOAT):
+            {
+                ins = INS_f32_floor;
+                break;
+            }
+            case var _ when intrinsicAndType == PackIntrinsicAndType(NI_System_Math_Floor, TYP_DOUBLE):
+            {
+                ins = INS_f64_floor;
+                break;
+            }
+            case var _ when intrinsicAndType == PackIntrinsicAndType(NI_System_Math_Max, TYP_FLOAT) ||
+                intrinsicAndType == PackIntrinsicAndType(NI_System_Math_MaxNative, TYP_FLOAT):
+            {
+                ins = INS_f32_max;
+                break;
+            }
+            case var _ when intrinsicAndType == PackIntrinsicAndType(NI_System_Math_Max, TYP_DOUBLE) ||
+                intrinsicAndType == PackIntrinsicAndType(NI_System_Math_MaxNative, TYP_DOUBLE):
+            {
+                ins = INS_f64_max;
+                break;
+            }
+            case var _ when intrinsicAndType == PackIntrinsicAndType(NI_System_Math_Min, TYP_FLOAT) ||
+                intrinsicAndType == PackIntrinsicAndType(NI_System_Math_MinNative, TYP_FLOAT):
+            {
+                ins = INS_f32_min;
+                break;
+            }
+            case var _ when intrinsicAndType == PackIntrinsicAndType(NI_System_Math_Min, TYP_DOUBLE) ||
+                intrinsicAndType == PackIntrinsicAndType(NI_System_Math_MinNative, TYP_DOUBLE):
+            {
+                ins = INS_f64_min;
+                break;
+            }
+            case var _ when intrinsicAndType == PackIntrinsicAndType(NI_System_Math_Round, TYP_FLOAT):
+            {
+                ins = INS_f32_nearest;
+                break;
+            }
+            case var _ when intrinsicAndType == PackIntrinsicAndType(NI_System_Math_Round, TYP_DOUBLE):
+            {
+                ins = INS_f64_nearest;
+                break;
+            }
+            case var _ when intrinsicAndType == PackIntrinsicAndType(NI_System_Math_Sqrt, TYP_FLOAT):
+            {
+                ins = INS_f32_sqrt;
+                break;
+            }
+            case var _ when intrinsicAndType == PackIntrinsicAndType(NI_System_Math_Sqrt, TYP_DOUBLE):
+            {
+                ins = INS_f64_sqrt;
+                break;
+            }
+            case var _ when intrinsicAndType == PackIntrinsicAndType(NI_System_Math_Truncate, TYP_FLOAT):
+            {
+                ins = INS_f32_trunc;
+                break;
+            }
+            case var _ when intrinsicAndType == PackIntrinsicAndType(NI_System_Math_Truncate, TYP_DOUBLE):
+            {
+                ins = INS_f64_trunc;
+                break;
+            }
+            case var _ when intrinsicAndType == PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_INT) ||
+                intrinsicAndType == PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_LONG) ||
+                intrinsicAndType == PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_INT) ||
+                intrinsicAndType == PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_LONG) ||
+                intrinsicAndType == PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_INT) ||
+                intrinsicAndType == PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_LONG):
+            {
+                canHaveMixedTypes = true;
+                break;
+            }
+            default:
+            {
+                assert(false, "genIntrinsic: Unsupported intrinsic");
+                unreached();
+                break;
+            }
+        }
+
+        var needsTruncation = false;
+        var needsExtension = false;
+
+        if (canHaveMixedTypes)
+        {
+            var treeType = tree.Type;
+            var operandType = genActualType(tree.Op1.Type);
+
+            needsTruncation = (operandType == TYP_LONG) && (treeType == TYP_INT);
+            needsExtension = (operandType == TYP_INT) && (treeType == TYP_LONG);
+
+            var operandIntrinsicAndType = PackIntrinsicAndType(tree.IntrinsicName, operandType);
+            switch (operandIntrinsicAndType)
+            {
+                case var _ when operandIntrinsicAndType == PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_INT):
+                {
+                    ins = INS_i32_clz;
+                    break;
+                }
+                case var _ when operandIntrinsicAndType == PackIntrinsicAndType(NI_PRIMITIVE_LeadingZeroCount, TYP_LONG):
+                {
+                    ins = INS_i64_clz;
+                    break;
+                }
+                case var _ when operandIntrinsicAndType == PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_INT):
+                {
+                    ins = INS_i32_ctz;
+                    break;
+                }
+                case var _ when operandIntrinsicAndType == PackIntrinsicAndType(NI_PRIMITIVE_TrailingZeroCount, TYP_LONG):
+                {
+                    ins = INS_i64_ctz;
+                    break;
+                }
+                case var _ when operandIntrinsicAndType == PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_INT):
+                {
+                    ins = INS_i32_popcnt;
+                    break;
+                }
+                case var _ when operandIntrinsicAndType == PackIntrinsicAndType(NI_PRIMITIVE_PopCount, TYP_LONG):
+                {
+                    ins = INS_i64_popcnt;
+                    break;
+                }
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+        }
+
+        GetEmitter().emitIns(ins);
+
+        if (needsTruncation)
+        {
+            GetEmitter().emitIns(INS_i32_wrap_i64);
+        }
+        else if (needsExtension)
+        {
+            GetEmitter().emitIns(INS_i64_extend_u_i32);
+        }
+
+        WasmProduceReg(tree);
     }
 
     private void genCodeForAsyncContinuation(GenTree tree)
