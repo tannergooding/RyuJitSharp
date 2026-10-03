@@ -102,7 +102,7 @@ public sealed class GenTreeIntCon : GenTreeIntConCommon
         var size = type.Size;
         if (size > 1)
         {
-            nuint value = unchecked((nuint)IconValue);
+            var value = unchecked((nuint)IconValue);
             value &= (nuint)0xFF;
             value |= value << 8;
             if (size >= 4)
