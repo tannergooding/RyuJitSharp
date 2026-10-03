@@ -16,6 +16,17 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-02: Managed bitset operation counter
+
+Ported `BitSetSupport.Operation`, the operation-name table, and the complete
+`BitSetOpCounter.RecordOp` diagnostic, preserving unsigned counter wrap, the
+million-operation interval, native ordering and output formatting. Full-analysis
+focused Windows-x64 `BitSetSupportTests` pass 1/1 in Debug and Release. Native
+`c5d0fdd1` retires the mapped counter implementation from the consolidated
+residual commit. `BitSetOpsWithCounter` and its disabled activation path remain
+untranslated; this unit claims neither production counter wiring nor runtime
+parity.
+
 ## 2026-10-02: Managed ArrayStack
 
 Ported the complete `ArrayStack<T>` helper, including growth, push/emplace/pop,

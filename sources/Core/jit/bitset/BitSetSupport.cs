@@ -5,11 +5,13 @@
 
 #if DEBUG
 using TestBitSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.BitVecTraits, RyuJitSharp.BitVecTraits>;
+#endif
 
 namespace RyuJitSharp;
 
-public static class BitSetSupport
+public static partial class BitSetSupport
 {
+#if DEBUG
     public static void TestSuite(Compiler compiler)
     {
         // The native storage specializations share the managed nint[] representation.
@@ -72,5 +74,5 @@ public static class BitSetSupport
         });
         assert(count == 2);
     }
-}
 #endif
+}
