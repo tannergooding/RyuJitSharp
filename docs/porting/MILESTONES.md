@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: SIMD local-alignment retirement
+
+Revalidated the existing whole `Compiler::isSIMDTypeLocalAligned` mapping in
+`Compiler.LocalAlignment.cs`; live codegen callers use it when selecting local
+load/store instructions. Full-analysis Windows-x64 `CodeGenStoreSelectionTests`
+pass 28/28 in Debug and Release, including frame-pointer and stack-pointer
+alignment, vector widths and the return-address bias.
+
+The pre-amend residual contained a C#-shaped 35-line method, so it was not
+treated as textually equal to the pinned C++ body. Full-flow comparison and the
+focused alignment tests verified the managed mapping. Native `555d7a3d` amends
+the consolidated residual commit, sole-parented to the pinned oracle, and
+removes the complete native method and its attached rationale. Recovery ref
+`refs/copilot-recovery/is-simd-local-aligned-before-6d229a56` preserves the
+previous native HEAD. No emitted-code or runtime parity is claimed.
+
 ## 2026-10-03: EE variable diagnostic retirement
 
 Accepted the existing Debug-only `Compiler::eeDispVar` binding, used by the
