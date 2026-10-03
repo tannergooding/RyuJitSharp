@@ -112,11 +112,17 @@ public sealed partial class CodeGen
         NYI_ARM("GT_NONLOCAL_JMP is not supported on arm32");
         throw new FatalJitException(CORJIT_SKIPPED);
 #elif TARGET_LOONGARCH64
+        // Non-local jumps cannot handle the case where this function has been
+        // hijacked, since the VM may not restore the original LR at the right
+        // location in the new frame.
         HasTailCalls = true;
         genConsumeOperands(tree);
         // jirl with rd=r0 is an indirect jump (no link).
         Emitter.emitIns_R_R_I(INS_jirl, EA_PTRSIZE, REG_R0, tree.Op1.RegNum, (nint)0);
 #elif TARGET_RISCV64
+        // Non-local jumps cannot handle the case where this function has been
+        // hijacked, since the VM may not restore the original LR at the right
+        // location in the new frame.
         HasTailCalls = true;
         genConsumeOperands(tree);
         // jalr with rd=x0 is an indirect jump (no link).
