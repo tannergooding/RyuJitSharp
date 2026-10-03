@@ -345,7 +345,29 @@ public sealed partial class CodeGen
 
     private void genCodeForCompare(GenTreeOp tree)
     {
-        WasmCodegenDependencyNotPorted(tree, nameof(genCodeForCompare));
+        assert(tree.OperIsCmpCompare());
+
+        var op1 = tree.Op1;
+        var op1Type = op1.Type;
+
+        if (varTypeIsFloating(op1Type))
+        {
+            genCompareFloat(tree);
+        }
+        else
+        {
+            genCompareInt(tree);
+        }
+    }
+
+    private void genCompareInt(GenTreeOp treeNode)
+    {
+        WasmCodegenDependencyNotPorted(treeNode, nameof(genCompareInt));
+    }
+
+    private void genCompareFloat(GenTreeOp treeNode)
+    {
+        WasmCodegenDependencyNotPorted(treeNode, nameof(genCompareFloat));
     }
 
     private void genCodeForLclAddr(GenTreeLclFld tree)
