@@ -20,7 +20,10 @@ public partial class Emitter
     private static regNumber inst3opImulReg(instruction ins)
     {
         assert(instrIs3opImul(ins));
-        return (regNumber)(ins - INS_imul_AX);
+        var reg = (regNumber)(ins - INS_imul_AX);
+        assert(reg.IsIntReg);
+        check3opImulValues();
+        return reg;
     }
 
     private static bool insNeedsRRIb(instruction ins)

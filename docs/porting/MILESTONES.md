@@ -16,6 +16,22 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: Shared xarch IMUL helper retirement
+
+Completed the shared three-operand IMUL register-selection and reverse-decoding
+helpers for x86 and AMD64, including native register/opcode layout assertions
+and target-isolated regression tests. Focused Windows-x64 target tests pass 1/1
+in Debug and Release with full analysis and no skips. The ordinary Core test
+project remains blocked by unrelated compile/analyzer failures; the x86 Core
+build remains blocked by existing missing backend symbols, so neither x86 build
+nor execution parity is claimed.
+
+The three exact pinned-oracle helper bodies and their declarations were removed
+from the consolidated native residual (86 deletion lines) at HEAD
+`060e7870836b6d0be58775ae062ce840bed77c88`, solely parented to pinned oracle
+`33baf8ee337b20dd0f184b69a6f09be92850bf9e`. Recovery ref
+`refs/copilot-recovery/imul-helper-before-060e787` preserves the previous HEAD.
+
 ## 2026-10-03: Managed edge-weight diagnostics
 
 Added the DEBUG-only `Compiler.fgPrintEdgeWeights` binding, preserving block

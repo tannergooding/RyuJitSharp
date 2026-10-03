@@ -5,6 +5,14 @@
     <TargetFramework>net11.0</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(RyuJitTargetArchitecture)' == 'x64'">
+    <DefineConstants>$(DefineConstants);IMUL_TEST_AMD64</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RyuJitTargetArchitecture)' == 'x86'">
+    <DefineConstants>$(DefineConstants);IMUL_TEST_X86</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\sources\Core\RyuJitSharp.csproj" />
     <Compile Include="..\Core\AbiHeaderTests.cs" Link="AbiHeaderTests.cs" />

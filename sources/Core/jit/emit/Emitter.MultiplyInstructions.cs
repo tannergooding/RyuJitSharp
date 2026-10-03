@@ -11,7 +11,7 @@ public partial class Emitter
 {
     public static instruction inst3opImulForReg(regNumber reg)
     {
-#if TARGET_AMD64
+#if TARGET_XARCH
         assert(reg.IsIntReg);
         var ins = INS_imul_AX + (int)reg;
         check3opImulValues();
@@ -19,14 +19,22 @@ public partial class Emitter
 
         return ins;
 #else
-        throw new FatalJitException(CORJIT_SKIPPED, "Three-operand IMUL selection requires AMD64.");
+        throw new FatalJitException(CORJIT_SKIPPED, "Three-operand IMUL selection requires x86 architecture support.");
 #endif
     }
 
     [Conditional("DEBUG")]
     private static void check3opImulValues()
     {
-#if TARGET_AMD64
+#if TARGET_X86
+        assert((int)INS_imul_AX - (int)INS_imul_AX == (int)REG_EAX);
+        assert((int)INS_imul_BX - (int)INS_imul_AX == (int)REG_EBX);
+        assert((int)INS_imul_CX - (int)INS_imul_AX == (int)REG_ECX);
+        assert((int)INS_imul_DX - (int)INS_imul_AX == (int)REG_EDX);
+        assert((int)INS_imul_BP - (int)INS_imul_AX == (int)REG_EBP);
+        assert((int)INS_imul_SI - (int)INS_imul_AX == (int)REG_ESI);
+        assert((int)INS_imul_DI - (int)INS_imul_AX == (int)REG_EDI);
+#elif TARGET_AMD64
 #pragma warning disable CA1508 // Retain the native encoding-layout assertions.
         assert((int)INS_imul_AX - (int)INS_imul_AX == (int)REG_RAX);
         assert((int)INS_imul_BX - (int)INS_imul_AX == (int)REG_RBX);
