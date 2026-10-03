@@ -547,6 +547,18 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
         });
     }
+
+    [Test]
+    public static void SimdBinaryIntrinsicPreservesTheRiscVNyiBoundary()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var node = new GenTreeVecCon(TYP_SIMD16);
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genSIMDIntrinsicBinOp(node));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+        });
+    }
 #endif
 
 #if TARGET_RISCV64
