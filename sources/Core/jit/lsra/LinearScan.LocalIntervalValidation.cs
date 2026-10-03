@@ -195,7 +195,7 @@ public sealed partial class LinearScan
                 if (!defined && RefTypeIsUse(referenceType) && (lastUseBlock == position.bbNum) &&
                     !position.lastUse)
                 {
-                    if (!string.IsNullOrEmpty(_compiler.info.compMethodName))
+                    if (_compiler.info.compMethodName is not null)
                     {
                         JITDUMP($"{_compiler.info.compMethodName}: ");
                     }

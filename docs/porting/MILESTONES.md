@@ -50,6 +50,25 @@ native HEAD. The shared `lsra.h` declaration remains for untranslated
 LoongArch64 and RISC-V callers. This mapped retirement is not a new runtime or
 generated-code parity claim.
 
+## 2026-10-03: LSRA interval-validation native retirement
+
+Reconciled the complete DEBUG-only `LinearScan.validateIntervals` mapping with
+its accepted managed implementation. Focused Windows-x64
+`LinearScanBuildIntervalsTests` and `LinearScanLocalIntervalConstructionTests`
+pass 18/18 Debug and 17/17 Release, with zero skips. The managed diagnostic now
+matches native null handling for `compMethodName`, including the distinction
+between null and an empty name.
+
+The complete 60-line native body matched the pinned oracle exactly (2,245
+bytes; SHA-256
+`cb8d2fc0e6bae5a23ed21529d03d99a1a97466d62645c3df261826c52ff92184`).
+Native `fd8d2384` amends the consolidated residual commit, sole-parented to the
+pinned oracle, and removes the DEBUG-only definition and its exclusive
+`lsra.h` declaration (76 deletion lines). Recovery ref
+`refs/copilot-recovery/lsra-validate-intervals-before-5c8d0cb5` preserves the
+previous native HEAD. The native residual had no remaining callers. This
+mapped retirement is not a runtime or generated-code parity claim.
+
 ## 2026-10-03: Bounded peephole history traversal
 
 The managed emitter now preserves the complete instruction-history traversal
