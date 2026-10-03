@@ -224,6 +224,7 @@ internal static unsafe class EmitterCallInstructionTests
             codeGen.Emitter.emitIns_Call(parameters);
             var id = Last(codeGen.Emitter);
 
+            Assert.That(GetCallArgumentCount(codeGen.Emitter, id), Is.EqualTo(unchecked((uint)args)));
             Assert.That(id.idIsLargeCall(), Is.EqualTo(large));
             Assert.That(id.NativeLogicalSize, Is.EqualTo(large ? 72 : 16));
             Assert.That(id.idOpSize(), Is.EqualTo(EA_PTRSIZE));
@@ -602,6 +603,9 @@ internal static unsafe class EmitterCallInstructionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetInsCIdisp")]
     private static extern nint CallDisplacement(Emitter emitter, Emitter.instrDesc id);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetInsCIargs")]
+    private static extern uint GetCallArgumentCount(Emitter emitter, Emitter.instrDesc id);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitDecodeCallGCregs")]
     private static extern uint DecodeGcRegisters(Emitter? emitter, Emitter.instrDesc id);
