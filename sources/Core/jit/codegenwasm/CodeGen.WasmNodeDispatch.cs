@@ -362,12 +362,214 @@ public sealed partial class CodeGen
 
     private void genCompareInt(GenTreeOp treeNode)
     {
-        WasmCodegenDependencyNotPorted(treeNode, nameof(genCompareInt));
+        assert(treeNode.OperIsCmpCompare());
+        genConsumeOperands(treeNode);
+
+        var type = genActualType(treeNode.Op1.Type);
+        instruction ins;
+        switch ((treeNode.Oper, type))
+        {
+            case (GT_EQ, TYP_INT):
+            {
+                ins = INS_i32_eq;
+                break;
+            }
+
+            case (GT_EQ, TYP_LONG):
+            {
+                ins = INS_i64_eq;
+                break;
+            }
+
+            case (GT_NE, TYP_INT):
+            {
+                ins = INS_i32_ne;
+                break;
+            }
+
+            case (GT_NE, TYP_LONG):
+            {
+                ins = INS_i64_ne;
+                break;
+            }
+
+            case (GT_LT, TYP_INT):
+            {
+                ins = treeNode.IsUnsigned ? INS_i32_lt_u : INS_i32_lt_s;
+                break;
+            }
+
+            case (GT_LT, TYP_LONG):
+            {
+                ins = treeNode.IsUnsigned ? INS_i64_lt_u : INS_i64_lt_s;
+                break;
+            }
+
+            case (GT_LE, TYP_INT):
+            {
+                ins = treeNode.IsUnsigned ? INS_i32_le_u : INS_i32_le_s;
+                break;
+            }
+
+            case (GT_LE, TYP_LONG):
+            {
+                ins = treeNode.IsUnsigned ? INS_i64_le_u : INS_i64_le_s;
+                break;
+            }
+
+            case (GT_GE, TYP_INT):
+            {
+                ins = treeNode.IsUnsigned ? INS_i32_ge_u : INS_i32_ge_s;
+                break;
+            }
+
+            case (GT_GE, TYP_LONG):
+            {
+                ins = treeNode.IsUnsigned ? INS_i64_ge_u : INS_i64_ge_s;
+                break;
+            }
+
+            case (GT_GT, TYP_INT):
+            {
+                ins = treeNode.IsUnsigned ? INS_i32_gt_u : INS_i32_gt_s;
+                break;
+            }
+
+            case (GT_GT, TYP_LONG):
+            {
+                ins = treeNode.IsUnsigned ? INS_i64_gt_u : INS_i64_gt_s;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+
+        GetEmitter().emitIns(ins);
+        WasmProduceReg(treeNode);
     }
 
     private void genCompareFloat(GenTreeOp treeNode)
     {
-        WasmCodegenDependencyNotPorted(treeNode, nameof(genCompareFloat));
+        assert(treeNode.OperIsCmpCompare());
+
+        var op = treeNode.Oper;
+        var invertSense = false;
+
+        if ((treeNode.Flags & GTF_RELOP_NAN_UN) != 0)
+        {
+            // CIL has no unordered GT_EQ comparison.
+            assert(op != GT_EQ);
+
+            // Wasm comparisons other than "fne" return false for NaNs, so unordered
+            // comparisons can use the reversed ordered comparison and invert its result.
+            if (op != GT_NE)
+            {
+                op = op.ReverseRelop;
+                invertSense = true;
+            }
+        }
+        else
+        {
+            // CIL has no ordered GT_NE comparison.
+            assert(op != GT_NE);
+        }
+
+        genConsumeOperands(treeNode);
+
+        instruction ins;
+        switch ((op, treeNode.Op1.Type))
+        {
+            case (GT_EQ, TYP_FLOAT):
+            {
+                ins = INS_f32_eq;
+                break;
+            }
+
+            case (GT_EQ, TYP_DOUBLE):
+            {
+                ins = INS_f64_eq;
+                break;
+            }
+
+            case (GT_NE, TYP_FLOAT):
+            {
+                ins = INS_f32_ne;
+                break;
+            }
+
+            case (GT_NE, TYP_DOUBLE):
+            {
+                ins = INS_f64_ne;
+                break;
+            }
+
+            case (GT_LT, TYP_FLOAT):
+            {
+                ins = INS_f32_lt;
+                break;
+            }
+
+            case (GT_LT, TYP_DOUBLE):
+            {
+                ins = INS_f64_lt;
+                break;
+            }
+
+            case (GT_LE, TYP_FLOAT):
+            {
+                ins = INS_f32_le;
+                break;
+            }
+
+            case (GT_LE, TYP_DOUBLE):
+            {
+                ins = INS_f64_le;
+                break;
+            }
+
+            case (GT_GE, TYP_FLOAT):
+            {
+                ins = INS_f32_ge;
+                break;
+            }
+
+            case (GT_GE, TYP_DOUBLE):
+            {
+                ins = INS_f64_ge;
+                break;
+            }
+
+            case (GT_GT, TYP_FLOAT):
+            {
+                ins = INS_f32_gt;
+                break;
+            }
+
+            case (GT_GT, TYP_DOUBLE):
+            {
+                ins = INS_f64_gt;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+
+        GetEmitter().emitIns(ins);
+
+        if (invertSense)
+        {
+            GetEmitter().emitIns(INS_i32_eqz);
+        }
+
+        WasmProduceReg(treeNode);
     }
 
     private void genCodeForLclAddr(GenTreeLclFld tree)
