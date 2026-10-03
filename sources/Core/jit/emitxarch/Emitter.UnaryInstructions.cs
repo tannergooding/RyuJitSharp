@@ -129,14 +129,20 @@ public partial class Emitter
     {
         return (ins >= INS_seto_apx) && (ins <= INS_setg_apx);
     }
+#endif
 
+#if TARGET_XARCH
     public void SetEvexZuIfNeeded(instrDesc id, insOpts instOptions)
     {
         if ((instOptions & INS_OPTS_EVEX_zu_MASK) != 0)
         {
             assert(UsePromotedEvexEncodings);
+#if TARGET_AMD64
             assert(IsApxZuCompatibleInstruction(id.idIns()));
             id.idSetEvexZuContext();
+#else
+            throw new FatalJitException(CORJIT_SKIPPED, "APX EVEX.zu instruction recording requires AMD64.");
+#endif
         }
         else
         {
