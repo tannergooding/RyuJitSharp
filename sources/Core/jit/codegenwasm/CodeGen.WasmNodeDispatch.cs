@@ -410,7 +410,25 @@ public sealed partial class CodeGen
 
     private void genRangeCheck(GenTree tree)
     {
-        WasmCodegenDependencyNotPorted(tree, nameof(genRangeCheck));
+        assert(tree.Oper is GT_BOUNDS_CHECK);
+        var boundsCheck = tree.AsBoundsChk();
+
+        // Incoming stack operands are index, then length (top of stack).
+        genConsumeOperands(boundsCheck);
+#if FEATURE_SIMD
+        if (varTypeIsSimd(boundsCheck.Index.Type))
+        {
+            GetEmitter().emitIns(INS_i8x16_splat);
+            GetEmitter().emitIns(INS_i8x16_ge_u);
+            GetEmitter().emitIns(INS_v128_any_true);
+        }
+        else
+#endif
+        {
+            GetEmitter().emitIns(INS_I_ge_u);
+        }
+
+        genJumpToThrowHlpBlk(boundsCheck.ThrowKind);
     }
 
     private void genLclHeap(GenTree tree)
