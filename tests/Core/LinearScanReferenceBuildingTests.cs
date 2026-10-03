@@ -148,6 +148,41 @@ internal static unsafe class LinearScanReferenceBuildingTests
     }
 
     [Test]
+    public static void DefinitionListNodePoolReusesReturnedNodesInLifoOrder()
+    {
+        WithAllocator((compiler, _) => {
+            var pool = new RefInfoListNodePool(preallocate: 0);
+            var firstTree = compiler.gtNewIconNode(TYP_INT, 1);
+            var secondTree = compiler.gtNewIconNode(TYP_INT, 2);
+            var firstReference = new RefPosition(0, 1, firstTree, RefType.RefTypeDef);
+            var secondReference = new RefPosition(0, 1, secondTree, RefType.RefTypeDef);
+
+            var first = pool.GetNode(firstReference, firstTree);
+            var second = pool.GetNode(secondReference, secondTree);
+            Assert.That(first, Is.Not.SameAs(second));
+
+            pool.ReturnNode(first);
+            pool.ReturnNode(second);
+
+            var reusedSecond = pool.GetNode(firstReference, firstTree);
+            Assert.That(reusedSecond, Is.SameAs(second));
+            Assert.That(reusedSecond.refPosition, Is.SameAs(firstReference));
+            Assert.That(reusedSecond.treeNode, Is.SameAs(firstTree));
+            Assert.That(reusedSecond.next, Is.Null);
+
+            var reusedFirst = pool.GetNode(secondReference, secondTree);
+            Assert.That(reusedFirst, Is.SameAs(first));
+            Assert.That(reusedFirst.refPosition, Is.SameAs(secondReference));
+            Assert.That(reusedFirst.treeNode, Is.SameAs(secondTree));
+            Assert.That(reusedFirst.next, Is.Null);
+
+            var newNode = pool.GetNode(firstReference, firstTree);
+            Assert.That(newNode, Is.Not.SameAs(first));
+            Assert.That(newNode, Is.Not.SameAs(second));
+        });
+    }
+
+    [Test]
     public static void LastUseOfCandidateLocalRemovesItFromLiveSetAndBuildsLocalUse()
     {
         WithAllocator((compiler, allocator) => {
