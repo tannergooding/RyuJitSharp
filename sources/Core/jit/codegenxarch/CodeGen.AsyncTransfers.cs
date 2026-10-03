@@ -127,6 +127,13 @@ public sealed partial class CodeGen
         genConsumeOperands(tree);
         // jalr with rd=x0 is an indirect jump (no link).
         Emitter.emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_R0, tree.Op1.RegNum, (nint)0);
+#elif TARGET_ARM64
+        // Non-local jumps cannot handle the case where this function has been
+        // hijacked, since the VM may not restore the original LR at the right
+        // location in the new frame.
+        HasTailCalls = true;
+        genConsumeOperands(tree);
+        Emitter.emitIns_R(INS_br, EA_PTRSIZE, tree.Op1.RegNum);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Nonlocal jump generation requires Windows AMD64.");
 #else
