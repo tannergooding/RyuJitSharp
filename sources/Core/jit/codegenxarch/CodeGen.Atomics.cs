@@ -51,7 +51,44 @@ public sealed partial class CodeGen
 
     public void genLockedInstructions(GenTreeOp node)
     {
-#if !TARGET_XARCH
+#if TARGET_LOONGARCH64
+        NYI("unimplemented on LOONGARCH64 yet");
+        throw new FatalJitException(CORJIT_SKIPPED, "unimplemented on LOONGARCH64 yet");
+#elif TARGET_RISCV64
+        assert(!varTypeIsSmall(node.Type));
+
+        var data = node.Op2;
+        var addr = node.Op1;
+        var dataReg = !data.IsContained ? data.RegNum : REG_ZERO;
+        var addrReg = addr.RegNum;
+        var targetReg = node.RegNum;
+        if (targetReg == REG_NA)
+        {
+            targetReg = REG_ZERO;
+        }
+
+        genConsumeAddress(addr);
+        genConsumeRegs(data);
+
+        var dataSize = emitActualTypeSize(data);
+        var is4 = dataSize == EA_4BYTE;
+        var ins = node.Oper switch
+        {
+            GT_XORR => is4 ? INS_amoor_w : INS_amoor_d,
+            GT_XAND => is4 ? INS_amoand_w : INS_amoand_d,
+            GT_XCHG => is4 ? INS_amoswap_w : INS_amoswap_d,
+            GT_XADD => is4 ? INS_amoadd_w : INS_amoadd_d,
+            _ => throw new FatalJitException(CORJIT_INTERNALERROR,
+                "Unexpected operation in locked instruction generation."),
+        };
+
+        Emitter.emitIns_R_R_R(ins, dataSize, targetReg, addrReg, dataReg);
+
+        if (targetReg != REG_ZERO)
+        {
+            genProduceReg(node);
+        }
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Locked instruction generation outside xarch is not implemented.");
 #else
 #if TARGET_AMD64

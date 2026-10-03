@@ -239,6 +239,35 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         });
     }
 
+#if TARGET_RISCV64
+    [TestCase(GT_XADD)]
+    [TestCase(GT_XCHG)]
+    [TestCase(GT_XORR)]
+    [TestCase(GT_XAND)]
+#else
+    [TestCase(GT_XADD)]
+    [TestCase(GT_XCHG)]
+#endif
+    public static void LockedInstructionDispatchReachesTheTargetBoundary(genTreeOps oper)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+            var address = CodeGenShiftTests.Register(compiler, TYP_BYREF, REG_S0);
+            var data = CodeGenShiftTests.Register(compiler, TYP_INT, REG_S1);
+            var tree = new GenTreeOp(oper, TYP_INT, address, data) { RegNum = REG_S2 };
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
+#if TARGET_LOONGARCH64
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+#else
+            Assert.That(failure?.Message,
+                Does.Contain("RISC-V three-register instruction recording is not implemented."));
+#endif
+        });
+    }
+
     [Test]
     public static void JumpTableAddressRecordingStopsAtTheTargetEmitterBoundary()
     {

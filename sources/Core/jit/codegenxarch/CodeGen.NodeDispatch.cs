@@ -19,6 +19,12 @@ public sealed partial class CodeGen
 
         switch (tree.Oper)
         {
+            case GT_ASYNC_RESUME_INFO:
+            {
+                genAsyncResumeInfo(tree.AsVal());
+                return;
+            }
+
             case GT_JMPTABLE:
             {
                 genJumpTable(tree);
@@ -48,6 +54,16 @@ public sealed partial class CodeGen
             case GT_NONLOCAL_JMP:
             {
                 genNonLocalJmp(tree.AsUnOp());
+                return;
+            }
+            case GT_XCHG:
+            case GT_XADD:
+#if TARGET_RISCV64
+            case GT_XORR:
+            case GT_XAND:
+#endif
+            {
+                genLockedInstructions(tree.AsOp());
                 return;
             }
             case GT_JMPTABLE:
