@@ -210,6 +210,57 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         });
     }
 
+#if TARGET_LOONGARCH64
+    [TestCase(0, "LoongArch64 conditional-branch instruction recording is not ported.")]
+    [TestCase(1, "Target immediate materialization is not implemented.")]
+    public static void JumpCompareDispatchPreservesImmediateAndBranchBoundaries(
+        long immediate, string expectedBoundary)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var trueTarget = new BasicBlock(null, null);
+            var falseTarget = new BasicBlock(null, null);
+            var block = new BasicBlock(null, null);
+            block.SetCond(new FlowEdge(block, trueTarget, null), new FlowEdge(block, falseTarget, null));
+            compiler.compCurBB = block;
+            var value = CodeGenShiftTests.Register(compiler, TYP_LONG, REG_S0);
+            var constant = new GenTreeIntCon(TYP_LONG, unchecked((nint)immediate)) { IsContained = true };
+            var tree = new GenTreeOpCC(GT_JCMP, TYP_VOID, new GenCondition(GenCondition.CodeKind.EQ),
+                value, constant);
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
+
+            Assert.That(failure?.Message, Does.Contain(expectedBoundary));
+        });
+    }
+#endif
+
+#if TARGET_RISCV64
+    [Test]
+    public static void ZicondSelectDispatchReachesRiscVInstructionRecordingBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_Zicond);
+            compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_Zicond);
+            compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_Zicond);
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+
+            var condition = CodeGenShiftTests.Register(compiler, TYP_INT, REG_S0);
+            var trueValue = CodeGenShiftTests.Register(compiler, TYP_INT, REG_S1);
+            var falseValue = new GenTreeIntCon(TYP_INT, 0) { IsContained = true };
+            var tree = new GenTreeConditional(GT_SELECT, TYP_INT, condition, trueValue, falseValue)
+            {
+                RegNum = REG_S2,
+            };
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
+
+            Assert.That(failure?.Message,
+                Does.Contain("RISC-V three-register instruction recording is not implemented."));
+        });
+    }
+#endif
+
     [Test]
     public static void FunctionEntryDispatchReachesTheInstructionGroupRecordingBoundary()
     {

@@ -5,6 +5,15 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    public void emitIns_J(
+        instruction ins,
+        BasicBlock target,
+        bool keepShort = false,
+        bool isRemovableJmpCandidate = false)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "Target jump instruction recording is not implemented.");
+    }
+
     public void emitIns_J_cond_la(instruction ins, BasicBlock target, regNumber reg1, regNumber reg2)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "Target conditional-branch recording is not implemented.");

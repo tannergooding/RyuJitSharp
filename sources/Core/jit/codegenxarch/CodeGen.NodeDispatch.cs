@@ -115,6 +115,20 @@ public sealed partial class CodeGen
                 genCkfinite(tree);
                 return;
             }
+#if TARGET_LOONGARCH64
+            case GT_JCMP:
+            {
+                genCodeForJumpCompare(tree.AsOpCC());
+                return;
+            }
+#endif
+#if TARGET_RISCV64
+            case GT_SELECT:
+            {
+                genCodeForSelect(tree.AsConditional());
+                return;
+            }
+#endif
             case GT_EQ:
             case GT_NE:
             case GT_LT:

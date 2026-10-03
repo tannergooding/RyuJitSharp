@@ -145,7 +145,7 @@ public sealed partial class CodeGen
 #endif
         )
     {
-        throw new System.NotSupportedException("instGen_Set_Reg_To_Imm for this target is not yet ported.");
+            throw new FatalJitException(CORJIT_SKIPPED, "Target immediate materialization is not implemented.");
     }
 #endif
 }

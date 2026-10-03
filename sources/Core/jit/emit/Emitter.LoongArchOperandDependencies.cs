@@ -18,6 +18,11 @@ public partial class Emitter
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 two-register/two-immediate instruction recording is not ported.");
     }
 
+    public void emitIns_J(instruction ins, BasicBlock target, int regs)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 conditional-branch instruction recording is not ported.");
+    }
+
     public void emitIns_I_I(instruction ins, emitAttr attr, nint cc, nint offs)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 condition-code/immediate instruction recording is not ported.");
