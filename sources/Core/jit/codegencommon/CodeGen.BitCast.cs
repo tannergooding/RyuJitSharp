@@ -22,7 +22,29 @@ public sealed partial class CodeGen
     public void genCodeForBitCast(GenTreeUnOp tree)
     {
 #if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "Wasm bitcast node generation is not ported.");
+        assert(tree.Oper is GT_BITCAST);
+
+        if (tree.Op1.IsContained)
+        {
+            assert(tree.Op1.Oper is GT_LCL_VAR);
+            genCodeForLclVar(tree.Op1.AsLclVar());
+        }
+        else
+        {
+            genConsumeOperands(tree);
+        }
+
+        var toType = tree.Type;
+        var fromType = genActualType(tree.Op1.Type);
+        assert(toType == genActualType(tree));
+
+        var ins = WasmBitCastInstruction(toType, fromType);
+        if (ins is not INS_none)
+        {
+            GetEmitter().emitIns(ins);
+        }
+
+        WasmProduceReg(tree);
 #else
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Type == tree.Type.ActualType);
