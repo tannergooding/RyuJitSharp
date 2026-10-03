@@ -819,6 +819,28 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         });
     }
 
+#if TARGET_LOONGARCH64
+    [TestCase(TYP_FLOAT, TYP_DOUBLE)]
+    [TestCase(TYP_DOUBLE, TYP_FLOAT)]
+    public static void FloatingWidthCastReachesTheLoongArchTwoRegisterBoundary(var_types sourceType, var_types targetType)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+
+            var source = compiler.gtNewDconNode(sourceType, 1.0);
+            source.RegNum = REG_F0;
+            var cast = new GenTreeCast(targetType, source, false, targetType) { RegNum = REG_F1 };
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genFloatToFloatCast(cast));
+
+            Assert.That(failure?.Message,
+                Does.Contain("Target two-register instruction recording is not implemented."));
+        });
+    }
+#endif
+
     [TestCase(GT_BSWAP, TYP_INT)]
     [TestCase(GT_BSWAP16, TYP_INT)]
     [TestCase(GT_BSWAP, TYP_LONG)]

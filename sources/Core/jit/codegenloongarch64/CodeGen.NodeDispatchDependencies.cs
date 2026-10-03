@@ -45,11 +45,6 @@ public sealed partial class CodeGen
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 index-address generation is not ported.");
     }
 
-    private void genFloatToFloatCast(GenTree tree)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 floating-point cast generation is not ported.");
-    }
-
     private void genIntToIntCast(GenTreeCast tree)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 integer cast generation is not ported.");

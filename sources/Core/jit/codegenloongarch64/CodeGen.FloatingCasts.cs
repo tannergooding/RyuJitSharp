@@ -114,6 +114,39 @@ public sealed partial class CodeGen
         genProduceReg(cast);
     }
 
+    public void genFloatToFloatCast(GenTreeCast treeNode)
+    {
+        assert(treeNode.Oper is GT_CAST);
+        assert(!treeNode.HasOverflowCheck);
+
+        var targetReg = treeNode.RegNum;
+        assert(genIsValidFloatReg(targetReg));
+
+        var op1 = treeNode.CastOp;
+        assert(!op1.IsContained);
+        assert(genIsValidFloatReg(op1.RegNum));
+
+        var dstType = treeNode.CastType;
+        var srcType = op1.Type;
+        assert(varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
+
+        genConsumeOperands(treeNode);
+        assert(!treeNode.IsContained);
+
+        if (srcType != dstType)
+        {
+            var ins = srcType is TYP_FLOAT ? INS_fcvt_d_s : INS_fcvt_s_d;
+            Emitter.emitIns_R_R(ins, treeNode.Type.EmitActualSize, targetReg, op1.RegNum);
+        }
+        else if (targetReg != op1.RegNum)
+        {
+            var ins = srcType is TYP_FLOAT ? INS_fmov_s : INS_fmov_d;
+            Emitter.emitIns_R_R(ins, treeNode.Type.EmitActualSize, targetReg, op1.RegNum);
+        }
+
+        genProduceReg(treeNode);
+    }
+
     public void genFloatToIntCast(GenTreeCast treeNode)
     {
         assert(treeNode.Oper is GT_CAST);
