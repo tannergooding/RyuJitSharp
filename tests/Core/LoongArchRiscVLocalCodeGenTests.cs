@@ -275,6 +275,21 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
         });
     }
+
+    [Test]
+    public static void SimdUpperSavePreservesTheLoongArchNyiBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaTable[0].Type = TYP_SIMD16;
+            var source = compiler.gtNewLclvNode(TYP_SIMD16, 0);
+            var node = new GenTreeIntrinsic(TYP_SIMD16, source, NamedIntrinsic.NI_SIMD_UpperSave, null);
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genSimdUpperSave(node));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+        });
+    }
 #endif
 
 #if TARGET_LOONGARCH64 || TARGET_RISCV64
@@ -432,6 +447,20 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             Assert.That(failure?.Message, Does.Contain(expectedBoundary));
         });
     }
+
+#if TARGET_RISCV64 && FEATURE_SIMD
+    [Test]
+    public static void SimdInstructionOptionsPreserveTheRiscVNyiBoundary()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var failure = Assert.Throws<FatalJitException>(() =>
+                codeGen.genGetSimdInsOpt(EA_16BYTE, TYP_SIMD16));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+        });
+    }
+#endif
 
 #if TARGET_RISCV64
     [Test]
