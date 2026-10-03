@@ -16,6 +16,24 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: LSRA interval and def-use native retirement
+
+Reconciled the already-implemented `LinearScan.newInterval` and
+`LinearScan.resolveConflictingDefAndUse` managed methods with the remaining
+native definitions and exclusive declarations. Focused Windows-x64
+`LinearScanRegisterSelectionTests`, `LinearScanReferenceBuildingTests`,
+`LinearScanDefinitionConstructionTests`, and `LinearScanAllocationEventTests`
+pass 28/28 Debug and 23/23 Release, with zero skips.
+
+Both complete native bodies matched the pinned oracle exactly. Native
+`df0cda1e` amends the consolidated residual commit, sole-parented to the pinned
+oracle, and removes the definitions, their rationale, and two exclusive
+`lsra.h` declarations (178 deletion lines). Recovery ref
+`refs/copilot-recovery/lsra-defuse-before-209f008a` preserves the prior native
+HEAD. `addKillForRegs` remains because residual LoongArch64/RISC-V callers are
+unported. This is a mapped-retirement reconciliation, not a new runtime or
+generated-code parity claim.
+
 ## 2026-10-03: Bounded peephole history traversal
 
 The managed emitter now preserves the complete instruction-history traversal
