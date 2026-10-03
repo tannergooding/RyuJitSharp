@@ -128,6 +128,26 @@ internal static unsafe class LinearScanReferenceBuildingTests
     }
 
     [Test]
+    public static void DefinitionListRejectsMatchingTreeWithoutReferencePosition()
+    {
+        WithAllocator((compiler, _) => {
+            var definitions = new RefInfoList();
+            var tree = compiler.gtNewIconNode(TYP_INT, 1);
+            var missingReference = new RefInfoListNode { treeNode = tree };
+            var reference = new RefPosition(0, 1, tree, RefType.RefTypeDef);
+            var matchingReference = new RefInfoListNode { refPosition = reference, treeNode = tree };
+            reference.setMultiRegIdx(0);
+
+            definitions.Append(missingReference);
+            definitions.Append(matchingReference);
+
+            Assert.Throws<FatalJitException>(() => definitions.RemoveListNode(tree, 0));
+            Assert.That(definitions.First, Is.SameAs(missingReference));
+            Assert.That(missingReference.next, Is.SameAs(matchingReference));
+        });
+    }
+
+    [Test]
     public static void LastUseOfCandidateLocalRemovesItFromLiveSetAndBuildsLocalUse()
     {
         WithAllocator((compiler, allocator) => {

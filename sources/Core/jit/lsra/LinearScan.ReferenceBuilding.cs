@@ -33,26 +33,30 @@ internal sealed class RefInfoList
         RefInfoListNode? previous = null;
         for (var node = _head; node is not null; node = node.next)
         {
-            if (ReferenceEquals(node.treeNode, treeNode) &&
-                (node.refPosition?.getMultiRegIdx() == multiRegIndex))
+            if (ReferenceEquals(node.treeNode, treeNode))
             {
-                var next = node.next;
-                if (previous is null)
+                var refPosition = node.refPosition
+                    ?? throw new FatalJitException("LSRA definition list entry has no reference position.");
+                if (refPosition.getMultiRegIdx() == multiRegIndex)
                 {
-                    _head = next;
-                }
-                else
-                {
-                    previous.next = next;
-                }
+                    var next = node.next;
+                    if (previous is null)
+                    {
+                        _head = next;
+                    }
+                    else
+                    {
+                        previous.next = next;
+                    }
 
-                if (next is null)
-                {
-                    _tail = previous;
-                }
+                    if (next is null)
+                    {
+                        _tail = previous;
+                    }
 
-                node.next = null;
-                return node;
+                    node.next = null;
+                    return node;
+                }
             }
 
             previous = node;

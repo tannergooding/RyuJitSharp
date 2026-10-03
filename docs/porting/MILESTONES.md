@@ -16,6 +16,28 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-03: LSRA multi-register definition-list removal
+
+The complete native `RefInfoList::removeListNode(GenTree*, unsigned)` overload
+matched the pinned oracle. Its managed `BuildUse` binding removes the matching
+tree/multi-register entry; a matching tree without a reference position now
+fails explicitly instead of being silently skipped, preserving the native
+non-null invariant. A regression verifies the failure leaves the definition
+list unchanged. Focused Windows-x64 `LinearScanReferenceBuildingTests` passed
+8/8 Debug and 7/7 Release, with zero skips. Code-style enforcement was disabled
+to bypass unrelated compile failures; temporary imports excluded only
+`EmitterPrefixTests.cs` in both configurations and
+`EmitterRegisterInstructionTests.cs` in Release. This is focused test evidence,
+not a full-suite or cross-target parity claim.
+
+The consolidated native residual removes the 23-line `lsrabuild.cpp` overload
+and its exclusive `lsra.h` declaration. Native HEAD
+`3f4d6f6dc96dfb1fb590b0ecfa58447bc5c6e9d5` (tree
+`353bbbf18899000e7b189951d7c3534d66b84f6d`) is sole-parented to the pinned
+oracle. Recovery ref
+`refs/porting/recovery/2026-10-03-remove-list-node-before-amend` preserves
+prior HEAD `7738d438682246a7b2126461c6dc026f8bd75cef`.
+
 ## 2026-10-03: Physical-promotion remainder strategy
 
 Completed `DecompositionPlan::DetermineRemainderStrategy` with the native
