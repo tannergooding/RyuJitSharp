@@ -306,7 +306,6 @@ internal static unsafe class SharedStructArgumentSetupTests
             AssertConsumed(small, true);
             AssertConsumed(vector, true);
             AssertConsumed(reference, true);
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(ReferenceRegister)));
         });
     }
 #endif

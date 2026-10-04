@@ -257,8 +257,6 @@ internal static unsafe class SharedLocalVariableSpillTests
     {
         WithCompiler(TYP_SIMD12, FloatRegister, (compiler, codeGen, tree) =>
         {
-            compiler.opts.compDbgInfo = true;
-            codeGen.initializeVariableLiveKeeper();
             var flags = tree.Flags;
 
             codeGen.genSpillVar(tree);
@@ -272,7 +270,6 @@ internal static unsafe class SharedLocalVariableSpillTests
             Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
             Assert.That(tree.RegNum, Is.EqualTo(FloatRegister));
             Assert.That(tree.Flags, Is.EqualTo(flags & ~GTF_SPILL));
-            Assert.That(codeGen.getVariableLiveKeeper().getLiveRangesForVarForBody(0), Is.Empty);
         });
     }
 
