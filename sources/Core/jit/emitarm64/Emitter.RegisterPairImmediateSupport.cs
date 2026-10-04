@@ -6,6 +6,7 @@
 #if TARGET_ARM64
 using System.Numerics;
 using static RyuJitSharp.GCInfo.GCtype;
+using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
 
@@ -107,7 +108,7 @@ public partial class Emitter
                (size == EA_2BYTE) || (size == EA_1BYTE);
     }
 
-    private bool TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
+    private unsafe bool TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
     {
         assert(_compiler is not null);
 
