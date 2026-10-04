@@ -90,8 +90,7 @@ public sealed partial class CodeGen
 #endif
         _ = VarSetOps.VisitBits(_compiler, block.bbLiveIn, varIndex =>
         {
-            assert(_compiler.lvaTrackedToVarNum is not null);
-            ref var varDsc = ref _compiler.lvaGetDesc(_compiler.lvaTrackedToVarNum[varIndex]);
+            ref var varDsc = ref _compiler.lvaGetDesc(_compiler.lvaTrackedIndexToLclNum(varIndex));
             if (varDsc.lvIsInReg)
             {
                 var regMask = genGetRegMask(in varDsc);
@@ -378,8 +377,7 @@ public sealed partial class CodeGen
         var foundMismatchedRegVar = false;
         _ = VarSetOps.VisitBits(_compiler, mismatchLiveVars, varIndex =>
         {
-            assert(_compiler.lvaTrackedToVarNum is not null);
-            var varNum = _compiler.lvaTrackedToVarNum[varIndex];
+            var varNum = _compiler.lvaTrackedIndexToLclNum(varIndex);
             ref var varDsc = ref _compiler.lvaGetDesc(varNum);
             if (varDsc.lvIsRegCandidate)
             {

@@ -1311,6 +1311,16 @@ public partial class Compiler
     }
 #endif
 
+    public int lvaTrackedIndexToLclNum(int trackedIndex)
+    {
+        assert((uint)trackedIndex < (uint)lvaTrackedCount);
+        assert(lvaTrackedToVarNum is not null);
+        assert((uint)trackedIndex < (uint)lvaTrackedToVarNum.Length);
+        var lclNum = lvaTrackedToVarNum[trackedIndex];
+        assert((uint)lclNum < (uint)lvaCount);
+        return lclNum;
+    }
+
     public ref LclVarDsc lvaGetDesc(int lclNum)
     {
         assert((lclNum >= 0) && (lclNum < lvaCount));

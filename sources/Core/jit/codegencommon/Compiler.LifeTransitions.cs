@@ -55,7 +55,7 @@ public partial class Compiler
         // A dying local can share its register with a newly live local.
         _ = VarSetOps.VisitBits(this, deadSet, deadVarIndex =>
         {
-            var varNum = lvaTrackedToVarNum[deadVarIndex];
+            var varNum = lvaTrackedIndexToLclNum(deadVarIndex);
             ref var varDsc = ref lvaGetDesc(varNum);
 #if EMIT_GENERATE_GCINFO
             var isGCRef = varDsc.Type == TYP_REF;
@@ -100,7 +100,7 @@ public partial class Compiler
 
         _ = VarSetOps.VisitBits(this, bornSet, bornVarIndex =>
         {
-            var varNum = lvaTrackedToVarNum[bornVarIndex];
+            var varNum = lvaTrackedIndexToLclNum(bornVarIndex);
             ref var varDsc = ref lvaGetDesc(varNum);
 #if EMIT_GENERATE_GCINFO
             var isGCRef = varDsc.Type == TYP_REF;
