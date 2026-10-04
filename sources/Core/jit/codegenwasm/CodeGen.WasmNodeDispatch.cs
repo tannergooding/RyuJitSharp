@@ -635,7 +635,18 @@ public sealed partial class CodeGen
 
     private void genLoadLclTypeSimd12(GenTreeLclVarCommon tree)
     {
-        WasmCodegenDependencyNotPorted(tree, nameof(genLoadLclTypeSimd12));
+        var frameOffset = _compiler.lvaFrameAddress(tree.LclNum, out var fpBased) + tree.LclOffs;
+        noway_assert(frameOffset >= 0);
+        assert(fpBased);
+
+        // Vector3 uses a v128 with its upper lane loaded separately.
+        var fpIndex = GetFramePointerRegIndex();
+        var emitter = GetEmitter();
+
+        emitter.emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)fpIndex));
+        emitter.emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)fpIndex));
+        emitter.emitIns_I(INS_v128_load64_zero, EA_8BYTE, frameOffset);
+        emitter.emitIns_MemargLane(INS_v128_load32_lane, EA_4BYTE, frameOffset + 8, 2);
     }
 
     private void genCodeForLclVar(GenTreeLclVar tree)
@@ -761,14 +772,31 @@ public sealed partial class CodeGen
 
     private void genLoadIndTypeSimd12(GenTreeIndir tree)
     {
-        WasmCodegenDependencyNotPorted(tree, nameof(genLoadIndTypeSimd12));
+        var emitter = GetEmitter();
+
+        // The multiply-used address is reloaded for the upper lane.
+        genEmitLocalGet(GetMultiUseOperandReg(tree.Addr), WasmValueType.I);
+        emitter.emitIns_I(INS_v128_load64_zero, EA_8BYTE, 0);
+        emitter.emitIns_MemargLane(INS_v128_load32_lane, EA_4BYTE, 8, 2);
     }
 
     private nint genWasmMemargOffset(GenTree addr)
     {
-        throw new FatalJitException(
-            CORJIT_SKIPPED,
-            $"Wasm {nameof(genWasmMemargOffset)} is not ported for {addr.Oper}.");
+        if (addr.IsContained && addr.Oper is GT_LEA)
+        {
+            return addr.AsAddrMode().Offset;
+        }
+
+        if (addr.Oper is GT_LCL_ADDR && (addr.gtLIRFlags & LIR.Flags.FoldedAddr) != LIR.Flags.None)
+        {
+            var lclVar = addr.AsLclVarCommon();
+            var offset = _compiler.lvaFrameAddress(lclVar.LclNum, out var fpBased) + lclVar.LclOffs;
+            noway_assert(offset >= 0);
+            assert(fpBased);
+            return offset;
+        }
+
+        return 0;
     }
 
     private void genCodeForStoreInd(GenTreeStoreInd tree)
@@ -823,7 +851,33 @@ public sealed partial class CodeGen
 
     private void genStoreIndTypeSimd12(GenTreeStoreInd tree)
     {
-        WasmCodegenDependencyNotPorted(tree, nameof(genStoreIndTypeSimd12));
+        var emitter = GetEmitter();
+        var addr = tree.Addr;
+        var valueReg = _internalRegisters.GetSingle(tree);
+        var wasmValueIndex = regNumberExtensions.WasmRegToIndex(valueReg);
+
+        // The incoming stack is [addr, value]; tee value so it survives the first lane store.
+        emitter.emitIns_I(INS_local_tee, EA_16BYTE, unchecked((nint)wasmValueIndex));
+        emitter.emitIns_MemargLane(INS_v128_store64_lane, EA_8BYTE, 0, 0);
+
+        if (addr.Oper is GT_LCL_ADDR)
+        {
+            var lclVar = addr.AsLclVarCommon();
+            var frameOffset = _compiler.lvaFrameAddress(lclVar.LclNum, out var fpBased) + lclVar.LclOffs;
+            noway_assert(frameOffset >= 0);
+            assert(fpBased);
+
+            emitter.emitIns_I(
+                INS_local_get, EA_PTRSIZE, unchecked((nint)GetFramePointerRegIndex()));
+            emitter.emitIns_I(INS_local_get, EA_16BYTE, unchecked((nint)wasmValueIndex));
+            emitter.emitIns_MemargLane(INS_v128_store32_lane, EA_4BYTE, frameOffset + 8, 2);
+        }
+        else
+        {
+            genEmitLocalGet(GetMultiUseOperandReg(addr), WasmValueType.I);
+            emitter.emitIns_I(INS_local_get, EA_16BYTE, unchecked((nint)wasmValueIndex));
+            emitter.emitIns_MemargLane(INS_v128_store32_lane, EA_4BYTE, 8, 2);
+        }
     }
 
     private void genCall(GenTreeCall call)
@@ -1191,7 +1245,17 @@ public sealed partial class CodeGen
 
     private void genEmitNullCheck(regNumber reg)
     {
-        WasmCodegenDependencyNotPorted(nameof(genEmitNullCheck));
+        var emitter = GetEmitter();
+
+        if (reg is not REG_NA)
+        {
+            genEmitLocalGet(reg, WasmValueType.I);
+        }
+
+        emitter.emitIns_I(
+            INS_I_const, EA_PTRSIZE, unchecked((nint)_compiler.compMaxUncheckedOffsetForNullObject));
+        emitter.emitIns(INS_I_le_u);
+        genJumpToThrowHlpBlk(SCK_NULL_CHECK);
     }
 
     private void genRangeCheck(GenTree tree)
