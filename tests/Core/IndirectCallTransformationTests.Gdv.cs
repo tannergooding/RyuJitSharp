@@ -18,6 +18,23 @@ internal static unsafe partial class IndirectCallTransformationTests
 {
     private static InfoAccessType s_lookupAccess;
 
+    [Test]
+    public static void EnumeratorLikelyTypeMapIsLazilyCreatedAndReused()
+    {
+        WithCompiler(compiler => {
+            Assert.That(compiler.hasImpEnumeratorLikelyTypeMap, Is.False);
+
+            var map = compiler.ImpEnumeratorLikelyTypeMap;
+
+            Assert.That(compiler.hasImpEnumeratorLikelyTypeMap, Is.True);
+            Assert.That(compiler.ImpEnumeratorLikelyTypeMap, Is.SameAs(map));
+
+            map.Add(1, default);
+            Assert.That(map.TryGetValue(1, out var entry), Is.True);
+            Assert.That(entry._likelihood, Is.Zero);
+        });
+    }
+
 #if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitPrintDevirtualizedMethods")]
     private static extern ref JitConfigValues.MethodSet PrintDevirtualizedMethods(ref JitConfigValues config);
