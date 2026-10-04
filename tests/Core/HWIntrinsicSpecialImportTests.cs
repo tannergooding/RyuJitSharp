@@ -15,6 +15,32 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class HWIntrinsicSpecialImportTests
 {
+    [Test]
+    public static void SystemHalfClassRequiresIntrinsicSystemHalfMetadata()
+    {
+        WithImporter(compiler => {
+            fixed (byte* half = "Half\0"u8)
+            fixed (byte* single = "Single\0"u8)
+            fixed (byte* system = "System\0"u8)
+            fixed (byte* otherNamespace = "Other\0"u8)
+            {
+                var systemHalf = new ClassInfo { Name = half, Namespace = system };
+                var systemSingle = new ClassInfo { Name = single, Namespace = system };
+                var otherNamespaceHalf = new ClassInfo { Name = half, Namespace = otherNamespace };
+                var nonIntrinsicSystemHalf = new ClassInfo {
+                    Name = half,
+                    Namespace = system,
+                    IsNonIntrinsic = true,
+                };
+
+                Assert.That(compiler.IsSystemHalfClass((CORINFO_CLASS_STRUCT_*)&systemHalf), Is.True);
+                Assert.That(compiler.IsSystemHalfClass((CORINFO_CLASS_STRUCT_*)&systemSingle), Is.False);
+                Assert.That(compiler.IsSystemHalfClass((CORINFO_CLASS_STRUCT_*)&otherNamespaceHalf), Is.False);
+                Assert.That(compiler.IsSystemHalfClass((CORINFO_CLASS_STRUCT_*)&nonIntrinsicSystemHalf), Is.False);
+            }
+        });
+    }
+
     [TestCase(NI_X86Base_AndNot, TYP_INT, (byte)0)]
     [TestCase(NI_X86Base_AndNot, TYP_SIMD16, (byte)16)]
     [TestCase(NI_AVX2_AndNot, TYP_SIMD32, (byte)32)]
@@ -345,10 +371,12 @@ internal static unsafe class HWIntrinsicSpecialImportTests
         public byte* Name;
         public byte* Namespace;
         public int Size;
+        public bool IsNonIntrinsic;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static byte IsIntrinsicType(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => 1;
+    private static byte IsIntrinsicType(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type)
+        => ((ClassInfo*)type)->IsNonIntrinsic ? (byte)0 : (byte)1;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte* GetClassName(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type, byte** ns)
