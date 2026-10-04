@@ -396,14 +396,18 @@ public partial class Compiler
 
     public void unwindEndEpilog() => throw new FatalJitException(CORJIT_SKIPPED, "Unwind recording requires Windows AMD64.");
 
+#if !TARGET_ARM64
     public void unwindPush(regNumber reg) => throw new FatalJitException(CORJIT_SKIPPED, "Unwind recording requires Windows AMD64.");
+#endif
 
     public void unwindPush2(regNumber reg1, regNumber reg2) => throw new FatalJitException(CORJIT_SKIPPED, "Unwind recording requires Windows AMD64.");
 
+#if !TARGET_ARM64
     public void unwindAllocStack(uint size) => throw new FatalJitException(CORJIT_SKIPPED, "Unwind recording requires Windows AMD64.");
 
     public void unwindSetFrameReg(regNumber reg, uint offset) => throw new FatalJitException(CORJIT_SKIPPED, "Unwind recording requires Windows AMD64.");
 
     public void unwindSaveReg(regNumber reg, uint offset) => throw new FatalJitException(CORJIT_SKIPPED, "Unwind recording requires Windows AMD64.");
+#endif
 #endif
 }
