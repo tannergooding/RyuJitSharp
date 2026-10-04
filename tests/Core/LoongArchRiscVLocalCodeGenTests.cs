@@ -46,13 +46,16 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         });
     }
 
-    [Test]
-    public static void IntrinsicSaturationDispatchReachesTheLoongArchImmediateBoundary()
+    [TestCase(NamedIntrinsic.NI_PRIMITIVE_SaturateToInt8)]
+    [TestCase(NamedIntrinsic.NI_PRIMITIVE_SaturateToInt16)]
+    [TestCase(NamedIntrinsic.NI_PRIMITIVE_SaturateToUInt8)]
+    [TestCase(NamedIntrinsic.NI_PRIMITIVE_SaturateToUInt16)]
+    public static void IntrinsicSaturationDispatchReachesTheLoongArchImmediateBoundary(NamedIntrinsic intrinsic)
     {
         WithCodeGen((compiler, codeGen) =>
         {
             var operand = Register(compiler, TYP_INT, REG_S0);
-            var tree = new GenTreeIntrinsic(TYP_INT, operand, NamedIntrinsic.NI_PRIMITIVE_SaturateToInt8, null)
+            var tree = new GenTreeIntrinsic(TYP_INT, operand, intrinsic, null)
             {
                 RegNum = REG_S1,
             };
@@ -65,16 +68,21 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         });
     }
 
-    [Test]
-    public static void FloatingIntrinsicDispatchReachesTheLoongArchInstructionBoundary()
+    [TestCase(NamedIntrinsic.NI_System_Math_MaxNative, TYP_FLOAT)]
+    [TestCase(NamedIntrinsic.NI_System_Math_MaxNative, TYP_DOUBLE)]
+    [TestCase(NamedIntrinsic.NI_System_Math_MinNative, TYP_FLOAT)]
+    [TestCase(NamedIntrinsic.NI_System_Math_MinNative, TYP_DOUBLE)]
+    public static void FloatingIntrinsicDispatchReachesTheLoongArchInstructionBoundary(
+        NamedIntrinsic intrinsic,
+        var_types type)
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var op1 = compiler.gtNewDconNode(TYP_FLOAT, 1.0);
+            var op1 = compiler.gtNewDconNode(type, 1.0);
             op1.RegNum = REG_F0;
-            var op2 = compiler.gtNewDconNode(TYP_FLOAT, 2.0);
+            var op2 = compiler.gtNewDconNode(type, 2.0);
             op2.RegNum = REG_F1;
-            var tree = new GenTreeIntrinsic(TYP_FLOAT, op1, op2, NamedIntrinsic.NI_System_Math_MaxNative, null)
+            var tree = new GenTreeIntrinsic(type, op1, op2, intrinsic, null)
             {
                 RegNum = REG_F2,
             };
