@@ -14,6 +14,10 @@ public partial class Emitter
 #if TARGET_ARM64
         // The encoder-only predicate uses a checked unsigned conversion.
         return ((int)ins >= 0) && emitInsIsStoreArm64(ins);
+#elif TARGET_RISCV64
+        // Pseudo instructions such as LEA are not represented in the instruction table.
+        return ((uint)ins < (uint)CodeGen.instInfo.Length) &&
+               ((CodeGen.instInfo[(int)ins] & RISCV64_ST) != 0);
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Target instruction store classification is not implemented.");
 #endif

@@ -39,6 +39,7 @@ public partial class Emitter
 
     internal static uint UpperNBitsOfWordSignExtend(nint word, byte maskSize)
     {
+        // Round before extracting the upper bits so the signed low immediate reconstructs the original word.
         var signExtend = unchecked((nint)(1u << (31 - maskSize)));
         var adjustedWord = unchecked(word + signExtend);
 
@@ -136,6 +137,7 @@ public partial class Emitter
 
     internal static uint tryGetRvcRegisterNumber(regNumber reg)
     {
+        // The compressed register field encodes x8 through x15 as 0 through 7.
         return reg switch
         {
             REG_FP => 0,
@@ -243,6 +245,7 @@ public partial class Emitter
         uint rs2,
         uint funct7)
     {
+        // R-type fields occupy funct7[31:25], rs2[24:20], rs1[19:15], funct3[14:12], rd[11:7], and opcode[6:0].
         assertCodeLength(opcode, 7);
         assertCodeLength(rd, 5);
         assertCodeLength(funct3, 3);
@@ -255,6 +258,7 @@ public partial class Emitter
 
     internal static uint insEncodeITypeInstr(uint opcode, uint rd, uint funct3, uint rs1, uint imm12)
     {
+        // I-type immediates occupy bits 31:20 above the shared register and opcode fields.
         assertCodeLength(opcode, 7);
         assertCodeLength(rd, 5);
         assertCodeLength(funct3, 3);
@@ -269,6 +273,7 @@ public partial class Emitter
         const uint loMask = 0x1f;
         const uint hiMask = 0x7f;
 
+        // S-type splits the 12-bit immediate around the register fields: imm[4:0] goes to 11:7, imm[11:5] to 31:25.
         assertCodeLength(opcode, 7);
         assertCodeLength(funct3, 3);
         assertCodeLength(rs1, 5);
@@ -283,6 +288,7 @@ public partial class Emitter
 
     internal static uint insEncodeUTypeInstr(uint opcode, uint rd, uint imm20)
     {
+        // U-type places the 20-bit immediate in instruction bits 31:12.
         assertCodeLength(opcode, 7);
         assertCodeLength(rd, 5);
         assertCodeLength(imm20, 20);
@@ -296,6 +302,7 @@ public partial class Emitter
         const uint hiSectionMask = 0x3f;
         const uint bitMask = 0x01;
 
+        // Branch displacements have an implicit zero bit; imm[12|10:5] and imm[4:1|11] occupy the split fields.
         assertCodeLength(opcode, 7);
         assertCodeLength(funct3, 3);
         assertCodeLength(rs1, 5);
@@ -319,6 +326,7 @@ public partial class Emitter
         const uint loSectionMask = 0xff;
         const uint bitMask = 0x01;
 
+        // Jump displacements have an implicit zero bit and are reordered into imm[20|10:1|11|19:12].
         assertCodeLength(opcode, 7);
         assertCodeLength(rd, 5);
         assertCodeLength(imm21, 21);

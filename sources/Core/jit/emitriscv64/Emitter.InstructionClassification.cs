@@ -13,14 +13,9 @@ public partial class Emitter
 
     public bool emitInsIsLoad(instruction ins)
     {
+        // Pseudo instructions such as LEA are not represented in the instruction table.
         return ((uint)ins < (uint)CodeGen.instInfo.Length) &&
                ((CodeGen.instInfo[(int)ins] & RISCV64_LD) != 0);
-    }
-
-    public bool emitInsIsStore(instruction ins)
-    {
-        return ((uint)ins < (uint)CodeGen.instInfo.Length) &&
-               ((CodeGen.instInfo[(int)ins] & RISCV64_ST) != 0);
     }
 
     public bool emitInsIsLoadOrStore(instruction ins)
@@ -36,6 +31,7 @@ public partial class Emitter
             return false;
         }
 
+        // This list mirrors the integer stores accepted by emitIns_S_R and excludes floating-point locals.
         return id.idIns() switch
         {
             INS_sd or

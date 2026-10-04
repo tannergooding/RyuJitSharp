@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp.UnitTests;
@@ -119,11 +120,8 @@ internal static class RiscVInstructionEncodingTests
 
     private static Emitter.instrDesc NewDescriptor(instruction ins, bool isLocal)
     {
-        var descriptorType = typeof(Emitter).GetNestedType("instrDescBasic", BindingFlags.NonPublic);
-        if (descriptorType is null)
-        {
-            throw new InvalidOperationException("The basic RISC-V instruction descriptor type is unavailable.");
-        }
+        var descriptorType = typeof(Emitter).GetNestedType("instrDescBasic", BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("The basic RISC-V instruction descriptor type is unavailable.");
 
         var descriptor = (Emitter.instrDesc)RuntimeHelpers.GetUninitializedObject(descriptorType);
         descriptor.idIns(ins);

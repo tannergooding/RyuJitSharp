@@ -72,6 +72,7 @@
 
   <ItemGroup Condition="'$(RyuJitTargetRuntimeIdentifier)' == 'linux-riscv64' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'linux-riscv64')">
     <Compile Include="..\Core\RiscVReservedRegisterCheckTests.cs" Link="RiscVReservedRegisterCheckTests.cs" />
+    <Compile Include="..\Core\RiscVInstructionEncodingTests.cs" Link="RiscVInstructionEncodingTests.cs" />
   </ItemGroup>
 
   <PropertyGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-wasm')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-wasm')))">
