@@ -735,6 +735,20 @@ public sealed class GenTreeCall : GenTree
 #endif
     }
 
+    public void InitializeLongReturnType()
+    {
+#if FEATURE_MULTIREG_RET
+        _returnTypeDesc.InitializeLongReturnType();
+#endif
+    }
+
+    public void ResetReturnType()
+    {
+#if FEATURE_MULTIREG_RET
+        _returnTypeDesc.Reset();
+#endif
+    }
+
     /// <summary>get the type descriptor of return value of the call</summary>
 #if FEATURE_MULTIREG_RET
     internal ref readonly ReturnTypeDesc ReturnTypeDesc => ref _returnTypeDesc;
@@ -843,6 +857,13 @@ public sealed class GenTreeCall : GenTree
         Span<regNumber> otherRegs = tree._otherRegs;
         otherRegs.CopyTo(_otherRegs);
         _spillFlags = tree._spillFlags;
+#endif
+    }
+
+    public void CopyOtherRegFlags(GenTreeCall fromCall)
+    {
+#if FEATURE_MULTIREG_RET
+        _spillFlags = fromCall._spillFlags;
 #endif
     }
 

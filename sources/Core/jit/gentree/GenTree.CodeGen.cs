@@ -8,6 +8,17 @@ namespace RyuJitSharp;
 public partial class GenTree
 {
 #if TARGET_XARCH
+    public void SetDontExtend()
+    {
+        assert(varTypeIsSmall(Type) && (Oper is GT_IND or GT_LCL_FLD));
+        Flags |= GTF_DONT_EXTEND;
+    }
+
+    public void ClearDontExtend()
+    {
+        Flags &= ~GTF_DONT_EXTEND;
+    }
+
     public bool DontExtend
     {
         get

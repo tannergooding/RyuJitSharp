@@ -7,6 +7,48 @@ namespace RyuJitSharp;
 
 public partial class GenTree
 {
+    public void SetOverflow()
+    {
+        assert(_oper.MayOverflow);
+        Flags |= GTF_OVERFLOW;
+    }
+
+    public void ClearOverflow()
+    {
+        assert(_oper.MayOverflow);
+        Flags &= ~GTF_OVERFLOW;
+    }
+
+    public void Set64RsltMul()
+    {
+        Flags |= GTF_MUL_64RSLT;
+    }
+
+    public void Clear64RsltMul()
+    {
+        Flags &= ~GTF_MUL_64RSLT;
+    }
+
+    public void ClearIconHandleMask()
+    {
+        assert(Oper is GT_CNS_INT);
+        Flags &= ~GTF_ICON_HDL_MASK;
+    }
+
+#if FEATURE_HW_INTRINSICS
+    public bool IsEmbMaskOp()
+    {
+        return Oper.IsHWIntrinsic && ((Flags & GTF_HW_EM_OP) != 0);
+    }
+
+    public void MakeEmbMaskOp()
+    {
+        assert(Oper.IsHWIntrinsic);
+        assert(!IsEmbMaskOp());
+        Flags |= GTF_HW_EM_OP;
+    }
+#endif
+
     // A false result does not promise to preserve ZF. Callers consuming the
     // result's zero flag must mark the producer with GTF_SET_FLAGS.
     public bool SupportsSettingZeroFlag()

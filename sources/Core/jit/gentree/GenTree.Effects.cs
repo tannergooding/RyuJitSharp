@@ -7,6 +7,11 @@ namespace RyuJitSharp;
 
 public partial class GenTree
 {
+    public GenTreeFlags OperEffects(Compiler compiler)
+    {
+        return OperEffects(compiler, out _);
+    }
+
     public bool NodeOrContainedOperandsMayThrow(Compiler compiler)
     {
         if (MayThrow(compiler))

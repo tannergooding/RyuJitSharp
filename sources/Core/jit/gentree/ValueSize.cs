@@ -57,7 +57,9 @@ public readonly partial struct ValueSize : IEquatable<ValueSize>
 
     public bool IsVector => _kind is Kind.Vector;
 
-    public static bool operator ==(ValueSize left, ValueSize right) => (left._kind == right._kind)
+    public static bool operator ==(ValueSize left, ValueSize right) => !left.IsUnknown
+                                                                    && !right.IsUnknown
+                                                                    && (left._kind == right._kind)
                                                                     && (left._size == right._size);
 
     public static bool operator !=(ValueSize left, ValueSize right) => !(left == right);

@@ -10,6 +10,31 @@ public partial class GenTree
     public const ValueNumberUpdate CLEAR_VN = ValueNumberUpdate.CLEAR_VN;
     public const ValueNumberUpdate PRESERVE_VN = ValueNumberUpdate.PRESERVE_VN;
 
+    public void SetVNsFromNode(GenTree tree)
+    {
+        _vnPair = tree._vnPair;
+    }
+
+    public ValueNum GetVN(ValueNumKind vnk)
+    {
+        return _vnPair[vnk];
+    }
+
+    public void SetVN(ValueNumKind vnk, ValueNum vn)
+    {
+        _vnPair[vnk] = vn;
+    }
+
+    public void SetVNs(ValueNumPair vnp)
+    {
+        _vnPair = vnp;
+    }
+
+    public void ClearVN()
+    {
+        _vnPair = new ValueNumPair();
+    }
+
     public enum ValueNumberUpdate
     {
         /// <summary>Clear value number</summary>
