@@ -13,12 +13,14 @@ public partial class Emitter
 
     private bool emitInsIsLoad(instruction ins)
     {
+        // Pseudo instructions such as LEA are not represented in the instruction table.
         return ((uint)ins < (uint)CodeGen.instInfo.Length) &&
                ((CodeGen.instInfo[(int)ins] & LOONGARCH64_LD) != 0);
     }
 
     private bool emitInsIsLoadOrStore(instruction ins)
     {
+        // Pseudo instructions such as LEA are not represented in the instruction table.
         return ((uint)ins < (uint)CodeGen.instInfo.Length) &&
                ((CodeGen.instInfo[(int)ins] & (LOONGARCH64_LD | LOONGARCH64_ST)) != 0);
     }
@@ -27,6 +29,7 @@ public partial class Emitter
     {
         assert(ins != INS_invalid);
 
+        // Register-writing ranges follow the instruction groupings in instrsloongarch64.h.
         var instructionValue = (int)ins;
         return ((instructionValue >= (int)INS_mov) && (instructionValue <= (int)INS_jirl)) ||
                (ins == INS_movfcsr2gr) ||
@@ -46,6 +49,7 @@ public partial class Emitter
             return false;
         }
 
+        // This list mirrors stores accepted by emitIns_S_R and excludes floating-point locals.
         return id.idIns() switch
         {
             INS_st_d or

@@ -10,12 +10,14 @@ public partial class Emitter
 {
     public static emitJumpKind emitInsToJumpKind(instruction ins)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 instruction-to-jump-kind mapping is not implemented.");
+        throw new FatalJitException(
+            CORJIT_SKIPPED, "emitInsToJumpKind-----unimplemented on LOONGARCH64 yet----");
     }
 
     public void emitIns_J_R(instruction ins, emitAttr attr, BasicBlock dst, regNumber reg)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 label-relative register jump recording is not implemented.");
+        throw new FatalJitException(
+            CORJIT_SKIPPED, "emitIns_J_R-----unimplemented/unused on LOONGARCH64 yet----");
     }
 }
 #endif

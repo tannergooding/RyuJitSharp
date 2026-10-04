@@ -39,7 +39,7 @@ internal static class LoongArchEmitterClassifierTests
     [TestCase(INS_jirl, true)]
     [TestCase(INS_movfcsr2gr, true)]
     [TestCase(INS_movcf2gr, true)]
-    [TestCase(INS_addi_d, false)]
+    [TestCase(INS_addi_d, true)]
     [TestCase(INS_fadd_s, false)]
 #if FEATURE_SIMD
     [TestCase(INS_vpickve2gr_d, true)]
@@ -86,16 +86,13 @@ internal static class LoongArchEmitterClassifierTests
         var failure = Assert.Throws<FatalJitException>(() => Emitter.emitInsToJumpKind(INS_beq));
 
         Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-        Assert.That(failure?.Message, Does.Contain("not implemented"));
+        Assert.That(failure?.Message, Is.EqualTo("emitInsToJumpKind-----unimplemented on LOONGARCH64 yet----"));
     }
 
     private static Emitter.instrDesc NewDescriptor(instruction ins, bool isLocal)
     {
-        var descriptorType = typeof(Emitter).GetNestedType("instrDescBasic", BindingFlags.NonPublic);
-        if (descriptorType is null)
-        {
-            throw new InvalidOperationException("The basic LoongArch instruction descriptor type is unavailable.");
-        }
+        var descriptorType = typeof(Emitter).GetNestedType("instrDescBasic", BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("The basic LoongArch instruction descriptor type is unavailable.");
 
         var descriptor = (Emitter.instrDesc)RuntimeHelpers.GetUninitializedObject(descriptorType);
         descriptor.idIns(ins);
