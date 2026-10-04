@@ -444,7 +444,7 @@ public partial class Compiler
                         shouldPromote = false;
                     }
 #if TARGET_LOONGARCH64 || TARGET_RISCV64
-                    else if (_compiler.lvaGetParameterAbiInfo(lclNum).IsSplitAcrossRegistersAndStack())
+                    else if (_compiler.lvaGetParameterAbiInfo(lclNum).IsSplitAcrossRegistersAndStack)
                     {
                         JITDUMP($"Not promoting multireg struct local V{lclNum:D2}, because it is splitted.\n");
                         shouldPromote = false;
