@@ -35,6 +35,25 @@ internal static unsafe partial class IndirectCallTransformationTests
         });
     }
 
+    [Test]
+    public static void EnumeratorGdvLocalMapIsLazilyCreatedAndReused()
+    {
+        WithCompiler(compiler => {
+            Assert.That(compiler.hasImpEnumeratorGdvLocalMap, Is.False);
+
+            var map = compiler.ImpEnumeratorGdvLocalMap;
+
+            Assert.That(compiler.hasImpEnumeratorGdvLocalMap, Is.True);
+            Assert.That(compiler.ImpEnumeratorGdvLocalMap, Is.SameAs(map));
+
+            var call = CreateGdvCall(compiler, TYP_VOID, [80]);
+            map.Add(call, 0);
+
+            Assert.That(map.TryGetValue(call, out var localNum), Is.True);
+            Assert.That(localNum, Is.Zero);
+        });
+    }
+
 #if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitPrintDevirtualizedMethods")]
     private static extern ref JitConfigValues.MethodSet PrintDevirtualizedMethods(ref JitConfigValues config);
