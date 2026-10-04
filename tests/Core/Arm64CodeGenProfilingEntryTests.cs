@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;

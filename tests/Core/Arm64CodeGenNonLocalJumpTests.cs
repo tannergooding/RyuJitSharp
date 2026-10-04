@@ -2,6 +2,7 @@
 
 #if TARGET_ARM64
 using NUnit.Framework;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;

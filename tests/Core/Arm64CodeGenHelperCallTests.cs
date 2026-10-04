@@ -3,6 +3,7 @@
 #if TARGET_ARM64
 using NUnit.Framework;
 using static RyuJitSharp.CorInfoHelpFunc;
+using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 

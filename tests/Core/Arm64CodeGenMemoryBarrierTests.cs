@@ -8,6 +8,7 @@ using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BarrierKind;
+using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.insBarrier;
 using static RyuJitSharp.instruction;
