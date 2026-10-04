@@ -110,7 +110,27 @@ public partial class Emitter
 {
     public void emitStoreSimd12ToLclOffset(uint varNum, uint offset, regNumber dataReg, GenTree? tmpRegProvider)
     {
+#if TARGET_ARM64
+        assert(varNum != unchecked((uint)BAD_VAR_NUM));
+        assert(isVectorRegister(dataReg));
+
+        emitIns_S_R(INS_str, EA_8BYTE, dataReg, unchecked((int)varNum), unchecked((int)offset));
+
+        if ((tmpRegProvider is null) || (codeGen.InternalRegisters.Count(tmpRegProvider) == 0))
+        {
+            emitIns_R_R_R_I(INS_ext, EA_16BYTE, dataReg, dataReg, dataReg, 8, INS_OPTS_16B);
+            emitIns_S_R(INS_str, EA_4BYTE, dataReg, unchecked((int)varNum), unchecked((int)(offset + 8)));
+            emitIns_R_R_R_I(INS_ext, EA_16BYTE, dataReg, dataReg, dataReg, 8, INS_OPTS_16B);
+        }
+        else
+        {
+            var tmpReg = codeGen.InternalRegisters.Extract(tmpRegProvider);
+            emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, dataReg, 2);
+            emitIns_S_R(INS_str, EA_4BYTE, tmpReg, unchecked((int)varNum), unchecked((int)(offset + 8)));
+        }
+#else
         throw new FatalJitException(CORJIT_SKIPPED, "Target SIMD12 local-stack store recording is not yet ported.");
+#endif
     }
 }
 #endif

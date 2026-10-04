@@ -253,28 +253,25 @@ internal static unsafe class SharedLocalVariableSpillTests
 #if TARGET_ARM64
 #if FEATURE_SIMD
     [Test]
-    public static void Simd12TerminatesAtItsEmitterDependencyBeforeAnySpillStateChanges()
+    public static void Simd12SpillRecordsTheStackStoreBeforeUpdatingSpillState()
     {
         WithCompiler(TYP_SIMD12, FloatRegister, (compiler, codeGen, tree) =>
         {
             compiler.opts.compDbgInfo = true;
             codeGen.initializeVariableLiveKeeper();
-            var mask = codeGen.RegSet.GetMaskVars();
             var flags = tree.Flags;
 
-            var error = Assert.Throws<FatalJitException>(() => codeGen.genSpillVar(tree));
+            codeGen.genSpillVar(tree);
 
-            Assert.That(error, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(error, Has.Message.EqualTo("Target SIMD12 local-stack store recording is not yet ported."));
-            Assert.That(CurrentCount(codeGen.Emitter), Is.Zero);
-            Assert.That(CurrentSize(codeGen.Emitter), Is.Zero);
-            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(mask));
+            Assert.That(CurrentCount(codeGen.Emitter), Is.EqualTo(4));
+            Assert.That(CurrentSize(codeGen.Emitter), Is.EqualTo(16));
+            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(UnrelatedRegister)));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(ReferenceRegister)));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(ByrefRegister)));
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.False);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(FloatRegister));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
             Assert.That(tree.RegNum, Is.EqualTo(FloatRegister));
-            Assert.That(tree.Flags, Is.EqualTo(flags));
+            Assert.That(tree.Flags, Is.EqualTo(flags & ~GTF_SPILL));
             Assert.That(codeGen.getVariableLiveKeeper().getLiveRangesForVarForBody(0), Is.Empty);
         });
     }

@@ -295,7 +295,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
     }
 
     [Test]
-    public static void Simd12FieldStackStoresTerminateAtTheUnportedEmitterDependency()
+    public static void Simd12FieldStackStoresRotateWhenNoTemporaryRegisterIsAvailable()
     {
         WithCodeGen((compiler, codeGen) =>
         {
@@ -308,11 +308,73 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             var tree = compiler.gtNewStoreLclFldNode(TYP_SIMD12, 0, 4, source);
             tree.RegNum = REG_NA;
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreLclFld(tree)) ??
-                throw new AssertionException("The unported SIMD12 stack-store dependency did not fail.");
+            codeGen.genCodeForStoreLclFld(tree);
 
-            Assert.That(failure.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure.Message, Does.Contain("Target SIMD12 local-stack store recording is not yet ported."));
+            var descriptors = Descriptors(codeGen.Emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(4));
+
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_str));
+            Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_8BYTE));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_V1));
+            Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(4u));
+
+            Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_ext));
+            Assert.That(descriptors[1].idOpSize(), Is.EqualTo(EA_16BYTE));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_V1));
+            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_V1));
+            Assert.That(descriptors[1].idReg3(), Is.EqualTo(REG_V1));
+            Assert.That(descriptors[1].idSmallCns(), Is.EqualTo(8));
+
+            Assert.That(descriptors[2].idIns(), Is.EqualTo(INS_str));
+            Assert.That(descriptors[2].idOpSize(), Is.EqualTo(EA_4BYTE));
+            Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_V1));
+            Assert.That(descriptors[2].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(12u));
+
+            Assert.That(descriptors[3].idIns(), Is.EqualTo(INS_ext));
+            Assert.That(descriptors[3].idOpSize(), Is.EqualTo(EA_16BYTE));
+            Assert.That(descriptors[3].idReg1(), Is.EqualTo(REG_V1));
+            Assert.That(descriptors[3].idReg2(), Is.EqualTo(REG_V1));
+            Assert.That(descriptors[3].idReg3(), Is.EqualTo(REG_V1));
+            Assert.That(descriptors[3].idSmallCns(), Is.EqualTo(8));
+        });
+    }
+
+    [Test]
+    public static void Simd12FieldStackStoresUseTemporaryRegisterWhenAssigned()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaTable[0].Type = TYP_SIMD16;
+            var source = new GenTreeVecCon(TYP_SIMD12)
+            {
+                RegNum = REG_V1,
+            };
+            source.SimdVal.u32[0] = 1;
+            var tree = compiler.gtNewStoreLclFldNode(TYP_SIMD12, 0, 4, source);
+            tree.RegNum = REG_NA;
+            codeGen.InternalRegisters.Add(tree, RBM_R10);
+
+            codeGen.genCodeForStoreLclFld(tree);
+
+            var descriptors = Descriptors(codeGen.Emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(3));
+
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_str));
+            Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_8BYTE));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_V1));
+            Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(4u));
+
+            Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_mov));
+            Assert.That(descriptors[1].idOpSize(), Is.EqualTo(EA_4BYTE));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R10));
+            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_V1));
+            Assert.That(descriptors[1].idSmallCns(), Is.EqualTo(2));
+
+            Assert.That(descriptors[2].idIns(), Is.EqualTo(INS_str));
+            Assert.That(descriptors[2].idOpSize(), Is.EqualTo(EA_4BYTE));
+            Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_R10));
+            Assert.That(descriptors[2].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(12u));
+            Assert.That(codeGen.InternalRegisters.Count(tree), Is.Zero);
         });
     }
 #endif

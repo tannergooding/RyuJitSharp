@@ -272,7 +272,7 @@ internal static unsafe class SharedStructArgumentSetupTests
 
 #if TARGET_ARM64 && FEATURE_SIMD
     [Test]
-    public static void Simd12ReachesItsTypedEmitterBoundaryAfterConsumingOnlyTheCurrentField()
+    public static void Simd12FieldListRecordsTheValueBeforeFollowingFields()
     {
         WithCompiler((compiler, codeGen) =>
         {
@@ -291,16 +291,21 @@ internal static unsafe class SharedStructArgumentSetupTests
             reference.UseNum = 2;
 #endif
 
-            var error = Assert.Throws<FatalJitException>(() => StoreFieldList(codeGen, argument, 0));
+            StoreFieldList(codeGen, argument, 0);
 
-            Assert.That(error, Has.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(error, Has.Message.EqualTo("Target SIMD12 local-stack store recording is not yet ported."));
             var descriptors = Descriptors(codeGen);
-            Assert.That(descriptors, Has.Count.EqualTo(1));
+            Assert.That(descriptors, Has.Count.EqualTo(6));
             AssertStack(descriptors[0], INS_str, EA_4BYTE, FieldRegister, 0, 0);
+            AssertStack(descriptors[1], INS_str, EA_8BYTE, REG_V0, 0, 8);
+            Assert.That(descriptors[2].idIns(), Is.EqualTo(INS_ext));
+            Assert.That(descriptors[2].idSmallCns(), Is.EqualTo(8));
+            AssertStack(descriptors[3], INS_str, EA_4BYTE, REG_V0, 0, 16);
+            Assert.That(descriptors[4].idIns(), Is.EqualTo(INS_ext));
+            Assert.That(descriptors[4].idSmallCns(), Is.EqualTo(8));
+            AssertStack(descriptors[5], INS_str, EA_8BYTE, ReferenceRegister, 0, 24);
             AssertConsumed(small, true);
             AssertConsumed(vector, true);
-            AssertConsumed(reference, false);
+            AssertConsumed(reference, true);
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(ReferenceRegister)));
         });
     }
