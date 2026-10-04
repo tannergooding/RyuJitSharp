@@ -604,6 +604,7 @@ public sealed partial class LinearScan
     private void resetRegStateMinimal()
     {
         initializeAvailableRegs();
+        _registersWithConstants = RBM_NONE;
         _regsBusyUntilKill = RBM_NONE;
     }
 

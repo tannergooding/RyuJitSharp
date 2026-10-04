@@ -517,6 +517,7 @@ public sealed partial class LinearScan
     private void resetRegStateWithLocals()
     {
         initializeAvailableRegs();
+        _registersWithConstants = RBM_NONE;
         _regsBusyUntilKill = RBM_NONE;
     }
 

@@ -244,6 +244,19 @@ internal static class LinearScanLocalBlockLocationsTests
         });
     }
 
+    [Test]
+    public static void ResetRegStateWithLocalsClearsConstantRegisterMask()
+    {
+        WithLocations((_, allocator, _, _) =>
+        {
+            ConstantRegisters(allocator) = new regMaskTP(SRBM_RCX);
+
+            ResetRegStateWithLocals(allocator);
+
+            Assert.That(ConstantRegisters(allocator), Is.EqualTo(RBM_NONE));
+        });
+    }
+
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     [Test]
     public static void DeadUpperVectorReleasesItsRegisterWithoutChangingLocalMap()
@@ -315,6 +328,9 @@ internal static class LinearScanLocalBlockLocationsTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "processBlockStartLocations")]
     private static extern void ProcessStart(LinearScan allocator, BasicBlock block);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "resetRegStateWithLocals")]
+    private static extern void ResetRegStateWithLocals(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "processBlockEndLocations")]
     private static extern void ProcessEnd(LinearScan allocator, BasicBlock block);

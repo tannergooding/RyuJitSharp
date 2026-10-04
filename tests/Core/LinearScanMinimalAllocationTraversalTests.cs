@@ -17,6 +17,19 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanMinimalAllocationTraversalTests
 {
+    [Test]
+    public static void ResetRegStateMinimalClearsConstantRegisterMask()
+    {
+        WithAllocator((_, allocator) =>
+        {
+            ConstantRegisterMask(allocator) = new regMaskTP(SRBM_RAX);
+
+            ResetRegStateMinimal(allocator);
+
+            Assert.That(ConstantRegisterMask(allocator), Is.EqualTo(RBM_NONE));
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void BlockBoundariesClearRetainedConstantAssignments(bool floating)
@@ -681,8 +694,14 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "allocateRegistersMinimal")]
     private static extern void AllocateRegistersMinimal(LinearScan allocator);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "resetRegStateMinimal")]
+    private static extern void ResetRegStateMinimal(LinearScan allocator);
+
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "tryPopRegister")]
     private static extern bool TryPopRegister(LinearScan allocator, ref regMaskTP registers, out regNumber register);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_registersWithConstants")]
+    private static extern ref regMaskTP ConstantRegisterMask(LinearScan allocator);
 
 #if TARGET_ARM
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "getSingleTypeRegMask")]
