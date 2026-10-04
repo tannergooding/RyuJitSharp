@@ -1,9 +1,16 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 #if TARGET_ARM64
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.BasicBlockFlags;
+using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.SpecialCodeKind;
+using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
@@ -82,11 +89,12 @@ internal static class Arm64CodeGenDivisionTests
                 Flags = GTF_DIV_MOD_NO_BY_ZERO,
             };
 
+            Assert.That(tree.Exceptions(compiler) & ExceptionSetFlags.ArithmeticException, Is.Not.Zero);
             codeGen.genCodeForTreeNode(tree);
 
-            var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
+            var descriptors = AllDescriptors(codeGen.Emitter, compiler);
             Assert.That(descriptors, Has.Count.EqualTo(5));
-            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_cmp));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_cmn));
             Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_bne));
             Assert.That(descriptors[2].idIns(), Is.EqualTo(INS_cmp));
             Assert.That(descriptors[3].idIns(), Is.EqualTo(INS_bvs));
@@ -118,6 +126,26 @@ internal static class Arm64CodeGenDivisionTests
         });
     }
 
+    private static List<Emitter.instrDesc> AllDescriptors(Emitter emitter, Compiler compiler)
+    {
+        var descriptors = new List<Emitter.instrDesc>();
+        var firstGroup = FirstGroup(emitter);
+        while ((firstGroup is not null) && (firstGroup.igInsCnt == 0))
+        {
+            firstGroup = firstGroup.igNext;
+        }
+        var firstInstructionGroup = firstGroup ?? throw new AssertionException("Missing instruction group.");
+        Walk(emitter, new emitLocation(firstInstructionGroup), (descriptor, _) => descriptors.Add(descriptor), compiler);
+        return descriptors;
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitWalkIDs")]
+    private static extern void Walk(Emitter emitter, emitLocation location,
+        Action<Emitter.instrDesc, Compiler> process, Compiler context);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
+    private static extern ref insGroup? FirstGroup(Emitter emitter);
+
     private static void PrepareThrowTarget(Compiler compiler, SpecialCodeKind kind)
     {
         compiler.compCurBB = new BasicBlock(null, null);
@@ -126,7 +154,9 @@ internal static class Arm64CodeGenDivisionTests
         var descriptor = compiler.fgGetExcptnTarget(kind, compiler.compCurBB);
         descriptor.acdUsed = true;
         descriptor.acdDstBlk = target;
+#if !FEATURE_FIXED_OUT_ARGS
         descriptor.acdStkLvlInit = true;
+#endif
     }
 }
 #endif

@@ -42,6 +42,34 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void CommutativeTernaryAcceptsAContainedIntegerImmediateOnEitherSide(bool immediateIsFirst)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var register = Register(compiler, TYP_LONG, REG_R0);
+            var immediate = compiler.gtNewIconNode(TYP_LONG, 7);
+            immediate.IsContained = true;
+            var src1 = immediateIsFirst ? immediate : register;
+            var src2 = immediateIsFirst ? register : immediate;
+            var tree = new GenTreeOp(GT_ADD, TYP_LONG, src1, src2)
+            {
+                RegNum = REG_R2,
+            };
+
+            var result = codeGen.Emitter.emitInsTernary(INS_add, EA_8BYTE, tree, src1, src2);
+
+            Assert.That(result, Is.EqualTo(REG_R2));
+            var descriptor = Descriptors(codeGen.Emitter).Single();
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_add));
+            Assert.That(descriptor.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_DI_2A));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R2));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R0));
+            Assert.That(descriptor.idSmallCns(), Is.EqualTo(7));
+        });
+    }
+
     [TestCase(GT_ADD, INS_madd)]
     [TestCase(GT_SUB, INS_msub)]
     public static void ContainedMultiplyUsesTheFusedArithmeticInstruction(genTreeOps oper, instruction expected)
