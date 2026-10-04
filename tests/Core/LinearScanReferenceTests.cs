@@ -33,6 +33,27 @@ internal static unsafe class LinearScanReferenceTests
         Assert.That(interval.registerPreferences, Is.EqualTo(expected));
     }
 
+    [TestCase(false, SRBM_RAX | SRBM_RCX | SRBM_RDX)]
+    [TestCase(true, SRBM_RAX | SRBM_RDX)]
+    public static void UpdatingPreferencesUsesCurrentRelatedRegisterOnlyWhenInactive(
+        bool relatedIntervalIsActive, regMask expected)
+    {
+        var interval = new Interval(TYP_INT, SRBM_RAX);
+        var relatedInterval = new Interval(TYP_INT, SRBM_RBX) {
+            isActive = relatedIntervalIsActive,
+        };
+        var register = new RegRecord();
+        register.init(regNumber.REG_RCX);
+        relatedInterval.assignedReg = register;
+        interval.assignRelatedInterval(relatedInterval);
+
+        Assert.That(relatedInterval.getCurrentPreferences(), Is.EqualTo(SRBM_RCX));
+
+        interval.updateRegisterPreferences(SRBM_RDX);
+
+        Assert.That(interval.registerPreferences, Is.EqualTo(expected));
+    }
+
     [TestCase(regNumber.REG_RBX, TYP_INT, true)]
     [TestCase(regNumber.REG_XMM31, TYP_FLOAT, false)]
     [TestCase(regNumber.REG_K7, TYP_MASK, false)]
