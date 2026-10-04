@@ -138,6 +138,44 @@ internal static unsafe class LocalMorphTests
         });
     }
 
+#if TARGET_XARCH
+    [TestCase(TYP_INT, IND_COST_EX, 2)]
+    [TestCase(TYP_BYTE, IND_COST_EX + 1, 3)]
+    [TestCase(TYP_FLOAT, FLT_IND_COST_EX, 4)]
+    [TestCase(TYP_DOUBLE, FLT_IND_COST_EX, 4)]
+    [TestCase(TYP_SIMD32, FLT_IND_COST_EX + 1, 4)]
+    [TestCase(TYP_SIMD64, FLT_IND_COST_EX + 2, 6)]
+    public static void IndirectionNodeCostsPreserveXarchTypeRules(var_types type, int execution, int size)
+    {
+        WithCompiler(compiler =>
+        {
+            var address = compiler.gtNewIconNode(TYP_I_IMPL, 16);
+            address.SetCosts(3, 4);
+            var node = compiler.gtNewIndir(type, address);
+
+            var includesAddressCost = compiler.gtGetIndNodeCost(node, out var costEx, out var costSz);
+
+            Assert.That(includesAddressCost, Is.True);
+            Assert.That((costEx, costSz), Is.EqualTo((execution + 2, size + 4)));
+        });
+    }
+#endif
+
+    [Test]
+    public static void IndirectionNodeCostsExcludeUnmodeledAddress()
+    {
+        WithCompiler(compiler =>
+        {
+            var address = compiler.gtNewLclVarAddrNode(TYP_BYREF, 0);
+            var node = compiler.gtNewIndir(TYP_INT, address);
+
+            var includesAddressCost = compiler.gtGetIndNodeCost(node, out var costEx, out var costSz);
+
+            Assert.That(includesAddressCost, Is.False);
+            Assert.That((costEx, costSz), Is.EqualTo((IND_COST_EX, 2)));
+        });
+    }
+
     [TestCase(TYP_FLOAT, true, 1, 2)]
     [TestCase(TYP_DOUBLE, true, 1, 2)]
     [TestCase(TYP_FLOAT, false, IND_COST_EX, 4)]
