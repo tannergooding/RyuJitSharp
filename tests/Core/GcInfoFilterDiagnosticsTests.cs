@@ -112,12 +112,13 @@ internal static class GcInfoFilterDiagnosticsTests
                     (descriptor.vpdVarNum & 1u) != 0));
             }
 
-            Assert.That(actual, Is.EqualTo(new[]
-            {
+            List<(uint Begin, uint End, bool Pinned, bool Byref)> expected =
+            [
                 (8u, 12u, false, true),
                 (4u, 8u, true, true),
                 (2u, 4u, false, true),
-            }));
+            ];
+            Assert.That(actual, Is.EqualTo(expected));
             var tail = codeGen.GCInfo.gcVarPtrList;
             while ((tail is not null) && (tail.vpdNext is not null))
             {

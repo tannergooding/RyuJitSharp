@@ -130,7 +130,7 @@ internal static unsafe class LinearScanReferenceBuildingTests
     [Test]
     public static void DefinitionListRejectsMatchingTreeWithoutReferencePosition()
     {
-        WithAllocator((compiler, _) => {
+        WithAllocator((compiler, allocator) => {
             var definitions = new RefInfoList();
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var missingReference = new RefInfoListNode { treeNode = tree };
@@ -141,7 +141,9 @@ internal static unsafe class LinearScanReferenceBuildingTests
             definitions.Append(missingReference);
             definitions.Append(matchingReference);
 
-            Assert.Throws<FatalJitException>(() => definitions.RemoveListNode(tree, 0));
+            Assert.That(
+                Assert.Throws<FatalJitException>(() => _ = definitions.RemoveListNode(tree, 0)),
+                Is.Not.Null);
             Assert.That(definitions.First, Is.SameAs(missingReference));
             Assert.That(missingReference.next, Is.SameAs(matchingReference));
         });

@@ -171,7 +171,9 @@ internal static class EmitterRegisterInstructionTests
     {
         WithEmitter((_, emitter) =>
         {
+#if DEBUG
             emitter.emitIssuing = true;
+#endif
             GCrefRegs(emitter) = regMask.SRBM_RAX;
             ByrefRegs(emitter) = regMask.SRBM_RCX;
 

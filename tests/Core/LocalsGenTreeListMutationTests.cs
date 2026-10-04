@@ -62,12 +62,12 @@ internal static class LocalsGenTreeListMutationTests
                 replacementFirst,
                 replacementLast);
 
-            int replacedCount = lastIndex - firstIndex + 1;
-            int replacementCount = replaceWithSingleNode ? 1 : 2;
+            var replacedCount = lastIndex - firstIndex + 1;
+            var replacementCount = replaceWithSingleNode ? 1 : 2;
             var expected = new GenTreeLclVarCommon[4 - replacedCount + replacementCount];
-            int targetIndex = 0;
+            var targetIndex = 0;
 
-            for (int sourceIndex = 0; sourceIndex < firstIndex; sourceIndex++)
+            for (var sourceIndex = 0; sourceIndex < firstIndex; sourceIndex++)
             {
                 expected[targetIndex++] = nodes[sourceIndex];
             }
@@ -78,7 +78,7 @@ internal static class LocalsGenTreeListMutationTests
                 expected[targetIndex++] = replacementLast;
             }
 
-            for (int sourceIndex = lastIndex + 1; sourceIndex < nodes.Length; sourceIndex++)
+            for (var sourceIndex = lastIndex + 1; sourceIndex < nodes.Length; sourceIndex++)
             {
                 expected[targetIndex++] = nodes[sourceIndex];
             }
@@ -91,7 +91,7 @@ internal static class LocalsGenTreeListMutationTests
     {
         var nodes = new GenTreeLclVar[count];
 
-        for (int index = 0; index < count; index++)
+        for (var index = 0; index < count; index++)
         {
             nodes[index] = new GenTreeLclVar(TYP_INT, index);
             if (index > 0)
@@ -106,9 +106,11 @@ internal static class LocalsGenTreeListMutationTests
 
     private static Statement CreateStatement(GenTreeLclVar[] nodes)
     {
-        var statement = new Statement(nodes[0], 0);
-        statement.TreeListBegin = nodes[0];
-        statement.TreeListEnd = nodes[^1];
+        var statement = new Statement(nodes[0], 0)
+        {
+            TreeListBegin = nodes[0],
+            TreeListEnd = nodes[^1],
+        };
         return statement;
     }
 
@@ -117,7 +119,7 @@ internal static class LocalsGenTreeListMutationTests
         Assert.That(statement.TreeListBegin, Is.SameAs(nodes.Length == 0 ? null : nodes[0]));
         Assert.That(statement.TreeListEnd, Is.SameAs(nodes.Length == 0 ? null : nodes[^1]));
 
-        for (int index = 0; index < nodes.Length; index++)
+        for (var index = 0; index < nodes.Length; index++)
         {
             Assert.That(nodes[index].Prev, Is.SameAs(index == 0 ? null : nodes[index - 1]));
             Assert.That(nodes[index].Next, Is.SameAs(index == nodes.Length - 1 ? null : nodes[index + 1]));

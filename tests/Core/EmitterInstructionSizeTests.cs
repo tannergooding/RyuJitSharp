@@ -20,11 +20,12 @@ internal static unsafe class EmitterInstructionSizeTests
     [TestCase(byte.MaxValue)]
     public static void EmitCodeWithInstructionSizeReturnsAfterAndStoresTheByteCount(int length)
     {
-        byte* before = stackalloc byte[byte.MaxValue + 1];
-        byte* after = before + length;
+        var emitter = CreateEmitter(false, 0);
+        var before = stackalloc byte[byte.MaxValue + 1];
+        var after = before + length;
         byte size = 0;
 
-        Assert.That((nint)EmitCodeWithInstructionSize(before, after, &size), Is.EqualTo((nint)after));
+        Assert.That((nint)EmitCodeWithInstructionSize(emitter, before, after, &size), Is.EqualTo((nint)after));
         Assert.That(size, Is.EqualTo((byte)length));
     }
 
@@ -268,5 +269,5 @@ internal static unsafe class EmitterInstructionSizeTests
     private static extern bool TakesEvexPrefix(Emitter emitter, Emitter.instrDesc id);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitCodeWithInstructionSize")]
-    private static extern byte* EmitCodeWithInstructionSize(byte* before, byte* after, byte* size);
+    private static extern byte* EmitCodeWithInstructionSize(Emitter emitter, byte* before, byte* after, byte* size);
 }

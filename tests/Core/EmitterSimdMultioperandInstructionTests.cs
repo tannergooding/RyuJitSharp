@@ -27,10 +27,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
     [TestCase(INS_vblendvps, false)]
     public static void Avx512BlendClassifierMatchesInstructionSet(instruction ins, bool expected)
     {
-        WithEmitter((_, emitter) =>
-        {
-            Assert.That(IsAvx512Blendv(emitter, ins), Is.EqualTo(expected));
-        });
+        WithEmitter((_, emitter) => Assert.That(IsAvx512Blendv(emitter, ins), Is.EqualTo(expected)));
     }
 
     [TestCase(INS_vblendvps, true)]
@@ -39,10 +36,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
     [TestCase(INS_blendvps, false)]
     public static void AvxBlendClassifierMatchesInstructionSet(instruction ins, bool expected)
     {
-        WithEmitter((_, emitter) =>
-        {
-            Assert.That(IsAvxBlendv(emitter, ins), Is.EqualTo(expected));
-        });
+        WithEmitter((_, emitter) => Assert.That(IsAvxBlendv(emitter, ins), Is.EqualTo(expected)));
     }
 
     [TestCase(INS_blendvps, true)]
@@ -51,10 +45,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
     [TestCase(INS_vblendvps, false)]
     public static void Sse41BlendClassifierMatchesInstructionSet(instruction ins, bool expected)
     {
-        WithEmitter((_, emitter) =>
-        {
-            Assert.That(IsSse41Blendv(emitter, ins), Is.EqualTo(expected));
-        });
+        WithEmitter((_, emitter) => Assert.That(IsSse41Blendv(emitter, ins), Is.EqualTo(expected)));
     }
 
     [Test]

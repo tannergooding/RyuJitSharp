@@ -189,6 +189,7 @@ internal static unsafe class CodeGenPrologTests
             compiler.compCalleeRegsPushed = 0;
             compiler.compCalleeFPRegsSavedMask = SRBM_NONE;
             codeGen.resetFramePointerUsedWritePhase();
+            compiler.unwindEndProlog();
 #if DEBUG
             var savedHalt = HaltSelection(ref JitConfig);
             var savedHash = HaltHash(ref JitConfig);

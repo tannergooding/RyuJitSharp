@@ -95,7 +95,7 @@ internal static unsafe class EmitterPrefixTests
     [TestCase(REG_R31, true)]
     public static void HighGeneralPurposeRegisterClassifierMatchesApxRegisterRange(regNumber reg, bool expected)
     {
-        Assert.That(IsHighGPReg(reg), Is.EqualTo(expected));
+        Assert.That(IsHighGPReg(CreateEmitter(), reg), Is.EqualTo(expected));
     }
 
     [TestCase(0UL, false, false)]
@@ -103,11 +103,12 @@ internal static unsafe class EmitterPrefixTests
     [TestCase(0xFF00000000UL, true, false)]
     [TestCase(0xD40000000000UL, false, false)]
     [TestCase(0xD50000000000UL, false, true)]
-    [TestCase(0xD5FF00000000UL, false, true)]
+    [TestCase(0xD5FF00000000UL, true, true)]
     public static void RexAndRex2ClassifiersMatchEncodedPrefixBytes(ulong code, bool expectedRex, bool expectedRex2)
     {
-        Assert.That(IsRexPrefix(code), Is.EqualTo(expectedRex));
-        Assert.That(IsRex2Prefix(code), Is.EqualTo(expectedRex2));
+        var emitter = CreateEmitter();
+        Assert.That(IsRexPrefix(emitter, code), Is.EqualTo(expectedRex));
+        Assert.That(IsRex2Prefix(emitter, code), Is.EqualTo(expectedRex2));
     }
 
     [TestCase(INS_pcmpgtb, true)]
@@ -117,6 +118,7 @@ internal static unsafe class EmitterPrefixTests
     public static void KMaskDestinationClassifierMatchesEvexInstructionSet(instruction ins, bool expected)
     {
         var emitter = CreateEmitter();
+        emitter.UseVexEncodings = true;
         emitter.UseEvexEncodings = true;
 
         Assert.That(HasKMaskRegisterDest(emitter, ins), Is.EqualTo(expected));

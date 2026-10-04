@@ -27,15 +27,14 @@ internal static unsafe class EmitterCallGCOutputTests
         {
             emitter.emitCodeBlock = (byte*)0x2000;
             emitter.emitTotalHotCodeSize = 0x40;
-            emitter.emitColdCodeBlock = (byte*)0x1000;
-            // A wrapped synthetic bound admits a 64-bit cold distance without backing memory.
-            emitter.emitTotalColdCodeSize = -0x2000;
+            emitter.emitColdCodeBlock = (byte*)0x2001;
+            emitter.emitTotalColdCodeSize = -1;
             FirstColdGroup(emitter) = new insGroup();
             var address = (byte*)0x1_0000_2000;
 
             if (minopts)
             {
-                Assert.That(CurrentCodeOffset(emitter, address), Is.EqualTo(0x1040u));
+                Assert.That(CurrentCodeOffset(emitter, address), Is.EqualTo(0x3Fu));
             }
             else
             {
