@@ -10,7 +10,14 @@ public sealed partial class CodeGen
 {
     private void genLoadLocalIntoReg(regNumber reg, int localNumber)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Wasm incoming stack argument load is not ported.");
+        ref var local = ref _compiler.lvaGetDesc(localNumber);
+        var type = local.GetRegisterType();
+
+        GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetFramePointerRegIndex()));
+        GetEmitter().emitIns_S(ins_Load(type), type.EmitActualSize, localNumber, 0);
+        GetEmitter().emitIns_I(
+            INS_local_set, type.EmitActualSize,
+            unchecked((nint)regNumberExtensions.WasmRegToIndex(reg)));
     }
 }
 #endif

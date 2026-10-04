@@ -20,7 +20,9 @@ public sealed partial class CodeGen
 #if !TARGET_ARM64
     public void genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, ref bool initRegZeroed)
     {
-#if !TARGET_XARCH
+#if TARGET_WASM
+        unreached();
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Prolog block initialization requires xarch.");
 #else
 #if TARGET_AMD64

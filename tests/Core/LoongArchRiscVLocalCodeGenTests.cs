@@ -95,14 +95,14 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     }
 
     [Test]
-    public static void TreeNodeDispatchPreservesTheLoongArchConstantBoundary()
+    public static void TreeNodeDispatchReachesTheSharedConstantMaterializationBoundary()
     {
         WithCodeGen((_, codeGen) =>
         {
             var tree = new GenTreeIntCon(TYP_INT, 1) { RegNum = REG_S0 };
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
 
-            Assert.That(failure?.Message, Does.Contain("LoongArch64 constant materialization is not ported."));
+            Assert.That(failure?.Message, Does.Contain("Target immediate materialization is not implemented."));
         });
     }
 #endif

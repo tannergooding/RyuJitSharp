@@ -195,10 +195,116 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
-    public void genJumpToThrowHlpBlk_la(SpecialCodeKind codeKind, instruction ins, regNumber reg1,
+    public unsafe void genJumpToThrowHlpBlk_la(SpecialCodeKind codeKind, instruction ins, regNumber reg1,
         BasicBlock? failBlk = null, regNumber reg2 = REG_R0)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 conditional exception-branch generation is not ported.");
+        assert((ins >= INS_beq) && (ins <= INS_bgeu));
+
+        var useThrowHelperBlocks = _compiler.fgUseThrowHelperBlocks();
+        var emit = GetEmitter();
+        if (useThrowHelperBlocks)
+        {
+            assert(_compiler.compCurBB is not null);
+
+            BasicBlock? exceptionRaisingBlock;
+            if (failBlk is not null)
+            {
+                exceptionRaisingBlock = failBlk;
+
+#if DEBUG
+                var add = _compiler.fgGetExcptnTarget(codeKind, _compiler.compCurBB);
+                assert(add is not null);
+                assert(add.acdUsed);
+                assert(ReferenceEquals(exceptionRaisingBlock, add.acdDstBlk));
+#if !FEATURE_FIXED_OUT_ARGS
+                assert(add.acdStkLvlInit || IsFramePointerUsed);
+#endif
+#endif
+            }
+            else
+            {
+                var add = _compiler.fgGetExcptnTarget(codeKind, _compiler.compCurBB);
+                assert(add is not null);
+                assert(add.acdUsed);
+                exceptionRaisingBlock = add.acdDstBlk;
+#if !FEATURE_FIXED_OUT_ARGS
+                assert(add.acdStkLvlInit || IsFramePointerUsed);
+#endif
+            }
+
+            noway_assert(exceptionRaisingBlock is not null);
+            emit.emitIns_J(ins, exceptionRaisingBlock, (int)reg1 | ((int)reg2 << 5));
+        }
+        else
+        {
+            var parameters = new EmitCallParams();
+            if (ins is INS_blt)
+            {
+                ins = INS_bge;
+            }
+            else if (ins is INS_bltu)
+            {
+                ins = INS_bgeu;
+            }
+            else if (ins is INS_bge)
+            {
+                ins = INS_blt;
+            }
+            else if (ins is INS_bgeu)
+            {
+                ins = INS_bltu;
+            }
+            else
+            {
+                ins = ins is INS_beq ? INS_bne : INS_beq;
+            }
+
+            var helper = Compiler.acdHelper(codeKind);
+            var helperFunction = _compiler.compGetHelperFtn(helper);
+            if (helperFunction.accessType is IAT_VALUE)
+            {
+                parameters.addr = helperFunction.addr;
+                parameters.callType = EC_FUNC_TOKEN;
+
+                var imm = _compiler.opts.compReloc ? 3 << 2 : 5 << 2;
+                emit.emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
+            }
+            else
+            {
+                parameters.addr = null;
+                assert(helperFunction.accessType is IAT_PVALUE);
+                var address = helperFunction.addr;
+
+                parameters.callType = EC_INDIR_R;
+                parameters.ireg = REG_DEFAULT_HELPER_CALL_TARGET;
+                if (_compiler.opts.compReloc)
+                {
+                    emit.emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, (3 + 1) << 2);
+                    emit.emitIns_R_AI(INS_bl, EA_PTR_DSP_RELOC, parameters.ireg,
+                        unchecked((nint)address));
+                }
+                else
+                {
+                    var addressValue = unchecked((nint)address);
+                    emit.emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, (4 + 1) << 2);
+                    emit.emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, parameters.ireg,
+                        (addressValue & unchecked((nint)0xfffff000u)) >> 12);
+                    emit.emitIns_R_I(INS_lu32i_d, EA_PTRSIZE, parameters.ireg,
+                        addressValue >> 32);
+                    emit.emitIns_R_R_I(INS_ldptr_d, EA_PTRSIZE, parameters.ireg, parameters.ireg,
+                        (addressValue & 0xfff) >> 2);
+                }
+            }
+
+            var skipLabel = genCreateTempLabel();
+            parameters.methHnd = Compiler.eeFindHelper(helper);
+
+            genEmitCallWithCurrentGC(ref parameters);
+
+            var killMask = _compiler.compHelperCallKillSet(helper);
+            _regSet.verifyRegistersUsed(killMask);
+            genDefineTempLabel(skipLabel);
+        }
     }
 
     public void genCodeForIncSaturate(GenTree tree)

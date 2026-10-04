@@ -35,14 +35,11 @@ internal static unsafe class CodeGenBlockDriverTargetTests
 
 #if TARGET_WASM
     [Test]
-    public static void DriverMarksFuncletEntriesBeforeTheUnsupportedStackInitializationBoundary()
+    public static void DriverMarksLabelsForAnEmptyWasmFunction()
     {
         WithDriver((compiler, codeGen, block) =>
         {
-            var failure = Assert.Throws<FatalJitException>(codeGen.genCodeForBBlist) ??
-                throw new AssertionException("Missing Wasm control-flow stack dependency failure.");
-
-            Assert.That(failure.Message, Is.EqualTo("Wasm control-flow stack initialization is not ported."));
+            codeGen.genCodeForBBlist();
 #if DEBUG
             Assert.That(compiler.fgSafeBasicBlockCreation, Is.False);
 #endif
@@ -80,6 +77,9 @@ internal static unsafe class CodeGenBlockDriverTargetTests
         compiler.fgLastBB = block;
         compiler.fgBBcount = 1;
         compiler.fgBBNumMax = 1;
+#if TARGET_WASM
+        compiler.fgWasmIntervals = [];
+#endif
 #if DEBUG
         compiler.fgSafeBasicBlockCreation = true;
 #endif
@@ -110,8 +110,8 @@ internal static unsafe class CodeGenBlockDriverTargetTests
                 );
 #if HAS_FIXED_REGISTER_SET
             compiler.lvaTable[0].RegNum = REG_STK;
-            Allocator(compiler) = new LinearScan(compiler);
 #endif
+            Allocator(compiler) = new LinearScan(compiler);
             codeGen.RegSet.rsClearRegsModified();
             action(compiler, codeGen, block);
         }
@@ -124,10 +124,8 @@ internal static unsafe class CodeGenBlockDriverTargetTests
         }
     }
 
-#if HAS_FIXED_REGISTER_SET
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regAlloc")]
     private static extern ref IRegAlloc? Allocator(Compiler compiler);
-#endif
 
 #if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitEmitUnitTests")]

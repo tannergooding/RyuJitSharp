@@ -210,10 +210,106 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
-    public void genJumpToThrowHlpBlk_la(SpecialCodeKind codeKind, instruction ins, regNumber reg1,
+    public unsafe void genJumpToThrowHlpBlk_la(SpecialCodeKind codeKind, instruction ins, regNumber reg1,
         BasicBlock? failBlk = null, regNumber reg2 = REG_R0)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 conditional exception-branch generation is not ported.");
+        assert(INS_beq <= ins && ins <= INS_bgeu);
+
+        var useThrowHelperBlocks = _compiler.fgUseThrowHelperBlocks();
+        var emit = Emitter;
+        if (useThrowHelperBlocks)
+        {
+            assert(_compiler.compCurBB is not null);
+
+            // The helper block may be shared by multiple trees.
+            BasicBlock? excpRaisingBlock;
+            if (failBlk is not null)
+            {
+                // The caller already knows the exception target.
+                excpRaisingBlock = failBlk;
+
+#if DEBUG
+                var add = _compiler.fgGetExcptnTarget(codeKind, _compiler.compCurBB);
+                assert(add.acdUsed);
+                assert(ReferenceEquals(excpRaisingBlock, add.acdDstBlk));
+#if !FEATURE_FIXED_OUT_ARGS
+                assert(add.acdStkLvlInit || IsFramePointerUsed);
+#endif
+#endif
+            }
+            else
+            {
+                // Find the helper block that raises the exception.
+                var add = _compiler.fgGetExcptnTarget(codeKind, _compiler.compCurBB);
+                assert(add is not null);
+                assert(add.acdUsed);
+                excpRaisingBlock = add.acdDstBlk;
+#if !FEATURE_FIXED_OUT_ARGS
+                assert(add.acdStkLvlInit || IsFramePointerUsed);
+#endif
+            }
+
+            noway_assert(excpRaisingBlock is not null);
+            emit.emitIns_J_cond_la(ins, excpRaisingBlock, reg1, reg2);
+        }
+        else
+        {
+            // Inline the throw helper and branch around it on the non-exception path.
+            var callParams = new EmitCallParams();
+
+            if (ins is INS_blt)
+            {
+                ins = INS_bge;
+            }
+            else if (ins is INS_bltu)
+            {
+                ins = INS_bgeu;
+            }
+            else if (ins is INS_bge)
+            {
+                ins = INS_blt;
+            }
+            else if (ins is INS_bgeu)
+            {
+                ins = INS_bltu;
+            }
+            else
+            {
+                ins = ins is INS_beq ? INS_bne : INS_beq;
+            }
+
+            var skipLabel = genCreateTempLabel();
+            emit.emitIns_J_cond_la(ins, skipLabel, reg1, reg2);
+
+            var helper = Compiler.acdHelper(codeKind);
+            var helperFunction = _compiler.compGetHelperFtn(helper);
+            if (helperFunction.accessType is IAT_VALUE)
+            {
+                // A value helper is called by its address.
+                callParams.addr = helperFunction.addr;
+                callParams.callType = EC_FUNC_TOKEN;
+                callParams.ireg = callParams.isJump ? rsGetRsvdReg() : REG_RA;
+            }
+            else
+            {
+                callParams.addr = null;
+                assert(helperFunction.accessType is IAT_PVALUE);
+                callParams.callType = EC_INDIR_R;
+                callParams.ireg = REG_DEFAULT_HELPER_CALL_TARGET;
+                emit.emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, callParams.ireg, callParams.ireg,
+                    unchecked((nint)helperFunction.addr));
+                _regSet.verifyRegUsed(callParams.ireg);
+            }
+
+            callParams.methHnd = Compiler.eeFindHelper(helper);
+            // TODO-RISCV64: Why is this not using genEmitHelperCall?
+            genEmitCallWithCurrentGC(ref callParams);
+
+            var killMask = _compiler.compHelperCallKillSet(helper);
+            _regSet.verifyRegistersUsed(killMask);
+            // Defining this label starts the instruction group used to update GC information.
+            genDefineTempLabel(skipLabel);
+        }
     }
 
     public void genCodeForIncSaturate(GenTree tree)
