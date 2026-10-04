@@ -23,6 +23,12 @@ public readonly partial struct HWIntrinsicInfo
 
     public static bool IsVectorCreateScalarUnsafe(NamedIntrinsic id) => id is NI_Vector_CreateScalarUnsafe;
 
+    public static bool IsVectorCreate(NamedIntrinsic id) => id is NI_Vector_Create;
+
+    public static bool IsVectorGetElement(NamedIntrinsic id) => id is NI_Vector_GetElement;
+
+    public static bool IsVectorToScalar(NamedIntrinsic id) => id is NI_Vector_ToScalar;
+
     public static bool IsFmaIntrinsic(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_FmaIntrinsic) != 0;
 
 #if TARGET_XARCH
