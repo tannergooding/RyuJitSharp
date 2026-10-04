@@ -8,6 +8,31 @@ namespace RyuJitSharp;
 public partial class Compiler
 {
 #if TARGET_ARM
+    public void unwindBegProlog()
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 unwind prolog recording is not ported.");
+    }
+
+    public void unwindEndProlog()
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 unwind prolog recording is not ported.");
+    }
+
+    public void unwindSetFrameReg(regNumber reg, uint offset)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 frame-register unwind recording is not ported.");
+    }
+
+    public void unwindReserve()
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 unwind reservation is not ported.");
+    }
+
+    public unsafe void unwindEmit(void* pHotCode, void* pColdCode)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 unwind emission is not ported.");
+    }
+
     public void unwindNop(uint codeSizeInBytes)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "ARM32 unwind NOP encoding is not ported.");

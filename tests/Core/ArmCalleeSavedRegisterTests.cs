@@ -15,12 +15,101 @@ using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
+using static RyuJitSharp.var_types;
 using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
 namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class ArmCalleeSavedRegisterTests
 {
+    [Test]
+    public static void MinOptsStillLaysOutTheFrameBeforeReservingTheRegister()
+    {
+        WithFrame(0, (compiler, _) =>
+        {
+            Assert.That(compiler.compRsvdRegCheck(Compiler.REGALLOC_FRAME_LAYOUT), Is.True);
+            Assert.That(compiler.lvaDoneFrameLayout, Is.EqualTo(Compiler.REGALLOC_FRAME_LAYOUT));
+        }, minOpts: true);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void StackPointerReachabilityUsesTheStrictIntegerEncodingLimit(bool beyondLimit)
+    {
+        WithFrame(0, (compiler, codeGen) =>
+        {
+            codeGen.IsFramePointerRequired = false;
+            codeGen.IsFramePointerUsed = false;
+
+            var frameSize = compiler.lvaFrameSize(Compiler.REGALLOC_FRAME_LAYOUT);
+            var parameterStackSize = unchecked(0x1000u - frameSize + (beyondLimit ? 1u : 0u));
+            compiler.lvaParameterStackSize = checked((int)parameterStackSize);
+
+            Assert.That(compiler.compRsvdRegCheck(Compiler.REGALLOC_FRAME_LAYOUT), Is.EqualTo(beyondLimit));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void RequiredFramePointerReachabilityUsesTheStrictPositiveEncodingLimit(bool beyondLimit)
+    {
+        WithFrame(0, (compiler, codeGen) =>
+        {
+            codeGen.IsFramePointerRequired = true;
+            codeGen.IsFramePointerUsed = true;
+
+            var parameterStackSize = 0x1000u - (2 * (uint)REGSIZE_BYTES) + (beyondLimit ? 1u : 0u);
+            compiler.lvaParameterStackSize = checked((int)parameterStackSize);
+
+            Assert.That(compiler.compRsvdRegCheck(Compiler.REGALLOC_FRAME_LAYOUT), Is.EqualTo(beyondLimit));
+        });
+    }
+
+    [TestCase(0, false)]
+    [TestCase(320, true)]
+    public static void RequiredFramePointerMustReachTheNegativeLocalOffsetRange(int outgoingArgSpaceSize, bool expected)
+    {
+        WithFrame(outgoingArgSpaceSize, (compiler, codeGen) =>
+        {
+            codeGen.IsFramePointerRequired = true;
+            codeGen.IsFramePointerUsed = true;
+
+            Assert.That(compiler.compRsvdRegCheck(Compiler.REGALLOC_FRAME_LAYOUT), Is.EqualTo(expected));
+        });
+    }
+
+    [TestCase(4096, false)]
+    [TestCase(4400, true)]
+    public static void UsedFramePointerAndStackPointerShareReachabilityAcrossLocals(
+        int outgoingArgSpaceSize, bool expected)
+    {
+        WithFrame(outgoingArgSpaceSize, (compiler, codeGen) =>
+        {
+            codeGen.IsFramePointerRequired = false;
+            codeGen.IsFramePointerUsed = true;
+
+            Assert.That(compiler.compRsvdRegCheck(Compiler.REGALLOC_FRAME_LAYOUT), Is.EqualTo(expected));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void FloatingPointFramesUseTheirSmallerStackOffsetEncodingLimit(bool beyondLimit)
+    {
+        WithFrame(0, (compiler, codeGen) =>
+        {
+            compiler.compFloatingPointUsed = true;
+            codeGen.IsFramePointerRequired = false;
+            codeGen.IsFramePointerUsed = false;
+
+            var frameSize = compiler.lvaFrameSize(Compiler.REGALLOC_FRAME_LAYOUT);
+            var parameterStackSize = unchecked(0x3FDu - frameSize + (beyondLimit ? 1u : 0u));
+            compiler.lvaParameterStackSize = checked((int)parameterStackSize);
+
+            Assert.That(compiler.compRsvdRegCheck(Compiler.REGALLOC_FRAME_LAYOUT), Is.EqualTo(beyondLimit));
+        });
+    }
+
     [TestCase(0u, SRBM_NONE, false, SRBM_NONE)]
     [TestCase(4u, SRBM_NONE, false, SRBM_R3)]
     [TestCase(8u, SRBM_NONE, false, SRBM_R2 | SRBM_R3)]
@@ -357,7 +446,8 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         }
     }
 
-    private static void WithCodeGen(Action<Compiler, CodeGen> action, bool captureAssertions = false)
+    private static void WithCodeGen(
+        Action<Compiler, CodeGen> action, bool captureAssertions = false, bool minOpts = true)
     {
 #if DEBUG
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
@@ -376,7 +466,7 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(true);
+        compiler.opts.SetMinOpts(minOpts);
         compiler.lvaTrackedCount = 1;
         compiler.lvaTrackedCountInSizeTUnits = 1;
         compiler.eeInfoInitialized = true;
@@ -417,6 +507,43 @@ internal static unsafe class ArmCalleeSavedRegisterTests
             }
 #endif
         }
+    }
+
+    private static void WithFrame(int outgoingArgSpaceSize, Action<Compiler, CodeGen> action, bool minOpts = false)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            CORINFO_METHOD_INFO methodInfo = default;
+            compiler.info.compMethodInfo = &methodInfo;
+            compiler.info.compRetBuffArg = BAD_VAR_NUM;
+            compiler.lvaTable =
+            [
+                new LclVarDsc { Type = TYP_INT, lvOnFrame = true, RegNum = REG_STK },
+                new LclVarDsc
+                {
+                    Type = TYP_STRUCT,
+                    lvOnFrame = true,
+                    RegNum = REG_STK,
+                    Layout = new ClassLayout(checked((uint)outgoingArgSpaceSize)),
+                },
+            ];
+            compiler.lvaCount = 2;
+            compiler.lvaOutgoingArgSpaceVar = 1;
+            compiler.lvaOutgoingArgSpaceSize.ResetWritePhase();
+            compiler.lvaOutgoingArgSpaceSize.Value = outgoingArgSpaceSize;
+            compiler.lvaRetAddrVar = BAD_VAR_NUM;
+            compiler.lvaMonAcquired = BAD_VAR_NUM;
+            compiler.lvaResumedIndicator = BAD_VAR_NUM;
+            compiler.lvaAsyncThreadObjectVar = BAD_VAR_NUM;
+            compiler.lvaAsyncExecutionContextVar = BAD_VAR_NUM;
+            compiler.lvaAsyncSynchronizationContextVar = BAD_VAR_NUM;
+            compiler.lvaGSSecurityCookie = BAD_VAR_NUM;
+            compiler.compLclFrameSize = 0;
+            codeGen.IsFramePointerRequired = false;
+            codeGen.IsFrameRequired = false;
+            codeGen.IsFramePointerUsed = false;
+            action(compiler, codeGen);
+        }, minOpts: minOpts);
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]

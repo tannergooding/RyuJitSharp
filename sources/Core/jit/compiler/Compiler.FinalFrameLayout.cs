@@ -100,9 +100,101 @@ public partial class Compiler
 #if TARGET_ARM
     public bool compRsvdRegCheck(FrameLayoutState curState)
     {
-        NYI("TARGET_ARM compRsvdRegCheck");
-        fatal(CORJIT_IMPLLIMITATION);
-        throw new FatalJitException("TARGET_ARM compRsvdRegCheck is not ported.");
+        var frameSize = lvaFrameSize(curState);
+        JITDUMP($"\ncompRsvdRegCheck\n  frame size  = {frameSize,6}\n" +
+            $"  lvaParameterStackSize = {lvaParameterStackSize,6}\n");
+
+        if (opts.MinOpts)
+        {
+            JITDUMP(" Returning true (MinOpts)\n\n");
+            return true;
+        }
+
+        uint calleeSavedRegMaxSz = CALLEE_SAVED_REG_MAXSZ;
+        if (compFloatingPointUsed)
+        {
+            calleeSavedRegMaxSz += CALLEE_SAVED_FLOAT_MAXSZ;
+        }
+
+        calleeSavedRegMaxSz += REGSIZE_BYTES;
+        noway_assert(frameSize >= calleeSavedRegMaxSz);
+        assert(codeGen is not null);
+
+        // R11 is the frame pointer: positive offsets reach incoming arguments and negative offsets reach locals.
+        // Floating-point loads/stores can reach -0x3FC, but integer locals limit negative R11 offsets to -0xFF.
+        var maxR11PositiveEncodingOffset = compFloatingPointUsed ? 0x03FCu : 0x0FFFu;
+        JITDUMP($"  maxR11PositiveEncodingOffset     = {maxR11PositiveEncodingOffset,6}\n");
+
+        var maxR11NegativeEncodingOffset = 0x00FFu;
+        JITDUMP($"  maxR11NegativeEncodingOffset     = {maxR11NegativeEncodingOffset,6}\n");
+
+        // Exclude the address just beyond the last incoming argument; R11 and LR occupy the first two frame slots.
+        var parameterStackSize = unchecked((uint)lvaParameterStackSize);
+        var framePointerAndLinkSize = 2 * (uint)REGSIZE_BYTES;
+        var maxR11PositiveOffset = unchecked(parameterStackSize + framePointerAndLinkSize - 1);
+        JITDUMP($"  maxR11PositiveOffset             = {maxR11PositiveOffset,6}\n");
+
+        // The frame size includes R11 and LR, which are at non-negative offsets from R11.
+        assert(frameSize >= framePointerAndLinkSize);
+        var maxR11NegativeOffset = unchecked(frameSize - framePointerAndLinkSize);
+        JITDUMP($"  maxR11NegativeOffset             = {maxR11NegativeOffset,6}\n");
+
+        if (codeGen.IsFramePointerRequired)
+        {
+            if (maxR11NegativeOffset > maxR11NegativeEncodingOffset)
+            {
+                JITDUMP(" Returning true (frame required and maxR11NegativeOffset)\n\n");
+                return true;
+            }
+
+            if (maxR11PositiveOffset > maxR11PositiveEncodingOffset)
+            {
+                JITDUMP(" Returning true (frame required and maxR11PositiveOffset)\n\n");
+                return true;
+            }
+        }
+
+        var maxSPPositiveEncodingOffset = compFloatingPointUsed ? 0x03FCu : 0x0FFFu;
+        JITDUMP($"  maxSPPositiveEncodingOffset      = {maxSPPositiveEncodingOffset,6}\n");
+
+        assert(unchecked(parameterStackSize + frameSize) > 0);
+        var maxSPPositiveOffset = unchecked(parameterStackSize + frameSize - 1);
+
+        if (codeGen.IsFramePointerUsed)
+        {
+            // Split local reachability between SP's positive range and R11's negative range.
+            var maxSPLocalsCombinedOffset = unchecked(frameSize - framePointerAndLinkSize - 1);
+            JITDUMP($"  maxSPLocalsCombinedOffset        = {maxSPLocalsCombinedOffset,6}\n");
+
+            if (maxSPLocalsCombinedOffset > maxSPPositiveEncodingOffset)
+            {
+                var maxRemainingLocalsCombinedOffset =
+                    unchecked(maxSPLocalsCombinedOffset - maxSPPositiveEncodingOffset);
+                JITDUMP($"  maxRemainingLocalsCombinedOffset = {maxRemainingLocalsCombinedOffset,6}\n");
+
+                if (maxRemainingLocalsCombinedOffset > maxR11NegativeEncodingOffset)
+                {
+                    JITDUMP(" Returning true (frame pointer exists; R11 and SP can't reach entire stack between them)\n\n");
+                    return true;
+                }
+            }
+
+            // Incoming arguments are reachable when either base register can encode their offsets.
+            if ((maxR11PositiveOffset > maxR11PositiveEncodingOffset) &&
+                (maxSPPositiveOffset > maxSPPositiveEncodingOffset))
+            {
+                JITDUMP(" Returning true (frame pointer exists; R11 and SP can't reach all arguments)\n\n");
+                return true;
+            }
+        }
+        else if (maxSPPositiveOffset > maxSPPositiveEncodingOffset)
+        {
+            JITDUMP(" Returning true (no frame pointer exists; SP can't reach all of frame)\n\n");
+            return true;
+        }
+
+        JITDUMP(" Returning false\n\n");
+        return false;
     }
 #endif
 

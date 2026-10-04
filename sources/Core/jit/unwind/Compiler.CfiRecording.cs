@@ -100,7 +100,7 @@ public partial class Compiler
 #if TARGET_ARM
             // LLVM DWARF names D0-D15, so pair the emitter's S0-S31 registers.
             regBit >>= isFloat ? 2 : 1;
-            regNum = unchecked(regNum - (isFloat ? 2 : 1));
+            regNum = unchecked((regNumber)((int)regNum - (isFloat ? 2 : 1)));
 #else
             regBit >>= 1;
             regNum = unchecked(regNum - 1);
