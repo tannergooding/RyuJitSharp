@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
@@ -207,7 +208,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_stp));
             Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ZR));
-            Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_ZR));
+            Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_FP));
             Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.Zero);
             Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
         });
@@ -218,10 +219,10 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            compiler.lvaTable[0].Type = TYP_SIMD8;
+            compiler.lvaTable[0].Type = TYP_SIMD16;
             compiler.lvaTable[0].lvLRACandidate = true;
             compiler.lvaTable[0].RegNum = REG_V0;
-            var source = new GenTreeVecCon(TYP_SIMD8)
+            var source = new GenTreeVecCon(TYP_SIMD16)
             {
                 IsContained = true,
             };
@@ -348,6 +349,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
         {
             var codeGen = new CodeGen(compiler);
             compiler.codeGen = codeGen;
+            codeGen.IsFramePointerRequired = true;
             codeGen.RegSet.rsClearRegsModified();
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
