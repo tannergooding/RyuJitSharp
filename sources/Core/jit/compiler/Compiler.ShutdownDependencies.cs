@@ -7,13 +7,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if CALL_ARG_STATS
-    internal static void compDispCallArgStats(System.IO.StreamWriter output)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "Call argument statistics are not implemented.");
-    }
-#endif
-
 #if COUNT_AST_OPERS
     internal readonly record struct OperInfo(uint Count, uint Size, genTreeOps Oper);
 

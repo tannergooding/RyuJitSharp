@@ -2745,7 +2745,7 @@ public partial class Compiler
     public void compJitStats()
     {
 #if CALL_ARG_STATS
-        throw new FatalJitException(CORJIT_SKIPPED, "Call argument statistics are not implemented.");
+        compCallArgStats();
 #endif
     }
 

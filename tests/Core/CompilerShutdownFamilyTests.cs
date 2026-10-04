@@ -110,6 +110,9 @@ internal static class CompilerShutdownFamilyTests
 #endif
 #if EMITTER_STATS && TARGET_XARCH && !NODEBASH_STATS && !COUNT_AST_OPERS && !CALL_ARG_STATS && !MEASURE_NODE_SIZE && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE
             Compiler.compShutdown();
+#elif CALL_ARG_STATS && !NODEBASH_STATS && !COUNT_AST_OPERS && !MEASURE_NODE_SIZE && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
+            Compiler.argTotalCalls = 0;
+            Compiler.compShutdown();
 #else
             var exception = Assert.Throws<FatalJitException>(Compiler.compShutdown);
             Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
@@ -129,8 +132,8 @@ internal static class CompilerShutdownFamilyTests
 #if COUNT_AST_OPERS
             Assert.That(exception?.Message, Is.EqualTo("GenTree::s_gtNodeCounts storage is not ported."));
             Assert.That(text, Does.Not.Contain("GenTree operator counts"));
-#elif CALL_ARG_STATS
-            Assert.That(exception?.Message, Is.EqualTo("Compiler::compDispCallArgStats is not ported."));
+#elif CALL_ARG_STATS && !NODEBASH_STATS && !MEASURE_NODE_SIZE && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
+            Assert.That(text, Does.Not.Contain("Call stats"));
             Assert.That(text, Does.Not.Contain("Basic block count frequency table"));
 #elif MEASURE_NODE_SIZE
             Assert.That(exception?.Message, Is.EqualTo("genNodeSizeStats collection is not ported."));
@@ -252,6 +255,27 @@ internal static class CompilerShutdownFamilyTests
     {
         using var output = new MemoryStream();
         using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
+
+#if CALL_ARG_STATS
+        if (dependency == "CallArguments")
+        {
+            var totalCalls = Compiler.argTotalCalls;
+            Compiler.argTotalCalls = 0;
+
+            try
+            {
+                AccessDependency(dependency, writer);
+                writer.Flush();
+                Assert.That(output.Length, Is.Zero);
+            }
+            finally
+            {
+                Compiler.argTotalCalls = totalCalls;
+            }
+
+            return;
+        }
+#endif
 
 #if EMITTER_STATS && TARGET_XARCH
         AccessDependency(dependency, writer);

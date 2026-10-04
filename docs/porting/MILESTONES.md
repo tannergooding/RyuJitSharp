@@ -9680,6 +9680,26 @@ target tests pass 81/81 with a clean full-analysis Wasm Core build. These tests
 run Wasm-targeted managed logic on the Windows host; they do not establish
 browser-Wasm execution or generated-code parity.
 
+## 2026-10-04: Optional call-argument statistics
+
+Completed the `CALL_ARG_STATS` collection/reporting closure. The compilation
+finish caller now collects call kinds from the post-rationalization LIR chain;
+the reporter preserves the pinned labels, percentage arithmetic, signed
+`%d` counter output, histogram tables, and shutdown early-return behavior.
+Focused Windows-x64 full-analysis tests pass 6/6 Debug and 6/6 Release with
+zero skips using a validation-only feature import; production defaults remain
+unchanged.
+
+Retired the complete residual globals, collector, reporter and both
+declarations: 206 lines from `compiler.cpp` and 4 from `compiler.h`; also
+removed the obsolete `CALL_ARG_STATS` term from the retained `genMethodCnt`
+guard. The consolidated native commit is `ef01ee6fe767168c0ffed810d1d08495f4235922`,
+sole-parented to pinned oracle `33baf8ee337b20dd0f184b69a6f09be92850bf9e`;
+recovery refs `refs/copilot-recovery/call-arg-stats-before-a0c67aff` and
+`refs/copilot-recovery/call-arg-stats-guard-before-amend` preserve the prior
+heads. `compJitStats` was already absent and was not re-retired. No
+generated-code, phase-dump or runtime parity is claimed.
+
 ## Earlier port milestones
 
 | Date | Development |
