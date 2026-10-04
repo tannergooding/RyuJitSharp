@@ -186,11 +186,14 @@ internal static unsafe class CallDispatchLoweringTests
                 _callMethHnd = Compiler.eeFindHelper(helper),
             };
             var destinationArg = call.Args.PushBack(NewCallArg.CreateForPrimitive(destination));
-            destinationArg.AbiInfo.Segments[0] = AbiPassingSegment.InRegister(regNumber.REG_RCX, 0, 8);
+            destinationArg.AbiInfo = AbiPassingInformation.FromSegmentByValue(
+                compiler, AbiPassingSegment.InRegister(regNumber.REG_RCX, 0, 8));
             var sourceArg = call.Args.PushBack(NewCallArg.CreateForPrimitive(source));
-            sourceArg.AbiInfo.Segments[0] = AbiPassingSegment.InRegister(regNumber.REG_RDX, 0, source.Type.Size);
+            sourceArg.AbiInfo = AbiPassingInformation.FromSegmentByValue(
+                compiler, AbiPassingSegment.InRegister(regNumber.REG_RDX, 0, source.Type.Size));
             var lengthArg = call.Args.PushBack(NewCallArg.CreateForPrimitive(length));
-            lengthArg.AbiInfo.Segments[0] = AbiPassingSegment.InRegister(regNumber.REG_R8, 0, 8);
+            lengthArg.AbiInfo = AbiPassingInformation.FromSegmentByValue(
+                compiler, AbiPassingSegment.InRegister(regNumber.REG_R8, 0, 8));
             var successor = compiler.gtNewNothingNode();
             foreach (var node in new GenTree[] { destination, source, length, call, successor })
             {

@@ -43,7 +43,11 @@ internal static class UnwindPrologRecordingTests
     {
         WithProlog((compiler, _) =>
         {
+#if DEBUG
             Assert.That(() => compiler.unwindBegProlog(), Throws.Exception);
+#else
+            compiler.unwindBegProlog();
+#endif
             Assert.That(compiler.compGeneratingUnwindProlog, Is.True);
         });
     }

@@ -222,7 +222,8 @@ internal static unsafe class CallLoweringTests
             fields.AddFieldLIR(compiler, second, 4, var_types.TYP_INT);
             var call = new GenTreeCall(var_types.TYP_VOID);
             var arg = call.Args.PushBack(NewCallArg.CreateForStruct(fields, var_types.TYP_STRUCT, new ClassLayout(8)));
-            arg.AbiInfo.Segments[0] = AbiPassingSegment.InRegister(regNumber.REG_RCX, 0, 8);
+            arg.AbiInfo = AbiPassingInformation.FromSegmentByValue(
+                compiler, AbiPassingSegment.InRegister(regNumber.REG_RCX, 0, 8));
             block.InsertAtEnd(first);
             block.InsertAtEnd(second);
             block.InsertAtEnd(fields);
@@ -329,7 +330,8 @@ internal static unsafe class CallLoweringTests
             fields.AddFieldLIR(compiler, value, 0, var_types.TYP_INT);
             var call = new GenTreeCall(var_types.TYP_VOID);
             var arg = call.Args.PushBack(NewCallArg.CreateForStruct(fields, var_types.TYP_STRUCT, compiler.typGetBlkLayout(4)));
-            arg.AbiInfo.Segments[0] = AbiPassingSegment.InRegister(regNumber.REG_RCX, 0, 4);
+            arg.AbiInfo = AbiPassingInformation.FromSegmentByValue(
+                compiler, AbiPassingSegment.InRegister(regNumber.REG_RCX, 0, 4));
             block.InsertAtEnd(value);
             block.InsertAtEnd(fields);
             block.InsertAtEnd(call);
@@ -366,9 +368,11 @@ internal static unsafe class CallLoweringTests
             var firstValue = compiler.gtNewIconNode(var_types.TYP_INT, 1);
             var secondValue = compiler.gtNewIconNode(var_types.TYP_LONG, 2);
             var firstArg = call.Args.PushBack(NewCallArg.CreateForPrimitive(firstValue));
-            firstArg.AbiInfo.Segments[0] = AbiPassingSegment.InRegister(regNumber.REG_RCX, 0, 4);
+            firstArg.AbiInfo = AbiPassingInformation.FromSegmentByValue(
+                compiler, AbiPassingSegment.InRegister(regNumber.REG_RCX, 0, 4));
             var secondArg = call.Args.PushBack(NewCallArg.CreateForPrimitive(secondValue));
-            secondArg.AbiInfo.Segments[0] = AbiPassingSegment.OnStack(32, 0, 8);
+            secondArg.AbiInfo = AbiPassingInformation.FromSegmentByValue(
+                compiler, AbiPassingSegment.OnStack(32, 0, 8));
             if (lateStackArg)
             {
                 secondArg.EarlyNode = null;

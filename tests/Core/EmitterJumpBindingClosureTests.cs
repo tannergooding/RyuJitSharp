@@ -151,7 +151,7 @@ internal static unsafe class EmitterJumpBindingClosureTests
                 Assert.That(assertions[0].Expression, Does.Contain(
                     "|| (((instrDescJmp)id).idjIsAfterCallBeforeEpilog && id.idCodeSize() == 1)"));
                 Assert.That(assertions[1].File, Does.EndWith("Emitter.GroupDiagnostics.cs"));
-                Assert.That(assertions[1].Expression, Is.EqualTo("index == ig.igInsCnt - 1"));
+                Assert.That(assertions[1].Expression, Is.EqualTo("count == 1"));
                 Assert.That(assertions[2].File, Does.EndWith("Emitter.JumpRemoval.cs"));
                 Assert.That(assertions[2].Expression, Is.EqualTo("ReferenceEquals(jmp, lastInstruction)"));
                 Assert.That(context.Assertions, Is.EqualTo(assertions.Count));

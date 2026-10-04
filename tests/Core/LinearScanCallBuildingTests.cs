@@ -286,9 +286,10 @@ internal static unsafe class LinearScanCallBuildingTests
             call.Args.IsVarArgs = true;
             call.ControlExpr = target;
             var arg = call.Args.PushBack(NewCallArg.CreateForPrimitive(value));
+            arg.AbiInfo = AbiPassingInformation.FromSegmentByValue(
+                compiler, AbiPassingSegment.InRegister(floatRegister, 0, 8));
             arg.EarlyNode = null;
             arg.LateNode = putArg;
-            arg.AbiInfo.Segments[0] = AbiPassingSegment.InRegister(floatRegister, 0, 8);
             call.Args.PushLateBack(arg);
             ReferenceBuildLocation(allocator) = 4;
 

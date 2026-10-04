@@ -76,6 +76,7 @@ internal static unsafe class GcInfoTableEncodingTests
         CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
         {
             compiler.compHndBBtabCount = 1;
+            compiler.lvaOutgoingArgSpaceSize.Value = 0;
             ICorJitInfo jitInfo = default;
             CORINFO_METHOD_INFO method = default;
             var encoder = new GcInfoEncoder(&jitInfo, &method);

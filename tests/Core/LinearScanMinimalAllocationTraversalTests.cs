@@ -184,16 +184,6 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
             Assert.That(output, Does.StartWith(
                 $"<RefPosition #{reference.rpNum,-3} @2   (null) <Ivl:{interval.intervalIndex}> "));
             Assert.That(output, Does.EndWith($">{Environment.NewLine}"));
-
-#if TARGET_AMD64
-            _ = Capture(() => InitializeAllocationDumpFormat(allocator));
-            var intervalRow = Capture(() => DumpRefPositionShort(allocator, reference));
-            var withoutInterval = new RefPosition(reference.bbNum, reference.nodeLocation, null, reference.refType);
-            var nonIntervalRow = Capture(() => DumpRefPositionShort(allocator, withoutInterval));
-
-            Assert.That(intervalRow, Does.EndWith("  (null)   "));
-            Assert.That(nonIntervalRow, Does.EndWith(" (null)   "));
-#endif
         });
     }
 

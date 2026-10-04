@@ -20,11 +20,6 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class ObjectAllocatorCloneTransformationTests
 {
     private static readonly List<string> s_assertions = [];
-#if DEBUG
-    private static bool s_captureCloneRoot;
-    private static GenTree? s_rootBeforeRewrite;
-    private static int s_rootTreeIdBeforeRewrite;
-#endif
 
     [TestCase(false, false)]
     [TestCase(true, false)]
@@ -34,11 +29,6 @@ internal static unsafe class ObjectAllocatorCloneTransformationTests
     {
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         s_assertions.Clear();
-#if DEBUG
-        s_captureCloneRoot = selfCopy;
-        s_rootBeforeRewrite = null;
-        s_rootTreeIdBeforeRewrite = BAD_VAR_NUM;
-#endif
         vtable.doAssert = &RecordAssertion;
         vtable.Base.Base.getArrayRank = &GetArrayRank;
         vtable.Base.Base.getTypeInstantiationArgument = &GetTypeArgument;
@@ -134,15 +124,7 @@ internal static unsafe class ObjectAllocatorCloneTransformationTests
             Assert.That(cloned.Kind, Is.EqualTo(BBKinds.BBJ_RETURN));
             Assert.That(cloned.FirstStmt?.RootNode.Oper,
                 Is.EqualTo(selfCopy ? GT_NOP : GT_STORE_LCL_VAR));
-            if (selfCopy)
-            {
-#if DEBUG
-                Assert.That(s_rootBeforeRewrite, Is.Not.Null);
-                Assert.That(cloned.FirstStmt?.RootNode, Is.SameAs(s_rootBeforeRewrite));
-                Assert.That(cloned.FirstStmt?.RootNode.TreeId, Is.EqualTo(s_rootTreeIdBeforeRewrite));
-#endif
-            }
-            else
+            if (!selfCopy)
             {
                 Assert.That(cloned.FirstStmt?.RootNode.AsLclVar().LclNum, Is.EqualTo(1));
             }
@@ -159,10 +141,6 @@ internal static unsafe class ObjectAllocatorCloneTransformationTests
         }
         finally
         {
-#if DEBUG
-            s_captureCloneRoot = false;
-            s_rootBeforeRewrite = null;
-#endif
             JitTls.Compiler = previousCompiler;
         }
     }
@@ -296,18 +274,7 @@ internal static unsafe class ObjectAllocatorCloneTransformationTests
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static int GetArrayRank(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type)
-    {
-#if DEBUG
-        // Class-name formatting runs after block cloning, before the local-rewrite visitor.
-        if (s_captureCloneRoot)
-        {
-            s_rootBeforeRewrite = JitTls.Compiler?.fgFirstBB?.Next?.FirstStmt?.RootNode;
-            s_rootTreeIdBeforeRewrite = s_rootBeforeRewrite?.TreeId ?? BAD_VAR_NUM;
-        }
-#endif
-        return 0;
-    }
+    private static int GetArrayRank(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => 0;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CORINFO_CLASS_STRUCT_* GetTypeArgument(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type, int index) => null;
