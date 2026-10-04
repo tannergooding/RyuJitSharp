@@ -58,6 +58,18 @@ internal static unsafe class CodeGenPrologFrameSetupTests
         });
     }
 
+    [TestCase(false, REG_RSP)]
+    [TestCase(true, REG_RBP)]
+    public static void FramePointerRegisterTracksFramePointerUsage(bool framePointerUsed, regNumber expected)
+    {
+        WithProlog((_, codeGen) =>
+        {
+            codeGen.IsFramePointerUsed = framePointerUsed;
+
+            Assert.That(codeGen.genFramePointerReg(), Is.EqualTo(expected));
+        });
+    }
+
     [TestCase(0u)]
     [TestCase(8u)]
     [TestCase(16u)]
