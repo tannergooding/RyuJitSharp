@@ -3752,9 +3752,14 @@ public partial class Compiler
 
                             if (varTypeIsUnsigned(preciseType))
                             {
-                                ni = isMax ? NI_System_Math_Maxuint : NI_System_Math_Minuint;
+                                ni = isMax ? NI_System_Math_MaxUnsigned : NI_System_Math_MinUnsigned;
                             }
-                            retNode = new GenTreeIntrinsic(TYP_I_IMPL, op1, op2, ni, null CORINFO_CONST_LOOKUP{IAT_VALUE});
+                            retNode = new GenTreeIntrinsic(TYP_I_IMPL, op1, op2, ni, null)
+                            {
+#if FEATURE_READYTORUN
+                                EntryPoint = new CORINFO_CONST_LOOKUP { accessType = IAT_VALUE },
+#endif
+                            };
                         }
 #endif
                     }
@@ -3797,16 +3802,21 @@ public partial class Compiler
                                 }
                             }
 
-                            var nullEntry = CORINFO_CONST_LOOKUP{IAT_VALUE};
-
                             // Native RISC-V fmin/fmax instructions implement IEEE 754-2019 Minimum/MaximumNumber functions
                             // which don't specify what kind of NaN is returned if both arguments are NaN. RISC-V returns quiet
                             // canonical NaN in this case.
                             ni = isMax ? NI_System_Math_MaxNative : NI_System_Math_MinNative;
-                            var minMax = new GenTreeIntrinsic(callType, op1, op2, ni, null nullEntry);
+                            GenTree minMax = new GenTreeIntrinsic(callType, op1, op2, ni, null)
+                            {
+#if FEATURE_READYTORUN
+                                EntryPoint = new CORINFO_CONST_LOOKUP { accessType = IAT_VALUE },
+#endif
+                            };
 
                             if (!isNative)
                             {
+                                var op1CloneNode = op1Clone ?? throw new FatalJitException("Unable to clone the first Math.Min/Max operand.");
+
                                 // Select an input NaN where needed, preferring the first when both are NaN.
 
                                 if (isNumber)
@@ -3814,22 +3824,32 @@ public partial class Compiler
                                     // Build expression:  isNumber(minMax) ? minMax : op1
                                     minMax = compiler.impCloneExpr(minMax, out var minMaxClone, CHECK_SPILL_NONE, "Clone min/max result in Math.Min/MaxNumber");
 
-                                    var isNumber = compiler.gtNewBinaryNode(GT_EQ, TYP_INT, minMax, minMaxClone);
+                                    var isNumberComparison = compiler.gtNewBinaryNode(GT_EQ, TYP_INT, minMax, minMaxClone);
 
-                                    minMax = compiler.gtNewQmarkNode(callType, isNumber, compiler.gtNewColonNode(callType, gtCloneExpr(minMaxClone), op1Clone));
+                                    minMax = compiler.gtNewQmarkNode(callType, isNumberComparison,
+                                        compiler.gtNewColonNode(callType,
+                                            compiler.gtCloneExpr(minMaxClone) ?? throw new FatalJitException("Unable to clone the Math.Min/Max result."),
+                                            op1CloneNode));
                                 }
                                 else
                                 {
                                     // Build expression:  isNumber(op1) ? (isNumber(op2) ? minMax : op2) : op1
-                                    var isOp1Number = compiler.gtNewBinaryNode(GT_EQ, TYP_INT, op1Clone, gtCloneExpr(op1Clone));
-                                    var isOp2Number = compiler.gtNewBinaryNode(GT_EQ, TYP_INT, op2Clone, gtCloneExpr(op2Clone));
+                                    var op2CloneNode = op2Clone ?? throw new FatalJitException("Unable to clone the second Math.Min/Max operand.");
+                                    var isOp1Number = compiler.gtNewBinaryNode(GT_EQ, TYP_INT, op1CloneNode,
+                                        compiler.gtCloneExpr(op1CloneNode) ?? throw new FatalJitException("Unable to clone the first Math.Min/Max operand."));
+                                    var isOp2Number = compiler.gtNewBinaryNode(GT_EQ, TYP_INT, op2CloneNode,
+                                        compiler.gtCloneExpr(op2CloneNode) ?? throw new FatalJitException("Unable to clone the second Math.Min/Max operand."));
 
-                                    minMax = compiler.gtNewQmarkNode(callType, isOp2Number, compiler.gtNewColonNode(callType, minMax, gtCloneExpr(op2Clone)));
-                                    minMax = compiler.gtNewQmarkNode(callType, isOp1Number, compiler.gtNewColonNode(callType, minMax, gtCloneExpr(op1Clone)));
+                                    minMax = compiler.gtNewQmarkNode(callType, isOp2Number,
+                                        compiler.gtNewColonNode(callType, minMax,
+                                            compiler.gtCloneExpr(op2CloneNode) ?? throw new FatalJitException("Unable to clone the second Math.Min/Max operand.")));
+                                    minMax = compiler.gtNewQmarkNode(callType, isOp1Number,
+                                        compiler.gtNewColonNode(callType, minMax,
+                                            compiler.gtCloneExpr(op1CloneNode) ?? throw new FatalJitException("Unable to clone the first Math.Min/Max operand.")));
                                 }
 
                                 // Top-level QMARK needs to be in a variable
-                                assert(minMax->OperIs(GT_QMARK));
+                                assert(minMax.Oper is GT_QMARK);
 
                                 var tmpTop = compiler.lvaGrabTemp(shortLifetime: true, "Temp for top qmark in Math.Min/Max");
                                 compiler.impStoreToTemp(tmpTop, minMax, CHECK_SPILL_NONE);
