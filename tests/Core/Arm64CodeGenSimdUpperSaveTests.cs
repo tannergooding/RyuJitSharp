@@ -14,7 +14,7 @@ using static RyuJitSharp.var_types;
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
-internal static class Arm64CodeGenSimdUpperSaveTests
+internal static unsafe class Arm64CodeGenSimdUpperSaveTests
 {
     [Test]
     public static void RegisterSaveExtractsTheUpperDoubleLane()
@@ -36,7 +36,7 @@ internal static class Arm64CodeGenSimdUpperSaveTests
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_8BYTE));
             Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_V1));
             Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_V0));
-            Assert.That((nint)descriptors[0].idAddr().iiaAddr, Is.EqualTo((nint)1));
+            Assert.That(descriptors[0].idSmallCns(), Is.EqualTo(1));
         });
     }
 

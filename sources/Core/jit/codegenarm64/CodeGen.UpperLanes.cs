@@ -17,8 +17,8 @@ public sealed partial class CodeGen
         assert(op1.Oper.IsLocal);
 
         var lclNode = op1.AsLclVar();
-        ref var varDsc = ref _compiler.lvaGetDesc(lclNode);
-        assert(emitTypeSize(varDsc.GetRegisterType(lclNode)) == 16);
+        ref var varDsc = ref _compiler.lvaGetDesc(lclNode.LclNum);
+        assert(emitTypeSize(varDsc.GetRegisterType(lclNode)) == EA_16BYTE);
 
         var targetReg = node.RegNum;
         assert(targetReg != REG_NA);
@@ -53,8 +53,8 @@ public sealed partial class CodeGen
         assert(op1.Oper.IsLocal);
 
         var lclNode = op1.AsLclVar();
-        ref var varDsc = ref _compiler.lvaGetDesc(lclNode);
-        assert(emitTypeSize(varDsc.GetRegisterType(lclNode)) == 16);
+        ref var varDsc = ref _compiler.lvaGetDesc(lclNode.LclNum);
+        assert(emitTypeSize(varDsc.GetRegisterType(lclNode)) == EA_16BYTE);
 
         var srcReg = node.RegNum;
         assert(srcReg != REG_NA);
