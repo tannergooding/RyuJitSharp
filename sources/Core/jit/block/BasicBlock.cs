@@ -485,6 +485,21 @@ public sealed partial class BasicBlock : LIR.Range
     /// <summary>bbID is a unique block identifier number that does not change: it does not get renumbered, like bbNum.</summary>
     public int bbID;
 
+    public override bool Equals(object? obj) => ReferenceEquals(this, obj);
+
+    public override int GetHashCode()
+    {
+#if DEBUG
+        var hash = SsaStressHashHelper();
+        if (hash != 0)
+        {
+            var blockId = unchecked((uint)bbID);
+            return unchecked((int)(hash ^ (blockId << 16) ^ blockId));
+        }
+#endif
+        return bbID;
+    }
+
     public BasicBlock(GenTree? firstNode, GenTree? lastNode)
         : base(firstNode, lastNode)
     {
