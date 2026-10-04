@@ -38,7 +38,7 @@ public sealed partial class CodeGen
         var type = treeNode.Type;
         var oper = treeNode.Oper;
         var attr = treeNode.Type.EmitActualSize;
-        var isImm = false;
+        bool isImm;
         var ins = INS_break;
 
         if (varTypeIsFloating(type))

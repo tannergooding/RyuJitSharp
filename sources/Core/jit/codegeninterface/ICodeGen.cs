@@ -92,6 +92,22 @@ public interface ICodeGen
     bool validImmForInstr(instruction ins, nint imm, insFlags flags = INS_FLAGS_DONT_CARE);
 #endif
 
+#if TARGET_LOONGARCH64
+    regMask SRBM_FLT_CALLEE_TRASH { get; }
+
+    regMask SRBM_INT_CALLEE_TRASH { get; }
+
+    regMask SRBM_MSK_CALLEE_TRASH { get; }
+#endif
+
+#if TARGET_RISCV64
+    regMask SRBM_FLT_CALLEE_TRASH { get; }
+
+    regMask SRBM_INT_CALLEE_TRASH { get; }
+
+    regMask SRBM_MSK_CALLEE_TRASH { get; }
+#endif
+
 #if TARGET_XARCH
     bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree operand);
 

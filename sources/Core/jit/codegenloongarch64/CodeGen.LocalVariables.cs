@@ -98,7 +98,7 @@ public sealed partial class CodeGen
             return;
         }
 
-        ref var varDsc = ref _compiler.lvaGetDesc(lclNode);
+        ref var varDsc = ref _compiler.lvaGetDesc(lclNode.LclNum);
         if (lclNode.IsMultiReg)
         {
             NYI_LOONGARCH64("genCodeForStoreLclVar : unimplemented on LoongArch64 yet");
@@ -112,9 +112,9 @@ public sealed partial class CodeGen
 
                 var fieldLclNum = varDsc.lvFieldLclStart + i;
                 ref var fieldVarDsc = ref _compiler.lvaGetDesc(fieldLclNum);
-                assert(fieldVarDsc.TypeIs(TYP_FLOAT));
+                assert(fieldVarDsc.Type is TYP_FLOAT);
 
-                Emitter.emitIns_R_R_I(INS_st_d, emitTypeSize(TYP_FLOAT), varReg, operandReg, i);
+                Emitter.emitIns_R_R_I(INS_st_d, TYP_FLOAT.EmitSize, varReg, operandReg, i);
             }
             genProduceReg(lclNode);
             return;
@@ -125,7 +125,7 @@ public sealed partial class CodeGen
         var targetType = varDsc.GetRegisterType(lclNode);
 
 #if FEATURE_SIMD
-        if (lclNode.TypeIs(TYP_SIMD12))
+        if (lclNode.Type is TYP_SIMD12)
         {
             genStoreLclTypeSimd12(lclNode);
             return;
@@ -134,19 +134,19 @@ public sealed partial class CodeGen
 
         genConsumeRegs(data);
 
-        regNumber dataReg = REG_NA;
+        var dataReg = REG_NA;
         if (data.IsContained)
         {
             // Contained store operands are zero-inits, constants, or bitcasts.
             var zeroInit = data.IsIntegralConst(0);
             // TODO-LOONGARCH64-CQ: supporting the SIMD.
-            assert(!varTypeIsSIMD(targetType));
+            assert(!varTypeIsSimd(targetType));
 
             if (zeroInit)
             {
                 dataReg = REG_R0;
             }
-            else if (data.IsIntegralConst())
+            else if (data.Oper.IsIntegralConst)
             {
                 var immediate = data.AsIntConCommon().IconValue;
                 Emitter.emitIns_I_la(EA_PTRSIZE, REG_R21, immediate);
@@ -175,11 +175,11 @@ public sealed partial class CodeGen
             Emitter.emitIns_S_R(ins, targetType.EmitActualSize, dataReg, varNum, 0);
 
             genUpdateLife(lclNode);
-            varDsc.SetRegNum(REG_STK);
+            varDsc.RegNum = REG_STK;
         }
         else
         {
-            if (data.IsIconHandle(GTF_ICON_TLS_HDL))
+            if (data.Oper.IsCnsIntOrI && data.AsIntCon().IsIconHandle(GTF_ICON_TLS_HDL))
             {
                 assert(data.AsIntCon().IconValue == 0);
                 // Load the address from the thread pointer register.
@@ -201,7 +201,7 @@ public sealed partial class CodeGen
             assert(tree.Oper is GT_LCLHEAP);
             assert(_compiler.compLocallocUsed);
 
-            var size = tree.AsOp().Op1;
+            var size = tree.AsUnOp().Op1;
             noway_assert(size.Type.ActualType is TYP_INT or TYP_I_IMPL);
 
             var targetReg = tree.RegNum;
@@ -270,9 +270,9 @@ public sealed partial class CodeGen
             {
                 assert(amount > 0);
 
-                nint immediate = -16;
+                nint immediate;
                 assert(amount % (REGSIZE_BYTES * 2) == 0);
-                nuint storePairCount = amount / (REGSIZE_BYTES * 2);
+                var storePairCount = amount / (REGSIZE_BYTES * 2);
                 if (_compiler.info.compInitMem && (storePairCount <= 4))
                 {
                     immediate = unchecked(-16 * (nint)storePairCount);
@@ -374,7 +374,7 @@ public sealed partial class CodeGen
                         _compiler.eeGetPageSize()))
                 {
                     // The allocation can leave SP near a guard boundary; probe while restoring outgoing space.
-                    genStackPointerConstantAdjustmentLoopWithProbe(unchecked(-(nint)stackAdjustment), tmpReg);
+                    _ = genStackPointerConstantAdjustmentLoopWithProbe(unchecked(-(nint)stackAdjustment), tmpReg);
                 }
                 else
                 {

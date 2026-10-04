@@ -69,7 +69,7 @@ public sealed partial class CodeGen
             {
                 if (targetType is TYP_DOUBLE or TYP_FLOAT)
                 {
-                    tree.Oper = GT_CNS_DBL;
+                    tree._oper = GT_CNS_DBL;
                 }
                 goto case GT_CNS_DBL;
             }
@@ -84,7 +84,7 @@ public sealed partial class CodeGen
             case GT_NOT:
             case GT_NEG:
             {
-                genCodeForNegNot(tree.AsOp());
+                genCodeForNegNot(tree.AsUnOp());
                 break;
             }
 
@@ -109,7 +109,7 @@ public sealed partial class CodeGen
             case GT_AND:
             case GT_AND_NOT:
             {
-                assert(varTypeIsIntegralOrI(tree));
+                assert(varTypeIsIntegralOrI(tree.Type));
                 goto case GT_ADD;
             }
 
@@ -256,23 +256,25 @@ public sealed partial class CodeGen
 
             case GT_JCC:
             {
-                var targetBlock = _compiler.compCurBB.KindIs(BBJ_COND)
-                    ? _compiler.compCurBB.TrueTarget
-                    : _compiler.compCurBB.Target;
+                var currentBlock = _compiler.compCurBB;
+                assert(currentBlock is not null);
+
+                var block = currentBlock!;
+                var targetBlock = block.Kind is BBJ_COND ? block.TrueTarget : block.Target;
 #if !FEATURE_FIXED_OUT_ARGS
                 assert((unchecked((uint)targetBlock.bbTgtStkDepth * sizeof(int)) == genStackLevel)
                     || IsFramePointerUsed);
 #endif
 
                 var jcc = tree.AsCC();
-                assert(jcc.Condition.Is(GenCondition.EQ, GenCondition.NE));
-                var ins = jcc.Condition.Is(GenCondition.EQ) ? INS_bceqz : INS_bcnez;
+                assert(jcc.Condition.Code is GenCondition.EQ or GenCondition.NE);
+                var ins = jcc.Condition.Code is GenCondition.EQ ? INS_bceqz : INS_bcnez;
                 emit.emitIns_J(ins, targetBlock, 1);
 
-                if (_compiler.compCurBB.KindIs(BBJ_COND))
+                if (block.Kind is BBJ_COND)
                 {
-                    var falseTarget = _compiler.compCurBB.FalseTarget;
-                    if (!_compiler.compCurBB.CanRemoveJumpToTarget(falseTarget, _compiler))
+                    var falseTarget = block.FalseTarget;
+                    if (!block.CanRemoveJumpToTarget(falseTarget, _compiler))
                     {
                         inst_JMP(EJ_jmp, falseTarget);
                     }

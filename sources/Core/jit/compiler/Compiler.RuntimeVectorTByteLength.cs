@@ -16,6 +16,10 @@ public partial class Compiler
     }
 #endif
 
+#if (TARGET_LOONGARCH64 || TARGET_RISCV64) && !FEATURE_HW_INTRINSICS
+    private uint getCompileTimeVectorTByteLength() => unchecked((uint)GetVectorTByteLength());
+#endif
+
     public unsafe uint getRuntimeVectorTByteLength()
     {
         var compileTimeLength = getCompileTimeVectorTByteLength();

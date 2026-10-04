@@ -183,11 +183,11 @@ public sealed partial class CodeGen
         return INS_ldr;
 #elif TARGET_ARM
 #if FEATURE_SIMD
-        assert(!varTypeIsSIMD(srcType));
+        assert(!varTypeIsSimd(srcType));
 #endif
         return INS_vldr;
 #elif TARGET_LOONGARCH64
-        assert(!varTypeIsSIMD(srcType));
+        assert(!varTypeIsSimd(srcType));
         if (srcType == TYP_DOUBLE)
         {
             return INS_fld_d;
@@ -198,7 +198,7 @@ public sealed partial class CodeGen
             return INS_fld_s;
         }
 #elif TARGET_RISCV64
-        assert(!varTypeIsSIMD(srcType));
+        assert(!varTypeIsSimd(srcType));
         if (srcType == TYP_DOUBLE)
         {
             return INS_fld;

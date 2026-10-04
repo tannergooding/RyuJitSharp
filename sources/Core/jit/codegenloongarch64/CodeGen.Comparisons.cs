@@ -155,7 +155,7 @@ public sealed partial class CodeGen
 
             if (targetReg != REG_NA)
             {
-                assert(!tree.TypeIs(TYP_VOID));
+                assert(tree.Type is not TYP_VOID);
                 assert(Emitter.isGeneralRegister(targetReg));
 
                 emit.emitIns_R_I(INS_movcf2gr, EA_PTRSIZE, targetReg, 1);
@@ -165,7 +165,7 @@ public sealed partial class CodeGen
         else
         {
             assert(targetReg != REG_NA);
-            assert(!tree.TypeIs(TYP_VOID));
+            assert(tree.Type is not TYP_VOID);
 
             assert(!op1.IsContainedIntOrIImmed);
             assert(tree.Oper is GT_LT or GT_LE or GT_EQ or GT_NE or GT_GT or GT_GE);
@@ -279,7 +279,7 @@ public sealed partial class CodeGen
                     else
                     {
                         emit.emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
-                        emit.emitIns_R_R_R(IsUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, REG_RA, regOp1);
+                        emit.emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, REG_RA, regOp1);
                     }
                 }
                 else if (tree.Oper is GT_GE)
@@ -414,10 +414,10 @@ public sealed partial class CodeGen
         var currentBlock = _compiler.compCurBB;
         assert(currentBlock is not null);
         var block = currentBlock!;
-        assert(block.KindIs(BBJ_COND));
+        assert(block.Kind is BBJ_COND);
         assert(tree.Oper is GT_JCMP);
         assert(!varTypeIsFloating(tree.Type));
-        assert(tree.TypeIs(TYP_VOID));
+        assert(tree.Type is TYP_VOID);
         assert(tree.RegNum == REG_NA);
 
         var op1 = tree.Op1;
@@ -434,7 +434,7 @@ public sealed partial class CodeGen
         genConsumeOperands(tree);
 
         var emit = Emitter;
-        instruction ins = INS_invalid;
+        var ins = INS_invalid;
         var regs = 0;
         var cond = tree.Condition;
         var cmpSize = (emitAttr)genTypeSize(op1Type);
@@ -483,7 +483,7 @@ public sealed partial class CodeGen
                 }
 
                 var con = op2.AsIntCon();
-                var attr = emitActualTypeSize(op2Type);
+                var attr = op2Type.EmitActualSize;
                 if (con.ImmedValNeedsReloc(_compiler))
                 {
                     attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);

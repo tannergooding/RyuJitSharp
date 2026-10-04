@@ -58,6 +58,41 @@ public partial class Compiler
         throw new FatalJitException(CORJIT_SKIPPED, "ARM64 unwind emission is not ported.");
     }
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64
+    public void unwindBegProlog()
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64/RISC-V64 unwind recording is not ported.");
+    }
+
+    public void unwindEndProlog()
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64/RISC-V64 unwind recording is not ported.");
+    }
+
+    public void unwindAllocStack(uint size)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64/RISC-V64 unwind recording is not ported.");
+    }
+
+    public void unwindSaveReg(regNumber reg, uint offset)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64/RISC-V64 unwind recording is not ported.");
+    }
+
+    public void unwindSaveReg(regNumber reg, int offset)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64/RISC-V64 unwind recording is not ported.");
+    }
+
+    public void unwindReserve()
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64/RISC-V64 unwind recording is not ported.");
+    }
+
+    public unsafe void unwindEmit(void* pHotCode, void* pColdCode)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64/RISC-V64 unwind recording is not ported.");
+    }
+
     public void unwindNop()
     {
         throw new FatalJitException(CORJIT_SKIPPED, "Unwind NOP encoding for this target is not ported.");

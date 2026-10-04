@@ -35,7 +35,7 @@ public sealed partial class CodeGen
         var trueReg = trueValue.IsContained ? REG_ZERO : trueValue.RegNum;
         var falseReg = falseValue.IsContained ? REG_ZERO : falseValue.RegNum;
 
-        var attr = emitActualTypeSize(tree);
+        var attr = tree.Type.EmitActualSize;
         if (falseReg == REG_ZERO)
         {
             Emitter.emitIns_R_R_R(INS_czero_eqz, attr, targetReg, trueReg, conditionReg);

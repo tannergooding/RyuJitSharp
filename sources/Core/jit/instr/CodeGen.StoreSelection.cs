@@ -187,11 +187,11 @@ public sealed partial class CodeGen
         return INS_str;
 #elif TARGET_ARM
 #if FEATURE_SIMD
-        assert(!varTypeIsSIMD(dstType));
+        assert(!varTypeIsSimd(dstType));
 #endif
         return INS_vstr;
 #elif TARGET_LOONGARCH64
-        assert(!varTypeIsSIMD(dstType));
+        assert(!varTypeIsSimd(dstType));
         if (dstType == TYP_DOUBLE)
         {
             return aligned ? INS_fstx_d : INS_fst_d;
@@ -202,7 +202,7 @@ public sealed partial class CodeGen
             return aligned ? INS_fstx_s : INS_fst_s;
         }
 #elif TARGET_RISCV64
-        assert(!varTypeIsSIMD(dstType));
+        assert(!varTypeIsSimd(dstType));
         if (dstType == TYP_DOUBLE)
         {
             return INS_fsd;

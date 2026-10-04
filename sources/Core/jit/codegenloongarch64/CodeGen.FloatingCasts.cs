@@ -167,8 +167,8 @@ public sealed partial class CodeGen
         var dstSize = dstType.EmitSize;
         noway_assert((dstSize == EA_4BYTE) || (dstSize == EA_8BYTE));
 
-        instruction ins1 = INS_invalid;
-        instruction ins2 = INS_invalid;
+        instruction ins1;
+        instruction ins2;
         var isUnsigned = varTypeIsUnsigned(dstType);
 
         var tempReg = REG_SCRATCH_FLT;
@@ -209,7 +209,7 @@ public sealed partial class CodeGen
         // Convert unsigned values above the signed limit relative to that limit, then restore the high bit.
         if (isUnsigned)
         {
-            nint imm = 0;
+            nint imm;
             if (srcType is TYP_DOUBLE)
             {
                 if (dstSize == EA_4BYTE)
@@ -299,7 +299,7 @@ public sealed partial class CodeGen
     {
         assert(treeNode.Oper is GT_CKFINITE);
 
-        var op1 = treeNode.AsOp().Op1;
+        var op1 = treeNode.AsUnOp().Op1;
         var targetType = treeNode.Type;
         nint expMask = targetType is TYP_FLOAT ? 0xFF : 0x7FF;
         var exponentSize = targetType is TYP_FLOAT ? 8 : 11;

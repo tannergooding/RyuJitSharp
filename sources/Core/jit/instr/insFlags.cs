@@ -103,4 +103,13 @@ public enum insFlags : uint
     INS_FLAGS_SET = 0x01,
     INS_FLAGS_DONT_CARE = 0x02,
 }
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+global using static RyuJitSharp.insFlags;
+
+namespace RyuJitSharp;
+
+public enum insFlags : uint
+{
+    INS_FLAGS_DONT_CARE = 0,
+}
 #endif

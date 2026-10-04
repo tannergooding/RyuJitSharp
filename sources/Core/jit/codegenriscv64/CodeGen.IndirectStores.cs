@@ -64,7 +64,7 @@ public sealed partial class CodeGen
                 instGen_MemoryBarrier();
             }
 
-            Emitter.emitInsLoadStoreOp(ins, emitActualTypeSize(type), dataReg, tree);
+            Emitter.emitInsLoadStoreOp(ins, type.EmitActualSize, dataReg, tree);
         }
     }
 

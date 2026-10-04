@@ -48,10 +48,12 @@ public sealed partial class CodeGen
     }
 #endif
 
+#if !TARGET_LOONGARCH64
     private void genIntToIntCast(GenTreeCast tree)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "Integer cast generation outside xarch is not ported.");
     }
+#endif
 #endif
 
 #if TARGET_ARM

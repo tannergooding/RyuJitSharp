@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if !TARGET_ARM64
+#if !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
     public void genCodeForIncSaturate(GenTree tree)
     {
 #if !TARGET_XARCH

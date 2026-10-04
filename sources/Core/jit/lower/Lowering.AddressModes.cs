@@ -204,7 +204,7 @@ public sealed partial class Lowering
             assert(baseAddress is not null);
             assert(scale <= 1);
 
-            var addition = CompilerInstance.gtNewOperNode(GT_ADD, addrMode.Type, baseAddress, index);
+            var addition = CompilerInstance.gtNewBinaryNode(GT_ADD, addrMode.Type, baseAddress, index);
             BlockRange().InsertBefore(addrMode, addition);
             addrMode.BaseAddress = addition;
             addrMode.Index = null;

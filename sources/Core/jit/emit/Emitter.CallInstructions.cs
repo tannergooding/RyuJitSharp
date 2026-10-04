@@ -219,6 +219,8 @@ public partial class Emitter
             assert(emitCurStackLvl >= 0);
         }
 #endif
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+        throw new FatalJitException(CORJIT_SKIPPED, "Target call instruction recording is not implemented.");
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Call instruction recording requires xarch.");
 #endif

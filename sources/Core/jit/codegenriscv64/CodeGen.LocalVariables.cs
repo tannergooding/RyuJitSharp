@@ -98,7 +98,7 @@ public sealed partial class CodeGen
             return;
         }
 
-        ref var varDsc = ref _compiler.lvaGetDesc(lclNode);
+        ref var varDsc = ref _compiler.lvaGetDesc(lclNode.LclNum);
         if (lclNode.IsMultiReg)
         {
             NYI_RISCV64("genCodeForStoreLclVar-----unimplemented on RISCV64 yet----");
@@ -110,7 +110,7 @@ public sealed partial class CodeGen
         var targetType = varDsc.GetRegisterType(lclNode);
 
 #if FEATURE_SIMD
-        if (lclNode.TypeIs(TYP_SIMD12))
+        if (lclNode.Type is TYP_SIMD12)
         {
             genStoreLclTypeSimd12(lclNode);
             return;
@@ -119,19 +119,19 @@ public sealed partial class CodeGen
 
         genConsumeRegs(data);
 
-        regNumber dataReg = REG_NA;
+        var dataReg = REG_NA;
         if (data.IsContained)
         {
             // Contained store operands are zero-inits, constants, or bitcasts.
             var zeroInit = data.IsIntegralConst(0);
             // TODO-RISCV64-CQ: supporting the SIMD.
-            assert(!varTypeIsSIMD(targetType));
+            assert(!varTypeIsSimd(targetType));
 
             if (zeroInit)
             {
                 dataReg = REG_R0;
             }
-            else if (data.IsIntegralConst())
+            else if (data.Oper.IsIntegralConst)
             {
                 var immediate = data.AsIntConCommon().IconValue;
                 dataReg = (targetReg == REG_NA) ? rsGetRsvdReg() : targetReg; // Use tempReg if spilled
@@ -145,7 +145,7 @@ public sealed partial class CodeGen
                 }
                 else
                 {
-                    genEmitRiscvLoadImmediate(true, EA_PTRSIZE, dataReg, immediate);
+                    RyuJitSharp.Emitter.emitLoadImmediate(true, EA_PTRSIZE, dataReg, immediate);
                 }
             }
             else
@@ -171,11 +171,11 @@ public sealed partial class CodeGen
             Emitter.emitIns_S_R(ins, targetType.EmitActualSize, dataReg, varNum, 0);
 
             genUpdateLife(lclNode);
-            varDsc.SetRegNum(REG_STK);
+            varDsc.RegNum = REG_STK;
         }
         else
         {
-            if (data.IsIconHandle(GTF_ICON_TLS_HDL))
+            if (data.Oper.IsCnsIntOrI && data.AsIntCon().IsIconHandle(GTF_ICON_TLS_HDL))
             {
                 assert(data.AsIntCon().IconValue == 0);
                 // Load the address from the thread pointer register.
@@ -197,7 +197,7 @@ public sealed partial class CodeGen
             assert(tree.Oper is GT_LCLHEAP);
             assert(_compiler.compLocallocUsed);
 
-            var size = tree.AsOp().Op1;
+            var size = tree.AsUnOp().Op1;
             noway_assert(size.Type.ActualType is TYP_INT or TYP_I_IMPL);
 
             var targetReg = tree.RegNum;
@@ -267,10 +267,10 @@ public sealed partial class CodeGen
             if (size.Oper.IsCnsIntOrI)
             {
                 assert(amount > 0);
-                nint immediate = -16;
+                nint immediate;
                 assert(STACK_ALIGN == (REGSIZE_BYTES * 2));
                 assert(amount % (REGSIZE_BYTES * 2) == 0);
-                nuint storePairCount = amount / (REGSIZE_BYTES * 2);
+                var storePairCount = amount / (REGSIZE_BYTES * 2);
 
                 if (_compiler.info.compInitMem && (storePairCount <= 4))
                 {
@@ -307,7 +307,7 @@ public sealed partial class CodeGen
                             tempReg = InternalRegisters.Extract(tree);
                         }
 
-                        _ = genEmitRiscvLoadImmediate(true, EA_PTRSIZE, tempReg, (nint)amount);
+                        _ = RyuJitSharp.Emitter.emitLoadImmediate(true, EA_PTRSIZE, tempReg, (nint)amount);
                         Emitter.emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tempReg);
                     }
 
@@ -389,7 +389,7 @@ public sealed partial class CodeGen
                     (unchecked(stackAdjustment + (uint)lastTouchDelta + StackProbeBoundaryThresholdBytes) >
                         pageSize))
                 {
-                    genStackPointerConstantAdjustmentLoopWithProbe(unchecked(-(nint)stackAdjustment), tempReg);
+                    _ = genStackPointerConstantAdjustmentLoopWithProbe(unchecked(-(nint)stackAdjustment), tempReg);
                 }
                 else
                 {
@@ -427,7 +427,7 @@ public sealed partial class CodeGen
             }
             else
             {
-                _ = genEmitRiscvLoadImmediate(true, EA_PTRSIZE, regTmp, spDelta);
+                _ = RyuJitSharp.Emitter.emitLoadImmediate(true, EA_PTRSIZE, regTmp, spDelta);
                 Emitter.emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, regTmp);
             }
         }
@@ -471,11 +471,6 @@ public sealed partial class CodeGen
         nint displacement)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 relocatable immediate instruction recording is not ported.");
-    }
-
-    private int genEmitRiscvLoadImmediate(bool doEmit, emitAttr attr, regNumber reg, nint immediate)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 immediate materialization is not ported.");
     }
 
 #if FEATURE_SIMD

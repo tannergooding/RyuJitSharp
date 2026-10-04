@@ -483,6 +483,22 @@ public sealed partial class CodeGen : ICodeGen
     public regMask SRBM_MSK_CALLEE_TRASH => SRBM_NONE;
 #endif
 
+#if TARGET_LOONGARCH64
+    public regMask SRBM_FLT_CALLEE_TRASH => Globals.SRBM_FLT_CALLEE_TRASH;
+
+    public regMask SRBM_INT_CALLEE_TRASH => Globals.SRBM_INT_CALLEE_TRASH;
+
+    public regMask SRBM_MSK_CALLEE_TRASH => SRBM_NONE;
+#endif
+
+#if TARGET_RISCV64
+    public regMask SRBM_FLT_CALLEE_TRASH => Globals.SRBM_FLT_CALLEE_TRASH;
+
+    public regMask SRBM_INT_CALLEE_TRASH => Globals.SRBM_INT_CALLEE_TRASH;
+
+    public regMask SRBM_MSK_CALLEE_TRASH => Globals.SRBM_MSK_CALLEE_TRASH;
+#endif
+
     public ref RegSet RegSet => ref _regSet;
 
     public bool ShouldAlignLoops

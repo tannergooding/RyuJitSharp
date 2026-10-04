@@ -34,13 +34,13 @@ public sealed partial class CodeGen
         var targetReg = tree.RegNum;
 
         assert(targetReg != REG_NA);
-        assert(!tree.TypeIs(TYP_VOID));
+        assert(tree.Type is not TYP_VOID);
 
         var isReversed = false;
         if (varTypeIsFloating(op1Type))
         {
             assert(!op1.IsContainedIntOrIImmed && !op2.IsContainedIntOrIImmed);
-            assert(op1.TypeIs(op2.Type));
+            assert(op1.Type == op2.Type);
 
             var oper = tree.Oper;
             isReversed = (tree.Flags & GTF_RELOP_NAN_UN) != 0;
@@ -55,7 +55,7 @@ public sealed partial class CodeGen
                 (op1, op2) = (op2, op1);
             }
 
-            instruction instr = INS_none;
+            var instr = INS_none;
             switch (oper)
             {
                 case GT_LT:
@@ -143,9 +143,9 @@ public sealed partial class CodeGen
     {
         var block = _compiler.compCurBB;
         assert(block is not null);
-        assert(block!.KindIs(BBJ_COND));
+        assert(block!.Kind is BBJ_COND);
         assert(tree.Oper is GT_JCMP);
-        assert(tree.TypeIs(TYP_VOID));
+        assert(tree.Type is TYP_VOID);
         assert(tree.RegNum is REG_NA);
 
         var op1 = tree.Op1;
@@ -166,7 +166,7 @@ public sealed partial class CodeGen
             (reg1, reg2) = (reg2, reg1);
         }
 
-        instruction ins = INS_invalid;
+        var ins = INS_invalid;
         switch (condition.Code)
         {
             case GenCondition.CodeKind.EQ:
@@ -206,8 +206,8 @@ public sealed partial class CodeGen
             }
         }
 
-        assert((reg1 is REG_R0) || Emitter.isGeneralRegister(reg1));
-        assert((reg2 is REG_R0) || Emitter.isGeneralRegister(reg2));
+        assert(Emitter.isGeneralRegister(reg1));
+        assert(Emitter.isGeneralRegister(reg2));
         Emitter.emitIns_J_cond_la(ins, block!.TrueTarget, reg1, reg2);
 
         var falseTarget = block.FalseTarget;

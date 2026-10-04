@@ -3265,10 +3265,10 @@ public partial class Compiler
 #if TARGET_RISCV64
                     NI_System_Math_Max => " max",
                     NI_System_Math_MaxNative => " maxNative",
-                    NI_System_Math_Maxuint => " maxuint",
+                    NI_System_Math_MaxUnsigned => " maxuint",
                     NI_System_Math_Min => " min",
                     NI_System_Math_MinNative => " minNative",
-                    NI_System_Math_Minuint => " minuint",
+                    NI_System_Math_MinUnsigned => " minuint",
                     NI_PRIMITIVE_LeadingZeroCount => " leadingZeroCount",
                     NI_PRIMITIVE_TrailingZeroCount => " trailingZeroCount",
                     NI_PRIMITIVE_PopCount => " popCount",
@@ -7925,7 +7925,7 @@ public partial class Compiler
                     addrModeCostSz += 4;
                 }
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64
-                if (!emitter.isValidSimm12(cns))
+                if (!Emitter.isValidSimm12(cns))
                 {
                     // TODO-LoongArch64-CQ: tune for LoongArch64.
                     // TODO-RISCV64-CQ: tune for RISCV64.
@@ -8076,12 +8076,12 @@ public partial class Compiler
                 //      |     |- CNS_INT    (scale)
                 //      |- CNS_INT          (offset)
 
-                var index = op2.Op1;
+                var index = op2.AsOp().Op1;
 
                 if ((index is not null) && (index.Oper is GT_CAST))
                 {
                     assert(index.Type is TYP_I_IMPL);
-                    index->gtFlags |= GTF_ADDRMODE_NO_CSE;
+                    index.Flags |= GTF_ADDRMODE_NO_CSE;
                 }
 #endif
             }
@@ -14685,7 +14685,8 @@ public partial class Compiler
                     }
                     else
                     {
-                        var instructionCount = Emitter.emitLoadImmediate<false>(size, REG_NA, imm);
+                        var size = intCon.Type.EmitActualSize;
+                        var instructionCount = Emitter.emitLoadImmediate(false, size, REG_NA, iconVal);
                         assert(instructionCount is not 0);
 
                         if (instructionCount == -1)

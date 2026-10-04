@@ -7,6 +7,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+#if !TARGET_LOONGARCH64
     public void genFloatToFloatCast(GenTree treeNode)
     {
 #if !TARGET_XARCH
@@ -53,7 +54,9 @@ public sealed partial class CodeGen
         genProduceReg(cast);
 #endif
     }
+#endif
 
+#if !TARGET_LOONGARCH64 && !TARGET_RISCV64
     public void genIntToFloatCast(GenTree treeNode)
     {
 #if !TARGET_XARCH
@@ -137,4 +140,5 @@ public sealed partial class CodeGen
         genProduceReg(cast);
 #endif
     }
+#endif
 }

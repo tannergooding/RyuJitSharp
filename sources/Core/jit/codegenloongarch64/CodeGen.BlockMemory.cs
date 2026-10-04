@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+#if TARGET_LOONGARCH64
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
@@ -63,7 +64,7 @@ public sealed partial class CodeGen
         assert(size <= int.MaxValue);
         assert(dstOffset < int.MaxValue - unchecked((int)size));
 
-        for (uint regSize = (uint)(2 * REGSIZE_BYTES); size >= regSize; size -= regSize, dstOffset += (int)regSize)
+        for (var regSize = (uint)(2 * REGSIZE_BYTES); size >= regSize; size -= regSize, dstOffset += (int)regSize)
         {
             if (dstLclNum != BAD_VAR_NUM)
             {
@@ -77,7 +78,7 @@ public sealed partial class CodeGen
             }
         }
 
-        for (uint regSize = (uint)REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += (int)regSize)
+        for (var regSize = (uint)REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += (int)regSize)
         {
             while (regSize > size)
             {
@@ -136,3 +137,4 @@ public sealed partial class CodeGen
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 memory barrier emission is not ported.");
     }
 }
+#endif

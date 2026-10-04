@@ -35,7 +35,7 @@ public sealed partial class CodeGen
         var srcSize = srcType.EmitSize;
         noway_assert((srcSize == EA_4BYTE) || (srcSize == EA_8BYTE));
 
-        instruction ins = INS_invalid;
+        instruction ins;
         if (cast.IsUnsigned)
         {
             if (dstType is TYP_DOUBLE)
@@ -114,7 +114,7 @@ public sealed partial class CodeGen
         noway_assert((dstSize == EA_4BYTE) || (dstSize == EA_8BYTE));
 
         var isUnsigned = varTypeIsUnsigned(dstType);
-        instruction ins = INS_invalid;
+        instruction ins;
 
         if (isUnsigned)
         {
@@ -178,7 +178,7 @@ public sealed partial class CodeGen
         Emitter.emitIns_R_R(ins, dstSize, treeNode.RegNum, op1.RegNum);
 
         // This emulates the "flush to zero" option because the RISC-V specification does not provide it.
-        instruction feqIns = INS_feq_s;
+        var feqIns = INS_feq_s;
         if (srcType is TYP_DOUBLE)
         {
             feqIns = INS_feq_d;
@@ -196,7 +196,7 @@ public sealed partial class CodeGen
     {
         assert(treeNode.Oper is GT_CKFINITE);
 
-        var op1 = treeNode.AsOp().Op1;
+        var op1 = treeNode.AsUnOp().Op1;
         var targetType = treeNode.Type;
         var expMask = 0x381; // fclass bits 0 and 7-9 identify infinities and NaNs.
 

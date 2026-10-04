@@ -43,7 +43,11 @@ public partial class Emitter
 
     public void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock dst, regNumber reg)
     {
-#if !TARGET_XARCH
+#if TARGET_LOONGARCH64
+        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 block-relative address recording is not ported.");
+#elif TARGET_RISCV64
+        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 block-relative address recording is not ported.");
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Basic-block label address recording requires xarch.");
 #else
 #if TARGET_AMD64

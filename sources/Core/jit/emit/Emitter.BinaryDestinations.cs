@@ -9,7 +9,9 @@ public partial class Emitter
 {
     public void emitIns_R_AR(instruction ins, emitAttr attr, regNumber reg, regNumber baseReg, int displacement)
     {
-#if !TARGET_XARCH
+#if TARGET_RISCV64
+        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 register-address instruction recording is not ported.");
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Register/address instruction recording requires xarch.");
 #else
         emitIns_R_ARX(ins, attr, reg, baseReg, REG_NA, 1, displacement);

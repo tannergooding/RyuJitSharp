@@ -225,7 +225,9 @@ public partial class Emitter
 #endif
         )
     {
-#if !TARGET_XARCH
+#if TARGET_LOONGARCH64
+        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 relocated-address instruction recording is not ported.");
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Absolute-address instruction recording requires xarch.");
 #else
 #if TARGET_AMD64

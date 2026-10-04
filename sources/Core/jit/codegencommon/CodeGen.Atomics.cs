@@ -67,7 +67,7 @@ public sealed partial class CodeGen
 
         assert((node.Oper is GT_XCHG) || !varTypeIsSmall(node.Type));
 
-        var dataSize = emitActualTypeSize(data);
+        var dataSize = data.Type.EmitActualSize;
 
         if (_compiler.compOpportunisticallyDependsOn(InstructionSet_Atomics))
         {
@@ -125,8 +125,13 @@ public sealed partial class CodeGen
         {
             assert((node.Oper is not GT_XORR) && (node.Oper is not GT_XAND));
 
-            var exResultReg = InternalRegisters.Extract(node, RBM_ALLINT);
-            var storeDataReg = (node.Oper is GT_XCHG) ? dataReg : InternalRegisters.Extract(node, RBM_ALLINT);
+#if TARGET_ARM64
+            var allIntRegs = new regMaskTP(SRBM_ALLINT);
+#else
+            var allIntRegs = RBM_ALLINT;
+#endif
+            var exResultReg = InternalRegisters.Extract(node, allIntRegs);
+            var storeDataReg = (node.Oper is GT_XCHG) ? dataReg : InternalRegisters.Extract(node, allIntRegs);
             var loadReg = (targetReg != REG_NA) ? targetReg : storeDataReg;
 
             // Check allocator assumptions: store-exclusive unpredictable cases must be avoided.
@@ -222,7 +227,6 @@ public sealed partial class CodeGen
             genProduceReg(node);
         }
 #elif TARGET_LOONGARCH64
-        NYI("unimplemented on LOONGARCH64 yet");
         throw new FatalJitException(CORJIT_SKIPPED, "unimplemented on LOONGARCH64 yet");
 #elif TARGET_RISCV64
         assert(!varTypeIsSmall(node.Type));
@@ -240,7 +244,7 @@ public sealed partial class CodeGen
         genConsumeAddress(addr);
         genConsumeRegs(data);
 
-        var dataSize = emitActualTypeSize(data);
+        var dataSize = data.Type.EmitActualSize;
         var is4 = dataSize == EA_4BYTE;
         var ins = node.Oper switch
         {
@@ -323,7 +327,6 @@ public sealed partial class CodeGen
     public void genCodeForCmpXchg(GenTreeCmpXchg tree)
     {
 #if TARGET_LOONGARCH64
-        NYI("unimplemented on LOONGARCH64 yet");
         throw new FatalJitException(CORJIT_SKIPPED, "unimplemented on LOONGARCH64 yet");
 #elif TARGET_RISCV64
         assert(tree.Oper is GT_CMPXCHG);
@@ -372,7 +375,7 @@ public sealed partial class CodeGen
 
         var retry = genCreateTempLabel();
         var fail = genCreateTempLabel();
-        var size = emitActualTypeSize(valOp);
+        var size = valOp.Type.EmitActualSize;
         var is4 = size == EA_4BYTE;
 
         genDefineTempLabel(retry);

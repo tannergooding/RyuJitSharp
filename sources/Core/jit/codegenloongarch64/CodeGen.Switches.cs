@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+#if TARGET_LOONGARCH64
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
@@ -36,6 +37,7 @@ public sealed partial class CodeGen
         assert(firstBlock is not null);
         Emitter.emitIns_R_L(INS_lea, EA_PTRSIZE, firstBlock, tempReg);
         Emitter.emitIns_R_R_R(INS_add_d, EA_PTRSIZE, baseReg, baseReg, tempReg);
-        Emitter.emitIns_R_R_I(INS_jirl, emitActualTypeSize(TYP_I_IMPL), REG_R0, baseReg, 0);
+        Emitter.emitIns_R_R_I(INS_jirl, TYP_I_IMPL.EmitActualSize, REG_R0, baseReg, 0);
     }
 }
+#endif
