@@ -75,7 +75,7 @@ public partial class Compiler
         // Wasm does not have cold code.
         pColdCode = null;
 
-        byte* buffer = stackalloc byte[WasmUnwindInfoBufferSize];
+        var buffer = stackalloc byte[WasmUnwindInfoBufferSize];
         var index = 0;
         assert(func.endVirtualIP > func.startVirtualIP);
         index += WriteWasmUnwindInfoULEB128(buffer + index, func.funWasmFrameSize);

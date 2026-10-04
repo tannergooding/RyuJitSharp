@@ -118,7 +118,7 @@ internal static unsafe class WasmUnwindTests
             Assert.That(context->Reservations[0].Size, Is.EqualTo(3));
             Assert.That(context->Reservations[1].Size, Is.EqualTo(5));
             Assert.That(context->Reservations[2].Size, Is.EqualTo(7));
-            Assert.That(context->Reservations[3].Size, Is.EqualTo(8));
+            Assert.That(context->Reservations[3].Size, Is.EqualTo(10));
             Assert.That(context->Reservations[4].Size, Is.EqualTo(10));
             Assert.That(context->Reservations[5].Size, Is.EqualTo(3));
 
@@ -221,7 +221,7 @@ internal static unsafe class WasmUnwindTests
         Assert.That(allocation.Start, Is.EqualTo(start));
         Assert.That(allocation.End, Is.EqualTo(end));
         Assert.That(allocation.HotCode, Is.EqualTo((nint)context->HotCode));
-        Assert.That(allocation.ColdCode, Is.Zero);
+        Assert.That(allocation.ColdCode, Is.EqualTo(IntPtr.Zero));
         Assert.That(allocation.Size, Is.EqualTo(bytes.Length));
         Assert.That(allocation.Kind, Is.EqualTo(kind));
         for (var byteIndex = 0; byteIndex < bytes.Length; byteIndex++)

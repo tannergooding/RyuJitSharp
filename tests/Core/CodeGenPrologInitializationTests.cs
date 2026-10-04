@@ -182,6 +182,23 @@ internal static unsafe class CodeGenPrologInitializationTests
         });
     }
 
+#if TARGET_AMD64
+    [TestCase(false, INS_movaps)]
+    [TestCase(true, INS_movdqa32)]
+    public static void AlignedMoveSelectionUsesVexEncodingWhenSupported(bool vex, instruction expected)
+    {
+        WithProlog((compiler, codeGen) =>
+        {
+            if (vex)
+            {
+                EnableAvx2(compiler);
+            }
+
+            Assert.That(GetSimdAlignedMovIns(codeGen), Is.EqualTo(expected));
+        });
+    }
+#endif
+
     [TestCase(1L, false)]
     [TestCase(-1L, false)]
     [TestCase(int.MaxValue, false)]
@@ -453,6 +470,11 @@ internal static unsafe class CodeGenPrologInitializationTests
         codeGen.Emitter.UseVexEncodings = width > 16;
         codeGen.Emitter.UseEvexEncodings = width == 64;
     }
+
+#if TARGET_AMD64
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "simdAlignedMovIns")]
+    private static extern instruction GetSimdAlignedMovIns(CodeGen codeGen);
+#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitGetInsAmdAny")]
     private static extern nint Displacement(Emitter emitter, Emitter.instrDesc descriptor);
