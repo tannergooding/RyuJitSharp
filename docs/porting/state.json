@@ -3412,6 +3412,14 @@
         "retirement": "Retired the complete residual compRsvdRegCheck definition (173 lines) and its exclusive declaration/access section from the consolidated Remove ported code commit. Native HEAD ab68a3a2ac497e8979414c553af1c6e4a97dac8c remains solely parented to oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e; recovery ref refs/copilot-recovery/arm32-comp-rsvd-reg-before-9601fab1 preserves pre-amend HEAD 9601fab1f64e1ba3c458ae5f417e8c0a404f78bd.",
         "limits": "ARM32 unwind behavior remains unported; the compile-only dependency stubs terminate. These cross-target tests are not Windows-x64 parity evidence. Continue the Windows-x64 port and mapped retirement debt separately."
       },
+      "riscvReservedRegisterCheckFollowup": {
+        "status": "completed-existing-managed-mapping",
+        "scope": "Restore the existing RISC-V compRsvdRegCheck branch beside ARM64 and preserve its target-specific diagnostic while it advances frame layout and reserves the register.",
+        "mapping": "Pinned runtime-oracle src/coreclr/jit/compiler.cpp::Compiler::compRsvdRegCheck maps to sources/Core/jit/compiler/Compiler.FinalFrameLayout.cs; this is a target-guard follow-up, not a new algorithm.",
+        "validation": "RiscVReservedRegisterCheckTests passed 1/1 Debug and Release in tests\\Targets\\RyuJitSharp.Target.UnitTests.csproj, full analysis, target RID linux-riscv64, host RID win-x64, default compiler CPU, and compiler-only DOTNET_GCConserveMemory=5. The non-MinOpts case verifies frame-layout advancement and the unconditional reserved-register result.",
+        "retirement": "No new native change: the whole native definition and exclusive declaration were already retired at consolidated native HEAD ab68a3a2ac497e8979414c553af1c6e4a97dac8c. runtime-port contains no retained compRsvdRegCheck definition.",
+        "limits": "Managed target-branch tests only; no RISC-V generated-code or runtime-parity claim."
+      },
       "x64LsraHeaderHelpers": {
         "status": "completed-existing-mappings-native-retired",
         "scope": "Retire the shared LSRA interval lookups, local-candidate predicate helpers, definition-type helper, and RegisterSelection query helpers from lsra.h.",

@@ -71,7 +71,7 @@ public partial class Compiler
         return (uint)compLclFrameSize + calleeSavedRegMaxSz;
     }
 
-#if TARGET_ARM64
+#if TARGET_ARM64 || TARGET_RISCV64
     public bool compRsvdRegCheck(FrameLayoutState curState)
     {
         var frameSize = lvaFrameSize(curState);
@@ -92,7 +92,11 @@ public partial class Compiler
 
         calleeSavedRegMaxSz += REGSIZE_BYTES;
         noway_assert(frameSize >= calleeSavedRegMaxSz);
+#if TARGET_ARM64
         JITDUMP(" Returning true (ARM64)\n\n");
+#else
+        JITDUMP(" Returning true (RISCV64)\n\n");
+#endif
         return true;
     }
 #endif
