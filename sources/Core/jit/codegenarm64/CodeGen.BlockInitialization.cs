@@ -42,7 +42,7 @@ public sealed partial class CodeGen
             if ((bytesToWrite >= bytesUseDataCacheZeroInstruction) &&
                 _compiler.compOpportunisticallyDependsOn(InstructionSet_Dczva))
             {
-                genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, frameReg, untrLclLo + 64, addrReg);
+                _ = genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, frameReg, untrLclLo + 64, addrReg);
                 addrOffset = -64;
 
                 // Keep DC ZVA within the requested region by explicitly storing its first and last 64 bytes.
@@ -53,7 +53,7 @@ public sealed partial class CodeGen
                     initRegZeroed = false;
                 }
 
-                genInstrWithConstant(INS_add, EA_PTRSIZE, endAddrReg, frameReg, untrLclHi - 64, endAddrReg);
+                _ = genInstrWithConstant(INS_add, EA_PTRSIZE, endAddrReg, frameReg, untrLclHi - 64, endAddrReg);
 
                 Emitter.emitIns_R_R_R_I(INS_stp, EA_16BYTE, zeroSimdReg, zeroSimdReg, addrReg, addrOffset);
                 addrOffset += simdRegPairSizeBytes;
@@ -77,7 +77,7 @@ public sealed partial class CodeGen
             }
             else
             {
-                genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, frameReg, untrLclLo - 32, addrReg);
+                _ = genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, frameReg, untrLclLo - 32, addrReg);
                 addrOffset = 32;
 
                 const regNumber countReg = REG_R10;
@@ -103,7 +103,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, frameReg, untrLclLo, addrReg);
+            _ = genInstrWithConstant(INS_add, EA_PTRSIZE, addrReg, frameReg, untrLclLo, addrReg);
         }
 
         if (bytesToWrite >= simdRegPairSizeBytes)
@@ -111,7 +111,6 @@ public sealed partial class CodeGen
             if (!simdRegZeroed)
             {
                 Emitter.emitIns_R_I(INS_movi, EA_16BYTE, zeroSimdReg, 0, INS_OPTS_16B);
-                simdRegZeroed = true;
             }
 
             for (; bytesToWrite >= simdRegPairSizeBytes; bytesToWrite -= simdRegPairSizeBytes)
