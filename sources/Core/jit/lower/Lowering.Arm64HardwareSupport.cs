@@ -159,7 +159,7 @@ public sealed partial class Lowering
             IsFfrIntrinsic(node.HWIntrinsicId));
 
         var local = CompilerInstance.getFFRegisterVarNum();
-        var register = new GenTreePhysReg(REG_FFR, TYP_MASK);
+        var register = CompilerInstance.gtNewPhysRegNode(REG_FFR, TYP_MASK);
         var store = CompilerInstance.gtNewStoreLclVarNode(local, register);
         BlockRange().InsertAfter(node, register, store);
         _ffrTrashed = false;

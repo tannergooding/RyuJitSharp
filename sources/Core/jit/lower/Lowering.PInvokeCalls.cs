@@ -113,7 +113,7 @@ public sealed partial class Lowering
         InsertTreeBeforeAndContainCheck(insertionPoint, targetStore);
 
 #if TARGET_X86
-        var stackPointer = new GenTreePhysReg(REG_SPBASE, TYP_I_IMPL);
+        var stackPointer = compiler.gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
         var stackPointerStore = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
             checked((ushort)frameInfo.offsetOfCallSiteSP), stackPointer);
         InsertTreeBeforeAndContainCheck(insertionPoint, stackPointerStore);

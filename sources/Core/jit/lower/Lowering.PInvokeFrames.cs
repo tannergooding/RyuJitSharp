@@ -57,7 +57,7 @@ public sealed partial class Lowering
         DISPTREERANGE(firstBlockRange, morphedStore);
 
 #if !TARGET_X86 && !TARGET_ARM
-        var stackPointer = new GenTreePhysReg(REG_SPBASE, TYP_I_IMPL);
+        var stackPointer = compiler.gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
         var stackPointerStore = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
             checked((ushort)frameInfo.offsetOfCallSiteSP), stackPointer);
         firstBlockRange.InsertBefore(insertionPoint, LIR.SeqTree(compiler, stackPointerStore));
@@ -65,7 +65,7 @@ public sealed partial class Lowering
 #endif
 
 #if !TARGET_ARM
-        var framePointer = new GenTreePhysReg(REG_FPBASE, TYP_I_IMPL);
+        var framePointer = compiler.gtNewPhysRegNode(REG_FPBASE, TYP_I_IMPL);
         var framePointerStore = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
             checked((ushort)frameInfo.offsetOfCalleeSavedFP), framePointer);
         firstBlockRange.InsertBefore(insertionPoint, LIR.SeqTree(compiler, framePointerStore));

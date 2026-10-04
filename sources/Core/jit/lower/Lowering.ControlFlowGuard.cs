@@ -124,15 +124,15 @@ public sealed partial class Lowering
                 // The validator preserves its target in a designated register; reloading it
                 // from memory after validation would allow the checked and called targets to differ.
 #if TARGET_AMD64 || TARGET_ARM64
-                var regNode = new GenTreePhysReg(REG_VALIDATE_INDIRECT_CALL_ADDR, TYP_I_IMPL);
+                var regNode = compiler.gtNewPhysRegNode(REG_VALIDATE_INDIRECT_CALL_ADDR, TYP_I_IMPL);
 #elif TARGET_X86
-                var regNode = new GenTreePhysReg(REG_ECX, TYP_I_IMPL);
+                var regNode = compiler.gtNewPhysRegNode(REG_ECX, TYP_I_IMPL);
 #elif TARGET_ARM
-                var regNode = new GenTreePhysReg(REG_R0, TYP_I_IMPL);
+                var regNode = compiler.gtNewPhysRegNode(REG_R0, TYP_I_IMPL);
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64
-                var regNode = new GenTreePhysReg(REG_T3, TYP_I_IMPL);
+                var regNode = compiler.gtNewPhysRegNode(REG_T3, TYP_I_IMPL);
 #elif TARGET_WASM
-                var regNode = new GenTreePhysReg(REG_NA, TYP_I_IMPL);
+                var regNode = compiler.gtNewPhysRegNode(REG_NA, TYP_I_IMPL);
 #else
                 NYI("Lowering.LowerCFGCall validation register for this target");
                 fatal(CORJIT_IMPLLIMITATION);

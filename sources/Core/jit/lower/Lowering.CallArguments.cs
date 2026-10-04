@@ -168,7 +168,7 @@ public sealed partial class Lowering
     {
         assert(putArgStk is not null);
         var compiler = CompilerInstance;
-        GenTree destination = new GenTreePhysReg(REG_SPBASE, TYP_I_IMPL);
+        GenTree destination = compiler.gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
         var localType = compiler.lvaGetRealType(lclNum);
         GenTree source;
         if (localType is TYP_BYREF or TYP_I_IMPL)
