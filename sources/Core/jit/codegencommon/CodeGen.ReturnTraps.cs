@@ -72,6 +72,16 @@ public sealed partial class CodeGen
         var killMask = _compiler.compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC);
         _regSet.verifyRegistersUsed(killMask);
         genDefineTempLabel(skipLabel);
+#elif TARGET_ARM64
+        assert(tree.Oper is GT_RETURNTRAP);
+        var data = tree.Op1;
+        genConsumeRegs(data);
+        Emitter.emitIns_R_I(INS_cmp, EA_4BYTE, data.RegNum, 0);
+
+        var skipLabel = genCreateTempLabel();
+        inst_JMP(EJ_eq, skipLabel);
+        genEmitHelperCall(CORINFO_HELP_STOP_FOR_GC, 0, EA_UNKNOWN);
+        genDefineTempLabel(skipLabel);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Return-trap generation requires AMD64.");
 #else
