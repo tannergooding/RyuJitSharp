@@ -4,7 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace RyuJitSharp;
 
@@ -240,7 +239,7 @@ public partial class Compiler
 
                             memoryHavoc |= AllLoopMemoryKinds;
                         }
-                        else if (TryGetLoopArrayAddr(addr, out var arrAddr))
+                        else if (addr.IsArrayAddr(out var arrAddr))
                         {
                             var elemType = EncodeElemType(arrAddr.ElemType, arrAddr.ElemClassHandle);
                             AddModifiedElemTypeAllContainingLoops(mostNestedLoop, elemType);
@@ -345,17 +344,6 @@ public partial class Compiler
         {
             optRecordLoopNestsMemoryHavoc(mostNestedLoop, memoryHavoc);
         }
-    }
-
-    private static bool TryGetLoopArrayAddr(GenTree address, [NotNullWhen(true)] out GenTreeArrAddr? arrAddr)
-    {
-        if ((address.Oper is GT_ADD) && address.AsOp().Op2.Oper.IsCnsIntOrI)
-        {
-            address = address.AsOp().Op1;
-        }
-
-        arrAddr = address.Oper is GT_ARR_ADDR ? address.AsArrAddr() : null;
-        return arrAddr is not null;
     }
 
     public void optRecordLoopNestsMemoryHavoc(FlowGraphNaturalLoop loop, MemoryKindSet memoryHavoc)

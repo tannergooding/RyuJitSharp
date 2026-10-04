@@ -5,6 +5,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
@@ -641,6 +642,19 @@ public partial class GenTree
     }
 
     public bool IsLclVarAddr => (_oper is GT_LCL_ADDR) && (AsLclFld().LclOffs == 0);
+
+    /// <summary>Get the array-address node beneath an optional constant offset.</summary>
+    public bool IsArrayAddr([NotNullWhen(true)] out GenTreeArrAddr? arrayAddress)
+    {
+        var address = this;
+        if ((address.Oper is GT_ADD) && address.AsOp().Op2.Oper.IsCnsIntOrI)
+        {
+            address = address.AsOp().Op1;
+        }
+
+        arrayAddress = address.Oper is GT_ARR_ADDR ? address.AsArrAddr() : null;
+        return arrayAddress is not null;
+    }
 
 #if DEBUG
     public bool IsLirOp => (_oper.DebugKind & DBK_NOTLIR) == 0;
