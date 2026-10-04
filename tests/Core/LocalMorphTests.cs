@@ -122,6 +122,22 @@ internal static unsafe class LocalMorphTests
         });
     }
 
+    [TestCase(TYP_INT, IND_COST_EX, 4)]
+    [TestCase(TYP_BYTE, IND_COST_EX + 1, 5)]
+    [TestCase(TYP_STRUCT, 3 * IND_COST_EX, 8)]
+    public static void LocalFieldNodeCostsPreserveNativeTypeRules(var_types type, int execution, int size)
+    {
+        WithCompiler(compiler =>
+        {
+            var node = type is TYP_STRUCT
+                ? new GenTreeLclFld(GT_LCL_FLD, type, 0, 0, new ClassLayout(8))
+                : new GenTreeLclFld(GT_LCL_FLD, type, 0, 0);
+            compiler.gtGetLclFldNodeCost(node, out var costEx, out var costSz);
+
+            Assert.That((costEx, costSz), Is.EqualTo((execution, size)));
+        });
+    }
+
     [TestCase(TYP_FLOAT, true, 1, 2)]
     [TestCase(TYP_DOUBLE, true, 1, 2)]
     [TestCase(TYP_FLOAT, false, IND_COST_EX, 4)]
