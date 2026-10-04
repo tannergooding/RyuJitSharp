@@ -140,7 +140,7 @@ public sealed partial class hashBv
     public void Resize(int newSize)
     {
         assert(newSize > 0);
-        newSize = 1 << BitOperations.Log2((uint)newSize);
+        newSize = Globals.nearest_pow2((uint)newSize);
         var oldSize = hashtable_size();
 
         if (newSize == oldSize)

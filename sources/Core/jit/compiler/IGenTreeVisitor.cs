@@ -279,6 +279,12 @@ public interface IGenTreeVisitor<TSelf>
                         }
                         break;
                     }
+
+                    default:
+                    {
+                        assert(false, "unhandled special node");
+                        break;
+                    }
                 }
             }
         }

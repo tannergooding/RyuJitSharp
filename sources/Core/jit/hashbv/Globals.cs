@@ -23,6 +23,11 @@ public static partial class Globals
     public const int ELEMENTS_PER_NODE = 1 << LOG2_ELEMENTS_PER_NODE;
     public const int BITS_PER_NODE = 1 << LOG2_BITS_PER_NODE;
 
+    public static int nearest_pow2(uint number)
+    {
+        return 1 << BitOperations.Log2(number);
+    }
+
     public static HbvWalk ForEachHbvBitSet(hashBv bv, Func<indexType, HbvWalk> func)
     {
         for (var hashNum = 0; hashNum < bv.hashtable_size(); hashNum++)

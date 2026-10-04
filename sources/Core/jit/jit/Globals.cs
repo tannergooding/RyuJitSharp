@@ -438,16 +438,28 @@ public partial class Globals
 
     public static nint dspOffset(nint offs)
     {
-        var compiler = JitTls.Compiler;
-        assert(compiler is not null);
-        return compiler.dspOffset(offs);
+#if DEBUG
+        if (offs != 0)
+        {
+            var compiler = JitTls.Compiler;
+            assert(compiler is not null);
+            return compiler.dspOffset(offs);
+        }
+#endif
+        return offs;
     }
 
     public static unsafe nint dspPtr(void* ptr)
     {
-        var compiler = JitTls.Compiler;
-        assert(compiler is not null);
-        return compiler.dspPtr(ptr);
+#if DEBUG
+        if (ptr != null)
+        {
+            var compiler = JitTls.Compiler;
+            assert(compiler is not null);
+            return compiler.dspPtr(ptr);
+        }
+#endif
+        return unchecked((nint)ptr);
     }
 
 #if DEBUG
