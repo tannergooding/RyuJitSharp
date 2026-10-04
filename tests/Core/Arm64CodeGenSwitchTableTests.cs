@@ -2,10 +2,12 @@
 
 #if TARGET_ARM64
 using NUnit.Framework;
+using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
+using static RyuJitSharp.insOpts;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 
@@ -27,6 +29,7 @@ internal static class Arm64CodeGenSwitchTableTests
             var tree = new GenTreeOp(GT_SWITCH_TABLE, TYP_VOID, index, table);
             codeGen.InternalRegisters.Add(tree,
                 regMaskTP.CreateFromRegNum(REG_R3, REG_R3.SingleTypeMask));
+            compiler.fgFirstBB = new BasicBlock(null, null);
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree)) ??
                 throw new AssertionException("The unported ARM64 block-address dependency did not fail.");
