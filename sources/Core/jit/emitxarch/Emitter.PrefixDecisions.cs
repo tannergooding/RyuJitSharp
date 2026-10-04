@@ -12,6 +12,22 @@ public partial class Emitter
 
     private bool TakesVexPrefix(instruction ins) => IsVexEncodableInstruction(ins) && ins != INS_vzeroupper;
 
+    public ulong AddSimdPrefixIfNeeded(instrDesc id, ulong code, emitAttr size)
+    {
+        if (TakesEvexPrefix(id))
+        {
+            return AddEvexPrefix(id, code, size);
+        }
+
+        var ins = id.idIns();
+        if (TakesVexPrefix(ins))
+        {
+            return AddVexPrefix(ins, code, size);
+        }
+
+        return code;
+    }
+
     internal bool TakesEvexPrefix(instrDesc id)
     {
         var ins = id.idIns();
