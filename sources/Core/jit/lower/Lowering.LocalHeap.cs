@@ -81,6 +81,12 @@ public sealed partial class Lowering
         }
 #elif TARGET_ARM64
         // Native ARM64 nonlocal jump containment is empty.
+#elif TARGET_RISCV64
+        // Native RISC-V nonlocal jump containment is empty.
+#elif TARGET_LOONGARCH64
+        // Native LoongArch64 nonlocal jump containment is empty.
+#elif TARGET_WASM
+        // Wasm nonlocal jumps have no containable operands.
 #else
         throw new NotImplementedException("Nonlocal jump containment is not ported for this target.");
 #endif

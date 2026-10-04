@@ -361,7 +361,7 @@ public sealed partial class Lowering
 
     private GenTree? LowerStoreLoc(GenTreeLclVarCommon storeLoc)
     {
-#if TARGET_XARCH || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_RISCV64
 #if TARGET_XARCH
         if ((storeLoc.Oper is GT_STORE_LCL_VAR) && (storeLoc.Type.Size == 2) &&
             storeLoc.Op1.Oper.IsCnsIntOrI && !CompilerInstance.lvaGetDesc(storeLoc.LclNum).lvIsStructField)
@@ -383,6 +383,22 @@ public sealed partial class Lowering
         }
 #endif
         return next;
+#elif TARGET_WASM
+        if (storeLoc.Oper is GT_STORE_LCL_FLD)
+        {
+            VerifyLclFldDoNotEnregister(storeLoc.LclNum);
+        }
+
+        ContainCheckStoreLoc(storeLoc);
+        return storeLoc.Next;
+#elif TARGET_LOONGARCH64
+        if (storeLoc.Oper is GT_STORE_LCL_FLD)
+        {
+            VerifyLclFldDoNotEnregister(storeLoc.LclNum);
+        }
+
+        ContainCheckStoreLoc(storeLoc);
+        return storeLoc.Next;
 #else
         throw new System.NotImplementedException("Non-xarch local-store lowering is not ported.");
 #endif
@@ -390,7 +406,7 @@ public sealed partial class Lowering
 
     private void ContainCheckStoreLoc(GenTreeLclVarCommon storeLoc)
     {
-#if TARGET_XARCH || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_RISCV64
         assert(storeLoc.Oper.IsLocalStore);
         var source = storeLoc.Op1;
         if (source.Oper is GT_BITCAST)
@@ -414,6 +430,15 @@ public sealed partial class Lowering
             }
             return;
         }
+#elif TARGET_RISCV64
+        if (storeLoc.Type is TYP_SIMD8 or TYP_SIMD12)
+        {
+            if ((source.IsIntegralConst(0) || source.IsVectorZero) && descriptor.lvDoNotEnregister)
+            {
+                MakeSrcContained(storeLoc, source);
+            }
+            return;
+        }
 #else
         if (varTypeIsSimd(storeLoc.Type))
         {
@@ -424,6 +449,25 @@ public sealed partial class Lowering
 #endif
 #if TARGET_ARM64
         if (IsContainableImmed(storeLoc, source))
+        {
+            MakeSrcContained(storeLoc, source);
+        }
+#elif TARGET_RISCV64
+        if (IsContainableImmed(storeLoc, source))
+        {
+            MakeSrcContained(storeLoc, source);
+        }
+
+        var type = descriptor.GetRegisterType(storeLoc);
+        if (IsContainableImmed(storeLoc, source) &&
+            (!source.IsIntegralConst(0) || varTypeIsSmall(type)))
+        {
+            MakeSrcContained(storeLoc, source);
+        }
+
+        if ((storeLoc.Oper is GT_STORE_LCL_VAR) && source.IsIconHandle() &&
+            source.AsIntCon().FitsInAddrBase(CompilerInstance) &&
+            source.AsIntCon().AddrNeedsReloc(CompilerInstance))
         {
             MakeSrcContained(storeLoc, source);
         }
@@ -440,6 +484,43 @@ public sealed partial class Lowering
         }
 #endif
 #endif
+#elif TARGET_WASM
+        // Wasm stores do not contain local-store sources.
+#elif TARGET_LOONGARCH64
+        assert(storeLoc.Oper.IsLocalStore);
+        var source = storeLoc.Op1;
+        if (source.Oper is GT_BITCAST)
+        {
+            var bitcastSource = source.AsUnOp().Op1;
+            if (!bitcastSource.IsContained && !bitcastSource.IsRegOptional)
+            {
+                source.IsContained = true;
+                return;
+            }
+        }
+
+        ref var descriptor = ref CompilerInstance.lvaGetDesc(storeLoc.LclNum);
+#if FEATURE_SIMD
+        if (storeLoc.Type is TYP_SIMD8 or TYP_SIMD12)
+        {
+            if ((source.IsIntegralConst(0) || source.IsVectorZero) && descriptor.lvDoNotEnregister)
+            {
+                MakeSrcContained(storeLoc, source);
+            }
+            return;
+        }
+#endif
+        if (IsContainableImmed(storeLoc, source))
+        {
+            MakeSrcContained(storeLoc, source);
+        }
+
+        var type = descriptor.GetRegisterType(storeLoc);
+        if (IsContainableImmed(storeLoc, source) &&
+            (!source.IsIntegralConst(0) || varTypeIsSmall(type)))
+        {
+            MakeSrcContained(storeLoc, source);
+        }
 #else
         throw new System.NotImplementedException("Non-xarch local-store containment is not ported.");
 #endif

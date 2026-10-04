@@ -214,6 +214,115 @@ public sealed partial class Lowering
         }
 
         return false;
+#elif TARGET_RISCV64
+        if (!varTypeIsFloating(parentNode.Type))
+        {
+            if (!childNode.Oper.IsCnsIntOrI)
+            {
+                return false;
+            }
+
+            var constant = childNode.AsIntCon();
+            if (constant.ImmedValNeedsReloc(CompilerInstance))
+            {
+                return false;
+            }
+
+            var immVal = constant.IconValue;
+            switch (parentNode.Oper)
+            {
+                case GT_LT:
+                case GT_GE:
+                case GT_ADD:
+                case GT_AND:
+                case GT_OR:
+                case GT_XOR:
+                {
+                    return (immVal >= -2048) && (immVal <= 2047);
+                }
+
+                case GT_EQ:
+                case GT_NE:
+                case GT_GT:
+                case GT_LE:
+                case GT_JCMP:
+                case GT_CMPXCHG:
+                case GT_XORR:
+                case GT_XAND:
+                case GT_XADD:
+                case GT_XCHG:
+                case GT_STORE_LCL_FLD:
+                case GT_STORE_LCL_VAR:
+                {
+                    return immVal == 0;
+                }
+            }
+        }
+
+        return false;
+#elif TARGET_LOONGARCH64
+        if (!varTypeIsFloating(parentNode.Type))
+        {
+            if (!childNode.Oper.IsCnsIntOrI)
+            {
+                return false;
+            }
+
+            var constant = childNode.AsIntCon();
+            if (constant.ImmedValNeedsReloc(CompilerInstance))
+            {
+                return false;
+            }
+
+            var immVal = constant.IconValue;
+            switch (parentNode.Oper)
+            {
+                case GT_CMPXCHG:
+                case GT_LOCKADD:
+                case GT_XADD:
+                {
+                    NYI_LOONGARCH64("GT_CMPXCHG,GT_LOCKADD,GT_XADD");
+                    break;
+                }
+
+                case GT_ADD:
+                case GT_EQ:
+                case GT_NE:
+                case GT_LT:
+                case GT_LE:
+                case GT_GE:
+                case GT_GT:
+                case GT_BOUNDS_CHECK:
+                {
+                    return Emitter.isValidSimm12(immVal);
+                }
+
+                case GT_AND:
+                case GT_OR:
+                case GT_XOR:
+                {
+                    return Emitter.isValidUimm12(immVal);
+                }
+
+                case GT_JCMP:
+                {
+                    assert(immVal == 0);
+                    return true;
+                }
+
+                case GT_STORE_LCL_FLD:
+                case GT_STORE_LCL_VAR:
+                {
+                    if (immVal == 0)
+                    {
+                        return true;
+                    }
+                    break;
+                }
+            }
+        }
+
+        return false;
 #else
         throw new System.NotImplementedException("Immediate containment is not ported for this target.");
 #endif

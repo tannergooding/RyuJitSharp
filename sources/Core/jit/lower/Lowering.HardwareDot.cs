@@ -409,6 +409,8 @@ public sealed partial class Lowering
 
         BlockRange().Remove(node);
         return tmp1.Next;
+#elif TARGET_LOONGARCH64
+        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic Dot lowering is not ported.");
 #else
         throw new NotImplementedException("Non-xarch vector Dot lowering is not ported.");
 #endif

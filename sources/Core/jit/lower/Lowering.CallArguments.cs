@@ -215,7 +215,16 @@ public sealed partial class Lowering
     private static void AfterLowerArgsForCall(GenTreeCall call)
     {
 #if TARGET_WASM
-        throw new NotImplementedException("Wasm call argument post-processing is not ported.");
+        if (call.NeedsNullCheck)
+        {
+            var thisArg = call.Args.ThisArg;
+            assert(thisArg is not null);
+            SetMultiplyUsed(thisArg.Node
+#if DEBUG
+                , "AfterLowerArgsForCall thisArg (null check)"
+#endif
+            );
+        }
 #endif
         // Native has no post-processing on non-Wasm targets.
     }

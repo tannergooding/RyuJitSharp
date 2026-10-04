@@ -42,6 +42,8 @@ public sealed partial class CodeGen
         GCInfo.gcMarkRegSetNpt(genRegMask(profilerCallerSpReg));
 
         genEmitHelperCall(helper, 0, EA_UNKNOWN);
+#elif TARGET_WASM
+        // Wasm omits the matching profiling-entry hook in its prolog.
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Profiler leave callbacks require xarch.");
 #else

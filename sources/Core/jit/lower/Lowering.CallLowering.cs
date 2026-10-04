@@ -116,6 +116,12 @@ public sealed partial class Lowering
         }
 #elif TARGET_ARM64
         // Native ARM64 calls have no contained operands.
+#elif TARGET_RISCV64
+        // Native RISC-V calls have no contained operands.
+#elif TARGET_LOONGARCH64
+        // Native LoongArch64 calls have no contained operands.
+#elif TARGET_WASM
+        // Wasm calls do not contain call operands.
 #else
         throw new NotImplementedException("Call operand containment is not ported for this target.");
 #endif
@@ -317,7 +323,50 @@ public sealed partial class Lowering
 #if TARGET_WASM
     private void LowerPEPCall(GenTreeCall call)
     {
-        throw new NotImplementedException("Wasm portable-entrypoint call lowering is not ported.");
+        var compiler = CompilerInstance;
+        JITDUMP("Begin lowering PEP call\n");
+        DISPTREERANGE(BlockRange(), call);
+
+        assert(call._controlExpr is not null);
+        var callTargetUse = new LIR.Use(BlockRange(), ref call.ControlExprRef, call);
+
+        // Keep the original entrypoint address as a local for the final Wasm argument.
+        JITDUMP("Creating new local variable for PEP");
+        var callTargetLclNum = callTargetUse.ReplaceWithLclVar(compiler);
+        var callTargetLclForArg = compiler.gtNewLclvNode(TYP_I_IMPL, callTargetLclNum);
+        DISPTREE(call);
+
+        JITDUMP("Add new arg to call arg list corresponding to PEP target\n");
+        var pepTargetArg =
+            NewCallArg.CreateForPrimitive(callTargetLclForArg).WithWellKnownArg(WellKnownArg.WasmPortableEntryPoint);
+        var pepArg = call.Args.PushBack(pepTargetArg);
+        pepArg.EarlyNode = null;
+        pepArg.LateNode = callTargetLclForArg;
+        call.Args.PushLateBack(pepArg);
+
+        // Wasm portable-entrypoint metadata is always the last argument.
+        var pepIndex = unchecked((uint)(call.Args.CountArgs() - 1));
+        var pepReg = regNumberExtensions.MakeWasmReg(pepIndex, WasmValueType.I);
+        var pepSegment = AbiPassingSegment.InRegister(pepReg, 0, TARGET_POINTER_SIZE);
+        pepArg.AbiInfo = AbiPassingInformation.FromSegmentByValue(compiler, pepSegment);
+        BlockRange().InsertBefore(call, callTargetLclForArg);
+
+        LowerArg(call, pepArg);
+        DISPTREE(call);
+
+        JITDUMP("Rewrite PEP call's control expression to indirect through the new local variable\n");
+        var controlExpr = call._controlExpr;
+        assert(controlExpr.Oper is GT_LCL_VAR);
+
+        BlockRange().Remove(controlExpr);
+        BlockRange().InsertBefore(call, controlExpr);
+        var target = compiler.gtNewIndir(TYP_I_IMPL, controlExpr, GTF_IND_NONFAULTING);
+        BlockRange().InsertBefore(call, target);
+
+        call._controlExpr = target;
+
+        JITDUMP("Finished lowering PEP call\n");
+        DISPTREERANGE(BlockRange(), call);
     }
 #endif
 

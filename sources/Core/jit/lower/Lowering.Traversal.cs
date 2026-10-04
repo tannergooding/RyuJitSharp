@@ -694,26 +694,102 @@ public sealed partial class Lowering
     }
 
 #if TARGET_RISCV64
-    private void TryLowerZextLeftShiftToSlliUw(GenTreeOp shift, out GenTree? next)
+    private bool TryLowerZextLeftShiftToSlliUw(GenTreeOp shift, out GenTree? next)
     {
-        throw new NotImplementedException("RISC-V Zba left-shift lowering is not ported.");
+        next = null;
+        if (CompilerInstance.opts.OptimizationDisabled)
+        {
+            return false;
+        }
+
+        if (shift.IsContained || (shift.Oper is not GT_LSH) || (shift.Op1.Oper is not GT_CAST) ||
+            shift.Op1.HasOverflowCheck || !shift.Op2.Oper.IsCnsIntOrI ||
+            ((shift.Type.EmitActualSize != EA_8BYTE) && (shift.Type.EmitActualSize != EA_BYREF)))
+        {
+            return false;
+        }
+
+        var index = shift.Op1;
+        assert(index.IsValue);
+        if (index.IsContained || !varTypeIsIntegralOrI(index.Type) || index.Oper.IsCnsIntOrI)
+        {
+            return false;
+        }
+
+        var cast = index.AsCast();
+        var source = cast.CastOp;
+        if (!IsIntZeroExtCast(cast))
+        {
+            return false;
+        }
+
+        JITDUMP("Removing unused node:\n  ");
+        DISPNODE(cast);
+        BlockRange().Remove(cast);
+
+        shift.Op1 = source;
+        shift.SetOper(GT_SLLI_UW);
+
+        JITDUMP("Index:\n  ");
+        DISPNODE(shift.Op1);
+        JITDUMP("New SLLI_UW node:\n  ");
+        DISPNODE(shift);
+        JITDUMP("\n");
+
+        next = shift.Next;
+        return true;
     }
 #endif
 
 #if TARGET_WASM
     private GenTree? LowerNeg(GenTreeUnOp node)
     {
-        throw new NotImplementedException("Wasm negate lowering is not ported.");
+        assert(node.Oper is GT_NEG);
+        if (node.Type is not (TYP_INT or TYP_LONG))
+        {
+            return node.Next;
+        }
+
+        var value = node.Op1;
+        var zero = CompilerInstance.gtNewZeroConNode(node.Type);
+        // Insert before the whole operand tree to preserve its evaluation order on the Wasm value stack.
+        var insertBefore = Compiler.fgGetFirstNode(value);
+        BlockRange().InsertBefore(insertBefore, zero);
+        _ = LowerNode(zero);
+
+        var subtraction = node.AsOp();
+        subtraction.SetOper(GT_SUB);
+        subtraction.Op1 = zero;
+        subtraction.Op2 = value;
+        return LowerNode(subtraction);
     }
 
     private void LowerIndexAddr(GenTreeIndexAddr node)
     {
-        throw new NotImplementedException("Wasm index-address lowering is not ported.");
+        if (node.IsBoundsChecked)
+        {
+            SetMultiplyUsed(node.Arr
+#if DEBUG
+                , "LowerIndexAddr Arr"
+#endif
+            );
+            SetMultiplyUsed(node.Index
+#if DEBUG
+                , "LowerIndexAddr Index"
+#endif
+            );
+        }
     }
 
     private void LowerCkfinite(GenTreeOp node)
     {
-        throw new NotImplementedException("Wasm finite-check lowering is not ported.");
+        assert(node.Oper is GT_CKFINITE);
+        // Codegen reads the operand for both the finiteness check and the produced value.
+        SetMultiplyUsed(node.Op1
+#if DEBUG
+            , "LowerCkfinite op1 (finiteness check)"
+#endif
+        );
     }
 #endif
 }

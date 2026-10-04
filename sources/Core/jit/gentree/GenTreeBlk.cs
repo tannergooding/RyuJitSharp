@@ -22,6 +22,13 @@ public sealed partial class GenTreeBlk : GenTreeIndir
         _layout = layout;
     }
 
+    internal GenTreeBlk(var_types type, GenTree addr, ClassLayout layout, GenTree source, NodeThreading threading)
+        : base(GT_BLK, type, addr, null, source, threading)
+    {
+        assert(layout.Size != 0);
+        _layout = layout;
+    }
+
     public GenTreeBlk(var_types type, GenTree addr, GenTree data, ClassLayout layout)
         : base(GT_STORE_BLK, type, addr, data)
     {

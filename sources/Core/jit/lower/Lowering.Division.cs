@@ -41,6 +41,12 @@ public sealed partial class Lowering
 #elif TARGET_ARM64
         assert(node.Oper is GT_DIV or GT_UDIV or GT_MOD);
         // Native ARM64 division has no immediate or memory containment.
+#elif TARGET_RISCV64
+        assert(node.Oper is GT_MOD or GT_UMOD or GT_DIV or GT_UDIV);
+#elif TARGET_WASM
+        // Wasm does not contain operands for integer division.
+#elif TARGET_LOONGARCH64
+        assert(node.Oper is GT_MOD or GT_UMOD or GT_DIV or GT_UDIV);
 #else
         throw new System.NotImplementedException("Division containment is not ported for this target.");
 #endif
@@ -76,13 +82,18 @@ public sealed partial class Lowering
     }
 
 #if TARGET_WASM
-    private void SetMultiplyUsed(GenTree node
+    private static void SetMultiplyUsed(GenTree node
 #if DEBUG
         , string reason
 #endif
     )
     {
-        throw new System.NotImplementedException("WASM multiply-use tracking is not ported.");
+#if DEBUG
+        JITDUMP($"Setting [{node.TreeId:D6}] as multiply-used: {reason}\n");
+#endif
+        assert(varTypeIsEnregisterable(node.Type));
+        assert(!node.IsContained);
+        node._lirFlags |= LIR.Flags.MultiplyUsed;
     }
 #endif
 }

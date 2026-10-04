@@ -22,11 +22,38 @@ public partial class Emitter
         };
     }
 
+    public static int SizeOfULEB128(ulong value)
+    {
+        var adjustedBitCount = 6 + 64 - BitOperations.LeadingZeroCount(value | 1UL);
+
+        // Adding six rounds up for division by seven. Multiplication by ceil(256 / 7)
+        // followed by an eight-bit shift is exact for this value, which is at most 70.
+        return (adjustedBitCount * 37) >> 8;
+    }
+
     public static int SizeOfSLEB128(long value)
     {
         var signAdjustedValue = unchecked((ulong)(value ^ (value >> 63))) | 1UL;
         var significantBits = 1 + 6 + 64 - BitOperations.LeadingZeroCount(signAdjustedValue);
         return (significantBits * 37) >> 8;
+    }
+
+    public static byte GetWasmValueTypeCode(WasmValueType type)
+    {
+        ReadOnlySpan<byte> typeCodeMapping =
+        [
+            0x00, // Invalid
+            0x7F, // I32
+            0x7E, // I64
+            0x7D, // F32
+            0x7C, // F64
+            0x7B, // V128
+            0x69, // ExnRef
+        ];
+
+        assert((uint)typeCodeMapping.Length == (uint)WasmValueType.Count);
+
+        return typeCodeMapping[unchecked((int)type)];
     }
 
     public void emitIns_I_Ty(instruction ins, uint immediate, WasmValueType valueType, int localIndex)

@@ -159,6 +159,17 @@ public sealed partial class Lowering
                 return;
             }
         }
+#elif TARGET_RISCV64
+        if (cmp.Op1.IsIntegralConst(0) && !cmp.Op1.AsIntCon().ImmedValNeedsReloc(CompilerInstance))
+        {
+            MakeSrcContained(cmp, cmp.Op1);
+        }
+
+        CheckImmedAndMakeContained(cmp, cmp.Op2);
+#elif TARGET_WASM
+        // Wasm compare containment remains an optimization opportunity.
+#elif TARGET_LOONGARCH64
+        CheckImmedAndMakeContained(cmp, cmp.Op2);
 #else
         throw new System.NotImplementedException("Comparison containment is not ported for this target.");
 #endif

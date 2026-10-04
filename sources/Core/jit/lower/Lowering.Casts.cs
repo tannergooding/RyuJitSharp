@@ -95,6 +95,12 @@ public sealed partial class Lowering
                 }
             }
         }
+#elif TARGET_RISCV64
+        // Native RISC-V casts have no contained operands.
+#elif TARGET_LOONGARCH64
+        // Native LoongArch64 casts have no contained operands.
+#elif TARGET_WASM
+        // Wasm cast containment remains an optimization opportunity.
 #else
         throw new System.NotImplementedException("Cast containment is not ported for this target.");
 #endif

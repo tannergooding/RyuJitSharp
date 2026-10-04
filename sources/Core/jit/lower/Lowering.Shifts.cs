@@ -85,6 +85,21 @@ public sealed partial class Lowering
         {
             MakeSrcContained(node, shiftBy);
         }
+#elif TARGET_RISCV64
+        var shiftBy = node.Op2;
+        assert(node.Oper.IsShiftOrRotate);
+        if (shiftBy.Oper.IsCnsIntOrI)
+        {
+            MakeSrcContained(node, shiftBy);
+        }
+#elif TARGET_WASM
+        // Wasm shifts and rotates do not contain operands.
+#elif TARGET_LOONGARCH64
+        assert(node.Oper.IsShiftOrRotate);
+        if (node.Op2.Oper.IsCnsIntOrI)
+        {
+            MakeSrcContained(node, node.Op2);
+        }
 #else
         throw new System.NotImplementedException("Shift containment is not ported for this target.");
 #endif

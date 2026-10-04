@@ -118,6 +118,52 @@ public sealed partial class Lowering
         {
             MakeSrcContained(select, select.Op2);
         }
+#elif TARGET_RISCV64
+        assert(select.Oper is GT_SELECT);
+        assert(CompilerInstance.compOpportunisticallyDependsOn(CORINFO_InstructionSet.InstructionSet_Zicond));
+        assert(varTypeIsIntegralOrI(select.Type));
+
+        var conditional = select.AsConditional();
+        var condition = conditional.Cond;
+        if (condition.Oper.IsCompare)
+        {
+            var relop = condition.AsOp();
+            if (relop.Oper is GT_EQ or GT_NE)
+            {
+                var relopOp2 = relop.Op2;
+                if (relopOp2.IsIntegralConst(0))
+                {
+                    conditional.CondRef = relop.Op1;
+                    if (relop.Oper is GT_EQ)
+                    {
+                        (conditional.Op1, conditional.Op2) = (conditional.Op2, conditional.Op1);
+                    }
+
+                    BlockRange().Remove(relopOp2);
+                    BlockRange().Remove(relop);
+                }
+            }
+            else if ((relop.Oper is GT_GE or GT_LE) ||
+                (varTypeIsFloating(relop.Op1.Type) && ((relop.Flags & GTF_RELOP_NAN_UN) != 0)))
+            {
+                var reversed = CompilerInstance.gtTryReverseCond(condition);
+                assert(reversed);
+                (conditional.Op1, conditional.Op2) = (conditional.Op2, conditional.Op1);
+            }
+        }
+
+        if (conditional.Op1.IsIntegralConst(0))
+        {
+            MakeSrcContained(select, conditional.Op1);
+        }
+        if (conditional.Op2.IsIntegralConst(0))
+        {
+            MakeSrcContained(select, conditional.Op2);
+        }
+#elif TARGET_WASM
+        // Wasm select operands remain on the stack in their existing order.
+#elif TARGET_LOONGARCH64
+        assert(false, "GT_SELECT nodes are not supported on LoongArch64.");
 #else
         throw new System.NotImplementedException("Select containment is not ported for this target.");
 #endif

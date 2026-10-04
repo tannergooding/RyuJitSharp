@@ -142,6 +142,10 @@ public sealed partial class CodeGen
         Emitter.emitIns_J_cond_la(INS_beq, gsCheckBlk, regGSConst, regGSValue);
         genEmitHelperCall(CORINFO_HELP_FAIL_FAST, 0, EA_UNKNOWN, regGSConst);
         genDefineTempLabel(gsCheckBlk);
+#elif TARGET_WASM
+        // TODO-WASM: GS cookie checks have limited utility on WASM since they can only help
+        // with detecting linear memory stack corruption. Decide if we want them anyway.
+        NYI_WASM("genEmitGSCookieCheck");
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "GS-cookie checks require xarch.");
 #endif

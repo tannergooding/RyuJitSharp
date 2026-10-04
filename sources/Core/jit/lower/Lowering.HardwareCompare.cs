@@ -177,4 +177,11 @@ public sealed partial class Lowering
         return LowerNode(compare);
     }
 #endif
+
+#if FEATURE_HW_INTRINSICS && TARGET_LOONGARCH64
+    private GenTree? LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic node, genTreeOps cmpOp)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic comparisons are not ported.");
+    }
+#endif
 }

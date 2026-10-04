@@ -69,6 +69,35 @@ public sealed partial class Lowering
         }
 
         return next;
+#elif TARGET_WASM
+        if (((node.Flags & GTF_IND_NONFAULTING) == 0) ||
+            ((node.Type is TYP_SIMD12) && (node.Addr.Oper is not GT_LCL_ADDR)))
+        {
+            // Keep the address available for null checks and SIMD12's trailing lane store.
+            var foldable = GetFoldableAddrMode(node);
+            var addressToReuse = node.Addr;
+            if (foldable is not null)
+            {
+                addressToReuse = foldable.BaseAddress ??
+                    throw new InvalidOperationException("Foldable Wasm address is missing its base.");
+            }
+
+            SetMultiplyUsed(addressToReuse
+#if DEBUG
+                , "LowerStoreIndir Addr (null check or simd12 lane store)"
+#endif
+            );
+        }
+
+        ContainCheckStoreIndir(node);
+        return node.Next;
+#elif TARGET_RISCV64
+        ContainCheckStoreIndir(node);
+        return node.Next;
+#elif TARGET_LOONGARCH64
+        var next = node.Next;
+        ContainCheckStoreIndir(node);
+        return next;
 #else
         throw new NotImplementedException("Indirect-store lowering outside xarch and ARM64 is not ported.");
 #endif
@@ -268,6 +297,24 @@ public sealed partial class Lowering
             MakeSrcContained(node, src);
         }
 
+        ContainCheckIndir(node);
+#elif TARGET_RISCV64
+        var src = node.Data;
+        if (!varTypeIsFloating(src.Type) && src.IsIntegralConst(0))
+        {
+            MakeSrcContained(node, src);
+        }
+
+        ContainCheckIndir(node);
+#elif TARGET_LOONGARCH64
+        var source = node.Data;
+        if (!varTypeIsFloating(source.Type) && source.IsIntegralConst(0))
+        {
+            MakeSrcContained(node, source);
+        }
+
+        ContainCheckIndir(node);
+#elif TARGET_WASM
         ContainCheckIndir(node);
 #else
         throw new NotImplementedException("Indirect-store containment outside xarch and ARM64 is not ported.");

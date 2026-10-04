@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.CorInfoHelpFunc;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.gtCallTypes;
@@ -113,6 +114,37 @@ internal static unsafe class WasmCallArgumentMorphTests
         WithCompiler(compiler => new CodeGen(compiler).genCaptureFuncletPrologEpilogInfo());
     }
 
+#if PROFILING_SUPPORTED
+    [TestCase(CORINFO_HELP_PROF_FCN_LEAVE)]
+    [TestCase(CORINFO_HELP_PROF_FCN_TAILCALL)]
+    public static void WasmProfilerLeaveCallbacksRemainEmpty(CorInfoHelpFunc helper)
+    {
+        WithCompiler(compiler => {
+            ProfilerHookNeeded(compiler) = true;
+            var codeGen = new CodeGen(compiler);
+
+            codeGen.genProfilingLeaveCallback(helper);
+
+            Assert.That(ProfilerHookNeeded(compiler), Is.True);
+            Assert.That(compiler.info.compProfilerCallback, Is.False);
+        });
+    }
+#endif
+
+    [Test]
+    public static void WasmGSCookieChecksKeepTheConfiguredNYIBoundary()
+    {
+        WithCompiler(compiler => {
+            var codeGen = new CodeGen(compiler);
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genEmitGSCookieCheck(false));
+
+            var expected = (JitConfig.JitWasmNyiToR2RUnsupported > 0)
+                ? CorJitResult.CORJIT_R2R_UNSUPPORTED
+                : CorJitResult.CORJIT_SKIPPED;
+            Assert.That(failure?.Result, Is.EqualTo(expected));
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void ShadowStackArgumentPrecedesClassificationOnlyForManagedCalls(bool unmanaged)
@@ -179,5 +211,10 @@ internal static unsafe class WasmCallArgumentMorphTests
             JitTls.Compiler = previous;
         }
     }
+
+#if PROFILING_SUPPORTED
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compProfilerHookNeeded")]
+    private static extern ref bool ProfilerHookNeeded(Compiler compiler);
+#endif
 }
 #endif

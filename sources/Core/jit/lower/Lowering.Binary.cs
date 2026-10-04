@@ -57,6 +57,8 @@ public sealed partial class Lowering
         {
             SetRegOptionalForBinOp(node, IsSafeToMarkRegOptional(node, op1), IsSafeToMarkRegOptional(node, op2));
         }
+#elif TARGET_LOONGARCH64
+        CheckImmedAndMakeContained(node, node.Op2);
 #elif TARGET_ARM64
         var op1 = node.Op1;
         var op2 = node.Op2;
@@ -98,6 +100,10 @@ public sealed partial class Lowering
                 return;
             }
         }
+#elif TARGET_RISCV64
+        CheckImmedAndMakeContained(node, node.Op2);
+#elif TARGET_WASM
+        // Wasm binary operators do not contain operands.
 #else
         throw new System.NotImplementedException("Binary containment is not ported for this target.");
 #endif

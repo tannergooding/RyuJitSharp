@@ -374,6 +374,8 @@ public sealed partial class Lowering
         }
 
         return LowerNode(node);
+#elif TARGET_LOONGARCH64
+        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic Create lowering is not ported.");
 #else
         throw new NotImplementedException("Non-xarch vector Create lowering is not ported.");
 #endif

@@ -79,6 +79,10 @@
     <DefineConstants>$(DefineConstants);TARGET_WASM</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(RyuJitEnableWasmProfilingTests)' == 'true' and '$(TargetRuntimeIdentifier)' == 'browser-wasm'">
+    <DefineConstants>$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-wasm')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-wasm')))">
     <Compile Include="..\Core\CodeGenBlockDriverTargetTests.cs" Link="CodeGenBlockDriverTargetTests.cs" />
     <Compile Include="..\Core\WasmCallArgumentMorphTests.cs" Link="WasmCallArgumentMorphTests.cs" />

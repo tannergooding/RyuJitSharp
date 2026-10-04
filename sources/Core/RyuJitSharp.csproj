@@ -437,7 +437,7 @@
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);NOGC_WRITE_BARRIERS</DefineConstants>
 
     <!-- PROFILING_SUPPORTED -->
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' != 'wasm'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' != 'wasm' or '$(RyuJitEnableWasmProfilingTests)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
 
     <!-- SWIFT_SUPPORT -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);SWIFT_SUPPORT</DefineConstants>

@@ -140,6 +140,51 @@ public sealed partial class Lowering
                 CompilerInstance.lvaSetVarDoNotEnregister(source.AsLclVar().LclNum, DoNotEnregisterReason.IsStructArg);
             }
         }
+#elif TARGET_RISCV64
+        var source = putArgStk.Data;
+        if (source.Type is TYP_STRUCT)
+        {
+            MakeSrcContained(putArgStk, source);
+            if (source.Oper is GT_LCL_VAR)
+            {
+                CompilerInstance.lvaSetVarDoNotEnregister(source.AsLclVar().LclNum,
+                    DoNotEnregisterReason.IsStructArg);
+            }
+        }
+#elif TARGET_LOONGARCH64
+        var source = putArgStk.Data;
+        if (source.Type is TYP_STRUCT)
+        {
+            MakeSrcContained(putArgStk, source);
+
+            if (source.Oper.IsLocalRead)
+            {
+                var localNumber = source.AsLclVarCommon().LclNum;
+                var layout = source.GetLayout(CompilerInstance);
+                GenTree localAddress;
+                if (source.Oper is GT_LCL_VAR)
+                {
+                    localAddress = CompilerInstance.gtNewLclVarAddrNode(TYP_BYREF, localNumber);
+                    CompilerInstance.lvaSetVarDoNotEnregister(localNumber, DoNotEnregisterReason.IsStructArg);
+                }
+                else
+                {
+                    localAddress = CompilerInstance.gtNewLclAddrNode(TYP_BYREF, localNumber,
+                        source.AsLclFld().LclOffs, layout);
+                }
+
+                var block = new GenTreeBlk(TYP_STRUCT, localAddress, layout, source, NodeThreading.LIR);
+                BlockRange().ReplaceNode(source, block);
+                BlockRange().InsertBefore(block, localAddress);
+                source = block;
+            }
+
+            if ((source.Oper is GT_BLK) && source.AsBlk().Addr.IsLclVarAddr &&
+                IsContainableLclAddr(source.AsBlk().Addr.AsLclFld(), source.AsBlk().Size))
+            {
+                MakeSrcContained(source, source.AsBlk().Addr);
+            }
+        }
 #else
         throw new System.NotImplementedException("Stack argument lowering is not ported for this target.");
 #endif

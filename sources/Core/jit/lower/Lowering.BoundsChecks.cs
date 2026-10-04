@@ -40,6 +40,18 @@ public sealed partial class Lowering
         {
             _ = CheckImmedAndMakeContained(node, node.ArrayLength);
         }
+#elif TARGET_RISCV64
+        assert(node.Oper is GT_BOUNDS_CHECK);
+        if (!CheckImmedAndMakeContained(node, node.Index))
+        {
+            CheckImmedAndMakeContained(node, node.ArrayLength);
+        }
+#elif TARGET_LOONGARCH64
+        assert(node.Oper is GT_BOUNDS_CHECK);
+        if (!CheckImmedAndMakeContained(node, node.Index))
+        {
+            _ = CheckImmedAndMakeContained(node, node.ArrayLength);
+        }
 #else
         throw new System.NotImplementedException("Bounds-check containment outside xarch and ARM64 is not ported.");
 #endif

@@ -149,12 +149,179 @@ public sealed partial class Lowering
 #if TARGET_RISCV64
     private bool TryLowerShiftAddToShxadd(GenTreeOp node, out GenTree? next)
     {
-        throw new NotImplementedException("RISC-V Zba shift-add lowering is not ported.");
+        next = null;
+        if (CompilerInstance.opts.OptimizationDisabled)
+        {
+            return false;
+        }
+
+        if (node.IsContained || (node.Oper is not GT_ADD) || node.HasOverflowCheck ||
+            ((node.Type.EmitActualSize != EA_8BYTE) && (node.Type.EmitActualSize != EA_BYREF)))
+        {
+            return false;
+        }
+
+        GenTree baseNode;
+        GenTree shift;
+        if (node.Op1.Oper is GT_LSH or GT_MUL or GT_SLLI_UW)
+        {
+            shift = node.Op1;
+            baseNode = node.Op2;
+        }
+        else if (node.Op2.Oper is GT_LSH or GT_MUL or GT_SLLI_UW)
+        {
+            shift = node.Op2;
+            baseNode = node.Op1;
+        }
+        else
+        {
+            return false;
+        }
+
+        var isSlliUw = shift.Oper is GT_SLLI_UW;
+        var index = shift.AsOp().Op1;
+        var scale = shift.ScaledIndex;
+        if (scale == 0)
+        {
+            return false;
+        }
+
+        assert(baseNode.IsValue && index.IsValue);
+        if (baseNode.IsContained || index.IsContained || !varTypeIsIntegralOrI(baseNode.Type) ||
+            !varTypeIsIntegralOrI(index.Type) || baseNode.Oper.IsCnsIntOrI || index.Oper.IsCnsIntOrI)
+        {
+            return false;
+        }
+
+        var shiftAmount = shift.AsOp().Op2;
+        JITDUMP("Removing unused node:\n  ");
+        DISPNODE(shiftAmount);
+        BlockRange().Remove(shiftAmount);
+
+        JITDUMP("Removing unused node:\n  ");
+        DISPNODE(shift);
+        BlockRange().Remove(shift);
+
+        var shiftCount = BitOperations.TrailingZeroCount(scale);
+        node.Op1 = index;
+        node.Op2 = baseNode;
+        node.SetOper(GetShxaddOp((uint)shiftCount, isSlliUw));
+
+        JITDUMP("Base:\n  ");
+        DISPNODE(node.Op2);
+        JITDUMP("Index:\n  ");
+        DISPNODE(node.Op1);
+        JITDUMP("New SHXADD node:\n  ");
+        DISPNODE(node);
+        JITDUMP("\n");
+
+        if (index is GenTreeCast cast && IsIntZeroExtCast(cast))
+        {
+            var source = cast.CastOp;
+            JITDUMP("Removing unused node:\n  ");
+            DISPNODE(cast);
+            BlockRange().Remove(cast);
+
+            node.Op1 = source;
+            node.SetOper(GetShxaddOp((uint)shiftCount, true));
+
+            JITDUMP("Index:\n  ");
+            DISPNODE(node.Op1);
+            JITDUMP("Transformed SH(X)ADD node to SH(X)ADD_UW node:\n  ");
+            DISPNODE(node);
+            JITDUMP("\n");
+        }
+
+        next = node.Next;
+        return true;
     }
 
     private bool TryLowerZextAddToAddUw(GenTreeOp node, out GenTree? next)
     {
-        throw new NotImplementedException("RISC-V Zba zero-extended add lowering is not ported.");
+        next = null;
+        if (CompilerInstance.opts.OptimizationDisabled)
+        {
+            return false;
+        }
+
+        if (node.IsContained || (node.Oper is not GT_ADD) || node.HasOverflowCheck ||
+            ((node.Type.EmitActualSize != EA_8BYTE) && (node.Type.EmitActualSize != EA_BYREF)))
+        {
+            return false;
+        }
+
+        GenTree baseNode;
+        GenTree index;
+        if (node.Op1.Oper is GT_CAST)
+        {
+            index = node.Op1;
+            baseNode = node.Op2;
+        }
+        else if (node.Op2.Oper is GT_CAST)
+        {
+            index = node.Op2;
+            baseNode = node.Op1;
+        }
+        else
+        {
+            return false;
+        }
+
+        assert(baseNode.IsValue && index.IsValue);
+        if (baseNode.IsContained || index.IsContained || !varTypeIsIntegralOrI(baseNode.Type) ||
+            !varTypeIsIntegralOrI(index.Type) || baseNode.Oper.IsCnsIntOrI || index.Oper.IsCnsIntOrI)
+        {
+            return false;
+        }
+
+        var cast = index.AsCast();
+        var source = cast.CastOp;
+        if (!IsIntZeroExtCast(cast))
+        {
+            return false;
+        }
+
+        JITDUMP("Removing unused node:\n  ");
+        DISPNODE(cast);
+        BlockRange().Remove(cast);
+
+        node.Op1 = source;
+        node.Op2 = baseNode;
+        node.SetOper(GT_ADD_UW);
+
+        JITDUMP("Base:\n  ");
+        DISPNODE(node.Op2);
+        JITDUMP("Index:\n  ");
+        DISPNODE(node.Op1);
+        JITDUMP("New ADD_UW node:\n  ");
+        DISPNODE(node);
+        JITDUMP("\n");
+
+        next = node.Next;
+        return true;
+    }
+
+    private static bool IsIntZeroExtCast(GenTreeCast cast)
+    {
+        var sourceType = genActualType(cast.CastOp.Type);
+        var castType = cast.CastType;
+        var sourceUnsigned = cast.IsUnsigned;
+        var castUnsigned = varTypeIsUnsigned(castType);
+        return varTypeIsIntegralOrI(sourceType) && varTypeIsIntegralOrI(castType) &&
+            (sourceType.Size == 4) && (castType.Size == 8) && (castUnsigned || sourceUnsigned);
+    }
+
+    private static genTreeOps GetShxaddOp(uint shiftAmount, bool isUnsigned)
+    {
+        return (shiftAmount, isUnsigned) switch {
+            (1, false) => GT_SH1ADD,
+            (2, false) => GT_SH2ADD,
+            (3, false) => GT_SH3ADD,
+            (1, true) => GT_SH1ADD_UW,
+            (2, true) => GT_SH2ADD_UW,
+            (3, true) => GT_SH3ADD_UW,
+            _ => throw new System.InvalidOperationException(),
+        };
     }
 #endif
 
@@ -344,6 +511,12 @@ public sealed partial class Lowering
         }
 #elif TARGET_ARM64
         ContainCheckBinary(node);
+#elif TARGET_RISCV64
+        ContainCheckBinary(node);
+#elif TARGET_LOONGARCH64
+        ContainCheckBinary(node);
+#elif TARGET_WASM
+        // Wasm multiplication does not contain operands.
 #else
         throw new NotImplementedException("Multiply containment is not ported for this target.");
 #endif
@@ -400,6 +573,19 @@ public sealed partial class Lowering
             mul.Flags &= GTF_COMMON_MASK;
         }
 
+        ContainCheckMul(mul);
+        return mul.Next;
+#elif TARGET_RISCV64
+        assert(mul.Oper.IsMul);
+        ContainCheckMul(mul);
+        return mul.Next;
+#elif TARGET_LOONGARCH64
+        assert(mul.Oper.IsMul);
+        ContainCheckMul(mul);
+        return mul.Next;
+#elif TARGET_WASM
+        assert(mul.Oper is GT_MUL);
+        _ = LowerBinaryArithmetic(mul);
         ContainCheckMul(mul);
         return mul.Next;
 #else

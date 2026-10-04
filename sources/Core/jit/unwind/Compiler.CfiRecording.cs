@@ -137,7 +137,19 @@ public partial class Compiler
         }
     }
 
-#if !TARGET_ARM64 && (!TARGET_AMD64 || !UNIX_AMD64_ABI)
+#if TARGET_LOONGARCH64
+    private static short mapRegNumToDwarfReg(regNumber reg)
+    {
+        // LoongArch register numbers are the DWARF encodings for R0-R31 and F0-F31.
+        if ((byte)reg <= (byte)REG_F31)
+        {
+            return (short)reg;
+        }
+
+        NYI("CFI codes");
+        return DWARF_REG_ILLEGAL;
+    }
+#elif !TARGET_ARM64 && (!TARGET_AMD64 || !UNIX_AMD64_ABI)
     private static short mapRegNumToDwarfReg(regNumber reg)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "The target DWARF register mapping is not ported.");

@@ -75,4 +75,11 @@ public sealed partial class Lowering
         }
     }
 #endif
+
+#if FEATURE_HW_INTRINSICS && TARGET_LOONGARCH64
+    private void ContainCheckHWIntrinsic(GenTreeHWIntrinsic node)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic containment is not ported.");
+    }
+#endif
 }

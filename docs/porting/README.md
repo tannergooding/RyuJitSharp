@@ -175,6 +175,9 @@ Use Release as well, and select `win-arm64`, `osx-arm64` or `linux-x64` for the
 other covered ABI variants. The runtime RID selects the test host; the target
 RID selects compiler semantics. These are targeted managed unit results, not
 execution of generated code on those targets or a pass of the entire Core suite.
+Wasm normally excludes profiler support; pass
+`-p:RyuJitEnableWasmProfilingTests=true` to compile and run the Wasm profiling
+leave-callback boundary tests without changing the default target configuration.
 
 ### C# layout
 

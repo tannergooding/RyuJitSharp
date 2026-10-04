@@ -9,6 +9,14 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
+#if FEATURE_HW_INTRINSICS && TARGET_LOONGARCH64
+    private bool IsValidConstForMovImm(GenTreeHWIntrinsic node)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED,
+            "LoongArch64 hardware-intrinsic immediate materialization is not ported.");
+    }
+#endif
+
     private GenTree? LowerHWIntrinsic(GenTreeHWIntrinsic node)
     {
 #if TARGET_XARCH
@@ -795,6 +803,8 @@ public sealed partial class Lowering
         return node.Next;
 #elif TARGET_ARM64
         return LowerHWIntrinsicArm64(node);
+#elif TARGET_LOONGARCH64
+        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic lowering is not ported.");
 #else
         throw new NotImplementedException("Hardware-intrinsic lowering outside xarch and ARM64 is not ported.");
 #endif

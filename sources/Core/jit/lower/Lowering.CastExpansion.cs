@@ -345,6 +345,48 @@ public sealed partial class Lowering
 
         assert(!varTypeIsSmall(srcType));
         ContainCheckCast(tree);
+#elif TARGET_RISCV64
+        assert(tree.Oper is GT_CAST);
+        JITDUMP("LowerCast for: ");
+        DISPNODE(tree);
+        JITDUMP("\n");
+
+        var srcType = tree.CastOp.Type.ActualType;
+        if (varTypeIsFloating(srcType))
+        {
+            noway_assert(!tree.HasOverflowCheck);
+            assert(!varTypeIsSmall(tree.CastType));
+        }
+
+        assert(!varTypeIsSmall(srcType));
+        ContainCheckCast(tree);
+#elif TARGET_WASM
+        assert(tree.Oper is GT_CAST);
+        if (tree.HasOverflowCheck)
+        {
+            SetMultiplyUsed(tree.CastOp
+#if DEBUG
+                , "LowerCast op1 (overflow exception)"
+#endif
+            );
+        }
+
+        ContainCheckCast(tree);
+#elif TARGET_LOONGARCH64
+        assert(tree.Oper is GT_CAST);
+        JITDUMP("LowerCast for: ");
+        DISPNODE(tree);
+        JITDUMP("\n");
+
+        var srcType = tree.CastOp.Type.ActualType;
+        if (varTypeIsFloating(srcType))
+        {
+            noway_assert(!tree.HasOverflowCheck);
+            assert(!varTypeIsSmall(tree.CastType));
+        }
+
+        assert(!varTypeIsSmall(srcType));
+        ContainCheckCast(tree);
 #else
         throw new System.NotImplementedException("Cast lowering is not ported for this target.");
 #endif
