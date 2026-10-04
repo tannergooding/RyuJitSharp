@@ -132,7 +132,8 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
         {
             var left = Register(compiler, TYP_LONG, REG_R0);
             var castOperand = Register(compiler, TYP_INT, REG_R1);
-            var cast = compiler.gtNewCastNode(TYP_LONG, castOperand, isUnsigned, TYP_BYTE);
+            var castType = isUnsigned ? TYP_UBYTE : TYP_BYTE;
+            var cast = compiler.gtNewCastNode(TYP_LONG, castOperand, isUnsigned, castType);
             cast.IsContained = true;
             var tree = new GenTreeOp(GT_ADD, TYP_LONG, left, cast)
             {
@@ -169,7 +170,7 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
 
             var descriptors = Descriptors(codeGen.Emitter);
             Assert.That(descriptors.Select(descriptor => descriptor.idIns()),
-                Is.EqualTo(new[] { INS_add, INS_add }));
+                Is.EqualTo([INS_add, INS_add]));
             Assert.That(descriptors[0].idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_DI_2A));
             Assert.That(descriptors[0].idInsOpt(), Is.EqualTo(INS_OPTS_LSL12));
             Assert.That(descriptors[0].idIsCnsReloc(), Is.True);

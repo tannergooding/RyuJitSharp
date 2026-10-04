@@ -51,7 +51,8 @@ public sealed partial class CodeGen
                 default:
                 {
                     unreached();
-                    break;
+                    // C# definite-assignment analysis does not treat unreached() as terminating here.
+                    throw new System.Diagnostics.UnreachableException();
                 }
             }
 
@@ -69,11 +70,9 @@ public sealed partial class CodeGen
             var c = op2.AsOp().Op2;
 
             // The shifted operand's amount must remain an immediate.
-            assert(c.IsContained && c.IsCnsIntOrI);
+            assert(c.IsContained && c.Oper.IsCnsIntOrI);
 
             var ins = genGetInsForOper(treeNode.Oper, targetType);
-            var opt = INS_OPTS_NONE;
-
             if ((treeNode.Flags & GTF_SET_FLAGS) != 0)
             {
                 switch (oper)
@@ -110,7 +109,7 @@ public sealed partial class CodeGen
                 }
             }
 
-            opt = ShiftOpToInsOpts(op2.Oper);
+            var opt = ShiftOpToInsOpts(op2.Oper);
             emit.emitIns_R_R_R_I(ins, emitActualTypeSize(treeNode), targetReg, a.RegNum, b.RegNum,
                 c.AsIntConCommon().IconValue, opt);
 
@@ -126,10 +125,9 @@ public sealed partial class CodeGen
             var b = op2.AsOp().Op1;
             var c = op2.AsOp().Op2;
 
-            assert(c.IsContained && c.IsCnsIntOrI);
+            assert(c.IsContained && c.Oper.IsCnsIntOrI);
 
             var ins = genGetInsForOper(treeNode.Oper, targetType);
-            var opt = INS_OPTS_NONE;
 
             if ((treeNode.Flags & GTF_SET_FLAGS) != 0)
             {
@@ -150,7 +148,7 @@ public sealed partial class CodeGen
             }
 
             assert(op2.Oper is GT_ROR);
-            opt = INS_OPTS_ROR;
+            var opt = INS_OPTS_ROR;
             emit.emitIns_R_R_R_I(ins, emitActualTypeSize(treeNode), targetReg, a.RegNum, b.RegNum,
                 c.AsIntConCommon().IconValue, opt);
 
@@ -165,7 +163,6 @@ public sealed partial class CodeGen
             var cast = op2.AsCast();
             var b = cast.CastOp;
             var ins = genGetInsForOper(treeNode.Oper, targetType);
-            var opt = INS_OPTS_NONE;
 
             if ((treeNode.Flags & GTF_SET_FLAGS) != 0)
             {
@@ -191,20 +188,19 @@ public sealed partial class CodeGen
                 }
             }
 
-            var isZeroExtending = cast.IsZeroExtending();
-            if (varTypeIsByte(cast.CastToType))
+            var isZeroExtending = cast.IsZeroExtending;
+            var isByte = varTypeIsByte(cast.CastType);
+            var isShort = varTypeIsShort(cast.CastType);
+            if (!isByte && !isShort)
             {
-                opt = isZeroExtending ? INS_OPTS_UXTB : INS_OPTS_SXTB;
+                assert(cast.CastType == TYP_LONG && genActualTypeIsInt(b.Type));
             }
-            else if (varTypeIsShort(cast.CastToType))
-            {
-                opt = isZeroExtending ? INS_OPTS_UXTH : INS_OPTS_SXTH;
-            }
-            else
-            {
-                assert(cast.CastToType == TYP_LONG && genActualTypeIsInt(b));
-                opt = isZeroExtending ? INS_OPTS_UXTW : INS_OPTS_SXTW;
-            }
+
+            var opt = isByte
+                ? (isZeroExtending ? INS_OPTS_UXTB : INS_OPTS_SXTB)
+                : isShort
+                    ? (isZeroExtending ? INS_OPTS_UXTH : INS_OPTS_SXTH)
+                    : (isZeroExtending ? INS_OPTS_UXTW : INS_OPTS_SXTW);
 
             emit.emitIns_R_R_R(ins, emitActualTypeSize(treeNode), targetReg, a.RegNum, b.RegNum, opt);
             genProduceReg(treeNode);

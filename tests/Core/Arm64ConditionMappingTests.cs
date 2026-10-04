@@ -5,6 +5,7 @@
 
 #if TARGET_ARM64
 using NUnit.Framework;
+using static RyuJitSharp.emitJumpKind;
 using static RyuJitSharp.insCond;
 
 namespace RyuJitSharp.UnitTests;
