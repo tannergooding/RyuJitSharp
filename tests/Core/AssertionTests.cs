@@ -2174,6 +2174,26 @@ internal static unsafe class AssertionTests
     }
 
     [Test]
+    public static void IntegerAssertionPreservesIconFieldSequence()
+    {
+        WithCompiler(compiler => {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.isFieldStatic = &IsFieldStatic;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+            var fieldSeq = compiler.FieldSeqStore.Create((CORINFO_FIELD_STRUCT_*)0x1000, 0,
+                FieldSeq.FieldKind.SharedStatic);
+            var assertion = AssertionDsc.CreateConstLclVarAssertion(compiler, 0, ValueNumStore.NoVN,
+                (nint)42, ValueNumStore.NoVN, true, fieldSeq: fieldSeq);
+            var noFieldSeq = AssertionDsc.CreateConstLclVarAssertion(compiler, 0, ValueNumStore.NoVN,
+                (nint)42, ValueNumStore.NoVN, true);
+
+            Assert.That(assertion.Op2.IconFieldSeq, Is.SameAs(fieldSeq));
+            Assert.That(noFieldSeq.Op2.IconFieldSeq, Is.Null);
+        });
+    }
+
+    [Test]
     public static void NullHintDistinguishesReferenceNullFromIntegralZero()
     {
         WithCompiler(compiler => {
@@ -2195,6 +2215,8 @@ internal static unsafe class AssertionTests
                 BitConverter.Int64BitsToDouble(left), ValueNumStore.NoVN, true);
             var second = AssertionDsc.CreateConstLclVarAssertion(compiler, 0, ValueNumStore.NoVN,
                 BitConverter.Int64BitsToDouble(right), ValueNumStore.NoVN, true);
+            Assert.That(BitConverter.DoubleToInt64Bits(first.Op2.DoubleConstant), Is.EqualTo(left));
+            Assert.That(BitConverter.DoubleToInt64Bits(second.Op2.DoubleConstant), Is.EqualTo(right));
             Assert.That(first.Equals(second, false), Is.EqualTo(equal));
         });
     }
