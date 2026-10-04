@@ -12,7 +12,7 @@ using static RyuJitSharp.var_types;
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
-internal static class Arm64Simd12IndirectLoadTests
+internal static unsafe class Arm64Simd12IndirectLoadTests
 {
 #if FEATURE_SIMD
     [Test]
@@ -42,13 +42,14 @@ internal static class Arm64Simd12IndirectLoadTests
             Assert.That(descriptors[1].idOpSize(), Is.EqualTo(EA_4BYTE));
             Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R10));
             Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_R2));
-            Assert.That((nint)descriptors[1].idAddr().iiaAddr, Is.EqualTo((nint)8));
+            // A 4-byte load encodes an 8-byte offset as two words.
+            Assert.That(descriptors[1].idSmallCns(), Is.EqualTo(2));
 
             Assert.That(descriptors[2].idIns(), Is.EqualTo(INS_mov));
             Assert.That(descriptors[2].idOpSize(), Is.EqualTo(EA_4BYTE));
             Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_V0));
             Assert.That(descriptors[2].idReg2(), Is.EqualTo(REG_R10));
-            Assert.That((nint)descriptors[2].idAddr().iiaAddr, Is.EqualTo((nint)2));
+            Assert.That(descriptors[2].idSmallCns(), Is.EqualTo(2));
             Assert.That(load.RegNum, Is.EqualTo(REG_V0));
         });
     }

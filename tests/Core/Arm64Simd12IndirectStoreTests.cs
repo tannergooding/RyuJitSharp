@@ -3,6 +3,7 @@
 #if TARGET_ARM64
 using NUnit.Framework;
 using static RyuJitSharp.CorInfoHelpFunc;
+using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
@@ -12,7 +13,7 @@ using static RyuJitSharp.var_types;
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
-internal static class Arm64Simd12IndirectStoreTests
+internal static unsafe class Arm64Simd12IndirectStoreTests
 {
 #if FEATURE_SIMD
     [Test]
@@ -43,13 +44,14 @@ internal static class Arm64Simd12IndirectStoreTests
             Assert.That(descriptors[1].idOpSize(), Is.EqualTo(EA_4BYTE));
             Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R10));
             Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_V1));
-            Assert.That((nint)descriptors[1].idAddr().iiaAddr, Is.EqualTo((nint)2));
+            Assert.That(descriptors[1].idSmallCns(), Is.EqualTo(2));
 
             Assert.That(descriptors[2].idIns(), Is.EqualTo(INS_str));
             Assert.That(descriptors[2].idOpSize(), Is.EqualTo(EA_4BYTE));
             Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_R10));
             Assert.That(descriptors[2].idReg2(), Is.EqualTo(REG_R2));
-            Assert.That((nint)descriptors[2].idAddr().iiaAddr, Is.EqualTo((nint)8));
+            // A 4-byte store encodes an 8-byte offset as two words.
+            Assert.That(descriptors[2].idSmallCns(), Is.EqualTo(2));
             Assert.That(store.Addr, Is.SameAs(address));
         });
     }
