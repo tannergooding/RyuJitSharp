@@ -16,6 +16,23 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-04: Windows-x64 LSRA helper retirement
+
+Retired ten LSRA header helpers whose managed mappings and Windows-x64 caller
+paths already existed: local-interval lookups, local-candidate predicates,
+definition-type lookup, and register-selection queries. Full-analysis win-x64
+Core selections passed 23/20 Debug/Release for reference building and
+definition construction, 17/16 for local candidates, 14/12 for definition
+construction, and 24/24 for register selection and general allocation, with
+zero skips. No managed source changed.
+
+The native definitions were removed from the consolidated residual at HEAD
+`30a7e9949d1e207ad8824e046b0d0cd9dda2a546`, solely parented to pinned oracle
+`33baf8ee337b20dd0f184b69a6f09be92850bf9e`. Recovery refs preserve the
+pre-amend heads, and no residual references to the retired helpers remain.
+This is bounded LSRA retirement, not generated-code, phase-dump, runtime, or
+global debt parity.
+
 ## 2026-10-03: Wasm struct-return field-list acceptance
 
 Completed the `TARGET_WASM` field-list branch of `CodeGen::genStructReturn`,
