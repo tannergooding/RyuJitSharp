@@ -167,7 +167,7 @@ public partial struct GCInfo
 #endif
     }
 
-#if DEBUG
+#if DEBUG && TARGET_AMD64 && WINDOWS_AMD64_ABI
     private readonly unsafe void gcDumpVarPtrDsc(varPtrDsc descriptor)
     {
         var offset = unchecked((int)(descriptor.vpdVarNum & ~OffsetMask));

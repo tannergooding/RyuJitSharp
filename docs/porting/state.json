@@ -3501,12 +3501,19 @@
         "retirement": "Amended the consolidated runtime-port Remove ported code commit to 0a3c02c152d34b808545494193c31e5b71f9f8a3, solely parented to pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. Removed only the orphan compiler.h prototype. Recovery ref refs/copilot-recovery/indirection-cost-declaration-before-ff8c81ae preserves pre-amend HEAD ff8c81ae7e7e843e509045d18c674c50161ec237; the native worktree is clean.",
         "limits": "Focused Windows-x64 helper evidence is not complete other-target or generated-code parity and does not establish global retirement-debt clearance."
       },
+      "gcVarPtrDiagnosticTargetGuard": {
+        "status": "completed-windows-x64-configuration-guard",
+        "scope": "Keep the DEBUG-only GC lifetime formatter compiled only for its active Windows-AMD64 caller configuration.",
+        "mapping": "GCInfo.FilterLifetimes.cs::gcDumpVarPtrDsc is called only inside the Windows-AMD64 branch of gcMarkFilterVarsPinned; non-Windows-AMD64 managed paths terminate before those debug calls. The native helper and caller are already absent from runtime-port, so this adds no native retirement credit.",
+        "validation": "Full-analysis Windows-x64 GcInfoTableEncodingTests passed 10/10 Debug and 10/10 Release, zero skips, with compiler-only -p:CscEnvironment=DOTNET_GCConserveMemory=5 and default compiler CPU. This preserves the active x64 DEBUG implementation.",
+        "limits": "No x86/ARM64 acceptance is claimed. The x86 target test remains blocked by unrelated missing core and ABI support."
+      },
       "currentWipValidation": {
         "status": "blocked-not-accepted",
-        "x86": "The focused win-x86 X86UnwindNoOpTests build on a win-x64 host stopped before discovery: 142 compiler diagnostics across existing x86/core gaps, plus five analyzer diagnostics. The leading blockers are missing register-mask APIs/constants, GCInfo slot/callsite fields, and target globals; retain x86 unwind native definitions and uncommitted managed WIP.",
+        "x86": "The fresh focused win-x86 X86UnwindNoOpTests build on a win-x64 host stopped before discovery with 142 compiler diagnostics and two CA1814 analyzer diagnostics. Missing symbols span GCInfo slot maps/callsite fields, x86 register/argument constants, call-convention helpers, and long-multiply APIs; no diagnostic names the new x86 unwind implementation. Retain that unit uncommitted until its target build can reach discovery.",
         "arm64": "Focused changed-class target selection ran 58 tests: 39 passed and 19 failed. Failures remain at unset ICorJitInfo.doAssert fixture callbacks, explicit ARM ternary-emission boundaries, and SIMD12 direct-test setup. Do not treat this as ARM64 acceptance or commit the mixed WIP from this run.",
         "sourceScreens": "gcinfo.cpp definitions are JIT32-gated; regset.cpp retains only x86 FP-stack spill plus shared register masks; jithashtable.cpp is a prime table; buildstring.cpp is compile-time metadata; inline.cpp is DEBUG-only diagnostic code. alloc.cpp maps native allocateSlab/freeSlab plus actual-size tracking to managed allocateMemory/freeMemory, so retain it pending that ABI/ownership gap. Do not repeat these screens.",
-        "nextAction": "Preserve the 25 remaining modified tracked paths and three untracked files, including the unrelated DEVIATIONS note. Inspect the existing diff and staging boundaries to split it into coherent WIP units; prioritize Windows-x64-relevant accepted mappings, keep blocked x86/ARM64/RISC-V work unaccepted, and do not commit mixed paths wholesale. Continue the concrete mapped-debt cursor recorded under retirement.nextDebtCursor."
+        "nextAction": "Preserve the 24 remaining modified tracked paths and three untracked files, including the unrelated DEVIATIONS note. Inspect the existing diff and staging boundaries to split it into coherent WIP units; prioritize Windows-x64-relevant accepted mappings, keep blocked x86/ARM64/RISC-V work unaccepted, and do not commit mixed paths wholesale. Continue the concrete mapped-debt cursor recorded under retirement.nextDebtCursor."
       },
       "riscvSetItemValidationBlocker": {
         "status": "blocked",
