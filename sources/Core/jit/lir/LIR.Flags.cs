@@ -33,6 +33,9 @@ public partial class LIR
 #if TARGET_WASM
         /// <summary>Set by lowering on nodes that the RA should allocate into a dedicated register (WASM local), for multiple uses.</summary>
         MultiplyUsed = 0x08,
+
+        /// <summary>Set when an address is folded into a WebAssembly memory instruction.</summary>
+        FoldedAddr = 0x10,
 #endif
     }
 }

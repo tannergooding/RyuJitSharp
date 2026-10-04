@@ -599,12 +599,9 @@ public sealed partial class CodeGen
         var lclNum = tree.LclNum;
         var lclOffset = tree.LclOffs;
 
-        // This matches the Wasm-only LIR::Flags::FoldedAddr bit in src/coreclr/jit/lir.h.
-        const LIR.Flags WasmFoldedAddr = (LIR.Flags)0x10;
-
         GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetFramePointerRegIndex()));
 
-        if (((tree._lirFlags & WasmFoldedAddr) == LIR.Flags.None) &&
+        if (((tree._lirFlags & LIR.Flags.FoldedAddr) == LIR.Flags.None) &&
             ((lclOffset != 0) || (_compiler.lvaFrameAddress(lclNum, out _) != 0)))
         {
             GetEmitter().emitIns_S(INS_I_const, EA_PTRSIZE, lclNum, lclOffset);
@@ -787,7 +784,7 @@ public sealed partial class CodeGen
             return addr.AsAddrMode().Offset;
         }
 
-        if (addr.Oper is GT_LCL_ADDR && (addr.gtLIRFlags & LIR.Flags.FoldedAddr) != LIR.Flags.None)
+        if (addr.Oper is GT_LCL_ADDR && (addr._lirFlags & LIR.Flags.FoldedAddr) != LIR.Flags.None)
         {
             var lclVar = addr.AsLclVarCommon();
             var offset = _compiler.lvaFrameAddress(lclVar.LclNum, out var fpBased) + lclVar.LclOffs;
@@ -853,7 +850,9 @@ public sealed partial class CodeGen
     {
         var emitter = GetEmitter();
         var addr = tree.Addr;
-        var valueReg = _internalRegisters.GetSingle(tree);
+        ref var internalRegs = ref _internalRegisters.GetAll(tree);
+        assert(internalRegs.Count == 1);
+        var valueReg = _internalRegisters.Extract(tree);
         var wasmValueIndex = regNumberExtensions.WasmRegToIndex(valueReg);
 
         // The incoming stack is [addr, value]; tee value so it survives the first lane store.

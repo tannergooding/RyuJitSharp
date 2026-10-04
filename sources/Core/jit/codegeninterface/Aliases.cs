@@ -3,4 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+#if HAS_FIXED_REGISTER_SET
 global using NodeInternalRegistersTable = System.Collections.Generic.Dictionary<RyuJitSharp.GenTree, RyuJitSharp.regMaskTP>;
+#else
+global using NodeInternalRegistersTable = System.Collections.Generic.Dictionary<RyuJitSharp.GenTree, RyuJitSharp.InternalRegs>;
+#endif

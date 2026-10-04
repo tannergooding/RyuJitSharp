@@ -6,6 +6,7 @@ using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
 
@@ -13,26 +14,40 @@ namespace RyuJitSharp.Target.UnitTests;
 
 internal static unsafe class WasmCodeGenMemoryTests
 {
+    [Test]
+    public static void InternalRegistersTrackWasmLocals()
+    {
+        var node = (GenTree)RuntimeHelpers.GetUninitializedObject(typeof(GenTreeIntCon));
+        var first = regNumberExtensions.MakeWasmReg(3, TYP_INT);
+        var second = regNumberExtensions.MakeWasmReg(7, TYP_SIMD16);
+        var registers = new NodeInternalRegisters();
+
+        registers.Add(node, first);
+        registers.Add(node, second);
+
+        ref var all = ref registers.GetAll(node);
+        Assert.That(all.Count, Is.EqualTo(2));
+        Assert.That(all.GetAt(0), Is.EqualTo(first));
+        Assert.That(all.GetAt(1), Is.EqualTo(second));
+
+        all.SetAt(1, first);
+        Assert.That(registers.Extract(node), Is.EqualTo(first));
+        Assert.That(registers.GetSingle(node), Is.EqualTo(first));
+        Assert.That(registers.Extract(node), Is.EqualTo(first));
+        Assert.That(registers.GetAll(node).IsEmpty, Is.True);
+    }
+
     [TestCase(8)]
     [TestCase(128)]
     public static void ContainedAddressModeCarriesItsOffsetIntoTheMemarg(int offset)
     {
-        var address = new GenTreeAddrMode(
-            TYP_BYREF, new GenTreeIntCon(TYP_I_IMPL, 0), null, 0, offset)
-        {
-            IsContained = true,
-        };
-
-        Assert.That(GetMemargOffset(address), Is.EqualTo((nint)offset));
+        Assert.That(GetMemargOffset(offset, isContained: true), Is.EqualTo((nint)offset));
     }
 
     [Test]
     public static void UnfoldedAddressUsesZeroMemargOffset()
     {
-        var address = new GenTreeAddrMode(
-            TYP_BYREF, new GenTreeIntCon(TYP_I_IMPL, 0), null, 0, 128);
-
-        Assert.That(GetMemargOffset(address), Is.Zero);
+        Assert.That(GetMemargOffset(128, isContained: false), Is.EqualTo((nint)0));
     }
 
     [Test]
@@ -56,7 +71,7 @@ internal static unsafe class WasmCodeGenMemoryTests
         }
     }
 
-    private static nint GetMemargOffset(GenTree address)
+    private static nint GetMemargOffset(int offset, bool isContained)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -68,6 +83,11 @@ internal static unsafe class WasmCodeGenMemoryTests
         try
         {
             var codeGen = new CodeGen(compiler);
+            var address = new GenTreeAddrMode(
+                TYP_BYREF, new GenTreeIntCon(TYP_I_IMPL, 0), null, 0, offset)
+            {
+                IsContained = isContained,
+            };
             var method = typeof(CodeGen).GetMethod(
                 "genWasmMemargOffset", BindingFlags.Instance | BindingFlags.NonPublic)
                 ?? throw new AssertionException("Missing Wasm memarg offset implementation.");

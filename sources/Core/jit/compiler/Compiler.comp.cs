@@ -262,7 +262,7 @@ public partial class Compiler
 
     public int compNextExitScopeIndex;
 
-    protected int compMaxUncheckedOffsetForNullObject;
+    protected internal int compMaxUncheckedOffsetForNullObject;
 
 #if PROFILING_SUPPORTED
     // Data required for generating profiler Enter/Leave/TailCall hooks
