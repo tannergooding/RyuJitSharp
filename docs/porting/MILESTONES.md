@@ -1712,6 +1712,13 @@ do not establish that configuration or complete statistics-output parity.
 Evidence: `artifacts/shutdown-acceptance-d01ea182/v4` and
 `artifacts/residual-reconciliation/shutdown-d01ea182-*`.
 
+Retirement follow-up: the complete managed `CompTimeSummaryInfo.AddInfo`
+mapping and existing caller were already accepted. Removed its empty residual
+native shell from consolidated HEAD `a0c67aff`; the native declaration and
+residual callers were already absent. The focused full-analysis Windows-x64
+`CompilerTimingTests` selection passes 18/18 Debug and 12/12 Release with zero
+skips. This adds no generated-code or runtime parity claim.
+
 ## 2026-10-01: Funclet metadata identity and CFI record layout
 
 Completed funclet kind/index metadata, Wasm metadata declarations and the
