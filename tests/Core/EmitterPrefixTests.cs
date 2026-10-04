@@ -43,6 +43,30 @@ internal static unsafe class EmitterPrefixTests
         Assert.That(GetSseShiftRegNumber(CreateEmitter(), ins), Is.EqualTo(expected));
     }
 
+    [TestCase(INS_addps, REG_XMM0, EA_16BYTE, false, true)]
+    [TestCase(INS_addps, REG_XMM16, EA_16BYTE, true, false)]
+    [TestCase(INS_mov, REG_RAX, EA_8BYTE, false, false)]
+    public static void SimdPrefixHelperSelectsTheRequiredEncoding(
+        instruction ins, regNumber reg, emitAttr size, bool expectEvex, bool expectVex)
+    {
+        var emitter = CreateEmitter();
+        emitter.UseVexEncodings = true;
+        emitter.UseEvexEncodings = true;
+        var descriptor = CreateDescriptor(ins, IF_RWR_RRD, size);
+        descriptor.idReg1(reg);
+
+        const ulong code = 0x1234;
+        var expected = (expectEvex, expectVex) switch
+        {
+            (false, false) => code,
+            (false, true) => emitter.AddVexPrefix(ins, code, size),
+            (true, false) => AddEvexPrefix(emitter, descriptor, code, size),
+            _ => throw new AssertionException("A descriptor cannot require both VEX and EVEX."),
+        };
+
+        Assert.That(emitter.AddSimdPrefixIfNeeded(descriptor, code, size), Is.EqualTo(expected));
+    }
+
 #if DEBUG
     [Test]
     public static void InvalidShiftImmediateOpcodeAssertsAndReturnsNoRegister()
@@ -335,6 +359,9 @@ internal static unsafe class EmitterPrefixTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "TakesEvexPrefix")]
     private static extern bool TakesEvex(Emitter emitter, Emitter.instrDesc descriptor);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "AddEvexPrefix")]
+    private static extern ulong AddEvexPrefix(Emitter emitter, Emitter.instrDesc descriptor, ulong code, emitAttr size);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "insEncodeReg345")]
     private static extern uint EncodeRegisterField(
