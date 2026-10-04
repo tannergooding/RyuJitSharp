@@ -181,6 +181,8 @@ public enum HWIntrinsicFlag : ulong
 
 #elif TARGET_ARM
     // Arm32 does not enable FEATURE_HW_INTRINSICS, so it has no target-specific flags.
+#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+    // These targets do not enable FEATURE_HW_INTRINSICS, so they have no target-specific flags.
 
 #else
 #error Unsupported platform
