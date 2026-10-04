@@ -18,37 +18,21 @@ public sealed partial class CodeGen
     public void genCodeForNegNot(GenTreeUnOp tree)
     {
         assert(tree.Oper is GT_NEG or GT_NOT);
-
         var targetType = tree.Type;
         assert(tree.Oper is not GT_NOT || !varTypeIsFloating(targetType));
 
         var targetReg = tree.RegNum;
+        var ins = genGetInsForOper(tree);
+
         assert(!tree.IsContained);
         assert(targetReg != REG_NA);
 
         var operand = tree.Op1;
         assert(!operand.IsContained);
         var operandReg = genConsumeReg(operand);
-        var attr = emitActualTypeSize(tree);
+        var attr = tree.Type.EmitActualSize;
 
-        if (tree.Oper is GT_NEG)
-        {
-            if (varTypeIsFloating(targetType))
-            {
-                Emitter.emitIns_R_R_R(targetType == TYP_DOUBLE ? INS_fsgnjn_d : INS_fsgnjn_s,
-                    attr, targetReg, operandReg, operandReg);
-            }
-            else
-            {
-                Emitter.emitIns_R_R_R(attr == EA_4BYTE ? INS_subw : INS_sub,
-                    attr, targetReg, REG_R0, operandReg);
-            }
-        }
-        else if (tree.Oper is GT_NOT)
-        {
-            assert(!varTypeIsFloating(targetType));
-            Emitter.emitIns_R_R(INS_not, attr, targetReg, operandReg);
-        }
+        Emitter.emitIns_R_R(ins, attr, targetReg, operandReg);
 
         genProduceReg(tree);
     }
@@ -57,7 +41,7 @@ public sealed partial class CodeGen
     {
         assert(tree.Oper is GT_BSWAP or GT_BSWAP16);
 
-        var attr = emitActualTypeSize(tree);
+        var attr = tree.Type.EmitActualSize;
         var targetReg = tree.RegNum;
         var operand = tree.AsUnOp().Op1;
         assert(!operand.IsContained);

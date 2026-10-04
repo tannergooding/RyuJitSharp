@@ -809,10 +809,8 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForNegNot(tree.AsUnOp()));
 #if TARGET_LOONGARCH64
-            var expectedBoundary = oper is GT_NOT
-                ? "Target two-register instruction recording is not implemented."
-                : "LoongArch64 three-register instruction recording is not ported.";
-            Assert.That(failure?.Message, Does.Contain(expectedBoundary));
+            Assert.That(failure?.Message, Does.Contain(
+                "Target two-register instruction recording is not implemented."));
 #else
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_INTERNALERROR));
 #endif
