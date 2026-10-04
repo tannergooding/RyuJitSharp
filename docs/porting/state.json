@@ -3627,7 +3627,13 @@
             "arm32": "Full-analysis win-arm target tests pass 80/80 Debug and 76/76 Release on the Windows x64 host: artifacts/arm32-build/arm32-target-full-20261002-112632.trx and arm32-target-full-20261002-112649.trx."
           },
           "retirement": "Native 9b3a6d652a4d35492fa4512336c619b78f4f07ca amends the consolidated Remove ported code commit, whose sole parent is pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. It removes 19 complete definitions and ARM/ARM64-specific declarations; all selected bodies match the oracle after line-ending normalization. Recovery ref refs/copilot-recovery/arm-callee-save-before is retained.",
-          "limits": "Managed ARM32/ARM64-target tests and Windows-x64 controls are not ARM execution or generated-code parity. ARM/ARM64 unwind and ARM64 pointer-authentication helpers remain explicit terminating dependencies."
+          "limits": "Managed ARM32/ARM64-target tests and Windows-x64 controls are not ARM execution or generated-code parity. ARM/ARM64 unwind and ARM64 pointer-authentication helpers remain explicit terminating dependencies.",
+          "unwindBindingFollowup": {
+            "scope": "ARM64 callee-save adapters now call the accepted unwindSaveRegPairPreindexed, unwindSaveRegPair, unwindSaveRegPreindexed, unwindSaveNext, and int-offset unwindSaveReg methods instead of local NYI wrappers. Recording reaches the retained FuncInfoDsc::GetUnwindInfo boundary and terminates before writing unwind bytes.",
+            "validation": "Full-analysis Windows-host win-arm64 Arm64CalleeSavedRegisterTests pass 74/74 Debug and Release with zero skips. The focused linux-arm64 target selection also passes 74/74 in both configurations. Windows ARM64 TRX files: artifacts/tst/Debug/tagoo_GOODING-ZEN4_2026-10-03_21_37_59_net11.0.trx and artifacts/tst/Release/tagoo_GOODING-ZEN4_2026-10-03_21_38_11_net11.0.trx.",
+            "retirement": "No new native retirement: ARM64 callee-save bodies and unwindarm64.cpp are already absent at residual HEAD aa8dc2928c9b5fb2211b710ee13b71fb2adc33e0. Shared unwind declarations remain for retained native ARM64 callers; this is binding integration, not new retirement credit.",
+            "limits": "Direct target tests verify call binding, instruction-before-failure ordering, and the explicit embedded-unwind-data boundary. They do not validate encoded unwind bytes, ARM execution, or generated-code/runtime parity."
+          }
         },
         "wasmAbiAndRegisterEncoding": {
           "status": "completed",

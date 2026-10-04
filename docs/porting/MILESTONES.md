@@ -918,8 +918,8 @@ Completed ARM32/ARM64 callee-save algorithms and bound the production
 prolog/epilog entry points. ARM64 retains its distinct
 `genPopCalleeSavedRegistersAndFreeLclFrame` contract; frame types, register
 pairing, save-next handling, varargs saves and frame-pointer restoration retain
-the native ordering. Unwind and pointer-authentication helpers remain explicit
-terminating dependencies.
+the native ordering. ARM64 callee-save adapters now call the ported ARM64 unwind
+recorder; pointer-authentication helpers remain explicit terminating dependencies.
 
 Full-analysis ARM64-target tests pass 74 Debug/74 Release cases, and Windows-x64
 controls pass 125 Debug/125 Release cases. The `win-arm` attempt fails during
@@ -930,6 +930,12 @@ the consolidated cleanup commit. The residual keeps the pinned oracle as its
 sole parent and retains the pre-retirement recovery ref. This is managed target
 coverage, not ARM execution or generated-code parity. Evidence is recorded in
 `state.json` and `artifacts/callee-save-{arm64,windows-x64}`.
+
+The follow-up binding passes the focused 74-case ARM64 callee-save selection in
+Debug and Release for `win-arm64` on a Windows x64 host. Tests confirm the
+prolog/epilog instructions are emitted before the retained
+`FuncInfoDsc::GetUnwindInfo` boundary terminates; no unwind byte is written or
+parity claimed.
 
 ## 2026-10-02: ARM64 call and long-jump output
 

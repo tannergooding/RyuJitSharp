@@ -555,7 +555,7 @@ public sealed partial class CodeGen
         if (saveRegs)
         {
             Emitter.emitIns_R_R_I(INS_str, EA_PTRSIZE, reg, REG_SPBASE, offset);
-            _compiler.unwindSaveReg(reg, unchecked((uint)offset));
+            _compiler.unwindSaveReg(reg, offset);
         }
     }
 
@@ -629,7 +629,7 @@ public sealed partial class CodeGen
                 Emitter.emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg, baseReg, offset);
                 if (reportUnwindData)
                 {
-                    _compiler.unwindSaveReg(reg, unchecked((uint)offset));
+                    _compiler.unwindSaveReg(reg, offset);
                 }
                 genStackPointerAdjustmentArm64(delta, tmpReg, tmpRegIsZero, reportUnwindData);
             }
@@ -639,7 +639,7 @@ public sealed partial class CodeGen
             Emitter.emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg, baseReg, offset);
             if (reportUnwindData)
             {
-                _compiler.unwindSaveReg(reg, unchecked((uint)offset));
+                _compiler.unwindSaveReg(reg, offset);
             }
         }
     }
@@ -870,24 +870,24 @@ public sealed partial class CodeGen
         }
     }
 
-    private static void genUnwindSaveRegPairPreindexedArm64Dependency(regNumber reg1, regNumber reg2, int offset)
+    private void genUnwindSaveRegPairPreindexedArm64Dependency(regNumber reg1, regNumber reg2, int offset)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 unwind pre-indexed register-pair recording is not ported.");
+        _compiler.unwindSaveRegPairPreindexed(reg1, reg2, offset);
     }
 
-    private static void genUnwindSaveRegPairArm64Dependency(regNumber reg1, regNumber reg2, int offset)
+    private void genUnwindSaveRegPairArm64Dependency(regNumber reg1, regNumber reg2, int offset)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 unwind register-pair recording is not ported.");
+        _compiler.unwindSaveRegPair(reg1, reg2, offset);
     }
 
-    private static void genUnwindSaveRegPreindexedArm64Dependency(regNumber reg, int offset)
+    private void genUnwindSaveRegPreindexedArm64Dependency(regNumber reg, int offset)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 unwind pre-indexed register recording is not ported.");
+        _compiler.unwindSaveRegPreindexed(reg, offset);
     }
 
-    private static void genUnwindSaveNextArm64Dependency()
+    private void genUnwindSaveNextArm64Dependency()
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 unwind save-next recording is not ported.");
+        _compiler.unwindSaveNext();
     }
 
     private static void genEmitPacInPrologArm64Dependency()

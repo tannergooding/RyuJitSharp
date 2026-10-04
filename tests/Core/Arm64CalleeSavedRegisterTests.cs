@@ -21,6 +21,8 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm64CalleeSavedRegisterTests
 {
+    private const string UnwindInfoNotPorted = "FuncInfoDsc::uwi embedded unwind information is not ported.";
+
     [TestCase(nameof(Compiler.FrameInfo.frameType))]
     [TestCase(nameof(Compiler.FrameInfo.calleeSaveSpOffset))]
     [TestCase(nameof(Compiler.FrameInfo.calleeSaveSpDelta))]
@@ -238,11 +240,10 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         });
     }
 
-    [TestCase(0, -512, INS_stp, INS_OPTS_PRE_INDEX,
-        "ARM64 unwind pre-indexed register-pair recording is not ported.")]
-    [TestCase(0, -528, INS_sub, INS_OPTS_NONE, "Unwind recording requires Windows AMD64.")]
-    [TestCase(8, -16, INS_sub, INS_OPTS_NONE, "Unwind recording requires Windows AMD64.")]
-    [TestCase(504, 0, INS_stp, INS_OPTS_NONE, "ARM64 unwind register-pair recording is not ported.")]
+    [TestCase(0, -512, INS_stp, INS_OPTS_PRE_INDEX, UnwindInfoNotPorted)]
+    [TestCase(0, -528, INS_sub, INS_OPTS_NONE, UnwindInfoNotPorted)]
+    [TestCase(8, -16, INS_sub, INS_OPTS_NONE, UnwindInfoNotPorted)]
+    [TestCase(504, 0, INS_stp, INS_OPTS_NONE, UnwindInfoNotPorted)]
     public static void PairSaveTerminatesAtRealUnwindBoundaryAfterNativeFirstInstruction(
         int offset, int delta, instruction expected, insOpts options, string message)
     {
@@ -264,11 +265,10 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         });
     }
 
-    [TestCase(0, -256, INS_str, INS_OPTS_PRE_INDEX,
-        "ARM64 unwind pre-indexed register recording is not ported.")]
-    [TestCase(0, -272, INS_sub, INS_OPTS_NONE, "Unwind recording requires Windows AMD64.")]
-    [TestCase(8, -16, INS_sub, INS_OPTS_NONE, "Unwind recording requires Windows AMD64.")]
-    [TestCase(32760, 0, INS_str, INS_OPTS_NONE, "Unwind recording requires Windows AMD64.")]
+    [TestCase(0, -256, INS_str, INS_OPTS_PRE_INDEX, UnwindInfoNotPorted)]
+    [TestCase(0, -272, INS_sub, INS_OPTS_NONE, UnwindInfoNotPorted)]
+    [TestCase(8, -16, INS_sub, INS_OPTS_NONE, UnwindInfoNotPorted)]
+    [TestCase(504, 0, INS_str, INS_OPTS_NONE, UnwindInfoNotPorted)]
     public static void SingleSaveTerminatesAtRealUnwindBoundaryAfterNativeFirstInstruction(
         int offset, int delta, instruction expected, insOpts options, string message)
     {
@@ -297,12 +297,8 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         WithCodeGen((_, codeGen) =>
         {
             codeGen.genReverseAndPairCalleeSavedRegisters = reverse;
-            var message = reverse
-                ? "Unwind recording requires Windows AMD64."
-                : "ARM64 unwind register-pair recording is not ported.";
-
             AssertFailure(() =>
-                SaveGroup(codeGen, Mask(REG_R19, REG_R20, REG_R21, REG_R22, REG_R24), 0, 8), message);
+                SaveGroup(codeGen, Mask(REG_R19, REG_R20, REG_R21, REG_R22, REG_R24), 0, 8), UnwindInfoNotPorted);
 
             var descriptor = Descriptors(codeGen).Single();
             Assert.That(descriptor.idIns(), Is.EqualTo(reverse ? INS_str : INS_stp));
@@ -315,13 +311,10 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
     [TestCase(true)]
     public static void SaveNextSelectionTerminatesAfterRecordingTheNextRegisterPair(bool restore)
     {
-        WithCodeGen((compiler, codeGen) =>
+        WithCodeGen((_, codeGen) =>
         {
             codeGen.Emitter.emitIns_R_R_R_I(restore ? INS_ldp : INS_stp, EA_8BYTE,
                 REG_R19, REG_R20, REG_SPBASE, 0);
-            var message = TargetOS.IsUnix && compiler.generateCFIUnwindCodes()
-                ? "ARM64 unwind register-pair recording is not ported."
-                : "ARM64 unwind save-next recording is not ported.";
             AssertFailure(() =>
             {
                 if (restore)
@@ -332,7 +325,7 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
                 {
                     SavePair(codeGen, REG_R21, REG_R22, 16, 0, true, REG_IP0, null);
                 }
-            }, message);
+            }, UnwindInfoNotPorted);
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(2));
@@ -354,7 +347,7 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
             *zeroed = true;
             AssertFailure(() => StackAdjustment(codeGen, -amount, REG_R9, zeroed, true),
                 amount == 16
-                    ? "Unwind recording requires Windows AMD64."
+                    ? UnwindInfoNotPorted
                     : "Target prolog unwind padding is not ported.");
 
             Assert.That(*zeroed, Is.True);
@@ -399,11 +392,7 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
                 codeGen.RegSet.rsSetRegsModified(Mask(REG_R19, REG_R20));
             }
             var zeroed = true;
-            var message = expected == INS_stp
-                ? "ARM64 unwind pre-indexed register-pair recording is not ported."
-                : "Unwind recording requires Windows AMD64.";
-
-            AssertFailure(() => codeGen.genPushCalleeSavedRegisters(REG_R19, ref zeroed), message);
+            AssertFailure(() => codeGen.genPushCalleeSavedRegisters(REG_R19, ref zeroed), UnwindInfoNotPorted);
 
             var descriptor = Descriptors(codeGen).Single();
             Assert.That(descriptor.idIns(), Is.EqualTo(expected));
@@ -433,7 +422,7 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
             var zeroed = true;
 
             AssertFailure(() => codeGen.genPushCalleeSavedRegisters(REG_R19, ref zeroed),
-                "ARM64 unwind pre-indexed register-pair recording is not ported.");
+                UnwindInfoNotPorted);
 
             var descriptor = Descriptors(codeGen).Single();
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_stp));
@@ -471,16 +460,16 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         });
     }
 
-    [TestCase(1, false, INS_ldp, "ARM64 unwind pre-indexed register-pair recording is not ported.")]
-    [TestCase(2, false, INS_ldp, "ARM64 unwind register-pair recording is not ported.")]
-    [TestCase(3, false, INS_ldp, "ARM64 unwind register-pair recording is not ported.")]
-    [TestCase(4, false, INS_ldp, "ARM64 unwind pre-indexed register-pair recording is not ported.")]
-    [TestCase(5, false, INS_mov, "Unwind recording requires Windows AMD64.")]
-    [TestCase(1, true, INS_mov, "Unwind recording requires Windows AMD64.")]
-    [TestCase(2, true, INS_sub, "Unwind recording requires Windows AMD64.")]
-    [TestCase(3, true, INS_mov, "Unwind recording requires Windows AMD64.")]
-    [TestCase(4, true, INS_mov, "Unwind recording requires Windows AMD64.")]
-    [TestCase(5, true, INS_mov, "Unwind recording requires Windows AMD64.")]
+    [TestCase(1, false, INS_ldp, UnwindInfoNotPorted)]
+    [TestCase(2, false, INS_ldp, UnwindInfoNotPorted)]
+    [TestCase(3, false, INS_ldp, UnwindInfoNotPorted)]
+    [TestCase(4, false, INS_ldp, UnwindInfoNotPorted)]
+    [TestCase(5, false, INS_mov, UnwindInfoNotPorted)]
+    [TestCase(1, true, INS_mov, UnwindInfoNotPorted)]
+    [TestCase(2, true, INS_sub, UnwindInfoNotPorted)]
+    [TestCase(3, true, INS_mov, UnwindInfoNotPorted)]
+    [TestCase(4, true, INS_mov, UnwindInfoNotPorted)]
+    [TestCase(5, true, INS_mov, UnwindInfoNotPorted)]
     public static void PopPreservesFrameAndLocallocDispatchBeforeUnwindTermination(
         int frameType, bool localloc, instruction expected, string message)
     {
@@ -541,7 +530,7 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
                 {
                     SaveHelp(codeGen, mask, 0, 0);
                 }
-            }, "ARM64 unwind register-pair recording is not ported.");
+            }, UnwindInfoNotPorted);
             var descriptor = Descriptors(codeGen).Single();
 
             Assert.That(descriptor.idIns(), Is.EqualTo(expected));
@@ -566,7 +555,7 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
                 {
                     SaveHelp(codeGen, RBM_NONE, 0, -64);
                 }
-            }, "Unwind recording requires Windows AMD64.");
+            }, UnwindInfoNotPorted);
 
             AssertStackAdjustment(Descriptors(codeGen).Single(), restore ? INS_add : INS_sub, 64);
         });
@@ -600,7 +589,7 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         Assert.That(failure.Message, Is.EqualTo(message));
     }
 
-    private static void WithCodeGen(Action<Compiler, CodeGen> action)
+    internal static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -614,6 +603,9 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         compiler.lvaTrackedCountInSizeTUnits = 1;
         compiler.eeInfoInitialized = true;
         compiler.eeInfo.osPageSize = 4096;
+        compiler.compFuncInfos = [default];
+        compiler.compFuncInfoCount = 1;
+        compiler.fgFuncletsCreated = true;
         compiler.lvaOutgoingArgSpaceSize.Value = 0;
         compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
         JitTls.Compiler = compiler;
