@@ -6,6 +6,7 @@
 #if TARGET_LOONGARCH64 || TARGET_RISCV64
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.CORINFO_InstructionSet;
@@ -24,6 +25,13 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LoongArchRiscVLocalCodeGenTests
 {
+#if TARGET_RISCV64
+    private const regNumber REG_S0 = REG_FP;
+    private const regNumber REG_F0 = REG_FT0;
+    private const regNumber REG_F1 = REG_FT1;
+    private const regNumber REG_F2 = REG_FT2;
+#endif
+
 #if TARGET_LOONGARCH64
     [Test]
     public static void GSCookieCheckReachesTheLoongArchEmissionBoundary()
@@ -161,7 +169,9 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             GenTree destination;
             if (destinationKind is 2)
             {
-                var baseAddress = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0) { RegNum = REG_S0 };
+                var baseAddress = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
+                baseAddress.RegNum = REG_S0;
+
                 destination = new GenTreeAddrMode(TYP_BYREF, baseAddress, null, 0, 8)
                 {
                     IsContained = true,
@@ -169,11 +179,10 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             }
             else
             {
-                destination = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0)
-                {
-                    IsContained = destinationKind is 0,
-                    RegNum = destinationKind is 0 ? REG_NA : REG_S0,
-                };
+                var localAddress = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
+                localAddress.IsContained = destinationKind is 0;
+                localAddress.RegNum = destinationKind is 0 ? REG_NA : REG_S0;
+                destination = localAddress;
             }
 
             var zero = new GenTreeIntCon(TYP_INT, 0) { IsContained = true };
@@ -189,13 +198,13 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
                 ? "LoongArch64 memory barrier emission is not ported."
                 : destinationKind is 0
                     ? "Target local-stack store recording is not implemented."
-                    : "Target two-register-immediate instruction recording is not implemented.";
+                    : "Two-register-immediate instruction recording requires xarch.";
 #else
             var expectedBoundary = isVolatile
                 ? "RISC-V64 memory barrier emission is not ported."
                 : destinationKind is 0
                     ? "Target local-stack store recording is not implemented."
-                    : "Target two-register-immediate instruction recording is not implemented.";
+                    : "Two-register-immediate instruction recording requires xarch.";
 #endif
             Assert.That(failure?.Message, Does.Contain(expectedBoundary));
         });
@@ -213,26 +222,28 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         {
             if (useZba)
             {
+#if TARGET_RISCV64
                 compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_Zba);
                 compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_Zba);
                 compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_Zba);
+#endif
             }
 
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
             compiler.fgFirstBB = new BasicBlock(null, null);
-            var index = CodeGenShiftTests.Register(compiler, TYP_I_IMPL, REG_S0);
-            var table = CodeGenShiftTests.Register(compiler, TYP_I_IMPL, REG_S1);
+            var index = Register(compiler, TYP_I_IMPL, REG_S0);
+            var table = Register(compiler, TYP_I_IMPL, REG_S1);
             var tree = new GenTreeOp(GT_SWITCH_TABLE, TYP_VOID, index, table);
             codeGen.InternalRegisters.Add(tree, regMaskTP.CreateFromRegNum(REG_S2, REG_S2.SingleTypeMask));
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
 #if TARGET_LOONGARCH64
             Assert.That(failure?.Message,
-                Does.Contain("Target two-register-immediate instruction recording is not implemented."));
+                Does.Contain("Two-register-immediate instruction recording requires xarch."));
 #else
             var expectedBoundary = useZba
                 ? "RISC-V three-register instruction recording is not implemented."
-                : "Target two-register-immediate instruction recording is not implemented.";
+                : "Two-register-immediate instruction recording requires xarch.";
             Assert.That(failure?.Message, Does.Contain(expectedBoundary));
 #endif
         });
@@ -293,7 +304,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var block = new BasicBlock(null, null);
             block.SetCond(new FlowEdge(block, trueTarget, null), new FlowEdge(block, falseTarget, null));
             compiler.compCurBB = block;
-            var value = CodeGenShiftTests.Register(compiler, TYP_LONG, REG_S0);
+            var value = Register(compiler, TYP_LONG, REG_S0);
             var constant = new GenTreeIntCon(TYP_LONG, unchecked((nint)immediate)) { IsContained = true };
             var tree = new GenTreeOpCC(GT_JCMP, TYP_VOID, new GenCondition(GenCondition.CodeKind.EQ),
                 value, constant);
@@ -319,8 +330,8 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var block = new BasicBlock(null, null);
             block.SetCond(new FlowEdge(block, trueTarget, null), new FlowEdge(block, falseTarget, null));
             compiler.compCurBB = block;
-            var first = CodeGenShiftTests.Register(compiler, TYP_LONG, REG_S0);
-            var second = CodeGenShiftTests.Register(compiler, TYP_LONG, REG_S1);
+            var first = Register(compiler, TYP_LONG, REG_S0);
+            var second = Register(compiler, TYP_LONG, REG_S1);
             var tree = new GenTreeOpCC(GT_JCMP, TYP_VOID, new GenCondition(conditionCode), first, second);
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
@@ -425,8 +436,8 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_Zicond);
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
 
-            var condition = CodeGenShiftTests.Register(compiler, TYP_INT, REG_S0);
-            var trueValue = CodeGenShiftTests.Register(compiler, TYP_INT, REG_S1);
+            var condition = Register(compiler, TYP_INT, REG_S0);
+            var trueValue = Register(compiler, TYP_INT, REG_S1);
             var falseValue = new GenTreeIntCon(TYP_INT, 0) { IsContained = true };
             var tree = new GenTreeConditional(GT_SELECT, TYP_INT, condition, trueValue, falseValue)
             {
@@ -460,7 +471,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         {
             compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
-            var operand = CodeGenShiftTests.Register(compiler, TYP_I_IMPL, REG_S0);
+            var operand = Register(compiler, TYP_I_IMPL, REG_S0);
             var tree = new GenTreeUnOp(GT_NONLOCAL_JMP, TYP_VOID, operand);
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
@@ -486,9 +497,9 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         {
             compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
-            var address = CodeGenShiftTests.Register(compiler, TYP_BYREF, REG_S0);
-            var data = CodeGenShiftTests.Register(compiler, TYP_INT, REG_S1);
-            var tree = new GenTreeOp(oper, TYP_INT, address, data) { RegNum = REG_S2 };
+            var address = Register(compiler, TYP_BYREF, REG_S0);
+            var data = Register(compiler, TYP_INT, REG_S1);
+            var tree = new GenTreeIndir(oper, TYP_INT, address, data) { RegNum = REG_S2 };
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
 #if TARGET_LOONGARCH64
@@ -514,10 +525,12 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         {
             compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+            codeGen.GCInfo.gcRegPtrSetInit();
+            codeGen.GCInfo.gcVarPtrSetInit();
 
-            var address = CodeGenShiftTests.Register(compiler, TYP_BYREF, REG_S0);
-            var value = CodeGenShiftTests.Register(compiler, TYP_LONG, REG_S1);
-            var comparand = CodeGenShiftTests.Register(compiler, comparandType, REG_S2);
+            var address = Register(compiler, TYP_BYREF, REG_S0);
+            var value = Register(compiler, TYP_LONG, REG_S1);
+            var comparand = Register(compiler, comparandType, REG_S2);
             var tree = new GenTreeCmpXchg(TYP_LONG, address, value, comparand) { RegNum = REG_S4 };
             var internalRegisters = regMaskTP.CreateFromRegNum(REG_S3, REG_S3.SingleTypeMask);
             if (comparandType is TYP_INT)
@@ -641,6 +654,18 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     }
 
     [Test]
+    public static void SimdSetItemPreservesTheRiscVNyiBoundary()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var node = new GenTreeVecCon(TYP_SIMD16);
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genSIMDIntrinsicSetItem(node));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+        });
+    }
+
+    [Test]
     public static void SimdRelationalIntrinsicPreservesTheRiscVNyiBoundary()
     {
         WithCodeGen((_, codeGen) =>
@@ -688,7 +713,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         {
             compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
-            var data = CodeGenShiftTests.Register(compiler, TYP_I_IMPL, REG_S0);
+            var data = Register(compiler, TYP_I_IMPL, REG_S0);
             var tree = new GenTreeUnOp(GT_RETURNTRAP, TYP_VOID, data);
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
@@ -777,12 +802,13 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             codeGen.resetFramePointerUsedWritePhase();
             codeGen.IsFramePointerUsed = true;
             var size = new GenTreeIntCon(TYP_I_IMPL, 16) { IsContained = true };
-            var tree = new GenTreeUnOp(GT_LCLHEAP, TYP_I_IMPL, size) { RegNum = REG_S0 };
+            var tree = compiler.gtNewUnaryNode(GT_LCLHEAP, TYP_I_IMPL, size);
+            tree.RegNum = REG_S0;
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genLclHeap(tree));
 
             Assert.That(failure?.Message, Does.Contain(
-                "Target two-register-immediate instruction recording is not implemented."));
+                "Two-register-immediate instruction recording requires xarch."));
         });
     }
 
@@ -812,7 +838,10 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             Assert.That(failure?.Message, Does.Contain(
                 "Target two-register instruction recording is not implemented."));
 #else
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_INTERNALERROR));
+            var expectedMessage = oper is GT_NEG
+                ? "RISC-V three-register instruction recording is not implemented."
+                : "Target two-register instruction recording is not implemented.";
+            Assert.That(failure?.Message, Does.Contain(expectedMessage));
 #endif
         });
     }
@@ -910,7 +939,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         WithCodeGen((compiler, codeGen) =>
         {
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
-            var source = CodeGenShiftTests.Register(compiler, sourceType, REG_S0);
+            var source = Register(compiler, sourceType, REG_S0);
             var cast = new GenTreeCast(destinationType, source, isUnsigned, destinationType)
             {
                 RegNum = REG_F0,
@@ -935,7 +964,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var source = compiler.gtNewDconNode(sourceType, 1.5);
             source.RegNum = REG_F0;
 
-            var cast = new GenTreeCast(destinationType, source, isUnsigned, destinationType)
+            var cast = new GenTreeCast(destinationType, source, fromUnsigned: false, destinationType)
             {
                 RegNum = REG_S0,
             };
@@ -947,7 +976,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForCast(cast));
 #if TARGET_LOONGARCH64
             var expectedMessage = isUnsigned
-                ? "Target two-register-immediate instruction recording is not implemented."
+                ? "Two-register-immediate instruction recording requires xarch."
                 : "Target two-register instruction recording is not implemented.";
 #else
             const string expectedMessage = "Target two-register instruction recording is not implemented.";
@@ -987,9 +1016,10 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         {
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
 
-            var op1 = CodeGenShiftTests.Register(compiler, TYP_LONG, REG_S0);
+            var op1 = Register(compiler, TYP_LONG, REG_S0);
             var op2 = new GenTreeIntCon(TYP_LONG, 5) { IsContained = true };
-            var tree = compiler.gtNewBinaryNode(GT_LT, TYP_INT, op1, op2) { RegNum = REG_S1 };
+            var tree = compiler.gtNewBinaryNode(GT_LT, TYP_INT, op1, op2);
+            tree.RegNum = REG_S1;
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
 
@@ -1010,13 +1040,14 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             op1.RegNum = REG_F0;
             var op2 = compiler.gtNewDconNode(type, 2.0);
             op2.RegNum = REG_F1;
-            var tree = compiler.gtNewBinaryNode(GT_LT, TYP_INT, op1, op2) { RegNum = REG_S1 };
+            var tree = compiler.gtNewBinaryNode(GT_LT, TYP_INT, op1, op2);
+            tree.RegNum = REG_S1;
             tree.Flags |= GTF_RELOP_NAN_UN;
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
 #if TARGET_LOONGARCH64
             Assert.That(failure?.Message,
-                Does.Contain("Target two-register-immediate instruction recording is not implemented."));
+                Does.Contain("Two-register-immediate instruction recording requires xarch."));
 #else
             Assert.That(failure?.Message,
                 Does.Contain("RISC-V three-register instruction recording is not implemented."));
@@ -1105,7 +1136,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreInd(store));
 
-            Assert.That(failure?.Message, Does.Contain("Helper call generation is not implemented for this target."));
+            Assert.That(failure?.Message, Does.Contain("Register move recording requires xarch."));
         });
     }
 
@@ -1146,6 +1177,13 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     }
 #endif
 
+    private static GenTreeIntCon Register(Compiler compiler, var_types type, regNumber reg)
+    {
+        var node = compiler.gtNewIconNode(type, 7);
+        node.RegNum = reg;
+        return node;
+    }
+
     private static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
 #if DEBUG
@@ -1164,12 +1202,14 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         compiler.eeInfo.osPageSize = 4096;
         compiler.lvaOutgoingArgSpaceSize.Value = 0;
         compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
+        compiler.compCurBB = new BasicBlock(null, null);
         JitTls.Compiler = compiler;
 
         try
         {
             var codeGen = new CodeGen(compiler);
             compiler.codeGen = codeGen;
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
             codeGen.RegSet.rsClearRegsModified();
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
@@ -1183,13 +1223,6 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         }
         finally
         {
-    private static GenTreeIntCon Register(Compiler compiler, var_types type, regNumber reg)
-    {
-        var node = compiler.gtNewIconNode(type, 7);
-        node.RegNum = reg;
-        return node;
-    }
-
             JitTls.Compiler = previous;
         }
     }
@@ -1208,14 +1241,12 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         var context = (HelperContext*)self;
         lookup->accessType = IAT_PVALUE;
         lookup->addr = context->Address;
-        compiler.compCurBB = new BasicBlock(null, null);
 
         return context->Address;
     }
 #endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
-            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
 }
 #endif

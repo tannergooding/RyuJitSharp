@@ -10,11 +10,6 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    private void genLclHeap(GenTree tree)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 local-heap generation is not ported.");
-    }
-
     private void genSetRegToConst(regNumber targetReg, var_types targetType, GenTree tree)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 constant materialization is not ported.");
@@ -179,6 +174,5 @@ public sealed partial class CodeGen
     {
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 range-check generation is not ported.");
     }
-
 }
 #endif
