@@ -389,7 +389,7 @@ internal static unsafe class Arm64LongJumpOutputTests
 
     private abstract class View(CodeGen codeGen) : Emitter(codeGen)
     {
-        public static instrDesc Jump(instruction ins, insFormat format, emitAttr size, bool shortJump,
+        public static instrDescJmp Jump(instruction ins, insFormat format, emitAttr size, bool shortJump,
             uint target, int immediate = 0, bool keepLong = false)
         {
             var id = Create(ins, format, size, REG_R3, REG_NA, immediate);
@@ -400,7 +400,7 @@ internal static unsafe class Arm64LongJumpOutputTests
             return id;
         }
 
-        public static instrDesc Data(instruction ins, insFormat format, emitAttr size,
+        public static instrDescJmp Data(instruction ins, insFormat format, emitAttr size,
             regNumber destination, regNumber scratch, bool shortAddress, int dataOffset = 0,
             int immediate = 0, bool relocatable = false)
         {

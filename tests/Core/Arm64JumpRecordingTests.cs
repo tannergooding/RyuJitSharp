@@ -322,9 +322,9 @@ internal static unsafe class Arm64JumpRecordingTests
             Assert.That(jump.idjKeepLong, Is.EqualTo(keepLong));
         }
 
-        public static instrDesc? Next(instrDesc id) => ((instrDescJmp)id).idjNext;
+        public static instrDescJmp? Next(instrDesc id) => ((instrDescJmp)id).idjNext;
         public static bool IsRemovable(instrDesc id) => ((instrDescJmp)id).idjIsRemovableJmpCandidate;
-        public static instrDesc? Pending(Emitter emitter) => PendingJump(emitter);
+        public static instrDescJmp? Pending(Emitter emitter) => PendingJump(emitter);
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGjmpList")]
         private static extern ref instrDescJmp? PendingJump(Emitter emitter);

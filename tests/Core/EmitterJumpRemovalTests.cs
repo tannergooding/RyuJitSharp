@@ -397,9 +397,9 @@ internal static class EmitterJumpRemovalTests
 
     private abstract class JumpView(CodeGen codeGen) : Emitter(codeGen)
     {
-        public static instrDesc? First(Emitter emitter) => FirstJump(emitter);
-        public static instrDesc? Last(Emitter emitter) => LastJump(emitter);
-        public static instrDesc? Next(instrDesc id) => ((instrDescJmp)id).idjNext;
+        public static instrDescJmp? First(Emitter emitter) => (instrDescJmp?)FirstJump(emitter);
+        public static instrDescJmp? Last(Emitter emitter) => (instrDescJmp?)LastJump(emitter);
+        public static instrDescJmp? Next(instrDesc id) => ((instrDescJmp)id).idjNext;
         public static bool Removable(instrDesc id) => ((instrDescJmp)id).idjIsRemovableJmpCandidate;
         public static bool AfterCall(instrDesc id) => ((instrDescJmp)id).idjIsAfterCallBeforeEpilog;
         public static bool KeepLong(instrDesc id) => ((instrDescJmp)id).idjKeepLong;

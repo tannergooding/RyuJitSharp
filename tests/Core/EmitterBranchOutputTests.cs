@@ -476,7 +476,7 @@ internal static unsafe class EmitterBranchOutputTests
 
     private abstract class View(CodeGen codeGen) : Emitter(codeGen)
     {
-        public static instrDesc BackwardCrossRegionJump(insGroup source, insGroup target)
+        public static instrDescJmp BackwardCrossRegionJump(insGroup source, insGroup target)
         {
             var descriptor = new instrDescJmp();
             descriptor.idIns(INS_jmp);

@@ -187,7 +187,7 @@ internal static class EmitterExecutionCostTests
         public static void SetBase(instrDesc id, regNumber reg)
             => id.idAddr().iiaAddrMode.amBaseReg = reg;
 
-        public static instrDesc Jump(bool removable)
+        public static instrDescJmp Jump(bool removable)
         {
             var id = new instrDescJmp { idjIsRemovableJmpCandidate = removable };
             id.idIns(INS_jmp);

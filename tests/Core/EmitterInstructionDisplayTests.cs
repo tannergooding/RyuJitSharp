@@ -275,7 +275,7 @@ internal static unsafe class EmitterInstructionDisplayTests
 
     private abstract class DescriptorView(CodeGen codeGen) : Emitter(codeGen)
     {
-        public static instrDesc CreateLabel() => new instrDescJmp
+        public static instrDescJmp CreateLabel() => new instrDescJmp
         {
             idjTarget = new BasicBlock(null, null),
         };

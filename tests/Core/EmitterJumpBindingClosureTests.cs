@@ -214,7 +214,7 @@ internal static unsafe class EmitterJumpBindingClosureTests
         public static extern ref int Total(Emitter emitter);
 
 #if DEBUG && TARGET_AMD64
-        public static instrDesc BoundJump(insGroup target)
+        public static instrDescJmp BoundJump(insGroup target)
         {
             var jump = new instrDescJmp { idjTargetIG = target };
             jump.idIns(instruction.INS_jmp);

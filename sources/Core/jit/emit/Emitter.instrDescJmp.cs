@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    protected class instrDescJmp : instrDesc
+    protected internal class instrDescJmp : instrDesc
     {
         private uint _idjOffs;
 

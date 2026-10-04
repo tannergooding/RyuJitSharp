@@ -153,7 +153,7 @@ internal static unsafe class Arm64EmitterLabelTests
             return descriptor;
         }
 
-        public static instrDesc LargeAddressJump(
+        public static instrDescJmp LargeAddressJump(
             Emitter emitter, insFormat format, instruction ins, regNumber targetReg)
         {
             var descriptor = new instrDescJmp { idjIG = emitter.emitCurIG };

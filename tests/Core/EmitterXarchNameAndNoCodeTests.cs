@@ -89,7 +89,7 @@ internal static class EmitterXarchNameAndNoCodeTests
             return id;
         }
 
-        public static instrDesc Jump(uint size, bool removable)
+        public static instrDescJmp Jump(uint size, bool removable)
         {
             var id = new instrDescJmp { idjIsRemovableJmpCandidate = removable };
             id.idIns(instruction.INS_jmp);
