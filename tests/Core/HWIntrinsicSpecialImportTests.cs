@@ -41,6 +41,34 @@ internal static unsafe class HWIntrinsicSpecialImportTests
         });
     }
 
+    [TestCase(CORINFO_TYPE_BOOL, TYP_UBYTE)]
+    [TestCase(CORINFO_TYPE_CHAR, TYP_USHORT)]
+    [TestCase(CORINFO_TYPE_BYTE, TYP_BYTE)]
+    [TestCase(CORINFO_TYPE_UBYTE, TYP_UBYTE)]
+    [TestCase(CORINFO_TYPE_SHORT, TYP_SHORT)]
+    [TestCase(CORINFO_TYPE_USHORT, TYP_USHORT)]
+    [TestCase(CORINFO_TYPE_INT, TYP_INT)]
+    [TestCase(CORINFO_TYPE_UINT, TYP_UINT)]
+    [TestCase(CORINFO_TYPE_LONG, TYP_LONG)]
+    [TestCase(CORINFO_TYPE_ULONG, TYP_ULONG)]
+    [TestCase(CORINFO_TYPE_NATIVEINT, Globals.TYP_I_IMPL)]
+    [TestCase(CORINFO_TYPE_NATIVEUINT, Globals.TYP_U_IMPL)]
+    [TestCase(CORINFO_TYPE_FLOAT, TYP_FLOAT)]
+    [TestCase(CORINFO_TYPE_DOUBLE, TYP_DOUBLE)]
+    [TestCase(CORINFO_TYPE_UNDEF, TYP_UNDEF)]
+    public static void PrimitiveNumericClassUsesPreciseEeType(CorInfoType jitType, var_types expectedType)
+    {
+        WithImporter(compiler => {
+            var classInfo = new ClassInfo {
+                NumericType = jitType,
+                HasNumericType = true,
+            };
+
+            Assert.That(GetBaseTypeForPrimitiveNumericClass(
+                compiler, (CORINFO_CLASS_STRUCT_*)&classInfo), Is.EqualTo(expectedType));
+        });
+    }
+
     [TestCase(NI_X86Base_AndNot, TYP_INT, (byte)0)]
     [TestCase(NI_X86Base_AndNot, TYP_SIMD16, (byte)16)]
     [TestCase(NI_AVX2_AndNot, TYP_SIMD32, (byte)32)]
@@ -372,6 +400,8 @@ internal static unsafe class HWIntrinsicSpecialImportTests
         public byte* Namespace;
         public int Size;
         public bool IsNonIntrinsic;
+        public CorInfoType NumericType;
+        public bool HasNumericType;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
@@ -396,13 +426,20 @@ internal static unsafe class HWIntrinsicSpecialImportTests
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CorInfoType GetNumericType(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type)
-        => CORINFO_TYPE_INT;
+    {
+        var classInfo = (ClassInfo*)type;
+        return classInfo->HasNumericType ? classInfo->NumericType : CORINFO_TYPE_INT;
+    }
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "impSpecialIntrinsic")]
     private static extern GenTree? Import(Compiler compiler, NamedIntrinsic intrinsic,
         CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_METHOD_STRUCT_* method,
         in CORINFO_SIG_INFO sig, in CORINFO_CONST_LOOKUP entryPoint,
         var_types simdBaseType, var_types retType, byte simdSize, bool mustExpand);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "getBaseTypeForPrimitiveNumericClass")]
+    private static extern var_types GetBaseTypeForPrimitiveNumericClass(
+        Compiler compiler, CORINFO_CLASS_STRUCT_* cls);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "impStmtList")]
     private static extern ref Statement? ImportStatements(Compiler compiler);
