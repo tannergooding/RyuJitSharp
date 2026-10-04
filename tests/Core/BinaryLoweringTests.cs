@@ -9,6 +9,28 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class BinaryLoweringTests
 {
+    [TestCase(genTreeOps.GT_ADD, var_types.TYP_INT, var_types.TYP_INT, true)]
+    [TestCase(genTreeOps.GT_ADD, var_types.TYP_INT, var_types.TYP_LONG, false)]
+#if TARGET_XARCH
+    [TestCase(genTreeOps.GT_AND, var_types.TYP_INT, var_types.TYP_LONG, true)]
+    [TestCase(genTreeOps.GT_AND, var_types.TYP_INT, var_types.TYP_SHORT, false)]
+#endif
+    public static void ContainableMemoryOperandSizePreservesTargetWidthRules(
+        genTreeOps oper, var_types parentType, var_types childType, bool expected)
+    {
+        WithCompiler(compiler => {
+            var parent = new GenTreeOp(
+                oper,
+                parentType,
+                compiler.gtNewIconNode(parentType, 0),
+                compiler.gtNewIconNode(parentType, 0));
+            var child = compiler.gtNewIconNode(childType, 0);
+            var lowering = new Lowering(compiler, new LinearScan(compiler));
+
+            Assert.That(lowering.IsContainableMemoryOpSize(parent, child), Is.EqualTo(expected));
+        });
+    }
+
     [TestCase(genTreeOps.GT_ADD, false, false, var_types.TYP_INT, true)]
     [TestCase(genTreeOps.GT_ADD, true, false, var_types.TYP_INT, true)]
     [TestCase(genTreeOps.GT_SUB, true, false, var_types.TYP_INT, false)]
