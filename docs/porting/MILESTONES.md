@@ -1613,6 +1613,13 @@ scalable-recording cases, 109/98 branch cases and 36 stack cases. They establish
 managed descriptor/encoding-byte/algorithm behavior, not ARM machine-code or
 runtime parity. Earlier compilation and execution failures remain preserved.
 
+The focused stack-allocation fixture was later completed by initializing its
+current block and frame-info boundary and collecting descriptors across saved
+and current instruction groups. Its target-isolated full-analysis selection
+passes 41/41 in Debug and Release on a Windows-x64 test host with the
+Windows-ARM64 target; this remains managed unit coverage, not ARM64 execution
+or parity evidence.
+
 Windows controls pass 153 of 154 Debug cases and all 140 Release cases. The
 single Debug assertion-message mismatch is reproduced exactly from the
 untouched committed baseline. Release's process exits successfully; a later

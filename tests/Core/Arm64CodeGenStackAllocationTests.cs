@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.Globals;
@@ -100,7 +101,8 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
                 throw new AssertionException("The unported ARM64 unwind recorder did not fail.");
 
             Assert.That(failure.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure.Message, Is.EqualTo("Unwind recording requires Windows AMD64."));
+            Assert.That(failure.Message,
+                Is.EqualTo("FuncInfoDsc::uwi embedded unwind information is not ported."));
             Assert.That(Descriptors(codeGen).Single().idIns(), Is.EqualTo(expectedInstruction));
         });
     }
@@ -229,7 +231,8 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors.Count(id => id.idIns() == INS_stp), Is.EqualTo(pairStores));
             Assert.That(descriptors.Count(id => id.idIns() == INS_str), Is.EqualTo(scalarStores));
-            Assert.That(descriptors.Count(id => id.idIns() == INS_movi), Is.EqualTo(size == 28 ? 0 : 1));
+            Assert.That(descriptors.Count(id => id.idIns() == INS_movi),
+                Is.EqualTo(size == 28 ? 0 : 1));
             Assert.That(descriptors.Count(id => id.idIns() == INS_bge), Is.EqualTo(loopBranches));
             Assert.That(descriptors.Any(id => id.idIns() == INS_dczva), Is.False);
             Assert.That(initRegZeroed, Is.False);
@@ -276,6 +279,13 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
         compiler.lvaTrackedCountInSizeTUnits = 1;
         compiler.eeInfoInitialized = true;
         compiler.eeInfo.osPageSize = 4096;
+        compiler.compFuncInfos = [default];
+        compiler.compFuncInfoCount = 1;
+        compiler.fgFuncletsCreated = true;
+        var currentBlock = new BasicBlock(null, null);
+        compiler.fgFirstBB = currentBlock;
+        compiler.fgLastBB = currentBlock;
+        compiler.compCurBB = currentBlock;
         compiler.lvaOutgoingArgSpaceSize.Value = 0;
         compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
         JitTls.Compiler = compiler;
@@ -284,6 +294,8 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
             var codeGen = new CodeGen(compiler);
             compiler.codeGen = codeGen;
             codeGen.RegSet.rsClearRegsModified();
+            codeGen.resetFramePointerUsedWritePhase();
+            codeGen.IsFramePointerUsed = false;
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
             codeGen.Emitter.emitBegCG(compiler, default);
             codeGen.Emitter.Init();
@@ -302,11 +314,32 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
 
     private static List<Emitter.instrDesc> Descriptors(CodeGen codeGen)
     {
-        return CurrentDescriptors(codeGen.Emitter) ?? throw new AssertionException("Missing descriptor buffer.");
+        var emitter = codeGen.Emitter;
+        var descriptors = new List<Emitter.instrDesc>();
+        var currentGroup = emitter.emitCurIG;
+
+        for (var group = FirstGroup(emitter); group is not null; group = group.igNext)
+        {
+            if (group == currentGroup)
+            {
+                descriptors.AddRange(CurrentDescriptors(emitter)
+                    ?? throw new AssertionException("Missing current descriptor buffer."));
+            }
+            else if (group.igInsCnt > 0)
+            {
+                descriptors.AddRange(group.igData
+                    ?? throw new AssertionException("Missing saved descriptor buffer."));
+            }
+        }
+
+        return descriptors;
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
+    private static extern ref insGroup? FirstGroup(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
