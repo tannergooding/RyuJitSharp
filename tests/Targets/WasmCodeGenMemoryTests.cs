@@ -35,6 +35,27 @@ internal static unsafe class WasmCodeGenMemoryTests
         Assert.That(GetMemargOffset(address), Is.Zero);
     }
 
+    [Test]
+    public static void CallerStackPointerToInitialStackPointerDeltaIsUnreached()
+    {
+#if DEBUG
+        using var tls = new JitTls(null);
+#endif
+        var previousCompiler = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitTls.Compiler = compiler;
+
+        try
+        {
+            var codeGen = new CodeGen(compiler);
+            _ = Assert.Throws<FatalJitException>(() => _ = codeGen.genCallerSPtoInitialSPdelta);
+        }
+        finally
+        {
+            JitTls.Compiler = previousCompiler;
+        }
+    }
+
     private static nint GetMemargOffset(GenTree address)
     {
 #if DEBUG

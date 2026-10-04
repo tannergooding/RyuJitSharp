@@ -214,6 +214,10 @@ public sealed partial class CodeGen : ICodeGen
     {
         get
         {
+#if TARGET_WASM
+            unreached();
+            return 0;
+#else
             var callerSPtoSPdelta = -genTotalFrameSize;
 
 #if TARGET_ARM
@@ -233,6 +237,7 @@ public sealed partial class CodeGen : ICodeGen
 
             assert(callerSPtoSPdelta <= 0);
             return callerSPtoSPdelta;
+#endif
         }
     }
 
