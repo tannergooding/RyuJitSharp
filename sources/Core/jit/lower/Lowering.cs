@@ -160,7 +160,7 @@ public sealed partial class Lowering : Phase
     private void AfterLowerBlocks()
     {
 #if TARGET_WASM
-        throw new NotImplementedException("Wasm post-lowering block processing is not ported.");
+        AfterLowerBlocksWasm();
 #endif
     }
 

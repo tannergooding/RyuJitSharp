@@ -18,6 +18,10 @@ public partial class Globals
 
     public const int MAX_PASS_MULTIREG_BYTES = 0;
 
+    public const int MAX_RET_MULTIREG_BYTES = 0;
+
+    public const int MAX_ARG_REG_COUNT = 1;
+
     public const int MAX_RET_REG_COUNT = 1;
 
     public const int MAX_MULTIREG_COUNT = 2;

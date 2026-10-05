@@ -9,7 +9,7 @@ public partial class Compiler
 {
     internal void raMarkStkVars()
     {
-#if TARGET_AMD64 || TARGET_ARM64
+#if TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64 || TARGET_LOONGARCH64 || TARGET_WASM
         assert(codeGen is not null);
         for (var localNumber = 0; localNumber < lvaCount; localNumber++)
         {

@@ -87,6 +87,7 @@
     <Compile Include="..\Core\CodeGenBlockDriverTargetTests.cs" Link="CodeGenBlockDriverTargetTests.cs" />
     <Compile Include="..\Core\WasmCallArgumentMorphTests.cs" Link="WasmCallArgumentMorphTests.cs" />
     <Compile Include="..\Core\WasmClassifierTests.cs" Link="WasmClassifierTests.cs" />
+    <Compile Include="..\Core\WasmRegAllocTests.cs" Link="WasmRegAllocTests.cs" />
   </ItemGroup>
 
 </Project>

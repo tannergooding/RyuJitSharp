@@ -22,6 +22,9 @@ public partial class Compiler
 #if TARGET_ARM64
         return impSpecialIntrinsicArm64Core(intrinsic, clsHnd, method, in sig, in entryPoint,
             simdBaseType, retType, simdSize, mustExpand);
+#elif TARGET_WASM
+        return impSpecialIntrinsicWasmCore(intrinsic, clsHnd, method, in sig, in entryPoint,
+            simdBaseType, retType, simdSize, mustExpand);
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic special import outside xarch is not ported.");
 #endif
@@ -32,6 +35,9 @@ public partial class Compiler
     {
 #if TARGET_ARM64
         return impNonConstFallbackArm64Core(intrinsic, simdType, simdBaseType);
+#elif TARGET_WASM
+        unreached();
+        return null;
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic nonconstant fallback outside xarch is not ported.");
 #endif

@@ -11,7 +11,7 @@ public sealed partial class Target
 #if TARGET_WASM32
     public static readonly string TgtCpuName = "wasm32";
 #else
-    public static readonly string TgtCpuName = "wasm64";
+#error NYI: WASM64
 #endif
 
     public static readonly ArgOrder TgtArgOrder = ARG_ORDER_R2L;

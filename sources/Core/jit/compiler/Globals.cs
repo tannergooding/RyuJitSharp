@@ -329,7 +329,14 @@ public partial class Globals
     };
 #endif
 
-    public static IRegAlloc GetRegisterAllocator(Compiler compiler) => new LinearScan(compiler);
+    public static IRegAlloc GetRegisterAllocator(Compiler compiler)
+    {
+#if TARGET_WASM
+        return WasmRegAlloc.GetRegisterAllocator(compiler);
+#else
+        return new LinearScan(compiler);
+#endif
+    }
 
     public static bool handlerGetsXcptnObj(bbCatchType hndType) => hndType is not BBCT_NONE and not BBCT_FAULT and not BBCT_FINALLY;
 

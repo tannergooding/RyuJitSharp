@@ -94,6 +94,31 @@ public partial class Compiler
         }
 #elif TARGET_ARM64
         getHWIntrinsicImmOpsArm64Core(intrinsic, in sig, ref immOp1, ref immOp2);
+#elif TARGET_WASM
+        if (!HWIntrinsicInfo.HasImmediateOperand(intrinsic))
+        {
+            return;
+        }
+
+        var imm1Pos = -1;
+        var imm2Pos = -1;
+        var numArgs = HWIntrinsicInfo.lookupNumArgs(intrinsic);
+        HWIntrinsicInfo.GetImmOpsPositions(intrinsic, out imm1Pos, out imm2Pos);
+        if (imm1Pos >= 0)
+        {
+            var imm1StackPos = numArgs - imm1Pos;
+            var immOp = impStackTop(imm1StackPos).val;
+            immOp1 = immOp;
+            assert(HWIntrinsicInfo.isImmOp(intrinsic, immOp));
+        }
+
+        if (imm2Pos >= 0)
+        {
+            var imm2StackPos = numArgs - imm2Pos;
+            var immOp = impStackTop(imm2StackPos).val;
+            immOp2 = immOp;
+            assert(HWIntrinsicInfo.isImmOp(intrinsic, immOp));
+        }
 #else
         NYI("Hardware-intrinsic immediate discovery outside xarch");
         fatal(CORJIT_IMPLLIMITATION);

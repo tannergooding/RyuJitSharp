@@ -803,6 +803,8 @@ public sealed partial class Lowering
         return node.Next;
 #elif TARGET_ARM64
         return LowerHWIntrinsicArm64(node);
+#elif FEATURE_HW_INTRINSICS && TARGET_WASM
+        return LowerHWIntrinsicWasm(node);
 #elif TARGET_LOONGARCH64
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic lowering is not ported.");
 #else

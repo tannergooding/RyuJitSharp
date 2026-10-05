@@ -359,9 +359,291 @@ public sealed partial class CodeGen
     }
 
 #if FEATURE_HW_INTRINSICS
+    private readonly struct WasmHWIntrinsic
+    {
+        private readonly GenTreeHWIntrinsic _node;
+
+        public NamedIntrinsic Id { get; }
+        public HWIntrinsicCategory Category { get; }
+        public var_types BaseType { get; }
+        public int NumOperands { get; }
+
+        public WasmHWIntrinsic(GenTreeHWIntrinsic node)
+        {
+            assert(node is not null);
+            _node = node;
+            Id = node.HWIntrinsicId;
+            Category = HWIntrinsicInfo.lookupCategory(Id);
+            NumOperands = node.Operands.Length;
+            BaseType = node.SimdBaseType;
+
+            assert(HWIntrinsicInfo.RequiresCodegen(Id));
+            assert(NumOperands <= 3);
+
+            if (BaseType == TYP_UNKNOWN)
+            {
+                assert(Category is HW_Category_Scalar or HW_Category_Special);
+
+                if (HWIntrinsicInfo.BaseTypeFromFirstArg(Id))
+                {
+                    assert(NumOperands >= 1);
+                    BaseType = node.GetOp(1).Type;
+                }
+                else if (HWIntrinsicInfo.BaseTypeFromSecondArg(Id))
+                {
+                    assert(NumOperands >= 2);
+                    BaseType = node.GetOp(2).Type;
+                }
+                else
+                {
+                    BaseType = node.Type;
+                }
+
+                if (Category is HW_Category_Scalar)
+                {
+                    BaseType = BaseType.ActualType;
+                }
+            }
+        }
+
+        public bool CodeGenIsTableDriven =>
+            (Category is not HW_Category_Helper) && !HWIntrinsicInfo.HasSpecialCodegen(Id);
+
+        public bool NeedsJumpTableFallback =>
+            HWIntrinsicInfo.HasImmediateOperand(Id) && !GetImmediateOperand().Oper.IsCnsIntOrI;
+
+        public GenTree GetImmediateOperand()
+        {
+            HWIntrinsicInfo.GetImmOpsPositions(Id, out var immediatePosition, out _);
+            assert((immediatePosition > 0) && (immediatePosition <= NumOperands));
+
+            return _node.GetOp(immediatePosition);
+        }
+
+        public byte GetImmediateLaneOperand()
+        {
+            assert(Category is HW_Category_IMM or HW_Category_MemoryLoad or HW_Category_MemoryStore);
+
+            var immediate = GetImmediateOperand();
+            assert(immediate.Oper.IsCnsIntOrI);
+
+            var lane = immediate.AsIntCon().IconValue;
+            assert((lane >= byte.MinValue) && (lane <= byte.MaxValue));
+
+            return unchecked((byte)lane);
+        }
+    }
+
+    private void genEmitWasmIntrinsicLane(instruction ins, byte laneIdx)
+    {
+        WasmCodegenDependencyNotPorted($"Emitter.emitIns_Lane for {ins}, lane {laneIdx}");
+    }
+
+    private void genEmitWasmDepthInstruction(instruction ins, uint depth)
+    {
+        WasmCodegenDependencyNotPorted($"Emitter.emitIns_J for {ins}, depth {depth}, without a block target");
+    }
+
     private void genHWIntrinsic(GenTreeHWIntrinsic node)
     {
-        WasmCodegenDependencyNotPorted(node, nameof(genHWIntrinsic));
+        var info = new WasmHWIntrinsic(node);
+        genConsumeMultiOpOperands(node);
+
+        if (info.CodeGenIsTableDriven)
+        {
+            var ins = HWIntrinsicInfo.lookupIns(info.Id, info.BaseType, _compiler);
+            assert(ins != INS_invalid);
+
+            switch (info.Category)
+            {
+                case HW_Category_SIMD:
+                {
+                    if (info.Id is NI_PackedSimd_Shuffle)
+                    {
+                        var mask = node.GetOp(3);
+                        assert(mask.IsContained);
+                        GetEmitter().emitIns_V128Imm(ins, mask.AsVecCon().SimdVal.AsSpan<byte>()[..16]);
+                    }
+                    else if ((info.Id is NI_PackedSimd_Swizzle) && node.GetOp(2).IsContained)
+                    {
+                        // i8x16.shuffle reads two vectors, while the contained mask was not materialized.
+                        var src = node.GetOp(1);
+                        var srcReg = GetMultiUseOperandReg(src);
+                        genEmitLocalGet(srcReg, src.Type);
+                        GetEmitter().emitIns_V128Imm(
+                            INS_i8x16_shuffle, node.GetOp(2).AsVecCon().SimdVal.AsSpan<byte>()[..16]);
+                    }
+                    else
+                    {
+                        GetEmitter().emitIns(ins);
+                    }
+                    break;
+                }
+
+                case HW_Category_IMM:
+                {
+                    if (info.NeedsJumpTableFallback)
+                    {
+                        genHWIntrinsicJumpTableFallback(node, info);
+                    }
+                    else
+                    {
+                        genEmitWasmIntrinsicLane(ins, info.GetImmediateLaneOperand());
+                    }
+                    break;
+                }
+
+                case HW_Category_MemoryStore:
+                case HW_Category_MemoryLoad:
+                {
+                    var elemSize = node.SimdBaseType.EmitActualSize;
+                    var isMem = node.IsMemoryLoad(out var addr) || node.IsMemoryStore(out addr);
+                    assert(isMem && addr is not null);
+
+                    var memoryAddress = addr
+                        ?? throw new FatalJitException(
+                            CORJIT_INTERNALERROR, "Wasm hardware intrinsic memory node has no address.");
+                    var addrReg = GetMultiUseOperandReg(memoryAddress);
+                    genEmitNullCheck(addrReg);
+
+                    if (info.NeedsJumpTableFallback)
+                    {
+                        genHWIntrinsicJumpTableFallback(node, info);
+                    }
+                    else if (HWIntrinsicInfo.HasImmediateOperand(info.Id))
+                    {
+                        GetEmitter().emitIns_MemargLane(
+                            ins, elemSize, 0, info.GetImmediateLaneOperand());
+                    }
+                    else
+                    {
+                        GetEmitter().emitIns_I(ins, elemSize, 0);
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+        }
+        else
+        {
+            switch (info.Id)
+            {
+                case NI_Vector_AsVector128Unsafe:
+                case NI_Vector_AsVector2:
+                case NI_Vector_AsVector3:
+                {
+                    // Wasm SIMD values already occupy a full v128 on the value stack.
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+        }
+
+        WasmProduceReg(node);
+    }
+
+    private void genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic node, WasmHWIntrinsic info)
+    {
+        assert(info.Category is HW_Category_IMM or HW_Category_MemoryLoad or HW_Category_MemoryStore);
+
+        var simdSize = node.SimdSize;
+        var ins = HWIntrinsicInfo.lookupIns(info.Id, info.BaseType, _compiler);
+        var immUpperBound = HWIntrinsicInfo.lookupImmUpperBound(info.Id, simdSize, info.BaseType);
+        var resultType = WasmValueType.Invalid;
+        if (node.Type != TYP_VOID)
+        {
+            resultType = regNumberExtensions.ActualTypeToWasmValueType(node.Type.ActualType);
+        }
+
+        var immOp = info.GetImmediateOperand();
+        var immReg = GetMultiUseOperandReg(immOp);
+
+        // Drop the original operands; each switch-table case re-materializes its operands from locals.
+        for (var i = 0; i < info.NumOperands; i++)
+        {
+            GetEmitter().emitIns(INS_drop);
+        }
+
+        void GetNonImmediateOperands()
+        {
+            for (var i = 1; i <= info.NumOperands; i++)
+            {
+                var operand = node.GetOp(i);
+                if (operand != immOp)
+                {
+                    // Lowering marks these operands multiply used so register allocation keeps their locals.
+                    var reg = GetMultiUseOperandReg(operand);
+                    genEmitLocalGet(reg, operand.Type);
+                }
+            }
+        }
+
+        // Each nested block is a case target for br_table; the inner void block is the invalid-index target.
+        // The cases remain one inline macro-instruction; adding calls or safepoints would require restructuring.
+        genEmitBeginBlock(resultType);
+        genEmitBeginBlock();
+        for (var i = 0; i <= immUpperBound; i++)
+        {
+            genEmitBeginBlock();
+        }
+
+        genEmitLocalGet(immReg, immOp.Type);
+
+        var caseCount = immUpperBound + 1;
+        GetEmitter().emitIns_I(INS_br_table, EA_4BYTE, caseCount);
+        for (var caseNum = 0; caseNum <= immUpperBound; caseNum++)
+        {
+            genEmitWasmDepthInstruction(INS_label, unchecked((uint)caseNum));
+        }
+        genEmitWasmDepthInstruction(INS_label, unchecked((uint)(immUpperBound + 1)));
+
+        assert((immUpperBound >= 0) && (immUpperBound <= byte.MaxValue));
+        for (var i = 0; i <= immUpperBound; i++)
+        {
+            genEmitEndBlock();
+            GetNonImmediateOperands();
+
+            switch (info.Category)
+            {
+                case HW_Category_IMM:
+                {
+                    genEmitWasmIntrinsicLane(ins, unchecked((byte)i));
+                    break;
+                }
+
+                case HW_Category_MemoryLoad:
+                case HW_Category_MemoryStore:
+                {
+                    var elemSize = node.SimdBaseType.EmitActualSize;
+                    GetEmitter().emitIns_MemargLane(ins, elemSize, 0, unchecked((byte)i));
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                    break;
+                }
+            }
+
+            // The inner invalid-index block adds one level to the depth needed to branch to the result block.
+            var branchDepth = unchecked((uint)(immUpperBound + 1 - i));
+            genEmitWasmDepthInstruction(INS_br, branchDepth);
+        }
+
+        genEmitEndBlock();
+        GetEmitter().emitIns(INS_unreachable);
+        genEmitEndBlock();
     }
 #endif
 

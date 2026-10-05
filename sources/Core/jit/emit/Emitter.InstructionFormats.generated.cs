@@ -825,11 +825,37 @@ public partial class Emitter
         IF_SVE_JN_3C,
         IF_SVE_JN_3C_D,
         IF_SVE_JO_3A,
+#elif TARGET_WASM
+        IF_NONE,
+        IF_OPCODE,
+        IF_BLOCK,
+        IF_RAW_ULEB128,
+        IF_CODE_SIZE,
+        IF_ULEB128,
+        IF_FUNCIDX,
+        IF_GLOBALIDX,
+        IF_SLEB128,
+        IF_MEMADDR,
+        IF_FUNCPTR,
+        IF_FUNCLETPTR,
+        IF_FUNCLETIDX,
+        IF_DATAOFFS,
+        IF_F32,
+        IF_F64,
+        IF_MEMARG,
+        IF_LOCAL_DECL,
+        IF_CALL_INDIRECT,
+        IF_MEMIDX_MEMIDX,
+        IF_TRY_TABLE,
+        IF_CATCH_DECL,
+        IF_V128,
+        IF_LANE,
+        IF_MEMARG_LANE,
 #endif
         IF_COUNT,
     }
 
-#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_WASM
     internal static ReadOnlySpan<byte> emitFmtToOps => [
 #if TARGET_ARM
         (byte)ID_OP_NONE, // IF_NONE
@@ -1524,6 +1550,32 @@ public partial class Emitter
         (byte)ID_OP_NONE, // IF_SVE_JN_3C
         (byte)ID_OP_NONE, // IF_SVE_JN_3C_D
         (byte)ID_OP_NONE, // IF_SVE_JO_3A
+#elif TARGET_WASM
+        (byte)ID_OP_NONE, // IF_NONE
+        (byte)ID_OP_NONE, // IF_OPCODE
+        (byte)ID_OP_NONE, // IF_BLOCK
+        (byte)ID_OP_NONE, // IF_RAW_ULEB128
+        (byte)ID_OP_NONE, // IF_CODE_SIZE
+        (byte)ID_OP_NONE, // IF_ULEB128
+        (byte)ID_OP_NONE, // IF_FUNCIDX
+        (byte)ID_OP_NONE, // IF_GLOBALIDX
+        (byte)ID_OP_NONE, // IF_SLEB128
+        (byte)ID_OP_NONE, // IF_MEMADDR
+        (byte)ID_OP_NONE, // IF_FUNCPTR
+        (byte)ID_OP_NONE, // IF_FUNCLETPTR
+        (byte)ID_OP_NONE, // IF_FUNCLETIDX
+        (byte)ID_OP_NONE, // IF_DATAOFFS
+        (byte)ID_OP_NONE, // IF_F32
+        (byte)ID_OP_NONE, // IF_F64
+        (byte)ID_OP_NONE, // IF_MEMARG
+        (byte)ID_OP_NONE, // IF_LOCAL_DECL
+        (byte)ID_OP_NONE, // IF_CALL_INDIRECT
+        (byte)ID_OP_NONE, // IF_MEMIDX_MEMIDX
+        (byte)ID_OP_NONE, // IF_TRY_TABLE
+        (byte)ID_OP_NONE, // IF_CATCH_DECL
+        (byte)ID_OP_NONE, // IF_V128
+        (byte)ID_OP_NONE, // IF_LANE
+        (byte)ID_OP_NONE, // IF_MEMARG_LANE
 #else
         (byte)ID_OP_NONE, // IF_NONE
         (byte)ID_OP_JMP, // IF_LABEL

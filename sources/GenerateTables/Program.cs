@@ -1473,6 +1473,14 @@ public sealed partial class CodeGen
                     $"        (byte)ID_OP_{parts[2].Trim()}, // IF_{parts[0].Trim()}")));
         }
 
+        const string wasmFormatInput = @"Inputs\emitfmtswasm.h";
+        var wasmFormatLines = ReadInstructionFormatLines(wasmFormatInput);
+        var wasmFormatBuilder = ProcessMacroBasedFile(wasmFormatInput, wasmFormatLines, ["IF_DEF("],
+            AppendInstructionFormat);
+        var wasmOperandBuilder = ProcessMacroBasedFile(wasmFormatInput, wasmFormatLines, ["IF_DEF("],
+            (builder, inputFile, line, prefix, parts) => _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        (byte)ID_OP_{parts[2].Trim()}, // IF_{parts[0].Trim()}"));
+
         var operandBuilder = ProcessMacroBasedFile(formatInput, formatLines, ["IF_DEF("],
             (builder, inputFile, line, prefix, parts) => _ = builder.AppendLine(CultureInfo.InvariantCulture,
                 $"        (byte)ID_OP_{parts[2].Trim()}, // IF_{parts[0].Trim()}"));
@@ -1518,15 +1526,17 @@ public partial class Emitter
 #if TARGET_XARCH
 {{formatBuilder}}#elif TARGET_ARM
 {{armFormatBuilder}}#elif TARGET_ARM64
-{{arm64FormatBuilder}}#endif
+{{arm64FormatBuilder}}#elif TARGET_WASM
+{{wasmFormatBuilder}}#endif
         IF_COUNT,
     }
 
-#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_WASM
     internal static ReadOnlySpan<byte> emitFmtToOps => [
 #if TARGET_ARM
 {{armOperandBuilder}}#elif TARGET_ARM64
-{{arm64OperandBuilder}}#else
+{{arm64OperandBuilder}}#elif TARGET_WASM
+{{wasmOperandBuilder}}#else
 {{operandBuilder}}#endif
     ];
 #endif
@@ -1562,6 +1572,7 @@ public partial class Emitter
         var xarchOperandKinds = ReadNativeEnumBody(formatInput, "ID_OPS");
         var armOperandKinds = ReadNativeEnumBody(armFormatInput, "ID_OPS");
         var arm64OperandKinds = ReadNativeEnumBody(arm64Inputs[0], "ID_OPS");
+        var wasmOperandKinds = ReadNativeEnumBody(wasmFormatInput, "ID_OPS");
         File.WriteAllText(@"Outputs\jit\emit\ID_OPS.generated.cs", $$"""
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 //
@@ -1576,7 +1587,8 @@ public enum ID_OPS
 {
 #if TARGET_ARM
 {{armOperandKinds}}#elif TARGET_ARM64
-{{arm64OperandKinds}}#else
+{{arm64OperandKinds}}#elif TARGET_WASM
+{{wasmOperandKinds}}#else
 {{xarchOperandKinds}}#endif
 }
 """);

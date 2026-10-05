@@ -1128,10 +1128,16 @@ Code-generation preparation includes complete non-Wasm block-label marking,
 native hot/cold jump-elision predicates, emitter `Init`, and GC register/stack
 pointer state with live-register protection and native diagnostics.
 `EMIT_GENERATE_GCINFO` is enabled in every configuration, correcting B206.
-Wasm interval-aware jump elision, non-fixed-register GC register clearing and
-non-xarch emitter register names explicitly reject. These support routines do
-not activate machine-code generation or complete instruction-group storage,
-frame layout, per-tree liveness updates, encoding or runtime metadata.
+`CanRemoveJumpToTarget` preserves the native Wasm interval-boundary check.
+`WasmInterval` now has a managed `TARGET_WASM` implementation for its bounds,
+kind, chains, factories, and debug helpers; its native class definition is
+retired, with only a forward declaration retained for residual pointer uses.
+Full-analysis Linux-Wasm target suites pass 177 Debug and 178 Release cases,
+with zero failures or skips. This does not establish Wasm execution parity.
+Non-fixed-register GC register clearing and non-xarch emitter register names
+also explicitly reject. These support routines do not
+activate machine-code generation or complete instruction-group storage, frame
+layout, per-tree liveness updates, encoding or runtime metadata.
 
 Instruction-group allocation/initialization/linking and local register-location,
 register-mask and birth/death transitions are complete. Groups retain typed

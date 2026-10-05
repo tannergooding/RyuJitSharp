@@ -31,7 +31,51 @@ public readonly partial struct HWIntrinsicInfo
 #if FEATURE_HW_INTRINSICS && TARGET_WASM
     public static int lookupImmUpperBound(NamedIntrinsic intrinsic, int simdSize, var_types simdBaseType)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Wasm hardware-intrinsic immediate bounds are not ported.");
+        switch (intrinsic)
+        {
+            case NI_PackedSimd_ExtractScalar:
+            case NI_PackedSimd_ReplaceScalar:
+            case NI_PackedSimd_LoadScalarAndInsert:
+            case NI_PackedSimd_StoreSelectedScalar:
+            {
+                return Compiler.getSIMDVectorLength(unchecked((uint)simdSize), simdBaseType) - 1;
+            }
+
+            default:
+            {
+                unreached();
+                return 0;
+            }
+        }
+    }
+
+    public static void GetImmOpsPositions(NamedIntrinsic id, out int first, out int second)
+    {
+        first = -1;
+        second = -1;
+
+        switch (id)
+        {
+            case NI_PackedSimd_ExtractScalar:
+            case NI_PackedSimd_ReplaceScalar:
+            {
+                first = 2;
+                break;
+            }
+
+            case NI_PackedSimd_StoreSelectedScalar:
+            case NI_PackedSimd_LoadScalarAndInsert:
+            {
+                first = 3;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
     }
 #endif
 }

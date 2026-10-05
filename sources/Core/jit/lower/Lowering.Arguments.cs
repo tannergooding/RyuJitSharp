@@ -185,6 +185,8 @@ public sealed partial class Lowering
                 MakeSrcContained(source, source.AsBlk().Addr);
             }
         }
+#elif TARGET_WASM
+        unreached();
 #else
         throw new System.NotImplementedException("Stack argument lowering is not ported for this target.");
 #endif

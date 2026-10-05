@@ -12,7 +12,7 @@ public sealed partial class Lowering
 #if FEATURE_HW_INTRINSICS && TARGET_WASM
     private void ContainCheckHWIntrinsic(GenTreeHWIntrinsic node)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "WebAssembly hardware-intrinsic containment is not ported.");
+        ContainCheckHWIntrinsicWasm(node);
     }
 #endif
 
