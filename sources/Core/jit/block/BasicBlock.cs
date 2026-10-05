@@ -975,7 +975,7 @@ public sealed partial class BasicBlock : LIR.Range
     public BasicBlock? GetTargetRaw()
     {
         assert(HasTarget);
-        return (bbTargetEdge is null) ? null : bbTargetEdge.DestinationBlock;
+        return bbTargetEdge?.DestinationBlock;
     }
 #endif
 
@@ -1087,7 +1087,7 @@ public sealed partial class BasicBlock : LIR.Range
     public BasicBlock? GetFalseTargetRaw()
     {
         assert(Kind is BBJ_COND);
-        return (bbFalseEdge is null) ? null : bbFalseEdge.DestinationBlock;
+        return bbFalseEdge?.DestinationBlock;
     }
 #endif
 
@@ -1294,7 +1294,7 @@ public sealed partial class BasicBlock : LIR.Range
     public BasicBlock? GetTrueTargetRaw()
     {
         assert(Kind is BBJ_COND);
-        return (bbTrueEdge is null) ? null : bbTrueEdge.DestinationBlock;
+        return bbTrueEdge?.DestinationBlock;
     }
 #endif
 
