@@ -4470,6 +4470,14 @@
           "retirement": "No native change: both native overload definitions and their compiler.h declarations are absent from runtime-port HEAD ea62c471. The intact pinned oracle retains both overloads; no native-retirement credit is claimed.",
           "limits": "This is Linux SysV x64 target-branch evidence on a Windows x64 host, not Windows AMD64 ABI execution, Linux runtime behavior, generated-code parity, or global debt clearance."
         },
+        "linuxX64BranchPaddingFixture": {
+          "status": "accepted-test-fixture-only",
+          "scope": "Use the concrete instrDescJmp return type in the Linux x64 branch-padding test descriptor factory.",
+          "mapping": "LinuxX64EmitterBranchPaddingTests.Descriptor.Jump constructs instrDescJmp and callers inspect jump-specific metadata; returning instrDescJmp rather than the base instrDesc preserves the concrete fixture contract. No production behavior changed.",
+          "validation": "Full-analysis focused Target.UnitTests selection LinuxX64EmitterBranchPaddingTests passed 2/2 Debug and 2/2 Release, zero skips, using host win-x64 and target linux-x64, AnalysisLevel=latest-all, default compiler CPU, and compiler-only DOTNET_GCConserveMemory=5.",
+          "retirement": "No native change is applicable: this is a managed test-fixture type correction, not a translated native definition or declaration.",
+          "limits": "Linux x64 emitter-fixture coverage on a Windows x64 host only; no Windows AMD64 ABI, generated-code, or runtime-parity claim."
+        },
         "lastAcceptedHelperRetirement": {
           "symbol": "Compiler error-trap template wrappers and orphan Imp prototypes",
           "mapping": "runtime-oracle compiler.h::eeRunWithErrorTrap/eeRunWithSPMIErrorTrap map to Compiler.eeRunWithErrorTrap/eeRunWithSpmiErrorTrap; the two functor templates map to eeRunFunctorWithErrorTrap/eeRunFunctorWithSpmiErrorTrap; DEBUG eeRunExtraSuperPmiQueries maps to the existing managed helper.",

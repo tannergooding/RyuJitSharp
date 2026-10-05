@@ -89,7 +89,7 @@ internal static unsafe class LinuxX64EmitterBranchPaddingTests
 
     private abstract class Descriptor(CodeGen codeGen) : Emitter(codeGen)
     {
-        public static instrDesc Jump(insGroup group)
+        public static instrDescJmp Jump(insGroup group)
         {
             var descriptor = new instrDescJmp();
             descriptor.idIns(INS_jmp);
