@@ -283,10 +283,7 @@ public partial class Compiler
 #endif
 
         func.GetUnwindInfo().Allocate((CorJitFuncKind)func.funKind, pHotCode, pColdCode, true);
-        if (func.uwiCold is not null)
-        {
-            func.uwiCold.Allocate((CorJitFuncKind)func.funKind, pHotCode, pColdCode, false);
-        }
+        func.uwiCold?.Allocate((CorJitFuncKind)func.funKind, pHotCode, pColdCode, false);
     }
 #endif
 }
