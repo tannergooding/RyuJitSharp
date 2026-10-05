@@ -19,7 +19,7 @@ internal static class RiscVCodeGenPortTests
     [TestCase(TYP_I_IMPL)]
     public static void LocalAddressPreservesTheStackInstructionRecordingBoundary(var_types type)
     {
-        CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
+        ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
             var localAddress = new GenTreeLclFld(GT_LCL_ADDR, type, 0, 24)
             {
