@@ -41,6 +41,8 @@ public sealed partial class CodeGen
             inst_TT(INS_push, data.Type.EmitSize, data);
             AddStackLevel(TARGET_POINTER_SIZE);
         }
+#elif TARGET_LOONGARCH64
+        genPutArgStkLoongArch64(putArgStk);
 #elif !TARGET_AMD64
         throw new FatalJitException(CORJIT_SKIPPED, "Stack argument generation requires xarch.");
 #else

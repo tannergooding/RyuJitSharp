@@ -34,6 +34,37 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 
 #if TARGET_LOONGARCH64
     [Test]
+    public static void StackArgumentDispatchReachesTheLoongArchStoreBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var source = new GenTreePhysReg(REG_S0, TYP_LONG) { RegNum = REG_S0 };
+            var argument = new GenTreePutArgStk(TYP_VOID, source, null, 0, 8, false);
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(argument));
+
+            Assert.That(failure?.Message,
+                Does.Contain("Target local-stack store recording is not implemented."));
+        });
+    }
+
+#if FEATURE_SIMD
+    [Test]
+    public static void SimdStackArgumentPreservesTheLoongArchNyiBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var source = new GenTreePhysReg(REG_F0, TYP_SIMD16) { RegNum = REG_F0 };
+            var argument = new GenTreePutArgStk(TYP_VOID, source, null, 0, 16, false);
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(argument));
+
+            Assert.That(failure?.Message, Does.Contain("unimplemented on LOONGARCH64 yet"));
+        });
+    }
+#endif
+
+    [Test]
     public static void GSCookieCheckReachesTheLoongArchEmissionBoundary()
     {
         WithCodeGen((compiler, codeGen) =>
