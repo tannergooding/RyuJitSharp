@@ -71,7 +71,7 @@ public sealed partial class Lowering
         return false;
     }
 
-    private bool IsInvariantInRange(GenTree node, GenTree? endExclusive, GenTreeFlags ignoreFlagsOnNode = GTF_EMPTY)
+    private bool IsInvariantInRange(GenTree node, GenTree endExclusive, GenTreeFlags ignoreFlagsOnNode = GTF_EMPTY)
         => _scratchSideEffects.IsLirInvariantInRange(CompilerInstance, node, endExclusive, ignoreFlagsOnNode);
 
     private bool IsInvariantInRange(GenTree node, GenTree endExclusive, GenTree ignoreNode,

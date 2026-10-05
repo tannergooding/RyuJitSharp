@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
+using System.Diagnostics;
 using System.Numerics;
 
 namespace RyuJitSharp;
@@ -68,6 +70,7 @@ public struct SideEffectSet
     public bool IsLirInvariantInRange(Compiler compiler, GenTree node, GenTree endExclusive, GenTree? ignoreNode,
         GenTreeFlags ignoreFlagsOnNode = GTF_EMPTY)
     {
+        Debug.Assert(endExclusive is not null);
         if ((node.Next == endExclusive) || ((ignoreNode is not null) && (node.Next == ignoreNode) && (ignoreNode.Next == endExclusive)))
         {
             return true;
@@ -79,13 +82,17 @@ public struct SideEffectSet
         Clear();
         AddNode(compiler, node);
         _sideEffectFlags &= ~ignoreFlagsOnNode;
-        for (var current = node.Next; current != endExclusive; current = current.Next)
+        for (var current = node.Next; current != endExclusive;)
         {
-            assert(current is not null, "Expected first node to precede end node");
-            if ((current != ignoreNode) && InterferesWith(compiler, current, true))
+            Debug.Assert(current is not null);
+            var currentNode = current ??
+                throw new InvalidOperationException("Expected first node to precede end node.");
+            if ((currentNode != ignoreNode) && InterferesWith(compiler, currentNode, true))
             {
                 return false;
             }
+
+            current = currentNode.Next;
         }
         return true;
     }
