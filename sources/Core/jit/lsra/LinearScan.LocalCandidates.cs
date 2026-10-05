@@ -295,15 +295,69 @@ public sealed partial class LinearScan
 #if DOUBLE_ALIGN
     private CanDoubleAlign getCanDoubleAlign()
     {
-        NYI("Compiler.getCanDoubleAlign for x86 register candidates");
-        throw new FatalJitException(CORJIT_IMPLLIMITATION, "Compiler.getCanDoubleAlign is not ported.");
+#if DEBUG
+        if (_compiler.compStressCompile(Compiler.STRESS_DBL_ALN, 20))
+        {
+            return CanDoubleAlign.MUST_DOUBLE_ALIGN;
+        }
+
+        return (CanDoubleAlign)JitConfig.JitDoubleAlign;
+#else
+        return CanDoubleAlign.DEFAULT_DOUBLE_ALIGN;
+#endif
     }
 
+    // Estimate the bytes saved by frame-pointer-relative parameter references against
+    // setup and non-parameter stack references, then weigh alignment costs and EBP locals.
     private bool shouldDoubleAlign(uint refCntStk, uint refCntEBP, double refCntWtdEBP,
         uint refCntStkParam, double refCntWtdStkDbl)
     {
-        NYI("Compiler.shouldDoubleAlign for x86 register candidates");
-        throw new FatalJitException(CORJIT_IMPLLIMITATION, "Compiler.shouldDoubleAlign is not ported.");
+        var doDoubleAlign = false;
+        // MOV EBP,ESP; LEA ESP,[EBP-offset]; AND ESP,-8.
+        const uint DBL_ALIGN_SETUP_SIZE = 7;
+
+        var bytesUsed = unchecked(refCntStk + refCntEBP - refCntStkParam + DBL_ALIGN_SETUP_SIZE);
+        // Estimated misalignment penalty: 0 for SMALL_CODE, 4 normally, 16 for FAST_CODE.
+        uint misalignedWeight = 4;
+
+        if (_compiler.compCodeOpt is Compiler.SMALL_CODE)
+        {
+            misalignedWeight = 0;
+        }
+
+        if (_compiler.compCodeOpt is Compiler.FAST_CODE)
+        {
+            misalignedWeight *= 4;
+        }
+
+        JITDUMP("\nDouble alignment:\n");
+        JITDUMP($"  Bytes that could be saved by not using EBP frame: {bytesUsed}\n");
+        JITDUMP($"  Sum of weighted ref counts for EBP enregistered variables: {formatFloat(refCntWtdEBP, "F6")}\n");
+        JITDUMP($"  Sum of weighted ref counts for weighted stack based doubles: {formatFloat(refCntWtdStkDbl, "F6")}\n");
+
+        if (bytesUsed > (refCntWtdStkDbl * misalignedWeight / BB_UNITY_WEIGHT))
+        {
+            JITDUMP($"    Predicting not to double-align ESP to save {bytesUsed} bytes of code.\n");
+        }
+        else if (refCntWtdEBP > refCntWtdStkDbl * 2)
+        {
+            // TODO-CQ: On P4 2 Proc XEON's, SciMark.FFT degrades if SciMark.FFT.transform_internal is
+            // not double aligned.
+            // Here are the numbers that make this not double-aligned.
+            //     refCntWtdStkDbl = 0x164
+            //     refCntWtdEBP    = 0x1a4
+            // We think we do need to change the heuristic to be in favor of double-align.
+
+            JITDUMP("    Predicting not to double-align ESP to allow EBP to be used to enregister variables.\n");
+        }
+        else
+        {
+            // OK we passed all of the benefit tests, so we'll predict a double aligned frame.
+            JITDUMP("    Predicting to create a double-aligned frame\n");
+            doDoubleAlign = true;
+        }
+
+        return doDoubleAlign;
     }
 #endif
 
