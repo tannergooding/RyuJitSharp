@@ -107,7 +107,7 @@ internal static class Arm32CkfiniteCodeGenTests
             Assert.That(descriptor.idInsFlags(), Is.EqualTo(INS_FLAGS_NOT_SET));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R2));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R3));
-            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)encoded));
+            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)encoded));
 #if !DEBUG
             Assert.That(GroupSize(codeGen.Emitter), Is.EqualTo(4));
 #endif
