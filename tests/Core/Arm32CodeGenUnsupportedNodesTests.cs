@@ -14,6 +14,7 @@ using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.insFlags;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
@@ -76,8 +77,59 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
 }
 
 [NonParallelizable]
-internal static class Arm32CkfiniteCodeGenTests
+internal static unsafe class Arm32CkfiniteCodeGenTests
 {
+    [TestCase(NI_System_Math_Abs)]
+    [TestCase(NI_System_Math_Sqrt)]
+    public static void FloatingMathIntrinsicsRetainTheArm32BinaryEmitterBoundary(NamedIntrinsic intrinsic)
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
+        {
+            var source = new GenTreePhysReg(REG_F0, TYP_FLOAT) { RegNum = REG_F0 };
+            var tree = new GenTreeIntrinsic(TYP_FLOAT, source, intrinsic, methodHandle: null)
+            {
+                RegNum = REG_F1,
+            };
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genIntrinsic(tree));
+
+            Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Is.EqualTo("ARM32 binary instruction emission is not ported."));
+        });
+    }
+
+    [TestCase(NI_PRIMITIVE_SaturateToInt8, INS_ssat, 7)]
+    [TestCase(NI_PRIMITIVE_SaturateToInt16, INS_ssat, 15)]
+    [TestCase(NI_PRIMITIVE_SaturateToUInt8, INS_usat, 8)]
+    [TestCase(NI_PRIMITIVE_SaturateToUInt16, INS_usat, 16)]
+    public static void SaturationIntrinsicsRetainOpcodeAndWidth(
+        NamedIntrinsic intrinsic, instruction expectedInstruction, int expectedEncoding)
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
+        {
+            var source = new GenTreePhysReg(REG_R3, TYP_INT) { RegNum = REG_R3 };
+            var tree = new GenTreeIntrinsic(TYP_INT, source, intrinsic, methodHandle: null)
+            {
+                RegNum = REG_R2,
+            };
+
+#if DEBUG
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genIntrinsic(tree));
+            Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
+#else
+            codeGen.genIntrinsic(tree);
+#endif
+
+            var descriptor = LastInstruction(codeGen.Emitter)
+                ?? throw new AssertionException("No saturation instruction was recorded.");
+            Assert.That(descriptor.idIns(), Is.EqualTo(expectedInstruction));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R2));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R3));
+            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)expectedEncoding));
+        });
+    }
+
     [TestCase(INS_bfi, 1, 8, 40)]
     [TestCase(INS_bfi, 0, 32, 31)]
     [TestCase(INS_sbfx, 23, 8, 743)]

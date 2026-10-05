@@ -16,6 +16,14 @@ The [continuation plan](PLAN.md) describes the work ahead.
 [Known limitations and deviations](DEVIATIONS.md) and the [backlog](BACKLOG.md)
 cover outstanding issues.
 
+## 2026-10-05: RISC-V and ARM intrinsic code generation
+
+Whole-function managed implementations now preserve RISC-V and shared
+ARM/ARM64 intrinsic selection, operand consumption, register production, and
+target-specific instruction sequences. The focused target fixtures exercise
+instruction-recording boundaries; they do not establish generated-code
+execution or runtime parity on those architectures.
+
 ## 2026-10-04: Windows-x64 LSRA helper retirement
 
 Retired ten LSRA header helpers whose managed mappings and Windows-x64 caller
@@ -5548,7 +5556,6 @@ Both value and branch import now validate the widened operands while preserving
 their distinct native extension rules. Sixteen regressions reproduce the old
 Debug assertion; focused coverage passes 111 Debug and 111 Release cases.
 This is a bounded official execution result, not full-suite or whole-dump parity.
-See `checkpoint.importerComparisonTypes`.
 
 ## 2026-09-28: Emitted-code size statistics completed
 
@@ -5559,7 +5566,7 @@ formatting and shutdown order.
 
 These are emitted payload sizes, not estimates of managed compiler-object
 allocations. Native JIT32 header/map recording remains a separate target boundary.
-The option stays disabled by default; see `checkpoint.emittedSizeStatistics`.
+The option stays disabled by default.
 
 ## 2026-09-28: Shared diagnostic counters completed
 
@@ -5595,7 +5602,7 @@ Enabled statistics, error, liveness and shutdown coverage passes 59 Debug and
 53 Release cases; default controls pass 42 and 36. Both configurations reproduce
 the old caller-location defect before correction. The option remains disabled
 by default, and native optional-map concurrency quirks remain unchanged.
-See B444 and `checkpoint.nowayStatistics`.
+See B444.
 
 ## 2026-09-28: Optional basic-block statistics completed
 
@@ -5607,8 +5614,7 @@ unsigned wraparound, the 64-counter limit and the overflow bucket.
 Enabled coverage passes 98 Debug and 46 Release cases; default-configuration
 controls pass 95 and 43. The two convergence regressions fail with the original
 recording omission. Statistics remain disabled by default; this is not new
-generated-code or native execution evidence. See B385 and
-`checkpoint.blockCountStatistics`.
+generated-code or native execution evidence. See B385.
 
 ## 2026-09-28: SIMD length support completed
 
@@ -5631,8 +5637,7 @@ control. Both compilers also execute a same-thread assembly-resolution callback
 whose method is JIT-compiled while the outer method is still being imported.
 
 This closes the temporary serialization limitation, not every optional-mode
-race or whole-runtime parity question. Evidence: `checkpoint.compilerConcurrency`,
-B002, B442/B443 and R001.
+race or whole-runtime parity question. See B002, B442/B443 and R001.
 
 ## 2026-09-28: Integral narrowing executes across x64 ISA levels
 
@@ -5645,7 +5650,7 @@ also restored native unsigned permute metadata for 32-to-16 narrowing.
 Each native/managed primary pair checks 14,112 independently computed lanes
 and matches 54 raw phase slices and 18 complete instruction traces. These are
 selected integral narrowing results, not exhaustive SIMD or machine-byte parity.
-Evidence: `checkpoint.avx2IntegerNarrowing` and B437.
+See B437.
 
 ## 2026-09-28: Complete instruction comparison corrects TLS evidence
 
@@ -5658,8 +5663,7 @@ instruction-equality claim was incorrect. These operands preserve the EE's
 differing assigned slots, not a newly established compiler defect.
 
 The recheck preserves original execution status and missing Tier1 bodies; it
-does not rerun or relabel captures. Evidence: `checkpoint.completeInstructionRecheck`
-and B417.
+does not rerun or relabel captures. See B417.
 
 ## 2026-09-28: AMD64 Debug emitter payloads are available
 
@@ -5673,7 +5677,7 @@ native. The other sections have enabled descriptor-recording coverage, not an
 encoding-parity claim. Native default `all` requires promoted-EVEX configuration
 and asserts without it. Other-target payloads remain unsupported.
 
-Evidence: `checkpoint.amd64EmitterPayloads` and D007.
+See D007.
 
 ## 2026-09-28: Primary class profiling and selected value profiling execute
 
@@ -5688,7 +5692,6 @@ and instruction streams. This does not close the separate primary-JIT timing
 boundary: that fixed-duration program still exits before the selected managed
 instrumented Tier1 bodies appear.
 
-Evidence: `checkpoint.primaryClassProfiles` and `checkpoint.primaryPgoImport`.
 
 ## 2026-09-28: Primary tiered-PGO startup no longer crashes
 
@@ -5702,7 +5705,7 @@ Its two common Tier0 bodies match native trees and instructions. The native run
 also reaches instrumented Tier1 bodies that the managed run does not reach before
 this fixed-duration corpus exits; those absent bodies are not parity passes.
 Focused regressions and the precise runtime boundary are recorded in
-`checkpoint.primaryPgoImport` and `artifacts/primary-value-profile`.
+`artifacts/primary-value-profile`.
 
 ## 2026-09-28: Primary GC-stress and OSR controls match
 
@@ -5717,7 +5720,6 @@ instructions, including both OSR entry variants. This uses the established
 TieredPGO-disabled configuration; broader tiered-PGO and runtime-suite results
 remain separate.
 
-Evidence: `checkpoint.primaryObjectGcStress` and `checkpoint.primaryOsr`.
 
 ## 2026-09-28: Primary EH, allocation and intrinsic controls match
 
@@ -5728,8 +5730,8 @@ complete instruction streams. Both EH programs report 11 Gen2/helper collections
 The eight native/managed processes exit successfully with identical output.
 These are scoped controls, not whole-dump or official runtime-suite results.
 
-Evidence: `checkpoint.primaryEhObjectsAndHardware`; raw captures and comparisons
-are under `artifacts/primary-{eh,filters,objects,hardware}`.
+Raw captures and comparisons are under
+`artifacts/primary-{eh,filters,objects,hardware}`.
 
 ## 2026-09-28: Primary runtime-async and GC-loop execution complete
 
@@ -5747,8 +5749,7 @@ Gen2/helper collections, and matches native import/morph/cost trees and complete
 instructions for all four selected bodies. These remain bounded corpus results,
 not official runtime-suite or whole-dump parity.
 
-Evidence: `checkpoint.boxCleanupAndPrimaryAsync`, `checkpoint.primaryGcLoops`,
-and reports under `artifacts/box-cleanup` and `artifacts/primary-gc-loops`.
+Reports are under `artifacts/box-cleanup` and `artifacts/primary-gc-loops`.
 
 ## 2026-09-28: Standard and array primary-JIT execution match
 
@@ -5761,8 +5762,8 @@ P/Invoke and reverse P/Invoke, implicit-byref arguments, multidimensional arrays
 and generic type lookup. Whole dumps and the official runtime suite remain
 separate.
 
-Evidence: `checkpoint.primaryStandardAndArray` and the comparison reports under
-`artifacts/primary-standard` and `artifacts/primary-array`.
+Comparison reports are under `artifacts/primary-standard` and
+`artifacts/primary-array`.
 
 ## 2026-09-28: Runtime method tree diagnostics match
 
@@ -5774,8 +5775,7 @@ trees now match native, including node IDs and whitespace. Their complete
 arithmetic process still completes without AltJIT; this does not establish
 whole-dump or general runtime-suite parity.
 
-Evidence: `checkpoint.runtimeTreeDiagnostics` and
-`artifacts/runtime-tree-diagnostics/comparison-1.json`.
+See `artifacts/runtime-tree-diagnostics/comparison-1.json`.
 
 ## 2026-09-28: Monitor address-folding parity restored
 
@@ -5787,8 +5787,7 @@ managed body was 153 bytes. The primary arithmetic process still completes all
 27 checks and exits successfully without AltJIT. This is scoped method parity,
 not a whole-dump or runtime-suite result.
 
-Evidence: `checkpoint.addressConstantReassociation` and
-`artifacts/address-folding/comparison-1.json`.
+See `artifacts/address-folding/comparison-1.json`.
 
 ## 2026-09-28: Primary-JIT startup and teardown complete
 

@@ -114,7 +114,8 @@ with explicit authorization on 2026-09-26. That authorization does not extend to
 future pushes or PRs; obtain explicit authorization before either.
 Keep the journal reader-facing: explain capabilities, their significance and
 remaining limitations, rather than test results, provenance or recovery details.
-Execution evidence belongs in `state.json`, not in milestone descriptions.
+Keep only evidence needed for active decisions in `state.json`; completed
+capabilities belong in the milestone journal and Git history.
 Pause only for an explicit user request, a decision requiring approval,
 a publication conflict, or a blocker that cannot be safely resolved.
 

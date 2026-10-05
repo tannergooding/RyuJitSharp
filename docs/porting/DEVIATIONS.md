@@ -2119,7 +2119,7 @@ match. An explicitly enabled recording fixture reaches all six sections without
 executing their synthetic instructions. This does not establish encoding parity
 for the other five sections. Native `all` with default encoding settings asserts
 at `UsePromotedEVEXEncoding()`; the port does not bypass that configuration
-requirement. Evidence is recorded in `checkpoint.amd64EmitterPayloads`.
+requirement.
 
 ### D008: Optional CSE emission metrics
 

@@ -77,8 +77,10 @@ files and index state. Record immutable snapshot IDs and protect them with local
 refs. These refs are recovery aids, not published dependencies. Keep local paths
 and recovery commands in a session artifact. Never use `stash pop` as the only
 backup or interpret `stash@{0}` as a stable identity.
-The `localRecovery` entries in `state.json` identify these local refs and objects;
-they are not expected to exist in a fresh clone.
+The `localRecovery` entries in `state.json` identify only snapshots still needed
+by active work; older recovery refs remain in local Git without a parallel
+checked-in inventory. These local refs are not expected to exist in a fresh
+clone.
 
 ## Unit of work
 
@@ -215,13 +217,13 @@ large; do not load or rewrite an entire inventory for each task.
 An entry with `csharpSnapshot` describes preserved WIP, which may not exist in
 the working tree yet; resolve its paths in that Git tree until integration.
 
-Record function-level information only for active work, partial reconciliation,
-target-specific NYIs, non-obvious deviations, or validation gaps. For such a
-record include the native symbol/path, C# destination, source revision,
-implementation status, and remaining action. A `reconciledCommit` of `null`
-means no full reconciliation has been established. Advance a file's reconciled
-revision only after all relevant changes have been handled; use function-level
-exceptions for partial progress.
+Keep `state.json` as a concise TODO and resume cursor, not a completion catalog.
+Record only active work, partial reconciliation, target-specific NYIs,
+non-obvious deviations, unresolved decisions and validation gaps. Include the
+native symbol/path, C# destination and remaining action only when a simple
+directory convention or search cannot recover them. A `reconciledCommit` of
+`null` means no full reconciliation has been established. Advance a file's
+reconciled revision only after all relevant changes have been handled.
 
 Keep implementation and evidence separate:
 
@@ -232,9 +234,11 @@ Keep implementation and evidence separate:
 | In progress | Work is preserved but incomplete or not integrated. |
 | Ported | The whole body is translated, target branches are retained, and deferred dependency stubs are tracked separately. |
 
-Evidence is scoped separately to build, unit behavior, phase dumps, codegen, or
-execution, and to a particular revision, configuration, target, and corpus.
-No percentage should be inferred from removed lines, file counts, or TODO counts.
+Retain validation evidence in the active checkpoint only while it informs an
+open decision or uncommitted unit. Git history, the milestone journal and
+reproducible artifact paths preserve completed work; do not duplicate a
+function-by-function acceptance ledger in `state.json`. No percentage should be
+inferred from removed lines, file counts, or TODO counts.
 
 ## Keeping context bounded
 

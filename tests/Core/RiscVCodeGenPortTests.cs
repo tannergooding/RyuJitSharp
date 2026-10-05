@@ -10,6 +10,7 @@ using NUnit.Framework;
 using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
@@ -35,6 +36,104 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(failure?.Message,
                 Does.Contain("Target local-stack instruction recording is not implemented."));
         });
+    }
+
+    [TestCase(NI_PRIMITIVE_SaturateToInt8)]
+    [TestCase(NI_PRIMITIVE_SaturateToInt16)]
+    [TestCase(NI_PRIMITIVE_SaturateToUInt8)]
+    [TestCase(NI_PRIMITIVE_SaturateToUInt16)]
+    public static void SaturationIntrinsicDispatchPreservesRiscVRegisterRecordingBoundary(
+        NamedIntrinsic intrinsic)
+    {
+        WithCodeGen((compiler, codeGen) => AssertIntrinsicBoundary(
+            compiler, codeGen, intrinsic, TYP_INT, hasSecondOperand: false,
+            expectedBoundary: "Target two-register instruction recording is not implemented."));
+    }
+
+    [TestCase(NI_System_Math_Abs, TYP_FLOAT,
+        "RISC-V three-register instruction recording is not implemented.")]
+    [TestCase(NI_System_Math_Abs, TYP_DOUBLE,
+        "RISC-V three-register instruction recording is not implemented.")]
+    [TestCase(NI_System_Math_Sqrt, TYP_FLOAT,
+        "Target two-register instruction recording is not implemented.")]
+    [TestCase(NI_System_Math_Sqrt, TYP_DOUBLE,
+        "Target two-register instruction recording is not implemented.")]
+    [TestCase(NI_PRIMITIVE_LeadingZeroCount, TYP_INT,
+        "Target two-register instruction recording is not implemented.")]
+    [TestCase(NI_PRIMITIVE_LeadingZeroCount, TYP_LONG,
+        "Target two-register instruction recording is not implemented.")]
+    [TestCase(NI_PRIMITIVE_TrailingZeroCount, TYP_INT,
+        "Target two-register instruction recording is not implemented.")]
+    [TestCase(NI_PRIMITIVE_TrailingZeroCount, TYP_LONG,
+        "Target two-register instruction recording is not implemented.")]
+    [TestCase(NI_PRIMITIVE_PopCount, TYP_INT,
+        "Target two-register instruction recording is not implemented.")]
+    [TestCase(NI_PRIMITIVE_PopCount, TYP_LONG,
+        "Target two-register instruction recording is not implemented.")]
+    public static void UnaryIntrinsicDispatchPreservesRiscVRegisterRecordingBoundary(
+        NamedIntrinsic intrinsic,
+        var_types type,
+        string expectedBoundary)
+    {
+        WithCodeGen((compiler, codeGen) => AssertIntrinsicBoundary(
+            compiler, codeGen, intrinsic, type, hasSecondOperand: false,
+            expectedBoundary: expectedBoundary));
+    }
+
+    [TestCase(NI_System_Math_MinNative, TYP_FLOAT)]
+    [TestCase(NI_System_Math_MinNative, TYP_DOUBLE)]
+    [TestCase(NI_System_Math_MaxNative, TYP_FLOAT)]
+    [TestCase(NI_System_Math_MaxNative, TYP_DOUBLE)]
+    [TestCase(NI_System_Math_Min, TYP_INT)]
+    [TestCase(NI_System_Math_MinUnsigned, TYP_INT)]
+    [TestCase(NI_System_Math_Max, TYP_INT)]
+    [TestCase(NI_System_Math_MaxUnsigned, TYP_INT)]
+    public static void BinaryIntrinsicDispatchPreservesRiscVThreeRegisterRecordingBoundary(
+        NamedIntrinsic intrinsic,
+        var_types type)
+    {
+        WithCodeGen((compiler, codeGen) => AssertIntrinsicBoundary(
+            compiler, codeGen, intrinsic, type, hasSecondOperand: true,
+            expectedBoundary: "RISC-V three-register instruction recording is not implemented."));
+    }
+
+    private static void AssertIntrinsicBoundary(
+        Compiler compiler,
+        CodeGen codeGen,
+        NamedIntrinsic intrinsic,
+        var_types type,
+        bool hasSecondOperand,
+        string expectedBoundary)
+    {
+        var isFloating = type is TYP_FLOAT or TYP_DOUBLE;
+        var sourceRegister = isFloating ? REG_FT0 : REG_A0;
+        var secondSourceRegister = isFloating ? REG_FT1 : REG_A1;
+        var targetRegister = isFloating ? REG_FT2 : REG_A2;
+        var source = new GenTreePhysReg(sourceRegister, type) { RegNum = sourceRegister };
+        GenTreeIntrinsic tree;
+        if (hasSecondOperand)
+        {
+            var secondSource = new GenTreePhysReg(secondSourceRegister, type) { RegNum = secondSourceRegister };
+            tree = new GenTreeIntrinsic(type, source, secondSource, intrinsic, null);
+        }
+        else
+        {
+            tree = new GenTreeIntrinsic(type, source, intrinsic, null);
+        }
+
+        tree.RegNum = targetRegister;
+
+        if (intrinsic is NI_PRIMITIVE_SaturateToInt8 or NI_PRIMITIVE_SaturateToInt16
+            or NI_PRIMITIVE_SaturateToUInt8 or NI_PRIMITIVE_SaturateToUInt16)
+        {
+            codeGen.InternalRegisters.Add(tree,
+                regMaskTP.CreateFromRegNum(REG_A3, REG_A3.SingleTypeMask));
+        }
+
+        var failure = Assert.Throws<FatalJitException>(() => codeGen.genIntrinsic(tree));
+
+        Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+        Assert.That(failure?.Message, Does.Contain(expectedBoundary));
     }
 
     private static void WithCodeGen(Action<Compiler, CodeGen> action)
