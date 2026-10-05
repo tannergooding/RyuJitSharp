@@ -10,11 +10,11 @@
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
-    "nextAction": "Continue B054 by comparing pinned gentree.cpp::Compiler::gtFoldExprBinary with sources/Core/jit/compiler/Compiler.gt.SpecialFolding.cs::gtFoldExprBinary. Establish the first missing nonconstant-binary behavior and its direct dependency/test closure before editing; preserve native arithmetic semantics and the Windows-x64 validation priority.",
+    "nextAction": "Resolve the open B064 whole-node replacement/GenTree::BashToConst debt: compare the pinned helper and its callers with the live residual and managed replacements, then identify one complete Windows-x64 caller/dependency slice. Do not retire the helper or declaration until all remaining uses and threading/alias invariants are verified.",
     "activeBatch": {
-      "scope": "Finish the B054 nonconstant-binary folding slice by reconciling the native dispatcher and its direct managed support without widening into unrelated conditional/HWI/VN work.",
-      "doneWhen": "The coherent folding function/dependency closure matches the pinned algorithm, focused x64 checks pass, and eligible native definitions/declarations are retired before the managed completion commit; otherwise record the exact unresolved blocker and cursor.",
-      "validation": "Run focused folding/IR tests in Debug and compare the relevant phase output with the matching pinned Windows-x64 Core_Root when the fixture supports it. Unit tests do not establish full compiler parity.",
+      "scope": "Bound the B064 investigation to the native GenTree::BashToConst helper and its direct caller closure, prioritizing Windows x64; do not widen into a node-layout redesign or unrelated folding work.",
+      "doneWhen": "Complete one coherent caller/replacement dependency slice with focused tests and retire only eligible native definitions/declarations before its managed completion commit, or record the exact unresolved use and next cursor.",
+      "validation": "Run focused whole-node replacement and relevant scalar/VN tests in Windows x64 Debug. Compare pinned phase output when the fixture supports it; unit tests alone do not establish full compiler parity.",
       "deferred": [
         "Do not reopen bounded screens that found no candidate without new caller or mapping evidence.",
         "Keep the unresolved native ilogb decision, ARM32 parser-blocked validation, and Wasm traversal design blocker out of unrelated batches."
@@ -23,7 +23,7 @@
         "oracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "nativeResidualCommit": "b4c6d26d30a01cbae24beac1a0d55b82ac54dff2",
         "completionGate": "Retire whole eligible definitions and orphan declarations in the same accepted batch, before its managed completion commit. Keep untranslated helpers and target branches in the residual; an absent definition is not evidence that it was ported.",
-        "nextDebtCursor": "At b4c6d26d30a01cbae24beac1a0d55b82ac54dff2, compare pinned src/coreclr/jit/gentree.cpp::Compiler::gtFoldExprBinary with sources/Core/jit/compiler/Compiler.gt.SpecialFolding.cs::gtFoldExprBinary. Identify one concrete missing nonconstant-binary case and required support/tests before editing. Keep the B054 scope bounded, preserve unrelated residual WIP, and do not claim global debt clearance."
+        "nextDebtCursor": "At b4c6d26d30a01cbae24beac1a0d55b82ac54dff2, inspect pinned src/coreclr/jit/compiler.hpp::GenTree::BashToConst, its src/coreclr/jit/gentree.h declaration, and every pinned caller. Compare with the live runtime-port worktree before acting: committed residual grep currently shows only the helper/declaration, but unstaged WIP must be preserved and checked. Do not claim the helper is dead until managed caller replacements and node-threading/alias invariants are confirmed."
       }
     },
     "validationResourcePolicy": {
