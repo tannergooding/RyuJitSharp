@@ -10,16 +10,56 @@ public partial class Compiler
 {
     private GenTreeOp fgMorphLongMul(GenTreeOp mul)
     {
-        NYI("TARGET_ARM fgMorphLongMul");
-        fatal(CORJIT_IMPLLIMITATION);
-        throw new FatalJitException(CORJIT_IMPLLIMITATION, "TARGET_ARM long multiplication is not ported.");
+        INDEBUG(mul.DebugCheckLongMul());
+
+        var op1 = mul.Op1;
+        var op2 = mul.Op2;
+
+        var op1Cast = op1.AsCast();
+        op1Cast.Op1 = fgMorphTree(op1Cast.CastOp);
+        op1.SetAllEffectsFlags(op1Cast.CastOp);
+
+        if (op2.Oper is GT_CAST)
+        {
+            var op2Cast = op2.AsCast();
+            op2Cast.Op1 = fgMorphTree(op2Cast.CastOp);
+            op2.SetAllEffectsFlags(op2Cast.CastOp);
+        }
+
+        mul.SetAllEffectsFlags(op1, op2);
+        op1.CanCse = false;
+        op1.SetMorphed(this);
+        op2.CanCse = false;
+        op2.SetMorphed(this);
+
+        return mul;
     }
 
     private GenTreeOp fgRecognizeAndMorphLongMul(GenTreeOp mul)
     {
-        NYI("TARGET_ARM fgRecognizeAndMorphLongMul");
-        fatal(CORJIT_IMPLLIMITATION);
-        throw new FatalJitException(CORJIT_IMPLLIMITATION, "TARGET_ARM long multiplication is not ported.");
+        assert(mul.Oper is GT_MUL);
+        assert(mul.Type is TYP_LONG);
+
+        var op1 = mul.Op1;
+        var op2 = mul.Op2;
+
+        if (op1.Oper.IsIntegralConst)
+        {
+            (op1, op2) = (op2, op1);
+            mul.Op1 = op1;
+            mul.Op2 = op2;
+        }
+
+        if (!mul.IsValidLongMul())
+        {
+            return mul;
+        }
+
+        mul.IsUnsigned = op1.IsUnsigned;
+        mul.ClearOverflow();
+        mul.Set64RsltMul();
+
+        return fgMorphLongMul(mul);
     }
 }
 #endif
