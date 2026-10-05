@@ -547,6 +547,47 @@ public sealed partial class LinearScan
 
         buildInternalRegisterUses();
         return sourceCount;
+#elif TARGET_RISCV64
+        assert(argument.Oper.IsPutArgStk);
+
+        var source = argument.Op1;
+        var sourceCount = 0;
+
+        if (source.Type is TYP_STRUCT)
+        {
+            if (source.Oper is GT_FIELD_LIST)
+            {
+                assert(source.IsContained);
+                foreach (var field in source.AsFieldList().Uses)
+                {
+                    _ = buildUse(field.Node);
+                    sourceCount++;
+                }
+            }
+            else
+            {
+                _ = buildInternalIntRegisterDefForNode(argument);
+                _ = buildInternalIntRegisterDefForNode(argument);
+
+                assert(source.IsContained);
+                if (source.Oper is GT_BLK)
+                {
+                    sourceCount = buildOperandUses(source.AsBlk().Addr);
+                }
+                else
+                {
+                    assert(source.Oper is GT_LCL_VAR or GT_LCL_FLD);
+                }
+            }
+        }
+        else
+        {
+            assert(!source.IsContained);
+            sourceCount = buildOperandUses(source);
+        }
+
+        buildInternalRegisterUses();
+        return sourceCount;
 #else
         NYI("LinearScan.buildPutArgStk outside xarch and ARM64");
         throw new FatalJitException("LinearScan.buildPutArgStk outside xarch and ARM64.");
