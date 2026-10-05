@@ -2305,7 +2305,9 @@ public partial class Compiler
 
 #if DEBUG && TARGET_XARCH
         const int STACK_CHECK_ON_RETURN = 0x1;
+#if TARGET_X86
         const int STACK_CHECK_ON_CALL = 0x2;
+#endif
         const int STACK_CHECK_ALL = 0x3;
 
         var dwJitStackChecks = JitConfig.JitStackChecks;
