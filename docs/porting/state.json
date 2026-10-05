@@ -101,7 +101,11 @@
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
     "targetInputCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
-    "pendingReconciliation": "Compare generator inputs with pinned upstream targetCommit before treating generated tables as synchronized.",
-    "reconciledCommit": null
+    "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+    "managedInputExceptions": {
+      "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
+      "ternarylogic.inc": "Supplemental 256-row table mirrored from src/coreclr/jit/hwintrinsic.cpp::ternaryLogicFlags; no standalone native input file."
+    },
+    "outputPathMapping": "Outputs\\jit\\emitxarch\\*.generated.cs maps to sources\\Core\\jit\\emit\\*.generated.cs for the five shared emitter tables."
   }
 }
