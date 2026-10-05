@@ -4,6 +4,7 @@
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.LsraGlobals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
 
@@ -17,6 +18,7 @@ internal static class Arm64LinearScanAsyncContinuationTests
     {
         Arm64LinearScanConstructionTests.WithCompiler(false, false, (compiler, _) => {
             var allocator = new LinearScan(compiler);
+            BuildPhysRegRecords(allocator);
             var continuation = new GenTree(GT_ASYNC_CONTINUATION, TYP_REF);
 
             Assert.That(BuildNode(allocator, continuation), Is.Zero);
@@ -31,5 +33,8 @@ internal static class Arm64LinearScanAsyncContinuationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildNode")]
     private static extern int BuildNode(LinearScan allocator, GenTree tree);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildPhysRegRecords")]
+    private static extern void BuildPhysRegRecords(LinearScan allocator);
 }
 #endif

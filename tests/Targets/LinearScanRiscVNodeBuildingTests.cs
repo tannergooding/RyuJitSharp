@@ -171,18 +171,6 @@ internal static unsafe class LinearScanRiscVNodeBuildingTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_referenceBuildLocation")]
     private static extern ref uint ReferenceBuildLocation(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllInt")]
-    private static extern ref regMask CompilerAllIntRegs(Compiler compiler);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllFloat")]
-    private static extern ref regMask CompilerAllFloatRegs(Compiler compiler);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllMask")]
-    private static extern ref regMask CompilerAllMaskRegs(Compiler compiler);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmFltCalleeTrash")]
-    private static extern ref regMask CompilerFloatCalleeTrash(Compiler compiler);
-
     private static void WithAllocator(Action<Compiler, LinearScan> action)
     {
 #if DEBUG
@@ -193,15 +181,10 @@ internal static unsafe class LinearScanRiscVNodeBuildingTests
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(true);
-        CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;
-        CompilerAllFloatRegs(compiler) = SRBM_ALLFLOAT_INIT;
-        CompilerAllMaskRegs(compiler) = SRBM_ALLMASK_INIT;
-        CompilerFloatCalleeTrash(compiler) = SRBM_FLT_CALLEE_TRASH_INIT;
         JitTls.Compiler = compiler;
 
         var codeGen = new CodeGen(compiler);
         compiler.codeGen = codeGen;
-        codeGen.CopyRegisterInfo();
         codeGen.IsFramePointerRequired = false;
         codeGen.IsFramePointerUsed = false;
         codeGen.IsFrameRequired = false;

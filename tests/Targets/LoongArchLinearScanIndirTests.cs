@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.LsraGlobals;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.var_types;
@@ -88,24 +89,6 @@ internal static unsafe class LoongArchLinearScanIndirTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_referenceBuildLocation")]
     private static extern ref uint ReferenceBuildLocation(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllInt")]
-    private static extern ref regMask CompilerAllIntRegs(Compiler compiler);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllFloat")]
-    private static extern ref regMask CompilerAllFloatRegs(Compiler compiler);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllMask")]
-    private static extern ref regMask CompilerAllMaskRegs(Compiler compiler);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmIntCalleeTrash")]
-    private static extern ref regMask CompilerIntCalleeTrash(Compiler compiler);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmFltCalleeTrash")]
-    private static extern ref regMask CompilerFloatCalleeTrash(Compiler compiler);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmMskCalleeTrash")]
-    private static extern ref regMask CompilerMaskCalleeTrash(Compiler compiler);
-
     private static void WithAllocator(Action<Compiler, LinearScan> action)
     {
 #if DEBUG
@@ -116,12 +99,6 @@ internal static unsafe class LoongArchLinearScanIndirTests
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(true);
-        CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;
-        CompilerAllFloatRegs(compiler) = SRBM_ALLFLOAT_INIT;
-        CompilerAllMaskRegs(compiler) = SRBM_ALLMASK_INIT;
-        CompilerIntCalleeTrash(compiler) = SRBM_INT_CALLEE_TRASH_INIT;
-        CompilerFloatCalleeTrash(compiler) = SRBM_FLT_CALLEE_TRASH_INIT;
-        CompilerMaskCalleeTrash(compiler) = SRBM_MSK_CALLEE_TRASH_INIT;
         JitTls.Compiler = compiler;
 
         var codeGen = new CodeGen(compiler);
