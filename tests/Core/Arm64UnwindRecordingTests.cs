@@ -223,9 +223,9 @@ internal static class Arm64UnwindRecordingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIG")]
     private static extern ref insGroup? CurrentGroup(Emitter emitter);
+#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGsize")]
     private static extern ref int CurrentSize(Emitter emitter);
-#endif
 }
 #endif

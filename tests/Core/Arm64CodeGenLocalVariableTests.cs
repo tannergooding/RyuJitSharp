@@ -435,6 +435,39 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
         return CurrentDescriptors(emitter) ?? throw new AssertionException("Missing descriptor buffer.");
     }
 
+    internal static List<Emitter.instrDesc> AllDescriptors(CodeGen codeGen)
+    {
+        var emitter = codeGen.Emitter;
+        var descriptors = new List<Emitter.instrDesc>();
+        var currentGroup = emitter.emitCurIG;
+
+        for (var group = FirstGroup(emitter); group is not null; group = group.igNext)
+        {
+            if (group == currentGroup)
+            {
+                descriptors.AddRange(Descriptors(emitter));
+            }
+            else if (group.igInsCnt > 0)
+            {
+                descriptors.AddRange(group.igData
+                    ?? throw new AssertionException("Missing saved descriptor buffer."));
+            }
+        }
+
+        return descriptors;
+    }
+
+    internal static void SaveCurrentGroup(Emitter emitter)
+    {
+        SaveGroup(emitter, extend: false);
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
+    private static extern ref insGroup? FirstGroup(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNxtIG")]
+    private static extern void SaveGroup(Emitter emitter, bool extend);
+
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
 

@@ -10,20 +10,20 @@
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
-    "nextAction": "At runtime-port HEAD 77b24ec2cb443ff29ec3e8c9d12ee5b4792f39ce, select and begin the next dependency-coherent whole-function port from retained definitions. Prefer a reachable Windows-x64 gap; otherwise continue the next runnable target packet. Do not repeat the completed file-cleanup census or re-audit absent definitions.",
+    "nextAction": "Accept the pending ARM64 compare-exchange unit: native retirement is already in consolidated runtime-port HEAD 86ec4e097c220fdc11e13f10ff202bdd1f70f8af. Update the source mapping and residual pointer, run diff checks, then commit the managed implementation and focused tests. Next, screen retained Windows-x64 definitions in src/coreclr/jit/lsrabuild.cpp for a concrete whole-function candidate; do not reopen the closed utils.cpp or emitxarch.cpp screens.",
     "activeBatch": {
-      "scope": "Select the next whole-function/dependency-closure batch from the pinned native residual, with Windows x64 as foreground priority.",
-      "doneWhen": "A concrete retained native symbol and managed destination are selected; complete the whole function and required support, validate the relevant contract, retire only eligible native definitions/declarations, and commit the coherent unit.",
-      "validation": "Full-analysis focused checks at the batch boundary; distinguish target compilation, unit behavior, and generated-code/runtime parity. Keep compiler execution serial and use the matching pinned Core_Root for Windows x64.",
+      "scope": "Finish acceptance of the in-progress ARM64 compare-exchange translation by binding GT_CMPXCHG, validating LSE/exclusive emission and state, and recording the native retirement already applied. Then resume Windows-x64 candidate selection.",
+      "doneWhen": "The focused target fixtures pass, the managed implementation/tests and source mapping are committed with the current native residual pointer, and the next Windows-x64 candidate cursor is specific.",
+      "validation": "Full-analysis focused target fixtures: Linux ARM64 Debug/Release and Windows ARM64 Debug. Distinguish fixture validation from runtime parity; keep compiler execution serial and use the matching pinned Core_Root for Windows x64.",
       "deferred": [
         "Do not reopen bounded screens that found no candidate without new caller or mapping evidence.",
         "Keep the unresolved native ilogb decision, ARM32 parser-blocked validation, and Wasm traversal design blocker out of unrelated batches."
       ],
       "retirement": {
         "oracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
-        "nativeResidualCommit": "77b24ec2cb443ff29ec3e8c9d12ee5b4792f39ce",
+        "nativeResidualCommit": "86ec4e097c220fdc11e13f10ff202bdd1f70f8af",
         "completionGate": "Retire whole eligible definitions and orphan declarations in the same accepted batch, before its managed completion commit. Keep untranslated helpers and target branches in the residual; an absent definition is not evidence that it was ported.",
-        "nextDebtCursor": "At the current native residual commit, select the next retained, non-screened whole-function candidate with an exact managed mapping or accepted evidence. Prefer Windows-x64-reachable work; preserve unrelated residual WIP and do not claim global debt clearance."
+        "nextDebtCursor": "At 86ec4e097c220fdc11e13f10ff202bdd1f70f8af, begin a bounded Windows-x64 candidate screen in src/coreclr/jit/lsrabuild.cpp. Select only a retained whole definition with an exact managed mapping or accepted evidence and complete caller/dependency closure. The utils.cpp and emitxarch.cpp screens are closed without candidates; preserve unrelated residual WIP and do not claim global debt clearance."
       }
     },
     "validationResourcePolicy": {
@@ -72,8 +72,12 @@
       "ref": "refs/porting/snapshots/2026-09-22-csharp-wip"
     },
     "nativeResidual": {
-      "commit": "77b24ec2cb443ff29ec3e8c9d12ee5b4792f39ce",
+      "commit": "86ec4e097c220fdc11e13f10ff202bdd1f70f8af",
       "ref": "refs/heads/main"
+    },
+    "nativePreCompareExchangeRetirement": {
+      "commit": "77b24ec2cb443ff29ec3e8c9d12ee5b4792f39ce",
+      "ref": "refs/copilot-recovery/runtime-port-before-cmpxchg-35413849"
     },
     "preIntrinsicRetirement": {
       "commit": "58278376ba475f019fa48de65189a8827a436297",
@@ -81,6 +85,18 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "arm64-compare-exchange",
+      "native": [
+        "src\\coreclr\\jit\\codegenarm64.cpp",
+        "src\\coreclr\\jit\\codegen.h"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\codegencommon\\CodeGen.Atomics.cs",
+        "sources\\Core\\jit\\codegencommon\\CodeGen.NodeDispatch.cs"
+      ],
+      "sourceCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
     {
       "area": "shared-arm-intrinsics",
       "native": [

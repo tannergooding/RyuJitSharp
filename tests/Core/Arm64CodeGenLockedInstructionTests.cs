@@ -79,10 +79,16 @@ internal static class Arm64CodeGenLockedInstructionTests
         });
     }
 
-    [TestCase(TYP_BYTE, INS_casalb, INS_sxtb)]
-    [TestCase(TYP_SHORT, INS_casalh, INS_sxth)]
+    [TestCase(TYP_BYTE, INS_casalb, INS_sxtb, 3, EA_4BYTE)]
+    [TestCase(TYP_UBYTE, INS_casalb, INS_casalb, 2, EA_4BYTE)]
+    [TestCase(TYP_SHORT, INS_casalh, INS_sxth, 3, EA_4BYTE)]
+    [TestCase(TYP_USHORT, INS_casalh, INS_casalh, 2, EA_4BYTE)]
+    [TestCase(TYP_INT, INS_casal, INS_casal, 2, EA_4BYTE)]
+    [TestCase(TYP_UINT, INS_casal, INS_casal, 2, EA_4BYTE)]
+    [TestCase(TYP_LONG, INS_casal, INS_casal, 2, EA_8BYTE)]
+    [TestCase(TYP_ULONG, INS_casal, INS_casal, 2, EA_8BYTE)]
     public static void CompareExchangeUsesAtomicCompareAndSwapAndExtendsSignedResults(var_types type,
-        instruction expectedAtomic, instruction expectedExtension)
+        instruction expectedAtomic, instruction expectedLast, int expectedCount, emitAttr expectedSize)
     {
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
@@ -95,33 +101,46 @@ internal static class Arm64CodeGenLockedInstructionTests
 
             codeGen.genCodeForTreeNode(tree);
 
-            var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
-            Assert.That(descriptors, Has.Count.EqualTo(3));
+            var descriptors = Arm64CodeGenLocalVariableTests.AllDescriptors(codeGen);
+            Assert.That(descriptors, Has.Count.EqualTo(expectedCount));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_mov));
+            Assert.That(descriptors[0].idOpSize(), Is.EqualTo(expectedSize));
             Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3));
             Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R6));
             Assert.That(descriptors[1].idIns(), Is.EqualTo(expectedAtomic));
+            Assert.That(descriptors[1].idOpSize(), Is.EqualTo(expectedSize));
             Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R3));
             Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_R5));
             Assert.That(descriptors[1].idReg3(), Is.EqualTo(REG_R4));
-            Assert.That(descriptors[2].idIns(), Is.EqualTo(expectedExtension));
-            Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_R3));
-            Assert.That(descriptors[2].idReg2(), Is.EqualTo(REG_R3));
+            Assert.That(descriptors[^1].idIns(), Is.EqualTo(expectedLast));
+            if (type is TYP_BYTE or TYP_SHORT)
+            {
+                Assert.That(descriptors[^1].idOpSize(), Is.EqualTo(EA_4BYTE));
+                Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_R3));
+                Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_R3));
+            }
         });
     }
 
-    [TestCase(true, 0, INS_cbnz, 5)]
-    [TestCase(true, 1, INS_cmp, 6)]
-    [TestCase(false, 0, INS_cmp, 6)]
+    [TestCase(true, 0, INS_cbnz, 5, TYP_INT, EA_4BYTE, INS_ldaxr, INS_stlxr, INS_dmb, false)]
+    [TestCase(true, 1, INS_cmp, 6, TYP_INT, EA_4BYTE, INS_ldaxr, INS_stlxr, INS_dmb, false)]
+    [TestCase(false, 0, INS_cmp, 6, TYP_INT, EA_4BYTE, INS_ldaxr, INS_stlxr, INS_dmb, false)]
+    [TestCase(true, 0, INS_cbnz, 6, TYP_BYTE, EA_4BYTE, INS_ldaxrb, INS_stlxrb, INS_sxtb, true)]
+    [TestCase(false, 0, INS_cmp, 7, TYP_BYTE, EA_4BYTE, INS_ldaxrb, INS_stlxrb, INS_sxtb, true)]
+    [TestCase(true, 0, INS_cbnz, 6, TYP_SHORT, EA_4BYTE, INS_ldaxrh, INS_stlxrh, INS_sxth, true)]
+    [TestCase(true, 0, INS_cbnz, 5, TYP_UBYTE, EA_4BYTE, INS_ldaxrb, INS_stlxrb, INS_dmb, false)]
+    [TestCase(true, 0, INS_cbnz, 5, TYP_USHORT, EA_4BYTE, INS_ldaxrh, INS_stlxrh, INS_dmb, false)]
+    [TestCase(false, 0, INS_cmp, 6, TYP_LONG, EA_8BYTE, INS_ldaxr, INS_stlxr, INS_dmb, false)]
     public static void CompareExchangeExclusivePathChecksComparandAndRetriesStore(bool contained,
-        int comparandValue, instruction expectedCompare, int expectedCount)
+        int comparandValue, instruction expectedCompare, int expectedCount, var_types type, emitAttr expectedSize,
+        instruction expectedLoad, instruction expectedStore, instruction expectedLast, bool expectedExtension)
     {
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.compCurBB = new BasicBlock(null, null);
             var address = Register(compiler, TYP_BYREF, REG_R4);
-            var data = Register(compiler, TYP_INT, REG_R5);
-            var comparand = compiler.gtNewIconNode(TYP_INT, comparandValue);
+            var data = Register(compiler, type, REG_R5);
+            var comparand = compiler.gtNewIconNode(type, comparandValue);
             if (contained)
             {
                 comparand.IsContained = true;
@@ -132,17 +151,19 @@ internal static class Arm64CodeGenLockedInstructionTests
                 comparand.RegNum = REG_R6;
             }
 
-            var tree = new GenTreeCmpXchg(TYP_INT, address, data, comparand)
+            var tree = new GenTreeCmpXchg(type, address, data, comparand)
             {
                 RegNum = REG_R3,
             };
             codeGen.InternalRegisters.Add(tree, RegisterMask(REG_R7));
 
             codeGen.genCodeForTreeNode(tree);
+            Arm64CodeGenLocalVariableTests.SaveCurrentGroup(codeGen.Emitter);
 
-            var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
+            var descriptors = Arm64CodeGenLocalVariableTests.AllDescriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(expectedCount));
-            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_ldaxr));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(expectedLoad));
+            Assert.That(descriptors[0].idOpSize(), Is.EqualTo(expectedSize));
             Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3));
             Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R4));
 
@@ -150,6 +171,7 @@ internal static class Arm64CodeGenLockedInstructionTests
             if (expectedCompare == INS_cmp)
             {
                 Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_cmp));
+                Assert.That(descriptors[1].idOpSize(), Is.EqualTo(expectedSize));
                 Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R3));
                 if (contained)
                 {
@@ -161,13 +183,32 @@ internal static class Arm64CodeGenLockedInstructionTests
                 }
             }
 
+            var barrierIndex = expectedCount - (expectedExtension ? 2 : 1);
             var compareFailBranch = (Emitter.instrDescJmp)descriptors[compareIndex];
-            var retryBranch = (Emitter.instrDescJmp)descriptors[expectedCount - 2];
+            var storeIndex = barrierIndex - 2;
+            var retryBranch = (Emitter.instrDescJmp)descriptors[barrierIndex - 1];
+            Assert.That(descriptors[storeIndex].idIns(), Is.EqualTo(expectedStore));
+            Assert.That(descriptors[storeIndex].idOpSize(), Is.EqualTo(expectedSize));
+            Assert.That(descriptors[storeIndex].idReg1(), Is.EqualTo(REG_R7));
+            Assert.That(descriptors[storeIndex].idReg2(), Is.EqualTo(REG_R5));
+            Assert.That(descriptors[storeIndex].idReg3(), Is.EqualTo(REG_R4));
             Assert.That(compareFailBranch.idIns(), Is.EqualTo(expectedCompare is INS_cbnz ? INS_cbnz : INS_bne));
             Assert.That(retryBranch.idIns(), Is.EqualTo(INS_cbnz));
+            Assert.That(retryBranch.idOpSize(), Is.EqualTo(EA_4BYTE));
+            Assert.That(retryBranch.idReg1(), Is.EqualTo(REG_R7));
             Assert.That(compareFailBranch.idjTarget, Is.Not.SameAs(retryBranch.idjTarget));
-            Assert.That(retryBranch.idjTarget?.HasFlag(BBF_HAS_LABEL), Is.True);
-            Assert.That(descriptors[expectedCount - 1].idIns(), Is.EqualTo(INS_dmb));
+            var retryTarget = retryBranch.idjTarget ?? throw new AssertionException("Missing retry target.");
+            var compareFailTarget = compareFailBranch.idjTarget ?? throw new AssertionException("Missing compare-fail target.");
+            Assert.That(retryTarget.HasFlag(BBF_HAS_LABEL), Is.True);
+            Assert.That(compareFailTarget.HasFlag(BBF_HAS_LABEL), Is.True);
+            Assert.That(new regMaskTP((regMask)retryTarget.bbEmitCookie!.igByrefRegs()),
+                Is.EqualTo(RegisterMask(REG_R4)));
+            Assert.That(new regMaskTP((regMask)compareFailTarget.bbEmitCookie!.igByrefRegs()),
+                Is.EqualTo(RegisterMask(REG_R4)));
+            Assert.That(descriptors[barrierIndex].idIns(), Is.EqualTo(INS_dmb));
+            Assert.That(descriptors[barrierIndex].idSmallCns(), Is.EqualTo((int)INS_BARRIER_ISH));
+            Assert.That(descriptors[^1].idIns(), Is.EqualTo(expectedLast));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(default(regMaskTP)));
         });
     }
 

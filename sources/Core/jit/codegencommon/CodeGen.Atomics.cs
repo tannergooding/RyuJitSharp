@@ -427,7 +427,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            var exResultReg = InternalRegisters.Extract(tree, RBM_ALLINT);
+            var exResultReg = InternalRegisters.Extract(tree, new regMaskTP(SRBM_ALLINT));
 
             noway_assert(addressReg != targetReg);
             noway_assert(dataReg != targetReg);
@@ -466,7 +466,7 @@ public sealed partial class CodeGen
 
             Emitter.emitIns_R_R(insLd, dataSize, targetReg, addressReg);
 
-            if (comparand.IsContainedIntOrIImmed())
+            if (comparand.IsContainedIntOrIImmed)
             {
                 if (comparand.IsIntegralConst(0))
                 {
