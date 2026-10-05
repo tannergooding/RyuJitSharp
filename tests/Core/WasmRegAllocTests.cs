@@ -80,6 +80,35 @@ internal static unsafe class WasmRegAllocTests
         });
     }
 
+    [Test]
+    public static void PhysicalRegisterSourceCanBeRetargetedAfterLirReplacement()
+    {
+        WithCompiler(compiler => {
+            var block = new BasicBlock(null, null);
+            block.MakeLir(null, null);
+            var source = new GenTreeIntCon(TYP_I_IMPL, 0);
+            var following = new GenTreeIntCon(TYP_I_IMPL, 1);
+            block.InsertAtEnd(source);
+            block.InsertAtEnd(following);
+
+            var virtualStackPointer = regNumberExtensions.MakeWasmReg(0, WasmValueType.I32);
+            var resolvedStackPointer = regNumberExtensions.MakeWasmReg(2, WasmValueType.I32);
+            var physicalRegister = new GenTreePhysReg(
+                virtualStackPointer, TYP_I_IMPL, source, NodeThreading.LIR);
+            block.ReplaceNode(source, physicalRegister);
+            physicalRegister.SetSrcReg(resolvedStackPointer);
+
+            Assert.That(physicalRegister.SrcReg, Is.EqualTo(resolvedStackPointer));
+            Assert.That(block.FirstNode, Is.SameAs(physicalRegister));
+            Assert.That(block.LastNode, Is.SameAs(following));
+            Assert.That(physicalRegister.Prev, Is.Null);
+            Assert.That(physicalRegister.Next, Is.SameAs(following));
+            Assert.That(following.Prev, Is.SameAs(physicalRegister));
+            Assert.That(source.Prev, Is.Null);
+            Assert.That(source.Next, Is.Null);
+        });
+    }
+
     private static void WithCompiler(Action<Compiler> action)
     {
 #if DEBUG

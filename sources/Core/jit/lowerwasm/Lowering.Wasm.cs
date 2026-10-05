@@ -143,7 +143,8 @@ public sealed partial class Lowering
 #if DEBUG
             JITDUMP($"Stackifier moving [{node.TreeId:D6}] after [{previous.TreeId:D6}]: {reason}\n");
 #endif
-            var endExclusive = previous.Next;
+            var endExclusive = previous.Next
+                ?? throw new InvalidOperationException("A Wasm stackifier move requires an exclusive range endpoint.");
             assert(_lowering.IsInvariantInRange(node, endExclusive));
             _lowering.BlockRange().Remove(node);
             _lowering.BlockRange().InsertAfter(previous, node);

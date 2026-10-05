@@ -11,7 +11,7 @@ public sealed class GenTreePhysReg : GenTree
     // physregs need a field beyond GetRegNum() because
     // GetRegNum() indicates the destination (and can be changed)
     // whereas reg indicates the source
-    private readonly regNumber _srcReg;
+    private regNumber _srcReg;
 
     public GenTreePhysReg(regNumber srcReg, var_types type = TYP_I_IMPL)
         : base(GT_PHYSREG, type)
@@ -19,5 +19,16 @@ public sealed class GenTreePhysReg : GenTree
         _srcReg = srcReg;
     }
 
+    internal GenTreePhysReg(regNumber srcReg, var_types type, GenTree source, NodeThreading threading)
+        : base(GT_PHYSREG, type, source, threading)
+    {
+        _srcReg = srcReg;
+    }
+
     public regNumber SrcReg => _srcReg;
+
+    internal void SetSrcReg(regNumber srcReg)
+    {
+        _srcReg = srcReg;
+    }
 }
