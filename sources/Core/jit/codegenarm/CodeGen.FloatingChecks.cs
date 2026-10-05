@@ -29,13 +29,13 @@ public sealed partial class CodeGen
         // Extract and sign-extend the exponent into an integer register.
         if (targetType is TYP_FLOAT)
         {
-            emit.emitIns_Mov(INS_vmov_f2i, EA_4BYTE, intReg, fpReg, canSkip: false);
+            _ = emit.emitIns_Mov(INS_vmov_f2i, EA_4BYTE, intReg, fpReg, canSkip: false);
             emit.emitIns_R_R_I_I(INS_sbfx, EA_4BYTE, intReg, intReg, 23, 8);
         }
         else
         {
             assert(targetType is TYP_DOUBLE);
-            emit.emitIns_Mov(INS_vmov_f2i, EA_4BYTE, intReg, REG_NEXT(fpReg), canSkip: false);
+            _ = emit.emitIns_Mov(INS_vmov_f2i, EA_4BYTE, intReg, REG_NEXT(fpReg), canSkip: false);
             emit.emitIns_R_R_I_I(INS_sbfx, EA_4BYTE, intReg, intReg, 20, 11);
         }
 
@@ -44,7 +44,7 @@ public sealed partial class CodeGen
         genJumpToThrowHlpBlk(EJ_eq, SCK_ARITH_EXCPN);
 
         // If it's a finite value, copy it to targetReg.
-        inst_Mov(targetType, targetReg, fpReg, canSkip: true, size: emitTypeSize(treeNode));
+        inst_Mov(targetType, targetReg, fpReg, canSkip: true, size: targetType.EmitSize);
 
         genProduceReg(treeNode);
     }

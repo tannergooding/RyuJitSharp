@@ -19,13 +19,13 @@ public partial class Emitter
     public void emitIns_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         int imm1, int imm2, insFlags flags = INS_FLAGS_DONT_CARE)
     {
-        var fmt = IF_NONE;
-        var sf = INS_FLAGS_DONT_CARE;
+        insFormat fmt;
+        insFlags sf;
 
         var lsb = imm1;
         var width = imm2;
         var msb = unchecked(lsb + width - 1);
-        var imm = 0;
+        int imm;
 
         switch (ins)
         {
