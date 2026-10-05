@@ -367,16 +367,15 @@ public sealed partial class CodeGen
         }
     }
 
-    private static void Arm64EmitRegisterBranch(instruction ins, emitAttr attr, BasicBlock target, regNumber reg)
+    private void Arm64EmitRegisterBranch(instruction ins, emitAttr attr, BasicBlock target, regNumber reg)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 emitIns_J_R recording is not ported.");
+        Emitter.emitIns_J_R(ins, attr, target, reg);
     }
 
-    private static void Arm64EmitRegisterBranchImmediate(
+    private void Arm64EmitRegisterBranchImmediate(
         instruction ins, emitAttr attr, BasicBlock target, regNumber reg, int immediate)
     {
-        throw new FatalJitException(CORJIT_SKIPPED,
-            $"ARM64 emitIns_J_R_I recording is not ported ({ins}, {immediate}).");
+        Emitter.emitIns_J_R_I(ins, attr, target, reg, immediate);
     }
 }
 #endif

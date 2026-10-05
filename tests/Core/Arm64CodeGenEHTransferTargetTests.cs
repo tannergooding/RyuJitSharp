@@ -1,15 +1,12 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 #if TARGET_ARM64
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
+using System;
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BBKinds;
-using static RyuJitSharp.emitAttr;
-using static RyuJitSharp.instruction;
-using static RyuJitSharp.regNumber;
+using static RyuJitSharp.CorJitResult;
+using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -19,92 +16,73 @@ internal static class Arm64CodeGenEHTransferTargetTests
     [TestCase(true, false)]
     [TestCase(false, false)]
     [TestCase(true, true)]
-    public static void RetlessFinallyCallsBreakOnlyAtAnEhBoundaryOrCodeEnd(bool hasNextBlock, bool hasEhBoundary)
+    public static void RetlessFinallyCallStopsAtUnsupportedInstructionRecordingBoundary(
+        bool hasNextBlock, bool hasEhBoundary)
     {
-        var (compiler, codeGen, emitter) = CreateEmitter();
-        var target = Label();
-        var block = Transfer(BBJ_CALLFINALLY, target);
-        block.SetFlags(BBF_RETLESS_CALL);
-
-        if (!hasNextBlock)
+        WithCodeGen((compiler, codeGen) =>
         {
-            block.Next = null;
-        }
-        else if (hasEhBoundary)
-        {
-            var next = Label();
-            next.TryIndex = 0;
-            block.Next = next;
-        }
-        else
-        {
-            block.Next = Label();
-        }
+            var target = Label();
+            var block = Transfer(BBJ_CALLFINALLY, target);
+            block.SetFlags(BBF_RETLESS_CALL);
 
-        compiler.compCurBB = block;
+            if (!hasNextBlock)
+            {
+                block.Next = null;
+            }
+            else if (hasEhBoundary)
+            {
+                var next = Label();
+                next.TryIndex = 0;
+                block.Next = next;
+            }
+            else
+            {
+                block.Next = Label();
+            }
 
-        codeGen.genCallFinally(block);
+            compiler.compCurBB = block;
 
-        var shouldBreak = !hasNextBlock || hasEhBoundary;
-        var descriptors = Descriptors(emitter);
-        Assert.That(descriptors.Select(descriptor => descriptor.idIns()),
-            Is.EqualTo(shouldBreak ? new[] { INS_bl_local, INS_BREAKPOINT } : [INS_bl_local]));
-        Assert.That(((Emitter.instrDescJmp)descriptors[0]).idjTarget, Is.SameAs(target));
-        Assert.That(NoGcRequests(emitter), Is.Zero);
+            AssertUnsupportedRecording(() => codeGen.genCallFinally(block));
+        });
     }
 
     [TestCase(true, false)]
     [TestCase(false, false)]
     [TestCase(true, true)]
-    public static void ReturningFinallyCallsPreserveTheContinuationPath(bool adjacent, bool differentRegions)
+    public static void ReturningFinallyCallStopsAtUnsupportedInstructionRecordingBoundary(
+        bool adjacent, bool differentRegions)
     {
-        var (compiler, codeGen, emitter) = CreateEmitter();
-        var target = Label();
-        var continuation = Label();
-        var block = Transfer(BBJ_CALLFINALLY, target);
-        var finallyReturn = Transfer(BBJ_CALLFINALLYRET, continuation);
-        block.Next = finallyReturn;
-        finallyReturn.Next = adjacent ? continuation : Label();
-        if (differentRegions)
+        WithCodeGen((compiler, codeGen) =>
         {
-            continuation.SetFlags(BBF_COLD);
-            compiler.fgFirstColdBlock = continuation;
-        }
+            var target = Label();
+            var continuation = Label();
+            var block = Transfer(BBJ_CALLFINALLY, target);
+            var finallyReturn = Transfer(BBJ_CALLFINALLYRET, continuation);
+            block.Next = finallyReturn;
+            finallyReturn.Next = adjacent ? continuation : Label();
+            if (differentRegions)
+            {
+                continuation.SetFlags(BBF_COLD);
+                compiler.fgFirstColdBlock = continuation;
+            }
 
-        compiler.compCurBB = block;
+            compiler.compCurBB = block;
 
-        codeGen.genCallFinally(block);
-
-        var fallsThrough = adjacent && !differentRegions;
-        var descriptors = Descriptors(emitter);
-        Assert.That(descriptors.Select(descriptor => descriptor.idIns()),
-            Is.EqualTo(fallsThrough ? new[] { INS_bl_local, INS_nop } : [INS_bl_local, INS_b]));
-        Assert.That(((Emitter.instrDescJmp)descriptors[0]).idjTarget, Is.SameAs(target));
-        if (!fallsThrough)
-        {
-            Assert.That(((Emitter.instrDescJmp)descriptors[1]).idjTarget, Is.SameAs(continuation));
-        }
-
-        Assert.That(NoGcRequests(emitter), Is.Zero);
-        Assert.That(emitter.emitCurIG!.igFlags & InsGroupFlags.NoGCInterrupt,
-            Is.EqualTo(InsGroupFlags.NoGCInterrupt));
+            AssertUnsupportedRecording(() => codeGen.genCallFinally(block));
+        });
     }
 
     [Test]
-    public static void CatchReturnRecordsAnAdrIntoTheIntegerReturnRegister()
+    public static void CatchReturnStopsAtUnsupportedInstructionRecordingBoundary()
     {
-        var (compiler, codeGen, emitter) = CreateEmitter();
-        var target = Label();
-        var block = Transfer(BBJ_EHCATCHRET, target);
-        compiler.compCurBB = block;
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var target = Label();
+            var block = Transfer(BBJ_EHCATCHRET, target);
+            compiler.compCurBB = block;
 
-        codeGen.genEHCatchRet(block);
-
-        var descriptor = Descriptors(emitter).Single();
-        Assert.That(descriptor.idIns(), Is.EqualTo(INS_adr));
-        Assert.That(descriptor.idReg1(), Is.EqualTo(REG_INTRET));
-        Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_PTRSIZE));
-        Assert.That(((Emitter.instrDescJmp)descriptor).idjTarget, Is.SameAs(target));
+            AssertUnsupportedRecording(() => codeGen.genEHCatchRet(block));
+        });
     }
 
     private static BasicBlock Label()
@@ -123,34 +101,17 @@ internal static class Arm64CodeGenEHTransferTargetTests
         return block;
     }
 
-    private static (Compiler Compiler, CodeGen CodeGen, Emitter Emitter) CreateEmitter()
+    private static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
-        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-        compiler.lvaTrackedCount = 1;
-        compiler.lvaTrackedCountInSizeTUnits = 1;
-        compiler.compCurBB = new BasicBlock(null, null);
-        var codeGen = new CodeGen(compiler);
-        var emitter = codeGen.Emitter;
-        emitter.emitBegCG(compiler, default);
-        emitter.Init();
-        emitter.emitBegFN(false
-#if DEBUG
-            , true
-#endif
-            );
-
-        return (compiler, codeGen, emitter);
+        Arm64HardwareIntrinsicCodegenTests.WithCodeGen(action);
     }
 
-    private static List<Emitter.instrDesc> Descriptors(Emitter emitter)
+    private static void AssertUnsupportedRecording(Action action)
     {
-        return CurrentDescriptors(emitter) ?? throw new AssertionException("No instruction descriptors were recorded.");
+        var failure = Assert.Throws<FatalJitException>(() => action()) ??
+            throw new AssertionException("The unported ARM64 instruction recorder did not fail.");
+        Assert.That(failure.Result, Is.EqualTo(CORJIT_SKIPPED));
+        Assert.That(failure.Message, Is.EqualTo("Instruction recording outside AMD64 is not ported."));
     }
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
-    private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitNoGCRequestCount")]
-    private static extern ref int NoGcRequests(Emitter emitter);
 }
 #endif

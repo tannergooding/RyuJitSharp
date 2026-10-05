@@ -2,11 +2,12 @@
 
 #if TARGET_ARM64
 using NUnit.Framework;
+using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.CORINFO_InstructionSet;
-using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
+using static RyuJitSharp.insBarrier;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 
@@ -80,10 +81,11 @@ internal static class Arm64CodeGenLockedInstructionTests
 
     [TestCase(false)]
     [TestCase(true)]
-    public static void ExclusiveAddStopsAtTheUnportedConditionalRegisterBranch(bool useImmediate)
+    public static void ExclusiveAddRecordsItsConditionalRetryBranch(bool useImmediate)
     {
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
+            compiler.compCurBB = new BasicBlock(null, null);
             var address = Register(compiler, TYP_BYREF, REG_R4);
             var data = compiler.gtNewIconNode(TYP_INT, 7);
             data.IsContained = useImmediate;
@@ -94,14 +96,10 @@ internal static class Arm64CodeGenLockedInstructionTests
             };
             codeGen.InternalRegisters.Add(tree, RegisterMask(REG_R6) | RegisterMask(REG_R7));
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree)) ??
-                throw new AssertionException("The unported ARM64 register-branch dependency did not fail.");
-
-            Assert.That(failure.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure.Message, Is.EqualTo("ARM64 emitIns_J_R recording is not ported."));
+            codeGen.genCodeForTreeNode(tree);
 
             var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
-            Assert.That(descriptors, Has.Count.EqualTo(3));
+            Assert.That(descriptors, Has.Count.EqualTo(5));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_ldaxr));
             Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3));
             Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R4));
@@ -110,7 +108,7 @@ internal static class Arm64CodeGenLockedInstructionTests
             Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_R3));
             if (useImmediate)
             {
-                Assert.That(descriptors[1].idReg3(), Is.EqualTo(REG_NA));
+                Assert.That(descriptors[1].idSmallCns(), Is.EqualTo(7));
             }
             else
             {
@@ -120,6 +118,14 @@ internal static class Arm64CodeGenLockedInstructionTests
             Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_R6));
             Assert.That(descriptors[2].idReg2(), Is.EqualTo(REG_R7));
             Assert.That(descriptors[2].idReg3(), Is.EqualTo(REG_R4));
+            var branch = (Emitter.instrDescJmp)descriptors[3];
+            var retryTarget = branch.idjTarget ?? throw new AssertionException("Missing retry target.");
+            Assert.That(descriptors[3].idIns(), Is.EqualTo(INS_cbnz));
+            Assert.That(descriptors[3].idOpSize(), Is.EqualTo(EA_4BYTE));
+            Assert.That(descriptors[3].idReg1(), Is.EqualTo(REG_R6));
+            Assert.That(retryTarget.HasFlag(BBF_HAS_LABEL), Is.True);
+            Assert.That(descriptors[4].idIns(), Is.EqualTo(INS_dmb));
+            Assert.That(descriptors[4].idSmallCns(), Is.EqualTo((int)INS_BARRIER_ISH));
         });
     }
 
@@ -151,6 +157,5 @@ internal static class Arm64CodeGenLockedInstructionTests
         compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_Atomics);
         compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_Atomics);
     }
-
 }
 #endif

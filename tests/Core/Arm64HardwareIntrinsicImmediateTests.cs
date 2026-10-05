@@ -1,6 +1,9 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 #if FEATURE_HW_INTRINSICS && TARGET_ARM64
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.emitAttr;
@@ -73,7 +76,7 @@ internal static class Arm64HardwareIntrinsicImmediateTests
     }
 
     [Test]
-    public static void TwoCaseIndexedImmediateUsesConditionalBranchWithoutAnInternalAddressRegister()
+    public static void TwoCaseIndexedImmediateRecordsConditionalBranchWithoutAnInternalAddressRegister()
     {
         WithCodeGen((compiler, codeGen) =>
         {
@@ -81,12 +84,39 @@ internal static class Arm64HardwareIntrinsicImmediateTests
                 Operand(REG_V1, TYP_SIMD16), Operand(REG_R12, TYP_INT)) { RegNum = REG_R0 };
             EnableIsa(compiler, node);
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genHWIntrinsic(node)) ??
-                throw new AssertionException("Missing conditional-branch dependency failure.");
-            Assert.That(failure.Message, Is.EqualTo("ARM64 emitIns_J_R recording is not ported."));
-            Assert.That(Descriptors(codeGen), Is.Empty);
+            codeGen.genHWIntrinsic(node);
+
+            var descriptors = AllDescriptors(codeGen.Emitter, compiler);
+            Assert.That(descriptors, Is.Not.Empty);
+            var branch = (Emitter.instrDescJmp)descriptors[0];
+            Assert.That(branch.idIns(), Is.EqualTo(INS_cbnz));
+            Assert.That(branch.idOpSize(), Is.EqualTo(EA_4BYTE));
+            Assert.That(branch.idReg1(), Is.EqualTo(REG_R12));
+            Assert.That(branch.idjTarget, Is.Not.Null);
         });
     }
+
+    private static List<Emitter.instrDesc> AllDescriptors(Emitter emitter, Compiler compiler)
+    {
+        var descriptors = new List<Emitter.instrDesc>();
+        var firstGroup = FirstGroup(emitter);
+        while ((firstGroup is not null) && (firstGroup.igInsCnt == 0))
+        {
+            firstGroup = firstGroup.igNext;
+        }
+        var firstInstructionGroup = firstGroup ?? throw new AssertionException("Missing instruction group.");
+        Walk(emitter, new emitLocation(firstInstructionGroup),
+            (descriptor, _) => descriptors.Add(descriptor), compiler);
+
+        return descriptors;
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitWalkIDs")]
+    private static extern void Walk(Emitter emitter, emitLocation location,
+        Action<Emitter.instrDesc, Compiler> process, Compiler context);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
+    private static extern ref insGroup? FirstGroup(Emitter emitter);
 
     [TestCase(1, 0)]
     [TestCase(16, 31)]
@@ -136,6 +166,7 @@ internal static class Arm64HardwareIntrinsicImmediateTests
 
     [TestCase(NI_Sve2_MultiplyAddRotateComplexBySelectedScalar, TYP_SHORT)]
     [TestCase(NI_Sve2_DotProductRotateComplexBySelectedIndex, TYP_BYTE)]
+    [TestCase(NI_Sve2_MultiplyAddRotateComplexBySelectedScalar, TYP_INT)]
     public static void CombinedComplexArgumentsKeepBothMutationsBeforeAddressBoundary(
         NamedIntrinsic intrinsic, var_types baseType)
     {

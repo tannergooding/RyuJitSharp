@@ -47,51 +47,58 @@ internal static unsafe class Arm64InstructionOutputTests
         }
     }
 
-    [TestCase(INS_ret, IF_BR_1A)]
-    [TestCase(INS_nop, IF_SN_0A)]
-    [TestCase(INS_add, IF_DI_2A)]
-    [TestCase(INS_str, IF_LS_2A)]
-    public static void OrdinaryOpcodeDependencyTerminatesWithoutCommittingTheCursor(
-        instruction ins, Emitter.insFormat format)
+    [TestCase(INS_ret, IF_BR_1A, 0xD65F0000u, true)]
+    [TestCase(INS_nop, IF_SN_0A, 0xD503201Fu, false)]
+    [TestCase(INS_add, IF_DI_2A, 0x91000020u, false)]
+    [TestCase(INS_str, IF_LS_2A, 0xF9000020u, false)]
+    public static void OrdinaryOpcodeRecordsItsNativeEncoding(
+        instruction ins, Emitter.insFormat format, uint expected, bool isSmallDescriptor)
     {
         var emitter = NewEmitter();
+#if DEBUG
+        emitter.emitIssuing = true;
+#endif
         var id = OutputEmitter.Descriptor(ins, format, EA_8BYTE);
+        if (isSmallDescriptor)
+        {
+            id.idSetIsSmallDsc();
+        }
         var buffer = stackalloc byte[12];
         foreach (var usePublicEntry in new[] { false, true })
         {
             new Span<byte>(buffer, 12).Fill(0xA5);
             var cursor = buffer + 4;
             var slot = (nint)(&cursor);
-            var error = Assert.Throws<FatalJitException>(
-                () => Output(emitter, new insGroup(), id, (byte**)slot, usePublicEntry));
-            Assert.That(error?.Message, Does.Contain("Ordinary ARM64 instruction encoding tables"));
-            Assert.That((nuint)cursor, Is.EqualTo((nuint)(buffer + 4)));
-            Assert.That(new ReadOnlySpan<byte>(buffer, 12).ToArray(), Is.All.EqualTo(0xA5));
+            var size = Output(emitter, new insGroup(), id, (byte**)slot, usePublicEntry);
+            Assert.That(size, Is.EqualTo((nuint)id.NativeLogicalSize));
+            Assert.That((nuint)cursor, Is.EqualTo((nuint)(buffer + 8)));
+            Assert.That(Unsafe.ReadUnaligned<uint>(buffer + 4), Is.EqualTo(expected));
+            Assert.That(buffer[3], Is.EqualTo(0xA5));
+            Assert.That(buffer[8], Is.EqualTo(0xA5));
         }
     }
 
-    [TestCase(INS_b, IF_BI_0A)]
-    [TestCase(INS_cbz, IF_BI_1A)]
-    [TestCase(INS_tbz, IF_BI_1B)]
-    [TestCase(INS_ldr, IF_LARGELDC)]
-    [TestCase(INS_adr, IF_LARGEADR)]
-    public static void BoundLabelFormatsCallTheRetainedLongJumpDependency(instruction ins, Emitter.insFormat format)
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void BoundJumpDescriptorsReachArm64LongJumpOutput(bool usePublicEntry)
     {
         var emitter = NewEmitter();
-        var id = OutputEmitter.Descriptor(ins, format, EA_8BYTE);
-        id.idSetIsBound();
-        var buffer = stackalloc byte[12];
-        foreach (var usePublicEntry in new[] { false, true })
-        {
-            new Span<byte>(buffer, 12).Fill(0xA5);
-            var cursor = buffer + 4;
-            var slot = (nint)(&cursor);
-            var error = Assert.Throws<FatalJitException>(
-                () => Output(emitter, new insGroup(), id, (byte**)slot, usePublicEntry));
-            Assert.That(error?.Message, Does.Contain("Label output requires xarch"));
-            Assert.That((nuint)cursor, Is.EqualTo((nuint)(buffer + 4)));
-            Assert.That(new ReadOnlySpan<byte>(buffer, 12).ToArray(), Is.All.EqualTo(0xA5));
-        }
+        var buffer = stackalloc byte[64];
+        new Span<byte>(buffer, 64).Fill(0xA5);
+        emitter.emitCodeBlock = buffer;
+        emitter.emitTotalHotCodeSize = 128;
+        var id = OutputEmitter.Jump(INS_cbz, IF_LARGEJMP, EA_8BYTE, 48);
+        var cursor = buffer + 16;
+        var slot = (nint)(&cursor);
+
+        var size = Output(emitter, new insGroup(), id, (byte**)slot, usePublicEntry);
+
+        Assert.That(size, Is.EqualTo((nuint)id.NativeLogicalSize));
+        Assert.That((nuint)cursor, Is.EqualTo((nuint)(buffer + 24)));
+        Assert.That(Unsafe.ReadUnaligned<uint>(buffer + 16), Is.EqualTo(0xB5000043u));
+        Assert.That(Unsafe.ReadUnaligned<uint>(buffer + 20), Is.EqualTo(0x14000007u));
+        Assert.That(buffer[15], Is.EqualTo(0xA5));
+        Assert.That(buffer[24], Is.EqualTo(0xA5));
     }
 
 #if FEATURE_LOOP_ALIGN
@@ -252,22 +259,24 @@ internal static unsafe class Arm64InstructionOutputTests
     }
 
     [Test]
-    public static void UnboundJumpAssertsBeforeCallingTheTerminatingDependency()
+    public static void UnboundJumpDescriptorTripsItsBoundAssertion()
     {
         var emitter = NewEmitter();
-        var id = OutputEmitter.Descriptor(INS_b, IF_BI_0A, EA_8BYTE);
-        var buffer = stackalloc byte[12];
+        var id = OutputEmitter.Jump(INS_cbz, IF_LARGEJMP, EA_8BYTE, 48, isBound: false);
+        var buffer = stackalloc byte[64];
+        new Span<byte>(buffer, 64).Fill(0xA5);
+        emitter.emitCodeBlock = buffer;
+        emitter.emitTotalHotCodeSize = 128;
         foreach (var usePublicEntry in new[] { false, true })
         {
-            new Span<byte>(buffer, 12).Fill(0xA5);
-            var cursor = buffer + 4;
+            var cursor = buffer + 16;
             var slot = (nint)(&cursor);
             var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
-                () => Assert.Throws<FatalJitException>(
-                    () => Output(emitter, new insGroup(), id, (byte**)slot, usePublicEntry)));
+                () => _ = Output(emitter, new insGroup(), id, (byte**)slot, usePublicEntry));
             Assert.That(assertions, Is.EqualTo<string[]>(["id.idIsBound()"]));
-            Assert.That((nuint)cursor, Is.EqualTo((nuint)(buffer + 4)));
-            Assert.That(new ReadOnlySpan<byte>(buffer, 12).ToArray(), Is.All.EqualTo(0xA5));
+            Assert.That((nuint)cursor, Is.EqualTo((nuint)(buffer + 24)));
+            Assert.That(Unsafe.ReadUnaligned<uint>(buffer + 16), Is.EqualTo(0xB5000043u));
+            Assert.That(Unsafe.ReadUnaligned<uint>(buffer + 20), Is.EqualTo(0x14000007u));
         }
     }
 #endif
@@ -305,6 +314,27 @@ internal static unsafe class Arm64InstructionOutputTests
             id.idReg2(REG_R1);
             id.idReg3(REG_R2);
             id.idSmallCns(0);
+
+            return id;
+        }
+
+        internal static instrDescJmp Jump(instruction ins, Emitter.insFormat format, emitAttr size, uint target,
+            bool isBound = true)
+        {
+            var id = new instrDescJmp();
+            id.idIns(ins);
+            id.idInsFmt(format);
+            id.idOpSize(size);
+            id.idInsOpt(INS_OPTS_NONE);
+            id.idReg1(REG_R3);
+            if (isBound)
+            {
+                id.idSetIsBound();
+            }
+            id.idjTargetIG = new insGroup { igOffs = target };
+#if DEBUG
+            id.idDebugOnlyInfo(new instrDescDebugInfo());
+#endif
 
             return id;
         }

@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
-using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.SpecialCodeKind;
@@ -78,7 +77,7 @@ internal static class Arm64CodeGenDivisionTests
     {
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
-            PrepareThrowTarget(compiler, SCK_ARITH_EXCPN);
+            _ = PrepareThrowTarget(compiler, SCK_ARITH_EXCPN);
             var dividend = compiler.gtNewIconNode(TYP_INT, int.MinValue);
             dividend.RegNum = REG_R1;
             var divisor = compiler.gtNewLclvNode(TYP_INT, 0);
@@ -103,11 +102,11 @@ internal static class Arm64CodeGenDivisionTests
     }
 
     [Test]
-    public static void VariableDivisorZeroChecksReachTheUnportedRegisterBranchDependency()
+    public static void VariableDivisorZeroChecksRecordABranchBeforeDivision()
     {
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
-            PrepareThrowTarget(compiler, SCK_DIV_BY_ZERO);
+            var throwTarget = PrepareThrowTarget(compiler, SCK_DIV_BY_ZERO);
             var dividend = compiler.gtNewIconNode(TYP_INT, 7);
             dividend.RegNum = REG_R1;
             var divisor = compiler.gtNewLclvNode(TYP_INT, 0);
@@ -117,12 +116,16 @@ internal static class Arm64CodeGenDivisionTests
                 RegNum = REG_R3,
             };
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree)) ??
-                throw new AssertionException("The unported ARM64 register-branch dependency did not fail.");
+            codeGen.genCodeForTreeNode(tree);
 
-            Assert.That(failure.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure.Message, Is.EqualTo("ARM64 emitIns_J_R recording is not ported."));
-            Assert.That(Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter), Is.Empty);
+            var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(2));
+            var branch = (Emitter.instrDescJmp)descriptors[0];
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_cbz));
+            Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_4BYTE));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R2));
+            Assert.That(branch.idjTarget, Is.SameAs(throwTarget));
+            Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_udiv));
         });
     }
 
@@ -146,7 +149,7 @@ internal static class Arm64CodeGenDivisionTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
     private static extern ref insGroup? FirstGroup(Emitter emitter);
 
-    private static void PrepareThrowTarget(Compiler compiler, SpecialCodeKind kind)
+    private static BasicBlock PrepareThrowTarget(Compiler compiler, SpecialCodeKind kind)
     {
         compiler.compCurBB = new BasicBlock(null, null);
         var target = new BasicBlock(null, null);
@@ -157,6 +160,8 @@ internal static class Arm64CodeGenDivisionTests
 #if !FEATURE_FIXED_OUT_ARGS
         descriptor.acdStkLvlInit = true;
 #endif
+
+        return target;
     }
 }
 #endif
