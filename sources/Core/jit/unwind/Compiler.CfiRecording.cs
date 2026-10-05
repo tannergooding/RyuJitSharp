@@ -161,6 +161,46 @@ public partial class Compiler
         NYI("CFI codes");
         return DWARF_REG_ILLEGAL;
     }
+#elif TARGET_ARM
+    private static short mapRegNumToDwarfReg(regNumber reg)
+    {
+        return reg switch
+        {
+            REG_R0 => 0,
+            REG_R1 => 1,
+            REG_R2 => 2,
+            REG_R3 => 3,
+            REG_R4 => 4,
+            REG_R5 => 5,
+            REG_R6 => 6,
+            REG_R7 => 7,
+            REG_R8 => 8,
+            REG_R9 => 9,
+            REG_R10 => 10,
+            REG_R11 => 11,
+            REG_R12 => 12,
+            REG_R13 => 13,
+            REG_R14 => 14,
+            REG_R15 => 15,
+            REG_F0 => 256,
+            REG_F2 => 257,
+            REG_F4 => 258,
+            REG_F6 => 259,
+            REG_F8 => 260,
+            REG_F10 => 261,
+            REG_F12 => 262,
+            REG_F14 => 263,
+            REG_F16 => 264,
+            REG_F18 => 265,
+            REG_F20 => 266,
+            REG_F22 => 267,
+            REG_F24 => 268,
+            REG_F26 => 269,
+            REG_F28 => 270,
+            REG_F30 => 271,
+            _ => throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unexpected ARM DWARF register."),
+        };
+    }
 #elif !TARGET_ARM64 && (!TARGET_AMD64 || !UNIX_AMD64_ABI)
     private static short mapRegNumToDwarfReg(regNumber reg)
     {

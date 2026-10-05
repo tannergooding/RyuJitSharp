@@ -8,13 +8,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if TARGET_ARM
-    public void unwindPushMaskInt(regMaskTP mask)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM integer push-mask unwind recording is not ported.");
-    }
-#endif
-
     public void unwindPadding()
     {
 #if TARGET_ARMARCH

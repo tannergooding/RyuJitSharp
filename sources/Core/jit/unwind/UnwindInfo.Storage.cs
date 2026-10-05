@@ -334,7 +334,7 @@ public sealed partial class UnwindInfo
     }
 
 #if DEBUG
-    private static uint GetUnwindCodeSize(byte header)
+    internal static uint GetUnwindCodeSize(byte header)
     {
 #if TARGET_ARM
         if (header <= 0x7F || (header >= 0xC0 && header <= 0xE7) || header >= 0xF0)
@@ -358,11 +358,12 @@ public sealed partial class UnwindInfo
 #endif
 
 #if DEBUG && TARGET_ARM
-    private static uint GetArmOpcodeSize(byte header)
+    internal static uint GetArmOpcodeSize(byte header)
     {
         var size = header switch
         {
             <= 0x7F => 2,
+            <= 0xBF => 4,
             <= 0xD7 => 2,
             <= 0xEB => 4,
             <= 0xEE => 2,

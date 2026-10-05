@@ -178,17 +178,17 @@ public sealed partial class CodeGen
 
     private void unwindPushMaskFloatArmCore(regMaskTP mask)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM floating push-mask unwind recording is not ported.");
+        _compiler.unwindPushMaskFloat(mask);
     }
 
     private void unwindPopMaskIntArmCore(regMaskTP mask)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM integer pop-mask unwind recording is not ported.");
+        _compiler.unwindPopMaskInt(mask);
     }
 
     private void unwindPopMaskFloatArmCore(regMaskTP mask)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM floating pop-mask unwind recording is not ported.");
+        _compiler.unwindPopMaskFloat(mask);
     }
 }
 #endif

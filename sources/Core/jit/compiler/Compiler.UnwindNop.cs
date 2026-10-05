@@ -164,17 +164,6 @@ public partial class Compiler
         func.uwiCold?.Allocate((CorJitFuncKind)func.funKind, pHotCode, pColdCode, false);
     }
 
-#if TARGET_ARM
-    public void unwindSetFrameReg(regNumber reg, uint offset)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 frame-register unwind recording is not ported.");
-    }
-
-    public void unwindNop(uint codeSizeInBytes)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 unwind NOP encoding is not ported.");
-    }
-#endif
 #elif TARGET_LOONGARCH64
     public void unwindBegProlog()
     {
