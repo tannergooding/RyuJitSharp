@@ -666,7 +666,7 @@ public partial class Compiler
         _ => "CORINFO_TYPE_INVALID"
     };
 
-    /// <summary>Print a field name to a StringPrinter.</summary>
+    /// <summary>Print a field name to a StringBuilder.</summary>
     /// <param name="stringBuilder">the builder</param>
     /// <param name="fldHnd">The field</param>
     /// <param name="includeType">Whether to prefix the string by &lt;class name&gt;:</param>
