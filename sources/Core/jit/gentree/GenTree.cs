@@ -2915,6 +2915,13 @@ public partial class GenTree
 
     public void SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate = CLEAR_VN)
     {
+#if HOST_64BIT && !TARGET_64BIT
+        if ((Oper is GT_CNS_LNG) && (oper is GT_CNS_INT))
+        {
+            NYI("SetOper cannot change the managed runtime type of a long constant");
+        }
+#endif
+
 #if DEBUG
         assert(oper.StructType == GetType());
 #endif
@@ -2926,6 +2933,46 @@ public partial class GenTree
         {
             // Clear the ValueNum field as well.
             _vnPair.SetBoth(ValueNumStore.NoVN);
+        }
+
+#if DEBUG
+        if (oper.IsUnary && (this is GenTreeOp op))
+        {
+            op.Op2Ref = null;
+        }
+#endif
+
+        switch (oper)
+        {
+            case GT_CNS_INT:
+                AsIntCon().FieldSeq = null;
+#if DEBUG
+                AsIntCon().TargetHandle = 0;
+#endif
+                break;
+#if TARGET_ARM
+            case GT_MUL_LONG:
+                AsMultiRegOp().OtherReg = REG_NA;
+                AsMultiRegOp().ClearOtherRegFlags();
+                break;
+#endif
+            case GT_LCL_FLD:
+            case GT_STORE_LCL_FLD:
+                AsLclFld().LclOffs = 0;
+                AsLclFld().Layout = null;
+                break;
+            case GT_LCL_ADDR:
+                AsLclFld().Layout = null;
+                break;
+            case GT_CALL:
+                AsCall().Args = default;
+                break;
+#if DEBUG
+            case GT_LCL_VAR:
+            case GT_STORE_LCL_VAR:
+                AsLclVar().ResetLclILOffs();
+                break;
+#endif
         }
     }
 
