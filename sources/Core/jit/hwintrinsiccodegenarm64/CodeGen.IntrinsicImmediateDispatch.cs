@@ -120,7 +120,8 @@ public sealed partial class CodeGen
                 if (TestImmOpZeroOrOne())
                 {
                     assert(_nonZeroLabel is not null);
-                    Arm64IntrinsicEmitRegisterBranch(INS_cbnz, EA_4BYTE, _nonZeroLabel, _nonConstImmReg);
+                    _codeGen.Arm64IntrinsicEmitRegisterBranch(
+                        INS_cbnz, EA_4BYTE, _nonZeroLabel, _nonConstImmReg);
                 }
                 else
                 {
