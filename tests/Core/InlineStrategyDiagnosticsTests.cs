@@ -36,6 +36,52 @@ internal static unsafe class InlineStrategyDiagnosticsTests
     }
 
     [Test]
+    public static void InlineContextDumpDataVisitsSuccessfulSiblingsOnly()
+    {
+        WithStrategy((strategy, compiler) => {
+            var root = new InlineContext(strategy) {
+                _callee = compiler.info.compMethodHnd
+            };
+            var successful = new InlineContext(strategy) {
+                _parent = root,
+                _callee = compiler.info.compMethodHnd,
+                _policy = new DefaultPolicy(compiler, false)
+            };
+            SetField(typeof(InlineContext), successful, "_ordinal", 3);
+            SetField(typeof(InlineContext), successful, "_observation", InlineObservation.CALLEE_BELOW_ALWAYS_INLINE_SIZE);
+            var failed = new InlineContext(strategy) {
+                _parent = root,
+                _sibling = successful,
+                _callee = compiler.info.compMethodHnd,
+                _flags = InlineContext.Flags.None
+            };
+            SetField(typeof(InlineContext), failed, "_observation", InlineObservation.CALLEE_IS_NOINLINE);
+            root._child = failed;
+
+            using var stream = new MemoryStream();
+            using var stdout = new JitTextWriter(stream, leaveOpen: true);
+            var previous = s_jitstdout;
+            s_jitstdout = stdout;
+            try
+            {
+                root.DumpData();
+                stdout.Flush();
+
+                var output = Encoding.UTF8.GetString(stream.ToArray());
+                Assert.That(output, Does.Contain("Inlines [0] into \""));
+                Assert.That(output, Does.Contain(" [DefaultPolicy]"));
+                Assert.That(output, Does.Contain(
+                    $"  3,\"{InlineObservation.CALLEE_BELOW_ALWAYS_INLINE_SIZE.String}\",\""));
+                Assert.That(output, Does.Not.Contain(InlineObservation.CALLEE_IS_NOINLINE.String));
+            }
+            finally
+            {
+                s_jitstdout = previous;
+            }
+        }, dumpData: 1);
+    }
+
+    [Test]
     public static void NativeJitTimeRescalesTheAlreadyConvertedCounter()
     {
         WithStrategy((strategy, compiler) => {

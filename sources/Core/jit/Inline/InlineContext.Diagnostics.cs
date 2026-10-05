@@ -12,6 +12,34 @@ namespace RyuJitSharp;
 public sealed partial class InlineContext
 {
 #if DEBUG
+    internal unsafe void DumpData(uint indent = 0)
+    {
+        _sibling?.DumpData(indent);
+
+        var compiler = _inlineStrategy.Compiler;
+        var calleeName = compiler.eeGetMethodFullName(_callee);
+
+        if (_parent is null)
+        {
+            var policy = InlinePolicy.GetPolicy(compiler, isPrejitRoot: true);
+            jitstdout().Write(
+                $"\nInlines [{unchecked((uint)_inlineStrategy.InlineCount)}] into \"{calleeName}\" [{policy.Name}]\n");
+        }
+        else if (IsSuccess)
+        {
+            var inlineReason = _observation.String;
+            var indentation = indent <= (uint)int.MaxValue ? new string(' ', (int)indent) : string.Empty;
+            jitstdout().Write(
+                $"{indentation}{unchecked((uint)_ordinal)},\"{inlineReason}\",\"{calleeName}\",");
+
+            assert(_policy is not null);
+            _policy.DumpData(jitstdout());
+            jitstdout().Write('\n');
+        }
+
+        _child?.DumpData(unchecked(indent + 2));
+    }
+
     internal unsafe void DumpXml(StreamWriter file, int indent)
     {
         _sibling?.DumpXml(file, indent);
