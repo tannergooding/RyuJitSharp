@@ -971,6 +971,14 @@ public sealed partial class BasicBlock : LIR.Range
 
     public BasicBlock Target => TargetEdge.DestinationBlock;
 
+#if DEBUG
+    public BasicBlock? GetTargetRaw()
+    {
+        assert(HasTarget);
+        return (bbTargetEdge is null) ? null : bbTargetEdge.DestinationBlock;
+    }
+#endif
+
     public FlowEdge TargetEdge
     {
         get
@@ -1074,6 +1082,14 @@ public sealed partial class BasicBlock : LIR.Range
     }
 
     public BasicBlock FalseTarget => FalseEdge.DestinationBlock;
+
+#if DEBUG
+    public BasicBlock? GetFalseTargetRaw()
+    {
+        assert(Kind is BBJ_COND);
+        return (bbFalseEdge is null) ? null : bbFalseEdge.DestinationBlock;
+    }
+#endif
 
     public bool HasAllFlags(BasicBlockFlags flags)
     {
@@ -1273,6 +1289,14 @@ public sealed partial class BasicBlock : LIR.Range
     }
 
     public BasicBlock TrueTarget => TrueEdge.DestinationBlock;
+
+#if DEBUG
+    public BasicBlock? GetTrueTargetRaw()
+    {
+        assert(Kind is BBJ_COND);
+        return (bbTrueEdge is null) ? null : bbTrueEdge.DestinationBlock;
+    }
+#endif
 
     public BBswtDesc SwitchTargets
     {
