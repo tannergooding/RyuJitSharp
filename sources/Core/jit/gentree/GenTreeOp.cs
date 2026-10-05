@@ -223,11 +223,16 @@ public class GenTreeOp : GenTreeUnOp
         return true;
     }
 
-#if TARGET_ARM
+#if !TARGET_64BIT && !TARGET_WASM
     public void DebugCheckLongMul()
     {
+#if TARGET_ARM
         Globals.NYI("TARGET_ARM DebugCheckLongMul");
         throw new FatalJitException(CORJIT_IMPLLIMITATION, "TARGET_ARM long multiplication checks are not ported.");
+#else
+        Globals.NYI("32-bit DebugCheckLongMul");
+        throw new FatalJitException(CORJIT_IMPLLIMITATION, "32-bit long multiplication checks are not ported.");
+#endif
     }
 #endif
 
