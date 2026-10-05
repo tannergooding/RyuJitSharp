@@ -288,10 +288,10 @@ public sealed partial class CodeGen
     {
         assert(_compiler.compCurBB is not null);
         var block = _compiler.compCurBB!;
-        assert(block.KindIs(BBJ_COND));
+        assert(block.Kind is BBJ_COND);
 
         var op1 = tree.Op1;
-        var op2 = tree.Op2 ?? throw new NullReferenceException();
+        var op2 = tree.Op2 ?? throw new InvalidOperationException("Jump compare is missing its second operand.");
 
         assert(tree.Oper is GT_JCMP or GT_JTEST);
         assert(!varTypeIsFloating(tree.Type));

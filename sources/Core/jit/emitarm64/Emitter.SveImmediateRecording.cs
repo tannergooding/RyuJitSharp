@@ -424,7 +424,7 @@ public unsafe partial class Emitter
                 assert(isValidVectorElemsize(optGetSveElemsize(opt)));
                 floatImm8 fpi;
                 fpi.immFPIVal = 0;
-                canEncodeFloatImm8(immDbl, &fpi);
+                _ = canEncodeFloatImm8(immDbl, &fpi);
                 imm = (nint)fpi.immFPIVal;
                 fmt = IF_SVE_BU_2A;
 
