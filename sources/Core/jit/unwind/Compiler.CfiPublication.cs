@@ -61,6 +61,9 @@ public partial class Compiler
 #if TARGET_AMD64
         eeAllocUnwindInfo(hotCode, coldCode, unchecked((int)startOffset), unchecked((int)endOffset),
             unwindSize, unwindBlock, funcKind);
+#elif TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+        unwindAllocEEInfo(hotCode, coldCode, unchecked((int)startOffset), unchecked((int)endOffset),
+            unwindSize, unwindBlock, funcKind);
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Unwind EE publication for this target is not ported.");
 #endif

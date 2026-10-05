@@ -20,6 +20,10 @@ internal static class FuncletCreationTargetTests
         Assert.That(compiler.fgFuncletsCreated, Is.True);
         Assert.That(compiler.compFuncInfoCount, Is.EqualTo(1));
         Assert.That(compiler.compFuncInfos[0].funKind, Is.EqualTo(FUNC_ROOT));
+#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+        Assert.That(compiler.compFuncInfos[0].GetUnwindInfo(), Is.Not.Null);
+        Assert.That(compiler.compFuncInfos[0].uwiCold, Is.Null);
+#endif
 #if !HAS_FIXED_REGISTER_SET
         Assert.That(compiler.compFuncInfos[0].funStackPointerReg, Is.EqualTo(REG_NA));
         Assert.That(compiler.compFuncInfos[0].funFramePointerReg, Is.EqualTo(REG_NA));

@@ -41,20 +41,21 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
         });
     }
 
-    [TestCase(3600u, true, 1)]
+    [TestCase(3600u, false, 1)]
     [TestCase(4096u, false, 1)]
     [TestCase(8192u, false, 2)]
-    public static void ProbeRefWritesRespectGenuineUnwindTermination(uint frameSize, bool expectedZeroed, int probes)
+    public static void ProbeRefWritesRecordNativeUnwindPadding(uint frameSize, bool expectedZeroed, int probes)
     {
-        WithCodeGen((_, codeGen) =>
+        WithCodeGen((compiler, codeGen) =>
         {
             codeGen.Emitter.emitBegProlog();
+            compiler.unwindBegProlog();
+            var unwindInfo = compiler.funCurrentFunc().GetUnwindInfo();
+            var initialLocation = unwindInfo.GetCurrentEmitterLocation()
+                ?? throw new AssertionException("Unwind prolog location was not captured.");
             var actualZeroed = true;
-            var failure = Assert.Throws<FatalJitException>(() =>
-                codeGen.genAllocLclFrame(frameSize, REG_R9, ref actualZeroed, RBM_NONE)) ??
-                throw new AssertionException("Missing unwind-padding dependency failure.");
+            codeGen.genAllocLclFrame(frameSize, REG_R9, ref actualZeroed, RBM_NONE);
 
-            Assert.That(failure.Message, Is.EqualTo("Target prolog unwind padding is not ported."));
             Assert.That(actualZeroed, Is.EqualTo(expectedZeroed));
             var descriptors = Descriptors(codeGen);
             var loads = descriptors.Where(id => id.idIns() == INS_ldr).ToArray();
@@ -64,6 +65,11 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
             Assert.That(loads.All(id => id.idOpSize() == EA_4BYTE && id.idReg1() == REG_ZR), Is.True);
             Assert.That(descriptors.Where(id => id.idIns() != INS_ldr)
                 .All(id => id.idReg1() == REG_R9), Is.True);
+            var currentLocation = unwindInfo.GetCurrentEmitterLocation()
+                ?? throw new AssertionException("Unwind padding did not capture the emitter location.");
+            Assert.That(initialLocation.IsCurrentLocation(codeGen.Emitter), Is.False);
+            Assert.That(currentLocation.IsCurrentLocation(codeGen.Emitter), Is.True);
+            compiler.unwindEndProlog();
         });
     }
 
@@ -89,21 +95,28 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
 
     [TestCase(0, INS_mov)]
     [TestCase(16, INS_add)]
-    public static void FramePointerSetupPreservesTheUnwindRequestUntilTheUnportedRecorder(
+    public static void FramePointerSetupRecordsTheRequestedUnwindData(
         int delta, instruction expectedInstruction)
     {
-        WithCodeGen((_, codeGen) =>
+        WithCodeGen((compiler, codeGen) =>
         {
             codeGen.Emitter.emitBegProlog();
+            compiler.unwindBegProlog();
+            var unwindInfo = compiler.funCurrentFunc().GetUnwindInfo();
+            var initialLocation = unwindInfo.GetCurrentEmitterLocation()
+                ?? throw new AssertionException("Unwind prolog location was not captured.");
 
-            var failure = Assert.Throws<FatalJitException>(() =>
-                codeGen.genEstablishFramePointer(delta, reportUnwindData: true)) ??
-                throw new AssertionException("The unported ARM64 unwind recorder did not fail.");
+            codeGen.genEstablishFramePointer(delta, reportUnwindData: true);
 
-            Assert.That(failure.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure.Message,
-                Is.EqualTo("FuncInfoDsc::uwi embedded unwind information is not ported."));
-            Assert.That(Descriptors(codeGen).Single().idIns(), Is.EqualTo(expectedInstruction));
+            var descriptor = Descriptors(codeGen).Single();
+            Assert.That(descriptor.idIns(), Is.EqualTo(expectedInstruction));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_FPBASE));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_ZR));
+            var currentLocation = unwindInfo.GetCurrentEmitterLocation()
+                ?? throw new AssertionException("Frame-register unwind code did not capture the emitter location.");
+            Assert.That(initialLocation.IsCurrentLocation(codeGen.Emitter), Is.False);
+            Assert.That(currentLocation.IsCurrentLocation(codeGen.Emitter), Is.True);
+            compiler.unwindEndProlog();
         });
     }
 
@@ -279,7 +292,14 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
         compiler.lvaTrackedCountInSizeTUnits = 1;
         compiler.eeInfoInitialized = true;
         compiler.eeInfo.osPageSize = 4096;
-        compiler.compFuncInfos = [default];
+        compiler.compFuncInfos =
+        [
+            new FuncInfoDsc
+            {
+                funKind = FuncKind.FUNC_ROOT,
+                uwi = new UnwindInfo(),
+            },
+        ];
         compiler.compFuncInfoCount = 1;
         compiler.fgFuncletsCreated = true;
         var currentBlock = new BasicBlock(null, null);

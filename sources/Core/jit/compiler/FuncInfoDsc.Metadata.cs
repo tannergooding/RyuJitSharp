@@ -4,6 +4,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 #if TARGET_WASM || FEATURE_CFI_SUPPORT
 using System.Collections.Generic;
 #endif
@@ -85,10 +86,11 @@ public partial struct FuncInfoDsc
 #endif
 
 #if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+    public UnwindInfo? uwi;
+
     public readonly UnwindInfo GetUnwindInfo()
     {
-        throw new FatalJitException(
-            CorJitResult.CORJIT_SKIPPED, "FuncInfoDsc::uwi embedded unwind information is not ported.");
+        return uwi ?? throw new InvalidOperationException("Unwind information has not been initialized.");
     }
 
     public UnwindInfo? uwiCold;

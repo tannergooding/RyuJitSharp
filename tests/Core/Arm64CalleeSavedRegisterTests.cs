@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.Globals;
@@ -21,7 +22,19 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm64CalleeSavedRegisterTests
 {
-    private const string UnwindInfoNotPorted = "FuncInfoDsc::uwi embedded unwind information is not ported.";
+#if DEBUG
+    private static readonly List<string> s_assertions = [];
+    private static readonly string[] s_largeOffsetAssertions =
+    [
+        "0 <= offset && offset <= 504",
+        "0 <= z && z <= 0x3F",
+    ];
+    private static readonly string[] s_reversePairAssertions =
+    [
+        "reg1 + 1 == reg2",
+        "reg1 + 1 == reg2",
+    ];
+#endif
 
     [TestCase(nameof(Compiler.FrameInfo.frameType))]
     [TestCase(nameof(Compiler.FrameInfo.calleeSaveSpOffset))]
@@ -240,17 +253,17 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         });
     }
 
-    [TestCase(0, -512, INS_stp, INS_OPTS_PRE_INDEX, UnwindInfoNotPorted)]
-    [TestCase(0, -528, INS_sub, INS_OPTS_NONE, UnwindInfoNotPorted)]
-    [TestCase(8, -16, INS_sub, INS_OPTS_NONE, UnwindInfoNotPorted)]
-    [TestCase(504, 0, INS_stp, INS_OPTS_NONE, UnwindInfoNotPorted)]
-    public static void PairSaveTerminatesAtRealUnwindBoundaryAfterNativeFirstInstruction(
-        int offset, int delta, instruction expected, insOpts options, string message)
+    [TestCase(0, -512, INS_stp, INS_OPTS_PRE_INDEX)]
+    [TestCase(0, -528, INS_sub, INS_OPTS_NONE)]
+    [TestCase(8, -16, INS_sub, INS_OPTS_NONE)]
+    [TestCase(504, 0, INS_stp, INS_OPTS_NONE)]
+    public static void PairSaveRecordsNativeInstructionAndUnwindCode(
+        int offset, int delta, instruction expected, insOpts options)
     {
         WithCodeGen((_, codeGen) =>
         {
-            AssertFailure(() => SavePair(codeGen, REG_R19, REG_R20, offset, delta, false, REG_IP0, null), message);
-            var descriptor = Descriptors(codeGen).Single();
+            SavePair(codeGen, REG_R19, REG_R20, offset, delta, false, REG_IP0, null);
+            var descriptor = Descriptors(codeGen)[0];
 
             Assert.That(descriptor.idIns(), Is.EqualTo(expected));
             Assert.That(descriptor.idInsOpt(), Is.EqualTo(options));
@@ -265,17 +278,18 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         });
     }
 
-    [TestCase(0, -256, INS_str, INS_OPTS_PRE_INDEX, UnwindInfoNotPorted)]
-    [TestCase(0, -272, INS_sub, INS_OPTS_NONE, UnwindInfoNotPorted)]
-    [TestCase(8, -16, INS_sub, INS_OPTS_NONE, UnwindInfoNotPorted)]
-    [TestCase(504, 0, INS_str, INS_OPTS_NONE, UnwindInfoNotPorted)]
-    public static void SingleSaveTerminatesAtRealUnwindBoundaryAfterNativeFirstInstruction(
-        int offset, int delta, instruction expected, insOpts options, string message)
+    [TestCase(0, -256, INS_str, INS_OPTS_PRE_INDEX)]
+    [TestCase(0, -272, INS_sub, INS_OPTS_NONE)]
+    [TestCase(8, -16, INS_sub, INS_OPTS_NONE)]
+    [TestCase(504, 0, INS_str, INS_OPTS_NONE)]
+    [TestCase(32760, 0, INS_str, INS_OPTS_NONE)]
+    public static void SingleSaveRecordsNativeInstructionAndUnwindCode(
+        int offset, int delta, instruction expected, insOpts options)
     {
         WithCodeGen((_, codeGen) =>
         {
-            AssertFailure(() => SaveSingle(codeGen, REG_R19, offset, delta, REG_IP0, null), message);
-            var descriptor = Descriptors(codeGen).Single();
+            SaveSingle(codeGen, REG_R19, offset, delta, REG_IP0, null);
+            var descriptor = Descriptors(codeGen)[0];
 
             Assert.That(descriptor.idIns(), Is.EqualTo(expected));
             Assert.That(descriptor.idInsOpt(), Is.EqualTo(options));
@@ -287,45 +301,55 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
             {
                 AssertStackAdjustment(descriptor, INS_sub, -delta);
             }
+#if DEBUG
+            if (offset == 32760)
+            {
+                Assert.That(s_assertions, Is.EqualTo(s_largeOffsetAssertions));
+                s_assertions.Clear();
+            }
+#endif
         });
     }
 
     [TestCase(false)]
     [TestCase(true)]
-    public static void SaveGroupUsesNativeReverseStressSelectionBeforeUnwindTermination(bool reverse)
+    public static void SaveGroupUsesNativeReverseStressSelectionWhileRecordingUnwind(bool reverse)
     {
         WithCodeGen((_, codeGen) =>
         {
             codeGen.genReverseAndPairCalleeSavedRegisters = reverse;
-            AssertFailure(() =>
-                SaveGroup(codeGen, Mask(REG_R19, REG_R20, REG_R21, REG_R22, REG_R24), 0, 8), UnwindInfoNotPorted);
+            SaveGroup(codeGen, Mask(REG_R19, REG_R20, REG_R21, REG_R22, REG_R24), 0, 8);
 
-            var descriptor = Descriptors(codeGen).Single();
+            var descriptor = Descriptors(codeGen)[0];
             Assert.That(descriptor.idIns(), Is.EqualTo(reverse ? INS_str : INS_stp));
             Assert.That(descriptor.idReg1(), Is.EqualTo(reverse ? REG_R24 : REG_R19));
             Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)1));
+#if DEBUG
+            if (reverse)
+            {
+                Assert.That(s_assertions, Is.EqualTo(s_reversePairAssertions));
+                s_assertions.Clear();
+            }
+#endif
         });
     }
 
     [TestCase(false)]
     [TestCase(true)]
-    public static void SaveNextSelectionTerminatesAfterRecordingTheNextRegisterPair(bool restore)
+    public static void SaveNextSelectionRecordsTheNextRegisterPair(bool restore)
     {
         WithCodeGen((_, codeGen) =>
         {
             codeGen.Emitter.emitIns_R_R_R_I(restore ? INS_ldp : INS_stp, EA_8BYTE,
                 REG_R19, REG_R20, REG_SPBASE, 0);
-            AssertFailure(() =>
+            if (restore)
             {
-                if (restore)
-                {
-                    RestorePair(codeGen, REG_R21, REG_R22, REG_SPBASE, 16, 0, true, REG_IP1, null, true);
-                }
-                else
-                {
-                    SavePair(codeGen, REG_R21, REG_R22, 16, 0, true, REG_IP0, null);
-                }
-            }, UnwindInfoNotPorted);
+                RestorePair(codeGen, REG_R21, REG_R22, REG_SPBASE, 16, 0, true, REG_IP1, null, true);
+            }
+            else
+            {
+                SavePair(codeGen, REG_R21, REG_R22, 16, 0, true, REG_IP0, null);
+            }
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(2));
@@ -337,50 +361,51 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
     }
 
     [TestCase(16)]
-    [TestCase(4097)]
+    [TestCase(4112)]
     public static void ScratchZeroRefWriteRemainsAfterTheRealConstantInstructionDependency(int amount)
     {
-        WithCodeGen((_, codeGen) =>
+        WithCodeGen((compiler, codeGen) =>
         {
             codeGen.Emitter.emitBegProlog();
+            compiler.unwindBegProlog();
             var zeroed = stackalloc bool[1];
             *zeroed = true;
-            AssertFailure(() => StackAdjustment(codeGen, -amount, REG_R9, zeroed, true),
-                amount == 16
-                    ? UnwindInfoNotPorted
-                    : "Target prolog unwind padding is not ported.");
+            StackAdjustment(codeGen, -amount, REG_R9, zeroed, true);
 
-            Assert.That(*zeroed, Is.True);
+            Assert.That(*zeroed, Is.EqualTo(amount == 16));
             var descriptors = Descriptors(codeGen);
             if (amount == 16)
             {
-                AssertStackAdjustment(descriptors.Single(), INS_sub, amount);
+                AssertStackAdjustment(descriptors[0], INS_sub, amount);
             }
             else
             {
-                Assert.That(descriptors, Is.Not.Empty);
-                Assert.That(descriptors.All(id => id.idReg1() == REG_R9), Is.True);
+                Assert.That(descriptors, Has.Count.EqualTo(2));
+                Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R9));
+                Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_sub));
+                Assert.That(descriptors[1].idReg3(), Is.EqualTo(REG_R9));
             }
         });
     }
 
-    [TestCase(0, 0, false, false, false, INS_stp, REG_FP, -16)]
-    [TestCase(496, 0, false, false, false, INS_sub, REG_ZR, 512)]
-    [TestCase(32, 16, false, false, false, INS_sub, REG_ZR, 48)]
-    [TestCase(512, 0, false, false, false, INS_sub, REG_ZR, 528)]
-    [TestCase(512, 0, false, true, false, INS_stp, REG_R19, -16)]
-    [TestCase(512, 512, false, false, false, INS_stp, REG_FP, -16)]
-    [TestCase(0, 0, true, true, false, INS_stp, REG_R19, -32)]
-    [TestCase(32, 16, true, false, false, INS_sub, REG_ZR, 48)]
-    [TestCase(512, 0, true, false, false, INS_stp, REG_FP, -16)]
-    [TestCase(0, 0, true, false, true, INS_stp, REG_FP, -16)]
-    public static void PushPreservesAllFiveFrameChoicesBeforeUnwindTermination(
-        int localSize, int outgoingSize, bool saveFrameAtTop, bool extraPair, bool enc,
+    [TestCase(0, 0, false, false, false, 1, INS_stp, REG_FP, -16)]
+    [TestCase(496, 0, false, false, false, 2, INS_sub, REG_ZR, 512)]
+    [TestCase(32, 16, false, false, false, 2, INS_sub, REG_ZR, 48)]
+    [TestCase(512, 0, false, false, false, 3, INS_sub, REG_ZR, 528)]
+    [TestCase(512, 0, false, true, false, 3, INS_stp, REG_R19, -16)]
+    [TestCase(512, 512, false, false, false, 3, INS_stp, REG_FP, -16)]
+    [TestCase(0, 0, true, true, false, 4, INS_stp, REG_R19, -32)]
+    [TestCase(32, 16, true, false, false, 4, INS_sub, REG_ZR, 48)]
+    [TestCase(512, 0, true, false, false, 5, INS_stp, REG_FP, -16)]
+    [TestCase(0, 0, true, false, true, 5, INS_stp, REG_FP, -16)]
+    public static void PushPreservesAllFiveFrameChoicesWhileRecordingUnwind(
+        int localSize, int outgoingSize, bool saveFrameAtTop, bool extraPair, bool enc, int expectedFrameType,
         instruction expected, regNumber first, int immediate)
     {
         WithCodeGen((compiler, codeGen) =>
         {
             codeGen.Emitter.emitBegProlog();
+            compiler.unwindBegProlog();
             codeGen.IsFramePointerUsed = true;
             SaveFrameAtTop(codeGen) = saveFrameAtTop;
             compiler.compLclFrameSize = localSize;
@@ -392,9 +417,9 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
                 codeGen.RegSet.rsSetRegsModified(Mask(REG_R19, REG_R20));
             }
             var zeroed = true;
-            AssertFailure(() => codeGen.genPushCalleeSavedRegisters(REG_R19, ref zeroed), UnwindInfoNotPorted);
+            codeGen.genPushCalleeSavedRegisters(REG_R19, ref zeroed);
 
-            var descriptor = Descriptors(codeGen).Single();
+            var descriptor = Descriptors(codeGen)[0];
             Assert.That(descriptor.idIns(), Is.EqualTo(expected));
             Assert.That(descriptor.idReg1(), Is.EqualTo(first));
             Assert.That(Emitter.emitGetInsSC(descriptor),
@@ -403,28 +428,28 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
             Assert.That(SavedMask(ref codeGen.RegSet), Is.EqualTo(extraPair
                 ? Mask(REG_R19, REG_R20, REG_FP, REG_LR)
                 : Mask(REG_FP, REG_LR)));
-            Assert.That(compiler.compFrameInfo.frameType, Is.Zero);
-            Assert.That(compiler.compFrameInfo.calleeSaveSpOffset, Is.Zero);
-            Assert.That(compiler.compFrameInfo.calleeSaveSpDelta, Is.Zero);
-            Assert.That(compiler.compFrameInfo.offsetSpToSavedFp, Is.Zero);
+            Assert.That(compiler.compFrameInfo.frameType, Is.EqualTo(expectedFrameType));
+            Assert.That(compiler.compFrameInfo.calleeSaveSpOffset, Is.GreaterThanOrEqualTo(0));
+            Assert.That(compiler.compFrameInfo.calleeSaveSpDelta % 16, Is.Zero);
+            Assert.That(compiler.compFrameInfo.offsetSpToSavedFp, Is.GreaterThanOrEqualTo(0));
         });
     }
 
     [Test]
-    public static void VarargsSpaceParticipatesInWholePushBeforeTheFirstUnwindBoundary()
+    public static void VarargsSpaceParticipatesInWholePushWhileRecordingUnwind()
     {
         WithCodeGen((compiler, codeGen) =>
         {
             codeGen.Emitter.emitBegProlog();
+            compiler.unwindBegProlog();
             codeGen.IsFramePointerUsed = true;
             compiler.compCalleeRegsPushed = 2;
             compiler.info.compIsVarArgs = true;
             var zeroed = true;
 
-            AssertFailure(() => codeGen.genPushCalleeSavedRegisters(REG_R19, ref zeroed),
-                UnwindInfoNotPorted);
+            codeGen.genPushCalleeSavedRegisters(REG_R19, ref zeroed);
 
-            var descriptor = Descriptors(codeGen).Single();
+            var descriptor = Descriptors(codeGen)[0];
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_stp));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_FP));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_LR));
@@ -435,43 +460,47 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
     }
 
     [Test]
-    public static void WholePushProbesBeforeSavingTheMaskAndDoesNotTrashTheIncomingInitRegister()
+    public static void WholePushProbesWithDedicatedScratchBeforeSavingTheFrameRegisters()
     {
         WithCodeGen((compiler, codeGen) =>
         {
             codeGen.Emitter.emitBegProlog();
+            compiler.unwindBegProlog();
             codeGen.IsFramePointerUsed = true;
             compiler.compCalleeRegsPushed = 2;
             compiler.compLclFrameSize = 4096;
             var zeroed = true;
 
-            AssertFailure(() => codeGen.genPushCalleeSavedRegisters(REG_R19, ref zeroed),
-                "Target prolog unwind padding is not ported.");
+            codeGen.genPushCalleeSavedRegisters(REG_R19, ref zeroed);
 
             var descriptors = Descriptors(codeGen);
-            Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_ldr));
+            var probeIndex = descriptors.FindIndex(id => id.idIns() == INS_ldr);
+            var frameSaveIndex = descriptors.FindIndex(id =>
+                (id.idIns() == INS_stp) && (id.idReg1() == REG_FP) && (id.idReg2() == REG_LR));
+            Assert.That(probeIndex, Is.GreaterThanOrEqualTo(0));
+            Assert.That(probeIndex, Is.LessThan(frameSaveIndex));
             Assert.That(descriptors.Count(id => id.idIns() == INS_ldr), Is.EqualTo(1));
-            Assert.That(descriptors.Where(id => id.idIns() != INS_ldr)
-                .All(id => id.idReg1() == REG_SCRATCH), Is.True);
-            Assert.That(descriptors.Any(id => id.idReg1() == REG_R19), Is.False);
-            Assert.That(SavedMask(ref codeGen.RegSet), Is.EqualTo(RBM_NONE));
-            Assert.That(zeroed, Is.True);
-            Assert.That(compiler.compFrameInfo.frameType, Is.Zero);
+            Assert.That(descriptors.Take(probeIndex + 1).All(id =>
+                (id.idReg1() != REG_R19) && (id.idReg2() != REG_R19) && (id.idReg3() != REG_R19)), Is.True,
+                "The stack probe must use REG_SCRATCH instead of the incoming init register.");
+            Assert.That(SavedMask(ref codeGen.RegSet), Is.EqualTo(Mask(REG_FP, REG_LR)));
+            Assert.That(zeroed, Is.False);
+            Assert.That(compiler.compFrameInfo.frameType, Is.EqualTo(3));
         });
     }
 
-    [TestCase(1, false, INS_ldp, UnwindInfoNotPorted)]
-    [TestCase(2, false, INS_ldp, UnwindInfoNotPorted)]
-    [TestCase(3, false, INS_ldp, UnwindInfoNotPorted)]
-    [TestCase(4, false, INS_ldp, UnwindInfoNotPorted)]
-    [TestCase(5, false, INS_mov, UnwindInfoNotPorted)]
-    [TestCase(1, true, INS_mov, UnwindInfoNotPorted)]
-    [TestCase(2, true, INS_sub, UnwindInfoNotPorted)]
-    [TestCase(3, true, INS_mov, UnwindInfoNotPorted)]
-    [TestCase(4, true, INS_mov, UnwindInfoNotPorted)]
-    [TestCase(5, true, INS_mov, UnwindInfoNotPorted)]
-    public static void PopPreservesFrameAndLocallocDispatchBeforeUnwindTermination(
-        int frameType, bool localloc, instruction expected, string message)
+    [TestCase(1, false, INS_ldp)]
+    [TestCase(2, false, INS_ldp)]
+    [TestCase(3, false, INS_ldp)]
+    [TestCase(4, false, INS_ldp)]
+    [TestCase(5, false, INS_mov)]
+    [TestCase(1, true, INS_mov)]
+    [TestCase(2, true, INS_sub)]
+    [TestCase(3, true, INS_mov)]
+    [TestCase(4, true, INS_mov)]
+    [TestCase(5, true, INS_mov)]
+    public static void PopPreservesFrameAndLocallocDispatchWhileRecordingUnwind(
+        int frameType, bool localloc, instruction expected)
     {
         WithCodeGen((compiler, codeGen) =>
         {
@@ -502,9 +531,9 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
                 offsetSpToSavedFp = frameType == 2 ? 16 : 0,
             };
 
-            AssertFailure(() => codeGen.genPopCalleeSavedRegistersAndFreeLclFrame(false), message);
+            codeGen.genPopCalleeSavedRegistersAndFreeLclFrame(false);
 
-            var descriptor = Descriptors(codeGen).Single();
+            var descriptor = Descriptors(codeGen)[0];
             Assert.That(descriptor.idIns(), Is.EqualTo(expected));
             Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_PTRSIZE));
             Assert.That(descriptor.idReg1(), Is.EqualTo(expected == INS_ldp ? REG_FP : REG_ZR));
@@ -520,22 +549,19 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         WithCodeGen((_, codeGen) =>
         {
             var mask = Mask(REG_R19, REG_R20, REG_V8, REG_V9, REG_FP, REG_LR);
-            AssertFailure(() =>
+            if (restore)
             {
-                if (restore)
-                {
-                    RestoreHelp(codeGen, mask, 0, 0);
-                }
-                else
-                {
-                    SaveHelp(codeGen, mask, 0, 0);
-                }
-            }, UnwindInfoNotPorted);
-            var descriptor = Descriptors(codeGen).Single();
+                RestoreHelp(codeGen, mask, 0, 0);
+            }
+            else
+            {
+                SaveHelp(codeGen, mask, 0, 0);
+            }
+            var descriptors = Descriptors(codeGen);
 
-            Assert.That(descriptor.idIns(), Is.EqualTo(expected));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(expectedFirst));
-            Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo(restore ? (nint)4 : 0));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(expected));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(expectedFirst));
+            Assert.That(Emitter.emitGetInsSC(descriptors[0]), Is.EqualTo(restore ? (nint)4 : 0));
         });
     }
 
@@ -545,19 +571,16 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
     {
         WithCodeGen((_, codeGen) =>
         {
-            AssertFailure(() =>
+            if (restore)
             {
-                if (restore)
-                {
-                    RestoreHelp(codeGen, RBM_NONE, 0, 64);
-                }
-                else
-                {
-                    SaveHelp(codeGen, RBM_NONE, 0, -64);
-                }
-            }, UnwindInfoNotPorted);
+                RestoreHelp(codeGen, RBM_NONE, 0, 64);
+            }
+            else
+            {
+                SaveHelp(codeGen, RBM_NONE, 0, -64);
+            }
 
-            AssertStackAdjustment(Descriptors(codeGen).Single(), restore ? INS_add : INS_sub, 64);
+            AssertStackAdjustment(Descriptors(codeGen)[0], restore ? INS_add : INS_sub, 64);
         });
     }
 
@@ -581,18 +604,13 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)delta));
     }
 
-    private static void AssertFailure(TestDelegate action, string message)
-    {
-        var failure = Assert.Throws<FatalJitException>(action) ??
-            throw new AssertionException("Missing genuine unwind dependency failure.");
-
-        Assert.That(failure.Message, Is.EqualTo(message));
-    }
-
     internal static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
 #if DEBUG
-        using var tls = new JitTls(null);
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = new() { doAssert = &RecordAssertion };
+        ICorJitInfo ee = new() { lpVtbl = &vtable };
+        using var tls = new JitTls(&ee);
+        s_assertions.Clear();
 #endif
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -603,7 +621,7 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         compiler.lvaTrackedCountInSizeTUnits = 1;
         compiler.eeInfoInitialized = true;
         compiler.eeInfo.osPageSize = 4096;
-        compiler.compFuncInfos = [default];
+        compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT, uwi = new UnwindInfo() }];
         compiler.compFuncInfoCount = 1;
         compiler.fgFuncletsCreated = true;
         compiler.lvaOutgoingArgSpaceSize.Value = 0;
@@ -623,13 +641,26 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
                 , true
 #endif
                 );
+            compiler.compFuncInfos[0].GetUnwindInfo().InitUnwindInfo(compiler, null, null);
             action(compiler, codeGen);
+#if DEBUG
+            Assert.That(s_assertions, Is.Empty, "Unexpected JIT assertions: " + string.Join(" | ", s_assertions));
+#endif
         }
         finally
         {
             JitTls.Compiler = previous;
         }
     }
+
+#if DEBUG
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
+    {
+        s_assertions.Add(Marshal.PtrToStringUTF8((nint)expression) ?? "");
+        return 0;
+    }
+#endif
 
     private static List<Emitter.instrDesc> Descriptors(CodeGen codeGen)
     {

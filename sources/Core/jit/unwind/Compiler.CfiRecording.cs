@@ -149,6 +149,18 @@ public partial class Compiler
         NYI("CFI codes");
         return DWARF_REG_ILLEGAL;
     }
+#elif TARGET_RISCV64
+    private static short mapRegNumToDwarfReg(regNumber reg)
+    {
+        // RISC-V integer and floating-point register ordinals are their DWARF numbers.
+        if ((reg >= REG_INT_FIRST) && (reg <= REG_FP_LAST))
+        {
+            return (short)reg;
+        }
+
+        NYI("CFI codes");
+        return DWARF_REG_ILLEGAL;
+    }
 #elif !TARGET_ARM64 && (!TARGET_AMD64 || !UNIX_AMD64_ABI)
     private static short mapRegNumToDwarfReg(regNumber reg)
     {

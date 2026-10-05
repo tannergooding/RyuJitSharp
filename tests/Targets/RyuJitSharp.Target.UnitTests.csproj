@@ -70,6 +70,10 @@
     <Compile Include="..\Core\LoongArchRiscVLocalCodeGenTests.cs" Link="LoongArchRiscVLocalCodeGenTests.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-arm64')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-arm64'))) or '$(RyuJitTargetRuntimeIdentifier)' == 'linux-loongarch64' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'linux-loongarch64') or '$(RyuJitTargetRuntimeIdentifier)' == 'linux-riscv64' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'linux-riscv64')">
+    <Compile Include="..\Core\FuncInfoDscMetadataTests.cs" Link="FuncInfoDscMetadataTests.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(RyuJitTargetRuntimeIdentifier)' == 'linux-loongarch64' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'linux-loongarch64')">
     <Compile Include="..\Core\LoongArchUnwindMatchTests.cs" Link="LoongArchUnwindMatchTests.cs" />
   </ItemGroup>

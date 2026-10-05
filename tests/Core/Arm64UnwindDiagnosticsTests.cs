@@ -56,15 +56,16 @@ internal static unsafe class Arm64UnwindDiagnosticsTests
         }
     }
 
-    [Test]
-    public static void ChainedEndRetainsTheNativeNonterminalSizeBehavior()
+    [TestCase(new byte[] { 0xE4 }, 0u)]
+    [TestCase(new byte[] { 0xE5, 0xE4 }, 4u)]
+    [TestCase(new byte[] { 0xFD, 0xE4 }, 4u)]
+    public static void EndCodeUsesTheExactArm64Sentinel(byte[] codes, uint expectedSize)
     {
-        byte[] codes = [0xE5, 0xE4];
         fixed (byte* pointer = codes)
         {
             var source = new DiagnosticCodes(pointer);
 
-            Assert.That(source.GetCodeSizeFromUnwindCodes(false), Is.EqualTo(4));
+            Assert.That(source.GetCodeSizeFromUnwindCodes(false), Is.EqualTo(expectedSize));
         }
     }
 

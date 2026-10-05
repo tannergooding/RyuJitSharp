@@ -17,7 +17,19 @@ public partial class Compiler
 
     public void unwindPadding()
     {
-#if TARGET_LOONGARCH64
+#if TARGET_ARMARCH
+#if FEATURE_CFI_SUPPORT
+        if (generateCFIUnwindCodes())
+        {
+            return;
+        }
+#endif
+
+        var unwindInfo = funCurrentFunc().GetUnwindInfo();
+        var currentLocation = unwindInfo.GetCurrentEmitterLocation();
+        noway_assert(currentLocation.HasValue);
+        GetEmitter().emitUnwindNopPadding(currentLocation.GetValueOrDefault(), this);
+#elif TARGET_LOONGARCH64
 #if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {

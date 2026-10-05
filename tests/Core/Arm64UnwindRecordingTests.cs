@@ -34,72 +34,84 @@ internal static class Arm64UnwindRecordingTests
     [TestCase(5)]
     [TestCase(6)]
     [TestCase(7)]
-    public static void NativeRecordingRetainsTheTerminatingUnwindInfoDependency(int operation)
+    public static void NativeRecordingUsesDescriptorOwnedUnwindInfoAndCapturesLocation(int operation)
     {
-        Arm64CalleeSavedRegisterTests.WithCodeGen((compiler, _) =>
+        Arm64CalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             Assert.That(compiler.generateCFIUnwindCodes(), Is.False);
-            var failure = Assert.Throws<FatalJitException>(() =>
+            ref var func = ref compiler.compFuncInfos[0];
+            func.uwi = new UnwindInfo();
+            var emitter = codeGen.Emitter;
+            CurrentSize(emitter) = 0;
+            emitter.emitBegProlog();
+            compiler.unwindBegProlog();
+            var unwindInfo = func.GetUnwindInfo();
+            var initialLocation = unwindInfo.GetCurrentEmitterLocation()
+                ?? throw new AssertionException("Unwind prolog location was not captured.");
+
+            CurrentSize(emitter) = 4;
+            switch (operation)
             {
-                switch (operation)
+                case 0:
                 {
-                    case 0:
-                    {
-                        compiler.unwindAllocStack(512);
-                        break;
-                    }
-
-                    case 1:
-                    {
-                        compiler.unwindSetFrameReg(REG_FP, 8);
-                        break;
-                    }
-
-                    case 2:
-                    {
-                        compiler.unwindSaveRegPair(REG_FP, REG_LR, 504);
-                        break;
-                    }
-
-                    case 3:
-                    {
-                        compiler.unwindSaveRegPairPreindexed(REG_FP, REG_LR, -512);
-                        break;
-                    }
-
-                    case 4:
-                    {
-                        compiler.unwindSaveReg(REG_V15, 504);
-                        break;
-                    }
-
-                    case 5:
-                    {
-                        compiler.unwindSaveRegPreindexed(REG_LR, -256);
-                        break;
-                    }
-
-                    case 6:
-                    {
-                        compiler.unwindSaveNext();
-                        break;
-                    }
-
-                    case 7:
-                    {
-                        compiler.unwindNop();
-                        break;
-                    }
-
-                    default:
-                    {
-                        throw new AssertionException("Unknown unwind operation.");
-                    }
+                    compiler.unwindAllocStack(512);
+                    break;
                 }
-            });
 
-            Assert.That(failure?.Message,
-                Is.EqualTo("FuncInfoDsc::uwi embedded unwind information is not ported."));
+                case 1:
+                {
+                    compiler.unwindSetFrameReg(REG_FP, 8);
+                    break;
+                }
+
+                case 2:
+                {
+                    compiler.unwindSaveRegPair(REG_FP, REG_LR, 504);
+                    break;
+                }
+
+                case 3:
+                {
+                    compiler.unwindSaveRegPairPreindexed(REG_FP, REG_LR, -512);
+                    break;
+                }
+
+                case 4:
+                {
+                    compiler.unwindSaveReg(REG_V15, 504);
+                    break;
+                }
+
+                case 5:
+                {
+                    compiler.unwindSaveRegPreindexed(REG_LR, -256);
+                    break;
+                }
+
+                case 6:
+                {
+                    compiler.unwindSaveNext();
+                    break;
+                }
+
+                case 7:
+                {
+                    compiler.unwindNop();
+                    break;
+                }
+
+                default:
+                {
+                    throw new AssertionException("Unknown unwind operation.");
+                }
+            }
+
+            Assert.That(func.GetUnwindInfo(), Is.SameAs(unwindInfo));
+            var currentLocation = unwindInfo.GetCurrentEmitterLocation()
+                ?? throw new AssertionException("Unwind recording did not capture the emitter location.");
+            Assert.That(initialLocation.IsCurrentLocation(emitter), Is.False);
+            Assert.That(currentLocation.IsCurrentLocation(emitter), Is.True);
+            compiler.unwindEndProlog();
         });
     }
 
@@ -211,6 +223,9 @@ internal static class Arm64UnwindRecordingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIG")]
     private static extern ref insGroup? CurrentGroup(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGsize")]
+    private static extern ref int CurrentSize(Emitter emitter);
 #endif
 }
 #endif

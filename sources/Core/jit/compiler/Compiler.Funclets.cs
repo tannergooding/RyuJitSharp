@@ -21,6 +21,13 @@ public partial class Compiler
         }
 
         var funcInfo = new FuncInfoDsc[funcCount];
+#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
+        for (uint index = 0; index < funcCount; index++)
+        {
+            ref var func = ref funcInfo[index];
+            func.uwi = new UnwindInfo();
+        }
+#endif
 #if !HAS_FIXED_REGISTER_SET || TARGET_WASM
         for (uint index = 0; index < funcCount; index++)
         {

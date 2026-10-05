@@ -22,12 +22,7 @@ internal static unsafe class Arm64CodeGenOSRFrameTests
     {
         WithOSRFrame(isVarArgs, hasFrameRegisters, (compiler, codeGen) =>
         {
-            var failure = Assert.Throws<FatalJitException>(
-                () => codeGen.genOSRHandleTier0CalleeSavedRegistersAndFrame()) ??
-                throw new AssertionException("The unported ARM64 unwind allocation dependency did not fail.");
-
-            Assert.That(failure.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure.Message, Is.EqualTo("Unwind recording requires Windows AMD64."));
+            codeGen.genOSRHandleTier0CalleeSavedRegistersAndFrame();
 
             var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
             var instructions = descriptors.Select(descriptor => descriptor.idIns()).ToArray();
@@ -45,7 +40,7 @@ internal static unsafe class Arm64CodeGenOSRFrameTests
             {
                 Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_add));
                 Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_IP0));
-                Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_SPBASE));
+                Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ZR));
                 Assert.That(Emitter.emitGetInsSC(descriptors[0]), Is.EqualTo((nint)topOfCalleeSaves));
             }
 
@@ -72,13 +67,14 @@ internal static unsafe class Arm64CodeGenOSRFrameTests
 
     private static void WithOSRFrame(bool isVarArgs, bool hasFrameRegisters, Action<Compiler, CodeGen> action)
     {
-        Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
+        Arm64CalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
-            compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT }];
-            compiler.compFuncInfoCount = 1;
+            compiler.compFuncInfos =
+                [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT, uwi = new UnwindInfo() }];
             compiler.info.compIsVarArgs = isVarArgs;
             compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_OSR);
             codeGen.Emitter.emitCurIG = codeGen.Emitter.emitGetFirstPrologIG();
+            compiler.compFuncInfos[0].GetUnwindInfo().InitUnwindInfo(compiler, null, null);
 
             var storage = stackalloc byte[PatchpointInfo.ComputeSize(1)];
             var patchpoint = (PatchpointInfo*)storage;

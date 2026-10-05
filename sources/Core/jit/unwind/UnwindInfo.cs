@@ -9,7 +9,7 @@ using System;
 
 namespace RyuJitSharp;
 
-public sealed class UnwindInfo
+public sealed partial class UnwindInfo
 {
 #if DEBUG
     public bool uwiAddingNOP;
@@ -49,34 +49,5 @@ public sealed class UnwindInfo
 #endif
 #endif
 
-    public UnwindInfo()
-    {
-        throw new FatalJitException(CorJitResult.CORJIT_SKIPPED, "UnwindInfo construction is not ported.");
-    }
-
-    public void InitUnwindInfo(Compiler compiler, emitLocation? startLoc, emitLocation? endLoc)
-    {
-        throw new FatalJitException(CorJitResult.CORJIT_SKIPPED, "UnwindInfo::InitUnwindInfo is not ported.");
-    }
-
-    public emitLocation? GetCurrentEmitterLocation()
-    {
-        throw new FatalJitException(CorJitResult.CORJIT_SKIPPED, "UnwindInfo::GetCurrentEmitterLocation is not ported.");
-    }
-
-    public void AddCode(byte b1)
-    {
-        throw new FatalJitException(CorJitResult.CORJIT_SKIPPED, "UnwindInfo::AddCode is not ported.");
-    }
-
-    public void AddCode(byte b1, byte b2)
-    {
-        throw new FatalJitException(CorJitResult.CORJIT_SKIPPED, "UnwindInfo::AddCode is not ported.");
-    }
-
-    public void AddCode(byte b1, byte b2, byte b3, byte b4)
-    {
-        throw new FatalJitException(CorJitResult.CORJIT_SKIPPED, "UnwindInfo::AddCode is not ported.");
-    }
 }
 #endif

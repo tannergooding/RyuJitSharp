@@ -149,6 +149,20 @@ internal static class FuncInfoDscMetadataTests
         Assert.That(Marshal.OffsetOf<CFI_CODE>(nameof(CFI_CODE.Offset)), Is.EqualTo((nint)4));
     }
 
+#if TARGET_RISCV64
+    [Test]
+    public static void RiscvDwarfRegistersUseTheirNativeOrdinalRange()
+    {
+        for (var value = (int)regNumber.REG_R0; value <= (int)regNumber.REG_FT11; value++)
+        {
+            Assert.That(MapRiscvDwarfRegister(null, (regNumber)value), Is.EqualTo((short)value));
+        }
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "mapRegNumToDwarfReg")]
+    private static extern short MapRiscvDwarfRegister(Compiler? compiler, regNumber reg);
+#endif
+
     [TestCase((byte)0, (byte)0, (short)-1, 0)]
     [TestCase(byte.MaxValue, (byte)1, short.MinValue, int.MinValue)]
     [TestCase((byte)1, (byte)2, short.MaxValue, int.MaxValue)]
@@ -325,33 +339,55 @@ internal static class FuncInfoDscMetadataTests
 
 #if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
     [Test]
-    public static void UnportedUnwindConstructionCannotCreateASuccessfulPayload()
+    public static void UnwindConstructionStartsWithoutAnEmitterLocation()
     {
-        var exception = Assert.Throws<FatalJitException>(() => new UnwindInfo());
-        Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+        var unwindInfo = new UnwindInfo();
+
+        Assert.That(unwindInfo.GetCurrentEmitterLocation(), Is.Null);
     }
 
     [Test]
-    public static void EmbeddedHotUnwindReadTerminatesInsteadOfInventingState()
+    public static void UnwindReadRequiresStateOwnedByTheDescriptor()
     {
         FuncInfoDsc descriptor = default;
-        var exception = Assert.Throws<FatalJitException>(() => _ = descriptor.GetUnwindInfo());
-        Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+        var exception = Assert.Throws<InvalidOperationException>(() => _ = descriptor.GetUnwindInfo());
+        Assert.That(exception, Is.Not.Null);
         Assert.That(descriptor.uwiCold, Is.Null);
     }
 
     [Test]
-    public static void ColdUnwindReferenceAndRequiredReadsRetainTheirContracts()
+    public static void HotUnwindInfoPersistsOnItsOwningArrayDescriptor()
     {
-        var cold = (UnwindInfo)RuntimeHelpers.GetUninitializedObject(typeof(UnwindInfo));
+        var compiler = NewCompilerWithDescriptors();
+        ref var descriptor = ref compiler.compFuncInfos[2];
+        descriptor.uwi = new UnwindInfo();
+        descriptor.uwiCold = new UnwindInfo();
+        var unwindInfo = descriptor.GetUnwindInfo();
+
+        Assert.That(ReadUnwindInfo(in descriptor), Is.SameAs(unwindInfo));
+        var copy = descriptor;
+        Assert.That(copy.GetUnwindInfo(), Is.SameAs(unwindInfo));
+        Assert.That(compiler.compFuncInfos[2].GetUnwindInfo(), Is.SameAs(unwindInfo));
+        Assert.That(copy.uwiCold, Is.SameAs(descriptor.uwiCold));
+        Assert.That(copy.uwiCold, Is.Not.SameAs(unwindInfo));
+    }
+
+    [Test]
+    public static void ColdUnwindReferenceRetainsSeparateOwnershipAndInvalidLocation()
+    {
+        var cold = new UnwindInfo();
         var descriptor = new FuncInfoDsc { uwiCold = cold };
         var copy = descriptor;
 
         Assert.That(copy.uwiCold, Is.SameAs(cold));
-        var read = Assert.Throws<FatalJitException>(() => cold.GetCurrentEmitterLocation());
-        Assert.That(read?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-        var initialize = Assert.Throws<FatalJitException>(() => cold.InitUnwindInfo(NewCompilerWithDescriptors(), null, null));
-        Assert.That(initialize?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+        Assert.That(cold.GetCurrentEmitterLocation(), Is.Null);
+        cold.InitUnwindInfo(NewCompilerWithDescriptors(), null, null);
+        Assert.That(cold.GetCurrentEmitterLocation(), Is.Null);
+    }
+
+    private static UnwindInfo ReadUnwindInfo(in FuncInfoDsc descriptor)
+    {
+        return descriptor.GetUnwindInfo();
     }
 #endif
 }
