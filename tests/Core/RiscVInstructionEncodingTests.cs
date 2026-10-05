@@ -96,6 +96,48 @@ internal static class RiscVInstructionEncodingTests
     }
 
     [Test]
+    public static void ValidatesThirteenBitSignedImmediates()
+    {
+        Assert.That(Emitter.isValidSimm13(-4097), Is.False);
+        Assert.That(Emitter.isValidSimm13(-4096), Is.True);
+        Assert.That(Emitter.isValidSimm13(4095), Is.True);
+        Assert.That(Emitter.isValidSimm13(4096), Is.False);
+    }
+
+    [Test]
+    public static void ClassifiesSingleInstructionFloatingImmediates()
+    {
+        var singleCases = new (double Value, bool Expected, long Bits)[]
+        {
+            (UInt32BitsToSingle(0x7FF), true, 0x7FF),
+            (UInt32BitsToSingle(0x800), false, 0x800),
+            (UInt32BitsToSingle(0x12345000), true, 0x12345000),
+            (UInt32BitsToSingle(0x12345001), false, 0x12345001),
+            (double.NegativeInfinity, true, -0x800000),
+        };
+
+        foreach (var (value, expected, bits) in singleCases)
+        {
+            Assert.That(Emitter.isSingleInstructionFpImm(value, EA_4BYTE, out var outBits), Is.EqualTo(expected));
+            Assert.That(outBits, Is.EqualTo(bits));
+        }
+
+        var doubleCases = new (double Value, bool Expected, long Bits)[]
+        {
+            (UInt64BitsToDouble(0x7FF), true, 0x7FF),
+            (UInt64BitsToDouble(0x800), false, 0x800),
+            (UInt64BitsToDouble(0x12345000), true, 0x12345000),
+            (UInt64BitsToDouble(0x12345001), false, 0x12345001),
+        };
+
+        foreach (var (value, expected, bits) in doubleCases)
+        {
+            Assert.That(Emitter.isSingleInstructionFpImm(value, EA_8BYTE, out var outBits), Is.EqualTo(expected));
+            Assert.That(outBits, Is.EqualTo(bits));
+        }
+    }
+
+    [Test]
     public static void ClassifiesLoadsStoresAndLocalStackWrites()
     {
         var emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));

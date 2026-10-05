@@ -53,6 +53,11 @@ public partial class Emitter
         return (-limit <= value) && (value < limit);
     }
 
+    internal static bool isValidSimm13(nint value)
+    {
+        return isValidSignedImmediate(value, 13);
+    }
+
     internal static uint TrimSignedToImm12(nint immediate)
     {
         assert(isValidSimm12(immediate));
@@ -79,6 +84,18 @@ public partial class Emitter
         assert(isValidSignedImmediate(immediate, 21));
 
         return LowerNBitsOfWord(immediate, 21);
+    }
+
+    internal static bool isSingleInstructionFpImm(double value, emitAttr size, out long outBits)
+    {
+        assert(size == EA_4BYTE || size == EA_8BYTE);
+
+        outBits = size == EA_4BYTE
+            ? unchecked((int)SingleToUInt32Bits(FloatingPointUtils.convertToSingle(value)))
+            : unchecked((long)DoubleToUInt64Bits(value));
+
+        return isValidSimm12(unchecked((nint)outBits)) ||
+               (((outBits & 0xFFF) == 0) && isValidSignedImmediate(unchecked((nint)(outBits >> 12)), 20));
     }
 
     private static void assertCodeLength(ulong code, byte size)
