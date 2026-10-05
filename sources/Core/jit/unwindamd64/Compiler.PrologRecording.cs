@@ -45,7 +45,7 @@ public partial class Compiler
 #if UNIX_AMD64_ABI
     private static short mapRegNumToDwarfReg(regNumber reg)
     {
-        short dwarfReg = DWARF_REG_ILLEGAL;
+        var dwarfReg = DWARF_REG_ILLEGAL;
 
         switch (reg)
         {
