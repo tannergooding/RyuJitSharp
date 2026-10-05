@@ -119,6 +119,8 @@ public partial class Emitter
 #if TARGET_ARM64
         return jump.idInsFmt() is insFormat.IF_BI_0B or insFormat.IF_BI_1A
             or insFormat.IF_BI_1B or insFormat.IF_LARGEJMP;
+#elif TARGET_ARM
+        return jump.idInsFmt() is insFormat.IF_T2_J1 or insFormat.IF_T1_K or insFormat.IF_LARGEJMP;
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "ARM jump-format classification is not ported.");
 #endif
@@ -128,6 +130,8 @@ public partial class Emitter
     {
 #if TARGET_ARM64
         return jump.idInsFmt() is insFormat.IF_DI_1E or insFormat.IF_LARGEADR;
+#elif TARGET_ARM
+        return jump.idInsFmt() is insFormat.IF_T2_M1 or insFormat.IF_T1_J3 or insFormat.IF_T2_N1;
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "ARM label-load classification is not ported.");
 #endif
@@ -137,14 +141,22 @@ public partial class Emitter
 #if TARGET_ARM || TARGET_ARM64 || TARGET_RISCV64
     private static bool emitIsUncondJump(instrDesc jump)
     {
+#if TARGET_ARM
+        return jump.idInsFmt() is insFormat.IF_T2_J2 or insFormat.IF_T1_M;
+#else
         throw new FatalJitException(CORJIT_SKIPPED, "Non-xarch unconditional-jump classification is not ported.");
+#endif
     }
 #endif
 
 #if TARGET_ARM || TARGET_RISCV64
     private static bool emitIsCmpJump(instrDesc jump)
     {
+#if TARGET_ARM
+        return jump.idInsFmt() == insFormat.IF_T1_I;
+#else
         throw new FatalJitException(CORJIT_SKIPPED, "ARM/RISC-V compare-and-jump classification is not ported.");
+#endif
     }
 
     private static void emitSetMediumJump(instrDescJmp jump)
