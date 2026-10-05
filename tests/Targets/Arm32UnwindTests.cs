@@ -1,11 +1,11 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-
 #if TARGET_ARM
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp.UnitTests;
@@ -60,7 +60,6 @@ internal static unsafe class Arm32UnwindTests
     {
         WithProlog((compiler, emitter) =>
         {
-            CurrentSize(emitter) = 4;
             compiler.unwindPushMaskInt(new regMaskTP(SRBM_R8));
 
             var location = compiler.funCurrentFunc().GetUnwindInfo().GetCurrentEmitterLocation();
@@ -73,13 +72,11 @@ internal static unsafe class Arm32UnwindTests
     {
         WithProlog((compiler, emitter) =>
         {
-            CurrentSize(emitter) = 4;
             compiler.unwindPushMaskFloat(new regMaskTP(SRBM_F16 | SRBM_F17));
 
             var unwindInfo = compiler.funCurrentFunc().GetUnwindInfo();
             Assert.That(unwindInfo.GetCurrentEmitterLocation()?.IsCurrentLocation(emitter), Is.True);
 
-            CurrentSize(emitter) = 2;
             compiler.unwindPopMaskInt(new regMaskTP(SRBM_PC));
             Assert.That(unwindInfo.GetCurrentEmitterLocation()?.IsCurrentLocation(emitter), Is.True);
         });
@@ -90,12 +87,10 @@ internal static unsafe class Arm32UnwindTests
     {
         WithProlog((compiler, emitter) =>
         {
-            CurrentSize(emitter) = 4;
             compiler.unwindAllocStack(512);
             var unwindInfo = compiler.funCurrentFunc().GetUnwindInfo();
             Assert.That(unwindInfo.GetCurrentEmitterLocation()?.IsCurrentLocation(emitter), Is.True);
 
-            CurrentSize(emitter) = 2;
             compiler.unwindSetFrameReg(REG_R11, 0);
             Assert.That(unwindInfo.GetCurrentEmitterLocation()?.IsCurrentLocation(emitter), Is.True);
         });
@@ -143,24 +138,30 @@ internal static unsafe class Arm32UnwindTests
 
     private static void WithProlog(Action<Compiler, Emitter> action, bool nativeAot = false)
     {
-        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.eeInfo.targetAbi = nativeAot
                 ? CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI
                 : CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
 
-            compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT }];
+            var unwindInfo = new UnwindInfo();
+            compiler.compFuncInfos =
+            [
+                new FuncInfoDsc
+                {
+                    funKind = FuncKind.FUNC_ROOT,
+                    uwi = unwindInfo,
+                },
+            ];
             compiler.compFuncInfoCount = 1;
             compiler.fgFuncletsCreated = true;
             var emitter = codeGen.Emitter;
             emitter.emitBegProlog();
-            CurrentSize(emitter) = 0;
             compiler.unwindBegProlog();
-            action(compiler, emitter);
+            ArmCalleeSavedRegisterTests.WithUnwindSizeCheckSkipped(
+                unwindInfo,
+                () => action(compiler, emitter));
         });
     }
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGsize")]
-    private static extern ref int CurrentSize(Emitter emitter);
 }
 #endif

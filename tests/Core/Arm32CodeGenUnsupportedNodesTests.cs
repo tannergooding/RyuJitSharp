@@ -20,7 +20,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
     [Test]
     public static void NonLocalJumpRetainsTheNativeUnsupportedBoundary()
     {
-        WithCodeGen(codeGen =>
+        WithCodeGen((_, codeGen) =>
         {
             var value = new GenTree(GT_FTN_ENTRY, TYP_I_IMPL);
             var tree = new GenTreeUnOp(GT_NONLOCAL_JMP, TYP_VOID, value);
@@ -34,7 +34,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
     [Test]
     public static void FunctionEntryRetainsTheNativeUnsupportedBoundary()
     {
-        WithCodeGen(codeGen =>
+        WithCodeGen((_, codeGen) =>
         {
             var tree = new GenTree(GT_FTN_ENTRY, TYP_I_IMPL);
 
@@ -44,7 +44,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
         });
     }
 
-    private static void WithCodeGen(Action<CodeGen> action)
+    private static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -60,7 +60,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
         {
             var codeGen = new CodeGen(compiler);
             compiler.codeGen = codeGen;
-            action(codeGen);
+            action(compiler, codeGen);
         }
         finally
         {

@@ -249,7 +249,7 @@ public partial class Compiler
 
         var unwindInfo = funCurrentFunc().GetUnwindInfo();
         assert(offset == 0);
-        assert(0 <= reg && reg <= 15);
+        assert((int)reg >= 0 && (int)reg <= 15);
         unwindInfo.AddCode(unchecked((byte)(0xC0 + (int)reg)));
     }
 

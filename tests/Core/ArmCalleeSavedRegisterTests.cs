@@ -299,15 +299,30 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         });
     }
 
-    [TestCase(0, "ARM floating push-mask unwind recording is not ported.")]
-    [TestCase(1, "ARM integer pop-mask unwind recording is not ported.")]
-    [TestCase(2, "ARM floating pop-mask unwind recording is not ported.")]
-    public static void UnportedUnwindDependenciesRemainExactTypedTerminatingBoundaries(int operation, string message)
+    [TestCase(0)]
+    [TestCase(1)]
+    [TestCase(2)]
+    public static void CalleeSavedMaskUnwindDependenciesRecordUnwindInfo(int operation)
     {
-        WithCodeGen((_, codeGen) =>
+        WithCodeGen((compiler, codeGen) =>
         {
+            var unwindInfo = new UnwindInfo();
+            compiler.compFuncInfos =
+            [
+                new FuncInfoDsc
+                {
+                    funKind = FuncKind.FUNC_ROOT,
+                    uwi = unwindInfo,
+                },
+            ];
+            compiler.compFuncInfoCount = 1;
+            compiler.fgFuncletsCreated = true;
+            compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
+            codeGen.Emitter.emitBegProlog();
+            compiler.unwindBegProlog();
+
             var mask = new regMaskTP(operation == 1 ? SRBM_R4 | SRBM_LR : SRBM_F16 | SRBM_F17);
-            AssertFailure(() =>
+            WithUnwindSizeCheckSkipped(unwindInfo, () =>
             {
                 switch (operation)
                 {
@@ -316,25 +331,56 @@ internal static unsafe class ArmCalleeSavedRegisterTests
                         PushFloatUnwind(codeGen, mask);
                         break;
                     }
+
                     case 1:
                     {
                         PopIntUnwind(codeGen, mask);
                         break;
                     }
+
                     case 2:
                     {
                         PopFloatUnwind(codeGen, mask);
                         break;
                     }
+
                     default:
                     {
-                        throw new AssertionException("Unknown unwind boundary.");
+                        throw new AssertionException("Unknown unwind operation.");
                     }
                 }
-            }, message);
+            });
+
+            Assert.That(unwindInfo.GetCurrentEmitterLocation()?.IsCurrentLocation(codeGen.Emitter), Is.True);
             Assert.That(Descriptors(codeGen), Is.Empty);
         });
     }
+
+    // Recording-only fixtures lack the instruction descriptors needed by the debug size cross-check.
+#if DEBUG
+    internal static void WithUnwindSizeCheckSkipped(UnwindInfo unwindInfo, Action action)
+    {
+        var previous = AddingUnwindNop(unwindInfo);
+        AddingUnwindNop(unwindInfo) = true;
+        try
+        {
+            action();
+        }
+        finally
+        {
+            AddingUnwindNop(unwindInfo) = previous;
+        }
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "uwiAddingNOP")]
+    private static extern ref bool AddingUnwindNop(UnwindInfo unwindInfo);
+
+#else
+    internal static void WithUnwindSizeCheckSkipped(UnwindInfo unwindInfo, Action action)
+    {
+        action();
+    }
+#endif
 
 #if DEBUG
     [TestCase(true)]
@@ -446,7 +492,7 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         }
     }
 
-    private static void WithCodeGen(
+    internal static void WithCodeGen(
         Action<Compiler, CodeGen> action, bool captureAssertions = false, bool minOpts = true)
     {
 #if DEBUG

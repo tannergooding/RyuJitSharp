@@ -58,6 +58,7 @@ public partial class Globals
     public const regMask SRBM_ALLDOUBLE =
         SRBM_F0 | SRBM_F2 | SRBM_F4 | SRBM_F6 | SRBM_F8 | SRBM_F10 | SRBM_F12 | SRBM_F14 |
         SRBM_F16 | SRBM_F18 | SRBM_F20 | SRBM_F22 | SRBM_F24 | SRBM_F26 | SRBM_F28 | SRBM_F30;
+    public static regMaskTP RBM_LOW_REGS => new(SRBM_R0 | SRBM_R1 | SRBM_R2 | SRBM_R3 | SRBM_R4 | SRBM_R5 | SRBM_R6 | SRBM_R7);
     public static regMaskTP RBM_ALLINT => new(SRBM_ALLINT);
     public static regMaskTP RBM_ALLFLOAT => new(SRBM_ALLFLOAT);
     public static regMaskTP RBM_ALLDOUBLE => new(SRBM_ALLDOUBLE);

@@ -277,7 +277,7 @@ public sealed partial class UnwindInfo
 #endif
 
 #if TARGET_ARM
-    private uint GetInstructionSize()
+    internal uint GetInstructionSize()
     {
         CheckInitialized();
         return GetCompiler().GetEmitter().emitGetInstructionSize(uwiCurLoc.GetValueOrDefault());
