@@ -796,7 +796,8 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 #if TARGET_LOONGARCH64
             Assert.That(failure?.Message, Does.Contain("LoongArch64 address constant recording is not ported."));
 #else
-            Assert.That(failure?.Message, Does.Contain("RISC-V64 immediate materialization is not ported."));
+            Assert.That(failure?.Message,
+                Does.Contain("Target two-register-immediate instruction recording is not implemented."));
 #endif
         });
     }
