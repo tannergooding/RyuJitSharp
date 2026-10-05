@@ -37,6 +37,69 @@ internal static unsafe class SysVX64ClassifierTests
         Assert.That(compiler.GetEightByteType(descriptor, 1), Is.EqualTo(expected));
     }
 
+    [TestCase(SystemVClassificationTypeInteger, 1, TYP_BYTE)]
+    [TestCase(SystemVClassificationTypeInteger, 2, TYP_SHORT)]
+    [TestCase(SystemVClassificationTypeInteger, 3, TYP_INT)]
+    [TestCase(SystemVClassificationTypeInteger, 4, TYP_INT)]
+    [TestCase(SystemVClassificationTypeInteger, 5, TYP_LONG)]
+    [TestCase(SystemVClassificationTypeInteger, 8, TYP_LONG)]
+    [TestCase(SystemVClassificationTypeIntegerReference, 1, TYP_REF)]
+    [TestCase(SystemVClassificationTypeIntegerByRef, 1, TYP_BYREF)]
+    [TestCase(SystemVClassificationTypeSSE, 1, TYP_FLOAT)]
+    [TestCase(SystemVClassificationTypeSSE, 4, TYP_FLOAT)]
+    [TestCase(SystemVClassificationTypeSSE, 5, TYP_DOUBLE)]
+    [TestCase(SystemVClassificationTypeSSE, 8, TYP_DOUBLE)]
+    public static void ClassificationAndSizeMapsNativeTypeBoundaries(
+        SystemVClassificationType classification, int size, var_types expected)
+    {
+        Assert.That(GetTypeFromClassificationAndSizes(null, classification, size), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public static void StructTypeOffsetPreservesDescriptorOffsetsAndAbsentSlots()
+    {
+        var descriptor = Descriptor(SystemVClassificationTypeIntegerReference, SystemVClassificationTypeIntegerByRef);
+        descriptor.eightByteOffsets[0] = 3;
+        descriptor.eightByteOffsets[1] = 9;
+        descriptor.eightByteSizes[1] = 8;
+        descriptor.eightByteCount = 1;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var type0 = TYP_UNKNOWN;
+        var type1 = TYP_UNKNOWN;
+        byte offset0 = 0;
+        byte offset1 = 0;
+
+        GetStructTypeOffset(compiler, descriptor, &type0, &type1, &offset0, &offset1);
+
+        Assert.That(type0, Is.EqualTo(TYP_REF));
+        Assert.That(type1, Is.EqualTo(TYP_UNKNOWN));
+        Assert.That(offset0, Is.EqualTo(3));
+        Assert.That(offset1, Is.EqualTo(9));
+    }
+
+    [Test]
+    public static void ClassHandleStructTypeOffsetUsesTheEEDescriptor()
+    {
+        var descriptor = Descriptor(SystemVClassificationTypeInteger, SystemVClassificationTypeSSE);
+        descriptor.eightByteOffsets[0] = 2;
+        descriptor.eightByteOffsets[1] = 10;
+        WithCompiler(descriptor, 13, (compiler, layout, metadata) =>
+        {
+            var type0 = TYP_UNKNOWN;
+            var type1 = TYP_UNKNOWN;
+            byte offset0 = 0;
+            byte offset1 = 0;
+
+            GetStructTypeOffset(compiler, layout.ClassHandle, &type0, &type1, &offset0, &offset1);
+
+            Assert.That(type0, Is.EqualTo(TYP_LONG));
+            Assert.That(type1, Is.EqualTo(TYP_DOUBLE));
+            Assert.That(offset0, Is.EqualTo(2));
+            Assert.That(offset1, Is.EqualTo(10));
+            Assert.That(metadata.QueryCount, Is.EqualTo(1));
+        });
+    }
+
     [Test]
     public static void StructReturnInitializesOnlyTheDescriptorRegisters()
     {
@@ -340,6 +403,26 @@ internal static unsafe class SysVX64ClassifierTests
         Assert.That(info.Segments[0].Offset, Is.Zero);
         Assert.That(info.Segments[0].Size, Is.EqualTo(size));
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetTypeFromClassificationAndSizes")]
+    private static extern var_types GetTypeFromClassificationAndSizes(
+        Compiler? compiler, SystemVClassificationType classType, int size);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "GetStructTypeOffset")]
+    private static extern void GetStructTypeOffset(Compiler compiler,
+        in SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc,
+        var_types* type0,
+        var_types* type1,
+        byte* offset0,
+        byte* offset1);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "GetStructTypeOffset")]
+    private static extern void GetStructTypeOffset(Compiler compiler,
+        CORINFO_CLASS_STRUCT_* typeHnd,
+        var_types* type0,
+        var_types* type1,
+        byte* offset0,
+        byte* offset1);
 
     private sealed class Metadata
     {

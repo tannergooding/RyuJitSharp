@@ -5162,7 +5162,15 @@
     "retirement": "No native change was eligible: runtime-port had no SideEffectSet::IsLirInvariantInRange definition or declaration. Do not count native retirement.",
     "limits": "Focused helper semantics only; no generated-code/runtime parity or global retirement-debt clearance."
   },
-  "nextAction": "The non-fixed-register funclet setters and internal-register iterator are accepted as a Wasm-only managed unit with native retirement at consolidated HEAD 20fb824d. SideEffectSet now has a focused Windows-x64 acceptance record and preserves the pinned non-null endpoint contract; its native definition/declaration were already absent, so no retirement is claimed. Continue accepting the remaining managed/native WIP in coherent units, beginning with the next reachable Windows-x64/shared function and retiring only definitions/declarations that are still present and independently eligible. Preserve user-owned unwindx86.cpp and staged/unstaged ownership, keep validation serial, do not repeat the 101-file cleanup or closed screens, and do not claim global debt clearance or runtime parity. Do not push or open a PR.",
+  "sysvX64ClassifierHelperAcceptance": {
+    "status": "validated-linux-x64-target; native-retired",
+    "scope": "Complete GetTypeFromClassificationAndSizes and both GetStructTypeOffset overloads while preserving integer/SSE size boundaries, descriptor offsets and absent slots, and EE descriptor lookup.",
+    "mapping": "Pinned runtime-oracle compiler.cpp::GetTypeFromClassificationAndSizes/GetStructTypeOffset and compiler.h declarations map to sources/Core/jit/compiler/Compiler.SysVStructClassification.cs. The already-committed GetEightByteType implementation remains unchanged. No other native callers were found.",
+    "validation": "Full-analysis SysVX64ClassifierTests passed 47/47 Debug and 47/47 Release for linux-x64 target semantics on the win-x64 host, using AnalysisLevel=latest-all, default compiler CPU, and compiler-only DOTNET_GCConserveMemory=5.",
+    "retirement": "Amended consolidated runtime-port HEAD to 75d4f5bbc99882a7c9d98cda30b5fd9e1447d525, solely parented to pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. Removed 124 complete method-body lines from compiler.cpp and 18 exclusive declaration lines from compiler.h. Recovery ref refs/copilot-recovery/sysv-classifier-before-20261005 preserves prior HEAD 20fb824d63dbae2036227dc443adf43d29cc78a0.",
+    "limits": "Focused Linux-x64-target helper tests only; no Linux generated-code/runtime parity or Windows-x64 execution evidence."
+  },
+  "nextAction": "SysV classifier helper acceptance is complete, including the exact native retirement; the unrelated residual WIP remains unstaged. Continue reconciling the live backlog rather than starting new port work: inspect the untracked ArmEmitterPredicateTests.cs against the remaining emitarm.cpp/emitarm.h hunks, then establish focused target evidence before retiring any associated native text. Preserve user-owned unwindx86.cpp, staged/unstaged ownership, serial full-analysis validation, and all unrelated changes. The earlier 51-managed/70-native counts are not current; use fresh status. Do not repeat the 101-file cleanup or closed screens, and do not claim global debt clearance or runtime parity. Do not push or open a PR.",
 
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
@@ -11888,6 +11896,10 @@
     "lsraHandleDeadCandidatesRetirement": {
       "commit": "c58e258a806776371e39a4411ff8859ea4477f17",
       "ref": "refs/copilot-recovery/lsra-handle-dead-candidates-before-c58e258a"
+    },
+    "sysvClassifierNativeRetirement": {
+      "commit": "20fb824d63dbae2036227dc443adf43d29cc78a0",
+      "ref": "refs/copilot-recovery/sysv-classifier-before-20261005"
     }
   },
   "sourceMap": [
