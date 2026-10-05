@@ -28,8 +28,9 @@ root object and field initializers allocated before that body and non-GC native
 allocations. It is not native arena capacity or page usage. Collection is enabled
 by `JitReportMetrics` or timing CSV collection. The CSV's `Total Bytes Allocated`
 column reads the same root-thread delta at its own reporting point; native uses
-arena allocation rather than arena usage for that column. B352's twelve checked compilations compare all
-71 neighboring metric lines exactly while recording both allocation values.
+arena allocation rather than arena usage for that column. B352's twelve checked
+compilations compare all 71 neighboring metric lines exactly while recording
+both allocation values.
 
 When optional `MEASURE_MEM_ALLOC` reporting is enabled, the managed port aggregates
 that same per-root-compilation GC-allocation delta and records its rounded-up KB
@@ -90,6 +91,26 @@ C# helpers may replace native structure where appropriate. Examples include
 collection ordering, integer semantics, ownership, and native interop contracts.
 Larger algorithmic or architectural changes require separate approval.
 
+**How to read this section:** Each topic names the managed representation and
+the native contract it must preserve. Explicitly unported behavior is a scope
+limit, not an accepted difference; its actionable follow-up belongs in the
+backlog. Test counts and parity observations are scoped evidence, not blanket
+claims about the whole compiler.
+
+**Topics:** [Storage and diagnostics](#core-storage-ownership-and-diagnostics),
+[IR replacement](#ir-identity-and-replacement),
+[VN and numeric semantics](#value-numbering-assertions-and-numeric-semantics),
+[hardware intrinsics](#hardware-intrinsics-and-target-specific-evaluation),
+[compiler phases](#compiler-phases-calls-and-control-flow-ownership),
+[SSA and optimization state](#ssa-value-numbering-and-optimization-state),
+[runtime/EE boundaries](#runtime-ee-and-execution-boundaries),
+[liveness and allocation](#liveness-and-register-allocation),
+[backend/GC emission](#backend-emission-and-gc-metadata).
+
+#### Core storage, ownership, and diagnostics
+
+##### Managed storage and lifetime
+
 The native short/long bitset representation stores small sets directly in a
 pointer-sized value and larger sets in allocator-backed words. Managed
 `BitSetOps` uses `nint[]` words for both cases. Its `Iter` reads exactly the
@@ -112,12 +133,16 @@ LSRA statistics retain lazily allocated per-block counter arrays and the
 existing writer lock; semantic counters, signed text and unsigned weighted
 inputs are not excluded by the arena-allocation statistics policy.
 
+##### Diagnostics and formatting
+
 Native `Interval.dump(Compiler*)` continues to map to the existing private
 `LinearScan.dumpInterval(Interval)`, using its compiler context. Reference-name
 lookup preserves null for unknown values and native `(null)` diagnostic output.
 Diagnostic `%d` fields reinterpret unsigned bits as signed integers; sequence
 numbers printed with `%u` retain unsigned bits. No column-layout exception or
 new public interval-dump API is introduced.
+
+##### Scalar and numeric storage
 
 VN scalar extraction recognizes native pointer typedef aliases using actual
 host-backed element width, not the selected target ABI. Strict Debug extraction
@@ -128,44 +153,45 @@ exclude NaN and out-of-range native-undefined conversions; retaining managed
 `CreateTruncating` outside that domain is not a native-equivalence claim.
 
 Profile diagnostic helpers retain native decimal digit counts and seven- or
-three-significant-digit lowercase general formats (B321/B323). Managed string
+three-significant-digit lowercase general formats. Managed string
 formatting does not exempt column spacing, precision or exponent case.
 
 CSE temporary reasons retain native two-digit candidate indices, and array
-node names retain rank-minus-one commas (B305/B308). Intentionally unpadded RL
+node names retain rank-minus-one commas. Intentionally unpadded RL
 feature records are unchanged. These corrections do not establish full CSE
 diagnostic or array method-identity parity.
 
 Array type printing now terminates after the rank suffix, matching the native
-EE-query boundary (B301). The prior extra VM class-name query was a translation
+EE-query boundary. The prior extra VM class-name query was a translation
 defect, not an allowed name or hash difference. All baseline method identities
 and emitted instruction traces now match native; whole dumps and raw machine
 bytes remain separate evidence requirements.
 
 CSE diagnostics use read-only spans over existing availability sets, preserving
-native bit order, candidate labels and cross-call suffixes (B338). Checked
-arithmetic does not exempt native unsigned hash truncation (B339).
+native bit order, candidate labels and cross-call suffixes. Checked
+arithmetic does not exempt native unsigned hash truncation.
 
 Allocating paired exception wrappers and normal-value replacement explicitly
 evaluate the conservative operation first, matching native Windows-x64
-constructor-argument evaluation (B340). The returned pair retains its original
+constructor-argument evaluation. The returned pair retains its original
 liberal/conservative roles. Other explicitly sequenced pair operations and the
 shared unique normal value are unchanged. All 97 baseline CSE phases now match
 without normalizing value numbers; this is not other-target or whole-dump parity.
 
 Range-assertion diagnostics include the conservative normal VN and phi-edge
 assertion indices. Precise map stores/selects and physical selects print native
-dollar-prefixed hexadecimal VNs (B330). All 34 affected lines in the two stress
+dollar-prefixed hexadecimal VNs. All 34 affected lines in the two stress
 captures now match. Floating local costs also retain native AMD64 size adjustments
 for register and memory operands, without an extra floating memory execution
 penalty. All observed local/parent cost lines now match; constants and general
 operand ordering are unchanged.
 
 Integral SIMD broadcasts and mask/folding bit conversions explicitly retain
-native truncation and signed/unsigned reinterpretation under checked builds
-(B343). This preserves sign bits, all-true masks and overshift sentinels without
+native truncation and signed/unsigned reinterpretation under checked builds. This preserves sign bits, all-true masks and overshift sentinels without
 changing negative-index rejection or bit-scan undefined-zero guards.
 The project's general overflow-checking policy is unchanged.
+
+##### EE data and emitter storage
 
 SSA memory maps use the existing managed node-identity dictionary. The caller's
 shared-memory flag selects the map kind before the inline root supplies storage,
@@ -228,6 +254,8 @@ represent the native invalid offset. Explicit offsets and source flags retain
 their original values through the public API. This avoids adding a validity
 field or incorrectly assigning compiler-generated statements to IL offset zero.
 
+#### IR identity and replacement
+
 Whole-node replacement instead of native cross-kind node bashing is an explicitly
 approved safety and idiomatic-C# deviation. Keep the managed type hierarchy;
 adapt callers to accept replacement nodes and update all owning uses, cached
@@ -238,6 +266,8 @@ spurious ID-allocation changes. Existing unthreaded inline-argument replacement
 is prior art, not proof that other replacement contexts already work. Do not
 reinterpret incompatible CLR layouts or introduce a mutable-payload redesign
 merely to emulate native bashing (B064).
+
+##### Tree-form ownership and metadata
 
 Local addresses and local-field loads/stores all use `GenTreeLclFld`, so
 indirection finalization can retag that compatible object in place while
@@ -296,6 +326,10 @@ identity-preserving replacement helper. Its probe pass does not mutate the IR.
 Cast target types remain mutable metadata within `GenTreeCast`, allowing native
 cast cancellation without changing the node's CLR type.
 
+#### Value numbering, assertions, and numeric semantics
+
+##### Replacement construction and phase ownership
+
 Scalar constant folding now uses replacement constructors that copy base
 metadata and the logical tree ID without allocating another ID. Operation-specific
 flags are cleared using the native node mask. The source must be unthreaded;
@@ -303,7 +337,7 @@ existing importer and placeholder-walker uses consume the returned replacement.
 This does not implement LIR relinking or repair arbitrary cached aliases.
 Overflow folding retains the native global-morph gate. Value-numbered constant
 replacement now refreshes both VNs, and overflow helpers carry the native
-exception-set composition (B082/B083/B100).
+exception-set composition.
 
 Block initialization uses the same replacement contract for primitive stores and
 `GenTree.BashToZeroConst`. The latter returns a replacement instead of mutating
@@ -318,7 +352,8 @@ the source logical ID and metadata, consumes the native destination-allocation
 ID, and resets the sequence number. Array-index storage and hardware-intrinsic
 operand slots that native stores inline are copied; external operand arrays
 remain shared. It requires unthreaded source nodes and does not emulate poisoning
-the discarded native node. The recursive morph dispatcher is not yet active.
+the discarded native node. The recursive morph dispatcher is active and invokes
+the completion logic after transforming the tree.
 
 Allocation-to-helper conversion uses a `GenTreeCall` replacement constructor
 and the source-node overload of `gtNewHelperCallNode`. Unlike constant folding,
@@ -327,12 +362,6 @@ that mask, value numbers and logical identity, then recomputes helper/argument
 effects without the fresh-call factory's extra global-reference flag. The
 owning local store installs the returned node. General argument morphing remains
 outside this construction helper; no unported argument morphing is implied.
-
-B141 now includes complete object-allocation orchestration, retaining native
-mode/configuration gates and heap fallback decisions. Minopts still uses heap
-allocation. Optimized stack allocation no longer stops at the earlier phase
-gate; execution evidence and remaining layout/clone coverage are tracked
-separately from implementation completeness.
 
 Connection-graph escape closure, allocation-site/alias traversal and conditional
 clone viability are implemented, including guarded enumerator tracking, stack
@@ -404,7 +433,9 @@ copy the original sequencing links only outside global morph; callers still own
 installing the returned node. QMARK flag cleanup uses the standard managed
 preorder visitor and skips nested COLON subtrees. The nullable `hasValue`
 zero-offset invariant is checked in the folding fixture instead of a C++
-`static_assert` (B101).
+`static_assert`.
+
+##### Numeric semantics and ranges
 
 The existing `CheckedOps.Try*` arithmetic APIs return success (the inverse of
 native `CheckedOps::*Overflows`) and expose the wrapped result through an out
@@ -412,19 +443,21 @@ parameter. Addition/subtraction use sign-bit checks or unsigned ordering;
 signed multiplication checks that the full product is the sign extension of its low
 half. These implement the native `ClrSafeInt` overflow decisions without using
 exceptions for expected overflow. Callers must invert success when asking
-whether an operation overflows (B065).
+whether an operation overflows.
 
 `FitsIn(var_types, T)` intersects the destination range with the supported source
 integer type using generic-math saturated bounds, avoiding signed/unsigned
 comparison promotion. The cast-overflow predicates retain native overflow
 polarity and floating-point bounds; casts to floating-point destinations never
-report overflow, including narrowing to infinity (B066).
+report overflow, including narrowing to infinity.
 
 `IntegralRange` is a readonly value type with ordered enum bounds and managed
 value equality. Its native signed-domain interpretation is unchanged, including
 unsigned cast inputs whose bit patterns appear negative before widening.
 Tree-based non-negativity inference and the conservative-VN fallback are active.
-The VN predicate follows native phi traversal and intrinsic rules (B086/B091).
+The VN predicate follows native phi traversal and intrinsic rules.
+
+##### Value-number storage and evaluation
 
 Binary VN constant evaluation includes native eligibility and exception guards,
 numeric casts and bitcasts. Binary interning, algebraic identities and VM type
@@ -435,16 +468,17 @@ quaternary interning use the existing chunk/app storage and preserve variable
 arity and `MapStore`'s fourth-argument exception contract. Map selection and full
 VN phase orchestration are implemented.
 
+##### Assertion representation
+
 Assertion descriptors use immutable managed objects with value-type operands;
 reversal creates a new descriptor. Vector constants own a copied byte array
 containing only the active payload, instead of native inline/arena storage.
 Equality preserves signed-zero and NaN bit patterns, handle flags, and native
 field-sequence exclusion. Dependency vectors and complementary indices use
-managed collections without changing index or traversal order (B087).
-Insertion and complementary creation now cover both local and global assertions,
-including underlying `VN + constant` dependencies. The non-negativity-dependent
-factories are also implemented; generation remains unported (B090/B091). ARM64 scalable-vector assertion constants
-explicitly report NYI, matching the existing scalable-vector representation gap.
+managed collections without changing index or traversal order. Insertion,
+complementary creation, generation and morph application preserve native
+ordering and dependencies. ARM64 scalable-vector assertion constants explicitly
+report NYI, matching the existing scalable-vector representation gap.
 
 VN chunks use typed managed arrays and preserve native reserved IDs, 64-value
 chunk boundaries and allocation grouping. Function applications borrow readonly
@@ -454,13 +488,13 @@ result type. Failed function queries preserve ref outputs. Scalar constant
 access uses generic numeric conversion rather than reinterpretation; Debug checks
 require compatible storage size and floating/integral categories. SIMD12 storage
 is exactly 12 bytes. ARM64 scalable/mask storage remains explicitly NYI; scalar
-storage support does not imply VN folding or phase activation (B090).
+storage support does not imply VN folding or phase activation.
 Fixed-width vector/mask constants now use value-type dictionary keys and typed
 chunk arrays. Generic constant import accepts a bounded readonly byte span and
 uses unaligned-safe reads; SIMD retrieval copies the active payload into a
 zero-initialized maximum-width value. Scalar numeric and vector access remain
 separate managed helpers rather than emulating C++ template specialization.
-ARM64 scalable/mask storage is still explicitly NYI (B097).
+ARM64 scalable/mask storage is still explicitly NYI.
 
 Unary function folding publishes its dictionary result after recursive calls,
 without keeping a managed entry reference across possible dictionary growth.
@@ -470,32 +504,36 @@ These tokens remain metadata: EE calls receive the sequence's actual field
 handle. Field-sequence and general VN diagnostics retain native symbolic
 formatting; EE-dependent names and full phase dumps still need runtime evidence.
 Exception lists retain native unsigned-VN
-ordering and recursive union rather than managed collection enumeration (B098).
+ordering and recursive union rather than managed collection enumeration.
 Tree constant numbering reuses the bounded vector-import helper instead of
 native stack temporaries and `memcpy`. Embedded-handle and field-address maps
 are lazy managed dictionaries; failed embedded-handle lookup leaves its `ref`
 output unchanged. Unknown compile-time class handles do not overwrite an
-existing mapping, matching the pinned native guard (B100).
+existing mapping, matching the pinned native guard.
+
+#### Hardware intrinsics and target-specific evaluation
+
+##### SIMD values and masks
 
 HWI creation-constant helpers accept the existing maximum-width `simd_t` by
 reference instead of templating over native SIMD storage structs. They preserve
 native lane order, full output zeroing for creation candidates and untouched
 output for other intrinsic IDs. Nonconstant lanes stay zero, while recognized
-lanes are populated even when the whole creation cannot fold (B102).
+lanes are populated even when the whole creation cannot fold.
 
 Vector unary evaluation uses bounded byte spans and typed `MemoryMarshal.Cast`
 views instead of native template storage and per-lane `memcpy`. Integral lanes
 use generic-math operations; floating arithmetic has separate overloads, and
 floating bitwise operations are reinterpreted before any floating load. The
 node wrapper copies back only active bytes, preserving inactive storage, while
-xarch scalar operations retain upper lanes from the input (B104).
+xarch scalar operations retain upper lanes from the input.
 
 Binary evaluation uses the same bounded views, with an explicit evaluation
 width in place of the native template's default storage size. Generic integer
 and IEEE floating helpers retain wrapping arithmetic, exact comparison masks,
 unmasked SIMD overshifts and masked rotates. Floating bitwise operations never
 load floating values. Division retains native valid-input preconditions; no
-fallback value is introduced for invalid integer division (B105).
+fallback value is introduced for invalid integer division.
 
 Mask operations share the native element-size dispatch and mask-width policy.
 Conversions use bounded byte spans: lane expansion fills raw bytes, and xarch
@@ -503,32 +541,33 @@ extraction reads each lane's sign bit using the supported little-endian layout.
 This avoids loading floating values, preserving signaling-NaN bits. Mask
 arithmetic normalizes all-true results to 64 set bits; vector-to-mask conversion
 deliberately retains only the produced lane bits, matching native behavior.
-ARM64 predicates use spaced bits and nonzero-lane extraction (B106).
+ARM64 predicates use spaced bits and nonzero-lane extraction.
 
 Sequential MSB extraction is shared with xarch vector-to-mask conversion.
 Conversion recognition uses inherited `GenTree` properties rather than separate
 base/derived query implementations. Constant conversion creates a fresh typed
 mask through the existing managed constructor; the outer folding dispatcher
-remains responsible for morph and VN finalization (B107).
+remains responsible for morph and VN finalization.
 
 Per-element mask recognition checks bounded raw byte lanes rather than separate
 native integer template instantiations. Only an entirely zero or entirely
 one lane qualifies, so floating signed zero and NaN payloads are not treated as
-numeric comparisons. Local and intrinsic mask-width compatibility is unchanged
-(B108).
+numeric comparisons. Local and intrinsic mask-width compatibility is unchanged.
 
 HWI reconfiguration changes only the ID and operands within the same
 `GenTreeHWIntrinsic` object, not its CLR type. Partial changes retain the operand
 array; full resets install the supplied managed array and invalidate borrowed
 operand spans/refs. The native compiler/inline-array allocation parameters are
 unnecessary. Existing ID normalization is applied, but side-effect flags and
-other metadata remain caller-owned, as native requires (B109).
+other metadata remain caller-owned, as native requires.
 
 Xarch comparison normalization uses
 `System.Runtime.Intrinsics.X86.FloatComparisonMode` rather than duplicating the
 native enum. All 32 names/encodings and its byte representation were verified
 against the pinned header. The native mapping and signaling-mode normalization
-are unchanged (B110).
+are unchanged.
+
+##### Folding dispatch and target gates
 
 The Windows-x64 HWI folding dispatcher reuses the fixed-width evaluators and
 element-access helpers. Scalar bit scans use framework leading/trailing-zero
@@ -536,7 +575,7 @@ counts while retaining the native no-fold rule for zero BSF/BSR inputs. Native
 fallthrough becomes explicit `goto case`; operand-count invariants establish
 non-null operands without suppressing nullable analysis. Node reuse, conversion
 cancellation, side-effect ordering, morph marking and VN refresh are unchanged.
-Other-target dispatchers remain deferred (B111). Hardware-intrinsic constant
+Other-target dispatchers remain deferred. Hardware-intrinsic constant
 reassociation (`fgOptimizeHWIntrinsicAssociative`) depends on that dispatcher;
 its folding path explicitly terminates compilation on targets without it.
 
@@ -549,13 +588,16 @@ Managed debug destruction clears all use edges, unlike native's simple-node
 operand clearing. It must traverse those edges before poisoning type/flags:
 poisoning first sets `GTF_REVERSE_OPS` and breaks nonbinary HWI traversal.
 Mask-zero construction now uses the existing zero-initialized mask constructor,
-matching the native factory (B111).
+matching the native factory.
+
+#### Compiler phases, calls, and control-flow ownership
+
+##### Initialization and tree transformations
 
 Root class-initialization construction reuses the managed shared-cctor and
 ReadyToRun factories. Its nullable result retains their existing helper-rejection
 contract; zero-initialized resolved tokens use `default` instead of `memset`.
-Helper selection, argument ordering and generic-context reporting match native
-(B113).
+Helper selection, argument ordering and generic-context reporting match native.
 
 Helper equivalence reuses the existing managed helper dictionary on the inline
 root. Lookup preserves the output handle on failure through a `ref` parameter.
@@ -568,8 +610,8 @@ Native pointer-to-link operations use managed byrefs, and growth keeps a tail
 reference per destination bucket. Shrink merging, resize thresholds, 16-bit node
 counts and bucket/node/bit traversal order are preserved, including the native
 32-bit logical element stride on AMD64's 64-bit element storage. Callback traversal
-uses a delegate in place of the native template functor. Bulk/set algebra and the
-separate iterator are not yet ported (B114/B115).
+uses a delegate in place of the native template functor. The separate iterator
+is not yet ported (B114).
 
 `SharedTempsScope` is a managed `IDisposable` scope rather than a native destructor.
 It restores the enclosing temporary stack before releasing its own locals back
@@ -584,28 +626,30 @@ Morph initialization composes `gtNewStmt` and `fgInsertStmtAtBeg`, exactly as th
 native `fgNewStmtAtBeg` wrapper does. An EE request to use the class-init helper
 establishes the required non-null tree invariant. Entry insertion order and phase
 status match native, including E&C frame requirements not alone marking IR as
-modified (B114).
+modified.
 
 Qmark discovery uses an `out` destination instead of an optional pointer-to-pointer.
 Expansion updates the qmark's owning condition reference after reversal, including
 when reversal creates a replacement node. The existing statement/block iterators
 visit the newly inserted arms and remainder; managed throw conversion retains the
 native callfinally-unpairing and profile-update order. Native single-arm likelihood
-assignments are deliberately retained, not corrected only in C# (B116/B117).
+assignments are deliberately retained, not corrected only in C# (B117).
 
 Patchpoint transformation composes existing statement factories/insertion helpers
 in place of native `fgNewStmtAtBeg`/`fgNewStmtAtEnd` wrappers. Managed unary and
 binary node factories preserve `GT_PATCHPOINT`/`GT_PATCHPOINT_FORCED` shapes and
-call flags; shared-counter lifetime, branch layout and probabilities are unchanged
-(B118). This does not supply patchpoint code generation or OSR metadata.
+call flags; shared-counter lifetime, branch layout and probabilities are unchanged. This does not supply patchpoint code generation or OSR metadata.
+
+##### Inlining and call transformation
 
 `InlineResult` implements `IDisposable`; production owners use lexical `using`
 scopes to replace the native destructor's decision reporting, including early
 returns, loop continues and unwinding. Reporting retains native suppression,
 Debug failure observations, permanent NOINLINE propagation and structured EE
-notifications. UTF-8 reason strings use the existing scoped marshaling helper
-(B128). The shared `vlogf` EE text-logging stub is still unimplemented (B129);
+notifications. UTF-8 reason strings use the existing scoped marshaling helper. The shared `vlogf` EE text-logging stub is still unimplemented (B129);
 this is not an accepted diagnostic-output difference.
+
+##### EH, profile repair, and guarded devirtualization
 
 Post-import cleanup uses byrefs to EH table entries, retaining the native
 inner-to-outer traversal and retry of a slot after descriptor removal.
@@ -613,8 +657,8 @@ Unlinked blocks retain their links for region trimming. The OSR conditional-flow
 lambda is a local function, and statement creation uses the existing insertion
 helpers. `double.MinNumber(1.0, ratio)` preserves native `std::min` when both
 profile weights are zero: the resulting NaN ratio selects 1.0, not NaN.
-The early-return completion-flag behavior is unchanged (B126).
-`fgVerifyHandlerTab` now implements the complete native Debug contract (B127).
+The early-return completion-flag behavior is unchanged.
+`fgVerifyHandlerTab` now implements the complete native Debug contract.
 Its temporary lexical-order, handler-start and raw-index maps use owned arrays
 instead of native stack scratch space; block numbers are not modified. The
 managed table's array length supplies native allocation capacity. Normalization,
@@ -626,16 +670,16 @@ them with `Unsafe.AreSame`, preserving native spill order while replacing nodes.
 The shared transformer receives its non-null original call at construction;
 CFG blocks remain nullable until their corresponding creation steps establish
 the native invariants. Fat-pointer expansion preserves the tagged two-word tuple,
-call cloning, argument placement and native 80/20 block versus 50/50 edge weights
-(B119/B121). B123 completes guarded devirtualization and activates the pass.
-The inferred-local type correction in B120 restores native behavior, rather than
+call cloning, argument placement and native 80/20 block versus 50/50 edge weights.
+Guarded devirtualization is complete and the pass is active.
+The inferred-local type correction restores native behavior, rather than
 introducing a managed deviation.
 
 Candidate cloning shares the existing managed `gtCloneCall` implementation with
 ordinary expression cloning. Candidate metadata and return placeholders retain
 their native shared relationships until the caller repairs them. Vtable expansion
 interprets the EE's managed `int` offset outputs as native unsigned values before
-pointer-sized conversion and preserves 32-bit wrapping of their sum (B122).
+pointer-sized conversion and preserves 32-bit wrapping of their sum.
 
 Owning-link lookup returns a `ref struct` containing the actual owning byref.
 The visitor records the parent and exact operand index, resolving that slot
@@ -645,12 +689,18 @@ operands share a node or execution order differs from tree-walk order.
 GDV scouting replaces fixed-up return placeholders through their owning refs;
 candidate metadata remains shared only where native shares it. The exact-GDV
 fallback remains in the graph without incoming edges for later cleanup, and
-native metric guards are retained (B123/B124).
+native metric guards are retained (B124).
+
+#### SSA, value numbering, and optimization state
+
+##### SSA identities and initialization
 
 Phi definitions own copied SSA-number arrays and expose readonly memory.
 Reaching-VN traversal uses a managed stack and membership set, preserving native
 push/pop order, conservative SSA lookup, duplicate suppression, cycles and early
-abort. Memory phis are not traversed, matching native behavior (B091).
+abort. Memory phis are not traversed, matching native behavior.
+
+##### SSA maps and memory state
 
 Map selection has its own local/memory-phi fixed-point traversal and native
 budgets. Its cache retains ordered memory dependencies; managed membership
@@ -675,7 +725,7 @@ use target-pointer width, not the host-sized `VNForIntPtrCon` API.
 
 Physical loads retain native's unsigned offset truncation before the
 whole-location check; the later bounds check still uses the original signed
-offset (B278). Pointer extension uses native host-sized offsets and preserves
+offset. Pointer extension uses native host-sized offsets and preserves
 the source liberal exception set. Call and memory numbering use these contracts
 in the active VN phase.
 
@@ -692,20 +742,24 @@ enumerators, not dictionary iteration. Phase execution is established for the
 selected corpora; clone numbering, loop-block traversal and later optimization
 differences prevent a full dump/code parity claim.
 
+##### Assertion, range, and optimization dataflow
+
 Checked-bound/index registries use managed membership sets; no enumeration order
 is observed. Unsigned comparison results use a readonly record and failed queries
 leave ref outputs unchanged. JTRUE bounds generation retains native edge
 polarity and usefulness gates; it does not activate general assertion generation
-or morph completion (B093). General assertion creation and JTRUE equality/type
+or morph completion. General assertion creation and JTRUE equality/type
 facts are now also implemented. Unary native operand access uses the managed
 `GenTreeUnOp` base rather than casting unary nodes to `GenTreeOp`; CSE comma
-queries preserve the native single-store/same-local condition (B094).
+queries preserve the native single-store/same-local condition.
 Node-wide generation and morph completion now preserve native edge selection,
 boolean implications and physical-definition kill/gen ordering. Native bitset
 reference parameters are managed array references; the in-place bit operations
 do not replace those arrays. The morph diagnostic invocation number is accepted
 in both builds but used only in Debug, like the existing invalidation diagnostic
-tree parameter (B099).
+tree parameter.
+
+##### Active optimization phases
 
 Range analysis, relational application and forward assertion dataflow now feed
 the active global assertion phase. The complete range-check elimination phase
@@ -714,7 +768,7 @@ repair. Established execution corpora preserve their behavior but show no
 additional removals in that phase; focused tests cover successful removal.
 A dedicated array corpus also exercises managed removal and preserves exception
 and side-effect behavior. With loop cloning active, its recorded `SumByLength`
-check is removed during cloning by both JITs; B283's specific phase-placement
+check is removed during cloning by both JITs; 's specific phase-placement
 difference is resolved without changing range analysis.
 Duplicate conditional edges preserve native BitVec assignment:
 single-word values are copied before destructive intersection, while multi-word
@@ -758,19 +812,19 @@ Redundant-branch optimization and its VN relational predicates are active.
 The native postorder traversal, retry rules, SSA/phi repairs and edge/profile/EH
 updates are retained. DFS/SSA invalidation occurs even on an unchanged pass,
 resolving the observed stale managed `SSA MEM:` annotations after assertion
-propagation (B281). Complex global-phi execution and full dump parity remain
+propagation. Complex global-phi execution and full dump parity remain
 unestablished.
 
 Loop cloning is active, including candidate discovery, profitability, condition
 derivation, guarded fast/slow duplication and static optimizations. Jagged-array
 and span candidates copy
-descriptor values rather than aliasing mutable descriptors (B286). Jagged-array
+descriptor values rather than aliasing mutable descriptors. Jagged-array
 copies share the already-populated index/check buffers, as native value copies
 do; consumers do not grow those buffers. IR, block and statement references
 retain their native identity. EH endpoint updates scan all enclosing clauses,
-including different-try entries (B290). Selected array execution exercises cloning
+including different-try entries. Selected array execution exercises cloning
 and static bounds-check removal with matching native guards and block structure.
-The recorded `SumByLength` removal now occurs in the native phase (B283); broad
+The recorded `SumByLength` removal now occurs in the native phase; broad
 candidate, EH and machine-code parity remain unestablished.
 
 CSE candidate discovery/indexing, descriptor local counting, tree eligibility
@@ -787,19 +841,19 @@ Its ordered managed choice list preserves native reverse-stack traversal and
 mutable choice references; no extra greedy iteration cap is introduced.
 Debug random and replay policies are implemented with the shared native integer
 configuration parser. Adjacent minus tokens and the persistent negative sign
-retain pinned behavior (B295/B296). Debug RLHook and RL policies also implement
+retain pinned behavior. Debug RLHook and RL policies also implement
 decision replay, feature reporting, stochastic selection and parameter updates.
 The production phase now selects and caches the configured native policy, performs
 candidate discovery and availability analysis, and rewrites profitable expressions.
 Its wrapper clears prior CSE markers on repeated runs. Managed indirection
 eligibility uses the typed address accessor instead of native's unary-capable
-`GenTreeOp` cast (B298). Matching-input comparisons have not isolated a CSE
+`GenTreeOp` cast. Matching-input comparisons have not isolated a CSE
 algorithm difference. Production loop hoisting now supplies the four missing
 range-probe preheader expressions and restores native CSE weighted uses.
-The Boolean/switch pre-CSE return-merging differences remain tracked in B300.
+The Boolean/switch pre-CSE return-merging differences remain tracked in.
 
 Register-state copying accepts ordinary cross-operator replacements and delegates
-call/COPY/RELOAD state as native does (B292). Calls still require call sources, and
+call/COPY/RELOAD state as native does. Calls still require call sources, and
 the COPY/RELOAD helper requires matching operators. Its extra-register copy remains
 Unix-AMD64-only; Windows does not acquire invented multi-register behavior.
 Windows register/tag tests and existing backend execution pass. Cross-target
@@ -821,17 +875,17 @@ matches native converted-block decisions and runtime effects, not complete
 generated code. Dominant-case peeling is covered by IR tests, including single
 evaluation, but has no positive profiled-runtime capture yet. Block-table padding
 uses the magnitude of a signed empty-field width, preserving native `printf`
-instead of throwing for long targets (B289).
+instead of throwing for long targets.
 
 If-conversion is active for Windows x64. Its descriptor retains the native
 eligibility, profitability, operand and CFG transformations. The reachability
 work stack admits a null merge: equality with the excluded block is checked
 before dereferencing the item, after scratch initialization or clearing and
-without consuming budget (B287). This preserves native behavior rather than
+without consuming budget. This preserves native behavior rather than
 adding a null-merge shortcut. RISC-V-specific select arithmetic remains explicitly
 unsupported; other-target execution and full dump/code parity are not established.
 Special-operator evaluation now returns its calculated costs and level rather than
-discarding them (B291). The three positive return probes match native emitted
+discarding them. The three positive return probes match native emitted
 bytes and SELECT/RETURN costs; that is scoped evidence, not general code parity.
 
 VN-based folding and insertion-time statement morphing are also complete
@@ -846,12 +900,12 @@ but tree-ID and SSA-memory diagnostic differences still prevent full dump parity
 
 Profile weight lookup uses a managed `ref` output: native leaves the pointed-to
 value unchanged when no profile weights are available, so an unconditional
-`out` initialization would change that contract (B067).
+`out` initialization would change that contract.
 
 Profile spanning traversal uses `Stack<BasicBlock>` for pending blocks and a
 `List<BasicBlock>` successor snapshot. The snapshot is indexed from its end,
 matching native `ArrayStack::Top(i)`; callbacks must not change later successor
-selection through mutations of the live successor list (B068).
+selection through mutations of the live successor list.
 
 Sparse edge reconstruction stores managed edge/block-info objects, with a typed
 `BasicBlock.bbSparseCountInfo` reference instead of a `void*`. The two dictionaries
@@ -864,7 +918,7 @@ EH predecessor caches hold nullable managed edge heads: a cached empty list is
 distinct from an uncached block. New exceptional edges prepend to the original
 regular predecessor chain; SSA stress retains native in-place link shuffling.
 Second-pass filter successor visitation is shared with DFS via a managed
-callback, preserving region order and early abort (B071).
+callback, preserving region order and early abort.
 
 Natural-loop descriptors use managed references, ordered edge lists exposed as
 read-only spans, and the existing native-word bit vectors. Discovery retains
@@ -872,9 +926,9 @@ DFS/header order, exceptional predecessors, backward worklist order and
 parent/child/sibling identity. Loop and bit visitors use managed callbacks with
 the same abort contract; each bit-vector word is captured before callbacks,
 while later words are read when reached. Header-relative containment rejects
-negative indices without checked-conversion exceptions (B072).
+negative indices without checked-conversion exceptions.
 
-Profile checkers preserve the native flag-selection and failure policy (B074).
+Profile checkers preserve the native flag-selection and failure policy.
 Missing-likelihood diagnostics format a snapshot of the managed edge's current
 address; it is never dereferenced or retained for later use. These failure
 messages have pointer-format coverage, not native-address parity, and introduce
@@ -883,22 +937,24 @@ no dump-comparison normalization.
 Synthesis likelihood snapshots use ordered managed lists and cyclic gains use
 a managed array indexed by natural-loop index. Reversal preserves unique-edge
 order; seeded random draws retain the native sequence. Capping adjusts only the
-first eligible conditional exit in loop order, not all exits (B076). Compiler
+first eligible conditional exit in loop order, not all exits. Compiler
 DFS construction is accessible to the synthesis class in place of native
 friend-class access.
 
 The profile solver's zero-initialized count vector is a managed array indexed by
 block number. EH descriptors use the existing nullable-byref convention. Its
 `std::max` comparisons retain native operand selection, including NaN and signed
-zero, rather than adopting managed `Max` semantics (B077).
+zero, rather than adopting managed `Max` semantics.
 
 The synthesis driver retains entry-loop normalization, reachable EH input
 seeding, four repair retries, metadata/source selection and deferred profile
-checks (B078). Its call-count clamp and blend-factor bound preserve native
+checks. Its call-count clamp and blend-factor bound preserve native
 `std::max`/`std::min` operand selection. Debug double configuration uses a managed
 array and read-only span, with the native two-pass allocation scheme. Conversion
-uses .NET 11's invariant UTF-8 `double.TryParsePartial`, including hexadecimal
+uses.NET 11's invariant UTF-8 `double.TryParsePartial`, including hexadecimal
 floats. R003 records the grammar, range and invalid-input differences.
+
+#### Runtime, EE, and execution boundaries
 
 Managed error-trap callbacks capture exceptions before leaving their
 `UnmanagedCallersOnly` shim. An owned `GCHandle` keeps the action and captured
@@ -906,7 +962,7 @@ exception alive until the native trap returns. The regular trap reports
 nonterminal managed failures as false; terminal HRESULTs and SPMI-only managed
 failures are rethrown with their original identity and stack. Native exceptions
 remain subject to the EE's trap. This adapts exception ownership to the managed
-boundary without broadening the native recovery policy (B061).
+boundary without broadening the native recovery policy.
 
 `FatalJitException` carries the native `CorJitResult` exception payload. The
 compilation boundary reports and returns that result instead of collapsing
@@ -919,6 +975,10 @@ residual tree for the unported target paths.
 Minopts allocation and backend execution are active; optimized register
 allocation still explicitly reports `CORJIT_SKIPPED`. Completing lowering does
 not establish optimized execution or remove that later boundary.
+
+#### Liveness and register allocation
+
+##### Liveness policies and SSA traversal
 
 Liveness template policies use a static-interface generic parameter. The
 tracked-local reverse-map array's length supplies its allocation capacity rather
@@ -933,11 +993,13 @@ order observable. Strings and managed nodes replace native-owned key buffers;
 host-sized unsigned counts and the signed descending comparator are unchanged.
 Native optional-mode initialization and mutation remain unsynchronized.
 
+##### Tree traversal and owned uses
+
 `GenTreeCall` stores its tailcall, async-call, and unmanaged-call-convention
 variants separately. The native union cannot be reproduced with explicit
 overlapping fields because async debug information contains managed references.
 Call flags still select the active variant, and cloning copies the same grouped
-storage. These are managed IR objects, not JIT/EE interop structures; see B019.
+storage. These are managed IR objects, not JIT/EE interop structures; see.
 
 `GenTree.BashToNOP` retains the existing managed object, links, and logical node ID.
 `GT_NOP` uses only base `GenTree` fields; the object's CLR subtype does not change.
@@ -949,7 +1011,9 @@ The use-edge enumerator represents native pointer/function-pointer iteration
 with managed byrefs and explicit index/cursor state. Only actual operand storage
 is yielded; absence is a terminal state, never a dereferenced null byref. Reset
 clears every linked-list cursor. Writable edge identity and execution order are
-preserved, including distinct early/late argument order (B040).
+preserved, including distinct early/late argument order.
+
+##### Local, block, and continuation representations
 
 Native `LocalDefProvider`/generic definition callbacks map to the five original
 readonly descriptor structs implementing `ILocalDef`, constrained
@@ -964,7 +1028,7 @@ a second insertion of the same local and retaining expanded storage after clear.
 Its expanded membership storage uses `HashSet<int>` instead of `hashBv`; only
 membership, intersection, and emptiness are observable through this API, not
 iteration order. The separate general-purpose `hashBv` port remains incomplete.
-Pinned upstream quirks B049/B052 are preserved rather than silently corrected.
+Pinned upstream quirks (B052) are preserved rather than silently corrected.
 
 `SplitTreeVisitor` stores a node owner and operand ordinal in its managed
 use stack, reacquiring actual writable operand references through `UseEdges`.
@@ -975,11 +1039,13 @@ identity, governs matching and rewrites. `gtSplitTree` returns the split use
 by reference and exposes native change reporting through `out bool madeChanges`.
 Splitting retains native execution/spill order and statement debug information.
 
+##### LIR and traversal cursors
+
 GC-safe-point cycle detection uses a `List<GCSafePointSuccessorEnumerator>` as
 the native DFS stack, accessing its top through a transient `CollectionsMarshal`
 span. No reference is used after resizing the list. The enumerator retains the
 native two-successor inline storage and separate larger-array storage; diagnostic
-traversal remains top-down. `BasicBlock.GetLastNode()` maps native `lastNode()`
+traversal remains top-down. `BasicBlock.GetLastNode` maps native `lastNode`
 without hiding the inherited LIR-only `LastNode` property.
 
 Single-use inline arguments cannot use native `GenTree::ReplaceWith`, which
@@ -1026,6 +1092,10 @@ Tree dump callers always supply an indentation stack. An empty stack still
 corresponds to a non-null native stack, so it must not trigger the fractional
 sequence labels reserved for native calls without a stack.
 
+#### Backend emission and GC metadata
+
+##### Codegen state and descriptor layout
+
 Code generation owns the canonical mutable `GCInfo`, `RegSet` and disassembler
 values. Their collaborators use managed owner references and ref-returning
 accessors instead of copying state represented by native pointers/references.
@@ -1038,12 +1108,14 @@ arena allocations. The native negative numbering, normalized types, size-slot
 lists, acquisition/release order and total stack-space accounting are retained;
 equal-size GC and non-GC types still require distinct matching descriptors.
 
+##### Register allocation and reference state
+
 LSRA variable-to-register maps use managed register arrays while retaining native
 tracked-index mappings, padded entry counts and split-block aliases.
 `setInVarToRegMap` copies the logical entry count into the existing destination;
 it does not reproduce the pinned native function's oversized byte copy from a
 `regNumberSmall` buffer using `sizeof(regNumber)`. No native callsites were found
-for that function; B165 records this as a source discrepancy, not a reproduced
+for that function;  records this as a source discrepancy, not a reproduced
 runtime failure.
 
 `GenTreeFieldList.Uses` likewise returns its mutable list by reference, so
@@ -1090,7 +1162,7 @@ representation of the existing managed integer field.
 
 Copy/reload insertion updates the existing LIR owning use and places a newly
 allocated node immediately after its source, matching the pinned implementation
-rather than its stale before-parent description (B200). A second multireg result
+rather than its stale before-parent description. A second multireg result
 reuses the existing copy/reload node.
 
 Spill accounting retains native unsigned counters and normalized temporary
@@ -1112,7 +1184,7 @@ resolution and resolution blocks before resetting assignments, then preserves
 physical-register, copy/move, spill/reload and GC-kill checks. Allocation-table
 diagnostics share native block-row formatting, node-location widths and register
 name casing; the earlier translation mismatches are corrected, not accepted
-differences (B201).
+differences.
 
 The allocation driver uses the native minimal/full-allocation and local-enabled
 construction/resolution predicates, including the no-tracked-locals adjustment.
@@ -1124,10 +1196,12 @@ innermost-loop eligibility, call/EH exclusions, normalized weight thresholds and
 padding behind retained jumps. Selected optimized and minopts corpora execute
 managed-generated code; this does not establish broad execution or code parity.
 
+##### Code emission and register allocation
+
 Code-generation preparation includes complete non-Wasm block-label marking,
 native hot/cold jump-elision predicates, emitter `Init`, and GC register/stack
 pointer state with live-register protection and native diagnostics.
-`EMIT_GENERATE_GCINFO` is enabled in every configuration, correcting B206.
+`EMIT_GENERATE_GCINFO` is enabled in every configuration, correcting.
 `CanRemoveJumpToTarget` preserves the native Wasm interval-boundary check.
 `WasmInterval` now has a managed `TARGET_WASM` implementation for its bounds,
 kind, chains, factories, and debug helpers; its native class definition is
@@ -1149,7 +1223,7 @@ register of a pair.
 Morph-time `fgSetOptions` and its frame/GC setters now establish the native
 frame-pointer and interruptibility policy before allocation. Register-mask bank
 selection, physical-register availability aliases and block-boundary constant
-reset defects found during activation are corrected (B202-B205), not accepted
+reset defects found during activation are corrected (-), not accepted
 output differences. Allocation activation initially matched seventeen of twenty
 minopts corpus methods. Complete Windows-AMD64 `fgCreateFunclets` subsequently
 removed both EH-order mismatches; nineteen allocation-phase bodies now match,
@@ -1205,7 +1279,7 @@ and resolution use only `enregisterLocalVars`; the minimal paths are unchanged.
 Production optimized compilation now passes allocation and loop placement,
 emits native code and executes the selected standard and GC-loop corpora.
 The spill-weight assertion uses the native interval-building cursor rather than
-the allocation traversal cursor (B264). This is a translation correction, not
+the allocation traversal cursor. This is a translation correction, not
 an accepted algorithmic deviation. Full dump/code parity remains unestablished.
 
 Loop discovery and canonicalization now preserve native preheader,
@@ -1333,6 +1407,8 @@ size or pretend that the remaining union variants are implemented. Instruction
 format storage retains the native seven-bit width; generated operand,
 scheduling and update-mode tables use the pinned header inputs.
 
+##### GC, EH, and EE publication
+
 Outgoing EH clauses retain a stable descriptor-table index instead of a native
 descriptor pointer. VM-order sorting preserves that identity for same-try
 classification; unmanaged clause payloads are pinned only during publication.
@@ -1348,7 +1424,7 @@ without taking ownership of the EE's allocated GC-info buffer.
 Async debug publication copies records into EE-owned arrays and transfers them
 at the callback. Subsequent diagnostics read the original managed records,
 preserving native values and ordering without relying on transferred storage
-remaining readable (B239).
+remaining readable.
 
 The generation driver owns stack-local output storage for its synchronous phase
 calls. It copies successful results to the caller and clears borrowed emitter

@@ -11,9 +11,12 @@ project history and remaining work without replaying the conversation.
 The [continuation plan](PLAN.md) defines milestones; the
 [deviation register](DEVIATIONS.md) distinguishes accepted changes from existing
 limitations. Neither is an assertion that the current port is complete.
-Record bugs and future improvements in the [backlog](BACKLOG.md). The first goal
-is a clean, recognizable C# port that provides the foundation for a later rewrite,
-not that rewrite performed incrementally during translation.
+Use the [backlog](BACKLOG.md) only for unresolved findings, decisions, blockers,
+coverage gaps, and deferred work; remove entries when their actions are complete.
+Keep completion evidence with tests, artifacts, and commits, and record accepted
+observable differences only in the deviation register. The first goal is a clean,
+recognizable C# port that provides the foundation for a later rewrite, not that
+rewrite performed incrementally during translation.
 
 ## Three working trees
 
