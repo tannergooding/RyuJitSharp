@@ -2919,6 +2919,7 @@ public partial class GenTree
         if ((Oper is GT_CNS_LNG) && (oper is GT_CNS_INT))
         {
             NYI("SetOper cannot change the managed runtime type of a long constant");
+            throw new NotImplementedException("SetOper requires caller-side replacement for a long constant");
         }
 #endif
 
