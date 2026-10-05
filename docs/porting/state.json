@@ -5170,7 +5170,15 @@
     "retirement": "Amended consolidated runtime-port HEAD to 75d4f5bbc99882a7c9d98cda30b5fd9e1447d525, solely parented to pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. Removed 124 complete method-body lines from compiler.cpp and 18 exclusive declaration lines from compiler.h. Recovery ref refs/copilot-recovery/sysv-classifier-before-20261005 preserves prior HEAD 20fb824d63dbae2036227dc443adf43d29cc78a0.",
     "limits": "Focused Linux-x64-target helper tests only; no Linux generated-code/runtime parity or Windows-x64 execution evidence."
   },
-  "nextAction": "SysV classifier helper acceptance is complete, including the exact native retirement; the unrelated residual WIP remains unstaged. Continue reconciling the live backlog rather than starting new port work: inspect the untracked ArmEmitterPredicateTests.cs against the remaining emitarm.cpp/emitarm.h hunks, then establish focused target evidence before retiring any associated native text. Preserve user-owned unwindx86.cpp, staged/unstaged ownership, serial full-analysis validation, and all unrelated changes. The earlier 51-managed/70-native counts are not current; use fresh status. Do not repeat the 101-file cleanup or closed screens, and do not claim global debt clearance or runtime parity. Do not push or open a PR.",
+  "armEmitterPredicateAcceptance": {
+    "status": "validated-linux-arm-target; native-retired",
+    "scope": "Accept ARM register classification, flags/options predicates, emit-size bit width, and jump-format classifiers as one tested helper group.",
+    "mapping": "Pinned runtime-oracle src/coreclr/jit/emitarm.h inline helpers map to sources/Core/jit/emit/Emitter.ArmPredicateHelpers.cs and Emitter.JumpBindingHelpers.cs. The exclusive inline definitions were removed from emitarm.h; comment-only emitarm.cpp WIP was not included.",
+    "validation": "Full-analysis ArmEmitterPredicateTests passed 40/40 Debug and 40/40 Release for linux-arm target semantics on the win-x64 host, using AnalysisLevel=latest-all, default compiler CPU, and compiler-only DOTNET_GCConserveMemory=5.",
+    "retirement": "Amended consolidated runtime-port HEAD to 2bd96b5207b7c44c961dff9df614c5818881ba61, solely parented to pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. Removed 138 lines containing the tested inline definitions and their attached comments from emitarm.h. Recovery ref refs/copilot-recovery/arm-predicate-before-20261005 preserves prior HEAD 75d4f5bbc99882a7c9d98cda30b5fd9e1447d525.",
+    "limits": "Focused ARM-target managed helper tests only; no ARM generated-code/runtime parity. Unrelated emitarm.cpp comment cleanup remains pending."
+  },
+  "nextAction": "SysV classifier helpers and the ARM emitter predicate group are now validated and retired. Continue acceptance of the remaining live WIP before new porting: run SignedTwelveBitImmediateTests for linux-loongarch64 and linux-riscv64 in Debug and Release, then isolate and retire only the corresponding proven native predicates. Preserve user-owned unwindx86.cpp, staged/unstaged ownership, serial full-analysis validation, and all unrelated changes. The earlier 51-managed/70-native counts are not current; use fresh status. Do not repeat the 101-file cleanup or closed screens, and do not claim global debt clearance or runtime parity. Do not push or open a PR.",
 
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
@@ -11900,6 +11908,10 @@
     "sysvClassifierNativeRetirement": {
       "commit": "20fb824d63dbae2036227dc443adf43d29cc78a0",
       "ref": "refs/copilot-recovery/sysv-classifier-before-20261005"
+    },
+    "armPredicateNativeRetirement": {
+      "commit": "75d4f5bbc99882a7c9d98cda30b5fd9e1447d525",
+      "ref": "refs/copilot-recovery/arm-predicate-before-20261005"
     }
   },
   "sourceMap": [
