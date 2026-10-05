@@ -430,7 +430,7 @@ public sealed partial class LinearScan
             {
                 ref readonly var returnTypeDesc = ref call.ReturnTypeDesc;
                 assert(!Unsafe.IsNullRef(in returnTypeDesc));
-                var multiDestinationCandidates = getArmAbiReturnRegs(in returnTypeDesc, call.UnmanagedCallConv);
+                var multiDestinationCandidates = returnTypeDesc.GetAbiReturnRegs(call.UnmanagedCallConv);
                 assert(countRegisterMaskBits(multiDestinationCandidates) > 0);
                 buildCallDefsWithKills(call, destinationCount, multiDestinationCandidates, killMask);
             }
@@ -455,20 +455,6 @@ public sealed partial class LinearScan
         _placedArgumentRegisters = RBM_NONE;
         _placedArgumentLocalCount = 0;
         return sourceCount;
-    }
-
-    // Whole ReturnTypeDesc::GetABIReturnRegs, scoped here until the shared API is ported.
-    private static regMaskTP getArmAbiReturnRegs(in ReturnTypeDesc descriptor, CorInfoCallConvExtension callConv)
-    {
-        var resultMask = RBM_NONE;
-        var count = descriptor.ReturnRegCount;
-        for (byte index = 0; index < count; index++)
-        {
-            var register = descriptor.GetAbiReturnReg(index, callConv);
-            resultMask |= regMaskTP.CreateFromRegNum(register, genSingleTypeRegMask(register));
-        }
-
-        return resultMask;
     }
 
     private void markArmAsyncContinuationBusyForCall(GenTreeCall call)

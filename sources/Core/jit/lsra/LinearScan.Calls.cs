@@ -232,13 +232,8 @@ public sealed partial class LinearScan
         }
         else if (hasMultiRegRetVal)
         {
-            var multiDstCandidates = new regMaskTP(SRBM_NONE);
-            for (var index = 0; index < dstCount; index++)
-            {
-                var register = call.ReturnTypeDesc.GetAbiReturnReg(checked((byte)index), call.UnmanagedCallConv);
-                multiDstCandidates |= regMaskTP.CreateFromRegNum(register, genSingleTypeRegMask(register));
-            }
-            assert(countRegisterMaskBits(multiDstCandidates) > 0);
+            var multiDstCandidates = call.ReturnTypeDesc.GetAbiReturnRegs(call.UnmanagedCallConv);
+            assert(countRegisterMaskBits(multiDstCandidates) == dstCount);
             buildCallDefsWithKills(call, dstCount, multiDstCandidates, killMask);
         }
         else

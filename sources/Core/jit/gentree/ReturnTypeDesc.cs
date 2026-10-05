@@ -612,22 +612,25 @@ public struct ReturnTypeDesc
     }
 
 #if HAS_FIXED_REGISTER_SET
-    // TODO: Port ReturnTypeDesc.GetAbiReturnRegs
-    // /// <summary>get the mask of return registers as per target arch ABI.</summary>
-    // /// <param name="callConv">The calling convention</param>
-    // /// <returns>reg mask of return registers in which the return type is returned.</returns>
-    // /// <remarks>This routine can be used when the caller is not particular about the order of return registers and wants to know the set of return registers.</remarks>
-    // public regMaskTP GetAbiReturnRegs(CorInfoCallConvExtension callConv)
-    // {
-    //     var resultMask = SRBM_NONE;
-    //     var count = ReturnRegCount;
-    // 
-    //     for (byte i = 0; i < count; i++)
-    //     {
-    //         resultMask |= genRegMask(GetAbiReturnReg(i, callConv));
-    //     }
-    //     return resultMask;
-    // }
+    /// <summary>Get the mask of return registers as per the target ABI.</summary>
+    /// <param name="callConv">The calling convention</param>
+    /// <returns>The register mask containing the return registers.</returns>
+    /// <remarks>
+    /// This routine is useful when the caller does not need the return registers in a particular order.
+    /// </remarks>
+    public readonly regMaskTP GetAbiReturnRegs(CorInfoCallConvExtension callConv)
+    {
+        var resultMask = new regMaskTP(SRBM_NONE);
+        var count = ReturnRegCount;
+
+        for (byte index = 0; index < count; index++)
+        {
+            var register = GetAbiReturnReg(index, callConv);
+            resultMask |= regMaskTP.CreateFromRegNum(register, genSingleTypeRegMask(register));
+        }
+
+        return resultMask;
+    }
 #endif
 
 #if SWIFT_SUPPORT

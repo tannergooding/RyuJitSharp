@@ -47,6 +47,8 @@ internal static unsafe class SysVX64ClassifierTests
 
             Assert.That(call.HasMultiRegRetVal, Is.True);
             Assert.That(call.ReturnTypeDesc.ReturnRegCount, Is.EqualTo(2));
+            Assert.That(call.ReturnTypeDesc.GetAbiReturnRegs(CorInfoCallConvExtension.Managed),
+                Is.EqualTo(RBM_RAX | RBM_XMM0));
             Assert.That(call.GetMultiRegCount(compiler), Is.EqualTo(2));
             Assert.That(metadata.QueryCount, Is.GreaterThan(0));
         });
