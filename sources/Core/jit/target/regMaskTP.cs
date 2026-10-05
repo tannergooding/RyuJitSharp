@@ -216,6 +216,35 @@ public readonly struct regMaskTP : IEquatable<regMaskTP>
         return new regMaskTP(unchecked((regMask)lower));
     }
 
+#if TARGET_ARM
+    public static explicit operator int(regMaskTP mask) => unchecked((int)(long)mask._lower);
+
+    public static explicit operator byte(regMaskTP mask) => unchecked((byte)(long)mask._lower);
+
+    public static regMaskTP operator -(regMaskTP first, regMaskTP second)
+    {
+        var lower = unchecked((ulong)(long)first._lower - (ulong)(long)second._lower);
+        return new regMaskTP(unchecked((regMask)(long)lower));
+    }
+
+    public static bool operator >(
+        regMaskTP first,
+        regMaskTP second) =>
+        unchecked((ulong)(long)first._lower) > unchecked((ulong)(long)second._lower);
+
+    // C# requires relational operators to be declared in pairs.
+    public static bool operator <(
+        regMaskTP first,
+        regMaskTP second) =>
+        unchecked((ulong)(long)first._lower) < unchecked((ulong)(long)second._lower);
+
+    public static regMaskTP operator <<(regMaskTP first, int count)
+    {
+        var lower = unchecked((ulong)(long)first._lower << count);
+        return new regMaskTP(unchecked((regMask)(long)lower));
+    }
+#endif
+
     internal static ref regMaskTP ShiftRightAssign(ref regMaskTP destination, int count)
     {
         destination >>= count;

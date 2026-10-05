@@ -272,6 +272,57 @@ internal static unsafe class RegMaskOperationFamilyTests
         regMaskTP.RemoveRegNumFromMask(ref mask, REG_INT_FIRST, TYP_LONG);
         Assert.That(mask.IsEmpty, Is.True);
     }
+
+    [TestCase(0U, 0, 0)]
+    [TestCase(0x7FFFFFFFU, int.MaxValue, 0xFF)]
+    [TestCase(0x80000000U, int.MinValue, 0)]
+    [TestCase(uint.MaxValue, -1, 0xFF)]
+    public static void ArmScalarConversionsPreserveTheLowRegisterMaskBits(
+        uint bits, int expectedInt, byte expectedByte)
+    {
+        var mask = new regMaskTP((regMask)bits);
+
+        Assert.That((int)mask, Is.EqualTo(expectedInt));
+        Assert.That((byte)mask, Is.EqualTo(expectedByte));
+    }
+
+    [TestCase(0L, 1L, -1L)]
+    [TestCase(1L, long.MinValue, long.MinValue + 1)]
+    [TestCase(long.MinValue, 1L, long.MaxValue)]
+    public static void ArmSubtractionWrapsAtTheRegisterMaskWidth(
+        long first, long second, long expected)
+    {
+        var result = new regMaskTP((regMask)first) - new regMaskTP((regMask)second);
+
+        Assert.That(result, Is.EqualTo(new regMaskTP((regMask)expected)));
+    }
+
+    [Test]
+    public static void ArmMaskOrderingUsesUnsignedRegisterBits()
+    {
+        var belowSignBit = new regMaskTP((regMask)long.MaxValue);
+        var aboveSignBit = new regMaskTP((regMask)long.MinValue);
+        var allBits = new regMaskTP((regMask)(-1L));
+
+        Assert.That(aboveSignBit > belowSignBit, Is.True);
+        Assert.That(belowSignBit < aboveSignBit, Is.True);
+        Assert.That(allBits > aboveSignBit, Is.True);
+        Assert.That(aboveSignBit < allBits, Is.True);
+    }
+
+    [TestCase(0x4000000000000001L, 1, long.MinValue + 2)]
+    [TestCase(1L, 63, long.MinValue)]
+    [TestCase(long.MinValue, 1, 0L)]
+    public static void ArmLeftShiftMatchesTheNativeRegisterWidth(long bits, int count, long expected)
+    {
+        var mask = new regMaskTP((regMask)bits);
+        var result = mask << count;
+
+        Assert.That(result, Is.EqualTo(new regMaskTP((regMask)expected)));
+
+        mask <<= count;
+        Assert.That(mask, Is.EqualTo(result));
+    }
 #endif
 
 #if DEBUG
