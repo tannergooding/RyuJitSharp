@@ -25,6 +25,15 @@ public sealed class GenTreeMultiRegOp : GenTreeOp
         ClearOtherRegFlags();
     }
 
+    internal GenTreeMultiRegOp(genTreeOps oper, var_types type, GenTree op1, GenTree op2, GenTree source,
+        NodeThreading threading)
+        : base(oper, type, op1, op2, source, threading)
+    {
+        assert(oper.IsMultiRegOp);
+        _otherReg = REG_NA;
+        ClearOtherRegFlags();
+    }
+
     public regNumber OtherReg
     {
         get

@@ -3,8 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
-
 namespace RyuJitSharp;
 
 public sealed partial class Lowering : Phase
@@ -163,24 +161,4 @@ public sealed partial class Lowering : Phase
         AfterLowerBlocksWasm();
 #endif
     }
-
-#if LOWER_DECOMPOSE_LONGS
-    private sealed class DecomposeLongs
-    {
-        public DecomposeLongs(Compiler compiler, Lowering lowering)
-        {
-            throw new NotImplementedException("32-bit long decomposition is not ported.");
-        }
-
-        public void PrepareForDecomposition()
-        {
-            throw new NotImplementedException("32-bit long decomposition preparation is not ported.");
-        }
-
-        public void DecomposeBlock(BasicBlock block)
-        {
-            throw new NotImplementedException("32-bit long block decomposition is not ported.");
-        }
-    }
-#endif
 }
