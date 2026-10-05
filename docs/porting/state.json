@@ -10,20 +10,20 @@
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
-    "nextAction": "Inspect retained Windows-x64 functions in `src/coreclr/jit/codegencommon.cpp` at native residual HEAD 08df0d6a219f6151686cee00006ec16027910548. Select the first whole function with an exact managed `CodeGen` mapping, a bounded caller/dependency closure, and a focused test; preserve the live native WIP.",
+    "nextAction": "Resume Windows-x64 candidate selection at native residual HEAD f9b073873ebeb26261596abdd281805f3a2fd41d. `codegencommon.cpp` and `lsra.cpp` contain no function definitions, `lsrabuild.cpp` has no qualified member definitions, and `gcencode.cpp::gcInsertVarPtrDscSplit` is excluded from Windows AMD64. Inspect retained inline/member bodies in `src/coreclr/jit/lsra.h` for an exact managed mapping and bounded caller/test closure; preserve all live native WIP.",
     "activeBatch": {
-      "scope": "Select one retained common Windows-x64 JIT function with an exact managed destination and a complete bounded dependency closure; exclude closed candidate screens and avoid unrelated cleanup.",
-      "doneWhen": "Identify a concrete whole-function unit and its caller/test closure, then port, validate, retire eligible native definitions, update the checkpoint, and commit the coherent unit; if no candidate qualifies, record the exact screens and next concrete file.",
-      "validation": "Use source/mapping evidence to select the candidate. After selection, run its focused Windows-x64 Debug tests and compare phase output with the pinned runtime when the fixture supports it.",
+      "scope": "Select the next retained Windows-x64-reachable whole function with an exact managed mapping and bounded caller/dependency closure; begin with inline/member bodies in `lsra.h` and avoid unrelated cleanup.",
+      "doneWhen": "Identify one concrete whole-function unit and its caller/test closure, then port, validate, retire eligible native definitions, update the checkpoint, and commit the coherent unit; if no candidate qualifies, record the exact screens and next file.",
+      "validation": "Use native/managed source and caller evidence to select the candidate. After selection, run its focused Windows-x64 Debug tests and compare phase output with the pinned runtime when the fixture supports it.",
       "deferred": [
         "Do not reopen bounded screens that found no candidate without new caller or mapping evidence.",
         "Keep the unresolved native ilogb decision, ARM32 parser-blocked validation, and Wasm traversal design blocker out of unrelated batches."
       ],
       "retirement": {
         "oracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
-        "nativeResidualCommit": "08df0d6a219f6151686cee00006ec16027910548",
+        "nativeResidualCommit": "f9b073873ebeb26261596abdd281805f3a2fd41d",
         "completionGate": "Retire whole eligible definitions and orphan declarations in the same accepted batch, before its managed completion commit. Keep untranslated helpers and target branches in the residual; an absent definition is not evidence that it was ported.",
-        "nextDebtCursor": "At 08df0d6a219f6151686cee00006ec16027910548, `GenTree::BashToConst` and its declaration plus stale `ChangeOper` reference are retired; recovery ref `refs/copilot-recovery/runtime-port-before-bash-to-const-retirement-9c003612` preserves prior HEAD b4c6d26d30a01cbae24beac1a0d55b82ac54dff2. Bounded screens with no eligible candidate: utils.cpp, emitxarch.cpp, ee_il_dll.cpp, disasm.cpp, gcinfo.cpp, gentree.cpp, emit.cpp, compiler.cpp, alloc.cpp, hashbv.cpp, and helperexpansion.cpp. Next search is retained common Windows-x64 code in codegencommon.cpp."
+        "nextDebtCursor": "At f9b073873ebeb26261596abdd281805f3a2fd41d, `GenTree::BashToConst` and its declaration plus stale `ChangeOper` reference are retired; recovery ref `refs/copilot-recovery/runtime-port-before-bash-to-const-retirement-9c003612` preserves prior HEAD b4c6d26d30a01cbae24beac1a0d55b82ac54dff2. RISC-V `CodeGen::genEmitGSCookieCheck` and its orphan `codegen.h` declaration are retired; recovery ref `refs/copilot-recovery/runtime-port-before-gscookie-riscv-20261005` preserves prior HEAD 08df0d6a219f6151686cee00006ec16027910548. Bounded screens with no eligible candidate: utils.cpp, emitxarch.cpp, ee_il_dll.cpp, disasm.cpp, gcinfo.cpp, gentree.cpp, emit.cpp, compiler.cpp, alloc.cpp, hashbv.cpp, helperexpansion.cpp, codegencommon.cpp (no functions), lsra.cpp (comments only), and lsrabuild.cpp (no qualified member definitions). `gcencode.cpp::gcInsertVarPtrDscSplit` is not a Windows-x64 candidate: native code is guarded out for Windows AMD64 and the residual has no callers; its non-x64/JIT32 body remains untranslated. Next inspect `lsra.h` inline/member bodies for a bounded Windows-x64 mapping."
       }
     },
     "validationResourcePolicy": {
@@ -72,8 +72,12 @@
       "ref": "refs/porting/snapshots/2026-09-22-csharp-wip"
     },
     "nativeResidual": {
-      "commit": "08df0d6a219f6151686cee00006ec16027910548",
+      "commit": "f9b073873ebeb26261596abdd281805f3a2fd41d",
       "ref": "refs/heads/main"
+    },
+    "nativePreGSCookieRetirement": {
+      "commit": "08df0d6a219f6151686cee00006ec16027910548",
+      "ref": "refs/copilot-recovery/runtime-port-before-gscookie-riscv-20261005"
     },
     "nativePreBashToConstRetirement": {
       "commit": "b4c6d26d30a01cbae24beac1a0d55b82ac54dff2",

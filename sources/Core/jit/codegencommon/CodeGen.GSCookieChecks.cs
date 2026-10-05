@@ -142,6 +142,34 @@ public sealed partial class CodeGen
         Emitter.emitIns_J_cond_la(INS_beq, gsCheckBlk, regGSConst, regGSValue);
         genEmitHelperCall(CORINFO_HELP_FAIL_FAST, 0, EA_UNKNOWN, regGSConst);
         genDefineTempLabel(gsCheckBlk);
+#elif TARGET_RISCV64
+        noway_assert((_compiler.gsGlobalSecurityCookieAddr is not null) ||
+            (_compiler.gsGlobalSecurityCookieVal != 0));
+
+        var tempRegs = genGetGSCookieTempRegs(tailCall, null);
+        assert(tempRegs != RBM_NONE);
+        var regGSConst = (regNumber)BitOperations.TrailingZeroCount((ulong)tempRegs.IntRegSet);
+        tempRegs &= ~regMaskTP.CreateFromRegNum(regGSConst, regGSConst.SingleTypeMask);
+        assert(tempRegs != RBM_NONE);
+        var regGSValue = (regNumber)BitOperations.TrailingZeroCount((ulong)tempRegs.IntRegSet);
+
+        if (_compiler.gsGlobalSecurityCookieAddr is null)
+        {
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, regGSConst, _compiler.gsGlobalSecurityCookieVal);
+        }
+        else
+        {
+            Emitter.emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, regGSConst,
+                unchecked((nint)_compiler.gsGlobalSecurityCookieAddr));
+            _regSet.verifyRegUsed(regGSConst);
+        }
+
+        Emitter.emitIns_R_S(INS_ld, EA_PTRSIZE, regGSValue, _compiler.lvaGSSecurityCookie, 0);
+
+        var gsCheckBlk = genCreateTempLabel();
+        Emitter.emitIns_J_cond_la(INS_beq, gsCheckBlk, regGSConst, regGSValue);
+        genEmitHelperCall(CORINFO_HELP_FAIL_FAST, 0, EA_UNKNOWN, regGSConst);
+        genDefineTempLabel(gsCheckBlk);
 #elif TARGET_WASM
         // TODO-WASM: GS cookie checks have limited utility on WASM since they can only help
         // with detecting linear memory stack corruption. Decide if we want them anyway.

@@ -138,6 +138,29 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     }
 #endif
 
+#if TARGET_RISCV64
+    [TestCase(false, "Target immediate materialization is not implemented.")]
+    [TestCase(true, "Absolute-address instruction recording requires xarch.")]
+    public static void GSCookieCheckReachesTheRiscVEmissionBoundary(bool useCookieAddress, string expectedBoundary)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            if (useCookieAddress)
+            {
+                compiler.gsGlobalSecurityCookieAddr = (nint*)0x12345678;
+            }
+            else
+            {
+                compiler.gsGlobalSecurityCookieVal = 0x1234;
+            }
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genEmitGSCookieCheck(false));
+
+            Assert.That(failure?.Message, Does.Contain(expectedBoundary));
+        });
+    }
+#endif
+
     [Test]
     public static void LocalLoadsSkipAllocatorManagedRegisters()
     {
