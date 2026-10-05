@@ -79,6 +79,98 @@ internal static class Arm64CodeGenLockedInstructionTests
         });
     }
 
+    [TestCase(TYP_BYTE, INS_casalb, INS_sxtb)]
+    [TestCase(TYP_SHORT, INS_casalh, INS_sxth)]
+    public static void CompareExchangeUsesAtomicCompareAndSwapAndExtendsSignedResults(var_types type,
+        instruction expectedAtomic, instruction expectedExtension)
+    {
+        Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
+        {
+            EnableAtomics(compiler);
+            var tree = new GenTreeCmpXchg(type, Register(compiler, TYP_BYREF, REG_R4),
+                Register(compiler, type, REG_R5), Register(compiler, type, REG_R6))
+            {
+                RegNum = REG_R3,
+            };
+
+            codeGen.genCodeForTreeNode(tree);
+
+            var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(3));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_mov));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R6));
+            Assert.That(descriptors[1].idIns(), Is.EqualTo(expectedAtomic));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R3));
+            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_R5));
+            Assert.That(descriptors[1].idReg3(), Is.EqualTo(REG_R4));
+            Assert.That(descriptors[2].idIns(), Is.EqualTo(expectedExtension));
+            Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_R3));
+            Assert.That(descriptors[2].idReg2(), Is.EqualTo(REG_R3));
+        });
+    }
+
+    [TestCase(true, 0, INS_cbnz, 5)]
+    [TestCase(true, 1, INS_cmp, 6)]
+    [TestCase(false, 0, INS_cmp, 6)]
+    public static void CompareExchangeExclusivePathChecksComparandAndRetriesStore(bool contained,
+        int comparandValue, instruction expectedCompare, int expectedCount)
+    {
+        Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compCurBB = new BasicBlock(null, null);
+            var address = Register(compiler, TYP_BYREF, REG_R4);
+            var data = Register(compiler, TYP_INT, REG_R5);
+            var comparand = compiler.gtNewIconNode(TYP_INT, comparandValue);
+            if (contained)
+            {
+                comparand.IsContained = true;
+                comparand.RegNum = REG_NA;
+            }
+            else
+            {
+                comparand.RegNum = REG_R6;
+            }
+
+            var tree = new GenTreeCmpXchg(TYP_INT, address, data, comparand)
+            {
+                RegNum = REG_R3,
+            };
+            codeGen.InternalRegisters.Add(tree, RegisterMask(REG_R7));
+
+            codeGen.genCodeForTreeNode(tree);
+
+            var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(expectedCount));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_ldaxr));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R4));
+
+            var compareIndex = contained && comparandValue == 0 ? 1 : 2;
+            if (expectedCompare == INS_cmp)
+            {
+                Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_cmp));
+                Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R3));
+                if (contained)
+                {
+                    Assert.That(descriptors[1].idSmallCns(), Is.EqualTo(comparandValue));
+                }
+                else
+                {
+                    Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_R6));
+                }
+            }
+
+            var compareFailBranch = (Emitter.instrDescJmp)descriptors[compareIndex];
+            var retryBranch = (Emitter.instrDescJmp)descriptors[expectedCount - 2];
+            Assert.That(compareFailBranch.idIns(), Is.EqualTo(expectedCompare is INS_cbnz ? INS_cbnz : INS_bne));
+            Assert.That(retryBranch.idIns(), Is.EqualTo(INS_cbnz));
+            Assert.That(compareFailBranch.idjTarget, Is.Not.SameAs(retryBranch.idjTarget));
+            Assert.That(retryBranch.idjTarget?.HasFlag(BBF_HAS_LABEL), Is.True);
+            Assert.That(descriptors[expectedCount - 1].idIns(), Is.EqualTo(INS_dmb));
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void ExclusiveAddRecordsItsConditionalRetryBranch(bool useImmediate)

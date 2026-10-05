@@ -388,6 +388,119 @@ public sealed partial class CodeGen
 
         _gcInfo.gcMarkRegSetNpt(regMaskTP.CreateFromRegNum(loc, loc.SingleTypeMask));
         genProduceReg(tree);
+#elif TARGET_ARM64
+        assert(tree.Oper is GT_CMPXCHG);
+
+        var targetType = tree.Type;
+        var targetReg = tree.RegNum;
+        var address = tree.Addr;
+        var data = tree.Data;
+        var comparand = tree.Comparand;
+        var dataReg = data.RegNum;
+        var addressReg = address.RegNum;
+        var comparandReg = comparand.RegNum;
+        var dataSize = data.Type.EmitActualSize;
+
+        genConsumeAddress(address);
+        genConsumeRegs(data);
+        genConsumeRegs(comparand);
+
+        if (_compiler.compOpportunisticallyDependsOn(InstructionSet_Atomics))
+        {
+            // CASAL uses the result register for the expected value and replaces it with the observed value.
+            Emitter.emitIns_Mov(INS_mov, dataSize, targetReg, comparandReg, canSkip: true);
+
+            noway_assert((addressReg != targetReg) || (targetReg == comparandReg));
+            noway_assert((dataReg != targetReg) || (targetReg == comparandReg));
+
+            var ins = INS_casal;
+            if (varTypeIsByte(targetType))
+            {
+                ins = INS_casalb;
+            }
+            else if (varTypeIsShort(targetType))
+            {
+                ins = INS_casalh;
+            }
+
+            Emitter.emitIns_R_R_R(ins, dataSize, targetReg, dataReg, addressReg);
+        }
+        else
+        {
+            var exResultReg = InternalRegisters.Extract(tree, RBM_ALLINT);
+
+            noway_assert(addressReg != targetReg);
+            noway_assert(dataReg != targetReg);
+            noway_assert(comparandReg != targetReg);
+            noway_assert(addressReg != dataReg);
+            noway_assert(targetReg != REG_NA);
+            noway_assert(exResultReg != REG_NA);
+            noway_assert(exResultReg != targetReg);
+
+            assert(address.IsUsedFromReg);
+            assert(data.IsUsedFromReg);
+            assert(!comparand.IsUsedFromMemory);
+
+            noway_assert(exResultReg != dataReg);
+            noway_assert(exResultReg != addressReg);
+
+            // The retry loop reuses the address after genConsumeAddress clears its pointer state.
+            _gcInfo.gcMarkRegPtrVal(addressReg, address.Type);
+
+            var labelRetry = genCreateTempLabel();
+            var labelCompareFail = genCreateTempLabel();
+            genDefineTempLabel(labelRetry);
+
+            var insLd = INS_ldaxr;
+            var insSt = INS_stlxr;
+            if (varTypeIsByte(targetType))
+            {
+                insLd = INS_ldaxrb;
+                insSt = INS_stlxrb;
+            }
+            else if (varTypeIsShort(targetType))
+            {
+                insLd = INS_ldaxrh;
+                insSt = INS_stlxrh;
+            }
+
+            Emitter.emitIns_R_R(insLd, dataSize, targetReg, addressReg);
+
+            if (comparand.IsContainedIntOrIImmed())
+            {
+                if (comparand.IsIntegralConst(0))
+                {
+                    Emitter.emitIns_J_R(INS_cbnz, targetType.EmitActualSize, labelCompareFail, targetReg);
+                }
+                else
+                {
+                    Emitter.emitIns_R_I(INS_cmp, targetType.EmitActualSize, targetReg,
+                        comparand.AsIntConCommon().IconValue);
+                    Emitter.emitIns_J(INS_bne, labelCompareFail);
+                }
+            }
+            else
+            {
+                Emitter.emitIns_R_R(INS_cmp, targetType.EmitActualSize, targetReg, comparandReg);
+                Emitter.emitIns_J(INS_bne, labelCompareFail);
+            }
+
+            Emitter.emitIns_R_R_R(insSt, dataSize, exResultReg, dataReg, addressReg);
+            Emitter.emitIns_J_R(INS_cbnz, EA_4BYTE, labelRetry, exResultReg);
+            genDefineTempLabel(labelCompareFail);
+
+            // The exclusive pair has acquire/release ordering; this barrier also covers the compare-failure path.
+            instGen_MemoryBarrier(BARRIER_FULL);
+            _gcInfo.gcMarkRegSetNpt(address.RegMask);
+        }
+
+        if (varTypeIsSmall(targetType) && varTypeIsSigned(targetType))
+        {
+            var mov = varTypeIsShort(targetType) ? INS_sxth : INS_sxtb;
+            Emitter.emitIns_Mov(mov, EA_4BYTE, targetReg, targetReg, canSkip: false);
+        }
+
+        genProduceReg(tree);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Compare-exchange generation outside xarch is not implemented.");
 #else
