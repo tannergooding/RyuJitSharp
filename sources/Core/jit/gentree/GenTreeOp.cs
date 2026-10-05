@@ -245,12 +245,12 @@ public class GenTreeOp : GenTreeUnOp
             (op2.Oper.IsIntegralConst && FitsIn(TYP_INT, op2.AsIntConCommon().IntegralValue)));
         assert(!op2.HasOverflowCheckEx);
 
-        var op1ZeroExtends = op1.IsUnsigned;
-        var op2ZeroExtends = op2.Oper is GT_CAST ? op2.IsUnsigned : op2.AsIntConCommon().IntegralValue >= 0;
+        var op1ZeroExtends = op1.AsCast().IsUnsigned;
+        var op2ZeroExtends = op2.Oper is GT_CAST ? op2.AsCast().IsUnsigned : op2.AsIntConCommon().IntegralValue >= 0;
         var op2AnyExtensionIsSuitable = op2.Oper.IsIntegralConst && op2ZeroExtends;
         assert((op1ZeroExtends == op2ZeroExtends) || op2AnyExtensionIsSuitable);
 
-        assert(op1.IsUnsigned == IsUnsigned);
+        assert(op1.AsCast().IsUnsigned == IsUnsigned);
     }
 #endif
 
