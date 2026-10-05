@@ -511,6 +511,8 @@ public sealed partial class Lowering
         }
 #elif TARGET_ARM64
         ContainCheckBinary(node);
+#elif TARGET_ARM
+        ContainCheckBinary(node);
 #elif TARGET_RISCV64
         ContainCheckBinary(node);
 #elif TARGET_LOONGARCH64
@@ -573,6 +575,10 @@ public sealed partial class Lowering
             mul.Flags &= GTF_COMMON_MASK;
         }
 
+        ContainCheckMul(mul);
+        return mul.Next;
+#elif TARGET_ARM
+        assert(mul.Oper.IsMul);
         ContainCheckMul(mul);
         return mul.Next;
 #elif TARGET_RISCV64

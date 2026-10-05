@@ -3429,6 +3429,15 @@
         "retirement": "Retired the complete residual compRsvdRegCheck definition (173 lines) and its exclusive declaration/access section from the consolidated Remove ported code commit. Native HEAD ab68a3a2ac497e8979414c553af1c6e4a97dac8c remains solely parented to oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e; recovery ref refs/copilot-recovery/arm32-comp-rsvd-reg-before-9601fab1 preserves pre-amend HEAD 9601fab1f64e1ba3c458ae5f417e8c0a404f78bd.",
         "limits": "ARM32 unwind behavior remains unported; the compile-only dependency stubs terminate. These cross-target tests are not Windows-x64 parity evidence. Continue the Windows-x64 port and mapped retirement debt separately."
       },
+      "pendingUnit": {
+        "status": "completed",
+        "scope": "Port ARM32 immediate containment and multiply lowering in shared Lowering: IsContainableImmed, ContainCheckBinary, ContainCheckMul, and LowerMul. Preserve ARM64 and other target branches; this independent ARM32 dependency does not count as Windows-x64 acceptance.",
+        "doneWhen": "ARM32 behavior matches the pinned lowerarmarch.cpp bodies; focused tests cover add/sub and ALU immediate boundaries, commutative first-operand containment, and multiply dispatch in Debug and Release with no failures or skips. Remove only the four corresponding lowerarmarch.cpp definitions after acceptance; retain lower.h declarations because other target definitions remain. Commit the managed implementation, tests, and evidence while preserving unrelated WIP.",
+        "validation": "Full-analysis Target.UnitTests on a win-x64 host for linux-arm target passed 10/10 in Debug and Release with zero skips, using AnalysisLevel=latest-all, default compiler CPU, and compiler-only DOTNET_GCConserveMemory=5. Focused Windows-x64 Core ArithmeticLoweringTests controls passed 121/121 in Debug and Release. These are target-source and host-control tests, not ARM32 execution or parity evidence.",
+        "deferred": "Do not port other lowerarmarch.cpp functions or enable ARM32 DoPhase/phase execution. Keep x86 isTrivialPointerSizedStruct unaccepted and preserve user-owned native WIP, the existing CFI/NativeAOT branches, and all other target paths.",
+        "retirement": "Consolidated native HEAD 3d6a806dba3c89d5cbe79a1eb717cd60f12a3666 removes only the four complete lowerarmarch.cpp definitions and their attached comments. Its sole parent remains oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e; recovery ref refs/copilot-recovery/arm32-lowering-before-20261005-073646 preserves prior HEAD e3ca6874cb04758b07f6dfa1dd74c6e7bf4c2181. Shared lower.h declarations remain for other target definitions.",
+        "acceptanceEvidence": "The ARM32 immediate classification, first-operand containment swap, and GT_MUL/GT_MULHI lowering tests passed 10/10 in both configurations. The additional host-width test proves the ARM32 immediate cast truncates a 64-bit host constant to target width before encoding."
+      },
       "swiftErrorReturnPhase": {
         "status": "completed-managed-known-native-absent",
         "scope": "Implement the complete SWIFT_SUPPORT Compiler::fgAddSwiftErrorReturns phase: replace Swift error-argument local uses, convert ordinary return nodes to Swift error returns, and use the merged return error local for the merged return block.",
@@ -4469,7 +4478,7 @@
           "validation": "Windows-x64 StructPromotionTests passed 25/25 Debug with zero skips. LoongArchRiscVLocalCodeGenTests passed 56/56 Debug and Release for LoongArch64 and 57/57 Debug and Release for RISC-V64, zero skips; these target builds compile the changed conditional branch but do not exercise cross-target struct-promotion behavior. A RISC-V-filtered Core unit-test attempt failed during test-source compilation on unresolved insTupleType and INS_* symbols before test discovery; it is not acceptance evidence.",
           "limits": "No new native edit or runtime-parity claim. The Core unit project is not currently a usable RISC-V test harness; the focused target project and Windows-x64 helper tests are the recorded evidence."
         },
-        "latestNativeAmendment": "e3ca6874cb04758b07f6dfa1dd74c6e7bf4c2181 amends the consolidated Remove ported code commit with the mapped GenTreeCall::HasSwiftErrorHandling inline body (9 deletion lines); the sole parent remains pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. Recovery ref refs/copilot-recovery/has-swift-error-handling-before-20261005 preserves prior HEAD bbb6fa6e5bb3015dc1b5f36262025588ea5ad294.",
+        "latestNativeAmendment": "3d6a806dba3c89d5cbe79a1eb717cd60f12a3666 amends the consolidated Remove ported code commit by removing the complete IsContainableImmed, LowerMul, ContainCheckBinary, and ContainCheckMul definitions from lowerarmarch.cpp; the sole parent remains pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. Recovery ref refs/copilot-recovery/arm32-lowering-before-20261005-073646 preserves prior HEAD e3ca6874cb04758b07f6dfa1dd74c6e7bf4c2181. The prior GenTreeCall::HasSwiftErrorHandling retirement is part of the same consolidated tree."
         "returnTypeDescAbiReturnRegs": {
           "status": "completed-managed-binding-and-callsite-integration",
           "scope": "Implement the whole ReturnTypeDesc::GetABIReturnRegs mask helper and bind the xarch and shared ARM LSRA call builders to it.",
@@ -12052,6 +12061,10 @@
     "armPredicateNativeRetirement": {
       "commit": "75d4f5bbc99882a7c9d98cda30b5fd9e1447d525",
       "ref": "refs/copilot-recovery/arm-predicate-before-20261005"
+    },
+    "arm32LoweringBeforeRetirement": {
+      "commit": "e3ca6874cb04758b07f6dfa1dd74c6e7bf4c2181",
+      "ref": "refs/copilot-recovery/arm32-lowering-before-20261005-073646"
     }
   },
   "sourceMap": [

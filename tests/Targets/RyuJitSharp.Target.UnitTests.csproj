@@ -47,6 +47,7 @@
 
   <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-arm')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-arm')))">
     <Compile Include="..\Core\LinearScanScalarConversionTests.cs" Link="LinearScanScalarConversionTests.cs" />
+    <Compile Include="..\Core\Arm32ArithmeticLoweringTests.cs" Link="Arm32ArithmeticLoweringTests.cs" />
     <Compile Include="..\Core\ArmEmitterPredicateTests.cs" Link="ArmEmitterPredicateTests.cs" />
     <Compile Include="..\Core\RegMaskOperationFamilyTests.cs" Link="RegMaskOperationFamilyTests.cs" />
     <Compile Include="..\Core\EmitterFrameReferenceTests.cs" Link="EmitterFrameReferenceTests.cs" />

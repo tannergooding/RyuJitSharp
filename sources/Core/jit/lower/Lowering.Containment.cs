@@ -214,6 +214,51 @@ public sealed partial class Lowering
         }
 
         return false;
+#elif TARGET_ARM
+        if (!varTypeIsFloating(parentNode.Type))
+        {
+            if (!childNode.Oper.IsCnsIntOrI)
+            {
+                return false;
+            }
+
+            var constant = childNode.AsIntCon();
+            if (constant.ImmedValNeedsReloc(CompilerInstance))
+            {
+                return CompilerInstance.IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS.IsWindows &&
+                    constant.IsIconHandle(GTF_ICON_SECREL_OFFSET);
+            }
+
+            var immVal = unchecked((int)constant.IconValue);
+            var flags = parentNode.HasOverflowCheckEx || (parentNode.Flags & GTF_SET_FLAGS) is not 0
+                ? INS_FLAGS_SET
+                : INS_FLAGS_DONT_CARE;
+
+            switch (parentNode.Oper)
+            {
+                case GT_ADD:
+                case GT_SUB:
+                {
+                    return Emitter.emitIns_valid_imm_for_add(immVal, flags);
+                }
+
+                case GT_EQ:
+                case GT_NE:
+                case GT_LT:
+                case GT_LE:
+                case GT_GE:
+                case GT_GT:
+                case GT_CMP:
+                case GT_AND:
+                case GT_OR:
+                case GT_XOR:
+                {
+                    return Emitter.emitIns_valid_imm_for_alu(immVal);
+                }
+            }
+        }
+
+        return false;
 #elif TARGET_RISCV64
         if (!varTypeIsFloating(parentNode.Type))
         {

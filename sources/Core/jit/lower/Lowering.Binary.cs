@@ -57,6 +57,19 @@ public sealed partial class Lowering
         {
             SetRegOptionalForBinOp(node, IsSafeToMarkRegOptional(node, op1), IsSafeToMarkRegOptional(node, op2));
         }
+#elif TARGET_ARM
+        var op1 = node.Op1;
+        var op2 = node.Op2;
+        if (CheckImmedAndMakeContained(node, op2))
+        {
+            return;
+        }
+
+        if (node.Oper.IsCommutative && CheckImmedAndMakeContained(node, op1))
+        {
+            MakeSrcContained(node, op1);
+            (node.Op1, node.Op2) = (node.Op2, node.Op1);
+        }
 #elif TARGET_LOONGARCH64
         CheckImmedAndMakeContained(node, node.Op2);
 #elif TARGET_ARM64
