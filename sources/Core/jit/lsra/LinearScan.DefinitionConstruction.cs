@@ -29,7 +29,8 @@ public sealed partial class LinearScan
         return definition;
     }
 
-    private RefPosition buildInternalIntRegisterDefForNode(GenTree tree, SingleTypeRegSet candidates)
+    private RefPosition buildInternalIntRegisterDefForNode(
+        GenTree tree, SingleTypeRegSet candidates = SRBM_NONE)
     {
         assert((candidates & ~_availableIntRegs) == SRBM_NONE);
         return defineNewInternalTemp(tree, TYP_INT, candidates);

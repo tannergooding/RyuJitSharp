@@ -57,6 +57,24 @@ public sealed partial class LinearScan
         var sourceCount = buildOperandUses(cast.CastOp);
         _ = buildDef(cast, SRBM_NONE);
         return sourceCount;
+#elif TARGET_RISCV64
+        var castDescriptor = new CodeGen.GenIntCastDesc(cast);
+        if (castDescriptor.Check is not CodeGen.GenIntCastDesc.CheckKind.CHECK_NONE)
+        {
+            _ = buildInternalIntRegisterDefForNode(cast);
+        }
+
+        buildInternalRegisterUses();
+        var sourceCount = buildOperandUses(cast.CastOp);
+        _ = buildDef(cast, SRBM_NONE);
+
+        if (varTypeIsFloating(cast.CastOp.Type) && !varTypeIsFloating(cast.Type))
+        {
+            _ = buildInternalIntRegisterDefForNode(cast);
+            buildInternalRegisterUses();
+        }
+
+        return sourceCount;
 #else
         NYI("LinearScan.buildCast outside AMD64");
         throw new FatalJitException("LinearScan.buildCast outside AMD64.");

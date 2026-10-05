@@ -354,6 +354,123 @@ public sealed partial class LinearScan
         buildInternalRegisterUses();
         buildKills(block, getKillSetForBlockStore(block));
         return useCount;
+#elif TARGET_RISCV64
+        assert(block.Oper.IsStoreBlk);
+
+        var destinationAddress = block.Addr;
+        var source = block.Data;
+        var size = block.Size;
+        GenTree? sourceAddressOrFill = null;
+
+        var destinationAddressCandidates = SRBM_NONE;
+        var sourceCandidates = SRBM_NONE;
+        var sizeCandidates = SRBM_NONE;
+
+        if (block.IsInitBlkOp)
+        {
+            if (source.Oper is GT_INIT_VAL)
+            {
+                assert(source.IsContained);
+                source = source.AsUnOp().Op1;
+            }
+
+            sourceAddressOrFill = source;
+
+            switch (block._kind)
+            {
+                case GenTreeBlk.BlkOpKindUnroll:
+                {
+                    if (destinationAddress.IsContained)
+                    {
+                        // Code generation computes contained destinations and may need a register for the address.
+                        _ = buildInternalIntRegisterDefForNode(block);
+                    }
+
+                    var destinationAlignmentIsKnown = destinationAddress.Oper is GT_LCL_ADDR;
+                    if (destinationAlignmentIsKnown && (size > FP_REGSIZE_BYTES))
+                    {
+                        // Larger aligned blocks may use SIMD instructions; LSRA still reserves an integer temp.
+                        _ = buildInternalIntRegisterDefForNode(block);
+                    }
+
+                    break;
+                }
+
+                case GenTreeBlk.BlkOpKindLoop:
+                {
+                    _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
+                    break;
+                }
+
+                default:
+                {
+                    throw new FatalJitException($"Unsupported RISC-V initialization block kind {block._kind}.");
+                }
+            }
+        }
+        else
+        {
+            if (source.Oper is GT_IND)
+            {
+                assert(source.IsContained);
+                sourceAddressOrFill = source.AsIndir().Addr;
+            }
+
+            switch (block._kind)
+            {
+                case GenTreeBlk.BlkOpKindUnroll:
+                {
+                    _ = buildInternalIntRegisterDefForNode(block);
+                    break;
+                }
+
+                default:
+                {
+                    throw new FatalJitException($"Unsupported RISC-V copy block kind {block._kind}.");
+                }
+            }
+        }
+
+        if (sizeCandidates != SRBM_NONE)
+        {
+            _ = buildInternalIntRegisterDefForNode(block, sizeCandidates);
+        }
+
+        var useCount = 0;
+        if (!destinationAddress.IsContained)
+        {
+            _ = buildUse(destinationAddress, destinationAddressCandidates);
+            useCount++;
+        }
+        else if (destinationAddress.Oper.IsAddrMode)
+        {
+            var addressMode = destinationAddress.AsAddrMode();
+            if (addressMode.BaseAddress is { } baseAddress)
+            {
+                useCount += buildAddrUses(baseAddress, destinationAddressCandidates);
+            }
+        }
+
+        if (sourceAddressOrFill is not null)
+        {
+            if (!sourceAddressOrFill.IsContained)
+            {
+                _ = buildUse(sourceAddressOrFill, sourceCandidates);
+                useCount++;
+            }
+            else if (sourceAddressOrFill.Oper.IsAddrMode)
+            {
+                var addressMode = sourceAddressOrFill.AsAddrMode();
+                if (addressMode.BaseAddress is { } baseAddress)
+                {
+                    useCount += buildAddrUses(baseAddress, sourceCandidates);
+                }
+            }
+        }
+
+        buildInternalRegisterUses();
+        buildKills(block, getKillSetForBlockStore(block));
+        return useCount;
 #else
         NYI("LinearScan.buildBlockStore outside xarch and ARM64");
         throw new FatalJitException("LinearScan.buildBlockStore outside xarch and ARM64.");
