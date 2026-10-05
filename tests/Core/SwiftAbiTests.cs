@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using NUnit.Framework;
+using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.CorInfoCallConvExtension;
 using static RyuJitSharp.CorInfoType;
 using static RyuJitSharp.GenTreeFlags;
@@ -159,6 +160,64 @@ internal static unsafe class SwiftAbiTests
     }
 
     [Test]
+    public static void SwiftErrorReturnPhaseSkipsMethodsWithoutSwiftErrorArgument()
+    {
+        WithSwiftCompiler("SwiftError", (compiler, _, _) => {
+            var block = AddBlock(compiler, BBJ_RETURN);
+            var ret = new GenTreeUnOp(GT_RETURN, TYP_INT, compiler.gtNewIconNode(TYP_INT, 7));
+            var statement = AddStatement(compiler, block, ret);
+
+            Assert.That(compiler.fgAddSwiftErrorReturns(), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(statement.RootNode, Is.SameAs(ret));
+            Assert.That(ret.Oper, Is.EqualTo(GT_RETURN));
+        });
+    }
+
+    [Test]
+    public static void SwiftErrorReturnPhaseRewritesErrorReferencesAndReturnOperands()
+    {
+        WithSwiftCompiler("SwiftError", (compiler, _, _) => {
+            ConfigureSwiftErrorReturnLocals(compiler);
+            var block = AddBlock(compiler, BBJ_RETURN);
+            var errorUse = compiler.gtNewLclVarNode(TYP_I_IMPL, compiler.lvaSwiftErrorArg);
+            _ = AddStatement(compiler, block, errorUse);
+            var value = compiler.gtNewLclVarNode(TYP_INT, 2);
+            _ = AddStatement(compiler, block, new GenTreeUnOp(GT_RETURN, TYP_INT, value));
+
+            Assert.That(compiler.fgAddSwiftErrorReturns(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(block.FirstStmt!.RootNode.Oper, Is.EqualTo(GT_LCL_ADDR));
+            Assert.That(block.FirstStmt.RootNode.AsLclVarCommon().LclNum, Is.EqualTo(compiler.lvaSwiftErrorLocal));
+            var swiftRet = block.LastStmt!.RootNode;
+            Assert.That(swiftRet.Oper, Is.EqualTo(GT_SWIFT_ERROR_RET));
+            Assert.That(swiftRet.AsOp().Op1.Oper, Is.EqualTo(GT_LCL_FLD));
+            Assert.That(swiftRet.AsOp().Op1.AsLclVarCommon().LclNum, Is.EqualTo(compiler.lvaSwiftErrorLocal));
+            Assert.That(swiftRet.AsOp().Op1.AsLclVarCommon().LclOffs, Is.Zero);
+            Assert.That(swiftRet.AsOp().Op2, Is.SameAs(value));
+        });
+    }
+
+    [Test]
+    public static void SwiftErrorReturnPhaseUsesTheMergedReturnErrorLocal()
+    {
+        WithSwiftCompiler("SwiftError", (compiler, _, _) => {
+            ConfigureSwiftErrorReturnLocals(compiler);
+            var block = AddBlock(compiler, BBJ_RETURN);
+            compiler.genReturnBB = block;
+            var value = compiler.gtNewIconNode(TYP_INT, 7);
+            _ = AddStatement(compiler, block, new GenTreeUnOp(GT_RETURN, TYP_INT, value));
+
+            Assert.That(compiler.fgAddSwiftErrorReturns(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(compiler.genReturnErrorLocal, Is.Not.EqualTo(BAD_VAR_NUM));
+            Assert.That(compiler.lvaGetDesc(compiler.genReturnErrorLocal).Type, Is.EqualTo(TYP_I_IMPL));
+            var swiftRet = block.LastStmt!.RootNode;
+            Assert.That(swiftRet.Oper, Is.EqualTo(GT_SWIFT_ERROR_RET));
+            Assert.That(swiftRet.AsOp().Op1.Oper, Is.EqualTo(GT_LCL_VAR));
+            Assert.That(swiftRet.AsOp().Op1.AsLclVarCommon().LclNum, Is.EqualTo(compiler.genReturnErrorLocal));
+            Assert.That(swiftRet.AsOp().Op2, Is.SameAs(value));
+        });
+    }
+
+    [Test]
     public static void PartialLongLoweringReconstructsTheSevenByteTail()
     {
         WithSwiftCompiler("Ordinary", (compiler, state, cls) => {
@@ -275,6 +334,45 @@ internal static unsafe class SwiftAbiTests
         Assert.That(cast.Op1.Type, Is.EqualTo(fieldType));
     }
 
+    private static BasicBlock AddBlock(Compiler compiler, BBKinds kind)
+    {
+#if DEBUG
+        compiler.fgSafeBasicBlockCreation = true;
+#endif
+        var block = BasicBlock.New(compiler, kind);
+        if (compiler.fgLastBB is BasicBlock previous)
+        {
+            previous.Next = block;
+        }
+        else
+        {
+            compiler.fgFirstBB = block;
+        }
+        compiler.fgLastBB = block;
+
+        return block;
+    }
+
+    private static Statement AddStatement(Compiler compiler, BasicBlock block, GenTree tree)
+    {
+        var statement = compiler.fgNewStmtFromTree(tree);
+        compiler.fgInsertStmtAtEnd(block, statement);
+        return statement;
+    }
+
+    private static void ConfigureSwiftErrorReturnLocals(Compiler compiler)
+    {
+        compiler.info.compCallConv = Swift;
+        compiler.lvaCount = 3;
+        compiler.lvaTable[0].Type = TYP_I_IMPL;
+        compiler.lvaTable[1].Type = TYP_I_IMPL;
+        compiler.lvaTable[2].Type = TYP_INT;
+        compiler.lvaSwiftErrorArg = 0;
+        compiler.lvaSwiftErrorLocal = 1;
+        compiler.genReturnBB = null;
+        compiler.genReturnErrorLocal = BAD_VAR_NUM;
+    }
+
     private static void ConfigureArgs(SwiftState* state, CORINFO_CLASS_STRUCT_** handles, CorInfoType* types)
     {
         state->Handles = handles;
@@ -306,6 +404,9 @@ internal static unsafe class SwiftAbiTests
         compiler.info.compCompHnd = &state.Interface;
         CORINFO_METHOD_INFO methodInfo = default;
         compiler.info.compMethodInfo = &methodInfo;
+#if DEBUG
+        compiler.info.compFullName = name;
+#endif
         compiler.info.compMaxStack = 8;
         compiler.opts.jitFlags = &flags;
         compiler.compCurBB = new BasicBlock(null, null);

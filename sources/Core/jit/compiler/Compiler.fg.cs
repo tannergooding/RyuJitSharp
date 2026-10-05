@@ -13500,8 +13500,91 @@ public partial class Compiler
     }
 
 #if SWIFT_SUPPORT
-    // TODO: Port phase - fgAddSwiftErrorReturns
-    public PhaseStatus fgAddSwiftErrorReturns() => PhaseStatus.MODIFIED_NOTHING;
+    private struct ReplaceSwiftErrorVisitor : IGenTreeVisitor<ReplaceSwiftErrorVisitor>
+    {
+        public static bool DoPreOrder => true;
+
+        public static bool DoLclVarsOnly => true;
+
+        private readonly Compiler _compiler;
+        private readonly GenTreeStack _ancestors;
+
+        public ReplaceSwiftErrorVisitor(Compiler compiler)
+        {
+            _compiler = compiler;
+            _ancestors = [];
+        }
+
+        public readonly fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
+        {
+            if (use.AsLclVarCommon().LclNum == _compiler.lvaSwiftErrorArg)
+            {
+                if (use.Oper is not GT_LCL_VAR)
+                {
+                    Globals.BADCODE("Found invalid use of SwiftError* parameter");
+                }
+
+                use = _compiler.gtNewLclAddrNode(genActualType(use), _compiler.lvaSwiftErrorLocal, 0);
+            }
+
+            return WALK_CONTINUE;
+        }
+
+        public readonly fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
+
+        public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
+            => IGenTreeVisitor<ReplaceSwiftErrorVisitor>.WalkTree(ref this, ref use, user, _ancestors);
+    }
+
+    public PhaseStatus fgAddSwiftErrorReturns()
+    {
+        if (lvaSwiftErrorArg == BAD_VAR_NUM)
+        {
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+
+        assert(lvaSwiftErrorLocal != BAD_VAR_NUM);
+        assert(info.compCallConv == CorInfoCallConvExtension.Swift);
+
+        var visitor = new ReplaceSwiftErrorVisitor(this);
+
+        foreach (var block in Blocks)
+        {
+            foreach (var statement in block.Statements)
+            {
+                _ = visitor.WalkTree(ref statement.RootNodeRef, null);
+            }
+
+            if (block.Kind is BBJ_RETURN)
+            {
+                var lastStatement = block.LastStmt;
+                assert(lastStatement is not null);
+                var ret = lastStatement.RootNode;
+                assert(ret is not null);
+                assert(ret.Oper is GT_RETURN);
+                var returnValue = ret.AsUnOp().Op1;
+                GenTree errorValue;
+
+                // The merged return block uses its merged error local; other returns load the pseudolocal.
+                if (block == genReturnBB)
+                {
+                    assert(genReturnErrorLocal == BAD_VAR_NUM);
+                    genReturnErrorLocal = lvaGrabTemp(true, "Single return block SwiftError value");
+                    lvaGetDesc(genReturnErrorLocal).Type = TYP_I_IMPL;
+                    errorValue = gtNewLclvNode(TYP_I_IMPL, genReturnErrorLocal);
+                }
+                else
+                {
+                    errorValue = gtNewLclFldNode(TYP_I_IMPL, lvaSwiftErrorLocal, 0);
+                }
+
+                lastStatement.RootNode = new GenTreeOp(GT_SWIFT_ERROR_RET, ret.Type, errorValue, returnValue, ret,
+                    NodeThreading.None);
+            }
+        }
+
+        return PhaseStatus.MODIFIED_EVERYTHING;
+    }
 #endif
 
     /// <summary>Canonicalize the method entry to be dominate all blocks in the BB and to be executed exactly once.</summary>
