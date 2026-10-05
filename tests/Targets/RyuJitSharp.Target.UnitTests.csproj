@@ -53,6 +53,7 @@
     <Compile Include="..\Core\EmitterFrameReferenceTests.cs" Link="EmitterFrameReferenceTests.cs" />
     <Compile Include="..\Core\Arm32CodeGenUnsupportedNodesTests.cs" Link="Arm32CodeGenUnsupportedNodesTests.cs" />
     <Compile Include="..\Core\CodeGenSiVarLocDiagnosticsTests.cs" Link="CodeGenSiVarLocDiagnosticsTests.cs" />
+    <Compile Include="..\Core\ArmUnwindPortTests.cs" Link="ArmUnwindPortTests.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-arm64')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-arm64'))) or ('$(RyuJitTargetRuntimeIdentifier)' == 'linux-x64') or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'linux-x64')">
@@ -92,6 +93,7 @@
     <Compile Include="..\Core\LinearScanRiscVStackArgumentTests.cs" Link="LinearScanRiscVStackArgumentTests.cs" />
     <Compile Include="..\Core\RiscVReservedRegisterCheckTests.cs" Link="RiscVReservedRegisterCheckTests.cs" />
     <Compile Include="..\Core\RiscVInstructionEncodingTests.cs" Link="RiscVInstructionEncodingTests.cs" />
+    <Compile Include="..\Core\RiscVCodeGenPortTests.cs" Link="RiscVCodeGenPortTests.cs" />
   </ItemGroup>
 
   <PropertyGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-wasm')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-wasm')))">
