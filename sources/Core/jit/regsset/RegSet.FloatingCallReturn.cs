@@ -10,7 +10,36 @@ public partial struct RegSet
 {
     public void rsSpillFPStack(GenTreeCall call)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "x86 floating-point call return stack spilling is not yet ported.");
+        var treeType = call.Type;
+
+        var spill = _rsSpillFree;
+        if (spill is not null)
+        {
+            _rsSpillFree = spill.spillNext;
+        }
+        else
+        {
+            spill = new SpillDsc();
+        }
+
+        var temp = tmpGetTemp(treeType);
+        spill.spillTemp = temp;
+        spill.spillTree = call;
+
+        var reg = call.RegNum;
+        spill.spillNext = _rsSpillDesc[(int)reg];
+        _rsSpillDesc[(int)reg] = spill;
+
+#if DEBUG
+        if (Compiler.verbose)
+        {
+            jitprintf("\n");
+        }
+#endif
+
+        _codeGen.GetEmitter().emitIns_S(INS_fstp, treeType.EmitActualSize, temp.tdTempNum, 0);
+
+        rsMarkSpill(call, reg);
     }
 }
 #endif
