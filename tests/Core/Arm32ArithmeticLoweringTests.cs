@@ -85,6 +85,71 @@ internal static unsafe class Arm32ArithmeticLoweringTests
         });
     }
 
+    [Test]
+    public static void AndWithNotLowersToAndNotOnlyWhenOptimizing()
+    {
+        foreach (var minOpts in new[] { false, true })
+        {
+            foreach (var notFirst in new[] { false, true })
+            {
+                WithLowering((compiler, block, lowering) =>
+                {
+                    var negatedOperand = compiler.gtNewLclvNode(TYP_INT, 0);
+                    var otherOperand = compiler.gtNewLclvNode(TYP_INT, 1);
+                    var not = new GenTreeUnOp(GT_NOT, TYP_INT, negatedOperand);
+                    var and = new GenTreeOp(
+                        GT_AND,
+                        TYP_INT,
+                        notFirst ? not : otherOperand,
+                        notFirst ? otherOperand : not)
+                    {
+                        Flags = GTF_UNSIGNED | GTF_DONT_CSE,
+                        IsUnusedValue = true,
+                    };
+                    var next = compiler.gtNewIconNode(TYP_INT, 7);
+                    and._vnPair.SetBoth(123);
+
+                    if (notFirst)
+                    {
+                        block.InsertAtEnd(negatedOperand);
+                        block.InsertAtEnd(not);
+                        block.InsertAtEnd(otherOperand);
+                    }
+                    else
+                    {
+                        block.InsertAtEnd(otherOperand);
+                        block.InsertAtEnd(negatedOperand);
+                        block.InsertAtEnd(not);
+                    }
+
+                    block.InsertAtEnd(and);
+                    block.InsertAtEnd(next);
+
+                    Assert.That(LowerBinaryArithmetic(lowering, and), Is.SameAs(next));
+                    Assert.That(and.Oper, Is.EqualTo(minOpts ? GT_AND : GT_AND_NOT));
+                    Assert.That(and.Flags, Is.EqualTo(GTF_UNSIGNED | GTF_DONT_CSE));
+                    Assert.That(and._vnPair.Liberal, Is.EqualTo(minOpts ? 123u : ValueNumStore.NoVN));
+                    if (minOpts)
+                    {
+                        Assert.That(and.Op1, Is.SameAs(notFirst ? not : otherOperand));
+                        Assert.That(and.Op2, Is.SameAs(notFirst ? otherOperand : not));
+                        Assert.That(not.Next, Is.SameAs(notFirst ? otherOperand : and));
+                    }
+                    else
+                    {
+                        Assert.That(and.Op1, Is.SameAs(otherOperand));
+                        Assert.That(and.Op2, Is.SameAs(negatedOperand));
+                        Assert.That(not.Prev, Is.Null);
+                        Assert.That(not.Next, Is.Null);
+                    }
+                }, minOpts);
+            }
+        }
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerBinaryArithmetic")]
+    private static extern GenTree? LowerBinaryArithmetic(Lowering lowering, GenTreeOp binary);
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckBinary")]
     private static extern void ContainCheckBinary(Lowering lowering, GenTreeOp node);
 
@@ -94,7 +159,7 @@ internal static unsafe class Arm32ArithmeticLoweringTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_block")]
     private static extern ref BasicBlock? LoweringBlock(Lowering lowering);
 
-    private static void WithLowering(Action<Compiler, BasicBlock, Lowering> action)
+    private static void WithLowering(Action<Compiler, BasicBlock, Lowering> action, bool minOpts = false)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -103,7 +168,9 @@ internal static unsafe class Arm32ArithmeticLoweringTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.opts.SetMinOpts(false);
+        compiler.opts.SetMinOpts(minOpts);
+        compiler.opts.compFlags = minOpts ? 0 : CLFLG_REGVAR;
+        compiler.fgNodeThreading = NodeThreading.LIR;
         compiler.lvaTable = [new LclVarDsc(), new LclVarDsc()];
         compiler.lvaCount = 2;
         compiler.lvaTable[0].Type = TYP_INT;

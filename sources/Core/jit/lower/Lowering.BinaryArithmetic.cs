@@ -151,6 +151,35 @@ public sealed partial class Lowering
 
         ContainCheckBinary(binOp);
         return binOp.Next;
+#elif TARGET_ARM
+        if (CompilerInstance.opts.OptimizationEnabled && (binOp.Oper is GT_AND))
+        {
+            GenTree? opNode = null;
+            GenTree? notNode = null;
+            if (binOp.Op1.Oper is GT_NOT)
+            {
+                notNode = binOp.Op1;
+                opNode = binOp.Op2;
+            }
+            else if (binOp.Op2.Oper is GT_NOT)
+            {
+                notNode = binOp.Op2;
+                opNode = binOp.Op1;
+            }
+
+            if (notNode is not null)
+            {
+                assert(opNode is not null);
+                binOp.Op1 = opNode;
+                binOp.Op2 = notNode.AsUnOp().Op1;
+                binOp.SetOper(GT_AND_NOT);
+                binOp.Flags &= GTF_COMMON_MASK;
+                BlockRange().Remove(notNode);
+            }
+        }
+
+        ContainCheckBinary(binOp);
+        return binOp.Next;
 #elif TARGET_RISCV64
         var op1 = binOp.Op1;
         var op2 = binOp.Op2;
