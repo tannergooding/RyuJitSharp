@@ -5,6 +5,7 @@
 
 #if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
@@ -324,7 +325,7 @@ public sealed partial class UnwindInfo
         var last = uwiFragmentLast!;
         var newFragment = new UnwindFragmentInfo(GetCompiler(), emitLoc, true);
 #if DEBUG && TARGET_RISCV64
-        newFragment.ufiNum = unchecked(last.ufiNum + 1);
+        newFragment.SetNumberAfter(last);
 #endif
         newFragment.CopyPrologCodes(uwiFragmentFirst!);
         newFragment.SplitEpilogCodes(emitLoc, last);
@@ -434,7 +435,7 @@ public sealed partial class UnwindInfo
 #endif
     }
 
-    private sealed class UnwindPrologCodes : UnwindCodesStorage
+    private sealed partial class UnwindPrologCodes : UnwindCodesStorage
     {
         private const int UPC_LOCAL_COUNT = 24;
         private readonly Compiler m_compiler;
@@ -692,7 +693,7 @@ public sealed partial class UnwindInfo
 #endif
     }
 
-    private sealed class UnwindEpilogCodes : UnwindCodesStorage
+    private sealed partial class UnwindEpilogCodes : UnwindCodesStorage
     {
         private const int UEC_LOCAL_COUNT = 4;
         private byte[] uecMem = new byte[UEC_LOCAL_COUNT];
@@ -821,7 +822,7 @@ public sealed partial class UnwindInfo
 #endif
     }
 
-    private sealed class UnwindEpilogInfo
+    private sealed partial class UnwindEpilogInfo
     {
         private const uint EPI_ILLEGAL_OFFSET = uint.MaxValue;
         public UnwindEpilogInfo? epiNext;
@@ -931,7 +932,7 @@ public sealed partial class UnwindInfo
 #endif
     }
 
-    private sealed class UnwindFragmentInfo
+    private sealed partial class UnwindFragmentInfo
     {
         private const uint UFI_ILLEGAL_OFFSET = uint.MaxValue;
         private readonly Compiler m_compiler;
@@ -970,6 +971,13 @@ public sealed partial class UnwindInfo
             ufiInitialized = 0x0FACADE0;
 #endif
         }
+
+#if DEBUG && TARGET_RISCV64
+        public void SetNumberAfter(UnwindFragmentInfo previous)
+        {
+            ufiNum = unchecked(previous.ufiNum + 1);
+        }
+#endif
 
         public uint GetStartOffset()
         {

@@ -33,111 +33,122 @@ public sealed partial class UnwindInfo
         var fragmentNumber = 0;
         for (var fragment = uwiFragmentFirst; fragment is not null; fragment = fragment.ufiNext)
         {
-            DumpFragment(fragment, fragmentNumber++, indent + 2);
+            fragment.Dump(fragmentNumber++, indent + 2);
         }
     }
 
-    private static void DumpFragment(UnwindFragmentInfo fragment, int fragmentNumber, int indent)
+    private sealed partial class UnwindFragmentInfo
     {
-        var prefix = Indent(indent);
-        var epilogCount = 0;
-        for (var epilog = fragment.ufiEpilogList; epilog is not null; epilog = epilog.epiNext)
+        public void Dump(int fragmentNumber, int indent)
         {
-            epilogCount++;
-        }
-
-        jitprintf($"{prefix}UnwindFragmentInfo #{fragmentNumber}, @{Identity(fragment)}, size:managed:\n");
-        jitprintf($"{prefix}  m_compiler: {Identity(fragment.m_compiler)}\n");
-        jitprintf($"{prefix}  ufiNext: {Identity(fragment.ufiNext)}\n");
-        jitprintf($"{prefix}  ufiEmitLoc: {LocationState(fragment.ufiEmitLoc)}\n");
-        jitprintf($"{prefix}  ufiHasPhantomProlog: {dspBool(fragment.ufiHasPhantomProlog)}\n");
-        jitprintf($"{prefix}  {epilogCount} epilog{(epilogCount != 1 ? "s" : "")}\n");
-        jitprintf($"{prefix}  ufiEpilogList: {Identity(fragment.ufiEpilogList)}\n");
-        jitprintf($"{prefix}  ufiEpilogLast: {Identity(fragment.ufiEpilogLast)}\n");
-        jitprintf($"{prefix}  ufiCurCodes: {Identity(fragment.ufiCurCodes)}\n");
-        jitprintf($"{prefix}  ufiSize: {fragment.ufiSize}\n");
-        jitprintf($"{prefix}  ufiSetEBit: {dspBool(fragment.ufiSetEBit)}\n");
-        jitprintf($"{prefix}  ufiNeedExtendedCodeWordsEpilogCount: " +
-            $"{dspBool(fragment.ufiNeedExtendedCodeWordsEpilogCount)}\n");
-        jitprintf($"{prefix}  ufiCodeWords: {fragment.ufiCodeWords}\n");
-        jitprintf($"{prefix}  ufiEpilogScopes: {fragment.ufiEpilogScopes}\n");
-        jitprintf($"{prefix}  ufiStartOffset: 0x{fragment.ufiStartOffset:x}\n");
-        jitprintf($"{prefix}  ufiInProlog: {dspBool(fragment.ufiInProlog)}\n");
-        // Managed fragment construction replaces the native sentinel field; retain its dump value.
-        jitprintf($"{prefix}  ufiInitialized: 0x{UFI_INITIALIZED_PATTERN:x8}\n");
-
-        DumpPrologCodes(fragment.ufiPrologCodes, indent + 2);
-        for (var epilog = fragment.ufiEpilogList; epilog is not null; epilog = epilog.epiNext)
-        {
-            DumpEpilogInfo(epilog, indent + 2);
-        }
-    }
-
-    private static void DumpPrologCodes(UnwindPrologCodes codes, int indent)
-    {
-        var prefix = Indent(indent);
-        jitprintf($"{prefix}UnwindPrologCodes @{Identity(codes)}, size:managed:\n");
-        jitprintf($"{prefix}  m_compiler: {Identity(codes.m_compiler)}\n");
-        jitprintf($"{prefix}  &upcMemLocal[0]: managed buffer is upcMem\n");
-        jitprintf($"{prefix}  upcMem: {Identity(codes.upcMem)}\n");
-        jitprintf($"{prefix}  upcMemSize: {codes.upcMemSize}\n");
-        jitprintf($"{prefix}  upcCodeSlot: {codes.upcCodeSlot}\n");
-        jitprintf($"{prefix}  upcHeaderSlot: {codes.upcHeaderSlot}\n");
-        jitprintf($"{prefix}  upcEpilogSlot: {codes.upcEpilogSlot}\n");
-        jitprintf($"{prefix}  upcUnwindBlockSlot: {codes.upcUnwindBlockSlot}\n");
-
-        if (codes.upcMemSize > 0)
-        {
-            jitprintf($"{prefix}  codes:");
-            for (var index = 0; index < codes.upcMemSize; index++)
+            var prefix = UnwindInfo.Indent(indent);
+            var epilogCount = 0;
+            for (var epilog = ufiEpilogList; epilog is not null; epilog = epilog.epiNext)
             {
-                var marker = index == codes.upcCodeSlot ? " <-C"
-                    : index == codes.upcHeaderSlot ? " <-H"
-                    : index == codes.upcEpilogSlot ? " <-E"
-                    : index == codes.upcUnwindBlockSlot ? " <-U"
-                    : "";
-                jitprintf($" {codes.upcMem[index]:x2}{marker}");
+                epilogCount++;
             }
 
-            jitprintf("\n");
-        }
-    }
+            jitprintf($"{prefix}UnwindFragmentInfo #{fragmentNumber}, @{UnwindInfo.Identity(this)}, size:managed:\n");
+            jitprintf($"{prefix}  m_compiler: {UnwindInfo.Identity(m_compiler)}\n");
+            jitprintf($"{prefix}  ufiNext: {UnwindInfo.Identity(ufiNext)}\n");
+            jitprintf($"{prefix}  ufiEmitLoc: {UnwindInfo.LocationState(ufiEmitLoc)}\n");
+            jitprintf($"{prefix}  ufiHasPhantomProlog: {dspBool(ufiHasPhantomProlog)}\n");
+            jitprintf($"{prefix}  {epilogCount} epilog{(epilogCount != 1 ? "s" : "")}\n");
+            jitprintf($"{prefix}  ufiEpilogList: {UnwindInfo.Identity(ufiEpilogList)}\n");
+            jitprintf($"{prefix}  ufiEpilogLast: {UnwindInfo.Identity(ufiEpilogLast)}\n");
+            jitprintf($"{prefix}  ufiCurCodes: {UnwindInfo.Identity(ufiCurCodes)}\n");
+            jitprintf($"{prefix}  ufiSize: {ufiSize}\n");
+            jitprintf($"{prefix}  ufiSetEBit: {dspBool(ufiSetEBit)}\n");
+            jitprintf($"{prefix}  ufiNeedExtendedCodeWordsEpilogCount: " +
+                $"{dspBool(ufiNeedExtendedCodeWordsEpilogCount)}\n");
+            jitprintf($"{prefix}  ufiCodeWords: {ufiCodeWords}\n");
+            jitprintf($"{prefix}  ufiEpilogScopes: {ufiEpilogScopes}\n");
+            jitprintf($"{prefix}  ufiStartOffset: 0x{ufiStartOffset:x}\n");
+            jitprintf($"{prefix}  ufiInProlog: {dspBool(ufiInProlog)}\n");
+            jitprintf($"{prefix}  ufiInitialized: 0x{UnwindInfo.UFI_INITIALIZED_PATTERN:x8}\n");
 
-    private static void DumpEpilogCodes(UnwindEpilogCodes codes, int indent)
-    {
-        var prefix = Indent(indent);
-        jitprintf($"{prefix}UnwindEpilogCodes @{Identity(codes)}, size:managed:\n");
-        jitprintf($"{prefix}  m_compiler: not stored\n");
-        jitprintf($"{prefix}  &uecMemLocal[0]: managed buffer is uecMem\n");
-        jitprintf($"{prefix}  uecMem: {Identity(codes.uecMem)}\n");
-        jitprintf($"{prefix}  uecMemSize: {codes.uecMemSize}\n");
-        jitprintf($"{prefix}  uecCodeSlot: {codes.uecCodeSlot}\n");
-        jitprintf($"{prefix}  uecFinalized: {dspBool(codes.uecFinalized)}\n");
-
-        if (codes.uecMemSize > 0)
-        {
-            jitprintf($"{prefix}  codes:");
-            for (var index = 0; index < codes.uecMemSize; index++)
+            ufiPrologCodes.Dump(indent + 2);
+            for (var epilog = ufiEpilogList; epilog is not null; epilog = epilog.epiNext)
             {
-                var marker = index == codes.uecCodeSlot ? " <-C" : "";
-                jitprintf($" {codes.uecMem[index]:x2}{marker}");
+                epilog.Dump(indent + 2);
             }
-
-            jitprintf("\n");
         }
     }
 
-    private static void DumpEpilogInfo(UnwindEpilogInfo epilog, int indent)
+    private sealed partial class UnwindPrologCodes
     {
-        var prefix = Indent(indent);
-        jitprintf($"{prefix}UnwindEpilogInfo @{Identity(epilog)}, size:managed:\n");
-        jitprintf($"{prefix}  m_compiler: {Identity(epilog.m_compiler)}\n");
-        jitprintf($"{prefix}  epiNext: {Identity(epilog.epiNext)}\n");
-        jitprintf($"{prefix}  epiEmitLocation: {LocationState(epilog.epiEmitLocation)}\n");
-        jitprintf($"{prefix}  epiStartOffset: 0x{epilog.epiStartOffset:x}\n");
-        jitprintf($"{prefix}  epiMatches: {dspBool(epilog.epiMatches)}\n");
-        jitprintf($"{prefix}  epiStartIndex: {epilog.epiStartIndex}\n");
-        DumpEpilogCodes(epilog.epiCodes, indent + 2);
+        public void Dump(int indent)
+        {
+            var prefix = UnwindInfo.Indent(indent);
+            jitprintf($"{prefix}UnwindPrologCodes @{UnwindInfo.Identity(this)}, size:managed:\n");
+            jitprintf($"{prefix}  m_compiler: {UnwindInfo.Identity(m_compiler)}\n");
+            jitprintf($"{prefix}  &upcMemLocal[0]: managed buffer is upcMem\n");
+            jitprintf($"{prefix}  upcMem: {UnwindInfo.Identity(upcMem)}\n");
+            jitprintf($"{prefix}  upcMemSize: {upcMemSize}\n");
+            jitprintf($"{prefix}  upcCodeSlot: {upcCodeSlot}\n");
+            jitprintf($"{prefix}  upcHeaderSlot: {upcHeaderSlot}\n");
+            jitprintf($"{prefix}  upcEpilogSlot: {upcEpilogSlot}\n");
+            jitprintf($"{prefix}  upcUnwindBlockSlot: {upcUnwindBlockSlot}\n");
+
+            if (upcMemSize > 0)
+            {
+                jitprintf($"{prefix}  codes:");
+                for (var index = 0; index < upcMemSize; index++)
+                {
+                    var marker = index == upcCodeSlot ? " <-C"
+                        : index == upcHeaderSlot ? " <-H"
+                        : index == upcEpilogSlot ? " <-E"
+                        : index == upcUnwindBlockSlot ? " <-U"
+                        : "";
+                    jitprintf($" {upcMem[index]:x2}{marker}");
+                }
+
+                jitprintf("\n");
+            }
+        }
+    }
+
+    private sealed partial class UnwindEpilogCodes
+    {
+        public void Dump(int indent)
+        {
+            var prefix = UnwindInfo.Indent(indent);
+            jitprintf($"{prefix}UnwindEpilogCodes @{UnwindInfo.Identity(this)}, size:managed:\n");
+            jitprintf($"{prefix}  m_compiler: not stored\n");
+            jitprintf($"{prefix}  &uecMemLocal[0]: managed buffer is uecMem\n");
+            jitprintf($"{prefix}  uecMem: {UnwindInfo.Identity(uecMem)}\n");
+            jitprintf($"{prefix}  uecMemSize: {uecMemSize}\n");
+            jitprintf($"{prefix}  uecCodeSlot: {uecCodeSlot}\n");
+            jitprintf($"{prefix}  uecFinalized: {dspBool(uecFinalized)}\n");
+
+            if (uecMemSize > 0)
+            {
+                jitprintf($"{prefix}  codes:");
+                for (var index = 0; index < uecMemSize; index++)
+                {
+                    var marker = index == uecCodeSlot ? " <-C" : "";
+                    jitprintf($" {uecMem[index]:x2}{marker}");
+                }
+
+                jitprintf("\n");
+            }
+        }
+    }
+
+    private sealed partial class UnwindEpilogInfo
+    {
+        public void Dump(int indent)
+        {
+            var prefix = UnwindInfo.Indent(indent);
+            jitprintf($"{prefix}UnwindEpilogInfo @{UnwindInfo.Identity(this)}, size:managed:\n");
+            jitprintf($"{prefix}  m_compiler: {UnwindInfo.Identity(m_compiler)}\n");
+            jitprintf($"{prefix}  epiNext: {UnwindInfo.Identity(epiNext)}\n");
+            jitprintf($"{prefix}  epiEmitLocation: {UnwindInfo.LocationState(epiEmitLocation)}\n");
+            jitprintf($"{prefix}  epiStartOffset: 0x{epiStartOffset:x}\n");
+            jitprintf($"{prefix}  epiMatches: {dspBool(epiMatches)}\n");
+            jitprintf($"{prefix}  epiStartIndex: {epiStartIndex}\n");
+            epiCodes.Dump(indent + 2);
+        }
     }
 
     private static string Indent(int indent)

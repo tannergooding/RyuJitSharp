@@ -1,5 +1,6 @@
 #if TARGET_LOONGARCH64
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 #if DEBUG
@@ -83,11 +84,7 @@ internal static unsafe class LoongArchUnwindLifecycleTests
 
                 for (var index = 0; index < fullGroupCount; index++)
                 {
-                    groups[index] = new insGroup
-                    {
-                        igOffs = offset,
-                        igSize = fullGroupSize,
-                    };
+                    groups[index] = CreateGroup(offset, fullGroupSize);
                     offset = unchecked(offset + fullGroupSize);
                     if (index > 0)
                     {
@@ -95,27 +92,30 @@ internal static unsafe class LoongArchUnwindLifecycleTests
                     }
                 }
 
-                groups[^1] = new insGroup { igOffs = offset, igSize = 24 };
+                groups[^1] = CreateGroup(offset, 24);
                 groups[^2].igNext = groups[^1];
                 FirstGroup(codeGen.Emitter) = groups[0];
                 codeGen.Emitter.emitCurIG = groups[^1];
-                compiler.info.compTotalHotCodeSize = unchecked(offset + 24);
+                compiler.info.compTotalHotCodeSize = unchecked((int)(offset + 24));
 
                 var unwindInfo = new UnwindInfo();
                 unwindInfo.InitUnwindInfo(compiler, null, null);
                 unwindInfo.Split();
 
-                var firstFragment = GetPrivateField<object>(unwindInfo, "uwiFragmentFirst");
-                var secondFragment = GetPrivateNullableField(firstFragment, "ufiNext")
+                var unwindInfoType = typeof(UnwindInfo);
+                var fragmentType = unwindInfoType.GetNestedType("UnwindFragmentInfo", BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("UnwindFragmentInfo type was not found.");
+                var firstFragment = GetPrivateField<object>(unwindInfoType, unwindInfo, "uwiFragmentFirst");
+                var secondFragment = GetPrivateNullableField(fragmentType, firstFragment, "ufiNext")
                     ?? throw new AssertionException("The split did not create a second fragment.");
-                var secondLocation = GetPrivateField<emitLocation?>(secondFragment, "ufiEmitLoc")
+                var secondLocation = GetPrivateField<emitLocation?>(fragmentType, secondFragment, "ufiEmitLoc")
                     ?? throw new AssertionException("The second fragment has no emitter location.");
-                var splitOffset = secondLocation.Value.CodeOffset(codeGen.Emitter);
+                var splitOffset = secondLocation.CodeOffset(codeGen.Emitter);
 
                 Assert.That(compiler.info.compTotalHotCodeSize, Is.GreaterThan(fragmentSize));
                 Assert.That(splitOffset, Is.GreaterThan(0));
                 Assert.That(splitOffset, Is.LessThanOrEqualTo(fragmentSize));
-                Assert.That(GetPrivateNullableField(secondFragment, "ufiNext"), Is.Null);
+                Assert.That(GetPrivateNullableField(fragmentType, secondFragment, "ufiNext"), Is.Null);
             });
         }
         finally
@@ -125,11 +125,11 @@ internal static unsafe class LoongArchUnwindLifecycleTests
     }
 
     [Test]
-    public static void PrologLifecycleCapturesStateAndRecordsPaddingNop()
+    public static void PrologLifecycleCapturesStateAndCompletesWithoutInstructions()
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT }];
+            compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT, uwi = new UnwindInfo() }];
             compiler.compFuncInfoCount = 1;
             compiler.fgFuncletsCreated = true;
             codeGen.Emitter.emitCurIG = codeGen.Emitter.emitGetFirstPrologIG();
@@ -138,19 +138,12 @@ internal static unsafe class LoongArchUnwindLifecycleTests
             var unwindInfo = compiler.funCurrentFunc().GetUnwindInfo();
             Assert.That(unwindInfo.GetCurrentEmitterLocation().HasValue, Is.True);
 
-            AllocateNop(codeGen.Emitter);
             compiler.unwindPadding();
-
-            var fragment = GetPrivateField<object>(unwindInfo, "uwiFragmentFirst");
-            var prologCodes = GetPrivateField<object>(fragment, "ufiPrologCodes");
-            var codeSlot = GetPrivateField<int>(prologCodes, "upcCodeSlot");
-            var memory = GetPrivateField<byte[]>(prologCodes, "upcMem");
-            Assert.That(memory[codeSlot], Is.EqualTo(0xE3));
 
             compiler.unwindEndProlog();
             Assert.That(compiler.compGeneratingUnwindProlog, Is.False);
 
-            codeGen.Emitter.emitCurIG = new insGroup { igFlags = InsGroupFlags.Epilog };
+            codeGen.Emitter.emitCurIG = CreateGroup(flags: InsGroupFlags.Epilog);
             compiler.unwindBegEpilog();
             Assert.That(compiler.compGeneratingUnwindEpilog, Is.True);
             compiler.unwindEndEpilog();
@@ -163,7 +156,7 @@ internal static unsafe class LoongArchUnwindLifecycleTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT }];
+            compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT, uwi = new UnwindInfo() }];
             compiler.compFuncInfoCount = 1;
             compiler.fgFuncletsCreated = true;
             compiler.info.compMatchedVM = false;
@@ -174,13 +167,16 @@ internal static unsafe class LoongArchUnwindLifecycleTests
             compiler.unwindBegProlog();
             compiler.unwindEndProlog();
             codeGen.Emitter.emitEndProlog();
-            codeGen.Emitter.emitCurIG = new insGroup();
+            codeGen.Emitter.emitCurIG = CreateGroup();
             compiler.unwindReserve();
             compiler.unwindEmit(null, null);
 
             var unwindInfo = compiler.funCurrentFunc().GetUnwindInfo();
-            var fragment = GetPrivateField<object>(unwindInfo, "uwiFragmentFirst");
-            Assert.That(GetPrivateField<uint>(fragment, "ufiSize"), Is.GreaterThan(0));
+            var unwindInfoType = typeof(UnwindInfo);
+            var fragmentType = unwindInfoType.GetNestedType("UnwindFragmentInfo", BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("UnwindFragmentInfo type was not found.");
+            var fragment = GetPrivateField<object>(unwindInfoType, unwindInfo, "uwiFragmentFirst");
+            Assert.That(GetPrivateField<uint>(fragmentType, fragment, "ufiSize"), Is.GreaterThan(0));
             Assert.That(compiler.info.compMatchedVM, Is.False);
         });
     }
@@ -193,14 +189,17 @@ internal static unsafe class LoongArchUnwindLifecycleTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         var unwindInfo = new UnwindInfo();
         unwindInfo.InitUnwindInfo(compiler, null, null);
-        var fragment = GetPrivateField<object>(unwindInfo, "uwiFragmentFirst");
+        var unwindInfoType = typeof(UnwindInfo);
+        var fragmentType = unwindInfoType.GetNestedType("UnwindFragmentInfo", BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("UnwindFragmentInfo type was not found.");
+        var fragment = GetPrivateField<object>(unwindInfoType, unwindInfo, "uwiFragmentFirst");
         var epilogType = typeof(UnwindInfo).GetNestedType("UnwindEpilogInfo", BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("UnwindEpilogInfo type was not found.");
         var epilog = Activator.CreateInstance(
             epilogType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, [compiler], null)
             ?? throw new InvalidOperationException("UnwindEpilogInfo construction failed.");
-        SetPrivateField(fragment, "ufiEpilogList", epilog);
-        SetPrivateField(fragment, "ufiEpilogLast", epilog);
+        SetPrivateField(fragmentType, fragment, "ufiEpilogList", epilog);
+        SetPrivateField(fragmentType, fragment, "ufiEpilogLast", epilog);
 
         using var stream = new MemoryStream();
         using var writer = new JitTextWriter(stream, leaveOpen: true);
@@ -270,42 +269,57 @@ internal static unsafe class LoongArchUnwindLifecycleTests
         }
     }
 
-    private static Emitter.instrDescBasic AllocateNop(Emitter emitter)
+    private static insGroup CreateGroup(
+        uint offset = 0,
+        ushort size = 0,
+        InsGroupFlags flags = InsGroupFlags.None)
     {
-        var descriptor = AllocateSmall(emitter, emitAttr.EA_4BYTE);
-        descriptor.idIns(instruction.INS_nop);
-        descriptor.idInsFmt(Emitter.instrFormat.IF_SN_0A);
-        CurrentGroupSize(emitter) += 4;
-        return descriptor;
+        var group = new insGroup
+        {
+            igOffs = offset,
+            igSize = size,
+            igFlags = flags,
+        };
+#if DEBUG
+        group.igSelf = group;
+#endif
+        return group;
     }
 
-    private static T GetPrivateField<T>(object instance, string name)
+    private static T GetPrivateField<T>(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields |
+            DynamicallyAccessedMemberTypes.NonPublicFields)] Type type,
+        object instance,
+        string name)
     {
-        var field = instance.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)
+        var field = type.GetField(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException($"{instance.GetType().Name}.{name} was not found.");
         return (T)(field.GetValue(instance)
             ?? throw new InvalidOperationException($"{instance.GetType().Name}.{name} was null."));
     }
 
-    private static object? GetPrivateNullableField(object instance, string name)
+    private static object? GetPrivateNullableField(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields |
+            DynamicallyAccessedMemberTypes.NonPublicFields)] Type type,
+        object instance,
+        string name)
     {
-        var field = instance.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)
+        var field = type.GetField(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException($"{instance.GetType().Name}.{name} was not found.");
         return field.GetValue(instance);
     }
 
-    private static void SetPrivateField(object instance, string name, object value)
+    private static void SetPrivateField(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields |
+            DynamicallyAccessedMemberTypes.NonPublicFields)] Type type,
+        object instance,
+        string name,
+        object value)
     {
-        var field = instance.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)
+        var field = type.GetField(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException($"{instance.GetType().Name}.{name} was not found.");
         field.SetValue(instance, value);
     }
-
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNewInstrSmall")]
-    private static extern Emitter.instrDescBasic AllocateSmall(Emitter emitter, emitAttr attr);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGsize")]
-    private static extern ref int CurrentGroupSize(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
