@@ -10,21 +10,22 @@
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
-    "nextAction": "Resume Windows-x64 candidate selection in the remaining inline/member definitions in `src/coreclr/jit/lsra.h`, starting with `shouldDumpReg`; `RefInfo`/`RefInfoList` and `RegRecord.defList` have been retired. Preserve all unrelated native WIP.",
+    "nextAction": "At native residual HEAD 3f0b168571550237330e4ad25b8d7815f96147c1, resume Windows-x64 candidate selection. First check `Compiler::Funclets()` in `compiler.h` against the managed funclet enumeration and its x64 callers; establish whether it is mapped or still untranslated, then continue to the next bounded x64 candidate. Preserve all unrelated native WIP.",
     "activeBatch": {
-      "scope": "Select the next Windows-x64-reachable whole function from the remaining `lsra.h` inline/member definitions with an exact managed mapping and bounded caller/test closure.",
-      "doneWhen": "Identify one concrete whole-function unit and its caller/test closure, then port if needed, validate, retire eligible native definitions, update the checkpoint, and commit the coherent unit. If no candidate qualifies, record the exact screen and next symbol/file.",
-      "validation": "Use pinned native and managed source plus caller/test evidence to select the candidate. After selection, run focused Windows-x64 Debug tests and compare phase output when the fixture supports it.",
+      "scope": "Select the next Windows-x64-reachable whole function with an exact managed mapping and bounded caller/test closure; resume from the retained `Compiler::Funclets()` helper in `compiler.h`.",
+      "doneWhen": "Identify one concrete x64 function/dependency closure, then port if needed, validate, retire eligible native definitions, update the checkpoint, and commit the coherent unit. If the candidate is ineligible, record the exact reason and move to the next bounded x64 candidate.",
+      "validation": "Compare pinned native and managed code plus caller evidence. Run focused Windows-x64 Debug tests for an accepted candidate and phase comparison when its fixture supports it.",
       "deferred": [
         "Do not edit residual `lsra.cpp`; it contains user WIP deleting LSRA stress-mask constants.",
-        "`getLsraRegOptionalControl`, `candidatesAreStressLimited`, and `leafInRange` have no managed mappings and remain untranslated.",
+        "Do not reopen screened `codegen.h`, `emit.h`, or completed LSRA debt without new caller or mapping evidence.",
+        "`Compiler::HfaElemKindFromType` is target-specific, while the `gtNewSimdVconNode` overload is guarded by `TARGET_ARM64`.",
         "Keep the unresolved native ilogb decision, ARM32 parser-blocked validation, and Wasm traversal design blocker out of unrelated batches."
       ],
       "retirement": {
         "oracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
-        "nativeResidualCommit": "10312219ee7c1f83a69bdec030acdde683d9bf7d",
+        "nativeResidualCommit": "3f0b168571550237330e4ad25b8d7815f96147c1",
         "completionGate": "Retire whole eligible definitions and orphan declarations in the same accepted batch, before its managed completion commit. Keep untranslated helpers and target branches in the residual; an absent definition is not evidence that it was ported.",
-        "nextDebtCursor": "At 10312219ee7c1f83a69bdec030acdde683d9bf7d, `lsra.h`'s mapped Debug-only `IsLsraAdded`, `SetLsraAdded`, `IsResolutionMove`, `IsResolutionNode`, `verifyFreeRegisters`, `verifyFinalAllocation`, and `verifyResolutionMove` helpers/declarations are retired; the focused full-analysis Debug LinearScan filter passed 891/891. Recovery ref `refs/copilot-recovery/runtime-port-before-lsra-debug-helper-retirement-20261005` preserves prior HEAD f9b073873ebeb26261596abdd281805f3a2fd41d. The `RefInfo`/`RefInfoListNode`/`RefInfoList` type group and unused `RegRecord.defList` field are also retired: residual search shows no remaining references, and the managed definition list/node pool and focused tests cover the replacement. Recovery ref `refs/copilot-recovery/runtime-port-before-refinfolist-retirement-20261005` preserves prior HEAD aa0c4731856ad715d1f8bb0e861f3bbb3d8d4eea. User WIP remains: `lsra.cpp` deletes LSRA stress-mask constants and `lsra.h` removes `ResolveType`. Leave comment-only material in `lsra.cpp` untouched. Resume the Windows-x64 search in the remaining `lsra.h` inline/member definitions, starting with `shouldDumpReg`. Exclude `getLsraRegOptionalControl`, `candidatesAreStressLimited`, and `leafInRange` because they have no managed mappings. Prior screens with no eligible candidate: utils.cpp, emitxarch.cpp, ee_il_dll.cpp, disasm.cpp, gcinfo.cpp, gentree.cpp, emit.cpp, compiler.cpp, alloc.cpp, hashbv.cpp, helperexpansion.cpp, codegencommon.cpp (no functions), and lsrabuild.cpp (no qualified member definitions). `gcencode.cpp::gcInsertVarPtrDscSplit` is excluded from Windows AMD64; its non-x64/JIT32 body remains untranslated."
+        "nextDebtCursor": "At 3f0b168571550237330e4ad25b8d7815f96147c1, `lsra.h`'s mapped Debug-only `IsLsraAdded`, `SetLsraAdded`, `IsResolutionMove`, `IsResolutionNode`, `verifyFreeRegisters`, `verifyFinalAllocation`, and `verifyResolutionMove` helpers/declarations are retired; the focused full-analysis Debug LinearScan filter passed 891/891. Recovery ref `refs/copilot-recovery/runtime-port-before-lsra-debug-helper-retirement-20261005` preserves prior HEAD f9b073873ebeb26261596abdd281805f3a2fd41d. The `RefInfo`/`RefInfoListNode`/`RefInfoList` type group and unused `RegRecord.defList` field are also retired: residual search shows no remaining references, and the managed definition list/node pool and focused tests cover the replacement. Recovery ref `refs/copilot-recovery/runtime-port-before-refinfolist-retirement-20261005` preserves prior HEAD aa0c4731856ad715d1f8bb0e861f3bbb3d8d4eea. The ARM64-only `RefPosition::isFirstRefPositionOfConsecutiveRegisters` helper is retired; the managed predicate matches exactly and the target-ARM64 Debug filter passed 22/22. Recovery ref `refs/copilot-recovery/runtime-port-before-arm64-consecutive-ref-retirement-20261005` preserves prior HEAD 10312219ee7c1f83a69bdec030acdde683d9bf7d. This is target-specific debt closure, not Windows-x64 progress. User WIP remains: `lsra.cpp` deletes LSRA stress-mask constants and `lsra.h` removes `ResolveType`. The remaining `lsra.h` screen found no eligible Windows-x64 candidate: `shouldDumpReg` has no managed mapping, x64 register-mask helpers still serve retained macros/callers, and remaining list/target helpers are unported or target-specific. `codegen.h` has no x64 candidate: `genConsumeIfReg` still has an untranslated native ARM caller and `rsGetRsvdReg` is target-specific; `emit.h` helpers have remaining native callers or no managed mapping. Next screen `Compiler::Funclets()` for a managed representation and x64 caller closure. Prior screens with no eligible candidate: utils.cpp, emitxarch.cpp, ee_il_dll.cpp, disasm.cpp, gcinfo.cpp, gentree.cpp, emit.cpp, alloc.cpp, hashbv.cpp, helperexpansion.cpp, codegencommon.cpp (no functions), and lsrabuild.cpp (no qualified member definitions). `gcencode.cpp::gcInsertVarPtrDscSplit` is excluded from Windows AMD64; its non-x64/JIT32 body remains untranslated."
       }
     },
     "validationResourcePolicy": {
@@ -73,8 +74,12 @@
       "ref": "refs/porting/snapshots/2026-09-22-csharp-wip"
     },
     "nativeResidual": {
-      "commit": "10312219ee7c1f83a69bdec030acdde683d9bf7d",
+      "commit": "3f0b168571550237330e4ad25b8d7815f96147c1",
       "ref": "refs/heads/main"
+    },
+    "nativePreArm64ConsecutiveRefRetirement": {
+      "commit": "10312219ee7c1f83a69bdec030acdde683d9bf7d",
+      "ref": "refs/copilot-recovery/runtime-port-before-arm64-consecutive-ref-retirement-20261005"
     },
     "nativePreRefInfoRetirement": {
       "commit": "aa0c4731856ad715d1f8bb0e861f3bbb3d8d4eea",
