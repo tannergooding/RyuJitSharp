@@ -10,11 +10,11 @@
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
-    "nextAction": "Reconcile B051 in `SsaNumInfo.Composite`: compare the managed composite-name growth path with the pinned native implementation, reproduce the stale-span/field-index defect, and add a focused regression before enabling SSA clients that use it.",
+    "nextAction": "Inspect retained Windows-x64 functions in `src/coreclr/jit/codegencommon.cpp` at native residual HEAD 08df0d6a219f6151686cee00006ec16027910548. Select the first whole function with an exact managed `CodeGen` mapping, a bounded caller/dependency closure, and a focused test; preserve the live native WIP.",
     "activeBatch": {
-      "scope": "Fix the known managed composite SSA storage defect only; preserve native field order and growth behavior without widening into unrelated SSA redesign.",
-      "doneWhen": "Composite names and backing storage remain correct across capacity growth, focused regression tests pass, and B051 is removed from the backlog; otherwise record the exact native/managed mismatch and next cursor.",
-      "validation": "Run focused Debug tests for composite SSA storage and relevant SSA/VN consumers on Windows x64. Compare the pinned native implementation; unit tests alone do not establish full compiler parity.",
+      "scope": "Select one retained common Windows-x64 JIT function with an exact managed destination and a complete bounded dependency closure; exclude closed candidate screens and avoid unrelated cleanup.",
+      "doneWhen": "Identify a concrete whole-function unit and its caller/test closure, then port, validate, retire eligible native definitions, update the checkpoint, and commit the coherent unit; if no candidate qualifies, record the exact screens and next concrete file.",
+      "validation": "Use source/mapping evidence to select the candidate. After selection, run its focused Windows-x64 Debug tests and compare phase output with the pinned runtime when the fixture supports it.",
       "deferred": [
         "Do not reopen bounded screens that found no candidate without new caller or mapping evidence.",
         "Keep the unresolved native ilogb decision, ARM32 parser-blocked validation, and Wasm traversal design blocker out of unrelated batches."
@@ -23,7 +23,7 @@
         "oracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "nativeResidualCommit": "08df0d6a219f6151686cee00006ec16027910548",
         "completionGate": "Retire whole eligible definitions and orphan declarations in the same accepted batch, before its managed completion commit. Keep untranslated helpers and target branches in the residual; an absent definition is not evidence that it was ported.",
-        "nextDebtCursor": "At 08df0d6a219f6151686cee00006ec16027910548, `GenTree::BashToConst` and its declaration plus stale `ChangeOper` reference are retired; recovery ref `refs/copilot-recovery/runtime-port-before-bash-to-const-retirement-9c003612` preserves prior HEAD b4c6d26d30a01cbae24beac1a0d55b82ac54dff2. Next, continue residual selection after the B051 fix, excluding the already-screened utils.cpp, emitxarch.cpp, ee_il_dll.cpp, disasm.cpp, gcinfo.cpp, gentree.cpp, emit.cpp, compiler.cpp, alloc.cpp, hashbv.cpp, and helperexpansion.cpp screens."
+        "nextDebtCursor": "At 08df0d6a219f6151686cee00006ec16027910548, `GenTree::BashToConst` and its declaration plus stale `ChangeOper` reference are retired; recovery ref `refs/copilot-recovery/runtime-port-before-bash-to-const-retirement-9c003612` preserves prior HEAD b4c6d26d30a01cbae24beac1a0d55b82ac54dff2. Bounded screens with no eligible candidate: utils.cpp, emitxarch.cpp, ee_il_dll.cpp, disasm.cpp, gcinfo.cpp, gentree.cpp, emit.cpp, compiler.cpp, alloc.cpp, hashbv.cpp, and helperexpansion.cpp. Next search is retained common Windows-x64 code in codegencommon.cpp."
       }
     },
     "validationResourcePolicy": {
