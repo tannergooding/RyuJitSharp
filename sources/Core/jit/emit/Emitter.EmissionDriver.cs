@@ -261,11 +261,11 @@ public partial class Emitter
 #if DEBUG
             emitIssuing = true;
             VarSetOps.AssignNoCopy(compiler, ref emitPrevGCrefVars, VarSetOps.UninitVal());
-            emitPrevGCrefRegs = (regMask)0xBAADFEED;
-            emitPrevByrefRegs = (regMask)0xBAADFEED;
+            emitPrevGCrefRegs = unchecked((regMask)0xBAADFEEDu);
+            emitPrevByrefRegs = unchecked((regMask)0xBAADFEEDu);
             VarSetOps.AssignNoCopy(compiler, ref emitInitGCrefVars, VarSetOps.UninitVal());
-            emitInitGCrefRegs = (regMask)0xBAADFEED;
-            emitInitByrefRegs = (regMask)0xBAADFEED;
+            emitInitGCrefRegs = unchecked((regMask)0xBAADFEEDu);
+            emitInitByrefRegs = unchecked((regMask)0xBAADFEEDu);
 #endif
             codeGen.GCInfo.gcVarPtrSetInit();
             emitSyncThisObjOffs = -1;
@@ -775,11 +775,11 @@ public partial class Emitter
 
 #if DEBUG
             assert(VarSetOps.MaybeUninit(emitPrevGCrefVars));
-            assert(emitPrevGCrefRegs == (regMask)0xBAADFEED);
-            assert(emitPrevByrefRegs == (regMask)0xBAADFEED);
+            assert(emitPrevGCrefRegs == unchecked((regMask)0xBAADFEEDu));
+            assert(emitPrevByrefRegs == unchecked((regMask)0xBAADFEEDu));
             assert(VarSetOps.MaybeUninit(emitInitGCrefVars));
-            assert(emitInitGCrefRegs == (regMask)0xBAADFEED);
-            assert(emitInitByrefRegs == (regMask)0xBAADFEED);
+            assert(emitInitGCrefRegs == unchecked((regMask)0xBAADFEEDu));
+            assert(emitInitByrefRegs == unchecked((regMask)0xBAADFEEDu));
             emitCheckIGList();
 #endif
             *prologSize = emitPrologEndPos.CodeOffset(this);

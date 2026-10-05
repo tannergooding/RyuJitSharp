@@ -5035,11 +5035,16 @@ public partial class Compiler
             // inserted block is marked as the entry block for the filter. Becuase this sort of split can be complex
             // (especially given that it must ensure that the liveness of the exception object is properly tracked),
             // we avoid this situation by never generating single-block filters on x86 (see impPushCatchArgOnStack).
-            if (insertingIntoFilter && (bestBlk == endBlk.Prev))
+            if (insertingIntoFilter)
             {
-                assert(bestBlk != startBlk);
-                assert(bestBlk.Prev is not null);
-                bestBlk = bestBlk.Prev;
+                var filterEndBlk = endBlk
+                    ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Filter end block is missing.");
+                if (bestBlk == filterEndBlk.Prev)
+                {
+                    assert(bestBlk != startBlk);
+                    assert(bestBlk.Prev is not null);
+                    bestBlk = bestBlk.Prev;
+                }
             }
 #endif
 

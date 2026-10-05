@@ -88,7 +88,7 @@ public sealed partial class LinearScan
 #if TARGET_X86
         if (varTypeIsByte(node.Type))
         {
-            var allByteRegisters = _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+            var allByteRegisters = _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
             var byteCandidates = (op1Candidates == SRBM_NONE)
                 ? allByteRegisters
                 : (op1Candidates & allByteRegisters);

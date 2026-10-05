@@ -24,7 +24,7 @@ public sealed partial class LinearScan
 #if TARGET_X86
         if (varTypeIsByte(castType))
         {
-            candidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+            candidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
         }
 
         assert(!varTypeIsLong(sourceType) || (source.Oper is GT_LONG && source.IsContained));

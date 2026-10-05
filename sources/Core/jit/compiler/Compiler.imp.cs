@@ -9039,7 +9039,7 @@ public partial class Compiler
                         {
 #if TARGET_X86
                             // Legacy TLS access is implemented as intrinsic on x86 only
-                            op1 = gtNewFieldAddrNode(TYP_I_IMPL, resolvedToken.hField, null, fieldInfo.offset);
+                            op1 = gtNewFieldAddrNode(TYP_I_IMPL, obj: null, resolvedToken.hField, fieldInfo.offset);
                             op1.Flags |= GTF_FLD_TLS; // fgMorphExpandTlsField will handle the transformation.
                             break;
 #else

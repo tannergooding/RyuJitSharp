@@ -32,7 +32,7 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
             Assert.That(BuildHWIntrinsic(allocator, intrinsic, out var destinations), Is.EqualTo(1));
             Assert.That(destinations, Is.EqualTo(1));
             Assert.That(allocator.refPositions[^1].registerAssignment,
-                Is.EqualTo(AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.GetIntRegSet()));
+                Is.EqualTo(AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.IntRegSet));
         });
     }
 
@@ -51,7 +51,7 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
             Assert.That(BuildHWIntrinsic(allocator, intrinsic, out var destinations), Is.EqualTo(1));
             Assert.That(destinations, Is.EqualTo(1));
             Assert.That(allocator.refPositions[^1].registerAssignment,
-                Is.EqualTo(AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.GetIntRegSet()));
+                Is.EqualTo(AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.IntRegSet));
         });
     }
 
@@ -75,7 +75,7 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
             Assert.That(TargetPreferredUse(allocator), Is.SameAs(accumulatorDef.nextRefPosition));
             Assert.That(dataDef.nextRefPosition?.registerAssignment,
                 Is.EqualTo(byteSource
-                    ? AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.GetIntRegSet()
+                    ? AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.IntRegSet
                     : AvailableIntRegs(allocator)));
             Assert.That(dataDef.nextRefPosition?.delayRegFree, Is.True);
         });
@@ -100,7 +100,7 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
             Assert.That(BuildHWIntrinsic(allocator, intrinsic, out var destinations), Is.EqualTo(3));
             Assert.That(destinations, Is.EqualTo(1));
             Assert.That(scalarDef.nextRefPosition?.registerAssignment,
-                Is.EqualTo(AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.GetIntRegSet()));
+                Is.EqualTo(AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.IntRegSet));
         });
     }
 #else

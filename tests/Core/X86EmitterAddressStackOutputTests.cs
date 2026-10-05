@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;

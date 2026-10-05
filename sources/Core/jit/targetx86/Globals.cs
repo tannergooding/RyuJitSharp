@@ -8,7 +8,25 @@ namespace RyuJitSharp;
 
 public partial class Globals
 {
+    public const CorInfoArch CORINFO_ARCH_TARGET = CORINFO_ARCH_X86;
+
+    public const int MAX_PASS_SINGLEREG_BYTES = 8;
+
+    public const int MAX_PASS_MULTIREG_BYTES = 0;
+
+    public const int MAX_RET_MULTIREG_BYTES = 8;
+
+    public const int MAX_ARG_REG_COUNT = 1;
+
+    public const int MAX_RET_REG_COUNT = 2;
+
+    public const int MAX_MULTIREG_COUNT = 2;
+
     public const int TARGET_POINTER_SIZE = 4;
+
+    public const int MIN_ARG_AREA_FOR_CALL = 0;
+
+    public const int CODE_ALIGN = 1;
 
     public const regNumber FIRST_FP_ARGREG = REG_XMM0;
 
@@ -20,7 +38,15 @@ public partial class Globals
 
     public const int XMM_REGSIZE_BYTES = 16;
 
+    public const int YMM_REGSIZE_BYTES = 32;
+
+    public const int ZMM_REGSIZE_BYTES = 64;
+
+    public const int REGNUM_BITS = 6;
+
     public const int REGSIZE_BYTES = 4;
+
+    public const int FIRST_ARG_STACK_OFFS = 2 * REGSIZE_BYTES;
 
 #if UNIX_X86_ABI
     public const int STACK_ALIGN = 16;

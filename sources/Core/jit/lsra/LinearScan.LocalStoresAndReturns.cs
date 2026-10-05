@@ -40,7 +40,7 @@ public sealed partial class LinearScan
 #if TARGET_X86
         if (varTypeIsByte(registerType))
         {
-            candidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+            candidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
         }
 #endif
         var definition = newRefPosition(interval, _referenceBuildLocation + 1,
@@ -94,7 +94,7 @@ public sealed partial class LinearScan
 #if TARGET_X86
                 if (varTypeIsByte(field.Type))
                 {
-                    sourceCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+                    sourceCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
                 }
 #endif
                 singleUse = buildUse(source, sourceCandidates, index);
@@ -170,7 +170,7 @@ public sealed partial class LinearScan
 #if TARGET_X86
             if (varTypeIsByte(local.GetRegisterType(store)))
             {
-                sourceCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+                sourceCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
             }
 #endif
             singleUse = buildUse(source, sourceCandidates);

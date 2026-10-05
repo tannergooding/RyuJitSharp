@@ -107,7 +107,7 @@ internal static unsafe class LinearScanNodeBuildingTests
 
             Assert.That(Build(allocator, setcc), Is.Zero);
             Assert.That(allocator.refPositions[^1].registerAssignment,
-                Is.EqualTo(AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.GetIntRegSet()));
+                Is.EqualTo(AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.IntRegSet));
         });
     }
 #else

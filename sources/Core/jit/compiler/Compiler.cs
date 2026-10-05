@@ -874,6 +874,10 @@ public partial class Compiler
 
     public int CNT_CALLEE_TRASH_INT => CNT_CALLEE_TRASH;
 
+#if TARGET_X86
+    public regMask SRBM_ALLINT => Globals.SRBM_ALLINT;
+#endif
+
     public regMask SRBM_FLT_CALLEE_TRASH => Globals.SRBM_FLT_CALLEE_TRASH;
 
     public regMask SRBM_INT_CALLEE_TRASH => Globals.SRBM_INT_CALLEE_TRASH;

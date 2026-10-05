@@ -67,7 +67,7 @@ public sealed partial class LinearScan
 #if TARGET_X86
                     if ((size & 1) != 0)
                     {
-                        sourceCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+                        sourceCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
                     }
 #endif
                     break;
@@ -113,7 +113,7 @@ public sealed partial class LinearScan
 #if TARGET_X86
                         if ((size & 1) != 0)
                         {
-                            registerCandidates &= ~RBM_NON_BYTE_REGS.GetIntRegSet();
+                            registerCandidates &= ~RBM_NON_BYTE_REGS.IntRegSet;
                             internalIsByte = true;
                         }
                         internalIntDef = buildInternalIntRegisterDefForNode(block, registerCandidates);
@@ -524,7 +524,7 @@ public sealed partial class LinearScan
                     {
                         var byteTemp = intTemp
                             ?? throw new FatalJitException("A partial x86 field store requires an internal register.");
-                        byteTemp.registerAssignment &= _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+                        byteTemp.registerAssignment &= _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
                     }
                 }
 
@@ -567,7 +567,7 @@ public sealed partial class LinearScan
 #if TARGET_X86
                     if ((loadSize & 1) != 0)
                     {
-                        candidates &= ~RBM_NON_BYTE_REGS.GetIntRegSet();
+                        candidates &= ~RBM_NON_BYTE_REGS.IntRegSet;
                     }
 #endif
                     _ = buildInternalIntRegisterDefForNode(argument, candidates);

@@ -254,6 +254,7 @@ public partial struct GCInfo
 #endif
     }
 
+#if TARGET_AMD64 && WINDOWS_AMD64_ABI && !JIT32_GCENCODER
     private readonly void gcAssignStackSlot(GcInfoEncoderWithLogging encoder, int offset,
         GcSlotFlags flags, GcStackSlotBase stackBase)
     {
@@ -509,4 +510,5 @@ public partial struct GCInfo
             gcDefineCallSites(encoder, offsets, sizes, total);
         }
     }
+#endif
 }

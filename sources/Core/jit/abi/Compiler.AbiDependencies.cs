@@ -12,8 +12,38 @@ public partial class Compiler
 #if TARGET_X86
     public unsafe bool isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd)
     {
-        NYI("Compiler::isTrivialPointerSizedStruct (compiler.cpp), x86 ABI nested value-class classification");
-        throw new FatalJitException(CORJIT_IMPLLIMITATION, "x86 trivial pointer-sized struct classification is not ported.");
+        assert(info.compCompHnd->isValueClass(clsHnd));
+        if (info.compCompHnd->getClassSize(clsHnd) != TARGET_POINTER_SIZE)
+        {
+            return false;
+        }
+
+        for (;;)
+        {
+            // Every nested value class in the chain must also have exactly one field.
+            if (!info.compCompHnd->isValueClass(clsHnd) || info.compCompHnd->getClassNumInstanceFields(clsHnd) is not 1)
+            {
+                return false;
+            }
+
+            var pClsHnd = &clsHnd;
+            var fieldHandle = info.compCompHnd->getFieldInClass(clsHnd, 0);
+            var fieldType = info.compCompHnd->getFieldType(fieldHandle, pClsHnd);
+            var fieldVarType = fieldType.VarType;
+
+            if (fieldType == CORINFO_TYPE_VALUECLASS)
+            {
+                clsHnd = *pClsHnd;
+            }
+            else if (varTypeIsI(fieldVarType) && !varTypeIsGC(fieldVarType))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
     }
 #endif
 

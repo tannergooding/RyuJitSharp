@@ -101,7 +101,7 @@ public sealed partial class LinearScan
 #if TARGET_X86
                     else if (varTypeIsByte(baseType) && intrinsicId is NI_Vector_ToScalar)
                     {
-                        destinationCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+                        destinationCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
                     }
 #endif
                     break;
@@ -131,7 +131,7 @@ public sealed partial class LinearScan
                     sourceCount += buildOperandUses(op2);
 #if TARGET_X86
                     sourceCount += buildOperandUses(op3, varTypeIsByte(baseType)
-                        ? _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet()
+                        ? _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet
                         : SRBM_NONE);
 #else
                     sourceCount += buildOperandUses(op3, varTypeIsByte(baseType) ? _availableIntRegs : SRBM_NONE);
@@ -204,7 +204,7 @@ public sealed partial class LinearScan
 #if TARGET_X86
                     if (varTypeIsByte(baseType))
                     {
-                        destinationCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+                        destinationCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
                     }
 #endif
                     break;
@@ -218,7 +218,7 @@ public sealed partial class LinearScan
                     _targetPreferredUse = buildUse(op1);
                     sourceCount++;
                     sourceCount += buildDelayFreeUses(op2, op1, varTypeIsByte(baseType)
-                        ? _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet()
+                        ? _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet
                         : SRBM_NONE);
                     buildUses = false;
                     break;

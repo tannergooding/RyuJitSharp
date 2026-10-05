@@ -234,7 +234,7 @@ public sealed partial class LinearScan
                 sourceCount = 0;
                 assert(destinationCount == 1);
 #if TARGET_X86
-                _ = buildDef(tree, _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet());
+                _ = buildDef(tree, _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet);
 #else
                 _ = buildDef(tree, _availableIntRegs);
 #endif
@@ -441,7 +441,7 @@ public sealed partial class LinearScan
                 _ = buildUse(compareExchange.Addr, candidates);
 #if TARGET_X86
                 _ = buildUse(compareExchange.Data, varTypeIsByte(tree.Type)
-                    ? candidates & ~RBM_NON_BYTE_REGS.GetIntRegSet()
+                    ? candidates & ~RBM_NON_BYTE_REGS.IntRegSet
                     : candidates);
 #else
                 _ = buildUse(compareExchange.Data, varTypeIsByte(tree.Type) ? candidates & _rbmAllInt : candidates);
@@ -484,7 +484,7 @@ public sealed partial class LinearScan
                 assert(!data.IsContained);
 #if TARGET_X86
                 _ = buildUse(data, varTypeIsByte(tree.Type)
-                    ? _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet()
+                    ? _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet
                     : SRBM_NONE);
 #else
                 _ = buildUse(data, varTypeIsByte(tree.Type) ? _rbmAllInt : SRBM_NONE);
@@ -571,7 +571,7 @@ public sealed partial class LinearScan
 #if TARGET_X86
                 if (varTypeIsByte(tree.Type))
                 {
-                    _ = buildUse(tree.AsUnOp().Op1, _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet());
+                    _ = buildUse(tree.AsUnOp().Op1, _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet);
                     sourceCount = 1;
                     break;
                 }

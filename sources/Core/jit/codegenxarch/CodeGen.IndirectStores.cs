@@ -9,19 +9,19 @@ namespace RyuJitSharp;
 public sealed partial class CodeGen
 {
 #if TARGET_X86 && NOGC_WRITE_BARRIERS
-    private static readonly CorInfoHelpFunc[,] s_optimizedWriteBarrierHelpers =
-    {
-        {
+    private static readonly CorInfoHelpFunc[][] s_optimizedWriteBarrierHelpers =
+    [
+        [
             CORINFO_HELP_ASSIGN_REF_EAX, CORINFO_HELP_ASSIGN_REF_ECX, (CorInfoHelpFunc)(-1),
             CORINFO_HELP_ASSIGN_REF_EBX, (CorInfoHelpFunc)(-1), CORINFO_HELP_ASSIGN_REF_EBP,
             CORINFO_HELP_ASSIGN_REF_ESI, CORINFO_HELP_ASSIGN_REF_EDI,
-        },
-        {
+        ],
+        [
             CORINFO_HELP_CHECKED_ASSIGN_REF_EAX, CORINFO_HELP_CHECKED_ASSIGN_REF_ECX, (CorInfoHelpFunc)(-1),
             CORINFO_HELP_CHECKED_ASSIGN_REF_EBX, (CorInfoHelpFunc)(-1), CORINFO_HELP_CHECKED_ASSIGN_REF_EBP,
             CORINFO_HELP_CHECKED_ASSIGN_REF_ESI, CORINFO_HELP_CHECKED_ASSIGN_REF_EDI,
-        },
-    };
+        ],
+    ];
 #endif
 
     public void genCodeForStoreInd(GenTreeStoreInd tree)
@@ -278,20 +278,20 @@ public sealed partial class CodeGen
             return false;
         }
 
-        noway_assert(s_optimizedWriteBarrierHelpers[0, (int)REG_EAX] == CORINFO_HELP_ASSIGN_REF_EAX);
-        noway_assert(s_optimizedWriteBarrierHelpers[0, (int)REG_ECX] == CORINFO_HELP_ASSIGN_REF_ECX);
-        noway_assert(s_optimizedWriteBarrierHelpers[0, (int)REG_EBX] == CORINFO_HELP_ASSIGN_REF_EBX);
-        noway_assert(s_optimizedWriteBarrierHelpers[0, (int)REG_ESP] == (CorInfoHelpFunc)(-1));
-        noway_assert(s_optimizedWriteBarrierHelpers[0, (int)REG_EBP] == CORINFO_HELP_ASSIGN_REF_EBP);
-        noway_assert(s_optimizedWriteBarrierHelpers[0, (int)REG_ESI] == CORINFO_HELP_ASSIGN_REF_ESI);
-        noway_assert(s_optimizedWriteBarrierHelpers[0, (int)REG_EDI] == CORINFO_HELP_ASSIGN_REF_EDI);
-        noway_assert(s_optimizedWriteBarrierHelpers[1, (int)REG_EAX] == CORINFO_HELP_CHECKED_ASSIGN_REF_EAX);
-        noway_assert(s_optimizedWriteBarrierHelpers[1, (int)REG_ECX] == CORINFO_HELP_CHECKED_ASSIGN_REF_ECX);
-        noway_assert(s_optimizedWriteBarrierHelpers[1, (int)REG_EBX] == CORINFO_HELP_CHECKED_ASSIGN_REF_EBX);
-        noway_assert(s_optimizedWriteBarrierHelpers[1, (int)REG_ESP] == (CorInfoHelpFunc)(-1));
-        noway_assert(s_optimizedWriteBarrierHelpers[1, (int)REG_EBP] == CORINFO_HELP_CHECKED_ASSIGN_REF_EBP);
-        noway_assert(s_optimizedWriteBarrierHelpers[1, (int)REG_ESI] == CORINFO_HELP_CHECKED_ASSIGN_REF_ESI);
-        noway_assert(s_optimizedWriteBarrierHelpers[1, (int)REG_EDI] == CORINFO_HELP_CHECKED_ASSIGN_REF_EDI);
+        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_EAX] == CORINFO_HELP_ASSIGN_REF_EAX);
+        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_ECX] == CORINFO_HELP_ASSIGN_REF_ECX);
+        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_EBX] == CORINFO_HELP_ASSIGN_REF_EBX);
+        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_ESP] == (CorInfoHelpFunc)(-1));
+        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_EBP] == CORINFO_HELP_ASSIGN_REF_EBP);
+        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_ESI] == CORINFO_HELP_ASSIGN_REF_ESI);
+        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_EDI] == CORINFO_HELP_ASSIGN_REF_EDI);
+        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_EAX] == CORINFO_HELP_CHECKED_ASSIGN_REF_EAX);
+        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_ECX] == CORINFO_HELP_CHECKED_ASSIGN_REF_ECX);
+        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_EBX] == CORINFO_HELP_CHECKED_ASSIGN_REF_EBX);
+        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_ESP] == (CorInfoHelpFunc)(-1));
+        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_EBP] == CORINFO_HELP_CHECKED_ASSIGN_REF_EBP);
+        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_ESI] == CORINFO_HELP_CHECKED_ASSIGN_REF_ESI);
+        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_EDI] == CORINFO_HELP_CHECKED_ASSIGN_REF_EDI);
 
         var reg = data.RegNum;
         noway_assert(reg is not (REG_ESP or REG_EDX));
@@ -300,7 +300,7 @@ public sealed partial class CodeGen
         genCopyRegIfNeeded(addr, REG_EDX);
 
         var targetAnywhere = writeBarrierForm != GCInfo.WriteBarrierForm.WBF_BarrierUnchecked ? 1 : 0;
-        genEmitHelperCall(s_optimizedWriteBarrierHelpers[targetAnywhere, (int)reg], 0, EA_PTRSIZE);
+        genEmitHelperCall(s_optimizedWriteBarrierHelpers[targetAnywhere][(int)reg], 0, EA_PTRSIZE);
 
         return true;
 #else

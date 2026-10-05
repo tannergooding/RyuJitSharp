@@ -33,7 +33,7 @@ internal static unsafe class LinearScanLocalStoreAndReturnTests
             ReferenceBuildLocation(allocator) = 4;
 
             Assert.That(BuildStoreLoc(allocator, store), Is.EqualTo(1));
-            var byteRegisters = AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+            var byteRegisters = AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.IntRegSet;
             Assert.That(sourceDef.nextRefPosition?.registerAssignment, Is.EqualTo(byteRegisters));
             if (candidate)
             {
@@ -89,7 +89,7 @@ internal static unsafe class LinearScanLocalStoreAndReturnTests
             ReferenceBuildLocation(allocator) = 4;
 
             Assert.That(BuildStoreLoc(allocator, store), Is.EqualTo(2));
-            var byteRegisters = AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+            var byteRegisters = AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.IntRegSet;
             Assert.That(allocator.localVarIntervals![2]?.lastRefPosition?.registerAssignment,
                 Is.EqualTo(byteRegisters));
             Assert.That(allocator.localVarIntervals[0]?.lastRefPosition?.registerAssignment,

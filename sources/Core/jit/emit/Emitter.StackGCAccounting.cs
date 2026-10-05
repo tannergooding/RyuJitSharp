@@ -196,7 +196,7 @@ public partial class Emitter
             new regMaskTP(emitThisByrefRegs));
 
 #if JIT32_GCENCODER
-        uint reportedRegs = unchecked((uint)(SRBM_INT_CALLEE_SAVED | SRBM_EBP)) >> (int)REG_INT_FIRST;
+        var reportedRegs = unchecked((uint)(SRBM_INT_CALLEE_SAVED | SRBM_EBP)) >> (int)REG_INT_FIRST;
         gcrefRegs &= reportedRegs;
         byrefRegs &= reportedRegs;
 

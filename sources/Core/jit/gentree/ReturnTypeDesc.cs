@@ -338,11 +338,11 @@ public struct ReturnTypeDesc
 
                 Unsafe.SkipInit(out InlineArray2<CorInfoGCType> inlineGcPtrs);
                 var gcPtrs = (Span<CorInfoGCType>)(inlineGcPtrs);
-                compiler.info.compCompHnd->getClassGClayout(retClsHnd, (byte*)(&gcPtrs.e0));
+                compiler.info.compCompHnd->getClassGClayout(retClsHnd, &inlineGcPtrs.e0);
 
                 for (byte i = 0; i < 2; i++)
                 {
-                    _regType[i] = compiler.GetJitGCType(gcPtrs[i]);
+                    _regType[i] = compiler.getJitGCType(gcPtrs[i]);
                 }
 #elif TARGET_WASM
                 // For Wasm, structs are either returned by-ref or as primitives.

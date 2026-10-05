@@ -27,6 +27,13 @@ public readonly struct regMaskTP : IEquatable<regMaskTP>
         _lower = lower;
         _upper = upper;
     }
+#else
+    // The native type has no separate storage for the high mask on these targets.
+    public regMaskTP(regMask lower, regMask upper)
+    {
+        _lower = lower;
+        _ = upper;
+    }
 #endif
 
     public regMask IntRegSet => _lower;

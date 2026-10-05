@@ -40,7 +40,7 @@ internal static unsafe class X86UnwindNoOpTests
             Assert.That(context->Reservations[0].Size, Is.EqualTo(sizeof(uint)));
             Assert.That(context->AllocationCount, Is.EqualTo(1));
             Assert.That(context->Allocations[0].HotCode, Is.EqualTo((nint)hotCode));
-            Assert.That(context->Allocations[0].ColdCode, Is.Zero);
+            Assert.That(context->Allocations[0].ColdCode, Is.EqualTo((nint)0));
             Assert.That(context->Allocations[0].Start, Is.Zero);
             Assert.That(context->Allocations[0].End, Is.EqualTo(32));
             Assert.That(context->Allocations[0].Size, Is.EqualTo(sizeof(uint)));
@@ -71,7 +71,7 @@ internal static unsafe class X86UnwindNoOpTests
             Assert.That(context->Reservations[1].Size, Is.EqualTo(sizeof(uint)));
             Assert.That(context->AllocationCount, Is.EqualTo(2));
             Assert.That(context->Allocations[0].HotCode, Is.EqualTo((nint)hotCode));
-            Assert.That(context->Allocations[0].ColdCode, Is.Zero);
+            Assert.That(context->Allocations[0].ColdCode, Is.EqualTo((nint)0));
             Assert.That(context->Allocations[0].Start, Is.Zero);
             Assert.That(context->Allocations[0].End, Is.EqualTo(32));
             Assert.That(context->Allocations[0].FunctionLength, Is.EqualTo(32u));
@@ -103,7 +103,7 @@ internal static unsafe class X86UnwindNoOpTests
             Assert.That(context->ReservationCount, Is.EqualTo(1));
             Assert.That(context->Reservations[0].IsCold, Is.False);
             Assert.That(context->AllocationCount, Is.EqualTo(1));
-            Assert.That(context->Allocations[0].ColdCode, Is.Zero);
+            Assert.That(context->Allocations[0].ColdCode, Is.EqualTo((nint)0));
             Assert.That(context->Allocations[0].Start, Is.Zero);
             Assert.That(context->Allocations[0].End, Is.EqualTo(64));
             Assert.That(context->Allocations[0].FunctionLength, Is.EqualTo(64u));
@@ -126,36 +126,37 @@ internal static unsafe class X86UnwindNoOpTests
         {
             Globals.JitConfig = default;
 
-            var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-            var codeGen = (CodeGen)RuntimeHelpers.GetUninitializedObject(typeof(CodeGen));
-            EmitterField(ref codeGen) = new Emitter(codeGen);
-            compiler.codeGen = codeGen;
-            compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT }];
-            compiler.compFuncInfoCount = 1;
-            compiler.fgFuncletsCreated = true;
-            compiler.info.compNativeCodeSize = 32;
-            compiler.info.compTotalHotCodeSize = 32;
-
-            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
-            vtable.reserveUnwindInfo =
-                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, bool, bool, int, void>)
-                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, byte, byte, int, void>)&Reserve;
-            vtable.allocUnwindInfo = &Allocate;
-
-            var reservations = stackalloc Reservation[4];
-            var allocations = stackalloc Allocation[4];
-            byte* hotCode = stackalloc byte[1];
-            byte* coldCode = stackalloc byte[1];
-            var context = new PublicationContext
+            X86EmitterStaticOutputTests.WithEmitter((compiler, _) =>
             {
-                JitInfo = new ICorJitInfo { lpVtbl = &vtable },
-                Reservations = reservations,
-                Allocations = allocations,
-            };
-            compiler.info.compCompHnd = &context.JitInfo;
-            compiler.info.compMatchedVM = true;
+                compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT }];
+                compiler.compFuncInfoCount = 1;
+                compiler.fgFuncletsCreated = true;
+                compiler.info.compNativeCodeSize = 32;
+                compiler.info.compTotalHotCodeSize = 32;
 
-            action(compiler, &context, hotCode, coldCode);
+                ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+                vtable.reserveUnwindInfo =
+                    (delegate* unmanaged[MemberFunction]<ICorJitInfo*, bool, bool, int, void>)
+                    (delegate* unmanaged[MemberFunction]<ICorJitInfo*, byte, byte, int, void>)&Reserve;
+                vtable.allocUnwindInfo = &Allocate;
+
+                var reservations = stackalloc Reservation[4];
+                var allocations = stackalloc Allocation[4];
+#pragma warning disable IDE0007
+                byte* hotCode = stackalloc byte[1];
+                byte* coldCode = stackalloc byte[1];
+#pragma warning restore IDE0007
+                var context = new PublicationContext
+                {
+                    JitInfo = new ICorJitInfo { lpVtbl = &vtable },
+                    Reservations = reservations,
+                    Allocations = allocations,
+                };
+                compiler.info.compCompHnd = &context.JitInfo;
+                compiler.info.compMatchedVM = true;
+
+                action(compiler, &context, hotCode, coldCode);
+            });
         }
         finally
         {
@@ -170,9 +171,6 @@ internal static unsafe class X86UnwindNoOpTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitFakeProcedureSplitting")]
     private static extern ref int FakeSplit(ref JitConfigValues config);
 #endif
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_cgEmitter")]
-    private static extern ref Emitter EmitterField(ref CodeGen codeGen);
 
     private static insGroup Group(uint offset)
     {

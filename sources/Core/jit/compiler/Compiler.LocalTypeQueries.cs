@@ -26,6 +26,11 @@ public partial class Compiler
         return lvaTable[lclNum].Type.ActualType;
     }
 
+    public var_types lvaGetRealType(int lclNum)
+    {
+        return lvaTable[lclNum].Type;
+    }
+
     public var_types mangleVarArgsType(var_types type)
     {
 #if TARGET_ARMARCH

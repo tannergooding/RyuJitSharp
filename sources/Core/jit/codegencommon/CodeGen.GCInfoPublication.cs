@@ -29,8 +29,10 @@ public sealed partial class CodeGen
 #endif
         )
     {
+#pragma warning disable IDE0007
         byte* headerBuf = stackalloc byte[64];
-        GCInfo.InfoHdr header = default;
+#pragma warning restore IDE0007
+        var header = default(GCInfo.InfoHdr);
         var cached = 0;
 
         if (_compiler.compHndBBtabCount != 0)

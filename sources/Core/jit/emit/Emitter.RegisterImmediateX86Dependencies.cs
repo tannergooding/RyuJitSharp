@@ -97,6 +97,5 @@ public partial class Emitter
 
         return code;
     }
-
 }
 #endif

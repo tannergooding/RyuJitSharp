@@ -2325,7 +2325,7 @@ public partial class Compiler
 #if TARGET_X86
         // Allocate a temp to point at the beginning of the args
         lvaVarargsBaseOfStkArgs = lvaGrabTemp(shortLifetime: false, "Varargs BaseOfStkArgs");
-        lvaTable[lvaVarargsBaseOfStkArgs].lvType = TYP_I_IMPL;
+        lvaTable[lvaVarargsBaseOfStkArgs].Type = TYP_I_IMPL;
 #endif // TARGET_X86
 
         curVarNum++;

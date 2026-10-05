@@ -187,24 +187,93 @@ internal static unsafe class AbiHeaderTests
         Assert.That(classifier.StackSize, Is.EqualTo(12));
     }
 
-    [Test]
-    public static void X86StructDependencyTerminatesInsteadOfGuessingClassification()
+    [TestCase(4, CorInfoType.CORINFO_TYPE_INT, 1, CorInfoType.CORINFO_TYPE_INT, true, true)]
+    [TestCase(8, CorInfoType.CORINFO_TYPE_INT, 1, CorInfoType.CORINFO_TYPE_INT, true, false)]
+    [TestCase(4, CorInfoType.CORINFO_TYPE_INT, 0, CorInfoType.CORINFO_TYPE_INT, true, false)]
+    [TestCase(4, CorInfoType.CORINFO_TYPE_FLOAT, 1, CorInfoType.CORINFO_TYPE_INT, true, false)]
+    [TestCase(4, CorInfoType.CORINFO_TYPE_VALUECLASS, 1, CorInfoType.CORINFO_TYPE_INT, true, true)]
+    [TestCase(4, CorInfoType.CORINFO_TYPE_VALUECLASS, 1, CorInfoType.CORINFO_TYPE_INT, false, false)]
+    [TestCase(4, CorInfoType.CORINFO_TYPE_VALUECLASS, 1, CorInfoType.CORINFO_TYPE_FLOAT, true, false)]
+    public static void X86StructClassificationUsesExecutionEngineMetadata(
+        int classSize, CorInfoType fieldType, int fieldCount, CorInfoType nestedFieldType,
+        bool nestedValueClass, bool expectedRegister)
     {
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.Base.Base.isValueClass = &X86IsValueClass;
+        vtable.Base.Base.getClassSize = &X86GetClassSize;
+        vtable.Base.Base.getClassNumInstanceFields = &X86GetInstanceFieldCount;
+        vtable.Base.Base.getFieldInClass = &X86GetFieldInClass;
+        vtable.Base.Base.getFieldType = &X86GetFieldType;
+        var state = new X86StructClassificationState
+        {
+            Runtime = new ICorJitInfo { lpVtbl = &vtable },
+            ClassSize = classSize,
+            FieldCount = fieldCount,
+            FieldType = fieldType,
+            NestedFieldType = nestedFieldType,
+            NestedValueClass = nestedValueClass,
+        };
         var compiler = NewCompiler();
+        compiler.info.compCompHnd = &state.Runtime;
         var layout = new ClassLayout((CORINFO_CLASS_STRUCT_*)1, true, 4, TYP_STRUCT, "Struct", "Struct");
-        FatalJitException? error = null;
         var classifier = new X86Classifier(new ClassifierInfo());
+        var result = classifier.Classify(compiler, TYP_STRUCT, layout, WellKnownArg.None);
 
-        try
+        Assert.That(result.HasExactlyOneRegisterSegment, Is.EqualTo(expectedRegister));
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte X86IsValueClass(ICorJitInfo* runtime, CORINFO_CLASS_STRUCT_* handle)
+    {
+        var state = (X86StructClassificationState*)runtime;
+        return handle != (CORINFO_CLASS_STRUCT_*)2 || state->NestedValueClass ? (byte)1 : (byte)0;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int X86GetClassSize(ICorJitInfo* runtime, CORINFO_CLASS_STRUCT_* handle)
+    {
+        return ((X86StructClassificationState*)runtime)->ClassSize;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int X86GetInstanceFieldCount(ICorJitInfo* runtime, CORINFO_CLASS_STRUCT_* handle)
+    {
+        return ((X86StructClassificationState*)runtime)->FieldCount;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CORINFO_FIELD_STRUCT_* X86GetFieldInClass(
+        ICorJitInfo* runtime, CORINFO_CLASS_STRUCT_* handle, int index)
+    {
+        return handle == (CORINFO_CLASS_STRUCT_*)1
+            ? (CORINFO_FIELD_STRUCT_*)1
+            : (CORINFO_FIELD_STRUCT_*)2;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoType X86GetFieldType(
+        ICorJitInfo* runtime, CORINFO_FIELD_STRUCT_* field, CORINFO_CLASS_STRUCT_** structType,
+        CORINFO_CLASS_STRUCT_* memberParent)
+    {
+        var state = (X86StructClassificationState*)runtime;
+        if ((field == (CORINFO_FIELD_STRUCT_*)1) && (state->FieldType is CorInfoType.CORINFO_TYPE_VALUECLASS))
         {
-            _ = classifier.Classify(compiler, TYP_STRUCT, layout, WellKnownArg.None);
-        }
-        catch (FatalJitException exception)
-        {
-            error = exception;
+            *structType = (CORINFO_CLASS_STRUCT_*)2;
+            return CorInfoType.CORINFO_TYPE_VALUECLASS;
         }
 
-        Assert.That(error, Is.Not.Null);
+        return field == (CORINFO_FIELD_STRUCT_*)2 ? state->NestedFieldType : state->FieldType;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct X86StructClassificationState
+    {
+        public ICorJitInfo Runtime;
+        public int ClassSize;
+        public int FieldCount;
+        public CorInfoType FieldType;
+        public CorInfoType NestedFieldType;
+        public bool NestedValueClass;
     }
 #endif
 

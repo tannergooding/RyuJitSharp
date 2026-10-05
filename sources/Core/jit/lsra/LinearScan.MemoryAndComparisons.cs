@@ -55,7 +55,7 @@ public sealed partial class LinearScan
 
                     if ((nonMemorySource is not null) && !nonMemorySource.IsContained && varTypeIsByte(indirection.Type))
                     {
-                        sourceCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+                        sourceCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
                     }
 
                     if (otherIndirection is not null)
@@ -72,7 +72,7 @@ public sealed partial class LinearScan
 #if TARGET_X86
                 if (varTypeIsByte(indirection.Type) && !source.IsContained)
                 {
-                    _ = buildUse(source, _availableIntRegs & ~RBM_NON_BYTE_REGS.GetIntRegSet());
+                    _ = buildUse(source, _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet);
                     srcCount++;
                 }
                 else

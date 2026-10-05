@@ -755,6 +755,15 @@ public partial class GenTree
         }
     }
 
+    private bool OperIsMultiRegOp()
+    {
+#if !TARGET_64BIT
+        return _oper is GT_MUL_LONG;
+#else
+        return false;
+#endif
+    }
+
     /// <summary>whether a local var node defines multiple registers</summary>
     public bool IsMultiRegLclVar => _oper.IsScalarLocal && AsLclVar().IsMultiReg;
 

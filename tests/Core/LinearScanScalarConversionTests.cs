@@ -142,7 +142,7 @@ internal static unsafe class LinearScanScalarConversionTests
             ReferenceBuildLocation(allocator) = 4;
 
             Assert.That(BuildCast(allocator, cast), Is.EqualTo(1));
-            var byteRegisters = AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.GetIntRegSet();
+            var byteRegisters = AvailableIntRegs(allocator) & ~RBM_NON_BYTE_REGS.IntRegSet;
             Assert.That(sourceDef.nextRefPosition?.registerAssignment, Is.EqualTo(byteRegisters));
             Assert.That(allocator.refPositions[^1].registerAssignment, Is.EqualTo(byteRegisters));
         });

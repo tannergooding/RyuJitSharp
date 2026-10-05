@@ -80,6 +80,12 @@ public interface ICodeGen
     regNumber REG_INT_LAST { get; }
 #endif
 
+#if TARGET_X86
+    regMask SRBM_FLT_CALLEE_TRASH { get; }
+
+    regMask SRBM_INT_CALLEE_TRASH { get; }
+#endif
+
 #if TARGET_ARM
     regMask SRBM_FLT_CALLEE_TRASH { get; }
 

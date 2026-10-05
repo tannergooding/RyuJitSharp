@@ -243,7 +243,7 @@ public sealed partial class LinearScan
                 destinationCandidates = _availableIntRegs;
             }
 
-            destinationCandidates &= ~RBM_NON_BYTE_REGS.GetIntRegSet();
+            destinationCandidates &= ~RBM_NON_BYTE_REGS.IntRegSet;
             assert(destinationCandidates != SRBM_NONE);
         }
 #endif

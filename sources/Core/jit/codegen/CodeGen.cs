@@ -474,6 +474,12 @@ public sealed partial class CodeGen : ICodeGen
     public regNumber REG_INT_LAST => _regIntLast;
 #endif
 
+#if TARGET_X86
+    public regMask SRBM_FLT_CALLEE_TRASH => Globals.SRBM_FLT_CALLEE_TRASH;
+
+    public regMask SRBM_INT_CALLEE_TRASH => Globals.SRBM_INT_CALLEE_TRASH;
+#endif
+
 #if TARGET_XARCH
     public regMask SRBM_ALLMASK => _srbmAllMask;
 

@@ -15,7 +15,7 @@ internal static unsafe class X86EmitterInstructionDispatchTests
 {
     [TestCase(false)]
     [TestCase(true)]
-    public static void ThreeRegisterOutputWritesBytesBeforeTheRetainedGcDependency(bool dispatch)
+    public static void ThreeRegisterOutputWritesTheExpectedVexEncoding(bool dispatch)
     {
         X86EmitterStaticOutputTests.WithEmitter((_, emitter) =>
         {
@@ -33,22 +33,19 @@ internal static unsafe class X86EmitterInstructionDispatchTests
 #if DEBUG
             emitter.emitIssuing = true;
 #endif
-            var exception = Assert.Throws<FatalJitException>(() =>
+            if (dispatch)
             {
-                if (dispatch)
-                {
-                    var group = emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");
-                    emitter.emitOutputInstr(group, id, endPtr);
-                }
-                else
-                {
-                    emitter.emitOutputRRR(buffer, id);
-                }
-            });
+                var group = emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");
+                emitter.emitOutputInstr(group, id, endPtr);
+            }
+            else
+            {
+                end = emitter.emitOutputRRR(buffer, id);
+            }
 
-            Assert.That(exception!.Message, Does.Contain("x86 SIMD register-write classification"));
-            Assert.That(new ReadOnlySpan<byte>(buffer, 4).ToArray(), Is.EqualTo(Convert.FromHexString("C5E858CB")));
-            Assert.That((nint)end, Is.EqualTo((nint)buffer));
+            Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
+                Is.EqualTo(Convert.FromHexString("C5E858CB")));
+            Assert.That((nint)end, Is.EqualTo((nint)(buffer + 4)));
         });
     }
 

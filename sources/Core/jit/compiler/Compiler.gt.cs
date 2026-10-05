@@ -2762,6 +2762,21 @@ public partial class Compiler
         }
     }
 
+#if TARGET_X86
+    private static string GetCallConvName(CorInfoCallConvExtension callConv) => callConv switch
+    {
+        CorInfoCallConvExtension.Managed => "Managed",
+        CorInfoCallConvExtension.C => "C",
+        CorInfoCallConvExtension.Stdcall => "Stdcall",
+        CorInfoCallConvExtension.Thiscall => "Thiscall",
+        CorInfoCallConvExtension.Fastcall => "Fastcall",
+        CorInfoCallConvExtension.CMemberFunction => "CMemberFunction",
+        CorInfoCallConvExtension.StdcallMemberFunction => "StdcallMemberFunction",
+        CorInfoCallConvExtension.FastcallMemberFunction => "FastcallMemberFunction",
+        _ => "UnknownCallConv",
+    };
+#endif
+
     public void gtDispNodeName(GenTree tree)
     {
         // print the node name
@@ -15144,7 +15159,7 @@ public partial class Compiler
                                     costEx = 4 + FLT_IND_COST_EX; // 4 + FLT_IND_COST_EX
                                     costSz = 6 + 6;               // 12
 
-                                    if (op1Type == TYP_FLOAT)
+                                    if (op1.Type is TYP_FLOAT)
                                     {
                                         // vector widening float->long instructions take 1 extra cycle
                                         // compared to same-size conversion
@@ -15305,7 +15320,7 @@ public partial class Compiler
                                     costEx = 1 + 4 + FLT_IND_COST_EX + 4 + 4 + 4 + 1 + 1 + 3 + 3 + 1; // 26 + FLT_IND_COST_EX
                                     costSz = 4 + 4 + 8 + 4 + 4 + 4 + 6 + 5 + 4 + 4 + 3;               // 50
 
-                                    if (op1Type is TYP_DOUBLE)
+                                    if (op1.Type is TYP_DOUBLE)
                                     {
                                         // ...
                                         // vroundsd xmm3, xmm0, xmm0, 3

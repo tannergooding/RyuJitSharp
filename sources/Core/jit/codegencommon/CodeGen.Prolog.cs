@@ -568,7 +568,9 @@ public sealed partial class CodeGen
             ref readonly var lastArg = ref _compiler.lvaGetDesc(_compiler.lvaVarargsHandleArg);
             noway_assert(!lastArg.lvRegister);
             var offset = lastArg.StackOffset;
+#if DEBUG
             assert(offset != BAD_STK_OFFS);
+#endif
             noway_assert(lastArg.lvFramePointerBased);
             Emitter.emitIns_R_ARR(INS_lea, EA_PTRSIZE, REG_SCRATCH, genFramePointerReg(), REG_SCRATCH, offset);
             if (local.lvIsInReg)
