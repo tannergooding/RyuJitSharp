@@ -29,6 +29,39 @@ internal static class LinearScanRegisterStressTests
     }
 
     [Test]
+    public static void SmallFloatingPointSetUsesTheConfiguredRegisters()
+    {
+        LinearScanLocalCandidatesTests.WithCandidates(1, (_, allocator) => {
+            StressMask(allocator) = 3;
+            var candidates = SRBM_XMM3 | SRBM_XMM6;
+
+            Assert.That(StressLimit(allocator, null, TYP_FLOAT, candidates), Is.EqualTo(SRBM_XMM6));
+        });
+    }
+
+    [Test]
+    public static void UpperSimdSetUsesHighVectorRegisters()
+    {
+        LinearScanLocalCandidatesTests.WithCandidates(1, (_, allocator) => {
+            StressMask(allocator) = 0x2000;
+            var candidates = SRBM_XMM15 | SRBM_XMM16;
+
+            Assert.That(StressLimit(allocator, null, TYP_FLOAT, candidates), Is.EqualTo(SRBM_XMM16));
+        });
+    }
+
+    [Test]
+    public static void ExtendedGprSetUsesHighIntegerRegisters()
+    {
+        LinearScanLocalCandidatesTests.WithCandidates(1, (_, allocator) => {
+            StressMask(allocator) = 0x4000;
+            var candidates = SRBM_R15 | SRBM_R16;
+
+            Assert.That(StressLimit(allocator, null, TYP_INT, candidates), Is.EqualTo(SRBM_R16));
+        });
+    }
+
+    [Test]
     public static void RequiredBusyCandidateRetainsTheOriginalMask()
     {
         LinearScanLocalCandidatesTests.WithCandidates(1, (compiler, allocator) => {
