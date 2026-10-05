@@ -10,7 +10,9 @@ public partial class Compiler
 {
     private GenTreeOp fgMorphLongMul(GenTreeOp mul)
     {
-        INDEBUG(mul.DebugCheckLongMul());
+#if DEBUG
+        mul.DebugCheckLongMul();
+#endif
 
         var op1 = mul.Op1;
         var op2 = mul.Op2;
@@ -55,7 +57,7 @@ public partial class Compiler
             return mul;
         }
 
-        mul.IsUnsigned = op1.IsUnsigned;
+        mul.IsUnsigned = (op1.Flags & GTF_UNSIGNED) != 0;
         mul.ClearOverflow();
         mul.Set64RsltMul();
 

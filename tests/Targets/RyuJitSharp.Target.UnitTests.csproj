@@ -32,6 +32,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-arm64')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-arm64')))">
+    <Compile Include="..\Core\LinearScanScalarConversionTests.cs" Link="LinearScanScalarConversionTests.cs" />
     <Compile Include="..\Core\EmitterFrameReferenceTests.cs" Link="EmitterFrameReferenceTests.cs" />
     <Compile Include="..\Core\CodeGenLabelTests.cs" Link="CodeGenLabelTests.cs" />
     <Compile Include="..\Core\CodeGenBlockDriverTargetTests.cs" Link="CodeGenBlockDriverTargetTests.cs" />
@@ -43,6 +44,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-arm')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-arm')))">
+    <Compile Include="..\Core\LinearScanScalarConversionTests.cs" Link="LinearScanScalarConversionTests.cs" />
     <Compile Include="..\Core\EmitterFrameReferenceTests.cs" Link="EmitterFrameReferenceTests.cs" />
     <Compile Include="..\Core\Arm32CodeGenUnsupportedNodesTests.cs" Link="Arm32CodeGenUnsupportedNodesTests.cs" />
     <Compile Include="..\Core\CodeGenSiVarLocDiagnosticsTests.cs" Link="CodeGenSiVarLocDiagnosticsTests.cs" />

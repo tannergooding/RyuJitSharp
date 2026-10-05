@@ -301,7 +301,7 @@ public sealed partial class LinearScan
 
         _ = buildDef(select, SRBM_NONE);
         return srcCount;
-#elif TARGET_ARM64
+#elif TARGET_ARM || TARGET_ARM64
         assert(select.Oper is GT_SELECT or GT_SELECTCC);
         var sourceCount = select.Oper is GT_SELECT
             ? buildOperandUses(select.AsConditional().Cond)
@@ -311,8 +311,8 @@ public sealed partial class LinearScan
         _ = buildDef(select, SRBM_NONE);
         return sourceCount;
 #else
-        NYI("LinearScan.buildSelect outside AMD64");
-        throw new FatalJitException("LinearScan.buildSelect outside AMD64.");
+        NYI("LinearScan.buildSelect outside xarch/ARM/ARM64");
+        throw new FatalJitException("LinearScan.buildSelect outside xarch/ARM/ARM64.");
 #endif
     }
 }

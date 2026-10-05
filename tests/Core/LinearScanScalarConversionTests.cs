@@ -18,6 +18,7 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanScalarConversionTests
 {
+#if TARGET_XARCH
 #if !TARGET_X86
     [Test]
     public static void LongToIntCastPreferencesTheSource()
@@ -128,7 +129,7 @@ internal static unsafe class LinearScanScalarConversionTests
                     (reference.refType is RefType.RefTypeDef) && reference.getInterval().isInternal), Is.Empty);
         });
     }
-#else
+#elif TARGET_X86
     [TestCase(TYP_BYTE)]
     [TestCase(TYP_UBYTE)]
     public static void NarrowingByteCastRestrictsSourceAndDestination(var_types castType)
@@ -307,6 +308,92 @@ internal static unsafe class LinearScanScalarConversionTests
             Assert.That(allocator.refPositions[^1].getInterval().hasInterferingUses, Is.True);
         });
     }
+#endif
+
+#if TARGET_ARM || TARGET_ARM64
+    [TestCase(GT_SELECT, false)]
+    [TestCase(GT_SELECT, true)]
+    [TestCase(GT_SELECTCC, false)]
+    [TestCase(GT_SELECTCC, true)]
+    public static void ArmSelectBuildsOperandUsesInOrderAndDefinesTheResult(
+        genTreeOps operation, bool contained)
+    {
+        WithAllocator((compiler, allocator) => {
+            var condition = compiler.gtNewIconNode(TYP_INT, 1);
+            var first = compiler.gtNewIconNode(contained ? TYP_I_IMPL : TYP_INT, 2);
+            var second = compiler.gtNewIconNode(TYP_INT, 3);
+            second.IsContained = contained;
+            ReferenceBuildLocation(allocator) = 2;
+            RefPosition? conditionDefinition = null;
+            if (operation is GT_SELECT)
+            {
+                conditionDefinition = BuildDef(allocator, condition, SRBM_NONE, 0);
+            }
+
+            var firstDefinition = BuildDef(allocator, first, SRBM_NONE, 0);
+            RefPosition? secondDefinition = null;
+            if (!contained)
+            {
+                secondDefinition = BuildDef(allocator, second, SRBM_NONE, 0);
+            }
+
+            GenTree firstValue = first;
+            if (contained)
+            {
+                firstValue = compiler.gtNewIndir(TYP_INT, first);
+                firstValue.IsContained = true;
+            }
+
+            GenTreeOp select = operation is GT_SELECT
+                ? new GenTreeConditional(GT_SELECT, TYP_INT, condition, firstValue, second)
+                : new GenTreeOpCC(GT_SELECTCC, TYP_INT, new GenCondition(GenCondition.EQ), firstValue, second);
+            GenTree[] operands = contained ? [first] : [first, second];
+            if (operation is GT_SELECT)
+            {
+                operands = [condition, .. operands];
+            }
+
+            var expectedIntervals = new Interval[operands.Length];
+            var expectedIntervalIndex = 0;
+            if (operation is GT_SELECT)
+            {
+                expectedIntervals[expectedIntervalIndex++] =
+                    (conditionDefinition ?? throw new AssertionException("The select condition has no definition."))
+                    .getInterval();
+            }
+
+            expectedIntervals[expectedIntervalIndex++] = firstDefinition.getInterval();
+            if (!contained)
+            {
+                expectedIntervals[expectedIntervalIndex] =
+                    (secondDefinition ?? throw new AssertionException("The false value has no definition."))
+                    .getInterval();
+            }
+
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildSelect(allocator, select), Is.EqualTo(operands.Length));
+            var operandUses = allocator.refPositions.FindAll(
+                reference => (reference.refType is RefType.RefTypeUse) &&
+                    Array.Exists(expectedIntervals, interval => ReferenceEquals(interval, reference.getInterval())));
+            Assert.That(operandUses, Has.Count.EqualTo(operands.Length));
+            for (var index = 0; index < operands.Length; index++)
+            {
+                var use = operandUses[index];
+                Assert.That(use.getInterval(), Is.SameAs(expectedIntervals[index]));
+                Assert.That(use.delayRegFree, Is.False);
+            }
+
+            var definition = allocator.refPositions.FindLast(
+                reference => (reference.treeNode == select) &&
+                    (reference.refType is RefType.RefTypeDef))
+                ?? throw new AssertionException("The select has no register definition.");
+            Assert.That(definition.treeNode, Is.SameAs(select));
+            Assert.That(TargetPreferredUse(allocator), Is.Null);
+            Assert.That(TargetPreferredUse2(allocator), Is.Null);
+        });
+    }
+#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildCast")]
     private static extern int BuildCast(LinearScan allocator, GenTreeCast cast);
@@ -358,6 +445,17 @@ internal static unsafe class LinearScanScalarConversionTests
 
     private static void WithAllocator(Action<Compiler, LinearScan> action)
     {
+#if TARGET_ARM64
+        Arm64LinearScanConstructionTests.WithCompiler(false, false, (compiler, codeGen) => {
+            codeGen.IsFramePointerRequired = false;
+            codeGen.IsFramePointerUsed = false;
+            codeGen.IsFrameRequired = false;
+
+            var allocator = new LinearScan(compiler);
+            BuildPhysRegRecords(allocator);
+            action(compiler, allocator);
+        });
+#else
 #if DEBUG
         using var tls = new JitTls(null);
 #endif
@@ -366,15 +464,19 @@ internal static unsafe class LinearScanScalarConversionTests
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(true);
+#if !TARGET_ARM
         CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;
         CompilerAllFloatRegs(compiler) = SRBM_ALLFLOAT_INIT;
         CompilerAllMaskRegs(compiler) = SRBM_ALLMASK_INIT;
         CompilerFloatCalleeTrash(compiler) = SRBM_FLT_CALLEE_TRASH_INIT;
+#endif
         JitTls.Compiler = compiler;
 
         var codeGen = new CodeGen(compiler);
         compiler.codeGen = codeGen;
+#if TARGET_XARCH
         codeGen.CopyRegisterInfo();
+#endif
         codeGen.IsFramePointerRequired = false;
         codeGen.IsFramePointerUsed = false;
         codeGen.IsFrameRequired = false;
@@ -388,5 +490,6 @@ internal static unsafe class LinearScanScalarConversionTests
         {
             JitTls.Compiler = previous;
         }
+#endif
     }
 }
