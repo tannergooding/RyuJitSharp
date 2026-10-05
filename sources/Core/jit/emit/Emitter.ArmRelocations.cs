@@ -8,6 +8,11 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    private unsafe byte* emitGetInsRelocValue(instrDesc id)
+    {
+        return ((instrDescReloc)id).idrRelocVal;
+    }
+
     // Relative-code-relocation mode lets the EE record the PC-relative Thumb MOV32 relocation.
     // Otherwise the emitter requests the absolute relocation used for compilation-time fixup.
     public unsafe void emitHandlePCRelativeMov32(void* location, void* target)
