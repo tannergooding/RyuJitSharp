@@ -94,7 +94,7 @@ internal static class Arm32CkfiniteCodeGenTests
             var failure = RecordTwoImmediates(codeGen.Emitter, ins, imm1, imm2);
 #if DEBUG
             Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(failure?.Message, Does.Contain("Instruction sanity checking outside xarch"));
+            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
 #else
             Assert.That(failure, Is.Null);
 #endif
