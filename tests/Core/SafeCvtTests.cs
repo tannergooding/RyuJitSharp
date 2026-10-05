@@ -62,22 +62,22 @@ internal static class SafeCvtTests
         switch (destination)
         {
             case Destination.SByte:
-                Assert.Throws<FatalJitException>(() => SafeCvtNowayAssert<sbyte, long>(value));
+                _ = Assert.Throws<FatalJitException>(() => SafeCvtNowayAssert<sbyte, long>(value));
                 break;
             case Destination.Byte:
-                Assert.Throws<FatalJitException>(() => SafeCvtNowayAssert<byte, long>(value));
+                _ = Assert.Throws<FatalJitException>(() => SafeCvtNowayAssert<byte, long>(value));
                 break;
             case Destination.Int16:
-                Assert.Throws<FatalJitException>(() => SafeCvtNowayAssert<short, long>(value));
+                _ = Assert.Throws<FatalJitException>(() => SafeCvtNowayAssert<short, long>(value));
                 break;
             case Destination.UInt16:
-                Assert.Throws<FatalJitException>(() => SafeCvtNowayAssert<ushort, long>(value));
+                _ = Assert.Throws<FatalJitException>(() => SafeCvtNowayAssert<ushort, long>(value));
                 break;
             case Destination.Int32:
-                Assert.Throws<FatalJitException>(() => SafeCvtNowayAssert<int, long>(value));
+                _ = Assert.Throws<FatalJitException>(() => SafeCvtNowayAssert<int, long>(value));
                 break;
             case Destination.UInt32:
-                Assert.Throws<FatalJitException>(() => SafeCvtNowayAssert<uint, long>(value));
+                _ = Assert.Throws<FatalJitException>(() => SafeCvtNowayAssert<uint, long>(value));
                 break;
             default:
                 Assert.Fail($"Unexpected destination type {destination}.");
@@ -88,10 +88,10 @@ internal static class SafeCvtTests
     [Test]
     public static void NowayAssertRejectsUnsignedOverflowIntoSignedDestination()
     {
-        Assert.Throws<FatalJitException>(() => SafeCvtNowayAssert<long, ulong>(ulong.MaxValue));
+        _ = Assert.Throws<FatalJitException>(() => SafeCvtNowayAssert<long, ulong>(ulong.MaxValue));
     }
 
-    private enum Destination
+    internal enum Destination
     {
         SByte,
         Byte,
