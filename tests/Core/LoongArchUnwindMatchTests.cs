@@ -1,14 +1,16 @@
 #if TARGET_LOONGARCH64
 using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 #if DEBUG
+using System.Buffers.Binary;
 using System.IO;
 using System.Text;
 #endif
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
+using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -67,6 +69,48 @@ internal static class LoongArchUnwindMatchTests
 
 internal static unsafe class LoongArchUnwindLifecycleTests
 {
+    [Test]
+    public static void PrologRecordingPreservesLoongArchInstructionEncoding()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT, uwi = new UnwindInfo() }];
+            compiler.compFuncInfoCount = 1;
+            compiler.fgFuncletsCreated = true;
+            codeGen.Emitter.emitCurIG = codeGen.Emitter.emitGetFirstPrologIG();
+            Assert.That(compiler.generateCFIUnwindCodes(), Is.False);
+
+            compiler.unwindBegProlog();
+            compiler.unwindAllocStack(16);
+            compiler.unwindAllocStack(512);
+            compiler.unwindAllocStack(2048);
+            compiler.unwindSetFrameReg(REG_FP, 0);
+            compiler.unwindSetFrameReg(REG_FP, 8);
+            compiler.unwindSaveReg(REG_RA, 8);
+            compiler.unwindSaveReg(REG_F24, 8);
+            compiler.unwindNop();
+            compiler.unwindEndProlog();
+
+            var unwindInfo = compiler.funCurrentFunc().GetUnwindInfo();
+            var unwindInfoType = typeof(UnwindInfo);
+            var fragmentType = unwindInfoType.GetNestedType("UnwindFragmentInfo", BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("UnwindFragmentInfo type was not found.");
+            var prologType = unwindInfoType.GetNestedType("UnwindPrologCodes", BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("UnwindPrologCodes type was not found.");
+            var fragment = GetPrivateField<object>(unwindInfoType, unwindInfo, "uwiFragmentFirst");
+            var prolog = GetPrivateField<object>(fragmentType, fragment, "ufiPrologCodes");
+            var codeSlot = GetPrivateField<int>(prologType, prolog, "upcCodeSlot");
+            var codes = GetPrivateField<byte[]>(prologType, prolog, "upcMem");
+
+            Assert.That(codes[codeSlot..], Is.EqualTo(new byte[]
+            {
+                0xE3, 0xDC, 0x00, 0x01, 0xD0, 0x00, 0x01, 0xE2, 0x00, 0x01, 0xE1,
+                0xE0, 0x00, 0x00, 0x80, 0xC0, 0x20, 0x01,
+                0xE4, 0xE4, 0xE4, 0xE4,
+            }));
+        });
+    }
+
     [Test]
     public static void SplitAddsFragmentsAtEmitterGroupBoundaries()
     {
@@ -327,4 +371,102 @@ internal static unsafe class LoongArchUnwindLifecycleTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
     private static extern ref insGroup? FirstGroup(Emitter emitter);
 }
+
+#if DEBUG
+internal static unsafe class LoongArchUnwindDiagnosticsTests
+{
+    [TestCase(0xFFFFFFFFu, 27u, 5u, 31u)]
+    [TestCase(0xFFFFFFFFu, 22u, 5u, 31u)]
+    [TestCase(0xFFFFFFFFu, 0u, 18u, 0x3FFFFu)]
+    [TestCase(0x80000000u, 31u, 1u, 1u)]
+    [TestCase(0x12345678u, 16u, 8u, 0x34u)]
+    public static void HeaderBitExtractionPreservesUnsignedFields(uint word, uint start, uint length, uint expected)
+    {
+        Assert.That(Globals.ExtractBits(word, start, length), Is.EqualTo(expected));
+    }
+
+    [TestCase(new byte[] { 0x01 }, "alloc_s #1 (0x01); addi.d sp, sp, -16 (0x010)")]
+    [TestCase(new byte[] { 0xC0, 0x20 }, "alloc_m #32 (0x020); addi.d sp, sp, -512 (0x0200)")]
+    [TestCase(new byte[] { 0xD0, 0x01, 0x02 }, "save_reg X#1 Z#2 (0x02);")]
+    [TestCase(new byte[] { 0xDC, 0x10, 0x02 }, "save_freg X#1 Z#2 (0x02);")]
+    [TestCase(new byte[] { 0xE0, 0x00, 0x01, 0x02 }, "alloc_l 258 (0x000102);")]
+    [TestCase(new byte[] { 0xE1 }, "set_fp; move ")]
+    [TestCase(new byte[] { 0xE2, 0x01, 0x02 }, "add_fp 258 (0x102);")]
+    [TestCase(new byte[] { 0xE3 }, "nop")]
+    [TestCase(new byte[] { 0xE4 }, "end")]
+    [TestCase(new byte[] { 0xE5 }, "end_c")]
+    [TestCase(new byte[] { 0xE6 }, "save_next")]
+    public static void DumpDecodesLoongArchOpcodesFromAnUnalignedHeader(byte[] code, string expected)
+    {
+        var blob = new byte[9];
+        BinaryPrimitives.WriteUInt32LittleEndian(blob.AsSpan(1), (1u << 27) | 1u);
+        blob.AsSpan(5).Fill(0xE4);
+        code.CopyTo(blob, 5);
+        var text = Dump(blob, 1, 0, 4, 8);
+
+        Assert.That(text, Does.Contain(expected));
+        Assert.That(text, Does.Contain("  No epilogs"));
+        Assert.That(text, Does.Contain("  Function Length   : 1 (0x00001) Actual length = 4 (0x000004)"));
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void DumpPreservesBothEpilogScopeFormsAndFuncletOffsets(bool singleEpilog)
+    {
+        var blob = new byte[singleEpilog ? 8 : 12];
+        var header = (1u << 27) | (singleEpilog ? 1u << 21 : 1u << 22) | 2u;
+        BinaryPrimitives.WriteUInt32LittleEndian(blob, header);
+        if (!singleEpilog)
+        {
+            BinaryPrimitives.WriteUInt32LittleEndian(blob.AsSpan(4), (2u << 22) | 1u);
+        }
+
+        blob.AsSpan(blob.Length - 4).Fill(0xE4);
+        var text = Dump(blob, 0, 16, 24, (uint)blob.Length);
+
+        Assert.That(text, Does.Contain(singleEpilog
+            ? "  --- One epilog, unwind codes at 0"
+            : "Offset from main function begin = 20 (0x000014)"));
+        Assert.That(text, Does.Contain($"    ---- Epilog start at index {(singleEpilog ? 0 : 2)} ----"));
+    }
+
+    [Test]
+    public static void DumpPreservesExtendedHeaderCounts()
+    {
+        var blob = new byte[12];
+        BinaryPrimitives.WriteUInt32LittleEndian(blob, 1u);
+        BinaryPrimitives.WriteUInt32LittleEndian(blob.AsSpan(4), 1u << 16);
+        blob.AsSpan(8).Fill(0xE4);
+        var text = Dump(blob, 0, 0, 4, 12);
+
+        Assert.That(text, Does.Contain("  ---- Extension word ----"));
+        Assert.That(text, Does.Contain("  Extended Code Words        : 1"));
+        Assert.That(text, Does.Contain("  Extended Epilog Count      : 0"));
+    }
+
+    private static string Dump(byte[] blob, int headerOffset, uint start, uint end, uint size)
+    {
+        using var stream = new MemoryStream();
+        using var writer = new JitTextWriter(stream, leaveOpen: true);
+        var previous = Globals.s_jitstdout;
+        try
+        {
+            Globals.s_jitstdout = writer;
+            var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+            fixed (byte* pointer = blob)
+            {
+                Globals.DumpUnwindInfo(compiler, true, start, end, pointer + headerOffset, size);
+            }
+
+            writer.Flush();
+        }
+        finally
+        {
+            Globals.s_jitstdout = previous;
+        }
+
+        return Encoding.UTF8.GetString(stream.ToArray());
+    }
+}
+#endif
 #endif
