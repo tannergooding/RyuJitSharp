@@ -53,6 +53,10 @@ public sealed partial class LinearScan
         buildInternalRegisterUses();
         _ = buildDef(cast, SRBM_NONE);
         return sourceCount;
+#elif TARGET_LOONGARCH64
+        var sourceCount = buildOperandUses(cast.CastOp);
+        _ = buildDef(cast, SRBM_NONE);
+        return sourceCount;
 #else
         NYI("LinearScan.buildCast outside AMD64");
         throw new FatalJitException("LinearScan.buildCast outside AMD64.");
