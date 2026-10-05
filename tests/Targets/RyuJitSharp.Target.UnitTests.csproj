@@ -70,6 +70,10 @@
     <Compile Include="..\Core\LoongArchRiscVLocalCodeGenTests.cs" Link="LoongArchRiscVLocalCodeGenTests.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(RyuJitTargetRuntimeIdentifier)' == 'linux-loongarch64' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'linux-loongarch64')">
+    <Compile Include="..\Core\LoongArchUnwindMatchTests.cs" Link="LoongArchUnwindMatchTests.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(RyuJitTargetRuntimeIdentifier)' == 'linux-riscv64' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'linux-riscv64')">
     <Compile Include="..\Core\IfConversionTests.cs" Link="IfConversionTests.cs" />
     <Compile Include="..\Core\RiscVReservedRegisterCheckTests.cs" Link="RiscVReservedRegisterCheckTests.cs" />

@@ -57,45 +57,118 @@ public partial class Compiler
     {
         throw new FatalJitException(CORJIT_SKIPPED, "ARM64 unwind emission is not ported.");
     }
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+#elif TARGET_LOONGARCH64
     public void unwindBegProlog()
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64/RISC-V64 unwind recording is not ported.");
+        assert(GetEmitter().emitGeneratingPrologOrFuncletProlog());
+        assert(!compGeneratingUnwindProlog);
+        compGeneratingUnwindProlog = true;
+
+#if FEATURE_CFI_SUPPORT
+        if (generateCFIUnwindCodes())
+        {
+            unwindBegPrologCFI();
+            return;
+        }
+#endif
+
+        ref var func = ref funCurrentFunc();
+        unwindGetFuncLocations(in func, true, out var startLoc, out var endLoc);
+        var unwindInfo = func.GetUnwindInfo();
+        unwindInfo.InitUnwindInfo(this, startLoc, endLoc);
+        unwindInfo.CaptureLocation();
+        func.uwiCold = null;
     }
 
     public void unwindEndProlog()
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64/RISC-V64 unwind recording is not ported.");
-    }
-
-    public void unwindAllocStack(uint size)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64/RISC-V64 unwind recording is not ported.");
-    }
-
-    public void unwindSaveReg(regNumber reg, uint offset)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64/RISC-V64 unwind recording is not ported.");
-    }
-
-    public void unwindSaveReg(regNumber reg, int offset)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64/RISC-V64 unwind recording is not ported.");
+        assert(GetEmitter().emitGeneratingPrologOrFuncletProlog());
+        assert(compGeneratingUnwindProlog);
+        compGeneratingUnwindProlog = false;
     }
 
     public void unwindReserve()
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64/RISC-V64 unwind recording is not ported.");
+        assert(!GetEmitter().emitGeneratingPrologOrFuncletProlog());
+        assert(!GetEmitter().emitGeneratingEpilogOrFuncletEpilog());
+
+        for (var index = 0; index < compFuncInfoCount; index++)
+        {
+            ref var func = ref compFuncInfos[index];
+            unwindReserveFunc(ref func);
+        }
+    }
+
+    private unsafe void unwindReserveFunc(ref FuncInfoDsc func)
+    {
+        var isFunclet = func.funKind != FuncKind.FUNC_ROOT;
+
+#if FEATURE_CFI_SUPPORT
+        if (generateCFIUnwindCodes())
+        {
+            if (fgFirstColdBlock is not null)
+            {
+                unwindReserveEEInfo(isFunclet, true, 0);
+            }
+
+            noway_assert(func.cfiCodes is not null);
+            var unwindCodeBytes = unchecked(func.cfiCodes.Count * 8);
+            unwindReserveEEInfo(isFunclet, false, unwindCodeBytes);
+            return;
+        }
+#endif
+
+        var funcHasColdSection = fgFirstColdBlock is not null;
+        if (funcHasColdSection)
+        {
+            assert(!isFunclet); // TODO-CQ: support hot/cold splitting with EH.
+            unwindGetFuncLocations(in func, false, out var startLoc, out var endLoc);
+            var coldUnwindInfo = new UnwindInfo();
+            func.uwiCold = coldUnwindInfo;
+            coldUnwindInfo.InitUnwindInfo(this, startLoc, endLoc);
+            coldUnwindInfo.HotColdSplitCodes(func.GetUnwindInfo());
+        }
+
+        var unwindInfo = func.GetUnwindInfo();
+        unwindInfo.Split();
+        unwindInfo.Reserve(isFunclet, true);
+
+        if (funcHasColdSection)
+        {
+            var coldUnwindInfo = func.uwiCold
+                ?? throw new System.InvalidOperationException("Cold unwind information was not initialized.");
+            coldUnwindInfo.Split();
+            coldUnwindInfo.Reserve(isFunclet, false);
+        }
     }
 
     public unsafe void unwindEmit(void* pHotCode, void* pColdCode)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64/RISC-V64 unwind recording is not ported.");
+        for (var index = 0; index < compFuncInfoCount; index++)
+        {
+            unwindEmitFunc(in compFuncInfos[index], pHotCode, pColdCode);
+        }
     }
 
-    public void unwindNop()
+    private unsafe void unwindEmitFunc(in FuncInfoDsc func, void* pHotCode, void* pColdCode)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Unwind NOP encoding for this target is not ported.");
+        assert((int)FuncKind.FUNC_ROOT == (int)CorJitFuncKind.CORJIT_FUNC_ROOT);
+        assert((int)FuncKind.FUNC_HANDLER == (int)CorJitFuncKind.CORJIT_FUNC_HANDLER);
+        assert((int)FuncKind.FUNC_FILTER == (int)CorJitFuncKind.CORJIT_FUNC_FILTER);
+
+#if FEATURE_CFI_SUPPORT
+        if (generateCFIUnwindCodes())
+        {
+            unwindEmitFuncCFI(in func, pHotCode, pColdCode);
+            return;
+        }
+#endif
+
+        func.GetUnwindInfo().Allocate((CorJitFuncKind)func.funKind, pHotCode, pColdCode, true);
+        if (func.uwiCold is not null)
+        {
+            func.uwiCold.Allocate((CorJitFuncKind)func.funKind, pHotCode, pColdCode, false);
+        }
     }
 #endif
 }
