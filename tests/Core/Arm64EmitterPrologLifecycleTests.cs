@@ -71,9 +71,9 @@ internal static unsafe class Arm64EmitterPrologLifecycleTests
         Assert.That(NoGcRequests(emitter), Is.Zero);
     }
 
-    [TestCase(IGPT_EPILOG, "Root epilog generation requires AMD64.")]
-    [TestCase(IGPT_FUNCLET_PROLOG, "Funclet prologs require AMD64.")]
-    [TestCase(IGPT_FUNCLET_EPILOG, "Funclet epilogs require AMD64.")]
+    [TestCase(IGPT_EPILOG, "Root epilog generation requires xarch.")]
+    [TestCase(IGPT_FUNCLET_PROLOG, "Funclet prologs require xarch.")]
+    [TestCase(IGPT_FUNCLET_EPILOG, "Funclet epilogs require xarch.")]
     public static void GeneratingPlaceholdersReachesTheDistinctCodegenDependency(insGroupPlaceholderType kind, string dependency)
     {
         var (compiler, emitter) = CreateEmitter();
