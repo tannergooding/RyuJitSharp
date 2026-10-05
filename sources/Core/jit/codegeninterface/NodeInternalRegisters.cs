@@ -219,6 +219,5 @@ public partial struct NodeInternalRegisters
         return ref CollectionsMarshal.GetValueRefOrAddDefault(_table, tree, out _);
     }
 
-    // NodeInternalRegistersTable::KeyValueIteration Iterate();
 #endif
 }

@@ -12,6 +12,58 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class WasmRegAllocTests
 {
     [Test]
+    public static void NonFixedRegisterStateAndIterationPreserveFuncletAndNodeAssociations()
+    {
+        WithCompiler(compiler =>
+        {
+            var codeGen = compiler.codeGen
+                ?? throw new AssertionException("The compiler code generator was not initialized.");
+            var stackPointer = regNumberExtensions.MakeWasmReg(0, WasmValueType.I32);
+            var framePointer = regNumberExtensions.MakeWasmReg(1, WasmValueType.I32);
+            var secondRegister = regNumberExtensions.MakeWasmReg(2, WasmValueType.I32);
+
+            codeGen.SetStackPointerReg(0, stackPointer);
+            codeGen.SetFramePointerReg(0, framePointer);
+            Assert.That(compiler.compFuncInfos[0].funStackPointerReg, Is.EqualTo(stackPointer));
+            Assert.That(compiler.compFuncInfos[0].funFramePointerReg, Is.EqualTo(framePointer));
+
+            var firstTree = new GenTreeIntCon(TYP_INT, 1);
+            var secondTree = new GenTreeIntCon(TYP_INT, 2);
+            codeGen.InternalRegisters.Add(firstTree, stackPointer);
+            codeGen.InternalRegisters.Add(firstTree, framePointer);
+            codeGen.InternalRegisters.Add(secondTree, secondRegister);
+
+            var foundFirst = false;
+            var foundSecond = false;
+            var count = 0;
+            var iterator = codeGen.InternalRegisters.Iterate();
+            while (iterator.MoveNext())
+            {
+                var entry = iterator.Current;
+                if (ReferenceEquals(entry.Key, firstTree))
+                {
+                    foundFirst = true;
+                    Assert.That(entry.Value.Count, Is.EqualTo(2));
+                    Assert.That(entry.Value.GetAt(0), Is.EqualTo(stackPointer));
+                    Assert.That(entry.Value.GetAt(1), Is.EqualTo(framePointer));
+                }
+                else if (ReferenceEquals(entry.Key, secondTree))
+                {
+                    foundSecond = true;
+                    Assert.That(entry.Value.Count, Is.EqualTo(1));
+                    Assert.That(entry.Value.GetAt(0), Is.EqualTo(secondRegister));
+                }
+
+                count++;
+            }
+
+            Assert.That(count, Is.EqualTo(2));
+            Assert.That(foundFirst, Is.True);
+            Assert.That(foundSecond, Is.True);
+        });
+    }
+
+    [Test]
     public static void ResolveReferencesSkipsUnusedTemporaryRegisterBanks()
     {
         WithCompiler(compiler => {

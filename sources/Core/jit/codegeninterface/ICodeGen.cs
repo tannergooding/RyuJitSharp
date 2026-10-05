@@ -190,5 +190,11 @@ public interface ICodeGen
 
     regNumber GetStackPointerReg(int funcletIndex);
 
+#if !HAS_FIXED_REGISTER_SET
+    void SetFramePointerReg(int funcletIndex, regNumber reg);
+
+    void SetStackPointerReg(int funcletIndex, regNumber reg);
+#endif
+
     regMaskTP genGetGSCookieTempRegs(bool tailCall, GenTreeCall? tailCallNode);
 }
