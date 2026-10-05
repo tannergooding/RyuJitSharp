@@ -18,6 +18,14 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class LinearScanEdgeResolutionTests
 {
+    private static readonly string[] s_expectedResolveTypeNames = ["Split", "Join", "Critical", "SharedCritical"];
+
+    [Test]
+    public static void ResolveTypeDiagnosticNamesMatchEnumOrder()
+    {
+        Assert.That(ResolveTypeNames(null), Is.EqualTo(s_expectedResolveTypeNames));
+    }
+
     [TestCase(REG_STK, REG_RCX, GT_LCL_VAR, GTF_SPILLED)]
     [TestCase(REG_RCX, REG_STK, GT_LCL_VAR, GTF_SPILL)]
     [TestCase(REG_RCX, REG_RDX, GT_COPY, GTF_EMPTY)]
@@ -755,4 +763,7 @@ internal static class LinearScanEdgeResolutionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_availableFloatRegs")]
     private static extern ref regMask AvailableFloatingRegisters(LinearScan allocator);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_resolveTypeName")]
+    private static extern ref string[] ResolveTypeNames(LinearScan? allocator);
 }
