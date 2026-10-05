@@ -18,6 +18,10 @@ public partial class Globals
 
     public const int MAX_ARG_REG_COUNT = 2;
 
+    public const int MAX_REG_ARG = 8;
+
+    public const int MAX_FLOAT_REG_ARG = 8;
+
     public const int TARGET_POINTER_SIZE = 8;
 
     public const int MAX_RET_REG_COUNT = 2;
@@ -31,6 +35,16 @@ public partial class Globals
     public const int CODE_ALIGN = 2;
 
     public const int STACK_ALIGN = 16;
+
+    public const int J_DIST_SMALL_MAX_NEG = -(1 << 20);
+
+    public const int J_DIST_SMALL_MAX_POS = (1 << 20) - 1;
+
+    public const int B_DIST_SMALL_MAX_NEG = -4096;
+
+    public const int B_DIST_SMALL_MAX_POS = 4095;
+
+    public const int STACK_PROBE_BOUNDARY_THRESHOLD_BYTES = 0;
 
     public const regNumber FIRST_FP_ARGREG = REG_FA0;
 
@@ -49,6 +63,8 @@ public partial class Globals
     public const regNumber REG_ARG_2 = REG_A2;
 
     public const regNumber REG_INTRET = REG_A0;
+
+    public const regNumber REG_LNGRET = REG_A0;
 
     public const regNumber REG_INTRET_1 = REG_A1;
 

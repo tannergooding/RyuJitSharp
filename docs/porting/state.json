@@ -5178,7 +5178,15 @@
     "retirement": "Amended consolidated runtime-port HEAD to 2bd96b5207b7c44c961dff9df614c5818881ba61, solely parented to pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. Removed 138 lines containing the tested inline definitions and their attached comments from emitarm.h. Recovery ref refs/copilot-recovery/arm-predicate-before-20261005 preserves prior HEAD 75d4f5bbc99882a7c9d98cda30b5fd9e1447d525.",
     "limits": "Focused ARM-target managed helper tests only; no ARM generated-code/runtime parity. Unrelated emitarm.cpp comment cleanup remains pending."
   },
-  "nextAction": "SignedTwelveBitImmediateTests passed 7/7 Debug and 7/7 Release for each linux-loongarch64 and linux-riscv64 target. Both native isValidSimm12 definitions were already absent at the consolidated HEAD, so this adds no retirement credit. Continue acceptance of the remaining live WIP before new porting: reconcile the pending Globals.cs and Globals.Registers.cs target constants against the residual LoongArch64/RISC-V64 headers and existing ABI/register coverage, then accept only a complete, evidenced constant family. Keep x86 WIP and user-owned unwindx86.cpp separate; preserve staged/unstaged ownership, serial full-analysis validation, and all unrelated changes. The earlier 51-managed/70-native counts are not current; use fresh status. Do not repeat the 101-file cleanup or closed screens, and do not claim global debt clearance or runtime parity. Do not push or open a PR.",
+  "loongRiscvTargetConstantsAcceptance": {
+    "status": "accepted-managed-mapped-native-retired",
+    "scope": "Complete the pending LoongArch64 and RISC-V64 target constants, register aliases, mask sets, ABI argument aliases, frame constants, and branch-distance bounds in Globals.cs and Globals.Registers.cs.",
+    "mapping": "The pinned runtime-oracle targetloongarch64.h and targetriscv64.h map conventionally to the corresponding target folders. All 182 LoongArch64 and 165 RISC-V64 native macro names were reconciled to managed globals or project feature symbols; FEATURE_MULTIREG_ARGS_OR_RET and CSE_CONSTS are configured in RyuJitSharp.csproj.",
+    "validation": "Full-analysis Target.UnitTests selections for AbiHeaderTests, AbiPassingInformationTests, and LoongArchRiscVLocalCodeGenTests passed serially on the win-x64 host: linux-loongarch64 87/87 Debug and 87/87 Release; linux-riscv64 85/85 Debug and 85/85 Release. Runs used AnalysisLevel=latest-all, default compiler CPU, and compiler-only DOTNET_GCConserveMemory=5. TRX files are under artifacts/port-validation/target-globals-{40b9294772774d8c90f240abe5b7168b,8aab4a0ae3f24fbb93d50eb606ba7587,b6027a39684042e5b29e9a4d0d4f4517,707e9d3b795b4258bff35bcf4b772697}.",
+    "retirement": "Amended the consolidated runtime-port Remove ported code commit to 84d3f5921080ecf9ddc64bb40937395eb84f515c, solely parented to pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. Retired the fully mapped targetloongarch64.h and targetriscv64.h constant/header families (495 deletion lines). Recovery ref refs/copilot-recovery/target-globals-before-eeafa57df745457794012e876db4d056 preserves the prior native HEAD 2bd96b5207b7c44c961dff9df614c5818881ba61.",
+    "limits": "Cross-target managed ABI/register tests on a Windows x64 host only; no LoongArch/RISC-V generated-code or runtime parity, no Windows-x64 progress credit, and no global debt-clearance claim. Other pending managed/native WIP, including x86 globals and user-owned unwindx86.cpp, remains unaccepted."
+  },
+  "nextAction": "The LoongArch64/RISC-V64 target-constant family is reconciled, validated, and retired at native HEAD 84d3f592; the four focused full-analysis selections passed 87/87 and 85/85 in Debug and Release. Next resume checkpoint.activeBatch.retirement.nextDebtCursor: identify one still-retained Windows-x64/shared whole function with a reachable caller and clear managed mapping, then validate and retire only its eligible definition/declaration. Do not reuse closed symbols, choose x86-only isTrivialPointerSizedStruct, include ARM64-only WIP, or revive InlineContext::DumpData (no root caller). Keep all other WIP and the user-owned unwindx86.cpp untouched; no global debt-clearance or runtime-parity claim. Do not push or open a PR.",
 
     "arm64AllocatorConstruction": {
       "scope": "ARM64 node and hardware-intrinsic register-reference construction, consecutive use/definition chains and partial-vector restore links, scalar/memory/call constraints, and node-reference traversal.",
@@ -11260,6 +11268,10 @@
     ]
   },
   "localRecovery": {
+    "targetGlobalsBefore20261006": {
+      "commit": "2bd96b5207b7c44c961dff9df614c5818881ba61",
+      "ref": "refs/copilot-recovery/target-globals-before-eeafa57df745457794012e876db4d056"
+    },
     "rationalizationNativeBeforeRetirement": {
       "commit": "44527aecc86b8323408eb795d6c70dff2f65f921",
       "ref": "refs/porting/snapshots/rationalization-boundary"
