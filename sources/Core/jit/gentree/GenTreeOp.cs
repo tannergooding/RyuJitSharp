@@ -223,16 +223,34 @@ public class GenTreeOp : GenTreeUnOp
         return true;
     }
 
-#if !TARGET_64BIT && !TARGET_WASM
+#if !TARGET_64BIT && !TARGET_WASM && DEBUG
+    // The 32-bit lowering path must preserve the MUL_LONG-compatible tree shape from morph through decomposition.
     public void DebugCheckLongMul()
     {
-#if TARGET_ARM
-        Globals.NYI("TARGET_ARM DebugCheckLongMul");
-        throw new FatalJitException(CORJIT_IMPLLIMITATION, "TARGET_ARM long multiplication checks are not ported.");
-#else
-        Globals.NYI("32-bit DebugCheckLongMul");
-        throw new FatalJitException(CORJIT_IMPLLIMITATION, "32-bit long multiplication checks are not ported.");
-#endif
+        assert(Oper is GT_MUL);
+        assert(Is64RsltMul);
+        assert(Type is TYP_LONG);
+        assert(!HasOverflowCheck);
+
+        var op1 = Op1;
+        var op2 = Op2;
+
+        assert(op1.Type is TYP_LONG);
+        assert(op2.Type is TYP_LONG);
+
+        assert((op1.Oper is GT_CAST) && (op1.AsCast().CastOp.Type.ActualType is TYP_INT));
+        assert(!op1.HasOverflowCheck);
+
+        assert(((op2.Oper is GT_CAST) && (op2.AsCast().CastOp.Type.ActualType is TYP_INT)) ||
+            (op2.Oper.IsIntegralConst && FitsIn(TYP_INT, op2.AsIntConCommon().IntegralValue)));
+        assert(!op2.HasOverflowCheckEx);
+
+        var op1ZeroExtends = op1.IsUnsigned;
+        var op2ZeroExtends = op2.Oper is GT_CAST ? op2.IsUnsigned : op2.AsIntConCommon().IntegralValue >= 0;
+        var op2AnyExtensionIsSuitable = op2.Oper.IsIntegralConst && op2ZeroExtends;
+        assert((op1ZeroExtends == op2ZeroExtends) || op2AnyExtensionIsSuitable);
+
+        assert(op1.IsUnsigned == IsUnsigned);
     }
 #endif
 
