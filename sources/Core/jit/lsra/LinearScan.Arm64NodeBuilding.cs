@@ -527,7 +527,10 @@ public sealed partial class LinearScan
 
             case GT_ASYNC_CONTINUATION:
             {
-                throw new FatalJitException("ARM64 async continuation return register is not defined.");
+                sourceCount = 0;
+                assert(destinationCount == 1);
+                _ = buildDef(tree, genSingleTypeRegMask(REG_ASYNC_CONTINUATION_RET));
+                break;
             }
 
             case GT_INDEX_ADDR:
