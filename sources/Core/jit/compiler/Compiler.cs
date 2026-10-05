@@ -227,6 +227,12 @@ public partial class Compiler
 
     public ICodeGen? codeGen;
 
+    public Emitter GetEmitter()
+    {
+        assert(codeGen is not null);
+        return codeGen.Emitter;
+    }
+
 #if FEATURE_SIMD
     /// <summary>Have we identified any simd types?</summary>
     /// <remarks>This is currently used by struct promotion to avoid getting type information for a struct field to see if it is a simd type, if we haven't seen any simd types or operations in the method.</remarks>

@@ -157,11 +157,11 @@ public abstract class GenTreeIntConCommon : GenTree
 #else
         if (comp.opts.compReloc)
         {
-            return IsIconHandle() && (comp.eeGetRelocTypeHint((void*)IconValue) == CorInfoReloc.RELATIVE32);
+            return IsIconHandle() && (comp.eeGetRelocTypeHint(unchecked((void*)IconValue)) == CorInfoReloc.RELATIVE32);
         }
 
         // Query the VM first: RIP-relative encoding is smaller than a zero-relative address.
-        return (comp.eeGetRelocTypeHint((void*)IconValue) == CorInfoReloc.RELATIVE32) || FitsInI32;
+        return (comp.eeGetRelocTypeHint(unchecked((void*)IconValue)) == CorInfoReloc.RELATIVE32) || FitsInI32;
 #endif
     }
 
@@ -172,10 +172,10 @@ public abstract class GenTreeIntConCommon : GenTree
 #else
         if (comp.opts.compReloc)
         {
-            return IsIconHandle() && (comp.eeGetRelocTypeHint((void*)IconValue) == CorInfoReloc.RELATIVE32);
+            return IsIconHandle() && (comp.eeGetRelocTypeHint(unchecked((void*)IconValue)) == CorInfoReloc.RELATIVE32);
         }
 
-        return comp.eeGetRelocTypeHint((void*)IconValue) == CorInfoReloc.RELATIVE32;
+        return comp.eeGetRelocTypeHint(unchecked((void*)IconValue)) == CorInfoReloc.RELATIVE32;
 #endif
     }
 #endif

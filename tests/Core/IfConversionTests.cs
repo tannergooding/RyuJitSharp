@@ -8,9 +8,12 @@ using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using BitVecOps = RyuJitSharp.BitSetOps<RyuJitSharp.BitVecTraits, RyuJitSharp.BitVecTraits>;
 using static RyuJitSharp.BBKinds;
+using static RyuJitSharp.CORINFO_InstructionSet;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.emitAttr;
+using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
@@ -28,7 +31,8 @@ internal static unsafe class IfConversionTests
     {
         WithCompiler(compiler => {
             var (start, thenBlock, final) = CreateIf(compiler, withElse: false);
-            var thenStore = Store(compiler, thenBlock, 0, compiler.gtNewIconNode(TYP_INT, 17));
+            // Keep RISC-V on the select path instead of its small-immediate branch fast path.
+            var thenStore = Store(compiler, thenBlock, 0, compiler.gtNewIconNode(TYP_INT, 2048));
             var original = thenStore.RootNode;
             var edge = start.TrueEdge;
 
@@ -46,7 +50,7 @@ internal static unsafe class IfConversionTests
             Assert.That(select.Oper, Is.EqualTo(GT_SELECT));
             Assert.That(select.Op1.Oper, Is.EqualTo(GT_LCL_VAR));
             Assert.That(select.Op1.AsLclVar().LclNum, Is.Zero);
-            Assert.That(select.Op2.IsIntegralConst(17), Is.True);
+            Assert.That(select.Op2.IsIntegralConst(2048), Is.True);
             Assert.That(thenStore.TreeListBegin, Is.Not.Null);
             Assert.That(thenStore.RootNode.Next, Is.Null);
         });
@@ -204,7 +208,8 @@ internal static unsafe class IfConversionTests
             var previousStmt = compiler.gtNewStmt(previous);
             compiler.fgInsertStmtBefore(start, start.LastStmt!, previousStmt);
             Prepare(compiler, previousStmt);
-            _ = Store(compiler, thenBlock, 0, compiler.gtNewIconNode(TYP_INT, 7));
+            // Keep RISC-V from preferring the small-immediate branch over a Zicond select.
+            _ = Store(compiler, thenBlock, 0, compiler.gtNewIconNode(TYP_INT, 2048));
 
             Assert.That(compiler.optIfConversion(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
             Assert.That(start.FirstStmt, Is.SameAs(previousStmt));
@@ -261,7 +266,8 @@ internal static unsafe class IfConversionTests
     {
         WithCompiler(compiler => {
             var (start, thenBlock, join) = CreateIf(compiler, withElse: false);
-            _ = Store(compiler, thenBlock, 0, compiler.gtNewIconNode(TYP_INT, 3));
+            // Keep RISC-V on the select path instead of its small-immediate branch fast path.
+            _ = Store(compiler, thenBlock, 0, compiler.gtNewIconNode(TYP_INT, 2048));
             var tail = BasicBlock.New(compiler, BBJ_RETURN);
             tail.bbRefs = 0;
             compiler.fgLastBB!.Next = tail;
@@ -383,6 +389,127 @@ internal static unsafe class IfConversionTests
         });
     }
 
+#if TARGET_RISCV64
+    [TestCase(-2048L, 1)]
+    [TestCase(2047L, 1)]
+    [TestCase(-2049L, 2)]
+    [TestCase(2048L, 2)]
+    [TestCase(4096L, 1)]
+    [TestCase(0x80000000L, 2)]
+    [TestCase(long.MinValue, 2)]
+    public static void RiscVImmediateLoadCountsMatchInstructionSelection(long immediate, int expectedCount)
+    {
+        var instructionCount = Emitter.emitLoadImmediate(
+            false, EA_PTRSIZE, REG_NA, unchecked((nint)immediate));
+        Assert.That(instructionCount, Is.EqualTo(expectedCount));
+    }
+
+    [TestCase(6L, 5L, GT_ADD, false)]
+    [TestCase(8L, 4L, GT_LSH, false)]
+    [TestCase(8L, 0L, GT_LSH, true)]
+    public static void RiscVConstantSelectArithmeticUsesCondition(
+        long trueValue, long falseValue, genTreeOps expectedOper, bool usesBitIndex)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Type = TYP_LONG;
+            EnableZicond(compiler);
+            var (start, thenBlock, _) = CreateIf(compiler, withElse: true);
+            _ = Store(compiler, start.TrueTarget, 0, compiler.gtNewLconNode(trueValue));
+            var store = Store(compiler, thenBlock, 0, compiler.gtNewLconNode(falseValue));
+            var condition = start.LastStmt!.RootNode.AsUnOp().Op1;
+
+            Assert.That(compiler.optIfConversion(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            var result = store.RootNode.AsLclVar().Data.AsOp();
+            Assert.That(result.Oper, Is.EqualTo(expectedOper));
+            Assert.That(result.Type, Is.EqualTo(TYP_LONG));
+            if (usesBitIndex)
+            {
+                Assert.That(result.Op1, Is.SameAs(condition));
+                Assert.That(result.Op2.IsIntegralConst((nint)3), Is.True);
+            }
+            else if (expectedOper is GT_ADD)
+            {
+                Assert.That(
+                    result.Op1.IsIntegralConst(unchecked((nint)falseValue)) ||
+                    result.Op2.IsIntegralConst(unchecked((nint)falseValue)),
+                    Is.True);
+                Assert.That(
+                    ReferenceEquals(result.Op1, condition) || ReferenceEquals(result.Op2, condition),
+                    Is.True);
+            }
+            else
+            {
+                Assert.That(result.Op1.IsIntegralConst(unchecked((nint)falseValue)), Is.True);
+                Assert.That(result.Op2, Is.SameAs(condition));
+            }
+        });
+    }
+
+    [Test]
+    public static void RiscVSelectLocalOperationReusesAndUpdatesNode()
+    {
+        WithCompiler(compiler => {
+            EnableZicond(compiler);
+            var (start, thenBlock, _) = CreateIf(compiler, withElse: true);
+            var local = compiler.gtNewLclvNode(TYP_INT, 1);
+            var operation = compiler.gtNewBinaryNode(
+                GT_ADD, TYP_INT, local, compiler.gtNewIconNode(TYP_INT, -1));
+            _ = Store(compiler, start.TrueTarget, 0, operation);
+            var store = Store(compiler, thenBlock, 0, compiler.gtNewLclvNode(TYP_INT, 1));
+            var condition = start.LastStmt!.RootNode.AsUnOp().Op1;
+
+            Assert.That(compiler.optIfConversion(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            var result = store.RootNode.AsLclVar().Data.AsOp();
+            Assert.That(result, Is.SameAs(operation));
+            Assert.That(result.Oper, Is.EqualTo(GT_SUB));
+            Assert.That(result.Op1, Is.SameAs(local));
+            Assert.That(result.Op2, Is.SameAs(condition));
+        });
+    }
+
+    [Test]
+    public static void RiscVSelectConditionOperationReusesAndUpdatesNode()
+    {
+        WithCompiler(compiler => {
+            EnableZicond(compiler);
+            var (start, thenBlock, _) = CreateIf(compiler, withElse: true);
+            var expression = compiler.gtNewIconNode(TYP_INT, 2);
+            var operation = compiler.gtNewBinaryNode(
+                GT_LSH, TYP_INT, compiler.gtNewIconNode(TYP_INT, 1), expression);
+            _ = Store(compiler, start.TrueTarget, 0, operation);
+            var store = Store(compiler, thenBlock, 0, compiler.gtNewIconNode(TYP_INT, 0));
+            var condition = start.LastStmt!.RootNode.AsUnOp().Op1;
+
+            Assert.That(compiler.optIfConversion(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            var result = store.RootNode.AsLclVar().Data.AsOp();
+            Assert.That(result, Is.SameAs(operation));
+            Assert.That(result.Oper, Is.EqualTo(GT_LSH));
+            Assert.That(result.Op1, Is.SameAs(condition));
+            Assert.That(result.Op2, Is.SameAs(expression));
+        });
+    }
+
+    [Test]
+    public static void RiscVSelectRequiresZicond()
+    {
+        WithCompiler(compiler => {
+            compiler.opts.compSupportsISA = default;
+            compiler.opts.compSupportsISAExactly = default;
+            compiler.opts.compSupportsISAReported = default;
+            var (start, thenBlock, _) = CreateIf(compiler, withElse: true);
+            var elseBlock = start.TrueTarget;
+            var thenStore = Store(compiler, thenBlock, 0, compiler.gtNewIconNode(TYP_INT, 17));
+            _ = Store(compiler, elseBlock, 0, compiler.gtNewIconNode(TYP_INT, 23));
+
+            _ = compiler.optIfConversion();
+
+            Assert.That(start.Kind, Is.EqualTo(BBJ_COND));
+            Assert.That(thenBlock.FirstStmt, Is.SameAs(thenStore));
+            Assert.That(elseBlock.FirstStmt, Is.Not.Null);
+        });
+    }
+#endif
+
     [Test]
     public static void DisabledPhaseDoesNotClearReachabilityTraits()
     {
@@ -446,6 +573,15 @@ internal static unsafe class IfConversionTests
         compiler.fgSetStmtSeq(statement);
     }
 
+#if TARGET_RISCV64
+    private static void EnableZicond(Compiler compiler)
+    {
+        compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_Zicond);
+        compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_Zicond);
+        compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_Zicond);
+    }
+#endif
+
     private static void WithCompiler(Action<Compiler> action, bool optimized = true)
     {
 #if DEBUG
@@ -467,6 +603,9 @@ internal static unsafe class IfConversionTests
         compiler.lvaCount = 4;
         compiler.fgNodeThreading = NodeThreading.AllTrees;
         compiler.fgCalledCount = BB_UNITY_WEIGHT;
+#if TARGET_RISCV64
+        EnableZicond(compiler);
+#endif
 #if DEBUG
         compiler.fgSafeBasicBlockCreation = true;
         compiler.fgSafeFlowEdgeCreation = true;

@@ -21,14 +21,11 @@ public partial class Compiler
         }
 #endif
 
-#if TARGET_RISCV64
-        throw new System.NotImplementedException("RISC-V if-conversion select arithmetic is not ported.");
-#else
         var madeChanges = false;
         assert(!fgSsaValid);
         optReachableBitVecTraits = null;
 
-#if TARGET_ARM64 || TARGET_XARCH
+#if TARGET_ARM64 || TARGET_XARCH || TARGET_RISCV64
         var budget = new[] { 20000 };
         for (var block = fgLastBB; block is not null; block = block.Prev)
         {
@@ -37,6 +34,5 @@ public partial class Compiler
         }
 #endif
         return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
-#endif
     }
 }
