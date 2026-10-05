@@ -10,11 +10,11 @@
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
-    "nextAction": "Inspect GCInfo::gcCountForHeader in src/coreclr/jit/gcinfo.cpp and its direct callers/dependencies as the next Windows-x64 candidate. Establish whether a complete managed destination or a coherent whole-function port is needed before editing; keep JIT32-only stubs and unrelated residual WIP intact.",
+    "nextAction": "Continue B054 by comparing pinned gentree.cpp::Compiler::gtFoldExprBinary with sources/Core/jit/compiler/Compiler.gt.SpecialFolding.cs::gtFoldExprBinary. Establish the first missing nonconstant-binary behavior and its direct dependency/test closure before editing; preserve native arithmetic semantics and the Windows-x64 validation priority.",
     "activeBatch": {
-      "scope": "Inspect and, if its direct callers/dependencies form a complete unit, port GCInfo::gcCountForHeader from the retained native GC-info implementation. Keep Windows x64 as the execution/parity priority and avoid expanding into the JIT32 encoder stubs.",
-      "doneWhen": "The complete GC-info function/dependency closure is implemented and focused checks pass, or the exact blocker is recorded with the next concrete cursor; retire only fully translated native definitions and declarations.",
-      "validation": "Use focused GC-info tests and distinguish target compilation from runtime parity. Keep compiler execution serial and use the matching pinned Core_Root for Windows x64.",
+      "scope": "Finish the B054 nonconstant-binary folding slice by reconciling the native dispatcher and its direct managed support without widening into unrelated conditional/HWI/VN work.",
+      "doneWhen": "The coherent folding function/dependency closure matches the pinned algorithm, focused x64 checks pass, and eligible native definitions/declarations are retired before the managed completion commit; otherwise record the exact unresolved blocker and cursor.",
+      "validation": "Run focused folding/IR tests in Debug and compare the relevant phase output with the matching pinned Windows-x64 Core_Root when the fixture supports it. Unit tests do not establish full compiler parity.",
       "deferred": [
         "Do not reopen bounded screens that found no candidate without new caller or mapping evidence.",
         "Keep the unresolved native ilogb decision, ARM32 parser-blocked validation, and Wasm traversal design blocker out of unrelated batches."
@@ -23,7 +23,7 @@
         "oracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
         "nativeResidualCommit": "b4c6d26d30a01cbae24beac1a0d55b82ac54dff2",
         "completionGate": "Retire whole eligible definitions and orphan declarations in the same accepted batch, before its managed completion commit. Keep untranslated helpers and target branches in the residual; an absent definition is not evidence that it was ported.",
-        "nextDebtCursor": "At b4c6d26d30a01cbae24beac1a0d55b82ac54dff2, inspect src/coreclr/jit/gcinfo.cpp::GCInfo::gcCountForHeader and its direct caller closure for the next Windows-x64 unit. The function is retained at the pinned oracle; do not infer completeness from nearby JIT32 stubs. Preserve unrelated residual WIP and do not claim global debt clearance."
+        "nextDebtCursor": "At b4c6d26d30a01cbae24beac1a0d55b82ac54dff2, compare pinned src/coreclr/jit/gentree.cpp::Compiler::gtFoldExprBinary with sources/Core/jit/compiler/Compiler.gt.SpecialFolding.cs::gtFoldExprBinary. Identify one concrete missing nonconstant-binary case and required support/tests before editing. Keep the B054 scope bounded, preserve unrelated residual WIP, and do not claim global debt clearance."
       }
     },
     "validationResourcePolicy": {
