@@ -177,6 +177,78 @@ internal static unsafe class Arm64CodeGenPortTests
         });
     }
 
+    [TestCase(TYP_INT, 4, INS_OPTS_UXTW, 2)]
+    [TestCase(TYP_I_IMPL, 8, INS_OPTS_LSL, 3)]
+    public static void IndexAddressesPreserveWordWideningScaleAndElementOffset(
+        var_types indexType, int elementSize, insOpts scaleOption, int scale)
+    {
+        Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var baseAddress = compiler.gtNewIconNode(TYP_REF, 0);
+            baseAddress.RegNum = REG_R1;
+            var index = compiler.gtNewIconNode(indexType, 0);
+            index.RegNum = REG_R2;
+            var tree = new GenTreeIndexAddr(
+                baseAddress, index, TYP_INT, NO_CLASS_HANDLE, elementSize, 8, 16, boundsCheck: false)
+            {
+                RegNum = REG_R0,
+            };
+            codeGen.InternalRegisters.Add(tree,
+                regMaskTP.CreateFromRegNum(REG_R3, REG_R3.SingleTypeMask));
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_R1, TYP_REF);
+
+            codeGen.genCodeForTreeNode(tree);
+
+            var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(2));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_add));
+            Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_8BYTE));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R1));
+            Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_R2));
+            Assert.That(descriptors[0].idInsOpt(), Is.EqualTo(scaleOption));
+            Assert.That(descriptors[0].idSmallCns(), Is.EqualTo((nint)scale));
+            Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_add));
+            Assert.That(descriptors[1].idSmallCns(), Is.EqualTo((nint)16));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur,
+                Is.EqualTo(regMaskTP.CreateFromRegNum(REG_R0, REG_R0.SingleTypeMask)));
+        });
+    }
+
+    [Test]
+    public static void IndexAddressesWidenWordIndicesBeforeMultiplyAdd()
+    {
+        Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var baseAddress = compiler.gtNewIconNode(TYP_REF, 0);
+            baseAddress.RegNum = REG_R1;
+            var index = compiler.gtNewIconNode(TYP_INT, 0);
+            index.RegNum = REG_R2;
+            var tree = new GenTreeIndexAddr(
+                baseAddress, index, TYP_INT, NO_CLASS_HANDLE, 3, 8, 16, boundsCheck: false)
+            {
+                RegNum = REG_R0,
+            };
+            var internalRegisters =
+                regMaskTP.CreateFromRegNum(REG_R3, REG_R3.SingleTypeMask) |
+                regMaskTP.CreateFromRegNum(REG_R4, REG_R4.SingleTypeMask);
+            codeGen.InternalRegisters.Add(tree, internalRegisters);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_R1, TYP_REF);
+
+            codeGen.genCodeForTreeNode(tree);
+
+            var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
+            Assert.That(descriptors.ConvertAll(static descriptor => descriptor.idIns()),
+                Is.EqualTo((instruction[])[INS_mov, INS_mov, INS_madd, INS_add]));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R4));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R2));
+            Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(descriptors[2].idReg2(), Is.EqualTo(REG_R4));
+            Assert.That(descriptors[2].idReg3(), Is.EqualTo(REG_R3));
+            Assert.That(descriptors[2].idReg4(), Is.EqualTo(REG_R1));
+        });
+    }
+
     private static GenTreeIntCon Register(Compiler compiler, regNumber reg)
     {
         var node = compiler.gtNewIconNode(TYP_INT, 7);

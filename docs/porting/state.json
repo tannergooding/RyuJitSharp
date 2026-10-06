@@ -10,26 +10,22 @@
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
-    "nextAction": "The ARM/ARM64 CodeGen::genCodeForLclFld unit is implemented and validated. ARM32 local-field tests passed 19/19 Debug and 20/20 Release; Windows-x64 CodeGenLocalLoadTests passed 21/21 Debug. The ARM64 selector remains blocked only by the four established GSCookie CS1503 errors. The ARMARCH definition is retired at consolidated residual HEAD 22755347381d67435486466535f52b8bf1677440, parented to pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. Retain codegen.h's shared declaration because codegenriscv64.cpp still defines genCodeForLclFld. Preserve unrelated native WIP at snapshot 852ef381230bf94b864c9fb1e176b54d1ca335da. Next port the full ARM/ARM64 CodeGen::genCodeForIndexAddr at runtime-port/src/coreclr/jit/codegenarmarch.cpp:1088; keep the already-ported x64 implementation unchanged, and do not claim ARM64 execution/parity.",
+    "nextAction": "The ARM/ARM64 CodeGen::genCodeForIndexAddr unit is implemented and validated. ARM32 IndirectLoadStore tests passed 22/22 Debug and 23/23 Release; Windows-x64 CodeGenIndirectLoadTests passed 40/40 Debug and 39/39 Release. ARM64 compilation remains blocked only by the four established GSCookie CS1503 errors, with no diagnostics in the new port. The ARMARCH definition and its native dispatch case are retired at consolidated residual HEAD f378495658bc7a5d5c825a11a64085ee919fced9, parented to pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. Retain codegen.h's shared declaration because codegenriscv64.cpp still defines genCodeForIndexAddr; retain the native ARMARCH genScaledAdd helper because genLeaInstruction still calls it. Preserve unrelated native WIP and snapshot 852ef381230bf94b864c9fb1e176b54d1ca335da. Next port the full ARM/ARM64 CodeGen::genLeaInstruction at runtime-port/src/coreclr/jit/codegenarmarch.cpp:2089, wire the ARM/ARM64 GT_LEA dispatch, and then retire genScaledAdd when no native callers remain. Keep the x64 implementation unchanged and do not claim ARM64 execution/parity.",
     "activeBatch": {
-      "scope": "Port the complete ARM/ARM64 CodeGen::genCodeForLclFld body from codegenarmarch.cpp into the managed ARMARCH binding. Preserve the struct NYI boundary, ordinary local load, and ARM32 misaligned floating loads through integer temporaries; leave the x64 implementation unchanged.",
-      "doneWhen": "The complete pinned body has a managed implementation and ARM32 coverage for aligned integer/floating loads, misaligned float/double reconstruction, and the struct NYI boundary. The ARM64 direct-load selector has no diagnostics beyond the established GSCookie blockers, Windows-x64 local-load regressions remain unchanged, and the ARMARCH definition is retired before the managed completion commit. Retain the shared declaration because other target definitions remain.",
-      "validation": "Compare the complete native body with the pinned oracle and existing x64 implementation. Run the focused ARM32 class in Debug/Release, Windows-x64 CodeGenLocalLoadTests, and the ARM64 selector once for only the established GSCookie errors. Descriptor recording is not ARM execution or parity evidence.",
-      "latestValidation": "ARM32 Arm32IndirectLoadStoreTests passed 19/19 Debug and 20/20 Release, covering aligned integer/floating loads, misaligned float/double reconstruction, and the struct NYI boundary. Windows-x64 CodeGenLocalLoadTests passed 21/21 Debug. The ARM64 selector failed only with the four established GSCookie CS1503 errors in CodeGen.GSCookieChecks.cs and CodeGen.GSCookieInitialization.cs. Native ARMARCH genCodeForLclFld was retired; codegen.h remains required by the RISC-V definition. Native residual HEAD is 22755347381d67435486466535f52b8bf1677440, parented to oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e.",
+      "scope": "Port the whole ARM/ARM64 CodeGen::genCodeForIndexAddr body and genScaledAdd dependency into the managed ARMARCH binding. Wire GT_INDEX_ADDR dispatch for ARM32 and ARM64. Preserve bounds-check ordering, base GC-root lifetime, power-of-two and MULADD address formation, ARM64 32-bit index zero-extension, and the final element offset; leave x64 unchanged.",
+      "doneWhen": "The complete pinned ARMARCH body and caller binding are managed; ARM32 tests cover scaled add, non-power-of-two MULADD, bounds-check ordering, and GC state, while ARM64 tests cover unsigned index widening and MULADD. Windows-x64 indirect/index-address regressions remain unchanged. Retire the ARMARCH definition and caller case before the managed completion commit, retaining the shared declaration for RISC-V and the native genScaledAdd helper until residual genLeaInstruction is ported.",
+      "validation": "Compare the whole function and helper with the pinned oracle and existing target emitter contracts. Run tests/Targets/RyuJitSharp.Target.UnitTests.csproj for Arm32IndirectLoadStoreTests in Debug and Release with full analysis, CodeGenIndirectLoadTests on Windows x64 in Debug and Release, and the ARM64 selector. Descriptor-recording tests are not ARM execution or parity evidence.",
+      "latestValidation": "Full-analysis ARM32 Arm32IndirectLoadStoreTests passed 22/22 Debug and 23/23 Release. Full-analysis Windows-x64 CodeGenIndirectLoadTests passed 40/40 Debug and 39/39 Release. The ARM64 selector reports only the four established CS1503 errors in CodeGen.GSCookieChecks.cs and CodeGen.GSCookieInitialization.cs; no new diagnostics were reported, and no ARM64 execution/parity is claimed. Native ARMARCH genCodeForIndexAddr and its dispatch case were retired; codegen.h remains required by the RISC-V definition. Native residual HEAD is f378495658bc7a5d5c825a11a64085ee919fced9, parented to oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e.",
       "deferred": [
-        "Do not edit residual `lsra.cpp`; it contains user WIP deleting LSRA stress-mask constants.",
-        "Do not reopen screened `codegen.h` or completed LSRA debt without new caller or mapping evidence. The residual has no include references to `emitpub.h`; its sole CMake list entry is removed in the native worktree and must be included in the consolidated retirement amendment.",
-        "`Compiler::HfaElemKindFromType` is target-specific, while the `gtNewSimdVconNode` overload is guarded by `TARGET_ARM64`.",
-        "`GenTree::ChangeOper` remains required by the untranslated ARM caller at `lowerarmarch.cpp:147`; do not retire it before that caller is ported.",
-        "Keep the unresolved native ilogb decision and Wasm traversal design blocker out of unrelated batches.",
-        "When accepting jit.h/target.h, stage only verified semantic retirements. Preserve pre-existing boilerplate/whitespace WIP and the Apple/OpenBSD `unsigned_abs(int64_t)` overload change; its target-specific caller/mapping is not part of the jit.h lane.",
-        "ARM64 compilation of the shared indirect-load code is blocked by pre-existing argument-type errors in GSCookieChecks.cs and GSCookieInitialization.cs; do not claim ARM64 test acceptance."
+        "Keep codegen.h's genCodeForIndexAddr declaration because codegenriscv64.cpp still dispatches and defines the method.",
+        "Keep the native ARMARCH genScaledAdd definition until genLeaInstruction is ported; genLeaInstruction remains its native caller.",
+        "ARM64 compilation is blocked by the four established GSCookie CS1503 errors; do not claim ARM64 test acceptance or parity."
       ],
       "retirement": {
         "oracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
-        "nativeResidualCommit": "22755347381d67435486466535f52b8bf1677440",
+        "nativeResidualCommit": "f378495658bc7a5d5c825a11a64085ee919fced9",
         "completionGate": "Retire whole eligible definitions and orphan declarations in the same accepted batch, before its managed completion commit. Keep untranslated helpers and target branches in the residual; an absent definition is not evidence that it was ported.",
-        "nextDebtCursor": "At consolidated native residual HEAD 22755347381d67435486466535f52b8bf1677440 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), ARM/ARM64 CodeGen::genCodeForLclFld is fully managed and its ARMARCH native body is retired. ARM32 tests passed 19/19 Debug and 20/20 Release; Windows-x64 local-load tests passed 21/21 Debug; ARM64 remains blocked by the four established GSCookie CS1503 errors. Keep the shared declaration because RISC-V still defines this function. Next candidate: CodeGen::genCodeForIndexAddr at codegenarmarch.cpp:1088; its x64 implementation is already managed and should remain unchanged. Preserve unrelated native WIP with snapshot 852ef381230bf94b864c9fb1e176b54d1ca335da and recovery refs; do not infer global debt clearance."
+        "nextDebtCursor": "At consolidated native residual HEAD f378495658bc7a5d5c825a11a64085ee919fced9 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), ARM/ARM64 genCodeForIndexAddr and its native ARMARCH dispatch case are retired; codegen.h remains required by the RISC-V definition. Keep native ARMARCH genScaledAdd because residual genLeaInstruction still calls it. ARM32 tests passed 22/22 Debug and 23/23 Release; Windows-x64 tests passed 40/40 Debug and 39/39 Release; ARM64 remains blocked by four established GSCookie errors. Next candidate: genLeaInstruction at codegenarmarch.cpp:2089; preserve unrelated native WIP and the recorded recovery refs; do not infer global debt clearance."
       }
     },
     "validationResourcePolicy": {
@@ -61,7 +57,7 @@
     },
     "residualReconciliation": {
       "status": "in-progress",
-      "nextDebtCursor": "At consolidated native residual HEAD 22755347381d67435486466535f52b8bf1677440 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), genCodeForLclFld is fully managed and the ARMARCH definition is retired; codegen.h remains required by the RISC-V definition. ARM32 local-field coverage passed 19/19 Debug and 20/20 Release; Windows-x64 local-load tests passed 21/21 Debug; ARM64 remains blocked by the established four GSCookie type errors. Next candidate: ARM/ARM64 CodeGen::genCodeForIndexAddr at codegenarmarch.cpp:1088; the x64 counterpart is already managed. Preserve unrelated native WIP with snapshot 852ef381230bf94b864c9fb1e176b54d1ca335da; do not infer global debt clearance."
+      "nextDebtCursor": "At consolidated native residual HEAD f378495658bc7a5d5c825a11a64085ee919fced9 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), genCodeForIndexAddr and its ARMARCH dispatch case are fully managed and retired; codegen.h remains required by RISC-V. Keep ARMARCH genScaledAdd until its remaining native genLeaInstruction caller is ported. ARM32 tests passed 22/22 Debug and 23/23 Release; Windows-x64 tests passed 40/40 Debug and 39/39 Release; ARM64 is blocked by the established four GSCookie type errors. Next candidate: ARM/ARM64 genLeaInstruction at codegenarmarch.cpp:2089; preserve recovery refs and unrelated native WIP."
     },
     "windowsCompletionAssessment": {
       "status": "remaining-source-review",
@@ -74,8 +70,12 @@
       "ref": "refs/porting/snapshots/2026-09-22-csharp-wip"
     },
     "nativeResidual": {
-      "commit": "22755347381d67435486466535f52b8bf1677440",
+      "commit": "f378495658bc7a5d5c825a11a64085ee919fced9",
       "ref": "refs/heads/main"
+    },
+    "nativePreIndexAddrRetirement": {
+      "commit": "22755347381d67435486466535f52b8bf1677440",
+      "ref": "refs/copilot-recovery/runtime-port-before-indexaddr-retirement-20261006"
     },
     "nativePreLclFldRetirement": {
       "commit": "2eac77f5682059347367f666cea28a3795ae0c7c",

@@ -7,6 +7,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BarrierKind;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.GenTreeFlags;
@@ -16,7 +17,9 @@ using static RyuJitSharp.instruction;
 using static RyuJitSharp.insBarrier;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
+using static RyuJitSharp.SpecialCodeKind;
 using static RyuJitSharp.var_types;
+using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -105,6 +108,85 @@ internal static unsafe class Arm32IndirectLoadStoreTests
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForLclFld(tree));
 
             Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+        });
+    }
+
+    [Test]
+    public static void IndexAddressUsesScaledAddAndElementOffset()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var tree = CreateIndexAddress(compiler, codeGen, elementSize: 4, boundsCheck: false);
+            var initialCount = CurrentDescriptors(codeGen.Emitter)?.Count ?? 0;
+
+            RecordArm32Instructions(() => codeGen.genCodeForTreeNode(tree));
+
+            var descriptors = CurrentDescriptors(codeGen.Emitter)
+                ?? throw new AssertionException("Missing descriptor buffer.");
+            var emitted = descriptors.GetRange(initialCount, descriptors.Count - initialCount);
+#if DEBUG
+            Assert.That(emitted, Has.Count.EqualTo(1));
+            Assert.That(emitted[0].idIns(), Is.EqualTo(INS_add));
+#else
+            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()), Is.EqualTo(
+                (instruction[])[INS_add, INS_add]));
+            Assert.That(codeGen.Emitter.emitGetInsSC(emitted[0]), Is.EqualTo((nint)2));
+            Assert.That(codeGen.Emitter.emitGetInsSC(emitted[1]), Is.EqualTo((nint)12));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(new regMaskTP(SRBM_R0)));
+#endif
+        });
+    }
+
+    [Test]
+    public static void IndexAddressUsesMultiplyAddForNonPowerOfTwoElements()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var tree = CreateIndexAddress(compiler, codeGen, elementSize: 3, boundsCheck: false);
+            var initialCount = CurrentDescriptors(codeGen.Emitter)?.Count ?? 0;
+
+            RecordArm32Instructions(() => codeGen.genCodeForTreeNode(tree));
+
+            var descriptors = CurrentDescriptors(codeGen.Emitter)
+                ?? throw new AssertionException("Missing descriptor buffer.");
+            var emitted = descriptors.GetRange(initialCount, descriptors.Count - initialCount);
+#if DEBUG
+            Assert.That(emitted, Has.Count.EqualTo(1));
+            Assert.That(emitted[0].idIns(), Is.EqualTo(INS_mov));
+#else
+            Assert.That(emitted[^2].idIns(), Is.EqualTo(INS_mla));
+            Assert.That(emitted[^2].idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(emitted[^2].idReg2(), Is.EqualTo(REG_R2));
+            Assert.That(emitted[^2].idReg3(), Is.EqualTo(REG_R3));
+            Assert.That(emitted[^1].idIns(), Is.EqualTo(INS_add));
+            Assert.That(codeGen.Emitter.emitGetInsSC(emitted[^1]), Is.EqualTo((nint)12));
+#endif
+        });
+    }
+
+    [Test]
+    public static void IndexAddressChecksBoundsBeforeScaling()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var tree = CreateIndexAddress(compiler, codeGen, elementSize: 1, boundsCheck: true);
+            ConfigureBoundsCheckTarget(compiler, codeGen);
+            var initialCount = CurrentDescriptors(codeGen.Emitter)?.Count ?? 0;
+
+            RecordArm32Instructions(() => codeGen.genCodeForTreeNode(tree));
+
+            var descriptors = CurrentDescriptors(codeGen.Emitter)
+                ?? throw new AssertionException("Missing descriptor buffer.");
+            var emitted = descriptors.GetRange(initialCount, descriptors.Count - initialCount);
+#if DEBUG
+            Assert.That(emitted, Has.Count.EqualTo(1));
+            Assert.That(emitted[0].idIns(), Is.EqualTo(INS_ldr));
+#else
+            Assert.That(emitted[0].idIns(), Is.EqualTo(INS_ldr));
+            Assert.That(emitted[1].idIns(), Is.EqualTo(INS_cmp));
+            Assert.That(emitted[2].idIns(), Is.EqualTo(INS_bhs));
+            Assert.That(emitted[^1].idIns(), Is.EqualTo(INS_add));
+#endif
         });
     }
 
@@ -413,6 +495,36 @@ internal static unsafe class Arm32IndirectLoadStoreTests
         compiler.lvaDoneFrameLayout = Compiler.REGALLOC_FRAME_LAYOUT;
         compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
         codeGen.IsFramePointerUsed = false;
+    }
+
+    private static GenTreeIndexAddr CreateIndexAddress(
+        Compiler compiler, CodeGen codeGen, int elementSize, bool boundsCheck)
+    {
+        var baseAddress = compiler.gtNewIconNode(TYP_REF, 0);
+        baseAddress.RegNum = REG_R1;
+        var index = compiler.gtNewIconNode(TYP_INT, 0);
+        index.RegNum = REG_R2;
+        var tree = new GenTreeIndexAddr(
+            baseAddress, index, TYP_INT, NO_CLASS_HANDLE, elementSize, 8, 12, boundsCheck)
+        {
+            RegNum = REG_R0,
+        };
+
+        codeGen.InternalRegisters.Add(tree, new regMaskTP(SRBM_R3));
+        codeGen.GCInfo.gcMarkRegPtrVal(REG_R1, TYP_REF);
+
+        return tree;
+    }
+
+    private static void ConfigureBoundsCheckTarget(Compiler compiler, CodeGen codeGen)
+    {
+        compiler.compCurBB = new BasicBlock(null, null);
+        codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
+        var target = new BasicBlock(null, null);
+        target.SetFlags(BBF_HAS_LABEL | BBF_THROW_HELPER);
+        var descriptor = compiler.fgGetExcptnTarget(SCK_RNGCHK_FAIL, compiler.compCurBB);
+        descriptor.acdUsed = true;
+        descriptor.acdDstBlk = target;
     }
 
     private static Emitter.instrDesc LastInstruction(Emitter emitter)

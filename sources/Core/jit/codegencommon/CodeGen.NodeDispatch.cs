@@ -558,6 +558,12 @@ public sealed partial class CodeGen
                 return;
             }
 
+            case GT_INDEX_ADDR:
+            {
+                genCodeForIndexAddr(tree.AsIndexAddr());
+                return;
+            }
+
             case GT_MEMORYBARRIER:
             {
                 var barrierKind = (tree.Flags & GTF_MEMORYBARRIER_LOAD) != 0
@@ -574,6 +580,7 @@ public sealed partial class CodeGen
                 genCodeForIndir(tree.AsIndir());
                 return;
             }
+
         }
 #endif
 #if TARGET_LOONGARCH64 || TARGET_RISCV64
@@ -673,6 +680,12 @@ public sealed partial class CodeGen
             case GT_STOREIND:
             {
                 genCodeForStoreInd(tree.AsStoreInd());
+                return;
+            }
+
+            case GT_INDEX_ADDR:
+            {
+                genCodeForIndexAddr(tree.AsIndexAddr());
                 return;
             }
         }
