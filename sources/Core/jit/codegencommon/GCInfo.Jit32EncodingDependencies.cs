@@ -10,9 +10,53 @@ namespace RyuJitSharp;
 
 public partial struct GCInfo
 {
-    // The x86 header's native layout belongs to the unported JIT32 encoder.
-    internal struct InfoHdr
+    private unsafe struct EpilogTableWriter
     {
+        internal byte* Destination;
+        internal uint PreviousOffset;
+    }
+
+    private static unsafe nuint gcRecordEpilog(void* context, uint offset)
+    {
+        var writer = (EpilogTableWriter*)context;
+        var size = encodeUDelta(writer->Destination, offset, writer->PreviousOffset);
+        if (writer->Destination != null)
+        {
+            writer->Destination += size;
+        }
+
+        writer->PreviousOffset = offset;
+        return size;
+    }
+
+    private static byte VarTypeToReturnKind(var_types type)
+    {
+        return type switch
+        {
+            TYP_REF => 1,
+            TYP_BYREF => 2,
+            TYP_FLOAT or TYP_DOUBLE => 3,
+            _ => 0,
+        };
+    }
+
+    private readonly byte getReturnKind()
+    {
+        ref readonly var returnType = ref Compiler.compRetTypeDesc;
+        var returnRegCount = returnType.ReturnRegCount;
+        if (returnRegCount == 1)
+        {
+            return VarTypeToReturnKind(returnType.GetReturnRegType(0));
+        }
+
+#if DEBUG
+        for (byte index = 0; index < returnRegCount; index++)
+        {
+            assert(!varTypeIsGC(returnType.GetReturnRegType(index)));
+        }
+#endif
+
+        return 0;
     }
 
     internal readonly bool gcIsUntrackedLocalOrNonEnregisteredArg(int varNum)
@@ -169,15 +213,290 @@ public partial struct GCInfo
         noGCRegionCount = noGCRegions;
     }
 
-    internal static void gcInitEncoderLookupTable()
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "JIT32 GC encoder lookup initialization is not ported.");
-    }
-
-    internal readonly unsafe nuint gcInfoBlockHdrSave(byte* destination, int write,
+    internal unsafe nuint gcInfoBlockHdrSave(byte* destination, int write,
         uint codeSize, uint prologSize, uint epilogSize, ref InfoHdr header, ref int cached)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "JIT32 GC header encoding is not ported.");
+#if DEBUG
+        if (Compiler.verbose)
+        {
+            jitprintf("*************** In gcInfoBlockHdrSave()\n");
+        }
+#endif
+        nuint size = 0;
+
+#if VERIFY_GC_TABLES
+        *(ushort*)destination = 0xFEEF;
+        size += sizeof(ushort);
+        destination += sizeof(ushort);
+#endif
+
+#if DEBUG
+        if (Compiler.verbose && (write != 0))
+        {
+            jitprintf($"GCINFO: methodSize = {codeSize:X4}\n");
+            jitprintf($"GCINFO: prologSize = {prologSize:X4}\n");
+            jitprintf($"GCINFO: epilogSize = {epilogSize:X4}\n");
+        }
+#endif
+
+        var methodSize = encodeUnsigned(destination, codeSize);
+        size += methodSize;
+        if (write != 0)
+        {
+            destination += methodSize;
+        }
+
+        var compiler = Compiler;
+        var emitter = _codeGen.Emitter;
+        if (write == 0)
+        {
+            header = default;
+            cached = NO_CACHED_HEADER;
+        }
+
+        assert(prologSize <= byte.MaxValue);
+        header.prologSize = unchecked((byte)prologSize);
+        assert(epilogSize <= byte.MaxValue);
+        header.epilogSize = unchecked((byte)epilogSize);
+
+        var epilogCount = emitter.emitGetEpilogCnt();
+        header.epilogCount = unchecked((byte)(epilogCount & 0x07));
+        if (header.epilogCount != epilogCount)
+        {
+            IMPL_LIMITATION("emitGetEpilogCnt() does not fit in InfoHdr::epilogCount");
+        }
+
+        header.epilogAtEnd = emitter.emitHasEpilogEnd() ? (byte)1 : (byte)0;
+
+        if (RegSet.rsRegsModified(RBM_EDI))
+        {
+            header.ediSaved = 1;
+        }
+        if (RegSet.rsRegsModified(RBM_ESI))
+        {
+            header.esiSaved = 1;
+        }
+        if (RegSet.rsRegsModified(RBM_EBX))
+        {
+            header.ebxSaved = 1;
+        }
+
+        header.interruptible = _codeGen.Interruptible ? (byte)1 : (byte)0;
+        if (!_codeGen.IsFramePointerUsed)
+        {
+#if DOUBLE_ALIGN
+            if (compiler.genDoubleAlign)
+            {
+                header.ebpSaved = 1;
+                assert(!RegSet.rsRegsModified(RBM_EBP));
+            }
+#endif
+            if (RegSet.rsRegsModified(RBM_EBP))
+            {
+                header.ebpSaved = 1;
+            }
+        }
+        else
+        {
+            header.ebpSaved = 1;
+            header.ebpFrame = 1;
+        }
+
+#if DOUBLE_ALIGN
+        header.doubleAlign = compiler.genDoubleAlign ? (byte)1 : (byte)0;
+#endif
+
+        header.security = 0;
+        header.handlers = compiler.compHndBBtabCount != 0 ? (byte)1 : (byte)0;
+        header.localloc = compiler.compLocallocUsed ? (byte)1 : (byte)0;
+        header.varargs = compiler.info.compIsVarArgs ? (byte)1 : (byte)0;
+        header.profCallbacks = compiler.info.compProfilerCallback ? (byte)1 : (byte)0;
+        header.editNcontinue = compiler.opts.compDbgEnC ? (byte)1 : (byte)0;
+        header.genericsContext = compiler.lvaReportParamTypeArg() ? (byte)1 : (byte)0;
+        header.genericsContextIsMethodDesc =
+            (header.genericsContext != 0) &&
+            ((compiler.info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_METHODDESC) != 0)
+                ? (byte)1
+                : (byte)0;
+
+        header.returnKind = getReturnKind();
+        header.isAsync = compiler.compIsAsync ? (byte)1 : (byte)0;
+        assert(header.returnKind <= SET_RET_KIND_MAX_V5);
+
+        header.gsCookieOffset = INVALID_GS_COOKIE_OFFSET;
+        if (compiler.NeedsGSSecurityCookie)
+        {
+            assert(compiler.lvaGSSecurityCookie != BAD_VAR_NUM);
+            var stackOffset = compiler.lvaGetDesc(compiler.lvaGSSecurityCookie).StackOffset;
+            header.gsCookieOffset = _codeGen.IsFramePointerUsed
+                ? unchecked((uint)-stackOffset)
+                : unchecked((uint)stackOffset);
+            assert(header.gsCookieOffset != INVALID_GS_COOKIE_OFFSET);
+        }
+
+        header.syncStartOffset = INVALID_SYNC_OFFSET;
+        header.syncEndOffset = INVALID_SYNC_OFFSET;
+        if ((compiler.info.compFlags & CORINFO_FLG_SYNCH) != 0)
+        {
+            header.syncStartOffset = 1;
+            header.syncEndOffset = 1;
+        }
+
+        header.revPInvokeOffset = INVALID_REV_PINVOKE_OFFSET;
+        if (compiler.opts.IsReversePInvoke)
+        {
+            assert(compiler.lvaReversePInvokeFrameVar != BAD_VAR_NUM);
+            var stackOffset = compiler.lvaGetDesc(compiler.lvaReversePInvokeFrameVar).StackOffset;
+            header.revPInvokeOffset = _codeGen.IsFramePointerUsed
+                ? unchecked((uint)-stackOffset)
+                : unchecked((uint)stackOffset);
+            assert(header.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET);
+        }
+
+        var argCount = compiler.lvaParameterStackSize / REGSIZE_BYTES;
+        assert(argCount <= ushort.MaxValue);
+        header.argCount = unchecked((ushort)argCount);
+
+        header.frameSize = unchecked((uint)(compiler.compLclFrameSize / sizeof(int)));
+
+        if (write == 0)
+        {
+            gcCountForHeader(out header.untrackedCnt, out header.varPtrTableSize, out header.noGCRegionCnt);
+        }
+
+        var more = 0;
+        var headerEncoding = EncodeHeaderFirst(in header, out var state, ref more, ref cached);
+        size++;
+        if (write != 0)
+        {
+            *destination++ = headerEncoding;
+            var encoding = headerEncoding;
+            byte codeSet = 1;
+            while ((encoding & MORE_BYTES_TO_FOLLOW) != 0)
+            {
+                encoding = EncodeHeaderNext(in header, ref state, out codeSet);
+                assert((codeSet is 1 or 2));
+                if (codeSet == 2)
+                {
+                    *destination++ = NEXT_OPCODE | MORE_BYTES_TO_FOLLOW;
+                    size++;
+                }
+
+                *destination++ = encoding;
+                size++;
+            }
+        }
+        else
+        {
+            size += unchecked((nuint)more);
+        }
+
+        if (header.untrackedCnt > SET_UNTRACKED_MAX)
+        {
+            var encodedSize = encodeUnsigned(write != 0 ? destination : null, header.untrackedCnt);
+            size += encodedSize;
+            if (write != 0)
+            {
+                destination += encodedSize;
+            }
+        }
+
+        if (header.varPtrTableSize != 0)
+        {
+            var encodedSize = encodeUnsigned(write != 0 ? destination : null, header.varPtrTableSize);
+            size += encodedSize;
+            if (write != 0)
+            {
+                destination += encodedSize;
+            }
+        }
+
+        if (header.gsCookieOffset != INVALID_GS_COOKIE_OFFSET)
+        {
+            assert((write == 0) || (state.gsCookieOffset == HAS_GS_COOKIE_OFFSET));
+            var encodedSize = encodeUnsigned(write != 0 ? destination : null, header.gsCookieOffset);
+            size += encodedSize;
+            if (write != 0)
+            {
+                destination += encodedSize;
+            }
+        }
+
+        if (header.syncStartOffset != INVALID_SYNC_OFFSET)
+        {
+            assert((write == 0) || (state.syncStartOffset == HAS_SYNC_OFFSET));
+            var encodedSize = encodeUnsigned(write != 0 ? destination : null, header.syncStartOffset);
+            size += encodedSize;
+            if (write != 0)
+            {
+                destination += encodedSize;
+            }
+
+            encodedSize = encodeUnsigned(write != 0 ? destination : null, header.syncEndOffset);
+            size += encodedSize;
+            if (write != 0)
+            {
+                destination += encodedSize;
+            }
+        }
+
+        if (header.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET)
+        {
+            assert((write == 0) || (state.revPInvokeOffset == HAS_REV_PINVOKE_FRAME_OFFSET));
+            var encodedSize = encodeUnsigned(write != 0 ? destination : null, header.revPInvokeOffset);
+            size += encodedSize;
+            if (write != 0)
+            {
+                destination += encodedSize;
+            }
+        }
+
+        if (header.noGCRegionCnt > SET_NOGCREGIONS_MAX)
+        {
+            var encodedSize = encodeUnsigned(write != 0 ? destination : null, header.noGCRegionCnt);
+            size += encodedSize;
+            if (write != 0)
+            {
+                destination += encodedSize;
+            }
+        }
+
+        if (header.epilogCount != 0 && ((header.epilogAtEnd == 0) || (header.epilogCount != 1)))
+        {
+#if VERIFY_GC_TABLES
+            *(ushort*)destination = 0xFACE;
+            size += sizeof(ushort);
+            destination += sizeof(ushort);
+#endif
+
+            var writer = new EpilogTableWriter
+            {
+                Destination = write != 0 ? destination : null,
+                PreviousOffset = 0,
+            };
+            var epilogTableSize = emitter.emitGenEpilogLst(gcRecordEpilog, &writer);
+            size += epilogTableSize;
+            if (write != 0)
+            {
+                destination += (nint)epilogTableSize;
+            }
+        }
+
+#if DISPLAY_SIZES
+        if (write != 0)
+        {
+            if (_codeGen.Interruptible)
+            {
+                Compiler.genMethodICnt = unchecked(Compiler.genMethodICnt + 1);
+            }
+            else
+            {
+                Compiler.genMethodNCnt = unchecked(Compiler.genMethodNCnt + 1);
+            }
+        }
+#endif
+
+        return size;
     }
 
     internal readonly nuint gcPtrTableSize(InfoHdr header, uint codeSize, ref nuint argTabOffset)
