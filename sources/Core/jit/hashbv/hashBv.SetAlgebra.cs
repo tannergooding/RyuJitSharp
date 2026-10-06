@@ -19,8 +19,10 @@ public sealed partial class hashBv
     {
         And,
         Or,
+        Xor,
         Subtract,
         Compare,
+        Intersects,
     }
 
     public static hashBv CreateFrom(hashBv other, Compiler compiler)
@@ -75,7 +77,11 @@ public sealed partial class hashBv
 
     public bool OrWithChange(hashBv other) => MultiTraverse(other, SetAction.Or);
 
+    public bool XorWithChange(hashBv other) => MultiTraverse(other, SetAction.Xor);
+
     public bool SubtractWithChange(hashBv other) => MultiTraverse(other, SetAction.Subtract);
+
+    public bool Intersects(hashBv other) => MultiTraverse(other, SetAction.Intersects);
 
     public void AndWith(hashBv other)
     {
@@ -387,11 +393,20 @@ public sealed partial class hashBv
             result = false;
             terminate = true;
         }
-        else if (action is SetAction.Or)
+        else if (action is SetAction.Or or SetAction.Xor)
         {
             var source = rhs!;
             var node = new hashBvNode(source.baseIndex);
-            node.OrWith(source);
+
+            if (action is SetAction.Or)
+            {
+                node.OrWith(source);
+            }
+            else
+            {
+                node.XorWith(source);
+            }
+
             node.next = lhs;
             lhs = node;
             numNodes = unchecked((ushort)(numNodes + 1));
@@ -418,6 +433,7 @@ public sealed partial class hashBv
         else if (action is SetAction.And)
         {
             lhs = lhs!.next;
+
             numNodes = unchecked((ushort)(numNodes - 1));
             result = true;
         }
@@ -455,11 +471,27 @@ public sealed partial class hashBv
                 break;
             }
 
+            case SetAction.Xor:
+            {
+                changed = node.XorWithChange(rhs!) != 0;
+                break;
+            }
+
             case SetAction.Compare:
             {
                 if (!node.sameAs(rhs!))
                 {
                     result = false;
+                    terminate = true;
+                }
+                break;
+            }
+
+            case SetAction.Intersects:
+            {
+                if (node.Intersects(rhs!))
+                {
+                    result = true;
                     terminate = true;
                 }
                 break;
@@ -495,11 +527,20 @@ public sealed partial class hashBv
             return null;
         }
 
-        if (action is SetAction.Or)
+        if (action is SetAction.Or or SetAction.Xor)
         {
             var source = rhs!;
             var node = new hashBvNode(source.baseIndex);
-            node.OrWith(source);
+
+            if (action is SetAction.Or)
+            {
+                node.OrWith(source);
+            }
+            else
+            {
+                node.XorWith(source);
+            }
+
             node.next = lhs;
             lhs = node;
             numNodes = unchecked((ushort)(numNodes + 1));

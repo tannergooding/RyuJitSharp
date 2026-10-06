@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 #if TARGET_AMD64
@@ -34,6 +36,71 @@ public sealed class hashBvNode
     }
 
     public int numElements() => ELEMENTS_PER_NODE;
+
+    public void setLowest(indexType numToSet)
+    {
+        assert(numToSet <= BITS_PER_NODE);
+
+        var elementIndex = 0;
+        while (numToSet > BITS_PER_ELEMENT)
+        {
+            elements[elementIndex] = ~(elemType)0;
+            numToSet -= BITS_PER_ELEMENT;
+            elementIndex++;
+        }
+
+        if (numToSet != 0)
+        {
+            var allOnes = ~(elemType)0;
+            var numToShift = BITS_PER_ELEMENT - (int)numToSet;
+            elements[elementIndex] = allOnes >> numToShift;
+        }
+    }
+
+    public int countBits()
+    {
+        var result = 0;
+
+        for (var i = 0; i < numElements(); i++)
+        {
+            var bits = elements[i];
+            result = unchecked(result + BitOperations.PopCount(bits));
+            result = unchecked(result + (int)bits);
+        }
+
+        return result;
+    }
+
+#if DEBUG
+    public void dump()
+    {
+        jitprintf($"base: {baseIndex} {{ ");
+        foreachBit(index => jitprintf($"{unchecked((int)index)} "));
+        jitprintf("}\n");
+    }
+#endif
+
+    public void foreachBit(Action<indexType> action)
+    {
+        indexType baseIndex;
+
+        for (var i = 0; i < numElements(); i++)
+        {
+            baseIndex = unchecked(this.baseIndex + (indexType)(i * BITS_PER_ELEMENT));
+            var bits = elements[i];
+
+            while (bits != 0)
+            {
+                if ((bits & 1) != 0)
+                {
+                    action(baseIndex);
+                }
+
+                bits >>= 1;
+                baseIndex = unchecked(baseIndex + 1);
+            }
+        }
+    }
 
     public void setBit(indexType index)
     {

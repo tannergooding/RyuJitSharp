@@ -28,6 +28,9 @@ public static partial class Globals
         return 1 << BitOperations.Log2(number);
     }
 
+    public static int nodeSort(hashBvNode x, hashBvNode y)
+        => unchecked((int)(y.baseIndex - x.baseIndex));
+
     public static HbvWalk ForEachHbvBitSet(hashBv bv, Func<indexType, HbvWalk> func)
     {
         for (var hashNum = 0; hashNum < bv.hashtable_size(); hashNum++)
@@ -61,4 +64,27 @@ public static partial class Globals
 
         return HbvWalk.Continue;
     }
+
+#if DEBUG
+    public static void SimpleDumpNode(hashBvNode node)
+    {
+        jitprintf($"base: {node.baseIndex}\n");
+    }
+
+    public static void DumpNode(hashBvNode node)
+    {
+        node.dump();
+    }
+
+    public static void SimpleDumpDualNode(
+        hashBv left,
+        hashBv right,
+        hashBvNode? leftNode,
+        hashBvNode? rightNode)
+    {
+        jitprintf("nodes: ");
+        jitprintf(leftNode is null ? "----," : $"{leftNode.baseIndex},");
+        jitprintf(rightNode is null ? "----\n" : $"{rightNode.baseIndex}\n");
+    }
+#endif
 }

@@ -3,6 +3,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+#if DEBUG
+using System.IO;
+using System.Text;
+#endif
 using NUnit.Framework;
 
 using indexType = ulong;
@@ -31,10 +35,12 @@ internal static class HashBitVectorTests
             vector.setBit(index);
         }
 
+        var expectedOrder = values.OrderBy(index => (index >> 7) & (indexType)(buckets - 1)).ThenBy(index => index);
         Assert.That(vector.numNodes, Is.EqualTo(nodes));
         Assert.That(vector.hashtable_size(), Is.EqualTo(buckets));
         Assert.That(vector.IsValid(), Is.True);
-        Assert.That(Read(vector), Is.EqualTo(values.OrderBy(index => (index >> 7) & (indexType)(buckets - 1)).ThenBy(index => index)));
+        Assert.That(Read(vector), Is.EqualTo(expectedOrder));
+        Assert.That(ReadIterator(vector), Is.EqualTo(expectedOrder));
         Assert.That(values.All(vector.testBit), Is.True);
         Assert.That(vector.testBit(33), Is.False);
         Assert.That(vector.testBit((indexType)(nodes * 128)), Is.False);
@@ -120,6 +126,65 @@ internal static class HashBitVectorTests
         Assert.That(Read(vector), Is.EqualTo(new indexType[] { 0, 256 }));
     }
 
+    [Test]
+    public static void EnumerationAdvancesAcrossUnsetBits()
+    {
+        var vector = new hashBv();
+        indexType[] expected = [3, 31, 35, 129];
+
+        foreach (var index in expected)
+        {
+            vector.setBit(index);
+        }
+
+        Assert.That(Read(vector), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public static void IteratorAdvancesAcrossUnsetBits()
+    {
+        var vector = new hashBv();
+        vector.setBit(3);
+        vector.setBit(35);
+        var iterator = new hashBvIterator();
+        iterator.initFrom(vector);
+
+        Assert.That(iterator.nextBit(), Is.EqualTo((indexType)3));
+        Assert.That(iterator.nextBit(), Is.EqualTo((indexType)35));
+        Assert.That(iterator.nextBit(), Is.EqualTo(hashBvIterator.NOMOREBITS));
+    }
+
+#if DEBUG
+    [Test]
+    [NonParallelizable]
+    public static void FancyDumpPrintsInclusiveRanges()
+    {
+        var vector = new hashBv();
+        foreach (var index in new indexType[] { 0, 1, 3, 4, 5, 9, 10 })
+        {
+            vector.setBit(index);
+        }
+
+        var previousWriter = Globals.s_jitstdout;
+        using var stream = new MemoryStream();
+        using var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true);
+
+        try
+        {
+            Globals.s_jitstdout = writer;
+            vector.dumpFancy();
+            writer.Flush();
+
+            var expected = $"{{count:{vector.countBits()} 0-1 3-5 9-10}}\n";
+            Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo(expected));
+        }
+        finally
+        {
+            Globals.s_jitstdout = previousWriter;
+        }
+    }
+#endif
+
     private static List<indexType> Read(hashBv vector)
     {
         var values = new List<indexType>();
@@ -127,6 +192,26 @@ internal static class HashBitVectorTests
             values.Add(index);
             return HbvWalk.Continue;
         }), Is.EqualTo(HbvWalk.Continue));
+        return values;
+    }
+
+    private static List<indexType> ReadIterator(hashBv vector)
+    {
+        var values = new List<indexType>();
+        var iterator = new hashBvIterator();
+        iterator.initFrom(vector);
+
+        while (true)
+        {
+            var index = iterator.nextBit();
+            if (index == hashBvIterator.NOMOREBITS)
+            {
+                break;
+            }
+
+            values.Add(index);
+        }
+
         return values;
     }
 }

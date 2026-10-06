@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Numerics;
 
 #if TARGET_AMD64
@@ -27,6 +28,10 @@ public sealed partial class hashBv
     }
 
     public int hashtable_size() => 1 << log2_hashSize;
+
+    public bool TooSmall() => numNodes > hashtable_size() * 4;
+
+    public bool TooBig() => hashtable_size() > numNodes * 4;
 
     private static int getHashForIndex(indexType index, int tableSize)
         => (int)((index >> LOG2_BITS_PER_NODE) & (indexType)(tableSize - 1));
@@ -87,6 +92,75 @@ public sealed partial class hashBv
         index &= ~(indexType)(BITS_PER_NODE - 1);
         var node = getInsertionPointForIndex(index);
         return ((node is not null) && node.belongsIn(index)) ? node : null;
+    }
+
+    public void removeNodeAtBase(indexType index)
+    {
+        ref var insertionPoint = ref getInsertionPointForIndex(index);
+        var node = insertionPoint;
+        assert(node is not null);
+
+        if (node is null)
+        {
+            throw new InvalidOperationException("The node to remove is missing.");
+        }
+
+        insertionPoint = node.next;
+        numNodes = unchecked((ushort)(numNodes - 1));
+    }
+
+    public void setAll(indexType numToSet)
+    {
+        for (uint index = 0; index < numToSet; index = unchecked(index + (uint)BITS_PER_NODE))
+        {
+            var node = getOrAddNodeForIndex(index);
+            var bitsToSet = numToSet - index;
+
+            if (bitsToSet > BITS_PER_NODE)
+            {
+                bitsToSet = BITS_PER_NODE;
+            }
+
+            node.setLowest(bitsToSet);
+        }
+    }
+
+    public int countBits()
+    {
+        var result = 0;
+
+        for (var bucket = 0; bucket < hashtable_size(); bucket++)
+        {
+            var node = nodeArr[bucket];
+
+            while (node is not null)
+            {
+                result = unchecked(result + node.countBits());
+                node = node.next;
+            }
+        }
+
+        return result;
+    }
+
+    public bool anySet()
+    {
+        for (var bucket = 0; bucket < hashtable_size(); bucket++)
+        {
+            var node = nodeArr[bucket];
+
+            while (node is not null)
+            {
+                if (node.anySet())
+                {
+                    return true;
+                }
+
+                node = node.next;
+            }
+        }
+
+        return false;
     }
 
     private int getNodeCount()
