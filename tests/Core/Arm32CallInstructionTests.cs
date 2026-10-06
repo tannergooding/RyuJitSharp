@@ -83,6 +83,45 @@ internal static unsafe class Arm32CallInstructionTests
         });
     }
 
+    [TestCase(0u)]
+    [TestCase(12u)]
+    [TestCase(4100u)]
+    public static void FreeLocalFrameUsesAnUnwindableStackAdjustment(uint frameSize)
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
+        {
+            var group = CurrentGroup(codeGen.Emitter)
+                ?? throw new AssertionException("Missing epilog instruction group.");
+            group.igFlags = InsGroupFlags.Epilog;
+
+            var previousInstruction = LastInstruction(codeGen.Emitter);
+            var unwindStarted = false;
+
+            FreeLocalFrame(codeGen, frameSize, ref unwindStarted);
+
+            if (frameSize == 0)
+            {
+                Assert.That(unwindStarted, Is.False);
+                Assert.That(LastInstruction(codeGen.Emitter), Is.SameAs(previousInstruction));
+                return;
+            }
+
+            Assert.That(unwindStarted, Is.True);
+            var descriptor = LastInstruction(codeGen.Emitter)
+                ?? throw new AssertionException("Missing local-frame stack adjustment.");
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_add));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_SPBASE));
+            if (frameSize == 12)
+            {
+                Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)frameSize));
+            }
+            else
+            {
+                Assert.That(descriptor.idReg2(), Is.EqualTo(REG_LR));
+            }
+        });
+    }
+
     [TestCase(false, INS_bl)]
     [TestCase(true, INS_b)]
     public static void DirectCallsRecordThumb2BranchesAndGcState(bool isJump, instruction expectedInstruction)
@@ -199,6 +238,12 @@ internal static unsafe class Arm32CallInstructionTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]
     private static extern ref Emitter.instrDesc? Last(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genFreeLclFrame")]
+    private static extern void FreeLocalFrame(CodeGen codeGen, uint frameSize, ref bool unwindStarted);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIG")]
+    private static extern ref insGroup? CurrentGroup(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisGCrefRegs")]
     private static extern ref regMask ThisRefs(Emitter emitter);
