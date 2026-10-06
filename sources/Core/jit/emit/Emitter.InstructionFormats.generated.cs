@@ -851,11 +851,13 @@ public partial class Emitter
         IF_V128,
         IF_LANE,
         IF_MEMARG_LANE,
+#elif TARGET_LOONGARCH64
+        IF_NONE,
 #endif
         IF_COUNT,
     }
 
-#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_WASM
+#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_WASM || TARGET_LOONGARCH64
     internal static ReadOnlySpan<byte> emitFmtToOps => [
 #if TARGET_ARM
         (byte)ID_OP_NONE, // IF_NONE
@@ -1576,6 +1578,8 @@ public partial class Emitter
         (byte)ID_OP_NONE, // IF_V128
         (byte)ID_OP_NONE, // IF_LANE
         (byte)ID_OP_NONE, // IF_MEMARG_LANE
+#elif TARGET_LOONGARCH64
+        (byte)ID_OP_NONE, // IF_NONE
 #else
         (byte)ID_OP_NONE, // IF_NONE
         (byte)ID_OP_JMP, // IF_LABEL

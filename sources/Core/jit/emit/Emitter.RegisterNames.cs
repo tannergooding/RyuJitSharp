@@ -100,10 +100,27 @@ public partial class Emitter
         }
 
         return name;
+#elif TARGET_ARM
+        assert((uint)reg < (uint)REG_COUNT);
+        var compiler = _compiler ?? throw new FatalJitException("Register display requires an active compiler.");
+        var name = compiler.compRegVarName(reg, varName, false);
+        assert(name.Length >= 1);
+        return name;
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Emitter register names outside xarch are not implemented.");
 #endif
     }
+
+#if TARGET_ARM
+    private string emitFloatRegName(regNumber reg, emitAttr attr = EA_PTRSIZE, bool varName = true)
+    {
+        assert((uint)reg < (uint)REG_COUNT);
+        var compiler = _compiler ?? throw new FatalJitException("Floating register display requires an active compiler.");
+        var name = compiler.compRegVarName(reg, varName, true);
+        assert(name.Length >= 1);
+        return name;
+    }
+#endif
 
 #if TARGET_XARCH
     public static string emitXMMregName(regNumber reg)

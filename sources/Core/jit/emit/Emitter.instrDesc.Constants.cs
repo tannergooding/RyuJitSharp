@@ -72,7 +72,7 @@ public partial class Emitter
     // payloads add four/eight bytes; CnsDsp's trailing int rounds x64 to 32.
     private static class ConstantDescriptorSizes
     {
-#if TARGET_X86
+#if TARGET_X86 || (TARGET_WASM && !HOST_64BIT)
         internal const int Constant = 16;
         internal const int Displacement = 16;
         internal const int ConstantDisplacement = 20;
@@ -91,7 +91,7 @@ public partial class Emitter
     {
         public nint idcCnsVal;
 
-#if TARGET_XARCH || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_WASM
         public override int NativeLogicalSize => ConstantDescriptorSizes.Constant;
 #else
         public override int NativeLogicalSize => throw new PlatformNotSupportedException("Constant descriptor size is not yet ported for this target.");

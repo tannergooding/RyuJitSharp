@@ -11,7 +11,7 @@ public partial class Emitter
 #if TARGET_ARM
     public void emitIns_R(instruction ins, emitAttr attr, regNumber reg)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 single-register instruction recording is not implemented.");
+        recordArm32InsR(ins, attr, reg);
     }
 #else
     public void emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, nint imm)

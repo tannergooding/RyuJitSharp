@@ -73,7 +73,63 @@ public partial class Emitter
     public unsafe void emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO_FIELD_HANDLE fldHnd,
         int offs, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM
+        if (instOptions != INS_OPTS_NONE)
+        {
+            NYI("ARM32 static-field instruction options");
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 static-field instruction options are not ported.");
+        }
+
+        if (ins == INS_mov)
+        {
+            assert(false, "Please use ins_Load() to select the correct instruction.");
+        }
+
+        assert(emitInsIsLoad(ins) || (ins == INS_lea));
+        if (ins == INS_lea)
+        {
+            ins = INS_add;
+        }
+
+        var dataOffset = Compiler.eeGetJitDataOffs(fldHnd);
+        nint address = 0;
+        if (dataOffset >= 0)
+        {
+            NYI("JitDataOffset static fields");
+            throw new FatalJitException(CORJIT_SKIPPED, "JitDataOffset static fields are not ported.");
+        }
+
+        if (fldHnd == FLD_GLOBAL_FS)
+        {
+            NYI("Thread-Local-Storage static fields");
+            throw new FatalJitException(CORJIT_SKIPPED, "Thread-Local-Storage static fields are not ported.");
+        }
+
+        if (fldHnd == FLD_GLOBAL_DS)
+        {
+            address = offs;
+            offs = 0;
+        }
+        else
+        {
+            NYI("Normal statics are expected to be handled in the importer");
+            throw new FatalJitException(CORJIT_SKIPPED, "Normal static-field instruction recording is not ported.");
+        }
+
+        var regTmp = reg;
+        if (isFloatReg(regTmp))
+        {
+            assert(false, "emitIns_R_C cannot be called with a floating-point target.");
+            NYI("emitIns_R_C with a floating-point target");
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 static-field instruction recording requires a general register.");
+        }
+
+        codeGen.instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regTmp, address);
+        if ((ins != INS_add) || (offs != 0) || (reg != regTmp))
+        {
+            emitIns_R_R_I(ins, attr, reg, regTmp, offs, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
+        }
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Static-field register instruction recording requires xarch.");
 #else
 #if TARGET_AMD64

@@ -61,6 +61,16 @@ public sealed partial class FlowGraphNaturalLoop
         }) is BasicBlockVisit.Continue;
     }
 
+    public bool HasDef(int lclNum)
+    {
+        var compiler = _dfsTree.GetCompiler();
+        var localDesc = compiler.lvaGetDesc(lclNum);
+        assert(!localDesc.IsAddressExposed);
+        assert(!localDesc.lvPromoted);
+
+        return !VisitDefs((number, _) => number != lclNum);
+    }
+
     private GenTreeLclVarCommon? FindDef(int localNumber)
     {
         var compiler = _dfsTree.GetCompiler();

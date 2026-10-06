@@ -219,6 +219,50 @@ public partial class Emitter
             assert(emitCurStackLvl >= 0);
         }
 #endif
+#elif TARGET_WASM
+        assert(parameters.wasmSignature != null);
+
+        instruction wasmInstruction;
+        instrDesc id;
+
+        switch (parameters.callType)
+        {
+            case EC_FUNC_TOKEN:
+            {
+                wasmInstruction = parameters.isJump ? INS_return_call : INS_call;
+                id = emitNewInstrSC(EA_HANDLE_CNS_RELOC, unchecked((nint)parameters.addr));
+                id.idInsFmt(IF_FUNCIDX);
+                break;
+            }
+
+            case EC_INDIR_R:
+            {
+                wasmInstruction = parameters.isJump ? INS_return_call_indirect : INS_call_indirect;
+                id = emitNewInstrSC(EA_HANDLE_CNS_RELOC, unchecked((nint)parameters.wasmSignature));
+                id.idInsFmt(IF_CALL_INDIRECT);
+                break;
+            }
+
+            default:
+            {
+                throw new FatalJitException(CORJIT_INTERNALERROR,
+                    $"Unexpected Wasm call type {parameters.callType}.");
+            }
+        }
+
+        id.idIns(wasmInstruction);
+
+        if ((_debugInfoSize > 0) && (id.idDebugOnlyInfo() is { } debugInfo))
+        {
+#if DEBUG
+            debugInfo.idCallSig = parameters.sigInfo;
+#endif
+            debugInfo.idMemCookie = unchecked((nint)parameters.methHnd);
+            debugInfo.idFlags = GTF_ICON_METHOD_HDL;
+        }
+
+        dispIns(id);
+        appendToCurIG(id);
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64
         throw new FatalJitException(CORJIT_SKIPPED, "Target call instruction recording is not implemented.");
 #else

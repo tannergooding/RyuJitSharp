@@ -23,6 +23,11 @@ public partial class Emitter
         return isFloatReg(reg) && ((uint)reg % 2) == 0;
     }
 
+    private static uint unsigned_abs(int value)
+    {
+        return value < 0 ? unchecked(0u - (uint)value) : (uint)value;
+    }
+
     public static bool insSetsFlags(insFlags flags)
     {
         return flags != INS_FLAGS_NOT_SET;

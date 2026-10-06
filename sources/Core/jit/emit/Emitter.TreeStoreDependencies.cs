@@ -18,6 +18,13 @@ public partial class Emitter
         // Pseudo instructions such as LEA are not represented in the instruction table.
         return ((uint)ins < (uint)CodeGen.instInfo.Length) &&
                ((CodeGen.instInfo[(int)ins] & RISCV64_ST) != 0);
+#elif TARGET_ARM
+        const byte ST = 4;
+        return ((uint)ins < (uint)CodeGen.instInfo.Length) &&
+               ((CodeGen.instInfo[(int)ins] & ST) != 0);
+#elif TARGET_WASM
+        throw new FatalJitException(CORJIT_INTERNALERROR,
+            $"Wasm store classification is unreachable for instruction {ins}.");
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Target instruction store classification is not implemented.");
 #endif

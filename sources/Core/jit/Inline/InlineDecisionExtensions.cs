@@ -13,22 +13,38 @@ public static class InlineDecisionExtensions
             InlineDecision.SUCCESS => INLINE_PASS,
             InlineDecision.FAILURE => INLINE_FAIL,
             InlineDecision.NEVER => INLINE_NEVER,
-            _ => INLINE_FAIL,
+            _ => UnexpectedDecision<CorInfoInline>(),
         };
 
         /// <summary>check if this decision describes a viable candidate</summary>
         public bool IsCandidate => !decision.IsFailure;
 
-        public bool IsDecided => decision is InlineDecision.SUCCESS or InlineDecision.FAILURE or InlineDecision.NEVER;
+        public bool IsDecided => decision switch {
+            InlineDecision.SUCCESS or InlineDecision.FAILURE or InlineDecision.NEVER => true,
+            InlineDecision.UNDECIDED or InlineDecision.CANDIDATE => false,
+            _ => UnexpectedDecision<bool>(),
+        };
 
         /// <summary>check if this decision describes a failing inline</summary>
-        public bool IsFailure => decision is InlineDecision.FAILURE or InlineDecision.NEVER;
+        public bool IsFailure => decision switch {
+            InlineDecision.FAILURE or InlineDecision.NEVER => true,
+            InlineDecision.SUCCESS or InlineDecision.UNDECIDED or InlineDecision.CANDIDATE => false,
+            _ => UnexpectedDecision<bool>(),
+        };
 
         /// <summary>check if this decision describes a never inline</summary>
-        public bool IsNever => decision is InlineDecision.NEVER;
+        public bool IsNever => decision switch {
+            InlineDecision.NEVER => true,
+            InlineDecision.SUCCESS or InlineDecision.FAILURE or InlineDecision.UNDECIDED or InlineDecision.CANDIDATE => false,
+            _ => UnexpectedDecision<bool>(),
+        };
 
         /// <summary>check if this decision describes a successful inline</summary>
-        public bool IsSuccess => decision is InlineDecision.SUCCESS;
+        public bool IsSuccess => decision switch {
+            InlineDecision.SUCCESS => true,
+            InlineDecision.FAILURE or InlineDecision.NEVER or InlineDecision.UNDECIDED or InlineDecision.CANDIDATE => false,
+            _ => UnexpectedDecision<bool>(),
+        };
 
         /// <summary>get a string representing this decision</summary>
         public string String => decision switch {
@@ -37,7 +53,13 @@ public static class InlineDecisionExtensions
             InlineDecision.NEVER => "failed this callee",
             InlineDecision.CANDIDATE => "candidate",
             InlineDecision.UNDECIDED => "undecided",
-            _ => "unexpected decision",
+            _ => UnexpectedDecision<string>(),
         };
+    }
+
+    private static T UnexpectedDecision<T>()
+    {
+        assert(false, "Unexpected InlineDecision");
+        throw new FatalJitException(CORJIT_INTERNALERROR, "Unexpected InlineDecision.");
     }
 }

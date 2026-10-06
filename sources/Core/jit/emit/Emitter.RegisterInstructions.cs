@@ -10,6 +10,21 @@ namespace RyuJitSharp;
 public partial class Emitter
 {
 #if !TARGET_ARM64
+#if TARGET_ARM
+    public void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, nint val,
+        insFlags flags = INS_FLAGS_DONT_CARE
+#if DEBUG
+        , GenTreeFlags gtFlags = GTF_EMPTY
+#endif
+        )
+    {
+        recordArm32InsRI(ins, attr, reg, unchecked((int)val), flags
+#if DEBUG
+            , gtFlags
+#endif
+            );
+    }
+#else
     public void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, nint val,
         insOpts instOptions = INS_OPTS_NONE
 #if DEBUG
@@ -214,12 +229,20 @@ public partial class Emitter
 #endif
     }
 #endif
+#endif
 
 #if !TARGET_ARM64
     public void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM
+        if (!insOptsNone(instOptions))
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 register-register instruction options are not ported.");
+        }
+
+        recordArm32InsRR(ins, attr, reg1, reg2, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Register-register instruction recording requires xarch.");
 #else
 #if TARGET_AMD64

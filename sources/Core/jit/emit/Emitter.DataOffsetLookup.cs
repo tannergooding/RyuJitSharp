@@ -9,7 +9,7 @@ public partial class Emitter
 {
     public unsafe byte* emitDataOffsetToPtr(uint offset)
     {
-#if !TARGET_AMD64
+#if !TARGET_AMD64 && !TARGET_WASM
         throw new FatalJitException(CORJIT_SKIPPED, "Constant-data chunk lookup requires AMD64.");
 #else
         noway_assert(offset < emitConsDsc.dsdOffs);

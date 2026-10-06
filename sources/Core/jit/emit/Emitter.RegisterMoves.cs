@@ -17,7 +17,9 @@ public partial class Emitter
         bool canSkip, bool useApxNdd = false)
 #endif
     {
-#if !TARGET_XARCH
+#if TARGET_ARM
+        return recordArm32InsMov(ins, attr, dstReg, srcReg, canSkip, flags);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Register move recording requires xarch.");
 #else
         assert(IsMovInstruction(ins));

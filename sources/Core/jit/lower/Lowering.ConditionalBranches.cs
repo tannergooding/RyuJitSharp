@@ -10,6 +10,7 @@ public sealed partial class Lowering
     private GenTree? LowerJTrue(GenTreeUnOp branch)
     {
 #if TARGET_LOONGARCH64
+        var next = branch.Next;
         var op = branch.Op1;
         GenCondition condition;
         GenTree cmpOp1;
@@ -56,7 +57,7 @@ public sealed partial class Lowering
             cmpOp2.IsContained = true;
         }
 
-        return null;
+        return next;
 #elif !TARGET_RISCV64 && !TARGET_WASM
         var condition = branch.Op1;
         JITDUMP("Lowering JTRUE:\n");

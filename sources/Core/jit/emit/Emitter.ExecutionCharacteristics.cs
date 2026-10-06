@@ -1159,7 +1159,16 @@ public partial class Emitter
 #elif DEBUG || LATE_DISASM
     internal insExecutionCharacteristics getInsExecutionCharacteristics(instrDesc id)
     {
+#if TARGET_WASM
+        _ = id;
+        return new insExecutionCharacteristics
+        {
+            insThroughput = PERFSCORE_THROUGHPUT_1C,
+            insLatency = PERFSCORE_LATENCY_1C,
+        };
+#else
         throw new FatalJitException(CORJIT_SKIPPED, "Execution characteristics outside xarch are not implemented.");
+#endif
     }
 #endif
 }

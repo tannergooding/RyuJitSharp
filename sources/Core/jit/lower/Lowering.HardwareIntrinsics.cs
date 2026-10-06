@@ -807,6 +807,9 @@ public sealed partial class Lowering
         return LowerHWIntrinsicWasm(node);
 #elif TARGET_LOONGARCH64
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic lowering is not ported.");
+#elif FEATURE_HW_INTRINSICS && TARGET_RISCV64
+        NYI_RISCV64("LowerHWIntrinsic");
+        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic lowering is not ported.");
 #else
         throw new NotImplementedException("Hardware-intrinsic lowering outside xarch and ARM64 is not ported.");
 #endif

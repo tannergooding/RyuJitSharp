@@ -10,8 +10,21 @@ public partial class Emitter
 {
     public void emitIns_MemargLane(instruction ins, emitAttr attr, nint offset, byte laneIdx)
     {
-        throw new FatalJitException(
-            CORJIT_SKIPPED, "WebAssembly SIMD lane memory emission is not ported.");
+        var id = emitAllocAnyInstr<instrDescMemargLane>(DescriptorSizes.WasmMemargLane, attr);
+        var format = emitInsFormat(ins);
+        var elementSize = CodeGen.instSimdElemSize(ins);
+        assert(format == insFormat.IF_MEMARG_LANE);
+        assert(offset >= 0);
+        assert(isValidVectorIndex(elementSize, laneIdx));
+
+        id.idInsFmt(format);
+        id.idIns(ins);
+        id.idcCnsVal = offset;
+        id.idSetIsLargeCns();
+        id.idLaneIdx(laneIdx);
+
+        dispIns(id);
+        appendToCurIG(id);
     }
 }
 #endif

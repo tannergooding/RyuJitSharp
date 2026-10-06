@@ -258,7 +258,7 @@ public sealed partial class CodeGen
             _compiler.lvaCachedGenericContextArgOffset(), rsGetRsvdReg());
 #elif TARGET_ARM
         Emitter.emitIns_R_R_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
-            _compiler.lvaCachedGenericContextArgOffset());
+            _compiler.lvaCachedGenericContextArgOffset(), INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
 #elif TARGET_LOONGARCH64
         genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
             _compiler.lvaCachedGenericContextArgOffset(), REG_R21);

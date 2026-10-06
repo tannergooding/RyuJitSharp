@@ -10,7 +10,7 @@ public partial class Emitter
 {
     public void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insFlags flags)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM flags-aware register-register recording is not ported.");
+        recordArm32InsRR(ins, attr, reg1, reg2, flags, insOpts.INS_OPTS_NONE);
     }
 }
 #endif

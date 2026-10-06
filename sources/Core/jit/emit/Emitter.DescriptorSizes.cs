@@ -21,7 +21,7 @@ public partial class Emitter
     internal static class DescriptorSizes
     {
         internal const int Small = 8;
-#if TARGET_X86
+#if TARGET_X86 || (TARGET_WASM && !HOST_64BIT)
         internal const int Full = Small + 4;
         internal const int Jump = 28;
         internal const int Label = Jump + 4;
@@ -29,6 +29,14 @@ public partial class Emitter
         internal const int Full = Small + 8;
         internal const int Jump = 48;
         internal const int Label = Jump + 8;
+#endif
+        internal const int WasmLocalVarDecl = Full + 8;
+        internal const int WasmValTypeImm = Full + 8;
+        internal const int WasmV128Imm = Full + 16;
+#if HOST_64BIT
+        internal const int WasmMemargLane = Full + 16;
+#else
+        internal const int WasmMemargLane = Full + 8;
 #endif
 #if DEBUG
 #if TARGET_X86
@@ -43,7 +51,7 @@ public partial class Emitter
         internal const int Align = 40;
 #endif
 #endif
-#if TARGET_X86
+#if TARGET_X86 || (TARGET_WASM && !HOST_64BIT)
         internal const int DebugPrefix = 4;
         internal const int DebugInfo = 36;
 #else
@@ -60,11 +68,17 @@ public partial class Emitter
 
     protected sealed class instrDescBasic : instrDesc
     {
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_WASM
         public override int NativeLogicalSize
         {
             get
             {
-#if TARGET_XARCH || TARGET_ARM64
+#if TARGET_WASM
+                if (idIns() == INS_invalid)
+                {
+                    throw new InvalidOperationException("This instruction requires an initialized descriptor with its native layout.");
+                }
+#else
                 if (idIns() is INS_invalid or INS_align
 #if TARGET_AMD64
                     or INS_jmp
@@ -73,6 +87,7 @@ public partial class Emitter
                 {
                     throw new InvalidOperationException("This instruction requires an initialized descriptor with its native layout.");
                 }
+#endif
 
                 if (idIsLargeCns() || idIsLargeDsp() || idIsLargeCall())
                 {
@@ -80,11 +95,12 @@ public partial class Emitter
                 }
 
                 return idIsSmallDsc() ? SMALL_IDSC_SIZE : INSTR_DESC_SIZE;
-#else
-                throw new PlatformNotSupportedException("Base instruction descriptor size is not yet ported for this target.");
-#endif
             }
         }
+#else
+        public override int NativeLogicalSize =>
+            throw new PlatformNotSupportedException("Base instruction descriptor size is not yet ported for this target.");
+#endif
     }
 
     private int emitSizeOfInsDsc(instrDesc descriptor)
@@ -217,6 +233,8 @@ public partial class Emitter
 #endif
 
         return INSTR_DESC_SIZE;
+#elif TARGET_WASM
+        return descriptor.NativeLogicalSize;
 #else
         throw new PlatformNotSupportedException("Instruction descriptor sizes are not yet ported for this target.");
 #endif

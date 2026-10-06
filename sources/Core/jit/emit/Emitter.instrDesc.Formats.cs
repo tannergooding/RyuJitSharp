@@ -16,7 +16,7 @@ public partial class Emitter
         public insFormat idInsFmt()
         {
 #if TARGET_LOONGARCH64
-            return (insFormat)0;
+            return insFormat.IF_NONE;
 #elif TARGET_RISCV64
             NYI_RISCV64("idInsFmt-----unimplemented on RISCV64 yet----");
             return (insFormat)0;

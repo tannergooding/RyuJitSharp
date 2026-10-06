@@ -17,6 +17,8 @@ public partial class Emitter
         public uint idVarRefOffs2;
         public nint idMemCookie;
         public GenTreeFlags idFlags = GTF_EMPTY;
+        public int idLclNum = BAD_VAR_NUM;
+        public uint idLclOffset;
         public bool idFinallyCall;
         public bool idCatchRet;
         public StrongBox<CORINFO_SIG_INFO>? idCallSig;

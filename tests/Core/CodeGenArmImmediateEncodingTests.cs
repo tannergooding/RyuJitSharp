@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.insFlags;
 using static RyuJitSharp.instruction;
+using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 
@@ -33,6 +34,19 @@ internal static class CodeGenArmImmediateEncodingTests
         Assert.That(EmitInsIsLoadOrStore(codeGen.Emitter, (instruction)CodeGen.instInfo.Length), Is.False);
         Assert.That(EmitInsIsLoadOrStore(codeGen.Emitter, (instruction)int.MaxValue), Is.False);
         Assert.That(EmitInsIsLoadOrStore(codeGen.Emitter, (instruction)(-1)), Is.False);
+    }
+
+    [TestCase(INS_ldr, true, false, false)]
+    [TestCase(INS_str, false, false, true)]
+    [TestCase(INS_cmp, false, true, false)]
+    [TestCase(INS_add, false, false, false)]
+    public static void LoadCompareAndStoreClassifiersUseNativeInstructionFlags(
+        instruction ins, bool isLoad, bool isCompare, bool isStore)
+    {
+        var codeGen = NewCodeGen();
+        Assert.That(EmitInsIsLoad(codeGen.Emitter, ins), Is.EqualTo(isLoad));
+        Assert.That(EmitInsIsCompare(codeGen.Emitter, ins), Is.EqualTo(isCompare));
+        Assert.That(EmitInsIsStore(codeGen.Emitter, ins), Is.EqualTo(isStore));
     }
 
     [TestCase(INS_ldr, -255, INS_FLAGS_DONT_CARE, true)]
@@ -135,6 +149,64 @@ internal static class CodeGenArmImmediateEncodingTests
         Assert.That(Emitter.isLowRegister(reg), Is.EqualTo(expected));
     }
 
+    [TestCase(INS_mov, true)]
+    [TestCase(INS_sxtb, true)]
+    [TestCase(INS_uxth, true)]
+    [TestCase(INS_vmov, true)]
+    [TestCase(INS_vmov_i2f, true)]
+    [TestCase(INS_ldr, false)]
+    public static void MoveInstructionClassificationMatchesArmNativeSet(instruction ins, bool expected)
+    {
+        Assert.That(Emitter.IsMovInstruction(ins), Is.EqualTo(expected));
+    }
+
+    [TestCase(0, 0)]
+    [TestCase(0xff, 0xff)]
+    [TestCase(0x00ff00ff, 0x1ff)]
+    [TestCase(-1, 0x3ff)]
+    public static void ModifiedImmediateEncodingMatchesThumbRotatedByteEncoding(int immediate, int expected)
+    {
+        Assert.That(Emitter.encodeModImmConst(immediate), Is.EqualTo(expected));
+    }
+
+    [TestCase(REG_R0, 0xff, INS_FLAGS_SET, true)]
+    [TestCase(REG_R7, 0x100, INS_FLAGS_SET, false)]
+    [TestCase(REG_R8, 0xff, INS_FLAGS_SET, false)]
+    [TestCase(REG_R0, 0xff, INS_FLAGS_DONT_CARE, true)]
+    public static void SmallMoveImmediateRequiresLowRegisterAndFlagSetting(
+        regNumber reg, int immediate, insFlags flags, bool expected)
+    {
+        Assert.That(Emitter.emitIns_valid_imm_for_small_mov(reg, immediate, flags), Is.EqualTo(expected));
+    }
+
+    [TestCase(0xff, INS_FLAGS_DONT_CARE, true)]
+    [TestCase(-255, INS_FLAGS_SET, true)]
+    [TestCase(0x12345678, INS_FLAGS_DONT_CARE, false)]
+    public static void CompareImmediateAcceptsModifiedConstantsAndTheirNegatives(
+        int immediate, insFlags flags, bool expected)
+    {
+        Assert.That(Emitter.emitIns_valid_imm_for_cmp(immediate, flags), Is.EqualTo(expected));
+    }
+
+    [TestCase(-255, EA_4BYTE, true)]
+    [TestCase(-256, EA_4BYTE, false)]
+    [TestCase(4095, EA_8BYTE, true)]
+    [TestCase(4096, EA_8BYTE, false)]
+    public static void LoadStoreImmediatePredicatePreservesTheArmOffsetRanges(
+        int immediate, emitAttr size, bool expected)
+    {
+        Assert.That(Emitter.emitIns_valid_imm_for_ldst_offset(immediate, size), Is.EqualTo(expected));
+    }
+
+    [TestCase(0, true)]
+    [TestCase(1020, true)]
+    [TestCase(-4, false)]
+    [TestCase(1024, false)]
+    public static void VectorLoadStoreImmediateRequiresNonnegativeFourByteOffset(int immediate, bool expected)
+    {
+        Assert.That(Emitter.emitIns_valid_imm_for_vldst_offset(immediate), Is.EqualTo(expected));
+    }
+
     private static CodeGen NewCodeGen()
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -143,5 +215,14 @@ internal static class CodeGenArmImmediateEncodingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsLoadOrStore")]
     private static extern bool EmitInsIsLoadOrStore(Emitter emitter, instruction ins);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsLoad")]
+    private static extern bool EmitInsIsLoad(Emitter emitter, instruction ins);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsCompare")]
+    private static extern bool EmitInsIsCompare(Emitter emitter, instruction ins);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsStore")]
+    private static extern bool EmitInsIsStore(Emitter emitter, instruction ins);
 }
 #endif

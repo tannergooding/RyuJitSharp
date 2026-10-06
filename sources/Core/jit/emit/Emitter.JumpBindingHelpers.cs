@@ -222,6 +222,8 @@ public partial class Emitter
 
         jump.idInsFmt(format);
         jump.idjShort = true;
+#elif TARGET_WASM
+        throw new FatalJitException(CORJIT_INTERNALERROR, "Wasm has no short-jump instruction form.");
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Non-xarch short-jump selection is not ported.");
 #endif

@@ -126,7 +126,7 @@ public sealed partial class Lowering
             return;
         }
 #if FEATURE_SIMD
-        throw new NotImplementedException("RISC-V SIMD indirection containment is not ported.");
+        NYI_RISCV64("ContainCheckIndir-SIMD");
 #endif
 
         var addr = node.Addr;

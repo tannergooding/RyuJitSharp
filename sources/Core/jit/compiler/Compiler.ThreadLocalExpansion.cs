@@ -52,11 +52,6 @@ public partial class Compiler
             return false;
         }
 
-        if (!TargetOS.IsWindows || !TargetArchitecture.IsX64)
-        {
-            throw new FatalJitException("NativeAOT TLS expansion requires a port for this target.");
-        }
-
 #if DEBUG
         JITDUMP($"Expanding thread static local access for [{call.TreeId:D6}] in {FMT_BB(block.bbNum)}:\n");
         DISPTREE(call);
@@ -87,21 +82,59 @@ public partial class Compiler
             firstNewStmt = firstNewStmt.NextStmt;
         }
 
-        // Windows TLS slot -> module TLS index -> module TLS base -> section-relative root slot.
-        GenTree tlsValue = gtNewIconHandleNode(
-            unchecked((nint)(uint)threadStaticInfo.offsetOfThreadLocalStoragePointer), GTF_ICON_TLS_HDL);
-        tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+        var tlsRootObject = threadStaticInfo.tlsRootObject.handle;
+        GenTree tlsRootAddress;
+        if (TargetOS.IsWindows)
+        {
+            GenTree tlsValue = gtNewIconHandleNode(
+                unchecked((nint)(uint)threadStaticInfo.offsetOfThreadLocalStoragePointer), GTF_ICON_TLS_HDL);
+            tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
-        GenTree dllRef = gtNewIconHandleNode((nint)threadStaticInfo.tlsIndexObject.handle, GTF_ICON_CONST_PTR);
-        dllRef = gtNewIndir(TYP_INT, dllRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
-        dllRef = gtNewCastNode(TYP_I_IMPL, dllRef, true, TYP_I_IMPL);
-        dllRef = gtNewBinaryNode(GT_LSH, TYP_I_IMPL, dllRef, gtNewIconNode(TYP_I_IMPL, 3));
-        tlsValue = gtNewBinaryNode(GT_ADD, TYP_I_IMPL, tlsValue, dllRef);
-        tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+            GenTree dllRef = gtNewIconHandleNode((nint)threadStaticInfo.tlsIndexObject.handle, GTF_ICON_CONST_PTR);
+            dllRef = gtNewIndir(TYP_INT, dllRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+            dllRef = gtNewCastNode(TYP_I_IMPL, dllRef, true, TYP_I_IMPL);
+            dllRef = gtNewBinaryNode(GT_LSH, TYP_I_IMPL, dllRef, gtNewIconNode(TYP_I_IMPL, 3));
+            tlsValue = gtNewBinaryNode(GT_ADD, TYP_I_IMPL, tlsValue, dllRef);
+            tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
-        var tlsRootOffset = gtNewIconNode(TYP_INT, (nint)threadStaticInfo.tlsRootObject.handle);
-        tlsRootOffset.Flags |= GTF_ICON_SECREL_OFFSET;
-        var tlsRootAddress = gtNewBinaryNode(GT_ADD, TYP_I_IMPL, tlsValue, tlsRootOffset);
+            var tlsRootOffset = gtNewIconNode(TYP_INT, (nint)tlsRootObject);
+            tlsRootOffset.Flags |= GTF_ICON_SECREL_OFFSET;
+            tlsRootAddress = gtNewBinaryNode(GT_ADD, TYP_I_IMPL, tlsValue, tlsRootOffset);
+        }
+        else if (TargetOS.IsUnix && TargetArchitecture.IsX64)
+        {
+            // The linker recognizes the TLSGD sequence and supplies its argument during code generation.
+            var tlsGetAddr = gtNewIconHandleNode((nint)threadStaticInfo.tlsGetAddrFtnPtr.handle, GTF_ICON_FTN_ADDR);
+            tlsGetAddr.Flags |= GTF_CONTAINED;
+
+            var tlsRefCall = gtNewIndCallNode(TYP_I_IMPL, tlsGetAddr);
+            tlsRefCall.Flags |= GTF_TLS_GET_ADDR;
+            assert(tlsRootObject != null);
+
+            var tlsArg = gtNewIconNode(TYP_I_IMPL, (nint)tlsRootObject);
+            tlsArg.Flags |= GTF_ICON_TLSGD_OFFSET;
+            _ = tlsRefCall.Args.PushBack(NewCallArg.CreateForPrimitive(tlsArg));
+            fgMorphArgs(tlsRefCall);
+            tlsRefCall.Flags |= GTF_EXCEPT | (tlsGetAddr.Flags & GTF_GLOB_EFFECT);
+            tlsRootAddress = tlsRefCall;
+        }
+        else if (TargetOS.IsUnix && TargetArchitecture.IsArm64)
+        {
+            // The TLS descriptor call uses the TLSGD handle to encode its implicit arguments.
+            var tlsRootOffset = gtNewIconHandleNode((nint)tlsRootObject, GTF_ICON_TLS_HDL);
+            tlsRootOffset.Flags |= GTF_ICON_TLSGD_OFFSET;
+
+            var tlsCallIndir = CloneThreadLocalTree(tlsRootOffset);
+            var tlsRefCall = gtNewIndCallNode(TYP_I_IMPL, tlsCallIndir);
+            tlsRefCall.Flags |= GTF_TLS_GET_ADDR;
+            fgMorphArgs(tlsRefCall);
+            tlsRefCall.Flags |= GTF_EXCEPT | (tlsCallIndir.Flags & GTF_GLOB_EFFECT);
+            tlsRootAddress = tlsRefCall;
+        }
+        else
+        {
+            throw new FatalJitException("NativeAOT TLS expansion is not supported for this target.");
+        }
 
         var rootAddressLocal = lvaGrabTemp(shortLifetime: true, "TlsRootAddr access");
         lvaTable[rootAddressLocal].Type = TYP_I_IMPL;
@@ -156,6 +189,7 @@ public partial class Compiler
     private unsafe bool fgExpandThreadLocalAccessForCall(ref BasicBlock block, Statement stmt, GenTreeCall call)
     {
         assert(!IsAot);
+
         var helper = call.HelperNum;
         if (helper is not (CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED
             or CORINFO_HELP_GETDYNAMIC_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED
@@ -164,9 +198,10 @@ public partial class Compiler
             return false;
         }
 
-        if (!TargetOS.IsWindows || !TargetArchitecture.IsX64)
+        if ((TargetOS.IsUnix && !TargetArchitecture.Is64Bit) ||
+            (TargetOS.IsWindows && TargetArchitecture.IsArm32))
         {
-            throw new FatalJitException("CoreCLR TLS expansion requires a port for this target.");
+            throw new FatalJitException("CoreCLR TLS expansion is unsupported for this target.");
         }
 
 #if DEBUG
@@ -206,24 +241,68 @@ public partial class Compiler
 
         var tlsLocal = lvaGrabTemp(shortLifetime: true, "TLS access");
         lvaTable[tlsLocal].Type = TYP_I_IMPL;
-        var tlsIndex = (nuint)metadata.tlsIndex.addr;
-        GenTree? dllRef = null;
 
-        if (tlsIndex != 0)
+        GenTree tlsValue;
+        if (TargetOS.IsWindows)
         {
-            dllRef = gtNewIconHandleNode(unchecked((nint)(tlsIndex * TARGET_POINTER_SIZE)), GTF_ICON_TLS_HDL);
+            var tlsIndex = (nuint)metadata.tlsIndex.addr;
+            GenTree? dllRef = null;
+            if (tlsIndex != 0)
+            {
+                var tlsIndexOffset = unchecked((nint)(tlsIndex * (nuint)TARGET_POINTER_SIZE));
+                dllRef = gtNewIconHandleNode(tlsIndexOffset, GTF_ICON_TLS_HDL);
+            }
+
+            tlsValue = gtNewIconHandleNode(
+                unchecked((nint)(uint)metadata.offsetOfThreadLocalStoragePointer), GTF_ICON_TLS_HDL);
+            tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+            if (dllRef is not null)
+            {
+                tlsValue = gtNewBinaryNode(GT_ADD, TYP_I_IMPL, tlsValue, dllRef);
+            }
+
+            tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+        }
+        else if (TargetOS.IsApplePlatform)
+        {
+            var threadVarsSection = (nint)metadata.threadVarsSection;
+            GenTree tlsGetAddr = gtNewIconHandleNode(threadVarsSection, GTF_ICON_FTN_ADDR);
+            tlsGetAddr = gtNewIndir(TYP_I_IMPL, tlsGetAddr, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+            var tlsRefCall = gtNewIndCallNode(TYP_I_IMPL, tlsGetAddr);
+            assert(opts.altJit || threadVarsSection != 0);
+            var tlsArg = gtNewIconNode(TYP_I_IMPL, threadVarsSection);
+            _ = tlsRefCall.Args.PushBack(NewCallArg.CreateForPrimitive(tlsArg));
+            fgMorphArgs(tlsRefCall);
+            tlsRefCall.Flags |= GTF_EXCEPT | (tlsGetAddr.Flags & GTF_GLOB_EFFECT);
+            tlsValue = tlsRefCall;
+        }
+        else if (TargetOS.IsUnix && TargetArchitecture.IsX64)
+        {
+            var tlsGetAddr = gtNewIconHandleNode((nint)metadata.tlsGetAddrFtnPtr, GTF_ICON_FTN_ADDR);
+            var tlsRefCall = gtNewIndCallNode(TYP_I_IMPL, tlsGetAddr);
+            assert(opts.altJit || metadata.tlsIndexObject != null);
+
+            var tlsArg = gtNewIconNode(TYP_I_IMPL, (nint)metadata.tlsIndexObject);
+            _ = tlsRefCall.Args.PushBack(NewCallArg.CreateForPrimitive(tlsArg));
+            fgMorphArgs(tlsRefCall);
+            tlsRefCall.Flags |= GTF_EXCEPT | (tlsGetAddr.Flags & GTF_GLOB_EFFECT);
+#if UNIX_X86_ABI
+            tlsRefCall.Flags &= ~GTF_CALL_POP_ARGS;
+#endif
+            tlsValue = tlsRefCall;
+        }
+        else if (TargetOS.IsUnix &&
+            (TargetArchitecture.IsArm64 || TargetArchitecture.IsLoongArch64 || TargetArchitecture.IsRiscV64))
+        {
+            tlsValue = gtNewIconHandleNode(0, GTF_ICON_TLS_HDL);
+        }
+        else
+        {
+            throw new FatalJitException("CoreCLR TLS expansion is not supported for this target.");
         }
 
-        GenTree tlsValue = gtNewIconHandleNode(unchecked((nint)(uint)metadata.offsetOfThreadLocalStoragePointer),
-            GTF_ICON_TLS_HDL);
-        tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
-
-        if (dllRef is not null)
-        {
-            tlsValue = gtNewBinaryNode(GT_ADD, TYP_I_IMPL, tlsValue, dllRef);
-        }
-
-        tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
         var tlsDef = gtNewStoreLclVarNode(tlsLocal, tlsValue);
         var tlsLocalValue = gtNewLclVarNode(TYP_I_IMPL, tlsLocal);
         var typeIndex = call.Args.GetUserArgByIndex(0)?.Node
@@ -232,7 +311,11 @@ public partial class Compiler
 
         if (helper is CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2)
         {
-            var index = gtFoldExpr(gtNewCastNode(TYP_I_IMPL, CloneThreadLocalTree(typeIndex), true, TYP_I_IMPL));
+            var index = CloneThreadLocalTree(typeIndex);
+#if TARGET_64BIT
+            index = gtNewCastNode(TYP_I_IMPL, index, true, TYP_I_IMPL);
+            index = gtFoldExpr(index);
+#endif
             var offset = gtFoldExpr(gtNewBinaryNode(GT_ADD, TYP_I_IMPL, index,
                 gtNewIconNode(TYP_I_IMPL, unchecked((nint)(uint)metadata.offsetOfBaseOfThreadLocalData))));
             var baseAddress = gtNewBinaryNode(GT_ADD, TYP_I_IMPL,
@@ -260,8 +343,11 @@ public partial class Compiler
         var maxCondition = gtNewUnaryNode(GT_JTRUE, TYP_VOID, countExceeded);
 
         var pointerSize = gtNewIconNode(TYP_INT, TARGET_POINTER_SIZE);
-        var scaledIndex = gtFoldExpr(gtNewBinaryNode(GT_MUL, TYP_INT, CloneThreadLocalTree(typeIndex), pointerSize));
+        var scaledIndex = gtFoldExpr(
+            gtNewBinaryNode(GT_MUL, TYP_INT, CloneThreadLocalTree(typeIndex), pointerSize));
+#if TARGET_64BIT
         scaledIndex = gtFoldExpr(gtNewCastNode(TYP_I_IMPL, scaledIndex, true, TYP_I_IMPL));
+#endif
         var blockAddress = gtNewBinaryNode(GT_ADD, TYP_BYREF, blocks, scaledIndex);
         var blockValue = gtNewIndir(TYP_BYREF, blockAddress, GTF_IND_NONFAULTING);
         var blockBaseLocal = lvaGrabTemp(shortLifetime: true, "ThreadStaticBlockBase access");

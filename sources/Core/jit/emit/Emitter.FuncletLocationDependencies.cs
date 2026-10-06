@@ -10,7 +10,28 @@ public partial class Emitter
 {
     public void emitUpdateFuncletLocations()
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Wasm funclet location update is not ported.");
+        var current = emitIGlist;
+        insGroup? previous = null;
+
+        while (current is not null)
+        {
+            assert(_compiler is not null);
+            ref var func = ref _compiler.funGetFunc(current.igFuncIdx);
+
+            if ((previous is null) || (previous.igFuncIdx != current.igFuncIdx))
+            {
+                func.startLoc = new emitLocation(current);
+            }
+
+            var next = current.igNext;
+            if ((next is null) || (next.igFuncIdx != current.igFuncIdx))
+            {
+                func.endLoc = new emitLocation(current, current.igInsCnt);
+            }
+
+            previous = current;
+            current = next;
+        }
     }
 }
 #endif

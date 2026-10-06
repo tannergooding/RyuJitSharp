@@ -7,11 +7,15 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if !TARGET_ARM64
+#if !TARGET_ARM64 && !TARGET_WASM
     public void emitIns_I(instruction ins, emitAttr attr, nint val)
     {
 #if !TARGET_XARCH
+#if TARGET_ARM
+        recordArm32InsI(ins, attr, val);
+#else
         throw new FatalJitException(CORJIT_SKIPPED, "Immediate-only instruction recording requires xarch.");
+#endif
 #else
 #if TARGET_AMD64
         RequireSupportedInstructionRecording();

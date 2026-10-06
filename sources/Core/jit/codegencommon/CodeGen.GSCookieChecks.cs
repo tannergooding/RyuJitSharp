@@ -38,7 +38,8 @@ public sealed partial class CodeGen
                 , (nuint)THT_GSCookieCheck, GTF_EMPTY
 #endif
                 );
-            Emitter.emitIns_R_R_I(INS_ldr, EA_PTRSIZE, regGSConst, regGSConst, 0);
+            Emitter.emitIns_R_R_I(
+                INS_ldr, EA_PTRSIZE, regGSConst, regGSConst, 0, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
         }
 
         // Load this method's cookie from the stack frame and compare it to the constant.

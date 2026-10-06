@@ -12,7 +12,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 #endif
 using NUnit.Framework;
+using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.instruction;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
@@ -183,7 +185,7 @@ internal static unsafe class ArmCalleeSavedRegisterTests
     [TestCase(SRBM_R0 | SRBM_R4, true, 12, true)]
     [TestCase(SRBM_R4 | SRBM_F16 | SRBM_F17, false, 4, true)]
     [TestCase(SRBM_F16 | SRBM_F17 | SRBM_F18 | SRBM_F19, true, 8, false)]
-    public static void PushPersistsActualSaveMaskBeforeTheIntegerRecordingBoundary(
+    public static void PushRecordsActualSaveMaskAndInstructions(
         regMask modified, bool framePointer, int frameSize, bool zeroed)
     {
         WithCodeGen((compiler, codeGen) =>
@@ -203,15 +205,41 @@ internal static unsafe class ArmCalleeSavedRegisterTests
             compiler.compLclFrameSize = frameSize;
             var initialZeroed = zeroed;
 
-            AssertFailure(() => codeGen.genPushCalleeSavedRegisters(REG_R3, ref zeroed),
-                "Immediate-only instruction recording requires xarch.");
+            RecordArm32Instructions(() => codeGen.genPushCalleeSavedRegisters(REG_R3, ref zeroed));
 
             Assert.That(SavedMask(ref codeGen.RegSet), Is.EqualTo(expected));
             Assert.That(codeGen.RegSet.rsGetModifiedRegsMask(), Is.EqualTo(new regMaskTP(modified)));
             Assert.That(zeroed, Is.EqualTo(initialZeroed));
             Assert.That(codeGen.genUsedPopToReturn, Is.False);
             Assert.That(compiler.compLclFrameSize, Is.EqualTo(frameSize));
-            Assert.That(Descriptors(codeGen), Is.Empty);
+            var floatMask = expected & new regMaskTP(SRBM_ALLFLOAT);
+            var intMask = expected & ~floatMask;
+            if (floatMask.IsEmpty)
+            {
+                intMask |= frameSize switch
+                {
+                    REGSIZE_BYTES => new regMaskTP(SRBM_R3),
+                    2 * REGSIZE_BYTES => new regMaskTP(SRBM_R2 | SRBM_R3),
+                    _ => RBM_NONE,
+                };
+            }
+
+            var descriptors = Descriptors(codeGen);
+            var expectedDescriptorCount = 1;
+#if !DEBUG
+            if (floatMask.IsNonEmpty)
+            {
+                expectedDescriptorCount++;
+            }
+#endif
+            Assert.That(descriptors, Has.Count.EqualTo(expectedDescriptorCount));
+            AssertArm32PushPopDescriptor(codeGen, descriptors[0], INS_push, intMask);
+#if !DEBUG
+            if (floatMask.IsNonEmpty)
+            {
+                AssertFloatSaveDescriptor(codeGen, descriptors[1], INS_vpush, floatMask);
+            }
+#endif
         });
     }
 
@@ -221,7 +249,7 @@ internal static unsafe class ArmCalleeSavedRegisterTests
     [TestCase(false, SRBM_NONE, SRBM_R3, false, 4, false)]
     [TestCase(true, SRBM_NONE, SRBM_NONE, true, 8, false)]
     [TestCase(true, SRBM_R0, SRBM_R3, false, 12, false)]
-    public static void IntegerPopRecordsPcVersusLrChoiceBeforeTheRecordingBoundary(
+    public static void IntegerPopRecordsPcOrLrAndRestoresRegisters(
         bool jump, regMask arguments, regMask alignment, bool framePointer, int frameSize, bool popReturn)
     {
         WithCodeGen((compiler, codeGen) =>
@@ -234,21 +262,39 @@ internal static unsafe class ArmCalleeSavedRegisterTests
             compiler.compLclFrameSize = frameSize;
             codeGen.genUsedPopToReturn = !popReturn;
 
-            AssertFailure(() => codeGen.genPopCalleeSavedRegisters(jump),
-                "Immediate-only instruction recording requires xarch.");
+            RecordArm32Instructions(() => codeGen.genPopCalleeSavedRegisters(jump));
 
             Assert.That(codeGen.genUsedPopToReturn, Is.EqualTo(popReturn));
             Assert.That(codeGen.RegSet.rsGetModifiedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_R4 | SRBM_R5)));
             Assert.That(codeGen.RegSet.rsMaskPreSpillRegs(true), Is.EqualTo(new regMaskTP(arguments | alignment)));
             Assert.That(SavedMask(ref codeGen.RegSet).IsEmpty, Is.True);
             Assert.That(compiler.compLclFrameSize, Is.EqualTo(frameSize));
-            Assert.That(Descriptors(codeGen), Is.Empty);
+            var popMask = new regMaskTP(SRBM_R4 | SRBM_R5);
+            if (!jump)
+            {
+                popMask |= frameSize switch
+                {
+                    REGSIZE_BYTES => new regMaskTP(SRBM_R3),
+                    2 * REGSIZE_BYTES => new regMaskTP(SRBM_R2 | SRBM_R3),
+                    _ => RBM_NONE,
+                };
+            }
+
+            if (framePointer)
+            {
+                popMask |= new regMaskTP(SRBM_FPBASE);
+            }
+
+            popMask |= new regMaskTP(popReturn ? SRBM_PC : SRBM_LR);
+            var descriptors = Descriptors(codeGen);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            AssertArm32PushPopDescriptor(codeGen, descriptors[0], INS_pop, popMask);
         });
     }
 
     [TestCase(false)]
     [TestCase(true)]
-    public static void FloatPopTerminatesBeforeChangingTheReturnChoiceOrPoppingIntegers(bool jump)
+    public static void FloatPopRecordsFloatAndIntegerRegisters(bool jump)
     {
         WithCodeGen((_, codeGen) =>
         {
@@ -257,12 +303,27 @@ internal static unsafe class ArmCalleeSavedRegisterTests
             codeGen.RegSet.rsSetRegsModified(modified);
             codeGen.genUsedPopToReturn = true;
 
-            AssertFailure(() => codeGen.genPopCalleeSavedRegisters(jump),
-                "ARM register-immediate recording with flags is not ported.");
+            RecordArm32Instructions(() => codeGen.genPopCalleeSavedRegisters(jump));
 
+#if DEBUG
             Assert.That(codeGen.genUsedPopToReturn, Is.True);
+#else
+            Assert.That(codeGen.genUsedPopToReturn, Is.EqualTo(!jump));
+#endif
             Assert.That(codeGen.RegSet.rsGetModifiedRegsMask(), Is.EqualTo(modified));
-            Assert.That(Descriptors(codeGen), Is.Empty);
+            var descriptors = Descriptors(codeGen);
+#if DEBUG
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+#else
+            Assert.That(descriptors, Has.Count.EqualTo(2));
+#endif
+            AssertFloatSaveDescriptor(codeGen, descriptors[0], INS_vpop,
+                new regMaskTP(SRBM_F16 | SRBM_F17));
+#if !DEBUG
+            var returnRegister = jump ? SRBM_LR : SRBM_PC;
+            AssertArm32PushPopDescriptor(codeGen, descriptors[1], INS_pop,
+                new regMaskTP(SRBM_R4 | returnRegister));
+#endif
         });
     }
 
@@ -283,7 +344,7 @@ internal static unsafe class ArmCalleeSavedRegisterTests
 
             Assert.That(BitOperations.PopCount(unchecked((ulong)mask.Lower)), Is.EqualTo(singleWords));
             Assert.That(floatRegCanHoldType(first, var_types.TYP_DOUBLE), Is.True);
-            AssertFailure(() =>
+            RecordArm32Instructions(() =>
             {
                 if (push)
                 {
@@ -293,8 +354,10 @@ internal static unsafe class ArmCalleeSavedRegisterTests
                 {
                     PopFloats(codeGen, mask);
                 }
-            }, "ARM register-immediate recording with flags is not ported.");
-            Assert.That(Descriptors(codeGen), Is.Empty);
+            });
+            var descriptors = Descriptors(codeGen);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            AssertFloatSaveDescriptor(codeGen, descriptors[0], push ? INS_vpush : INS_vpop, mask);
             Assert.That(SavedMask(ref codeGen.RegSet).IsEmpty, Is.True);
         });
     }
@@ -416,9 +479,11 @@ internal static unsafe class ArmCalleeSavedRegisterTests
             Assert.That(s_assertions, Is.EqualTo(s_lowRegisterAssertion));
 
             s_assertions.Clear();
-            AssertFailure(() => PopFloats(codeGen, mask),
-                "ARM register-immediate recording with flags is not ported.");
+            RecordArm32Instructions(() => PopFloats(codeGen, mask));
             Assert.That(s_assertions, Is.Empty);
+            var descriptors = Descriptors(codeGen);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            AssertFloatSaveDescriptor(codeGen, descriptors[0], INS_vpop, mask);
         }, captureAssertions: true);
     }
 
@@ -492,6 +557,58 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         }
     }
 
+    private static void RecordArm32Instructions(TestDelegate action)
+    {
+#if DEBUG
+        AssertFailure(action, "Instruction sanity checking outside AMD64 is not ported.");
+#else
+        action();
+#endif
+    }
+
+    private static void AssertFloatSaveDescriptor(
+        CodeGen codeGen, Emitter.instrDesc descriptor, instruction ins, regMaskTP floatMask)
+    {
+        var firstRegister = (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)floatMask.Lower));
+        var singleWords = BitOperations.PopCount(unchecked((ulong)floatMask.Lower));
+        Assert.That(descriptor.idIns(), Is.EqualTo(ins));
+        Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_T2_VLDST));
+        Assert.That(descriptor.idReg1(), Is.EqualTo(firstRegister));
+        var expectedImmediate = (ins == INS_vpush ? -1 : 1) * singleWords * sizeof(uint);
+        Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)expectedImmediate));
+    }
+
+    private static void AssertArm32PushPopDescriptor(
+        CodeGen codeGen, Emitter.instrDesc descriptor, instruction ins, regMaskTP mask)
+    {
+        var imm = unchecked((int)mask.Lower);
+        var hasLr = (imm & (int)SRBM_LR) != 0;
+        var hasPc = (imm & (int)SRBM_PC) != 0;
+        var useThumb2 = (ins == INS_pop) && hasLr;
+        var isSingleBit = (imm != 0) && ((unchecked(imm - 1) & imm) == 0);
+        imm &= ~0xe000;
+
+        var format = (((imm & 0x00ff) == imm) && !useThumb2)
+            ? IF_T1_L1
+            : !isSingleBit
+                ? IF_T2_I1
+                : throw new AssertionException("Unexpected single-register ARM push/pop encoding.");
+
+        imm <<= 2;
+        if (hasPc)
+        {
+            imm |= 2;
+        }
+        if (hasLr)
+        {
+            imm |= 1;
+        }
+
+        Assert.That(descriptor.idIns(), Is.EqualTo(ins));
+        Assert.That(descriptor.idInsFmt(), Is.EqualTo(format));
+        Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)imm));
+    }
+
     internal static void WithCodeGen(
         Action<Compiler, CodeGen> action, bool captureAssertions = false, bool minOpts = true)
     {
@@ -517,6 +634,13 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         compiler.lvaTrackedCountInSizeTUnits = 1;
         compiler.eeInfoInitialized = true;
         compiler.eeInfo.osPageSize = 4096;
+        compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
+        var unwindInfo = new UnwindInfo();
+        unwindInfo.InitUnwindInfo(compiler, null, null);
+        compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT, uwi = unwindInfo }];
+        compiler.compFuncInfoCount = 1;
+        compiler.compCurrFuncIdx = 0;
+        compiler.fgFuncletsCreated = true;
         compiler.lvaOutgoingArgSpaceSize.Value = 0;
         compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
 #if DEBUG

@@ -197,6 +197,28 @@ public partial class Emitter
             _idLargeCns = true;
         }
 
+#if TARGET_WASM
+        public bool idIsLclVarDecl()
+        {
+            return idInsFmt() == insFormat.IF_LOCAL_DECL;
+        }
+
+        public bool idIsValTypeImm()
+        {
+            return idInsFmt() == insFormat.IF_TRY_TABLE;
+        }
+
+        public bool idIsV128Imm()
+        {
+            return idInsFmt() == insFormat.IF_V128;
+        }
+
+        public bool idIsMemargLaneImm()
+        {
+            return idInsFmt() == insFormat.IF_MEMARG_LANE;
+        }
+#endif
+
         public instrDescDebugInfo? idDebugOnlyInfo()
         {
             return _debugInfo;

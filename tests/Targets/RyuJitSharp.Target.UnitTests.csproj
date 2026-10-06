@@ -95,6 +95,7 @@
     <Compile Include="..\Core\RiscVReservedRegisterCheckTests.cs" Link="RiscVReservedRegisterCheckTests.cs" />
     <Compile Include="..\Core\RiscVInstructionEncodingTests.cs" Link="RiscVInstructionEncodingTests.cs" />
     <Compile Include="..\Core\RiscVCodeGenPortTests.cs" Link="RiscVCodeGenPortTests.cs" />
+    <Compile Include="..\Core\RiscVLoweringPortTests.cs" Link="RiscVLoweringPortTests.cs" />
   </ItemGroup>
 
   <PropertyGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-wasm')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-wasm')))">

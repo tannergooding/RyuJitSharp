@@ -15,15 +15,15 @@ public partial class Emitter
     }
 
     public void emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm,
-        insFlags flags, insOpts opt = INS_OPTS_NONE)
+        insFlags flags = INS_FLAGS_DONT_CARE, insOpts opt = INS_OPTS_NONE)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 register-register-immediate instruction emission is not ported.");
+        recordArm32InsRRI(ins, attr, reg1, reg2, imm, flags, opt);
     }
 
     public void emitIns_R_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3,
         int imm, insFlags flags = INS_FLAGS_DONT_CARE, insOpts opt = INS_OPTS_NONE)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 register-register-register-immediate instruction emission is not ported.");
+        recordArm32InsRRRImm(ins, attr, reg1, reg2, reg3, imm, flags, opt);
     }
 #endif
 

@@ -84,6 +84,11 @@ public sealed partial class CodeGen
         _regSet.verifyRegUsed(reg);
     }
 
+    public regNumber rsGetRsvdReg()
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 reserved-register selection is not ported.");
+    }
+
     public unsafe void genMov32RelocatableImmediate(emitAttr size, nuint address, regNumber reg)
     {
         assert(EA_IS_RELOC(size));

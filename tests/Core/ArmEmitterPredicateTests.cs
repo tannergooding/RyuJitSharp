@@ -1,6 +1,7 @@
 #if TARGET_ARM
 using System;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.insFlags;
@@ -12,6 +13,17 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class ArmEmitterPredicateTests
 {
+    private static readonly Emitter s_emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
+
+    [TestCase(INS_str, true)]
+    [TestCase(INS_strb, true)]
+    [TestCase(INS_ldr, false)]
+    [TestCase(INS_ldrb, false)]
+    public static void StoreClassificationUsesArmInstructionFlags(instruction ins, bool expected)
+    {
+        Assert.That(s_emitter.emitInsIsStore(ins), Is.EqualTo(expected));
+    }
+
     [TestCase(REG_R0, true)]
     [TestCase(REG_R15, true)]
     [TestCase(REG_F0, false)]
@@ -85,6 +97,20 @@ internal static class ArmEmitterPredicateTests
         Assert.That(Emitter.getBitWidth(size), Is.EqualTo(expectedWidth));
     }
 
+    [Test]
+    [NonParallelizable]
+    public static unsafe void UnsupportedArmEmitterPathsRemainFatalWhenNyiCanReturn()
+    {
+        WithNyiReturning(() =>
+        {
+            var emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
+
+            AssertSkipped(() => emitter.emitIns_AR_R(INS_ldr, EA_4BYTE, REG_R0, REG_R1, 0, INS_OPTS_RRX));
+            AssertSkipped(() => emitter.emitIns_R_C(INS_ldr, EA_4BYTE, REG_R0, default, 0, INS_OPTS_RRX));
+            AssertSkipped(() => emitter.emitIns_R_AI(INS_b, EA_4BYTE, REG_R0, 0));
+        });
+    }
+
     [TestCase("emitIsCondJump", Emitter.insFormat.IF_T2_J1, true)]
     [TestCase("emitIsCondJump", Emitter.insFormat.IF_T1_K, true)]
     [TestCase("emitIsCondJump", Emitter.insFormat.IF_LARGEJMP, true)]
@@ -115,6 +141,45 @@ internal static class ArmEmitterPredicateTests
             ?? throw new InvalidOperationException($"{methodName} was not found.");
 
         Assert.That(classifier.Invoke(null, [descriptor]), Is.EqualTo(expected));
+    }
+
+    private static unsafe void WithNyiReturning(Action action)
+    {
+#if DEBUG
+        using var tls = new JitTls(null);
+#endif
+        var previousCompiler = JitTls.Compiler;
+        var previousConfig = Globals.JitConfig;
+        try
+        {
+            var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+            JitFlags flags = default;
+            compiler.opts.jitFlags = &flags;
+            compiler.opts.SetMinOpts(true);
+            JitTls.Compiler = compiler;
+
+            object config = previousConfig;
+            var altJitAssertOnNyi = typeof(JitConfigValues).GetField(
+                "_altJitAssertOnNYI",
+                BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("AltJitAssertOnNYI configuration field was not found.");
+            altJitAssertOnNyi.SetValue(config, 2);
+            Globals.JitConfig = (JitConfigValues)config;
+
+            action();
+        }
+        finally
+        {
+            Globals.JitConfig = previousConfig;
+            JitTls.Compiler = previousCompiler;
+        }
+    }
+
+    private static void AssertSkipped(NUnit.Framework.TestDelegate action)
+    {
+        var failure = Assert.Throws<FatalJitException>(action);
+
+        Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
     }
 }
 #endif

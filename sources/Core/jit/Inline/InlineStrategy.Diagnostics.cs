@@ -180,10 +180,7 @@ public sealed partial class InlineStrategy
             }
         }
 
-        if (JitConfig.JitInlinePolicyReplay != 0)
-        {
-            ReplayPolicy.FinalizeXml();
-        }
+        ReplayPolicy.FinalizeXml();
     }
 #endif
 }

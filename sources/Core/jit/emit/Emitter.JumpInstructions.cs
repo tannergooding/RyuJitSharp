@@ -11,7 +11,7 @@ public partial class Emitter
 {
     public static emitJumpKind emitReverseJumpKind(emitJumpKind jumpKind)
     {
-#if !TARGET_XARCH
+#if !TARGET_XARCH && !TARGET_ARMARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Reverse jump-kind mapping requires xarch.");
 #else
         assert(unchecked((uint)jumpKind) < (uint)emitJumpKind.EJ_COUNT);
@@ -22,12 +22,30 @@ public partial class Emitter
 #if !TARGET_WASM
     public static instruction emitJumpKindToIns(emitJumpKind jumpKind)
     {
-#if !TARGET_XARCH && !TARGET_ARM64
+#if !TARGET_XARCH && !TARGET_ARMARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Jump-kind instruction mapping requires xarch.");
 #else
         assert(unchecked((uint)jumpKind) < (uint)emitJumpKindInstructions.Length);
         return emitJumpKindInstructions[(int)jumpKind];
 #endif
+    }
+#endif
+
+#if TARGET_ARM
+    public static emitJumpKind emitInsToJumpKind(instruction ins)
+    {
+        for (var index = 0; index < emitJumpKindInstructions.Length; index++)
+        {
+            if (ins == emitJumpKindInstructions[index])
+            {
+                var result = (emitJumpKind)index;
+                assert(EJ_NONE < result && result < EJ_COUNT);
+                return result;
+            }
+        }
+
+        unreached();
+        return default;
     }
 #endif
 

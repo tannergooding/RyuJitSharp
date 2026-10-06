@@ -83,7 +83,6 @@ public partial class Compiler
         assert(firstConstant.Type == type);
         assert(secondConstant.Type == type);
 
-#if TARGET_XARCH && FEATURE_MASKED_HW_INTRINSICS
         var fold = gtNewSimdHWIntrinsicNode(type, intrinsic, baseType, size, firstConstant, secondConstant);
         var folded = gtFoldExprHWIntrinsic(fold);
         assert(folded == firstConstant);
@@ -105,11 +104,6 @@ public partial class Compiler
         assert(tree.GetOp(2) == firstConstant);
 
         return tree;
-#else
-        NYI("Hardware-intrinsic constant reassociation requires the target's folding dispatcher");
-        fatal(CORJIT_IMPLLIMITATION);
-        return null;
-#endif
     }
 }
 #endif

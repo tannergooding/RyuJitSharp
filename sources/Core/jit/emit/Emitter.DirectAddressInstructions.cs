@@ -227,6 +227,32 @@ public partial class Emitter
     {
 #if TARGET_LOONGARCH64
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 relocated-address instruction recording is not ported.");
+#elif TARGET_ARM
+        assert(!CodeGen.instIsFP(ins) && (EA_SIZE(attr) <= EA_8BYTE) && (ireg != REG_NA));
+        if (emitInsIsLoad(ins))
+        {
+            var regTmp = ireg;
+            if (isFloatReg(regTmp))
+            {
+                assert(false, "emitIns_R_AI with a floating-point register.");
+                NYI("emitIns_R_AI with a floating-point register");
+                throw new FatalJitException(CORJIT_SKIPPED, "ARM32 absolute-address instruction recording requires a general register.");
+            }
+
+            codeGen.instGen_Set_Reg_To_Imm(EA_IS_RELOC(attr) ? EA_HANDLE_CNS_RELOC : EA_PTRSIZE, regTmp, disp);
+            emitIns_R_R_I(
+                ins,
+                attr & ~(EA_OFFSET_FLG | EA_DSP_RELOC_FLG | EA_CNS_RELOC_FLG),
+                ireg,
+                regTmp,
+                0,
+                INS_FLAGS_DONT_CARE,
+                INS_OPTS_NONE);
+            return;
+        }
+
+        NYI("emitIns_R_AI");
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 relocated-address instruction recording is not ported.");
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Absolute-address instruction recording requires xarch.");
 #else

@@ -11,7 +11,9 @@ public partial class Emitter
 {
     public void emitIns_ARR_R(instruction ins, emitAttr attr, regNumber reg, regNumber @base, regNumber index, int disp)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM
+        recordArm32InsARRR(ins, attr, reg, @base, index, disp);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Indexed address/register instruction recording requires xarch.");
 #else
         emitIns_ARX_R(ins, attr, reg, @base, index, 1, disp);
@@ -21,7 +23,16 @@ public partial class Emitter
     public void emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNumber @base, nint disp,
         insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM
+        if (instOptions != INS_OPTS_NONE)
+        {
+            NYI("ARM32 address/register instruction options");
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 address/register instruction options are not ported.");
+        }
+
+        assert(disp == (int)disp);
+        recordArm32InsAR_R(ins, attr, reg, @base, unchecked((int)disp));
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Address/register instruction recording requires xarch.");
 #else
         emitIns_ARX_R(ins, attr, reg, @base, REG_NA, 1, disp, instOptions);

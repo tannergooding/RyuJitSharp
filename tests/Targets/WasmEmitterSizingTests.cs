@@ -3,6 +3,7 @@
 
 #if TARGET_WASM
 using NUnit.Framework;
+using static RyuJitSharp.instruction;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -46,6 +47,36 @@ internal static class WasmEmitterSizingTests
     public static void WasmValueTypesUseTheirNativeEncoding(WasmValueType type, byte expectedCode)
     {
         Assert.That(Emitter.GetWasmValueTypeCode(type), Is.EqualTo(expectedCode));
+    }
+
+    [TestCase(INS_local_get, 0x20u, 0, Emitter.insFormat.IF_ULEB128)]
+    [TestCase(INS_i32_add, 0x6Au, 0, Emitter.insFormat.IF_OPCODE)]
+    [TestCase(INS_i8x16_shuffle, 13u, 0xFD, Emitter.insFormat.IF_V128)]
+    public static void WasmInstructionTablesMatchNativeEncodings(
+        instruction ins, uint expectedOpcode, byte expectedPrefix, Emitter.insFormat expectedFormat)
+    {
+        Assert.That(Emitter.GetInsOpcode(ins), Is.EqualTo(expectedOpcode));
+        Assert.That(Emitter.GetOpcodePrefix(ins), Is.EqualTo(expectedPrefix));
+        Assert.That(Emitter.emitInsFormat(ins), Is.EqualTo(expectedFormat));
+    }
+
+    [TestCase(1, 16)]
+    [TestCase(2, 8)]
+    [TestCase(4, 4)]
+    [TestCase(8, 2)]
+    public static void WasmVectorLaneRangesMatchElementWidths(byte elementSize, byte laneCount)
+    {
+        Assert.That(Emitter.isValidSimdElemSize(elementSize), Is.True);
+        Assert.That(Emitter.isValidVectorIndex(elementSize, unchecked((byte)(laneCount - 1))), Is.True);
+        Assert.That(Emitter.isValidVectorIndex(elementSize, laneCount), Is.False);
+    }
+
+    [TestCase(0)]
+    [TestCase(3)]
+    [TestCase(16)]
+    public static void InvalidWasmVectorElementWidthsAreRejected(byte elementSize)
+    {
+        Assert.That(Emitter.isValidSimdElemSize(elementSize), Is.False);
     }
 }
 #endif

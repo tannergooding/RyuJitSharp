@@ -1294,7 +1294,7 @@ public sealed partial class UnwindInfo
 
             fixed (byte* storage = finalInfo.Memory)
             {
-#if DEBUG && (TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64)
+#if DEBUG && (TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64)
                 if (m_compiler.opts.dspUnwind)
                 {
                     Globals.DumpUnwindInfo(m_compiler, isHotCode, startOffset, endOffset,

@@ -124,7 +124,7 @@ public partial class Emitter
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64
             return _idCodeSize;
 #elif TARGET_WASM
-            return GetWasmCodeSize();
+            return Emitter.GetWasmCodeSize(this);
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -145,11 +145,5 @@ public partial class Emitter
         }
 #endif
 
-#if TARGET_WASM
-        private uint GetWasmCodeSize()
-        {
-            throw new FatalJitException(CORJIT_SKIPPED, "emitter::instrDesc::idCodeSize is not yet ported for Wasm.");
-        }
-#endif
     }
 }

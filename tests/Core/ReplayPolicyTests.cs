@@ -98,9 +98,11 @@ internal static unsafe class ReplayPolicyTests
         });
     }
 
-    [TestCase(false)]
-    [TestCase(true)]
-    public static void MissingOrFinalizedFileIsNotReopened(bool createFile)
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void MissingOrFinalizedFileIsNotReopened(bool createFile, bool disableReplayBeforeFinalize)
     {
         WithReplay((compiler, path) => {
             var callee = Helper(CorInfoHelpFunc.CORINFO_HELP_OVERFLOW);
@@ -111,6 +113,13 @@ internal static unsafe class ReplayPolicyTests
 
             Assert.That(Assess(compiler, callee, 7).Decision.IsCandidate, Is.EqualTo(createFile));
             var file = ReplayFile(null);
+            if (disableReplayBeforeFinalize)
+            {
+                var config = JitConfig;
+                ReplayEnabled(ref config) = 0;
+                JitConfig = config;
+            }
+
             using var output = new StreamWriter(Stream.Null);
             InlineStrategy.FinalizeXml(output);
             if (file is not null)

@@ -48,9 +48,6 @@ public partial class Compiler
 
     private unsafe bool fgVNBasedIntrinsicExpansionForCall_ReadUtf8(ref BasicBlock block, Statement stmt, GenTreeCall call)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException("VN-based ReadUtf8 expansion requires a port for this target.");
-#else
         assert(call.Args.CountUserArgs() == 4);
 
         var srcPtr = call.Args.GetUserArgByIndex(0)!.Node;
@@ -194,7 +191,6 @@ public partial class Compiler
 
         JITDUMP("ReadUtf8: succesfully expanded!\n");
         return true;
-#endif
     }
 
     internal static int ConvertReadUtf8Constant(ReadOnlySpan<ushort> source, Span<byte> destination)

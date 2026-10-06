@@ -41,6 +41,7 @@ internal static class Program
         GenerateInstruction();
         GenerateInstructionFormats();
         GenerateInstructionOpcodes();
+        GenerateWasmInstructionOpcodes();
 
         GenerateJitConfigValues();
         GenerateJitMetadata();
@@ -1480,6 +1481,13 @@ public sealed partial class CodeGen
         var wasmOperandBuilder = ProcessMacroBasedFile(wasmFormatInput, wasmFormatLines, ["IF_DEF("],
             (builder, inputFile, line, prefix, parts) => _ = builder.AppendLine(CultureInfo.InvariantCulture,
                 $"        (byte)ID_OP_{parts[2].Trim()}, // IF_{parts[0].Trim()}"));
+        const string loongArchFormatInput = @"Inputs\emitfmtsloongarch64.h";
+        var loongArchFormatLines = ReadInstructionFormatLines(loongArchFormatInput);
+        var loongArchFormatBuilder = ProcessMacroBasedFile(loongArchFormatInput, loongArchFormatLines, ["IF_DEF("],
+            AppendInstructionFormat);
+        var loongArchOperandBuilder = ProcessMacroBasedFile(loongArchFormatInput, loongArchFormatLines, ["IF_DEF("],
+            (builder, inputFile, line, prefix, parts) => _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        (byte)ID_OP_{parts[2].Trim()}, // IF_{parts[0].Trim()}"));
 
         var operandBuilder = ProcessMacroBasedFile(formatInput, formatLines, ["IF_DEF("],
             (builder, inputFile, line, prefix, parts) => _ = builder.AppendLine(CultureInfo.InvariantCulture,
@@ -1527,16 +1535,18 @@ public partial class Emitter
 {{formatBuilder}}#elif TARGET_ARM
 {{armFormatBuilder}}#elif TARGET_ARM64
 {{arm64FormatBuilder}}#elif TARGET_WASM
-{{wasmFormatBuilder}}#endif
+{{wasmFormatBuilder}}#elif TARGET_LOONGARCH64
+{{loongArchFormatBuilder}}#endif
         IF_COUNT,
     }
 
-#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_WASM
+#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_WASM || TARGET_LOONGARCH64
     internal static ReadOnlySpan<byte> emitFmtToOps => [
 #if TARGET_ARM
 {{armOperandBuilder}}#elif TARGET_ARM64
 {{arm64OperandBuilder}}#elif TARGET_WASM
-{{wasmOperandBuilder}}#else
+{{wasmOperandBuilder}}#elif TARGET_LOONGARCH64
+{{loongArchOperandBuilder}}#else
 {{operandBuilder}}#endif
     ];
 #endif
@@ -1573,6 +1583,7 @@ public partial class Emitter
         var armOperandKinds = ReadNativeEnumBody(armFormatInput, "ID_OPS");
         var arm64OperandKinds = ReadNativeEnumBody(arm64Inputs[0], "ID_OPS");
         var wasmOperandKinds = ReadNativeEnumBody(wasmFormatInput, "ID_OPS");
+        var loongArchOperandKinds = ReadNativeEnumBody(loongArchFormatInput, "ID_OPS");
         File.WriteAllText(@"Outputs\jit\emit\ID_OPS.generated.cs", $$"""
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 //
@@ -1588,7 +1599,8 @@ public enum ID_OPS
 #if TARGET_ARM
 {{armOperandKinds}}#elif TARGET_ARM64
 {{arm64OperandKinds}}#elif TARGET_WASM
-{{wasmOperandKinds}}#else
+{{wasmOperandKinds}}#elif TARGET_LOONGARCH64
+{{loongArchOperandKinds}}#else
 {{xarchOperandKinds}}#endif
 }
 """);
@@ -1708,6 +1720,71 @@ public static partial class Globals
 
         GenerateSveInstructionOpcodes();
         GenerateArm64InstructionOpcodes();
+    }
+
+    private static void GenerateWasmInstructionOpcodes()
+    {
+        var instructionRows = new List<(string Opcode, string Prefix, string Format, string Name)>();
+        _ = ProcessInstrs((builder, inputFile, line, prefix, parts) =>
+        {
+            if (inputFile.Equals(@"Inputs\instrswasm.h", StringComparison.Ordinal))
+            {
+                var isPrefixed = prefix.Equals("INST2(", StringComparison.Ordinal);
+                var expectedArity = isPrefixed ? 6 : 5;
+                if (parts.Length != expectedArity)
+                {
+                    throw new InvalidDataException($"Invalid Wasm opcode table entry: '{line}'");
+                }
+
+                var name = $"INS_{parts[0].Trim()}";
+                instructionRows.Add((
+                    parts[isPrefixed ? 5 : 4].Trim(),
+                    isPrefixed ? parts[4].Trim() : "0",
+                    parts[3].Trim(),
+                    name));
+            }
+        });
+
+        var opcodes = new StringBuilder();
+        var prefixes = new StringBuilder();
+        var formats = new StringBuilder();
+        foreach (var (opcode, prefix, format, name) in instructionRows)
+        {
+            _ = opcodes.AppendLine(CultureInfo.InvariantCulture,
+                $"        unchecked((uint)({(opcode == "BAD_CODE" ? "Globals.BAD_CODE" : opcode)})), // {name}");
+            _ = prefixes.AppendLine(CultureInfo.InvariantCulture,
+                $"        unchecked((byte)({prefix})), // {name}");
+            _ = formats.AppendLine(CultureInfo.InvariantCulture,
+                $"        insFormat.{format}, // {name}");
+        }
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\emitwasm");
+        File.WriteAllText(@"Outputs\jit\emitwasm\Emitter.InstructionOpcodes.generated.cs", $$"""
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+
+namespace RyuJitSharp;
+
+public partial class Emitter
+{
+#if TARGET_WASM
+    private static ReadOnlySpan<uint> s_wasmOpcodes => [
+{{opcodes}}    ];
+
+    private static ReadOnlySpan<byte> s_wasmOpcodePrefixes => [
+{{prefixes}}    ];
+
+    private static ReadOnlySpan<insFormat> s_wasmInstructionFormats => [
+{{formats}}    ];
+
+#endif
+}
+
+""");
     }
 
     private static void GenerateArm64InstructionOpcodes()

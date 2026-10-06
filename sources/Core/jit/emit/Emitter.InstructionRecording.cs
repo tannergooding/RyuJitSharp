@@ -55,14 +55,14 @@ public partial class Emitter
     private static readonly uint[] emitIFcounts = new uint[(int)insFormat.IF_COUNT];
 #endif
 
-#if DEBUG && !TARGET_XARCH && !TARGET_ARM64
+#if DEBUG && !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM
     private static void emitInsSanityCheck(instrDesc id)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "Instruction sanity checking outside AMD64 is not ported.");
     }
 #endif
 
-#if !TARGET_XARCH
+#if !TARGET_XARCH && !TARGET_WASM
     public unsafe void emitDispIns(instrDesc id, bool isNew, bool doffs, bool asmfm,
         uint offset = 0, byte* code = null, nuint size = 0, insGroup? ig = null)
     {
@@ -84,5 +84,20 @@ public partial class Emitter
 
         return false;
     }
+
+    private bool emitInsIsLoad(instruction ins)
+    {
+        const byte LD = 2;
+        return ((uint)ins < (uint)CodeGen.instInfo.Length) &&
+            ((CodeGen.instInfo[(int)ins] & LD) != 0);
+    }
+
+    private bool emitInsIsCompare(instruction ins)
+    {
+        const byte CMP = 8;
+        return ((uint)ins < (uint)CodeGen.instInfo.Length) &&
+            ((CodeGen.instInfo[(int)ins] & CMP) != 0);
+    }
+
 #endif
 }

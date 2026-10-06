@@ -21,19 +21,7 @@ public partial class Compiler
             return false;
         }
 
-        assert(!lvaGetDesc(lclNum).lvPromoted);
-        var visitor = new TreeHasLocalStoreVisitor(this, lclNum);
-        return loop.VisitLoopBlocks(block => {
-            foreach (var stmt in block.Statements)
-            {
-                var tree = stmt.RootNode;
-                if (visitor.WalkTree(ref tree, null) is WALK_ABORT)
-                {
-                    return BasicBlockVisit.Abort;
-                }
-            }
-            return BasicBlockVisit.Continue;
-        }) is BasicBlockVisit.Continue;
+        return !loop.HasDef(lclNum);
     }
 
     private bool optExtractArrIndex(GenTree tree, ArrIndex result, int lhsNum, out bool topLevelIsFinal)

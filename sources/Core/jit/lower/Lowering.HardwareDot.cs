@@ -409,6 +409,9 @@ public sealed partial class Lowering
 
         BlockRange().Remove(node);
         return tmp1.Next;
+#elif FEATURE_HW_INTRINSICS && TARGET_RISCV64
+        NYI_RISCV64("LowerHWIntrinsicDot");
+        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic Dot lowering is not ported.");
 #elif TARGET_LOONGARCH64
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic Dot lowering is not ported.");
 #else

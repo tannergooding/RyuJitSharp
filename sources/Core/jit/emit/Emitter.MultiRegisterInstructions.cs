@@ -263,7 +263,14 @@ public partial class Emitter
     public void emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2,
         insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM
+        if (!insOptsNone(instOptions))
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 three-register instruction options are not ported.");
+        }
+
+        recordArm32InsRRR(ins, attr, targetReg, reg1, reg2, INS_FLAGS_DONT_CARE);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Three-register instruction recording requires xarch.");
 #else
 #if TARGET_AMD64

@@ -116,6 +116,32 @@ internal static unsafe class NaturalLoopTests
     }
 
     [Test]
+    public static void HasDefOnlyReportsDefinitionsInsideLoop()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaCount = 2;
+            compiler.lvaTable = new LclVarDsc[2];
+            compiler.lvaTable[0].Type = TYP_INT;
+            compiler.lvaTable[1].Type = TYP_INT;
+
+            var blocks = Blocks(compiler, BBJ_ALWAYS, BBJ_COND, BBJ_ALWAYS, BBJ_RETURN);
+            _ = Jump(blocks[0], blocks[1]);
+            blocks[1].SetCond(Connect(blocks[1], blocks[2]), Connect(blocks[1], blocks[3]));
+            _ = Jump(blocks[2], blocks[1]);
+            compiler.fgInsertStmtAtEnd(blocks[0],
+                compiler.gtNewStmt(compiler.gtNewStoreLclVarNode(1, compiler.gtNewIconNode(TYP_INT, 1))));
+            compiler.fgInsertStmtAtEnd(blocks[2],
+                compiler.gtNewStmt(compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 1))));
+
+            var loop = Find(compiler).GetLoopByHeader(blocks[1])!;
+            Assert.That(loop.HasDef(0), Is.True);
+            Assert.That(loop.HasDef(1), Is.False);
+            Assert.That(IsStackLocalInvariant(compiler, loop, 0), Is.False);
+            Assert.That(IsStackLocalInvariant(compiler, loop, 1), Is.True);
+        });
+    }
+
+    [Test]
     public static void NestedLoopsKeepParentChildSiblingAndIterationOrder()
     {
         WithCompiler(compiler => {
@@ -454,6 +480,9 @@ internal static unsafe class NaturalLoopTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgComputeDfs")]
     private static extern FlowGraphDfsTree ComputeDfs(Compiler compiler, bool useProfile);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "optIsStackLocalInvariant")]
+    private static extern bool IsStackLocalInvariant(Compiler compiler, FlowGraphNaturalLoop loop, int lclNum);
 
     private static FlowGraphNaturalLoops Find(Compiler compiler) => FlowGraphNaturalLoops.Find(ComputeDfs(compiler, false));
 

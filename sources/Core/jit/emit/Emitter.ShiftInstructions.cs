@@ -122,13 +122,19 @@ public partial class Emitter
 
     public void emitIns_R_ARR(instruction ins, emitAttr attr, regNumber reg, regNumber @base, regNumber index, int disp)
     {
+#if TARGET_ARM
+        recordArm32InsRARR(ins, attr, reg, @base, index, disp);
+#else
         emitIns_R_ARX(ins, attr, reg, @base, index, 1, disp);
+#endif
     }
 
     public void emitIns_R_ARX(instruction ins, emitAttr attr, regNumber reg, regNumber @base,
         regNumber index, uint scale, int disp)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM
+        recordArm32InsRARX(ins, attr, reg, @base, index, scale, disp);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Indexed-address instruction recording requires xarch.");
 #else
 #if TARGET_AMD64

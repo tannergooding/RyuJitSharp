@@ -8,6 +8,19 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    private unsafe instrDescReloc emitNewInstrReloc(emitAttr attr, nuint address)
+    {
+        assert(EA_IS_RELOC(attr));
+
+        var id = emitAllocAnyInstr<instrDescReloc>(
+            unchecked((nuint)(INSTR_DESC_SIZE + System.IntPtr.Size)), attr);
+        id.idSetRelocFlags(attr);
+        assert(id.idIsReloc());
+        id.idrRelocVal = (byte*)address;
+
+        return id;
+    }
+
     private unsafe byte* emitGetInsRelocValue(instrDesc id)
     {
         return ((instrDescReloc)id).idrRelocVal;

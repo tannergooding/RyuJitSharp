@@ -10,7 +10,11 @@ public partial class Emitter
 {
     public void emitIns_S_R(instruction ins, emitAttr attr, regNumber reg, int varNum, int offset)
     {
+#if TARGET_ARM
+        recordArm32InsSR(ins, attr, reg, varNum, offset);
+#else
         throw new FatalJitException(CORJIT_SKIPPED, "Target local-stack store recording is not implemented.");
+#endif
     }
 }
 #endif
