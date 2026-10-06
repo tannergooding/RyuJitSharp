@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
-    "nextAction": "The ARM/ARM64 genCodeForLclAddr unit is implemented and validated: ARM32 recording passed 2/2 Debug and Release, Windows-x64 CodeGenLocalLoadTests passed 21/21 Debug, and the ARM64 selector is blocked only by the established four GSCookie CS1503 errors. Its native body and orphaned shared declaration are retired at consolidated residual HEAD 6081ac5399e85524291d3894e8fcb2e79f953128, parented to pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. Preserve unrelated native WIP at snapshot 852ef381230bf94b864c9fb1e176b54d1ca335da. Next port ARM/ARM64 CodeGen::genCodeForNullCheck at runtime-port/src/coreclr/jit/codegenarmarch.cpp:1091, preserving the ARM32 unsupported assertion and ARM64 load-to-zero-register emission; do not claim ARM64 execution/parity.",
+    "nextAction": "The ARM/ARM64 CodeGen::genCodeForNullCheck unit is implemented and validated. ARM32 assertion capture passed 1/1 Debug; Windows-x64 null-check regressions passed 2/2 Debug and Release; the ARM64 selector remains blocked only by the four established GSCookie CS1503 errors. The ARMARCH definition is retired at consolidated residual HEAD 2eac77f5682059347367f666cea28a3795ae0c7c, parented to pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. Retain codegen.h's shared declaration because codegenriscv64.cpp still defines genCodeForNullCheck. Preserve unrelated native WIP at snapshot 852ef381230bf94b864c9fb1e176b54d1ca335da. Next inspect and port the complete ARM/ARM64 CodeGen::genCodeForLclFld at runtime-port/src/coreclr/jit/codegenarmarch.cpp:1089; keep the already-ported x64 implementation unchanged, and do not claim ARM64 execution/parity.",
     "activeBatch": {
       "scope": "Port the complete ARM/ARM64 CodeGen::genCodeForNullCheck body from codegenarmarch.cpp into the managed ARMARCH binding. Preserve the ARM32 unsupported assertion and ARM64 operand consumption, load selection, actual size, REG_ZR target, and emitter call; do not expand into general indirect-load handling.",
       "doneWhen": "The complete pinned body has a managed implementation with focused ARM32/ARM64 coverage at supported recording boundaries. Windows-x64 null-check regressions remain unchanged, ARM64 has no diagnostics beyond the established GSCookie blockers, and the ARMARCH definition plus any declaration proven orphaned are retired before the managed completion commit. Retain target dispatcher branches.",
       "validation": "Compare the complete native body against the pinned oracle and managed target counterparts; confirm the ARM32 assertion behavior and ARM64 emitter overload before selecting tests. Run focused ARM32 Debug/Release tests, the smallest Windows-x64 null-check regression tests, and the ARM64 selector once for only the established GSCookie errors. Descriptor recording is not ARM execution or parity evidence.",
-      "latestValidation": "Not started. The immediately preceding genCodeForLclAddr unit passed focused ARM32 Debug/Release recording (2/2 each) and Windows-x64 CodeGenLocalLoadTests (21/21 Debug); ARM64 compilation remains blocked by the four established GSCookie CS1503 errors. Native residual HEAD is 6081ac5399e85524291d3894e8fcb2e79f953128, parented to oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e.",
+      "latestValidation": "ARM32 null-check recording smoke passed 2/2 Debug and Release, and NullCheckNodesRetainTheUnsupportedAssertion passed 1/1 Debug. Windows-x64 NullChecksUseTheConsumedRegisterAsAddressAndCompareOperand passed 2/2 Debug and 2/2 Release. The ARM64 selector failed only with the four established GSCookie CS1503 errors in CodeGen.GSCookieChecks.cs and CodeGen.GSCookieInitialization.cs. Native ARMARCH genCodeForNullCheck was retired; the shared declaration remains necessary for the RISC-V definition. Native residual HEAD is 2eac77f5682059347367f666cea28a3795ae0c7c, parented to oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e.",
       "deferred": [
         "Do not edit residual `lsra.cpp`; it contains user WIP deleting LSRA stress-mask constants.",
         "Do not reopen screened `codegen.h` or completed LSRA debt without new caller or mapping evidence. The residual has no include references to `emitpub.h`; its sole CMake list entry is removed in the native worktree and must be included in the consolidated retirement amendment.",
@@ -27,9 +27,9 @@
       ],
       "retirement": {
         "oracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
-        "nativeResidualCommit": "6081ac5399e85524291d3894e8fcb2e79f953128",
+        "nativeResidualCommit": "2eac77f5682059347367f666cea28a3795ae0c7c",
         "completionGate": "Retire whole eligible definitions and orphan declarations in the same accepted batch, before its managed completion commit. Keep untranslated helpers and target branches in the residual; an absent definition is not evidence that it was ported.",
-        "nextDebtCursor": "At consolidated native residual HEAD 6081ac5399e85524291d3894e8fcb2e79f953128 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), ARM/ARM64 CodeGen::genCodeForLclAddr and its now-orphaned shared declaration are retired; ARM32 Debug/Release recording passed 2/2 each and Windows-x64 local-load tests passed 21/21 Debug. ARM64 remains blocked by the four established GSCookie CS1503 errors. The next candidate is CodeGen::genCodeForNullCheck at codegenarmarch.cpp:1091; retain its ARM32 unsupported assertion and ARM64 emission path. Preserve unrelated native WIP with snapshot 852ef381230bf94b864c9fb1e176b54d1ca335da and recovery refs; do not infer global debt clearance."
+        "nextDebtCursor": "At consolidated native residual HEAD 2eac77f5682059347367f666cea28a3795ae0c7c (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), ARM/ARM64 CodeGen::genCodeForNullCheck is fully managed and its ARMARCH native body is retired. ARM32 assertion capture passed 1/1 Debug; Windows-x64 null-check regressions passed 2/2 Debug and Release; ARM64 remains blocked by the four established GSCookie CS1503 errors. Keep the shared declaration because RISC-V still defines this function. Next candidate: CodeGen::genCodeForLclFld at codegenarmarch.cpp:1089; its x64 implementation is already managed and should remain unchanged. Preserve unrelated native WIP with snapshot 852ef381230bf94b864c9fb1e176b54d1ca335da and recovery refs; do not infer global debt clearance."
       }
     },
     "validationResourcePolicy": {
@@ -61,7 +61,7 @@
     },
     "residualReconciliation": {
       "status": "in-progress",
-      "nextDebtCursor": "At consolidated native residual HEAD 6081ac5399e85524291d3894e8fcb2e79f953128 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), genCodeForLclAddr is fully managed and its ARMARCH native body plus orphaned declaration are retired. Focused ARM32 recording passed in Debug/Release; Windows-x64 local-load regressions passed; ARM64 remains blocked only by established GSCookie type errors. Next candidate: ARM/ARM64 CodeGen::genCodeForNullCheck at codegenarmarch.cpp:1091. Preserve unrelated native WIP with snapshot 852ef381230bf94b864c9fb1e176b54d1ca335da; do not infer global debt clearance."
+      "nextDebtCursor": "At consolidated native residual HEAD 2eac77f5682059347367f666cea28a3795ae0c7c (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), genCodeForNullCheck is fully managed and the ARMARCH definition is retired; codegen.h remains required by the RISC-V definition. ARM32 assertion capture passed 1/1 Debug, Windows-x64 null-check regressions passed 2/2 Debug/Release, and ARM64 remains blocked by the established four GSCookie type errors. Next candidate: ARM/ARM64 CodeGen::genCodeForLclFld at codegenarmarch.cpp:1089; the x64 counterpart is already managed. Preserve unrelated native WIP with snapshot 852ef381230bf94b864c9fb1e176b54d1ca335da; do not infer global debt clearance."
     },
     "windowsCompletionAssessment": {
       "status": "remaining-source-review",
@@ -74,8 +74,12 @@
       "ref": "refs/porting/snapshots/2026-09-22-csharp-wip"
     },
     "nativeResidual": {
-      "commit": "6081ac5399e85524291d3894e8fcb2e79f953128",
+      "commit": "2eac77f5682059347367f666cea28a3795ae0c7c",
       "ref": "refs/heads/main"
+    },
+    "nativePreNullCheckRetirement": {
+      "commit": "6081ac5399e85524291d3894e8fcb2e79f953128",
+      "ref": "refs/copilot-recovery/runtime-port-before-null-check-retirement-20261006"
     },
     "nativePreArmArchShiftRetirement": {
       "commit": "ee155edef125521e72586db8c065b8f63ffab2ba",

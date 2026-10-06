@@ -14,6 +14,7 @@ using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
@@ -506,10 +507,25 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         }, captureAssertions: true);
     }
 
+    [Test]
+    public static void NullCheckNodesRetainTheUnsupportedAssertion()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var address = compiler.gtNewIconNode(TYP_BYREF, 7);
+            var tree = new GenTreeIndir(GT_NULLCHECK, TYP_LONG, address);
+
+            AssertFailure(() => codeGen.genCodeForNullCheck(tree), message: null);
+            Assert.That(s_assertions, Is.EqualTo(s_unsupportedNullCheckAssertion));
+        }, captureAssertions: true);
+    }
+
     private static readonly List<string> s_assertions = [];
     private static readonly string[] s_contiguousMaskAssertion = ["genMaxOneBit(tmpMask)"];
     private static readonly string[] s_lowRegisterAssertion = ["lowReg == REG_F16"];
     private static readonly string[] s_pushCountMismatchAssertion = ["_compiler.compCalleeRegsPushed == count"];
+    private static readonly string[] s_unsupportedNullCheckAssertion =
+        ["!\"GT_NULLCHECK isn't supported for Arm32; use GT_IND.\""];
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
