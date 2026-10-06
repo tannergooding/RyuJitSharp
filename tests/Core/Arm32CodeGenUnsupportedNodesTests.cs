@@ -315,6 +315,37 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
         });
     }
 
+    [TestCase(TYP_BYREF)]
+    [TestCase(TYP_I_IMPL)]
+    public static void LocalAddressesRecordTheTargetRegisterAndOffset(var_types type)
+    {
+        WithLocalStackCodeGen((_, codeGen) =>
+        {
+            var tree = new GenTreeLclFld(GT_LCL_ADDR, type, 0, 12)
+            {
+                RegNum = REG_R0,
+            };
+
+#if DEBUG
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForLclAddr(tree));
+            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
+#else
+            codeGen.genCodeForLclAddr(tree);
+#endif
+            var descriptor = LastInstruction(codeGen.Emitter)
+                ?? throw new AssertionException("No local-address instruction was recorded.");
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_add));
+            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_T1_J2));
+            Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_4BYTE));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_SPBASE));
+            Assert.That(descriptor.idIsLclVar(), Is.True);
+            Assert.That(descriptor.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
+            Assert.That(descriptor.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(12u));
+            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)28));
+        }, stackOffset: 16);
+    }
+
     [Test]
     public static void LargeLocalStackLoadStopsAtReservedRegisterDependency()
     {
