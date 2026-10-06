@@ -8,6 +8,7 @@ using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
+using static RyuJitSharp.Emitter.insSize;
 using static RyuJitSharp.instruction;
 
 namespace RyuJitSharp.UnitTests;
@@ -42,8 +43,22 @@ internal static class Arm32InstructionFormatTests
         });
     }
 
+    [TestCase(IF_T1_A, ISZ_16BIT)]
+    [TestCase(IF_T1_M, ISZ_16BIT)]
+    [TestCase(IF_T2_A, ISZ_32BIT)]
+    [TestCase(IF_T2_M1, ISZ_32BIT)]
+    [TestCase(IF_LARGEJMP, ISZ_48BIT)]
+    public static void InstructionSizesMatchNativeFormatRanges(
+        Emitter.insFormat format, Emitter.insSize expectedSize)
+    {
+        Assert.That(InstructionSize(null, format), Is.EqualTo(expectedSize));
+    }
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsFormat")]
     private static extern Emitter.insFormat Format(Emitter emitter, instruction ins);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitInsSize")]
+    private static extern Emitter.insSize InstructionSize(Emitter? emitter, Emitter.insFormat format);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_s_instructionFormats")]
     private static extern ReadOnlySpan<Emitter.insFormat> InstructionFormats(Emitter? emitter);

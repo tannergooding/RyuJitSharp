@@ -41,7 +41,7 @@ public partial class Emitter
             return ISZ_48BIT;
         }
 
-        assert(false, "Invalid ARM instruction format.");
+        assert(false, "!\"Invalid insFormat\"");
         return ISZ_48BIT;
     }
 
