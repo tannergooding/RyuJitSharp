@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if !TARGET_XARCH && !TARGET_WASM
+#if !TARGET_XARCH && !TARGET_WASM && !TARGET_ARM && !TARGET_ARM64
     public void genCodeForStoreBlk(GenTreeBlk node)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "Block memory generation requires Windows AMD64.");
@@ -21,7 +21,7 @@ public sealed partial class CodeGen
     }
 #endif
 
-#if !TARGET_XARCH && !TARGET_WASM
+#if !TARGET_XARCH && !TARGET_WASM && !TARGET_ARM && !TARGET_ARM64
     public void genCodeForInitBlkLoop(GenTreeBlk node)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "Loop block initialization requires Windows AMD64.");
