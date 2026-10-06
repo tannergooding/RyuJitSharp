@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
-    "nextAction": "The ARM64 memmove unit is committed as e60f34d8d4715413c378aca62c2b8bb4e92bcb0e. ARM/ARM64 genCodeForPhysReg is now source-reviewed and its ARM definition is retired in consolidated native commit ee155edef125521e72586db8c065b8f63ffab2ba (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e); the shared codegen.h declaration remains for the untranslated RISC-V definition/caller. The unrelated native WIP is still protected by snapshot 852ef381230bf94b864c9fb1e176b54d1ca335da. ARM32 physical-register tests passed 2/2 Debug and Release; Windows-x64 CodeGenScalarNodeTests passed 19/19 Debug and Release. ARM64 focused tests remain blocked by the same four pre-existing GSCookie signature errors. Bounded x64 candidate screening found no eligible complete function in buildstring.cpp, gcencode.cpp, fgwasm.cpp, codegencommon.cpp, dllmain.cpp, codegeninterface.h, emit.cpp, or gentree.cpp; disasm.cpp uses the late-disassembler DIS surface, and eeGetArgSize has no direct callers while ABI classifiers already implement argument sizing. Next port the complete ARM/ARM64 CodeGen::genCodeForShift body in codegenarmarch.cpp, preserving register/immediate operand selection and shift-width masking; add target-specific descriptor tests, then continue x64-first validation. Do not claim ARM64 execution/parity.",
+    "nextAction": "ARM/ARM64 genCodeForShift is translated in sources/Core/jit/codegenarmarch/CodeGen.Shifts.cs with ARM32/ARM64 variable-register and width-masked immediate recording tests. ARM32 tests passed 10/10 Debug and 10/10 Release; x64 CodeGenShiftTests passed 39/39 Debug and 38/38 Release. ARM64 test compilation remains blocked by the same four GSCookie CS1503 errors. The ARM/ARM64 definition is retired in native residual commit 3758d5899b21df3717df96a20e5e7560e04bd626, still directly parented to oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e; shared declaration is retained for other target definitions, and unrelated native WIP still matches recovery snapshot 852ef381230bf94b864c9fb1e176b54d1ca335da. Review the complete managed diff, validate state.json and git diff --check, then commit this coherent unit. Afterward, the next source candidate is the still-untranslated ARM/ARM64 CodeGen::genCodeForLclAddr body in codegenarmarch.cpp:1112; verify its mapped dependencies before editing or retiring it. Do not claim ARM64 execution/parity.",
     "activeBatch": {
-      "scope": "Port the complete ARM/ARM64 CodeGen::genCodeForPhysReg body from codegenarmarch.cpp into the existing managed binding. Preserve normal register moves, GC-state transfer, and the ARM64 FFR mask read; leave xarch and other-target definitions unchanged.",
-      "doneWhen": "The managed binding preserves the complete ARM32/ARM64 native behavior, including the ARM64 FFR assertion and scalable read, with focused ARM32/ARM64 descriptor and GC-state coverage. Windows-x64 scalar-node tests remain unchanged, ARM64 adds no diagnostics beyond the known GSCookie blockers, and only the ARM native definition is retired before the managed completion commit while the shared declaration and RISC-V definition remain.",
-      "validation": "Compare codegenarmarch.cpp against the pinned oracle; add ARM32 normal-move and GC-state coverage plus ARM64 normal-move and FFR descriptor coverage. Run the focused ARM32 target test in Debug and Release, Windows-x64 CodeGenScalarNodeTests in Debug and Release, and the ARM64 selector to confirm no new diagnostics beyond the known GSCookie errors. Descriptor recording is not ARM execution/parity evidence.",
-      "latestValidation": "ARM32 Arm32PhysicalRegisterCodeGenTests passed 2/2 Debug and 2/2 Release. Windows-x64 CodeGenScalarNodeTests passed 19/19 Debug and 19/19 Release. The ARM64 target selector reports only the four pre-existing CS1503 errors in CodeGen.GSCookieChecks.cs and CodeGen.GSCookieInitialization.cs, with no diagnostics from CodeGen.ScalarNodes.cs; ARM64 tests did not execute. Before retirement, residual reference search confirmed the ARM definition plus the shared declaration and separate RISC-V/LoongArch definitions; only the ARM definition was retired, and the declaration remains for RISC-V. git diff --check passed.",
+      "scope": "Port the complete ARM/ARM64 CodeGen::genCodeForShift body from codegenarmarch.cpp into a target-specific managed binding. Preserve variable-register and contained-immediate emission, target instruction selection, and shift-count masking by emitted operand width; leave xarch and other-target implementations unchanged.",
+      "doneWhen": "The managed ARM/ARM64 binding matches the whole pinned native body, with focused recording coverage for variable shifts and 32-/64-bit immediate count masking. Run focused ARM32 target tests plus x64 CodeGenShiftTests in Debug and Release; ARM64 may retain the known GSCookie build blocker but must add no diagnostics from this work. Retire the ARM/ARM64 native definition before the managed completion commit, retaining the shared declaration for other target definitions.",
+      "validation": "Compare the full codegenarmarch.cpp body against the pinned oracle. Add ARM32/ARM64 descriptor tests that cover register counts, negative/oversized immediates, and both supported operand widths. Run the ARM32 focused target test and Windows-x64 CodeGenShiftTests in Debug/Release; run the ARM64 selector once to confirm only the four established GSCookie errors. Recording tests do not establish ARM execution or parity.",
+      "latestValidation": "ARM32 Arm32ShiftCodeGenTests passed 10/10 Debug and 10/10 Release; Release verifies emitted descriptors and masked counts, while Debug confirms the existing terminating instruction-sanity stub is reached. Windows-x64 CodeGenShiftTests passed 39/39 Debug and 38/38 Release. The ARM64 Release selector reports only the four established CS1503 argument mismatches in CodeGen.GSCookieChecks.cs and CodeGen.GSCookieInitialization.cs; ARM64 tests did not execute. After full source review, only the ARM/ARM64 definition was retired; shared declarations remain for other target definitions. Native consolidated HEAD is 3758d5899b21df3717df96a20e5e7560e04bd626, parented to the pinned oracle, and protected WIP still matches snapshot 852ef381230bf94b864c9fb1e176b54d1ca335da.",
       "deferred": [
         "Do not edit residual `lsra.cpp`; it contains user WIP deleting LSRA stress-mask constants.",
         "Do not reopen screened `codegen.h` or completed LSRA debt without new caller or mapping evidence. The residual has no include references to `emitpub.h`; its sole CMake list entry is removed in the native worktree and must be included in the consolidated retirement amendment.",
@@ -23,13 +23,14 @@
         "`GenTree::ChangeOper` remains required by the untranslated ARM caller at `lowerarmarch.cpp:147`; do not retire it before that caller is ported.",
         "Keep the unresolved native ilogb decision and Wasm traversal design blocker out of unrelated batches.",
         "When accepting jit.h/target.h, stage only verified semantic retirements. Preserve pre-existing boilerplate/whitespace WIP and the Apple/OpenBSD `unsigned_abs(int64_t)` overload change; its target-specific caller/mapping is not part of the jit.h lane.",
-        "ARM64 compilation of the shared indirect-load code is blocked by pre-existing argument-type errors in GSCookieChecks.cs and GSCookieInitialization.cs; do not claim ARM64 test acceptance."
+        "ARM64 compilation of the shared indirect-load code is blocked by pre-existing argument-type errors in GSCookieChecks.cs and GSCookieInitialization.cs; do not claim ARM64 test acceptance.",
+        "Do not change xarch, RISC-V, LoongArch, or Wasm shift implementations, or the separate ARM32 long-shift path; this batch is only the common ARM/ARM64 genCodeForShift definition."
       ],
       "retirement": {
         "oracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
-        "nativeResidualCommit": "ee155edef125521e72586db8c065b8f63ffab2ba",
+        "nativeResidualCommit": "3758d5899b21df3717df96a20e5e7560e04bd626",
         "completionGate": "Retire whole eligible definitions and orphan declarations in the same accepted batch, before its managed completion commit. Keep untranslated helpers and target branches in the residual; an absent definition is not evidence that it was ported.",
-        "nextDebtCursor": "At consolidated native residual HEAD ee155edef125521e72586db8c065b8f63ffab2ba (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), ARM/ARM64 genCodeForPhysReg is retired from codegenarmarch.cpp. Preserve the shared codegen.h declaration for the untranslated RISC-V definition/caller and leave the separate LoongArch definition untouched. Next retireable target body is ARM/ARM64 CodeGen::genCodeForShift in codegenarmarch.cpp. Preserve unrelated native WIP with snapshot 852ef381230bf94b864c9fb1e176b54d1ca335da; do not infer global debt clearance."
+        "nextDebtCursor": "At consolidated native residual HEAD 3758d5899b21df3717df96a20e5e7560e04bd626 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), ARM/ARM64 CodeGen::genCodeForShift is retired from codegenarmarch.cpp. Keep the shared codegen.h declaration because xarch, RISC-V, LoongArch, and other target definitions remain. After the managed completion commit, inspect the next present residual body CodeGen::genCodeForLclAddr at codegenarmarch.cpp:1112; its managed ARM implementation was not found in the initial symbol search, so keep its native body until translated. Preserve unrelated native WIP with snapshot 852ef381230bf94b864c9fb1e176b54d1ca335da and the pre-retirement recovery ref; do not infer global debt clearance."
       }
     },
     "validationResourcePolicy": {
@@ -61,7 +62,7 @@
     },
     "residualReconciliation": {
       "status": "in-progress",
-      "nextDebtCursor": "At consolidated native residual HEAD ee155edef125521e72586db8c065b8f63ffab2ba (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), ARM/ARM64 genCodeForPhysReg is retired while its shared declaration remains for RISC-V. The next bounded unit is ARM/ARM64 genCodeForShift in codegenarmarch.cpp. Preserve unrelated native WIP using snapshot 852ef381230bf94b864c9fb1e176b54d1ca335da; do not infer global debt clearance."
+      "nextDebtCursor": "At consolidated native residual HEAD 3758d5899b21df3717df96a20e5e7560e04bd626 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), ARM/ARM64 genCodeForPhysReg and genCodeForShift are retired while their shared declarations remain for untranslated target definitions. genCodeForShift is the current managed completion awaiting commit; afterward inspect ARM/ARM64 genCodeForLclAddr at codegenarmarch.cpp:1112 and keep it native until its entire body is ported. Preserve unrelated native WIP using snapshot 852ef381230bf94b864c9fb1e176b54d1ca335da; do not infer global debt clearance."
     },
     "windowsCompletionAssessment": {
       "status": "remaining-source-review",
@@ -74,8 +75,12 @@
       "ref": "refs/porting/snapshots/2026-09-22-csharp-wip"
     },
     "nativeResidual": {
-      "commit": "ee155edef125521e72586db8c065b8f63ffab2ba",
+      "commit": "3758d5899b21df3717df96a20e5e7560e04bd626",
       "ref": "refs/heads/main"
+    },
+    "nativePreArmArchShiftRetirement": {
+      "commit": "ee155edef125521e72586db8c065b8f63ffab2ba",
+      "ref": "refs/copilot-recovery/runtime-port-before-armarch-shift-retirement-20261006"
     },
     "nativePreArmCopyUnrollRetirement": {
       "commit": "e07190be08645c4004588116adcd054b0671ee22",
