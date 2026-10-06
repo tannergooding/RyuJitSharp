@@ -59,7 +59,22 @@ public sealed partial class CodeGen
 #if !TARGET_WASM
     public void genCodeForPhysReg(GenTreePhysReg tree)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM || TARGET_ARM64
+        assert(tree.Oper == GT_PHYSREG);
+#if TARGET_ARM64
+        if (varTypeIsMask(tree.Type))
+        {
+            assert(tree.SrcReg == REG_FFR);
+            Emitter.emitIns_R(INS_sve_rdffr, EA_SCALABLE, tree.RegNum);
+        }
+        else
+#endif
+        {
+            inst_Mov(tree.Type, tree.RegNum, tree.SrcReg, canSkip: true);
+            genTransferRegGCState(tree.RegNum, tree.SrcReg);
+        }
+        genProduceReg(tree);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Physical register generation requires xarch.");
 #else
 #if TARGET_AMD64

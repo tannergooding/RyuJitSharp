@@ -57,6 +57,7 @@
     <Compile Include="..\Core\Arm32DataLabelAddressTests.cs" Link="Arm32DataLabelAddressTests.cs" />
     <Compile Include="..\Core\Arm32CastCodeGenTests.cs" Link="Arm32CastCodeGenTests.cs" />
     <Compile Include="..\Core\Arm32BlockMemoryCodeGenTests.cs" Link="Arm32BlockMemoryCodeGenTests.cs" />
+    <Compile Include="..\Core\Arm32PhysicalRegisterCodeGenTests.cs" Link="Arm32PhysicalRegisterCodeGenTests.cs" />
     <Compile Include="..\Core\Arm32IndirectLoadStoreTests.cs" Link="Arm32IndirectLoadStoreTests.cs" />
     <Compile Include="..\Core\ArmEmitterPredicateTests.cs" Link="ArmEmitterPredicateTests.cs" />
     <Compile Include="..\Core\RegMaskOperationFamilyTests.cs" Link="RegMaskOperationFamilyTests.cs" />
