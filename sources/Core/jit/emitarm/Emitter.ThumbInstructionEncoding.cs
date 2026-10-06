@@ -49,5 +49,49 @@ public partial class Emitter
             }
         }
     }
+
+    internal static uint insEncodePUW_G0(insOpts options, int imm)
+    {
+        uint result = 0;
+
+        if (options != INS_OPTS_LDST_POST_INC)
+        {
+            result |= 1u << 24;
+        }
+
+        if (imm >= 0)
+        {
+            result |= 1u << 23;
+        }
+
+        if (options != INS_OPTS_NONE)
+        {
+            result |= 1u << 21;
+        }
+
+        return result;
+    }
+
+    internal static uint insEncodePUW_H0(insOpts options, int imm)
+    {
+        uint result = 0;
+
+        if (options != INS_OPTS_LDST_POST_INC)
+        {
+            result |= 1u << 10;
+        }
+
+        if (imm >= 0)
+        {
+            result |= 1u << 9;
+        }
+
+        if (options != INS_OPTS_NONE)
+        {
+            result |= 1u << 8;
+        }
+
+        return result;
+    }
 }
 #endif

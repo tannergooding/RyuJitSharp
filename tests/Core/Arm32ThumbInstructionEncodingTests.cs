@@ -30,5 +30,27 @@ internal static class Arm32ThumbInstructionEncodingTests
     {
         Assert.That(Emitter.insEncodeShiftOpts(options), Is.EqualTo(expected));
     }
+
+    [TestCase(INS_OPTS_NONE, -1, 0x01000000u)]
+    [TestCase(INS_OPTS_NONE, 0, 0x01800000u)]
+    [TestCase(INS_OPTS_LDST_PRE_DEC, -1, 0x01200000u)]
+    [TestCase(INS_OPTS_LDST_PRE_DEC, 0, 0x01A00000u)]
+    [TestCase(INS_OPTS_LDST_POST_INC, -1, 0x00200000u)]
+    [TestCase(INS_OPTS_LDST_POST_INC, 0, 0x00A00000u)]
+    public static void G0AddressModeEncodingMatchesThumb2(insOpts options, int imm, uint expected)
+    {
+        Assert.That(Emitter.insEncodePUW_G0(options, imm), Is.EqualTo(expected));
+    }
+
+    [TestCase(INS_OPTS_NONE, -1, 0x400u)]
+    [TestCase(INS_OPTS_NONE, 0, 0x600u)]
+    [TestCase(INS_OPTS_LDST_PRE_DEC, -1, 0x500u)]
+    [TestCase(INS_OPTS_LDST_PRE_DEC, 0, 0x700u)]
+    [TestCase(INS_OPTS_LDST_POST_INC, -1, 0x100u)]
+    [TestCase(INS_OPTS_LDST_POST_INC, 0, 0x300u)]
+    public static void H0AddressModeEncodingMatchesThumb2(insOpts options, int imm, uint expected)
+    {
+        Assert.That(Emitter.insEncodePUW_H0(options, imm), Is.EqualTo(expected));
+    }
 }
 #endif
