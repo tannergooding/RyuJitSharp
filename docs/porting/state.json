@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
-    "nextAction": "The ARM32 genLongToIntCast, genIntToFloatCast, and genFloatToIntCast methods are implemented, tested, and retired from codegenarm.cpp in consolidated native commit 8d87302ec17d6a4a23a0b7d4974a97c361f6ab02. Next port the ARM32 branch of CodeGen::inst_JMP from runtime-port/src/coreclr/jit/codegenarmarch.cpp into codegencommon/CodeGen.ArithmeticSupport.cs; this is the explicit dependency stopping checked ARM32 cast tests after their overflow-check prefix. Preserve the existing ARM64 branch, unrelated native WIP, and unresolved B184/B185.",
+    "nextAction": "The ARM32 branch of CodeGen::inst_JMP is implemented in codegencommon/CodeGen.ArithmeticSupport.cs, and checked-cast tests now verify the complete Release overflow-branch sequences. The shared native definition was retired in consolidated residual commit 32ec91836fec0d5c10f5c1c688145e2ad19fa6b4. Next port the ARM32 block-memory dispatch and helpers (genCodeForStoreBlk, genCodeForInitBlkLoop, genCodeForInitBlkUnroll, genCodeForCpBlkUnroll, and genCodeForMemmove) from runtime-port/src/coreclr/jit/codegenarmarch.cpp into an ARM-specific CodeGen partial, preserving the xarch, Wasm, and other-target implementations. Keep unrelated native WIP and B184/B185 intact.",
     "activeBatch": {
-      "scope": "Port the ARM32 branch of shared CodeGen::inst_JMP from codegenarmarch.cpp into codegencommon/CodeGen.ArithmeticSupport.cs. It unblocks ARM32 checked-cast overflow paths and supports the wider target's conditional branches; preserve Windows-x64 behavior and the existing ARM64 branch.",
-      "doneWhen": "ARM32 BasicBlock jumps are emitted through the target emitter with the native jump-kind mapping and applicable stack invariants, existing ARM64 behavior is unchanged, focused ARM32 jump and cast tests pass, and the eligible shared native definition is retired before the managed completion commit.",
-      "validation": "Run ARM32JumpRecordingTests and Arm32CastCodeGenTests in Debug and Release, then the full ARM32 target suite at the completion boundary. Keep ARM32 managed tests on Windows x64 distinct from ARM execution/parity; checked-cast execution currently stops at the explicit inst_JMP NYI.",
-      "latestValidation": "Arm32CastCodeGenTests passed 16/16 in Debug and 16/16 in Release; the full ARM32 target suite passed 687/687 in Debug and 614/614 in Release with the standard analysis settings. Float/integer conversions and unchecked long casts verify emitted descriptors; checked casts verify the correct TST source-register prefix and the explicit inst_JMP stub boundary. The three ARM32 cast bodies were removed from codegenarm.cpp in consolidated native commit 8d87302ec17d6a4a23a0b7d4974a97c361f6ab02; shared declarations remain for other target implementations. These are managed ARM32 tests on Windows x64, not ARM execution/parity.",
+      "scope": "Port ARM32 block-memory emission as a coherent node-codegen capability: genCodeForStoreBlk, genCodeForInitBlkLoop, genCodeForInitBlkUnroll, genCodeForCpBlkUnroll, and genCodeForMemmove from codegenarmarch.cpp into ARM-specific managed CodeGen partials. Preserve the Windows-x64 path and the separate Wasm, RISC-V, and LoongArch implementations.",
+      "doneWhen": "The ARM32 store-block dispatcher and every selected helper preserve the pinned native algorithms and target branches, focused ARM32 block-memory checks and the full ARM32 target suite pass, Windows-x64 block-memory coverage remains unchanged, and every eligible native definition is retired before the managed completion commit.",
+      "validation": "Review CodeGenBlockMemoryTests and the ARM32 oracle bodies before choosing focused assertions; run focused ARM32 block-memory coverage plus the full ARM32 suite at the integration boundary, and run the existing Windows-x64 block-memory tests to guard the host target. ARM32 managed tests on Windows x64 are not ARM execution/parity evidence.",
+      "latestValidation": "Focused Arm32CastCodeGenTests and Arm32JumpRecordingTests passed 41/41 in Debug and 39/39 in Release. The full ARM32 target suite also passed 687/687 Debug and 614/614 Release under standard analysis settings. Release checked-cast tests verify the complete expected branch sequences; Debug intentionally verifies only the initial TST because emitter sanity checks stop recording unsupported instructions. The inst_JMP definition is retired from codegenarmarch.cpp in consolidated residual commit 32ec91836fec0d5c10f5c1c688145e2ad19fa6b4. These are managed ARM32 tests on Windows x64, not ARM execution/parity.",
       "deferred": [
         "Do not edit residual `lsra.cpp`; it contains user WIP deleting LSRA stress-mask constants.",
         "Do not reopen screened `codegen.h` or completed LSRA debt without new caller or mapping evidence. The residual has no include references to `emitpub.h`; its sole CMake list entry is removed in the native worktree and must be included in the consolidated retirement amendment.",
@@ -27,9 +27,9 @@
       ],
       "retirement": {
         "oracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
-        "nativeResidualCommit": "8d87302ec17d6a4a23a0b7d4974a97c361f6ab02",
+        "nativeResidualCommit": "32ec91836fec0d5c10f5c1c688145e2ad19fa6b4",
         "completionGate": "Retire whole eligible definitions and orphan declarations in the same accepted batch, before its managed completion commit. Keep untranslated helpers and target branches in the residual; an absent definition is not evidence that it was ported.",
-        "nextDebtCursor": "At consolidated native residual HEAD 8d87302ec17d6a4a23a0b7d4974a97c361f6ab02 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), the shared ARM/ARM64 genCodeForIndir and genGetVolatileLdStIns definitions, ARM32 genCodeForStoreInd and the three ARM32 cast bodies, and the orphan genGetVolatileLdStIns declaration are retired. Keep cross-target declarations whose ARM64/x86 definitions or untranslated RISC-V callers remain. Next port the ARM32 branch of CodeGen::inst_JMP at runtime-port/src/coreclr/jit/codegenarmarch.cpp:3611, preserving the existing ARM64 C# path; it is the concrete dependency stopping checked ARM32 casts at the branch. Preserve unrelated native WIP and B184/B185; do not infer global debt clearance."
+        "nextDebtCursor": "At consolidated native residual HEAD 32ec91836fec0d5c10f5c1c688145e2ad19fa6b4 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), the shared ARM/ARM64 genCodeForIndir, genGetVolatileLdStIns, and inst_JMP definitions, ARM32 genCodeForStoreInd and the three ARM32 cast bodies, and the orphan genGetVolatileLdStIns declaration are retired. Keep cross-target declarations whose ARM64/x86 definitions or untranslated RISC-V callers remain. Next port the ARM32 block-memory dispatcher and helpers in runtime-port/src/coreclr/jit/codegenarmarch.cpp: genCodeForStoreBlk, genCodeForInitBlkLoop, genCodeForInitBlkUnroll, genCodeForCpBlkUnroll, and genCodeForMemmove. Preserve unrelated native WIP and B184/B185; do not infer global debt clearance."
       }
     },
     "validationResourcePolicy": {
@@ -61,7 +61,7 @@
     },
     "residualReconciliation": {
       "status": "in-progress",
-      "nextDebtCursor": "At consolidated native residual HEAD 8d87302ec17d6a4a23a0b7d4974a97c361f6ab02, the ARM32 cast definitions are retired and their shared declarations remain for other targets. The next concrete debt is the ARM32 branch of CodeGen::inst_JMP at runtime-port/src/coreclr/jit/codegenarmarch.cpp:3611, which blocks checked cast branches. Preserve unrelated native WIP and B184/B185; do not infer global debt clearance."
+      "nextDebtCursor": "At consolidated native residual HEAD 32ec91836fec0d5c10f5c1c688145e2ad19fa6b4, the ARM32 cast definitions and shared inst_JMP definition are retired while declarations remain for other target implementations. The next concrete debt is ARM32 block-memory codegen in runtime-port/src/coreclr/jit/codegenarmarch.cpp: genCodeForStoreBlk, genCodeForInitBlkLoop, genCodeForInitBlkUnroll, genCodeForCpBlkUnroll, and genCodeForMemmove. Preserve unrelated native WIP and B184/B185; do not infer global debt clearance."
     },
     "windowsCompletionAssessment": {
       "status": "remaining-source-review",
@@ -74,7 +74,7 @@
       "ref": "refs/porting/snapshots/2026-09-22-csharp-wip"
     },
     "nativeResidual": {
-      "commit": "3f0b168571550237330e4ad25b8d7815f96147c1",
+      "commit": "32ec91836fec0d5c10f5c1c688145e2ad19fa6b4",
       "ref": "refs/heads/main"
     },
     "nativePreArm64ConsecutiveRefRetirement": {
@@ -180,6 +180,14 @@
     "nativeArm32CastWipSnapshot": {
       "commit": "58357b1d40ace02590d97659afa433c6fc274f90",
       "ref": "refs/copilot-recovery/runtime-port-wip-before-arm32-cast-retirement-20261006"
+    },
+    "nativePreArm32InstJmpRetirement": {
+      "commit": "8d87302ec17d6a4a23a0b7d4974a97c361f6ab02",
+      "ref": "refs/copilot-recovery/runtime-port-before-arm32-inst-jmp-retirement-20261006"
+    },
+    "nativeArm32InstJmpWipSnapshot": {
+      "commit": "067a596a714ff44fa3b68ebb2990983b2212b0f8",
+      "ref": "refs/copilot-recovery/runtime-port-wip-before-arm32-inst-jmp-retirement-20261006"
     }
   },
   "sourceMap": [
@@ -296,6 +304,17 @@
       "csharp": [
         "sources\\Core\\jit\\codegenlinear\\CodeGen.Casts.cs",
         "sources\\Core\\jit\\codegencommon\\CodeGen.FloatingCasts.cs"
+      ],
+      "sourceCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
+    {
+      "area": "arm32-jump-codegen",
+      "native": [
+        "src\\coreclr\\jit\\codegenarmarch.cpp",
+        "src\\coreclr\\jit\\codegen.h"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\codegencommon\\CodeGen.ArithmeticSupport.cs"
       ],
       "sourceCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     }

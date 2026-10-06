@@ -17,6 +17,7 @@ using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.SpecialCodeKind;
 using static RyuJitSharp.var_types;
+using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -36,7 +37,7 @@ internal static unsafe class Arm32CastCodeGenTests
             {
                 RegNum = REG_F0,
             };
-            var initialCount = CurrentDescriptors(codeGen.Emitter)?.Count ?? 0;
+            var initialCount = InstructionCount(codeGen.Emitter);
 
             RecordArm32Instructions(() => codeGen.genCodeForCast(cast));
 
@@ -71,7 +72,7 @@ internal static unsafe class Arm32CastCodeGenTests
                 RegNum = REG_R0,
             };
             codeGen.InternalRegisters.Add(cast, new regMaskTP(SRBM_R2));
-            var initialCount = CurrentDescriptors(codeGen.Emitter)?.Count ?? 0;
+            var initialCount = InstructionCount(codeGen.Emitter);
 
             RecordArm32Instructions(() => codeGen.genCodeForCast(cast));
 
@@ -100,7 +101,7 @@ internal static unsafe class Arm32CastCodeGenTests
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
             var cast = LongToIntCast(isUnsigned, destinationType);
-            var initialCount = CurrentDescriptors(codeGen.Emitter)?.Count ?? 0;
+            var initialCount = InstructionCount(codeGen.Emitter);
 
             RecordArm32Instructions(() => codeGen.genCodeForCast(cast));
 
@@ -112,37 +113,33 @@ internal static unsafe class Arm32CastCodeGenTests
         }, captureAssertions: true);
     }
 
-    [TestCase(false, TYP_INT, REG_R1)]
-    [TestCase(true, TYP_INT, REG_R1)]
-    [TestCase(false, TYP_UINT, REG_R2)]
-    [TestCase(true, TYP_UINT, REG_R2)]
-    public static void CheckedLongToIntCastRetainsNativeOverflowCheckPrefix(
-        bool isUnsigned, var_types destinationType, regNumber expectedSource)
+    [TestCase(false, TYP_INT, REG_R1, new instruction[] { INS_tst, INS_bmi, INS_tst, INS_bne, INS_b, INS_cmp, INS_bne, INS_mov })]
+    [TestCase(true, TYP_INT, REG_R1, new instruction[] { INS_tst, INS_bmi, INS_tst, INS_bne, INS_mov })]
+    [TestCase(false, TYP_UINT, REG_R2, new instruction[] { INS_tst, INS_bne, INS_mov })]
+    [TestCase(true, TYP_UINT, REG_R2, new instruction[] { INS_tst, INS_bne, INS_mov })]
+    public static void CheckedLongToIntCastRetainsNativeOverflowChecks(
+        bool isUnsigned, var_types destinationType, regNumber expectedSource, instruction[] expected)
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
-            ConfigureOverflowTarget(compiler);
+            ConfigureOverflowTarget(compiler, codeGen);
             var cast = LongToIntCast(isUnsigned, destinationType);
             cast.Flags |= GTF_OVERFLOW;
-            var initialCount = CurrentDescriptors(codeGen.Emitter)?.Count ?? 0;
+            var initialCount = InstructionCount(codeGen.Emitter);
 
 #if DEBUG
             RecordArm32Instructions(() => codeGen.genCodeForCast(cast));
+#else
+            codeGen.genCodeForCast(cast);
+#endif
             var emitted = InstructionsSince(codeGen.Emitter, initialCount);
+#if DEBUG
             Assert.That(emitted, Has.Count.EqualTo(1));
             Assert.That(emitted[0].idIns(), Is.EqualTo(INS_tst));
             Assert.That(emitted[0].idReg1(), Is.EqualTo(expectedSource));
             Assert.That(emitted[0].idReg2(), Is.EqualTo(expectedSource));
 #else
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForCast(cast))
-                ?? throw new AssertionException("Missing expected ARM32 jump-generation stub.");
-            Assert.That(failure.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(failure.Message, Is.EqualTo("Jump instruction generation is not implemented for this target."));
-            var emitted = InstructionsSince(codeGen.Emitter, initialCount);
-            Assert.That(emitted, Has.Count.EqualTo(1));
-            Assert.That(emitted[0].idIns(), Is.EqualTo(INS_tst));
-            Assert.That(emitted[0].idReg1(), Is.EqualTo(expectedSource));
-            Assert.That(emitted[0].idReg2(), Is.EqualTo(expectedSource));
+            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()), Is.EqualTo(expected));
 #endif
         }, captureAssertions: true);
     }
@@ -164,9 +161,10 @@ internal static unsafe class Arm32CastCodeGenTests
         return new GenTreePhysReg(reg, type) { RegNum = reg };
     }
 
-    private static void ConfigureOverflowTarget(Compiler compiler)
+    private static void ConfigureOverflowTarget(Compiler compiler, CodeGen codeGen)
     {
         compiler.compCurBB = new BasicBlock(null, null);
+        codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
         var target = new BasicBlock(null, null);
         target.SetFlags(BBF_HAS_LABEL | BBF_THROW_HELPER);
         var descriptor = compiler.fgGetExcptnTarget(SCK_OVERFLOW, compiler.compCurBB);
@@ -176,9 +174,29 @@ internal static unsafe class Arm32CastCodeGenTests
 
     private static List<Emitter.instrDesc> InstructionsSince(Emitter emitter, int initialCount)
     {
-        var descriptors = CurrentDescriptors(emitter)
-            ?? throw new AssertionException("Missing descriptor buffer.");
+        var descriptors = new List<Emitter.instrDesc>();
+        var currentGroup = emitter.emitCurIG;
+
+        for (var group = FirstGroup(emitter); group is not null; group = group.igNext)
+        {
+            if (group == currentGroup)
+            {
+                descriptors.AddRange(
+                    CurrentDescriptors(emitter) ?? throw new AssertionException("Missing descriptor buffer."));
+            }
+            else if (group.igInsCnt > 0)
+            {
+                descriptors.AddRange(
+                    group.igData ?? throw new AssertionException("Missing saved descriptor buffer."));
+            }
+        }
+
         return descriptors.GetRange(initialCount, descriptors.Count - initialCount);
+    }
+
+    private static int InstructionCount(Emitter emitter)
+    {
+        return InstructionsSince(emitter, 0).Count;
     }
 
     private static void RecordArm32Instructions(TestDelegate action)
@@ -194,4 +212,7 @@ internal static unsafe class Arm32CastCodeGenTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
+    private static extern ref insGroup? FirstGroup(Emitter emitter);
 }
