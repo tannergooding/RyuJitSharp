@@ -85,6 +85,53 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
+    private instruction getShxaddVariant(int scale, bool useUnsignedVariant)
+    {
+        if (useUnsignedVariant)
+        {
+            return scale switch
+            {
+                1 => INS_sh1add_uw,
+                2 => INS_sh2add_uw,
+                3 => INS_sh3add_uw,
+                _ => INS_none,
+            };
+        }
+
+        return scale switch
+        {
+            1 => INS_sh1add,
+            2 => INS_sh2add,
+            3 => INS_sh3add,
+            _ => INS_none,
+        };
+    }
+
+    private void genScaledAdd(
+        emitAttr attr,
+        regNumber targetReg,
+        regNumber baseReg,
+        regNumber indexReg,
+        int scale,
+        regNumber scaleTempReg)
+    {
+        assert((scale >> 5) == 0);
+
+        if (scale == 0)
+        {
+            var addIns = attr == EA_4BYTE ? INS_addw : INS_add;
+            Emitter.emitIns_R_R_R(addIns, attr, targetReg, baseReg, indexReg);
+        }
+        else
+        {
+            var shiftIns = attr == EA_4BYTE ? INS_slliw : INS_slli;
+            var addIns = attr == EA_4BYTE ? INS_addw : INS_add;
+            assert(scaleTempReg != REG_NA);
+            Emitter.emitIns_R_R_I(shiftIns, attr, scaleTempReg, indexReg, scale);
+            Emitter.emitIns_R_R_R(addIns, attr, targetReg, baseReg, scaleTempReg);
+        }
+    }
+
     public void genCodeForDivMod(GenTreeOp tree)
     {
         assert(tree.Oper is GT_MOD or GT_UMOD or GT_DIV or GT_UDIV);

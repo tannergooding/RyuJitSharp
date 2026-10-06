@@ -1178,6 +1178,49 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         });
     }
 
+#if TARGET_RISCV64
+    [Test]
+    public static void IndirectLoadReachesTheTargetRecordingBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var address = Register(compiler, TYP_BYREF, REG_S0);
+            var load = new GenTreeIndir(GT_IND, TYP_INT, address) { RegNum = REG_S1 };
+            LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForIndir(load));
+
+            Assert.That(failure?.Message,
+                Does.Contain("RISC-V64 indirect load/store instruction recording is not ported."));
+        });
+    }
+#endif
+
+#if TARGET_RISCV64
+    [Test]
+    public static void IndexAddressReachesTheTargetInstructionBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var baseAddress = Register(compiler, TYP_REF, REG_S0);
+            var index = Register(compiler, TYP_INT, REG_S1);
+            var tree = new GenTreeIndexAddr(
+                baseAddress, index, TYP_INT, NO_CLASS_HANDLE, 1, 8, 16, boundsCheck: false)
+            {
+                RegNum = REG_A0,
+            };
+            codeGen.InternalRegisters.Add(
+                tree, regMaskTP.CreateFromRegNum(REG_A1, REG_A1.SingleTypeMask));
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_S0, TYP_REF);
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForIndexAddr(tree));
+
+            Assert.That(failure?.Message,
+                Does.Contain("RISC-V three-register instruction recording is not implemented."));
+        });
+    }
+#endif
+
     [Test]
     public static void IndirectStoreReachesTheTargetRecordingBoundary()
     {
