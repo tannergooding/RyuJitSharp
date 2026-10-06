@@ -243,5 +243,124 @@ internal static unsafe class Jit32GcInfoTests
             JitTls.Compiler = previousCompiler;
         }
     }
+
+    [Test]
+    public static void EmptyPointerTableMeasurementMatchesSerialization()
+    {
+#if DEBUG
+        using var tls = new JitTls(null);
+#endif
+        var previousCompiler = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+        CORINFO_METHOD_INFO methodInfo = default;
+        compiler.opts.jitFlags = &flags;
+        compiler.info.compMethodInfo = &methodInfo;
+        compiler.info.compIsStatic = true;
+        compiler.lvaCount = 0;
+        compiler.lvaTable = [];
+        var codeGen = new CodeGen(compiler);
+        compiler.codeGen = codeGen;
+        codeGen.IsFramePointerUsed = true;
+        JitTls.Compiler = compiler;
+
+        try
+        {
+            var header = default(GCInfo.InfoHdr);
+            nuint argTabOffset = 0;
+            var measuredSize = codeGen.GCInfo.gcPtrTableSize(header, 0, ref argTabOffset);
+#pragma warning disable IDE0007
+            byte* destination = stackalloc byte[32];
+#pragma warning restore IDE0007
+            var end = codeGen.GCInfo.gcPtrTableSave(destination, header, 0, ref argTabOffset);
+
+            Assert.That((nuint)(end - destination), Is.EqualTo(measuredSize));
+            Assert.That(argTabOffset, Is.EqualTo((nuint)0));
+#if VERIFY_GC_TABLES
+            Assert.That(*(ushort*)destination, Is.EqualTo(0xBEEF));
+            Assert.That(*(ushort*)(destination + 2), Is.EqualTo(0xCAFE));
+            Assert.That(*(ushort*)(destination + 4), Is.EqualTo(0xBABE));
+            Assert.That(destination[6], Is.EqualTo(0xFF));
+            Assert.That(*(ushort*)(destination + 7), Is.EqualTo(0xBEEB));
+#else
+            Assert.That(destination[0], Is.EqualTo(0xFF));
+#endif
+        }
+        finally
+        {
+            JitTls.Compiler = previousCompiler;
+        }
+    }
+
+    [Test]
+    public static void PointerTableEncodesTrackedLifetimeAndArgumentOffset()
+    {
+#if DEBUG
+        using var tls = new JitTls(null);
+#endif
+        var previousCompiler = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+        CORINFO_METHOD_INFO methodInfo = default;
+        compiler.opts.jitFlags = &flags;
+        compiler.info.compMethodInfo = &methodInfo;
+        compiler.info.compIsStatic = true;
+        compiler.lvaCount = 0;
+        compiler.lvaTable = [];
+        var codeGen = new CodeGen(compiler);
+        compiler.codeGen = codeGen;
+        codeGen.IsFramePointerUsed = true;
+        JitTls.Compiler = compiler;
+
+        try
+        {
+            codeGen.GCInfo.gcVarPtrList = new GCInfo.varPtrDsc
+            {
+                vpdVarNum = 4,
+                vpdBegOfs = 3,
+                vpdEndOfs = 7,
+            };
+            var header = new GCInfo.InfoHdr { varPtrTableSize = 1 };
+            nuint argTabOffset = 0;
+            var measuredSize = codeGen.GCInfo.gcPtrTableSize(header, 0, ref argTabOffset);
+#if VERIFY_GC_TABLES
+            Assert.That(argTabOffset, Is.EqualTo((nuint)7));
+#else
+            Assert.That(argTabOffset, Is.EqualTo((nuint)3));
+#endif
+#pragma warning disable IDE0007
+            byte* destination = stackalloc byte[32];
+#pragma warning restore IDE0007
+            var end = codeGen.GCInfo.gcPtrTableSave(destination, header, 0, ref argTabOffset);
+
+            Assert.That((nuint)(end - destination), Is.EqualTo(measuredSize));
+#if VERIFY_GC_TABLES
+            Assert.That(argTabOffset, Is.EqualTo((nuint)8));
+#else
+            Assert.That(argTabOffset, Is.EqualTo((nuint)4));
+#endif
+#if VERIFY_GC_TABLES
+            Assert.That(destination[0], Is.EqualTo(7));
+            Assert.That(*(ushort*)(destination + 1), Is.EqualTo(0xBEEF));
+            Assert.That(*(ushort*)(destination + 3), Is.EqualTo(0xCAFE));
+            Assert.That(destination[5], Is.EqualTo(4));
+            Assert.That(destination[6], Is.EqualTo(3));
+            Assert.That(destination[7], Is.EqualTo(4));
+            Assert.That(*(ushort*)(destination + 8), Is.EqualTo(0xBABE));
+            Assert.That(destination[10], Is.EqualTo(0xFF));
+            Assert.That(*(ushort*)(destination + 11), Is.EqualTo(0xBEEB));
+#else
+            Assert.That(destination[0], Is.EqualTo(3));
+            Assert.That(destination[1], Is.EqualTo(4));
+            Assert.That(destination[2], Is.EqualTo(3));
+            Assert.That(destination[3], Is.EqualTo(4));
+            Assert.That(destination[4], Is.EqualTo(0xFF));
+#endif
+        }
+        finally
+        {
+            JitTls.Compiler = previousCompiler;
+        }
+    }
 }
 #endif

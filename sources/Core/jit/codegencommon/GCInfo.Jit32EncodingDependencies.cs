@@ -499,15 +499,25 @@ public partial struct GCInfo
         return size;
     }
 
-    internal readonly nuint gcPtrTableSize(InfoHdr header, uint codeSize, ref nuint argTabOffset)
+    internal readonly unsafe nuint gcPtrTableSize(InfoHdr header, uint codeSize, ref nuint argTabOffset)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "JIT32 GC pointer-table sizing is not ported.");
+#pragma warning disable IDE0007
+        byte* temporary = stackalloc byte[17];
+#pragma warning restore IDE0007
+#if DEBUG
+        temporary[16] = 0xAB;
+#endif
+        var size = gcMakeRegPtrTable(temporary, 0, header, codeSize, ref argTabOffset);
+#if DEBUG
+        assert(temporary[16] == 0xAB);
+#endif
+        return size;
     }
 
     internal readonly unsafe byte* gcPtrTableSave(byte* destination, InfoHdr header,
         uint codeSize, ref nuint argTabOffset)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "JIT32 GC pointer-table encoding is not ported.");
+        return destination + (nint)gcMakeRegPtrTable(destination, -1, header, codeSize, ref argTabOffset);
     }
 
 #if DUMP_GC_TABLES

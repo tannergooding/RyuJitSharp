@@ -1840,14 +1840,13 @@ Paired target diagnostics preserve fourteen x86, seventy-eight ARM32 and
 thirty-nine ARM64 errors with their exact identities and repetition counts.
 Early declarations still limit body checking.
 
-JIT32 header and pointer-table encoders, filter pinning and the Unix modern
-encoder remain independent unsupported dependencies. The empty `InfoHdr`
-carrier exists only behind terminating JIT32 boundaries, not as an ABI layout.
-Live GC dump diagnostics are preserved; the native DEBUG `if (0)` hexdump is
-unreachable and excluded. Native retirement covers seven functions and the
-already-complete condition map, retaining shared other-target declarations and
-independent helper definitions. No x86 execution, Unix GC-publication execution
-or generated-code parity is claimed.
+JIT32 header and pointer-table serialization are ported, and their native
+encoder definitions are retired. The JIT32 `DUMP_GC_TABLES` decoders and
+`MEASURE_PTRTAB_SIZE` counters remain terminating stubs; filter pinning and the
+Unix modern encoder are independent unsupported dependencies. `InfoHdr` is a
+managed serialization model, not an ABI layout. Live GC dump diagnostics are
+preserved; the native DEBUG `if (0)` hexdump is unreachable and excluded. No x86
+execution, Unix GC-publication execution or generated-code parity is claimed.
 
 `LinearScan.setFrameType` implements AMD64 and ARM64 frame selection. ARM64
 performs conservative frame layout before reserving IP1 and reserves x19 when
