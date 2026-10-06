@@ -8,6 +8,7 @@ using static RyuJitSharp.insFlags;
 using static RyuJitSharp.insOpts;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
+using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -58,6 +59,40 @@ internal static class ArmEmitterPredicateTests
         Assert.That(s_emitter.emitInsIsStore(ins), Is.False);
     }
 
+    [Test]
+    public static void LocalStackStoreClassificationRequiresAnIntegerStoreAndLocalDescriptor()
+    {
+        foreach (var ins in new[] { INS_strb, INS_strh, INS_str })
+        {
+            Assert.That(
+                EmitInsWritesToLclVarStackLoc(s_emitter, NewDescriptor(ins, IF_NONE, isLocal: true)),
+                Is.True);
+        }
+
+        Assert.That(
+            EmitInsWritesToLclVarStackLoc(s_emitter, NewDescriptor(INS_str, IF_NONE, isLocal: false)),
+            Is.False);
+        Assert.That(
+            EmitInsWritesToLclVarStackLoc(s_emitter, NewDescriptor(INS_vstr, IF_NONE, isLocal: true)),
+            Is.False);
+        Assert.That(
+            EmitInsWritesToLclVarStackLoc(s_emitter, NewDescriptor(INS_ldr, IF_NONE, isLocal: true)),
+            Is.False);
+    }
+
+    [Test]
+    public static void MultipleRegisterClassificationPreservesARMInstructionAndFormatRules()
+    {
+        foreach (var ins in new[] { INS_ldm, INS_ldmdb, INS_smlal, INS_smull, INS_umlal, INS_umull, INS_vmov_d2i })
+        {
+            Assert.That(EmitInsMayWriteMultipleRegs(s_emitter, NewDescriptor(ins, IF_NONE)), Is.True);
+        }
+
+        Assert.That(EmitInsMayWriteMultipleRegs(s_emitter, NewDescriptor(INS_pop, IF_T1_M)), Is.True);
+        Assert.That(EmitInsMayWriteMultipleRegs(s_emitter, NewDescriptor(INS_pop, IF_T2_E2)), Is.False);
+        Assert.That(EmitInsMayWriteMultipleRegs(s_emitter, NewDescriptor(INS_add, IF_T1_E)), Is.False);
+    }
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsLoadOrStore")]
     private static extern bool EmitInsIsLoadOrStore(Emitter emitter, instruction ins);
 
@@ -66,6 +101,27 @@ internal static class ArmEmitterPredicateTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsCompare")]
     private static extern bool EmitInsIsCompare(Emitter emitter, instruction ins);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsWritesToLclVarStackLoc")]
+    private static extern bool EmitInsWritesToLclVarStackLoc(Emitter emitter, Emitter.instrDesc id);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsMayWriteMultipleRegs")]
+    private static extern bool EmitInsMayWriteMultipleRegs(Emitter emitter, Emitter.instrDesc id);
+
+    private static Emitter.instrDesc NewDescriptor(instruction ins, Emitter.insFormat format, bool isLocal = false)
+    {
+        var descriptorType = typeof(Emitter).GetNestedType("instrDescBasic", BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("The ARM32 instruction descriptor type was not found.");
+        var descriptor = (Emitter.instrDesc)RuntimeHelpers.GetUninitializedObject(descriptorType);
+        descriptor.idIns(ins);
+        descriptor.idInsFmt(format);
+        if (isLocal)
+        {
+            descriptor.idSetIsLclVar();
+        }
+
+        return descriptor;
+    }
 
     [TestCase(REG_R0, true)]
     [TestCase(REG_R15, true)]

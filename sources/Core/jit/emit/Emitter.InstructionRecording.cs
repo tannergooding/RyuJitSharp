@@ -101,5 +101,24 @@ public partial class Emitter
             ((CodeGen.instInfo[(int)ins] & CMP) != 0);
     }
 
+    private bool emitInsWritesToLclVarStackLoc(instrDesc id)
+    {
+        if (!id.idIsLclVar())
+        {
+            return false;
+        }
+
+        // Match the integer-store set in emitIns_S_R; float local stores use a different form.
+        return id.idIns() is INS_strb or INS_strh or INS_str;
+    }
+
+    private bool emitInsMayWriteMultipleRegs(instrDesc id)
+    {
+        var ins = id.idIns();
+        // IF_T2_E2 is the single-register POP encoding.
+        return ins is INS_ldm or INS_ldmdb or INS_smlal or INS_smull or INS_umlal or INS_umull or INS_vmov_d2i ||
+            ((ins == INS_pop) && (id.idInsFmt() != insFormat.IF_T2_E2));
+    }
+
 #endif
 }
