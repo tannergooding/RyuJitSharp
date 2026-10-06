@@ -13777,8 +13777,7 @@ public partial class Compiler
     {
         assert(type == TYP_SIMD);
 
-        var node = new GenTreeVecCon(type) { SimdScalableVal = value };
-        return node;
+        return gtNewSimdVconNode(type, value.BaseType, value.Kind, value.Index.u64[0], value.Step.u64[0]);
     }
 
     public GenTreeVecCon gtNewSimdVconNode(

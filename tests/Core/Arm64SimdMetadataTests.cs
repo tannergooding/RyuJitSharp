@@ -134,6 +134,26 @@ internal static class Arm64SimdMetadataTests
         Assert.That(node.SimdScalableVal.Step.u64[0], Is.EqualTo(mask - 1));
     }
 
+    [Test]
+    public static void ScalableConstructionFromValueUsesTheScalarOperands()
+    {
+        var compiler = JitTls.Compiler ?? throw new AssertionException("The fixture compiler is not initialized.");
+        var value = new simdscalable_t
+        {
+            BaseType = TYP_BYTE,
+            Kind = SimdScalableKind.SimdScalableSequence,
+        };
+        value.Index.u64[0] = 0x1FF;
+        value.Step.u64[0] = 0x100;
+
+        var node = compiler.gtNewSimdVconNode(TYP_SIMD, in value);
+
+        Assert.That(node.SimdScalableVal.BaseType, Is.EqualTo(TYP_BYTE));
+        Assert.That(node.SimdScalableVal.Kind, Is.EqualTo(SimdScalableKind.SimdScalableSequence));
+        Assert.That(node.SimdScalableVal.Index.u64[0], Is.EqualTo(0xFFUL));
+        Assert.That(node.SimdScalableVal.Step.u64[0], Is.Zero);
+    }
+
     [TestCase((byte)0)]
     [TestCase((byte)0x3C)]
     [TestCase(byte.MaxValue)]
