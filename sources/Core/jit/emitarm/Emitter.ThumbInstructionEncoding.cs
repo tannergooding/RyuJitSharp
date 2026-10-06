@@ -109,6 +109,58 @@ public partial class Emitter
         return (uint)reg << 16;
     }
 
+    internal static uint floatRegIndex(regNumber reg, int size)
+    {
+        assert(size == (int)EA_8BYTE || size == (int)EA_4BYTE);
+
+        if (size == (int)EA_8BYTE)
+        {
+            assert(isDoubleReg(reg));
+        }
+        else
+        {
+            assert(isFloatReg(reg));
+        }
+
+        var result = unchecked((uint)reg - (uint)REG_F0);
+        if (size == (int)EA_8BYTE)
+        {
+            result >>= 1;
+        }
+
+        return result;
+    }
+
+    // Some ARM VFP instructions encode the split bit as the index's MSB for doubles
+    // and as the index's LSB for singles.
+    internal static uint floatRegEncoding(uint index, int size, bool variant = false)
+    {
+        if (!variant || size == (int)EA_8BYTE)
+        {
+            return index;
+        }
+
+        return ((index & 0x1) << 4) | (index >> 1);
+    }
+
+    internal static uint insEncodeRegT2_VectorM(regNumber reg, int size, bool variant)
+    {
+        var encoding = floatRegEncoding(floatRegIndex(reg, size), size, variant);
+        return ((encoding & 0xF) << 0) | ((encoding & 0x10) << 1);
+    }
+
+    internal static uint insEncodeRegT2_VectorN(regNumber reg, int size, bool variant)
+    {
+        var encoding = floatRegEncoding(floatRegIndex(reg, size), size, variant);
+        return ((encoding & 0xF) << 16) | ((encoding & 0x10) << 3);
+    }
+
+    internal static uint insEncodeRegT2_VectorD(regNumber reg, int size, bool variant)
+    {
+        var encoding = floatRegEncoding(floatRegIndex(reg, size), size, variant);
+        return ((encoding & 0xF) << 12) | ((encoding & 0x10) << 18);
+    }
+
     internal static int insUnscaleImm(instruction ins, int imm)
     {
         switch (ins)
