@@ -1,11 +1,19 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using NUnit.Framework;
+using static RyuJitSharp.BasicBlockFlags;
 
 namespace RyuJitSharp.UnitTests;
 
 internal static class BasicBlockHashTests
 {
+    [TestCase(BBF_SPLIT_LOST)]
+    [TestCase(BBF_SPLIT_GAINED)]
+    public static void SplitFlagsExcludeFlagsForbiddenBeforeSplitting(BasicBlockFlags splitFlags)
+    {
+        Assert.That(BBF_SPLIT_NONEXIST & splitFlags, Is.EqualTo((BasicBlockFlags)0));
+    }
+
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(42)]
