@@ -55,14 +55,14 @@ internal static class JitPrimeInfoTests
         Assert.That(info.magic, Is.EqualTo(magic));
         Assert.That(info.shift, Is.EqualTo(shift));
 
-        uint largestMultiple = (uint.MaxValue / prime) * prime;
+        var largestMultiple = uint.MaxValue / prime * prime;
         uint[] numerators = [
             0, 1, prime - 1, prime, prime + 1,
             largestMultiple - 1, largestMultiple, largestMultiple + 1,
             0x7fffffff, 0x80000000, uint.MaxValue - 1, uint.MaxValue,
         ];
 
-        foreach (uint numerator in numerators)
+        foreach (var numerator in numerators)
         {
             Assert.That(info.magicNumberDivide(numerator), Is.EqualTo(numerator / prime));
             Assert.That(info.magicNumberRem(numerator), Is.EqualTo(numerator % prime));

@@ -29,15 +29,15 @@ public struct JitPrimeInfo
     {
         ulong num = numerator;
         ulong mag = magic;
-        ulong product = (num * mag) >> unchecked((int)(32 + shift));
+        var product = (num * mag) >> unchecked((int)(32 + shift));
 
         return (uint)product;
     }
 
     public readonly uint magicNumberRem(uint numerator)
     {
-        uint div = magicNumberDivide(numerator);
-        uint result = unchecked(numerator - (div * prime));
+        var div = magicNumberDivide(numerator);
+        var result = unchecked(numerator - (div * prime));
         assert(result == numerator % prime);
 
         return result;

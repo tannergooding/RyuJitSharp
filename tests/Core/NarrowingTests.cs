@@ -24,6 +24,9 @@ internal static unsafe class NarrowingTests
         WithCompiler(compiler => {
             GenTree tree = compiler.gtNewLconNode(value);
             var original = tree;
+#if DEBUG
+            var originalTreeId = tree.TreeId;
+#endif
             var numbers = new ValueNumPair(23, 24);
             Assert.That(compiler.optNarrowTree(ref tree, TYP_LONG, target, numbers, false), Is.EqualTo(accepted));
             Assert.That(tree, Is.SameAs(original));
@@ -34,9 +37,62 @@ internal static unsafe class NarrowingTests
                 Assert.That(compiler.optNarrowTree(ref tree, TYP_LONG, target, numbers, true), Is.True);
                 Assert.That(tree.Type, Is.EqualTo(TYP_INT));
                 Assert.That(tree.AsIntCon().IconValue, Is.EqualTo((nint)unchecked((int)value)));
+#if !TARGET_64BIT
+                Assert.That(tree, Is.Not.SameAs(original));
+#endif
+#if DEBUG
+                Assert.That(tree.TreeId, Is.EqualTo(originalTreeId));
+#endif
             }
         });
     }
+
+#if HOST_64BIT && !TARGET_64BIT
+    [Test]
+    public static void SetOperRejectsInPlaceLongConstantRetyping()
+    {
+        WithCompiler(compiler => {
+            var tree = compiler.gtNewLconNode(1);
+            _ = Assert.Throws<InvalidOperationException>(() => tree.SetOper(GT_CNS_INT));
+        });
+    }
+#endif
+
+#if !TARGET_64BIT
+    [TestCase(123L, true)]
+    [TestCase(2147483647L, true)]
+    [TestCase(0x80000000L, false)]
+    [TestCase(-1L, false)]
+    public static void LongComparisonNarrowsOnlyWhenConstantFitsSignedInt(long value, bool narrowed)
+    {
+        WithCompiler(compiler => {
+            var input = compiler.gtNewLclvNode(TYP_INT, 0);
+            var cast = compiler.gtNewCastNode(TYP_LONG, input, false, TYP_LONG);
+            var constant = compiler.gtNewLconNode(value);
+#if DEBUG
+            var originalTreeId = constant.TreeId;
+#endif
+            var comparison = compiler.gtNewBinaryNode(GT_EQ, TYP_INT, cast, constant);
+            Assert.That(compiler.fgOptimizeEqualityComparisonWithConst(comparison), Is.SameAs(comparison));
+            Assert.That(comparison.Op1, Is.SameAs(narrowed ? input : cast));
+            if (narrowed)
+            {
+                Assert.That(comparison.Op2, Is.Not.SameAs(constant));
+                Assert.That(comparison.Op2.Type, Is.EqualTo(TYP_INT));
+                Assert.That(comparison.Op2.AsIntCon().IconValue, Is.EqualTo((nint)value));
+#if DEBUG
+                Assert.That(comparison.Op2.TreeId, Is.EqualTo(originalTreeId));
+#endif
+            }
+            else
+            {
+                Assert.That(comparison.Op2, Is.SameAs(constant));
+                Assert.That(comparison.Op2.Type, Is.EqualTo(TYP_LONG));
+                Assert.That(comparison.Op2.AsIntConCommon().IntegralValue, Is.EqualTo(value));
+            }
+        });
+    }
+#endif
 
     [Test]
     public static void FailedBinaryProbeDoesNotPartiallyNarrowItsFirstOperand()
@@ -74,9 +130,16 @@ internal static unsafe class NarrowingTests
             Assert.That(cast.CastOp, Is.SameAs(local));
             Assert.That(cast.CastType, Is.EqualTo(TYP_INT));
             Assert.That(local.Type, Is.EqualTo(TYP_LONG));
-            Assert.That(constant.Type, Is.EqualTo(TYP_INT));
+            var narrowedConstant = constantFirst ? binary.Op1 : binary.Op2;
+            Assert.That(narrowedConstant.Type, Is.EqualTo(TYP_INT));
             Assert.That(tree.Type, Is.EqualTo(TYP_INT));
             Assert.That(tree._vnPair, Is.EqualTo(numbers));
+#if !TARGET_64BIT
+            Assert.That(narrowedConstant, Is.Not.SameAs(constant));
+#endif
+#if DEBUG
+            Assert.That(narrowedConstant.TreeId, Is.EqualTo(constant.TreeId));
+#endif
         });
     }
 
@@ -103,9 +166,16 @@ internal static unsafe class NarrowingTests
                 Assert.That(compiler.optNarrowTree(ref tree, TYP_LONG, TYP_INT, numbers, true), Is.True);
                 Assert.That(tree.Type, Is.EqualTo(TYP_INT));
                 Assert.That(local.Type, Is.EqualTo(TYP_INT));
-                Assert.That(constant.Type, Is.EqualTo(TYP_INT));
+                var narrowedConstant = tree.AsOp().Op2;
+                Assert.That(narrowedConstant.Type, Is.EqualTo(TYP_INT));
                 Assert.That(tree._vnPair, Is.EqualTo(numbers));
                 Assert.That(local._vnPair, Is.EqualTo(new ValueNumPair()));
+#if !TARGET_64BIT
+                Assert.That(narrowedConstant, Is.Not.SameAs(constant));
+#endif
+#if DEBUG
+                Assert.That(narrowedConstant.TreeId, Is.EqualTo(constant.TreeId));
+#endif
             }
         });
     }

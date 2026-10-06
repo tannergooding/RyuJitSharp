@@ -40,7 +40,7 @@ internal static unsafe class CallArgumentMorphTests
             Assert.That(call.Args.GetUserIndex(first), Is.Zero);
             Assert.That(call.Args.GetUserIndex(second), Is.EqualTo(1));
 #if DEBUG
-            string name = kind == WellKnownArg.ShiftLow ? "shift low" : "shift high";
+            var name = kind == WellKnownArg.ShiftLow ? "shift low" : "shift high";
             Assert.That(compiler.gtGetWellKnownArgNameForArgMsg(kind), Is.EqualTo(name));
 #endif
         });

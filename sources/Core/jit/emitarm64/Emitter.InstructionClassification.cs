@@ -16,7 +16,7 @@ public partial class Emitter
 
     private static bool emitInsIsCompareArm64(instruction ins)
     {
-        if ((uint)ins < (uint)CodeGen.instInfo.Length)
+        if (unchecked((uint)ins) < (uint)CodeGen.instInfo.Length)
         {
             return (CodeGen.instInfo[(int)ins] & Arm64InstInfoCompare) != 0;
         }
@@ -26,7 +26,7 @@ public partial class Emitter
 
     private static bool emitInsIsVectorLongArm64(instruction ins)
     {
-        if ((uint)ins < (uint)CodeGen.instInfo.Length)
+        if (unchecked((uint)ins) < (uint)CodeGen.instInfo.Length)
         {
             return (CodeGen.instInfo[(int)ins] & Arm64InstInfoLong) != 0;
         }
@@ -36,7 +36,7 @@ public partial class Emitter
 
     private static bool emitInsIsVectorNarrowArm64(instruction ins)
     {
-        if ((uint)ins < (uint)CodeGen.instInfo.Length)
+        if (unchecked((uint)ins) < (uint)CodeGen.instInfo.Length)
         {
             return (CodeGen.instInfo[(int)ins] & Arm64InstInfoNarrow) != 0;
         }
@@ -46,7 +46,7 @@ public partial class Emitter
 
     private static bool emitInsIsVectorWideArm64(instruction ins)
     {
-        if ((uint)ins < (uint)CodeGen.instInfo.Length)
+        if (unchecked((uint)ins) < (uint)CodeGen.instInfo.Length)
         {
             return (CodeGen.instInfo[(int)ins] & Arm64InstInfoWide) != 0;
         }

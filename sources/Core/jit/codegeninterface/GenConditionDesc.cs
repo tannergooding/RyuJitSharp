@@ -24,7 +24,7 @@ public readonly struct GenConditionDesc
 
     public static GenConditionDesc Get(GenCondition condition)
     {
-        ReadOnlySpan<GenConditionDesc> map = GetMap();
+        var map = GetMap();
         assert((uint)condition.Code < (uint)map.Length);
         var desc = map[(int)condition.Code];
         assert(desc.JumpKind1 is not EJ_NONE);

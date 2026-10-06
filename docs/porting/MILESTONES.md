@@ -23,8 +23,8 @@ execution or parity on those targets.
 
 | Period | Capability |
 | --- | --- |
-| 2026 Q4 | Expanded whole-function backend translation across xarch, ARM/ARM64, RISC-V, and WebAssembly paths. Windows x64 remains the first execution target; target-specific code-generation coverage is not a parity claim. |
-| 2026 Q3–Q4 | Expanded managed Windows-x64 execution from the MinOpts baseline into selected optimized, tiered/PGO, and GC-stress scenarios. The supported scope remains corpus- and configuration-specific. |
+| 2026-10 | Expanded whole-function backend translation across xarch, ARM/ARM64, RISC-V, and WebAssembly paths. Windows x64 remains the first execution target; target-specific code-generation coverage is not a parity claim. |
+| 2026-09 | Expanded managed Windows-x64 execution from the MinOpts baseline into selected optimized, tiered/PGO, and GC-stress scenarios. The supported scope remains corpus- and configuration-specific. |
 | 2026-06 | Advanced the importer through block-code import, calls, and intrinsics; hardware-intrinsic import was still an outstanding boundary at that point. |
 | 2026-05 | Established basic-block construction, local-variable table initialization, and first-block canonicalization. |
 | 2026-04 | Retargeted the project to .NET 10 and resumed active porting. |
