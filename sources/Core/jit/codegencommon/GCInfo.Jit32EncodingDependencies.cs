@@ -13,6 +13,36 @@ public partial struct GCInfo
     {
     }
 
+    internal readonly bool gcIsUntrackedLocalOrNonEnregisteredArg(int varNum)
+    {
+        ref var variable = ref Compiler.lvaGetDesc(varNum);
+
+        assert(!Compiler.lvaIsFieldOfDependentlyPromotedStruct(in variable));
+        assert(varTypeIsGC(variable.Type));
+
+        if (!variable.lvIsParam)
+        {
+            assert(!variable.lvPinned || !variable.lvTracked);
+            if (variable.lvTracked || !variable.lvOnFrame)
+            {
+                return false;
+            }
+        }
+        else if (!variable.lvOnFrame)
+        {
+            if (!Compiler.compJmpOpUsed)
+            {
+                return false;
+            }
+        }
+        else if (variable.lvIsRegArg && variable.lvTracked)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     internal static void gcInitEncoderLookupTable()
     {
         throw new FatalJitException(CORJIT_SKIPPED, "JIT32 GC encoder lookup initialization is not ported.");
