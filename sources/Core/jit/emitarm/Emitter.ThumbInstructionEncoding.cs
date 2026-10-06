@@ -50,6 +50,15 @@ public partial class Emitter
         }
     }
 
+    internal static uint insEncodeShiftCount(int imm)
+    {
+        assert((imm & 0x001F) == imm);
+        var result = (uint)(imm & 0x03) << 6;
+        result |= (uint)(imm & 0x1C) << 10;
+
+        return result;
+    }
+
     internal static uint insEncodePUW_G0(insOpts options, int imm)
     {
         uint result = 0;

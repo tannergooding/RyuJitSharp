@@ -31,6 +31,17 @@ internal static class Arm32ThumbInstructionEncodingTests
         Assert.That(Emitter.insEncodeShiftOpts(options), Is.EqualTo(expected));
     }
 
+    [TestCase(0, 0u)]
+    [TestCase(1, 0x40u)]
+    [TestCase(3, 0xC0u)]
+    [TestCase(4, 0x1000u)]
+    [TestCase(5, 0x1040u)]
+    [TestCase(31, 0x70C0u)]
+    public static void ShiftCountEncodingMatchesThumb2(int imm, uint expected)
+    {
+        Assert.That(Emitter.insEncodeShiftCount(imm), Is.EqualTo(expected));
+    }
+
     [TestCase(INS_OPTS_NONE, -1, 0x01000000u)]
     [TestCase(INS_OPTS_NONE, 0, 0x01800000u)]
     [TestCase(INS_OPTS_LDST_PRE_DEC, -1, 0x01200000u)]
