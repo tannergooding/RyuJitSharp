@@ -101,5 +101,16 @@ public sealed partial class CodeGen
             Emitter.emitIns_R_R_R(INS_add, size, reg, reg, REG_PC);
         }
     }
+
+    public unsafe void genMov32RelocatableDataLabel(uint value, regNumber reg)
+    {
+        Emitter.emitIns_R_D(INS_movw, EA_HANDLE_CNS_RELOC, value, reg);
+        Emitter.emitIns_R_D(INS_movt, EA_HANDLE_CNS_RELOC, value, reg);
+
+        if (_compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_RELATIVE_CODE_RELOCS))
+        {
+            Emitter.emitIns_R_R_R(INS_add, EA_HANDLE_CNS_RELOC, reg, reg, REG_PC);
+        }
+    }
 }
 #endif

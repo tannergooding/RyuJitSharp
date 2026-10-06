@@ -52,6 +52,7 @@
     <Compile Include="..\Core\Arm32InstructionCodeTests.cs" Link="Arm32InstructionCodeTests.cs" />
     <Compile Include="..\Core\Arm32JumpRecordingTests.cs" Link="Arm32JumpRecordingTests.cs" />
     <Compile Include="..\Core\Arm32BlockLabelAddressTests.cs" Link="Arm32BlockLabelAddressTests.cs" />
+    <Compile Include="..\Core\Arm32DataLabelAddressTests.cs" Link="Arm32DataLabelAddressTests.cs" />
     <Compile Include="..\Core\ArmEmitterPredicateTests.cs" Link="ArmEmitterPredicateTests.cs" />
     <Compile Include="..\Core\RegMaskOperationFamilyTests.cs" Link="RegMaskOperationFamilyTests.cs" />
     <Compile Include="..\Core\EmitterFrameReferenceTests.cs" Link="EmitterFrameReferenceTests.cs" />
