@@ -12,10 +12,6 @@ namespace RyuJitSharp;
 public partial class Emitter
 {
 #if EMITTER_STATS
-#if TARGET_XARCH
-    private const uint emitTotalIDescLblCnt = 0;
-#endif
-
     internal static void emitterStats(StreamWriter output)
     {
 #if !TARGET_XARCH

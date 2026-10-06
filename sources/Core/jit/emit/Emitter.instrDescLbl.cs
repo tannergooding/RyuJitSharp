@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM
     protected sealed class instrDescLbl : instrDescJmp
     {
         // The managed target is separate, so the destination remains in iiaLclVar.

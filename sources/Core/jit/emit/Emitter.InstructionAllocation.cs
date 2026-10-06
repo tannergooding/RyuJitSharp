@@ -16,6 +16,7 @@ public partial class Emitter
     private static uint emitTotalIDescCnt;
     private static uint emitTotalIDescSmallCnt;
     private static uint emitTotalIDescJmpCnt;
+    private static uint emitTotalIDescLblCnt;
 #if FEATURE_LOOP_ALIGN
     private static uint emitTotalIDescAlignCnt;
 #endif
@@ -184,6 +185,17 @@ public partial class Emitter
         return emitAllocAnyInstr<instrDescJmp>(DescriptorSizes.Jump, EA_1BYTE);
     }
 
+#if TARGET_ARM || TARGET_XARCH
+    private instrDescLbl emitAllocInstrLbl()
+    {
+#if EMITTER_STATS
+        emitTotalIDescLblCnt = unchecked(emitTotalIDescLblCnt + 1);
+#endif
+
+        return emitAllocAnyInstr<instrDescLbl>(DescriptorSizes.Label, EA_4BYTE);
+    }
+#endif
+
 #if FEATURE_LOOP_ALIGN
     private instrDescAlign emitAllocInstrAlign()
     {
@@ -217,6 +229,13 @@ public partial class Emitter
     {
         return emitAllocInstrJmp();
     }
+
+#if TARGET_ARM || TARGET_XARCH
+    private instrDescLbl emitNewInstrLbl()
+    {
+        return emitAllocInstrLbl();
+    }
+#endif
 
 #if FEATURE_LOOP_ALIGN
     private instrDescAlign emitNewInstrAlign()
