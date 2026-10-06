@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.GenTreeBlk;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
@@ -91,6 +92,56 @@ internal static unsafe class Arm32BlockMemoryCodeGenTests
                 Is.EqualTo(expectedInstructions));
             Assert.That(emitted.TrueForAll(static descriptor => descriptor.idReg1() == REG_R0), Is.True);
             Assert.That(emitted.TrueForAll(static descriptor => descriptor.idReg2() == REG_R1), Is.True);
+#endif
+        }, captureAssertions: true);
+    }
+
+    [TestCase(1, new[] { INS_ldrb, INS_strb })]
+    [TestCase(2, new[] { INS_ldrh, INS_strh })]
+    [TestCase(3, new[] { INS_ldrh, INS_strh, INS_ldrb, INS_strb })]
+    [TestCase(4, new[] { INS_ldr, INS_str })]
+    [TestCase(5, new[] { INS_ldr, INS_str, INS_ldrb, INS_strb })]
+    [TestCase(7, new[] { INS_ldr, INS_str, INS_ldrh, INS_strh, INS_ldrb, INS_strb })]
+    [TestCase(8, new[] { INS_ldr, INS_str, INS_ldr, INS_str })]
+    public static void CopyBlockUnrollUsesExactScalarLoadAndStoreWidths(int size, instruction[] expectedInstructions)
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compCurBB = new BasicBlock(null, null);
+            codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
+
+            var source = new GenTreeIndir(GT_IND, TYP_STRUCT, Physical(REG_R2, TYP_BYREF))
+            {
+                IsContained = true,
+            };
+            var block = new GenTreeBlk(TYP_STRUCT, Physical(REG_R1, TYP_BYREF), source, new ClassLayout((uint)size))
+            {
+                _kind = BlkOpKindUnroll,
+            };
+            codeGen.InternalRegisters.Add(block, Mask(REG_R3));
+
+#if DEBUG
+            RecordArm32Instructions(() => codeGen.genCodeForCpBlkUnroll(block));
+#else
+            codeGen.genCodeForCpBlkUnroll(block);
+#endif
+
+            var emitted = InstructionsSince(codeGen.Emitter, 0);
+#if DEBUG
+            Assert.That(emitted, Has.Count.EqualTo(1));
+            Assert.That(emitted[0].idIns(), Is.EqualTo(expectedInstructions[0]));
+            Assert.That(emitted[0].idReg1(), Is.EqualTo(REG_R3));
+            Assert.That(emitted[0].idReg2(), Is.EqualTo(REG_R2));
+#else
+            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
+                Is.EqualTo(expectedInstructions));
+            for (var index = 0; index < emitted.Count; index += 2)
+            {
+                Assert.That(emitted[index].idReg1(), Is.EqualTo(REG_R3));
+                Assert.That(emitted[index].idReg2(), Is.EqualTo(REG_R2));
+                Assert.That(emitted[index + 1].idReg1(), Is.EqualTo(REG_R3));
+                Assert.That(emitted[index + 1].idReg2(), Is.EqualTo(REG_R1));
+            }
 #endif
         }, captureAssertions: true);
     }

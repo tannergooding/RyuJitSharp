@@ -10,6 +10,7 @@ using NUnit.Framework;
 using static RyuJitSharp.GenTreeBlk;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
+using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.insOpts;
 using static RyuJitSharp.regMask;
@@ -75,6 +76,121 @@ internal static class Arm64BlockMemoryUnrollTests
             Assert.That(Emitter.emitGetInsSC(emitted[0]), Is.EqualTo((nint)260));
             Assert.That(emitted[1].idReg2(), Is.EqualTo(emitted[0].idReg1()));
         });
+    }
+
+    [TestCase(3, new[] { INS_ldrh, INS_strh, INS_ldrb, INS_strb }, new[] { 2, 2, 1, 1 }, new[] { 0, 0, 2, 2 })]
+    [TestCase(7, new[] { INS_ldr, INS_str, INS_ldr, INS_str }, new[] { 4, 4, 4, 4 }, new[] { 0, 0, 3, 3 })]
+    [TestCase(9, new[] { INS_ldr, INS_str, INS_ldrb, INS_strb }, new[] { 8, 8, 1, 1 }, new[] { 0, 0, 8, 8 })]
+    [TestCase(16, new[] { INS_ldp, INS_stp }, new[] { 8, 8 }, new[] { 0, 0 })]
+    [TestCase(17, new[] { INS_ldp, INS_stp, INS_ldrb, INS_strb }, new[] { 8, 8, 1, 1 }, new[] { 0, 0, 16, 16 })]
+    [TestCase(32, new[] { INS_ldp, INS_stp }, new[] { 16, 16 }, new[] { 0, 0 })]
+    [TestCase(40, new[] { INS_ldp, INS_stp, INS_ldr, INS_str }, new[] { 16, 16, 8, 8 }, new[] { 0, 0, 32, 32 })]
+    public static void CopyBlockUnrollPreservesStoreWidthsAndOffsets(
+        int size,
+        instruction[] expectedInstructions,
+        int[] expectedWidths,
+        int[] expectedOffsets)
+    {
+        Arm64CalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compCurBB = new BasicBlock(null, null);
+            codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
+
+            var block = CreateCopyBlock(size);
+            codeGen.InternalRegisters.Add(
+                block,
+                Mask(REG_R16) | Mask(REG_R17) | Mask(REG_V16) | Mask(REG_V17));
+            codeGen.genCodeForStoreBlk(block);
+
+            var emitted = Descriptors(codeGen);
+            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()), Is.EqualTo(expectedInstructions));
+            Assert.That(emitted.ConvertAll(static descriptor => (int)descriptor.idOpSize()), Is.EqualTo(expectedWidths));
+            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idAddr().iiaAddrMode.amDisp),
+                Is.EqualTo(expectedOffsets));
+
+            for (var index = 0; index < emitted.Count; index += 2)
+            {
+                Assert.That(emitted[index].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_R2));
+                Assert.That(emitted[index + 1].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_R1));
+            }
+        });
+    }
+
+    [Test]
+    public static void CopyBlockUnrollMaterializesAnUnencodableSourceOffset()
+    {
+        Arm64CalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compCurBB = new BasicBlock(null, null);
+            codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
+
+            var block = CreateCopyBlock(8, sourceOffset: 32768);
+            codeGen.InternalRegisters.Add(block, Mask(REG_R16));
+            codeGen.genCodeForStoreBlk(block);
+
+            var emitted = Descriptors(codeGen);
+            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
+                Is.EqualTo([INS_add, INS_ldr, INS_str]));
+            Assert.That(Emitter.emitGetInsSC(emitted[0]), Is.EqualTo((nint)32768));
+            Assert.That(emitted[1].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(emitted[0].idReg1()));
+            Assert.That(emitted[1].idAddr().iiaAddrMode.amDisp, Is.Zero);
+            Assert.That(emitted[2].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_R1));
+            Assert.That(emitted[2].idAddr().iiaAddrMode.amDisp, Is.Zero);
+        });
+    }
+
+    [Test]
+    public static void CopyBlockUnrollMaterializesAnUnencodableDestinationOffset()
+    {
+        Arm64CalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compCurBB = new BasicBlock(null, null);
+            codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
+
+            var block = CreateCopyBlock(8, destinationOffset: 32768);
+            codeGen.InternalRegisters.Add(block, Mask(REG_R16));
+            codeGen.genCodeForStoreBlk(block);
+
+            var emitted = Descriptors(codeGen);
+            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
+                Is.EqualTo([INS_add, INS_ldr, INS_str]));
+            Assert.That(Emitter.emitGetInsSC(emitted[0]), Is.EqualTo((nint)32768));
+            Assert.That(emitted[1].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_R2));
+            Assert.That(emitted[1].idAddr().iiaAddrMode.amDisp, Is.Zero);
+            Assert.That(emitted[2].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(emitted[0].idReg1()));
+            Assert.That(emitted[2].idAddr().iiaAddrMode.amDisp, Is.Zero);
+        });
+    }
+
+    private static GenTreeBlk CreateCopyBlock(int size, int sourceOffset = 0, int destinationOffset = 0)
+    {
+        var sourceAddress = new GenTreeAddrMode(
+            TYP_BYREF,
+            Physical(REG_R2, TYP_BYREF),
+            null,
+            0,
+            sourceOffset)
+        {
+            IsContained = true,
+        };
+        var source = new GenTreeIndir(GT_IND, TYP_STRUCT, sourceAddress)
+        {
+            IsContained = true,
+        };
+        var destination = new GenTreeAddrMode(
+            TYP_BYREF,
+            Physical(REG_R1, TYP_BYREF),
+            null,
+            0,
+            destinationOffset)
+        {
+            IsContained = true,
+        };
+
+        return new GenTreeBlk(TYP_STRUCT, destination, source, new ClassLayout((uint)size))
+        {
+            _kind = BlkOpKindUnroll,
+        };
     }
 
     private static GenTreeBlk CreateBlock(int size, GenTree address)

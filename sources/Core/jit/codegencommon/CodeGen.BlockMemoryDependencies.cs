@@ -35,7 +35,7 @@ public sealed partial class CodeGen
     }
 #endif
 
-#if !TARGET_XARCH
+#if !TARGET_XARCH && !TARGET_ARM && !TARGET_ARM64
     public void genCodeForCpBlkUnroll(GenTreeBlk node)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "Unrolled block copy requires Windows AMD64.");

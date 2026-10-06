@@ -428,7 +428,7 @@ public sealed partial class CodeGen
         }
     }
 
-    private sealed class InitBlockUnrollHelper
+    private struct InitBlockUnrollHelper
     {
         private int _dstStartOffset;
         private readonly uint _byteCount;
@@ -439,37 +439,37 @@ public sealed partial class CodeGen
             _byteCount = byteCount;
         }
 
-        public int GetDstOffset() => _dstStartOffset;
+        public readonly int GetDstOffset() => _dstStartOffset;
 
         public void SetDstOffset(int dstOffset) => _dstStartOffset = dstOffset;
 
-        public bool CanEncodeAllOffsets(int regSizeBytes)
+        public readonly bool CanEncodeAllOffsets(int regSizeBytes)
         {
             var stream = new VerifyingStream();
             UnrollInitBlock(ref stream, regSizeBytes);
             return stream.CanEncodeAllStores;
         }
 
-        public uint InstructionCount(int regSizeBytes)
+        public readonly uint InstructionCount(int regSizeBytes)
         {
             var stream = new CountingStream();
             UnrollInitBlock(ref stream, regSizeBytes);
             return stream.InstructionCount;
         }
 
-        public void Unroll(regNumber intReg, regNumber simdReg, regNumber addrReg, Emitter emitter)
+        public readonly void Unroll(regNumber intReg, regNumber simdReg, regNumber addrReg, Emitter emitter)
         {
             var stream = new ProducingStream(intReg, simdReg, simdReg, addrReg, emitter);
             UnrollInitBlock(ref stream, FP_REGSIZE_BYTES);
         }
 
-        public void UnrollBaseInstrs(regNumber intReg, regNumber addrReg, Emitter emitter)
+        public readonly void UnrollBaseInstrs(regNumber intReg, regNumber addrReg, Emitter emitter)
         {
             var stream = new ProducingStreamBaseInstrs(intReg, intReg, addrReg, emitter);
             UnrollInitBlock(ref stream, REGSIZE_BYTES);
         }
 
-        private void UnrollInitBlock<TStream>(ref TStream stream, int initialRegSizeBytes)
+        private readonly void UnrollInitBlock<TStream>(ref TStream stream, int initialRegSizeBytes)
             where TStream : struct, IBlockUnrollInstructionStream
         {
             assert((initialRegSizeBytes == 8) || (initialRegSizeBytes == 16));

@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
-    "nextAction": "genCodeForInitBlkUnroll and its ARM64 InitBlockUnrollHelper algorithm are implemented in CodeGen.BlockMemoryUnroll.cs and retired from codegenarmarch.cpp in consolidated residual commit 152ca35fbe5ac10d0bde6dddbf76d182a03d10e5. The init-only native helper is removed; keep BlockUnrollHelper, shared instruction streams, CopyBlockUnrollHelper, and copy/memmove bodies because remaining code still depends on them. ARM32 full target suites pass 695/695 Debug and 622/622 Release; Windows-x64 CodeGenBlockMemoryTests pass 46/46 Debug and 44/44 Release. ARM64 compilation reports only the four existing GSCookie signature errors; no init-unroll diagnostics were reported and ARM64 tests did not execute. Next translate the complete ARM64 genCodeForCpBlkUnroll function and CopyBlockUnrollHelper, preserving the native load/store ordering and offset decisions. Keep unrelated native WIP and B184/B185 intact.",
+    "nextAction": "The ARM/ARM64 genCodeForCpBlkUnroll implementation, ARM64 helper, and focused tests are source-reviewed against the pinned oracle. Focused ARM32 block-memory tests pass 15/15 Debug and Release, full ARM32 suites pass 702/702 Debug and 629/629 Release, and Windows-x64 CodeGenBlockMemoryTests pass 46/46 Debug and 44/44 Release. The latest ARM64 build attempt reports only the four existing GSCookie signature errors in CodeGen.GSCookieChecks.cs and CodeGen.GSCookieInitialization.cs; no diagnostics reference the copy/init code, so ARM64 tests did not execute. Native copy code and its now-unreferenced ARM64 stream/helper machinery have been retired in consolidated residual commit 10a9dceec0dffbce811c38f75f2e7fcfc21676a4, preserving pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e. Next review the managed diff, commit the accepted copy unit, then advance the checkpoint; retain unrelated native WIP and B184/B185.",
     "activeBatch": {
-      "scope": "Port the complete ARM64 genCodeForCpBlkUnroll function and its required CopyBlockUnrollHelper algorithm from codegenarmarch.cpp. Preserve source/destination offset adjustment, overlapping-tail decisions, load-before-store ordering, scalar/SIMD sequence selection, and encoding checks; keep memmove separate.",
-      "doneWhen": "The complete ARM64 copy-unroll function and helper preserve the pinned algorithm and emitted instruction order, focused ARM64 descriptor coverage is added, ARM64 validation introduces no diagnostics beyond the recorded GSCookie signature blockers, and the eligible native copy definition/helper are retired before the managed completion commit while shared helpers needed by memmove remain.",
-      "validation": "Compare the complete helper/function against runtime-oracle, add focused ARM64 descriptor checks for address offsets, overlap tails, and load/store ordering, then attempt the ARM64 target tests and distinguish any new diagnostics from the existing GSCookieChecks.cs/GSCookieInitialization.cs blockers. Do not treat managed instruction-recording tests as ARM execution/parity evidence.",
-      "latestValidation": "The completed init-unroll unit passed the full ARM32 target suite 695/695 Debug and 622/622 Release using win-arm, and Windows-x64 CodeGenBlockMemoryTests passed 46/46 Debug and 44/44 Release. ARM64 compilation still fails with four pre-existing signature errors in CodeGen.GSCookieChecks.cs and CodeGen.GSCookieInitialization.cs; no diagnostic referenced CodeGen.BlockMemoryUnroll.cs, so the ARM64 tests did not execute. These are managed recording tests, not ARM execution/parity.",
+      "scope": "Port the complete ARM/ARM64 genCodeForCpBlkUnroll function and its required CopyBlockUnrollHelper algorithm from codegenarmarch.cpp. Preserve ARM32 scalar widths and ARM64 source/destination offset adjustment, overlapping-tail decisions, load-before-store ordering, scalar/SIMD sequence selection, and encoding checks; keep memmove separate.",
+      "doneWhen": "The complete ARM32/ARM64 copy-unroll paths preserve the pinned algorithms and emitted instruction order, focused ARM32 and ARM64 descriptor coverage is present, available target validation passes without diagnostics from the changed code, and the eligible native copy definition/helper are retired before the managed completion commit while shared helpers needed by memmove remain.",
+      "validation": "Compare the complete ARM32/ARM64 function and helper against runtime-oracle; retain ARM32 scalar-width and ARM64 descriptor tests for offsets, overlap tails, and load/store ordering. Run focused and full ARM32 validation plus Windows-x64 block-memory regressions; attempt ARM64 target tests and distinguish known GSCookie signature blockers from new diagnostics. Managed instruction-recording tests are not ARM execution/parity evidence.",
+      "latestValidation": "Focused ARM32 block-memory tests passed 15/15 Debug and 15/15 Release, including a fresh 15/15 Release run; full ARM32 target suites passed 702/702 Debug and 629/629 Release; Windows-x64 CodeGenBlockMemoryTests passed 46/46 Debug and 44/44 Release. The final ARM64 test/build attempt after the copy helper readonly fixes and source/destination offset test additions reported only four known signature errors in CodeGen.GSCookieChecks.cs and CodeGen.GSCookieInitialization.cs; the ARM64 tests did not execute. These are managed instruction-recording tests, not ARM execution/parity evidence.",
       "deferred": [
         "Do not edit residual `lsra.cpp`; it contains user WIP deleting LSRA stress-mask constants.",
         "Do not reopen screened `codegen.h` or completed LSRA debt without new caller or mapping evidence. The residual has no include references to `emitpub.h`; its sole CMake list entry is removed in the native worktree and must be included in the consolidated retirement amendment.",
@@ -27,9 +27,9 @@
       ],
       "retirement": {
         "oracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
-        "nativeResidualCommit": "152ca35fbe5ac10d0bde6dddbf76d182a03d10e5",
+        "nativeResidualCommit": "10a9dceec0dffbce811c38f75f2e7fcfc21676a4",
         "completionGate": "Retire whole eligible definitions and orphan declarations in the same accepted batch, before its managed completion commit. Keep untranslated helpers and target branches in the residual; an absent definition is not evidence that it was ported.",
-        "nextDebtCursor": "At consolidated native residual HEAD 152ca35fbe5ac10d0bde6dddbf76d182a03d10e5 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), the shared ARM/ARM64 genCodeForIndir, genGetVolatileLdStIns, inst_JMP, genCodeForStoreBlk, and genCodeForInitBlkLoop definitions, ARM32 genCodeForStoreInd and the three ARM32 cast bodies, the orphan genGetVolatileLdStIns declaration, and ARM/ARM64 genCodeForInitBlkUnroll plus its InitBlockUnrollHelper are retired. Keep BlockUnrollHelper and the shared instruction streams because CopyBlockUnrollHelper still uses them. Next translate ARM64 genCodeForCpBlkUnroll and CopyBlockUnrollHelper; leave unrolled memmove untouched. Preserve unrelated native WIP and B184/B185; do not infer global debt clearance."
+        "nextDebtCursor": "At consolidated native residual HEAD 10a9dceec0dffbce811c38f75f2e7fcfc21676a4 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), the shared ARM/ARM64 genCodeForIndir, genGetVolatileLdStIns, inst_JMP, genCodeForStoreBlk, and genCodeForInitBlkLoop definitions, ARM32 genCodeForStoreInd and the three ARM32 cast bodies, the orphan genGetVolatileLdStIns declaration, and ARM/ARM64 genCodeForInitBlkUnroll plus its InitBlockUnrollHelper are retired. This batch also retires ARM/ARM64 genCodeForCpBlkUnroll and the ARM64 CopyBlockUnrollHelper, streams, and BlockUnrollHelper; a repository-wide residual search found those native helpers referenced only in the retired block. Keep the shared method declaration in codegen.h because LoongArch64 and RISC-V still define and call the target hook. Leave native memmove untouched. Preserve unrelated native WIP using snapshot e07190be08645c4004588116adcd054b0671ee22 at refs/copilot-recovery/runtime-port-before-arm-copy-unroll-retirement-20261006, and preserve B184/B185; do not infer global debt clearance."
       }
     },
     "validationResourcePolicy": {
@@ -61,7 +61,7 @@
     },
     "residualReconciliation": {
       "status": "in-progress",
-      "nextDebtCursor": "At consolidated native residual HEAD 152ca35fbe5ac10d0bde6dddbf76d182a03d10e5, shared ARM/ARM64 genCodeForStoreBlk and genCodeForInitBlkLoop are retired alongside the prior ARM32 cast and jump work. ARM/ARM64 genCodeForInitBlkUnroll and InitBlockUnrollHelper are now retired. Keep BlockUnrollHelper and shared instruction streams for CopyBlockUnrollHelper; next translate and retire the ARM64 copy-unroll function/helper before advancing to memmove. Shared declarations remain when other target implementations still use them. Preserve unrelated native WIP and B184/B185; do not infer global debt clearance."
+      "nextDebtCursor": "At consolidated native residual HEAD 10a9dceec0dffbce811c38f75f2e7fcfc21676a4 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), shared ARM/ARM64 block-store, init-loop, and init-unroll definitions/helpers are retired. ARM/ARM64 copy-unroll is now retired together with its file-local helper streams after a repository-wide reference check; the shared codegen.h method declaration remains for LoongArch64/RISC-V definitions and callers. The next block-memory candidate is ARM64 memmove; its native body remains. Preserve unrelated native WIP and B184/B185; do not infer global debt clearance."
     },
     "windowsCompletionAssessment": {
       "status": "remaining-source-review",
@@ -74,8 +74,12 @@
       "ref": "refs/porting/snapshots/2026-09-22-csharp-wip"
     },
     "nativeResidual": {
-      "commit": "152ca35fbe5ac10d0bde6dddbf76d182a03d10e5",
+      "commit": "10a9dceec0dffbce811c38f75f2e7fcfc21676a4",
       "ref": "refs/heads/main"
+    },
+    "nativePreArmCopyUnrollRetirement": {
+      "commit": "e07190be08645c4004588116adcd054b0671ee22",
+      "ref": "refs/copilot-recovery/runtime-port-before-arm-copy-unroll-retirement-20261006"
     },
     "nativePreArm32InitUnrollRetirement": {
       "commit": "b964fd6320b1245fcc9b42ebe4fbcfe7e0aafecd",
