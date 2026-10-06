@@ -156,12 +156,31 @@ public partial struct GCInfo
 #endif
     }
 
-    private void gcInsertVarPtrDscSplit(varPtrDsc descriptor, varPtrDsc begin)
-    {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI || JIT32_GCENCODER
-        throw new FatalJitException(CORJIT_SKIPPED, "GC filter lifetimes require Windows AMD64.");
+#if JIT32_GCENCODER
+    private readonly void gcInsertVarPtrDscSplit(varPtrDsc descriptor, varPtrDsc begin)
 #else
+    private void gcInsertVarPtrDscSplit(varPtrDsc descriptor, varPtrDsc begin)
+#endif
+    {
+#if JIT32_GCENCODER
+        // The JIT32 GC format requires the lifetime list to remain sorted by begin offset.
+        assert(descriptor is not null);
         assert(begin is not null);
+        assert(descriptor.vpdBegOfs >= begin.vpdBegOfs);
+
+        var current = begin.vpdNext;
+        var insertionPoint = begin;
+
+        while ((current is not null) && (current.vpdBegOfs < descriptor.vpdBegOfs))
+        {
+            insertionPoint = current;
+            current = current.vpdNext;
+        }
+
+        descriptor.vpdNext = insertionPoint.vpdNext;
+        insertionPoint.vpdNext = descriptor;
+#else
+        _ = begin;
         descriptor.vpdNext = gcVarPtrList;
         gcVarPtrList = descriptor;
 #endif
