@@ -54,6 +54,47 @@ internal static unsafe class Arm32BlockMemoryCodeGenTests
         }, captureAssertions: true);
     }
 
+    [TestCase(1, new[] { INS_strb })]
+    [TestCase(2, new[] { INS_strh })]
+    [TestCase(3, new[] { INS_strh, INS_strb })]
+    [TestCase(4, new[] { INS_str })]
+    [TestCase(5, new[] { INS_str, INS_strb })]
+    [TestCase(7, new[] { INS_str, INS_strh, INS_strb })]
+    [TestCase(8, new[] { INS_str, INS_str })]
+    public static void InitBlockUnrollUsesExactScalarStoreWidths(int size, instruction[] expectedInstructions)
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compCurBB = new BasicBlock(null, null);
+            codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
+
+            var block = new GenTreeBlk(TYP_STRUCT, Physical(REG_R1, TYP_BYREF),
+                Physical(REG_R0, TYP_INT), new ClassLayout((uint)size))
+            {
+                _kind = BlkOpKindUnroll,
+            };
+
+#if DEBUG
+            RecordArm32Instructions(() => codeGen.genCodeForInitBlkUnroll(block));
+#else
+            codeGen.genCodeForInitBlkUnroll(block);
+#endif
+
+            var emitted = InstructionsSince(codeGen.Emitter, 0);
+#if DEBUG
+            Assert.That(emitted, Has.Count.EqualTo(1));
+            Assert.That(emitted[0].idIns(), Is.EqualTo(expectedInstructions[0]));
+            Assert.That(emitted[0].idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(emitted[0].idReg2(), Is.EqualTo(REG_R1));
+#else
+            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
+                Is.EqualTo(expectedInstructions));
+            Assert.That(emitted.TrueForAll(static descriptor => descriptor.idReg1() == REG_R0), Is.True);
+            Assert.That(emitted.TrueForAll(static descriptor => descriptor.idReg2() == REG_R1), Is.True);
+#endif
+        }, captureAssertions: true);
+    }
+
     private static List<Emitter.instrDesc> InstructionsSince(Emitter emitter, int initialCount)
     {
         var descriptors = new List<Emitter.instrDesc>();

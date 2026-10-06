@@ -28,7 +28,7 @@ public sealed partial class CodeGen
     }
 #endif
 
-#if !TARGET_XARCH && !TARGET_LOONGARCH64 && !TARGET_RISCV64
+#if !TARGET_XARCH && !TARGET_LOONGARCH64 && !TARGET_RISCV64 && !TARGET_ARM && !TARGET_ARM64
     public void genCodeForInitBlkUnroll(GenTreeBlk node)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "Unrolled block initialization requires Windows AMD64.");
