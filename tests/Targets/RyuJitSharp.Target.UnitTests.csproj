@@ -49,6 +49,7 @@
     <Compile Include="..\Core\LinearScanScalarConversionTests.cs" Link="LinearScanScalarConversionTests.cs" />
     <Compile Include="..\Core\Arm32ArithmeticLoweringTests.cs" Link="Arm32ArithmeticLoweringTests.cs" />
     <Compile Include="..\Core\Arm32InstructionFormatTests.cs" Link="Arm32InstructionFormatTests.cs" />
+    <Compile Include="..\Core\Arm32InstructionCodeTests.cs" Link="Arm32InstructionCodeTests.cs" />
     <Compile Include="..\Core\ArmEmitterPredicateTests.cs" Link="ArmEmitterPredicateTests.cs" />
     <Compile Include="..\Core\RegMaskOperationFamilyTests.cs" Link="RegMaskOperationFamilyTests.cs" />
     <Compile Include="..\Core\EmitterFrameReferenceTests.cs" Link="EmitterFrameReferenceTests.cs" />
