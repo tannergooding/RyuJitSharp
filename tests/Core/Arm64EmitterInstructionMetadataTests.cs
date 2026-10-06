@@ -19,10 +19,10 @@ internal static class Arm64EmitterInstructionMetadataTests
             var ins = (instruction)index;
             var info = CodeGen.instInfo[index];
 
-            Assert.That(IsCompare(null, ins), Is.EqualTo((info & 4) != 0), $"Compare classification for {ins}");
-            Assert.That(IsVectorLong(null, ins), Is.EqualTo((info & 32) != 0), $"Long classification for {ins}");
-            Assert.That(IsVectorNarrow(null, ins), Is.EqualTo((info & 64) != 0), $"Narrow classification for {ins}");
-            Assert.That(IsVectorWide(null, ins), Is.EqualTo((info & 16) != 0), $"Wide classification for {ins}");
+            Assert.That(IsCompare(ins), Is.EqualTo((info & 4) != 0), $"Compare classification for {ins}");
+            Assert.That(IsVectorLong(ins), Is.EqualTo((info & 32) != 0), $"Long classification for {ins}");
+            Assert.That(IsVectorNarrow(ins), Is.EqualTo((info & 64) != 0), $"Narrow classification for {ins}");
+            Assert.That(IsVectorWide(ins), Is.EqualTo((info & 16) != 0), $"Wide classification for {ins}");
         }
     }
 
@@ -55,8 +55,8 @@ internal static class Arm64EmitterInstructionMetadataTests
         descriptor.idIns(ins);
         descriptor.idOpSize(opSize);
 
-        Assert.That(TargetRegisterSize(null, descriptor), Is.EqualTo(expectedTarget));
-        Assert.That(LoadStoreSize(null, descriptor), Is.EqualTo(expectedAccess));
+        Assert.That(TargetRegisterSize(descriptor), Is.EqualTo(expectedTarget));
+        Assert.That(LoadStoreSize(descriptor), Is.EqualTo(expectedAccess));
     }
 
     [TestCase(INS_OPTS_8B, EA_8BYTE)]
@@ -69,7 +69,7 @@ internal static class Arm64EmitterInstructionMetadataTests
     [TestCase(INS_OPTS_2D, EA_16BYTE)]
     public static void ArrangementDataSizeMatchesNativeVectorWidth(insOpts arrangement, emitAttr expected)
     {
-        Assert.That(GetDatasize(null, arrangement), Is.EqualTo(expected));
+        Assert.That(GetDatasize(arrangement), Is.EqualTo(expected));
     }
 
     [TestCase(EA_1BYTE, EA_2BYTE)]
@@ -77,7 +77,7 @@ internal static class Arm64EmitterInstructionMetadataTests
     [TestCase(EA_4BYTE, EA_8BYTE)]
     public static void WidenedDataSizeDoublesTheElementWidth(emitAttr size, emitAttr expected)
     {
-        Assert.That(WidenDatasize(null, size), Is.EqualTo(expected));
+        Assert.That(WidenDatasize(size), Is.EqualTo(expected));
     }
 
     private sealed class TestDescriptor : Emitter.instrDesc
@@ -88,34 +88,34 @@ internal static class Arm64EmitterInstructionMetadataTests
 
     private static void AssertNoClassification(instruction ins)
     {
-        Assert.That(IsCompare(null, ins), Is.False);
-        Assert.That(IsVectorLong(null, ins), Is.False);
-        Assert.That(IsVectorNarrow(null, ins), Is.False);
-        Assert.That(IsVectorWide(null, ins), Is.False);
+        Assert.That(IsCompare(ins), Is.False);
+        Assert.That(IsVectorLong(ins), Is.False);
+        Assert.That(IsVectorNarrow(ins), Is.False);
+        Assert.That(IsVectorWide(ins), Is.False);
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitInsIsCompareArm64")]
-    private static extern bool IsCompare(Emitter? emitter, instruction ins);
+    private static extern bool IsCompare(instruction ins);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitInsIsVectorLongArm64")]
-    private static extern bool IsVectorLong(Emitter? emitter, instruction ins);
+    private static extern bool IsVectorLong(instruction ins);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitInsIsVectorNarrowArm64")]
-    private static extern bool IsVectorNarrow(Emitter? emitter, instruction ins);
+    private static extern bool IsVectorNarrow(instruction ins);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitInsIsVectorWideArm64")]
-    private static extern bool IsVectorWide(Emitter? emitter, instruction ins);
+    private static extern bool IsVectorWide(instruction ins);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitInsTargetRegSize")]
-    private static extern emitAttr TargetRegisterSize(Emitter? emitter, Emitter.instrDesc descriptor);
+    private static extern emitAttr TargetRegisterSize(Emitter.instrDesc descriptor);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitInsLoadStoreSize")]
-    private static extern emitAttr LoadStoreSize(Emitter? emitter, Emitter.instrDesc descriptor);
+    private static extern emitAttr LoadStoreSize(Emitter.instrDesc descriptor);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "optGetDatasize")]
-    private static extern emitAttr GetDatasize(Emitter? emitter, insOpts arrangement);
+    private static extern emitAttr GetDatasize(insOpts arrangement);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "widenDatasize")]
-    private static extern emitAttr WidenDatasize(Emitter? emitter, emitAttr size);
+    private static extern emitAttr WidenDatasize(emitAttr size);
 }
 #endif
