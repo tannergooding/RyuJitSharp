@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
-    "nextAction": "ARMARCH genCreateAndStoreGCInfo, gcInsertVarPtrDscSplit, and JIT32 gcIsUntrackedLocalOrNonEnregisteredArg are retired in consolidated native HEAD fb47b8a. Windows x64 full-analysis passed Debug 17,227/17,227 and Release 15,507/15,507; ARM GC-info skip-path tests passed ARM32/ARM64 Debug/Release 1/1 each; JIT32 local-classification regressions passed 8/8 Debug and Release under the x64 host. Next port the JIT32 GCInfo::gcInfoBlockHdrSave(BYTE*,...) encoder at gcencode.cpp:1180, beginning with its InfoHdr encoding dependency closure in gcencode.cpp:303 and managed stubs in GCInfo.Jit32EncodingDependencies.cs. The broader Core test project does not compile for x86 because of unrelated AMD64-only REG_R12/REG_R13 references. Do not claim x86 or ARM GC-info execution parity until their encoding and table helpers are implemented and exercised.",
+    "nextAction": "ARMARCH genCreateAndStoreGCInfo, gcInsertVarPtrDscSplit, JIT32 gcIsUntrackedLocalOrNonEnregisteredArg, and the now-unreferenced SimpleSprintf_s definition/declaration are retired in consolidated native HEAD 6169f37. The native SimpleSprintf_s callers in gentree.cpp were already retired; no callsites remain in consolidated HEAD. Windows x64 full-analysis passed Debug 17,227/17,227 and Release 15,507/15,507; ARM GC-info skip-path tests passed ARM32/ARM64 Debug/Release 1/1 each; JIT32 local-classification regressions passed 8/8 Debug and Release under the x64 host. Next port the JIT32 GCInfo::gcInfoBlockHdrSave(BYTE*,...) encoder at gcencode.cpp:1180, beginning with its InfoHdr encoding dependency closure in gcencode.cpp:303 and managed stubs in GCInfo.Jit32EncodingDependencies.cs. The broader Core test project does not compile for x86 because of unrelated AMD64-only REG_R12/REG_R13 references. Do not claim x86 or ARM GC-info execution parity until their encoding and table helpers are implemented and exercised.",
     "activeBatch": {
       "scope": "Complete a six-lane whole-function sweep of the available root-level residual JIT files: 60 small files and all six 100-200 KB files, with exact disjoint ownership recorded in session task state. Prioritize shared compiler/emitter work for Windows x64 acceptance; allow independent target-specific lanes to proceed. Keep the four user-edited native files untouched and reserve the three >=200 KB files for serial coordinator work.",
       "doneWhen": "Each assigned lane has completed every eligible whole function in its owned native files, preserved unfinished target branches and terminating NYI dependencies, added only focused regression coverage for concrete defects/adaptations, and removed exact eligible native definitions/declarations. The coordinator then accepts each lane with serial full-analysis validation, amends the single consolidated runtime-port retirement commit, and commits each validated managed lane. The three largest files and four reserved user-edited files remain explicitly outside this batch.",
@@ -26,9 +26,9 @@
       ],
       "retirement": {
         "oracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
-        "nativeResidualCommit": "fb47b8a9434b364d106e2063514f86f9b9b8a63f",
+        "nativeResidualCommit": "6169f37ea855680421296ed214e9d9f6b242e4bd",
         "completionGate": "Retire whole eligible definitions and orphan declarations in the same accepted batch, before its managed completion commit. Keep untranslated helpers and target branches in the residual; an absent definition is not evidence that it was ported.",
-        "nextDebtCursor": "At consolidated native residual HEAD fb47b8a9434b364d106e2063514f86f9b9b8a63f (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), hashBvIterator and completed hashBv operations, ARM/ARM64 genLeaInstruction and its native GT_LEA dispatch case, ARMARCH genScaledAdd, ARM64 genUnknownSizeFrame, genZeroInitializeUnknownSizeFrame, ARMARCH genFnEpilog, genCall, genCallInstruction, genCreateAndStoreGCInfo, gcInsertVarPtrDscSplit, and JIT32 gcIsUntrackedLocalOrNonEnregisteredArg definitions are retired. Shared codegen.h declarations remain required by other targets. Residual hashbv.cpp/hashbv.h retain only MergeLists and assert-only getRehashForIndex stubs; the zero-initialization caller remains. Preserve recovery refs including refs/copilot-recovery/runtime-port-before-armarch-gcinfo-cf586bf4, refs/copilot-recovery/runtime-port-before-gc-insert-split-7301a79a, and refs/copilot-recovery/runtime-port-before-jit32-gc-classification-d718a70f, plus unrelated native user edits. Next dependency cursor: JIT32 GCInfo::gcInfoBlockHdrSave(BYTE*,...) at gcencode.cpp:1180; its InfoHdr encoder helpers begin at :303."
+        "nextDebtCursor": "At consolidated native residual HEAD 6169f37ea855680421296ed214e9d9f6b242e4bd (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), hashBvIterator and completed hashBv operations, ARM/ARM64 genLeaInstruction and its native GT_LEA dispatch case, ARMARCH genScaledAdd, ARM64 genUnknownSizeFrame, genZeroInitializeUnknownSizeFrame, ARMARCH genFnEpilog, genCall, genCallInstruction, genCreateAndStoreGCInfo, gcInsertVarPtrDscSplit, JIT32 gcIsUntrackedLocalOrNonEnregisteredArg, and the now-unreferenced SimpleSprintf_s definition/declaration are retired. Shared codegen.h declarations remain required by other targets. Residual hashbv.cpp/hashbv.h retain only MergeLists and assert-only getRehashForIndex stubs; the zero-initialization caller remains. Preserve recovery refs including refs/copilot-recovery/runtime-port-before-armarch-gcinfo-cf586bf4, refs/copilot-recovery/runtime-port-before-gc-insert-split-7301a79a, refs/copilot-recovery/runtime-port-before-jit32-gc-classification-d718a70f, and refs/copilot-recovery/runtime-port-before-simplesprintf-retirement-07895f0d, plus unrelated native user edits. Next dependency cursor: JIT32 GCInfo::gcInfoBlockHdrSave(BYTE*,...) at gcencode.cpp:1180; its InfoHdr encoder helpers begin at :303."
       }
     },
     "validationResourcePolicy": {
@@ -60,7 +60,7 @@
     },
     "residualReconciliation": {
       "status": "in-progress",
-      "nextDebtCursor": "At consolidated native residual HEAD fb47b8a9434b364d106e2063514f86f9b9b8a63f, JIT32 gcIsUntrackedLocalOrNonEnregisteredArg joins gcInsertVarPtrDscSplit, genCreateAndStoreGCInfo, genFnEpilog, genCall and genCallInstruction as retired; existing index-address retirement remains intact. Continue with the JIT32 GCInfo::gcInfoBlockHdrSave(BYTE*,...) implementation and preserve the unrelated native WIP."
+      "nextDebtCursor": "At consolidated native residual HEAD 6169f37ea855680421296ed214e9d9f6b242e4bd, JIT32 gcIsUntrackedLocalOrNonEnregisteredArg joins gcInsertVarPtrDscSplit, genCreateAndStoreGCInfo, genFnEpilog, genCall, genCallInstruction, and the now-unreferenced SimpleSprintf_s helper as retired; existing index-address retirement remains intact. Continue with the JIT32 GCInfo::gcInfoBlockHdrSave(BYTE*,...) implementation and preserve the unrelated native WIP."
     },
     "windowsCompletionAssessment": {
       "status": "remaining-source-review",
@@ -73,7 +73,7 @@
       "ref": "refs/porting/snapshots/2026-09-22-csharp-wip"
     },
     "nativeResidual": {
-      "commit": "fb47b8a9434b364d106e2063514f86f9b9b8a63f",
+      "commit": "6169f37ea855680421296ed214e9d9f6b242e4bd",
       "ref": "refs/heads/main"
     },
     "nativePreArmArchGcInfoRetirement": {
