@@ -113,6 +113,37 @@ internal static class ArmEmitterPredicateTests
         Assert.That(EmitInsMayWriteToGCReg(s_emitter, descriptor), Is.EqualTo(expected));
     }
 
+    [TestCase(REG_R0, EA_PTRSIZE)]
+    [TestCase(REG_SP, EA_4BYTE)]
+    [TestCase(REG_R15, EA_PTRSIZE)]
+    public static void GeneralRegisterNamesUseTheCompilerRegisterTable(regNumber reg, emitAttr attr)
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            Assert.That(
+                codeGen.Emitter.emitRegName(reg, attr, varName: false),
+                Is.EqualTo(compiler.compRegVarName(reg, displayVar: false, isFloatReg: false)));
+            Assert.That(
+                codeGen.Emitter.emitRegName(reg, attr, varName: true),
+                Is.EqualTo(compiler.compRegVarName(reg, displayVar: true, isFloatReg: false)));
+        });
+    }
+
+    [TestCase(REG_F0, EA_PTRSIZE)]
+    [TestCase(REG_F31, EA_4BYTE)]
+    public static void FloatRegisterNamesUseTheFloatingCompilerRegisterTable(regNumber reg, emitAttr attr)
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            Assert.That(
+                EmitFloatRegName(codeGen.Emitter, reg, attr, varName: false),
+                Is.EqualTo(compiler.compRegVarName(reg, displayVar: false, isFloatReg: true)));
+            Assert.That(
+                EmitFloatRegName(codeGen.Emitter, reg, attr, varName: true),
+                Is.EqualTo(compiler.compRegVarName(reg, displayVar: true, isFloatReg: true)));
+        });
+    }
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsLoadOrStore")]
     private static extern bool EmitInsIsLoadOrStore(Emitter emitter, instruction ins);
 
@@ -130,6 +161,9 @@ internal static class ArmEmitterPredicateTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsMayWriteToGCReg")]
     private static extern bool EmitInsMayWriteToGCReg(Emitter emitter, Emitter.instrDesc id);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitFloatRegName")]
+    private static extern string EmitFloatRegName(Emitter emitter, regNumber reg, emitAttr attr, bool varName);
 
     private static Emitter.instrDesc NewDescriptor(instruction ins, Emitter.insFormat format, bool isLocal = false)
     {
