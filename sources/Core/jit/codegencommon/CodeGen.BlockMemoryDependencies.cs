@@ -14,7 +14,7 @@ public sealed partial class CodeGen
     }
 #endif
 
-#if !TARGET_XARCH
+#if !TARGET_XARCH && !TARGET_ARM64
     public void genCodeForMemmove(GenTreeBlk node)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "Unrolled memmove requires Windows AMD64.");
