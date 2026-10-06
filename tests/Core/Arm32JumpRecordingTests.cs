@@ -11,7 +11,9 @@ using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.Emitter.insSize;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
+using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -134,6 +136,39 @@ internal static class Arm32JumpRecordingTests
         });
     }
 
+    [TestCase(INS_cbz, REG_R0)]
+    [TestCase(INS_cbnz, REG_R7)]
+    public static void CompareAndBranchInstructionsUseShortRegisterBranchMetadata(
+        instruction ins, regNumber reg)
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compCurBB = new BasicBlock(null, null);
+            var emitter = codeGen.Emitter;
+            var target = Label();
+            var group = emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");
+            var initialGroupSize = GroupSize(emitter);
+
+            var jump = RecordConditionalRegisterBranch(emitter, ins, EA_4BYTE, target, reg);
+
+            Assert.That(jump.idIns(), Is.EqualTo(ins));
+            Assert.That(jump.idInsFmt(), Is.EqualTo(IF_T1_I));
+            Assert.That(jump.idInsSize(), Is.EqualTo(ISZ_16BIT));
+            Assert.That(jump.idReg1(), Is.EqualTo(reg));
+            Assert.That(jump.idjTarget, Is.SameAs(target));
+            Assert.That(jump.idjTargetIG, Is.Null);
+            Assert.That(jump.idjIG, Is.SameAs(group));
+            Assert.That(jump.idjOffs, Is.EqualTo(unchecked((uint)initialGroupSize)));
+            Assert.That(jump.idjShort, Is.True);
+            Assert.That(jump.idjKeepLong, Is.False);
+            Assert.That(jump.idjNext, Is.Null);
+            Assert.That(PendingJump(emitter), Is.SameAs(jump));
+#if !DEBUG
+            Assert.That(GroupSize(emitter), Is.EqualTo(initialGroupSize + 2));
+#endif
+        });
+    }
+
 #if DEBUG
     [Test]
     public static void LongAddressModeForcesLongBranches()
@@ -200,6 +235,19 @@ internal static class Arm32JumpRecordingTests
 #endif
         return LastInstruction(emitter) as Emitter.instrDescJmp
             ?? throw new AssertionException("No jump descriptor was recorded.");
+    }
+
+    private static Emitter.instrDescJmp RecordConditionalRegisterBranch(
+        Emitter emitter, instruction ins, emitAttr attr, BasicBlock target, regNumber reg)
+    {
+#if DEBUG
+        var failure = Assert.Throws<FatalJitException>(() => emitter.emitIns_J_R(ins, attr, target, reg));
+        Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
+#else
+        emitter.emitIns_J_R(ins, attr, target, reg);
+#endif
+        return LastInstruction(emitter) as Emitter.instrDescJmp
+            ?? throw new AssertionException("No conditional register-branch descriptor was recorded.");
     }
 
     private static BasicBlock Label()
