@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
+#if TARGET_ARM || TARGET_ARM64
 using static RyuJitSharp.insBarrier;
 #endif
 
@@ -558,6 +558,18 @@ public sealed partial class CodeGen
             !Emitter.emitTryCoalesceLastMemBarrier(barrier))
         {
             Emitter.emitIns_BARR(INS_dmb, barrier);
+        }
+#elif TARGET_ARM
+#if DEBUG
+        if (JitConfig.JitNoMemoryBarriers == 1)
+        {
+            return;
+        }
+#endif
+        if (!_compiler.opts.OptimizationEnabled ||
+            !Emitter.emitTryCoalesceLastMemBarrier(INS_BARRIER_SY))
+        {
+            Emitter.emitIns_I(INS_dmb, EA_4BYTE, unchecked((nint)(uint)INS_BARRIER_SY));
         }
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Memory barrier generation outside xarch is not implemented.");

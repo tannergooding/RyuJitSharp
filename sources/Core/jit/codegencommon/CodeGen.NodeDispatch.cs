@@ -568,6 +568,12 @@ public sealed partial class CodeGen
                 instGen_MemoryBarrier(barrierKind);
                 return;
             }
+
+            case GT_IND:
+            {
+                genCodeForIndir(tree.AsIndir());
+                return;
+            }
         }
 #endif
 #if TARGET_LOONGARCH64 || TARGET_RISCV64
@@ -651,6 +657,22 @@ public sealed partial class CodeGen
             case GT_SWITCH_TABLE:
             {
                 genTableBasedSwitch(tree);
+                return;
+            }
+        }
+        throw new FatalJitException(CORJIT_SKIPPED, "Node instruction generation requires xarch.");
+#elif TARGET_ARM
+        switch (tree.Oper)
+        {
+            case GT_IND:
+            {
+                genCodeForIndir(tree.AsIndir());
+                return;
+            }
+
+            case GT_STOREIND:
+            {
+                genCodeForStoreInd(tree.AsStoreInd());
                 return;
             }
         }

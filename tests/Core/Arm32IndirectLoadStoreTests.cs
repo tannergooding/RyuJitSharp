@@ -7,11 +7,13 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.BarrierKind;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
+using static RyuJitSharp.insBarrier;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
@@ -109,6 +111,82 @@ internal static unsafe class Arm32IndirectLoadStoreTests
         });
     }
 
+    [Test]
+    public static void IndirectLoadDispatchesThroughCodeGen()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            InitializeLocalRegisterCandidate(compiler);
+            var address = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+            address.RegNum = REG_R1;
+            var indir = new GenTreeIndir(GT_IND, TYP_INT, address) { RegNum = REG_R0 };
+
+            RecordArm32Instructions(() => codeGen.genCodeForTreeNode(indir));
+
+            var descriptor = LastInstruction(codeGen.Emitter);
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_ldr));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R1));
+        });
+    }
+
+    [Test]
+    public static void VolatileIndirectLoadUsesTrailingMemoryBarrier()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            InitializeLocalRegisterCandidate(compiler);
+            var address = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+            address.RegNum = REG_R1;
+            var indir = new GenTreeIndir(GT_IND, TYP_INT, address)
+            {
+                Flags = GTF_IND_VOLATILE,
+                RegNum = REG_R0,
+            };
+
+            RecordArm32Instructions(() => codeGen.genCodeForTreeNode(indir));
+
+            var descriptors = CurrentDescriptors(codeGen.Emitter)
+                ?? throw new AssertionException("Missing descriptor buffer.");
+#if DEBUG
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_ldr));
+#else
+            Assert.That(descriptors, Has.Count.EqualTo(2));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_ldr));
+            Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_dmb));
+            Assert.That(codeGen.Emitter.emitGetInsSC(descriptors[1]), Is.EqualTo((nint)INS_BARRIER_SY));
+#endif
+        });
+    }
+
+    [Test]
+    public static void VolatileIndirectStoreUsesLeadingMemoryBarrier()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            InitializeLocalRegisterCandidate(compiler);
+            var address = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+            address.RegNum = REG_R1;
+            var data = compiler.gtNewLclvNode(TYP_INT, 0);
+            data.RegNum = REG_R1;
+            var store = new GenTreeStoreInd(TYP_INT, address, data) { Flags = GTF_IND_VOLATILE };
+
+            RecordArm32Instructions(() => codeGen.genCodeForTreeNode(store));
+
+            var descriptors = CurrentDescriptors(codeGen.Emitter)
+                ?? throw new AssertionException("Missing descriptor buffer.");
+#if DEBUG
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_dmb));
+#else
+            Assert.That(descriptors, Has.Count.EqualTo(2));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_dmb));
+            Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_str));
+#endif
+        });
+    }
+
     [TestCase(TYP_FLOAT, false)]
     [TestCase(TYP_DOUBLE, false)]
     [TestCase(TYP_FLOAT, true)]
@@ -166,6 +244,39 @@ internal static unsafe class Arm32IndirectLoadStoreTests
         });
     }
 
+    [TestCase(BARRIER_FULL)]
+    [TestCase(BARRIER_LOAD_ONLY)]
+    [TestCase(BARRIER_STORE_ONLY)]
+    public static void MemoryBarriersEmitFullSystemDmb(BarrierKind barrierKind)
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
+        {
+            RecordArm32Instructions(() => codeGen.instGen_MemoryBarrier(barrierKind));
+
+            var descriptor = LastInstruction(codeGen.Emitter);
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_dmb));
+            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)INS_BARRIER_SY));
+        }, minOpts: false);
+    }
+
+#if !DEBUG
+    [Test]
+    public static void OptimizedAdjacentMemoryBarriersCoalesce()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
+        {
+            codeGen.instGen_MemoryBarrier(BARRIER_FULL);
+            codeGen.instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
+
+            var descriptors = CurrentDescriptors(codeGen.Emitter)
+                ?? throw new AssertionException("Missing descriptor buffer.");
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_dmb));
+            Assert.That(codeGen.Emitter.emitGetInsSC(descriptors[0]), Is.EqualTo((nint)INS_BARRIER_SY));
+        }, minOpts: false);
+    }
+#endif
+
     private static void RecordArm32Instructions(TestDelegate action)
     {
 #if DEBUG
@@ -175,6 +286,20 @@ internal static unsafe class Arm32IndirectLoadStoreTests
 #else
         action();
 #endif
+    }
+
+    private static void InitializeLocalRegisterCandidate(Compiler compiler)
+    {
+        compiler.lvaCount = 1;
+        compiler.lvaTable =
+        [
+            new LclVarDsc
+            {
+                Type = TYP_I_IMPL,
+                lvLRACandidate = true,
+                RegNum = REG_R1,
+            },
+        ];
     }
 
     private static Emitter.instrDesc LastInstruction(Emitter emitter)

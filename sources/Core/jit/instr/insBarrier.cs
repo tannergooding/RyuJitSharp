@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
+#if TARGET_ARM || TARGET_ARM64
 namespace RyuJitSharp;
 
 public enum insBarrier : uint
