@@ -42,6 +42,80 @@ public sealed partial class CodeGen
         GCInfo.gcMarkRegSetNpt(genRegMask(profilerCallerSpReg));
 
         genEmitHelperCall(helper, 0, EA_UNKNOWN);
+#elif TARGET_ARM
+        assert(helper is CORINFO_HELP_PROF_FCN_LEAVE or CORINFO_HELP_PROF_FCN_TAILCALL);
+        if (!_compiler.compIsProfilerHookNeeded)
+        {
+            return;
+        }
+
+        _compiler.info.compProfilerCallback = true;
+
+        bool r0InUse;
+        if (helper is CORINFO_HELP_PROF_FCN_TAILCALL)
+        {
+            r0InUse = false;
+        }
+        else if (_compiler.info.compRetType is TYP_VOID)
+        {
+            r0InUse = false;
+        }
+        else if (varTypeIsFloating(_compiler.info.compRetType) ||
+            _compiler.IsHfa(_compiler.info.compMethodInfo->args.retTypeClass))
+        {
+#if CONFIGURABLE_ARM_ABI
+            r0InUse = _compiler.info.compIsVarArgs || _compiler.opts.compUseSoftFP;
+#else
+            r0InUse = _compiler.info.compIsVarArgs || Compiler.Options.compUseSoftFP;
+#endif
+        }
+        else
+        {
+            r0InUse = true;
+        }
+
+        var attr = EA_UNKNOWN;
+
+        if (r0InUse)
+        {
+            if (varTypeIsGC(_compiler.info.compRetNativeType))
+            {
+                attr = _compiler.info.compRetNativeType.EmitActualSize;
+            }
+            else if (_compiler.compMethodReturnsRetBufAddr)
+            {
+                attr = EA_BYREF;
+            }
+            else
+            {
+                attr = EA_PTRSIZE;
+            }
+
+            Emitter.emitIns_Mov(INS_mov, attr, REG_PROFILER_RET_SCRATCH, REG_R0, canSkip: false);
+            genTransferRegGCState(REG_PROFILER_RET_SCRATCH, REG_R0);
+            _regSet.verifyRegUsed(REG_PROFILER_RET_SCRATCH);
+        }
+
+        if (_compiler.compProfilerMethHndIndirected)
+        {
+            Emitter.emitIns_R_AI(INS_ldr, EA_PTR_DSP_RELOC, REG_R0,
+                unchecked((nint)_compiler.compProfilerMethHnd));
+        }
+        else
+        {
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_R0, unchecked((nint)_compiler.compProfilerMethHnd));
+        }
+
+        GCInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_R0));
+        _regSet.verifyRegUsed(REG_R0);
+        genEmitHelperCall(helper, 0, EA_UNKNOWN);
+
+        if (r0InUse)
+        {
+            Emitter.emitIns_Mov(INS_mov, attr, REG_R0, REG_PROFILER_RET_SCRATCH, canSkip: false);
+            genTransferRegGCState(REG_R0, REG_PROFILER_RET_SCRATCH);
+            GCInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_PROFILER_RET_SCRATCH));
+        }
 #elif TARGET_WASM
         // Wasm omits the matching profiling-entry hook in its prolog.
 #elif !TARGET_XARCH
