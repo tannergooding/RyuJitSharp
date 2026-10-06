@@ -157,7 +157,18 @@ public static partial class Globals
     public const int DSP_DST_OPER_RIGHT = 0;
 #endif
 
-#if TARGET_XARCH
+#if TARGET_ARM
+    // Thumb branch limits and minimum sizes from targetarm.h.
+    public const int JMP_DIST_SMALL_MAX_NEG = -2048;
+
+    public const int JCC_DIST_SMALL_MAX_NEG = -256;
+
+    public const int JCC_DIST_MEDIUM_MAX_NEG = -1048576;
+
+    public const int JMP_SIZE_SMALL = 2;
+
+    public const int JCC_SIZE_SMALL = 2;
+#elif TARGET_XARCH
     public const int JMP_DIST_SMALL_MAX_NEG = -128;
 
     public const int JMP_DIST_SMALL_MAX_POS = +127;

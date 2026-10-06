@@ -161,7 +161,28 @@ public partial class Emitter
 
     private static void emitSetMediumJump(instrDescJmp jump)
     {
+#if TARGET_ARM
+        if (jump.idjKeepLong)
+        {
+            return;
+        }
+
+#if DEBUG_EMIT
+        var debugInfo = jump.idDebugOnlyInfo();
+        assert(debugInfo is not null);
+        if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) || (INTERESTING_JUMP_NUM == 0))
+        {
+            jitprintf($"[9] Converting jump {debugInfo.idNum} to medium\n");
+        }
+#endif
+
+        assert(emitIsCondJump(jump));
+        jump.idInsFmt(insFormat.IF_T2_J1);
+        jump.idjShort = false;
+        jump.idInsSize(emitInsSize(jump.idInsFmt()));
+#else
         throw new FatalJitException(CORJIT_SKIPPED, "ARM/RISC-V medium-jump selection is not ported.");
+#endif
     }
 #endif
 
@@ -222,6 +243,44 @@ public partial class Emitter
 
         jump.idInsFmt(format);
         jump.idjShort = true;
+#elif TARGET_ARM
+        if (jump.idjKeepLong)
+        {
+            return;
+        }
+
+        if (emitIsCondJump(jump))
+        {
+            jump.idInsFmt(insFormat.IF_T1_K);
+        }
+        else if (emitIsCmpJump(jump))
+        {
+            assert(jump.idjShort);
+            return;
+        }
+        else if (emitIsUncondJump(jump))
+        {
+            jump.idInsFmt(insFormat.IF_T1_M);
+        }
+        else if (emitIsLoadLabel(jump))
+        {
+            return;
+        }
+        else
+        {
+            unreached();
+        }
+
+        jump.idjShort = true;
+#if DEBUG_EMIT
+        var debugInfo = jump.idDebugOnlyInfo();
+        assert(debugInfo is not null);
+        if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) || (INTERESTING_JUMP_NUM == 0))
+        {
+            jitprintf($"[8] Converting jump {debugInfo.idNum} to short\n");
+        }
+#endif
+        jump.idInsSize(emitInsSize(jump.idInsFmt()));
 #elif TARGET_WASM
         throw new FatalJitException(CORJIT_INTERNALERROR, "Wasm has no short-jump instruction form.");
 #else

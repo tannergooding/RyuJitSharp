@@ -110,6 +110,8 @@ public partial class Emitter
     {
 #if TARGET_ARM64
         emitIns_JArm64(ins, dst, keepShort);
+#elif TARGET_ARM
+        emitIns_JArm32(ins, dst, keepShort);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Label jump instruction recording requires xarch.");
 #else
