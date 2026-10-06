@@ -249,6 +249,103 @@ internal static unsafe class Arm64CodeGenPortTests
         });
     }
 
+    [Test]
+    public static void LeaInstructionsUseScaledAddAndOffset()
+    {
+        Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var baseAddress = compiler.gtNewIconNode(TYP_REF, 0);
+            baseAddress.RegNum = REG_R1;
+            var index = compiler.gtNewIconNode(TYP_I_IMPL, 0);
+            index.RegNum = REG_R2;
+            var tree = new GenTreeAddrMode(TYP_BYREF, baseAddress, index, 4, 8)
+            {
+                RegNum = REG_R0,
+            };
+            codeGen.InternalRegisters.Add(tree,
+                regMaskTP.CreateFromRegNum(REG_R3, REG_R3.SingleTypeMask));
+
+            codeGen.genCodeForTreeNode(tree);
+
+            var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
+            Assert.That(descriptors.ConvertAll(static descriptor => descriptor.idIns()),
+                Is.EqualTo((instruction[])[INS_add, INS_add]));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R1));
+            Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_R2));
+            Assert.That(descriptors[0].idInsOpt(), Is.EqualTo(INS_OPTS_LSL));
+            Assert.That(descriptors[0].idSmallCns(), Is.EqualTo((nint)2));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_R3));
+            Assert.That(descriptors[1].idSmallCns(), Is.EqualTo((nint)8));
+        });
+    }
+
+    [Test]
+    public static void LeaInstructionUnwrapsContainedCastIndex()
+    {
+        Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var baseAddress = compiler.gtNewIconNode(TYP_REF, 0);
+            baseAddress.RegNum = REG_R1;
+            var source = compiler.gtNewIconNode(TYP_INT, 0);
+            source.RegNum = REG_R2;
+            var index = new GenTreeCast(TYP_I_IMPL, source, false, TYP_I_IMPL)
+            {
+                IsContained = true,
+            };
+            var tree = new GenTreeAddrMode(TYP_BYREF, baseAddress, index, 4, 0)
+            {
+                RegNum = REG_R0,
+            };
+
+            codeGen.genCodeForTreeNode(tree);
+
+            var descriptor = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter).Single();
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_add));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R1));
+            Assert.That(descriptor.idReg3(), Is.EqualTo(REG_R2));
+            Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_LSL));
+            Assert.That(descriptor.idSmallCns(), Is.EqualTo((nint)2));
+        });
+    }
+
+    [Test]
+    public static void LeaInstructionUnwrapsContainedBitfieldInsertIndex()
+    {
+        Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var baseAddress = compiler.gtNewIconNode(TYP_REF, 0);
+            baseAddress.RegNum = REG_R1;
+            var source = compiler.gtNewIconNode(TYP_INT, 0);
+            source.RegNum = REG_R2;
+            var cast = new GenTreeCast(TYP_I_IMPL, source, false, TYP_I_IMPL)
+            {
+                IsContained = true,
+            };
+            var shift = compiler.gtNewIconNode(TYP_INT, 2);
+            var index = new GenTreeOp(GT_BFIZ, TYP_I_IMPL, cast, shift)
+            {
+                IsContained = true,
+            };
+            var tree = new GenTreeAddrMode(TYP_BYREF, baseAddress, index, 1, 0)
+            {
+                RegNum = REG_R0,
+            };
+
+            codeGen.genCodeForTreeNode(tree);
+
+            var descriptor = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter).Single();
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_add));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R1));
+            Assert.That(descriptor.idReg3(), Is.EqualTo(REG_R2));
+            Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_LSL));
+            Assert.That(descriptor.idSmallCns(), Is.EqualTo((nint)2));
+        });
+    }
+
     private static GenTreeIntCon Register(Compiler compiler, regNumber reg)
     {
         var node = compiler.gtNewIconNode(TYP_INT, 7);

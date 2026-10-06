@@ -190,6 +190,188 @@ internal static unsafe class Arm32IndirectLoadStoreTests
         });
     }
 
+    [Test]
+    public static void LeaInstructionUsesScaledAddAndOffset()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var baseAddress = compiler.gtNewIconNode(TYP_REF, 0);
+            baseAddress.RegNum = REG_R1;
+            var index = compiler.gtNewIconNode(TYP_INT, 0);
+            index.RegNum = REG_R2;
+            var tree = new GenTreeAddrMode(TYP_BYREF, baseAddress, index, 4, 8)
+            {
+                RegNum = REG_R0,
+            };
+            codeGen.InternalRegisters.Add(tree, new regMaskTP(SRBM_R3));
+            var initialCount = CurrentDescriptors(codeGen.Emitter)?.Count ?? 0;
+
+            RecordArm32Instructions(() => codeGen.genCodeForTreeNode(tree));
+
+            var descriptors = CurrentDescriptors(codeGen.Emitter)
+                ?? throw new AssertionException("Missing descriptor buffer.");
+            var emitted = descriptors.GetRange(initialCount, descriptors.Count - initialCount);
+#if DEBUG
+            Assert.That(emitted, Has.Count.EqualTo(1));
+            Assert.That(emitted[0].idIns(), Is.EqualTo(INS_add));
+#else
+            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
+                Is.EqualTo((instruction[])[INS_add, INS_add]));
+            Assert.That(emitted[0].idReg1(), Is.EqualTo(REG_R3));
+            Assert.That(codeGen.Emitter.emitGetInsSC(emitted[0]), Is.EqualTo((nint)2));
+            Assert.That(emitted[1].idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(emitted[1].idReg2(), Is.EqualTo(REG_R3));
+            Assert.That(emitted[1].idSmallCns(), Is.EqualTo(8));
+#endif
+        });
+    }
+
+    [Test]
+    public static void LeaInstructionUsesScaledAddWithoutOffset()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var baseAddress = compiler.gtNewIconNode(TYP_REF, 0);
+            baseAddress.RegNum = REG_R1;
+            var index = compiler.gtNewIconNode(TYP_INT, 0);
+            index.RegNum = REG_R2;
+            var tree = new GenTreeAddrMode(TYP_BYREF, baseAddress, index, 4, 0)
+            {
+                RegNum = REG_R0,
+            };
+            var initialCount = CurrentDescriptors(codeGen.Emitter)?.Count ?? 0;
+
+            RecordArm32Instructions(() => codeGen.genCodeForTreeNode(tree));
+
+            var descriptors = CurrentDescriptors(codeGen.Emitter)
+                ?? throw new AssertionException("Missing descriptor buffer.");
+            var emitted = descriptors.GetRange(initialCount, descriptors.Count - initialCount);
+            Assert.That(emitted, Has.Count.EqualTo(1));
+            Assert.That(emitted[0].idIns(), Is.EqualTo(INS_add));
+            Assert.That(emitted[0].idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(emitted[0].idReg2(), Is.EqualTo(REG_R1));
+            Assert.That(emitted[0].idReg3(), Is.EqualTo(REG_R2));
+            Assert.That(codeGen.Emitter.emitGetInsSC(emitted[0]), Is.EqualTo((nint)2));
+        });
+    }
+
+    [Test]
+    public static void LeaInstructionMaterializesLargeOffsetInTemporary()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var baseAddress = compiler.gtNewIconNode(TYP_REF, 0);
+            baseAddress.RegNum = REG_R1;
+            var index = compiler.gtNewIconNode(TYP_INT, 0);
+            index.RegNum = REG_R2;
+            var tree = new GenTreeAddrMode(TYP_BYREF, baseAddress, index, 4, 0x12345678)
+            {
+                RegNum = REG_R0,
+            };
+            codeGen.InternalRegisters.Add(tree, new regMaskTP(SRBM_R3));
+            var initialCount = CurrentDescriptors(codeGen.Emitter)?.Count ?? 0;
+
+            RecordArm32Instructions(() => codeGen.genCodeForTreeNode(tree));
+
+            var descriptors = CurrentDescriptors(codeGen.Emitter)
+                ?? throw new AssertionException("Missing descriptor buffer.");
+            var emitted = descriptors.GetRange(initialCount, descriptors.Count - initialCount);
+            Assert.That(emitted, Is.Not.Empty);
+#if !DEBUG
+            Assert.That(emitted[^1].idIns(), Is.EqualTo(INS_add));
+            Assert.That(emitted[^1].idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(emitted[^1].idReg2(), Is.EqualTo(REG_R1));
+            Assert.That(emitted[^1].idReg3(), Is.EqualTo(REG_R3));
+#endif
+        });
+    }
+
+    [Test]
+    public static void LeaInstructionMaterializesLargeBaseOffsetInTemporary()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var baseAddress = compiler.gtNewIconNode(TYP_REF, 0);
+            baseAddress.RegNum = REG_R1;
+            var tree = new GenTreeAddrMode(TYP_BYREF, baseAddress, null, 0, 0x12345678)
+            {
+                RegNum = REG_R0,
+            };
+            codeGen.InternalRegisters.Add(tree, new regMaskTP(SRBM_R3));
+            var initialCount = CurrentDescriptors(codeGen.Emitter)?.Count ?? 0;
+
+            RecordArm32Instructions(() => codeGen.genCodeForTreeNode(tree));
+
+            var descriptors = CurrentDescriptors(codeGen.Emitter)
+                ?? throw new AssertionException("Missing descriptor buffer.");
+            var emitted = descriptors.GetRange(initialCount, descriptors.Count - initialCount);
+            Assert.That(emitted, Is.Not.Empty);
+#if !DEBUG
+            Assert.That(emitted[^1].idIns(), Is.EqualTo(INS_add));
+            Assert.That(emitted[^1].idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(emitted[^1].idReg2(), Is.EqualTo(REG_R1));
+            Assert.That(emitted[^1].idReg3(), Is.EqualTo(REG_R3));
+#endif
+        });
+    }
+
+    [Test]
+    public static void LeaInstructionUsesLargeSequenceForInterruptibleByref()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var baseAddress = compiler.gtNewIconNode(TYP_REF, 0);
+            baseAddress.RegNum = REG_R1;
+            var index = compiler.gtNewIconNode(TYP_INT, 0);
+            index.RegNum = REG_R2;
+            var tree = new GenTreeAddrMode(TYP_BYREF, baseAddress, index, 4, 8)
+            {
+                RegNum = REG_R0,
+            };
+            codeGen.InternalRegisters.Add(tree, new regMaskTP(SRBM_R3));
+            codeGen.Interruptible = true;
+            var initialCount = CurrentDescriptors(codeGen.Emitter)?.Count ?? 0;
+
+            RecordArm32Instructions(() => codeGen.genCodeForTreeNode(tree));
+
+            var descriptors = CurrentDescriptors(codeGen.Emitter)
+                ?? throw new AssertionException("Missing descriptor buffer.");
+            var emitted = descriptors.GetRange(initialCount, descriptors.Count - initialCount);
+            Assert.That(emitted, Is.Not.Empty);
+#if !DEBUG
+            Assert.That(emitted[^1].idIns(), Is.EqualTo(INS_add));
+            Assert.That(emitted[^1].idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(emitted[^1].idReg2(), Is.EqualTo(REG_R1));
+            Assert.That(emitted[^1].idReg3(), Is.EqualTo(REG_R3));
+#endif
+        });
+    }
+
+    [Test]
+    public static void LeaInstructionCopiesBaseForZeroOffset()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var baseAddress = compiler.gtNewIconNode(TYP_REF, 0);
+            baseAddress.RegNum = REG_R1;
+            var tree = new GenTreeAddrMode(TYP_BYREF, baseAddress, null, 0, 0)
+            {
+                RegNum = REG_R0,
+            };
+            var initialCount = CurrentDescriptors(codeGen.Emitter)?.Count ?? 0;
+
+            RecordArm32Instructions(() => codeGen.genCodeForTreeNode(tree));
+
+            var descriptors = CurrentDescriptors(codeGen.Emitter)
+                ?? throw new AssertionException("Missing descriptor buffer.");
+            var emitted = descriptors.GetRange(initialCount, descriptors.Count - initialCount);
+            Assert.That(emitted, Has.Count.EqualTo(1));
+            Assert.That(emitted[0].idIns(), Is.EqualTo(INS_mov));
+            Assert.That(emitted[0].idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(emitted[0].idReg2(), Is.EqualTo(REG_R1));
+        });
+    }
+
     [TestCase(TYP_FLOAT, 1, REG_F0, INS_vmov_i2f)]
     [TestCase(TYP_DOUBLE, 1, REG_F0, INS_vmov_i2d)]
     public static void MisalignedFloatingLocalFieldsLoadThroughIntegerRegisters(
