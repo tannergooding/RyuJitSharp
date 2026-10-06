@@ -80,8 +80,6 @@ public sealed partial class CallArg
     public bool IsUserArg => _wellKnownArg switch {
         WellKnownArg.None => true,
         WellKnownArg.ThisPointer => true,
-        WellKnownArg.ShiftLow => true,
-        WellKnownArg.ShiftHigh => true,
         WellKnownArg.SwiftError => true,
         WellKnownArg.SwiftSelf => true,
         WellKnownArg.SecretStubParam => true,

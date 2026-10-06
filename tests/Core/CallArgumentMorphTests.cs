@@ -20,6 +20,32 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CallArgumentMorphTests
 {
+    [TestCase(WellKnownArg.ShiftLow)]
+    [TestCase(WellKnownArg.ShiftHigh)]
+    public static void ShiftPseudoArgumentsAreExcludedFromUserIndexes(WellKnownArg kind)
+    {
+        WithCompiler(compiler => {
+            var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
+            var shift = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 1))
+                .WithWellKnownArg(kind));
+            var first = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 2)));
+            var second = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_INT, 3)));
+
+            Assert.That(shift.IsUserArg, Is.False);
+            Assert.That(shift.IsArgAddedLate, Is.False);
+            Assert.That(call.Args.CountArgs(), Is.EqualTo(3));
+            Assert.That(call.Args.CountUserArgs(), Is.EqualTo(2));
+            Assert.That(call.Args.GetUserArgByIndex(0), Is.SameAs(first));
+            Assert.That(call.Args.GetUserArgByIndex(1), Is.SameAs(second));
+            Assert.That(call.Args.GetUserIndex(first), Is.Zero);
+            Assert.That(call.Args.GetUserIndex(second), Is.EqualTo(1));
+#if DEBUG
+            string name = kind == WellKnownArg.ShiftLow ? "shift low" : "shift high";
+            Assert.That(compiler.gtGetWellKnownArgNameForArgMsg(kind), Is.EqualTo(name));
+#endif
+        });
+    }
+
     [TestCase(0)]
     [TestCase(2)]
     public static void EffectiveUsesUpdateTheirOwningSlotWithoutDiscardingCommas(int depth)
