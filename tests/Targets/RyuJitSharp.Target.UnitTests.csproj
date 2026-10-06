@@ -78,6 +78,7 @@
     <Compile Include="..\Core\RegMaskOperationFamilyTests.cs" Link="RegMaskOperationFamilyTests.cs" />
     <Compile Include="..\Core\EmitterFrameReferenceTests.cs" Link="EmitterFrameReferenceTests.cs" />
     <Compile Include="..\Core\Arm32CodeGenUnsupportedNodesTests.cs" Link="Arm32CodeGenUnsupportedNodesTests.cs" />
+    <Compile Include="..\Core\Arm32FuncletPrologEpilogTests.cs" Link="Arm32FuncletPrologEpilogTests.cs" />
     <Compile Include="..\Core\Arm32LocalHeapAndFrameSetupTests.cs" Link="Arm32LocalHeapAndFrameSetupTests.cs" />
     <Compile Include="..\Core\CodeGenSiVarLocDiagnosticsTests.cs" Link="CodeGenSiVarLocDiagnosticsTests.cs" />
     <Compile Include="..\Core\ArmUnwindPortTests.cs" Link="ArmUnwindPortTests.cs" />
