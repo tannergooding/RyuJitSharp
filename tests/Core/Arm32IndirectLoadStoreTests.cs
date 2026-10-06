@@ -112,6 +112,125 @@ internal static unsafe class Arm32IndirectLoadStoreTests
     }
 
     [Test]
+    public static void LocalVariableLoadsUseTheirAssignedRegisterAndStackHome()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            InitializeStackLocal(compiler, codeGen);
+            var tree = compiler.gtNewLclvNode(TYP_INT, 0);
+            tree.RegNum = REG_R0;
+
+            codeGen.genCodeForLclVar(tree);
+
+            var descriptor = LastInstruction(codeGen.Emitter);
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_ldr));
+            Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_4BYTE));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(descriptor.idIsLclVar(), Is.True);
+            Assert.That(descriptor.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
+            Assert.That(descriptor.idAddr().iiaLclVar.lvaOffset(), Is.Zero);
+        });
+    }
+
+    [Test]
+    public static void LocalFieldStoresUseTheFieldOffsetAndSourceRegister()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            InitializeStackLocal(compiler, codeGen);
+            compiler.lvaTable[0].Type = TYP_LONG;
+            var value = compiler.gtNewIconNode(TYP_INT, 7);
+            value.RegNum = REG_R1;
+            var tree = compiler.gtNewStoreLclFldNode(TYP_INT, 0, 4, value);
+
+            codeGen.genCodeForStoreLclFld(tree);
+
+            var descriptor = LastInstruction(codeGen.Emitter);
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_str));
+            Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_4BYTE));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R1));
+            Assert.That(descriptor.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
+            Assert.That(descriptor.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(4u));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+        });
+    }
+
+    [Test]
+    public static void LocalVariableStoresUseTheStackHome()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            InitializeStackLocal(compiler, codeGen);
+            var value = compiler.gtNewIconNode(TYP_INT, 7);
+            value.RegNum = REG_R1;
+            var tree = compiler.gtNewStoreLclVarNode(0, value);
+            tree.RegNum = REG_NA;
+
+            codeGen.genCodeForStoreLclVar(tree);
+
+            var descriptor = LastInstruction(codeGen.Emitter);
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_str));
+            Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_4BYTE));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R1));
+            Assert.That(descriptor.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
+            Assert.That(descriptor.idAddr().iiaLclVar.lvaOffset(), Is.Zero);
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+        });
+    }
+
+    [Test]
+    public static void LongLocalStoresWriteBothWordsAtTheirNativeOffsets()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            InitializeStackLocal(compiler, codeGen);
+            compiler.lvaTable[0].Type = TYP_LONG;
+            var low = compiler.gtNewIconNode(TYP_INT, 7);
+            low.RegNum = REG_R1;
+            var high = compiler.gtNewIconNode(TYP_INT, 9);
+            high.RegNum = REG_R2;
+            var value = new GenTreeOp(GT_LONG, TYP_LONG, low, high);
+            var tree = compiler.gtNewStoreLclVarNode(0, value);
+            tree.RegNum = REG_NA;
+
+            codeGen.genCodeForStoreLclVar(tree);
+
+            var descriptors = CurrentDescriptors(codeGen.Emitter)
+                ?? throw new AssertionException("Missing descriptor buffer.");
+            Assert.That(descriptors.ConvertAll(static descriptor => descriptor.idIns()),
+                Is.EqualTo((instruction[])[INS_str, INS_str]));
+            Assert.That(descriptors.ConvertAll(static descriptor => descriptor.idReg1()),
+                Is.EqualTo((regNumber[])[REG_R1, REG_R2]));
+            Assert.That(descriptors.ConvertAll(static descriptor => descriptor.idAddr().iiaLclVar.lvaOffset()),
+                Is.EqualTo((uint[])[0, 4]));
+        });
+    }
+
+    [Test]
+    public static void IntegerDivisionUsesTheArmSignedDivideInstruction()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var dividend = compiler.gtNewIconNode(TYP_INT, 7);
+            dividend.RegNum = REG_R1;
+            var divisor = compiler.gtNewIconNode(TYP_INT, 3);
+            divisor.RegNum = REG_R2;
+            var tree = new GenTreeOp(GT_DIV, TYP_INT, dividend, divisor)
+            {
+                RegNum = REG_R0,
+            };
+
+            codeGen.genCodeForDivMod(tree);
+
+            var descriptor = LastInstruction(codeGen.Emitter);
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_sdiv));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R1));
+            Assert.That(descriptor.idReg3(), Is.EqualTo(REG_R2));
+        });
+    }
+
+    [Test]
     public static void IndexAddressUsesScaledAddAndElementOffset()
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
