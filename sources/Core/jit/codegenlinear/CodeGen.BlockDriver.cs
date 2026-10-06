@@ -416,13 +416,6 @@ public sealed partial class CodeGen
 #endif
     }
 
-#if TARGET_ARM64
-    private void genZeroInitializeUnknownSizeFrame()
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 unknown-size frame initialization is not ported.");
-    }
-#endif
-
     private void SubtractStackLevel(uint adjustment)
     {
         assert(genStackLevel >= adjustment);

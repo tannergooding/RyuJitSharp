@@ -207,9 +207,9 @@ internal static unsafe class Arm64CodeGenPortTests
             Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R1));
             Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_R2));
             Assert.That(descriptors[0].idInsOpt(), Is.EqualTo(scaleOption));
-            Assert.That(descriptors[0].idSmallCns(), Is.EqualTo((nint)scale));
+            Assert.That(descriptors[0].idSmallCns(), Is.EqualTo(scale));
             Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_add));
-            Assert.That(descriptors[1].idSmallCns(), Is.EqualTo((nint)16));
+            Assert.That(descriptors[1].idSmallCns(), Is.EqualTo(16));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur,
                 Is.EqualTo(regMaskTP.CreateFromRegNum(REG_R0, REG_R0.SingleTypeMask)));
         });
@@ -274,10 +274,10 @@ internal static unsafe class Arm64CodeGenPortTests
             Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R1));
             Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_R2));
             Assert.That(descriptors[0].idInsOpt(), Is.EqualTo(INS_OPTS_LSL));
-            Assert.That(descriptors[0].idSmallCns(), Is.EqualTo((nint)2));
+            Assert.That(descriptors[0].idSmallCns(), Is.EqualTo(2));
             Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R0));
             Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_R3));
-            Assert.That(descriptors[1].idSmallCns(), Is.EqualTo((nint)8));
+            Assert.That(descriptors[1].idSmallCns(), Is.EqualTo(8));
         });
     }
 
@@ -307,7 +307,7 @@ internal static unsafe class Arm64CodeGenPortTests
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R1));
             Assert.That(descriptor.idReg3(), Is.EqualTo(REG_R2));
             Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_LSL));
-            Assert.That(descriptor.idSmallCns(), Is.EqualTo((nint)2));
+            Assert.That(descriptor.idSmallCns(), Is.EqualTo(2));
         });
     }
 
@@ -342,7 +342,7 @@ internal static unsafe class Arm64CodeGenPortTests
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R1));
             Assert.That(descriptor.idReg3(), Is.EqualTo(REG_R2));
             Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_LSL));
-            Assert.That(descriptor.idSmallCns(), Is.EqualTo((nint)2));
+            Assert.That(descriptor.idSmallCns(), Is.EqualTo(2));
         });
     }
 
@@ -397,6 +397,66 @@ internal static unsafe class Arm64CodeGenPortTests
         });
     }
 #endif
+
+    [Test]
+    public static void UnknownSizeFrameInitializationUnrollsFiveVectorStores()
+    {
+        Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compUsesUnknownSizeFrame = true;
+            compiler.unkSizeFrame.nVector = 5;
+            compiler.unkSizeFrame.FinalizeLayout();
+
+            codeGen.genZeroInitializeUnknownSizeFrame();
+
+            var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
+            Assert.That(descriptors.ConvertAll(static descriptor => descriptor.idIns()),
+                Is.EqualTo((instruction[])
+                [
+                    INS_sve_mov, INS_sve_str, INS_sve_str, INS_sve_str, INS_sve_str, INS_sve_str,
+                ]));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_SCRATCH_V));
+            Assert.That(descriptors[0].idInsOpt(), Is.EqualTo(INS_OPTS_SCALABLE_B));
+
+            for (var index = 0; index < 5; index++)
+            {
+                var descriptor = descriptors[index + 1];
+                Assert.That(descriptor.idReg1(), Is.EqualTo(REG_SCRATCH_V));
+                Assert.That(descriptor.idReg2(), Is.EqualTo(REG_ZR));
+                Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)index));
+            }
+        });
+    }
+
+    [Test]
+    public static void UnknownSizeFrameInitializationUsesLoopAboveFiveVectors()
+    {
+        Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compCurBB = new BasicBlock(null, null);
+            compiler.compUsesUnknownSizeFrame = true;
+            compiler.unkSizeFrame.nVector = 6;
+            compiler.unkSizeFrame.FinalizeLayout();
+
+            codeGen.genZeroInitializeUnknownSizeFrame();
+
+            var descriptors = Arm64CodeGenLocalVariableTests.AllDescriptors(codeGen);
+            Assert.That(descriptors.ConvertAll(static descriptor => descriptor.idIns()),
+                Is.EqualTo((instruction[])[INS_sve_mov, INS_mov, INS_sve_addvl, INS_sve_str, INS_cmp, INS_bne]));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_SCRATCH_V));
+            Assert.That(descriptors[0].idInsOpt(), Is.EqualTo(INS_OPTS_SCALABLE_B));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_SCRATCH));
+            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_UNKBASE));
+            Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_SCRATCH));
+            Assert.That(descriptors[2].idReg2(), Is.EqualTo(REG_SCRATCH));
+            Assert.That(Emitter.emitGetInsSC(descriptors[2]), Is.EqualTo((nint)(-1)));
+            Assert.That(descriptors[3].idReg1(), Is.EqualTo(REG_SCRATCH_V));
+            Assert.That(descriptors[3].idReg2(), Is.EqualTo(REG_SCRATCH));
+            Assert.That(descriptors[4].idReg1(), Is.EqualTo(REG_ZR));
+            Assert.That(descriptors[4].idReg2(), Is.EqualTo(REG_SCRATCH));
+            Assert.That(descriptors[4].idInsOpt(), Is.EqualTo(INS_OPTS_UXTX));
+        });
+    }
 
     private static GenTreeIntCon Register(Compiler compiler, regNumber reg)
     {
