@@ -89,7 +89,9 @@ public sealed partial class CodeGen
 #if !TARGET_WASM
     public void genLclHeap(GenTree tree)
     {
-#if TARGET_ARM64
+#if TARGET_ARM
+        genLclHeapArm32(tree);
+#elif TARGET_ARM64
         genLclHeapArm64(tree);
 #elif TARGET_LOONGARCH64
         genLclHeapLoongArch64(tree);

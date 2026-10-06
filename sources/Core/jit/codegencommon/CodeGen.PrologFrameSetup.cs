@@ -11,6 +11,15 @@ public sealed partial class CodeGen
     {
 #if TARGET_ARM64
         genEstablishFramePointerArm64(delta, reportUnwindData);
+#elif TARGET_ARM
+        assert(Emitter.emitGeneratingPrologOrFuncletProlog());
+        assert(arm_Valid_Imm_For_Add_SP(delta));
+        Emitter.emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, delta, INS_FLAGS_DONT_CARE);
+
+        if (reportUnwindData)
+        {
+            _compiler.unwindPadding();
+        }
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Frame pointer establishment is not ported for this target.");
 #else
@@ -37,6 +46,40 @@ public sealed partial class CodeGen
     {
 #if TARGET_ARM64
         genAllocLclFrameArm64(frameSize, initReg, ref initRegZeroed, maskArgRegsLiveIn);
+#elif TARGET_ARM
+        assert(Emitter.emitGeneratingPrologOrFuncletProlog());
+
+        if (frameSize == 0)
+        {
+            return;
+        }
+
+        var pageSize = unchecked((uint)_compiler.eeGetPageSize());
+        assert(!_compiler.compHasSecretStubArgument() || (REG_SECRET_STUB_PARAM != initReg));
+
+        if (frameSize < pageSize)
+        {
+            Emitter.emitIns_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, unchecked((nint)frameSize));
+        }
+        else
+        {
+            genInstrWithConstant(INS_sub, EA_PTRSIZE, REG_STACK_PROBE_HELPER_ARG, REG_SPBASE,
+                unchecked((nint)frameSize), REG_STACK_PROBE_HELPER_ARG, INS_FLAGS_DONT_CARE);
+            _regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);
+            genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN, REG_STACK_PROBE_HELPER_CALL_TARGET);
+            _regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_CALL_TARGET);
+            _compiler.unwindPadding();
+            _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE, REG_STACK_PROBE_HELPER_ARG, canSkip: false);
+
+            var clobberMask = new regMaskTP(SRBM_STACK_PROBE_HELPER_ARG | SRBM_STACK_PROBE_HELPER_CALL_TARGET |
+                SRBM_STACK_PROBE_HELPER_TRASH);
+            if ((genRegMask(initReg) & clobberMask).IsNonEmpty)
+            {
+                initRegZeroed = false;
+            }
+        }
+
+        _compiler.unwindAllocStack(frameSize);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Local frame allocation is not ported for this target.");
 #else
