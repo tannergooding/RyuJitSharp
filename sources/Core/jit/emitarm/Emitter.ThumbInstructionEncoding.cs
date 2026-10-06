@@ -59,6 +59,16 @@ public partial class Emitter
         return result;
     }
 
+    internal static uint insEncodeBitFieldImm(int imm)
+    {
+        assert((imm & 0x03FF) == imm);
+        var result = (uint)(imm & 0x001F);
+        result |= (uint)(imm & 0x0060) << 1;
+        result |= (uint)(imm & 0x0380) << 5;
+
+        return result;
+    }
+
     internal static uint insEncodePUW_G0(insOpts options, int imm)
     {
         uint result = 0;
