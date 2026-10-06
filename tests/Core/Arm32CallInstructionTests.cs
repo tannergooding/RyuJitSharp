@@ -15,6 +15,8 @@ using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
+using static RyuJitSharp.gtCallTypes;
+using static RyuJitSharp.var_types;
 using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
 namespace RyuJitSharp.UnitTests;
@@ -22,6 +24,32 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm32CallInstructionTests
 {
+    [Test]
+    public static void DirectCallNodesMaterializeOutOfRangeTargets()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.info.compMatchedVM = false;
+            compiler.lvaTrackedCount = 1;
+            compiler.lvaTrackedCountInSizeTUnits = 1;
+            codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
+            var call = new GenTreeCall(TYP_VOID)
+            {
+                _callType = CT_USER_FUNC,
+                _callMethHnd = (CORINFO_METHOD_STRUCT_*)0x2000,
+                _directCallAddress = (void*)0x1234,
+            };
+
+            codeGen.InternalRegisters.Add(call, new regMaskTP(SRBM_R12));
+            codeGen.genCall(call);
+
+            var id = LastInstruction(codeGen.Emitter) ??
+                throw new AssertionException("Missing direct call descriptor.");
+            Assert.That(id.idIns(), Is.EqualTo(INS_blx));
+            Assert.That(id.idReg3(), Is.EqualTo(REG_R12));
+        });
+    }
+
     [TestCase(false, INS_bl)]
     [TestCase(true, INS_b)]
     public static void DirectCallsRecordThumb2BranchesAndGcState(bool isJump, instruction expectedInstruction)
@@ -37,7 +65,7 @@ internal static unsafe class Arm32CallInstructionTests
             parameters.gcrefRegs = new(SRBM_R0 | SRBM_R4);
             parameters.byrefRegs = new(SRBM_R5);
 
-            RecordArm32Call(() => codeGen.Emitter.emitIns_Call(parameters));
+            codeGen.Emitter.emitIns_Call(parameters);
 
             var id = LastInstruction(codeGen.Emitter) ??
                 throw new AssertionException("Missing direct call descriptor.");
@@ -66,7 +94,7 @@ internal static unsafe class Arm32CallInstructionTests
             compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_AOT);
             var parameters = Parameters(compiler, EC_FUNC_TOKEN);
 
-            RecordArm32Call(() => codeGen.Emitter.emitIns_Call(parameters));
+            codeGen.Emitter.emitIns_Call(parameters);
 
             var id = LastInstruction(codeGen.Emitter) ??
                 throw new AssertionException("Missing direct call descriptor.");
@@ -94,7 +122,7 @@ internal static unsafe class Arm32CallInstructionTests
             parameters.noSafePoint = !isJump;
             LastMemBarrier(codeGen.Emitter) = new Emitter.instrDescJmp();
 
-            RecordArm32Call(() => codeGen.Emitter.emitIns_Call(parameters));
+            codeGen.Emitter.emitIns_Call(parameters);
 
             var id = LastInstruction(codeGen.Emitter) ??
                 throw new AssertionException("Missing register call descriptor.");
@@ -135,18 +163,6 @@ internal static unsafe class Arm32CallInstructionTests
 
     private static Emitter.instrDesc? LastInstruction(Emitter emitter)
         => Last(emitter);
-
-    private static void RecordArm32Call(TestDelegate action)
-    {
-#if DEBUG
-        var failure = Assert.Throws<FatalJitException>(action) ??
-            throw new AssertionException("Missing expected ARM target skip.");
-        Assert.That(failure.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-        Assert.That(failure.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
-        action();
-#endif
-    }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]
     private static extern ref Emitter.instrDesc? Last(Emitter emitter);

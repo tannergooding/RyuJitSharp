@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
-    "nextAction": "ARMARCH genFnEpilog is now accepted: the root-epilog regression passed on linux-arm Debug/Release and win-arm64 Debug/Release (1/1 each), and its exact native definition is retired. Continue serial acceptance at ARMARCH genCall and genCallInstruction from native residual HEAD; inspect their exact managed dependency closure, preserve unfinished branches, retire eligible native text, and commit a validated coherent unit before moving to genCreateAndStoreGCInfo.",
+    "nextAction": "ARMARCH genCall and genCallInstruction are now accepted as one call-generation unit: focused call tests passed ARM32 Debug/Release 11/11 each and ARM64 Debug/Release 23/23 each; their exact native definitions are retired. Continue at genCreateAndStoreGCInfo in codegenarmarch.cpp:1410 from the consolidated native HEAD; verify its managed mapping and dependency closure, preserve unfinished target paths, then retire eligible native text before committing the validated managed unit.",
     "activeBatch": {
       "scope": "Complete a six-lane whole-function sweep of the available root-level residual JIT files: 60 small files and all six 100-200 KB files, with exact disjoint ownership recorded in session task state. Prioritize shared compiler/emitter work for Windows x64 acceptance; allow independent target-specific lanes to proceed. Keep the four user-edited native files untouched and reserve the three >=200 KB files for serial coordinator work.",
       "doneWhen": "Each assigned lane has completed every eligible whole function in its owned native files, preserved unfinished target branches and terminating NYI dependencies, added only focused regression coverage for concrete defects/adaptations, and removed exact eligible native definitions/declarations. The coordinator then accepts each lane with serial full-analysis validation, amends the single consolidated runtime-port retirement commit, and commits each validated managed lane. The three largest files and four reserved user-edited files remain explicitly outside this batch.",
       "validation": "Workers do not build or test. After they pause, review each lane against the pinned oracle and managed APIs, then run full-analysis Windows-x64 validation serially at lane boundaries, followed by focused target unit tests for affected ARM, RISC-V, Wasm or other alternate paths. Native retirement must be compared against exact oracle spans and preserve every unfinished caller branch. Descriptor/build evidence for an alternate target is not execution parity.",
-      "latestValidation": "Full-analysis Windows-x64 Debug passed 17,226/17,226 and Release passed 15,506/15,506. Focused target suites passed in Debug/Release: ARM32 738/738 and 664/664; Windows ARM64 4,095/4,095 and 3,823/3,823; LoongArch64 227/227 and 207/207; RISC-V64 245/245 in both; Wasm 206/206 and 207/207. Linux ARM64 builds succeeded, but both target configurations have 18 failures at the explicitly unsupported Emitter.Arm64CallDescriptorSize layout; this is not execution parity. The direct hashBvIterator regression suite passed 14/14 Debug and 13/13 Release. LoongArch and RISC-V OSR root-prolog branches preserve native restore order, FP-relative offsets, FP/RA loads and phantom frame allocation; their native definitions are retired while the shared declaration remains. The ARMARCH genCodeForTreeNode and genPutArgStk bodies were restored because their managed paths remain incomplete. Native residual HEAD is tracked below; unrelated native user edits remain untouched. The ARMARCH root-epilog regression passed 1/1 in linux-arm Debug/Release and win-arm64 Debug/Release; each focused target build succeeded. This is focused code-generation evidence, not full target parity.",
+      "latestValidation": "Full-analysis Windows-x64 Debug passed 17,226/17,226 and Release passed 15,506/15,506. Focused target suites passed in Debug/Release: ARM32 738/738 and 664/664; Windows ARM64 4,095/4,095 and 3,823/3,823; LoongArch64 227/227 and 207/207; RISC-V64 245/245 in both; Wasm 206/206 and 207/207. Linux ARM64 builds succeeded, but both target configurations have 18 failures at the explicitly unsupported Emitter.Arm64CallDescriptorSize layout; this is not execution parity. The direct hashBvIterator regression suite passed 14/14 Debug and 13/13 Release. LoongArch and RISC-V OSR root-prolog branches preserve native restore order, FP-relative offsets, FP/RA loads and phantom frame allocation; their native definitions are retired while the shared declaration remains. The ARMARCH genCodeForTreeNode and genPutArgStk bodies were restored because their managed paths remain incomplete. Native residual HEAD is tracked below; unrelated native user edits remain untouched. The ARMARCH root-epilog regression passed 1/1 in linux-arm Debug/Release and win-arm64 Debug/Release; each focused target build succeeded. This is focused code-generation evidence, not full target parity. ARMARCH genCall/genCallInstruction direct-call tests and call descriptor/helper tests passed: ARM32 Debug/Release 11/11 each and ARM64 Debug/Release 23/23 each; focused builds succeeded. This is targeted call-generation evidence, not full target parity.",
       "deferred": [
         "The three largest residual files (emitloongarch64.cpp, emitarm64sve.cpp and codegenarm64test.cpp) are coordinator-owned follow-on batches, not worker assignments.",
         "Do not modify or retire from the pre-existing dirty native files jit.h, lsra.cpp, target.h and unwindx86.cpp until their user-owned changes can be preserved and reconciled.",
@@ -24,9 +24,9 @@
       ],
       "retirement": {
         "oracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
-        "nativeResidualCommit": "3995723614e87e354ad3d2b15925399c6e9e75f0",
+        "nativeResidualCommit": "cf586bf4f9d98173c0b82e863a941678daf26d69",
         "completionGate": "Retire whole eligible definitions and orphan declarations in the same accepted batch, before its managed completion commit. Keep untranslated helpers and target branches in the residual; an absent definition is not evidence that it was ported.",
-        "nextDebtCursor": "At consolidated native residual HEAD 3995723614e87e354ad3d2b15925399c6e9e75f0 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), hashBvIterator and completed hashBv operations, ARM/ARM64 genLeaInstruction and its native GT_LEA dispatch case, ARMARCH genScaledAdd, ARM64 genUnknownSizeFrame, and genZeroInitializeUnknownSizeFrame definitions are retired. Residual hashbv.cpp/hashbv.h retain only MergeLists and assert-only getRehashForIndex stubs; the zero-initialization caller remains. ARMARCH genFnEpilog and its documentation are now retired; keep shared codegen.h declaration for LoongArch/RISC-V. Preserve prior recovery refs and refs/copilot-recovery/runtime-port-before-armarch-epilog-a82e6798 (pre-amend a82e67989f21d0d20ae242818b0799ce297fce07), plus unrelated native user edits in jit.h, lsra.cpp, target.h and unwindx86.cpp. Next acceptance cursor: genCall and genCallInstruction at codegenarmarch.cpp:1076/1246 in native residual HEAD; then genCreateAndStoreGCInfo at :1790. Do not claim global debt clearance."
+        "nextDebtCursor": "At consolidated native residual HEAD cf586bf4f9d98173c0b82e863a941678daf26d69 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), hashBvIterator and completed hashBv operations, ARM/ARM64 genLeaInstruction and its native GT_LEA dispatch case, ARMARCH genScaledAdd, ARM64 genUnknownSizeFrame, genZeroInitializeUnknownSizeFrame, ARMARCH genFnEpilog, genCall and genCallInstruction definitions are retired. Shared codegen.h call declarations remain required by other targets. Residual hashbv.cpp/hashbv.h retain only MergeLists and assert-only getRehashForIndex stubs; the zero-initialization caller remains. Preserve prior recovery refs and refs/copilot-recovery/runtime-port-before-armarch-call-retirement-39957236 (pre-amend 3995723614e87e354ad3d2b15925399c6e9e75f0), plus unrelated native user edits in jit.h, lsra.cpp, target.h and unwindx86.cpp. Next debt cursor: genCreateAndStoreGCInfo at codegenarmarch.cpp:1410; do not claim global debt clearance."
       }
     },
     "validationResourcePolicy": {
@@ -58,7 +58,7 @@
     },
     "residualReconciliation": {
       "status": "in-progress",
-      "nextDebtCursor": "At consolidated native residual HEAD 3995723614e87e354ad3d2b15925399c6e9e75f0, genCodeForIndexAddr and its ARMARCH dispatch case remain retired; codegen.h remains required by RISC-V. ARMARCH genFnEpilog and its documentation are retired with focused ARM/ARM64 root-return tests passing in Debug/Release. Continue at genCall and genCallInstruction (native HEAD lines 1076 and 1246); retain the shared declaration. Then inspect genCreateAndStoreGCInfo (native HEAD line 1790). Preserve existing recovery refs and unrelated native WIP."
+      "nextDebtCursor": "At consolidated native residual HEAD cf586bf4f9d98173c0b82e863a941678daf26d69, genFnEpilog, genCall and genCallInstruction are retired with focused ARM32/ARM64 Debug/Release tests passing; retain shared codegen.h declarations needed by other targets. Existing index-address retirement remains intact. Continue with genCreateAndStoreGCInfo at codegenarmarch.cpp:1410; preserve existing recovery refs and unrelated native WIP."
     },
     "windowsCompletionAssessment": {
       "status": "remaining-source-review",
@@ -71,7 +71,7 @@
       "ref": "refs/porting/snapshots/2026-09-22-csharp-wip"
     },
     "nativeResidual": {
-      "commit": "3995723614e87e354ad3d2b15925399c6e9e75f0",
+      "commit": "cf586bf4f9d98173c0b82e863a941678daf26d69",
       "ref": "refs/heads/main"
     },
     "nativePreIndexAddrRetirement": {
@@ -225,6 +225,10 @@
     "nativePreArmArchEpilogRetirement": {
       "commit": "a82e67989f21d0d20ae242818b0799ce297fce07",
       "ref": "refs/copilot-recovery/runtime-port-before-armarch-epilog-a82e6798"
+    },
+    "nativePreArmArchCallRetirement": {
+      "commit": "3995723614e87e354ad3d2b15925399c6e9e75f0",
+      "ref": "refs/copilot-recovery/runtime-port-before-armarch-call-retirement-39957236"
     }
   },
   "sourceMap": [

@@ -4,10 +4,10 @@
 using System.Linq;
 using NUnit.Framework;
 using static RyuJitSharp.CorInfoHelpFunc;
-using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.gtCallTypes;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
@@ -15,10 +15,37 @@ using static RyuJitSharp.var_types;
 namespace RyuJitSharp.UnitTests;
 
 [NonParallelizable]
-internal static class Arm64CodeGenHelperCallTests
+internal static unsafe class Arm64CodeGenHelperCallTests
 {
     [Test]
-    public static void DirectHelperLookupReachesTheExplicitUnportedCallRecorder()
+    public static void DirectCallNodesRecordTheArchitectureCall()
+    {
+        Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.info.compMatchedVM = false;
+            compiler.lvaTrackedCount = 1;
+            compiler.lvaTrackedCountInSizeTUnits = 1;
+            codeGen.GCInfo.gcVarPtrSetCur = [0];
+            codeGen.GCInfo.gcRegGCrefSetCur = default;
+            codeGen.GCInfo.gcRegByrefSetCur = default;
+            var call = new GenTreeCall(TYP_VOID)
+            {
+                _callType = CT_USER_FUNC,
+                _callMethHnd = (CORINFO_METHOD_STRUCT_*)0x2000,
+                _directCallAddress = (void*)0x1234,
+            };
+
+            codeGen.genCall(call);
+
+            var descriptors = Arm64CodeGenLocalVariableTests.AllDescriptors(codeGen);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_bl));
+            Assert.That((nint)descriptors[0].idAddr().iiaAddr, Is.EqualTo((nint)call._directCallAddress));
+        });
+    }
+
+    [Test]
+    public static void DirectHelperLookupRecordsTheCall()
     {
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
@@ -27,18 +54,16 @@ internal static class Arm64CodeGenHelperCallTests
             codeGen.GCInfo.gcRegGCrefSetCur = default;
             codeGen.GCInfo.gcRegByrefSetCur = default;
 
-            var failure = Assert.Throws<FatalJitException>(() =>
-                codeGen.genEmitHelperCall(CORINFO_HELP_STOP_FOR_GC, 0, EA_UNKNOWN)) ??
-                throw new AssertionException("The unported ARM64 call recorder did not fail.");
+            codeGen.genEmitHelperCall(CORINFO_HELP_STOP_FOR_GC, 0, EA_UNKNOWN);
 
-            Assert.That(failure.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure.Message, Is.EqualTo("Call instruction recording requires xarch."));
-            Assert.That(Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter), Is.Empty);
+            var descriptors = Arm64CodeGenLocalVariableTests.AllDescriptors(codeGen);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_bl));
         });
     }
 
     [Test]
-    public static void ReturnTrapEmitsTheConditionalSkipBeforeTheUnportedCallRecorder()
+    public static void ReturnTrapEmitsTheConditionalSkipBeforeTheHelperCall()
     {
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
@@ -61,15 +86,11 @@ internal static class Arm64CodeGenHelperCallTests
             data.RegNum = REG_R3;
             var tree = new GenTreeUnOp(GT_RETURNTRAP, TYP_VOID, data);
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForReturnTrap(tree)) ??
-                throw new AssertionException("The unported ARM64 call recorder did not fail.");
+            codeGen.genCodeForReturnTrap(tree);
 
-            Assert.That(failure.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure.Message, Is.EqualTo("Call instruction recording requires xarch."));
-
-            var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
-            Assert.That(descriptors.Select(descriptor => descriptor.idIns()),
-                Is.EqualTo((instruction[])[INS_cmp, INS_beq]));
+            var descriptors = Arm64CodeGenLocalVariableTests.AllDescriptors(codeGen);
+            Assert.That(descriptors.Select(descriptor => descriptor.idIns()).ToArray(),
+                Is.EqualTo((instruction[])[INS_cmp, INS_beq, INS_bl]));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_4BYTE));
             Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3));
         });

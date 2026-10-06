@@ -7,6 +7,8 @@
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.CorInfoHelpFunc;
+using static RyuJitSharp.EmitCallType;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
@@ -20,22 +22,36 @@ internal static unsafe class Arm64EmitterCallAllocationTests
 {
     [TestCase(false)]
     [TestCase(true)]
-    public static void CallsCaptureCurrentGcStateBeforeTheUnportedRecorder(bool jump)
+    public static void CallsCaptureCurrentGcStateBeforeRecordingTheirDescriptor(bool jump)
     {
-        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-        var codeGen = new CodeGen(compiler);
-        codeGen.GCInfo.gcVarPtrSetCur = [0];
-        codeGen.GCInfo.gcRegGCrefSetCur = new regMaskTP(SRBM_R19);
-        codeGen.GCInfo.gcRegByrefSetCur = new regMaskTP(SRBM_R20);
-        var parameters = new EmitCallParams { argSize = 16, isJump = jump };
+        Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaTrackedCount = 1;
+            compiler.lvaTrackedCountInSizeTUnits = 1;
+            compiler.info.compMatchedVM = false;
+            codeGen.GCInfo.gcVarPtrSetCur = [0];
+            codeGen.GCInfo.gcRegGCrefSetCur = new regMaskTP(SRBM_R19);
+            codeGen.GCInfo.gcRegByrefSetCur = new regMaskTP(SRBM_R20);
+            var parameters = new EmitCallParams
+            {
+                callType = EC_FUNC_TOKEN,
+                methHnd = Compiler.eeFindHelper(CORINFO_HELP_STOP_FOR_GC),
+                addr = (void*)0x12345678,
+                retSize = EA_UNKNOWN,
+                isJump = jump,
+            };
 
-        Assert.That(() => codeGen.genEmitCallWithCurrentGC(ref parameters), Throws.TypeOf<FatalJitException>());
+            codeGen.genEmitCallWithCurrentGC(ref parameters);
 
-        Assert.That(parameters.ptrVars, Is.SameAs(codeGen.GCInfo.gcVarPtrSetCur));
-        Assert.That(parameters.gcrefRegs, Is.EqualTo(new regMaskTP(SRBM_R19)));
-        Assert.That(parameters.byrefRegs, Is.EqualTo(new regMaskTP(SRBM_R20)));
-        Assert.That(parameters.argSize, Is.EqualTo((nint)16));
-        Assert.That(parameters.isJump, Is.EqualTo(jump));
+            Assert.That(parameters.ptrVars, Is.SameAs(codeGen.GCInfo.gcVarPtrSetCur));
+            Assert.That(parameters.gcrefRegs, Is.EqualTo(new regMaskTP(SRBM_R19)));
+            Assert.That(parameters.byrefRegs, Is.EqualTo(new regMaskTP(SRBM_R20)));
+            Assert.That(parameters.argSize, Is.EqualTo((nint)0));
+            Assert.That(parameters.isJump, Is.EqualTo(jump));
+            var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(jump ? INS_b_tail : INS_bl));
+        });
     }
 
     [TestCase(-65, false)]
