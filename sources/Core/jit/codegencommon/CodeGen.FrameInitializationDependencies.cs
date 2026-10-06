@@ -10,7 +10,19 @@ public sealed partial class CodeGen
 #if TARGET_ARM
     private regMaskTP genPrespilledUnmappedRegs()
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM prespilled unmapped register selection is not ported.");
+        var regs = _regSet.rsMaskPreSpillRegs(false);
+
+        if (_compiler._paramRegLocalMappings is not null)
+        {
+            foreach (var mapping in _compiler._paramRegLocalMappings)
+            {
+                var registerMask = new regMaskTP(unchecked((regMask)(
+                    (ulong)mapping.RegisterSegment.RegisterMask << mapping.RegisterSegment.RegisterMaskBase)));
+                regs &= ~registerMask;
+            }
+        }
+
+        return regs;
     }
 #endif
 

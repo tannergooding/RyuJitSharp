@@ -8,6 +8,7 @@ using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
+using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
@@ -41,23 +42,48 @@ internal static unsafe class CodeGenSharedFrameInitializationTests
             var expectedBlock = slots > 4;
 #endif
 
-#if TARGET_ARM
-            if (expectedBlock)
-            {
-                var error = Assert.Throws<FatalJitException>(codeGen.genCheckUseBlockInit);
-                Assert.That(error?.Message, Is.EqualTo("ARM prespilled unmapped register selection is not ported."));
-            }
-            else
-#endif
-            {
-                codeGen.genCheckUseBlockInit();
-            }
+            codeGen.genCheckUseBlockInit();
 
             Assert.That(compiler.lvaTable[0].lvMustInit, Is.True);
             Assert.That(codeGen.InitStkLclCnt, Is.EqualTo(slots));
             Assert.That(codeGen.UseBlockInit, Is.EqualTo(expectedBlock));
         });
     }
+
+#if TARGET_ARM
+    [Test]
+    public static void BlockInitializationDoesNotForceSpillMappedPrespilledArguments()
+    {
+        WithFrame((compiler, codeGen) =>
+        {
+            compiler.info.compInitMem = true;
+            compiler.lvaTable[0] = new LclVarDsc
+            {
+                Type = TYP_STRUCT, Layout = new ClassLayout(17),
+                RegNum = REG_STK, lvOnFrame = true,
+            };
+            compiler.lvaCount = 2;
+            compiler.lvaTable =
+            [
+                compiler.lvaTable[0],
+                new LclVarDsc { Type = TYP_INT, RegNum = REG_R0, lvIsParam = true, lvIsRegArg = true },
+            ];
+            compiler._paramRegLocalMappings =
+            [
+                new ParameterRegisterLocalMapping(
+                    AbiPassingSegment.InRegister(REG_R0, 0, TARGET_POINTER_SIZE), 1, 0),
+            ];
+            codeGen.CalleeRegArgMaskLiveIn = new regMaskTP(SRBM_R0 | SRBM_R1 | SRBM_R2);
+            codeGen.RegSet.rsMaskPreSpillRegArg = new regMaskTP(SRBM_R0 | SRBM_R1);
+            codeGen.RegSet.rsClearRegsModified();
+
+            codeGen.genCheckUseBlockInit();
+
+            Assert.That(codeGen.UseBlockInit, Is.True);
+            Assert.That(codeGen.RegSet.rsGetModifiedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_R4)));
+        });
+    }
+#endif
 
 #if TARGET_WASM
     [TestCase(TYP_REF)]

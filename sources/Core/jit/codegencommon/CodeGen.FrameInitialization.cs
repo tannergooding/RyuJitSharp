@@ -186,8 +186,8 @@ public sealed partial class CodeGen
         {
             // Force spill R4/R5/R6 so they can be used during block initialization.
             var maskCalleeRegArgMask = _calleeRegArgMaskLiveIn & RBM_ALLINT;
-            var forceSpillRegCount = ulong.PopCount(unchecked(
-                (ulong)(regMask)(maskCalleeRegArgMask & ~genPrespilledUnmappedRegs()))) - 1;
+            var forceSpillRegCount = unchecked((int)(genCountBits(
+                maskCalleeRegArgMask & ~genPrespilledUnmappedRegs()) - 1));
             if (forceSpillRegCount > 0)
             {
                 _regSet.rsSetRegsModified(RBM_R4);
