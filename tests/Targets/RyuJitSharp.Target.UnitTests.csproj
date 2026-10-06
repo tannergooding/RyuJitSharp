@@ -51,6 +51,7 @@
     <Compile Include="..\Core\Arm32InstructionFormatTests.cs" Link="Arm32InstructionFormatTests.cs" />
     <Compile Include="..\Core\Arm32InstructionCodeTests.cs" Link="Arm32InstructionCodeTests.cs" />
     <Compile Include="..\Core\Arm32CallInstructionTests.cs" Link="Arm32CallInstructionTests.cs" />
+    <Compile Include="..\Core\Arm32ThumbInstructionEncodingTests.cs" Link="Arm32ThumbInstructionEncodingTests.cs" />
     <Compile Include="..\Core\Arm32JumpRecordingTests.cs" Link="Arm32JumpRecordingTests.cs" />
     <Compile Include="..\Core\Arm32BlockLabelAddressTests.cs" Link="Arm32BlockLabelAddressTests.cs" />
     <Compile Include="..\Core\Arm32DataLabelAddressTests.cs" Link="Arm32DataLabelAddressTests.cs" />
