@@ -56,6 +56,19 @@ internal static class Arm32ThumbInstructionEncodingTests
         Assert.That(Emitter.insEncodeBitFieldImm(imm), Is.EqualTo(expected));
     }
 
+    [TestCase(0x0000, 0x00000000u)]
+    [TestCase(0x00FF, 0x000000FFu)]
+    [TestCase(0x0100, 0x00001000u)]
+    [TestCase(0x0700, 0x00007000u)]
+    [TestCase(0x0800, 0x04000000u)]
+    [TestCase(0x1000, 0x00010000u)]
+    [TestCase(0xF000, 0x000F0000u)]
+    [TestCase(0xFFFF, 0x040F70FFu)]
+    public static void MovImmediateEncodingMatchesThumb2(int imm, uint expected)
+    {
+        Assert.That(Emitter.insEncodeImmT2_Mov(imm), Is.EqualTo(expected));
+    }
+
     [TestCase(INS_OPTS_NONE, -1, 0x01000000u)]
     [TestCase(INS_OPTS_NONE, 0, 0x01800000u)]
     [TestCase(INS_OPTS_LDST_PRE_DEC, -1, 0x01200000u)]

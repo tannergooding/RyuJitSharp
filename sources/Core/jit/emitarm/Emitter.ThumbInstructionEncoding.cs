@@ -69,6 +69,17 @@ public partial class Emitter
         return result;
     }
 
+    internal static uint insEncodeImmT2_Mov(int imm)
+    {
+        assert((imm & 0x0000FFFF) == imm);
+        var result = (uint)(imm & 0x00FF);
+        result |= (uint)(imm & 0x0700) << 4;
+        result |= (uint)(imm & 0x0800) << 15;
+        result |= (uint)(imm & 0xF000) << 4;
+
+        return result;
+    }
+
     internal static uint insEncodePUW_G0(insOpts options, int imm)
     {
         uint result = 0;
