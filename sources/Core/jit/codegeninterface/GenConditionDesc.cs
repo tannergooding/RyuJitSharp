@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
+
 namespace RyuJitSharp;
 
 public readonly struct GenConditionDesc
@@ -22,16 +24,22 @@ public readonly struct GenConditionDesc
 
     public static GenConditionDesc Get(GenCondition condition)
     {
-#if TARGET_XARCH || TARGET_ARM64
-        assert((uint)condition.Code < (uint)s_map.Length);
-        var desc = s_map[(int)condition.Code];
+        ReadOnlySpan<GenConditionDesc> map = GetMap();
+        assert((uint)condition.Code < (uint)map.Length);
+        var desc = map[(int)condition.Code];
         assert(desc.JumpKind1 is not EJ_NONE);
         assert(desc.Oper is GT_NONE or GT_AND or GT_OR);
         assert((desc.Oper is GT_NONE) == (desc.JumpKind2 is EJ_NONE));
 
         return desc;
+    }
+
+    private static ReadOnlySpan<GenConditionDesc> GetMap()
+    {
+#if TARGET_XARCH || TARGET_ARM64
+        return s_map;
 #else
-        throw new System.NotImplementedException("Condition instruction mapping is not ported for this target.");
+        throw new NotImplementedException("Condition instruction mapping is not ported for this target.");
 #endif
     }
 
