@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
-    "nextAction": "The ARM32 indirect load/store caller unit is managed, full-analysis validated, and retired from the residual in consolidated commit e216db9b29e3592b30f7de843cecaedd2f2f6581. Next port the ARM32 CodeGen::genLongToIntCast, genIntToFloatCast, and genFloatToIntCast methods in codegenarm.cpp, wiring the existing genCodeForCast dispatcher and adding focused cast coverage. Preserve the unrelated native WIP and keep B184/B185 unresolved.",
+    "nextAction": "The ARM32 genLongToIntCast, genIntToFloatCast, and genFloatToIntCast methods are implemented, tested, and retired from codegenarm.cpp in consolidated native commit 8d87302ec17d6a4a23a0b7d4974a97c361f6ab02. Next port the ARM32 branch of CodeGen::inst_JMP from runtime-port/src/coreclr/jit/codegenarmarch.cpp into codegencommon/CodeGen.ArithmeticSupport.cs; this is the explicit dependency stopping checked ARM32 cast tests after their overflow-check prefix. Preserve the existing ARM64 branch, unrelated native WIP, and unresolved B184/B185.",
     "activeBatch": {
-      "scope": "Port the complete ARM32 cast codegen methods genLongToIntCast, genIntToFloatCast, and genFloatToIntCast from codegenarm.cpp, using the existing genCodeForCast dispatcher. Preserve Windows-x64 execution/parity as the first validation target, not a filter on target selection.",
-      "doneWhen": "The three ARM32 cast methods preserve native overflow checks, register consumption, instruction selection, and result production, with focused/full-analysis ARM32 tests passing and eligible native definitions retired before the managed completion commit.",
-      "validation": "Focused full-analysis unit tests (these are not target execution/parity passes): Windows-x64 Debug focused GenTree, LocalMorph, Narrowing, and condition filters passed 285/285; JitPrimeInfo, CallArgumentMorph, and BasicBlockHash passed 108/108 Debug and 106/106 Release; Windows-x64 Debug/Release focused filters passed 775/775 and 805/805; target-x86 Narrowing passed 23/23 in Debug and Release; ARM32 lowering/unwind passed 22/22 Debug and 17/17 Release, with full ARM32 Debug 443/443 and Release 374/374 after adding the AltJitAssertOnNYI=2 regression; ARM64 emitter/unwind passed 84/84 Debug and 47/47 Release; BitSetSupportTests plus BitSetUint64Tests passed 13/13 Debug; FlagSupportTests plus HardwareIntrinsicInitializationTests passed 508/508 Debug; focused LoongArch passed 127/127 Debug and 107/107 Release; focused RISC-V Debug/Release passed 118/118 in each configuration. WasmEmitter target filters passed 38/38 in Debug and Release; Windows-x64 RegisterMaskDisplay passed 1/1. ARM unwind decoder tests now pass, but opcode output assertions intentionally ignore spacing/newline padding and do not establish native-output parity. B184/B185 remain unresolved; the 65-word case is managed-only. Native residual compilation is not an acceptance gate. ARM32InstructionFormatTests passed 3/3 in Debug and 3/3 in Release; generated TARGET_ARM format table matched checked-in output. ARM32InstructionCodeTests passed 49/49 in Debug and 49/49 in Release; generated opcode columns matched generator output. ARM32InstructionFormatTests including instruction-size range boundaries passed 8/8 in Debug and 8/8 in Release, then passed 10/10 in both configurations after adding zero-operand instruction recording. ARM32JumpRecordingTests passed 23/23 Debug and 21/21 Release; after adding ARM32 block-label address recording, the full ARM32 target suite passed 538/538 Debug and 464/464 Release. Windows-x64 EmitterJumpInstructionTests passed 78/78 Debug and 70/70 Release. ARM32 data-label recording tests passed 5/5 in Debug and Release; the full ARM32 target suite passed 543/543 Debug and 469/469 Release. ARM32JumpRecordingTests then passed 25/25 Debug and 23/23 Release, and the full ARM32 target suite passed 545/545 Debug and 471/471 Release. ARM32 call-emission tests passed 10/10 focused in Debug and Release; after the final direct-call descriptor case and 32-bit layout completion, the full ARM32 target suite passed 555/555 Debug and 481/481 Release. These are managed unit tests, not ARM native execution/parity. ARM32ThumbInstructionEncodingTests passed 9/9 focused in Debug and Release; full ARM32 target suites passed 564/564 Debug and 490/490 Release. ARM32ThumbInstructionEncodingTests passed 21/21 focused in Debug and Release; full ARM32 target suites passed 576/576 Debug and 502/502 Release. ARM32ThumbInstructionEncodingTests passed 27/27, 36/36, 44/44, 59/59, and 62/62 focused in Debug and Release. After adding Thumb2 VFP register-index and M/N/D encodings, it passed 74/74 focused in Debug and Release; these are managed ARM-target tests on Windows x64, not ARM native execution/parity. ARM32ThumbInstructionEncodingTests including Thumb1/Thumb2 output writer alias, halfword-order, size, and untouched-buffer coverage passed 76/76 focused in Debug and Release; these are managed ARM-target tests run on Windows x64, not ARM native execution/parity. ARM32 ArmEmitterPredicateTests passed 54/54 focused in Debug and Release after covering load/compare/store flags and synthetic, table-boundary, out-of-range, and negative instruction values; these are managed ARM-target tests run on Windows x64, not ARM native execution/parity. ARM32 ArmEmitterPredicateTests passed 56/56 focused in Debug and Release, covering local integer-store descriptor classification and all multiple-register opcodes including the single-register IF_T2_E2 POP exception; these are managed ARM-target tests run on Windows x64, not ARM native execution/parity. ARM32 ArmEmitterPredicateTests passed 67/67 focused in Debug and Release, covering destination-format defaults and store/flag-only exceptions plus both VMOV directions; these are managed ARM-target tests run on Windows x64, not ARM native execution/parity. ARM32 ArmEmitterPredicateTests passed 72/72 focused in Debug and Release, confirming integer and floating register names delegate to the corresponding compiler register tables; these are managed ARM-target tests run on Windows x64, not ARM native execution/parity. ARM32InstructionFormatTests passed 10/10 focused in Debug and Release against every defined instruction mapping; these are managed ARM-target tests run on Windows x64, not ARM native execution/parity.",
-      "latestValidation": "Arm32IndirectLoadStoreTests passed 13/13 in Debug and 14/14 in Release; the full ARM32 target suite passed 671/671 in Debug and 598/598 in Release under full analysis. These are managed ARM32 tests run on Windows x64, not ARM native execution or parity. The shared load implementation's ARM64 build/test remains unvalidated because a prior ARM64 compile reached only the pre-existing GSCookieChecks.cs and GSCookieInitialization.cs argument-type errors.",
+      "scope": "Port the ARM32 branch of shared CodeGen::inst_JMP from codegenarmarch.cpp into codegencommon/CodeGen.ArithmeticSupport.cs. It unblocks ARM32 checked-cast overflow paths and supports the wider target's conditional branches; preserve Windows-x64 behavior and the existing ARM64 branch.",
+      "doneWhen": "ARM32 BasicBlock jumps are emitted through the target emitter with the native jump-kind mapping and applicable stack invariants, existing ARM64 behavior is unchanged, focused ARM32 jump and cast tests pass, and the eligible shared native definition is retired before the managed completion commit.",
+      "validation": "Run ARM32JumpRecordingTests and Arm32CastCodeGenTests in Debug and Release, then the full ARM32 target suite at the completion boundary. Keep ARM32 managed tests on Windows x64 distinct from ARM execution/parity; checked-cast execution currently stops at the explicit inst_JMP NYI.",
+      "latestValidation": "Arm32CastCodeGenTests passed 16/16 in Debug and 16/16 in Release; the full ARM32 target suite passed 687/687 in Debug and 614/614 in Release with the standard analysis settings. Float/integer conversions and unchecked long casts verify emitted descriptors; checked casts verify the correct TST source-register prefix and the explicit inst_JMP stub boundary. The three ARM32 cast bodies were removed from codegenarm.cpp in consolidated native commit 8d87302ec17d6a4a23a0b7d4974a97c361f6ab02; shared declarations remain for other target implementations. These are managed ARM32 tests on Windows x64, not ARM execution/parity.",
       "deferred": [
         "Do not edit residual `lsra.cpp`; it contains user WIP deleting LSRA stress-mask constants.",
         "Do not reopen screened `codegen.h` or completed LSRA debt without new caller or mapping evidence. The residual has no include references to `emitpub.h`; its sole CMake list entry is removed in the native worktree and must be included in the consolidated retirement amendment.",
@@ -27,9 +27,9 @@
       ],
       "retirement": {
         "oracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
-        "nativeResidualCommit": "e216db9b29e3592b30f7de843cecaedd2f2f6581",
+        "nativeResidualCommit": "8d87302ec17d6a4a23a0b7d4974a97c361f6ab02",
         "completionGate": "Retire whole eligible definitions and orphan declarations in the same accepted batch, before its managed completion commit. Keep untranslated helpers and target branches in the residual; an absent definition is not evidence that it was ported.",
-        "nextDebtCursor": "At consolidated native residual HEAD e216db9b29e3592b30f7de843cecaedd2f2f6581 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), the shared ARM/ARM64 genCodeForIndir and genGetVolatileLdStIns definitions, the ARM32 genCodeForStoreInd definition, and the orphan genGetVolatileLdStIns declaration are retired. Keep genCodeForIndir and genCodeForStoreInd declarations because untranslated RISC-V definitions and callers remain; keep the ARM64 emitter overload because another untranslated ARM64 caller still uses it. Focused ARM32 caller tests passed 13/13 Debug and 14/14 Release; full ARM32 target suites passed 671/671 Debug and 598/598 Release under full analysis. These are managed tests on Windows x64, not ARM execution/parity. Next port ARM32 CodeGen::genLongToIntCast, genIntToFloatCast, and genFloatToIntCast, then retire their eligible definitions. Preserve unrelated native WIP and B184/B185; do not infer global debt clearance."
+        "nextDebtCursor": "At consolidated native residual HEAD 8d87302ec17d6a4a23a0b7d4974a97c361f6ab02 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), the shared ARM/ARM64 genCodeForIndir and genGetVolatileLdStIns definitions, ARM32 genCodeForStoreInd and the three ARM32 cast bodies, and the orphan genGetVolatileLdStIns declaration are retired. Keep cross-target declarations whose ARM64/x86 definitions or untranslated RISC-V callers remain. Next port the ARM32 branch of CodeGen::inst_JMP at runtime-port/src/coreclr/jit/codegenarmarch.cpp:3611, preserving the existing ARM64 C# path; it is the concrete dependency stopping checked ARM32 casts at the branch. Preserve unrelated native WIP and B184/B185; do not infer global debt clearance."
       }
     },
     "validationResourcePolicy": {
@@ -61,7 +61,7 @@
     },
     "residualReconciliation": {
       "status": "in-progress",
-      "nextDebtCursor": "At consolidated native residual HEAD e216db9b29e3592b30f7de843cecaedd2f2f6581 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), the shared ARM/ARM64 genCodeForIndir and genGetVolatileLdStIns definitions, the ARM32 genCodeForStoreInd definition, and the orphan genGetVolatileLdStIns declaration are retired. Keep genCodeForIndir and genCodeForStoreInd declarations because untranslated RISC-V definitions and callers remain; keep the ARM64 emitter overload because another untranslated ARM64 caller still uses it. Focused ARM32 caller tests passed 13/13 Debug and 14/14 Release; full ARM32 target suites passed 671/671 Debug and 598/598 Release under full analysis. These are managed tests on Windows x64, not ARM execution/parity. Next port ARM32 CodeGen::genLongToIntCast, genIntToFloatCast, and genFloatToIntCast, then retire their eligible definitions. Preserve unrelated native WIP and B184/B185; do not infer global debt clearance."
+      "nextDebtCursor": "At consolidated native residual HEAD 8d87302ec17d6a4a23a0b7d4974a97c361f6ab02, the ARM32 cast definitions are retired and their shared declarations remain for other targets. The next concrete debt is the ARM32 branch of CodeGen::inst_JMP at runtime-port/src/coreclr/jit/codegenarmarch.cpp:3611, which blocks checked cast branches. Preserve unrelated native WIP and B184/B185; do not infer global debt clearance."
     },
     "windowsCompletionAssessment": {
       "status": "remaining-source-review",
@@ -172,6 +172,14 @@
     "nativePreArm32MovImmRetirement": {
       "commit": "a81e8eac7bd5a6b122d1d953d2459e39c6e72326",
       "ref": "refs/copilot-recovery/runtime-port-before-arm32-mov-imm-retirement-a81e8eac"
+    },
+    "nativePreArm32CastRetirement": {
+      "commit": "e216db9b29e3592b30f7de843cecaedd2f2f6581",
+      "ref": "refs/copilot-recovery/runtime-port-before-arm32-cast-retirement-20261006"
+    },
+    "nativeArm32CastWipSnapshot": {
+      "commit": "58357b1d40ace02590d97659afa433c6fc274f90",
+      "ref": "refs/copilot-recovery/runtime-port-wip-before-arm32-cast-retirement-20261006"
     }
   },
   "sourceMap": [
@@ -276,6 +284,18 @@
       "csharp": [
         "sources\\Core\\jit\\compiler\\Compiler.gt.cs",
         "sources\\Core\\jit\\gentree\\GenTreeOp.cs"
+      ],
+      "sourceCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
+    {
+      "area": "arm32-casts",
+      "native": [
+        "src\\coreclr\\jit\\codegenarm.cpp",
+        "src\\coreclr\\jit\\codegen.h"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\codegenlinear\\CodeGen.Casts.cs",
+        "sources\\Core\\jit\\codegencommon\\CodeGen.FloatingCasts.cs"
       ],
       "sourceCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     }

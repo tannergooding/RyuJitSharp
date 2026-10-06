@@ -59,7 +59,49 @@ public sealed partial class CodeGen
 #if !TARGET_LOONGARCH64 && !TARGET_RISCV64
     public void genIntToFloatCast(GenTree treeNode)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM
+        assert(treeNode.Oper is GT_CAST);
+        assert(!treeNode.HasOverflowCheck);
+
+        var cast = treeNode.AsCast();
+        var targetReg = cast.RegNum;
+        assert(genIsValidFloatReg(targetReg));
+
+        var op1 = cast.CastOp;
+        assert(!op1.IsContained);
+        assert(genIsValidIntReg(op1.RegNum));
+
+        var dstType = cast.CastType;
+        var srcType = op1.Type.ActualType;
+        assert(!varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
+
+        if (cast.IsUnsigned)
+        {
+            srcType = varTypeToUnsigned(srcType);
+        }
+
+        var srcSize = srcType.EmitSize;
+        noway_assert(srcSize == EA_4BYTE);
+
+        instruction insVcvt;
+        if (dstType is TYP_DOUBLE)
+        {
+            insVcvt = varTypeIsUnsigned(srcType) ? INS_vcvt_u2d : INS_vcvt_i2d;
+        }
+        else
+        {
+            assert(dstType is TYP_FLOAT);
+            insVcvt = varTypeIsUnsigned(srcType) ? INS_vcvt_u2f : INS_vcvt_i2f;
+        }
+
+        genConsumeOperands(cast);
+
+        assert(insVcvt is not INS_invalid);
+        _ = Emitter.emitIns_Mov(INS_vmov_i2f, srcSize, targetReg, op1.RegNum, canSkip: false);
+        Emitter.emitIns_R_R(insVcvt, srcSize, targetReg, targetReg);
+
+        genProduceReg(cast);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Integral-to-floating casts outside xarch are not implemented.");
 #else
 #if TARGET_AMD64
