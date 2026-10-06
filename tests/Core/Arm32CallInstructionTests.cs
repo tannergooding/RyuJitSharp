@@ -11,6 +11,7 @@ using static RyuJitSharp.EmitCallType;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.Emitter.insSize;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regMask;
@@ -47,6 +48,38 @@ internal static unsafe class Arm32CallInstructionTests
                 throw new AssertionException("Missing direct call descriptor.");
             Assert.That(id.idIns(), Is.EqualTo(INS_blx));
             Assert.That(id.idReg3(), Is.EqualTo(REG_R12));
+        });
+    }
+
+    [Test]
+    public static void ReturnTrapEmitsTheConditionalStopForGcHelperCall()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.info.compMatchedVM = false;
+            codeGen.GCInfo.gcVarPtrSetCur = [0];
+            codeGen.GCInfo.gcRegGCrefSetCur = default;
+            codeGen.GCInfo.gcRegByrefSetCur = default;
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = true;
+#endif
+            var currentBlock = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            compiler.fgFirstBB = currentBlock;
+            compiler.fgLastBB = currentBlock;
+            compiler.compCurBB = currentBlock;
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = false;
+#endif
+
+            var data = compiler.gtNewIconNode(TYP_INT, 1);
+            data.RegNum = REG_R3;
+            var tree = new GenTreeUnOp(GT_RETURNTRAP, TYP_VOID, data);
+
+            codeGen.genCodeForReturnTrap(tree);
+
+            var descriptor = LastInstruction(codeGen.Emitter)
+                ?? throw new AssertionException("Missing return-trap helper call.");
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_blx));
         });
     }
 
