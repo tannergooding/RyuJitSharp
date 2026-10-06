@@ -7,6 +7,7 @@
 using NUnit.Framework;
 using static RyuJitSharp.insFlags;
 using static RyuJitSharp.insOpts;
+using static RyuJitSharp.instruction;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -67,6 +68,26 @@ internal static class Arm32ThumbInstructionEncodingTests
     public static void MovImmediateEncodingMatchesThumb2(int imm, uint expected)
     {
         Assert.That(Emitter.insEncodeImmT2_Mov(imm), Is.EqualTo(expected));
+    }
+
+    [TestCase(INS_ldr, 0, 0)]
+    [TestCase(INS_ldr, 124, 31)]
+    [TestCase(INS_ldr, -4, -1)]
+    [TestCase(INS_str, 124, 31)]
+    [TestCase(INS_str, -4, -1)]
+    [TestCase(INS_ldrh, 0, 0)]
+    [TestCase(INS_ldrh, 62, 31)]
+    [TestCase(INS_ldrh, -2, -1)]
+    [TestCase(INS_strh, 62, 31)]
+    [TestCase(INS_strh, -2, -1)]
+    [TestCase(INS_ldrb, 31, 31)]
+    [TestCase(INS_strb, 31, 31)]
+    [TestCase(INS_lsl, 31, 31)]
+    [TestCase(INS_lsr, 31, 31)]
+    [TestCase(INS_asr, 31, 31)]
+    public static void Thumb1ImmediateUnscalingMatchesInstruction(instruction ins, int imm, int expected)
+    {
+        Assert.That(Emitter.insUnscaleImm(ins, imm), Is.EqualTo(expected));
     }
 
     [TestCase(INS_OPTS_NONE, -1, 0x01000000u)]

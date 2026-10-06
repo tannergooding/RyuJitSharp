@@ -6,6 +6,7 @@
 #if TARGET_ARM
 using static RyuJitSharp.insFlags;
 using static RyuJitSharp.insOpts;
+using static RyuJitSharp.instruction;
 
 namespace RyuJitSharp;
 
@@ -78,6 +79,45 @@ public partial class Emitter
         result |= (uint)(imm & 0xF000) << 4;
 
         return result;
+    }
+
+    internal static int insUnscaleImm(instruction ins, int imm)
+    {
+        switch (ins)
+        {
+            case INS_ldr:
+            case INS_str:
+            {
+                assert((imm & 0x0003) == 0);
+                imm >>= 2;
+                break;
+            }
+
+            case INS_ldrh:
+            case INS_strh:
+            {
+                assert((imm & 0x0001) == 0);
+                imm >>= 1;
+                break;
+            }
+
+            case INS_ldrb:
+            case INS_strb:
+            case INS_lsl:
+            case INS_lsr:
+            case INS_asr:
+            {
+                break;
+            }
+
+            default:
+            {
+                assert(false);
+                break;
+            }
+        }
+
+        return imm;
     }
 
     internal static uint insEncodePUW_G0(insOpts options, int imm)
