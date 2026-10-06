@@ -77,7 +77,7 @@ public partial class Emitter
         const byte LD = 2;
         const byte ST = 4;
 
-        if ((uint)ins < (uint)CodeGen.instInfo.Length)
+        if (((int)ins >= 0) && ((uint)ins < (uint)CodeGen.instInfo.Length))
         {
             return (CodeGen.instInfo[(int)ins] & (LD | ST)) != 0;
         }
@@ -88,14 +88,16 @@ public partial class Emitter
     private bool emitInsIsLoad(instruction ins)
     {
         const byte LD = 2;
-        return ((uint)ins < (uint)CodeGen.instInfo.Length) &&
+        return ((int)ins >= 0) &&
+            ((uint)ins < (uint)CodeGen.instInfo.Length) &&
             ((CodeGen.instInfo[(int)ins] & LD) != 0);
     }
 
     private bool emitInsIsCompare(instruction ins)
     {
         const byte CMP = 8;
-        return ((uint)ins < (uint)CodeGen.instInfo.Length) &&
+        return ((int)ins >= 0) &&
+            ((uint)ins < (uint)CodeGen.instInfo.Length) &&
             ((CodeGen.instInfo[(int)ins] & CMP) != 0);
     }
 

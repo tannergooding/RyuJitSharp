@@ -20,7 +20,8 @@ public partial class Emitter
                ((CodeGen.instInfo[(int)ins] & RISCV64_ST) != 0);
 #elif TARGET_ARM
         const byte ST = 4;
-        return ((uint)ins < (uint)CodeGen.instInfo.Length) &&
+        return ((int)ins >= 0) &&
+               ((uint)ins < (uint)CodeGen.instInfo.Length) &&
                ((CodeGen.instInfo[(int)ins] & ST) != 0);
 #elif TARGET_WASM
         throw new FatalJitException(CORJIT_INTERNALERROR,

@@ -19,10 +19,53 @@ internal static class ArmEmitterPredicateTests
     [TestCase(INS_strb, true)]
     [TestCase(INS_ldr, false)]
     [TestCase(INS_ldrb, false)]
+    [TestCase(INS_invalid, false)]
     public static void StoreClassificationUsesArmInstructionFlags(instruction ins, bool expected)
     {
         Assert.That(s_emitter.emitInsIsStore(ins), Is.EqualTo(expected));
     }
+
+    [TestCase(INS_ldr, true, false, false)]
+    [TestCase(INS_str, false, false, true)]
+    [TestCase(INS_cmp, false, true, false)]
+    [TestCase(INS_add, false, false, false)]
+    public static void LoadCompareAndStoreClassificationUsesArmInstructionFlags(
+        instruction ins, bool isLoad, bool isCompare, bool isStore)
+    {
+        Assert.That(EmitInsIsLoad(s_emitter, ins), Is.EqualTo(isLoad));
+        Assert.That(EmitInsIsCompare(s_emitter, ins), Is.EqualTo(isCompare));
+        Assert.That(s_emitter.emitInsIsStore(ins), Is.EqualTo(isStore));
+    }
+
+    [TestCase(INS_lea)]
+    [TestCase((instruction)int.MaxValue)]
+    [TestCase((instruction)(-1))]
+    public static void InstructionClassificationRejectsSyntheticAndOutOfRangeValues(instruction ins)
+    {
+        Assert.That(EmitInsIsLoadOrStore(s_emitter, ins), Is.False);
+        Assert.That(EmitInsIsLoad(s_emitter, ins), Is.False);
+        Assert.That(EmitInsIsCompare(s_emitter, ins), Is.False);
+        Assert.That(s_emitter.emitInsIsStore(ins), Is.False);
+    }
+
+    [Test]
+    public static void InstructionClassificationRejectsTheInstructionTableBoundary()
+    {
+        var ins = (instruction)CodeGen.instInfo.Length;
+        Assert.That(EmitInsIsLoadOrStore(s_emitter, ins), Is.False);
+        Assert.That(EmitInsIsLoad(s_emitter, ins), Is.False);
+        Assert.That(EmitInsIsCompare(s_emitter, ins), Is.False);
+        Assert.That(s_emitter.emitInsIsStore(ins), Is.False);
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsLoadOrStore")]
+    private static extern bool EmitInsIsLoadOrStore(Emitter emitter, instruction ins);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsLoad")]
+    private static extern bool EmitInsIsLoad(Emitter emitter, instruction ins);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsCompare")]
+    private static extern bool EmitInsIsCompare(Emitter emitter, instruction ins);
 
     [TestCase(REG_R0, true)]
     [TestCase(REG_R15, true)]
