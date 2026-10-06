@@ -26,7 +26,7 @@ public sealed partial class CodeGen
         uint stackAdjustment = 0;
         var regTmp = REG_NA;
         const target_ssize_t IllegalLastTouchDelta = -1;
-        target_ssize_t lastTouchDelta = IllegalLastTouchDelta;
+        var lastTouchDelta = IllegalLastTouchDelta;
 
         noway_assert(IsFramePointerUsed);
         noway_assert(genStackLevel == 0);

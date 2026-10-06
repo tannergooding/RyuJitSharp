@@ -10,7 +10,6 @@ public sealed partial class CodeGen
 {
     public uint genEmitJumpTable(GenTree tree, bool relativeAddr)
     {
-        Emitter.RequireSupportedInstructionRecording();
         assert(_compiler.compCurBB is not null);
         noway_assert(_compiler.compCurBB.Kind == BBJ_SWITCH);
         assert(tree.Oper == GT_JMPTABLE);
