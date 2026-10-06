@@ -2197,17 +2197,6 @@ for the other five sections. Native `all` with default encoding settings asserts
 at `UsePromotedEVEXEncoding()`; the port does not bypass that configuration
 requirement.
 
-### D008: Optional CSE emission metrics
-
-**Status:** resolved implementation boundary; no accepted output difference.
-
-Windows-AMD64 `genEmitMachineCode` now implements the native Debug `opts.dspMetrics`
-path, including metrics-only versus code-summary framing, method-local CSE counts,
-policy-specific metrics, optional SPMI index and method identity. It constructs
-the configured policy when necessary rather than substituting empty metrics.
-Output flushing and native-code-size publication retain their native ordering.
-Ordinary emission and the separate late-disassembly boundary are unchanged.
-
 ### D009: Final metadata without optional late disassembly
 
 **Status:** temporary implementation boundary along the existing
