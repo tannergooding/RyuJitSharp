@@ -39,8 +39,11 @@ public sealed partial class CodeGen
                 , (nuint)THT_SetGSCookie, GTF_EMPTY
 #endif
                 );
-            Emitter.emitIns_R_R_I(
-                INS_ldr, EA_PTRSIZE, initReg, initReg, 0);
+#if TARGET_ARM
+            Emitter.emitIns_R_R_I(INS_ldr, EA_PTRSIZE, initReg, initReg, 0, INS_FLAGS_DONT_CARE);
+#else
+            Emitter.emitIns_R_R_I(INS_ldr, EA_PTRSIZE, initReg, initReg, 0);
+#endif
             _regSet.verifyRegUsed(initReg);
             Emitter.emitIns_S_R(INS_str, EA_PTRSIZE, initReg, _compiler.lvaGSSecurityCookie, 0);
         }
