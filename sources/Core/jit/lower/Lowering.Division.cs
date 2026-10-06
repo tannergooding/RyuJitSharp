@@ -38,6 +38,9 @@ public sealed partial class Lowering
         {
             MakeSrcRegOptional(node, divisor);
         }
+#elif TARGET_ARM
+        assert(node.Oper is GT_DIV or GT_UDIV or GT_MOD);
+        // ARM32 division has no immediate or memory containment.
 #elif TARGET_ARM64
         assert(node.Oper is GT_DIV or GT_UDIV or GT_MOD);
         // Native ARM64 division has no immediate or memory containment.

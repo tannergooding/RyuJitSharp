@@ -79,6 +79,8 @@ public sealed partial class Lowering
         {
             MakeSrcRegOptional(node, address);
         }
+#elif TARGET_ARM
+        // Native ARM32 nonlocal jump containment is empty.
 #elif TARGET_ARM64
         // Native ARM64 nonlocal jump containment is empty.
 #elif TARGET_RISCV64

@@ -114,6 +114,8 @@ public sealed partial class Lowering
                 MakeSrcContained(call, control);
             }
         }
+#elif TARGET_ARM
+        // Native ARM32 calls have no contained operands.
 #elif TARGET_ARM64
         // Native ARM64 calls have no contained operands.
 #elif TARGET_RISCV64

@@ -86,6 +86,81 @@ internal static unsafe class Arm32ArithmeticLoweringTests
     }
 
     [Test]
+    public static void Arm32NoOpContainmentLeavesOperandsUncontained()
+    {
+        WithLowering((compiler, block, lowering) =>
+        {
+            var dividend = compiler.gtNewLclvNode(TYP_INT, 0);
+            var divisor = compiler.gtNewIconNode(TYP_INT, 3);
+            var division = new GenTreeOp(GT_DIV, TYP_INT, dividend, divisor);
+            block.InsertAtEnd(dividend);
+            block.InsertAtEnd(divisor);
+            block.InsertAtEnd(division);
+
+            ContainCheckDivOrMod(lowering, division);
+
+            Assert.That(dividend.IsContained || dividend.IsRegOptional, Is.False);
+            Assert.That(divisor.IsContained || divisor.IsRegOptional, Is.False);
+
+            var target = compiler.gtNewLclvNode(TYP_I_IMPL, 1);
+            var nonLocalJump = new GenTreeUnOp(GT_NONLOCAL_JMP, TYP_VOID, target);
+            block.InsertAtEnd(target);
+            block.InsertAtEnd(nonLocalJump);
+
+            ContainCheckNonLocalJmp(lowering, nonLocalJump);
+
+            Assert.That(target.IsContained || target.IsRegOptional, Is.False);
+
+            var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            ContainCheckCallOperands(lowering, call);
+        });
+    }
+
+    [TestCase(GT_LSH)]
+    [TestCase(GT_RSH)]
+    public static void ShiftContainmentContainsTheImmediateCount(genTreeOps operation)
+    {
+        WithLowering((compiler, block, lowering) =>
+        {
+            var source = compiler.gtNewLclvNode(TYP_INT, 0);
+            var shiftBy = compiler.gtNewIconNode(TYP_INT, 3);
+            var shift = new GenTreeOp(operation, TYP_INT, source, shiftBy);
+            block.InsertAtEnd(source);
+            block.InsertAtEnd(shiftBy);
+            block.InsertAtEnd(shift);
+
+            ContainCheckShiftRotate(lowering, shift);
+
+            Assert.That(source.IsContained, Is.False);
+            Assert.That(shiftBy.IsContained, Is.True);
+        });
+    }
+
+    [TestCase(GT_LSH_HI)]
+    [TestCase(GT_RSH_LO)]
+    public static void LongWordShiftContainmentContainsTheLongSource(genTreeOps operation)
+    {
+        WithLowering((compiler, block, lowering) =>
+        {
+            var low = compiler.gtNewLclvNode(TYP_INT, 0);
+            var high = compiler.gtNewLclvNode(TYP_INT, 1);
+            var source = new GenTreeOp(GT_LONG, TYP_LONG, low, high);
+            var shiftBy = compiler.gtNewIconNode(TYP_INT, 3);
+            var shift = new GenTreeOp(operation, TYP_INT, source, shiftBy);
+            block.InsertAtEnd(low);
+            block.InsertAtEnd(high);
+            block.InsertAtEnd(source);
+            block.InsertAtEnd(shiftBy);
+            block.InsertAtEnd(shift);
+
+            ContainCheckShiftRotate(lowering, shift);
+
+            Assert.That(source.IsContained, Is.True);
+            Assert.That(shiftBy.IsContained, Is.True);
+        });
+    }
+
+    [Test]
     public static void AndWithNotLowersToAndNotOnlyWhenOptimizing()
     {
         foreach (var minOpts in new[] { false, true })
@@ -155,6 +230,18 @@ internal static unsafe class Arm32ArithmeticLoweringTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerMul")]
     private static extern GenTree? LowerMul(Lowering lowering, GenTreeOp multiply);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckDivOrMod")]
+    private static extern void ContainCheckDivOrMod(Lowering lowering, GenTreeOp node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckNonLocalJmp")]
+    private static extern void ContainCheckNonLocalJmp(Lowering lowering, GenTreeUnOp node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckCallOperands")]
+    private static extern void ContainCheckCallOperands(Lowering lowering, GenTreeCall call);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckShiftRotate")]
+    private static extern void ContainCheckShiftRotate(Lowering lowering, GenTreeOp node);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_block")]
     private static extern ref BasicBlock? LoweringBlock(Lowering lowering);

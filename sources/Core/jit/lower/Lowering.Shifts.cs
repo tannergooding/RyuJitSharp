@@ -78,6 +78,20 @@ public sealed partial class Lowering
                 MakeSrcRegOptional(node, source);
             }
         }
+#elif TARGET_ARM
+        assert(node.Oper.IsShiftOrRotate);
+        var source = node.Op1;
+        var shiftBy = node.Op2;
+        if (node.Oper is GT_LSH_HI or GT_RSH_LO)
+        {
+            assert(source.Oper is GT_LONG);
+            MakeSrcContained(node, source);
+        }
+
+        if (shiftBy.Oper.IsCnsIntOrI)
+        {
+            MakeSrcContained(node, shiftBy);
+        }
 #elif TARGET_ARM64
         assert(node.Oper.IsShiftOrRotate);
         var shiftBy = node.Op2;
