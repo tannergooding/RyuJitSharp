@@ -14,12 +14,5 @@ public sealed partial class CodeGen
         throw new FatalJitException(CORJIT_SKIPPED, "ARM stack allocation register mask is not ported.");
     }
 #endif
-
-#if TARGET_ARM64
-    private void genUnknownSizeFrame()
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 unknown-size frame setup is not ported.");
-    }
-#endif
 }
 #endif

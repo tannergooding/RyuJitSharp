@@ -33,7 +33,7 @@ internal static class Arm64IndirectLoadStoreTests
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_ldr));
             Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R0));
             Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R1));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptors[0]), Is.EqualTo((nint)8));
+            Assert.That(Emitter.emitGetInsSC(descriptors[0]), Is.EqualTo((nint)2));
         });
     }
 

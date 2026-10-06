@@ -105,13 +105,13 @@ internal static class Arm64BlockMemoryUnrollTests
             var emitted = Descriptors(codeGen);
             Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()), Is.EqualTo(expectedInstructions));
             Assert.That(emitted.ConvertAll(static descriptor => (int)descriptor.idOpSize()), Is.EqualTo(expectedWidths));
-            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idAddr().iiaAddrMode.amDisp),
-                Is.EqualTo(expectedOffsets));
+            Assert.That(emitted.ConvertAll(static descriptor => Emitter.emitGetInsSC(descriptor)),
+                Is.EqualTo(EncodedOffsets(expectedWidths, expectedOffsets)));
 
             for (var index = 0; index < emitted.Count; index += 2)
             {
-                Assert.That(emitted[index].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_R2));
-                Assert.That(emitted[index + 1].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_R1));
+                Assert.That(AddressBase(emitted[index]), Is.EqualTo(REG_R2));
+                Assert.That(AddressBase(emitted[index + 1]), Is.EqualTo(REG_R1));
             }
         });
     }
@@ -131,11 +131,12 @@ internal static class Arm64BlockMemoryUnrollTests
             var emitted = Descriptors(codeGen);
             Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
                 Is.EqualTo([INS_add, INS_ldr, INS_str]));
-            Assert.That(Emitter.emitGetInsSC(emitted[0]), Is.EqualTo((nint)32768));
-            Assert.That(emitted[1].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(emitted[0].idReg1()));
-            Assert.That(emitted[1].idAddr().iiaAddrMode.amDisp, Is.Zero);
-            Assert.That(emitted[2].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_R1));
-            Assert.That(emitted[2].idAddr().iiaAddrMode.amDisp, Is.Zero);
+            Assert.That(emitted[0].idInsOpt(), Is.EqualTo(INS_OPTS_LSL12));
+            Assert.That(Emitter.emitGetInsSC(emitted[0]), Is.EqualTo((nint)8));
+            Assert.That(emitted[1].idReg2(), Is.EqualTo(emitted[0].idReg1()));
+            Assert.That(Emitter.emitGetInsSC(emitted[1]), Is.EqualTo((nint)0));
+            Assert.That(emitted[2].idReg2(), Is.EqualTo(REG_R1));
+            Assert.That(Emitter.emitGetInsSC(emitted[2]), Is.EqualTo((nint)0));
         });
     }
 
@@ -154,11 +155,12 @@ internal static class Arm64BlockMemoryUnrollTests
             var emitted = Descriptors(codeGen);
             Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
                 Is.EqualTo([INS_add, INS_ldr, INS_str]));
-            Assert.That(Emitter.emitGetInsSC(emitted[0]), Is.EqualTo((nint)32768));
-            Assert.That(emitted[1].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_R2));
-            Assert.That(emitted[1].idAddr().iiaAddrMode.amDisp, Is.Zero);
-            Assert.That(emitted[2].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(emitted[0].idReg1()));
-            Assert.That(emitted[2].idAddr().iiaAddrMode.amDisp, Is.Zero);
+            Assert.That(emitted[0].idInsOpt(), Is.EqualTo(INS_OPTS_LSL12));
+            Assert.That(Emitter.emitGetInsSC(emitted[0]), Is.EqualTo((nint)8));
+            Assert.That(emitted[1].idReg2(), Is.EqualTo(REG_R2));
+            Assert.That(Emitter.emitGetInsSC(emitted[1]), Is.EqualTo((nint)0));
+            Assert.That(emitted[2].idReg2(), Is.EqualTo(emitted[0].idReg1()));
+            Assert.That(Emitter.emitGetInsSC(emitted[2]), Is.EqualTo((nint)0));
         });
     }
 
@@ -214,6 +216,28 @@ internal static class Arm64BlockMemoryUnrollTests
     private static regMaskTP Mask(regNumber reg)
     {
         return regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
+    }
+
+    private static regNumber AddressBase(Emitter.instrDesc descriptor)
+    {
+        return descriptor.idIns() is INS_ldp or INS_ldnp or INS_stp or INS_stnp
+            ? descriptor.idReg3()
+            : descriptor.idReg2();
+    }
+
+    private static nint[] EncodedOffsets(int[] widths, int[] offsets)
+    {
+        var encodedOffsets = new nint[offsets.Length];
+        for (var index = 0; index < offsets.Length; index++)
+        {
+            var offset = offsets[index];
+            var width = widths[index];
+            encodedOffsets[index] = (offset > 0) && (offset % width == 0)
+                ? offset / width
+                : offset;
+        }
+
+        return encodedOffsets;
     }
 
     private static List<Emitter.instrDesc> Descriptors(CodeGen codeGen)

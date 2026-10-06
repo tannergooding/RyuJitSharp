@@ -50,14 +50,14 @@ internal static class Arm64MemmoveCodeGenTests
             var emitted = Descriptors(codeGen);
             Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()), Is.EqualTo(expectedInstructions));
             Assert.That(emitted.ConvertAll(static descriptor => (int)descriptor.idOpSize()), Is.EqualTo(expectedWidths));
-            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idAddr().iiaAddrMode.amDisp),
-                Is.EqualTo(expectedOffsets));
+            Assert.That(emitted.ConvertAll(static descriptor => Emitter.emitGetInsSC(descriptor)),
+                Is.EqualTo(EncodedOffsets(expectedWidths, expectedOffsets)));
 
             var loadCount = expectedInstructions.Length / 2;
             for (var index = 0; index < loadCount; index++)
             {
-                Assert.That(emitted[index].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_R2));
-                Assert.That(emitted[loadCount + index].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_R1));
+                Assert.That(emitted[index].idReg2(), Is.EqualTo(REG_R2));
+                Assert.That(emitted[loadCount + index].idReg2(), Is.EqualTo(REG_R1));
                 Assert.That(emitted[loadCount + index].idReg1(), Is.EqualTo(emitted[index].idReg1()));
             }
         });
@@ -87,13 +87,15 @@ internal static class Arm64MemmoveCodeGenTests
                 Is.EqualTo(Instructions(INS_ldr, INS_str, registerCount)));
             Assert.That(emitted.ConvertAll(static descriptor => (int)descriptor.idOpSize()),
                 Is.EqualTo(Widths(registerCount)));
-            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idAddr().iiaAddrMode.amDisp),
-                Is.EqualTo(Offsets(expectedOffsets)));
+            var expectedWidths = Widths(registerCount);
+            var offsets = Offsets(expectedOffsets);
+            Assert.That(emitted.ConvertAll(static descriptor => Emitter.emitGetInsSC(descriptor)),
+                Is.EqualTo(EncodedOffsets(expectedWidths, offsets)));
 
             for (var index = 0; index < registerCount; index++)
             {
-                Assert.That(emitted[index].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_R2));
-                Assert.That(emitted[registerCount + index].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_R1));
+                Assert.That(emitted[index].idReg2(), Is.EqualTo(REG_R2));
+                Assert.That(emitted[registerCount + index].idReg2(), Is.EqualTo(REG_R1));
                 Assert.That(emitted[registerCount + index].idReg1(), Is.EqualTo(emitted[index].idReg1()));
             }
         });
@@ -155,6 +157,21 @@ internal static class Arm64MemmoveCodeGenTests
         Array.Copy(offsets, allOffsets, offsets.Length);
         Array.Copy(offsets, 0, allOffsets, offsets.Length, offsets.Length);
         return allOffsets;
+    }
+
+    private static nint[] EncodedOffsets(int[] widths, int[] offsets)
+    {
+        var encodedOffsets = new nint[offsets.Length];
+        for (var index = 0; index < offsets.Length; index++)
+        {
+            var offset = offsets[index];
+            var width = widths[index];
+            encodedOffsets[index] = (offset > 0) && (offset % width == 0)
+                ? offset / width
+                : offset;
+        }
+
+        return encodedOffsets;
     }
 
     private static List<Emitter.instrDesc> Descriptors(CodeGen codeGen)

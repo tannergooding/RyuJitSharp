@@ -39,7 +39,7 @@ public sealed partial class CodeGen
 #endif
                 );
             Emitter.emitIns_R_R_I(
-                INS_ldr, EA_PTRSIZE, regGSConst, regGSConst, 0, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
+                INS_ldr, EA_PTRSIZE, regGSConst, regGSConst, 0);
         }
 
         // Load this method's cookie from the stack frame and compare it to the constant.

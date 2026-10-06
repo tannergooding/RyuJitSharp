@@ -346,6 +346,58 @@ internal static unsafe class Arm64CodeGenPortTests
         });
     }
 
+    [Test]
+    public static void UnknownSizeFrameUsesAddVlAtTheImmediateLimit()
+    {
+        Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compLocallocUsed = true;
+            compiler.compUsesUnknownSizeFrame = true;
+            compiler.unkSizeFrame.nVector = 32;
+            compiler.unkSizeFrame.FinalizeLayout();
+
+            codeGen.genUnknownSizeFrame();
+
+            var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
+            Assert.That(descriptors.ConvertAll(static descriptor => descriptor.idIns()),
+                Is.EqualTo((instruction[])[INS_mov, INS_sve_addvl]));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_UNKBASE));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ZR));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_ZR));
+            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_ZR));
+            Assert.That(Emitter.emitGetInsSC(descriptors[1]), Is.EqualTo((nint)(-32)));
+        });
+    }
+
+#if !DEBUG
+    // The pinned emitter's DEBUG assertions reject SP operands for MSub.
+    [Test]
+    public static void UnknownSizeFrameUsesRdvlAndMsubAboveTheImmediateLimit()
+    {
+        Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compLocallocUsed = true;
+            compiler.compUsesUnknownSizeFrame = true;
+            compiler.unkSizeFrame.nVector = 33;
+            compiler.unkSizeFrame.FinalizeLayout();
+
+            codeGen.genUnknownSizeFrame();
+
+            var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
+            var rdvl = descriptors[^2];
+            var msub = descriptors[^1];
+            Assert.That(rdvl.idIns(), Is.EqualTo(INS_sve_rdvl));
+            Assert.That(rdvl.idReg1(), Is.EqualTo(REG_SCRATCH));
+            Assert.That(Emitter.emitGetInsSC(rdvl), Is.EqualTo((nint)1));
+            Assert.That(msub.idIns(), Is.EqualTo(INS_msub));
+            Assert.That(msub.idReg1(), Is.EqualTo(REG_SP));
+            Assert.That(msub.idReg2(), Is.EqualTo(codeGen.rsGetRsvdReg()));
+            Assert.That(msub.idReg3(), Is.EqualTo(REG_SCRATCH));
+            Assert.That(msub.idReg4(), Is.EqualTo(REG_SP));
+        });
+    }
+#endif
+
     private static GenTreeIntCon Register(Compiler compiler, regNumber reg)
     {
         var node = compiler.gtNewIconNode(TYP_INT, 7);
