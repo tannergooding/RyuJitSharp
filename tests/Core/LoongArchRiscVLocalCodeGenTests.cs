@@ -33,6 +33,22 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 #endif
 
 #if TARGET_LOONGARCH64
+    [TestCase(false, EA_PTRSIZE, "LoongArch64 address constant recording is not ported.")]
+    [TestCase(true, EA_PTR_DSP_RELOC, "LoongArch64 relocated-address instruction recording is not ported.")]
+    public static void ImmediateMaterializationReachesTheLoongArchEmitterBoundary(
+        bool relocatable, emitAttr size, string expectedFailure)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.opts.compReloc = relocatable;
+
+            var failure = Assert.Throws<FatalJitException>(() =>
+                codeGen.instGen_Set_Reg_To_Imm(size, REG_S0, 0x1234));
+
+            Assert.That(failure?.Message, Does.Contain(expectedFailure));
+        });
+    }
+
     [Test]
     public static void StackArgumentDispatchReachesTheLoongArchStoreBoundary()
     {
