@@ -14,6 +14,22 @@ internal static class BitSetSupportTests
     private static readonly uint[] s_expectedBitIndexes = [0, 10, 63, 64, 129];
 
     [Test]
+    public static void UninitializedValueIsDistinguishedFromNonemptyBitSet()
+    {
+        var environment = new TestEnvironment(size: 130);
+        var uninitialized = BitSetOps<TestEnvironment, TestBitSetTraits>.UninitVal();
+        var empty = BitSetOps<TestEnvironment, TestBitSetTraits>.MakeEmpty(environment);
+
+        Assert.That(BitSetOps<TestEnvironment, TestBitSetTraits>.MaybeUninit(uninitialized), Is.True);
+        Assert.That(BitSetOps<TestEnvironment, TestBitSetTraits>.MaybeUninit(empty), Is.False);
+
+        var emptyEnvironment = new TestEnvironment(size: 0);
+        var zeroSized = BitSetOps<TestEnvironment, TestBitSetTraits>.MakeEmpty(emptyEnvironment);
+
+        Assert.That(BitSetOps<TestEnvironment, TestBitSetTraits>.MaybeUninit(zeroSized), Is.True);
+    }
+
+    [Test]
     public static void OperationCounterWritesSortedCountsAtTheNativeInterval()
     {
         var path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());

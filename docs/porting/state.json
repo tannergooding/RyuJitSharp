@@ -10,11 +10,11 @@
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
-    "nextAction": "The common-header, GenTree, ARM32 lowering, ARM64 emitter, and ARM unwind units are mapping-accepted and focused full-analysis tests are recorded below. Native residual a996f6acc428c0038c67b25390e1a03f4e175e8e remains directly atop the pinned oracle; the ARM64/ARM32/unwind retirements are target-only, not Windows-x64 progress. Commit the already validated managed implementations, tests, backlog cleanup, and checkpoint together. Then resume with a concrete Windows-x64-mapped candidate from the retained residual definitions. Do not treat residual compilation as an acceptance gate; preserve user WIP, especially unwindx86.cpp and lsra.cpp.",
+    "nextAction": "The common-header, GenTree, ARM32 lowering, ARM64 emitter, ARM unwind, and small shared-header units are mapping-accepted. Native residual d282a65b83223982714a78c3966be79b305b4173 remains directly atop the pinned oracle. The latest full-analysis Windows-x64 Debug filters passed BitSetSupportTests plus BitSetUint64Tests (13/13) and FlagSupportTests plus HardwareIntrinsicInitializationTests (508/508). Commit the bitset regression and this checkpoint, then inspect runtime-port/src/coreclr/jit/lower.h for the next complete Windows-x64-mapped helper; do not reopen screened codegen.h, emit.h, or completed LSRA debt. Preserve user WIP, especially unwindx86.cpp and lsra.cpp; residual compilation is not an acceptance gate.",
     "activeBatch": {
-      "scope": "Accept the current GenTree, ARM32, ARM64, and common-header managed units together with their matching native retirements; keep Windows x64 as the first execution and parity target.",
-      "doneWhen": "Every changed managed area has focused full-analysis tests on its relevant target; each retired native helper, type, or table is fully represented in managed code and its migrated callers; unported managed target branches retain terminating stubs; the backlog and checkpoint contain only unresolved work and current cursors.",
-      "validation": "Focused full-analysis unit tests (these are not target execution/parity passes): Windows-x64 Debug focused GenTree, LocalMorph, Narrowing, and condition filters passed 285/285; JitPrimeInfo, CallArgumentMorph, and BasicBlockHash passed 108/108 Debug and 106/106 Release; target-x86 Narrowing passed 23/23 in Debug and Release; ARM32 lowering/unwind passed 22/22 Debug and 17/17 Release; ARM64 emitter/unwind passed 84/84 Debug and 47/47 Release. Native residual compilation is not an acceptance gate.",
+      "scope": "Retire fully mapped shared-header helpers and empty native header shells, with Windows x64 as the first execution and parity target.",
+      "doneWhen": "The empty residual block.h and its CMake entry are removed after checking residual references; the orphan lookupIns declaration and mapped bitset forwarding helpers are retired; focused full-analysis tests pass; user WIP remains separate.",
+      "validation": "Focused full-analysis unit tests (these are not target execution/parity passes): Windows-x64 Debug focused GenTree, LocalMorph, Narrowing, and condition filters passed 285/285; JitPrimeInfo, CallArgumentMorph, and BasicBlockHash passed 108/108 Debug and 106/106 Release; target-x86 Narrowing passed 23/23 in Debug and Release; ARM32 lowering/unwind passed 22/22 Debug and 17/17 Release; ARM64 emitter/unwind passed 84/84 Debug and 47/47 Release; BitSetSupportTests plus BitSetUint64Tests passed 13/13 Debug; FlagSupportTests plus HardwareIntrinsicInitializationTests passed 508/508 Debug. Native residual compilation is not an acceptance gate.",
       "deferred": [
         "Do not edit residual `lsra.cpp`; it contains user WIP deleting LSRA stress-mask constants.",
         "Do not reopen screened `codegen.h`, `emit.h`, or completed LSRA debt without new caller or mapping evidence.",
@@ -24,9 +24,9 @@
       ],
       "retirement": {
         "oracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
-        "nativeResidualCommit": "a996f6acc428c0038c67b25390e1a03f4e175e8e",
+        "nativeResidualCommit": "d282a65b83223982714a78c3966be79b305b4173",
         "completionGate": "Retire whole eligible definitions and orphan declarations in the same accepted batch, before its managed completion commit. Keep untranslated helpers and target branches in the residual; an absent definition is not evidence that it was ported.",
-        "nextDebtCursor": "At native residual HEAD a996f6acc428c0038c67b25390e1a03f4e175e8e, the nine mapped ARM64 emitter declarations, four fully mapped ARM32 containment definitions, and mapped ARM unwindSaveReg definition are retired; unwindarmarch.cpp retains a terminating DEBUG ExtractBits stub for decoder callers. Recovery ref refs/copilot-recovery/runtime-port-before-target-acceptance-20261006 protects the pre-amend target worktree, and refs/copilot-recovery/runtime-port-before-common-header-acceptance-20261006 protects the earlier common-header WIP. This target-only retirement batch is complete; current cursor is the managed completion commit for its tested implementations/tests/docs, then select a concrete Windows-x64-mapped definition from the retained residual. Keep user WIP in unwindx86.cpp and lsra.cpp."
+        "nextDebtCursor": "At native residual HEAD d282a65b83223982714a78c3966be79b305b4173, the nine mapped ARM64 emitter declarations, four fully mapped ARM32 containment definitions, mapped ARM unwindSaveReg, two BitSetOpsWithCounter forwarding methods, and the orphan HWIntrinsicInfo::lookupIns declaration are retired; unwindarmarch.cpp retains its terminating DEBUG ExtractBits stub. The include-guard-only block.h and its direct CMake entry are also removed after confirming no residual include references. Recovery refs refs/copilot-recovery/runtime-port-before-target-acceptance-20261006, refs/copilot-recovery/runtime-port-before-common-header-acceptance-20261006, refs/copilot-recovery/runtime-port-before-small-header-retirements-20261006, and refs/copilot-recovery/runtime-port-before-block-cmake-retirement-20261006 preserve prior native states. Next screen runtime-port/src/coreclr/jit/lower.h for a complete Windows-x64-mapped helper; preserve user WIP in unwindx86.cpp and lsra.cpp."
       }
     },
     "validationResourcePolicy": {
@@ -58,7 +58,7 @@
     },
     "residualReconciliation": {
       "status": "in-progress",
-      "nextDebtCursor": "Continue from the current runtime-port HEAD and retained definitions, selecting only a concrete candidate with an exact managed mapping or accepted evidence. Do not repeat closed screens or infer global debt clearance from prior retirements."
+      "nextDebtCursor": "At native residual HEAD d282a65b83223982714a78c3966be79b305b4173, block.h is deleted with its JIT CMake entry and no residual include references; jitgcinfo.h was screened and exposes only JIT32-GC or non-x64 members. The current bounded search is lower.h for one complete Windows-x64-mapped helper. Do not repeat closed screens or infer global debt clearance from prior retirements."
     },
     "windowsCompletionAssessment": {
       "status": "remaining-source-review",
