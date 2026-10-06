@@ -48,6 +48,32 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
         });
     }
 
+    [TestCase(TYP_INT, EA_4BYTE)]
+    [TestCase(TYP_LONG, EA_8BYTE)]
+    public static void StackLocalFieldLoadsUseTheNodeTypeAndFieldOffset(var_types type, emitAttr size)
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var tree = new GenTreeLclFld(GT_LCL_FLD, type, 0, 24)
+            {
+                RegNum = REG_R3,
+            };
+
+            codeGen.genCodeForLclFld(tree);
+
+            var descriptors = Descriptors(codeGen.Emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            var descriptor = descriptors[0];
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_ldr));
+            Assert.That(descriptor.idOpSize(), Is.EqualTo(size));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R3));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_FPBASE));
+            Assert.That(descriptor.idIsLclVar(), Is.True);
+            Assert.That(descriptor.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
+            Assert.That(descriptor.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(24u));
+        });
+    }
+
     [TestCase(TYP_BYREF)]
     [TestCase(TYP_I_IMPL)]
     public static void LocalAddressesRecordTheTargetRegisterAndOffset(var_types type)

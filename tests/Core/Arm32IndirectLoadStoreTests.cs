@@ -69,6 +69,101 @@ internal static unsafe class Arm32IndirectLoadStoreTests
         });
     }
 
+    [TestCase(TYP_INT, 4, REG_R3, INS_ldr, EA_4BYTE)]
+    [TestCase(TYP_FLOAT, 4, REG_F0, INS_vldr, EA_4BYTE)]
+    [TestCase(TYP_DOUBLE, 8, REG_F0, INS_vldr, EA_8BYTE)]
+    public static void AlignedLocalFieldLoadsUseTheLocalAndFieldOffset(
+        var_types type, int offset, regNumber targetReg, instruction loadInstruction, emitAttr size)
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            InitializeStackLocal(compiler, codeGen);
+            var tree = new GenTreeLclFld(GT_LCL_FLD, type, 0, (ushort)offset)
+            {
+                RegNum = targetReg,
+            };
+
+            RecordArm32Instructions(() => codeGen.genCodeForLclFld(tree));
+
+            var descriptor = LastInstruction(codeGen.Emitter);
+            Assert.That(descriptor.idIns(), Is.EqualTo(loadInstruction));
+            Assert.That(descriptor.idOpSize(), Is.EqualTo(size));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(targetReg));
+            Assert.That(descriptor.idIsLclVar(), Is.True);
+            Assert.That(descriptor.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
+            Assert.That(descriptor.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo((uint)offset));
+        });
+    }
+
+    [Test]
+    public static void StructLocalFieldLoadsRetainTheUnsupportedBoundary()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
+        {
+            var tree = new GenTreeLclFld(GT_LCL_FLD, TYP_STRUCT, 0, 0, new ClassLayout(8));
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForLclFld(tree));
+
+            Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+        });
+    }
+
+    [TestCase(TYP_FLOAT, 1, REG_F0, INS_vmov_i2f)]
+    [TestCase(TYP_DOUBLE, 1, REG_F0, INS_vmov_i2d)]
+    public static void MisalignedFloatingLocalFieldsLoadThroughIntegerRegisters(
+        var_types type, int offset, regNumber targetReg, instruction conversion)
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            InitializeStackLocal(compiler, codeGen);
+            var tree = new GenTreeLclFld(GT_LCL_FLD, type, 0, (ushort)offset)
+            {
+                RegNum = targetReg,
+            };
+            var tempRegisters = type is TYP_FLOAT
+                ? SRBM_R2 | SRBM_R3
+                : SRBM_R2 | SRBM_R3 | SRBM_R4;
+            codeGen.InternalRegisters.Add(tree, new regMaskTP(tempRegisters));
+
+            var descriptors = CurrentDescriptors(codeGen.Emitter)
+                ?? throw new AssertionException("Missing descriptor buffer.");
+            var initialCount = descriptors.Count;
+            RecordArm32Instructions(() => codeGen.genCodeForLclFld(tree));
+
+            var emitted = descriptors.GetRange(initialCount, descriptors.Count - initialCount);
+            Assert.That(emitted, Is.Not.Empty);
+            Assert.That(emitted[0].idIns(), Is.EqualTo(INS_subw));
+            Assert.That(emitted[0].idReg1(), Is.EqualTo(REG_R2));
+            Assert.That(emitted[0].idReg2(), Is.EqualTo(REG_SPBASE));
+#if DEBUG
+            Assert.That(emitted, Has.Count.EqualTo(1));
+#else
+            if (type is TYP_FLOAT)
+            {
+                Assert.That(emitted, Has.Count.EqualTo(3));
+                Assert.That(emitted[1].idIns(), Is.EqualTo(INS_ldr));
+                Assert.That(emitted[1].idReg1(), Is.EqualTo(REG_R3));
+                Assert.That(emitted[1].idReg2(), Is.EqualTo(REG_R2));
+                Assert.That(emitted[2].idIns(), Is.EqualTo(conversion));
+                Assert.That(emitted[2].idReg1(), Is.EqualTo(targetReg));
+                Assert.That(emitted[2].idReg2(), Is.EqualTo(REG_R3));
+            }
+            else
+            {
+                Assert.That(emitted, Has.Count.EqualTo(4));
+                Assert.That(emitted[1].idIns(), Is.EqualTo(INS_ldr));
+                Assert.That(emitted[1].idReg1(), Is.EqualTo(REG_R3));
+                Assert.That(emitted[2].idIns(), Is.EqualTo(INS_ldr));
+                Assert.That(emitted[2].idReg1(), Is.EqualTo(REG_R4));
+                Assert.That(emitted[3].idIns(), Is.EqualTo(conversion));
+                Assert.That(emitted[3].idReg1(), Is.EqualTo(targetReg));
+                Assert.That(emitted[3].idReg2(), Is.EqualTo(REG_R3));
+                Assert.That(emitted[3].idReg3(), Is.EqualTo(REG_R4));
+            }
+#endif
+        });
+    }
+
     [Test]
     public static void ContainedIndexedLoadWithOffsetFormsPartialAddressInTemporary()
     {
@@ -300,6 +395,24 @@ internal static unsafe class Arm32IndirectLoadStoreTests
                 RegNum = REG_R1,
             },
         ];
+    }
+
+    private static void InitializeStackLocal(Compiler compiler, CodeGen codeGen)
+    {
+        compiler.lvaCount = 1;
+        compiler.lvaTable =
+        [
+            new LclVarDsc
+            {
+                Type = TYP_INT,
+                lvOnFrame = true,
+                lvFramePointerBased = false,
+                StackOffset = -16,
+            },
+        ];
+        compiler.lvaDoneFrameLayout = Compiler.REGALLOC_FRAME_LAYOUT;
+        compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
+        codeGen.IsFramePointerUsed = false;
     }
 
     private static Emitter.instrDesc LastInstruction(Emitter emitter)
