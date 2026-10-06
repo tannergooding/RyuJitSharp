@@ -1,3 +1,4 @@
+#if TARGET_ARM
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 //
 // Based on the RyuJIT compiler from dotnet/runtime.
@@ -216,3 +217,4 @@ internal static unsafe class Arm32CastCodeGenTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
     private static extern ref insGroup? FirstGroup(Emitter emitter);
 }
+#endif
