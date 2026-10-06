@@ -55,6 +55,7 @@
     <Compile Include="..\Core\ArmArchEpilogTests.cs" Link="ArmArchEpilogTests.cs" />
     <Compile Include="..\Core\LinearScanScalarConversionTests.cs" Link="LinearScanScalarConversionTests.cs" />
     <Compile Include="..\Core\Arm32ArithmeticLoweringTests.cs" Link="Arm32ArithmeticLoweringTests.cs" />
+    <Compile Include="..\Core\Arm32EHTransferTests.cs" Link="Arm32EHTransferTests.cs" />
     <Compile Include="..\Core\Arm32InstructionFormatTests.cs" Link="Arm32InstructionFormatTests.cs" />
     <Compile Include="..\Core\Arm32InstructionCodeTests.cs" Link="Arm32InstructionCodeTests.cs" />
     <Compile Include="..\Core\Arm32CallInstructionTests.cs" Link="Arm32CallInstructionTests.cs" />
