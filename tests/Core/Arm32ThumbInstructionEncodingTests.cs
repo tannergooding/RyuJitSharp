@@ -8,6 +8,7 @@ using NUnit.Framework;
 using static RyuJitSharp.insFlags;
 using static RyuJitSharp.insOpts;
 using static RyuJitSharp.instruction;
+using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -68,6 +69,17 @@ internal static class Arm32ThumbInstructionEncodingTests
     public static void MovImmediateEncodingMatchesThumb2(int imm, uint expected)
     {
         Assert.That(Emitter.insEncodeImmT2_Mov(imm), Is.EqualTo(expected));
+    }
+
+    [TestCase(REG_R0, 0u, 0u, 0u, 0u)]
+    [TestCase(REG_R7, 0x7000u, 0x0700u, 7u, 0x00070000u)]
+    [TestCase(REG_PC, 0xF000u, 0x0F00u, 15u, 0x000F0000u)]
+    public static void Thumb2GeneralRegisterEncodingsMatchField(regNumber reg, uint expectedT, uint expectedD, uint expectedM, uint expectedN)
+    {
+        Assert.That(Emitter.insEncodeRegT2_T(reg), Is.EqualTo(expectedT));
+        Assert.That(Emitter.insEncodeRegT2_D(reg), Is.EqualTo(expectedD));
+        Assert.That(Emitter.insEncodeRegT2_M(reg), Is.EqualTo(expectedM));
+        Assert.That(Emitter.insEncodeRegT2_N(reg), Is.EqualTo(expectedN));
     }
 
     [TestCase(INS_ldr, 0, 0)]

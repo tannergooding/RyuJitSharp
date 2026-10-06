@@ -81,6 +81,34 @@ public partial class Emitter
         return result;
     }
 
+    internal static uint insEncodeRegT2_T(regNumber reg)
+    {
+        assert(reg < REG_STK);
+
+        return (uint)reg << 12;
+    }
+
+    internal static uint insEncodeRegT2_D(regNumber reg)
+    {
+        assert(reg < REG_STK);
+
+        return (uint)reg << 8;
+    }
+
+    internal static uint insEncodeRegT2_M(regNumber reg)
+    {
+        assert(reg < REG_STK);
+
+        return (uint)reg;
+    }
+
+    internal static uint insEncodeRegT2_N(regNumber reg)
+    {
+        assert(reg < REG_STK);
+
+        return (uint)reg << 16;
+    }
+
     internal static int insUnscaleImm(instruction ins, int imm)
     {
         switch (ins)
