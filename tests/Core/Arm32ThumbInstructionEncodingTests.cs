@@ -13,7 +13,7 @@ using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp.UnitTests;
 
-internal static class Arm32ThumbInstructionEncodingTests
+internal static unsafe class Arm32ThumbInstructionEncodingTests
 {
     [TestCase(INS_FLAGS_NOT_SET, 0u)]
     [TestCase(INS_FLAGS_SET, 0x00100000u)]
@@ -107,6 +107,64 @@ internal static class Arm32ThumbInstructionEncodingTests
         Assert.That(Emitter.insEncodeRegT2_VectorM(reg, size, variant), Is.EqualTo(expectedM));
         Assert.That(Emitter.insEncodeRegT2_VectorN(reg, size, variant), Is.EqualTo(expectedN));
         Assert.That(Emitter.insEncodeRegT2_VectorD(reg, size, variant), Is.EqualTo(expectedD));
+    }
+
+    [Test]
+    public static void Thumb1InstructionOutputUsesWritableAlias()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            var buffer = stackalloc byte[24];
+            for (var index = 0; index < 24; index++)
+            {
+                buffer[index] = 0xA5;
+            }
+
+            emitter.writeableOffset = 8;
+            var count = emitter.emitOutput_Thumb1Instr(buffer + 3, 0x1234);
+
+            Assert.That(count, Is.EqualTo((uint)sizeof(short)));
+            Assert.That(buffer[11], Is.EqualTo(0x34));
+            Assert.That(buffer[12], Is.EqualTo(0x12));
+            for (var index = 0; index < 24; index++)
+            {
+                if (index is < 11 or >= 13)
+                {
+                    Assert.That(buffer[index], Is.EqualTo(0xA5));
+                }
+            }
+        });
+    }
+
+    [Test]
+    public static void Thumb2InstructionOutputUsesWritableAliasAndHalfwordOrder()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            var buffer = stackalloc byte[24];
+            for (var index = 0; index < 24; index++)
+            {
+                buffer[index] = 0xA5;
+            }
+
+            emitter.writeableOffset = 8;
+            var count = emitter.emitOutput_Thumb2Instr(buffer + 3, 0xE8001234);
+
+            Assert.That(count, Is.EqualTo((uint)(sizeof(short) * 2)));
+            Assert.That(buffer[11], Is.EqualTo(0x00));
+            Assert.That(buffer[12], Is.EqualTo(0xE8));
+            Assert.That(buffer[13], Is.EqualTo(0x34));
+            Assert.That(buffer[14], Is.EqualTo(0x12));
+            for (var index = 0; index < 24; index++)
+            {
+                if (index is < 11 or >= 15)
+                {
+                    Assert.That(buffer[index], Is.EqualTo(0xA5));
+                }
+            }
+        });
     }
 
     [TestCase(INS_ldr, 0, 0)]

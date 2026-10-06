@@ -161,6 +161,36 @@ public partial class Emitter
         return ((encoding & 0xF) << 12) | ((encoding & 0x10) << 18);
     }
 
+    internal unsafe uint emitOutput_Thumb1Instr(byte* dst, uint code)
+    {
+        var word1 = code & 0xFFFF;
+        assert(word1 == code);
+
+#if DEBUG
+        var top5bits = (word1 & 0xF800) >> 11;
+        assert(top5bits < 29);
+#endif
+
+        return emitOutputWord(dst, word1);
+    }
+
+    internal unsafe uint emitOutput_Thumb2Instr(byte* dst, uint code)
+    {
+        var word1 = (code >> 16) & 0xFFFF;
+        var word2 = code & 0xFFFF;
+        assert(((word1 << 16) | word2) == code);
+
+#if DEBUG
+        var top5bits = (word1 & 0xF800) >> 11;
+        assert(top5bits >= 29);
+#endif
+
+        emitOutputWord(dst, word1);
+        emitOutputWord(unchecked(dst + sizeof(short)), word2);
+
+        return sizeof(short) * 2;
+    }
+
     internal static int insUnscaleImm(instruction ins, int imm)
     {
         switch (ins)
