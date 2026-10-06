@@ -1515,6 +1515,13 @@ public sealed partial class CodeGen
                 _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {parts[3].Trim()}, // {parts[0].Trim()}");
             }
         });
+        var armInstructionFormats = ProcessInstrs((builder, inputFile, line, prefix, parts) =>
+        {
+            if (inputFile.Equals(@"Inputs\instrsarm.h", StringComparison.Ordinal))
+            {
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {parts[4].Trim()}, // {parts[0].Trim()}");
+            }
+        });
 
         _ = Directory.CreateDirectory(@"Outputs\jit\emit");
         File.WriteAllText(@"Outputs\jit\emit\Emitter.InstructionFormats.generated.cs", $$"""
@@ -1625,6 +1632,28 @@ public partial class Emitter
 #if TARGET_ARM64
     private static ReadOnlySpan<insFormat> s_instructionFormats => [
 {{arm64InstructionFormats}}
+    ];
+#endif
+}
+""");
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\emitarm");
+        File.WriteAllText(@"Outputs\jit\emitarm\Emitter.InstructionFormats.generated.cs", $$"""
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+using static RyuJitSharp.Emitter.insFormat;
+
+namespace RyuJitSharp;
+
+public partial class Emitter
+{
+#if TARGET_ARM
+    private static ReadOnlySpan<insFormat> s_instructionFormats => [
+{{armInstructionFormats}}
     ];
 #endif
 }

@@ -17,6 +17,13 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    private insFormat emitInsFormat(instruction ins)
+    {
+        assert((uint)ins < (uint)s_instructionFormats.Length);
+        assert(s_instructionFormats[(int)ins] != IF_NONE);
+        return s_instructionFormats[(int)ins];
+    }
+
     private static insSize emitInsSize(insFormat format)
     {
         if ((format >= IF_T1_A) && (format < IF_T2_A))
