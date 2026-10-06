@@ -18,6 +18,7 @@
     <Compile Include="..\Core\AbiHeaderTests.cs" Link="AbiHeaderTests.cs" />
     <Compile Include="..\Core\AbiPassingInformationTests.cs" Link="AbiPassingInformationTests.cs" />
     <Compile Include="..\Core\ArmCalleeSavedRegisterTests.cs" Link="ArmCalleeSavedRegisterTests.cs" />
+    <Compile Include="..\Core\ArmGcInfoPublicationTests.cs" Link="ArmGcInfoPublicationTests.cs" />
     <Compile Include="..\Core\Arm64*Tests.cs" Link="%(Filename)%(Extension)" />
     <Compile Include="..\Core\CSELiveAcrossCallCostTests.cs" Link="CSELiveAcrossCallCostTests.cs" />
     <Compile Include="..\Core\ConfigIntegerReinterpretationTests.cs" Link="ConfigIntegerReinterpretationTests.cs" />

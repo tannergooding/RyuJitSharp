@@ -11,7 +11,9 @@ public sealed unsafe partial class GcInfoEncoder
 {
     public GcInfoEncoder(ICorJitInfo* pCorJitInfo, CORINFO_METHOD_INFO* pMethodInfo)
     {
-#if !TARGET_AMD64
+#if TARGET_ARM || TARGET_ARMARCH
+        throw new FatalJitException(CORJIT_SKIPPED, "GC info encoding is not implemented for ARM targets.");
+#elif !TARGET_AMD64
         throw new PlatformNotSupportedException("Only the AMD64 GC info encoding is implemented.");
 #else
         if (pCorJitInfo is null || pMethodInfo is null)
@@ -176,6 +178,14 @@ public sealed unsafe partial class GcInfoEncoder
         assert(m_SizeOfEditAndContinuePreservedArea == NO_REGISTER_OR_AREA);
         m_SizeOfEditAndContinuePreservedArea = slots;
     }
+
+#if TARGET_ARM64
+    public void SetSizeOfEditAndContinueFixedStackFrame(uint size)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED,
+            "ARM64 Edit-and-Continue GC-info metadata is not implemented.");
+    }
+#endif
 
     public void SetWantsReportOnlyLeaf()
     {
