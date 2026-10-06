@@ -54,6 +54,37 @@ internal static class Arm32InstructionFormatTests
         Assert.That(InstructionSize(null, format), Is.EqualTo(expectedSize));
     }
 
+    [TestCase(INS_nop, IF_T1_A, ISZ_16BIT, 2u)]
+    [TestCase(INS_nopw, IF_T2_A, ISZ_32BIT, 4u)]
+    public static void ZeroOperandInstructionsUseTheirNativeFormatAndSize(
+        instruction ins, Emitter.insFormat expectedFormat, Emitter.insSize expectedSize, uint expectedCodeSize)
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            var initialGroupSize = InstructionGroupSize(emitter);
+#if DEBUG
+            var failure = Assert.Throws<FatalJitException>(() => emitter.emitIns(ins));
+            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
+#else
+            emitter.emitIns(ins);
+            Assert.That(InstructionGroupSize(emitter), Is.EqualTo(initialGroupSize + (int)expectedCodeSize));
+#endif
+
+            var descriptor = LastInstruction(emitter)
+                ?? throw new AssertionException("No zero-operand instruction was recorded.");
+            Assert.That(descriptor.idIns(), Is.EqualTo(ins));
+            Assert.That(descriptor.idInsFmt(), Is.EqualTo(expectedFormat));
+            Assert.That(descriptor.idInsSize(), Is.EqualTo(expectedSize));
+        });
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]
+    private static extern ref Emitter.instrDesc? LastInstruction(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGsize")]
+    private static extern ref int InstructionGroupSize(Emitter emitter);
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsFormat")]
     private static extern Emitter.insFormat Format(Emitter emitter, instruction ins);
 
