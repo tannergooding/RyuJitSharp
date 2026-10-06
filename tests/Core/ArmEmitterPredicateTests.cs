@@ -93,6 +93,26 @@ internal static class ArmEmitterPredicateTests
         Assert.That(EmitInsMayWriteMultipleRegs(s_emitter, NewDescriptor(INS_add, IF_T1_E)), Is.False);
     }
 
+    [TestCase(IF_T1_C, INS_add, true)]
+    [TestCase(IF_T2_C0, INS_add, true)]
+    [TestCase(IF_T1_C, INS_str, false)]
+    [TestCase(IF_T1_C, INS_push, false)]
+    [TestCase(IF_T1_C, INS_cmp, false)]
+    [TestCase(IF_T1_C, INS_teq, false)]
+    [TestCase(IF_T2_VMOVS, INS_vmov_f2i, true)]
+    [TestCase(IF_T2_VMOVS, INS_vmov_i2f, false)]
+    [TestCase(IF_T2_VMOVD, INS_vmov_d2i, true)]
+    [TestCase(IF_T2_VMOVD, INS_vmov_i2d, false)]
+    [TestCase(IF_NONE, INS_add, false)]
+    public static void GCRegisterWriteClassificationUsesInstructionFormatAndOpcode(
+        Emitter.insFormat format, instruction ins, bool expected)
+    {
+        var descriptor = NewDescriptor(ins, format);
+        descriptor.idGCref(GCInfo.GCtype.GCT_NONE);
+
+        Assert.That(EmitInsMayWriteToGCReg(s_emitter, descriptor), Is.EqualTo(expected));
+    }
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsIsLoadOrStore")]
     private static extern bool EmitInsIsLoadOrStore(Emitter emitter, instruction ins);
 
@@ -107,6 +127,9 @@ internal static class ArmEmitterPredicateTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsMayWriteMultipleRegs")]
     private static extern bool EmitInsMayWriteMultipleRegs(Emitter emitter, Emitter.instrDesc id);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsMayWriteToGCReg")]
+    private static extern bool EmitInsMayWriteToGCReg(Emitter emitter, Emitter.instrDesc id);
 
     private static Emitter.instrDesc NewDescriptor(instruction ins, Emitter.insFormat format, bool isLocal = false)
     {

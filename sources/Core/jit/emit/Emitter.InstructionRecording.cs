@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using static RyuJitSharp.Emitter.insFormat;
+
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -118,6 +120,80 @@ public partial class Emitter
         // IF_T2_E2 is the single-register POP encoding.
         return ins is INS_ldm or INS_ldmdb or INS_smlal or INS_smull or INS_umlal or INS_umull or INS_vmov_d2i ||
             ((ins == INS_pop) && (id.idInsFmt() != insFormat.IF_T2_E2));
+    }
+
+    private bool emitInsMayWriteToGCReg(instrDesc id)
+    {
+        var ins = id.idIns();
+
+        switch (id.idInsFmt())
+        {
+            case IF_T1_C:
+            case IF_T1_D0:
+            case IF_T1_E:
+            case IF_T1_G:
+            case IF_T1_H:
+            case IF_T1_J0:
+            case IF_T1_J1:
+            case IF_T1_J2:
+            case IF_T1_J3:
+            case IF_T2_C0:
+            case IF_T2_C1:
+            case IF_T2_C2:
+            case IF_T2_C3:
+            case IF_T2_C4:
+            case IF_T2_C5:
+            case IF_T2_C6:
+            case IF_T2_C10:
+            case IF_T2_D0:
+            case IF_T2_D1:
+            case IF_T2_F1:
+            case IF_T2_F2:
+            case IF_T2_L0:
+            case IF_T2_L1:
+            case IF_T2_M0:
+            case IF_T2_M1:
+            case IF_T2_N:
+            case IF_T2_N1:
+            case IF_T2_N2:
+            case IF_T2_N3:
+            case IF_T2_VFP3:
+            case IF_T2_VFP2:
+            case IF_T2_VLDST:
+            case IF_T2_E0:
+            case IF_T2_E1:
+            case IF_T2_E2:
+            case IF_T2_G0:
+            case IF_T2_G1:
+            case IF_T2_H0:
+            case IF_T2_H1:
+            case IF_T2_K1:
+            case IF_T2_K4:
+            {
+                return ins is not (
+                    INS_str or INS_strb or INS_strh or INS_strd or INS_strex or INS_strexb or INS_strexd or INS_strexh or
+                    INS_push or INS_cmp or INS_cmn or INS_tst or INS_teq);
+            }
+
+            case IF_T2_VMOVS:
+            {
+                // Integer-to-float moves read integer registers; float-to-integer moves can overwrite GC registers.
+                assert(id.idGCref() == GCInfo.GCtype.GCT_NONE);
+                return ins == INS_vmov_f2i;
+            }
+
+            case IF_T2_VMOVD:
+            {
+                // Integer-to-double moves read integer registers; double-to-integer moves can overwrite GC registers.
+                assert(id.idGCref() == GCInfo.GCtype.GCT_NONE);
+                return ins == INS_vmov_d2i;
+            }
+
+            default:
+            {
+                return false;
+            }
+        }
     }
 
 #endif
