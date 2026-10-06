@@ -56,7 +56,7 @@
         "src/coreclr/jit/fgwasm.h::FgWasm::VisitWasmSuccs"
       ],
       "managed": "Wasm successor traversal; proposed fixture tests/Targets/WasmSuccessorEnumeratorTests.cs",
-      "blocker": "VisitWasmSuccs depends on AddCodeDscMap key iteration order, which follows native hash buckets and changes as EH cleanup removes/rekeys entries. A final managed Dictionary enumeration does not preserve this contract; do not expand shared map semantics without resolving that design boundary."
+      "blocker": "Tracked as B508. VisitWasmSuccs depends on AddCodeDscMap key iteration order, which follows native hash buckets and changes as EH cleanup removes/rekeys entries. A final managed Dictionary enumeration does not preserve this contract; do not expand shared map semantics without resolving that design boundary."
     },
     "residualReconciliation": {
       "status": "in-progress",

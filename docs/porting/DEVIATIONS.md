@@ -2414,15 +2414,3 @@ This does not establish parity with the undefined native read; native behavior
 must be corrected or explicitly accepted before claiming parity for these rows.
 The native reporter and its report-only histogram tables are now retired from
 `runtime-port`; this deviation describes the pinned oracle behavior only.
-
-## Incomplete implementation, not intentional deviations
-
-| ID | Evidence at the recorded C# baseline | Required action |
-| --- | --- | --- |
-| G001 | `Compiler.comp.cs`, `compCompileHelper`/local `GetResult`, deliberately returns `CORJIT_SKIPPED` until codegen exists. | Separate phase validation from codegen success and native fallback. Return success only after real code and required metadata exist. |
-| G002 | `Compiler.cs`, `Compiler.fg.cs`, and `Compiler.opt.cs` contain phase methods returning `MODIFIED_NOTHING` with port TODOs. | Treat each as a stub, not a verified no-op. Replace complete functions in dependency order. |
-| G003 | `Compiler.imp.cs`, `impHWIntrinsic`, currently returns `null` under a port TODO. | Reconcile the full intrinsic contract, including `mustExpand`; ordinary-call fallback is not proof of parity. |
-| G004 | The original baseline had an empty `tests/Core/RyuJitSharp.UnitTests.csproj`. | Focused output regression cases now exist. Do not infer compiler-wide coverage; prioritize dump/disassembly and runtime-test validation. |
-
-These entries describe the unstashed baseline. Reassess the affected gaps when
-the saved WIP is integrated; do not overwrite existing work based on this table.

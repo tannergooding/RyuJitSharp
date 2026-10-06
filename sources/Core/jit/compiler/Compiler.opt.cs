@@ -53,10 +53,6 @@ public partial class Compiler
 
     protected CSEdsc?[] optCSEtab = [];
 
-    // Treewalk helper for optCSE_DefMask and optCSE_UseMask
-    // TODO: Port Compiler.optCSE_MaskHelper
-    // protected static unsafe fgWalkPreFn optCSE_MaskHelper;
-
     /// <summary>True when we have found a duplicate CSE tree</summary>
     protected bool optDoCSE;
 
@@ -95,9 +91,6 @@ public partial class Compiler
     public BitVecTraits? optReachableBitVecTraits;
 
     public unsafe BitVec? optReachableBitVec;
-
-    // TODO: Port Compiler.optVNAssertionPropCurStmtVisitor
-    // protected static unsafe fgWalkPreFn optVNAssertionPropCurStmtVisitor;
 
     /// <summary>indicates that we are performing local assertion prop</summary>
     protected bool optLocalAssertionProp;
