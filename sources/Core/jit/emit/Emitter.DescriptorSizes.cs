@@ -21,7 +21,7 @@ public partial class Emitter
     internal static class DescriptorSizes
     {
         internal const int Small = 8;
-#if TARGET_X86 || (TARGET_WASM && !HOST_64BIT)
+#if TARGET_X86 || TARGET_ARM || (TARGET_WASM && !HOST_64BIT)
         internal const int Full = Small + 4;
         internal const int Jump = 28;
         internal const int Label = Jump + 4;
@@ -39,19 +39,19 @@ public partial class Emitter
         internal const int WasmMemargLane = Full + 8;
 #endif
 #if DEBUG
-#if TARGET_X86
+#if TARGET_X86 || TARGET_ARM
         internal const int Align = 28;
 #else
         internal const int Align = 48;
 #endif
 #else
-#if TARGET_X86
+#if TARGET_X86 || TARGET_ARM
         internal const int Align = 24;
 #else
         internal const int Align = 40;
 #endif
 #endif
-#if TARGET_X86 || (TARGET_WASM && !HOST_64BIT)
+#if TARGET_X86 || TARGET_ARM || (TARGET_WASM && !HOST_64BIT)
         internal const int DebugPrefix = 4;
         internal const int DebugInfo = 36;
 #else
@@ -68,12 +68,17 @@ public partial class Emitter
 
     protected sealed class instrDescBasic : instrDesc
     {
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_WASM
+#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_WASM
         public override int NativeLogicalSize
         {
             get
             {
 #if TARGET_WASM
+                if (idIns() == INS_invalid)
+                {
+                    throw new InvalidOperationException("This instruction requires an initialized descriptor with its native layout.");
+                }
+#elif TARGET_ARM
                 if (idIns() == INS_invalid)
                 {
                     throw new InvalidOperationException("This instruction requires an initialized descriptor with its native layout.");

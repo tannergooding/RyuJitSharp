@@ -39,6 +39,9 @@ public partial class Emitter
         internal static int NativeSize => 72;
 #elif TARGET_ARM64
         internal static int NativeSize => Arm64CallDescriptorSize();
+#elif TARGET_ARM
+        // The 12-byte base, 4-byte varset/displacement/count, and two 8-byte reg masks round to 48 bytes.
+        internal static int NativeSize => 48;
 #else
         internal static int NativeSize
             => throw new System.PlatformNotSupportedException("The call descriptor layout is not yet ported for this target.");

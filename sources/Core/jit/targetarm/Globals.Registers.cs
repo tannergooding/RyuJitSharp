@@ -53,6 +53,7 @@ public partial class Globals
         SRBM_F0 | SRBM_F1 | SRBM_F2 | SRBM_F3 | SRBM_F4 | SRBM_F5 | SRBM_F6 | SRBM_F7 |
         SRBM_F8 | SRBM_F9 | SRBM_F10 | SRBM_F11 | SRBM_F12 | SRBM_F13 | SRBM_F14 | SRBM_F15;
 
+    public const regMask SRBM_CALLEE_SAVED = SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED;
     public const regMask SRBM_ALLINT = SRBM_INT_CALLEE_SAVED | SRBM_INT_CALLEE_TRASH;
     public const regMask SRBM_ALLFLOAT = SRBM_FLT_CALLEE_SAVED | SRBM_FLT_CALLEE_TRASH;
     public const regMask SRBM_ALLDOUBLE =
@@ -90,6 +91,13 @@ public partial class Globals
 
     public const regNumber REG_SCRATCH = REG_LR;
     public const regNumber REG_SECRET_STUB_PARAM = REG_R12;
+    public const regMask SRBM_DEFAULT_HELPER_CALL_TARGET = SRBM_R12;
+    public const regMask SRBM_CALLEE_TRASH_NOGC =
+        SRBM_R2 | SRBM_R3 | SRBM_LR | SRBM_DEFAULT_HELPER_CALL_TARGET;
+    public const regMask SRBM_CALLEE_TRASH_WRITEBARRIER =
+        SRBM_R0 | SRBM_R3 | SRBM_LR | SRBM_DEFAULT_HELPER_CALL_TARGET;
+    public const regMask SRBM_CALLEE_GCTRASH_WRITEBARRIER = SRBM_CALLEE_TRASH_WRITEBARRIER;
+    public const regMask SRBM_PROFILER_RET_SCRATCH = SRBM_R2;
     public const regNumber REG_PINVOKE_FRAME = REG_R4;
     public const regNumber REG_VALIDATE_INDIRECT_CALL_ADDR = REG_R0;
     public const regNumber REG_FPBASE = REG_R11;
