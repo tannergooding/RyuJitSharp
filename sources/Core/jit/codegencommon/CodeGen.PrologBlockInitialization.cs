@@ -22,6 +22,92 @@ public sealed partial class CodeGen
     {
 #if TARGET_WASM
         unreached();
+#elif TARGET_ARM
+        assert(Emitter.emitGeneratingPrologOrFuncletProlog());
+        assert(UseBlockInit);
+        assert(untrLclHi > untrLclLo);
+
+        var availMask = _regSet.rsGetModifiedRegsMask() | new regMaskTP(SRBM_INT_CALLEE_TRASH);
+        availMask &= ~_calleeRegArgMaskLiveIn;
+        availMask &= ~genRegMask(initReg);
+        if (_compiler.compLocallocUsed)
+        {
+            availMask &= ~new regMaskTP(SRBM_SAVED_LOCALLOC_SP);
+        }
+
+        noway_assert(availMask.IsNonEmpty);
+        var rZero2Mask = genFindLowestBit(availMask);
+        var rZero2 = (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)rZero2Mask.Lower));
+        availMask &= ~rZero2Mask;
+        assert((genRegMask(rZero2) & _calleeRegArgMaskLiveIn).IsEmpty);
+
+        noway_assert(availMask.IsNonEmpty);
+        var rAddrMask = genFindLowestBit(availMask);
+        var rAddr = (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)rAddrMask.Lower));
+        availMask &= ~rAddrMask;
+
+        var cntBytes = unchecked((uint)(untrLclHi - untrLclLo));
+        assert((cntBytes % sizeof(int)) == 0);
+        var cntSlots = cntBytes / REGSIZE_BYTES;
+        var useLoop = cntSlots >= 10;
+        var rCnt = REG_NA;
+        if (useLoop)
+        {
+            noway_assert(availMask.IsNonEmpty);
+            var rCntMask = genFindLowestBit(availMask);
+            rCnt = (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)rCntMask.Lower));
+            availMask &= ~rCntMask;
+        }
+
+        assert((genRegMask(rAddr) & _calleeRegArgMaskLiveIn).IsEmpty);
+        if (arm_Valid_Imm_For_Add(untrLclLo, INS_FLAGS_DONT_CARE))
+        {
+            Emitter.emitIns_R_R_I(INS_add, EA_PTRSIZE, rAddr, genFramePointerReg(), untrLclLo,
+                INS_FLAGS_DONT_CARE);
+        }
+        else
+        {
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, untrLclLo);
+            Emitter.emitIns_R_R_R(INS_add, EA_PTRSIZE, rAddr, genFramePointerReg(), initReg);
+            initRegZeroed = false;
+        }
+
+        if (useLoop)
+        {
+            noway_assert(cntSlots >= 2);
+            assert((genRegMask(rCnt) & _calleeRegArgMaskLiveIn).IsEmpty);
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, rCnt, unchecked((nint)(cntSlots / 2)));
+        }
+
+        var rZero1 = genGetZeroReg(initReg, ref initRegZeroed);
+        instGen_Set_Reg_To_Zero(EA_PTRSIZE, rZero2);
+        var stmImm = unchecked((nint)(genRegMask(rZero1) | genRegMask(rZero2)).Lower);
+
+        if (!useLoop)
+        {
+            while (cntBytes >= REGSIZE_BYTES * 2)
+            {
+                Emitter.emitIns_R_I(INS_stm, EA_PTRSIZE, rAddr, stmImm);
+                cntBytes -= REGSIZE_BYTES * 2;
+            }
+        }
+        else
+        {
+            var loopHead = genCreateTempLabel();
+            genDefineInlineTempLabel(loopHead);
+            Emitter.emitIns_R_I(INS_stm, EA_PTRSIZE, rAddr, stmImm);
+            Emitter.emitIns_R_I(INS_sub, EA_PTRSIZE, rCnt, 1, INS_FLAGS_SET);
+            Emitter.emitIns_ShortJ(INS_bhi, loopHead);
+            cntBytes %= REGSIZE_BYTES * 2;
+        }
+
+        if (cntBytes >= REGSIZE_BYTES)
+        {
+            Emitter.emitIns_R_R_I(INS_str, EA_PTRSIZE, rZero1, rAddr, 0, INS_FLAGS_DONT_CARE);
+            cntBytes -= REGSIZE_BYTES;
+        }
+
+        noway_assert(cntBytes == 0);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Prolog block initialization requires xarch.");
 #else

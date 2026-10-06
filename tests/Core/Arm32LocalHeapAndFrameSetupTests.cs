@@ -4,6 +4,8 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if TARGET_ARM
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.emitAttr;
@@ -90,6 +92,35 @@ internal static class Arm32LocalHeapAndFrameSetupTests
         });
     }
 
+    [TestCase(-16, 36, 4, 1, 0)]
+    [TestCase(-16, 40, 1, 0, 1)]
+    [TestCase(-16, 44, 1, 1, 1)]
+    [TestCase(-8192, 32, 4, 0, 0)]
+    public static void BlockInitializationUsesTheArm32StoreWidthAndLoopThreshold(
+        int low, int size, int pairStores, int scalarStores, int loopBranches)
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compCurBB = new BasicBlock(null, null);
+            codeGen.Emitter.emitBegProlog();
+            codeGen.resetFramePointerUsedWritePhase();
+            codeGen.IsFramePointerUsed = true;
+            SetUseBlockInit(codeGen, true);
+            var initRegZeroed = false;
+
+            codeGen.genZeroInitFrameUsingBlockInit(low + size, low, REG_R0, ref initRegZeroed);
+
+            var descriptors = Descriptors(codeGen.Emitter);
+            Assert.That(descriptors.Count(static descriptor => descriptor.idIns() == INS_stm),
+                Is.EqualTo(pairStores));
+            Assert.That(descriptors.Count(static descriptor => descriptor.idIns() == INS_str),
+                Is.EqualTo(scalarStores));
+            Assert.That(descriptors.Count(static descriptor => descriptor.idIns() == INS_bhi),
+                Is.EqualTo(loopBranches));
+            Assert.That(initRegZeroed, Is.True);
+        }, captureAssertions: true, minOpts: false);
+    }
+
     [Test]
     public static void ConstantLocalHeapAlignmentWrapsAtArm32TargetWidth()
     {
@@ -119,5 +150,16 @@ internal static class Arm32LocalHeapAndFrameSetupTests
     {
         return Last(emitter) ?? throw new AssertionException("Expected an emitted instruction.");
     }
+
+    private static List<Emitter.instrDesc> Descriptors(Emitter emitter)
+    {
+        return CurrentDescriptors(emitter) ?? throw new AssertionException("Missing descriptor buffer.");
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
+    private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_UseBlockInit")]
+    private static extern void SetUseBlockInit(CodeGen codeGen, bool value);
 }
 #endif
