@@ -1519,11 +1519,11 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             };
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreInd(store));
-
 #if TARGET_LOONGARCH64
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreInd(store));
             Assert.That(failure?.Message, Does.Contain("LoongArch64 memory barrier emission is not ported."));
 #else
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreInd(store));
             Assert.That(failure?.Message, Does.Contain("RISC-V64 memory barrier emission is not ported."));
 #endif
         });
@@ -1539,10 +1539,169 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var load = new GenTreeIndir(GT_IND, TYP_INT, address) { RegNum = REG_S1 };
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForIndir(load));
+            var instructionBuffer = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(codeGen.Emitter);
 
-            Assert.That(failure?.Message,
-                Does.Contain("RISC-V64 indirect load/store instruction recording is not ported."));
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            var failure = CaptureFatalJitException(() => codeGen.genCodeForIndir(load));
+            AssertRiscVRecorderOutcome(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+        });
+    }
+
+    [TestCase(8, false, 1)]
+    [TestCase(0x12345, true, 2)]
+    [TestCase(-0x12345, true, 2)]
+    public static void ContainedAddressModeLoadRecordsTheExpectedInstructionSequence(
+        int offset,
+        bool requiresTemporary,
+        int minimumInstructionCount)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var baseAddress = Register(compiler, TYP_BYREF, REG_S0);
+            var address = new GenTreeAddrMode(TYP_BYREF, baseAddress, null, 1, offset)
+            {
+                IsContained = true,
+            };
+            var load = new GenTreeIndir(GT_IND, TYP_INT, address) { RegNum = REG_S1 };
+            if (requiresTemporary)
+            {
+                codeGen.InternalRegisters.Add(
+                    load, regMaskTP.CreateFromRegNum(REG_A1, REG_A1.SingleTypeMask));
+            }
+
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            var failure = CaptureFatalJitException(() =>
+                emitter.emitInsLoadStoreOp(INS_lw, EA_4BYTE, REG_S1, load));
+            AssertRiscVRecorderOutcome(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+#if !DEBUG
+            Assert.That(instructionBuffer.Count - initialInstructionCount,
+                Is.GreaterThanOrEqualTo(minimumInstructionCount));
+#endif
+        });
+    }
+
+    [TestCase(8, 1)]
+    [TestCase(0x12345, 2)]
+    public static void ContainedAbsoluteAddressLoadUsesImmediateOrMaterialization(
+        int addressValue,
+        int minimumInstructionCount)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var address = new GenTreeIntCon(TYP_I_IMPL, addressValue) { IsContained = true };
+            var load = new GenTreeIndir(GT_IND, TYP_INT, address) { RegNum = REG_S1 };
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            var failure = CaptureFatalJitException(() =>
+                emitter.emitInsLoadStoreOp(INS_lw, EA_4BYTE, REG_S1, load));
+            AssertRiscVRecorderOutcome(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+#if !DEBUG
+            Assert.That(instructionBuffer.Count - initialInstructionCount,
+                Is.GreaterThanOrEqualTo(minimumInstructionCount));
+#endif
+        });
+    }
+
+    [Test]
+    public static void ContainedAbsoluteAddressStoreUsesAnInternalAddressRegister()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var address = new GenTreeIntCon(TYP_I_IMPL, 0x12345) { IsContained = true };
+            var data = new GenTreePhysReg(REG_S1, TYP_INT) { RegNum = REG_S1 };
+            var store = new GenTreeStoreInd(TYP_INT, address, data);
+            codeGen.InternalRegisters.Add(
+                store, regMaskTP.CreateFromRegNum(REG_A1, REG_A1.SingleTypeMask));
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            var failure = CaptureFatalJitException(() =>
+                emitter.emitInsLoadStoreOp(INS_sw, EA_4BYTE, REG_S1, store));
+            AssertRiscVRecorderOutcome(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+#if !DEBUG
+            Assert.That(instructionBuffer.Count - initialInstructionCount, Is.GreaterThan(1));
+#endif
+        });
+    }
+
+    [Test]
+    public static void RelocatableContainedAddressLoadUsesTheRelocationDescriptor()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.getRelocTypeHint = &GetRelocTypeHint;
+            var context = new HelperContext
+            {
+                JitInfo = new ICorJitInfo { lpVtbl = &vtable },
+                Address = (void*)0x1234,
+                RelocHint = CorInfoReloc.RELATIVE32,
+            };
+            compiler.info.compCompHnd = &context.JitInfo;
+            compiler.info.compMatchedVM = true;
+            compiler.opts.compReloc = true;
+#if DEBUG
+            compiler.opts.compEnablePCRelAddr = true;
+#endif
+            var address = compiler.gtNewIconHandleNode((nint)context.Address, GTF_ICON_CONST_PTR);
+            address.IsContained = true;
+            var load = new GenTreeIndir(GT_IND, TYP_INT, address) { RegNum = REG_S1 };
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            var failure = CaptureFatalJitException(() =>
+                emitter.emitInsLoadStoreOp(INS_lw, EA_4BYTE, REG_S1, load));
+            AssertRiscVRecorderOutcome(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+#if !DEBUG
+            Assert.That(instructionBuffer.Count - initialInstructionCount, Is.EqualTo(1));
+#endif
         });
     }
 #endif
@@ -1592,14 +1751,24 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var store = new GenTreeStoreInd(TYP_INT, address, data);
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreInd(store));
-
 #if TARGET_LOONGARCH64
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreInd(store));
             Assert.That(failure?.Message,
                 Does.Contain("LoongArch64 indirect-store instruction recording is not ported."));
 #else
-            Assert.That(failure?.Message,
-                Does.Contain("RISC-V64 indirect load/store instruction recording is not ported."));
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+            var failure = CaptureFatalJitException(() => codeGen.genCodeForStoreInd(store));
+            AssertRiscVRecorderOutcome(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 #endif
         });
     }
