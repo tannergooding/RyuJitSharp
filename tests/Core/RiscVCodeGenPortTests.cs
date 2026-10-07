@@ -26,14 +26,15 @@ internal static unsafe class RiscVCodeGenPortTests
 {
     [TestCase(TYP_INT)]
     [TestCase(TYP_BYREF)]
-    public static void IntegerConstantPreservesRiscVImmediateRecordingBoundary(var_types type)
+    public static void IntegerConstantNodeDispatchPreservesRiscVImmediateRecordingBoundary(var_types type)
     {
         WithCodeGen((compiler, codeGen) =>
         {
             var constant = compiler.gtNewIconNode(type, 42);
+            constant.RegNum = REG_A0;
 
             var failure = Assert.Throws<FatalJitException>(
-                () => codeGen.genSetRegToConst(REG_A0, type, constant));
+                () => codeGen.genCodeForTreeNode(constant));
 
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
             Assert.That(failure?.Message,
@@ -48,7 +49,7 @@ internal static unsafe class RiscVCodeGenPortTests
     [TestCase(TYP_FLOAT, 0x12345000UL, "Target register-immediate recording is not implemented.")]
     [TestCase(TYP_DOUBLE, 0x12345000UL, "Target register-immediate recording is not implemented.")]
     [TestCase(TYP_FLOAT, 0x80000000UL, "Target register-immediate recording is not implemented.")]
-    public static void InlineFloatingConstantPreservesRiscVInstructionRecordingBoundary(
+    public static void InlineFloatingConstantNodeDispatchPreservesRiscVInstructionRecordingBoundary(
         var_types type,
         ulong bits,
         string expectedBoundary)
@@ -59,6 +60,7 @@ internal static unsafe class RiscVCodeGenPortTests
                 ? BitConverter.UInt32BitsToSingle(unchecked((uint)bits))
                 : BitConverter.UInt64BitsToDouble(bits);
             var constant = compiler.gtNewDconNode(type, value);
+            constant.RegNum = REG_FA0;
             if (bits != 0)
             {
                 codeGen.InternalRegisters.Add(
@@ -66,7 +68,7 @@ internal static unsafe class RiscVCodeGenPortTests
             }
 
             var failure = Assert.Throws<FatalJitException>(
-                () => codeGen.genSetRegToConst(REG_FA0, type, constant));
+                () => codeGen.genCodeForTreeNode(constant));
 
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
             Assert.That(failure?.Message, Does.Contain(expectedBoundary));
@@ -77,7 +79,7 @@ internal static unsafe class RiscVCodeGenPortTests
     [TestCase(TYP_FLOAT, 0x12345001UL)]
     [TestCase(TYP_DOUBLE, 0x8000000000000000UL)]
     [TestCase(TYP_DOUBLE, 0x3FF0000000000001UL)]
-    public static void PooledFloatingConstantPreservesRiscVEmbeddedDataRecordingBoundary(
+    public static void PooledFloatingConstantNodeDispatchPreservesRiscVEmbeddedDataRecordingBoundary(
         var_types type,
         ulong bits)
     {
@@ -87,9 +89,10 @@ internal static unsafe class RiscVCodeGenPortTests
                 ? BitConverter.UInt32BitsToSingle(unchecked((uint)bits))
                 : BitConverter.UInt64BitsToDouble(bits);
             var constant = compiler.gtNewDconNode(type, value);
+            constant.RegNum = REG_FA0;
 
             var failure = Assert.Throws<FatalJitException>(
-                () => codeGen.genSetRegToConst(REG_FA0, type, constant));
+                () => codeGen.genCodeForTreeNode(constant));
 
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
             Assert.That(failure?.Message,
@@ -120,7 +123,7 @@ internal static unsafe class RiscVCodeGenPortTests
     [TestCase(TYP_INT, TYP_LONG, "Target two-register instruction recording is not implemented.")]
     [TestCase(TYP_LONG, TYP_INT, "Target two-register instruction recording is not implemented.")]
     [TestCase(TYP_LONG, TYP_LONG, "Target conditional-branch recording is not implemented.")]
-    public static void RangeCheckPreservesRiscVInstructionRecordingBoundary(
+    public static void RangeCheckNodeDispatchPreservesRiscVInstructionRecordingBoundary(
         var_types indexType,
         var_types lengthType,
         string expectedBoundary)
@@ -138,7 +141,7 @@ internal static unsafe class RiscVCodeGenPortTests
                     boundsCheck, regMaskTP.CreateFromRegNum(REG_A2, REG_A2.SingleTypeMask));
             }
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genRangeCheck(boundsCheck));
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(boundsCheck));
 
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
             Assert.That(failure?.Message, Does.Contain(expectedBoundary));
@@ -146,18 +149,77 @@ internal static unsafe class RiscVCodeGenPortTests
     }
 
     [Test]
-    public static void NullCheckPreservesRiscVIndirectLoadRecordingBoundary()
+    public static void NullCheckNodeDispatchPreservesRiscVIndirectLoadRecordingBoundary()
     {
         WithCodeGen((_, codeGen) =>
         {
             var address = new GenTreePhysReg(REG_A0, TYP_I_IMPL) { RegNum = REG_A0 };
             var nullCheck = new GenTreeIndir(GT_NULLCHECK, TYP_INT, address);
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForNullCheck(nullCheck));
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(nullCheck));
 
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
             Assert.That(failure?.Message,
                 Does.Contain("RISC-V64 indirect load/store instruction recording is not ported."));
+        });
+    }
+
+    [TestCase(8, "Two-register-immediate instruction recording requires xarch.")]
+    [TestCase(0x12345, "RISC-V64 multi-instruction immediate descriptor recording is not ported.")]
+    public static void LeaNodeDispatchPreservesRiscVInstructionRecordingBoundary(int offset, string expectedBoundary)
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var baseAddress = new GenTreePhysReg(REG_A0, TYP_BYREF) { RegNum = REG_A0 };
+            var lea = new GenTreeAddrMode(TYP_BYREF, baseAddress, null, 0, offset) { RegNum = REG_A1 };
+            if (!Emitter.isValidSimm12(offset))
+            {
+                codeGen.InternalRegisters.Add(
+                    lea, regMaskTP.CreateFromRegNum(REG_A2, REG_A2.SingleTypeMask));
+            }
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(lea));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Does.Contain(expectedBoundary));
+        });
+    }
+
+    [Test]
+    public static void LeaNodeDispatchSkipsAZeroOffsetWhenTheBaseIsTheTarget()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var baseAddress = new GenTreePhysReg(REG_A0, TYP_BYREF) { RegNum = REG_A0 };
+            var lea = new GenTreeAddrMode(TYP_BYREF, baseAddress, null, 0, 0) { RegNum = REG_A0 };
+
+            Assert.DoesNotThrow(() => codeGen.genCodeForTreeNode(lea));
+        });
+    }
+
+    [Test]
+    public static void SelectNodeDispatchPreservesRiscVThreeRegisterRecordingBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_Zicond);
+            compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_Zicond);
+            compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_Zicond);
+
+            var condition = new GenTreePhysReg(REG_A0, TYP_INT) { RegNum = REG_A0 };
+            var trueValue = new GenTreePhysReg(REG_A1, TYP_INT) { RegNum = REG_A1 };
+            var falseValue = new GenTreePhysReg(REG_A2, TYP_INT) { RegNum = REG_A2 };
+            var select = new GenTreeConditional(GT_SELECT, TYP_INT, condition, trueValue, falseValue)
+            {
+                RegNum = REG_A3,
+            };
+            codeGen.InternalRegisters.Add(select, regMaskTP.CreateFromRegNum(REG_A4, REG_A4.SingleTypeMask));
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(select));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("RISC-V three-register instruction recording is not implemented."));
         });
     }
 
@@ -166,7 +228,7 @@ internal static unsafe class RiscVCodeGenPortTests
     [TestCase(GT_ROR, TYP_INT, false, false, "Two-register-immediate instruction recording requires xarch.")]
     [TestCase(GT_ROR, TYP_LONG, false, true, "RISC-V three-register instruction recording is not implemented.")]
     [TestCase(GT_ROL, TYP_INT, true, true, "Two-register-immediate instruction recording requires xarch.")]
-    public static void ShiftPreservesRiscVInstructionRecordingBoundary(
+    public static void ShiftNodeDispatchPreservesRiscVInstructionRecordingBoundary(
         genTreeOps oper,
         var_types type,
         bool useImmediate,
@@ -201,7 +263,7 @@ internal static unsafe class RiscVCodeGenPortTests
                     shift, regMaskTP.CreateFromRegNum(REG_A3, REG_A3.SingleTypeMask));
             }
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForShift(shift));
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(shift));
 
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
             Assert.That(failure?.Message, Does.Contain(expectedBoundary));
@@ -214,7 +276,7 @@ internal static unsafe class RiscVCodeGenPortTests
     [TestCase(GT_SH1ADD_UW)]
     [TestCase(GT_SH2ADD_UW)]
     [TestCase(GT_SH3ADD_UW)]
-    public static void ShxaddPreservesRiscVInstructionRecordingBoundary(genTreeOps oper)
+    public static void ShxaddNodeDispatchPreservesRiscVInstructionRecordingBoundary(genTreeOps oper)
     {
         WithCodeGen((compiler, codeGen) =>
         {
@@ -226,7 +288,7 @@ internal static unsafe class RiscVCodeGenPortTests
             var right = new GenTreePhysReg(REG_A1, TYP_LONG) { RegNum = REG_A1 };
             var tree = new GenTreeOp(oper, TYP_LONG, left, right) { RegNum = REG_A2 };
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForShxadd(tree));
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
 
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
             Assert.That(failure?.Message,
@@ -235,7 +297,7 @@ internal static unsafe class RiscVCodeGenPortTests
     }
 
     [Test]
-    public static void AddUwPreservesRiscVInstructionRecordingBoundary()
+    public static void AddUwNodeDispatchPreservesRiscVInstructionRecordingBoundary()
     {
         WithCodeGen((compiler, codeGen) =>
         {
@@ -247,7 +309,7 @@ internal static unsafe class RiscVCodeGenPortTests
             var right = new GenTreePhysReg(REG_A1, TYP_LONG) { RegNum = REG_A1 };
             var tree = new GenTreeOp(GT_ADD_UW, TYP_LONG, left, right) { RegNum = REG_A2 };
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForAddUw(tree));
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
 
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
             Assert.That(failure?.Message,
@@ -256,7 +318,7 @@ internal static unsafe class RiscVCodeGenPortTests
     }
 
     [Test]
-    public static void SlliUwPreservesRiscVInstructionRecordingBoundary()
+    public static void SlliUwNodeDispatchPreservesRiscVInstructionRecordingBoundary()
     {
         WithCodeGen((compiler, codeGen) =>
         {
@@ -270,7 +332,7 @@ internal static unsafe class RiscVCodeGenPortTests
 
             var tree = new GenTreeOp(GT_SLLI_UW, TYP_LONG, value, shiftBy) { RegNum = REG_A2 };
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForSlliUw(tree));
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
 
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
             Assert.That(failure?.Message,

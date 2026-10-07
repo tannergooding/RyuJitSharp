@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if TARGET_RISCV64 && FEATURE_SIMD
+using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
 
@@ -11,6 +12,12 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+    public void genSIMDIntrinsic(GenTree simdNode)
+    {
+        NYI_RISCV64("genSIMDIntrinsic-----unimplemented/unused on RISCV64 yet----");
+        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD intrinsic generation is not ported.");
+    }
+
     public insOpts genGetSimdInsOpt(emitAttr size, var_types elementType)
     {
         NYI_RISCV64("genGetSimdInsOpt-----unimplemented/unused on RISCV64 yet----");

@@ -10,7 +10,7 @@ public sealed partial class CodeGen
     public unsafe void genCodeForTreeNode(GenTree tree)
     {
 #if !TARGET_XARCH
-#if TARGET_LOONGARCH64
+#if TARGET_LOONGARCH64 || TARGET_RISCV64
         var targetReg = tree.RegNum;
         var targetType = tree.Type;
         var emit = GetEmitter();
@@ -108,6 +108,13 @@ public sealed partial class CodeGen
             case GT_XOR:
             case GT_AND:
             case GT_AND_NOT:
+#if TARGET_RISCV64
+            case GT_OR_NOT:
+            case GT_XOR_NOT:
+            case GT_BIT_SET:
+            case GT_BIT_CLEAR:
+            case GT_BIT_INVERT:
+#endif
             {
                 assert(varTypeIsIntegralOrI(tree.Type));
                 goto case GT_ADD;
@@ -126,6 +133,9 @@ public sealed partial class CodeGen
             case GT_RSH:
             case GT_RSZ:
             case GT_ROR:
+#if TARGET_RISCV64
+            case GT_ROL:
+#endif
             {
                 genCodeForShift(tree);
                 break;
@@ -255,6 +265,13 @@ public sealed partial class CodeGen
                 break;
             }
 #endif
+#if TARGET_RISCV64 && FEATURE_SIMD
+            case GT_SIMD:
+            {
+                genSIMDIntrinsic(tree.AsSIMD());
+                break;
+            }
+#endif
 
             case GT_EQ:
             case GT_NE:
@@ -268,6 +285,7 @@ public sealed partial class CodeGen
                 break;
             }
 
+#if TARGET_LOONGARCH64
             case GT_JCC:
             {
                 var currentBlock = _compiler.compCurBB;
@@ -295,7 +313,15 @@ public sealed partial class CodeGen
                 }
                 break;
             }
+#endif
 
+#if TARGET_RISCV64
+            case GT_SELECT:
+            {
+                genCodeForSelect(tree.AsConditional());
+                break;
+            }
+#endif
             case GT_JCMP:
             {
                 genCodeForJumpCompare(tree.AsOpCC());
@@ -356,6 +382,10 @@ public sealed partial class CodeGen
 
             case GT_XCHG:
             case GT_XADD:
+#if TARGET_RISCV64
+            case GT_XORR:
+            case GT_XAND:
+#endif
             {
                 genLockedInstructions(tree.AsOp());
                 break;
@@ -424,7 +454,11 @@ public sealed partial class CodeGen
             case GT_LABEL:
             {
                 genPendingCallLabel = genCreateTempLabel();
+#if TARGET_RISCV64
+                emit.emitIns_R_L(INS_ld, EA_PTRSIZE, genPendingCallLabel, targetReg);
+#else
                 emit.emitIns_R_L(INS_ld_d, EA_PTRSIZE, genPendingCallLabel, targetReg);
+#endif
                 break;
             }
 
@@ -494,14 +528,51 @@ public sealed partial class CodeGen
                 break;
             }
 
+#if TARGET_RISCV64
+            case GT_SH1ADD:
+            case GT_SH1ADD_UW:
+            case GT_SH2ADD:
+            case GT_SH2ADD_UW:
+            case GT_SH3ADD:
+            case GT_SH3ADD_UW:
+            {
+                genCodeForShxadd(tree.AsOp());
+                break;
+            }
+
+            case GT_ADD_UW:
+            {
+                genCodeForAddUw(tree.AsOp());
+                break;
+            }
+
+            case GT_SLLI_UW:
+            {
+                genCodeForSlliUw(tree.AsOp());
+                break;
+            }
+#endif
+
             default:
             {
 #if DEBUG
+#if TARGET_RISCV64
+                NYIRAW($"NYI: Unimplemented node type {tree.Oper}");
+#else
                 NYIRAW($"NYI: Unimplemented node type {tree.Oper}\n");
+#endif
+#else
+#if TARGET_RISCV64
+                NYI_RISCV64("some node type in genCodeForTreeNode-----unimplemented/unused on RISCV64 yet----");
 #else
                 NYI("unimplemented node");
 #endif
+#endif
+#if TARGET_RISCV64
+                throw new FatalJitException(CORJIT_SKIPPED, "Unimplemented node type in code generation.");
+#else
                 break;
+#endif
             }
         }
 #else
@@ -627,92 +698,7 @@ public sealed partial class CodeGen
             }
         }
 #endif
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
-        switch (tree.Oper)
-        {
-            case GT_ASYNC_RESUME_INFO:
-            {
-                genAsyncResumeInfo(tree.AsVal());
-                return;
-            }
-            case GT_FTN_ENTRY:
-            {
-                genFtnEntry(tree);
-                return;
-            }
-            case GT_NONLOCAL_JMP:
-            {
-                genNonLocalJmp(tree.AsUnOp());
-                return;
-            }
-            case GT_XCHG:
-            case GT_XADD:
-#if TARGET_RISCV64
-            case GT_XORR:
-            case GT_XAND:
-#endif
-            {
-                genLockedInstructions(tree.AsOp());
-                return;
-            }
-            case GT_CMPXCHG:
-            {
-                genCodeForCmpXchg(tree.AsCmpXchg());
-                return;
-            }
-            case GT_RETURNTRAP:
-            {
-                genCodeForReturnTrap(tree.AsUnOp());
-                return;
-            }
-            case GT_CKFINITE:
-            {
-                genCkfinite(tree);
-                return;
-            }
-#if TARGET_LOONGARCH64
-            case GT_JCMP:
-            {
-                genCodeForJumpCompare(tree.AsOpCC());
-                return;
-            }
-#endif
-#if TARGET_RISCV64
-            case GT_SELECT:
-            {
-                genCodeForSelect(tree.AsConditional());
-                return;
-            }
-            case GT_JCMP:
-            {
-                genCodeForJumpCompare(tree.AsOpCC());
-                return;
-            }
-#endif
-            case GT_EQ:
-            case GT_NE:
-            case GT_LT:
-            case GT_LE:
-            case GT_GE:
-            case GT_GT:
-            {
-                genConsumeOperands(tree.AsOp());
-                genCodeForCompare(tree.AsOp());
-                return;
-            }
-            case GT_JMPTABLE:
-            {
-                genJumpTable(tree);
-                return;
-            }
-            case GT_SWITCH_TABLE:
-            {
-                genTableBasedSwitch(tree);
-                return;
-            }
-        }
-        throw new FatalJitException(CORJIT_SKIPPED, "Node instruction generation requires xarch.");
-#elif TARGET_ARM
+#if TARGET_ARM
         switch (tree.Oper)
         {
             case GT_IND:
