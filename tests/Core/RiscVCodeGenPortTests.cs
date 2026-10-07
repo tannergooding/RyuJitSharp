@@ -48,6 +48,22 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [Test]
+    public static void GcInfoPublicationReachesTheRiscVEncoderBoundary()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var failure = Assert.Throws<PlatformNotSupportedException>(() =>
+                codeGen.genCreateAndStoreGCInfo(16, 4, 4
+#if DEBUG
+                    , null
+#endif
+                    ));
+
+            Assert.That(failure?.Message, Does.Contain("Only the AMD64 GC info encoding is implemented."));
+        });
+    }
+
 #if DEBUG
     [TestCase(TYP_INT, -2048, RiscVRecorderDebugBoundary, true)]
     [TestCase(TYP_INT, 2047, RiscVRecorderDebugBoundary, true)]

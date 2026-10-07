@@ -118,6 +118,12 @@ public sealed partial class CodeGen
             , codePtr
 #endif
             );
+#elif TARGET_RISCV64
+        genCreateAndStoreGCInfoRiscV64(codeSize, prologSize, epilogSize
+#if DEBUG
+            , codePtr
+#endif
+            );
 #elif !TARGET_AMD64
         throw new FatalJitException(CORJIT_SKIPPED, "GC-info publication requires Windows AMD64.");
 #else
@@ -128,6 +134,44 @@ public sealed partial class CodeGen
             );
 #endif
     }
+
+#if TARGET_RISCV64
+    internal unsafe void genCreateAndStoreGCInfoRiscV64(uint codeSize, uint prologSize, uint epilogSize
+#if DEBUG
+        , void* codePtr
+#endif
+        )
+    {
+        using var encoder = new GcInfoEncoder(_compiler.info.compCompHnd, _compiler.info.compMethodInfo);
+        GCInfo.gcInfoBlockHdrSave(encoder, codeSize, prologSize);
+
+        var callCount = 0u;
+        GCInfo.gcMakeRegPtrTable(encoder, codeSize, prologSize,
+            GCInfo.MakeRegPtrMode.MAKE_REG_PTR_MODE_ASSIGN_SLOTS, ref callCount);
+        encoder.FinalizeSlotIds();
+        GCInfo.gcMakeRegPtrTable(encoder, codeSize, prologSize,
+            GCInfo.MakeRegPtrMode.MAKE_REG_PTR_MODE_DO_WORK, ref callCount);
+
+#if FEATURE_REMAP_FUNCTION
+        if (_compiler.opts.compDbgEnC)
+        {
+            NYI_RISCV64("compDbgEnc in genCreateAndStoreGCInfo-----unimplemented/unused on RISCV64 yet----");
+        }
+#endif
+
+        if (_compiler.opts.IsReversePInvoke)
+        {
+            var reversePInvokeFrameVarNumber = _compiler.lvaReversePInvokeFrameVar;
+            assert(reversePInvokeFrameVarNumber != BAD_VAR_NUM);
+            ref var reversePInvokeFrameVar = ref _compiler.lvaGetDesc(reversePInvokeFrameVarNumber);
+            encoder.SetReversePInvokeFrameSlot(reversePInvokeFrameVar.StackOffset);
+        }
+
+        encoder.Build();
+        _compiler.compInfoBlkAddr = encoder.Emit();
+        _compiler.compInfoBlkSize = unchecked((nint)encoder.GetEncodedGCInfoSize());
+    }
+#endif
 
 #if TARGET_ARM || TARGET_ARMARCH
     internal unsafe void genCreateAndStoreGCInfoArmArch(uint codeSize, uint prologSize, uint epilogSize
