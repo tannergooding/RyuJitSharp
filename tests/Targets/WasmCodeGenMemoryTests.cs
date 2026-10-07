@@ -5,6 +5,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
@@ -14,6 +15,28 @@ namespace RyuJitSharp.Target.UnitTests;
 
 internal static unsafe class WasmCodeGenMemoryTests
 {
+    private static int s_wellKnownGlobalsQueries;
+
+    [Test]
+    public static void WellKnownGlobalsAreCachedPerCompilerAndReturnedByReference()
+    {
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.Base.Base.getWasmWellKnownGlobals = &GetWasmWellKnownGlobals;
+        ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+        s_wellKnownGlobalsQueries = 0;
+
+        var compiler = NewCompiler(&jitInfo);
+        ref var first = ref compiler.eeGetWasmWellKnownGlobals();
+        Assert.That(s_wellKnownGlobalsQueries, Is.EqualTo(1));
+        ref var second = ref compiler.eeGetWasmWellKnownGlobals();
+        Assert.That(Unsafe.AreSame(ref first, ref second), Is.True);
+        Assert.That(s_wellKnownGlobalsQueries, Is.EqualTo(1));
+
+        var other = NewCompiler(&jitInfo);
+        _ = other.eeGetWasmWellKnownGlobals();
+        Assert.That(s_wellKnownGlobalsQueries, Is.EqualTo(2));
+    }
+
     [Test]
     public static void InternalRegistersTrackWasmLocals()
     {
@@ -99,6 +122,21 @@ internal static unsafe class WasmCodeGenMemoryTests
         {
             JitTls.Compiler = previousCompiler;
         }
+    }
+
+    private static Compiler NewCompiler(ICorJitInfo* jitInfo)
+    {
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        compiler.info = new Compiler.Info { compCompHnd = jitInfo };
+        return compiler;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void GetWasmWellKnownGlobals(ICorJitInfo* jitInfo, CORINFO_WASM_WELLKNOWN_GLOBALS* result)
+    {
+        _ = jitInfo;
+        *result = default;
+        s_wellKnownGlobalsQueries++;
     }
 }
 #endif

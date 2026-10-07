@@ -45,6 +45,7 @@ public partial class Globals
     public const regNumber REG_FLT_CALLEE_SAVED_LAST = REG_XMM7;
 
     public const regMask SRBM_FPBASE = SRBM_EBP;
+    public const regMask SRBM_SPBASE = SRBM_ESP;
     public const regMask SRBM_INTRET = SRBM_EAX;
     public const regMask SRBM_ARG_REGS = SRBM_ECX | SRBM_EDX;
     public const regMask SRBM_LNGARG_LO = SRBM_EAX;
@@ -58,6 +59,8 @@ public partial class Globals
     public const regMask SRBM_VALIDATE_INDIRECT_CALL_TRASH = SRBM_EAX | SRBM_EDX;
     public const regMask SRBM_INT_CALLEE_SAVED = SRBM_EBX | SRBM_ESI | SRBM_EDI;
     public const regMask SRBM_INT_CALLEE_TRASH = SRBM_EAX | SRBM_ECX | SRBM_EDX;
+    public const regMask SRBM_CALLEE_SAVED =
+        SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED | SRBM_MSK_CALLEE_SAVED;
     public const regMask SRBM_ALLINT = SRBM_INT_CALLEE_SAVED | SRBM_INT_CALLEE_TRASH;
     public static regMaskTP RBM_NON_BYTE_REGS => RBM_ESI | RBM_EDI;
 

@@ -80,6 +80,8 @@ public partial class Globals
 
     public const regMask SRBM_INT_CALLEE_SAVED = SRBM_NONE;
 
+    public const regMask SRBM_CALLEE_SAVED = SRBM_NONE;
+
     public const regMask SRBM_FLT_CALLEE_SAVED = SRBM_NONE;
 
     public const regMask SRBM_INT_CALLEE_TRASH = SRBM_NONE;
@@ -93,6 +95,10 @@ public partial class Globals
     public const regMask SRBM_ALLDOUBLE = SRBM_NONE;
 
     public const regMask SRBM_ARG_REGS = SRBM_NONE;
+
+    public const regNumber REG_OPT_RSVD = REG_NA;
+
+    public const regMask SRBM_OPT_RSVD = SRBM_NONE;
 
     // Wasm has no fixed register set; the CSE counters are pinned heuristics, not physical registers.
     public const int CNT_CALLEE_SAVED = 0;
@@ -143,7 +149,11 @@ public partial class Globals
 
     public const regNumber REG_FPBASE = REG_NA;
 
+    public const regMask SRBM_FPBASE = SRBM_NONE;
+
     public const regNumber REG_SPBASE = REG_NA;
+
+    public const regMask SRBM_SPBASE = SRBM_NONE;
 
     public const regNumber REG_SCRATCH = REG_NA;
 
