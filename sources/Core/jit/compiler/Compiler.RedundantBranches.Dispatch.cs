@@ -291,7 +291,8 @@ public partial class Compiler
 
         JITDUMP($"\nRedundant branch opt in {FMT_BB(block.bbNum)}:\n");
         _ = fgMorphBlockStmt(block, statement, allowFGChange: true,
-            invalidateDFSTreeOnFGChange: false, message: nameof(optRedundantBranch));
+            invalidateDFSTreeOnFGChange: false,
+            message: $"{nameof(Compiler)}::{nameof(optRedundantBranch)}");
         Metrics.RedundantBranchesEliminated++;
         return true;
     }
