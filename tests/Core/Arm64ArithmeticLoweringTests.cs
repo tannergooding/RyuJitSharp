@@ -2,7 +2,9 @@
 
 #if TARGET_ARM64
 using System;
+using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text;
 using NUnit.Framework;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
@@ -63,6 +65,49 @@ internal static unsafe class Arm64ArithmeticLoweringTests
             });
         }
     }
+
+#if DEBUG
+    [TestCase(INS_FLAGS_NONE, "0")]
+    [TestCase(INS_FLAGS_V, "v")]
+    [TestCase(INS_FLAGS_C, "c")]
+    [TestCase(INS_FLAGS_CV, "cv")]
+    [TestCase(INS_FLAGS_Z, "z")]
+    [TestCase(INS_FLAGS_ZV, "zv")]
+    [TestCase(INS_FLAGS_ZC, "zc")]
+    [TestCase(INS_FLAGS_ZCV, "zcv")]
+    [TestCase(INS_FLAGS_N, "n")]
+    [TestCase(INS_FLAGS_NV, "nv")]
+    [TestCase(INS_FLAGS_NC, "nc")]
+    [TestCase(INS_FLAGS_NCV, "ncv")]
+    [TestCase(INS_FLAGS_NZ, "nz")]
+    [TestCase(INS_FLAGS_NZV, "nzv")]
+    [TestCase(INS_FLAGS_NZC, "nzc")]
+    [TestCase(INS_FLAGS_NZCV, "nzcv")]
+    public static void ConditionalCompareDumpUsesNativeFlagNames(insCFlags flags, string expected)
+    {
+        CSELiveAcrossCallCostTests.WithCompiler(compiler =>
+        {
+            var node = new GenTreeCCMP(TYP_VOID, new GenCondition(GenCondition.EQ),
+                compiler.gtNewIconNode(TYP_INT, 1), compiler.gtNewIconNode(TYP_INT, 2), flags);
+            using var stream = new MemoryStream();
+            using var writer = new JitTextWriter(stream, leaveOpen: true);
+            var previous = s_jitstdout;
+            try
+            {
+                s_jitstdout = writer;
+                compiler.gtDispTree(node, topOnly: true);
+                writer.Flush();
+
+                var output = Encoding.UTF8.GetString(stream.ToArray());
+                Assert.That(output, Does.Contain($"flags={expected}"));
+            }
+            finally
+            {
+                s_jitstdout = previous;
+            }
+        });
+    }
+#endif
 
     [TestCase(0, false)]
     [TestCase(1, false)]

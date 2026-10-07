@@ -3047,6 +3047,21 @@ public partial class Compiler
         gtDispTree(tree, ref indentStack, msg, topOnly, isLIR);
     }
 
+#if DEBUG && TARGET_ARM64
+    private static readonly string[] s_insCflagsNames =
+    [
+        "0", "v", "c", "cv", "z", "zv", "zc", "zcv",
+        "n", "nv", "nc", "ncv", "nz", "nzv", "nzc", "nzcv",
+    ];
+
+    private static string InsCflagsToString(insCFlags flags)
+    {
+        var index = (int)flags;
+        assert((index >= 0) && (index < s_insCflagsNames.Length));
+        return s_insCflagsNames[index];
+    }
+#endif
+
     public unsafe void gtDispTree(GenTree? tree, ref IndentStack indentStack, string msg = "", bool topOnly = false, bool isLIR = false)
     {
         if (tree is null)
@@ -3328,7 +3343,7 @@ public partial class Compiler
             else if (tree.Oper is GT_CCMP)
             {
                 var ccmp = tree.AsCCMP();
-                jitprintf(" cond={ccmp.Condition.Name} flags={InsCflagsToString(ccmp.FlagsVal)}");
+                jitprintf($" cond={ccmp.Condition.Name} flags={InsCflagsToString(ccmp.FlagsVal)}");
             }
 #endif
             gtDispCommonEndLine(tree);

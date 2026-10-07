@@ -257,8 +257,8 @@ public partial class Emitter
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
 #endif
-#endif
     }
+#endif
 
 #if TARGET_RISCV64
     private void emitIns_R_R_I_RiscV(
