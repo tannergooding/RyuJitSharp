@@ -77,6 +77,52 @@ internal static unsafe class WasmEmitterOutputTests
         });
     }
 
+#if DEBUG
+    [Test]
+    public static void EmitterUnitTestsExerciseAllWasmSimdInstructionFormats()
+    {
+        WithEmitter((compiler, _) =>
+        {
+            if (compiler.codeGen is not CodeGen codeGen)
+            {
+                throw new InvalidOperationException("Compiler has no code generator.");
+            }
+
+            var emitter = codeGen.Emitter;
+            emitter.emitBegCG(compiler, default);
+            compiler.compCurBB = new BasicBlock(null, null);
+            var previousWriter = Globals.s_jitstdout;
+            using var stream = new MemoryStream();
+            using var writer = new JitTextWriter(stream, leaveOpen: true);
+            try
+            {
+                Globals.s_jitstdout = writer;
+                compiler.opts.dspCode = true;
+                emitter.emitBegFN(false, false);
+
+                EmitWasmEmitterTestSkipBlock(codeGen);
+                EmitWasmEmitterUnitTestsSimd(codeGen);
+                emitter.emitIns(INS_end);
+
+                writer.Flush();
+                var diagnostic = Encoding.UTF8.GetString(stream.ToArray());
+                Assert.That(diagnostic, Does.Contain("block"));
+                Assert.That(diagnostic, Does.Contain("br"));
+                Assert.That(diagnostic, Does.Contain("v128.const"));
+                Assert.That(diagnostic, Does.Contain("i8x16.shuffle"));
+                Assert.That(diagnostic, Does.Contain("v128.load8_lane"));
+                Assert.That(diagnostic, Does.Contain("v128.store64_lane"));
+                Assert.That(diagnostic, Does.Contain("i32x4.trunc_sat_s_f32x4"));
+                Assert.That(diagnostic, Does.Contain("end"));
+            }
+            finally
+            {
+                Globals.s_jitstdout = previousWriter;
+            }
+        });
+    }
+#endif
+
     private static void AssertFloatingDiagnostic(Emitter emitter, double value, string expected)
     {
         var previousWriter = Globals.s_jitstdout;
@@ -156,6 +202,14 @@ internal static unsafe class WasmEmitterOutputTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitOutputConstantFunclet")]
     private static extern nuint EmitOutputConstantFunclet(Emitter emitter, byte* destination,
         Emitter.instrDesc descriptor, CorInfoReloc relocationType);
+
+#if DEBUG
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genEmitWasmEmitterTestSkipBlock")]
+    private static extern void EmitWasmEmitterTestSkipBlock(CodeGen codeGen);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genWasmEmitterUnitTestsSimd")]
+    private static extern void EmitWasmEmitterUnitTestsSimd(CodeGen codeGen);
+#endif
 
     private sealed class TestEmitter(CodeGen codeGen) : Emitter(codeGen)
     {
