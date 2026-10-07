@@ -220,6 +220,7 @@ public sealed partial class LinearScan
         }
     }
 
+    // ARM double intervals use the low register and must update both float-register records.
     private void updatePreviousInterval(RegRecord record, Interval? interval, RegisterType registerType)
     {
         updatePreviousInterval(record, interval);
