@@ -13,6 +13,17 @@ public partial class Emitter
     {
         recordArm32InsR(ins, attr, reg);
     }
+#elif TARGET_RISCV64
+    public void emitIns_R_R_I(
+        instruction ins,
+        emitAttr attr,
+        regNumber reg1,
+        regNumber reg2,
+        nint imm,
+        insOpts instOptions = INS_OPTS_NONE)
+    {
+        emitIns_R_R_I_RiscV(ins, attr, reg1, reg2, imm, instOptions);
+    }
 #else
     public void emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, nint imm)
     {

@@ -216,7 +216,9 @@ public partial class Emitter
     public void emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int ival,
         insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_XARCH
+#if TARGET_RISCV64
+        emitIns_R_R_I_RiscV(ins, attr, reg1, reg2, ival, instOptions);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Two-register-immediate instruction recording requires xarch.");
 #else
 #if TARGET_AMD64
@@ -255,8 +257,76 @@ public partial class Emitter
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
 #endif
+#endif
     }
 
+#if TARGET_RISCV64
+    private void emitIns_R_R_I_RiscV(
+        instruction ins,
+        emitAttr attr,
+        regNumber reg1,
+        regNumber reg2,
+        nint imm,
+        insOpts opt)
+    {
+        var code = emitInsCode(ins);
+        var id = emitNewInstr(attr);
+
+        switch (GetMajorOpcode(code))
+        {
+            case MajorOpcode.OpImm:
+            case MajorOpcode.OpImm32:
+            case MajorOpcode.Load:
+            case MajorOpcode.LoadFp:
+            case MajorOpcode.Jalr:
+            {
+                assert(!(INS_clz <= ins && ins <= INS_rev8)); // Encoded under OP-IMM but do not take an immediate.
+                assert(isGeneralRegisterOrR0(reg2));
+                code |= (unchecked((uint)reg1) & 0x1Fu) << 7; // rd
+                code |= unchecked((uint)reg2) << 15; // rs1
+                code |= unchecked((uint)imm) << 20; // imm
+                break;
+            }
+            case MajorOpcode.Store:
+            case MajorOpcode.StoreFp:
+            {
+                assert(isGeneralRegister(reg2));
+                code |= (unchecked((uint)reg1) & 0x1Fu) << 20; // rs2
+                code |= unchecked((uint)reg2) << 15;
+                // S-type immediates are split across the upper and lower immediate fields.
+                code |= ((unchecked((uint)(imm >> 5)) & 0x7Fu) << 25) |
+                        ((unchecked((uint)imm) & 0x1Fu) << 7);
+                break;
+            }
+            case MajorOpcode.System:
+            {
+                assert(ins is INS_csrrs or INS_csrrw or INS_csrrc);
+                assert(isGeneralRegisterOrR0(reg1));
+                assert(isGeneralRegisterOrR0(reg2));
+                assert(isValidUimm12(imm));
+                code |= unchecked((uint)reg1) << 7;
+                code |= unchecked((uint)reg2) << 15;
+                code |= unchecked((uint)imm) << 20;
+                break;
+            }
+            default:
+            {
+                NYI_RISCV64("illegal ins within emitIns_R_R_I!");
+                throw new FatalJitException(
+                    CORJIT_SKIPPED, "Illegal instruction within RISC-V two-register-immediate instruction recording.");
+            }
+        }
+
+        id.idIns(ins);
+        id.idReg1(reg1);
+        id.idReg2(reg2);
+        id.idSmallCns(imm);
+        id.idAddr().iiaInstrEncode = code;
+        id.idCodeSize(4);
+
+        dispIns(id);
+        appendToCurIG(id);
+    }
 #endif
 
 #if !TARGET_ARM64
