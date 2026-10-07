@@ -360,6 +360,23 @@ internal static unsafe class RiscVCodeGenPortTests
     }
 
     [Test]
+    public static void CatchReturnDispatchPreservesRiscVBlockLabelRecordingBoundary()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var block = new BasicBlock(null, null);
+            var target = new BasicBlock(null, null);
+            block.SetKindAndTargetEdge(BBKinds.BBJ_EHCATCHRET, new FlowEdge(block, target, null));
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genEmitEndBlock(block));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("RISC-V64 block-relative address recording is not ported."));
+        });
+    }
+
+    [Test]
     public static void CalleeSavedRestorePreservesXarchOnlyEmitterBoundary()
     {
         WithCodeGen((_, codeGen) =>

@@ -136,6 +136,8 @@ public sealed partial class CodeGen
         // The runtime expects a return value from a catch funclet,
         // but nothing will depend on it.
         GetEmitter().emitIns_I(INS_i32_const, EA_4BYTE, 0);
+#elif TARGET_RISCV64
+        Emitter.emitIns_R_L(INS_lea, EA_PTRSIZE, block.Target, REG_INTRET);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Catch-return generation requires xarch.");
 #else
