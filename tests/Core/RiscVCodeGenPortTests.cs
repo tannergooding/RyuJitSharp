@@ -495,6 +495,51 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [TestCase(-2048, false)]
+    [TestCase(0, false)]
+    [TestCase(32, true)]
+    [TestCase(2047, false)]
+    public static void FramePointerSetupUsesRiscVAddiAndOptionalUnwind(int delta, bool reportUnwindData)
+    {
+        WithProlog((compiler, codeGen) =>
+        {
+            if (reportUnwindData)
+            {
+                compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT, uwi = new UnwindInfo() }];
+                compiler.compFuncInfoCount = 1;
+                compiler.fgFuncletsCreated = true;
+                compiler.funCurrentFunc().GetUnwindInfo().InitUnwindInfo(compiler, null, null);
+            }
+
+            var emitter = codeGen.Emitter;
+            var descriptors = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = descriptors.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+            var failure = CaptureFatalJitException(() =>
+                codeGen.genEstablishFramePointer(delta, reportUnwindData));
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+            var descriptor = descriptors[^1];
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_addi));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_FPBASE));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_SPBASE));
+            Assert.That(descriptor.idSmallCns(), Is.EqualTo(delta));
+            Assert.That(descriptor.idCodeSize(), Is.EqualTo(4u));
+
+            if (failure is null && reportUnwindData)
+            {
+                Assert.That(compiler.funCurrentFunc().GetUnwindInfo().GetCurrentEmitterLocation(), Is.Not.Null);
+            }
+        });
+    }
+
     [TestCase(EA_PTRSIZE, REG_A0, REG_A1, INS_mov, 0x00058513u, false)]
     [TestCase(EA_4BYTE, REG_A0, REG_A1, INS_sext_w, 0x0005851Bu, false)]
     [TestCase(EA_PTRSIZE, REG_A0, REG_FA1, INS_fmv_x_d, 0xE2058553u, false)]

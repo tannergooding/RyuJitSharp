@@ -20,6 +20,15 @@ public sealed partial class CodeGen
         {
             _compiler.unwindPadding();
         }
+#elif TARGET_RISCV64
+        assert(Emitter.emitGeneratingPrologOrFuncletProlog());
+        assert(Emitter.isValidSimm12(delta));
+        Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, delta);
+
+        if (reportUnwindData)
+        {
+            _compiler.unwindSetFrameReg(REG_FPBASE, unchecked((uint)delta));
+        }
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Frame pointer establishment is not ported for this target.");
 #else
