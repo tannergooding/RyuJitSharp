@@ -471,6 +471,12 @@ public partial class Compiler
                     new LC_Expr(LC_Ident.CreateNull(deref.LclType))));
             }
         }
+#if DEBUG
+        if (verbose)
+        {
+            context.PrintBlockConditions(loopNum);
+        }
+#endif
         return true;
     }
 }

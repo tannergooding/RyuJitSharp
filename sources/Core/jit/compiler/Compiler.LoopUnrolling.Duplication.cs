@@ -43,7 +43,11 @@ public partial class Compiler
             return BasicBlockVisit.Continue;
         });
 
-        JITDUMP($"L{loop.Index:D2} contains {topLevelTries.Count} top-level try region(s)\n");
+        if (topLevelTries.Count > 0)
+        {
+            JITDUMP($"L{loop.Index:D2} contains {topLevelTries.Count} top-level try region(s)\n");
+        }
+
         for (var index = topLevelTries.Count - 1; index >= 0; index--)
         {
             if (fgCloneTryRegionFeasibility(topLevelTries[index], new CloneTryInfo(this)) is null)

@@ -376,7 +376,8 @@ identifying the C# revision and any preserved uncommitted source snapshot.
 The host must be Checked/debug and ABI-compatible with that managed binary.
 The runner isolates the child environment, rejects reused output directories,
 requires exactly the expected case-sensitive compilation headers, and records
-binary hashes, settings, timeout/exit status, and the raw dump.
+binary hashes, settings, timeout/exit status, and the raw dump. It sets
+`DOTNET_GCConserveMemory=5` for each compiler execution.
 Repeat a name in `-ExpectedMethods` when multiple overloads or generic
 instantiations are expected; the runner checks that exact count for each name.
 Names use ordinal equality, so canonically equivalent Unicode spellings remain

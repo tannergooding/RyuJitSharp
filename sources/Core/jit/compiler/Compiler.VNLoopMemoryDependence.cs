@@ -15,7 +15,7 @@ public partial class Compiler
         if (updateLoop is null)
         {
 #if DEBUG
-            JITDUMP($"      ==> Not updating loop memory dependence of [{tree.TreeId:D6}], memory {memoryVN} not defined in a loop\n");
+            JITDUMP($"      ==> Not updating loop memory dependence of [{tree.TreeId:D6}], memory ${memoryVN:x} not defined in a loop\n");
 #endif
             return;
         }

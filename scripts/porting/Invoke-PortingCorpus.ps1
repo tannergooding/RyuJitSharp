@@ -123,6 +123,7 @@ foreach ($name in @($start.Environment.Keys)) {
     }
 }
 $settings = [ordered]@{
+    DOTNET_GCConserveMemory = "5"
     DOTNET_ReadyToRun = "0"
     DOTNET_TieredCompilation = if ($InstrumentedTier0) { "1" } else { "0" }
     DOTNET_JitDump = $selector

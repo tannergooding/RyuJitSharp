@@ -47,7 +47,7 @@ public sealed partial class ObjectAllocator
 #if !TARGET_64BIT
         descriptor.lvStructDoubleAlign = alignTo8;
 #endif
-        var stackAddress = compiler.gtNewLclAddrNode(TYP_BYREF, local, 0);
+        var stackAddress = compiler.gtNewLclAddrNode(TYP_I_IMPL, local, 0);
         _ = newArr.Args.PushBack(NewCallArg.CreateForPrimitive(stackAddress)
             .WithWellKnownArg(WellKnownArg.StackArrayLocal));
         newArr._callMoreFlags |= GTF_CALL_M_STACK_ARRAY;

@@ -167,7 +167,7 @@ public partial class Compiler
         public readonly fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user)
         {
 #if DEBUG
-            JITDUMP($"----- PreOrderVisit for [{use.TreeId:D6}] {use.Oper}\n");
+            JITDUMP($"----- PreOrderVisit for [{use.TreeId:D6}] {use.Oper.Name}\n");
 #endif
             _values.Add(new HoistValue(use));
             return WALK_CONTINUE;
@@ -177,7 +177,7 @@ public partial class Compiler
         {
             var tree = use;
 #if DEBUG
-            JITDUMP($"----- PostOrderVisit for [{tree.TreeId:D6}] {tree.Oper}\n");
+            JITDUMP($"----- PostOrderVisit for [{tree.TreeId:D6}] {tree.Oper.Name}\n");
 #endif
             if (tree.Oper.IsLocalRead)
             {
@@ -208,7 +208,7 @@ public partial class Compiler
                 }
 
 #if DEBUG
-                JITDUMP($"      [{tree.TreeId:D6}] {tree.Oper}: " +
+                JITDUMP($"      [{tree.TreeId:D6}] {tree.Oper.Name}: " +
                     $"{(top.Invariant ? (top.Hoistable ? "hoistable" : "not hoistable") : "not invariant")}: " +
                     $"{top.FailReason}\n");
 #endif

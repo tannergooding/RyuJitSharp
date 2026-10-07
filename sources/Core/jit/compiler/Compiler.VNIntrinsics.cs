@@ -118,7 +118,7 @@ public partial class Compiler
         var elemClass = arrAddr.ElemClassHandle;
         var encodedElemType = EncodeElemType(elemType, elemClass);
         var elemTypeVN = vnStore.VNForHandle((nint)encodedElemType, GTF_ICON_CLASS_HDL);
-        JITDUMP($"    VNForHandle(arrElemType: {(elemType is TYP_STRUCT ? eeGetClassName(elemClass) : elemType.Name)}) is {elemTypeVN:x}\n");
+        JITDUMP($"    VNForHandle(arrElemType: {(elemType is TYP_STRUCT ? eeGetClassName(elemClass) : elemType.Name)}) is ${elemTypeVN:x}\n");
 
         var arrayVN = vnStore.VNNormalValue(array._vnPair.Liberal);
         indexVN = vnStore.VNNormalValue(indexVN);
