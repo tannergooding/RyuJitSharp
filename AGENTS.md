@@ -8,7 +8,7 @@ checkpoint, and load only the relevant sections of the
 - Establish a clean, recognizable port before restructuring. Record discovered
   bugs, rename/refactoring candidates, and architectural ideas in the
   [backlog](docs/porting/BACKLOG.md); do not fold unrelated cleanup into a port.
-- Windows x64 is the first execution/parity target. Translate each whole function,
+- Validate each target at its implemented frontier. Translate each whole function,
   preserving target conditionals and dependency calls. Add compilable declarations
   and tracked, terminating NYI helper stubs for unported other-target dependencies;
   do not omit their callers' branches. Remove the translated definition from

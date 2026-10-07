@@ -1,6 +1,6 @@
 # Continuation plan
 
-The plan, three-tree workflow, Windows-x64-first whole-function policy, and
+The plan, three-tree workflow, whole-function policy, and
 centralized newline proposal were approved on 2026-09-22. Prioritize a clean port
 with minimal divergence; extensive tooling tests and larger restructuring are
 deferred. Exact revisions and the checkpoint are in [state.json](state.json).
@@ -22,12 +22,11 @@ features a prerequisite. Keep remaining differences explicit rather than hiding
 them.
 
 Parallelize substantial work as bounded, non-overlapping feature or platform
-packets when dependencies and ownership allow. Completing the Windows x64 code
-port is the foreground priority. Linux x64 and ARM64 work proceeds in isolated
-background lanes; it must not replace Windows implementation work in the
-foreground or make its progress depend on other-target integration. Give
-each packet explicit source ownership, scope, and a completion boundary; do not
-invent assignments or duplicate work. The coordinator owns dependency selection,
+packets when dependencies and ownership allow. Select packets by dependency
+readiness, ownership, and validation boundaries; do not gate one target's
+progress on unrelated integration for another target. Give each packet explicit
+source ownership, scope, and a completion boundary; do not invent assignments or
+duplicate work. The coordinator owns dependency selection,
 shared JIT/EE and ABI contracts, cross-packet integration, and parity decisions.
 Resolve shared-contract changes there before dependent packets rely on them.
 Integrate packets at target-aware gates: build the affected target and collect
@@ -51,13 +50,13 @@ rather than growing a new validation matrix for every ported area. Keep builds
 and relevant existing checks at coherent integration boundaries. Do not turn
 helper-level commits into repeated testing, capture and documentation cycles.
 
-After the Windows x64 code port is complete, automate broader oracle/port dump
-comparisons and run the official runtime test suite with the port as the primary
-JIT, not an AltJIT. Preserve raw dumps and explicitly enumerate comparison
-exclusions for accepted non-semantic differences such as D001 arena allocation
-counts and bytes. Do not normalize away compiler decisions, IR, phase ordering,
-or generated instructions. Selected-method AltJIT execution remains useful
-scoped evidence, not a substitute for that primary-JIT test-suite gate.
+At the port's completion gate, automate broader oracle/port dump comparisons
+and run the official runtime test suite with the port as the primary JIT, not
+an AltJIT. Preserve raw dumps and explicitly enumerate comparison exclusions
+for accepted non-semantic differences such as D001 arena allocation counts and
+bytes. Do not normalize away compiler decisions, IR, phase ordering, or generated
+instructions. Selected-method AltJIT execution remains useful scoped evidence,
+not a substitute for that primary-JIT test-suite gate.
 
 Reuse the matching oracle product build and `Core_Root`. The native setup is
 `.\build.cmd -subset clr -config checked`, then
@@ -83,8 +82,8 @@ Before editing, record four fields in `checkpoint.activeBatch` in
 - **Scope:** the capability or bounded dependency closure being ported, and the
   larger milestone it serves. A helper alone is not the default batch boundary.
 - **Done when:** the concrete completion condition, including the logical commit.
-  Commit complete, validated units; keep incomplete Windows-x64 functions as WIP
-  and retain their native bodies. Do not add stubs to satisfy the boundary.
+  Commit complete, validated units; keep incomplete functions as WIP and retain
+  their native bodies. Do not add stubs to satisfy the boundary.
 - **Validation:** select the smallest checks that establish this batch's outcome
   before writing tests. Default to a batch build and relevant existing checks.
   Add focused coverage for concrete defects or non-obvious managed adaptations,
@@ -138,10 +137,11 @@ native artifacts rather than assuming they match. Build the required native
 host/JIT/SuperPMI artifacts from the original oracle revision if matching ones
 are unavailable. Record commands, flavors, hashes, and the JIT/EE version.
 
-Publish the C# JIT for Windows x64 and verify its exports, ABI, and loading.
-Establish a tiny local corpus covering straight-line arithmetic, branches,
-locals, direct calls, and an inline candidate. Record the actual phase frontier
-and known gaps without requiring the unfinished compiler to emit code.
+Publish the C# JIT for a supported host/target combination and verify its
+exports, ABI, and loading. Establish a tiny local corpus covering straight-line
+arithmetic, branches, locals, direct calls, and an inline candidate. Record the
+actual phase frontier and known gaps without requiring the unfinished compiler
+to emit code.
 
 Check table-generator input provenance and baseline reproducibility in an
 isolated output directory. Use a small comparison runner and existing tooling,
@@ -185,9 +185,9 @@ Process dependency-coherent batches in this order:
 
 For each batch, record affected native files/symbols, C# destinations, dispositions,
 and evidence. Preserve new target branches and their dependency calls; use tracked,
-terminating helper stubs for unported non-Windows-x64 dependencies where needed.
+terminating helper stubs for unported other-target dependencies where needed.
 An entire inline branch replaced with NYI remains a partial translation. Do not
-introduce silent stubs on relevant Windows-x64 paths to make reconciliation
+introduce silent stubs on required target paths to make reconciliation
 appear complete.
 
 Use the raw old-to-new upstream diff, not the size of merge-conflict regions, to
@@ -248,12 +248,11 @@ floating-point edge cases, intrinsics, tailcalls, managed/native boundaries,
 tiering/PGO/OSR, and stress. Broaden SuperPMI collections after the small corpus
 is reliable. Compare emitted bytes/metadata and execute code once supported.
 
-Windows x64 remains the first execution/parity baseline, not a serialization
-gate for independent Linux x64 or other architecture packets. Compile-check
-affected alternate-target branches and inventory explicit NYIs without claiming
-runtime support. Never infer one target's behavior from another target's run,
-and do not treat compile-only work, native fallback, or `CORJIT_SKIPPED` as
-execution parity.
+Execution and parity evidence are target-specific, not a serialization gate for
+independent architecture packets. Compile-check affected target branches and
+inventory explicit NYIs without claiming runtime support. Never infer one
+target's behavior from another target's run, and do not treat compile-only work,
+native fallback, or `CORJIT_SKIPPED` as execution parity.
 
 **Exit per batch:** complete intended functions, explicit deferrals, scoped
 regression/parity evidence, residual-source update, and a small continuation
@@ -273,6 +272,6 @@ rewrite. Maintain the clean port as the behavioral reference for that work.
 With this plan approved, routine translations, validation, source mapping, and
 documented checkpoint updates can proceed without repeated design questions.
 Ask before changing the parity contract, accepting additional output exceptions,
-substantial redesign, platform reprioritization, intentional ABI/ownership
-divergence, or discarding prior work. A new upstream update is a separate pinned
-batch, not an automatic background action. Publishing remains separately gated.
+substantial redesign, intentional ABI/ownership divergence, or discarding prior
+work. A new upstream update is a separate pinned batch, not an automatic
+background action. Publishing remains separately gated.
