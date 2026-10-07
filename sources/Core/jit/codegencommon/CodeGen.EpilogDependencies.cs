@@ -20,6 +20,8 @@ public sealed partial class CodeGen
     {
 #if TARGET_ARM
         genPopCalleeSavedRegistersArmCore(jmpEpilog);
+#elif TARGET_RISCV64
+        genPopCalleeSavedRegistersRiscV(jmpEpilog);
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Callee-save restoration requires xarch.");
 #endif
@@ -36,6 +38,8 @@ public sealed partial class CodeGen
         genFnEpilogWasm(block);
 #elif TARGET_ARMARCH
         genFnEpilogArmArch(block);
+#elif TARGET_RISCV64
+        genFnEpilogRiscV(block);
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Root epilog generation requires xarch.");
 #endif

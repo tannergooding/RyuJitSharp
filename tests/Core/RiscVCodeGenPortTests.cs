@@ -101,6 +101,17 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    private static void WithEpilog(Action<Compiler, CodeGen> action)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var group = codeGen.Emitter.emitCurIG
+                ?? throw new AssertionException("Missing instruction group.");
+            group.igFlags |= InsGroupFlags.Epilog;
+            action(compiler, codeGen);
+        });
+    }
+
     [TestCase(INS_add, EA_8BYTE, REG_A0, REG_A1, REG_A2, INS_none, 4)]
     [TestCase(INS_add, EA_8BYTE, REG_A0, REG_R0, REG_A1, INS_c_mv, 2)]
     [TestCase(INS_add, EA_8BYTE, REG_A0, REG_A0, REG_A1, INS_c_add, 2)]
@@ -563,7 +574,7 @@ internal static unsafe class RiscVCodeGenPortTests
             var modifiedRegs =
                 regMaskTP.CreateFromRegNum(REG_S1, REG_S1.SingleTypeMask)
                 | regMaskTP.CreateFromRegNum(REG_FS0, REG_FS0.SingleTypeMask);
-            InitializeCalleeSavedProlog(compiler, codeGen, 64, modifiedRegs);
+            InitializeCalleeSavedFrame(compiler, codeGen, 64, modifiedRegs);
 
             var zeroed = true;
             var emitter = codeGen.Emitter;
@@ -617,7 +628,7 @@ internal static unsafe class RiscVCodeGenPortTests
     {
         WithProlog((compiler, codeGen) =>
         {
-            InitializeCalleeSavedProlog(compiler, codeGen, 4096, default);
+            InitializeCalleeSavedFrame(compiler, codeGen, 4096, default);
 
             var zeroed = true;
             var failure = Assert.Throws<PlatformNotSupportedException>(
@@ -638,7 +649,7 @@ internal static unsafe class RiscVCodeGenPortTests
         WithProlog((compiler, codeGen) =>
         {
             compiler.info.compIsVarArgs = true;
-            InitializeCalleeSavedProlog(compiler, codeGen, 64, default);
+            InitializeCalleeSavedFrame(compiler, codeGen, 64, default);
 
             var zeroed = true;
             var failure = CaptureFatalJitException(
@@ -651,6 +662,93 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_addi));
             Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_FPBASE));
             Assert.That(zeroed, Is.True);
+        });
+    }
+#endif
+
+    [Test]
+    public static void CalleeSavedRegisterEpilogRestoresFrameSavesAndReturns()
+    {
+        WithEpilog((compiler, codeGen) =>
+        {
+            var modifiedRegs =
+                regMaskTP.CreateFromRegNum(REG_S1, REG_S1.SingleTypeMask)
+                | regMaskTP.CreateFromRegNum(REG_FS0, REG_FS0.SingleTypeMask);
+            InitializeCalleeSavedFrame(compiler, codeGen, 64, modifiedRegs);
+
+            var block = new BasicBlock(null, null);
+            block.SetFlags(BasicBlockFlags.BBF_IS_LIR);
+            block.InsertAtEnd(new GenTreeUnOp(GT_RETURN, TYP_VOID, null));
+
+            var emitter = codeGen.Emitter;
+            var descriptors = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = descriptors.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+            var failure = CaptureFatalJitException(() => codeGen.genFnEpilog(block));
+
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+#if !DEBUG
+            Assert.That(descriptors.Count, Is.EqualTo(initialInstructionCount + 6));
+            Assert.That(descriptors[initialInstructionCount].idIns(), Is.EqualTo(INS_fld));
+            Assert.That(descriptors[initialInstructionCount].idReg1(), Is.EqualTo(REG_FS0));
+            Assert.That(descriptors[initialInstructionCount].idSmallCns(), Is.EqualTo(88));
+            Assert.That(descriptors[initialInstructionCount + 1].idIns(), Is.EqualTo(INS_ld));
+            Assert.That(descriptors[initialInstructionCount + 1].idReg1(), Is.EqualTo(REG_S1));
+            Assert.That(descriptors[initialInstructionCount + 1].idSmallCns(), Is.EqualTo(80));
+            Assert.That(descriptors[initialInstructionCount + 2].idIns(), Is.EqualTo(INS_ld));
+            Assert.That(descriptors[initialInstructionCount + 2].idReg1(), Is.EqualTo(REG_RA));
+            Assert.That(descriptors[initialInstructionCount + 2].idSmallCns(), Is.EqualTo(72));
+            Assert.That(descriptors[initialInstructionCount + 3].idIns(), Is.EqualTo(INS_ld));
+            Assert.That(descriptors[initialInstructionCount + 3].idReg1(), Is.EqualTo(REG_FP));
+            Assert.That(descriptors[initialInstructionCount + 3].idSmallCns(), Is.EqualTo(64));
+            Assert.That(descriptors[initialInstructionCount + 4].idIns(), Is.EqualTo(INS_addi));
+            Assert.That(descriptors[initialInstructionCount + 4].idReg1(), Is.EqualTo(REG_SPBASE));
+            Assert.That(descriptors[initialInstructionCount + 4].idReg2(), Is.EqualTo(REG_SPBASE));
+            Assert.That(descriptors[initialInstructionCount + 4].idSmallCns(), Is.EqualTo(96));
+            Assert.That(descriptors[initialInstructionCount + 5].idIns(), Is.EqualTo(INS_jalr));
+            Assert.That(descriptors[initialInstructionCount + 5].idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(descriptors[initialInstructionCount + 5].idReg2(), Is.EqualTo(REG_RA));
+            Assert.That(descriptors[initialInstructionCount + 5].idSmallCns(), Is.EqualTo(0));
+            Assert.That(compiler.compGeneratingUnwindEpilog, Is.False);
+            Assert.That(compiler.funCurrentFunc().GetUnwindInfo().GetCurrentEmitterLocation(), Is.Not.Null);
+#endif
+        });
+    }
+
+#if !DEBUG
+    [Test]
+    public static void LargeCalleeSavedRegisterEpilogSplitsStackRestoration()
+    {
+        WithEpilog((compiler, codeGen) =>
+        {
+            InitializeCalleeSavedFrame(compiler, codeGen, 4096, default);
+
+            var block = new BasicBlock(null, null);
+            block.SetFlags(BasicBlockFlags.BBF_IS_LIR);
+            block.InsertAtEnd(new GenTreeUnOp(GT_RETURN, TYP_VOID, null));
+
+            var failure = CaptureFatalJitException(() => codeGen.genFnEpilog(block));
+            Assert.That(failure, Is.Null);
+            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var returnIndex = descriptors.FindIndex(descriptor => descriptor.idIns() is INS_jalr);
+            Assert.That(returnIndex, Is.EqualTo(descriptors.Count - 1));
+            Assert.That(descriptors[returnIndex - 2].idIns(), Is.EqualTo(INS_ld));
+            Assert.That(descriptors[returnIndex - 2].idReg1(), Is.EqualTo(REG_FP));
+            Assert.That(descriptors[returnIndex - 2].idSmallCns(), Is.EqualTo(0));
+            Assert.That(descriptors[returnIndex - 3].idIns(), Is.EqualTo(INS_ld));
+            Assert.That(descriptors[returnIndex - 3].idReg1(), Is.EqualTo(REG_RA));
+            Assert.That(descriptors[returnIndex - 3].idSmallCns(), Is.EqualTo(8));
+            Assert.That(descriptors.Take(returnIndex - 3).Any(descriptor =>
+                (descriptor.idIns() is INS_add or INS_addi) && (descriptor.idReg1() is REG_SPBASE)), Is.True);
         });
     }
 #endif
@@ -2414,7 +2512,7 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
-    private static void InitializeCalleeSavedProlog(
+    private static void InitializeCalleeSavedFrame(
         Compiler compiler,
         CodeGen codeGen,
         int localFrameSize,
