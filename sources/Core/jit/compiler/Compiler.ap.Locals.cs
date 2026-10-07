@@ -159,19 +159,20 @@ public partial class Compiler
                 }
 #endif
                 assert(size == assertion.Op2.SimdSize);
-                var vector = gtNewVconNode(tree.Type);
 #if TARGET_ARM64
                 if (tree.Type is TYP_SIMD)
                 {
-                    vector.SimdScalableVal = MemoryMarshal.Read<simdscalable_t>(assertion.Op2.SimdConstant);
+                    var scalableValue = MemoryMarshal.Read<simdscalable_t>(assertion.Op2.SimdConstant);
+                    replacement = gtNewSimdVconNode(tree.Type, scalableValue);
                 }
                 else
 #endif
                 {
+                    var vector = gtNewVconNode(tree.Type);
                     assertion.Op2.SimdConstant.CopyTo(vector.SimdVal.AsSpan<byte>());
+                    replacement = vector;
                 }
 
-                replacement = vector;
                 break;
             }
 #endif

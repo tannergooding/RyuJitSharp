@@ -13779,6 +13779,9 @@ public partial class Compiler
 #if FEATURE_SIMD
     public GenTreeVecCon gtNewVconNode(var_types type)
     {
+#if TARGET_ARM64
+        assert(type != TYP_SIMD);
+#endif
         return new GenTreeVecCon(type);
     }
 
