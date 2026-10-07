@@ -8,6 +8,52 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+    public void genCodeForStoreBlk(GenTreeBlk node)
+    {
+        assert(node.Oper is GT_STORE_BLK);
+
+        if (node._gcUnsafe)
+        {
+            Emitter.emitDisableGC();
+        }
+
+        var isCopyBlk = node.IsCopyBlkOp;
+
+        switch (node._kind)
+        {
+            case GenTreeBlk.BlkOpKindLoop:
+            {
+                assert(!isCopyBlk);
+                genCodeForInitBlkLoop(node);
+                break;
+            }
+
+            case GenTreeBlk.BlkOpKindUnroll:
+            {
+                if (isCopyBlk)
+                {
+                    genCodeForCpBlkUnroll(node);
+                }
+                else
+                {
+                    genCodeForInitBlkUnroll(node);
+                }
+                break;
+            }
+
+            default:
+            {
+                unreached();
+                break;
+            }
+        }
+
+        if (node._gcUnsafe)
+        {
+            Emitter.emitEnableGC();
+        }
+    }
+
     public void genCodeForCpBlkUnroll(GenTreeBlk node)
     {
         assert(node.Oper is GT_STORE_BLK);

@@ -227,7 +227,7 @@ internal static unsafe class RiscVCodeGenPortTests
     }
 
     [Test]
-    public static void InitBlkLoopPreservesRiscVInitialStoreRecordingBoundary()
+    public static void StoreBlkInitLoopDispatchPreservesRiscVInitialStoreRecordingBoundary()
     {
         WithCodeGen((_, codeGen) =>
         {
@@ -241,7 +241,7 @@ internal static unsafe class RiscVCodeGenPortTests
                 _kind = BlkOpKindLoop,
             };
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForInitBlkLoop(block));
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreBlk(block));
 
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
             Assert.That(failure?.Message,
