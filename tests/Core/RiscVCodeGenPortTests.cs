@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.GenTreeBlk;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.NamedIntrinsic;
@@ -128,6 +129,30 @@ internal static unsafe class RiscVCodeGenPortTests
 
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
             Assert.That(failure?.Message, Does.Contain(expectedBoundary));
+        });
+    }
+
+    [TestCase(8)]
+    [TestCase(16)]
+    public static void CopyBlockUnrollPreservesRiscVInstructionRecordingBoundary(int size)
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var destination = new GenTreePhysReg(REG_A0, TYP_BYREF) { RegNum = REG_A0 };
+            var sourceAddress = new GenTreePhysReg(REG_A1, TYP_BYREF) { RegNum = REG_A1 };
+            var source = new GenTreeIndir(GT_IND, TYP_STRUCT, sourceAddress) { IsContained = true };
+            var block = new GenTreeBlk(TYP_STRUCT, destination, source, new ClassLayout((uint)size))
+            {
+                _kind = BlkOpKindUnroll,
+            };
+            codeGen.InternalRegisters.Add(
+                block, regMaskTP.CreateFromRegNum(REG_A2, REG_A2.SingleTypeMask));
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForCpBlkUnroll(block));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("Two-register-immediate instruction recording requires xarch."));
         });
     }
 

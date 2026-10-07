@@ -8,6 +8,205 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+    public void genCodeForCpBlkUnroll(GenTreeBlk node)
+    {
+        assert(node.Oper is GT_STORE_BLK);
+
+        var dstLclNum = BAD_VAR_NUM;
+        var dstAddrBaseReg = REG_NA;
+        var dstOffset = 0;
+        var dstAddr = node.Addr;
+
+        if (!dstAddr.IsContained)
+        {
+            dstAddrBaseReg = genConsumeReg(dstAddr);
+        }
+        else if (dstAddr.Oper.IsAddrMode)
+        {
+            var addrMode = dstAddr.AsAddrMode();
+            assert(!addrMode.HasIndex);
+
+            if (addrMode.BaseAddress is not { } baseAddress)
+            {
+                unreached();
+                return;
+            }
+
+            dstAddrBaseReg = genConsumeReg(baseAddress);
+            dstOffset = addrMode.Offset;
+        }
+        else
+        {
+            assert(dstAddr.Oper is GT_LCL_ADDR);
+            var dstLocal = dstAddr.AsLclVarCommon();
+            dstLclNum = dstLocal.LclNum;
+            dstOffset = dstLocal.LclOffs;
+        }
+
+        var srcLclNum = BAD_VAR_NUM;
+        var srcAddrBaseReg = REG_NA;
+        var srcOffset = 0;
+        var src = node.Data;
+
+        assert(src.IsContained);
+
+        if (src.Oper is GT_LCL_VAR or GT_LCL_FLD)
+        {
+            var srcLocal = src.AsLclVarCommon();
+            srcLclNum = srcLocal.LclNum;
+            srcOffset = srcLocal.LclOffs;
+        }
+        else
+        {
+            assert(src.Oper is GT_IND);
+            var srcAddr = src.AsIndir().Addr;
+
+            if (!srcAddr.IsContained)
+            {
+                srcAddrBaseReg = genConsumeReg(srcAddr);
+            }
+            else if (srcAddr.Oper.IsAddrMode)
+            {
+                var addrMode = srcAddr.AsAddrMode();
+                assert(!addrMode.HasIndex);
+
+                if (addrMode.BaseAddress is not { } baseAddress)
+                {
+                    unreached();
+                    return;
+                }
+
+                srcAddrBaseReg = genConsumeReg(baseAddress);
+                srcOffset = addrMode.Offset;
+            }
+            else
+            {
+                assert(srcAddr.Oper is GT_LCL_ADDR);
+                var srcLocal = srcAddr.AsLclVarCommon();
+                srcLclNum = srcLocal.LclNum;
+                srcOffset = srcLocal.LclOffs;
+            }
+        }
+
+        if (node.IsVolatile)
+        {
+            instGen_MemoryBarrier(BARRIER_FULL);
+        }
+
+        var emit = GetEmitter();
+        var size = node.Layout.Size;
+
+        assert(size <= int.MaxValue);
+        assert(srcOffset < int.MaxValue - unchecked((int)size));
+        assert(dstOffset < int.MaxValue - unchecked((int)size));
+
+        var tempReg = InternalRegisters.Extract(node, new regMaskTP(SRBM_ALLINT));
+
+        if (size >= (uint)(2 * REGSIZE_BYTES))
+        {
+            var tempReg2 = REG_RA;
+
+            for (var regSize = (uint)(2 * REGSIZE_BYTES); size >= regSize;
+                 size -= regSize, srcOffset += (int)regSize, dstOffset += (int)regSize)
+            {
+                if (srcLclNum != BAD_VAR_NUM)
+                {
+                    emit.emitIns_R_S(INS_ld, EA_8BYTE, tempReg, srcLclNum, srcOffset);
+                    emit.emitIns_R_S(INS_ld, EA_8BYTE, tempReg2, srcLclNum, srcOffset + 8);
+                }
+                else
+                {
+                    emit.emitIns_R_R_I(INS_ld, EA_8BYTE, tempReg, srcAddrBaseReg, srcOffset);
+                    emit.emitIns_R_R_I(INS_ld, EA_8BYTE, tempReg2, srcAddrBaseReg, srcOffset + 8);
+                }
+
+                if (dstLclNum != BAD_VAR_NUM)
+                {
+                    emit.emitIns_S_R(INS_sd, EA_8BYTE, tempReg, dstLclNum, dstOffset);
+                    emit.emitIns_S_R(INS_sd, EA_8BYTE, tempReg2, dstLclNum, dstOffset + 8);
+                }
+                else
+                {
+                    emit.emitIns_R_R_I(INS_sd, EA_8BYTE, tempReg, dstAddrBaseReg, dstOffset);
+                    emit.emitIns_R_R_I(INS_sd, EA_8BYTE, tempReg2, dstAddrBaseReg, dstOffset + 8);
+                }
+            }
+        }
+
+        for (var regSize = (uint)REGSIZE_BYTES; size > 0;
+             size -= regSize, srcOffset += (int)regSize, dstOffset += (int)regSize)
+        {
+            while (regSize > size)
+            {
+                regSize /= 2;
+            }
+
+            instruction loadIns;
+            instruction storeIns;
+            emitAttr attr;
+
+            switch (regSize)
+            {
+                case 1:
+                {
+                    loadIns = INS_lb;
+                    storeIns = INS_sb;
+                    attr = EA_4BYTE;
+                    break;
+                }
+                case 2:
+                {
+                    loadIns = INS_lh;
+                    storeIns = INS_sh;
+                    attr = EA_4BYTE;
+                    break;
+                }
+                case 4:
+                {
+                    loadIns = INS_lw;
+                    storeIns = INS_sw;
+                    attr = EA_4BYTE;
+                    break;
+                }
+                case 8:
+                {
+                    loadIns = INS_ld;
+                    storeIns = INS_sd;
+                    attr = EA_8BYTE;
+                    break;
+                }
+                default:
+                {
+                    unreached();
+                    return;
+                }
+            }
+
+            if (srcLclNum != BAD_VAR_NUM)
+            {
+                emit.emitIns_R_S(loadIns, attr, tempReg, srcLclNum, srcOffset);
+            }
+            else
+            {
+                emit.emitIns_R_R_I(loadIns, attr, tempReg, srcAddrBaseReg, srcOffset);
+            }
+
+            if (dstLclNum != BAD_VAR_NUM)
+            {
+                emit.emitIns_S_R(storeIns, attr, tempReg, dstLclNum, dstOffset);
+            }
+            else
+            {
+                emit.emitIns_R_R_I(storeIns, attr, tempReg, dstAddrBaseReg, dstOffset);
+            }
+        }
+
+        if (node.IsVolatile)
+        {
+            instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
+        }
+    }
+
     public void genCodeForInitBlkUnroll(GenTreeBlk node)
     {
         assert(node.Oper is GT_STORE_BLK);
