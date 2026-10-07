@@ -8,6 +8,7 @@ using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.CorJitResult;
+using static RyuJitSharp.CORINFO_InstructionSet;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.NamedIntrinsic;
@@ -80,6 +81,53 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
             Assert.That(failure?.Message,
                 Does.Contain("RISC-V64 indirect load/store instruction recording is not ported."));
+        });
+    }
+
+    [TestCase(GT_LSH, TYP_INT, true, false, "Two-register-immediate instruction recording requires xarch.")]
+    [TestCase(GT_RSH, TYP_LONG, false, false, "RISC-V three-register instruction recording is not implemented.")]
+    [TestCase(GT_ROR, TYP_INT, false, false, "Two-register-immediate instruction recording requires xarch.")]
+    [TestCase(GT_ROR, TYP_LONG, false, true, "RISC-V three-register instruction recording is not implemented.")]
+    [TestCase(GT_ROL, TYP_INT, true, true, "Two-register-immediate instruction recording requires xarch.")]
+    public static void ShiftPreservesRiscVInstructionRecordingBoundary(
+        genTreeOps oper,
+        var_types type,
+        bool useImmediate,
+        bool useZbb,
+        string expectedBoundary)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            if (useZbb)
+            {
+                compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_Zbb);
+                compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_Zbb);
+                compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_Zbb);
+            }
+
+            var value = new GenTreePhysReg(REG_A0, type) { RegNum = REG_A0 };
+            GenTree shiftBy;
+            if (useImmediate)
+            {
+                shiftBy = compiler.gtNewIconNode(TYP_INT, 5);
+                shiftBy.IsContained = true;
+            }
+            else
+            {
+                shiftBy = new GenTreePhysReg(REG_A1, TYP_INT) { RegNum = REG_A1 };
+            }
+
+            var shift = new GenTreeOp(oper, type, value, shiftBy) { RegNum = REG_A2 };
+            if ((oper is GT_ROR or GT_ROL) && !useZbb)
+            {
+                codeGen.InternalRegisters.Add(
+                    shift, regMaskTP.CreateFromRegNum(REG_A3, REG_A3.SingleTypeMask));
+            }
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForShift(shift));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Does.Contain(expectedBoundary));
         });
     }
 
