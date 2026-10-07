@@ -12,7 +12,7 @@ param(
     [switch] $DisableObjectStackAllocation,
     [string] $TypeName = "RyuJitSharp.PortingCorpus",
     [string[]] $ExpectedMethods = @("Main", "Add", "Branch", "Locals", "Call", "InlineCaller", "IndirectCall", "FoldConstants", "FoldFloating", "FoldInteger", "FoldHardware",
-        "SynchronizedReturn", "GenericCatch", "PInvokeCall", "ReversePInvoke", "ManyReturns", "LocalAddressStore", "LocalAddressDifference", "ImplicitByRefArgument"),
+        "SynchronizedReturn", "GenericCatch", "PInvokeCall", "ReversePInvoke", "ManyReturns", "LocalAddressStore", "LocalAddressDifference", "ImplicitByRefArgument", "LoopSum", "IndexedArray"),
     [ValidateRange(1, 3600)][int] $TimeoutSeconds = 120,
     [switch] $ExecuteManagedCode,
     [ValidateRange(0, 2147483647)][int] $OptimizationRepeatCount = 0,

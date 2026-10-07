@@ -103,6 +103,16 @@ internal static class PortingCorpus
             return 18;
         }
 
+        if (LoopSum(8) != 28)
+        {
+            return 19;
+        }
+
+        if (IndexedArray(3) != 14)
+        {
+            return 20;
+        }
+
         return 0;
     }
 
@@ -235,6 +245,31 @@ internal static class PortingCorpus
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static long ImplicitByRefArgument(Triple value) => value.First + value.Second + value.Third;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int LoopSum(int count)
+    {
+        var sum = 0;
+        for (var index = 0; index < count; index++)
+        {
+            sum += index;
+        }
+
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int IndexedArray(int seed)
+    {
+        var values = new int[5];
+        for (var index = 0; index < values.Length; index++)
+        {
+            values[index] = seed + (index * 2);
+        }
+
+        var selectedIndex = seed & 3;
+        return values[selectedIndex] + values[4 - selectedIndex];
+    }
 
     private struct Triple
     {

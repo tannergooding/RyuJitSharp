@@ -365,6 +365,8 @@ minopts and optimized local morph without requiring managed code generation.
 `ImplicitByRefArgument` passes a three-long struct through the Windows-x64
 implicit-byref ABI and exercises parameter descriptor retyping before global
 morph.
+`LoopSum` exercises a counted loop, while `IndexedArray` exercises dynamic
+array allocation, length-based iteration, and variable-indexed loads and stores.
 It is a standalone fixture, not a compiler coverage claim.
 
 Use `scripts\porting\Invoke-PortingCorpus.ps1` with `-CoreRoot`, `-Corpus`,
