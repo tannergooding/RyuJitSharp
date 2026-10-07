@@ -109,6 +109,10 @@
     <Compile Include="..\Core\SignedTwelveBitImmediateTests.cs" Link="SignedTwelveBitImmediateTests.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(RyuJitTargetRuntimeIdentifier)' == 'linux-loongarch64' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'linux-loongarch64')">
+    <Compile Include="..\Core\LoongArch64CodeGenRegisterTransferTests.cs" Link="LoongArch64CodeGenRegisterTransferTests.cs" />
+  </ItemGroup>
+
   <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-arm64')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-arm64'))) or '$(RyuJitTargetRuntimeIdentifier)' == 'linux-loongarch64' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'linux-loongarch64') or '$(RyuJitTargetRuntimeIdentifier)' == 'linux-riscv64' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'linux-riscv64')">
     <Compile Include="..\Core\FuncInfoDscMetadataTests.cs" Link="FuncInfoDscMetadataTests.cs" />
   </ItemGroup>
@@ -123,6 +127,7 @@
     <Compile Include="..\Core\RiscVReservedRegisterCheckTests.cs" Link="RiscVReservedRegisterCheckTests.cs" />
     <Compile Include="..\Core\RiscVInstructionEncodingTests.cs" Link="RiscVInstructionEncodingTests.cs" />
     <Compile Include="..\Core\RiscVCodeGenPortTests.cs" Link="RiscVCodeGenPortTests.cs" />
+    <Compile Include="..\Core\RiscVLocalFieldCodeGenTests.cs" Link="RiscVLocalFieldCodeGenTests.cs" />
     <Compile Include="..\Core\RiscVLoweringPortTests.cs" Link="RiscVLoweringPortTests.cs" />
   </ItemGroup>
 

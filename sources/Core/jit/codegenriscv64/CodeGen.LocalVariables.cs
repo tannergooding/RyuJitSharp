@@ -37,6 +37,29 @@ public sealed partial class CodeGen
         }
     }
 
+    public void genCodeForLclFld(GenTreeLclFld tree)
+    {
+        assert(tree.Oper is GT_LCL_FLD);
+
+        var targetType = tree.Type;
+        var targetReg = tree.RegNum;
+        if (targetType is TYP_STRUCT)
+        {
+            NYI_IF(true, "GT_LCL_FLD: struct load local field not supported");
+            throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 struct local-field loads are not supported.");
+        }
+
+        assert(targetReg is not REG_NA);
+
+        var size = targetType.EmitSize;
+        var offset = tree.LclOffs;
+        var localNumber = tree.LclNum;
+        assert((uint)localNumber < (uint)_compiler.lvaCount);
+
+        Emitter.emitIns_R_S(ins_Load(targetType), size, targetReg, localNumber, offset);
+        genProduceReg(tree);
+    }
+
     public void genCodeForStoreLclFld(GenTreeLclFld tree)
     {
         var targetType = tree.Type;

@@ -181,7 +181,7 @@ internal static unsafe class RiscVCodeGenPortTests
         Assert.That(failure?.Message, Does.Contain(expectedBoundary));
     }
 
-    private static void WithCodeGen(Action<Compiler, CodeGen> action)
+    internal static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
 #if DEBUG
         using var tls = new JitTls(null);
