@@ -42,6 +42,10 @@ public partial class Emitter
 #elif TARGET_ARM
         // The 12-byte base, 4-byte varset/displacement/count, and two 8-byte reg masks round to 48 bytes.
         internal static int NativeSize => 48;
+#elif TARGET_RISCV64
+        // LP64 layout: 16-byte base, 8-byte varset/displacement and masks, 4-byte argument count,
+        // then the one-byte tail bitfield rounded up to the next 8-byte boundary.
+        internal static int NativeSize => 56;
 #else
         internal static int NativeSize
             => throw new System.PlatformNotSupportedException("The call descriptor layout is not yet ported for this target.");

@@ -64,6 +64,67 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [Test]
+    public static void SmallDescriptorSizeTakesPrecedenceOverInstructionOptions()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var descriptor = new DescriptorSizeProbe();
+            descriptor.idInsOpt(INS_OPTS_I);
+            descriptor.idSetIsSmallDsc();
+
+            Assert.That(DescriptorSize(codeGen.Emitter, descriptor), Is.EqualTo(8));
+        });
+    }
+
+    [TestCase(INS_OPTS_JUMP, 48)]
+    [TestCase(INS_OPTS_C, 16)]
+    [TestCase(INS_OPTS_RC, 16)]
+    [TestCase(INS_OPTS_RL, 16)]
+    [TestCase(INS_OPTS_RELOC, 16)]
+    [TestCase(INS_OPTS_NONE, 16)]
+    [TestCase(INS_OPTS_I, 88)]
+    public static void DescriptorSizeMatchesRiscVInstructionOptions(insOpts options, int expectedSize)
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var descriptor = new DescriptorSizeProbe();
+            descriptor.idInsOpt(options);
+
+            Assert.That(DescriptorSize(codeGen.Emitter, descriptor), Is.EqualTo(expectedSize));
+        });
+    }
+
+    [Test]
+    public static void LargeCallDescriptorUsesNativeRiscVSize()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var descriptor = new DescriptorSizeProbe();
+            descriptor.idInsOpt(INS_OPTS_C);
+            descriptor.idSetIsLargeCall();
+
+            Assert.That(DescriptorSize(codeGen.Emitter, descriptor), Is.EqualTo(56));
+        });
+    }
+
+    [Test]
+    public static void UnexpectedDescriptorOptionFails()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var descriptor = new DescriptorSizeProbe();
+            descriptor.idInsOpt((insOpts)63);
+
+            var failure = CaptureFatalJitException(() => DescriptorSize(codeGen.Emitter, descriptor));
+#if DEBUG
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_RECOVERABLEERROR));
+#else
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_INTERNALERROR));
+#endif
+        });
+    }
+
     [TestCase(INS_sd, 16, false, REG_NA)]
     [TestCase(INS_sw, 2048, true, REG_NA)]
     [TestCase(INS_sh, 16, false, REG_A2)]
@@ -1340,15 +1401,26 @@ internal static unsafe class RiscVCodeGenPortTests
             InitializeCalleeSavedFrame(compiler, codeGen, 4096, default);
 
             var zeroed = true;
-            var failure = Assert.Throws<PlatformNotSupportedException>(
+            var failure = CaptureFatalJitException(
                 () => codeGen.genPushCalleeSavedRegisters(REG_NA, ref zeroed));
-            Assert.That(failure?.Message,
-                Does.Contain("Instruction descriptor sizes are not yet ported for this target."));
+            Assert.That(failure, Is.Null);
+
             var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
                 ?? throw new AssertionException("Missing current instruction buffer.");
-            Assert.That(descriptors, Is.Not.Empty);
+            Assert.That(descriptors.Count, Is.GreaterThan(5));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_addi));
             Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_SPBASE));
+            Assert.That(descriptors[0].idSmallCns(), Is.EqualTo(-16));
+            Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_sd));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_FP));
+            Assert.That(descriptors[1].idSmallCns(), Is.Zero);
+            Assert.That(descriptors[2].idIns(), Is.EqualTo(INS_sd));
+            Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_RA));
+            Assert.That(descriptors[2].idSmallCns(), Is.EqualTo(8));
+            Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_add));
+            Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_SPBASE));
+            Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_SPBASE));
+            Assert.That(descriptors[^1].idReg3(), Is.EqualTo(REG_SCRATCH));
         });
     }
 
@@ -3520,5 +3592,14 @@ internal static unsafe class RiscVCodeGenPortTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genRestoreCalleeSavedRegistersHelp")]
     private static extern void RestoreCalleeSavedRegisters(CodeGen codeGen, regMaskTP mask, regNumber baseReg,
         int offset, bool reportUnwindData);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitSizeOfInsDsc")]
+    private static extern int DescriptorSize(Emitter emitter, Emitter.instrDesc descriptor);
+
+    private sealed class DescriptorSizeProbe : Emitter.instrDesc
+    {
+        public override int NativeLogicalSize
+            => throw new AssertionException("RISC-V descriptor size must be selected by instruction options.");
+    }
 }
 #endif

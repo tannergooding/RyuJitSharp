@@ -313,6 +313,50 @@ public partial class Emitter
         }
 
         return INSTR_DESC_SIZE;
+#elif TARGET_RISCV64
+        if (descriptor.idIsSmallDsc())
+        {
+            return SMALL_IDSC_SIZE;
+        }
+
+        switch (descriptor.idInsOpt())
+        {
+            case INS_OPTS_JUMP:
+            {
+                return DescriptorSizes.Jump;
+            }
+
+            case INS_OPTS_C:
+            {
+                if (descriptor.idIsLargeCall())
+                {
+                    return instrDescCGCA.NativeSize;
+                }
+
+                assert(!descriptor.idIsLargeDsp());
+                assert(!descriptor.idIsLargeCns());
+                return INSTR_DESC_SIZE;
+            }
+
+            case INS_OPTS_RC:
+            case INS_OPTS_RL:
+            case INS_OPTS_RELOC:
+            case INS_OPTS_NONE:
+            {
+                return INSTR_DESC_SIZE;
+            }
+
+            case INS_OPTS_I:
+            {
+                return DescriptorSizes.RiscVLoadImmediate;
+            }
+
+            default:
+            {
+                NO_WAY("unexpected instruction descriptor format");
+                return INSTR_DESC_SIZE;
+            }
+        }
 #elif TARGET_WASM
         return descriptor.NativeLogicalSize;
 #else

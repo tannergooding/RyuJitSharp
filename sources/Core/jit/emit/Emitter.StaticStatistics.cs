@@ -38,6 +38,8 @@ public partial class Emitter
         var (word, regMaskSize) = NativeStaticLayout();
 #if TARGET_ARM64
         const int cgcaSize = 80;
+#elif TARGET_RISCV64
+        var cgcaSize = instrDescCGCA.NativeSize;
 #else
         const int cgcaSize = 72;
 #endif
