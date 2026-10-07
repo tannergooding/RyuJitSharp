@@ -108,7 +108,7 @@ internal static class CompilerShutdownFamilyTests
             BasicBlock.s_Size = -1;
             Compiler.genMethodCnt = 3;
 #endif
-#if EMITTER_STATS && TARGET_XARCH && !NODEBASH_STATS && !COUNT_AST_OPERS && !CALL_ARG_STATS && !MEASURE_NODE_SIZE && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE
+#if EMITTER_STATS && (TARGET_XARCH || TARGET_ARM64) && !NODEBASH_STATS && !COUNT_AST_OPERS && !CALL_ARG_STATS && !MEASURE_NODE_SIZE && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE
             Compiler.compShutdown();
 #elif CALL_ARG_STATS && !NODEBASH_STATS && !COUNT_AST_OPERS && !MEASURE_NODE_SIZE && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
             Compiler.argTotalCalls = 0;
@@ -156,12 +156,12 @@ internal static class CompilerShutdownFamilyTests
                 "GC pointer table stats\n" +
                 "---------------------------------------------------\n"));
 #elif EMITTER_STATS
-#if TARGET_XARCH
+#if TARGET_XARCH || TARGET_ARM64
             Assert.That(text, Does.Contain("\nInstruction format frequency table:\n"));
             Assert.That(text, Does.Contain("Descriptor size distribution:\n"));
             Assert.That(text, Does.EndWith(" bytes allocated in the emitter\n"));
 #else
-            Assert.That(exception?.Message, Is.EqualTo("emitterStats outside xarch is not ported."));
+            Assert.That(exception?.Message, Is.EqualTo("emitterStats outside xarch and arm64 is not ported."));
 #endif
 #endif
 #endif
@@ -277,11 +277,12 @@ internal static class CompilerShutdownFamilyTests
         }
 #endif
 
-#if EMITTER_STATS && TARGET_XARCH
+#if EMITTER_STATS && (TARGET_XARCH || TARGET_ARM64)
         AccessDependency(dependency, writer);
         writer.Flush();
         var text = Encoding.UTF8.GetString(output.ToArray());
         Assert.That(text, Does.Contain("\nInstruction format frequency table:\n"));
+        Assert.That(text, Does.Contain("Descriptor size distribution:\n"));
 #else
         var exception = Assert.Throws<FatalJitException>(() => AccessDependency(dependency, writer));
         Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));

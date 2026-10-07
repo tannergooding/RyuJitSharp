@@ -516,7 +516,7 @@ internal static unsafe class EmitterMethodStatisticsTests
             return NewDescriptor(this, attr);
         }
 
-        public instrDesc AllocateJumpDescriptor()
+        public instrDescJmp AllocateJumpDescriptor()
         {
             return NewJumpDescriptor(this);
         }

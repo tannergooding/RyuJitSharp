@@ -14,8 +14,8 @@ public partial class Emitter
 #if EMITTER_STATS
     internal static void emitterStats(StreamWriter output)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "emitterStats outside xarch is not ported.");
+#if !TARGET_XARCH && !TARGET_ARM64
+        throw new FatalJitException(CORJIT_SKIPPED, "emitterStats outside xarch and arm64 is not ported.");
 #else
         if (totAllocdSize > 0)
         {
@@ -127,15 +127,25 @@ public partial class Emitter
             WriteEmitterDescriptorCount(output, "Total instrDesc:", emitTotalIDescCnt);
             WriteEmitterDescriptorCount(output, "Total instrDescCns:", emitTotalIDescCnsCnt);
             WriteEmitterDescriptorCount(output, "Total instrDescDsp:", emitTotalIDescDspCnt);
+#if TARGET_ARM64
+            WriteEmitterDescriptorCount(output, "Total instrDescLclVarPair:", emitTotalIDescLclVarPairCnt);
+            WriteEmitterDescriptorCount(output, "Total instrDescLclVarPairCns:", emitTotalIDescLclVarPairCnsCnt);
+#endif
+#if TARGET_XARCH
             WriteEmitterDescriptorCount(output, "Total instrDescAmd:", emitTotalIDescAmdCnt);
             WriteEmitterDescriptorCount(output, "Total instrDescCnsAmd:", emitTotalIDescCnsAmdCnt);
+#endif
             WriteEmitterDescriptorCount(output, "Total instrDescCnsDsp:", emitTotalIDescCnsDspCnt);
 #if FEATURE_LOOP_ALIGN
             WriteEmitterDescriptorCount(output, "Total instrDescAlign:", emitTotalIDescAlignCnt);
 #endif
             WriteEmitterDescriptorCount(output, "Total instrDescJmp:", emitTotalIDescJmpCnt);
+#if !TARGET_ARM64
             WriteEmitterDescriptorCount(output, "Total instrDescLbl:", emitTotalIDescLblCnt);
+#endif
+#if !TARGET_WASM
             WriteEmitterDescriptorCount(output, "Total instrDescCGCA:", emitTotalIDescCGCACnt);
+#endif
 
             output.Write("\n");
         }
@@ -205,14 +215,12 @@ public partial class Emitter
 #endif
     }
 
-#if TARGET_XARCH
     private static void WriteEmitterDescriptorCount(StreamWriter output, string name, uint count)
     {
         output.Write(FormattableString.Invariant($"{name,-30}{count,8} ("));
         WriteEmitterStatistic(output, (100.0 * count) / emitTotalInsCnt, 5, 2);
         output.Write("%)\n");
     }
-#endif
 
     private static void WriteEmitterConstantCount(StreamWriter output, string name, uint count, uint total)
     {
