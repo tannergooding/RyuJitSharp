@@ -18,6 +18,15 @@ namespace RyuJitSharp.UnitTests;
 internal static class RiscVInstructionEncodingTests
 {
     [Test]
+    public static void MapsTheNativeNoOperandInstructionFormat()
+    {
+        Assert.That((uint)Emitter.insFormat.IF_NONE, Is.Zero);
+        Assert.That((uint)Emitter.insFormat.IF_COUNT, Is.EqualTo(1u));
+        Assert.That(Emitter.emitFmtToOps.Length, Is.EqualTo((int)Emitter.insFormat.IF_COUNT));
+        Assert.That((ID_OPS)Emitter.emitFmtToOps[(int)Emitter.insFormat.IF_NONE], Is.EqualTo(ID_OPS.ID_OP_NONE));
+    }
+
+    [Test]
     public static void EncodesRiscVInstructionFormats()
     {
         Assert.That(Emitter.insEncodeRTypeInstr(0x33, 0x1b, 6, 0x13, 0x16, 0x55), Is.EqualTo(0xAB69EDB3u));

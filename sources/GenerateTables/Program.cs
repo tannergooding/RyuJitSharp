@@ -1488,6 +1488,13 @@ public sealed partial class CodeGen
         var loongArchOperandBuilder = ProcessMacroBasedFile(loongArchFormatInput, loongArchFormatLines, ["IF_DEF("],
             (builder, inputFile, line, prefix, parts) => _ = builder.AppendLine(CultureInfo.InvariantCulture,
                 $"        (byte)ID_OP_{parts[2].Trim()}, // IF_{parts[0].Trim()}"));
+        const string riscvFormatInput = @"Inputs\emitfmtsriscv64.h";
+        var riscvFormatLines = ReadInstructionFormatLines(riscvFormatInput);
+        var riscvFormatBuilder = ProcessMacroBasedFile(riscvFormatInput, riscvFormatLines, ["IF_DEF("],
+            AppendInstructionFormat);
+        var riscvOperandBuilder = ProcessMacroBasedFile(riscvFormatInput, riscvFormatLines, ["IF_DEF("],
+            (builder, inputFile, line, prefix, parts) => _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        (byte)ID_OP_{parts[2].Trim()}, // IF_{parts[0].Trim()}"));
 
         var operandBuilder = ProcessMacroBasedFile(formatInput, formatLines, ["IF_DEF("],
             (builder, inputFile, line, prefix, parts) => _ = builder.AppendLine(CultureInfo.InvariantCulture,
@@ -1543,17 +1550,19 @@ public partial class Emitter
 {{armFormatBuilder}}#elif TARGET_ARM64
 {{arm64FormatBuilder}}#elif TARGET_WASM
 {{wasmFormatBuilder}}#elif TARGET_LOONGARCH64
-{{loongArchFormatBuilder}}#endif
+{{loongArchFormatBuilder}}#elif TARGET_RISCV64
+{{riscvFormatBuilder}}#endif
         IF_COUNT,
     }
 
-#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_WASM || TARGET_LOONGARCH64
+#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_WASM || TARGET_LOONGARCH64 || TARGET_RISCV64
     internal static ReadOnlySpan<byte> emitFmtToOps => [
 #if TARGET_ARM
 {{armOperandBuilder}}#elif TARGET_ARM64
 {{arm64OperandBuilder}}#elif TARGET_WASM
 {{wasmOperandBuilder}}#elif TARGET_LOONGARCH64
-{{loongArchOperandBuilder}}#else
+{{loongArchOperandBuilder}}#elif TARGET_RISCV64
+{{riscvOperandBuilder}}#else
 {{operandBuilder}}#endif
     ];
 #endif
@@ -1591,6 +1600,7 @@ public partial class Emitter
         var arm64OperandKinds = ReadNativeEnumBody(arm64Inputs[0], "ID_OPS");
         var wasmOperandKinds = ReadNativeEnumBody(wasmFormatInput, "ID_OPS");
         var loongArchOperandKinds = ReadNativeEnumBody(loongArchFormatInput, "ID_OPS");
+        var riscvOperandKinds = ReadNativeEnumBody(riscvFormatInput, "ID_OPS");
         File.WriteAllText(@"Outputs\jit\emit\ID_OPS.generated.cs", $$"""
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 //
@@ -1607,7 +1617,8 @@ public enum ID_OPS
 {{armOperandKinds}}#elif TARGET_ARM64
 {{arm64OperandKinds}}#elif TARGET_WASM
 {{wasmOperandKinds}}#elif TARGET_LOONGARCH64
-{{loongArchOperandKinds}}#else
+{{loongArchOperandKinds}}#elif TARGET_RISCV64
+{{riscvOperandKinds}}#else
 {{xarchOperandKinds}}#endif
 }
 """);
