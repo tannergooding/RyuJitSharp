@@ -243,6 +243,62 @@ internal static unsafe class RiscVCodeGenPortTests
         return block;
     }
 
+    [Test]
+    public static void StackArgumentScalarUsesTheRiscVLocalStoreBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaOutgoingArgSpaceVar = 0;
+            compiler.lvaOutgoingArgSpaceSize.Value = TARGET_POINTER_SIZE;
+            var source = new GenTreePhysReg(REG_A0, TYP_LONG) { RegNum = REG_A0 };
+            var argument = new GenTreePutArgStk(TYP_VOID, source, null, 0, TARGET_POINTER_SIZE, false);
+
+            var failure = CaptureFatalJitException(() => codeGen.genPutArgStk(argument));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("Target local-stack store recording is not implemented."));
+            Assert.That(CurrentInstructionBuffer(codeGen.Emitter), Is.Empty);
+        });
+    }
+
+    [Test]
+    public static void StackArgumentStructCopiesItsSourceBeforeTheRiscVLocalStoreBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaOutgoingArgSpaceVar = 0;
+            compiler.lvaOutgoingArgSpaceSize.Value = 16;
+            var address = new GenTreePhysReg(REG_A0, TYP_BYREF) { RegNum = REG_A0 };
+            var source = new GenTreeBlk(TYP_STRUCT, address, new ClassLayout(16)) { IsContained = true };
+            var argument = new GenTreePutArgStk(TYP_VOID, source, null, 0, 16, false);
+            codeGen.InternalRegisters.Add(argument,
+                regMaskTP.CreateFromRegNum(REG_A1, REG_A1.SingleTypeMask));
+            var instructionBuffer = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(codeGen.Emitter);
+
+            var failure = CaptureFatalJitException(() => codeGen.genPutArgStk(argument));
+
+#if DEBUG
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Does.Contain(RiscVRecorderDebugBoundary));
+#else
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("Target local-stack store recording is not implemented."));
+#endif
+            Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount + 1));
+            Assert.That(instructionBuffer[^1].idIns(), Is.EqualTo(INS_ld));
+#if DEBUG
+            Assert.That(CurrentInstructionGroupSize(codeGen.Emitter), Is.EqualTo(initialGroupSize));
+#else
+            Assert.That(CurrentInstructionGroupSize(codeGen.Emitter), Is.EqualTo(initialGroupSize + 4));
+#endif
+        });
+    }
+
     private static void WithEpilog(Action<Compiler, CodeGen> action)
     {
         WithCodeGen((compiler, codeGen) =>
