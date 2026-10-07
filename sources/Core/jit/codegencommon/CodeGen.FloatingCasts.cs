@@ -60,6 +60,38 @@ public sealed partial class CodeGen
         }
 
         genProduceReg(cast);
+#elif TARGET_RISCV64
+        assert(treeNode.Oper is GT_CAST);
+        assert(!treeNode.HasOverflowCheck);
+
+        var cast = treeNode.AsCast();
+        var targetReg = cast.RegNum;
+        assert(genIsValidFloatReg(targetReg));
+
+        var op1 = cast.CastOp;
+        assert(!op1.IsContained);
+        assert(genIsValidFloatReg(op1.RegNum));
+
+        var dstType = cast.CastType;
+        var srcType = op1.Type;
+        assert(varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
+
+        genConsumeOperands(cast);
+        assert(!cast.IsContained);
+
+        if (srcType != dstType)
+        {
+            var ins = (srcType is TYP_FLOAT) ? INS_fcvt_d_s : INS_fcvt_s_d;
+            Emitter.emitIns_R_R(ins, cast.Type.EmitActualSize, targetReg, op1.RegNum);
+        }
+        else if (targetReg != op1.RegNum)
+        {
+            var ins = (srcType is TYP_FLOAT) ? INS_fsgnj_s : INS_fsgnj_d;
+            Emitter.emitIns_R_R_R(
+                ins, cast.Type.EmitActualSize, targetReg, op1.RegNum, op1.RegNum);
+        }
+
+        genProduceReg(cast);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Floating casts outside xarch are not implemented.");
 #else

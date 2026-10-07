@@ -320,6 +320,45 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [TestCase(TYP_FLOAT, TYP_DOUBLE, "Target two-register instruction recording is not implemented.")]
+    [TestCase(TYP_DOUBLE, TYP_FLOAT, "Target two-register instruction recording is not implemented.")]
+    [TestCase(TYP_FLOAT, TYP_FLOAT, "RISC-V three-register instruction recording is not implemented.")]
+    [TestCase(TYP_DOUBLE, TYP_DOUBLE, "RISC-V three-register instruction recording is not implemented.")]
+    public static void FloatToFloatCastDispatchPreservesRiscVRecordingBoundary(
+        var_types sourceType,
+        var_types destinationType,
+        string expectedBoundary)
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var source = new GenTreePhysReg(REG_FA0, sourceType) { RegNum = REG_FA0 };
+            var cast = new GenTreeCast(destinationType, source, fromUnsigned: false, castType: destinationType)
+            {
+                RegNum = REG_FA1,
+            };
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForCast(cast));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Does.Contain(expectedBoundary));
+        });
+    }
+
+    [Test]
+    public static void FloatToFloatCastWithSameRegisterDoesNotRecordRiscVInstruction()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var source = new GenTreePhysReg(REG_FA0, TYP_FLOAT) { RegNum = REG_FA0 };
+            var cast = new GenTreeCast(TYP_FLOAT, source, fromUnsigned: false, castType: TYP_FLOAT)
+            {
+                RegNum = REG_FA0,
+            };
+
+            Assert.DoesNotThrow(() => codeGen.genCodeForCast(cast));
+        });
+    }
+
     [Test]
     public static void CalleeSavedRestorePreservesXarchOnlyEmitterBoundary()
     {
