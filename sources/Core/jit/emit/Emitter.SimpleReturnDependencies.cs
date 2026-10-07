@@ -48,11 +48,6 @@ public partial class Emitter
         throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 register move recording is not ported.");
     }
 
-    public void emitIns_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V three-register instruction recording is not implemented.");
-    }
-
     public unsafe void emitIns_R_R_Addr(
         instruction ins,
         emitAttr attr,

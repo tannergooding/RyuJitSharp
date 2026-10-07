@@ -10,23 +10,22 @@
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
-    "nextAction": "Compare pinned src/coreclr/jit/emitriscv64.cpp::emitter::emitIns_R_R_R with the residual definition and the managed RISC-V stub in sources/Core/jit/emit/Emitter.SimpleReturnDependencies.cs. Map its caller and descriptor dependencies, then port the complete recorder with focused instruction and caller-boundary tests. Preserve explicit terminating dependencies; do not claim RISC-V output or execution parity.",
+    "nextAction": "Advance the existing Windows-x64 LSRA WIP in sources/Core/jit/lsra/LinearScan.RegisterAllocation.cs: compare the complete changed caller path with the pinned residual and oracle, establish the exact dependency-coherent scope and retirement debt, then finish and validate that packet before taking another target-only emitter unit. Preserve unrelated WIP and do not claim global debt clearance.",
     "activeBatch": {
-      "latestBatchValidation": "RISC-V full target suites passed 320/320 in Debug and Release. Focused RiscVCodeGenPortTests and LoongArchRiscVLocalCodeGenTests passed 143/143 in each configuration. Serial full-analysis Windows-x64 Core suites passed 17,247/17,247 Debug and 15,527/15,527 Release. Native residual HEAD is 6446a00a2eb2459560bb7a378a0a6aff21bb830e, parented to pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. This batch retired the orphaned emitNewInstrLoadImm declaration/body; emitter::emitLoadImmediate was already absent at starting residual HEAD 9025fae389f890ee355cd99b5ec29bef62571ba7 and was not restored. Native index tree 9f15d9444e504d22ff28f6d024181e5a1f966345 preserves 29 staged and 13 unstaged paths. This is target-suite/emitter-boundary evidence, not RISC-V output or execution parity.",
-      "scope": "Complete the RISC-V emitLoadImmediate descriptor-recording tail in Emitter.ImmediateLoadDependencies.cs and add the managed instrDescLoadImm shape and native logical size. Preserve the pinned immediate-selection algorithm, descriptor contents, display and append ordering, and the existing terminating dependencies.",
-      "doneWhen": "The managed descriptor matches the pinned native layout and the recorder stores the selected instruction/value sequence, destination register, immediate, instruction option, final instruction, and total code size before display and append. Tests verify descriptor allocation and recorded size, with configuration-specific follow-on boundaries. RISC-V Debug/Release and serial full-analysis Windows-x64 Debug/Release suites pass. Retire the now-orphaned native emitNewInstrLoadImm declaration/body; retain descriptor consumers and unported output dependencies. The native emitLoadImmediate body was already absent from starting residual HEAD 9025fae389f890ee355cd99b5ec29bef62571ba7; do not restore it. Do not claim RISC-V output or execution parity.",
-      "validation": "Compared the pinned oracle emitLoadImmediate algorithm and descriptor helper with the managed implementation. Focused RiscVCodeGenPortTests and LoongArchRiscVLocalCodeGenTests passed 143/143 in Debug and Release; full RISC-V target suites passed 320/320 in Debug and Release. Serial full-analysis Windows-x64 Core tests passed 17,247/17,247 Debug and 15,527/15,527 Release. Native residual helper references are absent; native index WIP remains 29 staged and 13 unstaged.",
-      "mapping": "Pinned src/coreclr/jit/emitriscv64.cpp::emitter::emitLoadImmediate maps to sources/Core/jit/emitriscv64/Emitter.ImmediateLoadDependencies.cs. Its instrDescLoadImm payload maps to Emitter.instrDesc.LoadImmediate.cs with the logical size in Emitter.DescriptorSizes.cs. The native emitNewInstrLoadImm helper's allocation, option, and constant initialization are represented directly in emitLoadImmediateSequence; its declaration/body were retired from emit.h. The emitLoadImmediate native body itself was already absent from the starting residual HEAD and remains retired.",
-      "latestValidation": "Accepted unit: RISC-V emitLoadImmediate descriptor recording. Focused RiscVCodeGenPortTests and LoongArchRiscVLocalCodeGenTests passed 143/143 in Debug and Release; full RISC-V target suites passed 320/320 in Debug and Release. Serial full-analysis Windows-x64 Core suites passed 17,247/17,247 Debug and 15,527/15,527 Release. Native residual HEAD is 6446a00a2eb2459560bb7a378a0a6aff21bb830e with pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e; emitNewInstrLoadImm was retired and no references remain. Starting HEAD 9025fae389f890ee355cd99b5ec29bef62571ba7 already lacked emitLoadImmediate. Native index tree 9f15d9444e504d22ff28f6d024181e5a1f966345 preserves 29 staged and 13 unstaged paths. Target-boundary evidence only; no RISC-V output or execution parity claim.",
+      "latestBatchValidation": "Accepted RISC-V emitIns_R_R_R recorder and opcode/compressed-encoding dependencies. Focused recorder/opcode tests passed 11/11 in Debug and Release; full RISC-V target suites passed 331/331 in Debug and Release; LoongArch target suites passed 247/247 Debug and 227/227 Release. Serial full-analysis Windows-x64 Core suites passed 17,247/17,247 Debug and 15,527/15,527 Release. The consolidated native residual is e549f760418d3ff9913a5346c1dc4c2452cb776d, parented to pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e; the index tree 6dc693213088e3677253a5cf010234d75297c5e0 preserves 29 staged and 13 unstaged WIP paths. No RISC-V output or execution parity is claimed.",
+      "scope": "Complete the RISC-V emitIns_R_R_R recorder with its opcode lookup and compressed CR/CA encoder dependencies. Generate the 213-entry instruction-opcode table from the pinned instrsriscv64.h input, preserve native instruction classification and descriptor/display/append ordering, and retain explicit terminating dependencies.",
+      "doneWhen": "The managed recorder and opcode/encoding helpers match the pinned native whole functions; the generated RISC-V table covers all 213 INST rows and representative opcodes are exact. The RISC-V descriptor stores the encoded word at offset 4 without overwriting its two preceding register fields. Focused recorder/opcode tests, full RISC-V and LoongArch target suites, and serial full-analysis Windows-x64 Core suites pass. Retire emitInsCode, emitIns_R_R_R, tryEmitCompressedIns_R_R_R, insEncodeCRTypeInstr, and insEncodeCATypeInstr definitions and eligible declarations from the residual before the managed completion commit. Target-boundary evidence only; no RISC-V output or execution parity.",
+      "validation": "Compared the complete pinned recorder and encoding helpers with the managed port; verified all 213 generated opcode rows and exact sample values, plus the native descriptor field offset. Focused recorder/opcode tests passed 11/11 in Debug and Release. Full RISC-V suites passed 331/331 Debug and Release; LoongArch suites passed 247/247 Debug and 227/227 Release. Serial full-analysis Windows-x64 Core suites passed 17,247/17,247 Debug and 15,527/15,527 Release. Native retirements are consolidated in the single residual commit; 29 staged and 13 unstaged WIP paths remain.",
+      "mapping": "Pinned src/coreclr/jit/emitriscv64.cpp::emitter::emitIns_R_R_R and tryEmitCompressedIns_R_R_R map to sources/Core/jit/emit/Emitter.MultiRegisterInstructions.cs. emitInsCode and CR/CA encoding map to sources/Core/jit/emitriscv64/Emitter.InstructionEncoding.cs; the instruction-opcode table generated from src/coreclr/jit/instrsriscv64.h maps to sources/GenerateTables/Program.cs and sources/Core/jit/emitriscv64/Emitter.InstructionOpcodes.generated.cs. The encoded instruction field maps to sources/Core/jit/emit/Emitter.instrDesc.Address.cs at offset 4.",
+      "latestValidation": "Accepted RISC-V emitIns_R_R_R recorder and encoding dependencies. Focused recorder/opcode tests passed 11/11 Debug and Release; RISC-V target suites passed 331/331 Debug and Release; LoongArch target suites passed 247/247 Debug and 227/227 Release. Serial full-analysis Windows-x64 Core suites passed 17,247/17,247 Debug and 15,527/15,527 Release. Native residual HEAD e549f760418d3ff9913a5346c1dc4c2452cb776d has pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e; preserved native index tree 6dc693213088e3677253a5cf010234d75297c5e0 has 29 staged and 13 unstaged paths. Target-boundary evidence only, not RISC-V output/execution parity.",
       "deferred": [
         "The three largest residual files (emitloongarch64.cpp, emitarm64sve.cpp and codegenarm64test.cpp) are coordinator-owned follow-on batches, not worker assignments.",
-        "Unrelated native WIP remains excluded from accepted batches and preserved with its staged/unstaged split. The current residual is 6446a00a2eb2459560bb7a378a0a6aff21bb830e; the native index is 9f15d9444e504d22ff28f6d024181e5a1f966345 with 29 staged and 13 unstaged paths. Earlier immutable recovery snapshots remain available.",
+        "Unrelated native WIP remains excluded from accepted batches and preserved with its staged/unstaged split. The current residual is e549f760418d3ff9913a5346c1dc4c2452cb776d; the native index is 6dc693213088e3677253a5cf010234d75297c5e0 with 29 staged and 13 unstaged paths. Earlier immutable recovery snapshots remain available.",
         "B507 remains unresolved; this batch does not change the unknown-size-frame algorithm.",
         "ARM/ARM64 GC-info publication remains incomplete: GcInfoEncoder and the ARM64 Edit-and-Continue fixed-frame setter terminate with CORJIT_SKIPPED, and the managed GCInfo header/table paths retain non-AMD64 stubs. The translated caller and retired ARMARCH body are not target execution parity.",
         "JIT32 header and pointer-table serialization are ported and retired. JIT32 DUMP_GC_TABLES decoders and MEASURE_PTRTAB_SIZE counters remain terminating stubs; no x86 execution or generated-code parity is claimed.",
         "The existing ARM32 genAsyncResumeInfo caller WIP matches the pinned native sequence, but table serialization remains blocked because managed CORINFO_AsyncResumeInfo layout and emitter output/offset/diagnostic code use host pointer width instead of native TARGET_SIZE_T target width. Keep genAsyncResumeInfo native until the entire table dependency closure is ported and tested.",
         "RISC-V constant literal sequences now record managed instruction descriptors. Small immediates still stop at emitIns_R_R_I, Debug descriptor display reaches the existing sanity-check boundary, Release callers may reach local-stack or three-register stubs, and relocated addresses stop at emitIns_R_AI; no generated-code or execution parity is claimed.",
-        "Next RISC-V emitter unit is the three-register recorder, reached by Release widened-LEA tests; compare its complete pinned implementation and dependencies before porting.",
         "ARM32 EMITTER_STATS remains blocked by B513: `emitNativeIGSize()` lacks target-size instruction-group layout, so retain the native relocation counter and ARM32 statistics fatal path.",
         "HashBv set algebra remains unaccepted: managed ApplyLeftGap inserts before and preserves the current LHS node, unlike pinned XorAction::LeftGap; managed ApplyBoth advances traversal for Intersects where the pinned action can stall. B246/B247 remain valid, so do not retire or claim parity for this closure.",
         "Keep emitfmtsriscv64.h until its `IF_NONE` data has a verified managed target mapping; GenerateTables currently has no RISC-V format input or explicit TARGET_RISCV64 branch.",
@@ -34,9 +33,9 @@
       ],
       "retirement": {
         "oracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
-        "nativeResidualCommit": "6446a00a2eb2459560bb7a378a0a6aff21bb830e",
+        "nativeResidualCommit": "e549f760418d3ff9913a5346c1dc4c2452cb776d",
         "completionGate": "Retire whole eligible definitions and orphan declarations in the same accepted batch, before its managed completion commit. Keep untranslated helpers and target branches in the residual; an absent definition is not evidence that it was ported.",
-        "nextDebtCursor": "At consolidated native residual HEAD 6446a00a2eb2459560bb7a378a0a6aff21bb830e (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), accepted RISC-V definitions include genCodeForRangeCheck, genCodeForNullCheck, genCodeForShift, genCodeForCpBlkUnroll, genCodeForShxadd, genCodeForAddUw, genCodeForSlliUw, genCodeForInitBlkLoop, genCodeForStoreBlk, genIntCastOverflowCheck, genIntToIntCast, genFloatToFloatCast, genEHCatchRet, genSetRegToConst, genCodeForTreeNode, genSIMDIntrinsic, genLeaInstruction, genSetGSSecurityCookie, and instGen_Set_Reg_To_Imm. Managed emitLoadImmediate descriptor recording is also complete; its native body was already absent at starting residual HEAD 9025fae389f890ee355cd99b5ec29bef62571ba7. This batch retired the orphaned emitNewInstrLoadImm declaration/body, leaving no native helper references. The native index tree is 9f15d9444e504d22ff28f6d024181e5a1f966345 with 29 staged and 13 unstaged paths preserved. Full RISC-V suites passed 320/320 Debug/Release and serial Windows-x64 Core suites passed 17,247/17,247 Debug and 15,527/15,527 Release. Next compare emitriscv64.cpp::emitIns_R_R_R with the managed stub. Keep the ARM32 async-resume target-width, LoongArch B509, hashbv B246/B247, TLS, Wasm traversal and format-header holds; this is not global debt clearance or RISC-V output/execution parity."
+        "nextDebtCursor": "At consolidated native residual HEAD e549f760418d3ff9913a5346c1dc4c2452cb776d (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), prior accepted RISC-V definitions and emitLoadImmediate remain as documented above. This batch retired the complete emitInsCode, emitIns_R_R_R, tryEmitCompressedIns_R_R_R, insEncodeCRTypeInstr, and insEncodeCATypeInstr definitions and eligible declarations from emitriscv64.cpp/h. The native index tree 6dc693213088e3677253a5cf010234d75297c5e0 preserves 29 staged and 13 unstaged paths. After the Windows-x64 LSRA WIP is advanced, inspect the remaining RISC-V emitIns_R_R_I dependency as the next RISC-V recorder boundary; do not claim global debt clearance or RISC-V output or execution parity. Keep the recorded ARM32 async-resume target-width, LoongArch B509, hashbv B246/B247, TLS, Wasm traversal and format-header holds."
       }
     },
     "validationResourcePolicy": {
@@ -68,7 +67,7 @@
     },
     "residualReconciliation": {
       "status": "in-progress",
-      "nextDebtCursor": "At consolidated native residual HEAD 6446a00a2eb2459560bb7a378a0a6aff21bb830e, accepted slices include the recorded ARM64/Wasm/LSRA/codegen work and the RISC-V functions listed in checkpoint.activeBatch.retirement. The emitLoadImmediate body was already absent at the prior residual HEAD 9025fae389f890ee355cd99b5ec29bef62571ba7; the orphaned emitNewInstrLoadImm declaration/body is now retired. The current native index tree is 9f15d9444e504d22ff28f6d024181e5a1f966345 with 29 staged and 13 unstaged paths preserved. Next compare emitriscv64.cpp::emitIns_R_R_R against the pinned body and managed stub, then port a complete tested unit before retirement. Keep the recorded hashbv B246/B247, B509/B175, B510-B513, nativeIlogbBoundary, B505/B184/B209, disasm.cpp/FILE* coupling, ARM32 async-resume layout, TLS input ownership, Wasm successor-order, and emitfmtsriscv64.h mapping holds; this is not global debt clearance."
+      "nextDebtCursor": "At consolidated native residual HEAD e549f760418d3ff9913a5346c1dc4c2452cb776d (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), accepted slices include the recorded ARM64/Wasm/LSRA/codegen work, the documented RISC-V functions, and the complete RISC-V emitIns_R_R_R/opcode/CR/CA recorder closure retired in this batch. The native index tree is 6dc693213088e3677253a5cf010234d75297c5e0 with 29 staged and 13 unstaged paths preserved. Advance the existing Windows-x64 LSRA WIP in sources/Core/jit/lsra/LinearScan.RegisterAllocation.cs before selecting another target-only packet; then inspect the residual emitIns_R_R_I boundary. Keep the recorded hashbv B246/B247, B509/B175, B510-B513, nativeIlogbBoundary, B505/B184/B209, disasm.cpp/FILE* coupling, ARM32 async-resume layout, TLS input ownership, Wasm successor-order, and emitfmtsriscv64.h mapping holds; this is not global debt clearance."
     },
     "windowsCompletionAssessment": {
       "status": "remaining-source-review",
@@ -81,7 +80,7 @@
       "ref": "refs/porting/snapshots/2026-09-22-csharp-wip"
     },
     "nativeResidual": {
-      "commit": "6446a00a2eb2459560bb7a378a0a6aff21bb830e",
+      "commit": "e549f760418d3ff9913a5346c1dc4c2452cb776d",
       "ref": "refs/heads/main"
     },
     "nativeBeforeRiscvImmediateHelperRetirement": {
@@ -367,6 +366,15 @@
     "nativePreArmArchCallRetirement": {
       "commit": "3995723614e87e354ad3d2b15925399c6e9e75f0",
       "ref": "refs/copilot-recovery/runtime-port-before-armarch-call-retirement-39957236"
+    },
+    "nativeBeforeRiscvRrrRetirement": {
+      "commit": "6446a00a2eb2459560bb7a378a0a6aff21bb830e",
+      "ref": "refs/recovery/native-before-riscv-rrr-retirement-6446a00"
+    },
+    "nativeIndexAfterRiscvRrrRetirement": {
+      "commit": "ea281064d0bc83b06b7ca674aa2402dcff9271c2",
+      "ref": "refs/recovery/native-index-after-riscv-rrr-retirement-20261007",
+      "tree": "6dc693213088e3677253a5cf010234d75297c5e0"
     }
   },
   "sourceMap": [
@@ -569,6 +577,22 @@
         "sources\\Core\\jit\\codegencommon\\CodeGen.ScalarNodes.cs",
         "tests\\Core\\Arm32PhysicalRegisterCodeGenTests.cs",
         "tests\\Core\\Arm64PhysicalRegisterCodeGenTests.cs"
+      ],
+      "sourceCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
+    {
+      "area": "riscv-three-register-recorder",
+      "native": [
+        "src\\coreclr\\jit\\emitriscv64.cpp",
+        "src\\coreclr\\jit\\emitriscv64.h",
+        "src\\coreclr\\jit\\instrsriscv64.h"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\emit\\Emitter.MultiRegisterInstructions.cs",
+        "sources\\Core\\jit\\emitriscv64\\Emitter.InstructionEncoding.cs",
+        "sources\\Core\\jit\\emitriscv64\\Emitter.InstructionOpcodes.generated.cs",
+        "sources\\Core\\jit\\emit\\Emitter.instrDesc.Address.cs",
+        "sources\\GenerateTables\\Program.cs"
       ],
       "sourceCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
     }

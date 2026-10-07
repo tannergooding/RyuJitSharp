@@ -41,6 +41,10 @@ public partial class Emitter
 
             [FieldOffset(0)]
             internal insSvePattern iiaSvePattern;
+#elif TARGET_RISCV64
+            // Two six-bit register fields precede the aligned instruction code.
+            [FieldOffset(4)]
+            public uint iiaInstrEncode;
 #endif
 
 #if TARGET_XARCH

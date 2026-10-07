@@ -10,6 +10,15 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    internal static uint emitInsCode(instruction ins)
+    {
+        assert((uint)ins < (uint)insCodes.Length);
+        var code = insCodes[(int)ins];
+        assert(code != BAD_CODE);
+
+        return code;
+    }
+
     // Values follow the 32-bit opcode map and then the 16-bit RVC opcode map.
     private enum MajorOpcode
     {
@@ -383,6 +392,30 @@ public partial class Emitter
                 throw new FatalJitException(CORJIT_INTERNALERROR, "Invalid compressed arithmetic instruction.");
             }
         }
+    }
+
+    internal static uint insEncodeCRTypeInstr(instruction ins, uint rdRs1, uint rs2)
+    {
+        assert((INS_c_mv <= ins) && (ins <= INS_c_add));
+
+        var code = emitInsCode(ins);
+        assertCodeLength(code, 16);
+        assertCodeLength(rdRs1, 5);
+        assertCodeLength(rs2, 5);
+
+        return code | (rs2 << 2) | (rdRs1 << 7);
+    }
+
+    internal static uint insEncodeCATypeInstr(instruction ins, uint rdRs1Rvc, uint rs2Rvc)
+    {
+        assert((INS_c_and <= ins) && (ins <= INS_c_subw));
+
+        var code = emitInsCode(ins);
+        assertCodeLength(code, 16);
+        assertCodeLength(rdRs1Rvc, 3);
+        assertCodeLength(rs2Rvc, 3);
+
+        return code | (rs2Rvc << 2) | (rdRs1Rvc << 7);
     }
 
     internal static uint insEncodeRTypeInstr(

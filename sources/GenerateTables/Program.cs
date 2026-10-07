@@ -1750,6 +1750,48 @@ public static partial class Globals
         GenerateSveInstructionOpcodes();
         GenerateArm64InstructionOpcodes();
         GenerateArmInstructionOpcodes();
+        GenerateRiscVInstructionOpcodes();
+    }
+
+    private static void GenerateRiscVInstructionOpcodes()
+    {
+        var opcodes = ProcessMacroBasedFile(@"Inputs\instrsriscv64.h", "INST(", (builder, inputFile, line, prefix, parts) =>
+        {
+            var arguments = SplitOpcodeArguments(line);
+            if (arguments.Length != 4)
+            {
+                throw new InvalidDataException($"Invalid RISC-V opcode table entry: '{line}'");
+            }
+
+            var opcode = arguments[3].Trim();
+            if (opcode == "BAD_CODE")
+            {
+                opcode = "Globals.BAD_CODE";
+            }
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        unchecked((uint)({opcode})), // INS_{arguments[0].Trim()}");
+        });
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\emitriscv64");
+        File.WriteAllText(@"Outputs\jit\emitriscv64\Emitter.InstructionOpcodes.generated.cs", $$"""
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+
+namespace RyuJitSharp;
+
+public partial class Emitter
+{
+#if TARGET_RISCV64
+    private static ReadOnlySpan<uint> insCodes => [
+{{opcodes}}    ];
+#endif
+}
+""");
     }
 
     private static void GenerateWasmInstructionOpcodes()
