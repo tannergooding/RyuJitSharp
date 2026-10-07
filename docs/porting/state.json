@@ -10,9 +10,9 @@
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
-    "nextAction": "Accepted Compiler::gtNewVconNode(var_types, const void*) by confirming its four pinned-oracle caller families map to existing managed paths: scalable ARM64 assertion propagation uses gtNewSimdVconNode, fixed assertion/generic constants copy active bytes, intrinsic mask folding has fixed/scalable branches, and store coalescing widens only to TYP_SIMD16 on ARM64. Added the ARM64 type-only constructor assertion and routed scalable assertion propagation through its dedicated constructor. Removed the now-orphan native declaration in consolidated residual HEAD 4abd74062d22253fccad6092952f53538171f061 (pinned parent unchanged at 33baf8ee337b20dd0f184b69a6f09be92850bf9e). ARM64-configured Debug source build passed; focused Windows-x64 vector-construction tests passed 588/588. Next inspect compiler.cpp in the live residual for one complete x64-relevant function; do not retire hashbv.cpp::MergeLists/getRehashForIndex, which remain untranslated empty/assert stubs in the pinned oracle. Preserve unrelated staged native metadata/header work and the unstaged codegenarm.cpp deletion.",
+    "nextAction": "Accepted the gtNewVconNode(var_types, const void*) caller-path audit and the debug-only Compiler::getInlineCycleCount accessor. Native consolidated residual HEAD is d5b3fa58238aa2faedcd159f2d81683c3bfee879, parented by pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. Full Windows-x64 suites passed 17,245/17,245 Debug and 15,525/15,525 Release; focused vector-construction tests passed 588/588; inline timing/diagnostic tests passed 38/38; ARM64-configured Debug compiler build passed. The active file-owned lane is screening/porting one complete unit from codegenriscv64.cpp; when it pauses, coordinator acceptance, focused target validation, native amendment, state update, and managed commit remain serial. Keep B184/B209 and nativeIlogbBoundary unchanged; do not claim global debt clearance. Preserve unrelated staged native WIP and the unstaged codegenarm.cpp deletion.",
     "activeBatch": {
-      "latestBatchValidation": "Audited Compiler::gtNewVconNode(var_types, const void*) against its four pinned-oracle caller families. Managed assertion propagation handles scalable ARM64 values with gtNewSimdVconNode and copies fixed-width active bytes; gtNewGenericCon validates/copies type.Size bytes; intrinsic mask folding preserves fixed and scalable branches; local/indirect store coalescing can only create TYP_SIMD16 on ARM64. Added the ARM64 type-only constructor assertion and used the scalable constructor at assertion propagation. Removed the orphan native declaration in consolidated residual HEAD 4abd74062d22253fccad6092952f53538171f061, parented by pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. ARM64-configured Debug source build succeeded with 0 warnings/errors; focused Windows-x64 vector-construction tests passed 588/588. No ARM64 execution-parity claim is made.",
+      "latestBatchValidation": "Accepted two mapped helper completions. For Compiler::gtNewVconNode(var_types, const void*), all four pinned-oracle caller families map to managed fixed/scalable paths; ARM64 scalable assertion propagation uses gtNewSimdVconNode, generic constants copy type.Size bytes, folding keeps scalable/fixed branches, and store coalescing widens to TYP_SIMD16 on ARM64. The debug-only Compiler::getInlineCycleCount accessor has no side effects; its managed counter is read directly by diagnostic timing properties. Native declarations/definition retirements are consolidated at d5b3fa58238aa2faedcd159f2d81683c3bfee879, parented by pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. ARM64-configured Debug compiler build succeeded with 0 warnings/errors; focused vector tests passed 588/588; inline timing/diagnostic tests passed 38/38; full Windows-x64 Debug/Release suites passed 17,245/17,245 and 15,525/15,525. No ARM64 execution-parity claim is made.",
       "scope": "Accept the validated parallel WIP for target-specific ARM32/ARM64/LoongArch64/RISC-V64/Wasm codegen, shared emitter/lowering/compiler paths, and their regression tests; retire the matching completed native definitions and orphan declarations. Preserve B184 and B209 boundaries and unrelated native user WIP.",
       "doneWhen": "All whole-function managed implementations and relevant regressions in the accepted WIP are committed after eligible native retirements; focused target tests and full-analysis Windows-x64 Debug/Release pass. B184 diagnostics and B209 ARM32 async-resume remain native and unaccepted until their parity blockers are resolved.",
       "validation": "Focused Wasm EH/virtual-IP tests passed 2/2. SIMD numerical construction tests passed 18/18 Debug and 18/18 Release. Full-analysis Windows-x64 Debug passed 17,245/17,245 and Release passed 15,525/15,525 with zero test failures. Focused ARM32, ARM64, LoongArch64, RISC-V64, and Wasm suites and codegen regressions passed in prior acceptance runs; these validate target code generation, not execution parity. The full ARM64 suite retains the unrelated JumpTableDispatchRetainsTheExplicitEmitterNyi failure through ICorJitInfo.doAssert. No Core_Root parity claim is made.",
@@ -29,9 +29,9 @@
       ],
       "retirement": {
         "oracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
-        "nativeResidualCommit": "4abd74062d22253fccad6092952f53538171f061",
+        "nativeResidualCommit": "d5b3fa58238aa2faedcd159f2d81683c3bfee879",
         "completionGate": "Retire whole eligible definitions and orphan declarations in the same accepted batch, before its managed completion commit. Keep untranslated helpers and target branches in the residual; an absent definition is not evidence that it was ported.",
-        "nextDebtCursor": "Consolidated native residual HEAD is 4abd74062d22253fccad6092952f53538171f061, parented by pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. Current acceptance retires the orphan gtNewVconNode(var_types, const void*) declaration after its four caller families were matched to managed fixed/scalable paths; ARM64 scalable assertion propagation now calls gtNewSimdVconNode. ARM64-configured Debug source build succeeded and focused Windows-x64 vector-construction tests passed 588/588. B184 and B209 remain open; staged jit.h, lsra.cpp/lsra.h, target.h, unwindx86.cpp and non-source metadata, plus unstaged codegenarm.cpp and untracked other/, remain explicitly preserved. The hashbv.cpp::MergeLists and getRehashForIndex residual bodies are not retirement candidates because the pinned oracle retains the same empty/assert stubs. Next inspect compiler.cpp for one complete x64-relevant function; do not claim global debt clearance."
+        "nextDebtCursor": "Consolidated native residual HEAD is d5b3fa58238aa2faedcd159f2d81683c3bfee879, parented by pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. The gtNewVconNode data-overload audit is accepted: all four caller families map to existing managed fixed/scalable paths, including ARM64 scalable assertion propagation through gtNewSimdVconNode. The DEBUG-only Compiler::getInlineCycleCount accessor is retired; its side-effect-free field read is represented by the managed diagnostic timing path. ARM64-configured Debug source build passed, full Windows-x64 Debug/Release suites passed 17,245/17,245 and 15,525/15,525, and focused inline timing/diagnostic tests passed 38/38. B184, B209, and nativeIlogbBoundary remain held. Staged jit.h, lsra.cpp/lsra.h, target.h, unwindx86.cpp and non-source metadata, plus unstaged codegenarm.cpp and untracked other/, remain preserved. The active file-owned lane is codegenriscv64.cpp; after it pauses, coordinator acceptance and validation continue serially. Do not claim global debt clearance."
       }
     },
     "validationResourcePolicy": {
@@ -63,7 +63,7 @@
     },
     "residualReconciliation": {
       "status": "in-progress",
-      "nextDebtCursor": "Consolidated native residual HEAD is 4abd74062d22253fccad6092952f53538171f061, parented by pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. Current acceptance retires the orphan gtNewVconNode(var_types, const void*) declaration after its four caller families were matched to managed fixed/scalable paths; ARM64 scalable assertion propagation now calls gtNewSimdVconNode. ARM64-configured Debug source build succeeded and focused Windows-x64 vector-construction tests passed 588/588. B184 and B209 remain open; staged jit.h, lsra.cpp/lsra.h, target.h, unwindx86.cpp and non-source metadata, plus unstaged codegenarm.cpp and untracked other/, remain explicitly preserved. The hashbv.cpp::MergeLists and getRehashForIndex residual bodies are not retirement candidates because the pinned oracle retains the same empty/assert stubs. Next inspect compiler.cpp for one complete x64-relevant function; do not claim global debt clearance."
+      "nextDebtCursor": "Consolidated native residual HEAD is d5b3fa58238aa2faedcd159f2d81683c3bfee879, parented by pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. The gtNewVconNode data-overload audit is accepted: all four caller families map to existing managed fixed/scalable paths, including ARM64 scalable assertion propagation through gtNewSimdVconNode. The DEBUG-only Compiler::getInlineCycleCount accessor is retired; its side-effect-free field read is represented by the managed diagnostic timing path. ARM64-configured Debug source build passed, full Windows-x64 Debug/Release suites passed 17,245/17,245 and 15,525/15,525, and focused inline timing/diagnostic tests passed 38/38. B184, B209, and nativeIlogbBoundary remain held. Staged jit.h, lsra.cpp/lsra.h, target.h, unwindx86.cpp and non-source metadata, plus unstaged codegenarm.cpp and untracked other/, remain preserved. The active file-owned lane is codegenriscv64.cpp; after it pauses, coordinator acceptance and validation continue serially. Do not claim global debt clearance."
     },
     "windowsCompletionAssessment": {
       "status": "remaining-source-review",
@@ -76,8 +76,24 @@
       "ref": "refs/porting/snapshots/2026-09-22-csharp-wip"
     },
     "nativeResidual": {
-      "commit": "4abd74062d22253fccad6092952f53538171f061",
+      "commit": "d5b3fa58238aa2faedcd159f2d81683c3bfee879",
       "ref": "refs/heads/main"
+    },
+    "nativeBeforeGtNewVconRetirement": {
+      "commit": "a14a2257b25e38202e8c9c9c8c26400effe1fc4a",
+      "ref": "refs/recovery/gtnewvcon-before-amend-20261007"
+    },
+    "nativeGtNewVconStagedWip": {
+      "commit": "24cbbb61c20b8ef94274d5dd9dc345ed3e91d77e",
+      "ref": "refs/recovery/gtnewvcon-staged-wip-20261007"
+    },
+    "nativeBeforeInlineCycleRetirement": {
+      "commit": "4abd74062d22253fccad6092952f53538171f061",
+      "ref": "refs/recovery/inline-cycle-before-amend-20261007"
+    },
+    "nativeInlineCycleStagedWip": {
+      "commit": "a891284e328ef0261f5729e827f9ec7265e5ef4d",
+      "ref": "refs/recovery/inline-cycle-staged-wip-20261007"
     },
     "nativePreAcceptanceAmendment": {
       "commit": "66f8e5298db775d1ff7f27e1da19358b6326a575",
