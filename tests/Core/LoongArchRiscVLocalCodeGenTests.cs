@@ -163,7 +163,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 #if DEBUG
     [TestCase(false, "Instruction sanity checking outside AMD64 is not ported.")]
 #else
-    [TestCase(false, "Target local-stack instruction recording is not implemented.")]
+    [TestCase(false, "Target conditional-branch recording is not implemented.")]
 #endif
     [TestCase(true, "Absolute-address instruction recording requires xarch.")]
     public static void GSCookieCheckReachesTheRiscVEmissionBoundary(bool useCookieAddress, string expectedBoundary)
@@ -200,46 +200,121 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     }
 
     [Test]
-    public static void StackLocalLoadStopsAtTheTargetEmitterBoundary()
+    public static void StackLocalLoadUsesTheRiscVRecorder()
     {
         WithCodeGen((compiler, codeGen) =>
         {
+#if TARGET_RISCV64
+            RiscVCodeGenPortTests.InitializeStackRecorderLocal(
+                compiler, codeGen, framePointerBased: false, stackOffset: 0, TYP_INT);
+            var descriptors = RiscVCodeGenPortTests.CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialCount = descriptors.Count;
+            var initialSize = RiscVCodeGenPortTests.CurrentInstructionGroupSize(codeGen.Emitter);
+#else
             compiler.lvaTable[0].Type = TYP_INT;
+#endif
             var tree = new GenTreeLclVar(TYP_INT, 0) { RegNum = REG_S0 };
 
+#if TARGET_RISCV64
+            var failure = RiscVCodeGenPortTests.CaptureFatalJitException(
+                () => codeGen.genCodeForLclVar(tree));
+#if DEBUG
+            Assert.That(failure?.Message, Does.Contain(RiscVRecorderDebugBoundary));
+            Assert.That(RiscVCodeGenPortTests.CurrentInstructionGroupSize(codeGen.Emitter), Is.EqualTo(initialSize));
+#else
+            Assert.That(failure, Is.Null);
+            Assert.That(RiscVCodeGenPortTests.CurrentInstructionGroupSize(codeGen.Emitter),
+                Is.EqualTo(initialSize + 4));
+#endif
+            Assert.That(descriptors.Count, Is.EqualTo(initialCount + 1));
+            Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_lw));
+            Assert.That(descriptors[^1].idAddr().iiaLclVar.lvaOffset(), Is.Zero);
+#else
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForLclVar(tree));
 
             Assert.That(failure?.Message, Does.Contain("Target local-stack instruction recording is not implemented."));
+#endif
         });
     }
 
     [Test]
-    public static void LocalFieldStoreStopsAtTheTargetEmitterBoundary()
+    public static void LocalFieldStoreUsesTheRiscVRecorder()
     {
         WithCodeGen((compiler, codeGen) =>
         {
+#if TARGET_RISCV64
+            RiscVCodeGenPortTests.InitializeStackRecorderLocal(
+                compiler, codeGen, framePointerBased: false, stackOffset: 0, TYP_LONG);
+            var descriptors = RiscVCodeGenPortTests.CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialCount = descriptors.Count;
+            var initialSize = RiscVCodeGenPortTests.CurrentInstructionGroupSize(codeGen.Emitter);
+#else
             compiler.lvaTable[0].Type = TYP_LONG;
+#endif
             var zero = new GenTreeIntCon(TYP_INT, 0) { IsContained = true };
             var tree = new GenTreeLclFld(TYP_INT, 0, 4, zero, null) { RegNum = REG_NA };
 
+#if TARGET_RISCV64
+            var failure = RiscVCodeGenPortTests.CaptureFatalJitException(
+                () => codeGen.genCodeForStoreLclFld(tree));
+#if DEBUG
+            Assert.That(failure?.Message, Does.Contain(RiscVRecorderDebugBoundary));
+            Assert.That(RiscVCodeGenPortTests.CurrentInstructionGroupSize(codeGen.Emitter), Is.EqualTo(initialSize));
+#else
+            Assert.That(failure, Is.Null);
+            Assert.That(RiscVCodeGenPortTests.CurrentInstructionGroupSize(codeGen.Emitter),
+                Is.EqualTo(initialSize + 4));
+#endif
+            Assert.That(descriptors.Count, Is.EqualTo(initialCount + 1));
+            Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_sw));
+            Assert.That(descriptors[^1].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(4u));
+#else
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreLclFld(tree));
 
             Assert.That(failure?.Message, Does.Contain("Target local-stack store recording is not implemented."));
+#endif
         });
     }
 
     [Test]
-    public static void LocalVariableStoreStopsAtTheTargetStackEmitterBoundary()
+    public static void LocalVariableStoreUsesTheRiscVRecorder()
     {
         WithCodeGen((compiler, codeGen) =>
         {
+#if TARGET_RISCV64
+            RiscVCodeGenPortTests.InitializeStackRecorderLocal(
+                compiler, codeGen, framePointerBased: false, stackOffset: 0, TYP_INT);
+            var descriptors = RiscVCodeGenPortTests.CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialCount = descriptors.Count;
+            var initialSize = RiscVCodeGenPortTests.CurrentInstructionGroupSize(codeGen.Emitter);
+#else
             compiler.lvaTable[0].Type = TYP_INT;
+#endif
             var zero = new GenTreeIntCon(TYP_INT, 0) { IsContained = true };
             var tree = new GenTreeLclVar(TYP_INT, 0, zero) { RegNum = REG_NA };
 
+#if TARGET_RISCV64
+            var failure = RiscVCodeGenPortTests.CaptureFatalJitException(
+                () => codeGen.genCodeForStoreLclVar(tree));
+#if DEBUG
+            Assert.That(failure?.Message, Does.Contain(RiscVRecorderDebugBoundary));
+            Assert.That(RiscVCodeGenPortTests.CurrentInstructionGroupSize(codeGen.Emitter), Is.EqualTo(initialSize));
+#else
+            Assert.That(failure, Is.Null);
+            Assert.That(RiscVCodeGenPortTests.CurrentInstructionGroupSize(codeGen.Emitter),
+                Is.EqualTo(initialSize + 4));
+#endif
+            Assert.That(descriptors.Count, Is.EqualTo(initialCount + 1));
+            Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_sw));
+            Assert.That(descriptors[^1].idAddr().iiaLclVar.lvaOffset(), Is.Zero);
+#else
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreLclVar(tree));
 
             Assert.That(failure?.Message, Does.Contain("Target local-stack store recording is not implemented."));
+#endif
         });
     }
 
@@ -259,6 +334,11 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
 #endif
             compiler.lvaTable[0].Type = TYP_STRUCT;
+#if TARGET_RISCV64
+            RiscVCodeGenPortTests.InitializeStackRecorderLocal(
+                compiler, codeGen, framePointerBased: false, stackOffset: 0,
+                TYP_STRUCT, new ClassLayout(16));
+#endif
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
             GenTree destination;
             if (destinationKind is 2)
@@ -301,9 +381,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 #if DEBUG
                 const string? expectedBoundary = RiscVRecorderDebugBoundary;
 #else
-                var expectedBoundary = destinationKind is 0
-                    ? "Target local-stack store recording is not implemented."
-                    : null;
+                const string? expectedBoundary = null;
 #endif
                 AssertRiscVRecorderOutcome(
                     codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
@@ -314,8 +392,11 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             }
             else if (destinationKind is 0)
             {
-                Assert.That(failure?.Message,
-                    Does.Contain("Target local-stack store recording is not implemented."));
+#if DEBUG
+                Assert.That(failure?.Message, Does.Contain(RiscVRecorderDebugBoundary));
+#else
+                Assert.That(failure, Is.Null);
+#endif
             }
             else
             {

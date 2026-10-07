@@ -32,7 +32,50 @@ public partial class Emitter
 #endif
         )
     {
-#if !TARGET_XARCH
+#if TARGET_RISCV64
+        var code = emitInsCode(ins);
+
+        switch (ins)
+        {
+            case INS_lui:
+            case INS_auipc:
+            {
+                assert(reg != REG_R0);
+                assert(isGeneralRegister(reg));
+                assert(isValidSimm20(val));
+
+                code |= unchecked((uint)reg) << 7;
+                code |= (unchecked((uint)val) & 0xFFFFF) << 12;
+                break;
+            }
+            case INS_jal:
+            {
+                assert(isGeneralRegisterOrR0(reg));
+                assert(isValidSimm21(val));
+
+                code |= unchecked((uint)reg) << 7;
+                code |= (unchecked((uint)(val >> 12)) & 0xFF) << 12;
+                code |= (unchecked((uint)(val >> 11)) & 0x1) << 20;
+                code |= (unchecked((uint)(val >> 1)) & 0x3FF) << 21;
+                code |= (unchecked((uint)(val >> 20)) & 0x1) << 31;
+                break;
+            }
+            default:
+            {
+                NO_WAY("illegal ins within emitIns_R_I!");
+                return;
+            }
+        }
+
+        var id = emitNewInstr(attr);
+        id.idIns(ins);
+        id.idReg1(reg);
+        id.idAddr().iiaInstrEncode = code;
+        id.idCodeSize(4);
+
+        dispIns(id);
+        appendToCurIG(id);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Register-immediate instruction recording requires xarch.");
 #else
 #if TARGET_AMD64

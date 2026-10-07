@@ -14,7 +14,11 @@ public partial class Emitter
 
     public void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, nint imm)
     {
+#if TARGET_RISCV64
+        emitIns_R_I(ins, attr, reg, imm, INS_OPTS_NONE);
+#else
         throw new FatalJitException(CORJIT_SKIPPED, "Target register-immediate recording is not implemented.");
+#endif
     }
 
 #if TARGET_RISCV64

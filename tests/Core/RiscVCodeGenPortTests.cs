@@ -64,6 +64,172 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [TestCase(INS_sd, 16, false, REG_NA)]
+    [TestCase(INS_sw, 2048, true, REG_NA)]
+    [TestCase(INS_sh, 16, false, REG_A2)]
+    public static void StackStoresRecordRiscVFrameBasesAndOffsets(
+        instruction ins, int offset, bool framePointerBased, regNumber tempReg)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            InitializeStackRecorderLocal(compiler, codeGen, framePointerBased, 32);
+            codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD);
+
+            var emitter = codeGen.Emitter;
+            var descriptors = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialCount = descriptors.Count;
+            var initialSize = CurrentInstructionGroupSize(emitter);
+            var failure = CaptureFatalJitException(() =>
+                emitter.emitIns_S_R_R(ins, EA_8BYTE, REG_A0, tempReg, 0, offset));
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            AssertRiscVInstructionBoundary(codeGen, failure, expectedBoundary, initialCount, initialSize);
+
+            var expectedImmediate = tempReg is REG_NA ? 32 + offset : offset;
+#if DEBUG
+            if (!Emitter.isValidSimm12(expectedImmediate))
+            {
+                Assert.That(descriptors.Skip(initialCount).Select(descriptor => descriptor.idIns()),
+                    Is.EqualTo((instruction[])[INS_lui]));
+                return;
+            }
+#endif
+            var frameReg = framePointerBased ? REG_FPBASE : REG_SPBASE;
+            var finalDescriptor = descriptors[^1];
+            Assert.That(finalDescriptor.idIns(), Is.EqualTo(ins));
+            Assert.That(finalDescriptor.idReg1(), Is.EqualTo(REG_A0));
+            Assert.That(finalDescriptor.idReg2(),
+                Is.EqualTo(Emitter.isValidSimm12(expectedImmediate) ? tempReg is REG_NA ? frameReg : tempReg : REG_OPT_RSVD));
+            Assert.That(finalDescriptor.idIsLclVar(), Is.True);
+            Assert.That(finalDescriptor.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
+            Assert.That(finalDescriptor.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(unchecked((uint)offset)));
+
+            if (Emitter.isValidSimm12(expectedImmediate))
+            {
+                Assert.That(finalDescriptor.idAddr().iiaInstrEncode,
+                    Is.EqualTo(ExpectedStoreEncoding(ins, REG_A0,
+                        tempReg is REG_NA ? frameReg : tempReg, expectedImmediate)));
+            }
+#if !DEBUG
+            else
+            {
+                Assert.That(descriptors.Skip(initialCount).Select(descriptor => descriptor.idIns()),
+                    Is.EqualTo((instruction[])[INS_lui, INS_add, ins]));
+                Assert.That(finalDescriptor.idAddr().iiaInstrEncode,
+                    Is.EqualTo(ExpectedStoreEncoding(ins, REG_A0, REG_OPT_RSVD, expectedImmediate & 0xFFF)));
+                Assert.That(CurrentInstructionGroupSize(emitter),
+                    Is.EqualTo(initialSize + descriptors.Skip(initialCount).Sum(descriptor => (int)descriptor.idCodeSize())));
+            }
+#endif
+        });
+    }
+
+    [TestCase(INS_ld, 8, false, 32)]
+    [TestCase(INS_lw, 16, true, 32)]
+    [TestCase(INS_lbu, 2048, false, 32)]
+    [TestCase(INS_lea, 8, true, 32)]
+    [TestCase(INS_lea, 2048, true, 32)]
+    public static void StackLoadsRecordRiscVFrameBasesAndOffsets(
+        instruction ins, int offset, bool framePointerBased, int baseOffset)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            InitializeStackRecorderLocal(compiler, codeGen, framePointerBased, baseOffset);
+            codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD);
+
+            var emitter = codeGen.Emitter;
+            var descriptors = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialCount = descriptors.Count;
+            var initialSize = CurrentInstructionGroupSize(emitter);
+            var failure = CaptureFatalJitException(() =>
+                emitter.emitIns_R_S(ins, EA_8BYTE, REG_A0, 0, offset));
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            AssertRiscVInstructionBoundary(codeGen, failure, expectedBoundary, initialCount, initialSize);
+
+            var imm = offset < 0 ? -offset - 8 : baseOffset + offset;
+            var normalizedOffset = offset;
+            var frameReg = framePointerBased ? REG_FPBASE : REG_SPBASE;
+#if DEBUG
+            if (!Emitter.isValidSimm12(imm))
+            {
+                Assert.That(descriptors.Skip(initialCount).Select(descriptor => descriptor.idIns()),
+                    Is.EqualTo((instruction[])[INS_lui]));
+                return;
+            }
+#endif
+            var finalDescriptor = descriptors[^1];
+            Assert.That(finalDescriptor.idReg1(), Is.EqualTo(REG_A0));
+            Assert.That(finalDescriptor.idIsLclVar(), Is.True);
+            Assert.That(finalDescriptor.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
+            Assert.That(finalDescriptor.idAddr().iiaLclVar.lvaOffset(),
+                Is.EqualTo(unchecked((uint)normalizedOffset)));
+
+            if (Emitter.isValidSimm12(imm))
+            {
+                Assert.That(finalDescriptor.idIns(), Is.EqualTo(ins is INS_lea ? INS_addi : ins));
+                Assert.That(finalDescriptor.idAddr().iiaInstrEncode,
+                    Is.EqualTo(ExpectedLoadEncoding(ins is INS_lea ? INS_addi : ins, REG_A0, frameReg, imm)));
+            }
+            else
+            {
+#if !DEBUG
+                Assert.That(descriptors.Skip(initialCount).Select(descriptor => descriptor.idIns()),
+                    Is.EqualTo(ins is INS_lea
+                        ? (instruction[])[INS_lui, INS_addi, INS_add]
+                        : [INS_lui, INS_add, ins]));
+                var expectedCode = ins is INS_lea
+                    ? Emitter.emitInsCode(INS_add) |
+                        (unchecked((uint)REG_A0) << 7) |
+                        (unchecked((uint)frameReg) << 15) |
+                        (unchecked((uint)REG_OPT_RSVD) << 20)
+                    : ExpectedLoadEncoding(ins, REG_A0, REG_OPT_RSVD, imm & 0xFFF);
+                Assert.That(finalDescriptor.idAddr().iiaInstrEncode, Is.EqualTo(expectedCode));
+                Assert.That(CurrentInstructionGroupSize(emitter),
+                    Is.EqualTo(initialSize + descriptors.Skip(initialCount).Sum(descriptor => (int)descriptor.idCodeSize())));
+#endif
+            }
+        });
+    }
+
+    [TestCase(INS_lui, 0x12345, 0x12345537u)]
+    [TestCase(INS_auipc, -1, 0xFFFFF517u)]
+    [TestCase(INS_jal, 2048, 0x0010056Fu)]
+    public static void RegisterImmediateRecordingEncodesRiscVUpperImmediates(
+        instruction ins, int immediate, uint expectedEncoding)
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            var descriptors = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialCount = descriptors.Count;
+            var initialSize = CurrentInstructionGroupSize(emitter);
+            var failure = CaptureFatalJitException(() =>
+                emitter.emitIns_R_I(ins, EA_PTRSIZE, REG_A0, immediate, INS_OPTS_NONE));
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            AssertRiscVInstructionBoundary(codeGen, failure, expectedBoundary, initialCount, initialSize);
+
+            var descriptor = descriptors[^1];
+            Assert.That(descriptor.idIns(), Is.EqualTo(ins));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_A0));
+            Assert.That(descriptor.idAddr().iiaInstrEncode, Is.EqualTo(expectedEncoding));
+            Assert.That(descriptor.idCodeSize(), Is.EqualTo(4u));
+        });
+    }
+
 #if DEBUG
     [TestCase(TYP_INT, -2048, RiscVRecorderDebugBoundary, true)]
     [TestCase(TYP_INT, 2047, RiscVRecorderDebugBoundary, true)]
@@ -264,17 +430,31 @@ internal static unsafe class RiscVCodeGenPortTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
+            InitializeStackRecorderLocal(compiler, codeGen, framePointerBased: false, stackOffset: 0);
             compiler.lvaOutgoingArgSpaceVar = 0;
             compiler.lvaOutgoingArgSpaceSize.Value = TARGET_POINTER_SIZE;
+            codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD);
             var source = new GenTreePhysReg(REG_A0, TYP_LONG) { RegNum = REG_A0 };
             var argument = new GenTreePutArgStk(TYP_VOID, source, null, 0, TARGET_POINTER_SIZE, false);
+            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialCount = descriptors.Count;
+            var initialSize = CurrentInstructionGroupSize(codeGen.Emitter);
 
             var failure = CaptureFatalJitException(() => codeGen.genPutArgStk(argument));
 
+#if DEBUG
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message,
-                Does.Contain("Target local-stack store recording is not implemented."));
-            Assert.That(CurrentInstructionBuffer(codeGen.Emitter), Is.Empty);
+            Assert.That(failure?.Message, Does.Contain(RiscVRecorderDebugBoundary));
+#else
+            Assert.That(failure, Is.Null);
+            Assert.That(CurrentInstructionGroupSize(codeGen.Emitter), Is.EqualTo(initialSize + 4));
+#endif
+            Assert.That(descriptors.Count, Is.EqualTo(initialCount + 1));
+            Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_sd));
+            Assert.That(descriptors[^1].idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
+            Assert.That(descriptors[^1].idAddr().iiaInstrEncode,
+                Is.EqualTo(ExpectedStoreEncoding(INS_sd, REG_A0, REG_SPBASE, 0)));
         });
     }
 
@@ -283,8 +463,10 @@ internal static unsafe class RiscVCodeGenPortTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
+            InitializeStackRecorderLocal(compiler, codeGen, framePointerBased: false, stackOffset: 0);
             compiler.lvaOutgoingArgSpaceVar = 0;
             compiler.lvaOutgoingArgSpaceSize.Value = 16;
+            codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD);
             var address = new GenTreePhysReg(REG_A0, TYP_BYREF) { RegNum = REG_A0 };
             var source = new GenTreeBlk(TYP_STRUCT, address, new ClassLayout(16)) { IsContained = true };
             var argument = new GenTreePutArgStk(TYP_VOID, source, null, 0, 16, false);
@@ -301,16 +483,16 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
             Assert.That(failure?.Message, Does.Contain(RiscVRecorderDebugBoundary));
 #else
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message,
-                Does.Contain("Target local-stack store recording is not implemented."));
+            Assert.That(failure, Is.Null);
+            Assert.That(CurrentInstructionGroupSize(codeGen.Emitter), Is.GreaterThan(initialGroupSize));
 #endif
+#if DEBUG
             Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount + 1));
             Assert.That(instructionBuffer[^1].idIns(), Is.EqualTo(INS_ld));
-#if DEBUG
             Assert.That(CurrentInstructionGroupSize(codeGen.Emitter), Is.EqualTo(initialGroupSize));
 #else
-            Assert.That(CurrentInstructionGroupSize(codeGen.Emitter), Is.EqualTo(initialGroupSize + 4));
+            Assert.That(instructionBuffer.Skip(initialInstructionCount).Select(id => id.idIns()),
+                Is.EqualTo((instruction[])[INS_ld, INS_sd, INS_ld, INS_sd]));
 #endif
         });
     }
@@ -1516,9 +1698,15 @@ internal static unsafe class RiscVCodeGenPortTests
     [TestCase(TYP_FLOAT, 0x7FFUL, null)]
     [TestCase(TYP_DOUBLE, 0x7FFUL, null)]
 #endif
-    [TestCase(TYP_FLOAT, 0x12345000UL, "Target register-immediate recording is not implemented.")]
-    [TestCase(TYP_DOUBLE, 0x12345000UL, "Target register-immediate recording is not implemented.")]
-    [TestCase(TYP_FLOAT, 0x80000000UL, "Target register-immediate recording is not implemented.")]
+#if DEBUG
+    [TestCase(TYP_FLOAT, 0x12345000UL, RiscVRecorderDebugBoundary)]
+    [TestCase(TYP_DOUBLE, 0x12345000UL, RiscVRecorderDebugBoundary)]
+    [TestCase(TYP_FLOAT, 0x80000000UL, RiscVRecorderDebugBoundary)]
+#else
+    [TestCase(TYP_FLOAT, 0x12345000UL, null)]
+    [TestCase(TYP_DOUBLE, 0x12345000UL, null)]
+    [TestCase(TYP_FLOAT, 0x80000000UL, null)]
+#endif
     public static void InlineFloatingConstantNodeDispatchPreservesRiscVInstructionRecordingBoundary(
         var_types type,
         ulong bits,
@@ -1593,20 +1781,36 @@ internal static unsafe class RiscVCodeGenPortTests
 
     [TestCase(TYP_BYREF)]
     [TestCase(TYP_I_IMPL)]
-    public static void LocalAddressPreservesTheStackInstructionRecordingBoundary(var_types type)
+    public static void LocalAddressRecordsRiscVStackAddressing(var_types type)
     {
-        WithCodeGen((_, codeGen) =>
+        WithCodeGen((compiler, codeGen) =>
         {
+            InitializeStackRecorderLocal(compiler, codeGen, framePointerBased: false, stackOffset: 0);
             var localAddress = new GenTreeLclFld(GT_LCL_ADDR, type, 0, 24)
             {
                 RegNum = REG_A0,
             };
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForLclAddr(localAddress));
+            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialCount = descriptors.Count;
+            var initialSize = CurrentInstructionGroupSize(codeGen.Emitter);
+            var failure = CaptureFatalJitException(() => codeGen.genCodeForLclAddr(localAddress));
 
+#if DEBUG
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message,
-                Does.Contain("Target local-stack instruction recording is not implemented."));
+            Assert.That(failure?.Message, Does.Contain(RiscVRecorderDebugBoundary));
+#else
+            Assert.That(failure, Is.Null);
+            Assert.That(CurrentInstructionGroupSize(codeGen.Emitter), Is.EqualTo(initialSize + 4));
+#endif
+            var descriptor = descriptors[initialCount];
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_addi));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_A0));
+            Assert.That(descriptor.idAddr().iiaInstrEncode,
+                Is.EqualTo(ExpectedLoadEncoding(INS_addi, REG_A0, REG_SPBASE, 24)));
+            Assert.That(descriptor.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
+            Assert.That(descriptor.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(24u));
         });
     }
 
@@ -1779,7 +1983,7 @@ internal static unsafe class RiscVCodeGenPortTests
 #if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
 #else
-            const string? expectedBoundary = "Target local-stack store recording is not implemented.";
+            const string? expectedBoundary = null;
 #endif
             var emitter = codeGen.Emitter;
             var instructionBuffer = CurrentInstructionBuffer(emitter)
@@ -1791,7 +1995,15 @@ internal static unsafe class RiscVCodeGenPortTests
 
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+#if DEBUG
             Assert.That(zeroed, Is.True);
+#else
+            Assert.That(zeroed, Is.False);
+#endif
+#if !DEBUG
+            Assert.That(instructionBuffer[^1].idIns(), Is.EqualTo(INS_sd));
+            Assert.That(instructionBuffer[^1].idCodeSize(), Is.EqualTo(4u));
+#endif
         });
     }
 
@@ -1819,20 +2031,25 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount + 1));
             Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize));
 #else
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message,
-                Does.Contain("Target local-stack store recording is not implemented."));
-            Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount + 1));
-            Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize + 8));
+            Assert.That(failure, Is.Null);
+            Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount + 2));
+            Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize + 12));
 #endif
-            var descriptor = instructionBuffer[^1];
+            var descriptor = instructionBuffer[initialInstructionCount];
+#if !DEBUG
+            Assert.That(instructionBuffer[^1].idIns(), Is.EqualTo(INS_sd));
+#endif
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_ld));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_A0));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_A0));
             Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_RELOC));
             Assert.That(descriptor.idCodeSize(), Is.EqualTo(8u));
             Assert.That((nint)descriptor.idAddr().iiaAddr, Is.EqualTo((nint)compiler.gsGlobalSecurityCookieAddr));
+#if DEBUG
             Assert.That(zeroed, Is.True);
+#else
+            Assert.That(zeroed, Is.False);
+#endif
         });
     }
 
@@ -2802,7 +3019,7 @@ internal static unsafe class RiscVCodeGenPortTests
             codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
     }
 
-    private static FatalJitException? CaptureFatalJitException(Action action)
+    internal static FatalJitException? CaptureFatalJitException(Action action)
     {
         try
         {
@@ -2932,6 +3149,55 @@ internal static unsafe class RiscVCodeGenPortTests
         codeGen.IsFramePointerUsed = true;
     }
 
+    internal static void InitializeStackRecorderLocal(
+        Compiler compiler,
+        CodeGen codeGen,
+        bool framePointerBased,
+        int stackOffset,
+        var_types type = TYP_LONG,
+        ClassLayout? layout = null)
+    {
+        compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
+        compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
+        var local = new LclVarDsc
+        {
+            Type = type,
+            lvOnFrame = true,
+            lvFramePointerBased = framePointerBased,
+            RegNum = REG_STK,
+        };
+        if (layout is not null)
+        {
+            local.Layout = layout;
+        }
+        local.StackOffset = stackOffset;
+        compiler.lvaTable[0] = local;
+        codeGen.resetFramePointerUsedWritePhase();
+        codeGen.IsFramePointerUsed = framePointerBased;
+        codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD);
+    }
+
+    private static uint ExpectedStoreEncoding(instruction ins, regNumber sourceReg, regNumber baseReg, nint imm)
+    {
+        var code = Emitter.emitInsCode(ins);
+        code |= (unchecked((uint)sourceReg) & 0x1F) << 20;
+        code |= (unchecked((uint)baseReg) & 0x1F) << 15;
+        code |= ((unchecked((uint)(imm >> 5)) & 0x7F) << 25) |
+                ((unchecked((uint)imm) & 0x1F) << 7);
+
+        return code;
+    }
+
+    private static uint ExpectedLoadEncoding(instruction ins, regNumber targetReg, regNumber baseReg, nint imm)
+    {
+        var code = Emitter.emitInsCode(ins);
+        code |= (unchecked((uint)targetReg) & 0x1F) << 7;
+        code |= (unchecked((uint)baseReg) & 0x1F) << 15;
+        code |= (unchecked((uint)imm) & 0xFFF) << 20;
+
+        return code;
+    }
+
     private static void WithFunclet(
         int outgoingArgSpaceSize, Action<Compiler, CodeGen, BasicBlock> action)
     {
@@ -3008,10 +3274,10 @@ internal static unsafe class RiscVCodeGenPortTests
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
-    private static extern ref List<Emitter.instrDesc>? CurrentInstructionBuffer(Emitter emitter);
+    internal static extern ref List<Emitter.instrDesc>? CurrentInstructionBuffer(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGsize")]
-    private static extern ref int CurrentInstructionGroupSize(Emitter emitter);
+    internal static extern ref int CurrentInstructionGroupSize(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIG")]
     private static extern ref insGroup? CurrentGroup(Emitter emitter);
