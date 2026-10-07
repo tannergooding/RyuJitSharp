@@ -187,6 +187,8 @@ public sealed partial class CodeGen
 #elif TARGET_AMD64
         unreached();
         throw new FatalJitException(CORJIT_SKIPPED, "SysV AMD64 JMP varargs are not supported.");
+#elif TARGET_RISCV64
+        NYI_RISCV64("Varargs not supported");
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "JMP varargs placement is not yet ported for this target.");
 #endif

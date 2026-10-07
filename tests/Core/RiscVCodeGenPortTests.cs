@@ -479,6 +479,22 @@ internal static unsafe class RiscVCodeGenPortTests
     }
 #endif
 
+    [Test]
+    public static void UnsupportedJmpVarargsStopsBeforeEmittingCode()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.info.compIsVarArgs = true;
+
+            var failure = CaptureFatalJitException(() => codeGen.genJmpPlaceVarArgs());
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            Assert.That(descriptors, Is.Empty);
+        });
+    }
+
     [TestCase(EA_PTRSIZE, REG_A0, REG_A1, INS_mov, 0x00058513u, false)]
     [TestCase(EA_4BYTE, REG_A0, REG_A1, INS_sext_w, 0x0005851Bu, false)]
     [TestCase(EA_PTRSIZE, REG_A0, REG_FA1, INS_fmv_x_d, 0xE2058553u, false)]
