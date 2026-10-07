@@ -3,6 +3,7 @@
 #if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
@@ -26,6 +27,39 @@ internal static unsafe class Arm64HardwareLoweringTests
         Assert.That(EvaluateSimdPatternToMask<simd16_t>(baseType, ref mask, pattern), Is.True);
         Assert.That(mask.u64[0], Is.EqualTo(expected));
     }
+
+#if FEATURE_MASKED_HW_INTRINSICS
+    [TestCase(TYP_BYTE, SveMaskPatternAll, 16)]
+    [TestCase(TYP_SHORT, SveMaskPatternVectorCount3, 3)]
+    [TestCase(TYP_INT, SveMaskPatternVectorCount8, 4)]
+    [TestCase(TYP_LONG, SveMaskPatternLargestMultipleOf3, 0)]
+    public static void VectorPatternsRespectElementWidthsAndUnavailableLanes(
+        var_types baseType, SveMaskPattern pattern, int expectedSetLanes)
+    {
+        simd16_t vector = default;
+        var result = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref vector, 1));
+
+        Assert.That(EvaluateSimdPatternToVector(baseType, ref vector, pattern), Is.True);
+
+        var initializedBytes = expectedSetLanes * baseType.Size;
+        Assert.That(result[..initializedBytes].ToArray(),
+            Is.All.EqualTo(byte.MaxValue));
+        Assert.That(result[initializedBytes..].ToArray(),
+            Is.All.EqualTo((byte)0));
+    }
+
+    [Test]
+    public static void UnsupportedVectorPatternLeavesResultUnchanged()
+    {
+        simd16_t vector = default;
+        var result = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref vector, 1));
+        result.Fill(0xA5);
+        var original = result.ToArray();
+
+        Assert.That(EvaluateSimdPatternToVector(TYP_BYTE, ref vector, SveMaskPatternNone), Is.False);
+        Assert.That(result.ToArray(), Is.EqualTo(original));
+    }
+#endif
 
     [TestCase(0, NI_Vector_Create, NI_AdvSimd_DuplicateToVector128)]
     [TestCase(1, NI_Vector_CreateScalar, NI_AdvSimd_Insert)]

@@ -1,7 +1,9 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 #if TARGET_ARM64
+using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 #if DEBUG
 using System.IO;
 using System.Text;
@@ -69,6 +71,58 @@ internal static class Arm64SimdMetadataTests
 
         Assert.That(node.IsZero, Is.True);
         Assert.That(node.IsAllBitsSet, Is.False);
+    }
+
+    [TestCase(TYP_FLOAT, 4)]
+    [TestCase(TYP_DOUBLE, 2)]
+    public static void FloatingVectorQueriesPreserveNaNAndSignedZero(var_types baseType, int elementCount)
+    {
+        var node = new GenTreeVecCon(TYP_SIMD16);
+        var negativeZero = BitConverter.Int64BitsToDouble(long.MinValue);
+
+        for (var index = 0; index < elementCount; index++)
+        {
+            node.SetElementFloating(baseType, index, double.NaN);
+        }
+
+        Assert.That(node.IsNaN(baseType), Is.True);
+        Assert.That(node.ContainsNaN(baseType), Is.True);
+
+        node.SetElementFloating(baseType, elementCount - 1, 1.0);
+        Assert.That(node.IsNaN(baseType), Is.False);
+        Assert.That(node.ContainsNaN(baseType), Is.True);
+
+        for (var index = 0; index < elementCount; index++)
+        {
+            node.SetElementFloating(baseType, index, negativeZero);
+        }
+
+        Assert.That(node.IsNegativeZero(baseType), Is.True);
+        Assert.That(node.ContainsNegativeZero(baseType), Is.True);
+        Assert.That(node.ContainsPositiveZero(baseType), Is.False);
+
+        for (var index = 0; index < elementCount; index++)
+        {
+            node.SetElementFloating(baseType, index, (index & 1) == 0 ? negativeZero : 0.0);
+        }
+
+        Assert.That(node.IsNegativeZero(baseType), Is.False);
+        Assert.That(node.ContainsNegativeZero(baseType), Is.True);
+        Assert.That(node.ContainsPositiveZero(baseType), Is.True);
+
+        var negativeMask = node.GetFloatingZeroMask(baseType, true);
+        var positiveMask = node.GetFloatingZeroMask(baseType, false);
+        var negativeMaskBytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref negativeMask, 1));
+        var positiveMaskBytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref positiveMask, 1));
+
+        for (var byteIndex = 0; byteIndex < TYP_SIMD16.Size; byteIndex++)
+        {
+            var laneIndex = byteIndex / baseType.Size;
+            var isNegativeLane = laneIndex < elementCount && (laneIndex & 1) == 0;
+            var isPositiveLane = laneIndex < elementCount && (laneIndex & 1) != 0;
+            Assert.That(negativeMaskBytes[byteIndex], Is.EqualTo(isNegativeLane ? byte.MaxValue : (byte)0));
+            Assert.That(positiveMaskBytes[byteIndex], Is.EqualTo(isPositiveLane ? byte.MaxValue : (byte)0));
+        }
     }
 
     [Test]
