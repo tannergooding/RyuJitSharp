@@ -24,6 +24,80 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class RiscVCodeGenPortTests
 {
+    [TestCase(TYP_INT)]
+    [TestCase(TYP_BYREF)]
+    public static void IntegerConstantPreservesRiscVImmediateRecordingBoundary(var_types type)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var constant = compiler.gtNewIconNode(type, 42);
+
+            var failure = Assert.Throws<FatalJitException>(
+                () => codeGen.genSetRegToConst(REG_A0, type, constant));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("Target immediate materialization is not implemented."));
+        });
+    }
+
+    [TestCase(TYP_FLOAT, 0UL, "Target two-register instruction recording is not implemented.")]
+    [TestCase(TYP_DOUBLE, 0UL, "Target two-register instruction recording is not implemented.")]
+    [TestCase(TYP_FLOAT, 0x7FFUL, "Target two-register-immediate instruction recording is not implemented.")]
+    [TestCase(TYP_DOUBLE, 0x7FFUL, "Target two-register-immediate instruction recording is not implemented.")]
+    [TestCase(TYP_FLOAT, 0x12345000UL, "Target register-immediate recording is not implemented.")]
+    [TestCase(TYP_DOUBLE, 0x12345000UL, "Target register-immediate recording is not implemented.")]
+    [TestCase(TYP_FLOAT, 0x80000000UL, "Target register-immediate recording is not implemented.")]
+    public static void InlineFloatingConstantPreservesRiscVInstructionRecordingBoundary(
+        var_types type,
+        ulong bits,
+        string expectedBoundary)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var value = type is TYP_FLOAT
+                ? BitConverter.UInt32BitsToSingle(unchecked((uint)bits))
+                : BitConverter.UInt64BitsToDouble(bits);
+            var constant = compiler.gtNewDconNode(type, value);
+            if (bits != 0)
+            {
+                codeGen.InternalRegisters.Add(
+                    constant, regMaskTP.CreateFromRegNum(REG_A2, REG_A2.SingleTypeMask));
+            }
+
+            var failure = Assert.Throws<FatalJitException>(
+                () => codeGen.genSetRegToConst(REG_FA0, type, constant));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Does.Contain(expectedBoundary));
+        });
+    }
+
+    [TestCase(TYP_FLOAT, 0x7F800001UL)]
+    [TestCase(TYP_FLOAT, 0x12345001UL)]
+    [TestCase(TYP_DOUBLE, 0x8000000000000000UL)]
+    [TestCase(TYP_DOUBLE, 0x3FF0000000000001UL)]
+    public static void PooledFloatingConstantPreservesRiscVEmbeddedDataRecordingBoundary(
+        var_types type,
+        ulong bits)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var value = type is TYP_FLOAT
+                ? BitConverter.UInt32BitsToSingle(unchecked((uint)bits))
+                : BitConverter.UInt64BitsToDouble(bits);
+            var constant = compiler.gtNewDconNode(type, value);
+
+            var failure = Assert.Throws<FatalJitException>(
+                () => codeGen.genSetRegToConst(REG_FA0, type, constant));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("RISC-V64 embedded-data instruction recording is not ported."));
+            Assert.That(codeGen.Emitter.emitConsDsc.dsdList, Is.Not.Null);
+        });
+    }
+
     [TestCase(TYP_BYREF)]
     [TestCase(TYP_I_IMPL)]
     public static void LocalAddressPreservesTheStackInstructionRecordingBoundary(var_types type)
