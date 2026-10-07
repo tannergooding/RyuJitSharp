@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.BBKinds;
+using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.CORINFO_InstructionSet;
 using static RyuJitSharp.CorInfoHelpFunc;
@@ -192,6 +194,53 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(CurrentInstructionGroupSize(codeGen.Emitter), Is.EqualTo(initialGroupSize + 4));
 #endif
         });
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public static void FinallyCallsReachTheExistingRiscVLabelJumpBoundary(bool retless)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var target = CreateLabel();
+            var block = CreateTransfer(BBJ_CALLFINALLY, target);
+            if (retless)
+            {
+                block.SetFlags(BBF_RETLESS_CALL);
+            }
+            else
+            {
+                var continuation = CreateLabel();
+                var finallyReturn = CreateTransfer(BBJ_CALLFINALLYRET, continuation);
+                finallyReturn.Next = continuation;
+                block.Next = finallyReturn;
+            }
+
+            compiler.compCurBB = block;
+            var failure = CaptureFatalJitException(() => codeGen.genCallFinally(block));
+            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+
+            Assert.That(descriptors, Is.Empty);
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Does.Contain("Label jump instruction recording requires xarch."));
+        });
+    }
+
+    private static BasicBlock CreateLabel()
+    {
+        var block = new BasicBlock(null, null);
+        block.SetFlags(BBF_HAS_LABEL);
+
+        return block;
+    }
+
+    private static BasicBlock CreateTransfer(BBKinds kind, BasicBlock target)
+    {
+        var block = new BasicBlock(null, null);
+        block.SetKindAndTargetEdge(kind, new FlowEdge(block, target, null));
+
+        return block;
     }
 
     private static void WithEpilog(Action<Compiler, CodeGen> action)

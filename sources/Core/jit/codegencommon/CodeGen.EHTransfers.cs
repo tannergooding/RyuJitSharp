@@ -77,6 +77,40 @@ public sealed partial class CodeGen
 
             Emitter.emitEnableGC();
         }
+#elif TARGET_RISCV64
+        assert(block.Kind == BBJ_CALLFINALLY);
+        var nextBlock = block.Next;
+
+        if (block.HasFlag(BBF_RETLESS_CALL))
+        {
+            Emitter.emitIns_J(INS_jal, block.Target);
+
+            if ((nextBlock is null) || !BasicBlock.sameEHRegion(block, nextBlock))
+            {
+                instGen(INS_ebreak);
+            }
+
+            return;
+        }
+
+        // Liveness after this call cannot represent last uses in the handler.
+        Emitter.emitDisableGC();
+        Emitter.emitIns_J(INS_jal, block.Target);
+
+        assert(nextBlock is not null);
+        assert(nextBlock.Kind == BBJ_CALLFINALLYRET);
+        var finallyContinuation = nextBlock.Target;
+        if ((nextBlock.Next == finallyContinuation) && !_compiler.fgInDifferentRegions(nextBlock, finallyContinuation))
+        {
+            // Keep a return address in this EH region for stack walking from the handler.
+            instGen(INS_nop);
+        }
+        else
+        {
+            inst_JMP(EJ_jmp, finallyContinuation);
+        }
+
+        Emitter.emitEnableGC();
 #elif TARGET_WASM
         genCallFinallyWasm(block);
 #elif !TARGET_XARCH
