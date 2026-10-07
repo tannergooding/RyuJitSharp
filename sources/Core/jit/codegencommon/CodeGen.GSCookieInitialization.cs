@@ -87,6 +87,33 @@ public sealed partial class CodeGen
         }
 
         initRegZeroed = false;
+#elif TARGET_RISCV64
+        assert(Emitter.emitGeneratingPrologOrFuncletProlog());
+        if (!_compiler.NeedsGSSecurityCookie)
+        {
+            return;
+        }
+
+        if (_compiler.opts.IsOSR && _compiler.info.compPatchpointInfo->HasSecurityCookie)
+        {
+            return;
+        }
+
+        if (_compiler.gsGlobalSecurityCookieAddr is null)
+        {
+            noway_assert(_compiler.gsGlobalSecurityCookieVal != 0);
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, _compiler.gsGlobalSecurityCookieVal);
+            Emitter.emitIns_S_R(INS_sd, EA_PTRSIZE, initReg, _compiler.lvaGSSecurityCookie, 0);
+        }
+        else
+        {
+            Emitter.emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, initReg, initReg,
+                unchecked((nint)_compiler.gsGlobalSecurityCookieAddr));
+            _regSet.verifyRegUsed(initReg);
+            Emitter.emitIns_S_R(INS_sd, EA_PTRSIZE, initReg, _compiler.lvaGSSecurityCookie, 0);
+        }
+
+        initRegZeroed = false;
 #elif TARGET_XARCH
         Emitter.RequireSupportedInstructionRecording();
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());

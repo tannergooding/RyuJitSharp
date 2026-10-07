@@ -197,6 +197,81 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void GSSecurityCookieInitializationSkipsWhenNotNeeded(bool initiallyZeroed)
+    {
+        WithProlog((compiler, codeGen) =>
+        {
+            compiler.compNeedsGSSecurityCookie = false;
+            var zeroed = initiallyZeroed;
+
+            codeGen.genSetGSSecurityCookie(REG_A0, ref zeroed);
+
+            Assert.That(codeGen.Emitter.emitCurIG?.igInsCnt, Is.Zero);
+            Assert.That(zeroed, Is.EqualTo(initiallyZeroed));
+        });
+    }
+
+    [Test]
+    public static void GSSecurityCookieInitializationSkipsWhenOsrFrameAlreadyHasCookie()
+    {
+        WithProlog((compiler, codeGen) =>
+        {
+            var storage = stackalloc byte[PatchpointInfo.ComputeSize(1)];
+            var patchpoint = (PatchpointInfo*)storage;
+            patchpoint->Initialize(1, 64);
+            patchpoint->SecurityCookieOffset = -24;
+            compiler.info.compPatchpointInfo = patchpoint;
+            compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_OSR);
+            compiler.compNeedsGSSecurityCookie = true;
+            var zeroed = true;
+
+            codeGen.genSetGSSecurityCookie(REG_A0, ref zeroed);
+
+            Assert.That(codeGen.Emitter.emitCurIG?.igInsCnt, Is.Zero);
+            Assert.That(zeroed, Is.True);
+        });
+    }
+
+    [Test]
+    public static void GSSecurityCookieInitializationPreservesImmediateMaterializationBoundary()
+    {
+        WithProlog((compiler, codeGen) =>
+        {
+            compiler.compNeedsGSSecurityCookie = true;
+            compiler.gsGlobalSecurityCookieVal = 1;
+            var zeroed = true;
+
+            var failure = Assert.Throws<FatalJitException>(() =>
+                codeGen.genSetGSSecurityCookie(REG_A0, ref zeroed));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("Target immediate materialization is not implemented."));
+            Assert.That(zeroed, Is.True);
+        });
+    }
+
+    [Test]
+    public static void GSSecurityCookieInitializationPreservesRelocatedAddressBoundary()
+    {
+        WithProlog((compiler, codeGen) =>
+        {
+            compiler.compNeedsGSSecurityCookie = true;
+            compiler.gsGlobalSecurityCookieAddr = (nint*)0x12345678;
+            var zeroed = true;
+
+            var failure = Assert.Throws<FatalJitException>(() =>
+                codeGen.genSetGSSecurityCookie(REG_A0, ref zeroed));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("RISC-V64 relocated-address load recording is not ported."));
+            Assert.That(zeroed, Is.True);
+        });
+    }
+
     [Test]
     public static void SelectNodeDispatchPreservesRiscVThreeRegisterRecordingBoundary()
     {
@@ -695,6 +770,17 @@ internal static unsafe class RiscVCodeGenPortTests
         {
             JitTls.Compiler = previous;
         }
+    }
+
+    private static void WithProlog(Action<Compiler, CodeGen> action)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var group = codeGen.Emitter.emitCurIG
+                ?? throw new AssertionException("Missing instruction group.");
+            group.igFlags |= InsGroupFlags.Prolog;
+            action(compiler, codeGen);
+        });
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
