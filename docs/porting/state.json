@@ -10,17 +10,17 @@
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
-    "nextAction": "Review the accepted emitIns_R_C diff and state update, then commit only its managed implementation, focused tests, and porting state. After that commit, assess residual RISC-V emitIns_R_AR and its target-specific callers before choosing the next acceptance unit.",
+    "nextAction": "Commit the validated RISC-V emitIns_R_AR boundary test and state update without including preserved managed WIP. Then begin mapping substantive emitIns_R_AI and select one disjoint small-file lane for parallel implementation without overlapping its emitter files or validation outputs.",
     "activeBatch": {
-      "latestBatchValidation": "Ported complete RISC-V emitIns_R_C descriptor recording and updated direct relocation, pooled floating-constant, and jump-table caller tests. Retired the native definition and declaration from the consolidated residual. Full-analysis target suites passed: RISC-V 356/356 Debug and 356/356 Release; Windows-x64 Core 17,247/17,247 Debug and 15,527/15,527 Release. Native residual ac2ae0ffe9c6f6b6807e19098e7ef221fadd238e is parented to pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e; native index tree 9f24fc7b956dae6549537057e62b36457d1d02b5 preserves 29 staged, 13 unstaged, and 10 untracked WIP paths. Debug descriptor display retains the existing sanity-check boundary; no RISC-V output or execution parity is claimed.",
-      "scope": "Accept the completed RISC-V emitIns_R_C function, caller bindings, tests, and native retirement as one coherent unit; do not include preserved unrelated managed WIP.",
-      "doneWhen": "Review the managed diff, ensure state records the pinned source, validations, retirement commit and preserved native index, then commit only the R_C managed implementation, focused tests, and state update. Begin the next method only after that commit.",
-      "validation": "Full-analysis RISC-V Debug and Release target suites passed 356/356 each; serial full-analysis Windows-x64 Core suites passed 17,247/17,247 Debug and 15,527/15,527 Release. `git diff --check` and state JSON parsing pass. No RISC-V execution or generated-output parity is claimed.",
-      "mapping": "The RISC-V emitIns_R_C native definition in src/coreclr/jit/emitriscv64.cpp maps to Emitter.emitIns_R_C in sources/Core/jit/emit/Emitter.SwitchDependencies.cs. Floating-constant, jump-table, async-resume, and large-immediate callers route field handles through this descriptor recorder; the descriptor retains relocation flags, INS_OPTS_RC, bound state, field handle, and the native fixed eight-byte size.",
-      "latestValidation": "Ported the full native RISC-V emitIns_R_C recording sequence: relocation flags, instruction/register operands, INS_OPTS_RC, fixed eight-byte instruction size, bound marker, field handle, display, then instruction-group append. Direct tests cover relocation flags and descriptor contents; caller tests cover pooled floating constants and jump tables while preserving the existing Debug-only descriptor sanity-check boundary. Retired the function and declaration from the residual before this managed commit. Full-analysis suites passed: RISC-V 356/356 Debug and Release; Windows-x64 Core 17,247/17,247 Debug and 15,527/15,527 Release. Native residual ac2ae0ffe9c6f6b6807e19098e7ef221fadd238e has pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e; the staged-WIP index tree 9f24fc7b956dae6549537057e62b36457d1d02b5 preserves 29 staged, 13 unstaged and 10 untracked paths. No RISC-V output or execution parity is claimed.",
+      "latestBatchValidation": "Accepted the RISC-V emitIns_R_AR NYI-only boundary: the pinned native body terminates via NYI_RISCV64, and the managed RISC-V branch already throws CORJIT_SKIPPED without recording. Added a direct regression for the error contract and unchanged descriptor/group state, then retired the native definition and declaration. Full-analysis target suites passed: RISC-V 357/357 Debug and 357/357 Release; Windows-x64 Core 17,247/17,247 Debug and 15,527/15,527 Release. Native residual fba190f6835b7bebfcdaed03aeb0b76fafc8644f is parented to pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e; native index tree 2e771dde23a69d133c0b971a3be2ec23b8469634 preserves 29 staged, 13 unstaged, and 10 untracked WIP paths. The caller path remains a terminating NYI boundary; no RISC-V output or execution parity is claimed.",
+      "scope": "Commit the validated RISC-V emitIns_R_AR NYI-boundary regression and state update without including preserved unrelated managed WIP, then start the next RISC-V emitter plus one disjoint small-file lane.",
+      "doneWhen": "Commit only the R_AR direct test and state update. Next, map the complete emitIns_R_AI function/callers and independently select a file-owned small residual lane with no shared C# files, native files, index/history, or build outputs.",
+      "validation": "Full-analysis RISC-V Debug and Release target suites passed 357/357 each; serial full-analysis Windows-x64 Core suites passed 17,247/17,247 Debug and 15,527/15,527 Release. No RISC-V execution or generated-output parity is claimed.",
+      "mapping": "The RISC-V emitIns_R_AR native stub in src/coreclr/jit/emitriscv64.cpp maps to the TARGET_RISCV64 branch of Emitter.emitIns_R_AR in sources/Core/jit/emit/Emitter.BinaryDestinations.cs. That branch already terminates with CORJIT_SKIPPED before descriptor allocation; preserve shared managed callers and the boundary rather than adding a RISC-V implementation not present in the pinned source.",
+      "latestValidation": "The RISC-V emitIns_R_AR native body consists solely of NYI_RISCV64 and its managed target branch already terminates. No direct RISC-V native callsites remain in the residual; translated shared callers remain in managed code and will still terminate at this binding. Added a direct regression asserting CORJIT_SKIPPED, the boundary message, and unchanged instruction buffer/group size. Retired the native definition and declaration before the managed completion commit. Full-analysis suites passed: RISC-V 357/357 Debug and Release; Windows-x64 Core 17,247/17,247 Debug and 15,527/15,527 Release. Native residual fba190f6835b7bebfcdaed03aeb0b76fafc8644f has pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e; staged-WIP index tree 2e771dde23a69d133c0b971a3be2ec23b8469634 preserves 29 staged, 13 unstaged and 10 untracked paths. No RISC-V output or execution parity is claimed.",
       "deferred": [
         "The three largest residual files (emitloongarch64.cpp, emitarm64sve.cpp and codegenarm64test.cpp) are coordinator-owned follow-on batches, not worker assignments.",
-        "Unrelated native WIP remains excluded from accepted batches and preserved with its staged/unstaged split. The current residual is ac2ae0ffe9c6f6b6807e19098e7ef221fadd238e; the native index is 9f24fc7b956dae6549537057e62b36457d1d02b5 with 29 staged, 13 unstaged and 10 untracked paths. Earlier immutable recovery snapshots remain available.",
+        "Unrelated native WIP remains excluded from accepted batches and preserved with its staged/unstaged split. The current residual is fba190f6835b7bebfcdaed03aeb0b76fafc8644f; the native index is 2e771dde23a69d133c0b971a3be2ec23b8469634 with 29 staged, 13 unstaged and 10 untracked paths. Earlier immutable recovery snapshots remain available.",
         "B507 remains unresolved; this batch does not change the unknown-size-frame algorithm.",
         "ARM/ARM64 GC-info publication remains incomplete: GcInfoEncoder and the ARM64 Edit-and-Continue fixed-frame setter terminate with CORJIT_SKIPPED, and the managed GCInfo header/table paths retain non-AMD64 stubs. The translated caller and retired ARMARCH body are not target execution parity.",
         "JIT32 header and pointer-table serialization are ported and retired. JIT32 DUMP_GC_TABLES decoders and MEASURE_PTRTAB_SIZE counters remain terminating stubs; no x86 execution or generated-code parity is claimed.",
@@ -33,9 +33,9 @@
       ],
       "retirement": {
         "oracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
-        "nativeResidualCommit": "ac2ae0ffe9c6f6b6807e19098e7ef221fadd238e",
+        "nativeResidualCommit": "fba190f6835b7bebfcdaed03aeb0b76fafc8644f",
         "completionGate": "Retire whole eligible definitions and orphan declarations in the same accepted batch, before its managed completion commit. Keep untranslated helpers and target branches in the residual; an absent definition is not evidence that it was ported.",
-        "nextDebtCursor": "At consolidated native residual HEAD ac2ae0ffe9c6f6b6807e19098e7ef221fadd238e (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), the RISC-V emitIns_R_R_I, emitIns_R_I_I and NYI-only emitIns_R_R_R_I boundaries, unused NYI-only emitIns_R_R_I_I and emitIns_R_R_R_R placeholders, and substantive emitIns_R_C are retired with their eligible declarations. Continue by assessing residual RISC-V emitIns_R_AR and its target-specific callers; preserve other target and global blockers and do not claim global debt clearance or RISC-V output or execution parity."
+        "nextDebtCursor": "At consolidated native residual HEAD fba190f6835b7bebfcdaed03aeb0b76fafc8644f (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), the RISC-V emitIns_R_R_I, emitIns_R_I_I and NYI-only emitIns_R_R_R_I boundaries, unused NYI-only emitIns_R_R_I_I/emitIns_R_R_R_R placeholders, substantive emitIns_R_C, and NYI-only emitIns_R_AR are retired with their eligible declarations. Continue at substantive emitIns_R_AI, preserving other target and global blockers and making no global debt-clearance or RISC-V output/execution-parity claim."
       }
     },
     "validationResourcePolicy": {
@@ -67,7 +67,7 @@
     },
     "residualReconciliation": {
       "status": "in-progress",
-      "nextDebtCursor": "At consolidated native residual HEAD ac2ae0ffe9c6f6b6807e19098e7ef221fadd238e (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), accepted slices include the recorded ARM64/Wasm/LSRA/codegen work, documented RISC-V functions, emitLoadImmediate, the complete emitIns_R_R_R/opcode/CR/CA closure, emitIns_R_R_I and emitIns_R_I_I, the NYI-only emitIns_R_R_R_I boundary, unused NYI-only emitIns_R_R_I_I/emitIns_R_R_R_R placeholders, and substantive emitIns_R_C. Continue by assessing residual RISC-V emitIns_R_AR and its target-specific callers. Keep the recorded hashbv B246/B247, B509/B175, B510-B513, nativeIlogbBoundary, B505/B184/B209, disasm.cpp/FILE* coupling, ARM32 async-resume layout, TLS input ownership, Wasm successor-order and emitfmtsriscv64.h mapping holds; this is not global debt clearance."
+      "nextDebtCursor": "At consolidated native residual HEAD fba190f6835b7bebfcdaed03aeb0b76fafc8644f (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), accepted slices include the recorded ARM64/Wasm/LSRA/codegen work, documented RISC-V functions, emitLoadImmediate, the complete emitIns_R_R_R/opcode/CR/CA closure, emitIns_R_R_I and emitIns_R_I_I, the NYI-only emitIns_R_R_R_I boundary, unused NYI-only emitIns_R_R_I_I/emitIns_R_R_R_R placeholders, substantive emitIns_R_C, and NYI-only emitIns_R_AR. Continue at substantive RISC-V emitIns_R_AI and select disjoint file-owned lanes for parallel progress. Keep the recorded hashbv B246/B247, B509/B175, B510-B513, nativeIlogbBoundary, B505/B184/B209, disasm.cpp/FILE* coupling, ARM32 async-resume layout, TLS input ownership, Wasm successor-order and emitfmtsriscv64.h mapping holds; this is not global debt clearance."
     },
     "windowsCompletionAssessment": {
       "status": "remaining-source-review",
@@ -91,6 +91,15 @@
       "commit": "c549484360623a7f2912659026261d07ce0448fd",
       "ref": "refs/recovery/native-index-after-riscv-emitins-rc-20261007",
       "tree": "9f24fc7b956dae6549537057e62b36457d1d02b5"
+    },
+    "nativeBeforeRiscvEmitInsRArRetirement": {
+      "commit": "ac2ae0ffe9c6f6b6807e19098e7ef221fadd238e",
+      "ref": "refs/recovery/native-before-riscv-emitins-r-ar-20261007"
+    },
+    "nativeIndexAfterRiscvEmitInsRArRetirement": {
+      "commit": "86a2d6e820568281f54f03271fba7e6b55b994b8",
+      "ref": "refs/recovery/native-index-after-riscv-emitins-r-ar-20261007",
+      "tree": "2e771dde23a69d133c0b971a3be2ec23b8469634"
     },
     "nativeBeforeRiscvMultioperandRetirement": {
       "commit": "3d0522afa5872863e8560db535a0d49a52afd4cc",

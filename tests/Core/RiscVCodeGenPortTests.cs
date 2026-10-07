@@ -251,6 +251,28 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [Test]
+    public static void RegisterAddressInstructionPreservesUnportedBoundary()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+
+            var failure = Assert.Throws<FatalJitException>(
+                () => emitter.emitIns_R_AR(INS_lw, EA_4BYTE, REG_A0, REG_A1, 8));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("RISC-V64 register-address instruction recording is not ported."));
+            Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount));
+            Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize));
+        });
+    }
+
     [TestCase(INS_csrrwi, REG_A0, 0, 0, 0x00005573u)]
     [TestCase(INS_csrrwi, REG_R0, 31, 0xFFF, 0xFFFFD073u)]
     [TestCase(INS_csrrsi, REG_A0, 31, 0xFFF, 0xFFFFE573u)]
