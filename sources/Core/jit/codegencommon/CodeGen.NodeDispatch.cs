@@ -505,6 +505,31 @@ public sealed partial class CodeGen
             }
         }
 #else
+#if TARGET_ARMARCH
+        if (tree.Oper is GT_PUTARG_STK)
+        {
+#if DEBUG
+            lastConsumedNode = null;
+            if (_compiler.verbose)
+            {
+                _compiler.gtDispLIRNode(tree, "Generating: ");
+            }
+#endif
+            if (tree.IsReuseRegVal)
+            {
+                genCodeForReuseVal(tree);
+                return;
+            }
+
+            if (tree.IsContained)
+            {
+                return;
+            }
+
+            genPutArgStk(tree.AsPutArgStk());
+            return;
+        }
+#endif
 #if TARGET_ARM64
         if (tree.Oper is GT_DIV or GT_UDIV or GT_MOD or GT_UMOD)
         {
