@@ -194,6 +194,62 @@ public sealed partial class CodeGen
         }
 
         _compiler.unwindEndProlog();
+#elif TARGET_RISCV64
+#if DEBUG
+        if (_verbose)
+        {
+            jitprintf("*************** In genFuncletProlog()\n");
+        }
+#endif
+        // TODO-RISCV64: Implement varargs.
+        assert(block is not null);
+        assert(_compiler.bbIsFuncletBeg(block));
+
+        GCInfo.gcResetForBB();
+        _compiler.unwindBegProlog();
+
+        var frameSize = unchecked((int)genFuncletInfo.fiSpDelta);
+        assert(frameSize < 0);
+
+        var maskSaveRegs = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_CALLEE_SAVED);
+        var fpOffset = genFuncletInfo.fiSP_to_CalleeSave_delta;
+
+        // 2040 is the largest 8-byte-aligned signed-12-bit load/store offset; reserve 16 bytes for FP/RA.
+        if ((fpOffset + (unchecked((int)genCountBits(maskSaveRegs)) * REGSIZE_BYTES)) <=
+            (2040 - 2 * REGSIZE_BYTES))
+        {
+            genStackPointerAdjustment(frameSize, REG_SCRATCH, null, reportUnwindData: true);
+
+            Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_FP, REG_SPBASE, fpOffset);
+            _compiler.unwindSaveReg(REG_FP, fpOffset);
+
+            Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RA, REG_SPBASE, fpOffset + 8);
+            _compiler.unwindSaveReg(REG_RA, fpOffset + 8);
+
+            genSaveCalleeSavedRegistersHelp(maskSaveRegs, fpOffset + 16);
+        }
+        else
+        {
+            assert(frameSize < -2040);
+
+            genStackPointerAdjustment(frameSize + (fpOffset & -16), REG_SCRATCH, null,
+                reportUnwindData: true);
+
+            frameSize = -(fpOffset & -16);
+            fpOffset &= 0xf;
+
+            Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_FP, REG_SPBASE, fpOffset);
+            _compiler.unwindSaveReg(REG_FP, fpOffset);
+
+            Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RA, REG_SPBASE, fpOffset + 8);
+            _compiler.unwindSaveReg(REG_RA, fpOffset + 8);
+
+            genSaveCalleeSavedRegistersHelp(maskSaveRegs, fpOffset + 16);
+
+            genStackPointerAdjustment(frameSize, REG_SCRATCH, null, reportUnwindData: true);
+        }
+
+        _compiler.unwindEndProlog();
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Funclet prologs require xarch.");
 #else
@@ -395,6 +451,47 @@ public sealed partial class CodeGen
 
         inst_RV(INS_ret, REG_LR, TYP_I_IMPL);
         _compiler.unwindReturn(REG_LR);
+        _compiler.unwindEndEpilog();
+#elif TARGET_RISCV64
+#if DEBUG
+        if (_verbose)
+        {
+            jitprintf("*************** In genFuncletEpilog()\n");
+        }
+#endif
+        _compiler.unwindBegEpilog();
+
+        var frameSize = unchecked((int)genFuncletInfo.fiSpDelta);
+        assert(frameSize < 0);
+
+        var maskSaveRegs = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_CALLEE_SAVED);
+        var fpOffset = genFuncletInfo.fiSP_to_CalleeSave_delta;
+
+        // The prolog reserves the final 16 bytes of the signed-12-bit offset range for FP/RA.
+        if ((fpOffset + (unchecked((int)genCountBits(maskSaveRegs)) * REGSIZE_BYTES)) >
+            (2040 - 2 * REGSIZE_BYTES))
+        {
+            assert(frameSize < -2040);
+
+            genStackPointerAdjustment(fpOffset & -16, REG_SCRATCH, null, reportUnwindData: true);
+
+            frameSize += fpOffset & -16;
+            fpOffset &= 0xf;
+        }
+
+        genRestoreCalleeSavedRegistersHelp(maskSaveRegs, REG_SPBASE, fpOffset + 16,
+            reportUnwindData: true);
+
+        Emitter.emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_SPBASE, fpOffset + 8);
+        _compiler.unwindSaveReg(REG_RA, fpOffset + 8);
+
+        Emitter.emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_FP, REG_SPBASE, fpOffset);
+        _compiler.unwindSaveReg(REG_FP, fpOffset);
+
+        genStackPointerAdjustment(-frameSize, REG_SCRATCH, null, reportUnwindData: true);
+
+        Emitter.emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_R0, REG_RA, 0);
+        _compiler.unwindReturn(REG_RA);
         _compiler.unwindEndEpilog();
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Funclet epilogs require xarch.");
@@ -608,6 +705,46 @@ public sealed partial class CodeGen
 
         assert(spToFplrSaveDelta >= 0);
         assert(spToCalleeSaveDelta >= 0);
+#endif
+#elif TARGET_RISCV64
+        if (_compiler.compHndBBtabCount == 0)
+        {
+            return;
+        }
+
+        assert(IsFramePointerUsed);
+        assert(_compiler.lvaDoneFrameLayout == Compiler.FINAL_FRAME_LAYOUT);
+
+        var saveRegs = _regSet.rsGetCalleeSavedRegsMask();
+        assert((saveRegs & new regMaskTP(SRBM_RA)).IsNonEmpty);
+        assert((saveRegs & new regMaskTP(SRBM_FP)).IsNonEmpty);
+
+        var frameSize = _compiler.lvaOutgoingArgSpaceSize.Value;
+        genFuncletInfo.fiSP_to_CalleeSave_delta = frameSize;
+        frameSize = unchecked(frameSize + (unchecked((int)genCountBits(saveRegs)) * REGSIZE_BYTES));
+
+        var pspDelta = -TARGET_POINTER_SIZE;
+        if ((_compiler.lvaMonAcquired != BAD_VAR_NUM) && !_compiler.opts.IsOSR)
+        {
+            pspDelta -= TARGET_POINTER_SIZE;
+        }
+
+        frameSize = unchecked(frameSize - pspDelta);
+        var alignedFrameSize = roundUp(unchecked((uint)frameSize), (uint)STACK_ALIGN);
+        genFuncletInfo.fiSpDelta = unchecked((uint)-unchecked((int)alignedFrameSize));
+        genFuncletInfo.fiSaveRegs = saveRegs;
+
+#if DEBUG
+        if (_verbose)
+        {
+            jitprintf("\nFunclet prolog / epilog info\n");
+            jitprintf("                        Save regs: ");
+            dspRegMask(saveRegs);
+            jitprintf($"\n  SP to CalleeSaved location delta: {genFuncletInfo.fiSP_to_CalleeSave_delta}\n");
+            jitprintf($"                       SP delta: {unchecked((int)genFuncletInfo.fiSpDelta)}\n");
+        }
+
+        assert(genFuncletInfo.fiSP_to_CalleeSave_delta >= 0);
 #endif
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Funclet frame capture requires xarch.");

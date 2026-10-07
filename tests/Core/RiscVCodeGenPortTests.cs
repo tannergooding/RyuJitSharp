@@ -661,6 +661,119 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [TestCase(0, -32, 0, false)]
+    [TestCase(16, -48, 16, false)]
+    [TestCase(2032, -32, 0, true)]
+    public static void FuncletPrologPreservesRiscVFrameShapes(
+        int outgoingArgSpaceSize, int firstStackAdjustment, int saveOffset, bool splitFrame)
+    {
+        WithFunclet(outgoingArgSpaceSize, (compiler, codeGen, block) =>
+        {
+            codeGen.genCaptureFuncletPrologEpilogInfo();
+
+            var prolog = codeGen.Emitter.emitGetFirstPrologIG();
+            CurrentGroup(codeGen.Emitter) = prolog;
+            prolog.igFlags = InsGroupFlags.FuncletProlog;
+
+            var emitter = codeGen.Emitter;
+            var descriptors = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = descriptors.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+            var failure = CaptureFatalJitException(() => codeGen.genFuncletProlog(block));
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+            var firstDescriptor = descriptors[initialInstructionCount];
+            Assert.That(firstDescriptor.idIns(), Is.EqualTo(INS_addi));
+            Assert.That(firstDescriptor.idReg1(), Is.EqualTo(REG_SPBASE));
+            Assert.That(firstDescriptor.idReg2(), Is.EqualTo(REG_SPBASE));
+            Assert.That(firstDescriptor.idSmallCns(), Is.EqualTo(firstStackAdjustment));
+
+#if !DEBUG
+            var expected = splitFrame
+                ? (instruction[])[INS_addi, INS_sd, INS_sd, INS_sd, INS_addi]
+                : [INS_addi, INS_sd, INS_sd, INS_sd];
+            Assert.That(descriptors.Skip(initialInstructionCount).Select(descriptor => descriptor.idIns()),
+                Is.EqualTo(expected));
+            Assert.That(descriptors[initialInstructionCount + 1].idReg1(), Is.EqualTo(REG_FP));
+            Assert.That(descriptors[initialInstructionCount + 1].idSmallCns(), Is.EqualTo(saveOffset));
+            Assert.That(descriptors[initialInstructionCount + 2].idReg1(), Is.EqualTo(REG_RA));
+            Assert.That(descriptors[initialInstructionCount + 2].idSmallCns(), Is.EqualTo(saveOffset + 8));
+            Assert.That(descriptors[initialInstructionCount + 3].idReg1(), Is.EqualTo(REG_S1));
+            Assert.That(descriptors[initialInstructionCount + 3].idSmallCns(), Is.EqualTo(saveOffset + 16));
+            if (splitFrame)
+            {
+                Assert.That(descriptors[initialInstructionCount + 4].idSmallCns(), Is.EqualTo(-2032));
+            }
+
+            Assert.That(compiler.funCurrentFunc().GetUnwindInfo().GetCurrentEmitterLocation(), Is.Not.Null);
+#endif
+        });
+    }
+
+    [TestCase(0, 32, false)]
+    [TestCase(16, 48, false)]
+    [TestCase(2032, 32, true)]
+    public static void FuncletEpilogRestoresRiscVFrameShapes(
+        int outgoingArgSpaceSize, int finalStackAdjustment, bool splitFrame)
+    {
+        WithFunclet(outgoingArgSpaceSize, (compiler, codeGen, block) =>
+        {
+            codeGen.genCaptureFuncletPrologEpilogInfo();
+
+            var group = CurrentGroup(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction group.");
+            group.igFlags = InsGroupFlags.FuncletEpilog | InsGroupFlags.OutOfOrderHead;
+
+            var emitter = codeGen.Emitter;
+            var descriptors = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = descriptors.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+            var failure = CaptureFatalJitException(() => codeGen.genFuncletEpilog(block));
+            Assert.That(descriptors.Count, Is.GreaterThan(initialInstructionCount), failure?.ToString());
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+#if DEBUG
+            var firstDescriptor = descriptors[initialInstructionCount];
+            Assert.That(firstDescriptor.idIns(), Is.EqualTo(splitFrame ? INS_addi : INS_ld));
+            Assert.That(firstDescriptor.idSmallCns(), Is.EqualTo(splitFrame ? 2032 : outgoingArgSpaceSize + 16));
+#else
+            var expected = splitFrame
+                ? (instruction[])[INS_addi, INS_ld, INS_ld, INS_ld, INS_addi, INS_jalr]
+                : [INS_ld, INS_ld, INS_ld, INS_addi, INS_jalr];
+            Assert.That(descriptors.Skip(initialInstructionCount).Select(descriptor => descriptor.idIns()),
+                Is.EqualTo(expected));
+
+            var firstLoad = initialInstructionCount + (splitFrame ? 1 : 0);
+            var saveOffset = splitFrame ? 0 : outgoingArgSpaceSize;
+            Assert.That(descriptors[firstLoad].idReg1(), Is.EqualTo(REG_S1));
+            Assert.That(descriptors[firstLoad].idSmallCns(), Is.EqualTo(saveOffset + 16));
+            Assert.That(descriptors[firstLoad + 1].idReg1(), Is.EqualTo(REG_RA));
+            Assert.That(descriptors[firstLoad + 1].idSmallCns(), Is.EqualTo(saveOffset + 8));
+            Assert.That(descriptors[firstLoad + 2].idReg1(), Is.EqualTo(REG_FP));
+            Assert.That(descriptors[firstLoad + 2].idSmallCns(), Is.EqualTo(saveOffset));
+            Assert.That(descriptors[^2].idSmallCns(), Is.EqualTo(finalStackAdjustment));
+            Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_RA));
+            Assert.That(compiler.compGeneratingUnwindEpilog, Is.False);
+            Assert.That(compiler.funCurrentFunc().GetUnwindInfo().GetCurrentEmitterLocation(), Is.Not.Null);
+#endif
+        });
+    }
+
     [Test]
     public static void CalleeSavedRegisterPrologRecordsFrameSavesAndUnwind()
     {
@@ -2626,6 +2739,42 @@ internal static unsafe class RiscVCodeGenPortTests
         codeGen.IsFramePointerUsed = true;
     }
 
+    private static void WithFunclet(
+        int outgoingArgSpaceSize, Action<Compiler, CodeGen, BasicBlock> action)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
+            compiler.lvaMonAcquired = BAD_VAR_NUM;
+            compiler.lvaResumedIndicator = BAD_VAR_NUM;
+            compiler.lvaAsyncThreadObjectVar = BAD_VAR_NUM;
+            compiler.lvaAsyncExecutionContextVar = BAD_VAR_NUM;
+            compiler.lvaAsyncSynchronizationContextVar = BAD_VAR_NUM;
+            compiler.lvaOutgoingArgSpaceSize.ResetWritePhase();
+            compiler.lvaOutgoingArgSpaceSize.Value = outgoingArgSpaceSize;
+            compiler.compHndBBtabCount = 1;
+            compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT, uwi = new UnwindInfo() }];
+            compiler.compFuncInfoCount = 1;
+            compiler.fgFuncletsCreated = true;
+            compiler.funCurrentFunc().GetUnwindInfo().InitUnwindInfo(compiler, null, null);
+
+            var block = new BasicBlock(null, null)
+            {
+                CatchType = bbCatchType.BBCT_FINALLY,
+                HndIndex = 0,
+            };
+            compiler.compHndBBtab = [
+                new EHblkDsc { ebdTyp = bbCatchType.BBCT_FINALLY, ebdHndBeg = block, ebdHndLast = block },
+            ];
+            compiler.compCurBB = block;
+
+            codeGen.resetFramePointerUsedWritePhase();
+            codeGen.IsFramePointerUsed = true;
+            codeGen.RegSet.rsSetCalleeSavedRegsMask(new regMaskTP(SRBM_FP | SRBM_RA | SRBM_S1));
+            action(compiler, codeGen, block);
+        });
+    }
+
 #if PROFILING_SUPPORTED
     private static void WithProfilerCallbacks(Action<Compiler, CodeGen> action)
     {
@@ -2670,6 +2819,9 @@ internal static unsafe class RiscVCodeGenPortTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGsize")]
     private static extern ref int CurrentInstructionGroupSize(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIG")]
+    private static extern ref insGroup? CurrentGroup(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genRestoreCalleeSavedRegistersHelp")]
     private static extern void RestoreCalleeSavedRegisters(CodeGen codeGen, regMaskTP mask, regNumber baseReg,

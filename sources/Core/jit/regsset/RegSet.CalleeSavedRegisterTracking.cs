@@ -13,4 +13,11 @@ public partial struct RegSet
         _rsMaskCalleeSaved = mask;
     }
 #endif
+
+#if TARGET_RISCV64
+    internal readonly regMaskTP rsGetCalleeSavedRegsMask()
+    {
+        return _rsMaskCalleeSaved;
+    }
+#endif
 }
