@@ -108,6 +108,96 @@ public sealed partial class CodeGen
         }
 
         noway_assert(cntBytes == 0);
+#elif TARGET_RISCV64
+        var availMask = _regSet.rsGetModifiedRegsMask() | new regMaskTP(SRBM_INT_CALLEE_TRASH);
+        availMask &= ~_calleeRegArgMaskLiveIn;
+        availMask &= ~genRegMask(initReg);
+
+        var addrReg = initReg;
+        initRegZeroed = false;
+
+        assert((genRegMask(addrReg) & _calleeRegArgMaskLiveIn).IsEmpty);
+        assert((untrLclLo % 4) == 0);
+
+        if (Emitter.isValidSimm12(untrLclLo))
+        {
+            Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, addrReg, genFramePointerReg(), untrLclLo);
+        }
+        else
+        {
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, unchecked((nint)untrLclLo));
+            Emitter.emitIns_R_R_R(INS_add, EA_PTRSIZE, addrReg, genFramePointerReg(), initReg);
+            initRegZeroed = false;
+        }
+
+        var lclBytes = unchecked((nint)(untrLclHi - untrLclLo));
+        assert((lclBytes % 4) == 0);
+        var padding = untrLclLo & 0x7;
+        if (padding != 0)
+        {
+            assert(padding == 4);
+            Emitter.emitIns_R_R_I(INS_sw, EA_4BYTE, REG_R0, addrReg, 0);
+            lclBytes -= sizeof(int);
+        }
+
+        var regSlots = lclBytes / REGSIZE_BYTES;
+        nint addrOffset = 0;
+        if (regSlots >= 12)
+        {
+            noway_assert(availMask.IsNonEmpty);
+            var endAddrMask = genFindLowestBit(availMask);
+            var endAddrReg = (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)endAddrMask.Lower));
+            availMask &= ~endAddrMask;
+
+            assert((genRegMask(endAddrReg) & _calleeRegArgMaskLiveIn).IsEmpty);
+            var loopBytes = (regSlots & ~((nint)0x3)) * REGSIZE_BYTES;
+            if (loopBytes != 0)
+            {
+                if (Emitter.isValidSimm12(loopBytes))
+                {
+                    Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, endAddrReg, addrReg, loopBytes);
+                }
+                else
+                {
+                    instGen_Set_Reg_To_Imm(EA_PTRSIZE, endAddrReg, loopBytes);
+                    Emitter.emitIns_R_R_R(INS_add, EA_PTRSIZE, endAddrReg, endAddrReg, addrReg);
+                }
+
+                var loopHead = genCreateTempLabel();
+                genDefineInlineTempLabel(loopHead);
+                Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, addrReg, padding);
+                Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, addrReg, padding + REGSIZE_BYTES);
+                Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, addrReg, padding + 2 * REGSIZE_BYTES);
+                Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, addrReg, padding + 3 * REGSIZE_BYTES);
+
+                Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, addrReg, addrReg, 4 * REGSIZE_BYTES);
+                Emitter.emitIns_J_cond_la(INS_bltu, loopHead, addrReg, endAddrReg);
+
+                lclBytes -= loopBytes;
+                addrOffset = 0;
+            }
+        }
+
+        while (lclBytes >= REGSIZE_BYTES)
+        {
+            Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, addrReg, addrOffset + padding);
+            lclBytes -= REGSIZE_BYTES;
+            addrOffset += REGSIZE_BYTES;
+        }
+
+        if (addrOffset != 0)
+        {
+            addrOffset -= REGSIZE_BYTES;
+        }
+
+        if (lclBytes != 0)
+        {
+            assert(lclBytes == sizeof(int));
+            Emitter.emitIns_R_R_I(INS_sw, EA_4BYTE, REG_R0, addrReg, addrOffset + padding);
+            lclBytes -= sizeof(int);
+        }
+
+        noway_assert(lclBytes == 0);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Prolog block initialization requires xarch.");
 #else

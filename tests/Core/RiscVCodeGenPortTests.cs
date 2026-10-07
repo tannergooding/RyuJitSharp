@@ -1969,6 +1969,78 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [TestCase(-32, 4, 0, 1, false)]
+    [TestCase(-32, 16, 2, 0, false)]
+    [TestCase(-28, 12, 1, 1, false)]
+    [TestCase(-256, 96, 4, 0, true)]
+    [TestCase(-256, 100, 4, 0, true)]
+    [TestCase(-4096, 16, 2, 0, false)]
+    [TestCase(-256, 2080, 4, 0, true)]
+    public static void PrologBlockInitializationRecordsRiscVZeroStores(
+        int low,
+        int size,
+        int expectedDoubleStores,
+        int expectedWordStores,
+        bool expectedLoop)
+    {
+        WithProlog((_, codeGen) =>
+        {
+            codeGen.resetFramePointerUsedWritePhase();
+            codeGen.IsFramePointerUsed = true;
+
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initRegZeroed = true;
+            var failure = CaptureFatalJitException(() => codeGen.genZeroInitFrameUsingBlockInit(
+                low + size, low, REG_T0, ref initRegZeroed));
+
+            Assert.That(initRegZeroed, Is.False);
+#if DEBUG
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Does.Contain(RiscVRecorderDebugBoundary));
+#else
+            if (expectedLoop)
+            {
+                Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+                Assert.That(failure?.Message,
+                    Does.Contain("Target conditional-branch recording is not implemented."));
+            }
+            else
+            {
+                Assert.That(failure, Is.Null);
+            }
+
+            var descriptors = instructionBuffer.Skip(initialInstructionCount).ToArray();
+            Assert.That(descriptors.Count(id => id.idIns() == INS_sd), Is.EqualTo(expectedDoubleStores));
+            Assert.That(descriptors.Count(id => id.idIns() == INS_sw), Is.EqualTo(expectedWordStores));
+
+            var storeOffsets = descriptors
+                .Where(id => id.idIns() is INS_sd or INS_sw)
+                .Select(id => unchecked((int)Emitter.emitGetInsSC(id)))
+                .ToArray();
+            if (expectedLoop)
+            {
+                var expectedLoopOffsets = Enumerable.Range(0, 4)
+                    .Select(index => (low & 0x7) + (index * REGSIZE_BYTES))
+                    .ToArray();
+                Assert.That(storeOffsets.Take(4), Is.EqualTo(expectedLoopOffsets));
+            }
+            else
+            {
+                var cleared = descriptors
+                    .Where(id => id.idIns() is INS_sd or INS_sw)
+                    .SelectMany(id => Enumerable.Range(
+                        unchecked((int)Emitter.emitGetInsSC(id)),
+                        id.idIns() == INS_sd ? REGSIZE_BYTES : sizeof(int)))
+                    .Order();
+                Assert.That(cleared, Is.EqualTo(Enumerable.Range(0, size)));
+            }
+#endif
+        });
+    }
+
 #if DEBUG
     [TestCase(false, RiscVRecorderDebugBoundary)]
     [TestCase(true, RiscVRecorderDebugBoundary)]
