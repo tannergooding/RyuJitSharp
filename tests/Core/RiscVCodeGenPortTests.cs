@@ -495,6 +495,21 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [Test]
+    public static void UnsupportedConditionCodeImmediateInstructionStopsBeforeEmission()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var failure = CaptureFatalJitException(
+                () => codeGen.Emitter.emitIns_I_I(INS_add, EA_PTRSIZE, 0, 0));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            Assert.That(descriptors, Is.Empty);
+        });
+    }
+
     [TestCase(-2048, false)]
     [TestCase(0, false)]
     [TestCase(32, true)]

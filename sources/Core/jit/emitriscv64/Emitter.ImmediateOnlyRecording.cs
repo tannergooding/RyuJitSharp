@@ -1,10 +1,17 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 #if TARGET_RISCV64
+using static RyuJitSharp.Globals;
+
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    public void emitIns_I_I(instruction ins, emitAttr attr, nint cc, nint offs)
+    {
+        NYI_RISCV64("emitIns_I_I-----unimplemented/unused on RISCV64 yet----");
+    }
+
     private void recordRiscVInsI(instruction ins, emitAttr attr, nint immediate)
     {
         var code = emitInsCode(ins);
