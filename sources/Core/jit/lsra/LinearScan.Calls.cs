@@ -252,6 +252,117 @@ public sealed partial class LinearScan
         _placedArgumentRegisters = new regMaskTP(SRBM_NONE);
         _placedArgumentLocalCount = 0;
         return srcCount;
+#elif TARGET_RISCV64 || TARGET_LOONGARCH64
+        var hasMultiRegRetVal = false;
+        var dstCount = 0;
+        var singleDstCandidates = SRBM_NONE;
+        if (call.Type is not TYP_VOID)
+        {
+            hasMultiRegRetVal = call.HasMultiRegRetVal;
+            dstCount = hasMultiRegRetVal ? call.ReturnTypeDesc.ReturnRegCount : 1;
+        }
+
+        var ctrlExpr = call.ControlExpr;
+        var ctrlExprCandidates = SRBM_NONE;
+        if (ctrlExpr is not null)
+        {
+            assert(ctrlExpr.Type is not TYP_VOID);
+            if (call.IsFastTailCall)
+            {
+                ctrlExprCandidates = allRegs(TYP_INT) & _rbmIntCalleeTrash;
+                if (_compiler.NeedsGSSecurityCookie)
+                {
+                    assert(_compiler.codeGen is not null);
+                    ctrlExprCandidates &= ~_compiler.codeGen.genGetGSCookieTempRegs(true, call).IntRegSet;
+                }
+                assert(ctrlExprCandidates != SRBM_NONE);
+            }
+
+#if TARGET_RISCV64
+            if (ctrlExpr.IsContainedIntOrIImmed)
+            {
+                _ = buildInternalIntRegisterDefForNode(call);
+            }
+#endif
+        }
+        else if (call.IsR2RRelativeIndir || call.IsVirtualStubRelativeIndir)
+        {
+            var candidates = SRBM_NONE;
+            if (call.IsFastTailCall)
+            {
+                candidates = allRegs(TYP_INT) & _rbmIntCalleeTrash;
+#if TARGET_LOONGARCH64
+                if (_compiler.NeedsGSSecurityCookie)
+                {
+                    assert(_compiler.codeGen is not null);
+                    ctrlExprCandidates &= ~_compiler.codeGen.genGetGSCookieTempRegs(true, call).IntRegSet;
+                }
+#endif
+                assert(candidates != SRBM_NONE);
+            }
+
+            _ = buildInternalIntRegisterDefForNode(call, candidates);
+        }
+
+        if (!hasMultiRegRetVal)
+        {
+            if (varTypeUsesFloatArgReg(call.Type))
+            {
+                singleDstCandidates = SRBM_FLOATRET;
+            }
+            else if (call.Type is TYP_LONG)
+            {
+                singleDstCandidates = SRBM_LNGRET;
+            }
+            else
+            {
+                singleDstCandidates = SRBM_INTRET;
+            }
+        }
+
+        var srcCount = buildCallArgUses(call);
+        if (ctrlExpr is not null)
+        {
+#if TARGET_RISCV64
+            if (!ctrlExpr.IsContainedIntOrIImmed)
+            {
+#endif
+                _ = buildUse(ctrlExpr, ctrlExprCandidates);
+                srcCount++;
+#if TARGET_RISCV64
+            }
+#endif
+        }
+
+        buildInternalRegisterUses();
+        if (call.IsAsync && _compiler.compIsAsync && !call.IsFastTailCall)
+        {
+            markAsyncContinuationBusyForCall(call);
+        }
+
+        var killMask = getKillSetForCall(call);
+        if (dstCount > 0)
+        {
+            if (hasMultiRegRetVal)
+            {
+                var multiDstCandidates = call.ReturnTypeDesc.GetAbiReturnRegs(call.UnmanagedCallConv);
+                assert(countRegisterMaskBits(multiDstCandidates) > 0);
+                buildCallDefsWithKills(call, dstCount, multiDstCandidates, killMask);
+            }
+            else
+            {
+                assert(dstCount == 1);
+                buildDefWithKills(call, singleDstCandidates, killMask);
+            }
+        }
+        else
+        {
+            buildKills(call, killMask);
+        }
+
+        _placedArgumentRegisters = new regMaskTP(SRBM_NONE);
+        _placedArgumentLocalCount = 0;
+        return srcCount;
 #else
         throw new FatalJitException("LSRA call reference building is not implemented outside AMD64.");
 #endif
@@ -379,7 +490,13 @@ public sealed partial class LinearScan
 
     private void markAsyncContinuationBusyForCall(GenTreeCall call)
     {
-#if TARGET_AMD64
+#if TARGET_RISCV64 || TARGET_LOONGARCH64
+        assert(call.Next?.Oper is GT_ASYNC_CONTINUATION);
+        var kill = addKillForRegs(
+            new regMaskTP(genSingleTypeRegMask(REG_ASYNC_CONTINUATION_RET)),
+            _referenceBuildLocation + 1);
+        setDelayFree(kill);
+#elif TARGET_AMD64
         assert(call.Next?.Oper is GT_ASYNC_CONTINUATION);
         var kill = addKillForRegs(new regMaskTP(genSingleTypeRegMask(REG_ASYNC_CONTINUATION_RET)),
             _referenceBuildLocation + 1);

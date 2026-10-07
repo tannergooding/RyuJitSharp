@@ -662,6 +662,10 @@ public sealed partial class LinearScan
         return buildNodeArm(tree);
 #elif TARGET_ARM64
         return buildNodeArm64(tree);
+#elif TARGET_LOONGARCH64
+        return buildNodeLoongArch64(tree);
+#elif TARGET_RISCV64
+        return buildNodeRiscV64(tree);
 #else
         NYI("LinearScan.buildNode outside AMD64");
         throw new FatalJitException("LinearScan.buildNode outside AMD64.");

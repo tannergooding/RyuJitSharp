@@ -24,7 +24,20 @@ public readonly partial struct HWIntrinsicInfo
 
     public static NamedIntrinsic GetScalarInputVariant(NamedIntrinsic id)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic scalar-input variant selection is not ported.");
+        assert(HasScalarInputVariant(id));
+
+        return id switch
+        {
+            NI_Sve_ConditionalExtractAfterLastActiveElement => NI_Sve_ConditionalExtractAfterLastActiveElementScalar,
+            NI_Sve_ConditionalExtractLastActiveElement => NI_Sve_ConditionalExtractLastActiveElementScalar,
+            NI_Sve_SaturatingDecrementBy16BitElementCount => NI_Sve_SaturatingDecrementBy16BitElementCountScalar,
+            NI_Sve_SaturatingDecrementBy32BitElementCount => NI_Sve_SaturatingDecrementBy32BitElementCountScalar,
+            NI_Sve_SaturatingDecrementBy64BitElementCount => NI_Sve_SaturatingDecrementBy64BitElementCountScalar,
+            NI_Sve_SaturatingIncrementBy16BitElementCount => NI_Sve_SaturatingIncrementBy16BitElementCountScalar,
+            NI_Sve_SaturatingIncrementBy32BitElementCount => NI_Sve_SaturatingIncrementBy32BitElementCountScalar,
+            NI_Sve_SaturatingIncrementBy64BitElementCount => NI_Sve_SaturatingIncrementBy64BitElementCountScalar,
+            _ => throw new FatalJitException("Unexpected ARM64 scalar-input variant intrinsic."),
+        };
     }
 #endif
 

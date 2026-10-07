@@ -19,6 +19,146 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanRiscVNodeBuildingTests
 {
+    [TestCase(0, false, 0)]
+    [TestCase(-2048, false, 0)]
+    [TestCase(2047, false, 0)]
+    [TestCase(2048, false, 1)]
+    [TestCase(8, true, 0)]
+    [TestCase(2048, true, 1)]
+    [TestCase(0, true, 0)]
+    public static void ContainedIndirectionAddressReservesTemporaryOnlyForOutOfRangeOffsets(
+        int offset, bool hasIndex, int expectedInternalDefinitions)
+    {
+        WithAllocator((compiler, allocator) =>
+        {
+            var baseAddress = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            ReferenceBuildLocation(allocator) = 2;
+            _ = BuildDef(allocator, baseAddress, SRBM_NONE, 0);
+
+            GenTree? index = null;
+            if (hasIndex)
+            {
+                index = compiler.gtNewIconNode(TYP_I_IMPL, 3);
+                ReferenceBuildLocation(allocator) = 4;
+                _ = BuildDef(allocator, index, SRBM_NONE, 0);
+            }
+
+            var address = new GenTreeAddrMode(
+                TYP_BYREF,
+                baseAddress,
+                index,
+                hasIndex ? (byte)1 : (byte)0,
+                offset)
+            {
+                IsContained = true,
+            };
+            var indirection = compiler.gtNewIndir(TYP_INT, address);
+            ReferenceBuildLocation(allocator) = hasIndex ? 6u : 4u;
+
+            Assert.That(BuildNode(allocator, indirection), Is.EqualTo(hasIndex ? 2 : 1));
+            Assert.That(allocator.refPositions[^1].treeNode, Is.SameAs(indirection));
+            Assert.That(allocator.refPositions[^1].refType, Is.EqualTo(RefType.RefTypeDef));
+            Assert.That(allocator.refPositions.FindAll(reference =>
+                (reference.treeNode == indirection) &&
+                (reference.refType is RefType.RefTypeDef) &&
+                reference.getInterval().isInternal), Has.Count.EqualTo(expectedInternalDefinitions));
+        });
+    }
+
+#if FEATURE_SIMD
+    [Test]
+    public static void Simd12IndirectionReservesAnInternalRegister()
+    {
+        WithAllocator((compiler, allocator) =>
+        {
+            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            ReferenceBuildLocation(allocator) = 2;
+            _ = BuildDef(allocator, address, SRBM_NONE, 0);
+            var indirection = compiler.gtNewIndir(TYP_SIMD12, address);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildNode(allocator, indirection), Is.EqualTo(1));
+            Assert.That(allocator.refPositions.FindAll(reference =>
+                (reference.treeNode == indirection) &&
+                (reference.refType is RefType.RefTypeDef) &&
+                reference.getInterval().isInternal), Has.Count.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public static void SimdNodeBuildingSkipsForUnportedRiscVBackend()
+    {
+        WithAllocator((_, allocator) =>
+        {
+            var simdTree = (GenTreeSIMD)RuntimeHelpers.GetUninitializedObject(typeof(GenTreeSIMD));
+            var failure = Assert.Throws<FatalJitException>(() => BuildSIMD(allocator, simdTree));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+        });
+    }
+#endif
+
+#if FEATURE_HW_INTRINSICS
+    [Test]
+    public static void HardwareIntrinsicNodeBuildingSkipsForUnportedRiscVBackend()
+    {
+        WithAllocator((_, allocator) =>
+        {
+            var intrinsicTree = (GenTreeHWIntrinsic)RuntimeHelpers.GetUninitializedObject(typeof(GenTreeHWIntrinsic));
+            var failure = Assert.Throws<FatalJitException>(() =>
+                BuildHWIntrinsic(allocator, intrinsicTree, out _));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+        });
+    }
+#endif
+
+    [Test]
+    public static void CallConsumesItsIndirectTargetAndDefinesItsReturnValue()
+    {
+        WithAllocator((compiler, allocator) =>
+        {
+            var target = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            ReferenceBuildLocation(allocator) = 2;
+            var targetDefinition = BuildDef(allocator, target, SRBM_NONE, 0);
+            var call = new GenTreeCall(TYP_INT)
+            {
+                _callType = gtCallTypes.CT_INDIRECT,
+                ControlExpr = target,
+            };
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildNode(allocator, call), Is.EqualTo(1));
+            Assert.That(targetDefinition.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
+            Assert.That(allocator.refPositions.FindAll(reference =>
+                (reference.treeNode == call) &&
+                (reference.refType is RefType.RefTypeDef) &&
+                !reference.getInterval().isInternal), Has.Count.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public static void CallMaterializesAContainedIndirectTarget()
+    {
+        WithAllocator((compiler, allocator) =>
+        {
+            var target = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            target.IsContained = true;
+            var call = new GenTreeCall(TYP_INT)
+            {
+                _callType = gtCallTypes.CT_INDIRECT,
+                ControlExpr = target,
+            };
+            ReferenceBuildLocation(allocator) = 2;
+
+            Assert.That(BuildNode(allocator, call), Is.Zero);
+            Assert.That(allocator.refPositions.FindAll(reference =>
+                (reference.treeNode == call) &&
+                (reference.refType is RefType.RefTypeDef) &&
+                reference.getInterval().isInternal), Has.Count.EqualTo(1));
+        });
+    }
+
     [Test]
     public static void BlockCopyReservesAnIntegerTemporaryAndConsumesBothAddresses()
     {
@@ -38,7 +178,7 @@ internal static unsafe class LinearScanRiscVNodeBuildingTests
             };
             ReferenceBuildLocation(allocator) = 4;
 
-            Assert.That(BuildBlockStore(allocator, block), Is.EqualTo(2));
+            Assert.That(BuildNode(allocator, block), Is.EqualTo(2));
             Assert.That(destinationDefinition.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
             Assert.That(sourceDefinition.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
 
@@ -67,7 +207,7 @@ internal static unsafe class LinearScanRiscVNodeBuildingTests
             };
             ReferenceBuildLocation(allocator) = 4;
 
-            Assert.That(BuildBlockStore(allocator, block), Is.EqualTo(2));
+            Assert.That(BuildNode(allocator, block), Is.EqualTo(2));
             Assert.That(destinationDefinition.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
             Assert.That(fillDefinition.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
             Assert.That(InternalDefinitions(allocator, block), Has.Count.EqualTo(1));
@@ -92,7 +232,7 @@ internal static unsafe class LinearScanRiscVNodeBuildingTests
             };
             ReferenceBuildLocation(allocator) = 4;
 
-            Assert.That(BuildBlockStore(allocator, block), Is.EqualTo(1));
+            Assert.That(BuildNode(allocator, block), Is.EqualTo(1));
             Assert.That(destinationDefinition.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
             Assert.That(InternalDefinitions(allocator, block), Has.Count.EqualTo(1));
         });
@@ -112,7 +252,7 @@ internal static unsafe class LinearScanRiscVNodeBuildingTests
 
             var castDescriptor = new CodeGen.GenIntCastDesc(cast);
             Assert.That(castDescriptor.Check, Is.Not.EqualTo(CHECK_NONE));
-            Assert.That(BuildCast(allocator, cast), Is.EqualTo(1));
+            Assert.That(BuildNode(allocator, cast), Is.EqualTo(1));
             Assert.That(sourceDefinition.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
 
             var definitions = InternalDefinitions(allocator, cast);
@@ -133,7 +273,7 @@ internal static unsafe class LinearScanRiscVNodeBuildingTests
             var cast = new GenTreeCast(TYP_INT, source, false, TYP_INT);
             ReferenceBuildLocation(allocator) = 4;
 
-            Assert.That(BuildCast(allocator, cast), Is.EqualTo(1));
+            Assert.That(BuildNode(allocator, cast), Is.EqualTo(1));
             Assert.That(sourceDefinition.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
 
             var castDefinition = allocator.refPositions.FindLast(
@@ -149,6 +289,79 @@ internal static unsafe class LinearScanRiscVNodeBuildingTests
         });
     }
 
+    [Test]
+    public static void NodeBuilderConsumesBinaryOperandsAndDefinesTheResult()
+    {
+        WithAllocator((compiler, allocator) =>
+        {
+            var left = compiler.gtNewIconNode(TYP_INT, 12);
+            var right = compiler.gtNewIconNode(TYP_INT, 30);
+            ReferenceBuildLocation(allocator) = 2;
+            Assert.That(BuildNode(allocator, left), Is.Zero);
+            var leftDefinition = allocator.refPositions.FindLast(reference =>
+                (reference.treeNode == left) && (reference.refType is RefType.RefTypeDef))
+                ?? throw new AssertionException("The left constant has no register definition.");
+            ReferenceBuildLocation(allocator) = 4;
+            Assert.That(BuildNode(allocator, right), Is.Zero);
+            var rightDefinition = allocator.refPositions.FindLast(reference =>
+                (reference.treeNode == right) && (reference.refType is RefType.RefTypeDef))
+                ?? throw new AssertionException("The right constant has no register definition.");
+
+            Assert.That(leftDefinition.getInterval().isConstant, Is.True);
+            Assert.That(rightDefinition.getInterval().isConstant, Is.True);
+
+            var addition = new GenTreeOp(GT_ADD, TYP_INT, left, right);
+            ReferenceBuildLocation(allocator) = 6;
+            Assert.That(BuildNode(allocator, addition), Is.EqualTo(2));
+
+            Assert.That(leftDefinition.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
+            Assert.That(rightDefinition.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
+            Assert.That(allocator.refPositions.FindAll(reference =>
+                (reference.treeNode == addition) &&
+                (reference.refType is RefType.RefTypeDef) &&
+                !reference.getInterval().isInternal), Has.Count.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public static void StructStackArgumentReservesLoadAndStoreTemporaries()
+    {
+        WithAllocator((compiler, allocator) =>
+        {
+            var sourceAddress = compiler.gtNewIconNode(TYP_I_IMPL, 0x2000);
+            ReferenceBuildLocation(allocator) = 2;
+            var sourceDefinition = BuildDef(allocator, sourceAddress, SRBM_NONE, 0);
+
+            var source = new GenTreeBlk(TYP_STRUCT, sourceAddress, new ClassLayout(16))
+            {
+                IsContained = true,
+            };
+            var argument = new GenTreePutArgStk(TYP_VOID, source, null, 0, 16, false);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildNode(allocator, argument), Is.EqualTo(1));
+            Assert.That(sourceDefinition.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
+            Assert.That(InternalDefinitions(allocator, argument), Has.Count.EqualTo(2));
+        });
+    }
+
+    [Test]
+    public static void ScalarStackArgumentConsumesItsSourceWithoutTemporaries()
+    {
+        WithAllocator((compiler, allocator) =>
+        {
+            var source = compiler.gtNewIconNode(TYP_LONG, 17);
+            ReferenceBuildLocation(allocator) = 2;
+            var sourceDefinition = BuildDef(allocator, source, SRBM_NONE, 0);
+            var argument = new GenTreePutArgStk(TYP_VOID, source, null, 0, TARGET_POINTER_SIZE, false);
+            ReferenceBuildLocation(allocator) = 4;
+
+            Assert.That(BuildNode(allocator, argument), Is.EqualTo(1));
+            Assert.That(sourceDefinition.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
+            Assert.That(InternalDefinitions(allocator, argument), Is.Empty);
+        });
+    }
+
     private static System.Collections.Generic.List<RefPosition> InternalDefinitions(
         LinearScan allocator, GenTree tree)
         => allocator.refPositions.FindAll(reference =>
@@ -156,11 +369,19 @@ internal static unsafe class LinearScanRiscVNodeBuildingTests
             reference.refType is RefType.RefTypeDef &&
             reference.getInterval().isInternal);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildBlockStore")]
-    private static extern int BuildBlockStore(LinearScan allocator, GenTreeBlk block);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildNode")]
+    private static extern int BuildNode(LinearScan allocator, GenTree tree);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildCast")]
-    private static extern int BuildCast(LinearScan allocator, GenTreeCast cast);
+#if FEATURE_SIMD
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildSIMD")]
+    private static extern int BuildSIMD(LinearScan allocator, GenTreeSIMD simdTree);
+#endif
+
+#if FEATURE_HW_INTRINSICS
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildHWIntrinsic")]
+    private static extern int BuildHWIntrinsic(
+        LinearScan allocator, GenTreeHWIntrinsic intrinsicTree, out int destinationCount);
+#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildDef")]
     private static extern RefPosition BuildDef(LinearScan allocator, GenTree tree, regMask candidates, int multiRegIndex);
@@ -178,6 +399,7 @@ internal static unsafe class LinearScanRiscVNodeBuildingTests
 #endif
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        compiler.info.compRetBuffArg = BAD_VAR_NUM;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(true);
@@ -188,6 +410,7 @@ internal static unsafe class LinearScanRiscVNodeBuildingTests
         codeGen.IsFramePointerRequired = false;
         codeGen.IsFramePointerUsed = false;
         codeGen.IsFrameRequired = false;
+        codeGen.RegSet.rsClearRegsModified();
         try
         {
             var allocator = new LinearScan(compiler);

@@ -157,6 +157,48 @@ public sealed partial class LinearScan
         }
 
         return sourceCount;
+#elif TARGET_RISCV64
+        assert(indirection.Type is not TYP_STRUCT);
+
+        var address = indirection.Addr;
+        if (address.IsContained)
+        {
+            if (address.Oper is GT_CNS_INT)
+            {
+                var constant = address.AsIntConCommon();
+                var needsRelocation = constant.FitsInAddrBase(_compiler) && constant.AddrNeedsReloc(_compiler);
+                if (needsRelocation || !Emitter.isValidSimm12(indirection.Offset))
+                {
+                    var needsTemporary = indirection.Oper is GT_STOREIND or GT_NULLCHECK ||
+                        varTypeIsFloating(indirection.Type);
+                    if (needsTemporary)
+                    {
+                        _ = buildInternalIntRegisterDefForNode(indirection);
+                    }
+                }
+            }
+            else if (!Emitter.isValidSimm12(indirection.Offset))
+            {
+                _ = buildInternalIntRegisterDefForNode(indirection);
+            }
+        }
+
+#if FEATURE_SIMD
+        if (indirection.Type is TYP_SIMD12)
+        {
+            assert(!address.IsContained);
+            _ = buildInternalIntRegisterDefForNode(indirection);
+        }
+#endif
+
+        var sourceCount = buildIndirUses(indirection, SRBM_NONE);
+        buildInternalRegisterUses();
+        if (indirection.Oper is not (GT_STOREIND or GT_NULLCHECK))
+        {
+            _ = buildDef(indirection, SRBM_NONE);
+        }
+
+        return sourceCount;
 #else
         NYI("LinearScan.buildIndir outside xarch and ARM64");
         throw new FatalJitException("LinearScan.buildIndir outside xarch and ARM64.");

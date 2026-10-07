@@ -19,7 +19,7 @@ public partial class Globals
     internal static void SortNative<T, TLess>(Span<T> values, TLess less)
         where TLess : struct, INativeLess<T>
     {
-        assert(values.Length < int.MaxValue);
+        assert(values.Length == 0 || (values.Length - 1) < int.MaxValue);
         if (values.IsEmpty)
         {
             return;

@@ -124,10 +124,12 @@ internal static unsafe class WasmEhFlowTests
 
     private static void WithCompiler(Action<Compiler> action)
     {
+#if DEBUG
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         ICorJitInfo ee = new() { lpVtbl = &vtable };
         using var tls = new JitTls(&ee);
+#endif
         var previous = JitTls.Compiler;
 #if DEBUG
         var previousConfig = JitConfig;
@@ -141,7 +143,9 @@ internal static unsafe class WasmEhFlowTests
             flags.Set(JitFlags.JIT_FLAG_ALT_JIT);
             compiler.opts.jitFlags = &flags;
             compiler.opts.SetMinOpts(false);
+#if DEBUG
             compiler.info.compFullName = nameof(WasmEhFlowTests);
+#endif
             compiler.fgNodeThreading = NodeThreading.LIR;
             compiler.fgPredsComputed = true;
             compiler.fgImportDone = true;

@@ -367,32 +367,6 @@ internal static unsafe class HWIntrinsicDispatchTests
     }
 
     [Test]
-    public static void ScalarInputVariantSelectionReachesItsTypedDependencyBeforeImmediateDiscovery()
-    {
-        WithImporter(compiler => {
-            var mask = new GenTreeLclVar(TYP_SIMD16, 1);
-            var scalar = new GenTreeLclVar(TYP_INT, 0);
-            var vector = new GenTreeLclVar(TYP_SIMD16, 1);
-            Push(compiler, mask, scalar, vector);
-            CORINFO_SIG_INFO sig = new() {
-                args = (CORINFO_ARG_LIST_STRUCT_*)1, numArgs = 3, retType = CORINFO_TYPE_INT
-            };
-
-            var exception = Assert.Throws<FatalJitException>(() =>
-                Import(compiler, NI_Sve_ConditionalExtractLastActiveElement, in sig));
-
-            Assert.That(exception, Is.TypeOf<FatalJitException>()
-                .With.Property(nameof(FatalJitException.Result)).EqualTo(CorJitResult.CORJIT_SKIPPED)
-                .And.Property(nameof(Exception.Message))
-                .EqualTo("Hardware-intrinsic scalar-input variant selection is not ported."));
-            Assert.That(compiler.impStackHeight, Is.EqualTo(3));
-            Assert.That(compiler.impStackTop().val, Is.SameAs(vector));
-            Assert.That(s_argumentQueries, Is.Empty);
-            Assert.That(compiler.compFloatingPointUsed, Is.False);
-        });
-    }
-
-    [Test]
     public static void NextCallRetAddrReturnsBeforeTargetMetadataOrOperands()
     {
         WithImporter(compiler => {

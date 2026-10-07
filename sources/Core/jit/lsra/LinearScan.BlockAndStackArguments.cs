@@ -354,8 +354,10 @@ public sealed partial class LinearScan
         buildInternalRegisterUses();
         buildKills(block, getKillSetForBlockStore(block));
         return useCount;
-#elif TARGET_RISCV64
+#elif TARGET_RISCV64 || TARGET_LOONGARCH64
+#if TARGET_RISCV64
         assert(block.Oper.IsStoreBlk);
+#endif
 
         var destinationAddress = block.Addr;
         var source = block.Data;
@@ -404,7 +406,12 @@ public sealed partial class LinearScan
 
                 default:
                 {
+#if TARGET_LOONGARCH64
+                    unreached();
+#else
                     throw new FatalJitException($"Unsupported RISC-V initialization block kind {block._kind}.");
+#endif
+                    break;
                 }
             }
         }
@@ -426,7 +433,12 @@ public sealed partial class LinearScan
 
                 default:
                 {
+#if TARGET_LOONGARCH64
+                    unreached();
+#else
                     throw new FatalJitException($"Unsupported RISC-V copy block kind {block._kind}.");
+#endif
+                    break;
                 }
             }
         }
@@ -664,7 +676,7 @@ public sealed partial class LinearScan
 
         buildInternalRegisterUses();
         return sourceCount;
-#elif TARGET_RISCV64
+#elif TARGET_RISCV64 || TARGET_LOONGARCH64
         assert(argument.Oper.IsPutArgStk);
 
         var source = argument.Op1;
