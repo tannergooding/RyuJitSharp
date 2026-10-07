@@ -75,6 +75,40 @@ public sealed partial class CodeGen
         {
             initRegZeroed = false;
         }
+#elif TARGET_RISCV64
+        assert(Emitter.emitGeneratingPrologOrFuncletProlog());
+        if (!_compiler.compIsProfilerHookNeeded)
+        {
+            return;
+        }
+
+        var instruction = _compiler.compProfilerMethHndIndirected ? INS_ld : INS_addi;
+        Emitter.emitIns_R_R_Addr(
+            instruction,
+            EA_PTRSIZE,
+            REG_PROFILER_ENTER_ARG_FUNC_ID,
+            REG_PROFILER_ENTER_ARG_FUNC_ID,
+            _compiler.compProfilerMethHnd);
+
+        var callerSPOffset = unchecked(-(nint)_compiler.lvaToCallerSPRelativeOffset(0, IsFramePointerUsed));
+        genInstrWithConstant(
+            INS_addi,
+            EA_PTRSIZE,
+            REG_PROFILER_ENTER_ARG_CALLER_SP,
+            genFramePointerReg(),
+            callerSPOffset,
+            REG_PROFILER_ENTER_ARG_CALLER_SP);
+
+        genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER, 0, EA_UNKNOWN);
+
+        var profilerClobberMask = new regMaskTP(
+            SRBM_PROFILER_ENTER_TRASH |
+            SRBM_PROFILER_ENTER_ARG_FUNC_ID |
+            SRBM_PROFILER_ENTER_ARG_CALLER_SP);
+        if ((profilerClobberMask & genRegMask(initReg)).IsNonEmpty)
+        {
+            initRegZeroed = false;
+        }
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Profiler enter callbacks require xarch.");
 #else

@@ -118,6 +118,37 @@ public sealed partial class CodeGen
         }
 #elif TARGET_WASM
         // Wasm omits the matching profiling-entry hook in its prolog.
+#elif TARGET_RISCV64
+        assert(helper is CORINFO_HELP_PROF_FCN_LEAVE or CORINFO_HELP_PROF_FCN_TAILCALL);
+        if (!_compiler.compIsProfilerHookNeeded)
+        {
+            return;
+        }
+
+        _compiler.info.compProfilerCallback = true;
+
+        var instruction = _compiler.compProfilerMethHndIndirected ? INS_ld : INS_addi;
+        Emitter.emitIns_R_R_Addr(
+            instruction,
+            EA_PTRSIZE,
+            REG_PROFILER_LEAVE_ARG_FUNC_ID,
+            REG_PROFILER_LEAVE_ARG_FUNC_ID,
+            _compiler.compProfilerMethHnd);
+
+        GCInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_PROFILER_LEAVE_ARG_FUNC_ID));
+
+        var callerSPOffset = unchecked(-(nint)_compiler.lvaToCallerSPRelativeOffset(0, IsFramePointerUsed));
+        genInstrWithConstant(
+            INS_addi,
+            EA_PTRSIZE,
+            REG_PROFILER_LEAVE_ARG_CALLER_SP,
+            genFramePointerReg(),
+            callerSPOffset,
+            REG_PROFILER_LEAVE_ARG_CALLER_SP);
+
+        GCInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_PROFILER_LEAVE_ARG_CALLER_SP));
+
+        genEmitHelperCall(helper, 0, EA_UNKNOWN);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Profiler leave callbacks require xarch.");
 #else

@@ -6,10 +6,12 @@
 #if TARGET_RISCV64
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.CorInfoHelpFunc;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.GenTreeBlk;
 using static RyuJitSharp.GenTreeFlags;
@@ -359,6 +361,123 @@ internal static unsafe class RiscVCodeGenPortTests
             });
         });
     }
+
+#if PROFILING_SUPPORTED
+    [Test]
+    public static void UnhookedProfilerCallbacksDoNotRecordInstructions()
+    {
+        WithProfilerCallbacks((compiler, codeGen) =>
+        {
+            var initRegZeroed = true;
+            codeGen.genProfilingEnterCallback(REG_T0, ref initRegZeroed);
+            codeGen.genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_LEAVE);
+
+            Assert.That(CurrentInstructionBuffer(codeGen.Emitter), Is.Empty);
+            Assert.That(initRegZeroed, Is.True);
+            Assert.That(compiler.info.compProfilerCallback, Is.False);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void HookedProfilerEntryPreparesArgumentsBeforeTheCallBoundary(bool indirect)
+    {
+        WithProfilerCallbacks((compiler, codeGen) =>
+        {
+            ProfilerHookNeeded(compiler) = true;
+            compiler.compProfilerMethHndIndirected = indirect;
+            compiler.compProfilerMethHnd = (void*)0x12345678;
+            var initRegZeroed = true;
+
+            var failure = CaptureFatalJitException(
+                () => codeGen.genProfilingEnterCallback(REG_T0, ref initRegZeroed));
+
+            AssertProfilerCallbackBoundary(failure);
+            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            Assert.That(descriptors.Any(descriptor => descriptor.idReg1() == REG_T0), Is.True);
+#if !DEBUG
+            Assert.That(descriptors.Any(descriptor => descriptor.idReg1() == REG_T1), Is.True);
+#endif
+            Assert.That(initRegZeroed, Is.True);
+        });
+    }
+
+    [TestCase(CORINFO_HELP_PROF_FCN_LEAVE)]
+    [TestCase(CORINFO_HELP_PROF_FCN_TAILCALL)]
+    public static void HookedProfilerLeavePreparesAndUntracksArgumentsBeforeTheCallBoundary(CorInfoHelpFunc helper)
+    {
+        WithProfilerCallbacks((compiler, codeGen) =>
+        {
+            ProfilerHookNeeded(compiler) = true;
+            compiler.compProfilerMethHnd = (void*)0x12345678;
+            codeGen.GCInfo.gcRegGCrefSetCur = new regMaskTP(SRBM_T0 | SRBM_T1);
+            codeGen.GCInfo.gcRegByrefSetCur = new regMaskTP(SRBM_T0 | SRBM_T1);
+
+            var failure = CaptureFatalJitException(() => codeGen.genProfilingLeaveCallback(helper));
+
+            AssertProfilerCallbackBoundary(failure);
+            Assert.That(compiler.info.compProfilerCallback, Is.True);
+#if DEBUG
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(new regMaskTP(SRBM_T0 | SRBM_T1)));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(new regMaskTP(SRBM_T0 | SRBM_T1)));
+#else
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_NONE));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(RBM_NONE));
+#endif
+            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            Assert.That(descriptors.Any(descriptor => descriptor.idReg1() == REG_T0), Is.True);
+#if !DEBUG
+            Assert.That(descriptors.Any(descriptor => descriptor.idReg1() == REG_T1), Is.True);
+#endif
+        });
+    }
+#endif
+
+#if !DEBUG
+    [TestCase(-2048, true, INS_addi)]
+    [TestCase(2047, true, INS_addi)]
+    [TestCase(-2049, false, INS_add)]
+    [TestCase(2048, false, INS_add)]
+    public static void FrameInstructionWithConstantUsesTheSignedImmediateBoundary(
+        int immediate,
+        bool expectedImmediateFit,
+        instruction expectedFinalInstruction)
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var immediateFits = GenInstrWithConstant(
+                codeGen, INS_addi, EA_PTRSIZE, REG_T0, REG_FP, immediate, REG_T2, false);
+
+            Assert.That(immediateFits, Is.EqualTo(expectedImmediateFit));
+            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            Assert.That(descriptors[^1].idIns(), Is.EqualTo(expectedFinalInstruction));
+            Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_T0));
+            Assert.That(descriptors[^1].idCodeSize(), Is.EqualTo(4u));
+        });
+    }
+
+    [Test]
+    public static void LargeFrameMemoryOperandUsesTemporaryBaseRegister()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var immediateFits = GenInstrWithConstant(
+                codeGen, INS_sd, EA_PTRSIZE, REG_A0, REG_SP, 2048, REG_T2, false);
+
+            Assert.That(immediateFits, Is.False);
+            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            Assert.That(descriptors[^2].idIns(), Is.EqualTo(INS_add));
+            Assert.That(descriptors[^2].idReg1(), Is.EqualTo(REG_T2));
+            Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_sd));
+            Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_A0));
+            Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_T2));
+        });
+    }
+#endif
 
     [TestCase(EA_PTRSIZE, REG_A0, REG_A1, INS_mov, 0x00058513u, false)]
     [TestCase(EA_4BYTE, REG_A0, REG_A1, INS_sext_w, 0x0005851Bu, false)]
@@ -2021,6 +2140,18 @@ internal static unsafe class RiscVCodeGenPortTests
         }
     }
 
+#if PROFILING_SUPPORTED
+    private static void AssertProfilerCallbackBoundary(FatalJitException? failure)
+    {
+        Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+#if DEBUG
+        Assert.That(failure?.Message, Does.Contain(RiscVRecorderDebugBoundary));
+#else
+        Assert.That(failure?.Message, Does.Contain("Target call instruction recording is not implemented."));
+#endif
+    }
+#endif
+
     private static void AssertRiscVInstructionBoundary(
         CodeGen codeGen,
         FatalJitException? failure,
@@ -2106,6 +2237,42 @@ internal static unsafe class RiscVCodeGenPortTests
             action(compiler, codeGen);
         });
     }
+
+#if PROFILING_SUPPORTED
+    private static void WithProfilerCallbacks(Action<Compiler, CodeGen> action)
+    {
+        WithProlog((compiler, codeGen) =>
+        {
+            compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
+            compiler.info.compMatchedVM = false;
+            codeGen.GCInfo.gcVarPtrSetCur = [0];
+            codeGen.GCInfo.gcRegGCrefSetCur = default;
+            codeGen.GCInfo.gcRegByrefSetCur = default;
+            codeGen.resetFramePointerUsedWritePhase();
+            codeGen.IsFramePointerUsed = true;
+            compiler.compLclFrameSize = 64;
+            compiler.compCalleeRegsPushed = 2;
+
+            action(compiler, codeGen);
+        });
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compProfilerHookNeeded")]
+    private static extern ref bool ProfilerHookNeeded(Compiler compiler);
+#endif
+
+#if !DEBUG
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genInstrWithConstant")]
+    private static extern bool GenInstrWithConstant(
+        CodeGen codeGen,
+        instruction ins,
+        emitAttr attr,
+        regNumber reg1,
+        regNumber reg2,
+        nint immediate,
+        regNumber tempReg,
+        bool inUnwindRegion);
+#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
