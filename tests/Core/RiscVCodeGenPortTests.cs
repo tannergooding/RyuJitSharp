@@ -251,6 +251,49 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [TestCase(INS_addi, REG_A0, REG_A0)]
+    [TestCase(INS_ld, REG_A1, REG_A1)]
+    [TestCase(INS_sd, REG_A0, REG_A1)]
+    [TestCase(INS_fld, REG_FA0, REG_A1)]
+    public static void RelocatableAddressInstructionRecordsTwoWordDescriptor(
+        instruction ins,
+        regNumber dataReg,
+        regNumber addrReg)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.opts.compReloc = true;
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+            const nint address = 0x12345678;
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+
+            var failure = CaptureFatalJitException(
+                () => emitter.emitIns_R_AI(ins, EA_PTR_DSP_RELOC, dataReg, addrReg, address));
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+            var descriptor = instructionBuffer[^1];
+            Assert.That(descriptor.idIns(), Is.EqualTo(ins));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(dataReg));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(addrReg));
+            Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_RELOC));
+            Assert.That(descriptor.idCodeSize(), Is.EqualTo(8u));
+            Assert.That(descriptor.idIsDspReloc(), Is.True);
+            Assert.That(descriptor.idIsCnsReloc(), Is.False);
+            Assert.That((nint)descriptor.idAddr().iiaAddr, Is.EqualTo(address));
+            Assert.That(CurrentInstructionGroupSize(emitter),
+                Is.EqualTo(initialGroupSize + (failure is null ? 8 : 0)));
+        });
+    }
+
     [Test]
     public static void RegisterAddressInstructionPreservesUnportedBoundary()
     {
@@ -423,16 +466,36 @@ internal static unsafe class RiscVCodeGenPortTests
     }
 
     [Test]
-    public static void RelocatableImmediateUsesRiscVRelocationRecordingBoundary()
+    public static void RelocatableImmediateGenerationRecordsRiscVDescriptor()
     {
-        WithCodeGen((_, codeGen) =>
+        WithCodeGen((compiler, codeGen) =>
         {
-            var failure = Assert.Throws<FatalJitException>(
-                () => codeGen.instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, REG_A0, 42));
+            compiler.opts.compReloc = true;
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
 
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message,
-                Does.Contain("RISC-V64 relocated-address load recording is not ported."));
+            var failure = CaptureFatalJitException(
+                () => codeGen.instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, REG_A0, 42));
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+            var descriptor = instructionBuffer[^1];
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_addi));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_A0));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_A0));
+            Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_RELOC));
+            Assert.That(descriptor.idCodeSize(), Is.EqualTo(8u));
+            Assert.That((nint)descriptor.idAddr().iiaAddr, Is.EqualTo((nint)42));
+            Assert.That(CurrentInstructionGroupSize(emitter),
+                Is.EqualTo(initialGroupSize + (failure is null ? 8 : 0)));
         });
     }
 
@@ -691,20 +754,42 @@ internal static unsafe class RiscVCodeGenPortTests
     }
 
     [Test]
-    public static void GSSecurityCookieInitializationPreservesRelocatedAddressBoundary()
+    public static void GSSecurityCookieInitializationRecordsRelocatedLoadBeforeStoreBoundary()
     {
         WithProlog((compiler, codeGen) =>
         {
+            compiler.opts.compReloc = true;
             compiler.compNeedsGSSecurityCookie = true;
             compiler.gsGlobalSecurityCookieAddr = (nint*)0x12345678;
             var zeroed = true;
 
-            var failure = Assert.Throws<FatalJitException>(() =>
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+            var failure = CaptureFatalJitException(() =>
                 codeGen.genSetGSSecurityCookie(REG_A0, ref zeroed));
 
+#if DEBUG
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Does.Contain(RiscVRecorderDebugBoundary));
+            Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount + 1));
+            Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize));
+#else
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
             Assert.That(failure?.Message,
-                Does.Contain("RISC-V64 relocated-address load recording is not ported."));
+                Does.Contain("Target local-stack store recording is not implemented."));
+            Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount + 1));
+            Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize + 8));
+#endif
+            var descriptor = instructionBuffer[^1];
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_ld));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_A0));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_A0));
+            Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_RELOC));
+            Assert.That(descriptor.idCodeSize(), Is.EqualTo(8u));
+            Assert.That((nint)descriptor.idAddr().iiaAddr, Is.EqualTo((nint)compiler.gsGlobalSecurityCookieAddr));
             Assert.That(zeroed, Is.True);
         });
     }

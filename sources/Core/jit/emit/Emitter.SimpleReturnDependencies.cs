@@ -23,14 +23,32 @@ public partial class Emitter
     }
 
 #if TARGET_RISCV64
-    public void emitIns_R_AI(
+    public unsafe void emitIns_R_AI(
         instruction ins,
         emitAttr attr,
-        regNumber reg1,
-        regNumber reg2,
+        regNumber dataReg,
+        regNumber addrReg,
         nint disp)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 relocated-address load recording is not ported.");
+        var compiler = _compiler ?? throw new FatalJitException("Relocated-address instruction recording requires an active compiler.");
+
+        assert(EA_IS_RELOC(attr));
+        assert(compiler.opts.compReloc ||
+            (compiler.eeGetRelocTypeHint((void*)disp) is CorInfoReloc.RELATIVE32));
+        assert(ins is INS_addi || emitInsIsLoadOrStore(ins));
+        assert(emitInsIsStore(ins) || isFloatReg(dataReg) || (dataReg is REG_ZERO) || (dataReg == addrReg));
+        assert(isGeneralRegister(addrReg));
+
+        var id = emitNewInstr(attr);
+        id.idIns(ins);
+        id.idReg1(dataReg);
+        id.idReg2(addrReg);
+        id.idInsOpt(INS_OPTS_RELOC);
+        id.idAddr().iiaAddr = (byte*)disp;
+        id.idCodeSize(8);
+
+        dispIns(id);
+        appendToCurIG(id);
     }
 
     public void emitIns_J_cond_la(instruction ins, BasicBlock target, regNumber reg)

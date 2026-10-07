@@ -561,9 +561,9 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 #endif
 
 #if TARGET_RISCV64
-    [TestCase(true, "RISC-V64 relocated-address load recording is not ported.")]
-    [TestCase(false, "RISC-V64 helper-address load recording is not ported.")]
-    public static void IndirectHelperLookupPreservesRiscVAddressBoundaries(bool useRelocation, string expectedBoundary)
+    [TestCase(true)]
+    [TestCase(false)]
+    public static void IndirectHelperLookupPreservesRiscVAddressBoundaries(bool useRelocation)
     {
         WithCodeGen((compiler, codeGen) =>
         {
@@ -577,11 +577,42 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             compiler.info.compCompHnd = &context.JitInfo;
             compiler.info.compMatchedVM = true;
             compiler.opts.compReloc = useRelocation;
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
 
-            var failure = Assert.Throws<FatalJitException>(() =>
+            var failure = CaptureFatalJitException(() =>
                 codeGen.genEmitHelperCall(CORINFO_HELP_ASSIGN_REF, 0, EA_PTRSIZE));
 
-            Assert.That(failure?.Message, Does.Contain(expectedBoundary));
+            if (useRelocation)
+            {
+#if DEBUG
+                Assert.That(failure?.Message, Does.Contain(RiscVRecorderDebugBoundary));
+                Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount + 1));
+                Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize));
+#else
+                Assert.That(failure?.Message,
+                    Does.Contain("Target call instruction recording is not implemented."));
+                Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount + 1));
+                Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize + 8));
+#endif
+                var descriptor = instructionBuffer[^1];
+                Assert.That(descriptor.idIns(), Is.EqualTo(INS_ld));
+                Assert.That(descriptor.idReg1(), Is.EqualTo(REG_DEFAULT_HELPER_CALL_TARGET));
+                Assert.That(descriptor.idReg2(), Is.EqualTo(REG_DEFAULT_HELPER_CALL_TARGET));
+                Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_RELOC));
+                Assert.That(descriptor.idCodeSize(), Is.EqualTo(8u));
+                Assert.That((nint)descriptor.idAddr().iiaAddr, Is.EqualTo((nint)context.Address));
+            }
+            else
+            {
+                Assert.That(failure?.Message,
+                    Does.Contain("RISC-V64 helper-address load recording is not ported."));
+                Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount));
+                Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize));
+            }
         });
     }
 
