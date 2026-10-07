@@ -1111,6 +1111,297 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [TestCase(GT_ADD, INS_addi, 17, false, 17)]
+    [TestCase(GT_ADD, INS_addi, 17, true, 17)]
+    [TestCase(GT_SUB, INS_sub, 17, false, -17)]
+    public static void TernaryImmediateRecordingPreservesOperandAndSubtractionSelection(
+        genTreeOps oper,
+        instruction ins,
+        long immediate,
+        bool constantFirst,
+        int expectedImmediate)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var register = new GenTreePhysReg(REG_A0, TYP_LONG) { RegNum = REG_A0 };
+            var constant = compiler.gtNewIconNode(TYP_LONG, unchecked((nint)immediate));
+            constant.IsContained = true;
+
+            GenTree src1 = constantFirst ? constant : register;
+            GenTree src2 = constantFirst ? register : constant;
+            var dst = new GenTreeOp(oper, TYP_LONG, src1, src2) { RegNum = REG_A1 };
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+            var result = REG_NA;
+
+            var failure = CaptureFatalJitException(
+                () => result = emitter.emitInsTernary(ins, EA_8BYTE, dst, src1, src2));
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+            var emitted = instructionBuffer.GetRange(initialInstructionCount,
+                instructionBuffer.Count - initialInstructionCount);
+            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()), Is.EqualTo([INS_addi]));
+            Assert.That(emitted[0].idSmallCns(), Is.EqualTo(expectedImmediate));
+
+            if (failure is null)
+            {
+                Assert.That(result, Is.EqualTo(REG_A1));
+            }
+        });
+    }
+
+    [TestCase(GT_ADD, INS_add)]
+    [TestCase(GT_SUB, INS_sub)]
+    [TestCase(GT_MUL, INS_mul)]
+    public static void TernaryRegisterRecordingPreservesRiscVInstructionSelection(genTreeOps oper, instruction ins)
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var src1 = new GenTreePhysReg(REG_A0, TYP_LONG) { RegNum = REG_A0 };
+            var src2 = new GenTreePhysReg(REG_A1, TYP_LONG) { RegNum = REG_A1 };
+            var dst = new GenTreeOp(oper, TYP_LONG, src1, src2) { RegNum = REG_A2 };
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+            var result = REG_NA;
+
+            var failure = CaptureFatalJitException(
+                () => result = emitter.emitInsTernary(ins, EA_8BYTE, dst, src1, src2));
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+            var emitted = instructionBuffer.GetRange(initialInstructionCount,
+                instructionBuffer.Count - initialInstructionCount);
+            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()), Is.EqualTo([ins]));
+
+            if (failure is null)
+            {
+                Assert.That(result, Is.EqualTo(REG_A2));
+            }
+        });
+    }
+
+    [Test]
+    public static void TernaryFloatingPointRecordingUsesThreeRegisterInstruction()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var src1 = new GenTreePhysReg(REG_FA0, TYP_FLOAT) { RegNum = REG_FA0 };
+            var src2 = new GenTreePhysReg(REG_FA1, TYP_FLOAT) { RegNum = REG_FA1 };
+            var dst = new GenTreeOp(GT_ADD, TYP_FLOAT, src1, src2) { RegNum = REG_FA2 };
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+            var result = REG_NA;
+
+            var failure = CaptureFatalJitException(
+                () => result = emitter.emitInsTernary(INS_fadd_s, EA_4BYTE, dst, src1, src2));
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+            var emitted = instructionBuffer.GetRange(initialInstructionCount,
+                instructionBuffer.Count - initialInstructionCount);
+            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()), Is.EqualTo([INS_fadd_s]));
+
+            if (failure is null)
+            {
+                Assert.That(result, Is.EqualTo(REG_FA2));
+            }
+        });
+    }
+
+    [Test]
+    public static void TernaryUnsignedWideAddZeroExtendsIntOperands()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var src1 = new GenTreePhysReg(REG_A0, TYP_INT) { RegNum = REG_A0 };
+            var src2 = new GenTreePhysReg(REG_A1, TYP_INT) { RegNum = REG_A1 };
+            var dst = new GenTreeOp(GT_ADD, TYP_LONG, src1, src2)
+            {
+                RegNum = REG_A2,
+                Flags = GTF_UNSIGNED,
+            };
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+
+            var failure = CaptureFatalJitException(
+                () => emitter.emitInsTernary(INS_add, EA_8BYTE, dst, src1, src2));
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+            var emitted = instructionBuffer.GetRange(initialInstructionCount,
+                instructionBuffer.Count - initialInstructionCount);
+#if DEBUG
+            Assert.That(emitted[0].idIns(), Is.EqualTo(INS_slli));
+#else
+            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
+                Is.EqualTo([INS_slli, INS_srli, INS_slli, INS_srli, INS_add]));
+#endif
+        });
+    }
+
+    [Test]
+    public static void TernaryOverflowAddPreservesSignedOverflowCheckSequence()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var src1 = new GenTreePhysReg(REG_A0, TYP_LONG) { RegNum = REG_A0 };
+            var src2 = new GenTreePhysReg(REG_A1, TYP_LONG) { RegNum = REG_A1 };
+            var dst = new GenTreeOp(GT_ADD, TYP_LONG, src1, src2)
+            {
+                RegNum = REG_A2,
+                Flags = GTF_OVERFLOW,
+            };
+            codeGen.InternalRegisters.Add(dst,
+                regMaskTP.CreateFromRegNum(REG_A3, REG_A3.SingleTypeMask) |
+                regMaskTP.CreateFromRegNum(REG_A4, REG_A4.SingleTypeMask));
+
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+
+            var failure = CaptureFatalJitException(
+                () => emitter.emitInsTernary(INS_add, EA_8BYTE, dst, src1, src2));
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = "Target conditional-branch recording is not implemented.";
+#endif
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+            var emitted = instructionBuffer.GetRange(initialInstructionCount,
+                instructionBuffer.Count - initialInstructionCount);
+#if DEBUG
+            Assert.That(emitted[0].idIns(), Is.EqualTo(INS_add));
+#else
+            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
+                Is.EqualTo([INS_add, INS_slt, INS_slti]));
+#endif
+        });
+    }
+
+    [Test]
+    public static void TernaryBitwiseIntResultPreservesRegisterExtensionBoundary()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var src1 = new GenTreePhysReg(REG_A0, TYP_INT) { RegNum = REG_A0 };
+            var src2 = new GenTreePhysReg(REG_A1, TYP_INT) { RegNum = REG_A1 };
+            var dst = new GenTreeOp(GT_AND, TYP_INT, src1, src2) { RegNum = REG_A2 };
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+
+            var failure = CaptureFatalJitException(
+                () => emitter.emitInsTernary(INS_and, EA_4BYTE, dst, src1, src2));
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = "Target two-register instruction recording is not implemented.";
+#endif
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+            var emitted = instructionBuffer.GetRange(initialInstructionCount,
+                instructionBuffer.Count - initialInstructionCount);
+            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()), Is.EqualTo([INS_and]));
+        });
+    }
+
+    [TestCase(TYP_LONG, EA_8BYTE, false, INS_mul)]
+    [TestCase(TYP_INT, EA_4BYTE, true, INS_mulw)]
+    public static void TernaryOverflowMultiplyPreservesHighPartAndThrowBoundary(
+        var_types type,
+        emitAttr attr,
+        bool isUnsigned,
+        instruction ins)
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var src1 = new GenTreePhysReg(REG_A0, type) { RegNum = REG_A0 };
+            var src2 = new GenTreePhysReg(REG_A1, type) { RegNum = REG_A1 };
+            var dst = new GenTreeOp(GT_MUL, type, src1, src2)
+            {
+                RegNum = REG_A2,
+                Flags = GTF_OVERFLOW | (isUnsigned ? GTF_UNSIGNED : GTF_EMPTY),
+            };
+
+            var internalRegisters = regMaskTP.CreateFromRegNum(REG_A3, REG_A3.SingleTypeMask);
+            if (!isUnsigned)
+            {
+                internalRegisters |= regMaskTP.CreateFromRegNum(REG_A4, REG_A4.SingleTypeMask);
+            }
+
+            codeGen.InternalRegisters.Add(dst, internalRegisters);
+
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+            var result = REG_NA;
+
+            var failure = CaptureFatalJitException(
+                () => result = emitter.emitInsTernary(ins, attr, dst, src1, src2));
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = "Target conditional-branch recording is not implemented.";
+#endif
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+            var emitted = instructionBuffer.GetRange(initialInstructionCount,
+                instructionBuffer.Count - initialInstructionCount);
+#if DEBUG
+            Assert.That(emitted[0].idIns(), Is.EqualTo(isUnsigned ? INS_slli : INS_mulh));
+#else
+            instruction[] expectedInstructions = isUnsigned
+                ? [INS_slli, INS_slli, INS_mulhu, INS_srai, INS_mulw]
+                : [INS_mulh, INS_mul, INS_srai];
+            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()), Is.EqualTo(expectedInstructions));
+#endif
+            Assert.That(failure?.Message, Does.Contain(expectedBoundary));
+        });
+    }
+
     [Test]
     public static void IntegerCastOverflowDispatchPreservesRiscVTwoRegisterRecordingBoundary()
     {
