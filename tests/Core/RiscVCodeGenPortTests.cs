@@ -39,6 +39,34 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [TestCase(TYP_INT, TYP_LONG, "Target two-register instruction recording is not implemented.")]
+    [TestCase(TYP_LONG, TYP_INT, "Target two-register instruction recording is not implemented.")]
+    [TestCase(TYP_LONG, TYP_LONG, "Target conditional-branch recording is not implemented.")]
+    public static void RangeCheckPreservesRiscVInstructionRecordingBoundary(
+        var_types indexType,
+        var_types lengthType,
+        string expectedBoundary)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.opts.compDbgCode = true;
+
+            var index = new GenTreePhysReg(REG_A0, indexType) { RegNum = REG_A0 };
+            var length = new GenTreePhysReg(REG_A1, lengthType) { RegNum = REG_A1 };
+            var boundsCheck = new GenTreeBoundsChk(index, length, SpecialCodeKind.SCK_RNGCHK_FAIL);
+            if ((indexType is TYP_INT) || (lengthType is TYP_INT))
+            {
+                codeGen.InternalRegisters.Add(
+                    boundsCheck, regMaskTP.CreateFromRegNum(REG_A2, REG_A2.SingleTypeMask));
+            }
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genRangeCheck(boundsCheck));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Does.Contain(expectedBoundary));
+        });
+    }
+
     [Test]
     public static void CalleeSavedRestorePreservesXarchOnlyEmitterBoundary()
     {
