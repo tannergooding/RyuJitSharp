@@ -116,7 +116,7 @@ public sealed partial class CodeGen
 #if !TARGET_XARCH && !TARGET_WASM
     public void inst_JMP(emitJumpKind jump, BasicBlock target, bool isRemovableJmpCandidate = false)
     {
-#if TARGET_ARM || TARGET_ARM64
+#if TARGET_ARM || TARGET_ARM64 || TARGET_RISCV64
 #if !FEATURE_FIXED_OUT_ARGS
         assert((target.bbTgtStkDepth * sizeof(int) == genStackLevel) || IsFramePointerUsed);
 #endif

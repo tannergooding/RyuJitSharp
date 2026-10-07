@@ -18,6 +18,7 @@ using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.insOpts;
 using static RyuJitSharp.BarrierKind;
+using static RyuJitSharp.emitJumpKind;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
@@ -298,6 +299,36 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_fence));
             Assert.That(descriptor.idAddr().iiaInstrEncode, Is.EqualTo(expectedCode));
             Assert.That(descriptor.idCodeSize(), Is.EqualTo(4u));
+        });
+    }
+
+    [TestCase(EJ_jmp, INS_j)]
+    [TestCase(EJ_eq, INS_beq)]
+    [TestCase(EJ_ne, INS_bne)]
+    public static void JumpKindMapsToItsRiscVInstruction(emitJumpKind jumpKind, instruction expectedInstruction)
+    {
+        Assert.That(Emitter.emitJumpKindToIns(jumpKind), Is.EqualTo(expectedInstruction));
+    }
+
+    [TestCase(EJ_jmp, EJ_jmp)]
+    [TestCase(EJ_eq, EJ_ne)]
+    [TestCase(EJ_ne, EJ_eq)]
+    public static void JumpKindMapsToItsRiscVReverse(emitJumpKind jumpKind, emitJumpKind expectedReverse)
+    {
+        Assert.That(Emitter.emitReverseJumpKind(jumpKind), Is.EqualTo(expectedReverse));
+    }
+
+    [Test]
+    public static void JumpGenerationReachesTheRiscVEmitterBoundary()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var target = new BasicBlock(null, null);
+            var failure = CaptureFatalJitException(
+                () => codeGen.inst_JMP(EJ_jmp, target));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Does.Contain("Label jump instruction recording requires xarch."));
         });
     }
 

@@ -9,7 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_RISCV64
     private static ReadOnlySpan<instruction> emitJumpKindInstructions => [
         INS_nop, // EJ_NONE
 #if TARGET_XARCH
