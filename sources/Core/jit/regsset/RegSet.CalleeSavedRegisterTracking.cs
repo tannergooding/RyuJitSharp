@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public partial struct RegSet
 {
-#if TARGET_ARMARCH
+#if TARGET_ARMARCH || TARGET_RISCV64
     internal void rsSetCalleeSavedRegsMask(regMaskTP mask)
     {
         _rsMaskCalleeSaved = mask;

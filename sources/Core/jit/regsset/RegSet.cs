@@ -24,7 +24,7 @@ public partial struct RegSet
     private regMaskTP _rsIntCalleeSavedMask;
 #endif
 
-#if TARGET_ARMARCH || TARGET_LOONGARCH64
+#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
     private regMaskTP _rsMaskCalleeSaved;
 #endif
 
@@ -60,7 +60,7 @@ public partial struct RegSet
 #endif
 #endif
 
-#if TARGET_ARMARCH || TARGET_LOONGARCH64
+#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
         _rsMaskCalleeSaved = RBM_NONE;
 #endif
 

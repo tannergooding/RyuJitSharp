@@ -555,6 +555,106 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [Test]
+    public static void CalleeSavedRegisterPrologRecordsFrameSavesAndUnwind()
+    {
+        WithProlog((compiler, codeGen) =>
+        {
+            var modifiedRegs =
+                regMaskTP.CreateFromRegNum(REG_S1, REG_S1.SingleTypeMask)
+                | regMaskTP.CreateFromRegNum(REG_FS0, REG_FS0.SingleTypeMask);
+            InitializeCalleeSavedProlog(compiler, codeGen, 64, modifiedRegs);
+
+            var zeroed = true;
+            var emitter = codeGen.Emitter;
+            var descriptors = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = descriptors.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+            var failure = CaptureFatalJitException(
+                () => codeGen.genPushCalleeSavedRegisters(REG_NA, ref zeroed));
+
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+            Assert.That(zeroed, Is.True);
+
+            var firstDescriptor = descriptors[initialInstructionCount];
+            Assert.That(firstDescriptor.idIns(), Is.EqualTo(INS_addi));
+            Assert.That(firstDescriptor.idReg1(), Is.EqualTo(REG_SPBASE));
+            Assert.That(firstDescriptor.idReg2(), Is.EqualTo(REG_SPBASE));
+
+#if !DEBUG
+            Assert.That(descriptors.Count, Is.EqualTo(initialInstructionCount + 6));
+            Assert.That(descriptors[initialInstructionCount + 1].idIns(), Is.EqualTo(INS_sd));
+            Assert.That(descriptors[initialInstructionCount + 1].idReg1(), Is.EqualTo(REG_FP));
+            Assert.That(descriptors[initialInstructionCount + 1].idSmallCns(), Is.EqualTo(64));
+            Assert.That(descriptors[initialInstructionCount + 2].idIns(), Is.EqualTo(INS_sd));
+            Assert.That(descriptors[initialInstructionCount + 2].idReg1(), Is.EqualTo(REG_RA));
+            Assert.That(descriptors[initialInstructionCount + 2].idSmallCns(), Is.EqualTo(72));
+            Assert.That(descriptors[initialInstructionCount + 3].idIns(), Is.EqualTo(INS_sd));
+            Assert.That(descriptors[initialInstructionCount + 3].idReg1(), Is.EqualTo(REG_S1));
+            Assert.That(descriptors[initialInstructionCount + 3].idSmallCns(), Is.EqualTo(80));
+            Assert.That(descriptors[initialInstructionCount + 4].idIns(), Is.EqualTo(INS_fsd));
+            Assert.That(descriptors[initialInstructionCount + 4].idReg1(), Is.EqualTo(REG_FS0));
+            Assert.That(descriptors[initialInstructionCount + 4].idSmallCns(), Is.EqualTo(88));
+            Assert.That(descriptors[initialInstructionCount + 5].idIns(), Is.EqualTo(INS_addi));
+            Assert.That(descriptors[initialInstructionCount + 5].idReg1(), Is.EqualTo(REG_FPBASE));
+            Assert.That(descriptors[initialInstructionCount + 5].idReg2(), Is.EqualTo(REG_SPBASE));
+            Assert.That(descriptors[initialInstructionCount + 5].idSmallCns(), Is.EqualTo(64));
+            Assert.That(compiler.funCurrentFunc().GetUnwindInfo().GetCurrentEmitterLocation(), Is.Not.Null);
+#endif
+        });
+    }
+
+#if !DEBUG
+    [Test]
+    public static void LargeCalleeSavedRegisterPrologSplitsRiscVFrameAllocation()
+    {
+        WithProlog((compiler, codeGen) =>
+        {
+            InitializeCalleeSavedProlog(compiler, codeGen, 4096, default);
+
+            var zeroed = true;
+            var failure = Assert.Throws<PlatformNotSupportedException>(
+                () => codeGen.genPushCalleeSavedRegisters(REG_NA, ref zeroed));
+            Assert.That(failure?.Message,
+                Does.Contain("Instruction descriptor sizes are not yet ported for this target."));
+            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            Assert.That(descriptors, Is.Not.Empty);
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_addi));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_SPBASE));
+        });
+    }
+
+    [Test]
+    public static void VarargsCalleeSavedRegisterPrologStopsAfterFrameSetup()
+    {
+        WithProlog((compiler, codeGen) =>
+        {
+            compiler.info.compIsVarArgs = true;
+            InitializeCalleeSavedProlog(compiler, codeGen, 64, default);
+
+            var zeroed = true;
+            var failure = CaptureFatalJitException(
+                () => codeGen.genPushCalleeSavedRegisters(REG_NA, ref zeroed));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            Assert.That(descriptors.Count, Is.EqualTo(4));
+            Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_addi));
+            Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_FPBASE));
+            Assert.That(zeroed, Is.True);
+        });
+    }
+#endif
+
     [TestCase(EA_PTRSIZE, REG_A0, REG_A1, INS_mov, 0x00058513u, false)]
     [TestCase(EA_4BYTE, REG_A0, REG_A1, INS_sext_w, 0x0005851Bu, false)]
     [TestCase(EA_PTRSIZE, REG_A0, REG_FA1, INS_fmv_x_d, 0xE2058553u, false)]
@@ -2312,6 +2412,25 @@ internal static unsafe class RiscVCodeGenPortTests
             group.igFlags |= InsGroupFlags.Prolog;
             action(compiler, codeGen);
         });
+    }
+
+    private static void InitializeCalleeSavedProlog(
+        Compiler compiler,
+        CodeGen codeGen,
+        int localFrameSize,
+        regMaskTP modifiedRegs)
+    {
+        compiler.compLclFrameSize = localFrameSize;
+        compiler.lvaMonAcquired = BAD_VAR_NUM;
+        compiler.fgFuncletsCreated = true;
+        compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT, uwi = new UnwindInfo() }];
+        compiler.compFuncInfoCount = 1;
+        compiler.funCurrentFunc().GetUnwindInfo().InitUnwindInfo(compiler, null, null);
+        var framePointerMask = regMaskTP.CreateFromRegNum(REG_FPBASE, REG_FPBASE.SingleTypeMask);
+        compiler.compCalleeRegsPushed = unchecked((int)genCountBits(modifiedRegs | framePointerMask | RBM_RA));
+        codeGen.RegSet.rsSetRegsModified(modifiedRegs);
+        codeGen.resetFramePointerUsedWritePhase();
+        codeGen.IsFramePointerUsed = true;
     }
 
 #if PROFILING_SUPPORTED
