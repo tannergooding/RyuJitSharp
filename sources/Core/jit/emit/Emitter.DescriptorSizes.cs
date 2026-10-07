@@ -64,6 +64,11 @@ public partial class Emitter
         internal const int LocalVarPair = Full + 8;
         internal const int LocalVarPairConstant = ConstantDescriptorSizes.Constant + 8;
 #endif
+#if TARGET_RISCV64
+        // Native instrDescLoadImm appends eight 32-bit instruction values and eight int32 immediates.
+        internal const int RiscVLoadImmediate =
+            ConstantDescriptorSizes.Constant + (instrDescLoadImm.absMaxInsCount * sizeof(int) * 2);
+#endif
     }
 
     protected sealed class instrDescBasic : instrDesc

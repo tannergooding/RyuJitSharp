@@ -52,7 +52,7 @@ public partial class Emitter
             x = BitOperations.TrailingZeroCount(immBits);
         }
 
-        const int absMaxInsCount = 8; // Matches instrDescLoadImm::absMaxInsCount in the pinned emitter.
+        const int absMaxInsCount = instrDescLoadImm.absMaxInsCount;
         const int prefMaxInsCount = 5;
         assert(prefMaxInsCount <= absMaxInsCount);
 
@@ -305,9 +305,22 @@ public partial class Emitter
         ReadOnlySpan<instruction> instructions,
         ReadOnlySpan<int> values)
     {
-        throw new FatalJitException(
-            CORJIT_SKIPPED,
-            "RISC-V64 multi-instruction immediate descriptor recording is not ported.");
+        assert(instructions.Length > 0);
+        assert(instructions.Length <= instrDescLoadImm.absMaxInsCount);
+        assert(instructions.Length == values.Length);
+
+        var id = emitAllocAnyInstr<instrDescLoadImm>(
+            unchecked((nuint)DescriptorSizes.RiscVLoadImmediate),
+            size);
+        id.idInsOpt(INS_OPTS_I);
+        id.idcCnsVal = immediate;
+        id.idReg1(reg);
+        instructions.CopyTo(id.ins);
+        values.CopyTo(id.values);
+        id.idCodeSize((uint)(instructions.Length * 4));
+        id.idIns(instructions[^1]);
+        dispIns(id);
+        appendToCurIG(id);
     }
 }
 #endif

@@ -157,7 +157,11 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 #endif
 
 #if TARGET_RISCV64
-    [TestCase(false, "RISC-V64 multi-instruction immediate descriptor recording is not ported.")]
+#if DEBUG
+    [TestCase(false, "Instruction sanity checking outside AMD64 is not ported.")]
+#else
+    [TestCase(false, "Target local-stack instruction recording is not implemented.")]
+#endif
     [TestCase(true, "Absolute-address instruction recording requires xarch.")]
     public static void GSCookieCheckReachesTheRiscVEmissionBoundary(bool useCookieAddress, string expectedBoundary)
     {
