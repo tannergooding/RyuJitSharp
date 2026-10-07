@@ -67,6 +67,11 @@ public sealed partial class CodeGen
         Emitter.emitIns_R_C(INS_adr, attr, treeNode.RegNum, REG_NA,
             genEmitAsyncResumeInfo(unchecked((uint)treeNode.Val1)), 0);
         genProduceReg(treeNode);
+#elif TARGET_ARM
+        var field = genEmitAsyncResumeInfo(unchecked((uint)treeNode.Val1));
+        assert(Compiler.eeIsJitDataOffs(field));
+        genMov32RelocatableDataLabel(unchecked((uint)Compiler.eeGetJitDataOffs(field)), treeNode.RegNum);
+        genProduceReg(treeNode);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Async resume address generation requires Windows AMD64.");
 #else

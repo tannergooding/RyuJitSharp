@@ -14,8 +14,8 @@ public partial class Emitter
 #if EMITTER_STATS
     internal static void emitterStats(StreamWriter output)
     {
-#if !TARGET_XARCH && !TARGET_ARM64
-        throw new FatalJitException(CORJIT_SKIPPED, "emitterStats outside xarch and arm64 is not ported.");
+#if !TARGET_XARCH && !TARGET_ARM64 && !TARGET_ARM
+        throw new FatalJitException(CORJIT_SKIPPED, "emitterStats outside xarch, arm, and arm64 is not ported.");
 #else
         if (totAllocdSize > 0)
         {
@@ -130,6 +130,9 @@ public partial class Emitter
 #if TARGET_ARM64
             WriteEmitterDescriptorCount(output, "Total instrDescLclVarPair:", emitTotalIDescLclVarPairCnt);
             WriteEmitterDescriptorCount(output, "Total instrDescLclVarPairCns:", emitTotalIDescLclVarPairCnsCnt);
+#endif
+#if TARGET_ARM
+            WriteEmitterDescriptorCount(output, "Total instrDescReloc:", emitTotalIDescRelocCnt);
 #endif
 #if TARGET_XARCH
             WriteEmitterDescriptorCount(output, "Total instrDescAmd:", emitTotalIDescAmdCnt);

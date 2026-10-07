@@ -1158,6 +1158,16 @@ public partial struct GCInfo
         totalSize += sizeof(ushort);
 #endif
 
+#if MEASURE_PTRTAB_SIZE
+        if (mask != 0)
+        {
+            unchecked
+            {
+                s_gcTotalPtrTabSize += totalSize;
+            }
+        }
+#endif
+
         return totalSize;
     }
 }

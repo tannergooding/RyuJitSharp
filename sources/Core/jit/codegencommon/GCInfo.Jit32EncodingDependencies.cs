@@ -521,6 +521,11 @@ public partial struct GCInfo
     }
 
 #if DUMP_GC_TABLES
+    internal readonly unsafe void gcFindPtrsInFrame(void* infoBlock, void* codeBlock, uint offs)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "JIT32 GC frame pointer dumping is not ported.");
+    }
+
     internal readonly unsafe nuint gcInfoBlockHdrDump(byte* source, ref InfoHdr header, out uint codeSize)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "JIT32 GC header decoding is not ported.");

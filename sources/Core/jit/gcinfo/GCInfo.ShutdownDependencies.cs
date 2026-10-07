@@ -8,8 +8,8 @@ namespace RyuJitSharp;
 
 public partial struct GCInfo
 {
-    internal static nuint s_gcRegPtrDscSize => throw new FatalJitException(CORJIT_SKIPPED, "GCInfo::s_gcRegPtrDscSize collection is not ported.");
+    internal static nuint s_gcRegPtrDscSize;
 
-    internal static nuint s_gcTotalPtrTabSize => throw new FatalJitException(CORJIT_SKIPPED, "GCInfo::s_gcTotalPtrTabSize collection is not ported.");
+    internal static nuint s_gcTotalPtrTabSize;
 }
 #endif
