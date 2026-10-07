@@ -292,6 +292,29 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [Test]
+    public static void UnsupportedFourRegisterInstructionTerminatesWithoutRecording()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+
+            var failure = CaptureFatalJitException(
+                () => emitter.emitIns_R_R_R_R(
+                    INS_add, EA_8BYTE, REG_A0, REG_A1, REG_A2, REG_A3));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("Four-register instruction recording requires xarch."));
+            Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount));
+            Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize));
+        });
+    }
+
     private static uint ExpectedThreeRegisterEncoding(
         instruction ins,
         regNumber reg1,
