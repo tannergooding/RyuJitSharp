@@ -132,6 +132,76 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [TestCase(GT_SH1ADD)]
+    [TestCase(GT_SH2ADD)]
+    [TestCase(GT_SH3ADD)]
+    [TestCase(GT_SH1ADD_UW)]
+    [TestCase(GT_SH2ADD_UW)]
+    [TestCase(GT_SH3ADD_UW)]
+    public static void ShxaddPreservesRiscVInstructionRecordingBoundary(genTreeOps oper)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_Zba);
+            compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_Zba);
+            compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_Zba);
+
+            var left = new GenTreePhysReg(REG_A0, TYP_LONG) { RegNum = REG_A0 };
+            var right = new GenTreePhysReg(REG_A1, TYP_LONG) { RegNum = REG_A1 };
+            var tree = new GenTreeOp(oper, TYP_LONG, left, right) { RegNum = REG_A2 };
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForShxadd(tree));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("RISC-V three-register instruction recording is not implemented."));
+        });
+    }
+
+    [Test]
+    public static void AddUwPreservesRiscVInstructionRecordingBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_Zba);
+            compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_Zba);
+            compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_Zba);
+
+            var left = new GenTreePhysReg(REG_A0, TYP_LONG) { RegNum = REG_A0 };
+            var right = new GenTreePhysReg(REG_A1, TYP_LONG) { RegNum = REG_A1 };
+            var tree = new GenTreeOp(GT_ADD_UW, TYP_LONG, left, right) { RegNum = REG_A2 };
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForAddUw(tree));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("RISC-V three-register instruction recording is not implemented."));
+        });
+    }
+
+    [Test]
+    public static void SlliUwPreservesRiscVInstructionRecordingBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_Zba);
+            compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_Zba);
+            compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_Zba);
+
+            var value = new GenTreePhysReg(REG_A0, TYP_LONG) { RegNum = REG_A0 };
+            var shiftBy = compiler.gtNewIconNode(TYP_INT, 7);
+            shiftBy.IsContained = true;
+
+            var tree = new GenTreeOp(GT_SLLI_UW, TYP_LONG, value, shiftBy) { RegNum = REG_A2 };
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForSlliUw(tree));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("Two-register-immediate instruction recording requires xarch."));
+        });
+    }
+
     [TestCase(8)]
     [TestCase(16)]
     public static void CopyBlockUnrollPreservesRiscVInstructionRecordingBoundary(int size)

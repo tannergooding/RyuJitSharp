@@ -357,6 +357,50 @@ public sealed partial class CodeGen
         return ins;
     }
 
+    public void genCodeForShxadd(GenTreeOp tree)
+    {
+        var ins = genGetInsForOper(tree);
+
+        assert(ins is INS_sh1add or INS_sh2add or INS_sh3add or INS_sh1add_uw or INS_sh2add_uw or INS_sh3add_uw);
+
+        genConsumeOperands(tree);
+
+        var attr = tree.Type.EmitActualSize;
+        GetEmitter().emitIns_R_R_R(ins, attr, tree.RegNum, tree.Op1.RegNum, tree.Op2.RegNum);
+
+        genProduceReg(tree);
+    }
+
+    public void genCodeForAddUw(GenTreeOp tree)
+    {
+        assert(tree.Oper is GT_ADD_UW);
+
+        genConsumeOperands(tree);
+
+        var attr = tree.Type.EmitActualSize;
+        GetEmitter().emitIns_R_R_R(INS_add_uw, attr, tree.RegNum, tree.Op1.RegNum, tree.Op2.RegNum);
+
+        genProduceReg(tree);
+    }
+
+    public void genCodeForSlliUw(GenTreeOp tree)
+    {
+        assert(tree.Oper is GT_SLLI_UW);
+
+        genConsumeOperands(tree);
+
+        var attr = tree.Type.EmitActualSize;
+        var shiftBy = tree.Op2;
+
+        assert(shiftBy.Oper.IsCnsIntOrI);
+
+        var shiftAmount = unchecked((int)(uint)shiftBy.AsIntCon().IconValue);
+
+        GetEmitter().emitIns_R_R_I(INS_slli_uw, attr, tree.RegNum, tree.Op1.RegNum, shiftAmount);
+
+        genProduceReg(tree);
+    }
+
     private static bool isImmed(GenTree treeNode)
     {
         assert(treeNode.Oper.IsBinary);
