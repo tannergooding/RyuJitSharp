@@ -17,6 +17,7 @@ using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.insOpts;
+using static RyuJitSharp.BarrierKind;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
@@ -227,6 +228,76 @@ internal static unsafe class RiscVCodeGenPortTests
                 Does.Contain("Illegal instruction within RISC-V two-register instruction recording."));
             Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount));
             Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize));
+        });
+    }
+
+    [TestCase(INS_fence, EA_4BYTE, 0x33, 0x0330000Fu)]
+    [TestCase(INS_fence, EA_4BYTE, 0x23, 0x0230000Fu)]
+    [TestCase(INS_fence, EA_4BYTE, 0x31, 0x0310000Fu)]
+    [TestCase(INS_j, EA_4BYTE, 8, 0x0080006Fu)]
+    [TestCase(INS_j, EA_4BYTE, -4, 0xFFDFF06Fu)]
+    [TestCase(INS_j, EA_4BYTE, -1048576, 0x8000006Fu)]
+    [TestCase(INS_j, EA_4BYTE, 1048574, 0x7FFFF06Fu)]
+    public static void ImmediateOnlyInstructionRecordsItsDescriptor(
+        instruction ins,
+        emitAttr attr,
+        int immediate,
+        uint expectedCode)
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+
+            var failure = CaptureFatalJitException(
+                () => emitter.emitIns_I(ins, attr, immediate));
+
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+            var descriptor = instructionBuffer[^1];
+            Assert.That(descriptor.idIns(), Is.EqualTo(ins));
+            Assert.That(descriptor.idAddr().iiaInstrEncode, Is.EqualTo(expectedCode));
+            Assert.That(descriptor.idCodeSize(), Is.EqualTo(4u));
+        });
+    }
+
+    [TestCase(BARRIER_FULL, 0x0330000Fu)]
+    [TestCase(BARRIER_LOAD_ONLY, 0x0230000Fu)]
+    [TestCase(BARRIER_STORE_ONLY, 0x0310000Fu)]
+    public static void MemoryBarrierRecordsItsRiscVFence(BarrierKind barrierKind, uint expectedCode)
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+
+            var failure = CaptureFatalJitException(
+                () => codeGen.instGen_MemoryBarrier(barrierKind));
+
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+            var descriptor = instructionBuffer[^1];
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_fence));
+            Assert.That(descriptor.idAddr().iiaInstrEncode, Is.EqualTo(expectedCode));
+            Assert.That(descriptor.idCodeSize(), Is.EqualTo(4u));
         });
     }
 

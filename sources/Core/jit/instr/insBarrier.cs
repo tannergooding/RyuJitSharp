@@ -3,11 +3,16 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM || TARGET_ARM64
+#if TARGET_ARM || TARGET_ARM64 || TARGET_RISCV64
 namespace RyuJitSharp;
 
 public enum insBarrier : uint
 {
+#if TARGET_RISCV64
+    INS_BARRIER_FULL = 0x33,
+    INS_BARRIER_LOAD_ONLY = 0x23,
+    INS_BARRIER_STORE_ONLY = 0x31,
+#else
     INS_BARRIER_OSHLD = 1,
     INS_BARRIER_OSHST = 2,
     INS_BARRIER_OSH = 3,
@@ -23,5 +28,6 @@ public enum insBarrier : uint
     INS_BARRIER_LD = 13,
     INS_BARRIER_ST = 14,
     INS_BARRIER_SY = 15,
+#endif
 }
 #endif

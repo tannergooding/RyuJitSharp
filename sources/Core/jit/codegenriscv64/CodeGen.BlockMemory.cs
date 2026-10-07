@@ -419,7 +419,7 @@ public sealed partial class CodeGen
 
     public void instGen_MemoryBarrier()
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 memory barrier emission is not ported.");
+        instGen_MemoryBarrier(BARRIER_FULL);
     }
 }
 #endif

@@ -298,7 +298,19 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var failure = CaptureFatalJitException(() => codeGen.genCodeForInitBlkUnroll(tree));
             if (isVolatile)
             {
-                Assert.That(failure?.Message, Does.Contain("RISC-V64 memory barrier emission is not ported."));
+#if DEBUG
+                const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+                var expectedBoundary = destinationKind is 0
+                    ? "Target local-stack store recording is not implemented."
+                    : null;
+#endif
+                AssertRiscVRecorderOutcome(
+                    codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+                var barrier = instructionBuffer[initialInstructionCount];
+                Assert.That(barrier.idIns(), Is.EqualTo(INS_fence));
+                Assert.That(barrier.idAddr().iiaInstrEncode, Is.EqualTo(0x0330000Fu));
             }
             else if (destinationKind is 0)
             {
@@ -1572,8 +1584,27 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreInd(store));
             Assert.That(failure?.Message, Does.Contain("LoongArch64 memory barrier emission is not ported."));
 #else
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreInd(store));
-            Assert.That(failure?.Message, Does.Contain("RISC-V64 memory barrier emission is not ported."));
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            var failure = CaptureFatalJitException(() => codeGen.genCodeForStoreInd(store));
+            AssertRiscVRecorderOutcome(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+            var barrier = instructionBuffer[initialInstructionCount];
+            Assert.That(barrier.idIns(), Is.EqualTo(INS_fence));
+            Assert.That(barrier.idAddr().iiaInstrEncode, Is.EqualTo(0x0330000Fu));
+#if !DEBUG
+            var storeInstruction = instructionBuffer[initialInstructionCount + 1];
+            Assert.That(storeInstruction.idIns(), Is.EqualTo(INS_sw));
+#endif
 #endif
         });
     }

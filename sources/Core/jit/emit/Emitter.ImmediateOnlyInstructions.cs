@@ -13,6 +13,8 @@ public partial class Emitter
 #if !TARGET_XARCH
 #if TARGET_ARM
         recordArm32InsI(ins, attr, val);
+#elif TARGET_RISCV64
+        recordRiscVInsI(ins, attr, val);
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Immediate-only instruction recording requires xarch.");
 #endif
