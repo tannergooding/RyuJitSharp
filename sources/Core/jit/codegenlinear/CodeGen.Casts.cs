@@ -113,7 +113,7 @@ public sealed partial class CodeGen
     }
 #endif
 
-#if !TARGET_LOONGARCH64
+#if !TARGET_LOONGARCH64 && !TARGET_RISCV64
 #if TARGET_ARMARCH
     private void genIntCastOverflowCheck(GenTreeCast tree, in GenIntCastDesc desc, regNumber reg)
     {

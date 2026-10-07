@@ -10,8 +10,10 @@ using NUnit.Framework;
 using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.CORINFO_InstructionSet;
 using static RyuJitSharp.GenTreeBlk;
+using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.instruction;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
@@ -246,6 +248,75 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
             Assert.That(failure?.Message,
                 Does.Contain("Two-register-immediate instruction recording requires xarch."));
+        });
+    }
+
+    [TestCase(false, "Two-register-immediate instruction recording requires xarch.")]
+    [TestCase(true, "RISC-V three-register instruction recording is not implemented.")]
+    public static void IntegerCastDispatchPreservesRiscVExtensionRecordingBoundary(
+        bool useZba,
+        string expectedBoundary)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            if (useZba)
+            {
+                compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_Zba);
+                compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_Zba);
+                compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_Zba);
+            }
+
+            var source = new GenTreePhysReg(REG_A0, TYP_INT) { RegNum = REG_A0 };
+            var cast = new GenTreeCast(TYP_LONG, source, fromUnsigned: true, castType: TYP_ULONG)
+            {
+                RegNum = REG_A1,
+            };
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForCast(cast));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Does.Contain(expectedBoundary));
+        });
+    }
+
+    [Test]
+    public static void IntegerCastOverflowDispatchPreservesRiscVTwoRegisterRecordingBoundary()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var source = new GenTreePhysReg(REG_A0, TYP_INT) { RegNum = REG_A0 };
+            var cast = new GenTreeCast(TYP_LONG, source, fromUnsigned: false, castType: TYP_ULONG)
+            {
+                RegNum = REG_A1,
+                Flags = GTF_OVERFLOW,
+            };
+            codeGen.InternalRegisters.Add(
+                cast, regMaskTP.CreateFromRegNum(REG_A2, REG_A2.SingleTypeMask));
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForCast(cast));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("Target two-register instruction recording is not implemented."));
+        });
+    }
+
+    [Test]
+    public static void IntegerCastCopyDispatchPreservesRiscVRegisterRecordingBoundary()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var source = new GenTreePhysReg(REG_A0, TYP_LONG) { RegNum = REG_A0 };
+            var cast = new GenTreeCast(TYP_LONG, source, fromUnsigned: false, castType: TYP_LONG)
+            {
+                RegNum = REG_A1,
+            };
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForCast(cast));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("Target two-register instruction recording is not implemented."));
         });
     }
 
