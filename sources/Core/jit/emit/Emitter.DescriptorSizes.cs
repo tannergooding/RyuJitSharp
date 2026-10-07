@@ -238,6 +238,76 @@ public partial class Emitter
 #endif
 
         return INSTR_DESC_SIZE;
+#elif TARGET_ARM
+        if (descriptor.idIsSmallDsc())
+        {
+            return SMALL_IDSC_SIZE;
+        }
+
+        assert((uint)descriptor.idInsFmt() < (uint)emitFmtToOps.Length);
+        var operands = (ID_OPS)emitFmtToOps[(int)descriptor.idInsFmt()];
+        var isCall = descriptor.idIns() is INS_bl or INS_blx;
+        var mayBeCall = descriptor.idIns() is INS_b or INS_bx;
+
+        assert(!isCall || operands is ID_OPS.ID_OP_CALL or ID_OPS.ID_OP_SPEC or ID_OPS.ID_OP_JMP);
+
+        switch (operands)
+        {
+            case ID_OPS.ID_OP_NONE:
+            {
+                break;
+            }
+
+            case ID_OPS.ID_OP_JMP:
+            {
+                return DescriptorSizes.Jump;
+            }
+
+            case ID_OPS.ID_OP_LBL:
+            {
+                return DescriptorSizes.Label;
+            }
+
+            case ID_OPS.ID_OP_CALL:
+            case ID_OPS.ID_OP_SPEC:
+            {
+                assert(isCall || mayBeCall);
+                if (descriptor.idIsLargeCall())
+                {
+                    return instrDescCGCA.NativeSize;
+                }
+
+                assert(!descriptor.idIsLargeDsp());
+                assert(!descriptor.idIsLargeCns());
+                return INSTR_DESC_SIZE;
+            }
+
+            default:
+            {
+                NO_WAY("unexpected instruction descriptor format");
+                break;
+            }
+        }
+
+        if (descriptor.idInsFmt() == insFormat.IF_T2_N3)
+        {
+            assert(descriptor.idIns() is INS_movw or INS_movt);
+            return INSTR_DESC_SIZE + sizeof(uint);
+        }
+
+        if (descriptor.idIsLargeCns())
+        {
+            return descriptor.idIsLargeDsp()
+                ? ConstantDescriptorSizes.ConstantDisplacement
+                : ConstantDescriptorSizes.Constant;
+        }
+
+        if (descriptor.idIsLargeDsp())
+        {
+            return ConstantDescriptorSizes.Displacement;
+        }
+
+        return INSTR_DESC_SIZE;
 #elif TARGET_WASM
         return descriptor.NativeLogicalSize;
 #else

@@ -29,6 +29,16 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
         }
     }
 
+#if TARGET_WASM
+    public GenTree GetImmOp()
+    {
+        HWIntrinsicInfo.GetImmOpsPositions(HWIntrinsicId, out var imm1Pos, out var imm2Pos);
+
+        assert((imm1Pos >= 0) && (imm2Pos < 0));
+        return GetOp(imm1Pos);
+    }
+#endif
+
     public new ClassLayout GetLayout(Compiler compiler)
     {
         assert(Type is TYP_STRUCT);

@@ -21,6 +21,7 @@ public partial class Compiler
         return varDsc.lvIsRegArg;
     }
 
+    // A local can be accessed through different machine types; these queries expose its normalized type.
     public var_types lvaGetActualType(int lclNum)
     {
         return lvaTable[lclNum].Type.ActualType;
@@ -31,6 +32,7 @@ public partial class Compiler
         return lvaTable[lclNum].Type;
     }
 
+    // This conversion applies to incoming fixed varargs on Windows ARM and soft-float ARM.
     public var_types mangleVarArgsType(var_types type)
     {
 #if TARGET_ARMARCH

@@ -89,15 +89,29 @@ internal static unsafe class Arm64EmitterLocationTests
     }
 
     [Test]
-    public static void EmptyPaddingDoesNotInvokeTheUnportedEncoder()
+    public static void NonemptyPaddingRecordsTheArm64UnwindNop()
     {
         var (compiler, emitter) = CreateEmitter();
-        UnwindPadding(emitter, new emitLocation(emitter), compiler);
-        _ = emitter.Allocate();
+        var unwindInfo = new UnwindInfo();
+        compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT, uwi = unwindInfo }];
+        compiler.compFuncInfoCount = 1;
+        compiler.fgFuncletsCreated = true;
+        unwindInfo.InitUnwindInfo(compiler, new emitLocation(emitter), null);
+        unwindInfo.CaptureLocation();
 
-        var error = Assert.Throws<FatalJitException>(() =>
-            UnwindPadding(emitter, new emitLocation(emitter.emitCurIG), compiler));
-        Assert.That(error, Has.Message.EqualTo("Unwind NOP encoding for this target is not ported."));
+        var initialLocation = unwindInfo.GetCurrentEmitterLocation()
+            ?? throw new AssertionException("Missing initial unwind location.");
+        UnwindPadding(emitter, initialLocation, compiler);
+        Assert.That(unwindInfo.GetCurrentEmitterLocation()?.CodeOffset(emitter), Is.Zero);
+
+        _ = emitter.Allocate();
+        var instructionGroup = emitter.emitCurIG
+            ?? throw new AssertionException("Missing current instruction group.");
+        instructionGroup.igInsCnt = 1;
+        instructionGroup.igSize = 4;
+        UnwindPadding(emitter, new emitLocation(instructionGroup), compiler);
+
+        Assert.That(unwindInfo.GetCurrentEmitterLocation()?.CodeOffset(emitter), Is.EqualTo(4u));
     }
 
     [Test]
@@ -167,7 +181,10 @@ internal static unsafe class Arm64EmitterLocationTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.lvaTrackedCount = 1;
         compiler.lvaTrackedCountInSizeTUnits = 1;
-        var emitter = new LocationEmitter(new CodeGen(compiler));
+        var codeGen = new CodeGen(compiler);
+        compiler.codeGen = codeGen;
+        var emitter = new LocationEmitter(codeGen);
+        CodeGenEmitter(codeGen) = emitter;
         emitter.emitBegCG(compiler, default);
         emitter.Init();
         emitter.emitBegFN(false
@@ -200,6 +217,9 @@ internal static unsafe class Arm64EmitterLocationTests
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNewInstrSmall")]
         private static extern instrDescBasic AllocateSmall(Emitter emitter, emitAttr attr);
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_cgEmitter")]
+    private static extern ref Emitter CodeGenEmitter(CodeGen codeGen);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitWalkIDs")]
     private static extern void Walk(Emitter emitter, emitLocation location,

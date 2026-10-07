@@ -110,7 +110,9 @@ public sealed partial class CodeGen
 #endif
         )
     {
-#if TARGET_ARM || TARGET_ARMARCH
+#if TARGET_WASM
+        genCreateAndStoreGCInfoWasm();
+#elif TARGET_ARM || TARGET_ARMARCH
         genCreateAndStoreGCInfoArmArch(codeSize, prologSize, epilogSize
 #if DEBUG
             , codePtr

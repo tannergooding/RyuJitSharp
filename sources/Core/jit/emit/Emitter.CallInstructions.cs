@@ -265,6 +265,8 @@ public partial class Emitter
         appendToCurIG(id);
 #elif TARGET_ARM
         emitIns_CallArm32(in parameters);
+#elif TARGET_ARM64
+        emitIns_CallArm64(in parameters);
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64
         throw new FatalJitException(CORJIT_SKIPPED, "Target call instruction recording is not implemented.");
 #else

@@ -20,9 +20,12 @@ internal static unsafe class Arm32ArithmeticLoweringTests
 {
     [TestCase(GT_ADD, 4095, false, true)]
     [TestCase(GT_ADD, 4095, true, false)]
+    [TestCase(GT_ADD, 4096, false, true)]
+    [TestCase(GT_ADD, 4097, false, false)]
     [TestCase(GT_ADD, 0x1_00000FFFL, false, true)]
     [TestCase(GT_SUB, -4095, false, true)]
     [TestCase(GT_AND, -16777216, false, true)]
+    [TestCase(GT_AND, 0x00FF00FF, false, true)]
     [TestCase(GT_XOR, 0x12345678, false, false)]
     [TestCase(GT_MUL, 1, false, false)]
     public static void ImmediateClassificationMatchesArmInstructionForms(
@@ -222,8 +225,60 @@ internal static unsafe class Arm32ArithmeticLoweringTests
         }
     }
 
+    [TestCase(-256, 4u, false)]
+    [TestCase(-255, 4u, true)]
+    [TestCase(255, 1u, true)]
+    [TestCase(255, 2u, false)]
+    [TestCase(256, 1u, false)]
+    public static void BlockStoreAddressContainmentUsesArmImmediateBounds(int offset, uint size, bool expectedContained)
+    {
+        WithLowering((compiler, block, lowering) =>
+        {
+            var baseAddress = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var offsetNode = compiler.gtNewIconNode(TYP_INT, (nint)offset);
+            var address = new GenTreeOp(GT_ADD, TYP_BYREF, baseAddress, offsetNode);
+            address._vnPair.SetBoth(123);
+            var data = compiler.gtNewIconNode(TYP_INT, 0);
+            var store = new GenTreeBlk(TYP_STRUCT, address, data, new ClassLayout(size))
+            {
+                _kind = GenTreeBlk.BlkOpKindUnroll,
+            };
+            block.InsertAtEnd(baseAddress);
+            block.InsertAtEnd(offsetNode);
+            block.InsertAtEnd(address);
+            block.InsertAtEnd(data);
+            block.InsertAtEnd(store);
+
+            ContainBlockStoreAddress(lowering, store, size, address, null);
+
+            Assert.That(store.Addr.IsContained, Is.EqualTo(expectedContained));
+            if (expectedContained)
+            {
+                var mode = store.Addr.AsAddrMode();
+                Assert.That(mode.BaseAddress, Is.SameAs(baseAddress));
+                Assert.That(mode.Index, Is.Null);
+                Assert.That(mode.Scale, Is.Zero);
+                Assert.That(mode.Offset, Is.EqualTo(offset));
+                Assert.That(address.Next, Is.Null);
+                Assert.That(offsetNode.Next, Is.Null);
+            }
+            else
+            {
+                Assert.That(store.Addr, Is.SameAs(address));
+                Assert.That(address.AsOp().Op2, Is.SameAs(offsetNode));
+            }
+#if DEBUG
+            Assert.That(block.CheckLir(compiler, checkUnusedValues: true), Is.True);
+#endif
+        });
+    }
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerBinaryArithmetic")]
     private static extern GenTree? LowerBinaryArithmetic(Lowering lowering, GenTreeOp binary);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainBlockStoreAddress")]
+    private static extern void ContainBlockStoreAddress(
+        Lowering lowering, GenTreeBlk block, uint size, GenTree address, GenTree? addressParent);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckBinary")]
     private static extern void ContainCheckBinary(Lowering lowering, GenTreeOp node);

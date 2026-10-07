@@ -2,6 +2,7 @@
 
 #if TARGET_WASM
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.CorInfoHelpFunc;
@@ -46,17 +47,40 @@ internal static unsafe class WasmCallArgumentMorphTests
     }
 
     [Test]
-    public static void UnportedWasmPrologEmitterOperationsFailExplicitly()
+    public static void WasmLocalDeclarationsAndStoresRecordDescriptors()
     {
         WithCompiler(compiler => {
-            var emitter = new CodeGen(compiler).Emitter;
+            compiler.lvaTrackedCount = 1;
+            compiler.lvaTrackedCountInSizeTUnits = 1;
+            compiler.lvaDoneFrameLayout = Compiler.REGALLOC_FRAME_LAYOUT;
+            compiler.lvaTable[0].Type = TYP_INT;
+            compiler.lvaTable[0].lvOnFrame = true;
+            compiler.lvaTable[0].lvFramePointerBased = true;
+            compiler.lvaTable[0].StackOffset = 16;
+            compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT }];
+            compiler.compFuncInfoCount = 1;
+            compiler.fgFuncletsCreated = true;
 
-            _ = Assert.Throws<FatalJitException>(() =>
-                emitter.emitIns_I_Ty(instruction.INS_local_decl, 1, WasmValueType.I32, 0));
-            _ = Assert.Throws<FatalJitException>(() =>
-                emitter.emitIns_S(instruction.INS_i32_store, RyuJitSharp.emitAttr.EA_4BYTE, 0, 0));
-            _ = Assert.Throws<FatalJitException>(() =>
-                emitter.emitFuncletAddressConstant((nint)0));
+            var codeGen = new CodeGen(compiler);
+            compiler.codeGen = codeGen;
+            var emitter = codeGen.Emitter;
+            emitter.emitBegCG(compiler, default);
+            emitter.Init();
+            emitter.emitBegFN(false
+#if DEBUG
+                , true
+#endif
+                );
+
+            emitter.emitIns_I_Ty(instruction.INS_local_decl, 1, WasmValueType.I32, 0);
+            emitter.emitIns_S(instruction.INS_i32_store, RyuJitSharp.emitAttr.EA_4BYTE, 0, 0);
+
+            var descriptors = CurrentDescriptors(emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(2));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(instruction.INS_local_decl));
+            Assert.That(Emitter.emitGetLclVarDeclCount(descriptors[0]), Is.EqualTo(1u));
+            Assert.That(Emitter.emitGetLclVarDeclType(descriptors[0]), Is.EqualTo(WasmValueType.I32));
+            Assert.That(descriptors[1].idIns(), Is.EqualTo(instruction.INS_i32_store));
         });
     }
 
@@ -211,6 +235,15 @@ internal static unsafe class WasmCallArgumentMorphTests
             JitTls.Compiler = previous;
         }
     }
+
+    private static List<Emitter.instrDesc> CurrentDescriptors(Emitter emitter)
+    {
+        return CurrentDescriptorsField(emitter)
+            ?? throw new AssertionException("Missing Wasm emitter instruction buffer.");
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
+    private static extern ref List<Emitter.instrDesc>? CurrentDescriptorsField(Emitter emitter);
 
 #if PROFILING_SUPPORTED
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compProfilerHookNeeded")]

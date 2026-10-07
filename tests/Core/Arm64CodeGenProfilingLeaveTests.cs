@@ -6,7 +6,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.CorInfoHelpFunc;
-using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
@@ -36,7 +35,7 @@ internal static unsafe class Arm64CodeGenProfilingLeaveTests
     [TestCase(CORINFO_HELP_PROF_FCN_LEAVE, true)]
     [TestCase(CORINFO_HELP_PROF_FCN_TAILCALL, false)]
     [TestCase(CORINFO_HELP_PROF_FCN_TAILCALL, true)]
-    public static void HookedLeavePreparesAndUntracksCallbackArgumentsBeforeTheCallRecorder(
+    public static void HookedLeavePreparesAndUntracksCallbackArgumentsBeforeTheHelperCall(
         CorInfoHelpFunc helper, bool indirect)
     {
         WithLeave((compiler, codeGen) =>
@@ -47,12 +46,7 @@ internal static unsafe class Arm64CodeGenProfilingLeaveTests
             codeGen.GCInfo.gcRegGCrefSetCur = RBM_R10;
             codeGen.GCInfo.gcRegByrefSetCur = RBM_R11;
 
-            var failure = Assert.Throws<FatalJitException>(
-                () => codeGen.genProfilingLeaveCallback(helper)) ??
-                throw new AssertionException("The unported ARM64 call recorder did not fail.");
-
-            Assert.That(failure.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure.Message, Is.EqualTo("Call instruction recording requires xarch."));
+            codeGen.genProfilingLeaveCallback(helper);
             Assert.That(compiler.info.compProfilerCallback, Is.True);
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_NONE));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(RBM_NONE));
@@ -65,6 +59,7 @@ internal static unsafe class Arm64CodeGenProfilingLeaveTests
             var callerStackAddress = descriptors.Last(descriptor =>
                 descriptor.idReg1() == REG_R11 && descriptor.idIns() is INS_add or INS_sub);
             Assert.That(callerStackAddress.idReg2(), Is.EqualTo(REG_FPBASE));
+            Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_bl));
         });
     }
 

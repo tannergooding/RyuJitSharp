@@ -11,6 +11,7 @@ using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.NamedIntrinsic;
+using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
@@ -35,6 +36,50 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
             Assert.That(failure?.Message,
                 Does.Contain("Target local-stack instruction recording is not implemented."));
+        });
+    }
+
+    [Test]
+    public static void CalleeSavedRestorePreservesXarchOnlyEmitterBoundary()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var restoreMask = regMaskTP.CreateFromRegNum(REG_S1, REG_S1.SingleTypeMask);
+            var failure = Assert.Throws<FatalJitException>(() =>
+                RestoreCalleeSavedRegisters(codeGen, restoreMask, REG_FP, 16, reportUnwindData: false));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("Two-register-immediate instruction recording requires xarch."));
+        });
+    }
+
+    [Test]
+    public static void OSRPrologPreservesXarchOnlyEmitterBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT, uwi = new UnwindInfo() }];
+            compiler.compFuncInfoCount = 1;
+            compiler.fgFuncletsCreated = true;
+            compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_OSR);
+            codeGen.Emitter.emitCurIG = codeGen.Emitter.emitGetFirstPrologIG();
+            compiler.funCurrentFunc().GetUnwindInfo().InitUnwindInfo(compiler, null, null);
+
+            var storage = stackalloc byte[PatchpointInfo.ComputeSize(1)];
+            var patchpoint = (PatchpointInfo*)storage;
+            patchpoint->Initialize(1, 96);
+            patchpoint->CalleeSaveRegisters = (long)(SRBM_S1 | SRBM_FP | SRBM_RA);
+            compiler.info.compPatchpointInfo = patchpoint;
+
+            compiler.unwindBegProlog();
+
+            var failure = Assert.Throws<FatalJitException>(
+                () => codeGen.genOSRHandleTier0CalleeSavedRegistersAndFrame());
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("Two-register-immediate instruction recording requires xarch."));
         });
     }
 
@@ -181,5 +226,9 @@ internal static unsafe class RiscVCodeGenPortTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genRestoreCalleeSavedRegistersHelp")]
+    private static extern void RestoreCalleeSavedRegisters(CodeGen codeGen, regMaskTP mask, regNumber baseReg,
+        int offset, bool reportUnwindData);
 }
 #endif

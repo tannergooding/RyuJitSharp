@@ -11,7 +11,7 @@ public sealed partial class CodeGen
 #if TARGET_ARM
     private regMaskTP genStackAllocRegisterMask(uint frameSize, regMaskTP maskCalleeSavedFloat)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM stack allocation register mask is not ported.");
+        return genStackAllocRegisterMaskArmCore(frameSize, maskCalleeSavedFloat);
     }
 #endif
 }

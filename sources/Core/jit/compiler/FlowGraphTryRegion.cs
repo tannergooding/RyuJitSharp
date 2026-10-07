@@ -69,6 +69,7 @@ public sealed class FlowGraphTryRegion
         return ancestor;
     }
 
+    // Unlike loops, try regions enumerate their regular block bit vector directly.
     public BasicBlockVisit VisitTryRegionBlocksReversePostOrder(Func<BasicBlock, BasicBlockVisit> func)
     {
         assert(CanEnumerateInReversePostOrder());

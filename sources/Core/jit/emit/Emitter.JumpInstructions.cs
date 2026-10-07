@@ -63,6 +63,8 @@ public partial class Emitter
     {
 #if TARGET_ARM
         emitIns_R_LArm32(ins, attr, dst, reg);
+#elif TARGET_ARM64
+        emitIns_R_LArm64(ins, attr, dst, reg);
 #elif TARGET_LOONGARCH64
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 block-relative address recording is not ported.");
 #elif TARGET_RISCV64

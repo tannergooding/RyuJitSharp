@@ -24,6 +24,8 @@ public partial class Globals
 
     public const int TARGET_POINTER_SIZE = 4;
 
+    public const int STACK_PROBE_BOUNDARY_THRESHOLD_BYTES = 0;
+
     public const regNumber FIRST_FP_ARGREG = REG_F0;
 
     public const regNumber LAST_FP_ARGREG = REG_F15;
@@ -37,6 +39,8 @@ public partial class Globals
     public const regMask SRBM_R2R_INDIRECT_PARAM = SRBM_R12;
 
     public const regNumber REG_ASYNC_CONTINUATION_RET = REG_R2;
+
+    public const regNumber REG_PINVOKE_TCB = REG_R5;
 
     public const regNumber REG_ARG_0 = REG_R0;
 

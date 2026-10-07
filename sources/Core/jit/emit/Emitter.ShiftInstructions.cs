@@ -124,6 +124,8 @@ public partial class Emitter
     {
 #if TARGET_ARM
         recordArm32InsRARR(ins, attr, reg, @base, index, disp);
+#elif TARGET_ARM64
+        NYI("emitIns_R_ARR");
 #else
         emitIns_R_ARX(ins, attr, reg, @base, index, 1, disp);
 #endif
@@ -134,6 +136,8 @@ public partial class Emitter
     {
 #if TARGET_ARM
         recordArm32InsRARX(ins, attr, reg, @base, index, scale, disp);
+#elif TARGET_ARM64
+        NYI("emitIns_R_ARR");
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Indexed-address instruction recording requires xarch.");
 #else

@@ -143,6 +143,8 @@ public partial class Emitter
     {
 #if TARGET_ARM
         return jump.idInsFmt() is insFormat.IF_T2_J2 or insFormat.IF_T1_M;
+#elif TARGET_ARM64
+        return jump.idInsFmt() == insFormat.IF_BI_0A;
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Non-xarch unconditional-jump classification is not ported.");
 #endif

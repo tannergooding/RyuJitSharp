@@ -60,6 +60,10 @@ public sealed partial class Lowering
         ContainCheckStoreIndir(node);
 
         return node.Next;
+#elif TARGET_ARM
+        var next = node.Next;
+        ContainCheckStoreIndir(node);
+        return next;
 #elif TARGET_ARM64
         var next = node.Next;
         ContainCheckStoreIndir(node);
@@ -289,6 +293,8 @@ public sealed partial class Lowering
 #endif
         }
 
+        ContainCheckIndir(node);
+#elif TARGET_ARM
         ContainCheckIndir(node);
 #elif TARGET_ARM64
         var src = node.Data;

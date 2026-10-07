@@ -137,7 +137,7 @@ public sealed partial class CodeGen
         genSetBlockSize(blkNode, sizeReg);
     }
 
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
+#if TARGET_RISCV64
     public void instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, nint imm,
         insFlags flags = INS_FLAGS_DONT_CARE
 #if DEBUG

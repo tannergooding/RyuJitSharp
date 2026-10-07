@@ -330,7 +330,7 @@ public sealed partial class Lowering
             assert(clone is not null);
             return clone;
         }
-#elif TARGET_ARM64
+#elif TARGET_ARMARCH
         assert(tree.Oper is GT_CAST);
         JITDUMP("LowerCast for: ");
         DISPNODE(tree);

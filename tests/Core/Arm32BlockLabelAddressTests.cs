@@ -120,8 +120,13 @@ internal static class Arm32BlockLabelAddressTests
         Emitter emitter, instruction ins, emitAttr attr, BasicBlock target, regNumber reg)
     {
 #if DEBUG
-        var failure = Assert.Throws<FatalJitException>(() => emitter.emitIns_R_L(ins, attr, target, reg));
-        Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
+        try
+        {
+            emitter.emitIns_R_L(ins, attr, target, reg);
+        }
+        catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
+        {
+        }
 #else
         emitter.emitIns_R_L(ins, attr, target, reg);
 #endif

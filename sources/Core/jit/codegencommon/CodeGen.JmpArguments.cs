@@ -148,6 +148,42 @@ public sealed partial class CodeGen
         while (potentialArgs != SRBM_NONE);
 
         Emitter.emitEnableGC();
+#elif TARGET_ARM64
+        var potentialArgs = SRBM_ARG_REGS;
+
+        for (var varNum = 0; varNum < _compiler.info.compArgsCount; varNum++)
+        {
+            var abiInfo = _compiler.lvaGetParameterAbiInfo(varNum);
+            foreach (ref readonly var segment in abiInfo.Segments)
+            {
+                if (!segment.IsPassedOnStack)
+                {
+                    potentialArgs &= ~segment.RegisterMask;
+                }
+            }
+        }
+
+        if (potentialArgs == SRBM_NONE)
+        {
+            return;
+        }
+
+        Emitter.emitDisableGC();
+        do
+        {
+            var reg = (regNumber)BitOperations.TrailingZeroCount((ulong)potentialArgs);
+            potentialArgs &= ~reg.SingleTypeMask;
+
+            var regIndex = (int)reg - (int)REG_ARG_0;
+            assert((regIndex >= 0) && (regIndex < MAX_REG_ARG));
+            var loadOffset = unchecked((MAX_REG_ARG - regIndex) * -TARGET_POINTER_SIZE);
+            loadOffset -= IsFramePointerUsed ? genCallerSPtoFPdelta : genCallerSPtoInitialSPdelta;
+
+            Emitter.emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg, genFramePointerReg(), loadOffset);
+        }
+        while (potentialArgs != SRBM_NONE);
+
+        Emitter.emitEnableGC();
 #elif TARGET_AMD64
         unreached();
         throw new FatalJitException(CORJIT_SKIPPED, "SysV AMD64 JMP varargs are not supported.");

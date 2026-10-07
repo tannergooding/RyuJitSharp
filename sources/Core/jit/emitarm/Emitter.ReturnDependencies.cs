@@ -11,7 +11,7 @@ public partial class Emitter
     public void emitIns_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         regNumber reg3, insFlags flags)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 three-register instruction recording is not implemented.");
+        recordArm32InsRRR(ins, attr, reg1, reg2, reg3, flags);
     }
 }
 #endif

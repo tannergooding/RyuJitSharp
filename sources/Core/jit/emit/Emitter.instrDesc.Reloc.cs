@@ -4,8 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if TARGET_ARM
-using System;
-
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -14,7 +12,7 @@ public partial class Emitter
     {
         public unsafe byte* idrRelocVal;
 
-        public override int NativeLogicalSize => INSTR_DESC_SIZE + IntPtr.Size;
+        public override int NativeLogicalSize => INSTR_DESC_SIZE + sizeof(uint);
     }
 }
 #endif

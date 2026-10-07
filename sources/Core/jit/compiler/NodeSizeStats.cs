@@ -14,7 +14,9 @@ public struct NodeSizeStats
 
     public void Init()
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "NodeSizeStats::Init is not ported.");
+        genTreeNodeCnt = 0;
+        genTreeNodeSize = 0;
+        genTreeNodeActualSize = 0;
     }
 }
 #endif

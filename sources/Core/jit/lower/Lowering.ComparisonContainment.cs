@@ -104,6 +104,19 @@ public sealed partial class Lowering
         {
             cmp.IsUnsigned = true;
         }
+#elif TARGET_ARM
+        var op1 = cmp.Op1;
+        var op2 = cmp.Op2;
+        if (CheckImmedAndMakeContained(cmp, op2))
+        {
+            return;
+        }
+
+        if (cmp.Oper.IsCompare && CheckImmedAndMakeContained(cmp, op1))
+        {
+            (cmp.Op1, cmp.Op2) = (cmp.Op2, cmp.Op1);
+            cmp.SetOper(cmp.Oper.SwapRelop);
+        }
 #elif TARGET_ARM64
         var op1 = cmp.Op1;
         var op2 = cmp.Op2;

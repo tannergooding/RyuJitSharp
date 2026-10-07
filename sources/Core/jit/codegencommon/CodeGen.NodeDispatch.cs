@@ -210,6 +210,20 @@ public sealed partial class CodeGen
                 break;
             }
 
+#if TARGET_ARM
+            case GT_MUL_LONG:
+            {
+                genCodeForMulLong(tree.AsOp());
+                break;
+            }
+#elif TARGET_X86
+            case GT_MUL_LONG:
+            {
+                genCodeForMulHi(tree.AsOp());
+                break;
+            }
+#endif
+
             case GT_SWAP:
             {
                 genCodeForSwap(tree.AsOp());

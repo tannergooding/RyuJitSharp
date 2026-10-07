@@ -12,7 +12,9 @@ public partial class Emitter
 #if !TARGET_WASM
     public void emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM64
+        NYI("emitIns_S");
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Stack instruction recording requires xarch.");
 #else
 #if TARGET_AMD64
@@ -43,7 +45,9 @@ public partial class Emitter
 
     public void emitIns_S_I(instruction ins, emitAttr attr, int varx, int offs, int val)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM64
+        NYI("emitIns_S_I");
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Stack-immediate instruction recording requires xarch.");
 #else
 #if TARGET_AMD64

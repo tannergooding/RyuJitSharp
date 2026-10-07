@@ -36,7 +36,7 @@ public readonly struct GenConditionDesc
 
     private static ReadOnlySpan<GenConditionDesc> GetMap()
     {
-#if TARGET_XARCH || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64
         return s_map;
 #else
         throw new NotImplementedException("Condition instruction mapping is not ported for this target.");
@@ -85,7 +85,7 @@ public readonly struct GenConditionDesc
         new(EJ_jp), // P
         new(EJ_jnp), // NP
     ];
-#elif TARGET_ARM64
+#elif TARGET_ARM || TARGET_ARM64
     private static readonly GenConditionDesc[] s_map = [
         default, // NONE
         default, // 1

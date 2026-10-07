@@ -100,6 +100,45 @@ public sealed partial class Lowering
         {
             MakeSrcContained(node, addr);
         }
+#elif TARGET_ARM
+        if (node.Type is TYP_STRUCT)
+        {
+            return;
+        }
+#if FEATURE_SIMD
+        if (node.Type is TYP_SIMD12)
+        {
+            return;
+        }
+#endif
+
+        var addr = node.Addr;
+        if ((addr.Oper is GT_LEA) && IsInvariantInRange(addr, node))
+        {
+            var makeContained = true;
+            var addrMode = addr.AsAddrMode();
+            if (addrMode.HasIndex || !Emitter.emitIns_valid_imm_for_vldst_offset(addrMode.Offset))
+            {
+                if ((node.Oper is GT_STOREIND) && varTypeIsFloating(node.AsStoreInd().Data.Type))
+                {
+                    makeContained = false;
+                }
+                else if ((node.Oper is GT_IND) && varTypeIsFloating(node.Type))
+                {
+                    makeContained = false;
+                }
+            }
+
+            if (makeContained)
+            {
+                MakeSrcContained(node, addr);
+            }
+        }
+        else if ((addr.Oper is GT_LCL_ADDR) && (node.Oper is not GT_NULLCHECK) &&
+            IsContainableLclAddr(addr.AsLclFld(), (uint)node.Size))
+        {
+            MakeSrcContained(node, addr);
+        }
 #elif TARGET_ARM64
         if (node.Type is TYP_STRUCT or TYP_SIMD12)
         {

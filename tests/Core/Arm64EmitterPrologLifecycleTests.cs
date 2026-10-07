@@ -71,23 +71,6 @@ internal static unsafe class Arm64EmitterPrologLifecycleTests
         Assert.That(NoGcRequests(emitter), Is.Zero);
     }
 
-    [TestCase(IGPT_EPILOG, "Root epilog generation requires xarch.")]
-    [TestCase(IGPT_FUNCLET_PROLOG, "Funclet prologs require xarch.")]
-    [TestCase(IGPT_FUNCLET_EPILOG, "Funclet epilogs require xarch.")]
-    public static void GeneratingPlaceholdersReachesTheDistinctCodegenDependency(insGroupPlaceholderType kind, string dependency)
-    {
-        var (compiler, emitter) = CreateEmitter();
-        compiler.fgFuncletsCreated = true;
-        compiler.compFuncInfos = [new() { funKind = FuncKind.FUNC_ROOT }];
-        compiler.compFuncInfoCount = 1;
-        emitter.emitCreatePlaceholderIG(kind, new BasicBlock(null, null), VarSetOps.MakeEmpty(compiler),
-            default, default, last: true);
-
-        var error = Assert.Throws<FatalJitException>(emitter.emitGeneratePrologEpilog);
-        Assert.That(error!.Message, Does.Contain(dependency));
-        Assert.That(LastPlaceholder(emitter)?.igPhData, Is.Null);
-    }
-
 #if EMITTER_STATS
     [Test]
     public static void EachReservationIncrementsTheNativePlaceholderCounter()

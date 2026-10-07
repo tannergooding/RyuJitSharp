@@ -34,6 +34,8 @@ public sealed partial class CodeGen
     {
 #if TARGET_WASM
         genFnEpilogWasm(block);
+#elif TARGET_ARMARCH
+        genFnEpilogArmArch(block);
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Root epilog generation requires xarch.");
 #endif

@@ -81,6 +81,48 @@ public partial class Emitter
         return result;
     }
 
+    internal static uint insEncodeRegT1_M4(regNumber reg)
+    {
+        assert(reg < REG_STK);
+
+        return (uint)reg << 3;
+    }
+
+    internal static uint insEncodeRegT1_D4(regNumber reg)
+    {
+        assert(reg < REG_STK);
+
+        return ((uint)reg & 0x7) | (((uint)reg & 0x8) << 4);
+    }
+
+    internal static uint insEncodeRegT1_M3(regNumber reg)
+    {
+        assert(reg < REG_R8);
+
+        return (uint)reg << 6;
+    }
+
+    internal static uint insEncodeRegT1_N3(regNumber reg)
+    {
+        assert(reg < REG_R8);
+
+        return (uint)reg << 3;
+    }
+
+    internal static uint insEncodeRegT1_D3(regNumber reg)
+    {
+        assert(reg < REG_R8);
+
+        return (uint)reg;
+    }
+
+    internal static uint insEncodeRegT1_DI(regNumber reg)
+    {
+        assert(reg < REG_R8);
+
+        return (uint)reg << 8;
+    }
+
     internal static uint insEncodeRegT2_T(regNumber reg)
     {
         assert(reg < REG_STK);

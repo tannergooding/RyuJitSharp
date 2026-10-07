@@ -228,8 +228,13 @@ internal static class Arm32JumpRecordingTests
         Emitter emitter, instruction ins, BasicBlock target, bool keepShort = false)
     {
 #if DEBUG
-        var failure = Assert.Throws<FatalJitException>(() => emitter.emitIns_J(ins, target, keepShort));
-        Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
+        try
+        {
+            emitter.emitIns_J(ins, target, keepShort);
+        }
+        catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
+        {
+        }
 #else
         emitter.emitIns_J(ins, target, keepShort);
 #endif
@@ -241,8 +246,13 @@ internal static class Arm32JumpRecordingTests
         Emitter emitter, instruction ins, emitAttr attr, BasicBlock target, regNumber reg)
     {
 #if DEBUG
-        var failure = Assert.Throws<FatalJitException>(() => emitter.emitIns_J_R(ins, attr, target, reg));
-        Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
+        try
+        {
+            emitter.emitIns_J_R(ins, attr, target, reg);
+        }
+        catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
+        {
+        }
 #else
         emitter.emitIns_J_R(ins, attr, target, reg);
 #endif

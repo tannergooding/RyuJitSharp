@@ -9,7 +9,39 @@ public sealed partial class CodeGen
 {
     public void genCallFinally(BasicBlock block)
     {
-#if TARGET_ARM64
+#if TARGET_ARM
+        assert(block.Kind == BBJ_CALLFINALLY);
+        var nextBlock = block.Next;
+
+        if (block.HasFlag(BBF_RETLESS_CALL))
+        {
+            Emitter.emitIns_J(INS_bl, block.Target);
+
+            if ((nextBlock is null) || !BasicBlock.sameEHRegion(block, nextBlock))
+            {
+                instGen(INS_BREAKPOINT);
+            }
+        }
+        else
+        {
+            Emitter.emitDisableGC();
+            Emitter.emitIns_J(INS_bl, block.Target);
+
+            assert(nextBlock is not null);
+            assert(nextBlock.Kind == BBJ_CALLFINALLYRET);
+            var finallyContinuation = nextBlock.Target;
+            if ((nextBlock.Next == finallyContinuation) && !_compiler.fgInDifferentRegions(nextBlock, finallyContinuation))
+            {
+                instGen(INS_nop);
+            }
+            else
+            {
+                Emitter.emitIns_J(INS_b, finallyContinuation);
+            }
+
+            Emitter.emitEnableGC();
+        }
+#elif TARGET_ARM64
         Emitter.RequireSupportedInstructionRecording();
         assert(block.Kind == BBJ_CALLFINALLY);
         var nextBlock = block.Next;
@@ -93,7 +125,9 @@ public sealed partial class CodeGen
 
     public void genEHCatchRet(BasicBlock block)
     {
-#if TARGET_ARM64
+#if TARGET_ARM
+        genMov32RelocatableDisplacement(block.Target, REG_INTRET);
+#elif TARGET_ARM64
         Emitter.RequireSupportedInstructionRecording();
         // The emitter selects ADR or ADRP+ADD after laying out the target.
         Emitter.emitIns_R_L(INS_adr, EA_PTRSIZE, block.Target, REG_INTRET);

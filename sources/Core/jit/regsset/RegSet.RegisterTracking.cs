@@ -170,9 +170,15 @@ public partial struct RegSet
         _rsModifiedRegsMask = remaining;
     }
 
+#if TARGET_WASM
+    public readonly void verifyRegUsed(regNumber reg)
+#else
     public void verifyRegUsed(regNumber reg)
+#endif
     {
+#if !TARGET_WASM
         rsSetRegsModified(regMaskTP.CreateFromRegNum(reg, (regMask)(1L << ((int)reg & 63))));
+#endif
     }
 
     public void verifyRegistersUsed(regMaskTP regMask)

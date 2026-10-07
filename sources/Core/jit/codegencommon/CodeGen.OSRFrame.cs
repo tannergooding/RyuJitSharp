@@ -138,6 +138,50 @@ public sealed partial class CodeGen
         // Record the phantom Tier0 frame allocation and pad the prolog for ARM64 unwind codes.
         _compiler.unwindAllocStack(unchecked((uint)patchpoint->TotalFrameSize));
         _compiler.unwindPadding();
+#elif TARGET_RISCV64
+        assert(Emitter.emitGeneratingPrologOrFuncletProlog());
+        assert(_compiler.opts.IsOSR);
+        assert(_compiler.funCurrentFunc().funKind == FuncKind.FUNC_ROOT);
+
+        var patchpoint = _compiler.info.compPatchpointInfo;
+        var tier0CalleeSaves = new regMaskTP((regMask)patchpoint->CalleeSaveRegisters);
+
+#if DEBUG
+        if (_verbose)
+        {
+            jitprintf("--OSR--- tier0 has already saved ");
+            dspRegMask(tier0CalleeSaves);
+            jitprintf("\nEmitting restores\n");
+        }
+#endif
+
+        genRestoreCalleeSavedRegistersHelp(tier0CalleeSaves & ~(RBM_FP | RBM_RA), REG_FP, 16,
+            reportUnwindData: false);
+        Emitter.emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_FP, 8);
+        Emitter.emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_FP, REG_FP, 0);
+        _compiler.unwindAllocStack(unchecked((uint)patchpoint->TotalFrameSize));
+#elif TARGET_LOONGARCH64
+        assert(Emitter.emitGeneratingPrologOrFuncletProlog());
+        assert(_compiler.opts.IsOSR);
+        assert(_compiler.funCurrentFunc().funKind == FuncKind.FUNC_ROOT);
+
+        var patchpoint = _compiler.info.compPatchpointInfo;
+        var tier0CalleeSaves = new regMaskTP((regMask)patchpoint->CalleeSaveRegisters);
+
+#if DEBUG
+        if (_verbose)
+        {
+            jitprintf("--OSR--- tier0 has already saved ");
+            dspRegMask(tier0CalleeSaves);
+            jitprintf("\nEmitting restores\n");
+        }
+#endif
+
+        genRestoreCalleeSavedRegistersHelp(tier0CalleeSaves & ~(RBM_FP | RBM_RA), REG_FP, 16,
+            reportUnwindData: false);
+        Emitter.emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_FP, 8);
+        Emitter.emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_FP, 0);
+        _compiler.unwindAllocStack(unchecked((uint)patchpoint->TotalFrameSize));
 #else
         unreached();
 #endif

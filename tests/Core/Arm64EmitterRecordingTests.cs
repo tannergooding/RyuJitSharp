@@ -8,12 +8,14 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using NUnit.Framework;
+using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.insOpts;
 using static RyuJitSharp.insScalableOpts;
+using static RyuJitSharp.insSvePattern;
 using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp.UnitTests;
@@ -28,8 +30,9 @@ internal static unsafe class Arm64EmitterRecordingTests
         var flags = Flags(null);
         Assert.That((int)IF_COUNT, Is.EqualTo(599));
         Assert.That(formats.Length, Is.EqualTo(1158));
-        Assert.That(flags.Length, Is.EqualTo(formats.Length));
+        Assert.That(flags.Length, Is.EqualTo(formats.Length + 1));
         Assert.That((int)INS_lea, Is.EqualTo(formats.Length));
+        Assert.That(flags[formats.Length], Is.EqualTo((byte)0));
         var rows = new StringBuilder();
         for (var index = 0; index < (int)IF_COUNT; index++)
         {
@@ -300,7 +303,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         var emitter = CreateEmitter();
         var error = Assert.Throws<FatalJitException>(() =>
             RecordShifted(emitter, INS_nop, EA_8BYTE, REG_R0, 1, 16, INS_OPTS_LSL));
-        Assert.That(error, Has.Message.EqualTo("ARM64 SVE register/two-immediate instruction recording is not ported."));
+        Assert.That(error!.Result, Is.EqualTo(CORJIT_RECOVERABLEERROR));
         Assert.That(GroupSize(emitter), Is.Zero);
     }
 
@@ -545,7 +548,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(pair.idReg1(), Is.EqualTo(firstExpected));
         Assert.That(pair.idReg2(), Is.EqualTo(secondExpected));
         Assert.That(pair.idReg3(), Is.EqualTo(REG_R20));
-        Assert.That(Emitter.emitGetInsSC(pair), Is.Zero);
+        Assert.That(Emitter.emitGetInsSC(pair), Is.EqualTo((nint)0));
     }
 
     [Test]
@@ -597,14 +600,14 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(Emitter.emitGetInsSC(postIndexed), Is.EqualTo((nint)expectedOffset));
     }
 
-    [TestCase(INS_nop, 1, false, false, REG_R20, "SVE two-register/immediate")]
+    [TestCase(INS_nop, 1, false, false, REG_R20)]
     public static void PairImmediateDependenciesRemainExplicit(instruction ins, int imm,
-        bool optimized, bool reloc, regNumber reg2, string dependency)
+        bool optimized, bool reloc, regNumber reg2)
     {
         var emitter = CreateEmitter(optimized, reloc);
         var error = Assert.Throws<FatalJitException>(() =>
             RecordPair(emitter, ins, EA_8BYTE, REG_R19, reg2, imm, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE));
-        Assert.That(error, Has.Message.Contains(dependency));
+        Assert.That(error!.Result, Is.EqualTo(CORJIT_RECOVERABLEERROR));
         Assert.That(GroupSize(emitter), Is.Zero);
     }
 
@@ -832,13 +835,17 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
 
         var sve = CreateEmitter();
-        var moveError = Assert.Throws<FatalJitException>(() =>
-            RecordMove(sve, INS_sve_movprfx, EA_8BYTE, REG_V0, REG_V1, false, INS_OPTS_NONE));
-        Assert.That(moveError, Has.Message.Contains("SVE move recording"));
+        RecordMove(sve, INS_sve_movprfx, EA_SCALABLE, REG_V0, REG_V1, false, INS_OPTS_SCALABLE_B);
+        var move = LastInstruction(sve) ?? throw new AssertionException("No SVE move-prefix instruction was recorded.");
+        Assert.That(move.idIns(), Is.EqualTo(INS_sve_movprfx));
+        Assert.That(move.idReg1(), Is.EqualTo(REG_V0));
+        Assert.That(move.idReg2(), Is.EqualTo(REG_V1));
+
         var pairError = Assert.Throws<FatalJitException>(() =>
             RecordRegisters(sve, INS_nop, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE));
-        Assert.That(pairError, Has.Message.Contains("SVE two-register recording"));
-        Assert.That(GroupSize(sve), Is.Zero);
+        Assert.That(pairError!.Result, Is.EqualTo(CORJIT_RECOVERABLEERROR));
+        Assert.That(LastInstruction(sve), Is.SameAs(move));
+        Assert.That(GroupSize(sve), Is.EqualTo(4));
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIns_Mov")]
@@ -954,13 +961,13 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
 
-    [TestCase(INS_nop, "SVE three-register")]
-    public static void ThreeRegisterDependenciesRemainExplicit(instruction ins, string dependency)
+    [TestCase(INS_nop)]
+    public static void ThreeRegisterDependenciesRemainExplicit(instruction ins)
     {
         var emitter = CreateEmitter();
         var error = Assert.Throws<FatalJitException>(() =>
             RecordThree(emitter, ins, EA_8BYTE, REG_R19, REG_R20, REG_R21, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE));
-        Assert.That(error, Has.Message.Contains(dependency));
+        Assert.That(error!.Result, Is.EqualTo(CORJIT_RECOVERABLEERROR));
         Assert.That(GroupSize(emitter), Is.Zero);
     }
 
@@ -1279,7 +1286,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         var emitter = CreateEmitter();
         var error = Assert.Throws<FatalJitException>(() => RecordThreeImmediate(emitter, INS_nop,
             EA_8BYTE, REG_R19, REG_R20, REG_R21, 0, INS_OPTS_NONE, EA_UNKNOWN, INS_SCALABLE_OPTS_NONE));
-        Assert.That(error, Has.Message.Contains("SVE three-register/immediate"));
+        Assert.That(error!.Result, Is.EqualTo(CORJIT_RECOVERABLEERROR));
         Assert.That(GroupSize(emitter), Is.Zero);
     }
 
@@ -1513,10 +1520,10 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
 
-    [TestCase(0, "three-register/two-immediate")]
-    [TestCase(1, "four-register recording")]
-    [TestCase(2, "four-register/immediate")]
-    public static void SveMultioperandFallbackTerminates(int form, string dependency)
+    [TestCase(0)]
+    [TestCase(1)]
+    [TestCase(2)]
+    public static void SveMultioperandFallbackTerminates(int form)
     {
         var emitter = CreateEmitter();
         var error = Assert.Throws<FatalJitException>(() =>
@@ -1543,7 +1550,7 @@ internal static unsafe class Arm64EmitterRecordingTests
                 }
             }
         });
-        Assert.That(error, Has.Message.Contains(dependency));
+        Assert.That(error!.Result, Is.EqualTo(CORJIT_RECOVERABLEERROR));
         Assert.That(GroupSize(emitter), Is.Zero);
     }
 
@@ -2024,10 +2031,9 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
 
-    [TestCase(31, "SVE", 0)]
-    [TestCase(32, "SVE", 4)]
-    public static void LocalStackScalableAddressDependenciesPreserveSignedSixBitBoundary(
-        int index, string dependency, int recordedSize)
+    [TestCase(31, 4)]
+    [TestCase(32, 12)]
+    public static void LocalStackScalableAddressesPreserveTheSignedSixBitBoundary(int index, int recordedSize)
     {
         var emitter = CreateLocalStackEmitter(0, false);
         var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
@@ -2035,9 +2041,23 @@ internal static unsafe class Arm64EmitterRecordingTests
         compiler.lvaTable[0].UnknownSizeFrameIndex = index;
         compiler.unkSizeFrame.nVector = (uint)(index + 1);
         compiler.unkSizeFrame.FinalizeLayout();
-        Assert.That(() => RecordLocalLoad(emitter, INS_lea, EA_8BYTE, REG_R4, 0, 0),
-            Throws.TypeOf<FatalJitException>().With.Message.Contains(dependency));
+        RecordLocalLoad(emitter, INS_lea, EA_8BYTE, REG_R4, 0, 0);
         Assert.That(GroupSize(emitter), Is.EqualTo(recordedSize));
+        var instructions = CurrentInstructions(emitter);
+        Assert.That(instructions, Has.Count.EqualTo(recordedSize / 4));
+        if (index == 31)
+        {
+            Assert.That(instructions[0].idIns(), Is.EqualTo(INS_sve_addvl));
+            Assert.That(instructions[0].idReg1(), Is.EqualTo(REG_R4));
+            Assert.That(instructions[0].idReg2(), Is.EqualTo(REG_UNKBASE));
+            Assert.That(Emitter.emitGetInsSC(instructions[0]), Is.EqualTo(-(nint)32));
+        }
+        else
+        {
+            Assert.That(instructions[1].idIns(), Is.EqualTo(INS_sve_rdvl));
+            Assert.That(instructions[2].idIns(), Is.EqualTo(INS_madd));
+            Assert.That(instructions[2].idReg1(), Is.EqualTo(REG_R4));
+        }
     }
 
     [TestCase(false, INS_ldr, -257, false, IF_LS_3A)]
@@ -2452,17 +2472,17 @@ internal static unsafe class Arm64EmitterRecordingTests
         RecordingEmitter.CheckConstantAddress(emitter, keepLong, reloc, (nint)handle);
     }
 
-    [TestCase(SimdScalableKind.SimdScalableRepeated, 0, 0, 0, "register-immediate")]
-    [TestCase(SimdScalableKind.SimdScalableRepeated, -1, 0, 0, "register-immediate")]
-    [TestCase(SimdScalableKind.SimdScalableRepeated, 127, 0, 0, "register-immediate")]
-    [TestCase(SimdScalableKind.SimdScalableRepeated, 0x12345678, 0, 1, "two-register")]
-    [TestCase(SimdScalableKind.SimdScalableSequence, 1, 2, 0, "two-immediate")]
-    [TestCase(SimdScalableKind.SimdScalableSequence, 1, 64, 1, "two-register/immediate")]
-    [TestCase(SimdScalableKind.SimdScalableSequence, 32, 2, 1, "two-register/immediate")]
-    [TestCase(SimdScalableKind.SimdScalableSequence, 32, 64, 2, "three-register")]
-    [TestCase(SimdScalableKind.SimdScalableScalar, 32, 0, 0, "register-immediate")]
-    public static void ConstantNodeScalablePreservesLoadsBeforeItsExplicitDependency(
-        SimdScalableKind kind, int index, int step, int loads, string dependency)
+    [TestCase(SimdScalableKind.SimdScalableRepeated, 0, 0, 0)]
+    [TestCase(SimdScalableKind.SimdScalableRepeated, -1, 0, 0)]
+    [TestCase(SimdScalableKind.SimdScalableRepeated, 127, 0, 0)]
+    [TestCase(SimdScalableKind.SimdScalableRepeated, 0x12345678, 0, 1)]
+    [TestCase(SimdScalableKind.SimdScalableSequence, 1, 2, 0)]
+    [TestCase(SimdScalableKind.SimdScalableSequence, 1, 64, 1)]
+    [TestCase(SimdScalableKind.SimdScalableSequence, 32, 2, 1)]
+    [TestCase(SimdScalableKind.SimdScalableSequence, 32, 64, 2)]
+    [TestCase(SimdScalableKind.SimdScalableScalar, 32, 0, 1)]
+    public static void ConstantNodeScalableRecordsLoadsBeforeTheTargetOperation(
+        SimdScalableKind kind, int index, int step, int loads)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -2476,13 +2496,17 @@ internal static unsafe class Arm64EmitterRecordingTests
         var codeGen = EmitterCodeGen(emitter);
         codeGen.InternalRegisters.Add(tree, new regMaskTP(REG_R3.SingleTypeMask | REG_R5.SingleTypeMask));
 
-        Assert.That(() => RecordConstantNode(codeGen, REG_V2, var_types.TYP_SIMD, tree),
-            Throws.TypeOf<FatalJitException>().With.Message.Contains(dependency));
-        var instructions = CurrentInstructions(emitter);
-        Assert.That(instructions, Has.Count.EqualTo(loads));
+        RecordConstantNode(codeGen, REG_V2, var_types.TYP_SIMD, tree);
+        var instructions = CurrentInstructions(emitter)
+            ?? throw new AssertionException("No scalable constant instructions were recorded.");
+        var isScalar = kind == SimdScalableKind.SimdScalableScalar;
+        Assert.That(instructions, Has.Count.EqualTo(loads + (isScalar ? 2 : 1)));
+        var loadStartIndex = isScalar ? 1 : 0;
         var section = emitter.emitConsDsc.dsdList;
         for (var i = 0; i < loads; i++)
         {
+            var load = instructions[loadStartIndex + i];
+            Assert.That(load.idIns(), Is.EqualTo(INS_ldr));
             Assert.That(section, Is.Not.Null);
             var data = section ?? throw new AssertionException("Missing scalable constant data.");
             var expected = kind == SimdScalableKind.SimdScalableRepeated || index > 15 ? index : step;
@@ -2493,16 +2517,30 @@ internal static unsafe class Arm64EmitterRecordingTests
             Assert.That(BitConverter.ToInt64(data.Data), Is.EqualTo((long)expected));
             Assert.That(data.dsSize, Is.EqualTo(8));
             Assert.That(data.dsDataType, Is.EqualTo(var_types.TYP_LONG));
-            Assert.That(instructions[i].idReg1(), Is.EqualTo(i == 0 ? REG_R3 : REG_R5));
-            Assert.That(instructions[i].idReg2(), Is.EqualTo(instructions[i].idReg1()));
+            Assert.That(load.idReg1(), Is.EqualTo(i == 0 ? REG_R3 : REG_R5));
+            Assert.That(load.idReg2(), Is.EqualTo(load.idReg1()));
             section = data.dsNext;
+        }
+
+        var operation = instructions[^1];
+        Assert.That(operation.idIns(), Is.EqualTo(kind switch
+        {
+            SimdScalableKind.SimdScalableRepeated => INS_sve_mov,
+            SimdScalableKind.SimdScalableSequence => INS_sve_index,
+            SimdScalableKind.SimdScalableScalar => INS_ins,
+            _ => throw new AssertionException($"Unexpected scalable constant kind: {kind}."),
+        }));
+        Assert.That(operation.idReg1(), Is.EqualTo(REG_V2));
+        if (isScalar)
+        {
+            Assert.That(instructions[0].idIns(), Is.EqualTo(INS_sve_mov));
         }
     }
 
-    [TestCase(0UL, "single-register")]
-    [TestCase(1UL, "register-pattern")]
-    [TestCase(0xFFFFUL, "register-pattern")]
-    public static void ConstantNodeMasksReachTheirExplicitRecordingDependency(ulong bits, string dependency)
+    [TestCase(0UL)]
+    [TestCase(1UL)]
+    [TestCase(0xFFFFUL)]
+    public static void ConstantNodeMasksRecordTheirScalablePredicatePattern(ulong bits)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -2511,9 +2549,24 @@ internal static unsafe class Arm64EmitterRecordingTests
         simdmask_t value = default;
         value.u64[0] = bits;
         var tree = new GenTreeMskCon(value);
-        Assert.That(() => RecordConstantNode(EmitterCodeGen(emitter), REG_P1, var_types.TYP_MASK, tree),
-            Throws.TypeOf<FatalJitException>().With.Message.Contains(dependency));
-        Assert.That(CurrentInstructions(emitter), Is.Empty);
+        RecordConstantNode(EmitterCodeGen(emitter), REG_P1, var_types.TYP_MASK, tree);
+
+        var id = LastInstruction(emitter) ?? throw new AssertionException("No predicate instruction was recorded.");
+        Assert.That(CurrentInstructions(emitter), Has.Count.EqualTo(1));
+        Assert.That(id.idReg1(), Is.EqualTo(REG_P1));
+        Assert.That(id.idOpSize(), Is.EqualTo(EA_SCALABLE));
+        if (bits == 0)
+        {
+            Assert.That(id.idIns(), Is.EqualTo(INS_sve_pfalse));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_SVE_DJ_1A));
+        }
+        else
+        {
+            Assert.That(id.idIns(), Is.EqualTo(INS_sve_ptrue));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_SVE_DE_1A));
+            Assert.That(id.idInsOpt(), Is.EqualTo(INS_OPTS_SCALABLE_B));
+            Assert.That(id.idSvePattern(), Is.EqualTo(bits == 1 ? SVE_PATTERN_VL1 : SVE_PATTERN_ALL));
+        }
     }
 
     [TestCase(EA_1BYTE, INS_OPTS_SCALABLE_B)]

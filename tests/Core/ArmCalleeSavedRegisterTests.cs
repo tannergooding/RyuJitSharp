@@ -226,21 +226,13 @@ internal static unsafe class ArmCalleeSavedRegisterTests
             }
 
             var descriptors = Descriptors(codeGen);
-            var expectedDescriptorCount = 1;
-#if !DEBUG
-            if (floatMask.IsNonEmpty)
-            {
-                expectedDescriptorCount++;
-            }
-#endif
+            var expectedDescriptorCount = floatMask.IsNonEmpty ? 2 : 1;
             Assert.That(descriptors, Has.Count.EqualTo(expectedDescriptorCount));
             AssertArm32PushPopDescriptor(codeGen, descriptors[0], INS_push, intMask);
-#if !DEBUG
             if (floatMask.IsNonEmpty)
             {
                 AssertFloatSaveDescriptor(codeGen, descriptors[1], INS_vpush, floatMask);
             }
-#endif
         });
     }
 
@@ -302,29 +294,20 @@ internal static unsafe class ArmCalleeSavedRegisterTests
             SetPhase(codeGen, InsGroupFlags.Epilog);
             var modified = new regMaskTP(SRBM_R4 | SRBM_F16 | SRBM_F17);
             codeGen.RegSet.rsSetRegsModified(modified);
+            codeGen.IsFramePointerUsed = false;
             codeGen.genUsedPopToReturn = true;
 
             RecordArm32Instructions(() => codeGen.genPopCalleeSavedRegisters(jump));
 
-#if DEBUG
-            Assert.That(codeGen.genUsedPopToReturn, Is.True);
-#else
             Assert.That(codeGen.genUsedPopToReturn, Is.EqualTo(!jump));
-#endif
             Assert.That(codeGen.RegSet.rsGetModifiedRegsMask(), Is.EqualTo(modified));
             var descriptors = Descriptors(codeGen);
-#if DEBUG
-            Assert.That(descriptors, Has.Count.EqualTo(1));
-#else
             Assert.That(descriptors, Has.Count.EqualTo(2));
-#endif
             AssertFloatSaveDescriptor(codeGen, descriptors[0], INS_vpop,
                 new regMaskTP(SRBM_F16 | SRBM_F17));
-#if !DEBUG
             var returnRegister = jump ? SRBM_LR : SRBM_PC;
             AssertArm32PushPopDescriptor(codeGen, descriptors[1], INS_pop,
                 new regMaskTP(SRBM_R4 | returnRegister));
-#endif
         });
     }
 
@@ -561,6 +544,21 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         return CurrentDescriptors(codeGen.Emitter) ?? throw new AssertionException("Missing descriptor buffer.");
     }
 
+    private static void RecordArm32Instructions(TestDelegate action)
+    {
+#if DEBUG
+        try
+        {
+            action();
+        }
+        catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
+        {
+        }
+#else
+        action();
+#endif
+    }
+
     private static void AssertFailure(TestDelegate action, string? message)
     {
         var failure = Assert.Throws<FatalJitException>(action) ??
@@ -571,15 +569,6 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         {
             Assert.That(failure.Message, Is.EqualTo(message));
         }
-    }
-
-    private static void RecordArm32Instructions(TestDelegate action)
-    {
-#if DEBUG
-        AssertFailure(action, "Instruction sanity checking outside AMD64 is not ported.");
-#else
-        action();
-#endif
     }
 
     private static void AssertFloatSaveDescriptor(
@@ -681,6 +670,7 @@ internal static unsafe class ArmCalleeSavedRegisterTests
                 , true
 #endif
                 );
+            unwindInfo.CaptureLocation();
             action(compiler, codeGen);
         }
         finally

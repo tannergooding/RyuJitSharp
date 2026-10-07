@@ -10,7 +10,7 @@ public partial class Emitter
 {
     public void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir indir)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 indirect-store instruction recording is not ported.");
+        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 indirect load/store instruction recording is not ported.");
     }
 }
 #endif

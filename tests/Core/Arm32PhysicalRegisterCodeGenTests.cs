@@ -28,10 +28,6 @@ internal static class Arm32PhysicalRegisterCodeGenTests
             var tree = new GenTreePhysReg(source, type) { RegNum = target };
             codeGen.GCInfo.gcMarkRegPtrVal(source, type);
 
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForPhysReg(tree));
-            Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-#else
             codeGen.genCodeForPhysReg(tree);
 
             var descriptors = CurrentDescriptors(codeGen.Emitter)
@@ -46,7 +42,6 @@ internal static class Arm32PhysicalRegisterCodeGenTests
                 Is.EqualTo(type == TYP_REF ? expected : RBM_NONE));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur,
                 Is.EqualTo(type == TYP_BYREF ? expected : RBM_NONE));
-#endif
         });
     }
 

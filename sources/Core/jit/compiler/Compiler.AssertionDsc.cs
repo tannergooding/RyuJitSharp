@@ -295,6 +295,11 @@ public partial class Compiler
             _op2 = op2;
         }
 
+        private static AssertionDsc CreateEmptyAssertion(Compiler comp)
+        {
+            return new(default, new(comp, default, 0), new(comp, default, default));
+        }
+
         public optAssertionKind Kind { get; }
 
         public ref readonly AssertionDscOp1 Op1 => ref _op1;

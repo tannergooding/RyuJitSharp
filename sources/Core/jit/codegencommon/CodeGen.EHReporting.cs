@@ -18,7 +18,18 @@ public sealed partial class CodeGen
     public void genReportEH()
     {
 #if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "genReportEH is not implemented for Wasm.");
+        var clauses = _compiler.fgWasmEHInfo;
+        if (clauses is null)
+        {
+            return;
+        }
+
+        var count = _compiler.compHndBBtabCount;
+        assert(clauses.Length == count);
+        _compiler.eeSetEHcount(count);
+        _compiler.Metrics.EHClauseCount = count;
+
+        genReportEHClauses(clauses);
 #else
         var count = _compiler.compHndBBtabCount;
         if (count == 0)
@@ -119,7 +130,7 @@ public sealed partial class CodeGen
         }
     }
 
-    private static CORINFO_EH_CLAUSE_FLAGS ToCORINFO_EH_CLAUSE_FLAGS(EHHandlerType type)
+    internal static CORINFO_EH_CLAUSE_FLAGS ToCORINFO_EH_CLAUSE_FLAGS(EHHandlerType type)
     {
         return type switch
         {

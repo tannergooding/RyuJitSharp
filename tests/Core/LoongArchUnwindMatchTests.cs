@@ -10,6 +10,9 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
+using static RyuJitSharp.CorJitResult;
+using static RyuJitSharp.Globals;
+using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp.UnitTests;
@@ -18,6 +21,9 @@ internal static class LoongArchUnwindMatchTests
 {
     [TestCase(new byte[] { 0xE1, 0xAA }, new byte[] { 0xAA }, 1)]
     [TestCase(new byte[] { 0xE2, 0x01, 0x02, 0xAA }, new byte[] { 0xAA }, 3)]
+    [TestCase(new byte[] { 0xE1, 0xAA, 0xE4 }, new byte[] { 0xE1, 0xAB }, -1)]
+    [TestCase(new byte[] { 0xE2, 0x01, 0x02, 0xAA }, new byte[] { 0xAA, 0xAB }, -1)]
+    [TestCase(new byte[] { 0xAA }, new byte[] { 0xAA, 0xAB }, -1)]
     public static void PrologFrameCodeMatchesTheCorrespondingEpilogTail(
         byte[] prologCodes,
         byte[] epilogCodes,
@@ -69,6 +75,35 @@ internal static class LoongArchUnwindMatchTests
 
 internal static unsafe class LoongArchUnwindLifecycleTests
 {
+    [Test]
+    public static void OSRPrologPreservesTheLoongArchEmitterBoundary()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT, uwi = new UnwindInfo() }];
+            compiler.compFuncInfoCount = 1;
+            compiler.fgFuncletsCreated = true;
+            compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_OSR);
+            codeGen.Emitter.emitCurIG = codeGen.Emitter.emitGetFirstPrologIG();
+            compiler.funCurrentFunc().GetUnwindInfo().InitUnwindInfo(compiler, null, null);
+
+            var storage = stackalloc byte[PatchpointInfo.ComputeSize(1)];
+            var patchpoint = (PatchpointInfo*)storage;
+            patchpoint->Initialize(1, 96);
+            patchpoint->CalleeSaveRegisters = (long)(SRBM_S0 | SRBM_F24 | SRBM_FP | SRBM_RA);
+            compiler.info.compPatchpointInfo = patchpoint;
+
+            compiler.unwindBegProlog();
+
+            var failure = Assert.Throws<FatalJitException>(
+                () => codeGen.genOSRHandleTier0CalleeSavedRegistersAndFrame());
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("Two-register-immediate instruction recording requires xarch."));
+        });
+    }
+
     [Test]
     public static void PrologRecordingPreservesLoongArchInstructionEncoding()
     {

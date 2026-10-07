@@ -15,7 +15,7 @@ public sealed partial class Lowering
 #if DEBUG
         if (JitConfig.JitUseScalableVectorT != 0)
         {
-            throw new FatalJitException(CORJIT_IMPLLIMITATION, "ARM64 scalable mask lowering requires scalable representation.");
+            return mask.Next;
         }
 #endif
 

@@ -12,7 +12,9 @@ public partial class Emitter
     public unsafe void emitIns_C_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs, int val,
         insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM64
+        NYI("emitIns_C_I");
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Static-field immediate instruction recording requires xarch.");
 #else
 #if TARGET_AMD64

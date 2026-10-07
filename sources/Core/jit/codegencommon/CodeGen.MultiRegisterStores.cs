@@ -160,7 +160,43 @@ public sealed partial class CodeGen
 
     public void genMultiRegStoreToSIMDLocal(GenTreeLclVar lclNode)
     {
-#if !TARGET_XARCH || !FEATURE_SIMD
+#if TARGET_ARMARCH && FEATURE_SIMD
+        assert(varTypeIsSimd(lclNode.Type));
+
+        var op1 = lclNode.Op1;
+        var actualOp1 = op1.SkipCopyOrReload;
+        var regCount = actualOp1.GetMultiRegCount(_compiler);
+        assert(op1.IsMultiRegNode);
+        genConsumeRegs(op1);
+
+        var targetReg = lclNode.RegNum;
+        for (var i = regCount - 1; i >= 0; i--)
+        {
+            var type = actualOp1.GetRegTypeByIndex(i);
+            var reg = actualOp1.GetRegByIndex(checked((byte)i));
+
+            if (op1.Oper.IsCopyOrReload)
+            {
+                var reloadReg = op1.AsCopyOrReload().GetRegNumByIdx(checked((byte)i));
+                if (reloadReg != REG_NA)
+                {
+                    reg = reloadReg;
+                }
+            }
+
+            assert(reg != REG_NA);
+            if (varTypeIsFloating(type))
+            {
+                Emitter.emitIns_R_R_I_I(INS_mov, emitTypeSize(type), targetReg, reg, i, 0);
+            }
+            else
+            {
+                Emitter.emitIns_R_R_I(INS_mov, emitTypeSize(type), targetReg, reg, i);
+            }
+        }
+
+        genProduceReg(lclNode);
+#elif !TARGET_XARCH || !FEATURE_SIMD
         throw new FatalJitException(CORJIT_SKIPPED, "Multi-register SIMD local stores require xarch SIMD support.");
 #elif TARGET_AMD64 && !UNIX_AMD64_ABI
         Emitter.RequireSupportedInstructionRecording();

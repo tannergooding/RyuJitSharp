@@ -351,6 +351,44 @@ public partial class Globals
         _ => TYP_UNKNOWN,
     };
 
+    public static CorInfoHFAElemType HfaElemKindFromType(var_types type)
+    {
+        switch (type)
+        {
+            case TYP_FLOAT:
+            {
+                return CORINFO_HFA_ELEM_FLOAT;
+            }
+
+            case TYP_DOUBLE:
+            {
+                return CORINFO_HFA_ELEM_DOUBLE;
+            }
+
+#if FEATURE_SIMD
+            case TYP_SIMD8:
+            {
+                return CORINFO_HFA_ELEM_VECTOR64;
+            }
+
+            case TYP_SIMD16:
+            {
+                return CORINFO_HFA_ELEM_VECTOR128;
+            }
+#endif
+            case TYP_UNDEF:
+            {
+                return CORINFO_HFA_ELEM_NONE;
+            }
+
+            default:
+            {
+                assert(false, "Invalid HFA Type");
+                return CORINFO_HFA_ELEM_NONE;
+            }
+        }
+    }
+
     public static bool IsHfa(CorInfoHFAElemType kind) => kind is not CORINFO_HFA_ELEM_NONE;
 
 #if TARGET_XARCH

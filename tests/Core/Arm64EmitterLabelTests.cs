@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.BasicBlockFlags;
+using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
 using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
@@ -50,6 +51,66 @@ internal static unsafe class Arm64EmitterLabelTests
         Assert.That(ThisByrefs(emitter), Is.EqualTo((regMask)2));
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void BlockLabelAddressesRecordTheirUnboundTargetAndRegionPolicy(bool targetCold)
+    {
+        var (compiler, emitter) = CreateEmitter(beginFunction: true);
+        var source = new BasicBlock(null, null);
+        var target = new BasicBlock(null, null);
+        target.SetFlags(BBF_HAS_LABEL);
+        compiler.compCurBB = source;
+        if (targetCold)
+        {
+            target.SetFlags(BBF_COLD);
+            compiler.fgFirstColdBlock = target;
+        }
+
+        emitter.emitIns_R_L(INS_adr, EA_PTRSIZE, target, regNumber.REG_R5);
+
+        var descriptor = LastInstruction(emitter) as Emitter.instrDescJmp
+            ?? throw new AssertionException("No block label address was recorded.");
+        Assert.That(descriptor.idIns(), Is.EqualTo(INS_adr));
+        Assert.That(descriptor.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_LARGEADR));
+        Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_PTRSIZE));
+        Assert.That(descriptor.idReg1(), Is.EqualTo(regNumber.REG_R5));
+        Assert.That(descriptor.idjTarget, Is.SameAs(target));
+        Assert.That(descriptor.idjTargetIG, Is.Null);
+        Assert.That(descriptor.idIsBound(), Is.False);
+        Assert.That(descriptor.idjShort, Is.False);
+        Assert.That(descriptor.idjKeepLong, Is.EqualTo(targetCold));
+        Assert.That(descriptor.idjIG, Is.SameAs(emitter.emitCurIG));
+        Assert.That(descriptor.idjOffs, Is.Zero);
+        Assert.That(PendingJump(emitter), Is.SameAs(descriptor));
+        Assert.That(GroupSize(emitter), Is.EqualTo(8));
+    }
+
+    [Test]
+    public static void InstructionGroupLabelAddressesRecordTheirBoundTarget()
+    {
+        var (compiler, emitter) = CreateEmitter(beginFunction: true);
+        compiler.compCurBB = new BasicBlock(null, null);
+        var target = new insGroup();
+
+        emitter.emitIns_R_L(INS_adr, EA_PTRSIZE, target, regNumber.REG_R5);
+
+        var descriptor = LastInstruction(emitter) as Emitter.instrDescJmp
+            ?? throw new AssertionException("No instruction-group label address was recorded.");
+        Assert.That(descriptor.idIns(), Is.EqualTo(INS_adr));
+        Assert.That(descriptor.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_LARGEADR));
+        Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_PTRSIZE));
+        Assert.That(descriptor.idReg1(), Is.EqualTo(regNumber.REG_R5));
+        Assert.That(descriptor.idjTarget, Is.Null);
+        Assert.That(descriptor.idjTargetIG, Is.SameAs(target));
+        Assert.That(descriptor.idIsBound(), Is.True);
+        Assert.That(descriptor.idjShort, Is.False);
+        Assert.That(descriptor.idjKeepLong, Is.False);
+        Assert.That(descriptor.idjIG, Is.SameAs(emitter.emitCurIG));
+        Assert.That(descriptor.idjOffs, Is.Zero);
+        Assert.That(PendingJump(emitter), Is.SameAs(descriptor));
+        Assert.That(GroupSize(emitter), Is.EqualTo(8));
+    }
+
 #if DEBUG
     [TestCase(Emitter.insFormat.IF_LARGEADR, INS_adrp)]
     [TestCase(Emitter.insFormat.IF_LARGELDC, INS_ldr)]
@@ -88,12 +149,12 @@ internal static unsafe class Arm64EmitterLabelTests
 
     [TestCase(BBJ_ALWAYS, INS_nop)]
     [TestCase(BBJ_THROW, INS_brk)]
-    public static void ChangedCallLivenessReachesTheRequiredPaddingDependency(BBKinds kind, instruction expected)
+    public static void ChangedCallLivenessPadsThePredecessorGroup(BBKinds kind, instruction expected)
     {
 #if DEBUG
         using var tls = new JitTls(null);
 #endif
-        var (compiler, emitter) = CreateEmitter();
+        var (compiler, emitter) = CreateEmitter(beginFunction: true);
 #if DEBUG
         JitTls.Compiler = compiler;
 #endif
@@ -114,33 +175,37 @@ internal static unsafe class Arm64EmitterLabelTests
         LastInstruction(emitter) = descriptor;
         LastInstructionGroup(emitter) = emitter.emitCurIG;
 
-#if DEBUG
-        var exception = Assert.Throws<FatalJitException>(() =>
-            emitter.emitAddLabel(VarSetOps.MakeEmpty(compiler), new((regMask)1), default, previous));
-
-        Assert.That(exception, Has.Message.EqualTo(
-            "Instruction sanity checking outside AMD64 is not ported."));
-        Assert.That(LastInstruction(emitter)?.idIns(), Is.EqualTo(expected));
-#else
         var oldGroup = emitter.emitCurIG ?? throw new AssertionException("No current instruction group.");
         var label = emitter.emitAddLabel(VarSetOps.MakeEmpty(compiler), new((regMask)1), default, previous);
         Assert.That(label, Is.Not.SameAs(oldGroup));
         Assert.That(oldGroup.igData, Has.Length.EqualTo(1));
         Assert.That(oldGroup.igData![0].idIns(), Is.EqualTo(expected));
         Assert.That(oldGroup.igSize, Is.EqualTo(4));
-#endif
     }
 
-    private static (Compiler Compiler, LabelEmitter Emitter) CreateEmitter()
+    private static (Compiler Compiler, LabelEmitter Emitter) CreateEmitter(bool beginFunction = false)
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.lvaTrackedCount = 1;
         compiler.lvaTrackedCountInSizeTUnits = 1;
-        var emitter = new LabelEmitter(new CodeGen(compiler));
+        var codeGen = new CodeGen(compiler);
+        var emitter = new LabelEmitter(codeGen);
         emitter.emitBegCG(compiler, default);
         emitter.Init();
-        var group = new insGroup { igFlags = InsGroupFlags.Prolog };
-        Prepare(emitter, group);
+        if (beginFunction)
+        {
+            emitter.emitBegFN(false
+#if DEBUG
+                , true
+#endif
+                );
+        }
+        else
+        {
+            var group = new insGroup { igFlags = InsGroupFlags.Prolog };
+            Prepare(emitter, group);
+        }
+
         return (compiler, emitter);
     }
 
@@ -184,6 +249,12 @@ internal static unsafe class Arm64EmitterLabelTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]
     private static extern ref Emitter.instrDesc? LastInstruction(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGjmpList")]
+    private static extern ref Emitter.instrDescJmp? PendingJump(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGsize")]
+    private static extern ref int GroupSize(Emitter emitter);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastInsIG")]
     private static extern ref insGroup? LastInstructionGroup(Emitter emitter);

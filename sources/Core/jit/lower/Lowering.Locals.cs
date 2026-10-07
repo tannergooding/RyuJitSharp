@@ -361,7 +361,18 @@ public sealed partial class Lowering
 
     private GenTree? LowerStoreLoc(GenTreeLclVarCommon storeLoc)
     {
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_RISCV64
+#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_RISCV64
+#if TARGET_ARM
+        if ((storeLoc.Oper is GT_STORE_LCL_VAR) && varTypeIsSmall(storeLoc.Type) &&
+            storeLoc.Op1.Oper.IsCnsIntOrI)
+        {
+            ref var descriptor = ref CompilerInstance.lvaGetDesc(storeLoc.LclNum);
+            if (!descriptor.lvIsStructField && (descriptor.GetStackSlotHomeType() is TYP_INT))
+            {
+                storeLoc.Type = TYP_INT;
+            }
+        }
+#endif
 #if TARGET_XARCH
         if ((storeLoc.Oper is GT_STORE_LCL_VAR) && (storeLoc.Type.Size == 2) &&
             storeLoc.Op1.Oper.IsCnsIntOrI && !CompilerInstance.lvaGetDesc(storeLoc.LclNum).lvIsStructField)
@@ -406,7 +417,7 @@ public sealed partial class Lowering
 
     private void ContainCheckStoreLoc(GenTreeLclVarCommon storeLoc)
     {
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_RISCV64
+#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_RISCV64
         assert(storeLoc.Oper.IsLocalStore);
         var source = storeLoc.Op1;
         if (source.Oper is GT_BITCAST)
@@ -422,6 +433,15 @@ public sealed partial class Lowering
         ref var descriptor = ref CompilerInstance.lvaGetDesc(storeLoc.LclNum);
 #if FEATURE_SIMD
 #if TARGET_ARM64
+        if (storeLoc.Type is TYP_SIMD8 or TYP_SIMD12)
+        {
+            if ((source.IsIntegralConst(0) || source.IsVectorZero) && descriptor.lvDoNotEnregister)
+            {
+                MakeSrcContained(storeLoc, source);
+            }
+            return;
+        }
+#elif TARGET_ARM
         if (storeLoc.Type is TYP_SIMD8 or TYP_SIMD12)
         {
             if ((source.IsIntegralConst(0) || source.IsVectorZero) && descriptor.lvDoNotEnregister)
@@ -477,7 +497,7 @@ public sealed partial class Lowering
         {
             MakeSrcContained(storeLoc, source);
         }
-#if TARGET_X86
+#if TARGET_X86 || TARGET_ARM
         else if (source.Oper is GT_LONG)
         {
             MakeSrcContained(storeLoc, source);

@@ -62,12 +62,11 @@ internal static class Arm32InstructionFormatTests
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
             var emitter = codeGen.Emitter;
+#if !DEBUG
             var initialGroupSize = InstructionGroupSize(emitter);
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() => emitter.emitIns(ins));
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
+#endif
             emitter.emitIns(ins);
+#if !DEBUG
             Assert.That(InstructionGroupSize(emitter), Is.EqualTo(initialGroupSize + (int)expectedCodeSize));
 #endif
 

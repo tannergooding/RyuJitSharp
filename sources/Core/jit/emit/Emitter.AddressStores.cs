@@ -13,6 +13,8 @@ public partial class Emitter
     {
 #if TARGET_ARM
         recordArm32InsARRR(ins, attr, reg, @base, index, disp);
+#elif TARGET_ARM64
+        NYI("emitIns_R_ARR");
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Indexed address/register instruction recording requires xarch.");
 #else
@@ -32,6 +34,8 @@ public partial class Emitter
 
         assert(disp == (int)disp);
         recordArm32InsAR_R(ins, attr, reg, @base, unchecked((int)disp));
+#elif TARGET_ARM64
+        NYI("emitIns_AR_R");
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Address/register instruction recording requires xarch.");
 #else

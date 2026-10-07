@@ -109,6 +109,8 @@ public sealed partial class Lowering
                 MakeSrcRegOptional(select, op2);
             }
         }
+#elif TARGET_ARM
+        noway_assert(false, "GT_SELECT nodes are not supported on ARM32.");
 #elif TARGET_ARM64
         if (select.Op1.IsIntegralConst(0))
         {

@@ -288,7 +288,7 @@ internal static unsafe class Arm64SveThreeRegisterRecordingTests
                 ins, EA_SCALABLE, REG_V0, REG_P7, REG_R30, opt));
 
             AssertDescriptor(id, ins, format, opt, EA_SCALABLE, REG_V0, REG_P7, REG_R30);
-            Assert.That(Emitter.emitGetInsSC(id), Is.Zero);
+            Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)0));
         });
     }
 
@@ -355,15 +355,17 @@ internal static unsafe class Arm64SveThreeRegisterRecordingTests
             }
             if (ins == INS_sve_sqxtnt)
             {
-#if DEBUG
-                var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
-                    () => Assert.Throws<FatalJitException>(() => RecordOperands()));
-                Assert.That(assertions, Is.Empty);
-#else
-                Assert.Throws<FatalJitException>(() => RecordOperands());
-#endif
-                Assert.That(GroupSize(emitter), Is.Zero);
-                Assert.That(LastInstruction(emitter), Is.Null);
+                var rmwId = Record(emitter, RecordOperands);
+                Assert.That(rmwId.idIns(), Is.EqualTo(INS_sve_sqxtnt));
+                Assert.That(rmwId.idInsFmt(), Is.EqualTo(IF_SVE_GD_2A));
+                Assert.That(rmwId.idInsOpt(), Is.EqualTo(opt));
+                Assert.That(rmwId.idOpSize(), Is.EqualTo(attr));
+                Assert.That(rmwId.idReg1(), Is.EqualTo(first));
+                Assert.That(rmwId.idReg2(), Is.EqualTo(third));
+                var rmwInstructions = CurrentInstructions(emitter)
+                    ?? throw new AssertionException("No descriptor buffer was prepared.");
+                Assert.That(rmwInstructions.Count, Is.EqualTo(1));
+                Assert.That(rmwInstructions[0], Is.SameAs(rmwId));
                 return;
             }
 

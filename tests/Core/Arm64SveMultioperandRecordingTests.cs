@@ -408,23 +408,27 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
 
     [TestCase(INS_sve_tbx)]
     [TestCase(INS_sve_addhnt)]
-    public static void UnportedMoveDependencyTerminatesWithoutDroppingRmwBranch(instruction ins)
+    public static void RmwRecordingRetainsItsMoveAndOperation(instruction ins)
     {
         WithEmitter(emitter =>
         {
+            var opt = ins == INS_sve_addhnt ? INS_OPTS_SCALABLE_S : INS_OPTS_SCALABLE_D;
             void RecordOperands()
             {
                 emitter.emitInsSve_R_R_R_R(
-                    ins, EA_SCALABLE, REG_V0, REG_V0, REG_V1, REG_V31, INS_OPTS_SCALABLE_D);
+                    ins, EA_SCALABLE, REG_V0, REG_V1, REG_V2, REG_V31, opt);
             }
-#if DEBUG
-            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
-                () => Assert.Throws<FatalJitException>(() => RecordOperands()));
-            Assert.That(assertions, Is.Empty);
-#else
-            Assert.Throws<FatalJitException>(() => RecordOperands());
-#endif
-            Assert.That(GroupSize(emitter), Is.Zero);
+            var id = Record(emitter, RecordOperands, expectedSize: 8);
+            var instructions = CurrentInstructions(emitter)
+                ?? throw new AssertionException("No descriptor buffer was prepared.");
+
+            Assert.That(instructions.Count, Is.EqualTo(2));
+            Assert.That(instructions[0].idIns(), Is.EqualTo(INS_sve_mov));
+            Assert.That(instructions[0].idReg1(), Is.EqualTo(REG_V0));
+            Assert.That(instructions[0].idReg2(), Is.EqualTo(REG_V1));
+            AssertDescriptor(id, ins, ins == INS_sve_tbx ? IF_SVE_BZ_3A : IF_SVE_GC_3A,
+                opt, REG_V0, REG_V2, REG_V31);
+            Assert.That(instructions[1], Is.SameAs(id));
         });
     }
 

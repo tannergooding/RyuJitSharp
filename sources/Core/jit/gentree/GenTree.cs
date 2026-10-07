@@ -1682,7 +1682,7 @@ public partial class GenTree
 
     public static void InitNodeSize()
     {
-        // TODO: Port GenTree.InitNodeSize
+        // Managed GenTree nodes are individually allocated objects, so native arena-size classes do not apply.
     }
 
     public void AddAllEffectsFlags(GenTree source)
@@ -2459,6 +2459,40 @@ public partial class GenTree
     public bool IsHWIntrinsic(NamedIntrinsic intrinsicId) => false;
 #endif
 
+    public GenTree? GetOp2IfPresent() => _oper.IsBinary ? AsOp().Op2 : null;
+
+    public int IsLclVarUpdateTree(ref GenTree? otherTree, ref genTreeOps updateOper)
+    {
+        if ((_oper is GT_STORE_LCL_VAR) && AsLclVar().Data.Oper.IsBinary)
+        {
+            var localNumber = AsLclVar().LclNum;
+            var value = AsLclVar().Data;
+            var op1 = value.AsOp().Op1;
+            var op2 = value.AsOp().Op2;
+
+            if ((op1 is not null) && (op2 is not null) && (op1.Oper is GT_LCL_VAR) &&
+                (op1.AsLclVarCommon().LclNum == localNumber))
+            {
+                otherTree = op2;
+                updateOper = value.Oper;
+                return localNumber;
+            }
+        }
+
+        return BAD_VAR_NUM;
+    }
+
+    public bool IsBlockProfileUpdate()
+    {
+        if (_oper is GT_STOREIND)
+        {
+            var address = AsIndir().Addr;
+            return address.Oper.IsCnsIntOrI && address.AsIntCon().IsIconHandle(GTF_ICON_BBC_PTR);
+        }
+
+        return false;
+    }
+
 #if TARGET_XARCH
     public bool IsConvertMaskToVector => IsHWIntrinsic(NI_AVX512_ConvertMaskToVector);
 
@@ -3042,6 +3076,23 @@ public partial class GenTree
     public VisitResult VisitOperands(GenTreeVisitorFunc visitor)
     {
         return VisitOperandUses((ref use) => visitor(use));
+    }
+
+    public GenTree FirstNodeInOperandOrder()
+    {
+        var node = this;
+        VisitResult visitResult;
+
+        do
+        {
+            visitResult = node.VisitOperands(operand =>
+            {
+                node = operand;
+                return VisitResult.Abort;
+            });
+        } while (visitResult is VisitResult.Abort);
+
+        return node;
     }
 
     public VisitResult VisitOperandUses(GenTreeUseVisitorFunc visitor)

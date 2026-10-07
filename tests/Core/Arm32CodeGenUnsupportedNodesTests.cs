@@ -48,6 +48,53 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
         Assert.That(Emitter.emitReverseJumpKind(jumpKind), Is.EqualTo(reverseJumpKind));
     }
 
+    [Test]
+    public static void ConditionDescriptionsMatchNativeArmMapping()
+    {
+        var mappings = new (GenCondition.CodeKind Code, emitJumpKind JumpKind1, genTreeOps Oper, emitJumpKind JumpKind2)[]
+        {
+            (GenCondition.SLT, emitJumpKind.EJ_lt, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.SLE, emitJumpKind.EJ_le, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.SGE, emitJumpKind.EJ_ge, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.SGT, emitJumpKind.EJ_gt, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.S, emitJumpKind.EJ_mi, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.NS, emitJumpKind.EJ_pl, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.EQ, emitJumpKind.EJ_eq, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.NE, emitJumpKind.EJ_ne, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.ULT, emitJumpKind.EJ_lo, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.ULE, emitJumpKind.EJ_ls, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.UGE, emitJumpKind.EJ_hs, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.UGT, emitJumpKind.EJ_hi, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.C, emitJumpKind.EJ_hs, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.NC, emitJumpKind.EJ_lo, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.FEQ, emitJumpKind.EJ_eq, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.FNE, emitJumpKind.EJ_gt, GT_AND, emitJumpKind.EJ_lo),
+            (GenCondition.FLT, emitJumpKind.EJ_lo, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.FLE, emitJumpKind.EJ_ls, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.FGE, emitJumpKind.EJ_ge, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.FGT, emitJumpKind.EJ_gt, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.O, emitJumpKind.EJ_vs, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.NO, emitJumpKind.EJ_vc, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.FEQU, emitJumpKind.EJ_eq, GT_OR, emitJumpKind.EJ_vs),
+            (GenCondition.FNEU, emitJumpKind.EJ_ne, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.FLTU, emitJumpKind.EJ_lt, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.FLEU, emitJumpKind.EJ_le, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.FGEU, emitJumpKind.EJ_hs, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.FGTU, emitJumpKind.EJ_hi, GT_NONE, emitJumpKind.EJ_NONE),
+        };
+
+        ArmCalleeSavedRegisterTests.WithCodeGen((_, _) =>
+        {
+            foreach (var (code, jumpKind1, oper, jumpKind2) in mappings)
+            {
+                var description = GenConditionDesc.Get(new GenCondition(code));
+                Assert.That(description.JumpKind1, Is.EqualTo(jumpKind1), code.ToString());
+                Assert.That(description.Oper, Is.EqualTo(oper), code.ToString());
+                Assert.That(description.JumpKind2, Is.EqualTo(jumpKind2), code.ToString());
+            }
+        });
+    }
+
     [TestCase(INS_add, REG_R3, 7, INS_FLAGS_SET, INS_add, IF_T1_J0, 7, INS_FLAGS_SET)]
     [TestCase(INS_add, REG_R3, -7, INS_FLAGS_SET, INS_sub, IF_T1_J0, 7, INS_FLAGS_SET)]
     [TestCase(INS_add, REG_SP, 12, INS_FLAGS_NOT_SET, INS_add, IF_T1_F, 12, INS_FLAGS_NOT_SET)]
@@ -59,13 +106,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() =>
-                codeGen.Emitter.emitIns_R_I(ins, EA_4BYTE, reg, immediate, flags));
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
-            codeGen.Emitter.emitIns_R_I(ins, EA_4BYTE, reg, immediate, flags);
-#endif
+            RecordArm32Instructions(() => codeGen.Emitter.emitIns_R_I(ins, EA_4BYTE, reg, immediate, flags));
 
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No register-immediate instruction was recorded.");
@@ -90,15 +131,9 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() =>
-                codeGen.Emitter.emitIns_Mov(ins, attr, dstReg, srcReg, canSkip: false, flags: flags));
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
             Assert.That(
                 codeGen.Emitter.emitIns_Mov(ins, attr, dstReg, srcReg, canSkip: false, flags: flags),
                 Is.True);
-#endif
 
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No register move was recorded.");
@@ -130,13 +165,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() =>
-                codeGen.Emitter.emitIns_R_R(ins, EA_4BYTE, reg1, reg2));
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
-            codeGen.Emitter.emitIns_R_R(ins, EA_4BYTE, reg1, reg2);
-#endif
+            RecordArm32Instructions(() => codeGen.Emitter.emitIns_R_R(ins, EA_4BYTE, reg1, reg2));
 
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No register-register instruction was recorded.");
@@ -153,15 +182,8 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() =>
-                codeGen.Emitter.emitIns_R_R(
-                    INS_cmp, EA_4BYTE, REG_R3, REG_R4, INS_FLAGS_SET));
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
-            codeGen.Emitter.emitIns_R_R(
-                INS_cmp, EA_4BYTE, REG_R3, REG_R4, INS_FLAGS_SET);
-#endif
+            RecordArm32Instructions(() =>
+                codeGen.Emitter.emitIns_R_R(INS_cmp, EA_4BYTE, REG_R3, REG_R4, INS_FLAGS_SET));
 
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No flags-aware register-register instruction was recorded.");
@@ -181,13 +203,8 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() =>
+            RecordArm32Instructions(() =>
                 codeGen.Emitter.emitIns_R_R_R(ins, EA_4BYTE, reg1, reg2, reg3));
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
-            codeGen.Emitter.emitIns_R_R_R(ins, EA_4BYTE, reg1, reg2, reg3);
-#endif
 
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No three-register instruction was recorded.");
@@ -208,13 +225,8 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() =>
+            RecordArm32Instructions(() =>
                 codeGen.Emitter.emitIns_R_R_R_I(ins, EA_4BYTE, reg1, reg2, reg3, immediate, flags, opt));
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
-            codeGen.Emitter.emitIns_R_R_R_I(ins, EA_4BYTE, reg1, reg2, reg3, immediate, flags, opt);
-#endif
 
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No three-register-immediate instruction was recorded.");
@@ -240,13 +252,8 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() =>
+            RecordArm32Instructions(() =>
                 codeGen.Emitter.emitIns_R_R_R_R(ins, EA_4BYTE, REG_R0, REG_R1, REG_R2, REG_R3));
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
-            codeGen.Emitter.emitIns_R_R_R_R(ins, EA_4BYTE, REG_R0, REG_R1, REG_R2, REG_R3);
-#endif
 
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No four-register instruction was recorded.");
@@ -280,8 +287,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
     {
         WithLocalStackCodeGen((_, codeGen) =>
         {
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() =>
+            RecordArm32Instructions(() =>
             {
                 if (store)
                 {
@@ -292,17 +298,6 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
                     codeGen.Emitter.emitIns_R_S(ins, EA_4BYTE, REG_R3, 0, 0);
                 }
             });
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
-            if (store)
-            {
-                codeGen.Emitter.emitIns_S_R(ins, EA_4BYTE, REG_R3, 0, 0);
-            }
-            else
-            {
-                codeGen.Emitter.emitIns_R_S(ins, EA_4BYTE, REG_R3, 0, 0);
-            }
-#endif
 
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No local-stack instruction was recorded.");
@@ -326,12 +321,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
                 RegNum = REG_R0,
             };
 
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForLclAddr(tree));
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
-            codeGen.genCodeForLclAddr(tree);
-#endif
+            RecordArm32Instructions(() => codeGen.genCodeForLclAddr(tree));
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No local-address instruction was recorded.");
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_add));
@@ -364,8 +354,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() =>
+            RecordArm32Instructions(() =>
             {
                 if (store)
                 {
@@ -376,17 +365,6 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
                     codeGen.Emitter.emitIns_R_AR(INS_ldr, EA_4BYTE, REG_R3, REG_R1, 4);
                 }
             });
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
-            if (store)
-            {
-                codeGen.Emitter.emitIns_AR_R(INS_str, EA_4BYTE, REG_R3, REG_R1, 4);
-            }
-            else
-            {
-                codeGen.Emitter.emitIns_R_AR(INS_ldr, EA_4BYTE, REG_R3, REG_R1, 4);
-            }
-#endif
 
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No register/address instruction was recorded.");
@@ -402,13 +380,8 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() =>
+            RecordArm32Instructions(() =>
                 codeGen.Emitter.emitIns_R_ARX(INS_ldr, EA_4BYTE, REG_R0, REG_R1, REG_R2, 1, 0));
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
-            codeGen.Emitter.emitIns_R_ARX(INS_ldr, EA_4BYTE, REG_R0, REG_R1, REG_R2, 1, 0);
-#endif
 
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No indexed-address instruction was recorded.");
@@ -426,13 +399,8 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() =>
+            RecordArm32Instructions(() =>
                 codeGen.Emitter.emitIns_R_ARR(INS_ldr, EA_4BYTE, REG_R0, REG_R1, REG_R2, 0));
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
-            codeGen.Emitter.emitIns_R_ARR(INS_ldr, EA_4BYTE, REG_R0, REG_R1, REG_R2, 0);
-#endif
 
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No unscaled indexed-address instruction was recorded.");
@@ -449,13 +417,8 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() =>
+            RecordArm32Instructions(() =>
                 codeGen.Emitter.emitIns_R_I_I(INS_bfc, EA_4BYTE, REG_R5, 8, 8, INS_FLAGS_NOT_SET));
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
-            codeGen.Emitter.emitIns_R_I_I(INS_bfc, EA_4BYTE, REG_R5, 8, 8, INS_FLAGS_NOT_SET);
-#endif
 
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No bit-field instruction was recorded.");
@@ -464,7 +427,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
             Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)271));
             Assert.That(descriptor.idInsFlags(), Is.EqualTo(INS_FLAGS_NOT_SET));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R5));
-        });
+        }, captureAssertions: true);
     }
 
     [Test]
@@ -474,15 +437,9 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
 
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() =>
+            RecordArm32Instructions(() =>
                 codeGen.Emitter.emitIns_MovRelocatableImmediate(
                     INS_movw, EA_HANDLE_CNS_RELOC, REG_R4, address));
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
-            codeGen.Emitter.emitIns_MovRelocatableImmediate(
-                INS_movw, EA_HANDLE_CNS_RELOC, REG_R4, address);
-#endif
 
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No relocatable instruction was recorded.");
@@ -490,7 +447,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
             Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_T2_N3));
             Assert.That(descriptor.idInsFlags(), Is.EqualTo(INS_FLAGS_NOT_SET));
             Assert.That((nuint)RelocationValue(codeGen.Emitter, descriptor), Is.EqualTo(address));
-        });
+        }, captureAssertions: true);
     }
 
     [TestCase(INS_dmb, IF_T2_B, 15, 15)]
@@ -501,13 +458,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() =>
-                codeGen.Emitter.emitIns_I(ins, EA_4BYTE, immediate));
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
-            codeGen.Emitter.emitIns_I(ins, EA_4BYTE, immediate);
-#endif
+            RecordArm32Instructions(() => codeGen.Emitter.emitIns_I(ins, EA_4BYTE, immediate));
 
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No immediate-only instruction was recorded.");
@@ -524,13 +475,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() =>
-                codeGen.Emitter.emitIns_I(INS_push, EA_4BYTE, 1 << (int)REG_R8));
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
-            codeGen.Emitter.emitIns_I(INS_push, EA_4BYTE, 1 << (int)REG_R8);
-#endif
+            RecordArm32Instructions(() => codeGen.Emitter.emitIns_I(INS_push, EA_4BYTE, 1 << (int)REG_R8));
 
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No high-register push was recorded.");
@@ -548,13 +493,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() =>
-                codeGen.Emitter.emitIns_R(ins, EA_4BYTE, reg));
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
-            codeGen.Emitter.emitIns_R(ins, EA_4BYTE, reg);
-#endif
+            RecordArm32Instructions(() => codeGen.Emitter.emitIns_R(ins, EA_4BYTE, reg));
 
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No single-register instruction was recorded.");
@@ -564,6 +503,21 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
             Assert.That(descriptor.idReg1(), Is.EqualTo(reg));
             Assert.That(descriptor.idReg2(), Is.EqualTo(reg));
         });
+    }
+
+    private static void RecordArm32Instructions(TestDelegate action)
+    {
+#if DEBUG
+        try
+        {
+            action();
+        }
+        catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
+        {
+        }
+#else
+        action();
+#endif
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]
@@ -655,7 +609,7 @@ internal static unsafe class Arm32CkfiniteCodeGenTests
 {
     [TestCase(NI_System_Math_Abs)]
     [TestCase(NI_System_Math_Sqrt)]
-    public static void FloatingMathIntrinsicsRetainTheArm32BinaryEmitterBoundary(NamedIntrinsic intrinsic)
+    public static void FloatingMathIntrinsicsUseArm32UnaryEmitters(NamedIntrinsic intrinsic)
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
@@ -665,10 +619,15 @@ internal static unsafe class Arm32CkfiniteCodeGenTests
                 RegNum = REG_F1,
             };
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genIntrinsic(tree));
+            RecordArm32Instructions(() => codeGen.genIntrinsic(tree));
 
-            Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(failure?.Message, Is.EqualTo("ARM32 binary instruction emission is not ported."));
+            var descriptor = LastInstruction(codeGen.Emitter)
+                ?? throw new AssertionException("No floating-point intrinsic instruction was recorded.");
+            Assert.That(descriptor.idIns(), Is.EqualTo(
+                intrinsic == NI_System_Math_Abs ? INS_vabs : INS_vsqrt));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_F1));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_F0));
+            Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_4BYTE));
         });
     }
 
@@ -687,13 +646,7 @@ internal static unsafe class Arm32CkfiniteCodeGenTests
                 RegNum = REG_R2,
             };
 
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genIntrinsic(tree));
-            Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
-            codeGen.genIntrinsic(tree);
-#endif
+            RecordArm32Instructions(() => codeGen.genIntrinsic(tree));
 
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No saturation instruction was recorded.");
@@ -717,13 +670,8 @@ internal static unsafe class Arm32CkfiniteCodeGenTests
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
-            var failure = RecordTwoImmediates(codeGen.Emitter, ins, imm1, imm2);
-#if DEBUG
-            Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
-            Assert.That(failure, Is.Null);
-#endif
+            RecordArm32Instructions(() =>
+                codeGen.Emitter.emitIns_R_R_I_I(ins, EA_4BYTE, REG_R2, REG_R3, imm1, imm2));
 
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No two-immediate instruction was recorded.");
@@ -740,15 +688,18 @@ internal static unsafe class Arm32CkfiniteCodeGenTests
         });
     }
 
-    private static FatalJitException? RecordTwoImmediates(
-        Emitter emitter, instruction ins, int imm1, int imm2)
+    private static void RecordArm32Instructions(TestDelegate action)
     {
 #if DEBUG
-        return Assert.Throws<FatalJitException>(() =>
-            emitter.emitIns_R_R_I_I(ins, EA_4BYTE, REG_R2, REG_R3, imm1, imm2));
+        try
+        {
+            action();
+        }
+        catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
+        {
+        }
 #else
-        emitter.emitIns_R_R_I_I(ins, EA_4BYTE, REG_R2, REG_R3, imm1, imm2);
-        return null;
+        action();
 #endif
     }
 

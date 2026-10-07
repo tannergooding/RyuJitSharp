@@ -2082,7 +2082,7 @@ public partial class Compiler
 
     public FlowGraphTryRegions? fgTryRegions;
 
-    public EHClauseInfo fgWasmEHInfo;
+    public EHClauseInfo[]? fgWasmEHInfo;
 #endif
 
     public bool fgBBVarSetsInited;
@@ -2240,14 +2240,6 @@ public partial class Compiler
     private AddCodeDscMap? fgAddCodeDscMap;
 
     public bool fgRngChkThrowAdded;
-
-#if DEBUG
-    // TODO: Port Compiler.fgDebugCheckInlineCandidates
-    // public static unsafe fgWalkPreFn fgDebugCheckInlineCandidates;
-
-    // TODO: Port Compiler.fgDebugCheckForTransformableIndirectCalls
-    // public static unsafe fgWalkPreFn fgDebugCheckForTransformableIndirectCalls;
-#endif
 
     public bool fgHasLoops;
 
@@ -15497,23 +15489,10 @@ public partial class Compiler
     }
 
 #if TARGET_WASM
-    // TODO: Port phase - fgWasmEhFlow
-    public PhaseStatus fgWasmEhFlow() => PhaseStatus.MODIFIED_NOTHING;
+    public PhaseStatus fgWasmControlFlow() => throw new NotImplementedException("Wasm control-flow layout is blocked on the successor-order port.");
 
-#if TARGET_WASM
-    public PhaseStatus fgWasmRepairTryEntries() => throw new NotImplementedException("Wasm repair try entries is not ported.");
+    public PhaseStatus fgWasmTransformSccs() => throw new NotImplementedException("Wasm SCC transformation is blocked on the successor-order port.");
 
-    public PhaseStatus fgWasmSpillRefs() => throw new NotImplementedException("Wasm reference spilling is not ported.");
-#endif
-
-    // TODO: Port phase - fgWasmControlFlow
-    public PhaseStatus fgWasmControlFlow() => PhaseStatus.MODIFIED_NOTHING;
-
-    // TODO: Port phase - fgWasmTransformSccs
-    public PhaseStatus fgWasmTransformSccs() => PhaseStatus.MODIFIED_NOTHING;
-
-    // TODO: Port phase - fgWasmVirtualIP
-    public PhaseStatus fgWasmVirtualIP() => PhaseStatus.MODIFIED_NOTHING;
 #endif
 
     protected PhaseStatus fgComputeDominators()

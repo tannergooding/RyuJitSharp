@@ -32,7 +32,7 @@ internal static class Arm32DataLabelAddressTests
             Assert.That(descriptor.idInsSize(), Is.EqualTo(ISZ_32BIT));
             Assert.That(descriptor.idIsSmallDsc(), Is.EqualTo(isSmallDescriptor));
             Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo(unchecked((nint)offs)));
-        });
+        }, captureAssertions: true);
     }
 
     [TestCase(false)]
@@ -45,7 +45,7 @@ internal static class Arm32DataLabelAddressTests
             var descriptor = RecordAddress(codeGen.Emitter, INS_movt, EA_HANDLE_CNS_RELOC, 42, REG_R4);
 
             Assert.That(descriptor.idIsCnsReloc(), Is.EqualTo(compReloc));
-        });
+        }, captureAssertions: true);
     }
 
     [Test]
@@ -54,13 +54,10 @@ internal static class Arm32DataLabelAddressTests
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.compCurBB = new BasicBlock(null, null);
+            RecordArm32Instruction(() => codeGen.genMov32RelocatableDataLabel(42, REG_R4));
 #if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() =>
-                codeGen.genMov32RelocatableDataLabel(42, REG_R4));
-            Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
             var expectedInstruction = INS_movw;
 #else
-            codeGen.genMov32RelocatableDataLabel(42, REG_R4);
             var expectedInstruction = INS_movt;
 #endif
             var descriptor = LastInstruction(codeGen.Emitter)
@@ -69,20 +66,30 @@ internal static class Arm32DataLabelAddressTests
             Assert.That(descriptor.idIns(), Is.EqualTo(expectedInstruction));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R4));
             Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)42));
-        });
+        }, captureAssertions: true);
     }
 
     private static Emitter.instrDesc RecordAddress(
         Emitter emitter, instruction ins, emitAttr attr, uint offs, regNumber reg)
     {
-#if DEBUG
-        var failure = Assert.Throws<FatalJitException>(() => emitter.emitIns_R_D(ins, attr, offs, reg));
-        Assert.That(failure?.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
-#else
-        emitter.emitIns_R_D(ins, attr, offs, reg);
-#endif
+        RecordArm32Instruction(() => emitter.emitIns_R_D(ins, attr, offs, reg));
         return LastInstruction(emitter)
             ?? throw new AssertionException("No data-label descriptor was recorded.");
+    }
+
+    private static void RecordArm32Instruction(TestDelegate action)
+    {
+#if DEBUG
+        try
+        {
+            action();
+        }
+        catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
+        {
+        }
+#else
+        action();
+#endif
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]

@@ -11,6 +11,8 @@ public partial class Emitter
     {
 #if TARGET_ARM
         recordArm32InsRAR(ins, attr, reg, baseReg, displacement);
+#elif TARGET_ARM64
+        NYI("emitIns_R_AR");
 #elif TARGET_RISCV64
         throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 register-address instruction recording is not ported.");
 #elif !TARGET_XARCH

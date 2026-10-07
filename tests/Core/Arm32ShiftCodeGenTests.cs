@@ -31,10 +31,6 @@ internal static class Arm32ShiftCodeGenTests
             var shiftBy = new GenTreePhysReg(REG_R4, TYP_INT) { RegNum = REG_R4 };
             var tree = new GenTreeOp(oper, TYP_INT, operand, shiftBy) { RegNum = REG_R3 };
 
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForShift(tree));
-            Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-#else
             codeGen.genCodeForShift(tree);
             var descriptors = CurrentDescriptors(codeGen.Emitter)
                 ?? throw new AssertionException("Missing descriptor buffer.");
@@ -44,7 +40,6 @@ internal static class Arm32ShiftCodeGenTests
             Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3));
             Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R2));
             Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_R4));
-#endif
         });
     }
 
@@ -64,10 +59,6 @@ internal static class Arm32ShiftCodeGenTests
             shiftBy.IsContained = true;
             var tree = new GenTreeOp(oper, TYP_INT, operand, shiftBy) { RegNum = REG_R3 };
 
-#if DEBUG
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForShift(tree));
-            Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-#else
             codeGen.genCodeForShift(tree);
             var descriptors = CurrentDescriptors(codeGen.Emitter)
                 ?? throw new AssertionException("Missing descriptor buffer.");
@@ -77,7 +68,6 @@ internal static class Arm32ShiftCodeGenTests
             Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3));
             Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R2));
             Assert.That(codeGen.Emitter.emitGetInsSC(descriptors[0]), Is.EqualTo((nint)expectedCount));
-#endif
         });
     }
 

@@ -8,9 +8,11 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
+using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.CORINFO_InstructionSet;
 using static RyuJitSharp.CorInfoHelpFunc;
+using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.InfoAccessType;
@@ -149,7 +151,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var tree = new GenTreeIntCon(TYP_INT, 1) { RegNum = REG_S0 };
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
 
-            Assert.That(failure?.Message, Does.Contain("Target immediate materialization is not implemented."));
+            Assert.That(failure?.Message, Does.Contain("LoongArch64 address constant recording is not ported."));
         });
     }
 #endif
@@ -346,14 +348,26 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     }
 
     [Test]
-    public static void JumpTableGenerationStopsAtTheSharedRecordingBoundary()
+    public static void JumpTableGenerationStopsAtTheTargetEmbeddedDataBoundary()
     {
         WithCodeGen((compiler, codeGen) =>
         {
+            var current = compiler.compCurBB ?? throw new AssertionException("Missing current block.");
+            current.SetKindAndTargetEdge(BBJ_SWITCH, null);
+            var target = new BasicBlock(null, null);
+            target.SetFlags(BBF_HAS_LABEL);
+            var edge = new FlowEdge(current, target, null);
+            current.SwitchTargets = new BBswtDesc([edge], [0], hasDefault: false);
+            current.SwitchTargets.Cases[0] = edge;
+
             var tree = new GenTree(GT_JMPTABLE, TYP_I_IMPL) { RegNum = REG_S0 };
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
 
-            Assert.That(failure?.Message, Does.Contain("Instruction recording outside AMD64 is not ported."));
+#if TARGET_LOONGARCH64
+            Assert.That(failure?.Message, Does.Contain("LoongArch64 embedded-data instruction recording is not ported."));
+#else
+            Assert.That(failure?.Message, Does.Contain("RISC-V64 embedded-data instruction recording is not ported."));
+#endif
         });
     }
 
@@ -371,7 +385,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 
 #if TARGET_LOONGARCH64
     [TestCase(0, "LoongArch64 conditional-branch instruction recording is not ported.")]
-    [TestCase(1, "Target immediate materialization is not implemented.")]
+    [TestCase(1, "LoongArch64 address constant recording is not ported.")]
     public static void JumpCompareDispatchPreservesImmediateAndBranchBoundaries(
         long immediate, string expectedBoundary)
     {
@@ -1238,7 +1252,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
                 Does.Contain("LoongArch64 indirect-store instruction recording is not ported."));
 #else
             Assert.That(failure?.Message,
-                Does.Contain("RISC-V64 indirect-store instruction recording is not ported."));
+                Does.Contain("RISC-V64 indirect load/store instruction recording is not ported."));
 #endif
         });
     }

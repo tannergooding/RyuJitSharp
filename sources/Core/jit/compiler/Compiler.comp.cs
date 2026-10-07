@@ -268,7 +268,7 @@ public partial class Compiler
     // Data required for generating profiler Enter/Leave/TailCall hooks
 
     /// <summary>Whether profiler Enter/Leave/TailCall hook needs to be generated for the method</summary>
-    protected bool compProfilerHookNeeded;
+    protected internal bool compProfilerHookNeeded;
 
     /// <summary>Profiler handle of the method being compiled. Passed as param to ELT callbacks</summary>
     protected internal unsafe void* compProfilerMethHnd;

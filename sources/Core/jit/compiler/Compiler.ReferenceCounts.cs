@@ -78,7 +78,7 @@ public partial class Compiler
 #elif TARGET_ARM64
         return type is TYP_SIMD16 or TYP_SIMD12;
 #else
-        throw new System.NotImplementedException("Partial SIMD callee saves are unsupported on this target.");
+#error Unknown target architecture for FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 #endif
     }
 #endif

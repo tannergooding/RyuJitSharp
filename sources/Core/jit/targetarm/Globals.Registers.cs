@@ -98,6 +98,10 @@ public partial class Globals
         SRBM_R0 | SRBM_R3 | SRBM_LR | SRBM_DEFAULT_HELPER_CALL_TARGET;
     public const regMask SRBM_CALLEE_GCTRASH_WRITEBARRIER = SRBM_CALLEE_TRASH_WRITEBARRIER;
     public const regMask SRBM_PROFILER_RET_SCRATCH = SRBM_R2;
+    public const regNumber REG_PROFILER_ENTER_ARG = REG_R0;
+    public const regMask SRBM_PROFILER_ENTER_ARG = SRBM_R0;
+    public const regNumber REG_PROFILER_RET_SCRATCH = REG_R2;
+    public const regMask SRBM_PROFILER_ENTER_TRASH = SRBM_NONE;
     public const regNumber REG_PINVOKE_FRAME = REG_R4;
     public const regNumber REG_VALIDATE_INDIRECT_CALL_ADDR = REG_R0;
     public const regNumber REG_FPBASE = REG_R11;

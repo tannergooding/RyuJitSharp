@@ -243,16 +243,11 @@ internal static unsafe class Arm32IndirectLoadStoreTests
             var descriptors = CurrentDescriptors(codeGen.Emitter)
                 ?? throw new AssertionException("Missing descriptor buffer.");
             var emitted = descriptors.GetRange(initialCount, descriptors.Count - initialCount);
-#if DEBUG
-            Assert.That(emitted, Has.Count.EqualTo(1));
-            Assert.That(emitted[0].idIns(), Is.EqualTo(INS_add));
-#else
             Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()), Is.EqualTo(
                 (instruction[])[INS_add, INS_add]));
             Assert.That(codeGen.Emitter.emitGetInsSC(emitted[0]), Is.EqualTo((nint)2));
             Assert.That(codeGen.Emitter.emitGetInsSC(emitted[1]), Is.EqualTo((nint)12));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(new regMaskTP(SRBM_R0)));
-#endif
         });
     }
 
@@ -269,17 +264,12 @@ internal static unsafe class Arm32IndirectLoadStoreTests
             var descriptors = CurrentDescriptors(codeGen.Emitter)
                 ?? throw new AssertionException("Missing descriptor buffer.");
             var emitted = descriptors.GetRange(initialCount, descriptors.Count - initialCount);
-#if DEBUG
-            Assert.That(emitted, Has.Count.EqualTo(1));
-            Assert.That(emitted[0].idIns(), Is.EqualTo(INS_mov));
-#else
             Assert.That(emitted[^2].idIns(), Is.EqualTo(INS_mla));
             Assert.That(emitted[^2].idReg1(), Is.EqualTo(REG_R0));
             Assert.That(emitted[^2].idReg2(), Is.EqualTo(REG_R2));
             Assert.That(emitted[^2].idReg3(), Is.EqualTo(REG_R3));
             Assert.That(emitted[^1].idIns(), Is.EqualTo(INS_add));
             Assert.That(codeGen.Emitter.emitGetInsSC(emitted[^1]), Is.EqualTo((nint)12));
-#endif
         });
     }
 
@@ -297,15 +287,10 @@ internal static unsafe class Arm32IndirectLoadStoreTests
             var descriptors = CurrentDescriptors(codeGen.Emitter)
                 ?? throw new AssertionException("Missing descriptor buffer.");
             var emitted = descriptors.GetRange(initialCount, descriptors.Count - initialCount);
-#if DEBUG
-            Assert.That(emitted, Has.Count.EqualTo(1));
-            Assert.That(emitted[0].idIns(), Is.EqualTo(INS_ldr));
-#else
             Assert.That(emitted[0].idIns(), Is.EqualTo(INS_ldr));
             Assert.That(emitted[1].idIns(), Is.EqualTo(INS_cmp));
             Assert.That(emitted[2].idIns(), Is.EqualTo(INS_bhs));
             Assert.That(emitted[^1].idIns(), Is.EqualTo(INS_add));
-#endif
         });
     }
 
@@ -330,10 +315,6 @@ internal static unsafe class Arm32IndirectLoadStoreTests
             var descriptors = CurrentDescriptors(codeGen.Emitter)
                 ?? throw new AssertionException("Missing descriptor buffer.");
             var emitted = descriptors.GetRange(initialCount, descriptors.Count - initialCount);
-#if DEBUG
-            Assert.That(emitted, Has.Count.EqualTo(1));
-            Assert.That(emitted[0].idIns(), Is.EqualTo(INS_add));
-#else
             Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
                 Is.EqualTo((instruction[])[INS_add, INS_add]));
             Assert.That(emitted[0].idReg1(), Is.EqualTo(REG_R3));
@@ -341,7 +322,6 @@ internal static unsafe class Arm32IndirectLoadStoreTests
             Assert.That(emitted[1].idReg1(), Is.EqualTo(REG_R0));
             Assert.That(emitted[1].idReg2(), Is.EqualTo(REG_R3));
             Assert.That(emitted[1].idSmallCns(), Is.EqualTo(8));
-#endif
         });
     }
 
@@ -396,12 +376,10 @@ internal static unsafe class Arm32IndirectLoadStoreTests
                 ?? throw new AssertionException("Missing descriptor buffer.");
             var emitted = descriptors.GetRange(initialCount, descriptors.Count - initialCount);
             Assert.That(emitted, Is.Not.Empty);
-#if !DEBUG
             Assert.That(emitted[^1].idIns(), Is.EqualTo(INS_add));
             Assert.That(emitted[^1].idReg1(), Is.EqualTo(REG_R0));
             Assert.That(emitted[^1].idReg2(), Is.EqualTo(REG_R1));
             Assert.That(emitted[^1].idReg3(), Is.EqualTo(REG_R3));
-#endif
         });
     }
 
@@ -425,12 +403,10 @@ internal static unsafe class Arm32IndirectLoadStoreTests
                 ?? throw new AssertionException("Missing descriptor buffer.");
             var emitted = descriptors.GetRange(initialCount, descriptors.Count - initialCount);
             Assert.That(emitted, Is.Not.Empty);
-#if !DEBUG
             Assert.That(emitted[^1].idIns(), Is.EqualTo(INS_add));
             Assert.That(emitted[^1].idReg1(), Is.EqualTo(REG_R0));
             Assert.That(emitted[^1].idReg2(), Is.EqualTo(REG_R1));
             Assert.That(emitted[^1].idReg3(), Is.EqualTo(REG_R3));
-#endif
         });
     }
 
@@ -457,12 +433,10 @@ internal static unsafe class Arm32IndirectLoadStoreTests
                 ?? throw new AssertionException("Missing descriptor buffer.");
             var emitted = descriptors.GetRange(initialCount, descriptors.Count - initialCount);
             Assert.That(emitted, Is.Not.Empty);
-#if !DEBUG
             Assert.That(emitted[^1].idIns(), Is.EqualTo(INS_add));
             Assert.That(emitted[^1].idReg1(), Is.EqualTo(REG_R0));
             Assert.That(emitted[^1].idReg2(), Is.EqualTo(REG_R1));
             Assert.That(emitted[^1].idReg3(), Is.EqualTo(REG_R3));
-#endif
         });
     }
 
@@ -518,9 +492,6 @@ internal static unsafe class Arm32IndirectLoadStoreTests
             Assert.That(emitted[0].idIns(), Is.EqualTo(INS_subw));
             Assert.That(emitted[0].idReg1(), Is.EqualTo(REG_R2));
             Assert.That(emitted[0].idReg2(), Is.EqualTo(REG_SPBASE));
-#if DEBUG
-            Assert.That(emitted, Has.Count.EqualTo(1));
-#else
             if (type is TYP_FLOAT)
             {
                 Assert.That(emitted, Has.Count.EqualTo(3));
@@ -543,7 +514,6 @@ internal static unsafe class Arm32IndirectLoadStoreTests
                 Assert.That(emitted[3].idReg2(), Is.EqualTo(REG_R3));
                 Assert.That(emitted[3].idReg3(), Is.EqualTo(REG_R4));
             }
-#endif
         });
     }
 
@@ -567,14 +537,6 @@ internal static unsafe class Arm32IndirectLoadStoreTests
             var descriptors = CurrentDescriptors(codeGen.Emitter)
                 ?? throw new AssertionException("Missing descriptor buffer.");
             var emittedInstructions = descriptors.GetRange(initialCount, descriptors.Count - initialCount);
-#if DEBUG
-            Assert.That(emittedInstructions, Has.Count.EqualTo(1));
-            Assert.That(emittedInstructions[0].idIns(), Is.EqualTo(INS_add));
-            Assert.That(emittedInstructions[0].idReg1(), Is.EqualTo(REG_R3));
-            Assert.That(emittedInstructions[0].idReg2(), Is.EqualTo(REG_R1));
-            Assert.That(emittedInstructions[0].idReg3(), Is.EqualTo(REG_R2));
-            Assert.That(codeGen.Emitter.emitGetInsSC(emittedInstructions[0]), Is.EqualTo((nint)2));
-#else
             Assert.That(emittedInstructions, Has.Count.EqualTo(2));
             Assert.That(emittedInstructions[0].idIns(), Is.EqualTo(INS_add));
             Assert.That(emittedInstructions[0].idReg1(), Is.EqualTo(REG_R3));
@@ -585,7 +547,6 @@ internal static unsafe class Arm32IndirectLoadStoreTests
             Assert.That(emittedInstructions[1].idReg1(), Is.EqualTo(REG_R0));
             Assert.That(emittedInstructions[1].idReg2(), Is.EqualTo(REG_R3));
             Assert.That(codeGen.Emitter.emitGetInsSC(emittedInstructions[1]), Is.EqualTo((nint)8));
-#endif
         });
     }
 
@@ -608,6 +569,52 @@ internal static unsafe class Arm32IndirectLoadStoreTests
         });
     }
 
+    [TestCase(TYP_BYTE, INS_ldrsb)]
+    [TestCase(TYP_UBYTE, INS_ldrb)]
+    [TestCase(TYP_SHORT, INS_ldrsh)]
+    [TestCase(TYP_USHORT, INS_ldrh)]
+    public static void IndirectNarrowLoadsPreserveSignednessAndWidth(
+        var_types type, instruction loadInstruction)
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0);
+            address.RegNum = REG_R1;
+            var indir = new GenTreeIndir(GT_IND, type, address) { RegNum = REG_R0 };
+
+            RecordArm32Instructions(() => codeGen.genCodeForTreeNode(indir));
+
+            var descriptor = LastInstruction(codeGen.Emitter);
+            Assert.That(descriptor.idIns(), Is.EqualTo(loadInstruction));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R1));
+        });
+    }
+
+    [TestCase(TYP_BYTE, INS_strb)]
+    [TestCase(TYP_UBYTE, INS_strb)]
+    [TestCase(TYP_SHORT, INS_strh)]
+    [TestCase(TYP_USHORT, INS_strh)]
+    public static void IndirectNarrowStoresUseTheDestinationWidth(
+        var_types type, instruction storeInstruction)
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0);
+            address.RegNum = REG_R1;
+            var data = compiler.gtNewIconNode(type.ActualType, 7);
+            data.RegNum = REG_R3;
+            var store = new GenTreeStoreInd(type, address, data);
+
+            RecordArm32Instructions(() => codeGen.genCodeForTreeNode(store));
+
+            var descriptor = LastInstruction(codeGen.Emitter);
+            Assert.That(descriptor.idIns(), Is.EqualTo(storeInstruction));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R3));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R1));
+        });
+    }
+
     [Test]
     public static void VolatileIndirectLoadUsesTrailingMemoryBarrier()
     {
@@ -626,15 +633,10 @@ internal static unsafe class Arm32IndirectLoadStoreTests
 
             var descriptors = CurrentDescriptors(codeGen.Emitter)
                 ?? throw new AssertionException("Missing descriptor buffer.");
-#if DEBUG
-            Assert.That(descriptors, Has.Count.EqualTo(1));
-            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_ldr));
-#else
             Assert.That(descriptors, Has.Count.EqualTo(2));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_ldr));
             Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_dmb));
             Assert.That(codeGen.Emitter.emitGetInsSC(descriptors[1]), Is.EqualTo((nint)INS_BARRIER_SY));
-#endif
         });
     }
 
@@ -654,14 +656,9 @@ internal static unsafe class Arm32IndirectLoadStoreTests
 
             var descriptors = CurrentDescriptors(codeGen.Emitter)
                 ?? throw new AssertionException("Missing descriptor buffer.");
-#if DEBUG
-            Assert.That(descriptors, Has.Count.EqualTo(1));
-            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_dmb));
-#else
             Assert.That(descriptors, Has.Count.EqualTo(2));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_dmb));
             Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_str));
-#endif
         });
     }
 
@@ -712,13 +709,8 @@ internal static unsafe class Arm32IndirectLoadStoreTests
                     ? [INS_vmov_d2i, INS_str, INS_str]
                     : [INS_ldr, INS_ldr, INS_vmov_i2d];
 
-#if DEBUG
-            Assert.That(emittedInstructions, Has.Count.EqualTo(1));
-            Assert.That(emittedInstructions[0].idIns(), Is.EqualTo(expected[0]));
-#else
             Assert.That(emittedInstructions.ConvertAll(static descriptor => descriptor.idIns()),
                 Is.EqualTo(expected));
-#endif
         });
     }
 
@@ -758,9 +750,13 @@ internal static unsafe class Arm32IndirectLoadStoreTests
     private static void RecordArm32Instructions(TestDelegate action)
     {
 #if DEBUG
-        var failure = Assert.Throws<FatalJitException>(action)
-            ?? throw new AssertionException("Missing expected ARM target sanity-check skip.");
-        Assert.That(failure.Message, Is.EqualTo("Instruction sanity checking outside AMD64 is not ported."));
+        try
+        {
+            action();
+        }
+        catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
+        {
+        }
 #else
         action();
 #endif

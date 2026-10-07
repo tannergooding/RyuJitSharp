@@ -130,7 +130,7 @@ public sealed partial class Lowering
             TryMakeSrcContainedOrRegOptional(putArgStk, src);
         }
 #endif
-#elif TARGET_ARM64
+#elif TARGET_ARMARCH
         var source = putArgStk.Data;
         if (source.Type is TYP_STRUCT)
         {

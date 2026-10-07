@@ -31,7 +31,7 @@ internal static unsafe class Arm64SveImmediateRecordingTests
             Assert.That(id.idIns(), Is.EqualTo(INS_sve_setffr));
             Assert.That(id.idInsFmt(), Is.EqualTo(IF_SVE_DQ_0A));
             Assert.That(id.idOpSize(), Is.EqualTo(EA_PTRSIZE));
-            Assert.That(Emitter.emitGetInsSC(id), Is.Zero);
+            Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)0));
             Assert.That(id.idIsSmallDsc(), Is.True);
         });
     }

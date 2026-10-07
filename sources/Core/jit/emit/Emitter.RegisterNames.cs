@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Globalization;
 
 namespace RyuJitSharp;
 
@@ -106,10 +107,70 @@ public partial class Emitter
         var name = compiler.compRegVarName(reg, varName, false);
         assert(name.Length >= 1);
         return name;
+#elif TARGET_ARM64
+        assert((uint)reg < (uint)REG_COUNT);
+        var size = EA_SIZE(attr);
+
+        if (reg == REG_SP)
+        {
+            return size switch
+            {
+                EA_8BYTE => "sp",
+                EA_4BYTE => "wsp",
+                _ => throw new FatalJitException(CORJIT_INTERNALERROR, $"Invalid ARM64 stack register size {size}."),
+            };
+        }
+
+        if ((reg >= REG_R0) && (reg <= REG_ZR))
+        {
+            if (reg == REG_ZR)
+            {
+                return size switch
+                {
+                    EA_8BYTE => "xzr",
+                    EA_4BYTE => "wzr",
+                    _ => throw new FatalJitException(CORJIT_INTERNALERROR, $"Invalid ARM64 zero register size {size}."),
+                };
+            }
+
+            var index = ((int)reg).ToString(CultureInfo.InvariantCulture);
+            return size switch
+            {
+                EA_8BYTE => string.Concat("x", index),
+                EA_4BYTE => string.Concat("w", index),
+                _ => throw new FatalJitException(CORJIT_INTERNALERROR, $"Invalid ARM64 general register size {size}."),
+            };
+        }
+
+        if (!isVectorRegister(reg))
+        {
+            throw new FatalJitException(CORJIT_INTERNALERROR, $"Invalid ARM64 register {reg}.");
+        }
+
+        var vectorIndex = ((int)reg - (int)REG_V0).ToString(CultureInfo.InvariantCulture);
+        return size switch
+        {
+            EA_8BYTE => string.Concat("d", vectorIndex),
+            EA_4BYTE => string.Concat("s", vectorIndex),
+            EA_16BYTE => string.Concat("q", vectorIndex),
+            EA_2BYTE => string.Concat("h", vectorIndex),
+            EA_1BYTE => string.Concat("b", vectorIndex),
+            EA_SCALABLE => string.Concat("z", vectorIndex),
+            _ => throw new FatalJitException(CORJIT_INTERNALERROR, $"Invalid ARM64 vector register size {size}."),
+        };
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Emitter register names outside xarch are not implemented.");
 #endif
     }
+
+#if TARGET_ARM64
+    public string emitVectorRegName(regNumber reg)
+    {
+        assert((reg >= REG_V0) && (reg <= REG_V31));
+        var index = ((int)reg - (int)REG_V0).ToString(CultureInfo.InvariantCulture);
+        return string.Concat("v", index);
+    }
+#endif
 
 #if TARGET_ARM
     private string emitFloatRegName(regNumber reg, emitAttr attr = EA_PTRSIZE, bool varName = true)

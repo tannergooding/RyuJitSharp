@@ -277,6 +277,7 @@ internal static unsafe class Arm64ReturnTypeTests
                 : compiler.gtNewIconNode(type, 3);
             var call = new GenTreeCall(TYP_VOID);
             var argument = call.Args.PushBack(NewCallArg.CreateForPrimitive(value));
+            argument.AbiInfo = new AbiPassingInformation(1);
             argument.AbiInfo.Segments[0] = stack
                 ? AbiPassingSegment.OnStack(24, 0, type.Size)
                 : AbiPassingSegment.InRegister(register, 0, type.Size);
@@ -371,6 +372,7 @@ internal static unsafe class Arm64ReturnTypeTests
             argument.AbiInfo.Segments[1] = AbiPassingSegment.OnStack(16, 8, 8);
             var tailValue = compiler.gtNewIconNode(TYP_LONG, 33);
             var tail = call.Args.PushBack(NewCallArg.CreateForPrimitive(tailValue));
+            tail.AbiInfo = new AbiPassingInformation(1);
             tail.AbiInfo.Segments[0] = AbiPassingSegment.OnStack(24, 0, 8);
             if (late)
             {

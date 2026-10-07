@@ -10,6 +10,7 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    // Visit try regions before loop bodies when their traversal orders conflict.
     internal void fgVisitBlocksInTryAwareLoopAwareRPO(
         FlowGraphDfsTree dfsTree, FlowGraphTryRegions tryRegions, FlowGraphNaturalLoops loops, Action<BasicBlock> func)
     {

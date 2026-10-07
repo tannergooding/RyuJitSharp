@@ -10,6 +10,82 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    // Values follow the 32-bit opcode map and then the 16-bit RVC opcode map.
+    private enum MajorOpcode
+    {
+        Load,
+        LoadFp,
+        Custom0,
+        MiscMem,
+        OpImm,
+        Auipc,
+        OpImm32,
+        Encoding48Bit1,
+        Store,
+        StoreFp,
+        Custom1,
+        Amo,
+        Op,
+        Lui,
+        Op32,
+        Encoding64Bit,
+        MAdd,
+        MSub,
+        NmSub,
+        NmAdd,
+        OpFp,
+        OpV,
+        Custom2Rv128,
+        Encoding48Bit2,
+        Branch,
+        Jalr,
+        Reserved,
+        Jal,
+        System,
+        OpVe,
+        Custom3Rv128,
+        Encoding80Bit,
+        Addi4Spn,
+        Fld,
+        Lw,
+        Ld,
+        Reserved2,
+        Fsd,
+        Sw,
+        Sd,
+        Addi,
+        Addiw,
+        Li,
+        LuiAddi16Sp,
+        MiscAlu,
+        J,
+        Beqz,
+        Bnez,
+        Slli,
+        FldSp,
+        LwSp,
+        LdSp,
+        JrJalrMvAdd,
+        FsdSp,
+        SwSp,
+        SdSp,
+    }
+
+    private static MajorOpcode GetMajorOpcode(uint code)
+    {
+        var is32BitInstruction = (code & 0x3) == 0x3;
+        assert(!is32BitInstruction || ((code & 0x1F) != 0x1F));
+
+        if (is32BitInstruction)
+        {
+            return (MajorOpcode)((code >> 2) & 0x1F);
+        }
+
+        var opcode = code & 0x3;
+        var funct3 = (code >> 13) & 0x7;
+        return (MajorOpcode)(32u + (opcode << 3) + funct3);
+    }
+
     internal static uint WordMask(byte bits)
     {
         return unchecked((uint)((1UL << bits) - 1));
@@ -56,6 +132,61 @@ public partial class Emitter
     internal static bool isValidSimm13(nint value)
     {
         return isValidSignedImmediate(value, 13);
+    }
+
+    public static bool isValidUimm12(nint value)
+    {
+        return value >> 12 == 0;
+    }
+
+    public static bool isValidUimm11(nint value)
+    {
+        return value >> 11 == 0;
+    }
+
+    public static bool isValidUimm5(nint value)
+    {
+        return value >> 5 == 0;
+    }
+
+    public static bool isValidSimm20(nint value)
+    {
+        return (-((nint)1 << 19) <= value) && (value < ((nint)1 << 19));
+    }
+
+    public static bool isValidUimm20(nint value)
+    {
+        return value >> 20 == 0;
+    }
+
+    public static bool isValidSimm21(nint value)
+    {
+        return (-((nint)1 << 20) <= value) && (value < ((nint)1 << 20));
+    }
+
+    public static bool isValidSimm32(nint value)
+    {
+        var minValue = -((nint)1 << 31) - 0x800;
+        var maxValueExclusive = ((nint)1 << 31) - 0x800;
+
+        return (minValue <= value) && (value < maxValueExclusive);
+    }
+
+    public static uint getBitWidth(emitAttr size)
+    {
+        assert(size <= EA_8BYTE);
+
+        return (uint)size * BITS_PER_BYTE;
+    }
+
+    public static bool isGeneralRegisterOrR0(regNumber reg)
+    {
+        return (reg >= REG_FIRST) && (reg <= REG_INT_LAST);
+    }
+
+    public static bool isFloatReg(regNumber reg)
+    {
+        return (reg >= REG_FP_FIRST) && (reg <= REG_FP_LAST);
     }
 
     internal static uint TrimSignedToImm12(nint immediate)

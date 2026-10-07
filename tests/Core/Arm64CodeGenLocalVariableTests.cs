@@ -93,7 +93,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_add));
             Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_DI_2A));
             Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_8BYTE));
-            Assert.That(descriptor.idSmallCns(), Is.EqualTo((nint)8));
+            Assert.That(descriptor.idSmallCns(), Is.EqualTo(8));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R3));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_FPBASE));
             Assert.That(descriptor.idIsLclVar(), Is.True);

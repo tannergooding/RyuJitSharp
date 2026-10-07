@@ -11,7 +11,9 @@ public partial class Emitter
 {
     public unsafe void emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM64
+        NYI("emitIns_C");
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Single static-field instruction recording requires xarch.");
 #else
 #if TARGET_AMD64

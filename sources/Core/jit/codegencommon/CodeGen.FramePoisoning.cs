@@ -3,6 +3,10 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+#if TARGET_ARM64
+using static RyuJitSharp.insSvePattern;
+#endif
+
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
@@ -112,9 +116,30 @@ public sealed partial class CodeGen
     }
 
 #if TARGET_ARM64
-    private static void genPoisonUnknownSizeVariable(int varNum, sbyte poisonVal)
+    private void genPoisonUnknownSizeVariable(int varNum, sbyte poisonVal)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Unknown-size ARM64 frame poisoning is not ported.");
+        ref var varDsc = ref _compiler.lvaGetDesc(varNum);
+        assert(varNum >= 0);
+        assert(varDsc.IsAddressExposed);
+
+        if (varDsc.Type is TYP_SIMD)
+        {
+            Emitter.emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_SCRATCH_V, poisonVal, INS_OPTS_SCALABLE_B);
+            Emitter.emitIns_S_R(INS_sve_str, EA_SCALABLE, REG_SCRATCH_V, varNum, 0);
+        }
+        else
+        {
+            assert(varDsc.Type is TYP_MASK);
+
+            const ulong vectorPoisonVal = 0xffff0000ffff00ffUL;
+            instGen_Set_Reg_To_Imm(EA_8BYTE, REG_SCRATCH, unchecked((nint)vectorPoisonVal));
+            Emitter.emitIns_R_R(INS_sve_dup, EA_8BYTE, REG_SCRATCH_V, REG_SCRATCH, INS_OPTS_SCALABLE_D);
+            Emitter.emitIns_R_PATTERN(INS_sve_ptrue, EA_SCALABLE, REG_SCRATCH_P, INS_OPTS_SCALABLE_B,
+                SVE_PATTERN_ALL);
+            Emitter.emitIns_R_R_R_I(INS_sve_cmpne, EA_SCALABLE, REG_SCRATCH_P, REG_SCRATCH_P, REG_SCRATCH_V,
+                0, INS_OPTS_SCALABLE_B);
+            Emitter.emitIns_S_R(INS_sve_str, EA_SCALABLE, REG_SCRATCH_P, varNum, 0);
+        }
     }
 #endif
 }

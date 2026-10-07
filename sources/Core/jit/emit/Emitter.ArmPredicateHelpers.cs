@@ -28,6 +28,12 @@ public partial class Emitter
         return value < 0 ? unchecked(0u - (uint)value) : (uint)value;
     }
 
+    private static bool offsetFitsInVectorMem(int disp)
+    {
+        var imm = unsigned_abs(disp);
+        return (imm & 0x03fc) == imm;
+    }
+
     public static bool insSetsFlags(insFlags flags)
     {
         return flags != INS_FLAGS_NOT_SET;

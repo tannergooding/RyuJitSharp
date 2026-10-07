@@ -83,3 +83,36 @@ public sealed partial class CodeGen
     }
 }
 #endif
+
+#if TARGET_ARM64
+namespace RyuJitSharp;
+
+public sealed partial class CodeGen
+{
+    public void genCodeForCCMP(GenTreeCCMP tree)
+    {
+        genConsumeOperands(tree);
+        var op1 = tree.Op1;
+        var op2 = tree.Op2;
+        var op1Type = op1.Type.ActualType;
+        var op2Type = op2.Type.ActualType;
+        var cmpSize = op1Type.EmitActualSize;
+        var srcReg1 = op1.RegNum;
+
+        assert(!varTypeIsFloating(op2Type));
+        assert(!op1.IsContainedIntOrIImmed);
+
+        var condition = GenConditionDesc.Get(tree.Condition);
+        var insCond = JumpKindToInsCond(condition.JumpKind1);
+        if (op2.IsContainedIntOrIImmed)
+        {
+            var value = unchecked((int)op2.AsIntConCommon().IconValue);
+            Emitter.emitIns_R_I_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, value, tree.FlagsVal, insCond);
+        }
+        else
+        {
+            Emitter.emitIns_R_R_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, op2.RegNum, tree.FlagsVal, insCond);
+        }
+    }
+}
+#endif

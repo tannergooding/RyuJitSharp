@@ -197,7 +197,7 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
             codeGen.genCodeForBinary(tree);
 
             var descriptors = Descriptors(codeGen.Emitter);
-            Assert.That(descriptors.Select(descriptor => descriptor.idIns()),
+            Assert.That(descriptors.Select(descriptor => descriptor.idIns()).ToArray(),
                 Is.EqualTo([INS_add, INS_add]));
             Assert.That(descriptors[0].idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_DI_2A));
             Assert.That(descriptors[0].idInsOpt(), Is.EqualTo(INS_OPTS_LSL12));

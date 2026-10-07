@@ -9,7 +9,7 @@ public sealed partial class CodeGen
 {
     public void genPutArgReg(GenTreeUnOp tree)
     {
-#if !TARGET_XARCH
+#if !TARGET_XARCH && !TARGET_ARMARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Register argument generation requires xarch.");
 #else
 #if TARGET_AMD64

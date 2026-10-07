@@ -1159,7 +1159,7 @@ public partial class Emitter
 #elif DEBUG || LATE_DISASM
     internal insExecutionCharacteristics getInsExecutionCharacteristics(instrDesc id)
     {
-#if TARGET_WASM
+#if TARGET_WASM || TARGET_ARM
         _ = id;
         return new insExecutionCharacteristics
         {

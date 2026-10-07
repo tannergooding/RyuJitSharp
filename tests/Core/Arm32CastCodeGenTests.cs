@@ -43,10 +43,6 @@ internal static unsafe class Arm32CastCodeGenTests
             RecordArm32Instructions(() => codeGen.genCodeForCast(cast));
 
             var emitted = InstructionsSince(codeGen.Emitter, initialCount);
-#if DEBUG
-            Assert.That(emitted, Has.Count.EqualTo(1));
-            Assert.That(emitted[0].idIns(), Is.EqualTo(INS_vmov_i2f));
-#else
             Assert.That(emitted, Has.Count.EqualTo(2));
             Assert.That(emitted[0].idIns(), Is.EqualTo(INS_vmov_i2f));
             Assert.That(emitted[0].idOpSize(), Is.EqualTo(EA_4BYTE));
@@ -54,7 +50,6 @@ internal static unsafe class Arm32CastCodeGenTests
             Assert.That(emitted[1].idOpSize(), Is.EqualTo(EA_4BYTE));
             Assert.That(emitted[1].idReg1(), Is.EqualTo(REG_F0));
             Assert.That(emitted[1].idReg2(), Is.EqualTo(REG_F0));
-#endif
         }, captureAssertions: true);
     }
 
@@ -62,34 +57,30 @@ internal static unsafe class Arm32CastCodeGenTests
     [TestCase(TYP_FLOAT, TYP_UINT, INS_vcvt_f2u)]
     [TestCase(TYP_DOUBLE, TYP_INT, INS_vcvt_d2i)]
     [TestCase(TYP_DOUBLE, TYP_UINT, INS_vcvt_d2u)]
-    public static void FloatToIntCastsUseAnIntegerTemporary(
+    public static void FloatToIntCastsUseAVfpTemporary(
         var_types sourceType, var_types destinationType, instruction conversion)
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
-            var source = Register(REG_F1, sourceType);
+            var source = Register(REG_F0, sourceType);
             var cast = new GenTreeCast(destinationType, source, fromUnsigned: false, castType: destinationType)
             {
                 RegNum = REG_R0,
             };
-            codeGen.InternalRegisters.Add(cast, new regMaskTP(SRBM_R2));
+            codeGen.InternalRegisters.Add(cast, new regMaskTP(SRBM_F2));
             var initialCount = InstructionCount(codeGen.Emitter);
 
             RecordArm32Instructions(() => codeGen.genCodeForCast(cast));
 
             var emitted = InstructionsSince(codeGen.Emitter, initialCount);
-#if DEBUG
-            Assert.That(emitted, Is.Empty);
-#else
             Assert.That(emitted, Has.Count.EqualTo(2));
             Assert.That(emitted[0].idIns(), Is.EqualTo(conversion));
             Assert.That(emitted[0].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(emitted[0].idReg1(), Is.EqualTo(REG_R2));
-            Assert.That(emitted[0].idReg2(), Is.EqualTo(REG_F1));
+            Assert.That(emitted[0].idReg1(), Is.EqualTo(REG_F2));
+            Assert.That(emitted[0].idReg2(), Is.EqualTo(REG_F0));
             Assert.That(emitted[1].idIns(), Is.EqualTo(INS_vmov_f2i));
             Assert.That(emitted[1].idReg1(), Is.EqualTo(REG_R0));
-            Assert.That(emitted[1].idReg2(), Is.EqualTo(REG_R2));
-#endif
+            Assert.That(emitted[1].idReg2(), Is.EqualTo(REG_F2));
         }, captureAssertions: true);
     }
 
@@ -128,20 +119,9 @@ internal static unsafe class Arm32CastCodeGenTests
             cast.Flags |= GTF_OVERFLOW;
             var initialCount = InstructionCount(codeGen.Emitter);
 
-#if DEBUG
             RecordArm32Instructions(() => codeGen.genCodeForCast(cast));
-#else
-            codeGen.genCodeForCast(cast);
-#endif
             var emitted = InstructionsSince(codeGen.Emitter, initialCount);
-#if DEBUG
-            Assert.That(emitted, Has.Count.EqualTo(1));
-            Assert.That(emitted[0].idIns(), Is.EqualTo(INS_tst));
-            Assert.That(emitted[0].idReg1(), Is.EqualTo(expectedSource));
-            Assert.That(emitted[0].idReg2(), Is.EqualTo(expectedSource));
-#else
             Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()), Is.EqualTo(expected));
-#endif
         }, captureAssertions: true);
     }
 
@@ -203,9 +183,13 @@ internal static unsafe class Arm32CastCodeGenTests
     private static void RecordArm32Instructions(TestDelegate action)
     {
 #if DEBUG
-        var failure = Assert.Throws<FatalJitException>(action)
-            ?? throw new AssertionException("Missing expected ARM target sanity-check skip.");
-        Assert.That(failure.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+        try
+        {
+            action();
+        }
+        catch (FatalJitException failure) when (failure.Result == CorJitResult.CORJIT_SKIPPED)
+        {
+        }
 #else
         action();
 #endif

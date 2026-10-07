@@ -19,7 +19,9 @@ public partial class Emitter
 
     public void emitIns_R_L(instruction ins, emitAttr attr, insGroup dst, regNumber reg)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM64
+        emitIns_R_LArm64(ins, attr, dst, reg);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Instruction-group address recording requires xarch.");
 #else
 #if TARGET_AMD64

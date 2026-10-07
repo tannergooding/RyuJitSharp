@@ -11,7 +11,7 @@ public sealed partial class Lowering
 {
     private void ContainBlockStoreAddress(GenTreeBlk block, uint size, GenTree address, GenTree? addressParent)
     {
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_RISCV64
+#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_RISCV64
         assert((block.Oper is GT_STORE_BLK) && (block._kind is GenTreeBlk.BlkOpKindUnroll));
         assert(size < int.MaxValue);
 
@@ -39,6 +39,35 @@ public sealed partial class Lowering
         {
             mode.IsContained = true;
         }
+#elif TARGET_ARM
+        if ((address.Oper is not GT_ADD) || address.HasOverflowCheck ||
+            (address.AsOp().Op2.Oper is not GT_CNS_INT))
+        {
+            return;
+        }
+
+        var offsetNode = address.AsOp().Op2.AsIntCon();
+        var offset = offsetNode.IconValue;
+        if ((offset < -255) || (offset > 255) || ((long)offset + size > 256))
+        {
+            return;
+        }
+
+        var invariant = addressParent is null
+            ? IsInvariantInRange(address, block)
+            : IsInvariantInRange(address, block, addressParent);
+        if (!invariant)
+        {
+            return;
+        }
+
+        BlockRange().Remove(offsetNode);
+        var mode = new GenTreeAddrMode(address.Type, address.AsOp().Op1, null, 0, (int)offset,
+            address, NodeThreading.LIR) {
+            Flags = address.Flags & GTF_COMMON_MASK,
+            IsContained = true,
+        };
+        BlockRange().ReplaceNode(address, mode);
 #elif TARGET_ARM64
         if ((address.Oper is not GT_ADD) || address.HasOverflowCheck ||
             (address.AsOp().Op2.Oper is not GT_CNS_INT))

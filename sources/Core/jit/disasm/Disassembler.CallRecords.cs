@@ -22,6 +22,23 @@ public partial struct Disassembler
         return _helperAddressToMethodHandleMap;
     }
 
+    private unsafe string? disGetMethodFullName(nuint addr)
+    {
+        var compiler = _compiler ?? throw new FatalJitException("Disassembler has not been initialized.");
+
+        if (GetHelperAddrToMethodHandleMap().TryGetValue(addr, out var methodHandle))
+        {
+            return compiler.eeGetMethodFullName(methodHandle);
+        }
+
+        if (GetAddrToMethodHandleMap().TryGetValue(addr, out methodHandle))
+        {
+            return compiler.eeGetMethodFullName(methodHandle);
+        }
+
+        return null;
+    }
+
     public unsafe void disSetMethod(nuint addr, CORINFO_METHOD_HANDLE methHnd)
     {
         assert(_compiler is not null);

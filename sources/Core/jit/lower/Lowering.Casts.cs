@@ -51,7 +51,7 @@ public sealed partial class Lowering
             castOp.IsContained = true;
         }
 #endif
-#elif TARGET_ARM64
+#elif TARGET_ARMARCH
         var castOp = node.CastOp;
         var castToType = node.CastType;
         if (CompilerInstance.opts.OptimizationEnabled && !node.HasOverflowCheck &&
@@ -72,7 +72,8 @@ public sealed partial class Lowering
                         else if ((address is GenTreeAddrMode mode) && !mode.HasIndex)
                         {
                             var loadType = varTypeIsSmall(castToType) ? castToType : castOp.Type;
-                            srcIsContainable = Emitter.emitIns_valid_imm_for_ldst_offset(mode.Offset, (emitAttr)loadType.Size);
+                            srcIsContainable = Emitter.emitIns_valid_imm_for_ldst_offset(
+                                mode.Offset, (emitAttr)loadType.Size);
                         }
                     }
                 }
@@ -95,6 +96,13 @@ public sealed partial class Lowering
                 }
             }
         }
+#if TARGET_ARM
+        if (varTypeIsLong(castOp.Type))
+        {
+            assert(castOp.Oper is GT_LONG);
+            MakeSrcContained(node, castOp);
+        }
+#endif
 #elif TARGET_RISCV64
         // Native RISC-V casts have no contained operands.
 #elif TARGET_LOONGARCH64

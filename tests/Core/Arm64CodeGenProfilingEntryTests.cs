@@ -5,7 +5,6 @@ using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
-using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
@@ -30,7 +29,7 @@ internal static unsafe class Arm64CodeGenProfilingEntryTests
 
     [TestCase(false)]
     [TestCase(true)]
-    public static void HookedEntryPreparesTheFunctionIdAndCallerStackBeforeTheCallRecorder(bool indirect)
+    public static void HookedEntryPreparesTheFunctionIdAndCallerStackBeforeTheHelperCall(bool indirect)
     {
         WithEntry((compiler, codeGen) =>
         {
@@ -39,12 +38,7 @@ internal static unsafe class Arm64CodeGenProfilingEntryTests
             compiler.compProfilerMethHnd = (void*)0x12345678;
             var initRegZeroed = true;
 
-            var failure = Assert.Throws<FatalJitException>(
-                () => codeGen.genProfilingEnterCallback(REG_R10, ref initRegZeroed)) ??
-                throw new AssertionException("The unported ARM64 call recorder did not fail.");
-
-            Assert.That(failure.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure.Message, Is.EqualTo("Call instruction recording requires xarch."));
+            codeGen.genProfilingEnterCallback(REG_R10, ref initRegZeroed);
 
             var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
             Assert.That(descriptors.Any(descriptor => descriptor.idReg1() == REG_R10), Is.True);
@@ -55,6 +49,7 @@ internal static unsafe class Arm64CodeGenProfilingEntryTests
                 descriptor.idReg1() == REG_R11 && descriptor.idIns() is INS_add or INS_sub);
             Assert.That(callerStackAddress.idReg2(),
                 Is.EqualTo(codeGen.IsFramePointerUsed ? REG_FPBASE : REG_SPBASE));
+            Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_bl));
         });
     }
 

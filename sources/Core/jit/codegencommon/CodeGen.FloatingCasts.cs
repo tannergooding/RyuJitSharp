@@ -10,7 +10,57 @@ public sealed partial class CodeGen
 #if !TARGET_LOONGARCH64
     public void genFloatToFloatCast(GenTree treeNode)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM
+        assert(treeNode.Oper is GT_CAST);
+        assert(!treeNode.HasOverflowCheck);
+        var cast = treeNode.AsCast();
+        var targetReg = cast.RegNum;
+        assert(genIsValidFloatReg(targetReg));
+        var op1 = cast.CastOp;
+        assert(!op1.IsContained);
+        assert(genIsValidFloatReg(op1.RegNum));
+        var dstType = cast.CastType;
+        var srcType = op1.Type;
+        assert(varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
+
+        genConsumeOperands(cast);
+        if (srcType != dstType)
+        {
+            var ins = (srcType is TYP_FLOAT) ? INS_vcvt_f2d : INS_vcvt_d2f;
+            Emitter.emitIns_R_R(ins, cast.Type.EmitActualSize, targetReg, op1.RegNum);
+        }
+        else
+        {
+            _ = Emitter.emitIns_Mov(INS_vmov, cast.Type.EmitActualSize, targetReg, op1.RegNum, canSkip: true);
+        }
+
+        genProduceReg(cast);
+#elif TARGET_ARM64
+        assert(treeNode.Oper is GT_CAST);
+        assert(!treeNode.HasOverflowCheck);
+        var cast = treeNode.AsCast();
+        var targetReg = cast.RegNum;
+        assert(genIsValidFloatReg(targetReg));
+        var op1 = cast.CastOp;
+        assert(!op1.IsContained);
+        assert(genIsValidFloatReg(op1.RegNum));
+        var dstType = cast.CastType;
+        var srcType = op1.Type;
+        assert(varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
+
+        genConsumeOperands(cast);
+        if (srcType != dstType)
+        {
+            var options = (srcType is TYP_FLOAT) ? INS_OPTS_S_TO_D : INS_OPTS_D_TO_S;
+            Emitter.emitIns_R_R(INS_fcvt, cast.Type.EmitActualSize, targetReg, op1.RegNum, options);
+        }
+        else
+        {
+            Emitter.emitIns_Mov(INS_mov, cast.Type.EmitActualSize, targetReg, op1.RegNum, canSkip: true);
+        }
+
+        genProduceReg(cast);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Floating casts outside xarch are not implemented.");
 #else
 #if TARGET_AMD64
@@ -100,6 +150,40 @@ public sealed partial class CodeGen
         _ = Emitter.emitIns_Mov(INS_vmov_i2f, srcSize, targetReg, op1.RegNum, canSkip: false);
         Emitter.emitIns_R_R(insVcvt, srcSize, targetReg, targetReg);
 
+        genProduceReg(cast);
+#elif TARGET_ARM64
+        assert(treeNode.Oper is GT_CAST);
+        assert(!treeNode.HasOverflowCheck);
+
+        var cast = treeNode.AsCast();
+        var targetReg = cast.RegNum;
+        assert(genIsValidFloatReg(targetReg));
+
+        var op1 = cast.CastOp;
+        assert(!op1.IsContained);
+        assert(genIsValidIntReg(op1.RegNum));
+
+        var dstType = cast.CastType;
+        var srcType = op1.Type.ActualType;
+        assert(!varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
+
+        if (cast.IsUnsigned)
+        {
+            srcType = varTypeToUnsigned(srcType);
+        }
+
+        var srcSize = srcType.EmitSize;
+        noway_assert(srcSize is EA_4BYTE or EA_8BYTE);
+        var ins = varTypeIsUnsigned(srcType) ? INS_ucvtf : INS_scvtf;
+        var cvtOption = dstType switch
+        {
+            TYP_DOUBLE => srcSize == EA_4BYTE ? INS_OPTS_4BYTE_TO_D : INS_OPTS_8BYTE_TO_D,
+            TYP_FLOAT => srcSize == EA_4BYTE ? INS_OPTS_4BYTE_TO_S : INS_OPTS_8BYTE_TO_S,
+            _ => throw new FatalJitException(CORJIT_INTERNALERROR, "Invalid integral-to-floating cast target."),
+        };
+
+        genConsumeOperands(cast);
+        Emitter.emitIns_R_R(ins, emitActualTypeSize(dstType), targetReg, op1.RegNum, cvtOption);
         genProduceReg(cast);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Integral-to-floating casts outside xarch are not implemented.");

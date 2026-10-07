@@ -2,9 +2,10 @@
 
 #if TARGET_ARM64
 using NUnit.Framework;
-using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 
@@ -13,7 +14,7 @@ namespace RyuJitSharp.UnitTests;
 internal static class Arm64CodeGenFunctionEntryTests
 {
     [Test]
-    public static void FunctionEntryDispatchRetainsTheInstructionGroupRecordingBoundary()
+    public static void FunctionEntryDispatchRecordsTheCurrentFunctionAddress()
     {
         Arm64CodeGenLocalVariableTests.WithCodeGen((_, codeGen) =>
         {
@@ -22,12 +23,13 @@ internal static class Arm64CodeGenFunctionEntryTests
                 RegNum = REG_R3,
             };
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree)) ??
-                throw new AssertionException("The unported ARM64 instruction-group recording dependency did not fail.");
+            codeGen.genCodeForTreeNode(tree);
 
-            Assert.That(failure.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure.Message, Is.EqualTo("Instruction-group address recording requires xarch."));
-            Assert.That(Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter), Is.Empty);
+            var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_adr));
+            Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_PTRSIZE));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3));
         });
     }
 }
