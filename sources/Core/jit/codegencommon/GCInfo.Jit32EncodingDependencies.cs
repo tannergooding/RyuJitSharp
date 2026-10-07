@@ -519,22 +519,5 @@ public partial struct GCInfo
     {
         return destination + (nint)gcMakeRegPtrTable(destination, -1, header, codeSize, ref argTabOffset);
     }
-
-#if DUMP_GC_TABLES
-    internal readonly unsafe void gcFindPtrsInFrame(void* infoBlock, void* codeBlock, uint offs)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "JIT32 GC frame pointer dumping is not ported.");
-    }
-
-    internal readonly unsafe nuint gcInfoBlockHdrDump(byte* source, ref InfoHdr header, out uint codeSize)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "JIT32 GC header decoding is not ported.");
-    }
-
-    internal readonly unsafe nuint gcDumpPtrTable(byte* source, InfoHdr header, uint codeSize)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "JIT32 GC pointer-table decoding is not ported.");
-    }
-#endif
 }
 #endif
