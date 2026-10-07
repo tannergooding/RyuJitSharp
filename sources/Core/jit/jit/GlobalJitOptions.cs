@@ -10,9 +10,9 @@ public static class GlobalJitOptions
 #if FEATURE_HFA
 #if CONFIGURABLE_ARM_ABI
     // These are safe to have globals as they cannot change once initialized within the process.
-    public static static int compUseSoftFPConfigured;
+    public static int compUseSoftFPConfigured;
 
-    public static static bool compFeatureHfa;
+    public static bool compFeatureHfa;
 #else
     public static bool compFeatureHfa => true;
 #endif
