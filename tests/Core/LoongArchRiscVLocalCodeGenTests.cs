@@ -786,10 +786,11 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 #if TARGET_RISCV64
 #if DEBUG
     [TestCase(TYP_LONG, RiscVRecorderDebugBoundary)]
+    [TestCase(TYP_INT, RiscVRecorderDebugBoundary)]
 #else
     [TestCase(TYP_LONG, "Target conditional-branch recording is not implemented.")]
+    [TestCase(TYP_INT, "Target conditional-branch recording is not implemented.")]
 #endif
-    [TestCase(TYP_INT, "Target two-register instruction recording is not implemented.")]
 #else
     [TestCase(TYP_LONG, "unimplemented on LOONGARCH64 yet")]
 #endif
@@ -824,15 +825,8 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 
 #if TARGET_RISCV64
             var failure = CaptureFatalJitException(() => codeGen.genCodeForTreeNode(tree));
-            if (comparandType is TYP_LONG)
-            {
-                AssertRiscVRecorderOutcome(
-                    codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
-            }
-            else
-            {
-                Assert.That(failure?.Message, Does.Contain(expectedBoundary));
-            }
+            AssertRiscVRecorderOutcome(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 #else
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
             Assert.That(failure?.Message, Does.Contain(expectedBoundary));
@@ -1207,23 +1201,14 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             tree.RegNum = isFloating ? REG_F2 : REG_S1;
 
 #if TARGET_RISCV64
-            if (oper is GT_NEG)
-            {
 #if DEBUG
-                const string? expectedBoundary = RiscVRecorderDebugBoundary;
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
 #else
-                const string? expectedBoundary = null;
+            const string? expectedBoundary = null;
 #endif
-                var failure = CaptureFatalJitException(() => codeGen.genCodeForNegNot(tree.AsUnOp()));
-                AssertRiscVRecorderOutcome(
-                    codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
-            }
-            else
-            {
-                var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForNegNot(tree.AsUnOp()));
-                Assert.That(failure?.Message,
-                    Does.Contain("Target two-register instruction recording is not implemented."));
-            }
+            var failure = CaptureFatalJitException(() => codeGen.genCodeForNegNot(tree.AsUnOp()));
+            AssertRiscVRecorderOutcome(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 #else
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForNegNot(tree.AsUnOp()));
             Assert.That(failure?.Message, Does.Contain(
@@ -1262,6 +1247,11 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         WithCodeGen((compiler, codeGen) =>
         {
 #if TARGET_RISCV64
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
             compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_Zbb);
             compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_Zbb);
             compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_Zbb);
@@ -1271,9 +1261,20 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var tree = compiler.gtNewUnaryNode(oper, type, operand);
             tree.RegNum = REG_S1;
 
+#if TARGET_RISCV64
+            var failure = CaptureFatalJitException(() => codeGen.genCodeForBswap(tree));
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            AssertRiscVRecorderOutcome(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+#else
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForBswap(tree));
 
             Assert.That(failure?.Message, Does.Contain("Target two-register instruction recording is not implemented."));
+#endif
         });
     }
 
@@ -1337,6 +1338,13 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
+#if TARGET_RISCV64
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+#endif
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
             var source = Register(compiler, sourceType, REG_S0);
             var cast = new GenTreeCast(destinationType, source, isUnsigned, destinationType)
@@ -1344,9 +1352,19 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
                 RegNum = REG_F0,
             };
 
+#if TARGET_RISCV64
+            var failure = CaptureFatalJitException(() => codeGen.genCodeForCast(cast));
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            AssertRiscVRecorderOutcome(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+#else
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForCast(cast));
-
             Assert.That(failure?.Message, Does.Contain("Target two-register instruction recording is not implemented."));
+#endif
         });
     }
 
@@ -1359,6 +1377,13 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
+#if TARGET_RISCV64
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+#endif
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
             var source = compiler.gtNewDconNode(sourceType, 1.5);
             source.RegNum = REG_F0;
@@ -1372,15 +1397,22 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             codeGen.InternalRegisters.Add(cast, regMaskTP.CreateFromRegNum(REG_S2, REG_S2.SingleTypeMask));
 #endif
 
+#if TARGET_RISCV64
+            var failure = CaptureFatalJitException(() => codeGen.genCodeForCast(cast));
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            AssertRiscVRecorderOutcome(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+#else
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForCast(cast));
-#if TARGET_LOONGARCH64
             var expectedMessage = isUnsigned
                 ? "Two-register-immediate instruction recording requires xarch."
                 : "Target two-register instruction recording is not implemented.";
-#else
-            const string expectedMessage = "Target two-register instruction recording is not implemented.";
-#endif
             Assert.That(failure?.Message, Does.Contain(expectedMessage));
+#endif
         });
     }
 
@@ -1390,6 +1422,13 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
+#if TARGET_RISCV64
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+#endif
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
             var operand = compiler.gtNewDconNode(type, -0.0);
             operand.RegNum = REG_F0;
@@ -1402,9 +1441,19 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             codeGen.InternalRegisters.Add(tree, regMaskTP.CreateFromRegNum(REG_S2, REG_S2.SingleTypeMask));
 #endif
 
+#if TARGET_RISCV64
+            var failure = CaptureFatalJitException(() => codeGen.genCodeForTreeNode(tree));
+#if DEBUG
+            const string expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string expectedBoundary = "Target conditional-branch recording is not implemented.";
+#endif
+            AssertRiscVRecorderOutcome(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+#else
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
-
             Assert.That(failure?.Message, Does.Contain("Target two-register instruction recording is not implemented."));
+#endif
         });
     }
 

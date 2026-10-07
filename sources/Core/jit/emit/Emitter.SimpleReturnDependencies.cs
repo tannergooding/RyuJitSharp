@@ -17,11 +17,6 @@ public partial class Emitter
         throw new FatalJitException(CORJIT_SKIPPED, "Target register-immediate recording is not implemented.");
     }
 
-    public void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "Target two-register instruction recording is not implemented.");
-    }
-
 #if TARGET_RISCV64
     public unsafe void emitIns_R_AI(
         instruction ins,

@@ -161,6 +161,75 @@ internal static unsafe class RiscVCodeGenPortTests
         Assert.That(Emitter.emitInsCode(ins), Is.EqualTo(expectedCode));
     }
 
+    [TestCase(INS_mov, EA_8BYTE, REG_A0, REG_A1, 0x00058513u)]
+    [TestCase(INS_sext_w, EA_4BYTE, REG_A0, REG_A1, 0x0005851Bu)]
+    [TestCase(INS_not, EA_8BYTE, REG_A0, REG_A1, 0xFFF5C513u)]
+    [TestCase(INS_clz, EA_8BYTE, REG_A0, REG_A1, 0x60059513u)]
+    [TestCase(INS_rev8, EA_8BYTE, REG_A0, REG_A1, 0x6B85D513u)]
+    [TestCase(INS_fmv_x_w, EA_4BYTE, REG_A0, REG_FA1, 0xE0058553u)]
+    [TestCase(INS_fclass_d, EA_8BYTE, REG_A0, REG_FA1, 0xE2059553u)]
+    [TestCase(INS_fcvt_wu_d, EA_4BYTE, REG_A0, REG_FA1, 0xC2159553u)]
+    [TestCase(INS_fmv_d_x, EA_8BYTE, REG_FA0, REG_A1, 0xF2058553u)]
+    [TestCase(INS_fcvt_s_w, EA_4BYTE, REG_FA0, REG_A1, 0xD005F553u)]
+    [TestCase(INS_fcvt_d_w, EA_8BYTE, REG_FA0, REG_A1, 0xD2058553u)]
+    [TestCase(INS_fcvt_s_d, EA_4BYTE, REG_FA0, REG_FA1, 0x4015F553u)]
+    [TestCase(INS_fcvt_d_s, EA_8BYTE, REG_FA0, REG_FA1, 0x42058553u)]
+    [TestCase(INS_fsqrt_s, EA_4BYTE, REG_FA0, REG_FA1, 0x5805F553u)]
+    public static void RegisterRegisterInstructionRecordsItsDescriptor(
+        instruction ins,
+        emitAttr attr,
+        regNumber reg1,
+        regNumber reg2,
+        uint expectedCode)
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+
+            var failure = CaptureFatalJitException(() => emitter.emitIns_R_R(ins, attr, reg1, reg2));
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+            var descriptor = instructionBuffer[^1];
+            Assert.That(descriptor.idIns(), Is.EqualTo(ins));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(reg1));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(reg2));
+            Assert.That(descriptor.idAddr().iiaInstrEncode, Is.EqualTo(expectedCode));
+            Assert.That(descriptor.idCodeSize(), Is.EqualTo(4u));
+        });
+    }
+
+    [Test]
+    public static void UnsupportedRegisterRegisterInstructionStopsBeforeRecording()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+
+            var failure = CaptureFatalJitException(
+                () => emitter.emitIns_R_R(INS_nop, EA_8BYTE, REG_A0, REG_A1));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("Illegal instruction within RISC-V two-register instruction recording."));
+            Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount));
+            Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize));
+        });
+    }
+
     [TestCase(INS_addi, EA_8BYTE, REG_A0, REG_A1, 42, 0x02A58513u)]
     [TestCase(INS_addi, EA_8BYTE, REG_A0, REG_A1, -2048, 0x80058513u)]
     [TestCase(INS_addi, EA_8BYTE, REG_A0, REG_A1, 2047, 0x7FF58513u)]
@@ -499,14 +568,16 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
-    [TestCase(TYP_FLOAT, 0UL, "Target two-register instruction recording is not implemented.")]
-    [TestCase(TYP_DOUBLE, 0UL, "Target two-register instruction recording is not implemented.")]
 #if DEBUG
+    [TestCase(TYP_FLOAT, 0UL, RiscVRecorderDebugBoundary)]
+    [TestCase(TYP_DOUBLE, 0UL, RiscVRecorderDebugBoundary)]
     [TestCase(TYP_FLOAT, 0x7FFUL, RiscVRecorderDebugBoundary)]
     [TestCase(TYP_DOUBLE, 0x7FFUL, RiscVRecorderDebugBoundary)]
 #else
-    [TestCase(TYP_FLOAT, 0x7FFUL, "Target two-register instruction recording is not implemented.")]
-    [TestCase(TYP_DOUBLE, 0x7FFUL, "Target two-register instruction recording is not implemented.")]
+    [TestCase(TYP_FLOAT, 0UL, null)]
+    [TestCase(TYP_DOUBLE, 0UL, null)]
+    [TestCase(TYP_FLOAT, 0x7FFUL, null)]
+    [TestCase(TYP_DOUBLE, 0x7FFUL, null)]
 #endif
     [TestCase(TYP_FLOAT, 0x12345000UL, "Target register-immediate recording is not implemented.")]
     [TestCase(TYP_DOUBLE, 0x12345000UL, "Target register-immediate recording is not implemented.")]
@@ -602,8 +673,13 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
-    [TestCase(TYP_INT, TYP_LONG, "Target two-register instruction recording is not implemented.")]
-    [TestCase(TYP_LONG, TYP_INT, "Target two-register instruction recording is not implemented.")]
+#if DEBUG
+    [TestCase(TYP_INT, TYP_LONG, RiscVRecorderDebugBoundary)]
+    [TestCase(TYP_LONG, TYP_INT, RiscVRecorderDebugBoundary)]
+#else
+    [TestCase(TYP_INT, TYP_LONG, "Target conditional-branch recording is not implemented.")]
+    [TestCase(TYP_LONG, TYP_INT, "Target conditional-branch recording is not implemented.")]
+#endif
     [TestCase(TYP_LONG, TYP_LONG, "Target conditional-branch recording is not implemented.")]
     public static void RangeCheckNodeDispatchPreservesRiscVInstructionRecordingBoundary(
         var_types indexType,
@@ -612,6 +688,11 @@ internal static unsafe class RiscVCodeGenPortTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
             compiler.opts.compDbgCode = true;
 
             var index = new GenTreePhysReg(REG_A0, indexType) { RegNum = REG_A0 };
@@ -623,10 +704,9 @@ internal static unsafe class RiscVCodeGenPortTests
                     boundsCheck, regMaskTP.CreateFromRegNum(REG_A2, REG_A2.SingleTypeMask));
             }
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(boundsCheck));
-
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message, Does.Contain(expectedBoundary));
+            var failure = CaptureFatalJitException(() => codeGen.genCodeForTreeNode(boundsCheck));
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
         });
     }
 
@@ -1334,14 +1414,19 @@ internal static unsafe class RiscVCodeGenPortTests
 #if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
 #else
-            const string? expectedBoundary = "Target two-register instruction recording is not implemented.";
+            const string? expectedBoundary = null;
 #endif
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 
             var emitted = instructionBuffer.GetRange(initialInstructionCount,
                 instructionBuffer.Count - initialInstructionCount);
+#if DEBUG
             Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()), Is.EqualTo([INS_and]));
+#else
+            Assert.That(emitted.ConvertAll(static descriptor => descriptor.idIns()),
+                Is.EqualTo([INS_and, INS_sext_w]));
+#endif
         });
     }
 
@@ -1407,6 +1492,11 @@ internal static unsafe class RiscVCodeGenPortTests
     {
         WithCodeGen((_, codeGen) =>
         {
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
             var source = new GenTreePhysReg(REG_A0, TYP_INT) { RegNum = REG_A0 };
             var cast = new GenTreeCast(TYP_LONG, source, fromUnsigned: false, castType: TYP_ULONG)
             {
@@ -1416,11 +1506,14 @@ internal static unsafe class RiscVCodeGenPortTests
             codeGen.InternalRegisters.Add(
                 cast, regMaskTP.CreateFromRegNum(REG_A2, REG_A2.SingleTypeMask));
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForCast(cast));
-
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message,
-                Does.Contain("Target two-register instruction recording is not implemented."));
+            var failure = CaptureFatalJitException(() => codeGen.genCodeForCast(cast));
+#if DEBUG
+            const string expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string expectedBoundary = "Target conditional-branch recording is not implemented.";
+#endif
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
         });
     }
 
@@ -1429,22 +1522,35 @@ internal static unsafe class RiscVCodeGenPortTests
     {
         WithCodeGen((_, codeGen) =>
         {
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
             var source = new GenTreePhysReg(REG_A0, TYP_LONG) { RegNum = REG_A0 };
             var cast = new GenTreeCast(TYP_LONG, source, fromUnsigned: false, castType: TYP_LONG)
             {
                 RegNum = REG_A1,
             };
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForCast(cast));
-
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message,
-                Does.Contain("Target two-register instruction recording is not implemented."));
+            var failure = CaptureFatalJitException(() => codeGen.genCodeForCast(cast));
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
         });
     }
 
-    [TestCase(TYP_FLOAT, TYP_DOUBLE, "Target two-register instruction recording is not implemented.")]
-    [TestCase(TYP_DOUBLE, TYP_FLOAT, "Target two-register instruction recording is not implemented.")]
+#if DEBUG
+    [TestCase(TYP_FLOAT, TYP_DOUBLE, RiscVRecorderDebugBoundary)]
+    [TestCase(TYP_DOUBLE, TYP_FLOAT, RiscVRecorderDebugBoundary)]
+#else
+    [TestCase(TYP_FLOAT, TYP_DOUBLE, null)]
+    [TestCase(TYP_DOUBLE, TYP_FLOAT, null)]
+#endif
 #if DEBUG
     [TestCase(TYP_FLOAT, TYP_FLOAT, RiscVRecorderDebugBoundary)]
     [TestCase(TYP_DOUBLE, TYP_DOUBLE, RiscVRecorderDebugBoundary)]
@@ -1576,9 +1682,14 @@ internal static unsafe class RiscVCodeGenPortTests
     public static void SaturationIntrinsicDispatchPreservesRiscVRegisterRecordingBoundary(
         NamedIntrinsic intrinsic)
     {
+#if DEBUG
+        const string expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+        const string expectedBoundary = "Target conditional-branch recording is not implemented.";
+#endif
         WithCodeGen((compiler, codeGen) => AssertIntrinsicBoundary(
             compiler, codeGen, intrinsic, TYP_INT, hasSecondOperand: false,
-            expectedBoundary: "Target two-register instruction recording is not implemented."));
+            expectedBoundary: expectedBoundary));
     }
 
 #if DEBUG
@@ -1588,22 +1699,25 @@ internal static unsafe class RiscVCodeGenPortTests
     [TestCase(NI_System_Math_Abs, TYP_FLOAT, null)]
     [TestCase(NI_System_Math_Abs, TYP_DOUBLE, null)]
 #endif
-    [TestCase(NI_System_Math_Sqrt, TYP_FLOAT,
-        "Target two-register instruction recording is not implemented.")]
-    [TestCase(NI_System_Math_Sqrt, TYP_DOUBLE,
-        "Target two-register instruction recording is not implemented.")]
-    [TestCase(NI_PRIMITIVE_LeadingZeroCount, TYP_INT,
-        "Target two-register instruction recording is not implemented.")]
-    [TestCase(NI_PRIMITIVE_LeadingZeroCount, TYP_LONG,
-        "Target two-register instruction recording is not implemented.")]
-    [TestCase(NI_PRIMITIVE_TrailingZeroCount, TYP_INT,
-        "Target two-register instruction recording is not implemented.")]
-    [TestCase(NI_PRIMITIVE_TrailingZeroCount, TYP_LONG,
-        "Target two-register instruction recording is not implemented.")]
-    [TestCase(NI_PRIMITIVE_PopCount, TYP_INT,
-        "Target two-register instruction recording is not implemented.")]
-    [TestCase(NI_PRIMITIVE_PopCount, TYP_LONG,
-        "Target two-register instruction recording is not implemented.")]
+#if DEBUG
+    [TestCase(NI_System_Math_Sqrt, TYP_FLOAT, RiscVRecorderDebugBoundary)]
+    [TestCase(NI_System_Math_Sqrt, TYP_DOUBLE, RiscVRecorderDebugBoundary)]
+    [TestCase(NI_PRIMITIVE_LeadingZeroCount, TYP_INT, RiscVRecorderDebugBoundary)]
+    [TestCase(NI_PRIMITIVE_LeadingZeroCount, TYP_LONG, RiscVRecorderDebugBoundary)]
+    [TestCase(NI_PRIMITIVE_TrailingZeroCount, TYP_INT, RiscVRecorderDebugBoundary)]
+    [TestCase(NI_PRIMITIVE_TrailingZeroCount, TYP_LONG, RiscVRecorderDebugBoundary)]
+    [TestCase(NI_PRIMITIVE_PopCount, TYP_INT, RiscVRecorderDebugBoundary)]
+    [TestCase(NI_PRIMITIVE_PopCount, TYP_LONG, RiscVRecorderDebugBoundary)]
+#else
+    [TestCase(NI_System_Math_Sqrt, TYP_FLOAT, null)]
+    [TestCase(NI_System_Math_Sqrt, TYP_DOUBLE, null)]
+    [TestCase(NI_PRIMITIVE_LeadingZeroCount, TYP_INT, null)]
+    [TestCase(NI_PRIMITIVE_LeadingZeroCount, TYP_LONG, null)]
+    [TestCase(NI_PRIMITIVE_TrailingZeroCount, TYP_INT, null)]
+    [TestCase(NI_PRIMITIVE_TrailingZeroCount, TYP_LONG, null)]
+    [TestCase(NI_PRIMITIVE_PopCount, TYP_INT, null)]
+    [TestCase(NI_PRIMITIVE_PopCount, TYP_LONG, null)]
+#endif
     public static void UnaryIntrinsicDispatchPreservesRiscVRegisterRecordingBoundary(
         NamedIntrinsic intrinsic,
         var_types type,
