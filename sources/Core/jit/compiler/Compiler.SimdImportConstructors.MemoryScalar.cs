@@ -14,6 +14,8 @@ public partial class Compiler
         assert(op1 is not null && op1.Type == type);
         assert(varTypeIsFloating(simdBaseType));
 
+        var intrinsic = NI_Illegal;
+
 #if TARGET_XARCH
         if (simdSize == 64)
         {
@@ -21,10 +23,8 @@ public partial class Compiler
                 op1, gtNewIconNode(TYP_INT, (int)FloatRoundingMode.ToPositiveInfinity));
         }
 
-        var intrinsic = simdSize == 32 ? NI_AVX_Ceiling : NI_X86Base_Ceiling;
-        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
+        intrinsic = simdSize == 32 ? NI_AVX_Ceiling : NI_X86Base_Ceiling;
 #elif TARGET_ARM64
-        NamedIntrinsic intrinsic;
         if (simdBaseType == TYP_DOUBLE)
         {
             intrinsic = simdSize == 8 ? NI_AdvSimd_CeilingScalar : NI_AdvSimd_Arm64_Ceiling;
@@ -33,14 +33,14 @@ public partial class Compiler
         {
             intrinsic = NI_AdvSimd_Ceiling;
         }
-        assert(intrinsic != NI_Illegal);
-
-        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
 #elif TARGET_WASM
-        return gtNewSimdHWIntrinsicNode(type, NI_PackedSimd_Ceiling, simdBaseType, simdSize, op1);
+        intrinsic = NI_PackedSimd_Ceiling;
 #else
         throw new FatalJitException("gtNewSimdCeilNode requires its target-specific implementation.");
 #endif
+
+        assert(intrinsic != NI_Illegal);
+        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
     }
 
     public GenTree gtNewSimdFloorNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
@@ -49,6 +49,8 @@ public partial class Compiler
         assert(op1 is not null && op1.Type == type);
         assert(varTypeIsFloating(simdBaseType));
 
+        var intrinsic = NI_Illegal;
+
 #if TARGET_XARCH
         if (simdSize == 64)
         {
@@ -56,10 +58,8 @@ public partial class Compiler
                 op1, gtNewIconNode(TYP_INT, (int)FloatRoundingMode.ToNegativeInfinity));
         }
 
-        var intrinsic = simdSize == 32 ? NI_AVX_Floor : NI_X86Base_Floor;
-        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
+        intrinsic = simdSize == 32 ? NI_AVX_Floor : NI_X86Base_Floor;
 #elif TARGET_ARM64
-        NamedIntrinsic intrinsic;
         if (simdBaseType == TYP_DOUBLE)
         {
             intrinsic = simdSize == 8 ? NI_AdvSimd_FloorScalar : NI_AdvSimd_Arm64_Floor;
@@ -68,14 +68,14 @@ public partial class Compiler
         {
             intrinsic = NI_AdvSimd_Floor;
         }
-        assert(intrinsic != NI_Illegal);
-
-        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
 #elif TARGET_WASM
-        return gtNewSimdHWIntrinsicNode(type, NI_PackedSimd_Floor, simdBaseType, simdSize, op1);
+        intrinsic = NI_PackedSimd_Floor;
 #else
         throw new FatalJitException("gtNewSimdFloorNode requires its target-specific implementation.");
 #endif
+
+        assert(intrinsic != NI_Illegal);
+        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1);
     }
 
     public GenTree gtNewSimdRoundNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
