@@ -10,7 +10,9 @@ public sealed partial class CodeGen
 {
     public regNumber rsGetRsvdReg()
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 reserved stack register selection is not ported.");
+        noway_assert((_regSet.rsMaskResvd & new regMaskTP(SRBM_OPT_RSVD)).IsNonEmpty);
+
+        return REG_OPT_RSVD;
     }
 }
 #endif

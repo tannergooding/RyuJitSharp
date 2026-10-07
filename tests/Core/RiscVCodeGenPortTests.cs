@@ -35,6 +35,17 @@ internal static unsafe class RiscVCodeGenPortTests
 {
     private const string RiscVRecorderDebugBoundary = "Instruction sanity checking outside AMD64 is not ported.";
 
+    [Test]
+    public static void ReservedRegisterSelectionReturnsT6()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD);
+
+            Assert.That(codeGen.rsGetRsvdReg(), Is.EqualTo(REG_OPT_RSVD));
+        });
+    }
+
 #if DEBUG
     [TestCase(TYP_INT, -2048, RiscVRecorderDebugBoundary, true)]
     [TestCase(TYP_INT, 2047, RiscVRecorderDebugBoundary, true)]
