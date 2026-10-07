@@ -139,6 +139,54 @@ internal static unsafe class Arm64UnwindDiagnosticsTests
         Assert.That(text, Does.Contain("  Extended Epilog Count      : 0"));
     }
 
+    [Test]
+    public static void UnwindInfoDumpUsesNativeFragmentSizesAndEmitterLocations()
+    {
+        Arm64CalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            emitter.emitBegProlog();
+            var location = new emitLocation(emitter);
+            var unwindInfo = new UnwindInfo();
+            unwindInfo.InitUnwindInfo(compiler, location, location);
+            unwindInfo.AddEpilog();
+
+            using var stream = new MemoryStream();
+            using var writer = new JitTextWriter(stream, leaveOpen: true);
+            var previous = s_jitstdout;
+            try
+            {
+                s_jitstdout = writer;
+                unwindInfo.Dump(true);
+                writer.Flush();
+            }
+            finally
+            {
+                s_jitstdout = previous;
+            }
+
+            var text = Encoding.UTF8.GetString(stream.ToArray());
+            Assert.That(text, Does.Contain("UnwindInfo @0x"));
+            Assert.That(text, Does.Contain($"size:{(IntPtr.Size == 8 ? 296 : 196)}:"));
+            Assert.That(text, Does.Contain("UnwindFragmentInfo #1, @0x"));
+            Assert.That(text, Does.Contain($"size:{(IntPtr.Size == 8 ? 248 : 172)}:"));
+            Assert.That(text, Does.Contain("UnwindPrologCodes @0x"));
+            Assert.That(text, Does.Contain($"size:{(IntPtr.Size == 8 ? 72 : 56)}:"));
+            Assert.That(text, Does.Contain("UnwindEpilogInfo @0x"));
+            Assert.That(text, Does.Contain($"size:{(IntPtr.Size == 8 ? 88 : 56)}:"));
+            Assert.That(text, Does.Contain("UnwindEpilogCodes @0x"));
+            Assert.That(text, Does.Contain($"size:{(IntPtr.Size == 8 ? 48 : 32)}:"));
+            Assert.That(text, Does.Contain("ufiEmitLoc: 0x"));
+            Assert.That(text, Does.Contain("(G_M"));
+            Assert.That(text, Does.Contain("_IG"));
+            Assert.That(text, Does.Contain(",ins#"));
+            Assert.That(text, Does.Contain(",ofs#"));
+            Assert.That(text, Does.Not.Contain("managed@"));
+            Assert.That(text, Does.Not.Contain("size:managed"));
+            Assert.That(text, Does.Not.Contain("m_compiler: not stored"));
+        });
+    }
+
     private sealed class DiagnosticCodes(byte* codes) : UnwindCodesBase
     {
         public override byte* GetCodes()

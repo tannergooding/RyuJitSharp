@@ -2414,3 +2414,23 @@ This does not establish parity with the undefined native read; native behavior
 must be corrected or explicitly accepted before claiming parity for these rows.
 The native reporter and its report-only histogram tables are now retired from
 `runtime-port`; this deviation describes the pinned oracle behavior only.
+
+### D012: Managed ARM unwind diagnostic identity tokens
+
+**Status:** accepted DEBUG diagnostic limitation for ARM/ARM64; native address
+parity is not claimed.
+
+The pinned `src/coreclr/jit/unwindarmarch.cpp` dump methods print native pointer
+values with `%p`. Managed
+`sources/Core/jit/unwindarmarch/UnwindInfo.Diagnostics.cs::Identity` and
+`LocationIdentity` instead format process-local hash-derived identity tokens
+for object references and `emitLocation` values. Those managed values cannot
+expose their corresponding native addresses, so the token values differ from
+native `%p`; hash collisions are also possible. The `0x...` field shape, native
+layout sizes, fragment ordering, and emitter-location details are retained,
+but pointer values must not be compared as parity evidence.
+
+`Arm64UnwindDiagnosticsTests.UnwindInfoDumpUsesNativeFragmentSizesAndEmitterLocations`
+checks the pointer-shaped fields and the retained dump details. This exception
+is limited to the diagnostic identity values; it does not accept other dump,
+generated-code, or execution differences.
