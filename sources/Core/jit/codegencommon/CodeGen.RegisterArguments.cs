@@ -11,6 +11,8 @@ public sealed partial class CodeGen
     {
 #if TARGET_LOONGARCH64
         genPutArgRegLoongArch64(tree);
+#elif TARGET_RISCV64
+        genPutArgRegRiscV64(tree);
 #elif !TARGET_XARCH && !TARGET_ARMARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Register argument generation requires xarch.");
 #else

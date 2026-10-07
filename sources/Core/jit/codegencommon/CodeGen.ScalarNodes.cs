@@ -76,6 +76,8 @@ public sealed partial class CodeGen
         genProduceReg(tree);
 #elif TARGET_LOONGARCH64
         genCodeForPhysRegLoongArch64(tree);
+#elif TARGET_RISCV64
+        genCodeForPhysRegRiscV64(tree);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Physical register generation requires xarch.");
 #else
