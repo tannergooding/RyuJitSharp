@@ -655,6 +655,22 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [Test]
+    public static void BinaryOperandRecordingRemainsUnsupportedOnRiscV()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var dst = new GenTreePhysReg(REG_A0, TYP_INT) { RegNum = REG_A0 };
+            var src = new GenTreePhysReg(REG_A1, TYP_INT) { RegNum = REG_A1 };
+
+            var failure = Assert.Throws<FatalJitException>(() =>
+                codeGen.Emitter.emitInsBinary(INS_add, EA_4BYTE, dst, src));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Does.Contain("Binary operand recording requires xarch."));
+        });
+    }
+
 #if DEBUG
     [TestCase(8, RiscVRecorderDebugBoundary)]
     [TestCase(0x12345, RiscVRecorderDebugBoundary)]
