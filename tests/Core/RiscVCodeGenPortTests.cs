@@ -16,6 +16,7 @@ using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
+using static RyuJitSharp.insOpts;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
@@ -207,6 +208,46 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(descriptor.idSmallCns(), Is.EqualTo(immediate));
             Assert.That(descriptor.idAddr().iiaInstrEncode, Is.EqualTo(expectedCode));
             Assert.That(descriptor.idCodeSize(), Is.EqualTo(4u));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void EmbeddedDataRegisterInstructionRecordsRelocationDescriptor(bool hasRelocation)
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+            var fieldHandle = Compiler.eeFindJitDataOffs(64);
+            var attr = hasRelocation
+                ? EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG)
+                : EA_PTRSIZE;
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+
+            var failure = CaptureFatalJitException(
+                () => emitter.emitIns_R_C(INS_addi, attr, REG_A0, REG_NA, fieldHandle));
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+            var descriptor = instructionBuffer[^1];
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_addi));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_A0));
+            Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_RC));
+            Assert.That(descriptor.idCodeSize(), Is.EqualTo(8u));
+            Assert.That(descriptor.idIsBound(), Is.True);
+            Assert.That(descriptor.idIsCnsReloc(), Is.EqualTo(hasRelocation));
+            Assert.That(descriptor.idIsDspReloc(), Is.False);
+            Assert.That(descriptor.idAddr().iiaFieldHnd == fieldHandle, Is.True);
+            Assert.That(CurrentInstructionGroupSize(emitter),
+                Is.EqualTo(initialGroupSize + (failure is null ? 8 : 0)));
         });
     }
 
@@ -418,25 +459,42 @@ internal static unsafe class RiscVCodeGenPortTests
     [TestCase(TYP_FLOAT, 0x12345001UL)]
     [TestCase(TYP_DOUBLE, 0x8000000000000000UL)]
     [TestCase(TYP_DOUBLE, 0x3FF0000000000001UL)]
-    public static void PooledFloatingConstantNodeDispatchPreservesRiscVEmbeddedDataRecordingBoundary(
+    public static void PooledFloatingConstantNodeDispatchRecordsRiscVEmbeddedDataDescriptor(
         var_types type,
         ulong bits)
     {
         WithCodeGen((compiler, codeGen) =>
         {
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
             var value = type is TYP_FLOAT
                 ? BitConverter.UInt32BitsToSingle(unchecked((uint)bits))
                 : BitConverter.UInt64BitsToDouble(bits);
             var constant = compiler.gtNewDconNode(type, value);
             constant.RegNum = REG_FA0;
 
-            var failure = Assert.Throws<FatalJitException>(
-                () => codeGen.genCodeForTreeNode(constant));
+            var failure = CaptureFatalJitException(() => codeGen.genCodeForTreeNode(constant));
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message,
-                Does.Contain("RISC-V64 embedded-data instruction recording is not ported."));
-            Assert.That(codeGen.Emitter.emitConsDsc.dsdList, Is.Not.Null);
+            var descriptor = instructionBuffer[^1];
+            Assert.That(descriptor.idIns(), Is.EqualTo(type is TYP_FLOAT ? INS_flw : INS_fld));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_FA0));
+            Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_RC));
+            Assert.That(descriptor.idCodeSize(), Is.EqualTo(8u));
+            Assert.That(descriptor.idIsBound(), Is.True);
+            Assert.That(Compiler.eeIsJitDataOffs(descriptor.idAddr().iiaFieldHnd), Is.True);
+            Assert.That(emitter.emitConsDsc.dsdList, Is.Not.Null);
+            Assert.That(CurrentInstructionGroupSize(emitter),
+                Is.EqualTo(initialGroupSize + (failure is null ? 8 : 0)));
         });
     }
 

@@ -20,6 +20,7 @@ using static RyuJitSharp.InfoAccessType;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
+using static RyuJitSharp.insOpts;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
@@ -389,7 +390,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     }
 
     [Test]
-    public static void JumpTableGenerationStopsAtTheTargetEmbeddedDataBoundary()
+    public static void JumpTableGenerationPreservesTargetEmbeddedDataBehavior()
     {
         WithCodeGen((compiler, codeGen) =>
         {
@@ -402,12 +403,37 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             current.SwitchTargets.Cases[0] = edge;
 
             var tree = new GenTree(GT_JMPTABLE, TYP_I_IMPL) { RegNum = REG_S0 };
+#if TARGET_LOONGARCH64
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
 
-#if TARGET_LOONGARCH64
             Assert.That(failure?.Message, Does.Contain("LoongArch64 embedded-data instruction recording is not ported."));
 #else
-            Assert.That(failure?.Message, Does.Contain("RISC-V64 embedded-data instruction recording is not ported."));
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+
+            var failure = CaptureFatalJitException(() => codeGen.genCodeForTreeNode(tree));
+            AssertRiscVRecorderOutcome(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+            var descriptor = instructionBuffer[^1];
+            var section = emitter.emitConsDsc.dsdLast
+                ?? throw new AssertionException("Missing jump-table data section.");
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_addi));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_S0));
+            Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_RC));
+            Assert.That(descriptor.idCodeSize(), Is.EqualTo(8u));
+            Assert.That(descriptor.idIsBound(), Is.True);
+            Assert.That(descriptor.idAddr().iiaFieldHnd == Compiler.eeFindJitDataOffs(section.dsOffset), Is.True);
+            Assert.That(CurrentInstructionGroupSize(emitter),
+                Is.EqualTo(initialGroupSize + (failure is null ? 8 : 0)));
 #endif
         });
     }
@@ -951,7 +977,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 #endif
 
     [Test]
-    public static void JumpTableAddressRecordingStopsAtTheTargetEmitterBoundary()
+    public static void JumpTableAddressRecordingUsesTheTargetEmitterContract()
     {
         WithCodeGen((compiler, codeGen) =>
         {
@@ -962,10 +988,31 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             Assert.That(failure?.Message,
                 Does.Contain("LoongArch64 embedded-data instruction recording is not ported."));
 #else
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.Emitter.emitIns_R_C(
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+
+            var failure = CaptureFatalJitException(() => emitter.emitIns_R_C(
                 INS_addi, EA_PTRSIZE, REG_S0, REG_NA, fieldHandle));
-            Assert.That(failure?.Message,
-                Does.Contain("RISC-V64 embedded-data instruction recording is not ported."));
+            AssertRiscVRecorderOutcome(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+            var descriptor = instructionBuffer[^1];
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_addi));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_S0));
+            Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_RC));
+            Assert.That(descriptor.idCodeSize(), Is.EqualTo(8u));
+            Assert.That(descriptor.idIsBound(), Is.True);
+            Assert.That(descriptor.idAddr().iiaFieldHnd == fieldHandle, Is.True);
+            Assert.That(CurrentInstructionGroupSize(emitter),
+                Is.EqualTo(initialGroupSize + (failure is null ? 8 : 0)));
 #endif
         });
     }
