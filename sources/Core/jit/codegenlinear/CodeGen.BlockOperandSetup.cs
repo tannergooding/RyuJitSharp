@@ -145,7 +145,17 @@ public sealed partial class CodeGen
 #endif
         )
     {
-            throw new FatalJitException(CORJIT_SKIPPED, "Target immediate materialization is not implemented.");
+        assert(genIsValidIntReg(reg));
+        if (EA_IS_RELOC(size))
+        {
+            Emitter.emitIns_R_AI(INS_addi, size, reg, reg, imm);
+        }
+        else
+        {
+            _ = Emitter.emitLoadImmediate(true, size, reg, imm);
+        }
+
+        _regSet.verifyRegUsed(reg);
     }
 #endif
 }

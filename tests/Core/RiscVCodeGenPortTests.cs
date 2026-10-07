@@ -24,21 +24,40 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class RiscVCodeGenPortTests
 {
-    [TestCase(TYP_INT)]
-    [TestCase(TYP_BYREF)]
-    public static void IntegerConstantNodeDispatchPreservesRiscVImmediateRecordingBoundary(var_types type)
+    [TestCase(TYP_INT, -2048, "Target two-register-immediate instruction recording is not implemented.")]
+    [TestCase(TYP_INT, 2047, "Target two-register-immediate instruction recording is not implemented.")]
+    [TestCase(TYP_BYREF, 42, "Target two-register-immediate instruction recording is not implemented.")]
+    [TestCase(TYP_INT, -2049, "RISC-V64 multi-instruction immediate descriptor recording is not ported.")]
+    [TestCase(TYP_LONG, 2048, "RISC-V64 multi-instruction immediate descriptor recording is not ported.")]
+    public static void IntegerConstantNodeDispatchPreservesRiscVImmediateRecordingBoundary(
+        var_types type,
+        long immediate,
+        string expectedBoundary)
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var constant = compiler.gtNewIconNode(type, 42);
+            var constant = compiler.gtNewIconNode(type, unchecked((nint)immediate));
             constant.RegNum = REG_A0;
 
             var failure = Assert.Throws<FatalJitException>(
                 () => codeGen.genCodeForTreeNode(constant));
 
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Does.Contain(expectedBoundary));
+        });
+    }
+
+    [Test]
+    public static void RelocatableImmediateUsesRiscVRelocationRecordingBoundary()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var failure = Assert.Throws<FatalJitException>(
+                () => codeGen.instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, REG_A0, 42));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
             Assert.That(failure?.Message,
-                Does.Contain("Target immediate materialization is not implemented."));
+                Does.Contain("RISC-V64 relocated-address load recording is not ported."));
         });
     }
 
@@ -235,7 +254,7 @@ internal static unsafe class RiscVCodeGenPortTests
     }
 
     [Test]
-    public static void GSSecurityCookieInitializationPreservesImmediateMaterializationBoundary()
+    public static void GSSecurityCookieInitializationPreservesImmediateRecordingBoundary()
     {
         WithProlog((compiler, codeGen) =>
         {
@@ -248,7 +267,7 @@ internal static unsafe class RiscVCodeGenPortTests
 
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
             Assert.That(failure?.Message,
-                Does.Contain("Target immediate materialization is not implemented."));
+                Does.Contain("Target two-register-immediate instruction recording is not implemented."));
             Assert.That(zeroed, Is.True);
         });
     }
