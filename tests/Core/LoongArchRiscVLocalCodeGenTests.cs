@@ -563,11 +563,25 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     {
         WithCodeGen((_, codeGen) =>
         {
+#if TARGET_RISCV64
+            var emitter = codeGen.Emitter;
+            var initialInstructionCount = CurrentInstructionBuffer(emitter)?.Count ?? 0;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+            var failure = CaptureFatalJitException(
+                () => codeGen.genEmitHelperCall(CORINFO_HELP_ASSIGN_REF, 0, EA_PTRSIZE));
+#if DEBUG
+            AssertRiscVRecorderOutcome(
+                codeGen, failure, RiscVRecorderDebugBoundary, initialInstructionCount, initialGroupSize);
+#else
+            AssertRiscVRecorderOutcome(codeGen, failure, null, initialInstructionCount, initialGroupSize);
+#endif
+#else
             var failure = Assert.Throws<FatalJitException>(() =>
                 codeGen.genEmitHelperCall(CORINFO_HELP_ASSIGN_REF, 0, EA_PTRSIZE));
 
             Assert.That(failure?.Message,
                 Does.Contain("Target call instruction recording is not implemented."));
+#endif
         });
     }
 #endif
@@ -622,18 +636,20 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
                 Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount + 1));
                 Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize));
 #else
-                Assert.That(failure?.Message,
-                    Does.Contain("Target call instruction recording is not implemented."));
-                Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount + 1));
-                Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize + 8));
+                Assert.That(failure, Is.Null);
+                Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount + 2));
+                Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize + 12));
 #endif
-                var descriptor = instructionBuffer[^1];
+                var descriptor = instructionBuffer[initialInstructionCount];
                 Assert.That(descriptor.idIns(), Is.EqualTo(INS_ld));
                 Assert.That(descriptor.idReg1(), Is.EqualTo(REG_DEFAULT_HELPER_CALL_TARGET));
                 Assert.That(descriptor.idReg2(), Is.EqualTo(REG_DEFAULT_HELPER_CALL_TARGET));
                 Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_RELOC));
                 Assert.That(descriptor.idCodeSize(), Is.EqualTo(8u));
                 Assert.That((nint)descriptor.idAddr().iiaAddr, Is.EqualTo((nint)context.Address));
+#if !DEBUG
+                Assert.That(instructionBuffer[^1].idIns(), Is.EqualTo(INS_jalr));
+#endif
             }
             else
             {
@@ -647,22 +663,22 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
                 Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount + 1));
                 Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize));
 #else
-                Assert.That(failure?.Message,
-                    Does.Contain("Target call instruction recording is not implemented."));
-                Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount + 2));
+                Assert.That(failure, Is.Null);
+                Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount + 3));
                 Assert.That(CurrentInstructionGroupSize(emitter),
-                    Is.EqualTo(initialGroupSize + (loadImmediateCount * 4) + 4));
+                    Is.EqualTo(initialGroupSize + (loadImmediateCount * 4) + 8));
 #endif
                 var immediateDescriptor = instructionBuffer[initialInstructionCount];
                 Assert.That(immediateDescriptor.idReg1(), Is.EqualTo(REG_DEFAULT_HELPER_CALL_TARGET));
                 Assert.That(immediateDescriptor.idCodeSize(), Is.EqualTo((uint)(loadImmediateCount * 4)));
 #if !DEBUG
-                var loadDescriptor = instructionBuffer[^1];
+                var loadDescriptor = instructionBuffer[initialInstructionCount + 1];
                 Assert.That(loadDescriptor.idIns(), Is.EqualTo(INS_ld));
                 Assert.That(loadDescriptor.idReg1(), Is.EqualTo(REG_DEFAULT_HELPER_CALL_TARGET));
                 Assert.That(loadDescriptor.idReg2(), Is.EqualTo(REG_DEFAULT_HELPER_CALL_TARGET));
                 Assert.That(loadDescriptor.idSmallCns(), Is.EqualTo(unchecked((int)lo12)));
                 Assert.That(loadDescriptor.idCodeSize(), Is.EqualTo(4u));
+                Assert.That(instructionBuffer[^1].idIns(), Is.EqualTo(INS_jalr));
 #endif
             }
         });
@@ -1941,6 +1957,9 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         {
             var codeGen = new CodeGen(compiler);
             compiler.codeGen = codeGen;
+#if TARGET_RISCV64
+            codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
+#endif
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
             codeGen.RegSet.rsClearRegsModified();
             codeGen.Emitter.emitBegCG(compiler, default);

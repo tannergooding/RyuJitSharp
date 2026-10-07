@@ -17,10 +17,12 @@ using static RyuJitSharp.GenTreeBlk;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.gtCallTypes;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.insOpts;
 using static RyuJitSharp.BarrierKind;
 using static RyuJitSharp.emitJumpKind;
+using static RyuJitSharp.EmitCallType;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
@@ -37,8 +39,8 @@ internal static unsafe class RiscVCodeGenPortTests
     [TestCase(TYP_INT, -2048, RiscVRecorderDebugBoundary, true)]
     [TestCase(TYP_INT, 2047, RiscVRecorderDebugBoundary, true)]
     [TestCase(TYP_BYREF, 42, RiscVRecorderDebugBoundary, true)]
-    [TestCase(TYP_INT, -2049, "Instruction sanity checking outside AMD64 is not ported.", true)]
-    [TestCase(TYP_LONG, 2048, "Instruction sanity checking outside AMD64 is not ported.", true)]
+    [TestCase(TYP_INT, -2049, RiscVRecorderDebugBoundary, true)]
+    [TestCase(TYP_LONG, 2048, RiscVRecorderDebugBoundary, true)]
 #else
     [TestCase(TYP_INT, -2048, null, true)]
     [TestCase(TYP_INT, 2047, null, true)]
@@ -98,6 +100,86 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(descriptor.idIns(), Is.Not.EqualTo(INS_invalid));
             Assert.That(CurrentInstructionGroupSize(emitter),
                 Is.EqualTo(initialGroupSize + (failure is null ? instructionCount * 4 : 0)));
+        });
+    }
+
+    [Test]
+    public static void GenCallRecordsDirectRiscVCall()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.opts.compReloc = true;
+            codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
+            var initialGroupSize = CurrentInstructionGroupSize(codeGen.Emitter);
+            var call = new GenTreeCall(TYP_VOID)
+            {
+                _callType = CT_USER_FUNC,
+                _callMethHnd = (CORINFO_METHOD_STRUCT_*)0x4000,
+                _directCallAddress = (void*)0x1234,
+                _returnType = TYP_VOID,
+            };
+#if DEBUG
+            call._callSig.numArgs = 0;
+#endif
+            var failure = CaptureFatalJitException(() => codeGen.genCall(call));
+
+            var instructionBuffer = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            Assert.That(instructionBuffer, Has.Count.EqualTo(1), failure?.ToString());
+
+            var descriptor = instructionBuffer[0];
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_jalr));
+            Assert.That(descriptor.idCodeSize(), Is.EqualTo(8));
+            Assert.That(descriptor.idIsCall(), Is.True);
+            Assert.That(descriptor.idIsCallRegPtr(), Is.False);
+            Assert.That(descriptor.idIsDspReloc(), Is.True);
+            Assert.That((nint)descriptor.idAddr().iiaAddr, Is.EqualTo((nint)0x1235));
+#if DEBUG
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Does.Contain(RiscVRecorderDebugBoundary));
+            Assert.That(CurrentInstructionGroupSize(codeGen.Emitter), Is.EqualTo(initialGroupSize));
+#else
+            Assert.That(failure, Is.Null);
+            Assert.That(CurrentInstructionGroupSize(codeGen.Emitter), Is.EqualTo(initialGroupSize + 8));
+#endif
+        });
+    }
+
+    [Test]
+    public static void EmitterRecordsIndirectRiscVTailCall()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var initialGroupSize = CurrentInstructionGroupSize(codeGen.Emitter);
+            var parameters = new EmitCallParams
+            {
+                callType = EC_INDIR_R,
+                ireg = REG_A0,
+                isJump = true,
+                ptrVars = VarSetOps.MakeEmpty(compiler),
+            };
+            var failure = CaptureFatalJitException(() => codeGen.Emitter.emitIns_Call(in parameters));
+
+            var instructionBuffer = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            Assert.That(instructionBuffer, Has.Count.EqualTo(1), failure?.ToString());
+
+            var descriptor = instructionBuffer[0];
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_jalr));
+            Assert.That(descriptor.idCodeSize(), Is.EqualTo(4));
+            Assert.That(descriptor.idIsCall(), Is.True);
+            Assert.That(descriptor.idIsCallRegPtr(), Is.True);
+            Assert.That(descriptor.idIsNoGC(), Is.True);
+            Assert.That(descriptor.idReg3(), Is.EqualTo(REG_A0));
+            Assert.That(descriptor.idReg4(), Is.EqualTo(REG_R0));
+#if DEBUG
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Does.Contain(RiscVRecorderDebugBoundary));
+            Assert.That(CurrentInstructionGroupSize(codeGen.Emitter), Is.EqualTo(initialGroupSize));
+#else
+            Assert.That(failure, Is.Null);
+            Assert.That(CurrentInstructionGroupSize(codeGen.Emitter), Is.EqualTo(initialGroupSize + 4));
+#endif
         });
     }
 
@@ -205,7 +287,7 @@ internal static unsafe class RiscVCodeGenPortTests
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
 #if DEBUG
-            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+            const string expectedBoundary = RiscVRecorderDebugBoundary;
 #else
             const string? expectedBoundary = null;
 #endif
@@ -266,7 +348,7 @@ internal static unsafe class RiscVCodeGenPortTests
             var initialInstructionCount = instructionBuffer.Count;
             var initialGroupSize = CurrentInstructionGroupSize(emitter);
 #if DEBUG
-            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+            const string expectedBoundary = RiscVRecorderDebugBoundary;
 #else
             const string? expectedBoundary = null;
 #endif
@@ -409,8 +491,10 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(descriptors.Any(descriptor => descriptor.idReg1() == REG_T0), Is.True);
 #if !DEBUG
             Assert.That(descriptors.Any(descriptor => descriptor.idReg1() == REG_T1), Is.True);
-#endif
+            Assert.That(initRegZeroed, Is.False);
+#else
             Assert.That(initRegZeroed, Is.True);
+#endif
         });
     }
 
@@ -2116,7 +2200,7 @@ internal static unsafe class RiscVCodeGenPortTests
 
             var failure = CaptureFatalJitException(() => codeGen.genCodeForCast(cast));
 #if DEBUG
-            const string expectedBoundary = RiscVRecorderDebugBoundary;
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
 #else
             const string expectedBoundary = "Target conditional-branch recording is not implemented.";
 #endif
@@ -2291,7 +2375,7 @@ internal static unsafe class RiscVCodeGenPortTests
         NamedIntrinsic intrinsic)
     {
 #if DEBUG
-        const string expectedBoundary = RiscVRecorderDebugBoundary;
+        const string? expectedBoundary = RiscVRecorderDebugBoundary;
 #else
         const string expectedBoundary = "Target conditional-branch recording is not implemented.";
 #endif
@@ -2417,11 +2501,11 @@ internal static unsafe class RiscVCodeGenPortTests
 #if PROFILING_SUPPORTED
     private static void AssertProfilerCallbackBoundary(FatalJitException? failure)
     {
-        Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
 #if DEBUG
+        Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
         Assert.That(failure?.Message, Does.Contain(RiscVRecorderDebugBoundary));
 #else
-        Assert.That(failure?.Message, Does.Contain("Target call instruction recording is not implemented."));
+        Assert.That(failure, Is.Null);
 #endif
     }
 #endif

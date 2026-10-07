@@ -267,7 +267,9 @@ public partial class Emitter
         emitIns_CallArm32(in parameters);
 #elif TARGET_ARM64
         emitIns_CallArm64(in parameters);
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+#elif TARGET_RISCV64
+        emitIns_CallRiscV64(in parameters);
+#elif TARGET_LOONGARCH64
         throw new FatalJitException(CORJIT_SKIPPED, "Target call instruction recording is not implemented.");
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Call instruction recording requires xarch.");

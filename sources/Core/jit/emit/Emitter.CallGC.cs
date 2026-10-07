@@ -86,6 +86,16 @@ public partial class Emitter
     private static regMaskTP RBM_PROFILER_TAILCALL_TRASH => new(SRBM_NONE);
     private static regMaskTP RBM_VALIDATE_INDIRECT_CALL_TRASH => new(SRBM_INT_CALLEE_TRASH);
     private static regMaskTP RBM_CALLEE_TRASH_NOGC => new(SRBM_CALLEE_TRASH_NOGC);
+#elif TARGET_RISCV64
+    private static regMaskTP RBM_CALLEE_TRASH => new(SRBM_CALLEE_TRASH);
+    private static regMaskTP RBM_ALLINT => new(SRBM_ALLINT);
+    private static regMaskTP RBM_CALLEE_SAVED => new(SRBM_CALLEE_SAVED);
+    private static regMaskTP RBM_CALLEE_GCTRASH_WRITEBARRIER => new(SRBM_CALLEE_GCTRASH_WRITEBARRIER);
+    private static regMaskTP RBM_PROFILER_ENTER_TRASH => new(SRBM_PROFILER_ENTER_TRASH);
+    private static regMaskTP RBM_PROFILER_LEAVE_TRASH => new(SRBM_PROFILER_LEAVE_TRASH);
+    private static regMaskTP RBM_PROFILER_TAILCALL_TRASH => new(SRBM_PROFILER_TAILCALL_TRASH);
+    private static regMaskTP RBM_VALIDATE_INDIRECT_CALL_TRASH => new(SRBM_VALIDATE_INDIRECT_CALL_TRASH);
+    private static regMaskTP RBM_CALLEE_TRASH_NOGC => new(SRBM_CALLEE_TRASH_NOGC);
 #else
 #if TARGET_X86
     private regMaskTP RBM_CALLEE_TRASH => CallScratchRegisters;
