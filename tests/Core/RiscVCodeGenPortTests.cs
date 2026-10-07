@@ -68,6 +68,22 @@ internal static unsafe class RiscVCodeGenPortTests
     }
 
     [Test]
+    public static void NullCheckPreservesRiscVIndirectLoadRecordingBoundary()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var address = new GenTreePhysReg(REG_A0, TYP_I_IMPL) { RegNum = REG_A0 };
+            var nullCheck = new GenTreeIndir(GT_NULLCHECK, TYP_INT, address);
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForNullCheck(nullCheck));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("RISC-V64 indirect load/store instruction recording is not ported."));
+        });
+    }
+
+    [Test]
     public static void CalleeSavedRestorePreservesXarchOnlyEmitterBoundary()
     {
         WithCodeGen((_, codeGen) =>
