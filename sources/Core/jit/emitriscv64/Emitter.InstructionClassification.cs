@@ -41,5 +41,66 @@ public partial class Emitter
             _ => false,
         };
     }
+
+    public bool emitInsMayWriteToGCReg(instruction ins)
+    {
+        assert(ins != INS_invalid);
+        if (ins is INS_nop or INS_j)
+        {
+            return false;
+        }
+
+        if (ins == INS_lea)
+        {
+            return true;
+        }
+
+        var code = emitInsCode(ins);
+        switch (GetMajorOpcode(code))
+        {
+            case MajorOpcode.Store:
+            case MajorOpcode.StoreFp:
+            case MajorOpcode.MiscMem:
+            case MajorOpcode.Branch:
+            case MajorOpcode.LoadFp:
+            case MajorOpcode.MAdd:
+            case MajorOpcode.MSub:
+            case MajorOpcode.NmSub:
+            case MajorOpcode.NmAdd:
+            {
+                return false;
+            }
+
+            case MajorOpcode.System:
+            {
+                var funct3 = (code >> 12) & 0b111;
+                return funct3 != 0;
+            }
+
+            case MajorOpcode.OpFp:
+            {
+                // The low two funct7 bits select the floating-point width and do not affect GC writes.
+                var funct7 = code >> (25 + 2);
+                return funct7 is 0b10100 or 0b11100 or 0b11000;
+            }
+
+            case MajorOpcode.Custom0:
+            case MajorOpcode.Custom1:
+            case MajorOpcode.Custom2Rv128:
+            case MajorOpcode.Custom3Rv128:
+            case MajorOpcode.OpV:
+            case MajorOpcode.OpVe:
+            case MajorOpcode.Reserved:
+            {
+                assert(false);
+                return true;
+            }
+
+            default:
+            {
+                return true;
+            }
+        }
+    }
 }
 #endif

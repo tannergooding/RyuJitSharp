@@ -332,6 +332,34 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [Test]
+    public static void InstructionClassificationIdentifiesGCRegisterWrites()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            Assert.Multiple(() =>
+            {
+                Assert.That(emitter.emitInsMayWriteToGCReg(INS_nop), Is.False);
+                Assert.That(emitter.emitInsMayWriteToGCReg(INS_j), Is.False);
+                Assert.That(emitter.emitInsMayWriteToGCReg(INS_lea), Is.True);
+                Assert.That(emitter.emitInsMayWriteToGCReg(INS_sw), Is.False);
+                Assert.That(emitter.emitInsMayWriteToGCReg(INS_fsd), Is.False);
+                Assert.That(emitter.emitInsMayWriteToGCReg(INS_fence), Is.False);
+                Assert.That(emitter.emitInsMayWriteToGCReg(INS_beq), Is.False);
+                Assert.That(emitter.emitInsMayWriteToGCReg(INS_fld), Is.False);
+                Assert.That(emitter.emitInsMayWriteToGCReg(INS_fmadd_s), Is.False);
+                Assert.That(emitter.emitInsMayWriteToGCReg(INS_csrrw), Is.True);
+                Assert.That(emitter.emitInsMayWriteToGCReg(INS_ecall), Is.False);
+                Assert.That(emitter.emitInsMayWriteToGCReg(INS_feq_s), Is.True);
+                Assert.That(emitter.emitInsMayWriteToGCReg(INS_fmv_x_w), Is.True);
+                Assert.That(emitter.emitInsMayWriteToGCReg(INS_fcvt_w_s), Is.True);
+                Assert.That(emitter.emitInsMayWriteToGCReg(INS_fadd_s), Is.False);
+                Assert.That(emitter.emitInsMayWriteToGCReg(INS_add), Is.True);
+            });
+        });
+    }
+
     [TestCase(EA_PTRSIZE, REG_A0, REG_A1, INS_mov, 0x00058513u, false)]
     [TestCase(EA_4BYTE, REG_A0, REG_A1, INS_sext_w, 0x0005851Bu, false)]
     [TestCase(EA_PTRSIZE, REG_A0, REG_FA1, INS_fmv_x_d, 0xE2058553u, false)]
