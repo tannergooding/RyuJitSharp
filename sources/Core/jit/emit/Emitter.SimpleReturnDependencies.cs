@@ -77,7 +77,31 @@ public partial class Emitter
 
     public void emitIns_Mov(emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 register move recording is not ported.");
+        if (!canSkip || dstReg != srcReg)
+        {
+            assert(attr == EA_4BYTE || attr == EA_PTRSIZE);
+
+            if (isGeneralRegisterOrR0(dstReg) && isGeneralRegisterOrR0(srcReg))
+            {
+                emitIns_R_R(attr == EA_4BYTE ? INS_sext_w : INS_mov, attr, dstReg, srcReg);
+            }
+            else if (isGeneralRegisterOrR0(dstReg) && genIsValidFloatReg(srcReg))
+            {
+                emitIns_R_R(attr == EA_4BYTE ? INS_fmv_x_w : INS_fmv_x_d, attr, dstReg, srcReg);
+            }
+            else if (genIsValidFloatReg(dstReg) && isGeneralRegisterOrR0(srcReg))
+            {
+                emitIns_R_R(attr == EA_4BYTE ? INS_fmv_w_x : INS_fmv_d_x, attr, dstReg, srcReg);
+            }
+            else if (genIsValidFloatReg(dstReg) && genIsValidFloatReg(srcReg))
+            {
+                emitIns_R_R_R(attr == EA_4BYTE ? INS_fsgnj_s : INS_fsgnj_d, attr, dstReg, srcReg, srcReg);
+            }
+            else
+            {
+                assert(false, conditionExpression: "!\"Invalid registers in emitIns_Mov()\\n\"");
+            }
+        }
     }
 
     public unsafe void emitIns_R_R_Addr(

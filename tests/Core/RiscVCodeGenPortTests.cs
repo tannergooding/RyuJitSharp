@@ -230,6 +230,91 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [TestCase(EA_PTRSIZE, REG_A0, REG_A1, INS_mov, 0x00058513u, false)]
+    [TestCase(EA_4BYTE, REG_A0, REG_A1, INS_sext_w, 0x0005851Bu, false)]
+    [TestCase(EA_PTRSIZE, REG_A0, REG_FA1, INS_fmv_x_d, 0xE2058553u, false)]
+    [TestCase(EA_4BYTE, REG_A0, REG_FA1, INS_fmv_x_w, 0xE0058553u, false)]
+    [TestCase(EA_PTRSIZE, REG_FA0, REG_A1, INS_fmv_d_x, 0xF2058553u, false)]
+    [TestCase(EA_4BYTE, REG_FA0, REG_A1, INS_fmv_w_x, 0xF0058553u, false)]
+    [TestCase(EA_PTRSIZE, REG_FA0, REG_FA1, INS_fsgnj_d, 0x22B58553u, true)]
+    [TestCase(EA_4BYTE, REG_FA0, REG_FA1, INS_fsgnj_s, 0x20B58553u, true)]
+    public static void RegisterMoveRecordsTheExpectedTransfer(
+        emitAttr attr,
+        regNumber dstReg,
+        regNumber srcReg,
+        instruction expectedInstruction,
+        uint expectedCode,
+        bool hasThirdRegister)
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+
+            var failure = CaptureFatalJitException(
+                () => emitter.emitIns_Mov(attr, dstReg, srcReg, canSkip: false));
+
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+            var descriptor = instructionBuffer[^1];
+            Assert.That(descriptor.idIns(), Is.EqualTo(expectedInstruction));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(dstReg));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(srcReg));
+            Assert.That(descriptor.idCodeSize(), Is.EqualTo(4u));
+            Assert.That(descriptor.idAddr().iiaInstrEncode, Is.EqualTo(expectedCode));
+            if (hasThirdRegister)
+            {
+                Assert.That(descriptor.idReg3(), Is.EqualTo(srcReg));
+            }
+        });
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public static void RegisterMoveHonorsCanSkipForIdenticalRegisters(bool canSkip)
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+#if DEBUG
+            var expectedBoundary = canSkip ? null : RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+
+            var failure = CaptureFatalJitException(
+                () => emitter.emitIns_Mov(EA_PTRSIZE, REG_A0, REG_A0, canSkip));
+
+            if (canSkip)
+            {
+                Assert.That(failure, Is.Null);
+                Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount));
+                Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize));
+                return;
+            }
+
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+            Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount + 1));
+            Assert.That(instructionBuffer[^1].idIns(), Is.EqualTo(INS_mov));
+            Assert.That(instructionBuffer[^1].idReg1(), Is.EqualTo(REG_A0));
+            Assert.That(instructionBuffer[^1].idReg2(), Is.EqualTo(REG_A0));
+        });
+    }
+
     [TestCase(INS_addi, EA_8BYTE, REG_A0, REG_A1, 42, 0x02A58513u)]
     [TestCase(INS_addi, EA_8BYTE, REG_A0, REG_A1, -2048, 0x80058513u)]
     [TestCase(INS_addi, EA_8BYTE, REG_A0, REG_A1, 2047, 0x7FF58513u)]

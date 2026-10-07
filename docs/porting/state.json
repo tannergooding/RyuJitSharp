@@ -10,17 +10,17 @@
   "checkpoint": {
     "csharpBaselineCommit": "16baaa76261ee07b239908d8ff50fddefca74d0f",
     "stage": "continuing-port",
-    "nextAction": "Map the remaining RISC-V emitter::emitIns_Mov(emitAttr, ...) helper and its register-class dependencies; add direct descriptor coverage for elision, width handling, and register transfers, then retire its native definition before the managed completion commit.",
+    "nextAction": "Stage and commit the verified RISC-V emitIns_Mov managed helper, direct coverage, and updated Release caller boundary. Then inspect small residual RISC-V emitter files for the next complete, independently testable function; do not touch uncommitted native index WIP.",
     "activeBatch": {
-      "latestBatchValidation": "Ported the complete RISC-V emitter::emitIns_R_R encoder for general-register operations, integer/float transfers, conversions, and rounding; added 14 direct descriptor cases and an unsupported-instruction test; updated callers to reflect the newly recorded instructions and later remaining boundaries. Retired the RISC-V definition and target-only declaration. Full-analysis suites passed: RISC-V target 399/399 Debug and Release; Windows-x64 Core 17,247/17,247 Debug and 15,527/15,527 Release. No RISC-V generated-code or execution parity is claimed.",
+      "latestBatchValidation": "Ported the complete RISC-V no-instruction emitter::emitIns_Mov overload, preserving canSkip, width selection, register classes, and existing dependency calls; added direct descriptor tests for general-register, integer/float, float/integer, float/float, and self-move cases. Retired its RISC-V definition and target-only declaration before managed acceptance. Full-analysis RISC-V target tests passed 409/409 Debug and Release; Windows-x64 Core tests passed 17,247/17,247 Debug and 15,527/15,527 Release. No RISC-V generated-code or execution parity is claimed.",
       "scope": "Port the RISC-V emitter::emitIns_Mov(emitAttr, ...) helper, preserving its canSkip behavior, 32-bit sign extension, integer/float transfer selection, and register validation. Keep the separate instruction-taking overload and other targets' definitions unchanged.",
-      "doneWhen": "Implement the complete RISC-V no-instruction move helper and its existing dependency calls; add direct tests for skipped/self moves, general-register moves, both floating-point transfer directions, same-bank floating moves, and invalid register combinations as supported by the native contract; retire only the matching RISC-V native definition; pass full-analysis RISC-V Debug/Release and Windows-x64 Core Debug/Release suites; update state and commit the coherent unit.",
-      "validation": "Pending mapping and focused move-helper tests, followed by full-analysis RISC-V Debug/Release and Windows-x64 Core Debug/Release acceptance.",
-      "mapping": "The completed emitter::emitIns_R_R maps from native src/coreclr/jit/emitriscv64.cpp to sources/Core/jit/emitriscv64/Emitter.RegisterTransferRecording.cs. The next no-instruction emitter::emitIns_Mov overload maps from native src/coreclr/jit/emitriscv64.cpp to the RISC-V boundary in sources/Core/jit/emit/Emitter.SimpleReturnDependencies.cs; its target-local native declaration is in emitriscv64.h.",
-      "latestValidation": "Full-analysis RISC-V target suites passed 399/399 in Debug and Release; full-analysis Windows-x64 Core suites passed 17,247/17,247 in Debug and 15,527/15,527 in Release. The RISC-V tests directly cover 14 encoder cases plus unsupported-instruction rejection. Consolidated native residual is 6065c13dbfd1d58dd151b953d2c6ea8106aa2d02 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e); preserved native index tree is 7157595da4d394e4bd8afe056a56b36990c1007e, with 29 staged, 13 unstaged, and 10 untracked files. Recovery ref refs/recovery/native-before-riscv-two-register-20261007 preserves prior residual 941aad02fc630b174b18c93c32927e863e8473ab. No RISC-V generated-code or execution parity is claimed.",
+      "doneWhen": "Implement the complete RISC-V no-instruction move helper and its existing dependency calls; add direct tests for skipped/self moves, general-register moves, both floating-point transfer directions, and same-bank floating moves; preserve native invalid-register Debug assertions; retire only the matching RISC-V native definition; pass full-analysis RISC-V Debug/Release and Windows-x64 Core Debug/Release suites; update state and commit the coherent unit.",
+      "validation": "Full-analysis RISC-V target tests passed 409/409 in Debug and Release; Windows-x64 Core tests passed 17,247/17,247 Debug and 15,527/15,527 Release. Direct cases cover all move classes, 32-bit sign extension, and self-move elision. The isolated compiler's EE assert callback is unavailable, so the invalid-register Debug assertion was not directly invoked; the native assertion is preserved. No RISC-V generated output or execution parity is claimed.",
+      "mapping": "Native src/coreclr/jit/emitriscv64.cpp::emitter::emitIns_Mov(emitAttr, regNumber, regNumber, bool) maps to the RISC-V branch in sources/Core/jit/emit/Emitter.SimpleReturnDependencies.cs. The matching RISC-V-only declaration in emitriscv64.h was retired with its definition; the distinct instruction-taking overload remains native.",
+      "latestValidation": "RISC-V target Debug and Release full-analysis builds/tests passed 409/409 each; Windows-x64 Core Debug/Release full-analysis builds/tests passed 17,247/17,247 and 15,527/15,527. Native residual d0c23b297f8b82e300d4fa3716857e345dfaaabf (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), tree ccb4946f47c277d6f33b12d5513bbec522a6b066. Recovery refs refs/recovery/native-before-riscv-emitins-mov-20261007 and refs/recovery/native-index-before-riscv-emitins-mov-20261007 preserve the pre-retirement residual and index; refs/recovery/native-index-after-riscv-emitins-mov-20261007 records the post-retirement tree. Unrelated staged, unstaged, and untracked native work remains preserved. No RISC-V generated-code or execution parity is claimed.",
       "deferred": [
         "The three largest residual files (emitloongarch64.cpp, emitarm64sve.cpp and codegenarm64test.cpp) are coordinator-owned follow-on batches, not worker assignments.",
-        "Unrelated native WIP remains excluded from accepted batches and preserved with its staged/unstaged split. The current residual is 6065c13dbfd1d58dd151b953d2c6ea8106aa2d02; the native index is 7157595da4d394e4bd8afe056a56b36990c1007e with 29 staged, 13 unstaged and 10 untracked files. Recovery ref refs/recovery/native-before-riscv-two-register-20261007 retains the prior residual 941aad02fc630b174b18c93c32927e863e8473ab; older recovery refs remain intact.",
+        "Unrelated native WIP remains excluded from accepted batches and preserved with its staged/unstaged split. The current consolidated residual is d0c23b297f8b82e300d4fa3716857e345dfaaabf with tree ccb4946f47c277d6f33b12d5513bbec522a6b066. Recovery refs refs/recovery/native-before-riscv-emitins-mov-20261007 and refs/recovery/native-index-before-riscv-emitins-mov-20261007 preserve the pre-retirement residual and staged index; older recovery refs remain intact.",
         "B507 remains unresolved; this batch does not change the unknown-size-frame algorithm.",
         "ARM/ARM64 GC-info publication remains incomplete: GcInfoEncoder and the ARM64 Edit-and-Continue fixed-frame setter terminate with CORJIT_SKIPPED, and the managed GCInfo header/table paths retain non-AMD64 stubs. The translated caller and retired ARMARCH body are not target execution parity.",
         "JIT32 header and pointer-table serialization are ported and retired. JIT32 DUMP_GC_TABLES decoders and MEASURE_PTRTAB_SIZE counters remain terminating stubs; no x86 execution or generated-code parity is claimed.",
@@ -33,9 +33,9 @@
       ],
       "retirement": {
         "oracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
-        "nativeResidualCommit": "6065c13dbfd1d58dd151b953d2c6ea8106aa2d02",
+        "nativeResidualCommit": "d0c23b297f8b82e300d4fa3716857e345dfaaabf",
         "completionGate": "Retire whole eligible definitions and orphan declarations in the same accepted batch, before its managed completion commit. Keep untranslated helpers and target branches in the residual; an absent definition is not evidence that it was ported.",
-        "nextDebtCursor": "At consolidated native residual HEAD 6065c13dbfd1d58dd151b953d2c6ea8106aa2d02 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), the RISC-V emitIns_R_R encoder and target-only declaration are retired along with previously recorded eligible slices. Next map residual emitter::emitIns_Mov(emitAttr, ...), preserving its distinct canSkip, width, and register-class behavior; do not retire the instruction-taking overload or claim global debt clearance or output/execution parity."
+        "nextDebtCursor": "At consolidated native residual HEAD d0c23b297f8b82e300d4fa3716857e345dfaaabf (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), the no-instruction RISC-V emitIns_Mov definition and target-only declaration are retired. Preserve the distinct instruction-taking overload, which remains present in the residual; continue with the next concrete eligible RISC-V function without implying global debt clearance or output/execution parity."
       }
     },
     "validationResourcePolicy": {
@@ -67,7 +67,7 @@
     },
     "residualReconciliation": {
       "status": "in-progress",
-      "nextDebtCursor": "At consolidated native residual HEAD 6065c13dbfd1d58dd151b953d2c6ea8106aa2d02 (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), the RISC-V emitIns_R_R encoder and target-only declaration have been retired along with previously recorded accepted slices. Continue at emitter::emitIns_Mov(emitAttr, ...) and preserve the recorded hashbv B246/B247, B509/B175, B510-B513, nativeIlogbBoundary, B505/B184/B209, disasm.cpp/FILE* coupling, ARM32 async-resume layout, TLS input ownership, Wasm successor-order and emitfmtsriscv64.h mapping holds. This cursor is scoped to known debt, not global debt clearance."
+      "nextDebtCursor": "At consolidated native residual HEAD d0c23b297f8b82e300d4fa3716857e345dfaaabf (pinned parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e), accepted RISC-V slices include the emitIns_R_R encoder and no-instruction emitIns_Mov with target-only declarations removed. Next screen small RISC-V-owned residual files for a complete, independently testable function; check exact HEAD/index/worktree definitions before selection. Preserve hashbv B246/B247, B509/B175, B510-B513, nativeIlogbBoundary, B505/B184/B209, disasm.cpp/FILE* coupling, ARM32 async-resume layout, TLS input ownership, Wasm successor-order, and emitfmtsriscv64.h mapping holds. This is not global debt clearance."
     },
     "windowsCompletionAssessment": {
       "status": "remaining-source-review",
@@ -80,8 +80,22 @@
       "ref": "refs/porting/snapshots/2026-09-22-csharp-wip"
     },
     "nativeResidual": {
-      "commit": "6065c13dbfd1d58dd151b953d2c6ea8106aa2d02",
+      "commit": "d0c23b297f8b82e300d4fa3716857e345dfaaabf",
       "ref": "refs/heads/main"
+    },
+    "nativeBeforeRiscvEmitInsMovRetirement": {
+      "commit": "6065c13dbfd1d58dd151b953d2c6ea8106aa2d02",
+      "ref": "refs/recovery/native-before-riscv-emitins-mov-20261007"
+    },
+    "nativeIndexBeforeRiscvEmitInsMovRetirement": {
+      "commit": "cd7c18f75092bc9d024c6509268f1595e2fe6f93",
+      "ref": "refs/recovery/native-index-before-riscv-emitins-mov-20261007",
+      "tree": "7157595da4d394e4bd8afe056a56b36990c1007e"
+    },
+    "nativeIndexAfterRiscvEmitInsMovRetirement": {
+      "commit": "24c2bfb8d7c7972767c4ac53e41dd5816ad7830d",
+      "ref": "refs/recovery/native-index-after-riscv-emitins-mov-20261007",
+      "tree": "ccb4946f47c277d6f33b12d5513bbec522a6b066"
     },
     "nativeBeforeRiscvTwoRegisterRetirement": {
       "commit": "941aad02fc630b174b18c93c32927e863e8473ab",

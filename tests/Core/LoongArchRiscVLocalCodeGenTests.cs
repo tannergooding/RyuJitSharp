@@ -1160,7 +1160,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 #if DEBUG
             const string? expectedBoundary = RiscVRecorderDebugBoundary;
 #else
-            const string? expectedBoundary = "RISC-V64 register move recording is not ported.";
+            const string? expectedBoundary = null;
 #endif
             AssertRiscVRecorderOutcome(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
