@@ -24,6 +24,17 @@ public partial class Emitter
     {
         emitIns_R_R_I_RiscV(ins, attr, reg1, reg2, imm, instOptions);
     }
+
+    public void emitIns_R_I_I(
+        instruction ins,
+        emitAttr attr,
+        regNumber reg,
+        nint imm1,
+        nint imm2,
+        insOpts instOptions = INS_OPTS_NONE)
+    {
+        emitIns_R_I_I_RiscV(ins, attr, reg, imm1, imm2);
+    }
 #else
     public void emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, nint imm)
     {

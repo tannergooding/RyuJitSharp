@@ -327,6 +327,35 @@ public partial class Emitter
         dispIns(id);
         appendToCurIG(id);
     }
+
+    private void emitIns_R_I_I_RiscV(instruction ins, emitAttr attr, regNumber reg, nint imm1, nint imm2)
+    {
+        var code = emitInsCode(ins);
+        if (INS_csrrwi <= ins && ins <= INS_csrrci)
+        {
+            assert(isGeneralRegisterOrR0(reg));
+            assert(isValidUimm5(imm1));
+            assert(isValidUimm12(imm2));
+            code |= unchecked((uint)reg) << 7;
+            code |= unchecked((uint)imm1) << 15;
+            code |= unchecked((uint)imm2) << 20;
+        }
+        else
+        {
+            NYI_RISCV64("illegal ins within emitIns_R_I_I!");
+            throw new FatalJitException(
+                CORJIT_SKIPPED, "Illegal instruction within RISC-V register-two-immediate instruction recording.");
+        }
+
+        var id = emitNewInstr(attr);
+        id.idIns(ins);
+        id.idReg1(reg);
+        id.idAddr().iiaInstrEncode = code;
+        id.idCodeSize(4);
+
+        dispIns(id);
+        appendToCurIG(id);
+    }
 #endif
 
 #if !TARGET_ARM64

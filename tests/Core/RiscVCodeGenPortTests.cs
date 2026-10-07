@@ -210,6 +210,65 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [TestCase(INS_csrrwi, REG_A0, 0, 0, 0x00005573u)]
+    [TestCase(INS_csrrwi, REG_R0, 31, 0xFFF, 0xFFFFD073u)]
+    [TestCase(INS_csrrsi, REG_A0, 31, 0xFFF, 0xFFFFE573u)]
+    [TestCase(INS_csrrsi, REG_R0, 0, 0, 0x00006073u)]
+    [TestCase(INS_csrrci, REG_A0, 0, 0xFFF, 0xFFF07573u)]
+    [TestCase(INS_csrrci, REG_R0, 31, 0, 0x000FF073u)]
+    public static void RegisterTwoImmediateInstructionRecordsItsDescriptor(
+        instruction ins,
+        regNumber reg,
+        int imm1,
+        int imm2,
+        uint expectedCode)
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+#if DEBUG
+            const string? expectedBoundary = RiscVRecorderDebugBoundary;
+#else
+            const string? expectedBoundary = null;
+#endif
+
+            var failure = CaptureFatalJitException(
+                () => emitter.emitIns_R_I_I(ins, EA_8BYTE, reg, imm1, imm2));
+            AssertRiscVInstructionBoundary(
+                codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
+
+            var descriptor = instructionBuffer[^1];
+            Assert.That(descriptor.idIns(), Is.EqualTo(ins));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(reg));
+            Assert.That(descriptor.idAddr().iiaInstrEncode, Is.EqualTo(expectedCode));
+            Assert.That(descriptor.idCodeSize(), Is.EqualTo(4u));
+        });
+    }
+
+    [Test]
+    public static void UnsupportedRegisterTwoImmediateInstructionTerminatesWithoutRecording()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+
+            var failure = CaptureFatalJitException(
+                () => emitter.emitIns_R_I_I(INS_add, EA_8BYTE, REG_A0, 1, 0xC00));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount));
+            Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize));
+        });
+    }
+
     private static uint ExpectedThreeRegisterEncoding(
         instruction ins,
         regNumber reg1,
