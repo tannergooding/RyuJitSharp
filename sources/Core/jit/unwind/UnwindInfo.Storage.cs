@@ -267,7 +267,7 @@ public sealed partial class UnwindInfo
         jitprintf($"{indentation}  {fragmentCount} fragment{(fragmentCount != 1 ? "s" : "")}\n");
         jitprintf($"{indentation}  uwiFragmentLast: {DebugReference(uwiFragmentLast)}\n");
         jitprintf($"{indentation}  uwiEndLoc: {DebugReference(uwiEndLoc)}\n");
-        jitprintf($"{indentation}  uwiInitialized: 0x{(uwiInitialized ? 0x0FACADE0u : 0u):x8}\n");
+        jitprintf($"{indentation}  uwiInitialized: 0x{(uwiInitialized ? 0x0FACADE1u : 0u):x8}\n");
 
         for (var fragment = first; fragment is not null; fragment = fragment.ufiNext)
         {

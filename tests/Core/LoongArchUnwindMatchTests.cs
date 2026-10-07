@@ -298,7 +298,7 @@ internal static unsafe class LoongArchUnwindLifecycleTests
         Assert.That(output, Does.Contain("UnwindInfo"));
         Assert.That(output, Does.Contain("UnwindPrologCodes"));
         Assert.That(output, Does.Contain("upcCodeSlot: 20"));
-        Assert.That(output, Does.Contain("uwiInitialized: 0x0facade0"));
+        Assert.That(output, Does.Contain("uwiInitialized: 0x0facade1"));
         Assert.That(output, Does.Contain("ufiInitialized: 0x0facade0"));
         Assert.That(output, Does.Contain("UnwindEpilogInfo"));
         Assert.That(output, Does.Contain("uecFinalized: false"));

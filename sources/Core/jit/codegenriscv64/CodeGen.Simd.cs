@@ -18,6 +18,36 @@ public sealed partial class CodeGen
         throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD intrinsic generation is not ported.");
     }
 
+    public void genSIMDIntrinsicUpperSave(GenTree simdNode)
+    {
+        NYI_RISCV64("genSIMDIntrinsicUpperSave-----unimplemented/unused on RISCV64 yet----");
+        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD upper-lane saving is not ported.");
+    }
+
+    public void genSIMDIntrinsicUpperRestore(GenTree simdNode)
+    {
+        NYI_RISCV64("genSIMDIntrinsicUpperRestore-----unimplemented/unused on RISCV64 yet----");
+        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD upper-lane restoration is not ported.");
+    }
+
+    public void genStoreIndTypeSIMD12(GenTree treeNode)
+    {
+        NYI_RISCV64("genStoreIndTypeSIMD12-----unimplemented/unused on RISCV64 yet----");
+        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD12 indirect stores are not ported.");
+    }
+
+    public void genLoadIndTypeSIMD12(GenTree treeNode)
+    {
+        NYI_RISCV64("genLoadIndTypeSIMD12-----unimplemented/unused on RISCV64 yet----");
+        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD12 indirect loads are not ported.");
+    }
+
+    public void genStoreLclTypeSIMD12(GenTree treeNode)
+    {
+        NYI_RISCV64("genStoreLclTypeSIMD12-----unimplemented/unused on RISCV64 yet----");
+        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD12 local stores are not ported.");
+    }
+
     public insOpts genGetSimdInsOpt(emitAttr size, var_types elementType)
     {
         NYI_RISCV64("genGetSimdInsOpt-----unimplemented/unused on RISCV64 yet----");
