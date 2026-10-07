@@ -21,7 +21,7 @@ public sealed partial class CodeGen
     }
 #endif
 
-#if !TARGET_XARCH && !TARGET_WASM && !TARGET_ARM && !TARGET_ARM64
+#if !TARGET_XARCH && !TARGET_WASM && !TARGET_ARM && !TARGET_ARM64 && !TARGET_RISCV64
     public void genCodeForInitBlkLoop(GenTreeBlk node)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "Loop block initialization requires Windows AMD64.");

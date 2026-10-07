@@ -207,6 +207,46 @@ public sealed partial class CodeGen
         }
     }
 
+    public void genCodeForInitBlkLoop(GenTreeBlk node)
+    {
+        var dstNode = node.Addr;
+        _ = genConsumeReg(dstNode);
+        var dstReg = dstNode.RegNum;
+
+        if (node.IsVolatile)
+        {
+            instGen_MemoryBarrier();
+        }
+
+        var size = node.Layout.Size;
+        assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));
+
+        // Store the first pointer before forming the loop's potentially large offset to retain nullcheck behavior.
+        Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, dstReg, 0);
+        if (size > TARGET_POINTER_SIZE)
+        {
+            GCInfo.gcMarkRegPtrVal(dstReg, dstNode.Type);
+
+            var tempReg = InternalRegisters.GetSingle(node);
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, tempReg, unchecked((nint)(size - TARGET_POINTER_SIZE)));
+
+            // tempReg = dstReg + tempReg (a new interior pointer, but in a nongc region).
+            Emitter.emitIns_R_R_R(INS_add, EA_PTRSIZE, tempReg, dstReg, tempReg);
+
+            var loop = genCreateTempLabel();
+            genDefineTempLabel(loop);
+            // TODO: add GC info for tempReg and remove the no-GC region.
+            Emitter.emitDisableGC();
+
+            Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, tempReg, 0);
+            Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, tempReg, -TARGET_POINTER_SIZE);
+            Emitter.emitIns_J_cond_la(INS_bne, loop, tempReg, dstReg);
+            Emitter.emitEnableGC();
+
+            GCInfo.gcMarkRegSetNpt(genRegMask(dstReg));
+        }
+    }
+
     public void genCodeForInitBlkUnroll(GenTreeBlk node)
     {
         assert(node.Oper is GT_STORE_BLK);

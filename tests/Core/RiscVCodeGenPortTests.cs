@@ -227,6 +227,29 @@ internal static unsafe class RiscVCodeGenPortTests
     }
 
     [Test]
+    public static void InitBlkLoopPreservesRiscVInitialStoreRecordingBoundary()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var destination = new GenTreePhysReg(REG_A0, TYP_BYREF) { RegNum = REG_A0 };
+            var block = new GenTreeBlk(
+                TYP_STRUCT,
+                destination,
+                new GenTreeIntCon(TYP_INT, 0),
+                new ClassLayout((uint)TARGET_POINTER_SIZE))
+            {
+                _kind = BlkOpKindLoop,
+            };
+
+            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForInitBlkLoop(block));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("Two-register-immediate instruction recording requires xarch."));
+        });
+    }
+
+    [Test]
     public static void CalleeSavedRestorePreservesXarchOnlyEmitterBoundary()
     {
         WithCodeGen((_, codeGen) =>
