@@ -9,7 +9,12 @@ public partial class Emitter
 {
     public void emitIns_J_cond_la(instruction ins, BasicBlock target, regNumber reg1, regNumber reg2)
     {
+#if TARGET_RISCV64
+        assert(emitIsCmpJump(ins));
+        emitIns_Jump(ins, target, reg1, reg2);
+#else
         throw new FatalJitException(CORJIT_SKIPPED, "Target conditional-branch recording is not implemented.");
+#endif
     }
 
     public void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, nint imm)
@@ -71,7 +76,7 @@ public partial class Emitter
 
     public void emitIns_J_cond_la(instruction ins, BasicBlock target, regNumber reg)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V one-register conditional-branch recording is not implemented.");
+        emitIns_J_cond_la(ins, target, reg, REG_ZERO);
     }
 
     public static bool isValidSimm12(nint value)

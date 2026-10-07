@@ -116,6 +116,9 @@ public partial class Emitter
         emitIns_JArm64(ins, dst, keepShort);
 #elif TARGET_ARM
         emitIns_JArm32(ins, dst, keepShort);
+#elif TARGET_RISCV64
+        assert(emitIsUncondJump(ins));
+        emitIns_Jump(ins, dst, ins is INS_jal ? REG_RA : REG_ZERO, REG_ZERO);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Label jump instruction recording requires xarch.");
 #else
@@ -255,6 +258,68 @@ public partial class Emitter
 #endif
 #endif
     }
+
+#if TARGET_RISCV64
+    private void emitIns_Jump(instruction ins, BasicBlock dst, regNumber reg1, regNumber reg2)
+    {
+        var compiler = _compiler ?? throw new FatalJitException("RISC-V jump recording requires an active compiler.");
+        var currentBlock = compiler.compCurBB
+            ?? throw new FatalJitException("RISC-V jump recording requires a current basic block.");
+        assert(dst.HasFlag(BBF_HAS_LABEL));
+
+        var id = emitNewInstrJmp();
+        id.idIns(ins);
+        id.idReg1(reg1);
+        id.idReg2(reg2);
+        id.idjShort = false;
+        id.idCodeSize(emitIsCmpJump(ins) ? 12u : 8u);
+        id.idInsOpt(INS_OPTS_JUMP);
+        id.idjTarget = dst;
+
+        id.idjKeepLong = compiler.fgInDifferentRegions(currentBlock, dst);
+#if DEBUG
+        if (compiler.opts.compLongAddress)
+        {
+            id.idjKeepLong = true;
+        }
+#endif
+
+        id.idjIG = emitCurIG;
+        id.idjOffs = unchecked((uint)emitCurIGsize);
+        id.idjNext = emitCurIGjmpList;
+        emitCurIGjmpList = id;
+#if EMITTER_STATS
+        emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
+#endif
+
+        var targetIG = emitCodeGetCookie(dst);
+        if (!id.idjKeepLong && (targetIG is not null))
+        {
+            var sourceOffset = unchecked((uint)emitCurCodeOffset + (uint)emitCurIGsize);
+            var jumpDistance = unchecked((int)(sourceOffset - targetIG.igOffs));
+            assert(jumpDistance >= 0);
+
+            if (emitIsCmpJump(id))
+            {
+                if (-4096 <= -jumpDistance)
+                {
+                    emitSetShortJump(id);
+                }
+                else if (-1048576 <= -jumpDistance - sizeof(uint))
+                {
+                    emitSetMediumJump(id);
+                }
+            }
+            else if (-1048576 <= -jumpDistance)
+            {
+                emitSetShortJump(id);
+            }
+        }
+
+        dispIns(id);
+        appendToCurIG(id);
+    }
+#endif
 
 #if TARGET_XARCH
     private static void emitSetShortJump(instrDescJmp id)

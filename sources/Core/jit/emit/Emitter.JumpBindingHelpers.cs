@@ -145,10 +145,17 @@ public partial class Emitter
         return jump.idInsFmt() is insFormat.IF_T2_J2 or insFormat.IF_T1_M;
 #elif TARGET_ARM64
         return jump.idInsFmt() == insFormat.IF_BI_0A;
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Non-xarch unconditional-jump classification is not ported.");
+#elif TARGET_RISCV64
+        return emitIsUncondJump(jump.idIns());
 #endif
     }
+
+#if TARGET_RISCV64
+    private static bool emitIsUncondJump(instruction ins)
+    {
+        return ins is INS_j or INS_jal;
+    }
+#endif
 #endif
 
 #if TARGET_ARM || TARGET_RISCV64
@@ -156,10 +163,18 @@ public partial class Emitter
     {
 #if TARGET_ARM
         return jump.idInsFmt() == insFormat.IF_T1_I;
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM/RISC-V compare-and-jump classification is not ported.");
+#elif TARGET_RISCV64
+        return emitIsCmpJump(jump.idIns());
 #endif
     }
+
+#if TARGET_RISCV64
+    private static bool emitIsCmpJump(instruction ins)
+    {
+        return ins is INS_beqz or INS_bnez or INS_bne or INS_beq
+            or INS_blt or INS_bltu or INS_bge or INS_bgeu;
+    }
+#endif
 
     private static void emitSetMediumJump(instrDescJmp jump)
     {
@@ -182,8 +197,15 @@ public partial class Emitter
         jump.idInsFmt(insFormat.IF_T2_J1);
         jump.idjShort = false;
         jump.idInsSize(emitInsSize(jump.idInsFmt()));
+#elif TARGET_RISCV64
+        if (!jump.idjKeepLong)
+        {
+            assert(emitIsCmpJump(jump));
+            jump.idCodeSize(8);
+            jump.idjShort = false;
+        }
 #else
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM/RISC-V medium-jump selection is not ported.");
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM medium-jump selection is not ported.");
 #endif
     }
 #endif
@@ -285,6 +307,13 @@ public partial class Emitter
         jump.idInsSize(emitInsSize(jump.idInsFmt()));
 #elif TARGET_WASM
         throw new FatalJitException(CORJIT_INTERNALERROR, "Wasm has no short-jump instruction form.");
+#elif TARGET_RISCV64
+        if (!jump.idjKeepLong)
+        {
+            assert(emitIsCmpJump(jump) || emitIsUncondJump(jump));
+            jump.idCodeSize(4);
+            jump.idjShort = true;
+        }
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Non-xarch short-jump selection is not ported.");
 #endif
