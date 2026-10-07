@@ -51,6 +51,25 @@ public partial class Emitter
         appendToCurIG(id);
     }
 
+    public unsafe bool IsAddressInRange(void* addr)
+    {
+        var compiler = _compiler ?? throw new FatalJitException("Address range checks require an active compiler.");
+
+        if (compiler.opts.compReloc)
+        {
+            return true;
+        }
+
+#if DEBUG
+        if (!compiler.opts.compEnablePCRelAddr)
+        {
+            return false;
+        }
+#endif
+
+        return compiler.eeGetRelocTypeHint(addr) is CorInfoReloc.RELATIVE32;
+    }
+
     public void emitIns_J_cond_la(instruction ins, BasicBlock target, regNumber reg)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "RISC-V one-register conditional-branch recording is not implemented.");
@@ -73,7 +92,22 @@ public partial class Emitter
         regNumber regAddr,
         void* addr)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 helper-address load recording is not ported.");
+        assert(ins is INS_addi || emitInsIsLoadOrStore(ins));
+        assert(!EA_IS_RELOC(attr) && (EA_SIZE(attr) is EA_PTRSIZE));
+
+        if (IsAddressInRange(addr))
+        {
+            attr = EA_SET_FLG(attr, EA_PTR_DSP_RELOC);
+            emitIns_R_AI(ins, attr, regDest, regAddr, (nint)addr);
+        }
+        else
+        {
+            var imm = (nint)addr;
+            var lo12 = unchecked((imm << (64 - 12)) >> (64 - 12));
+            imm = unchecked(imm - lo12);
+            _ = emitLoadImmediate(true, attr, regAddr, imm);
+            emitIns_R_R_I(ins, attr, regDest, regAddr, lo12);
+        }
     }
 #endif
 }

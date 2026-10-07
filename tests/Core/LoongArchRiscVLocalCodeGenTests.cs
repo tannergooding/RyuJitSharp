@@ -561,22 +561,34 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 #endif
 
 #if TARGET_RISCV64
-    [TestCase(true)]
-    [TestCase(false)]
-    public static void IndirectHelperLookupPreservesRiscVAddressBoundaries(bool useRelocation)
+    [TestCase(true, false, false, 0x1234)]
+    [TestCase(false, false, false, 0x1234)]
+    [TestCase(false, true, true, 0x1234)]
+    [TestCase(false, true, false, 0x1234)]
+    [TestCase(false, false, false, 0x1ABC)]
+    public static void IndirectHelperLookupPreservesRiscVAddressBoundaries(
+        bool useRelocation,
+        bool useRelocationHint,
+        bool enablePcRelAddr,
+        int helperAddress)
     {
         WithCodeGen((compiler, codeGen) =>
         {
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.getHelperFtn = &GetHelperFtn;
+            vtable.getRelocTypeHint = &GetRelocTypeHint;
             var context = new HelperContext
             {
                 JitInfo = new ICorJitInfo { lpVtbl = &vtable },
-                Address = (void*)0x1234,
+                Address = (void*)helperAddress,
+                RelocHint = useRelocationHint ? CorInfoReloc.RELATIVE32 : CorInfoReloc.NONE,
             };
             compiler.info.compCompHnd = &context.JitInfo;
             compiler.info.compMatchedVM = true;
             compiler.opts.compReloc = useRelocation;
+#if DEBUG
+            compiler.opts.compEnablePCRelAddr = enablePcRelAddr;
+#endif
             var emitter = codeGen.Emitter;
             var instructionBuffer = CurrentInstructionBuffer(emitter)
                 ?? throw new AssertionException("Missing current instruction buffer.");
@@ -586,7 +598,12 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             var failure = CaptureFatalJitException(() =>
                 codeGen.genEmitHelperCall(CORINFO_HELP_ASSIGN_REF, 0, EA_PTRSIZE));
 
-            if (useRelocation)
+#if DEBUG
+            var addressInRange = useRelocation || (useRelocationHint && enablePcRelAddr);
+#else
+            var addressInRange = useRelocation || useRelocationHint;
+#endif
+            if (addressInRange)
             {
 #if DEBUG
                 Assert.That(failure?.Message, Does.Contain(RiscVRecorderDebugBoundary));
@@ -608,10 +625,33 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
             }
             else
             {
-                Assert.That(failure?.Message,
-                    Does.Contain("RISC-V64 helper-address load recording is not ported."));
-                Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount));
+                var address = (nint)context.Address;
+                var lo12 = unchecked((address << (64 - 12)) >> (64 - 12));
+                var immediate = unchecked(address - lo12);
+                var loadImmediateCount = Emitter.emitLoadImmediate(
+                    false, EA_PTRSIZE, REG_NA, immediate);
+#if DEBUG
+                Assert.That(failure?.Message, Does.Contain(RiscVRecorderDebugBoundary));
+                Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount + 1));
                 Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize));
+#else
+                Assert.That(failure?.Message,
+                    Does.Contain("Target call instruction recording is not implemented."));
+                Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount + 2));
+                Assert.That(CurrentInstructionGroupSize(emitter),
+                    Is.EqualTo(initialGroupSize + (loadImmediateCount * 4) + 4));
+#endif
+                var immediateDescriptor = instructionBuffer[initialInstructionCount];
+                Assert.That(immediateDescriptor.idReg1(), Is.EqualTo(REG_DEFAULT_HELPER_CALL_TARGET));
+                Assert.That(immediateDescriptor.idCodeSize(), Is.EqualTo((uint)(loadImmediateCount * 4)));
+#if !DEBUG
+                var loadDescriptor = instructionBuffer[^1];
+                Assert.That(loadDescriptor.idIns(), Is.EqualTo(INS_ld));
+                Assert.That(loadDescriptor.idReg1(), Is.EqualTo(REG_DEFAULT_HELPER_CALL_TARGET));
+                Assert.That(loadDescriptor.idReg2(), Is.EqualTo(REG_DEFAULT_HELPER_CALL_TARGET));
+                Assert.That(loadDescriptor.idSmallCns(), Is.EqualTo(unchecked((int)lo12)));
+                Assert.That(loadDescriptor.idCodeSize(), Is.EqualTo(4u));
+#endif
             }
         });
     }
@@ -994,15 +1034,33 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     }
 #else
     [Test]
-    public static void ReturnTrapHelperAddressLoadStopsAtTheTargetEmitterBoundary()
+    public static void ReturnTrapHelperAddressLoadUsesImmediateFallback()
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var failure = Assert.Throws<FatalJitException>(() =>
-                codeGen.Emitter.emitIns_R_R_Addr(INS_ld, EA_PTRSIZE, REG_S3, REG_S3, null));
+            var emitter = codeGen.Emitter;
+            var instructionBuffer = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialInstructionCount = instructionBuffer.Count;
+            var initialGroupSize = CurrentInstructionGroupSize(emitter);
+            var failure = CaptureFatalJitException(() =>
+                emitter.emitIns_R_R_Addr(INS_ld, EA_PTRSIZE, REG_S3, REG_S3, null));
 
-            Assert.That(failure?.Message,
-                Does.Contain("RISC-V64 helper-address load recording is not ported."));
+#if DEBUG
+            Assert.That(failure?.Message, Does.Contain(RiscVRecorderDebugBoundary));
+            Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount + 1));
+            Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize));
+#else
+            Assert.That(failure, Is.Null);
+            Assert.That(instructionBuffer.Count, Is.EqualTo(initialInstructionCount + 2));
+            Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialGroupSize + 8));
+            var loadDescriptor = instructionBuffer[^1];
+            Assert.That(loadDescriptor.idIns(), Is.EqualTo(INS_ld));
+            Assert.That(loadDescriptor.idReg1(), Is.EqualTo(REG_S3));
+            Assert.That(loadDescriptor.idReg2(), Is.EqualTo(REG_S3));
+            Assert.That(loadDescriptor.idSmallCns(), Is.Zero);
+            Assert.That(loadDescriptor.idCodeSize(), Is.EqualTo(4u));
+#endif
         });
     }
 #endif
@@ -1704,6 +1762,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     {
         public ICorJitInfo JitInfo;
         public void* Address;
+        public CorInfoReloc RelocHint;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
@@ -1715,6 +1774,13 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         lookup->addr = context->Address;
 
         return context->Address;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoReloc GetRelocTypeHint(ICorJitInfo* self, void* address)
+    {
+        var context = (HelperContext*)self;
+        return context->RelocHint;
     }
 #endif
 
