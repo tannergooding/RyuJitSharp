@@ -211,10 +211,14 @@ internal static unsafe class CompilerFinalFrameLayoutTests
             patchpoint->Initialize(2, 64);
             patchpoint->SetOffsetAndExposure(0, -40, true);
             patchpoint->MonitorAcquiredOffset = -24;
+            patchpoint->ResumedIndicatorOffset = -40;
             patchpoint->AsyncThreadOffset = -32;
             compiler.info.compPatchpointInfo = patchpoint;
 
             Assert.That(compiler.lvaOSRLocalTier0FrameOffset(0), Is.EqualTo(-40));
+            compiler.lvaResumedIndicator = 0;
+            Assert.That(compiler.lvaOSRLocalTier0FrameOffset(0), Is.EqualTo(-40));
+            compiler.lvaResumedIndicator = BAD_VAR_NUM;
             compiler.lvaMonAcquired = 0;
             Assert.That(compiler.lvaOSRLocalTier0FrameOffset(0), Is.EqualTo(-24));
             compiler.lvaMonAcquired = BAD_VAR_NUM;

@@ -10,7 +10,7 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class WriteBarrierClassificationTests
 {
     [TestCase(var_types.TYP_BYREF, GenTreeFlags.GTF_EMPTY, false, GCInfo.WriteBarrierForm.WBF_BarrierChecked)]
-    [TestCase(var_types.TYP_LONG, GenTreeFlags.GTF_EMPTY, false, GCInfo.WriteBarrierForm.WBF_BarrierChecked)]
+    [TestCase(TYP_I_IMPL, GenTreeFlags.GTF_EMPTY, false, GCInfo.WriteBarrierForm.WBF_BarrierChecked)]
     [TestCase(var_types.TYP_REF, GenTreeFlags.GTF_EMPTY, false, GCInfo.WriteBarrierForm.WBF_BarrierUnchecked)]
     [TestCase(var_types.TYP_BYREF, GenTreeFlags.GTF_IND_TGT_HEAP, false, GCInfo.WriteBarrierForm.WBF_BarrierUnchecked)]
     [TestCase(var_types.TYP_BYREF, GenTreeFlags.GTF_IND_TGT_NOT_HEAP, false, GCInfo.WriteBarrierForm.WBF_NoBarrier)]
@@ -82,6 +82,36 @@ internal static unsafe class WriteBarrierClassificationTests
                 compiler.gtNewLclvNode(var_types.TYP_REF, 1));
 
             var gcInfo = new GCInfo(new CodeGen(compiler));
+            Assert.That(gcInfo.gcIsWriteBarrierCandidate(store),
+                Is.EqualTo(GCInfo.WriteBarrierForm.WBF_NoBarrier));
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
+    [Test]
+    public static void DirectLocalAddressNeedsNoWriteBarrier()
+    {
+#if DEBUG
+        using var tls = new JitTls(null);
+#endif
+        var previous = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        compiler.info.compRetBuffArg = BAD_VAR_NUM;
+        compiler.lvaTable = new LclVarDsc[2];
+        compiler.lvaCount = 2;
+        compiler.lvaTable[0].Type = var_types.TYP_BYREF;
+        compiler.lvaTable[1].Type = var_types.TYP_REF;
+        JitTls.Compiler = compiler;
+        try
+        {
+            var address = new GenTreeLclFld(genTreeOps.GT_LCL_ADDR, var_types.TYP_BYREF, 0, 0);
+            var value = compiler.gtNewLclvNode(var_types.TYP_REF, 1);
+            var store = new GenTreeStoreInd(var_types.TYP_REF, address, value);
+            var gcInfo = new GCInfo(new CodeGen(compiler));
+
             Assert.That(gcInfo.gcIsWriteBarrierCandidate(store),
                 Is.EqualTo(GCInfo.WriteBarrierForm.WBF_NoBarrier));
         }

@@ -56,6 +56,20 @@ internal static unsafe class WasmGenStructReturnTests
         });
     }
 
+    [Test]
+    public static void StructReturnUsesAHiddenBufferForLargerAggregates()
+    {
+        WithCompiler(compiler =>
+        {
+            var classHandle = (CORINFO_CLASS_STRUCT_*)(nuint)CORINFO_WASM_TYPE_I32;
+            var type = compiler.GetReturnTypeForStruct(classHandle, CorInfoCallConvExtension.Managed,
+                out var kind, structSize: 16);
+
+            Assert.That(type, Is.EqualTo(TYP_UNKNOWN));
+            Assert.That(kind, Is.EqualTo(Compiler.SPK_ByReference));
+        });
+    }
+
     private static void WithCompiler(Action<Compiler> action)
     {
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
