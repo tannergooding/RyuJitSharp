@@ -8538,6 +8538,16 @@ public partial class Compiler
         return new GenTreeDblCon(type, value);
     }
 
+    public GenTreeDblCon gtNewDconNodeF(float value)
+    {
+        return gtNewDconNode(TYP_FLOAT, FloatingPointUtils.convertToDouble(value));
+    }
+
+    public GenTreeDblCon gtNewDconNodeD(double value)
+    {
+        return gtNewDconNode(TYP_DOUBLE, value);
+    }
+
     public GenTreeIntCon gtNewFalse()
     {
         return gtNewIconNode(TYP_INT, 0);
@@ -8641,14 +8651,14 @@ public partial class Compiler
             {
                 assert(cnsVal.Length == sizeof(float));
                 var val = Unsafe.ReadUnaligned<float>(in cnsVal[0]);
-                return gtNewDconNode(TYP_FLOAT, val);
+                return gtNewDconNodeF(val);
             }
 
             case TYP_DOUBLE:
             {
                 assert(cnsVal.Length == sizeof(double));
                 var val = Unsafe.ReadUnaligned<double>(in cnsVal[0]);
-                return gtNewDconNode(TYP_DOUBLE, val);
+                return gtNewDconNodeD(val);
             }
 
             case TYP_REF:

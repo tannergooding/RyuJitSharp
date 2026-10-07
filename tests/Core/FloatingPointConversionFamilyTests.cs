@@ -1,7 +1,10 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using System;
+using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -67,6 +70,60 @@ internal static class FloatingPointConversionFamilyTests
 
             Assert.That(DoubleToUInt64Bits(result), Is.EqualTo(expected));
             Assert.That(SingleToUInt32Bits(input), Is.EqualTo(inputBits | sign));
+        }
+    }
+
+    [TestCase(0x7FC12345U, 0x7FF82468A0000000UL)]
+    [TestCase(0x7F812345U, 0x7FF82468A0000000UL)]
+    [TestCase(0xFFC12345U, 0xFFF82468A0000000UL)]
+    [TestCase(0xFF812345U, 0xFFF82468A0000000UL)]
+    public static void FloatConstantConstructorsUseNativePayloadWidening(uint inputBits, ulong expectedBits)
+    {
+        WithCompiler(compiler =>
+        {
+            var value = UInt32BitsToSingle(inputBits);
+            var expected = unchecked((long)expectedBits);
+            var genericData = BitConverter.GetBytes(value);
+
+            Assert.That(BitConverter.DoubleToInt64Bits(compiler.gtNewDconNodeF(value).DconVal), Is.EqualTo(expected));
+            Assert.That(
+                BitConverter.DoubleToInt64Bits(compiler.gtNewGenericCon(TYP_FLOAT, genericData).AsDblCon().DconVal),
+                Is.EqualTo(expected));
+        });
+    }
+
+    [TestCase(0x7FF8000000000123UL)]
+    [TestCase(0xFFF8000000000123UL)]
+    public static void DoubleConstantConstructorsPreserveNaNPayload(ulong inputBits)
+    {
+        WithCompiler(compiler =>
+        {
+            var value = UInt64BitsToDouble(inputBits);
+            var expected = unchecked((long)inputBits);
+            var genericData = BitConverter.GetBytes(value);
+
+            Assert.That(BitConverter.DoubleToInt64Bits(compiler.gtNewDconNodeD(value).DconVal), Is.EqualTo(expected));
+            Assert.That(
+                BitConverter.DoubleToInt64Bits(compiler.gtNewGenericCon(TYP_DOUBLE, genericData).AsDblCon().DconVal),
+                Is.EqualTo(expected));
+        });
+    }
+
+    private static unsafe void WithCompiler(Action<Compiler> action)
+    {
+#if DEBUG
+        using var tls = new JitTls(null);
+#endif
+        var previous = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitTls.Compiler = compiler;
+        try
+        {
+            action(compiler);
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
         }
     }
 }
