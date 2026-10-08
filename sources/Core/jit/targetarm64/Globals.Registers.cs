@@ -27,6 +27,9 @@ public static partial class Globals
     public const regMask SRBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS =
         SRBM_V0 | SRBM_V1 | SRBM_V2 | SRBM_V3 | SRBM_V4 | SRBM_V5 | SRBM_V6 | SRBM_V7 |
         SRBM_V8 | SRBM_V9 | SRBM_V10 | SRBM_V11 | SRBM_V12 | SRBM_V13 | SRBM_V14 | SRBM_V15;
+    public const regMask SRBM_SVE_INDEXED_S_ELEMENT_ALLOWED_REGS =
+        SRBM_V0 | SRBM_V1 | SRBM_V2 | SRBM_V3 | SRBM_V4 | SRBM_V5 | SRBM_V6 | SRBM_V7;
+    public const regMask SRBM_SVE_INDEXED_D_ELEMENT_ALLOWED_REGS = SRBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS;
 
     public const regNumber REG_PREDICATE_FIRST = REG_P0;
     public const regNumber REG_PREDICATE_LAST = REG_P15;
@@ -125,6 +128,9 @@ public static partial class Globals
     public const regNumber REG_SCRATCH = REG_R9;
     public const regNumber REG_OPT_RSVD = REG_IP1;
     public const regMask SRBM_OPT_RSVD = SRBM_IP1;
+    public const regNumber REG_ZERO_INIT_FRAME_REG1 = REG_R9;
+    public const regNumber REG_ZERO_INIT_FRAME_REG2 = REG_R10;
+    public const regNumber REG_ZERO_INIT_FRAME_SIMD = REG_V16;
 
     public const regNumber REG_EXCEPTION_OBJECT = REG_R0;
     public const regMask SRBM_EXCEPTION_OBJECT = SRBM_R0;
@@ -142,6 +148,23 @@ public static partial class Globals
     public const regNumber REG_R2R_INDIRECT_PARAM = REG_R11;
     public const regMask SRBM_R2R_INDIRECT_PARAM = SRBM_R11;
     public const regNumber REG_INDIRECT_CALL_TARGET_REG = REG_IP0;
+
+    public const regNumber REG_PROFILER_ENTER_ARG_FUNC_ID = REG_R10;
+    public const regMask SRBM_PROFILER_ENTER_ARG_FUNC_ID = SRBM_R10;
+    public const regNumber REG_PROFILER_ENTER_ARG_CALLER_SP = REG_R11;
+    public const regMask SRBM_PROFILER_ENTER_ARG_CALLER_SP = SRBM_R11;
+    public const regNumber REG_PROFILER_LEAVE_ARG_FUNC_ID = REG_PROFILER_ENTER_ARG_FUNC_ID;
+    public const regMask SRBM_PROFILER_LEAVE_ARG_FUNC_ID = SRBM_PROFILER_ENTER_ARG_FUNC_ID;
+    public const regNumber REG_PROFILER_LEAVE_ARG_CALLER_SP = REG_PROFILER_ENTER_ARG_CALLER_SP;
+    public const regMask SRBM_PROFILER_LEAVE_ARG_CALLER_SP = SRBM_PROFILER_ENTER_ARG_CALLER_SP;
+
+    public static readonly regMaskTP SRBM_PROFILER_ENTER_TRASH =
+        SRBM_CALLEE_TRASH &
+        ~new regMaskTP(SRBM_ARG_REGS | SRBM_ARG_RET_BUFF | SRBM_FLTARG_REGS | SRBM_FP);
+    public static readonly regMaskTP SRBM_PROFILER_LEAVE_TRASH = SRBM_PROFILER_ENTER_TRASH;
+    public static readonly regMaskTP SRBM_PROFILER_TAILCALL_TRASH = SRBM_PROFILER_LEAVE_TRASH;
+
+    public const regMask SRBM_ASYNC_CONTINUATION_RET = SRBM_R2;
 
     public const regNumber REG_INTRET = REG_R0;
     public const regMask SRBM_INTRET = SRBM_R0;
@@ -218,6 +241,21 @@ public static partial class Globals
     public const regMask SRBM_FLTARG_REGS =
         SRBM_FLTARG_0 | SRBM_FLTARG_1 | SRBM_FLTARG_2 | SRBM_FLTARG_3 |
         SRBM_FLTARG_4 | SRBM_FLTARG_5 | SRBM_FLTARG_6 | SRBM_FLTARG_7;
+
+    public const int LBL_DIST_SMALL_MAX_NEG = -1048576;
+    public const int LBL_DIST_SMALL_MAX_POS = 1048575;
+    public const int LBL_SIZE_SMALL = 4;
+    public const int JCC_DIST_SMALL_MAX_NEG = -1048576;
+    public const int JCC_DIST_SMALL_MAX_POS = 1048575;
+    public const int JCC_SIZE_SMALL = 4;
+    public const int JCC_SIZE_LARGE = 8;
+    public const int TB_DIST_SMALL_MAX_NEG = -32768;
+    public const int TB_DIST_SMALL_MAX_POS = 32767;
+    public const int LDC_DIST_SMALL_MAX_NEG = -1048576;
+    public const int LDC_DIST_SMALL_MAX_POS = 1048575;
+    public const int LDC_SIZE_SMALL = 4;
+    public const int JMP_SIZE_SMALL = 4;
+    public const int STACK_PROBE_BOUNDARY_THRESHOLD_BYTES = 512;
 
     public const regNumber REG_SWIFT_ERROR = REG_R21;
     public const regMask SRBM_SWIFT_ERROR = SRBM_R21;

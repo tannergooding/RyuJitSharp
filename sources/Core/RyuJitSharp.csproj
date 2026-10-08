@@ -423,6 +423,9 @@
     <!-- LOWER_DECOMPOSE_LONGS: Decompose TYP_LONG operations into (typically two) TYP_INT ones -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm'">$(DefineConstants);LOWER_DECOMPOSE_LONGS</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);LOWER_DECOMPOSE_LONGS</DefineConstants>
+
+    <!-- USE_HELPERS_FOR_INT_DIV: ARMv7A does not guarantee SDIV/UDIV support. -->
+    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm'">$(DefineConstants);USE_HELPERS_FOR_INT_DIV</DefineConstants>
     
     <!-- MULTIREG_HAS_SECOND_GC_RET -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);MULTIREG_HAS_SECOND_GC_RET</DefineConstants>

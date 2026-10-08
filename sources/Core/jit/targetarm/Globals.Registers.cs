@@ -16,6 +16,16 @@ public partial class Globals
     public const int REG_INT_COUNT = (int)REG_INT_LAST - (int)REG_INT_FIRST + 1;
     public const regNumber REG_FP_FIRST = REG_F0;
     public const regNumber REG_FP_LAST = REG_F31;
+    public const regNumber REG_DEFAULT_HELPER_CALL_TARGET = REG_R12;
+    public const regNumber REG_SHIFT = REG_NA;
+    // Variable 64-bit shifts use a helper call with R2 as the shift amount.
+    public const regNumber REG_SHIFT_LNG = REG_R2;
+    public const regNumber REG_JUMP_THUNK_PARAM = REG_R12;
+    // ARM write barriers take the destination in R0 and value in R1; they trash R0, R3, and R12.
+    public const regNumber REG_WRITE_BARRIER_DST = REG_ARG_0;
+    public const regNumber REG_WRITE_BARRIER_SRC = REG_ARG_1;
+    public const regNumber REG_INDIRECT_CALL_TARGET_REG = REG_R12;
+    public const regNumber REG_PINVOKE_SCRATCH = REG_R6;
 
     public static regNumber REG_NEXT(regNumber reg) => reg + 1;
 
@@ -54,15 +64,54 @@ public partial class Globals
         SRBM_F8 | SRBM_F9 | SRBM_F10 | SRBM_F11 | SRBM_F12 | SRBM_F13 | SRBM_F14 | SRBM_F15;
 
     public const regMask SRBM_CALLEE_SAVED = SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED;
+    public const regMask SRBM_CALLEE_TRASH = SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH;
     public const regMask SRBM_ALLINT = SRBM_INT_CALLEE_SAVED | SRBM_INT_CALLEE_TRASH;
     public const regMask SRBM_ALLFLOAT = SRBM_FLT_CALLEE_SAVED | SRBM_FLT_CALLEE_TRASH;
     public const regMask SRBM_ALLDOUBLE =
         SRBM_F0 | SRBM_F2 | SRBM_F4 | SRBM_F6 | SRBM_F8 | SRBM_F10 | SRBM_F12 | SRBM_F14 |
         SRBM_F16 | SRBM_F18 | SRBM_F20 | SRBM_F22 | SRBM_F24 | SRBM_F26 | SRBM_F28 | SRBM_F30;
+    // Double registers use even/odd pairs; this mask tracks the unused high halves.
+    public const regMask SRBM_ALLDOUBLE_HIGH =
+        SRBM_F1 | SRBM_F3 | SRBM_F5 | SRBM_F7 | SRBM_F9 | SRBM_F11 | SRBM_F13 | SRBM_F15 |
+        SRBM_F17 | SRBM_F19 | SRBM_F21 | SRBM_F23 | SRBM_F25 | SRBM_F27 | SRBM_F29 | SRBM_F31;
+    public const regMask SRBM_HIGH_REGS =
+        SRBM_R8 | SRBM_R9 | SRBM_R10 | SRBM_R11 | SRBM_R12 | SRBM_SP | SRBM_LR | SRBM_PC;
+    public const regMask SRBM_SHIFT = SRBM_ALLINT;
+    public const regMask SRBM_SHIFT_LNG = SRBM_R2;
+    public const regMask SRBM_JUMP_THUNK_PARAM = SRBM_R12;
+    public const regMask SRBM_WRITE_BARRIER_DST = SRBM_R0;
+    public const regMask SRBM_WRITE_BARRIER_SRC = SRBM_R1;
+    public const regMask SRBM_SECRET_STUB_PARAM = SRBM_R12;
+    public const regMask SRBM_PINVOKE_FRAME = SRBM_R4;
+    public const regMask SRBM_PINVOKE_TCB = SRBM_R5;
+    public const regMask SRBM_PINVOKE_SCRATCH = SRBM_R6;
+    public const regMask SRBM_LNGRET = SRBM_R0 | SRBM_R1;
+    public const regMask SRBM_LNGRET_LO = SRBM_R0;
+    public const regMask SRBM_LNGRET_HI = SRBM_R1;
+    public const regMask SRBM_FLOATRET = SRBM_F0;
+    public const regMask SRBM_DOUBLERET = SRBM_F0 | SRBM_F1;
+    // This matches the CORINFO_HELP_STOP_FOR_GC clobber mask.
+    public const regMask SRBM_STOP_FOR_GC_TRASH =
+        SRBM_CALLEE_TRASH &
+        ~(SRBM_LNGRET | SRBM_R7 | SRBM_R8 | SRBM_R11 | SRBM_DOUBLERET |
+          SRBM_F2 | SRBM_F3 | SRBM_F4 | SRBM_F5 | SRBM_F6 | SRBM_F7);
+    // P/Invoke frame setup additionally clobbers the TCB and scratch registers.
+    public const regMask SRBM_INIT_PINVOKE_FRAME_TRASH =
+        SRBM_CALLEE_TRASH | SRBM_PINVOKE_TCB | SRBM_PINVOKE_SCRATCH;
+    public const regMask SRBM_VALIDATE_INDIRECT_CALL_TRASH = SRBM_INT_CALLEE_TRASH;
+    public const regMask SRBM_ASYNC_CONTINUATION_RET = SRBM_R2;
+    public const regMask SRBM_ARG_0 = SRBM_R0;
+    public const regMask SRBM_ARG_1 = SRBM_R1;
+    public const regMask SRBM_ARG_2 = SRBM_R2;
+    public const regMask SRBM_ARG_3 = SRBM_R3;
     public static regMaskTP RBM_LOW_REGS => new(SRBM_R0 | SRBM_R1 | SRBM_R2 | SRBM_R3 | SRBM_R4 | SRBM_R5 | SRBM_R6 | SRBM_R7);
     public static regMaskTP RBM_ALLINT => new(SRBM_ALLINT);
     public static regMaskTP RBM_ALLFLOAT => new(SRBM_ALLFLOAT);
     public static regMaskTP RBM_ALLDOUBLE => new(SRBM_ALLDOUBLE);
+    public static regMaskTP RBM_ALLDOUBLE_HIGH => new(SRBM_ALLDOUBLE_HIGH);
+    public static regMaskTP RBM_HIGH_REGS => new(SRBM_HIGH_REGS);
+    public static regMaskTP RBM_SHIFT => new(SRBM_SHIFT);
+    public static regMaskTP RBM_SHIFT_LNG => new(SRBM_SHIFT_LNG);
 
     public const int CNT_CALLEE_TRASH = 6;
     public const int CNT_CALLEE_TRASH_FLOAT = 16;

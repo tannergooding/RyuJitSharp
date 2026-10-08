@@ -17,7 +17,7 @@ public sealed partial class CodeGen
         noway_assert((tree.Oper is GT_DIV) || !varTypeIsFloating(tree.Type));
 
 #if USE_HELPERS_FOR_INT_DIV
-        noway_assert(!varTypeIsIntOrI(tree));
+        noway_assert(!varTypeIsIntOrI(tree.Type));
 #endif
 
         var targetType = tree.Type;

@@ -55,5 +55,25 @@ public partial class Globals
     public const regNumber REG_LNGRET_HI = REG_R1;
 
     public const regNumber REG_FLOATRET = REG_F0;
+
+    public const int MAX_HFA_RET_SLOTS = 8;
+
+    public const int LBL_DIST_SMALL_MAX_NEG = 0;
+    public const int LBL_DIST_SMALL_MAX_POS = 1020;
+    public const int LBL_DIST_MED_MAX_NEG = -4095;
+    public const int LBL_DIST_MED_MAX_POS = 4096;
+
+    public const int JMP_DIST_SMALL_MAX_POS = 2046;
+
+    public const int CALL_DIST_MAX_NEG = -16777216;
+    public const int CALL_DIST_MAX_POS = 16777214;
+
+    public const int JCC_DIST_SMALL_MAX_POS = 254;
+    public const int JCC_DIST_MEDIUM_MAX_POS = 1048574;
+
+    public const int LBL_SIZE_SMALL = 2;
+    public const int JMP_SIZE_LARGE = 4;
+    public const int JCC_SIZE_MEDIUM = 4;
+    public const int JCC_SIZE_LARGE = 6;
 }
 #endif
