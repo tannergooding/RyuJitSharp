@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Investigate B506: trace ARM64 GT_LEA lowering and codegen limits to determine whether the deferred address-mode work is a port omission or intentionally constrained upstream behavior.",
+    "nextAction": "Investigate B507: trace the ARM64 unknown-size frame fallback and MSUB operand constraints; determine whether the assertion conflict is reachable and whether it is a native defect.",
     "activeBatch": {
-      "scope": "B506 ARM64 GT_LEA lowering and target address-mode constraints.",
-      "doneWhen": "Establish supported lowering/codegen contracts and whether safe baseline-parity work can be completed without redesign.",
-      "validation": "Compare pinned native and managed lowering plus existing ARM64 LEA tests; do not expand supported forms without a valid design and tests.",
-      "deferred": "Do not change observable generated code or enable baseless arithmetic forms speculatively."
+      "scope": "B507 ARM64 large-frame fallback and emitter operand validation.",
+      "doneWhen": "Establish whether unknown frame size can reach the fallback and confirm native/managed emitter contracts for SP operands.",
+      "validation": "Inspect the prolog fallback, MSUB recorder assertions, and existing frame-boundary tests before deciding whether this is actionable port work.",
+      "deferred": "Do not change the emitted stack-pointer update sequence without a valid target-correct correction."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
