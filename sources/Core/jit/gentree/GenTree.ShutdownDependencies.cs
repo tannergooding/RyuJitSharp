@@ -111,10 +111,11 @@ public partial class GenTree
 #endif
 
 #if COUNT_AST_OPERS
-    // Native s_gtNodeCounts storage must be shared by the constructor and report.
+    private static readonly uint[] s_gtNodeCounts = new uint[(int)GT_COUNT + 1];
+
     internal static ref uint GetNodeCount(uint op)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "GenTree::s_gtNodeCounts storage is not ported.");
+        return ref s_gtNodeCounts[(int)op];
     }
 #endif
 

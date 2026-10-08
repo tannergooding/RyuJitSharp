@@ -31,9 +31,13 @@ public partial class Globals
 #endif
 
 #if MEASURE_BLOCK_SIZE
-    internal static ref nuint genFlowNodeCnt => throw new FatalJitException(CORJIT_SKIPPED, "genFlowNodeCnt collection is not ported.");
+    private static nuint s_genFlowNodeCnt;
 
-    internal static ref nuint genFlowNodeSize => throw new FatalJitException(CORJIT_SKIPPED, "genFlowNodeSize collection is not ported.");
+    private static nuint s_genFlowNodeSize;
+
+    internal static ref nuint genFlowNodeCnt => ref s_genFlowNodeCnt;
+
+    internal static ref nuint genFlowNodeSize => ref s_genFlowNodeSize;
 
     internal static nuint NativeBasicBlockSize => throw new FatalJitException(CORJIT_SKIPPED, "Native sizeof(BasicBlock) is not ported.");
 

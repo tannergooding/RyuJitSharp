@@ -15,6 +15,52 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class CompilerShutdownFamilyTests
 {
+#if COUNT_AST_OPERS
+    [Test]
+    public static void OperatorCountStorageIncludesSentinelAndSupportsWrites()
+    {
+        var previousCount = GenTree.GetNodeCount((uint)GT_ADD);
+        var updatedCount = unchecked(previousCount + 1);
+
+        try
+        {
+            GenTree.GetNodeCount((uint)GT_ADD) = updatedCount;
+            Assert.That(GenTree.GetNodeCount((uint)GT_ADD), Is.EqualTo(updatedCount));
+        }
+        finally
+        {
+            GenTree.GetNodeCount((uint)GT_ADD) = previousCount;
+        }
+
+        Assert.That(GenTree.GetNodeCount((uint)GT_COUNT), Is.Zero);
+    }
+#endif
+
+#if MEASURE_BLOCK_SIZE
+    [Test]
+    public static void FlowNodeStatisticsStorageSupportsReadsAndWrites()
+    {
+        var previousCount = genFlowNodeCnt;
+        var previousSize = genFlowNodeSize;
+        var updatedCount = unchecked(previousCount + 1);
+        var updatedSize = unchecked(previousSize + 1);
+
+        try
+        {
+            genFlowNodeCnt = updatedCount;
+            genFlowNodeSize = updatedSize;
+
+            Assert.That(genFlowNodeCnt, Is.EqualTo(updatedCount));
+            Assert.That(genFlowNodeSize, Is.EqualTo(updatedSize));
+        }
+        finally
+        {
+            genFlowNodeCnt = previousCount;
+            genFlowNodeSize = previousSize;
+        }
+    }
+#endif
+
 #if MEASURE_NODE_SIZE
     [Test]
     public static void MeasurementStructureNamesRemainAvailableWithoutDebug()
@@ -115,6 +161,21 @@ internal static class CompilerShutdownFamilyTests
 #elif CALL_ARG_STATS && !NODEBASH_STATS && !COUNT_AST_OPERS && !MEASURE_NODE_SIZE && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
             Compiler.argTotalCalls = 0;
             Compiler.compShutdown();
+#elif COUNT_AST_OPERS && !NODEBASH_STATS && !CALL_ARG_STATS && !MEASURE_NODE_SIZE && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
+            var previousCount = GenTree.GetNodeCount((uint)GT_ADD);
+            try
+            {
+                GenTree.GetNodeCount((uint)GT_ADD) = unchecked(previousCount + 1);
+                var exception = Assert.Throws<FatalJitException>(Compiler.compShutdown);
+                Assert.That(exception?.Message,
+                    Is.EqualTo("GenTree::s_gtTrueSizes native logical sizes are not ported."));
+            }
+            finally
+            {
+                GenTree.GetNodeCount((uint)GT_ADD) = previousCount;
+            }
+#elif MEASURE_BLOCK_SIZE && !NODEBASH_STATS && !COUNT_AST_OPERS && !CALL_ARG_STATS && !MEASURE_NODE_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
+            Compiler.compShutdown();
 #else
             var exception = Assert.Throws<FatalJitException>(Compiler.compShutdown);
             Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
@@ -133,7 +194,6 @@ internal static class CompilerShutdownFamilyTests
 #endif
 #endif
 #if COUNT_AST_OPERS
-            Assert.That(exception?.Message, Is.EqualTo("GenTree::s_gtNodeCounts storage is not ported."));
             Assert.That(text, Does.Not.Contain("GenTree operator counts"));
 #elif CALL_ARG_STATS && !NODEBASH_STATS && !MEASURE_NODE_SIZE && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
             Assert.That(text, Does.Not.Contain("Call stats"));
@@ -145,13 +205,14 @@ internal static class CompilerShutdownFamilyTests
                 "GenTree node allocation stats\n" +
                 "---------------------------------------------------\n"));
 #elif MEASURE_BLOCK_SIZE
-            Assert.That(exception?.Message, Is.EqualTo("genFlowNodeCnt collection is not ported."));
             var average = unchecked((uint)(nuint.MaxValue / 3));
             Assert.That(text, Does.EndWith(
                 "\n---------------------------------------------------\n" +
                 "BasicBlock and FlowEdge/BasicBlockList allocation stats\n" +
                 "---------------------------------------------------\n" +
-                $"Allocated      9 basic blocks (4294967295 bytes total, avg {average,4} bytes per method)\n"));
+                $"Allocated      9 basic blocks (4294967295 bytes total, avg {average,4} bytes per method)\n" +
+                "Allocated      0 flow nodes (      0 bytes total, avg    0 bytes per method)\n\n" +
+                "A total of      3 methods compiled.\n"));
 #elif MEASURE_PTRTAB_SIZE
             Assert.That(exception?.Message, Is.EqualTo("GCInfo::s_gcRegPtrDscSize collection is not ported."));
             Assert.That(text, Does.EndWith(
@@ -219,8 +280,6 @@ internal static class CompilerShutdownFamilyTests
     [TestCase("OperBashing")]
 #endif
 #if COUNT_AST_OPERS
-    [TestCase("NodeCountRead")]
-    [TestCase("NodeCountWrite")]
     [TestCase("SmallNodeSize")]
 #endif
 #if NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
@@ -239,10 +298,6 @@ internal static class CompilerShutdownFamilyTests
     [TestCase("StaticNodeSizeReport")]
 #endif
 #if MEASURE_BLOCK_SIZE
-    [TestCase("FlowCountRead")]
-    [TestCase("FlowCountWrite")]
-    [TestCase("FlowSizeRead")]
-    [TestCase("FlowSizeWrite")]
     [TestCase("BasicBlockSize")]
     [TestCase("FlowEdgeSize")]
 #endif
@@ -359,16 +414,6 @@ internal static class CompilerShutdownFamilyTests
             }
 #endif
 #if COUNT_AST_OPERS
-            case "NodeCountRead":
-            {
-                _ = GenTree.GetNodeCount(0);
-                break;
-            }
-            case "NodeCountWrite":
-            {
-                GenTree.GetNodeCount(0) = 1;
-                break;
-            }
             case "SmallNodeSize":
             {
                 _ = TREE_NODE_SZ_SMALL;
@@ -428,26 +473,6 @@ internal static class CompilerShutdownFamilyTests
             }
 #endif
 #if MEASURE_BLOCK_SIZE
-            case "FlowCountRead":
-            {
-                _ = genFlowNodeCnt;
-                break;
-            }
-            case "FlowCountWrite":
-            {
-                genFlowNodeCnt = 1;
-                break;
-            }
-            case "FlowSizeRead":
-            {
-                _ = genFlowNodeSize;
-                break;
-            }
-            case "FlowSizeWrite":
-            {
-                genFlowNodeSize = 1;
-                break;
-            }
             case "BasicBlockSize":
             {
                 _ = NativeBasicBlockSize;

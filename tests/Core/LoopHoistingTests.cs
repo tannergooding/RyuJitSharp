@@ -127,7 +127,7 @@ internal static unsafe class LoopHoistingTests
             var status = PhaseStatus.MODIFIED_NOTHING;
             var output = CodeGenLifeTransitionTests.Capture(() => status = Hoist(compiler));
             Assert.That(status, Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING), output);
-            Assert.That(output, Does.Contain($"PostOrderVisit for [{tree.TreeId:D6}] GT_MUL"));
+            Assert.That(output, Does.Contain($"PostOrderVisit for [{tree.TreeId:D6}] MUL"));
 #else
             Assert.That(Hoist(compiler), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
 #endif
