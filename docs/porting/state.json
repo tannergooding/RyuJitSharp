@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B227 xarch vector-division emitter arguments: trace the unsigned vector-division call sites through the `emitIns_Mov` and `emitIns_R_C` overloads, then determine whether the apparent argument conversions change native instruction behavior.",
+    "nextAction": "Resolve B236 data-section relocation aliases: trace the current `writeableOffset` value through data-section output and `emitRecordRelocation`, then establish whether writable-alias targets are correct for nonzero code aliases.",
     "activeBatch": {
-      "scope": "B227 xarch unsigned vector-division emitter arguments.",
-      "doneWhen": "Trace the suspect native arguments to exact overload parameters and establish whether the instruction encoding or copy-elision decision differs from managed; preserve parity or move a demonstrated defect to owner review.",
-      "validation": "Compare pinned hwintrinsiccodegenxarch.cpp call sites, emitxarch.h signatures, and emitxarch.cpp implementations with the managed unsigned vector-division paths and focused tests.",
-      "deferred": "Do not change conversions, argument positions, or copy elision solely from the apparent mismatch at the call site."
+      "scope": "B236 data-section relocations using writable aliases.",
+      "doneWhen": "Establish the relocation address contract when the code and writable aliases differ; preserve pinned output or move a demonstrated defect to owner review.",
+      "validation": "Trace native emitOutputDataSec and emitRecordRelocation through the code/data output lifecycle and compare with the managed implementation; require a nonzero writable-alias regression before changing offsets.",
+      "deferred": "Do not reset or adjust writeableOffset based only on the apparent mismatch between blockRW pointers and the relocation wrapper."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
