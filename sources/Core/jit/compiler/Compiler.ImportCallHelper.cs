@@ -4334,26 +4334,7 @@ public partial class Compiler
         {
             assert(compiler.compCurBB is not null);
 
-            // Collect profiles before inline candidates are wrapped, including optimized instrumented tiers.
-            if (compiler.opts.IsInstrumented && (JitConfig.JitProfileValues is not 0)
-                && result.Oper.IsCall && result.AsCall().IsSpecialIntrinsic())
-            {
-                var call = result.AsCall();
-                var intrinsic = compiler.lookupNamedIntrinsic(call._callMethHnd);
-
-                if (intrinsic is NI_System_SpanHelpers_Memmove or NI_System_SpanHelpers_SequenceEqual)
-                {
-                    assert(!call.IsGuardedDevirtualizationCandidate);
-
-                    // Inline and profile metadata share a slot, so retain the candidate object.
-                    var profileInfo = call.IsInlineCandidate ? call.SingleInlineCandidateInfo : new HandleHistogramProfileCandidateInfo();
-                    assert(profileInfo is not null);
-                    profileInfo.ilOffset = opcodeOffs;
-                    profileInfo.probeIndex = 0;
-                    call._handleHistogramProfileCandidateInfo = profileInfo;
-                    compiler.compCurBB.SetFlags(BBF_HAS_VALUE_PROFILE);
-                }
-            }
+            compiler.impCollectValueProfileCandidate(result, opcodeOffs);
 
             // Push or append the result of the call
 
@@ -4557,5 +4538,34 @@ public partial class Compiler
 
             return callRetTyp;
         }
+    }
+
+    internal unsafe void impCollectValueProfileCandidate(GenTree result, IL_OFFSET ilOffset)
+    {
+        assert(compCurBB is not null);
+
+        if (!opts.IsInstrumented || (JitConfig.JitProfileValues is 0)
+            || !result.Oper.IsCall || !result.AsCall().IsSpecialIntrinsic())
+        {
+            return;
+        }
+
+        var call = result.AsCall();
+        var intrinsic = lookupNamedIntrinsic(call._callMethHnd);
+
+        if (intrinsic is not NI_System_SpanHelpers_Memmove and not NI_System_SpanHelpers_SequenceEqual)
+        {
+            return;
+        }
+
+        assert(!call.IsGuardedDevirtualizationCandidate);
+
+        // Inline and profile metadata share a slot, so retain the candidate object.
+        var profileInfo = call.IsInlineCandidate ? call.SingleInlineCandidateInfo : new HandleHistogramProfileCandidateInfo();
+        assert(profileInfo is not null);
+        profileInfo.ilOffset = ilOffset;
+        profileInfo.probeIndex = 0;
+        call._handleHistogramProfileCandidateInfo = profileInfo;
+        compCurBB.SetFlags(BBF_HAS_VALUE_PROFILE);
     }
 }

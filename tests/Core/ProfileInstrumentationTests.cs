@@ -472,6 +472,88 @@ internal static unsafe class ProfileInstrumentationTests
         });
     }
 
+    [Test]
+    public static void InstrumentedSpanHelperCallsCollectValueProfilesBeforeWrapping(
+        [Values("Memmove", "SequenceEqual")] string method,
+        [Values(false, true)] bool optimized,
+        [Values(false, true)] bool inlineCandidate,
+        [Values(false, true)] bool instrumented)
+    {
+        var previousConfig = JitConfig;
+        try
+        {
+            ProfileValues(ref JitConfig) = 1;
+
+            FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler => {
+                fixed (byte* className = "SpanHelpers\0"u8)
+                fixed (byte* methodName = method == "Memmove" ? "Memmove\0"u8 : "SequenceEqual\0"u8)
+                fixed (byte* namespaceName = "System\0"u8)
+                {
+                    var metadata = new ProfileMethodMetadata { Class = className, Method = methodName, Namespace = namespaceName };
+                    ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+                    vtable.Base.Base.getMethodNameFromMetadata = &GetProfileMethodName;
+                    ICorJitInfo runtime = new() { lpVtbl = &vtable };
+                    compiler.info.compCompHnd = &runtime;
+                    compiler.compCurBB = new BasicBlock(null, null);
+                    if (instrumented)
+                    {
+                        compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_BBINSTR);
+                    }
+                    if (optimized)
+                    {
+                        compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_BBOPT);
+                    }
+
+                    var call = compiler.gtNewCallNode(method == "Memmove" ? TYP_VOID : TYP_INT,
+                        CT_USER_FUNC, (CORINFO_METHOD_STRUCT_*)&metadata);
+                    call._callMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
+                    InlineCandidateInfo? candidateInfo = null;
+                    if (inlineCandidate)
+                    {
+                        candidateInfo = new InlineCandidateInfo { ilOffset = 7, probeIndex = 4 };
+                        call.SingleInlineCandidateInfo = candidateInfo;
+                    }
+
+                    compiler.impCollectValueProfileCandidate(call, 19);
+
+                    Assert.That(call.Oper, Is.EqualTo(GT_CALL));
+                    Assert.That(call.IsInlineCandidate, Is.EqualTo(inlineCandidate));
+                    Assert.That(compiler.compCurBB.HasFlag(BBF_HAS_VALUE_PROFILE), Is.EqualTo(instrumented));
+
+                    if (instrumented)
+                    {
+                        var profileInfo = call._handleHistogramProfileCandidateInfo
+                            ?? throw new AssertionException("Missing value-profile candidate metadata.");
+                        Assert.That(profileInfo.ilOffset, Is.EqualTo(19));
+                        Assert.That(profileInfo.probeIndex, Is.Zero);
+                        if (inlineCandidate)
+                        {
+                            Assert.That(profileInfo, Is.SameAs(candidateInfo));
+                        }
+                        else
+                        {
+                            Assert.That(profileInfo, Is.TypeOf<HandleHistogramProfileCandidateInfo>());
+                        }
+                    }
+                    else if (inlineCandidate)
+                    {
+                        Assert.That(call.SingleInlineCandidateInfo, Is.SameAs(candidateInfo));
+                        Assert.That(candidateInfo!.ilOffset, Is.EqualTo(7));
+                        Assert.That(candidateInfo.probeIndex, Is.EqualTo(4));
+                    }
+                    else
+                    {
+                        Assert.That(call._handleHistogramProfileCandidateInfo, Is.Null);
+                    }
+                }
+            });
+        }
+        finally
+        {
+            JitConfig = previousConfig;
+        }
+    }
+
     private struct ProfileMethodMetadata
     {
         public byte* Class;
@@ -506,4 +588,7 @@ internal static unsafe class ProfileInstrumentationTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitDelegateProfiling")]
     private static extern ref int DelegateProfiling(ref JitConfigValues config);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitProfileValues")]
+    private static extern ref int ProfileValues(ref JitConfigValues config);
 }
