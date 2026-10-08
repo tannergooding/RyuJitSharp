@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using NUnit.Framework;
 
 namespace RyuJitSharp.UnitTests;
@@ -167,6 +168,15 @@ internal static class JitStdContainerTests
         Assert.That(other.size(), Is.EqualTo((nuint)3));
         Assert.That(other.front(), Is.EqualTo(3));
         Assert.That(other.nodeIdentity(other.begin()), Is.SameAs(firstNodeIdentity));
+    }
+
+    [Test]
+    public static void ListMaxSizeMatchesTheNativeNodeSizeLimit()
+    {
+        using var scope = new JitStdAllocationScope();
+        using var list = new JitStdList<int>(new JitStdAllocator<int>(scope));
+
+        Assert.That(list.max_size(), Is.EqualTo((nuint.MaxValue >> 1) / (nuint)Unsafe.SizeOf<IntListNodeLayout>()));
     }
 
     [Test]
@@ -469,6 +479,20 @@ internal static class JitStdContainerTests
         internal TrackedValue(int value)
         {
             this.value = value;
+        }
+    }
+
+    private struct IntListNodeLayout
+    {
+        internal int value;
+        internal nint next;
+        internal nint previous;
+
+        internal IntListNodeLayout(int value, nint next, nint previous)
+        {
+            this.value = value;
+            this.next = next;
+            this.previous = previous;
         }
     }
 

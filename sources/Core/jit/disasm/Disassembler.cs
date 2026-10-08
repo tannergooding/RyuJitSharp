@@ -5,6 +5,7 @@
 
 #if LATE_DISASM
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 
 namespace RyuJitSharp;
@@ -25,6 +26,12 @@ public partial struct Disassembler
     private nuint _coldCodeBlock;
     private nuint _hotCodeSize;
     private nuint _coldCodeSize;
+    private nuint _totalCodeSize;
+    private nuint _startAddr;
+#if USE_COREDISTOOLS
+    private static StreamWriter? s_disAsmFileCorDisTools;
+    private nuint _corDisasm;
+#endif
 
     private readonly nuint dspAddr(nuint addr)
     {
@@ -47,10 +54,18 @@ public partial struct Disassembler
         _relocationMap = null;
         _diffable = false;
         _disAsmFile = null;
+
+#if USE_COREDISTOOLS
+        s_disAsmFileCorDisTools = null;
+        _corDisasm = 0;
+#endif
     }
 
     public readonly void disDone()
     {
+#if USE_COREDISTOOLS
+        DoneCoredistoolsDisasm();
+#endif
     }
 
     private readonly unsafe byte* disGetLinearAddr(nuint offset)
@@ -85,14 +100,77 @@ public partial struct Disassembler
         _curClassName = curClassName;
     }
 
-    public readonly unsafe void disAsmCode(byte* hotCodePtr, byte* hotCodePtrRW, uint hotCodeSize,
-        byte* coldCodePtr, byte* coldCodePtrRW, uint coldCodeSize)
+    public unsafe void disAsmCode(byte* hotCodePtr, byte* hotCodePtrRW, nuint hotCodeSize,
+        byte* coldCodePtr, byte* coldCodePtrRW, nuint coldCodeSize)
     {
         var compiler = _compiler ?? throw new FatalJitException("Disassembler has not been initialized.");
-        if (compiler.opts.doLateDisasm)
+        if (!compiler.opts.doLateDisasm)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Late disassembly requires the native CoreDisTools callback ABI.");
+            return;
         }
+
+#if USE_COREDISTOOLS
+        _ = InitCoredistoolsDisasm();
+#endif
+
+#if DEBUG
+        _diffable = compiler.opts.dspDiffable;
+#else
+        _diffable = true;
+#endif
+
+#if DEBUG
+        var fileName = JitConfig.JitLateDisasmTo;
+        if (fileName is not null)
+        {
+            _disAsmFile = OpenLateDisassemblyFile(fileName);
+        }
+#else
+        _disAsmFile = jitstdout();
+#endif
+
+        var output = _disAsmFile ??= jitstdout();
+
+        // Like the native common output file, this is not reentrant.
+        assert(hotCodeSize > 0);
+        if (coldCodeSize == 0)
+        {
+            output.Write($"************************** {_curClassName}:{_curMethodName} " +
+                $"size 0x{hotCodeSize:X4} **************************\n\n");
+            output.Write($"Base address : {FormatAddress(hotCodePtr)}h (RW: {FormatAddress(hotCodePtrRW)}h)\n");
+        }
+        else
+        {
+            output.Write($"************************** {_curClassName}:{_curMethodName} " +
+                $"hot size 0x{hotCodeSize:X4} cold size 0x{coldCodeSize:X4} **************************\n\n");
+            output.Write($"Hot  address : {FormatAddress(hotCodePtr)}h (RW: {FormatAddress(hotCodePtrRW)}h)\n");
+            output.Write($"Cold address : {FormatAddress(coldCodePtr)}h (RW: {FormatAddress(coldCodePtrRW)}h)\n");
+        }
+
+        _startAddr = 0;
+        _hotCodeBlock = (nuint)hotCodePtrRW;
+        _hotCodeSize = hotCodeSize;
+        _coldCodeBlock = (nuint)coldCodePtrRW;
+        _coldCodeSize = coldCodeSize;
+        _totalCodeSize = unchecked(_hotCodeSize + _coldCodeSize);
+        _labels = new byte[_totalCodeSize];
+
+        DisasmBuffer(output, printit: true);
+        output.Write("\n");
+
+        if (output != jitstdout())
+        {
+            output.Dispose();
+        }
+        else
+        {
+            output.Flush();
+        }
+    }
+
+    private readonly unsafe string FormatAddress(void* address)
+    {
+        return ((nuint)dspAddr(address)).ToString($"X{sizeof(nuint) * 2}", CultureInfo.InvariantCulture);
     }
 }
 #endif

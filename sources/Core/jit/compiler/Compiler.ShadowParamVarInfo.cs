@@ -3,6 +3,10 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+#if DEBUG
+using System.Runtime.CompilerServices;
+#endif
+
 namespace RyuJitSharp;
 
 public partial class Compiler
@@ -12,6 +16,14 @@ public partial class Compiler
         public nint[]? AssignGroup;
 
         public int ShadowCopy = BAD_VAR_NUM;
+
+#if DEBUG
+        public unsafe void Print()
+        {
+            var assignGroup = AssignGroup;
+            jitprintf($"assignGroup [{FMT_PTR((void*)Unsafe.As<nint[]?, nint>(ref assignGroup))}]; shadowCopy: [{ShadowCopy}];\n");
+        }
+#endif
 
         public static bool MayNeedShadowCopy(in LclVarDsc varDsc)
         {

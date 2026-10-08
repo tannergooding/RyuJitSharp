@@ -6,6 +6,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
@@ -27,6 +28,14 @@ internal sealed class JitStdList<T> : IDisposable, IEnumerable<T>
             owner = null;
             isAlive = false;
         }
+    }
+
+    // Match the native Node value layout without the managed object's header or owner/lifetime fields.
+    private struct NodeLayout
+    {
+        internal T value;
+        internal Node? next;
+        internal Node? previous;
     }
 
     internal readonly struct Iterator : IJitStdIterator, IEquatable<Iterator>
@@ -391,7 +400,7 @@ internal sealed class JitStdList<T> : IDisposable, IEnumerable<T>
     internal nuint max_size()
     {
         throwIfUnavailable();
-        return (nuint)Array.MaxLength;
+        return (nuint.MaxValue >> 1) / (nuint)Unsafe.SizeOf<NodeLayout>();
     }
 
     internal JitStdAllocator<T> get_allocator()
