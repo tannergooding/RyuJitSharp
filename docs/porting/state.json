@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "B145 is complete: AVX-512 MoveMask value numbering now performs signed-to-unsigned mask conversions in an unchecked bit-preserving context, with regression cases for negative and high-bit 64-lane masks. The existing broadcast implementation and expectations explicitly use unchecked lane truncation; focused Debug coverage passed 52 ValueNumHardwareEvaluationClosureTests and 475 HardwareIntrinsicInitializationTests. Next address B129: trace Globals.vlogf/JITLOG through the managed EE formatting contract and implement the missing text-log path without changing structured decision reporting.",
+    "nextAction": "B145 is complete: AVX-512 MoveMask value numbering now performs signed-to-unsigned mask conversions in an unchecked bit-preserving context, with regression cases for negative and high-bit 64-lane masks. Focused Debug coverage passed 52 ValueNumHardwareEvaluationClosureTests and 475 HardwareIntrinsicInitializationTests. B129 needs owner sign-off: the pinned EE consumes a native va_list, so a managed preformatted string cannot safely be passed through logMsg without a native bridge. Next address B134 by capturing and comparing early- and post-morph phase output for head-tail merging.",
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
       "finding": "Selected runtime-async adapters retain matching transformed-body instructions but use different EE-assigned TLS indices and offsets; the earlier slot allocations causing the managed shift are unidentified.",

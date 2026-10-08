@@ -18,6 +18,9 @@ observable differences only in the deviation register. The port is implemented
 in this repository; the exact upstream source revision used for reference is
 recorded in [state.json](state.json). Remaining correctness, parity and coverage
 work belongs in the backlog, not in a parallel inventory of native definitions.
+Items needing an owner decision are separated under the backlog's
+owner-review section and should not be implemented as approved changes before
+sign-off.
 
 An implemented managed body, a passing build, or an explicit unsupported-target
 path does not by itself establish runtime or generated-code parity. Compare
