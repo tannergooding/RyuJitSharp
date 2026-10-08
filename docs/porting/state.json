@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Investigate B509: determine whether the LoongArch fast-tail-call candidate masking can include GS-cookie temps on a reachable call path.",
+    "nextAction": "Investigate B511: determine how the managed JIT exports a stable build identity for SuperPMI without introducing an unapproved C ABI.",
     "activeBatch": {
-      "scope": "B509 LoongArch fast-tail-call temporary candidates and GS-cookie interaction.",
-      "doneWhen": "Establish whether a production path reaches the relative-indirection fast-tail-call candidate computation with a GS cookie.",
-      "validation": "Trace the pinned and managed paths and inspect reachable call setup before deciding whether a coordinated fix or owner review is needed.",
-      "deferred": "Do not alter the candidate mask or tail-call behavior without a reproducible call path."
+      "scope": "B511 SuperPMI build identity export for the managed JIT.",
+      "doneWhen": "Identify the exact SuperPMI consumer contract and establish a managed-compatible source for the JIT build identity.",
+      "validation": "Inspect the pinned native symbol and script consumer plus current managed identity formatting; avoid introducing an unverified export ABI.",
+      "deferred": "Do not add a C data export or alter SuperPMI behavior without an approved integration contract."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
