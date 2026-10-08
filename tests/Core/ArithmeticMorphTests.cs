@@ -456,19 +456,32 @@ internal static unsafe class ArithmeticMorphTests
         });
     }
 
-    [TestCase(GT_OR, true)]
-    [TestCase(GT_XOR, false)]
-    public static void VariableComplementaryShiftsRespectZeroCount(genTreeOps operation, bool rotate)
+    [TestCase(GT_OR, true, false)]
+    [TestCase(GT_OR, true, true)]
+    [TestCase(GT_XOR, false, false)]
+    [TestCase(GT_XOR, false, true)]
+    public static void VariableComplementaryShiftsRespectZeroCount(genTreeOps operation, bool rotate, bool maskCounts)
     {
         WithCompiler(compiler => {
             var count = compiler.gtNewLclvNode(TYP_INT, 1);
             var complement = compiler.gtNewBinaryNode(GT_ADD, TYP_INT,
                 compiler.gtNewUnaryNode(GT_NEG, TYP_INT, compiler.gtNewLclvNode(TYP_INT, 1)),
                 compiler.gtNewIconNode(TYP_INT, 32));
-            var left = compiler.gtNewBinaryNode(GT_LSH, TYP_INT,
-                compiler.gtNewLclvNode(TYP_INT, 0), count);
-            var right = compiler.gtNewBinaryNode(GT_RSZ, TYP_INT,
-                compiler.gtNewLclvNode(TYP_INT, 0), complement);
+            GenTree leftIndex = count;
+            GenTree rightIndex = complement;
+
+            if (maskCounts)
+            {
+                var leftMask = compiler.gtNewIconNode(TYP_INT, 31);
+                var rightMask = compiler.gtNewIconNode(TYP_INT, 31);
+                leftIndex = compiler.gtNewBinaryNode(GT_AND, TYP_INT, leftIndex, leftMask);
+                rightIndex = compiler.gtNewBinaryNode(GT_AND, TYP_INT, rightIndex, rightMask);
+            }
+
+            var leftValue = compiler.gtNewLclvNode(TYP_INT, 0);
+            var rightValue = compiler.gtNewLclvNode(TYP_INT, 0);
+            var left = compiler.gtNewBinaryNode(GT_LSH, TYP_INT, leftValue, leftIndex);
+            var right = compiler.gtNewBinaryNode(GT_RSZ, TYP_INT, rightValue, rightIndex);
             var root = compiler.gtNewBinaryNode(operation, TYP_INT, left, right);
 
             var result = compiler.fgRecognizeAndMorphBitwiseRotation(root);

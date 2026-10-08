@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B156 XOR rotation recognition: compare the pinned native and managed predicates for complementary masked variable shifts, then reproduce the zero-count case on the native oracle before proposing any algorithm change.",
+    "nextAction": "Resolve B158 SideEffectSet::m_preciseExceptions initialization: trace its constructors, allocator/placement-new callsites, and AddNode writes in the pinned oracle; establish whether any runtime path reads the field before it is initialized.",
     "activeBatch": {
-      "scope": "B156 recognition of complementary masked variable shifts as XOR rotations.",
-      "doneWhen": "The native and managed predicates and zero-count result are verified; preserve pinned behavior or move a demonstrated correctness correction to owner review with a native reproduction.",
-      "validation": "Compare pinned fgopt.cpp and managed rotation-recognition code, then run a focused native zero-count reproduction and matching managed test.",
-      "deferred": "Do not alter rotation recognition based only on algebraic inference or managed tests."
+      "scope": "B158 initialization and use of SideEffectSet::m_preciseExceptions.",
+      "doneWhen": "The complete native construction/initialization lifecycle and managed equivalent are compared; close if the field is initialized before every read, otherwise move the undefined-state difference to owner review without emulating poison.",
+      "validation": "Trace pinned sideeffect.h/cpp allocation, constructors, AddNode and read paths; run focused side-effect tests if the invariant is ambiguous.",
+      "deferred": "Do not reproduce uninitialized storage or alter side-effect classification without proving the valid native contract."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
