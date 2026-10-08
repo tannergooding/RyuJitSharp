@@ -12,7 +12,6 @@ public sealed partial class CodeGen
 
     public void genRecordAsyncResume(GenTreeVal asyncResume)
     {
-        Emitter.RequireSupportedInstructionRecording();
         var index = unchecked((nuint)asyncResume.Val1);
         assert(_compiler.compSuspensionPoints is not null);
         assert(index < (nuint)_compiler.compSuspensionPoints.Count);
@@ -84,7 +83,6 @@ public sealed partial class CodeGen
 
     public uint genEmitAsyncResumeInfoTable(out Emitter.dataSection dataSection)
     {
-        Emitter.RequireSupportedInstructionRecording();
         assert(_compiler.compSuspensionPoints is not null);
 
         if (genAsyncResumeInfoTable is null)
@@ -100,7 +98,6 @@ public sealed partial class CodeGen
 
     public unsafe CORINFO_FIELD_HANDLE genEmitAsyncResumeInfo(uint stateNum)
     {
-        Emitter.RequireSupportedInstructionRecording();
         assert(_compiler.compSuspensionPoints is not null);
         assert(stateNum < (uint)_compiler.compSuspensionPoints.Count);
 

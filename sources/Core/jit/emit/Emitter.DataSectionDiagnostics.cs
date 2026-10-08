@@ -99,7 +99,8 @@ public partial class Emitter
                 assert(emitAsyncResumeStubEntryPoint is not null);
 
                 var resumeStubName = compiler.eeGetMethodFullName(emitAsyncResumeStub, true, true);
-                // Native emitLocation is a host pointer plus uint, padded to host pointer alignment.
+                // The oracle divides by host-sized emitLocation, not the target entry size,
+                // and prints dq even for 32-bit targets. Preserve both diagnostic quirks.
                 var infoCount = data.dsSize / (2u * (uint)sizeof(nint));
                 for (uint i = 0; i < infoCount; i++)
                 {

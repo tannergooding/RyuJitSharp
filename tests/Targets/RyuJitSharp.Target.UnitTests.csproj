@@ -17,6 +17,8 @@
     <ProjectReference Include="..\..\sources\Core\RyuJitSharp.csproj" />
     <Compile Include="..\Core\AbiHeaderTests.cs" Link="AbiHeaderTests.cs" />
     <Compile Include="..\Core\AbiPassingInformationTests.cs" Link="AbiPassingInformationTests.cs" />
+    <Compile Include="..\Core\AsyncResumeCodeGenTestSupport.cs" Link="AsyncResumeCodeGenTestSupport.cs" />
+    <Compile Include="..\Core\AsyncResumeTableTargetTests.cs" Link="AsyncResumeTableTargetTests.cs" />
     <Compile Include="..\Core\ArmCalleeSavedRegisterTests.cs" Link="ArmCalleeSavedRegisterTests.cs" />
     <Compile Include="..\Core\ArmGcInfoPublicationTests.cs" Link="ArmGcInfoPublicationTests.cs" />
     <Compile Include="..\Core\Arm64*Tests.cs" Link="%(Filename)%(Extension)" />
@@ -55,6 +57,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-arm')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-arm')))">
+    <Compile Include="..\Core\Arm32CodeGenAsyncResumeInfoTests.cs" Link="Arm32CodeGenAsyncResumeInfoTests.cs" />
     <Compile Include="..\Core\ArmArchEpilogTests.cs" Link="ArmArchEpilogTests.cs" />
     <Compile Include="..\Core\LinearScanScalarConversionTests.cs" Link="LinearScanScalarConversionTests.cs" />
     <Compile Include="..\Core\CodeGenSharedFrameInitializationTests.cs" Link="CodeGenSharedFrameInitializationTests.cs" />

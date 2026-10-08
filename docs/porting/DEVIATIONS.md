@@ -1598,6 +1598,12 @@ null-location handling. Their native definitions and declarations, and the
 newly shared existing inline hot/cold offset helper, are removed. Native
 `emitLocation` diagnostic geometry remains a host pointer plus an aligned
 unsigned field; the EE record layout is not redesigned.
+`CORINFO_AsyncResumeInfo` uses two unsigned `TARGET_SIZE_T` fields, so ARM32
+records are 8 bytes and 64-bit records are 16 bytes. ARM32 and ARM64 target
+tests exercise the metadata callers and target address instructions in Debug
+and Release; AMD64 and Wasm tests cover serialization and relocation order,
+including Wasm's method-relative diagnostic relocation. These source-contract
+tests do not establish native runtime or target execution parity.
 Shared non-Wasm suspension/continuation transfers and async debug publication
 retain their complete native algorithms. Five non-AMD64 continuation-register
 aliases now match the pinned target headers. Their three common definitions and

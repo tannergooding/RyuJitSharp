@@ -4,6 +4,11 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+#if TARGET_64BIT
+using target_size_t = System.UInt64;
+#else
+using target_size_t = System.UInt32;
+#endif
 
 namespace RyuJitSharp;
 
@@ -125,8 +130,8 @@ public partial class Emitter
                     var target = location.Valid() ? emitOffsetToPtr(location.CodeOffset(this)) : null;
 #endif
 
-                    aDstRW[i].Resume = (nint)emitAsyncResumeStubEntryPoint;
-                    aDstRW[i].DiagnosticIP = (nint)target;
+                    aDstRW[i].Resume = unchecked((target_size_t)(nuint)emitAsyncResumeStubEntryPoint);
+                    aDstRW[i].DiagnosticIP = unchecked((target_size_t)(nuint)target);
 
                     if (compiler.opts.compReloc)
                     {

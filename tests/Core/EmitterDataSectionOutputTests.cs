@@ -158,10 +158,10 @@ internal static unsafe class EmitterDataSectionOutputTests
             emitter.emitOutputDataSec(descriptor, &chunk);
 
             var entries = (CORINFO_AsyncResumeInfo*)writableBlock;
-            Assert.That(entries[0].Resume, Is.EqualTo((nint)0x1234));
-            Assert.That(entries[0].DiagnosticIP, Is.EqualTo((nint)(code + 12)));
-            Assert.That(entries[1].Resume, Is.EqualTo((nint)0x1234));
-            Assert.That(entries[1].DiagnosticIP, Is.EqualTo((nint)0));
+            Assert.That(entries[0].Resume, Is.EqualTo(0x1234UL));
+            Assert.That(entries[0].DiagnosticIP, Is.EqualTo((ulong)(nuint)(code + 12)));
+            Assert.That(entries[1].Resume, Is.EqualTo(0x1234UL));
+            Assert.That(entries[1].DiagnosticIP, Is.EqualTo(0UL));
             Assert.That(context.Calls, Is.EqualTo(3));
             Assert.That(context.FirstLocation == &entries[0].Resume, Is.True);
             Assert.That(context.SecondLocation == &entries[0].DiagnosticIP, Is.True);
@@ -287,8 +287,8 @@ internal static unsafe class EmitterDataSectionOutputTests
                 "RWD16  \tdq\tCORINFO_HELP_THROW\n" +
                 "\tdq\tG_M000_IG01\n").Replace("\n", Environment.NewLine, StringComparison.Ordinal)));
             var entries = (CORINFO_AsyncResumeInfo*)writableBlock;
-            Assert.That(entries[0].DiagnosticIP, Is.EqualTo((nint)(code + 12)));
-            Assert.That(entries[1].DiagnosticIP, Is.EqualTo((nint)(code + 12)));
+            Assert.That(entries[0].DiagnosticIP, Is.EqualTo((ulong)(nuint)(code + 12)));
+            Assert.That(entries[1].DiagnosticIP, Is.EqualTo((ulong)(nuint)(code + 12)));
         });
     }
 

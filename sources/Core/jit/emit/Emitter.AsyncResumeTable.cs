@@ -9,7 +9,6 @@ public partial class Emitter
 {
     public unsafe void emitAsyncResumeTable(uint numEntries, out uint dataSecOffs, out dataSection dataSec)
     {
-        RequireSupportedInstructionRecording();
         var emittedSize = unchecked((uint)sizeof(CORINFO_AsyncResumeInfo) * numEntries);
         var secOffs = roundUp(emitConsDsc.dsdOffs, TARGET_POINTER_SIZE);
         emitConsDsc.dsdOffs = unchecked(secOffs + emittedSize);
