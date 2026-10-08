@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Start B069 sparse edge reconstruction: inspect pinned native fgIncorporateEdgeCounts and its full flow-model dependency closure, then translate preparation through failure/repair as one coherent unit.",
+    "nextAction": "Resolve B087 global assertion propagation: compare the pinned native VN/SSA-based dispatcher and range-analysis dependencies with the managed implementation, then port any missing coherent dependency closure without widening D004's local-assertion path.",
     "activeBatch": {
-      "scope": "B069 sparse edge reconstruction and its complete flow-model dependency closure.",
-      "doneWhen": "The upstream flow model, preparation, spanning callbacks, conservation solving, OSR normalization, and native failure/repair behavior are translated with focused tests and documented evidence.",
-      "validation": "Run targeted edge-count importer tests in Debug and Release, then compare outputs with the pinned native oracle.",
-      "deferred": "Preserve the ten-pass limit, reverse layout order, linked-edge order, unsigned counters, random draw order, and exact diagnostics."
+      "scope": "B087 global VN/SSA assertion propagation and required range-analysis dependencies.",
+      "doneWhen": "The complete global dispatcher and its required analysis dependencies match pinned native assertion, range, and edge semantics; D004's separate local path remains unchanged.",
+      "validation": "Run focused assertion, range-check, and VN/SSA test suites in Debug and Release.",
+      "deferred": "Do not widen or replace the established local-assertion application path."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
