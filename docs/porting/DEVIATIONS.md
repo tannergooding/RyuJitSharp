@@ -1028,7 +1028,13 @@ a second insertion of the same local and retaining expanded storage after clear.
 Its expanded membership storage uses `HashSet<int>` instead of `hashBv`; only
 membership, intersection, and emptiness are observable through this API, not
 iteration order. The separate general-purpose `hashBv` port remains incomplete.
-Pinned upstream quirks (B052) are preserved rather than silently corrected.
+`IsEmpty` reports true for the inline single-local representation even though
+`Contains` finds that local. The alias-set global-write predicate and operand-read
+gate preserve the same pinned native behavior; this representational quirk is
+covered by `LclVarSetPreservesPinnedSingleElementEmptiness`. This matches
+`src/coreclr/jit/sideeffects.h` (`LclVarSet::IsEmpty` and
+`AliasSet::WritesAnyLocation`) and `sideeffects.cpp`
+(`AliasSet::InterferesWith(NodeInfo)`) at the pinned upstream revision.
 
 `SplitTreeVisitor` stores a node owner and operand ordinal in its managed
 use stack, reacquiring actual writable operand references through `UseEdges`.

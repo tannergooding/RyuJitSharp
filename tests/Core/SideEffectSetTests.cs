@@ -29,6 +29,28 @@ internal static unsafe class SideEffectSetTests
         });
     }
 
+    [Test]
+    public static void LclVarSetPreservesPinnedSingleElementEmptiness()
+    {
+        WithCompiler(compiler =>
+        {
+            var locals = new LclVarSet();
+            Assert.That(locals.IsEmpty, Is.True);
+
+            locals.Add(compiler, 17);
+            Assert.That(locals.Contains(17), Is.True);
+            Assert.That(locals.IsEmpty, Is.True);
+
+            locals.Add(compiler, 23);
+            Assert.That(locals.Contains(17), Is.True);
+            Assert.That(locals.Contains(23), Is.True);
+            Assert.That(locals.IsEmpty, Is.False);
+
+            locals.Clear();
+            Assert.That(locals.IsEmpty, Is.True);
+        });
+    }
+
     private static GenTreeOp OrderedDivide(int left, int right)
         => new GenTreeOp(GT_DIV, TYP_INT, new GenTreeIntCon(TYP_INT, left), new GenTreeIntCon(TYP_INT, right))
         {
