@@ -10,7 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Next resolve B159: trace the native/managed SynchronizedReturn and GenericCatch block-order difference to its missing funclet preparation; port the coherent preparation dependency and compare both EH layouts before clearing the entry.",
+    "nextAction": "Resolve B170: inspect the implemented block-layout and ValueSize widths and their consumers against the native uint contract; port only any remaining signed-width dependency, then verify large-size behavior.",
+    "activeBatch": {
+      "scope": "B170 unsigned block-layout sizes, ValueSize representation, and consumers above Int32.MaxValue.",
+      "doneWhen": "All relevant sizes, offsets, keys, and consumers preserve native unsigned widths; boundary tests pass, B170 is removed, and the batch is committed locally.",
+      "validation": "Run focused ClassLayout, SegmentList, and ValueSize tests in Debug and Release; run the analyzer-enabled Debug acceptance test.",
+      "deferred": "Do not broaden into unrelated allocation statistics or change documented no-GC layout behavior."
+    },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
       "finding": "Selected runtime-async adapters retain matching transformed-body instructions but use different EE-assigned TLS indices and offsets; the earlier slot allocations causing the managed shift are unidentified.",
