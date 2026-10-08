@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B395: trace Unix AMD64 NativeAOT CFI unwind recording, reservation, and publication dependencies; preserve explicit rejection until the entire supported format is implemented and validated.",
+    "nextAction": "Resolve B398: compare ARM64 LSRA consecutive-candidate filtering, spill ranking, and reuse masks with the pinned native implementation; preserve exact wrap behavior and record any correction requiring sign-off.",
     "activeBatch": {
-      "scope": "B395 Unix AMD64 NativeAOT CFI unwind support.",
-      "doneWhen": "Port the complete CFI unwind lifecycle or establish a concrete blocker while retaining explicit rejection before state mutation or publication.",
-      "validation": "Trace pinned CFI recording, reservation, and publication against the managed SysV unwind path; run focused NativeAOT and CoreCLR unwind tests for supported configurations.",
-      "deferred": "Do not partially publish CFI data, accept unsupported NativeAOT requests, or alter the currently supported CoreCLR unwind format."
+      "scope": "B398 ARM64 LSRA consecutive-candidate behavior.",
+      "doneWhen": "Determine whether managed candidate selection, spill ranking, and assigned-register reuse match the pinned wrap behavior; isolate any upstream defect from port parity.",
+      "validation": "Compare pinned lsraarm64.cpp with managed register-selection code and run focused ARM64 LSRA tests.",
+      "deferred": "Do not normalize wrap sequences or change masks without an upstream decision and native runtime evidence."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
