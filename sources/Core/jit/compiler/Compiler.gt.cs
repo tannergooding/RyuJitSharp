@@ -1348,7 +1348,7 @@ public partial class Compiler
 
 #if FEATURE_MULTIREG_RET
         copy._returnTypeDesc = tree._returnTypeDesc;
-        copy.CopyOtherRegs(tree);
+        copy.CopyOtherRegFlags(tree);
 #endif
 
         copy._callMoreFlags = tree._callMoreFlags;

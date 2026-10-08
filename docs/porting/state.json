@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B293 call spill-state copying: compare GenTreeCall.CopyOtherRegs with pinned gentree.h under FEATURE_MULTIREG_RET, then determine whether spill-state copying is reachable on any enabled managed target.",
+    "nextAction": "Resolve B294 Unix target configuration: reproduce the linux-x64 property/conditional build path, then isolate the Compiler.lva.cs and GenTreeCall.cs compile failures before claiming cross-target register-copy coverage.",
     "activeBatch": {
-      "scope": "B293 call spill-state copying.",
-      "doneWhen": "Establish whether the managed copy of spill flags diverges from native and whether FEATURE_MULTIREG_RET can execute this branch on a supported managed target.",
-      "validation": "Compare the complete source helpers and feature guards; add or run register-versus-spill coverage only when the relevant target build enables the storage.",
-      "deferred": "Do not change helper behavior or claim Unix coverage without a supported target configuration."
+      "scope": "B294 Unix target configuration and register-copy coverage.",
+      "doneWhen": "Determine whether the target RID properties activate Unix code paths as intended and whether the reported compile errors are stale conditional-port defects or baseline build blockers.",
+      "validation": "Build the focused target unit project for linux-x64 using the repository's target properties; record the exact compiler diagnostics and do not count the Windows build as Unix coverage.",
+      "deferred": "Do not infer Unix register-copy behavior from Windows tests or make broad property-plumbing changes without understanding downstream target selection."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",

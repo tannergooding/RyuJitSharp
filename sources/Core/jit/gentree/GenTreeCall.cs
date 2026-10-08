@@ -856,7 +856,6 @@ public sealed class GenTreeCall : GenTree
 #if FEATURE_MULTIREG_RET
         Span<regNumber> otherRegs = tree._otherRegs;
         otherRegs.CopyTo(_otherRegs);
-        _spillFlags = tree._spillFlags;
 #endif
     }
 
