@@ -10,11 +10,11 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "B524: check the current upstream status of dotnet/runtime#135435, confirm the managed merge behavior and whether any in-scope call sites exist, then decide whether the item remains active work or only a reported upstream defect.",
+    "nextAction": "B525: reproduce pinned native FloatingPointUtils::ilogb(double) overload resolution and behavior for finite nonzero inputs, then compare it with the managed Math.ILogB path before deciding whether this is a confirmed upstream defect or an intentional parity gap.",
     "activeBatch": {
-      "scope": "B524 JitStdList.merge tail alias and upstream issue status.",
-      "doneWhen": "Confirm whether upstream has corrected the alias; if not, verify whether any in-scope JIT caller can observe it and remove redundant local follow-up tracking when the upstream report is sufficient.",
-      "validation": "Compare the pinned and current upstream implementation, inspect managed JitStdList call sites, and run focused merge tests if behavior changes.",
+      "scope": "B525 native/managed double-precision ilogb behavior.",
+      "doneWhen": "Establish the compiled pinned behavior and runtime reachability; preserve parity or move the confirmed behavior difference to owner review with a coordinated-fix recommendation.",
+      "validation": "Compile a focused native reproduction matching the pinned overload context, inspect the result without relying on a crashing full JIT run, and run the managed ilogb boundary tests.",
       "deferred": "B515 remains blocked on its missing range-check reproducer; B516 remains blocked on matching native/managed PGO inputs and pre-import captures; B520 and B523 await owner review of the recommended optional-feature boundaries."
     },
     "dynamicTlsInputBoundary": {
