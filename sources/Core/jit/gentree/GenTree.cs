@@ -732,8 +732,8 @@ public partial class GenTree
             }
 #endif
 
-#if FEATURE_MULTIREG_RET && TARGET_X86
-            if (OperIsMultiRegOp())
+#if FEATURE_MULTIREG_RET && TARGET_32BIT
+            if (Oper.IsMultiRegOp)
             {
                 return AsMultiRegOp().RegCount > 1;
             }
@@ -753,15 +753,6 @@ public partial class GenTree
 
             return IsMultiRegLclVar;
         }
-    }
-
-    private bool OperIsMultiRegOp()
-    {
-#if !TARGET_64BIT
-        return _oper is GT_MUL_LONG;
-#else
-        return false;
-#endif
     }
 
     /// <summary>whether a local var node defines multiple registers</summary>

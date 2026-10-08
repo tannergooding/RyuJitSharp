@@ -29,6 +29,7 @@
     <Compile Include="..\Core\EmitterHotColdBoundaryTests.cs" Link="EmitterHotColdBoundaryTests.cs" />
     <Compile Include="..\Core\EmitterHandleCommentTests.cs" Link="EmitterHandleCommentTests.cs" />
     <Compile Include="..\Core\GenTreeVectorPredicateTests.cs" Link="GenTreeVectorPredicateTests.cs" />
+    <Compile Include="..\Core\GenTreeMultiRegTargetTests.cs" Link="GenTreeMultiRegTargetTests.cs" />
     <Compile Include="..\Core\FuncletCreationTargetTests.cs" Link="FuncletCreationTargetTests.cs" />
     <Compile Include="..\Core\HWIntrinsicCodegenClassificationTests.cs" Link="HWIntrinsicCodegenClassificationTests.cs" />
     <Compile Include="..\Core\HWIntrinsicXplatImportTests.cs" Link="HWIntrinsicXplatImportTests.cs" />

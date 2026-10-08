@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B198: correct the TARGET_32BIT GenTree.IsMultiRegNode classifier to use the existing managed Oper.IsMultiRegOp property, add 32-bit target coverage, and confirm the target build.",
+    "nextAction": "Resolve B207: inspect emitter group descriptor ownership, logical sizes/offsets, group splitting, and saved-reference relocation; finish only missing native-equivalent state, then test group boundaries and commit.",
     "activeBatch": {
-      "scope": "B198 TARGET_32BIT multi-register node classification.",
-      "doneWhen": "The classifier uses the existing property consistently with other targets, 32-bit target tests pass, B198 is removed, and the batch is committed.",
-      "validation": "Run focused target test coverage under a 32-bit target configuration and the analyzer-enabled Debug build.",
-      "deferred": "Do not broaden to unrelated multi-register classification or target cleanup."
+      "scope": "B207 emitter instruction-group descriptor storage, logical sizing, group splitting, and saved-reference relocation.",
+      "doneWhen": "Typed managed descriptors preserve native logical layout and every group/reference invariant; focused emitter tests pass, B207 is resolved or moved to sign-off if it requires an ABI deviation, and the batch is committed.",
+      "validation": "Run focused emitter group and descriptor ownership tests in Debug and Release; run analyzer-enabled Debug acceptance.",
+      "deferred": "Do not introduce byte-copying of managed descriptor objects or skip relocation-dependent behavior."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
