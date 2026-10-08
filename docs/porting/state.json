@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B380 ARM64 volatile-load bitcast round trip: trace LowerIndir and TryRemoveBitCast in pinned native and managed lowering, then compare emitted acquire-load forms if a native ARM64 runner is available.",
+    "nextAction": "Resolve B381 ARM64 non-flags conditional increment: trace the lowered GT_SELECT_INC shapes through pinned codegen dispatch and establish whether a reachable explicit-condition form reaches the inconsistent consumer.",
     "activeBatch": {
-      "scope": "B380 ARM64 volatile-load bitcast round trip.",
-      "doneWhen": "Establish whether native ARM64 lowering and bitcast removal preserve the intended volatile/acquire load behavior and instruction form.",
-      "validation": "Trace pinned and managed lowering order, then compare native and managed ARM64 output for a valid volatile floating-load case when the native runner is available.",
-      "deferred": "Do not change the pinned lowering or claim the volatile-load optimization is lost without output evidence."
+      "scope": "B381 ARM64 non-flags conditional increment.",
+      "doneWhen": "Establish whether a valid lowering path can create GT_SELECT_INC without a condition-code operand and reach codegen that assumes one.",
+      "validation": "Trace pinned lowering and codegen callers; use a bounded valid IR reproducer if caller reachability is established, while preserving the pinned transformation until then.",
+      "deferred": "Do not change the lowering shape or codegen consumer without a valid native reproducer."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
