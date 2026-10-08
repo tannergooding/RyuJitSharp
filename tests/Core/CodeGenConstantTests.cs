@@ -167,11 +167,11 @@ internal static unsafe class CodeGenConstantTests
     }
 
     [Test]
-    public static void Simd12RetainsThePinnedOriginalValueCallsite()
+    public static void Simd12ConstantsUseZeroInitializedPadding()
     {
         WithCodeGen((_, codeGen) =>
         {
-            var value = Pattern(16, 16);
+            var value = Pattern(12, 12);
             codeGen.genSetRegToConst(REG_XMM1, TYP_SIMD12, in value);
 
             Assert.That(Last(codeGen).idIns(), Is.EqualTo(INS_movups));

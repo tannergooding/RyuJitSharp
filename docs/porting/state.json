@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B214 SIMD12 constant padding: trace the SIMD12 constant creation and compressed-load consumers, then establish the inactive-lane contract and a native repro before substituting the padded temporary.",
+    "nextAction": "Resolve B215 APX address-operand format: trace `emitIns_R_R_A` descriptor format selection and EVEX.ND encoding, then establish whether the classification changes emitted bytes or downstream processing.",
     "activeBatch": {
-      "scope": "B214 SIMD12 constant padding and compressed-load inputs.",
-      "doneWhen": "Establish the inactive-lane guarantees for SIMD12 constants and whether passing the unpadded value can change generated code; preserve parity or move a demonstrated defect to owner review.",
-      "validation": "Compare pinned codegenxarch.cpp with the managed constant-load path and focused target tests; require an executable native repro before changing the operand.",
-      "deferred": "Do not substitute the padded temporary based only on the apparent mismatch between the temporary and the emitter argument."
+      "scope": "B215 APX NDD address-form descriptor selection.",
+      "doneWhen": "Establish whether missing `useNDD` in address-form descriptor selection affects instruction encoding or downstream emitter behavior; preserve parity or move a demonstrated defect to owner review.",
+      "validation": "Compare pinned emitxarch.cpp address and stack forms with managed instruction-format selection and descriptor tests; require a targeted APX-capable repro before changing the format.",
+      "deferred": "Do not update format selection based only on its mismatch with the APX NDD flag."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",

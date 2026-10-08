@@ -67,7 +67,6 @@ public sealed partial class CodeGen
                 }
                 else
                 {
-                    // Native prepares a padded temporary but passes the original value (B214).
                     emit.emitSimdConstCompressedLoad(in value, EA_16BYTE, targetReg);
                 }
                 break;
