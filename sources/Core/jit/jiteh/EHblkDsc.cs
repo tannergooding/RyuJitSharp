@@ -4,9 +4,15 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Diagnostics.CodeAnalysis;
+#if DEBUG
+using System.Diagnostics;
+#endif
 
 namespace RyuJitSharp;
 
+#if DEBUG
+[DebuggerDisplay("type={ebdHandlerType}")]
+#endif
 public struct EHblkDsc
 {
     public const ushort NO_ENCLOSING_INDEX = ushort.MaxValue;

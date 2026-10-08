@@ -5,6 +5,9 @@
 
 using System;
 using System.Globalization;
+#if DEBUG
+using System.Diagnostics;
+#endif
 
 namespace RyuJitSharp;
 
@@ -17,6 +20,9 @@ public enum LimitType
     Unknown,
 }
 
+#if DEBUG
+[DebuggerDisplay("{DebuggerDisplayText,nq}")]
+#endif
 public struct Limit
 {
     public Limit(LimitType type)
@@ -110,6 +116,8 @@ public struct Limit
     }
 
 #if DEBUG
+    private readonly string DebuggerDisplayText => IsConstant ? $"const: {Constant}" : ToString();
+
     public override readonly string ToString() => Type switch
     {
         LimitType.Undef => "Undef",
@@ -122,6 +130,9 @@ public struct Limit
 #endif
 }
 
+#if DEBUG
+[DebuggerDisplay("{DebuggerDisplayText,nq}")]
+#endif
 public struct Range
 {
     public Range(Limit limit)
@@ -184,6 +195,11 @@ public struct Range
     }
 
 #if DEBUG
+    private readonly string DebuggerDisplayText =>
+        (LowerLimit.IsConstant && UpperLimit.IsConstant)
+            ? $"const range: [{LowerLimit.Constant}..{UpperLimit.Constant}]"
+            : ToString();
+
     public override readonly string ToString() => $"<{LowerLimit}, {UpperLimit}>";
 #endif
 }

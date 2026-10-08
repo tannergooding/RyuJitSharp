@@ -4,10 +4,16 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+#if DEBUG
+using System.Diagnostics;
+#endif
 using System.Diagnostics.CodeAnalysis;
 
 namespace RyuJitSharp;
 
+#if DEBUG
+[DebuggerDisplay("VNP=[L: {Liberal,h}, C: {Conservative,h}]")]
+#endif
 public struct ValueNumPair : IEquatable<ValueNumPair>
 {
     private ValueNum _conservative;

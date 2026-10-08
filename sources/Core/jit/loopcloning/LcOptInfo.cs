@@ -2,8 +2,15 @@
 //
 // Based on the RyuJIT compiler from dotnet/runtime.
 
+#if DEBUG
+using System.Diagnostics;
+#endif
+
 namespace RyuJitSharp;
 
+#if DEBUG
+[DebuggerDisplay("{Type}")]
+#endif
 public abstract unsafe class LcOptInfo
 {
     public enum OptType

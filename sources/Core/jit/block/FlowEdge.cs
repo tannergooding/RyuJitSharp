@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace RyuJitSharp;
 
-public sealed class FlowEdge
+public sealed partial class FlowEdge
 {
     // The next predecessor edge in the list, null for end of list.
     private FlowEdge? _nextPredEdge;

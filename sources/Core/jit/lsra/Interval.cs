@@ -5,7 +5,7 @@
 
 namespace RyuJitSharp;
 
-public sealed class Interval : Referenceable
+public sealed partial class Interval : Referenceable
 {
     public Interval(RegisterType registerType, SingleTypeRegSet registerPreferences)
         : base(registerType)

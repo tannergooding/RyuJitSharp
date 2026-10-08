@@ -5,12 +5,22 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+#if DEBUG
+using System.Diagnostics;
+#endif
 
 namespace RyuJitSharp;
 
 // Managed arrays provide the compiler-lifetime storage formerly supplied by CompAllocator.
+#if DEBUG
+[DebuggerDisplay("{DebuggerDisplayText,nq}")]
+#endif
 internal class JitExpandArray<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>
 {
+#if DEBUG
+    private string DebuggerDisplayText => m_size is 0 ? "Empty" : $"size={m_size}";
+#endif
+
     // Native value-initialization invokes explicit value-type constructors; Array.Clear does not.
     private static readonly bool s_hasParameterlessValueTypeConstructor =
         typeof(T).IsValueType && typeof(T).GetConstructor(Type.EmptyTypes) is not null;
@@ -121,9 +131,16 @@ internal class JitExpandArray<[DynamicallyAccessedMembers(DynamicallyAccessedMem
     }
 }
 
+#if DEBUG
+[DebuggerDisplay("{DebuggerStackDisplayText,nq}")]
+#endif
 internal class JitExpandArrayStack<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> : JitExpandArray<T>
 {
     private uint _used;
+
+#if DEBUG
+    private string DebuggerStackDisplayText => m_size is 0 ? "Empty" : $"size={m_size} used={_used}";
+#endif
 
     internal JitExpandArrayStack(uint minSize = 1)
         : base(minSize)

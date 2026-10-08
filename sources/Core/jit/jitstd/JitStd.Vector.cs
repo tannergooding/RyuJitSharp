@@ -6,11 +6,21 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+#if DEBUG
+using System.Diagnostics;
+#endif
 
 namespace RyuJitSharp;
 
+#if DEBUG
+[DebuggerDisplay("{DebuggerDisplayText,nq}")]
+#endif
 internal sealed class JitStdVector<T> : IDisposable, IEnumerable<T>
 {
+#if DEBUG
+    private string DebuggerDisplayText => _size is 0 ? "Empty" : $"size={_size} capacity={_data.Length}";
+#endif
+
     internal readonly struct Iterator : IJitStdIterator, IEquatable<Iterator>
     {
         internal readonly JitStdVector<T>? _owner;

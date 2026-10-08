@@ -7,11 +7,21 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+#if DEBUG
+using System.Diagnostics;
+#endif
 
 namespace RyuJitSharp;
 
+#if DEBUG
+[DebuggerDisplay("{DebuggerDisplayText,nq}")]
+#endif
 internal sealed class JitStdList<T> : IDisposable, IEnumerable<T>
 {
+#if DEBUG
+    private string DebuggerDisplayText => _size is 0 ? "Empty" : $"Size={_size}";
+#endif
+
     internal sealed class Node : IJitStdScopeAllocation
     {
         internal T value = default!;
