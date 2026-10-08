@@ -213,16 +213,36 @@ internal static class JitStdContainerTests
     }
 
     [Test]
-    public static void ListMergeFailsExplicitlyWhileNativeMergeRemainsUnported()
+    public static void ListMergeMatchesNativeOrderingAndTailAliasing()
     {
         using var scope = new JitStdAllocationScope();
         var allocator = new JitStdAllocator<int>(scope);
-        using var list = new JitStdList<int>([1, 4], allocator);
-        using var other = new JitStdList<int>([2, 3], allocator);
+        using var list = new JitStdList<int>([1, 4, 6], allocator);
+        using var other = new JitStdList<int>([2, 3, 5, 7], allocator);
 
-        _ = Assert.Throws<NotImplementedException>(() => list.merge(other));
-        Assert.That(list.size(), Is.EqualTo((nuint)2));
-        Assert.That(other.size(), Is.EqualTo((nuint)2));
+        list.merge(other);
+
+        Assert.That(string.Join(",", list), Is.EqualTo("1,2,3,4,5,6,7"));
+        Assert.That(string.Join(",", other), Is.EqualTo("2,3,5,7"));
+        Assert.That(list.size(), Is.EqualTo((nuint)7));
+        Assert.That(other.size(), Is.EqualTo((nuint)4));
+        Assert.That(list.nodeIdentity(list.backPosition()), Is.SameAs(other.nodeIdentity(other.backPosition())));
+
+        var iteratorValues = new List<int>();
+        for (var iterator = list.begin(); iterator != list.end(); iterator++)
+        {
+            iteratorValues.Add(iterator.value);
+        }
+        Assert.That(string.Join(",", iteratorValues), Is.EqualTo("1,2,3,4,5,6,7"));
+
+        using var customList = new JitStdList<int>([1, 4], allocator);
+        using var customOther = new JitStdList<int>([2, 3], allocator);
+        var comparer = Comparer<int>.Create((first, second) => second.CompareTo(first));
+
+        customList.merge(customOther, comparer);
+
+        Assert.That(string.Join(",", customList), Is.EqualTo("3,2,1,4"));
+        Assert.That(string.Join(",", customOther), Is.EqualTo("2,3"));
     }
 
     [Test]

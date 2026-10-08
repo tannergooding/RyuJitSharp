@@ -153,8 +153,7 @@ internal sealed class JitStdList<T> : IDisposable, IEnumerable<T>
 
         public bool Equals(Iterator other)
         {
-            return ReferenceEquals(_node, other._node)
-                && (_node is not null || ReferenceEquals(_endOwner, other._endOwner));
+            return ReferenceEquals(_node, other._node);
         }
 
         public override bool Equals(object? obj)
@@ -705,8 +704,42 @@ internal sealed class JitStdList<T> : IDisposable, IEnumerable<T>
     {
         throwIfUnavailable();
         other.throwIfUnavailable();
-        _ = comparer;
-        throw new NotImplementedException("The native list merge implementation aliases source nodes.");
+
+        var size = unchecked((int)other._size);
+        var current = _head;
+        var otherCurrent = other._head;
+        while (current is not null && otherCurrent is not null)
+        {
+            var shouldInsert = comparer is null
+                ? JitStdComparison<T>.Greater(current.value, otherCurrent.value)
+                : comparer.Compare(current.value, otherCurrent.value) > 0;
+            if (shouldInsert)
+            {
+                current = insert(new Iterator(current, this), otherCurrent.value).node;
+                otherCurrent = otherCurrent.next;
+                size = unchecked(size - 1);
+            }
+            else
+            {
+                current = current.next;
+            }
+        }
+
+        if (otherCurrent is not null)
+        {
+            // Match native list::merge: the source metadata remains unchanged after this tail link.
+            if (_tail is not null)
+            {
+                _tail.next = otherCurrent;
+            }
+            else
+            {
+                _head = otherCurrent;
+            }
+
+            _tail = other._tail;
+            _size = unchecked(_size + (nuint)size);
+        }
     }
 
     internal void splice(Iterator position, JitStdList<T> other)
