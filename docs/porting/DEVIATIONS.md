@@ -970,8 +970,8 @@ skipped, invalid-code and implementation-limit failures into internal errors.
 Windows-AMD64 lowering supports both native local-lifetime modes. The
 lifetime-enabled path runs post-lowering liveness, flowgraph cleanup and any
 required second liveness pass before recounting references and invalidating DFS.
-Non-Wasm `AfterLowerBlocks` is genuinely empty. The native body remains in the
-residual tree for the unported target paths.
+Non-Wasm `AfterLowerBlocks` is genuinely empty. The pinned native implementation
+is the reference for the unported target paths.
 Minopts allocation and backend execution are active; optimized register
 allocation still explicitly reports `CORJIT_SKIPPED`. Completing lowering does
 not establish optimized execution or remove that later boundary.
@@ -1457,7 +1457,7 @@ flagged AMD64 call. Windows-AMD64 fast-tailcall lowering is implemented.
 
 `RegSet` initializes Swift callee-saved masks for AMD64 and ARM64 using their
 target masks. Other Swift targets report NYI and then terminate with
-`fatal(CORJIT_IMPLLIMITATION)`. The native constructor remains in the residual tree.
+`fatal(CORJIT_IMPLLIMITATION)`. The pinned native constructor remains the reference.
 
 The SysV x64 classifier, multireg return helpers and Swift argument/special-parameter
 helpers have Linux-target unit coverage on a Windows host. This does not establish
@@ -1726,7 +1726,7 @@ instruction boundary. X86 excludes `FEATURE_FASTTAILCALL`, so the fast-tail
 epilog callsite does not impose an extra-argument-zero contract there.
 The shared non-Wasm pending-call-label definition and exclusive declaration are
 retired; pending-label state remains native. Four Unix x86 CallArgs inline
-definitions retire without restoring fields already absent from the residual.
+definitions retire without restoring fields that were already absent.
 The exact fourteen earlier x86 declaration errors still prevent full body
 checking; floating spill, unwind and recording dependencies remain untranslated.
 Windows frame/call controls do not establish x86 runtime or generated-code parity.
@@ -2023,7 +2023,7 @@ ordinary GetElement/SetElement and EvaluateBroadcastInPlace switches also omit
 `Compiler.gtFoldExpr` retains the native `FEATURE_HW_INTRINSICS` dispatch.
 The whole `gtFoldExprHWIntrinsic` body now preserves its xarch, ARM64 and masked
 branches, including scalar/vector constants, mask conversion and conditional
-selection. Both the dispatcher and folding helper are retired from the residual.
+selection. Both the dispatcher and folding helper are absent from the managed path.
 ARM64 `HWIntrinsicInfo.GetMaskVariant` and `Compiler.NarrowAndDuplicateSimdLong`
 are implemented and retired, including the complete mask mapping and both SIMD
 widths with native saturation/duplication behavior. Target fixtures establish
@@ -2054,7 +2054,7 @@ do not establish their execution or generated-code parity.
 Emission finalization retains its whole target/feature body and native unsigned
 allocation/offset semantics. Other-target issuing, label output, ARM64 pair
 checking and non-xarch GC-delta/indentation diagnostics remain typed terminating
-dependencies. Their native implementations remain in the residual; ordinary
+dependencies. Their pinned native implementations remain the reference; ordinary
 validation does not enable optional `EMITTER_STATS`.
 
 Ternary HW-intrinsic VN evaluation retains whole ARM64/SVE and Wasm branches
@@ -2067,7 +2067,7 @@ other-target source projections do not remove existing execution limitations.
 Local/temporary frame offsets and shared helper-kill, lifetime, stack-adjustment
 and exit bodies retain their whole target branches. Managed Async/OSR frame
 helpers no longer reject otherwise supported caller branches, but the native
-Async helper remains in the residual. Native stack-adjustment NYI policy is
+Async helper remains unported. Native stack-adjustment NYI policy is
 preserved. Windows and Linux-target frame/life/exit fixtures pass; broader
 Windows-only block generation and frame poisoning are not thereby enabled on
 Linux. ARM64's existing compile diagnostics and other-target helper dependencies
@@ -2097,7 +2097,7 @@ The fixed-size cases and SVE dependency boundary have managed target coverage.
 `CallArgs.AddFinalArgsAndDetermineAbiInfo` implements outgoing argument
 classification and non-standard argument insertion for Windows x64. Its Wasm
 branch throws `NotImplementedException` pending shadow-stack argument insertion;
-the complete native body/declaration remain available in the residual tree.
+the complete pinned native body/declaration remain the reference.
 Unix varargs also throw explicitly, matching the native unsupported path rather
 than continuing with an unsupported ABI. Other target-specific register rules
 are source-ported, not execution-validated. Classification is not argument
@@ -2117,7 +2117,7 @@ target-specific hardware immediate/MSB rationalization paths likewise throw.
 the native raw 64-bit sequence arithmetic, without narrow-element truncation or
 signed extension. `TryEvaluateUnaryInPlace` folds representable scalable results
 and leaves the tree unchanged otherwise.
-The mixed-target native hardware bodies remain in the residual tree; this
+The mixed-target native hardware bodies remain unported; this
 batch establishes Windows-x64 rationalization, not other-target execution.
 
 The ARM64 SVE immediate-only, single-register, register-immediate,
@@ -2145,7 +2145,7 @@ comparison, array-length, hardware-intrinsic and JTRUE cases make no changes in
 this mode. No optimization flag is disabled to obtain this boundary.
 
 The global VN/SSA-based dispatcher and its range-analysis dependencies remain
-unported. Their shared native bodies are retained in the residual tree. This
+unported. Their shared pinned native bodies remain the reference. This
 mode split prevents an optional later phase from blocking required morphing,
 without adding success-shaped fallbacks on the active path.
 
@@ -2422,8 +2422,8 @@ validates the resulting output. The focused statistics suites pass 27 Debug and
 26 Release cases in `artifacts\emit-stat-report\stats-enabled-focused-*`.
 This does not establish parity with the undefined native read; native behavior
 must be corrected or explicitly accepted before claiming parity for these rows.
-The native reporter and its report-only histogram tables are now retired from
-`runtime-port`; this deviation describes the pinned oracle behavior only.
+The native reporter and its report-only histogram tables are retired from the
+managed implementation; this deviation describes the pinned oracle behavior only.
 
 ### D012: Managed ARM unwind diagnostic identity tokens
 

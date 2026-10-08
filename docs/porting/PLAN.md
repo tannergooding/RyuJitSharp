@@ -1,25 +1,20 @@
 # Continuation plan
 
-The plan, three-tree workflow, whole-function policy, and
-centralized newline proposal were approved on 2026-09-22. Prioritize a clean port
-with minimal divergence; extensive tooling tests and larger restructuring are
-deferred. Exact revisions and the checkpoint are in [state.json](state.json).
+The whole-function porting sequence below is historical context. The managed
+port is implemented; current work is the parity, correctness, and coverage
+burn-down in [BACKLOG.md](BACKLOG.md). Exact revisions and the resume cursor are
+in [state.json](state.json).
 
 ## Execution order and iteration
 
-Resume from `checkpoint.nextAction` in [state.json](state.json), using its pinned
-revisions and active batch rather than replaying completed synchronization or WIP
-reconciliation. Resolve any still-open reconciliation before depending on the
-affected code. Select the next dependency-coherent feature or target packet from
-the actual reachable frontier; required shared functions still need complete
-implementations, while optional neighboring phases do not become prerequisites
-merely because they are adjacent.
+Resume from `checkpoint.nextAction` in [state.json](state.json), and take the
+next dependency-coherent item from the backlog. Use the pinned upstream revision
+for behavior comparisons; do not replay completed translation or setup work.
 
-The central execution path is rationalization, lowering, LSRA, then code
-generation and emission. Continue extending this path and its required support
-without making complete parity in optional optimizations or unrelated corpus
-features a prerequisite. Keep remaining differences explicit rather than hiding
-them.
+The compiler pipeline remains the main parity boundary: rationalization,
+lowering, LSRA, code generation and emission. Resolve tracked gaps without
+making unrelated optional features prerequisites, and keep remaining
+differences explicit rather than hiding them.
 
 Parallelize substantial work as bounded, non-overlapping feature or platform
 packets when dependencies and ownership allow. Select packets by dependency
@@ -120,10 +115,10 @@ a publication conflict, or a blocker that cannot be safely resolved.
 
 ## 0. Preserve and establish the starting point
 
-Completed setup: the isolated C# branch starts from `fgImport`, its latest WIP
-is preserved separately, and the native deletion ledger has a protected snapshot.
-`runtime-port` was restored exactly, including index state. `runtime-oracle`
-was established as an intact detached worktree at the original native revision.
+Completed setup: the isolated C# branch started from `fgImport`, its latest WIP
+was preserved separately, and the pinned upstream source was established as the
+reference revision. The managed implementation and its tests now live in this
+repository; current maintenance proceeds from the managed code and tracked gaps.
 
 The initial unstashed C# baseline built in Debug and Release, before native
 publish/loading and phase comparisons were established; its test project had no
@@ -191,37 +186,32 @@ introduce silent stubs on required target paths to make reconciliation
 appear complete.
 
 Use the raw old-to-new upstream diff, not the size of merge-conflict regions, to
-drive reconciliation. Preserve previous deletions of ported methods, retain net
-new APIs that remain unported, and apply changed-method deltas to their existing
-C# implementations. Large deletion conflicts do not require reviewing or restoring
-thousands of unchanged lines. If a pass becomes disproportionately expensive,
-reassess its scope and approach rather than expanding the investigation.
+identify managed behavior that needs synchronization. Apply changed-method
+deltas to the existing C# implementation and review changed APIs, tables,
+generators, types and JIT/EE contracts. If a pass becomes disproportionately
+expensive, reassess its scope and approach rather than expanding the investigation.
 
-Move the oracle to the pinned target only with a clean source tree and preserved
-old-baseline evidence. Update the residual tree with its snapshots protected.
-For modify/delete conflicts, compare the old/new native delta with the existing
-C# implementation. Update an already translated definition in C# and keep its
-native body absent; retain new and still-unported definitions in the residual.
-Do not restore completed bodies merely to make the merge easier, or keep them
-deleted without applying their changed behavior to C#. Track unresolved deltas
-as explicit mixed-revision exceptions until reconciliation is complete.
+Advance the recorded upstream baseline only with preserved old-baseline evidence.
+Compare the old/new native delta with the existing C# implementation, and track
+unresolved deltas as explicit mixed-revision exceptions until reconciliation is
+complete.
 
 Rebuild matching native artifacts and recapture version-specific replay inputs
 when the ABI or collection format requires it. Do not silently reuse incompatible
 old collections. Compare the updated C# port against the updated native oracle;
 upstream-intended changes are not C# deviations.
 
-**Exit:** every relevant inventory entry has a disposition; both native trees
-use the target revision; the ABI is reconciled; generated changes are explained;
-Debug/Release and relevant checks pass; the supported phase corpus has new-baseline
-evidence. Only then advance the recorded port baseline.
+**Exit:** every relevant upstream change has a disposition; the ABI is
+reconciled; generated changes are explained; Debug/Release and relevant checks
+pass; the supported phase corpus has new-baseline evidence. Only then advance
+the recorded port baseline.
 
 ## 3. Reconcile and resume the saved C# work
 
-Apply the preserved C# WIP by immutable ID, keeping the snapshot. It affects
+Apply preserved C# WIP by immutable ID, keeping the snapshot. It affects
 inlining/flowgraph support, tree visitors, local sequencing, LIR, rationalization,
-and support-file moves. The native deletion snapshot already includes work from
-this WIP; it must not be interpreted as the committed C# baseline's coverage.
+and support-file moves. A preserved snapshot is not evidence that its contents
+are already integrated or covered.
 
 Resolve conflicts against the updated native definitions and completed sync
 batches. Preserve the WIP's intent and file moves; do not gratuitously repeat or
@@ -236,7 +226,7 @@ Retain recovery refs until these checks are complete.
 ## 4. Continue by compiler dependencies
 
 Select the next required minopts phase and its dependency cluster from the
-residual source and actual reachable frontier. Prioritize mandatory importer,
+backlog and actual reachable frontier. Prioritize mandatory importer,
 morph, rationalization, lowering, register allocation, code generation, and
 GC/EH/unwind support. Inlining and other optional optimizations can wait.
 Do not bypass required transformations or claim an optional phase is implemented
@@ -254,9 +244,9 @@ inventory explicit NYIs without claiming runtime support. Never infer one
 target's behavior from another target's run, and do not treat compile-only work,
 native fallback, or `CORJIT_SKIPPED` as execution parity.
 
-**Exit per batch:** complete intended functions, explicit deferrals, scoped
-regression/parity evidence, residual-source update, and a small continuation
-checkpoint naming the next dependency, committed together as one logical batch.
+**Exit per batch:** complete intended behavior, explicit deferrals, scoped
+regression/parity evidence, and a small continuation checkpoint naming the next
+dependency, committed together as one logical batch.
 Do not start the next batch with completed work still waiting for a commit.
 
 ## 5. Restructure after establishing the clean port

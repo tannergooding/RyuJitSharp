@@ -5,16 +5,12 @@ Use [state.json](docs/porting/state.json) for pinned revisions and the current
 checkpoint, and load only the relevant sections of the
 [plan](docs/porting/PLAN.md) and [deviations](docs/porting/DEVIATIONS.md).
 
-- Establish a clean, recognizable port before restructuring. Record discovered
-  bugs, rename/refactoring candidates, and architectural ideas in the
-  [backlog](docs/porting/BACKLOG.md); do not fold unrelated cleanup into a port.
-- Validate each target at its implemented frontier. Translate each whole function,
-  preserving target conditionals and dependency calls. Add compilable declarations
-  and tracked, terminating NYI helper stubs for unported other-target dependencies;
-  do not omit their callers' branches. Remove the translated definition from
-  `runtime-port` in the same batch, retaining the unported helper definitions there.
-  A caller need not wait for those helpers to execute. Do not introduce silent
-  no-ops or success-shaped fallbacks.
+- Preserve the recognizable C# port while resolving its tracked correctness,
+  parity, and coverage work. Record newly discovered defects and design questions
+  in the [backlog](docs/porting/BACKLOG.md); do not bundle unrelated cleanup.
+- Validate changes at the relevant target frontier. Preserve target conditionals
+  and dependency behavior; unsupported target paths must remain explicit and
+  terminating rather than becoming silent no-ops or success-shaped fallbacks.
 - Preserve upstream algorithms, phase ordering, diagnostics, numeric semantics,
   and JIT/EE contracts. Idiomatic C# does not authorize different generated code
   or dumps. Ask before substantial redesigns or new observable deviations.
@@ -27,20 +23,13 @@ checkpoint, and load only the relevant sections of the
   surrounding context, not a hard rule tied to statement kinds.
   Respect `.editorconfig`, but also review logical grouping and wrap long
   expressions at meaningful boundaries; formatter compliance is not sufficient.
-- Use the intact, pinned `runtime-oracle` for source and behavior comparisons.
-  The residual `runtime-port` tree identifies remaining work; deleted native code
-  is not evidence of parity. Obtain their local paths from the session setup,
-  not from assumptions about another contributor's checkout.
-- Treat the residual as the untranslated-definition work list, not a second
-  recurring audit project. Track stubs and exceptions sparsely. On an oracle
-  update, use the immutable old/new upstream diff: apply changes to already
-  translated definitions in C# and keep them absent from the residual; update
-  still-unported definitions and retain new definitions for porting. Do not
-  restore completed bodies merely to resolve modify/delete conflicts.
-- Keep the residual native branch at the pinned oracle plus one consolidated
-  `Remove ported code` commit. Amend that native commit for accepted retirements
-  and restorations; do not append new cleanup commits. Preserve recovery refs
-  when consolidating history. This authorization does not cover C# amendments.
+- Use the pinned upstream revision recorded in [state.json](docs/porting/state.json)
+  as the source and behavior reference when relevant. Native source absence or
+  successful compilation is not evidence of parity.
+- When synchronizing upstream changes, compare immutable old and new revisions
+  and apply relevant deltas to the managed implementation. Keep the source map
+  sparse and record only non-obvious mappings, active exceptions, and unresolved
+  decisions; do not recreate a native-source inventory.
 - Keep the mapping sparse. Conventionally, `src/coreclr/jit/<stem>.{h,cpp}`
   maps to `sources/Core/jit/<stem>/`; `Compiler` partials span several native
   files. Verify symbol matches, and record non-obvious mappings for active work.
