@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B212 multi-register local indices: trace indexed genRegCopy and genConsumeReg call paths through native register and spill-state updates, then determine whether the parent-local arguments are intentional for every field transition.",
+    "nextAction": "Resolve B214 SIMD12 constant padding: trace the SIMD12 constant creation and compressed-load consumers, then establish the inactive-lane contract and a native repro before substituting the padded temporary.",
     "activeBatch": {
-      "scope": "B212 indexed register-copy and consume liveness for multi-register locals.",
-      "doneWhen": "Establish the required local identity at each update from LSRA field assignments and native state transitions; preserve pinned behavior or move a demonstrated field-specific correctness fix to owner review.",
-      "validation": "Compare pinned codegencommon.cpp/codegenlinear.cpp with managed multi-register local paths and tests; use a target build/repro if source invariants do not decide the index.",
-      "deferred": "Do not replace parent locals with field locals based only on indexed method names."
+      "scope": "B214 SIMD12 constant padding and compressed-load inputs.",
+      "doneWhen": "Establish the inactive-lane guarantees for SIMD12 constants and whether passing the unpadded value can change generated code; preserve parity or move a demonstrated defect to owner review.",
+      "validation": "Compare pinned codegenxarch.cpp with the managed constant-load path and focused target tests; require an executable native repro before changing the operand.",
+      "deferred": "Do not substitute the padded temporary based only on the apparent mismatch between the temporary and the emitter argument."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
