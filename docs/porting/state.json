@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B175: verify the managed Debug sort postcondition against the pinned native implementation, and remove the backlog entry if its known one-pair check is already preserved.",
+    "nextAction": "Resolve B183: inspect the second-operand contained-indirection LSRA candidate path and establish whether the pinned no-EVEX/non-RMW case is reachable and matches the managed port; retain it for owner review only if resolution needs an intentional difference.",
     "activeBatch": {
-      "scope": "B175 Debug sort postcondition parity with the pinned native implementation.",
-      "doneWhen": "The managed diagnostic checks the same adjacent pair as native, B175 is removed, and the evidence is committed locally.",
-      "validation": "Inspect the managed Debug-only postcondition; no runtime behavior changes are needed if it matches native.",
-      "deferred": "Do not strengthen only the managed diagnostic or change sort behavior."
+      "scope": "B183 LSRA second-operand contained-indirection candidate narrowing in the non-RMW/no-EVEX case.",
+      "doneWhen": "Reachability and managed behavior are established against the pinned native path; resolve or explicitly retain only an actual upstream question, then commit the outcome.",
+      "validation": "Inspect candidate filtering and operand-use construction; run the smallest target-appropriate LSRA tests if the behavior path is exercised or changed.",
+      "deferred": "Do not alter candidate masks or operand construction without a reproducible native behavior mismatch."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
