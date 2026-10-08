@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B409: trace the nested struct-comma block-sinking shape in importer.cpp::impNormStructVal against the managed implementation and native invariants, then establish reachability before proposing an upstream fix or port deviation.",
+    "nextAction": "Resolve B446: verify whether the disabled CALL_ARG_STATS collector is compiled or otherwise supported, then determine whether its stale call-argument access and missing totals affect any supported workflow.",
     "activeBatch": {
-      "scope": "B409 potential chained struct-comma ownership defect.",
-      "doneWhen": "Establish whether the nested comma/block shape is reachable under native invariants and whether managed behavior differs.",
-      "validation": "Trace pinned importer normalization, compare the managed implementation and existing tests, and add a focused regression only if a valid reachable case establishes a defect.",
-      "deferred": "Do not change upstream behavior or introduce a port deviation without reachability and parity evidence."
+      "scope": "B446 optional CALL_ARG_STATS collector usability.",
+      "doneWhen": "Establish whether the collector is a supported build workflow and whether its stale API reference or unrecorded totals require a port change.",
+      "validation": "Trace the pinned collector, build-condition definitions, and managed equivalents; close stale findings or move unsupported upstream behavior to owner review.",
+      "deferred": "Do not invent call-argument accounting or claim this optional mode is usable without supported-build evidence."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
