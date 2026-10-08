@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B266 loop-inversion diagnostic: trace the zero-weight in-loop successor check against the block number passed to the diagnostic, then confirm whether the managed port prints the same incorrect preheader identifier.",
+    "nextAction": "Resolve B282 lowering fixture failures: inspect the failing test accessors and current Lowering replacement API, then reconcile the tests with the production helper while retaining the ownership assertions.",
     "activeBatch": {
-      "scope": "B266 optimizer loop-inversion diagnostic.",
-      "doneWhen": "Establish whether the zero-weight successor branch formats the preheader instead of the successor and whether managed behavior matches the pinned diagnostic.",
-      "validation": "Compare pinned optimizer.cpp and managed loop-inversion diagnostic paths with any existing focused capture; keep diagnostic-only findings separate from loop transformation behavior.",
-      "deferred": "Do not alter loop inversion or diagnostic control flow solely from the apparent block-number mismatch."
+      "scope": "B282 lowering fixture accessor failures.",
+      "doneWhen": "Determine whether the tests reference an obsolete helper name or whether the production replacement contract regressed; keep assertions on single lowered stores and temporary ownership.",
+      "validation": "Run the two named focused tests in Debug after reconciling their accessor with the current helper. Do not change production lowering merely to restore an obsolete test entrypoint.",
+      "deferred": "Do not relax the ownership assertions or broaden production behavior to satisfy stale fixture reflection."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
