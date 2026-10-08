@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "B493 is complete: LinearScanAllocationDiagnosticsTests now derives expected integer-register columns from the target allocation mask, and all seven tests pass for the Linux x64 target. Next, audit B510 callers of CompMemKind, JitMemKindTraits, and Globals.op_New/op_Delete; remove compatibility-only helpers and tests only if production code has no managed consumers, retaining HostAllocator and JitMemStatsInfo.",
+    "nextAction": "B510 is complete: repository search confirmed CompMemKind, JitMemKindTraits, and Globals.op_New/op_Delete had no managed production callers; removed the compatibility-only helpers and their tests while preserving HostAllocator and JitMemStatsInfo. Full Core Debug passed 17,394/17,394 and Release passed 15,633/15,633. Next take B145: trace production SIMD bit conversions and test expectations against pinned native semantics, add focused regressions, and remove the entry when the conversion behavior is covered.",
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
       "finding": "Selected runtime-async adapters retain matching transformed-body instructions but use different EE-assigned TLS indices and offsets; the earlier slot allocations causing the managed shift are unidentified.",
