@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B502: rerun the Linux-target call/kill tests after the SIMD return descriptor initialization and separate Windows ABI expectations from SysV behavior.",
+    "nextAction": "Investigate B503: verify whether upstream corrected dFindTreeInTree recursion after the pinned revision; preserve pinned behavior and move any managed-only correction to owner review.",
     "activeBatch": {
-      "scope": "B502 Linux-target LSRA call/kill fixture ABI assumptions and return descriptor setup.",
-      "doneWhen": "Run the listed Linux-target Debug cases and correct only fixture expectations or initialization defects, without changing production ABI behavior.",
-      "validation": "Run the focused LSRA tests on Linux x64 in Debug and Release, then confirm the corresponding Windows cases still pass.",
-      "deferred": "Do not weaken native assertions or convert Windows-specific masks into production behavior."
+      "scope": "B503 debugger tree lookup parity with the pinned native source and current upstream.",
+      "doneWhen": "Establish whether the recursion defect was corrected upstream; keep the pinned translation unchanged unless an owner-approved deviation is needed.",
+      "validation": "Compare the pinned source evidence with current upstream and test any matching managed behavior without changing pinned semantics.",
+      "deferred": "Do not silently correct the managed behavior or create an upstream issue."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",

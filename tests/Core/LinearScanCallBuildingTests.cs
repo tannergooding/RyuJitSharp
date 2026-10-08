@@ -103,6 +103,11 @@ internal static unsafe class LinearScanCallBuildingTests
     {
         WithAllocator((compiler, allocator) => {
             var call = compiler.gtNewCallNode(type, CT_USER_FUNC, null);
+#if FEATURE_MULTIREG_RET
+            // The synthetic SIMD struct return uses one floating-point return register.
+            var descriptorType = varTypeIsStruct(type) ? TYP_DOUBLE : type;
+            call._returnTypeDesc.InitializeReturnType(compiler, descriptorType, null, compiler.info.compCallConv);
+#endif
             ReferenceBuildLocation(allocator) = 4;
 
             Assert.That(BuildCall(allocator, call), Is.Zero);
@@ -268,6 +273,7 @@ internal static unsafe class LinearScanCallBuildingTests
         });
     }
 
+#if TARGET_AMD64 && !UNIX_AMD64_ABI
     [TestCase(REG_XMM0, SRBM_RCX)]
     [TestCase(REG_XMM1, SRBM_RDX)]
     [TestCase(REG_XMM2, SRBM_R8)]
@@ -304,6 +310,7 @@ internal static unsafe class LinearScanCallBuildingTests
                 Is.EqualTo(AvailableIntRegs(allocator) & ~SRBM_ARG_REGS));
         });
     }
+#endif
 
     [TestCase(false)]
     [TestCase(true)]

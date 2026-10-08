@@ -259,6 +259,7 @@ internal static unsafe class LinearScanDefinitionConstructionTests
     }
 
 #if TARGET_AMD64
+#if !UNIX_AMD64_ABI
     [Test]
     public static void HelperCallKillSetsMatchWindowsAmd64Masks()
     {
@@ -279,6 +280,7 @@ internal static unsafe class LinearScanDefinitionConstructionTests
                 Is.EqualTo(RemoveRegisterSets(calleeTrash, SRBM_INTRET, SRBM_FLOATRET, SRBM_NONE)));
         });
     }
+#endif
 
     [Test]
     public static void IndirectStoreKillSetUsesWriteBarrierClassification()
