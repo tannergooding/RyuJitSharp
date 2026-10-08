@@ -12,8 +12,12 @@ namespace RyuJitSharp;
 
 public partial class Globals
 {
-#if COUNT_AST_OPERS
+#if COUNT_AST_OPERS || MEASURE_NODE_SIZE
     internal static nuint TREE_NODE_SZ_SMALL => throw new FatalJitException(CORJIT_SKIPPED, "Native sizeof(GenTreeLclFld) is not ported.");
+#endif
+
+#if MEASURE_NODE_SIZE
+    internal static nuint TREE_NODE_SZ_LARGE => throw new FatalJitException(CORJIT_SKIPPED, "Native sizeof(GenTreeCall) is not ported.");
 #endif
 
 #if MEASURE_NODE_SIZE

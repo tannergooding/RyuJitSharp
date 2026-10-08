@@ -66,6 +66,11 @@ public static partial class Globals
     }
 
 #if DEBUG
+    public static void pBit(indexType index)
+    {
+        jitprintf($"{unchecked((int)index)} ");
+    }
+
     public static void SimpleDumpNode(hashBvNode node)
     {
         jitprintf($"base: {node.baseIndex}\n");

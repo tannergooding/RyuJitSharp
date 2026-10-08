@@ -20,6 +20,16 @@ public partial struct Disassembler
     private bool _diffable;
     private StreamWriter? _disAsmFile;
 
+    private nuint dspAddr(nuint addr)
+    {
+        return (addr == 0) ? 0 : (_diffable ? (nuint)0xD1FFAB1E : addr);
+    }
+
+    private unsafe void* dspAddr(void* addr)
+    {
+        return (addr == null) ? null : (_diffable ? (void*)(nuint)0xD1FFAB1E : addr);
+    }
+
     public void disInit(Compiler compiler)
     {
         assert(compiler is not null);

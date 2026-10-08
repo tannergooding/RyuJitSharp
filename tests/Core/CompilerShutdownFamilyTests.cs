@@ -108,7 +108,9 @@ internal static class CompilerShutdownFamilyTests
             BasicBlock.s_Size = -1;
             Compiler.genMethodCnt = 3;
 #endif
-#if EMITTER_STATS && (TARGET_XARCH || TARGET_ARM64) && !NODEBASH_STATS && !COUNT_AST_OPERS && !CALL_ARG_STATS && !MEASURE_NODE_SIZE && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE
+#if NODEBASH_STATS && !COUNT_AST_OPERS && !CALL_ARG_STATS && !MEASURE_NODE_SIZE && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
+            Compiler.compShutdown();
+#elif EMITTER_STATS && (TARGET_XARCH || TARGET_ARM64) && !NODEBASH_STATS && !COUNT_AST_OPERS && !CALL_ARG_STATS && !MEASURE_NODE_SIZE && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE
             Compiler.compShutdown();
 #elif CALL_ARG_STATS && !NODEBASH_STATS && !COUNT_AST_OPERS && !MEASURE_NODE_SIZE && !MEASURE_BLOCK_SIZE && !MEASURE_PTRTAB_SIZE && !EMITTER_STATS
             Compiler.argTotalCalls = 0;
@@ -121,13 +123,14 @@ internal static class CompilerShutdownFamilyTests
             var text = Encoding.UTF8.GetString(output.ToArray());
 
 #if NODEBASH_STATS
-            Assert.That(exception?.Message, Is.EqualTo("GenTree::ReportOperBashing is not ported."));
-            Assert.That(CsvFile(null), Is.SameAs(csv));
+            Assert.That(text, Does.Contain("Bashed gtOper stats:\n"));
+            Assert.That(text, Does.Contain("Total bashings: 0\n"));
             Assert.That(csvOutput.CanWrite, Is.True);
-            Assert.That(text, Is.Empty);
-#else
+#endif
 #if FEATURE_JIT_METHOD_PERF
+#if !NODEBASH_STATS
             Assert.That(CsvFile(null), Is.Null);
+#endif
 #endif
 #if COUNT_AST_OPERS
             Assert.That(exception?.Message, Is.EqualTo("GenTree::s_gtNodeCounts storage is not ported."));
@@ -162,7 +165,6 @@ internal static class CompilerShutdownFamilyTests
             Assert.That(text, Does.EndWith(" bytes allocated in the emitter\n"));
 #else
             Assert.That(exception?.Message, Is.EqualTo("emitterStats outside xarch and arm64 is not ported."));
-#endif
 #endif
 #endif
             Assert.That(text, Does.Not.Contain("Fatal errors stats"));
@@ -255,6 +257,60 @@ internal static class CompilerShutdownFamilyTests
     {
         using var output = new MemoryStream();
         using var writer = new StreamWriter(output, new UTF8Encoding(false), leaveOpen: true);
+
+#if NODEBASH_STATS
+        if (dependency == "OperBashing")
+        {
+            AccessDependency(dependency, writer);
+            writer.Flush();
+
+            var text = Encoding.UTF8.GetString(output.ToArray());
+            Assert.That(text, Is.EqualTo(
+                "\nBashed gtOper stats:\n" +
+                "\n" +
+                "    Old operator        New operator     #bytes old->new      Count\n" +
+                "    ---------------------------------------------------------------\n" +
+                "\n" +
+                "Total bashings: 0\n" +
+                "\n"));
+            return;
+        }
+#endif
+
+#if MEASURE_NODE_SIZE
+        if (dependency == "NodeStatisticsInit")
+        {
+            NodeSizeStats statistics = default;
+            statistics.Init();
+
+            Assert.That(statistics.genTreeNodeCnt, Is.Zero);
+            Assert.That(statistics.genTreeNodeSize, Is.Zero);
+            Assert.That(statistics.genTreeNodeActualSize, Is.Zero);
+            return;
+        }
+
+        if (dependency == "NodeSizeDump")
+        {
+            var previousWriter = s_jitstdout;
+            s_jitstdout = writer;
+
+            try
+            {
+                var nodeSizeException = Assert.Throws<FatalJitException>(() => AccessDependency(dependency, writer));
+                Assert.That(nodeSizeException?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+                Assert.That(nodeSizeException?.Message, Is.EqualTo(
+                    "Native sizeof(GenTreeLclFld) is not ported."));
+                writer.Flush();
+                Assert.That(output.Length, Is.Zero);
+            }
+            finally
+            {
+                s_jitstdout = previousWriter;
+            }
+
+            return;
+        }
+#endif
 
 #if CALL_ARG_STATS
         if (dependency == "CallArguments")

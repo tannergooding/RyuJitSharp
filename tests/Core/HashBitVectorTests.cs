@@ -157,6 +157,28 @@ internal static class HashBitVectorTests
 #if DEBUG
     [Test]
     [NonParallelizable]
+    public static void BitDumpPrintsTheNativeIntegerFormat()
+    {
+        var previousWriter = Globals.s_jitstdout;
+        using var stream = new MemoryStream();
+        using var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true);
+
+        try
+        {
+            Globals.s_jitstdout = writer;
+            Globals.pBit(42);
+            writer.Flush();
+
+            Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo("42 "));
+        }
+        finally
+        {
+            Globals.s_jitstdout = previousWriter;
+        }
+    }
+
+    [Test]
+    [NonParallelizable]
     public static void FancyDumpPrintsInclusiveRanges()
     {
         var vector = new hashBv();
