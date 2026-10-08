@@ -131,9 +131,11 @@ internal static unsafe class CodeGenHelperCallTests
             compiler.opts.compDbgInfo = true;
             compiler.opts.compScopeInfo = true;
             var call = new GenTreeCall(type) { _returnType = type };
+#if FEATURE_MULTIREG_RET
             // The synthetic SIMD struct return is represented by one floating-point return register.
             var descriptorType = varTypeIsStruct(type) ? TYP_DOUBLE : type;
             call._returnTypeDesc.InitializeReturnType(compiler, descriptorType, null, CorInfoCallConvExtension.Managed);
+#endif
             var root = (InlineContext)RuntimeHelpers.GetUninitializedObject(typeof(InlineContext));
             var inline = (InlineContext)RuntimeHelpers.GetUninitializedObject(typeof(InlineContext));
             inline._parent = root;
