@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if LATE_DISASM
+using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.CorJitResult;
 
@@ -35,9 +36,27 @@ internal static unsafe class LateDisassemblyTests
         });
     }
 
-    [TestCase(false)]
-    [TestCase(true)]
-    public static void RequestedLateDisassemblyFailsClosedWithoutDecoding(bool open)
+    [Test]
+    public static void LateDisassemblerOpenRecordsMethodAndClassOnlyWhenEnabled()
+    {
+        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var disassembler = codeGen.Disassembler;
+            disassembler.disInit(compiler);
+            compiler.opts.doLateDisasm = true;
+            disassembler.disOpenForLateDisAsm("Method", "Class", default);
+            Assert.That(CurrentMethodName(ref disassembler), Is.EqualTo("Method"));
+            Assert.That(CurrentClassName(ref disassembler), Is.EqualTo("Class"));
+
+            compiler.opts.doLateDisasm = false;
+            disassembler.disOpenForLateDisAsm("DisabledMethod", "DisabledClass", default);
+            Assert.That(CurrentMethodName(ref disassembler), Is.EqualTo("Method"));
+            Assert.That(CurrentClassName(ref disassembler), Is.EqualTo("Class"));
+        });
+    }
+
+    [Test]
+    public static void RequestedLateDisassemblyFailsClosedWithoutDecoding()
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
@@ -48,14 +67,7 @@ internal static unsafe class LateDisassemblyTests
 
             void Request()
             {
-                if (open)
-                {
-                    codeGen.Disassembler.disOpenForLateDisAsm("Method", "Class", default);
-                }
-                else
-                {
-                    codeGen.Disassembler.disAsmCode(hot, hotRW, 1, null, null, 0);
-                }
+                codeGen.Disassembler.disAsmCode(hot, hotRW, 1, null, null, 0);
             }
 
             var exception = Assert.Throws<FatalJitException>(Request);
@@ -66,5 +78,11 @@ internal static unsafe class LateDisassemblyTests
             codeGen.Disassembler.disDone();
         });
     }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_curMethodName")]
+    private static extern ref string? CurrentMethodName(ref Disassembler disassembler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_curClassName")]
+    private static extern ref string? CurrentClassName(ref Disassembler disassembler);
 }
 #endif

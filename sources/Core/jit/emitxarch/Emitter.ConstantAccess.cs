@@ -19,12 +19,6 @@ public partial class Emitter
     private const int AM_DISP_MIN = -((1 << (AM_DISP_BITS - 1)) - 1);
     private const int AM_DISP_MAX = (1 << (AM_DISP_BITS - 1)) - 1;
 
-    public struct CnsVal
-    {
-        public nint cnsVal;
-        public bool cnsReloc;
-    }
-
     private instrDesc emitNewInstrAmd(emitAttr size, nint dsp)
     {
         if ((dsp < AM_DISP_MIN) || (dsp > AM_DISP_MAX))

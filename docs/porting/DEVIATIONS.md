@@ -2214,19 +2214,21 @@ is not used as a success-shaped approximation (B241).
 
 ### D010: Deferred bitset operation-count tracking
 
-**Status:** explicit NYI boundary for disabled instrumentation; not an accepted
-output exception.
+**Status:** explicit NYI boundary for disabled `BITSET_TRACK_OPCOUNTS`;
+not an accepted output exception.
 
 Native `BitSetOps::Iter::NextElem` contains a `BITSET_TRACK_OPCOUNTS` branch that
 calls `BitSetStaticsImpl::RecordOp`. The pinned oracle has only that call site:
 no definition or declaration of `BitSetStaticsImpl` and no definition of
 `BITSET_TRACK_OPCOUNTS` were found. Managed `Iter.NextElem` preserves the branch
 and throws `NotImplementedException` if the symbol is explicitly enabled. The
-pinned Windows-x64 configuration does not enable it, so ordinary iteration is
-unaffected. `BitSetOpsWithCounter` remains untranslated and `VARSET_COUNTOPS` is
-zero. Implement exact tracking before enabling either instrumentation path.
-Full-analysis Windows-x64 `BitSetSupportTests` pass 2/2 in Debug and Release;
-these are helper tests, not runtime or generated-code parity.
+`BitSetOpsWithCounter` wrapper, counter traits, and conditional
+`VARSET_COUNTOPS`/`ALLVARSET_COUNTOPS` aliases are now represented and tested.
+The pinned native source defines `VARSET_COUNTOPS` as zero and does not define
+`ALLVARSET_COUNTOPS`; neither wrapper path is enabled by default. The pinned
+Windows-x64 configuration also does not enable `BITSET_TRACK_OPCOUNTS`, so
+ordinary iteration is unaffected. Implement the exact
+`BitSetStaticsImpl::RecordOp` behavior before enabling that separate hook.
 
 ### D011: LSRA reference-row duplicate state
 

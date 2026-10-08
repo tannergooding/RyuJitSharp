@@ -7,11 +7,19 @@ namespace RyuJitSharp;
 
 /// <summary>Customizes the bit set to represent sets of tracked local vars.</summary>
 /// <remarks>The size of the bitset is determined by the # of tracked locals (up to some internal maximum), and the Compiler* tracks the tracked local epochs</remarks>
+#if VARSET_COUNTOPS
+public struct TrackedVarBitSetTraits : IBitSetTraits<Compiler>, IBitSetOpCounterTraits<Compiler>
+#else
 public struct TrackedVarBitSetTraits : IBitSetTraits<Compiler>
+#endif
 {
     public static int GetArrSize(Compiler env) => env.lvaTrackedCountInSizeTUnits;
 
     public static int GetEpoch(Compiler env) => env.CurLVEpoch;
 
     public static int GetSize(Compiler env) => env.lvaTrackedCount;
+
+#if VARSET_COUNTOPS
+    public static BitSetSupport.BitSetOpCounter GetOpCounter(Compiler env) => Compiler._varsetOpCounter;
+#endif
 }

@@ -25,6 +25,11 @@ public partial class Emitter
                ((CodeGen.instInfo[(int)ins] & (LOONGARCH64_LD | LOONGARCH64_ST)) != 0);
     }
 
+    public void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insFlags flags)
+    {
+        emitIns_R_R(ins, attr, reg1, reg2);
+    }
+
     public bool emitInsMayWriteToGCReg(instruction ins)
     {
         assert(ins != INS_invalid);

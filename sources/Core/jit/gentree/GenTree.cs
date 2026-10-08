@@ -2459,7 +2459,28 @@ public partial class GenTree
     public bool IsHWIntrinsic(NamedIntrinsic intrinsicId) => false;
 #endif
 
-    public GenTree? GetOp2IfPresent() => _oper.IsBinary ? AsOp().Op2 : null;
+    public GenTree? GetOp2IfPresent()
+    {
+        var op2 = _oper.IsBinary ? AsOp().Op2 : null;
+#if DEBUG
+        assert((op2 is not null) || !RequiresNonNullOp2(_oper));
+#endif
+        return op2;
+    }
+
+#if DEBUG
+    private static bool RequiresNonNullOp2(genTreeOps oper)
+    {
+        return oper switch
+        {
+            GT_ADD or GT_SUB or GT_MUL or GT_DIV or GT_MOD or GT_UDIV or GT_UMOD or
+            GT_OR or GT_XOR or GT_AND or GT_LSH or GT_RSH or GT_RSZ or GT_ROL or GT_ROR or
+            GT_EQ or GT_NE or GT_LT or GT_LE or GT_GE or GT_GT or GT_COMMA or GT_QMARK or
+            GT_COLON or GT_INDEX_ADDR => true,
+            _ => false,
+        };
+    }
+#endif
 
     public int IsLclVarUpdateTree(ref GenTree? otherTree, ref genTreeOps updateOper)
     {

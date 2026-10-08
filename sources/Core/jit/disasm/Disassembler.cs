@@ -19,13 +19,15 @@ public partial struct Disassembler
     private Dictionary<nuint, nuint>? _relocationMap;
     private bool _diffable;
     private StreamWriter? _disAsmFile;
+    private string? _curMethodName;
+    private string? _curClassName;
 
-    private nuint dspAddr(nuint addr)
+    private readonly nuint dspAddr(nuint addr)
     {
         return (addr == 0) ? 0 : (_diffable ? (nuint)0xD1FFAB1E : addr);
     }
 
-    private unsafe void* dspAddr(void* addr)
+    private readonly unsafe void* dspAddr(void* addr)
     {
         return (addr == null) ? null : (_diffable ? (void*)(nuint)0xD1FFAB1E : addr);
     }
@@ -47,13 +49,16 @@ public partial struct Disassembler
     {
     }
 
-    public readonly unsafe void disOpenForLateDisAsm(string curMethodName, string curClassName, PCCOR_SIGNATURE sig)
+    public unsafe void disOpenForLateDisAsm(string curMethodName, string curClassName, PCCOR_SIGNATURE sig)
     {
         var compiler = _compiler ?? throw new FatalJitException("Disassembler has not been initialized.");
-        if (compiler.opts.doLateDisasm)
+        if (!compiler.opts.doLateDisasm)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "Late disassembly requires the native CoreDisTools callback ABI.");
+            return;
         }
+
+        _curMethodName = curMethodName;
+        _curClassName = curClassName;
     }
 
     public readonly unsafe void disAsmCode(byte* hotCodePtr, byte* hotCodePtrRW, uint hotCodeSize,

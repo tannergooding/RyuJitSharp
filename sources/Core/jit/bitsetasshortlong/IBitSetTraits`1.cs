@@ -14,3 +14,9 @@ public interface IBitSetTraits<TEnv>
 
     static abstract int GetSize(TEnv env);
 }
+
+public interface IBitSetOpCounterTraits<TEnv>
+    where TEnv : class
+{
+    static abstract BitSetSupport.BitSetOpCounter GetOpCounter(TEnv env);
+}

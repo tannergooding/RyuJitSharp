@@ -5,8 +5,16 @@
 
 global using VARSET_TP = nint[];
 
+#if VARSET_COUNTOPS
+global using VarSetOps = RyuJitSharp.BitSetOpsWithCounter<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
+#else
 global using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
+#endif
 
 global using ALLVARSET_TP = nint[];
 
+#if ALLVARSET_COUNTOPS
+global using AllVarSetOps = RyuJitSharp.BitSetOpsWithCounter<RyuJitSharp.Compiler, RyuJitSharp.AllVarBitSetTraits>;
+#else
 global using AllVarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.AllVarBitSetTraits>;
+#endif

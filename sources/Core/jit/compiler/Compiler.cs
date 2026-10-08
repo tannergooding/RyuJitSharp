@@ -340,11 +340,11 @@ public partial class Compiler
     public unsafe CORINFO_CLASS_HANDLE _refAnyClass;
 
 #if VARSET_COUNTOPS
-    public static BitSetSupport.BitSetOpCounter _varsetOpCounter;
+    public static BitSetSupport.BitSetOpCounter _varsetOpCounter = new("VarSetOpCounts.log");
 #endif
 
 #if ALLVARSET_COUNTOPS
-    public static BitSetSupport.BitSetOpCounter _allvarsetOpCounter;
+    public static BitSetSupport.BitSetOpCounter _allvarsetOpCounter = new("AllVarSetOpCounts.log");
 #endif
 
 #if TARGET_RISCV64 || TARGET_LOONGARCH64
