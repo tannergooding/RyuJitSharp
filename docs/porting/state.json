@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B392: compare BasicBlock dictionary hashing and iteration under JitSsaStress against the pinned native key behavior, and determine whether the difference reaches observable output; do not alter managed hashing based on hash values alone.",
+    "nextAction": "Resolve B394: compare the pinned VN self-test's expected ADD argument order with VNForFunc canonicalization and managed tests; establish whether the mismatch is test-only without changing canonicalization.",
     "activeBatch": {
-      "scope": "B392 basic-block map hash stress and iteration parity.",
-      "doneWhen": "Establish which managed maps use BasicBlock hashing and whether JitSsaStress changes their iteration/output behavior compared to native; preserve stable ID and ordering contracts.",
-      "validation": "Trace JitPtrKeyFuncs<BasicBlock>, managed BasicBlock.GetHashCode(), map consumers, and existing SSA stress tests; compare targeted hash iteration or phase-output evidence when available.",
-      "deferred": "Do not change general comparers, inject hash stress into all maps, or infer output differences solely from differing hashes."
+      "scope": "B394 VN component test argument-order mismatch.",
+      "doneWhen": "Determine whether the obsolete native self-test expectation is isolated from compiler behavior and managed regression coverage; preserve current canonicalization.",
+      "validation": "Compare pinned ValueNumStore.RunTests and VNForFunc with managed constant canonicalization and focused VN tests.",
+      "deferred": "Do not change VN canonical argument order or adopt the obsolete expected order without an upstream correction."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
