@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Investigate B507: trace the ARM64 unknown-size frame fallback and MSUB operand constraints; determine whether the assertion conflict is reachable and whether it is a native defect.",
+    "nextAction": "Investigate B509: determine whether the LoongArch fast-tail-call candidate masking can include GS-cookie temps on a reachable call path.",
     "activeBatch": {
-      "scope": "B507 ARM64 large-frame fallback and emitter operand validation.",
-      "doneWhen": "Establish whether unknown frame size can reach the fallback and confirm native/managed emitter contracts for SP operands.",
-      "validation": "Inspect the prolog fallback, MSUB recorder assertions, and existing frame-boundary tests before deciding whether this is actionable port work.",
-      "deferred": "Do not change the emitted stack-pointer update sequence without a valid target-correct correction."
+      "scope": "B509 LoongArch fast-tail-call temporary candidates and GS-cookie interaction.",
+      "doneWhen": "Establish whether a production path reaches the relative-indirection fast-tail-call candidate computation with a GS cookie.",
+      "validation": "Trace the pinned and managed paths and inspect reachable call setup before deciding whether a coordinated fix or owner review is needed.",
+      "deferred": "Do not alter the candidate mask or tail-call behavior without a reproducible call path."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
