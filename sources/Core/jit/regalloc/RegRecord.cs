@@ -10,7 +10,7 @@ namespace RyuJitSharp;
 #if DEBUG
 [DebuggerDisplay("[reg={regNum}, type={registerType}]")]
 #endif
-public sealed class RegRecord : Referenceable
+public sealed partial class RegRecord : Referenceable
 {
     public RegRecord()
         : base(TYP_INT)

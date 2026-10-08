@@ -14,11 +14,14 @@ namespace RyuJitSharp;
 // Managed arrays provide the compiler-lifetime storage formerly supplied by CompAllocator.
 #if DEBUG
 [DebuggerDisplay("{DebuggerDisplayText,nq}")]
+[DebuggerTypeProxy(typeof(JitExpandArrayDebuggerProxy<>))]
 #endif
 internal class JitExpandArray<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>
 {
 #if DEBUG
     private string DebuggerDisplayText => m_size is 0 ? "Empty" : $"size={m_size}";
+
+    internal uint DebuggerSize => m_size;
 #endif
 
     // Native value-initialization invokes explicit value-type constructors; Array.Clear does not.
@@ -133,6 +136,7 @@ internal class JitExpandArray<[DynamicallyAccessedMembers(DynamicallyAccessedMem
 
 #if DEBUG
 [DebuggerDisplay("{DebuggerStackDisplayText,nq}")]
+[DebuggerTypeProxy(typeof(JitExpandArrayStackDebuggerProxy<>))]
 #endif
 internal class JitExpandArrayStack<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> : JitExpandArray<T>
 {
@@ -140,6 +144,8 @@ internal class JitExpandArrayStack<[DynamicallyAccessedMembers(DynamicallyAccess
 
 #if DEBUG
     private string DebuggerStackDisplayText => m_size is 0 ? "Empty" : $"size={m_size} used={_used}";
+
+    internal uint DebuggerUsed => _used;
 #endif
 
     internal JitExpandArrayStack(uint minSize = 1)
@@ -221,3 +227,55 @@ internal class JitExpandArrayStack<[DynamicallyAccessedMembers(DynamicallyAccess
 
     internal uint Size() => _used;
 }
+
+#if DEBUG
+internal sealed class JitExpandArrayDebuggerProxy<T>
+{
+    private readonly JitExpandArray<T> _array;
+
+    public JitExpandArrayDebuggerProxy(JitExpandArray<T> array)
+    {
+        _array = array;
+    }
+
+    [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+    public T[] Items
+    {
+        get
+        {
+            var items = new T[checked((int)_array.DebuggerSize)];
+            for (var index = 0; index < items.Length; index++)
+            {
+                items[index] = _array.Get((uint)index);
+            }
+
+            return items;
+        }
+    }
+}
+
+internal sealed class JitExpandArrayStackDebuggerProxy<T>
+{
+    private readonly JitExpandArrayStack<T> _array;
+
+    public JitExpandArrayStackDebuggerProxy(JitExpandArrayStack<T> array)
+    {
+        _array = array;
+    }
+
+    [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+    public T[] Items
+    {
+        get
+        {
+            var items = new T[checked((int)_array.DebuggerUsed)];
+            for (var index = 0; index < items.Length; index++)
+            {
+                items[index] = _array.GetNoExpand((uint)index);
+            }
+
+            return items;
+        }
+    }
+}
+#endif

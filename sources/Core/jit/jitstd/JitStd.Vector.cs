@@ -14,6 +14,7 @@ namespace RyuJitSharp;
 
 #if DEBUG
 [DebuggerDisplay("{DebuggerDisplayText,nq}")]
+[DebuggerTypeProxy(typeof(JitStdVectorDebuggerProxy<>))]
 #endif
 internal sealed class JitStdVector<T> : IDisposable, IEnumerable<T>
 {
@@ -881,3 +882,30 @@ internal sealed class JitStdVector<T> : IDisposable, IEnumerable<T>
         _allocator.scope.throwIfDisposed();
     }
 }
+
+#if DEBUG
+internal sealed class JitStdVectorDebuggerProxy<T>
+{
+    private readonly JitStdVector<T> _vector;
+
+    public JitStdVectorDebuggerProxy(JitStdVector<T> vector)
+    {
+        _vector = vector;
+    }
+
+    [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+    public T[] Items
+    {
+        get
+        {
+            var items = new List<T>(checked((int)_vector.size()));
+            foreach (var item in _vector)
+            {
+                items.Add(item);
+            }
+
+            return [.. items];
+        }
+    }
+}
+#endif

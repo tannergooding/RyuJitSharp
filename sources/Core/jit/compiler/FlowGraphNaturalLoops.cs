@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
-public sealed class FlowGraphNaturalLoops
+public sealed partial class FlowGraphNaturalLoops
 {
     private readonly FlowGraphDfsTree _dfsTree;
     private readonly List<FlowGraphNaturalLoop> _loops = [];

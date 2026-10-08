@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace RyuJitSharp;
 
-public sealed class Statement
+public sealed partial class Statement
 {
     // The root of the expression tree.
     // Note: It will be the last node in evaluation order.

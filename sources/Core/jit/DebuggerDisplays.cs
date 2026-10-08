@@ -3,12 +3,15 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 #if DEBUG
 using System.Globalization;
 #endif
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
 
@@ -17,6 +20,36 @@ namespace RyuJitSharp;
 public partial class Compiler
 {
     private string DebuggerMethodHash => unchecked((uint)info.compMethodHash()).ToString("x8", CultureInfo.InvariantCulture);
+}
+
+[DebuggerTypeProxy(typeof(StatementDebuggerProxy))]
+public sealed partial class Statement
+{
+}
+
+internal sealed class StatementDebuggerProxy
+{
+    private readonly Statement _statement;
+
+    public StatementDebuggerProxy(Statement statement)
+    {
+        _statement = statement;
+    }
+
+    [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+    public GenTree[] Trees
+    {
+        get
+        {
+            var trees = new List<GenTree>();
+            foreach (var tree in _statement.TreeList)
+            {
+                trees.Add(tree);
+            }
+
+            return [.. trees];
+        }
+    }
 }
 #endif
 
@@ -51,6 +84,84 @@ public sealed partial class FlowEdge
         }
     }
 }
+
+[DebuggerDisplay("{DebuggerDisplayText,nq}")]
+[DebuggerTypeProxy(typeof(FlowGraphNaturalLoopDebuggerProxy))]
+public sealed partial class FlowGraphNaturalLoop
+{
+    private string DebuggerDisplayText
+    {
+        get
+        {
+            var top = GetLexicallyTopMostBlock();
+            var bottom = GetLexicallyBottomMostBlock();
+            var preheader = GetPreheader();
+            var range = $"[BB{top.bbNum}..BB{bottom.bbNum}]";
+            var header = $"h:BB{Header.bbNum}";
+            var preheaderText = preheader is null ? "" : $" pre-h:BB{preheader.bbNum}";
+
+            return $"{range}{preheaderText} {header} entries={EntryEdges.Length}";
+        }
+    }
+}
+
+[DebuggerTypeProxy(typeof(FlowGraphNaturalLoopsDebuggerProxy))]
+public sealed partial class FlowGraphNaturalLoops
+{
+}
+
+internal sealed class FlowGraphNaturalLoopDebuggerProxy
+{
+    private readonly FlowGraphNaturalLoop _loop;
+
+    public FlowGraphNaturalLoopDebuggerProxy(FlowGraphNaturalLoop loop)
+    {
+        _loop = loop;
+    }
+
+    public BasicBlock Header => _loop.Header;
+
+    public FlowGraphNaturalLoop? Parent => _loop.Parent;
+
+    public FlowGraphNaturalLoop? Child => _loop.Child;
+
+    public FlowGraphNaturalLoop? Sibling => _loop.Sibling;
+
+    public FlowEdge[] BackEdges => [.. _loop.BackEdges];
+
+    public FlowEdge[] EntryEdges => [.. _loop.EntryEdges];
+
+    public FlowEdge[] ExitEdges => [.. _loop.ExitEdges];
+
+    [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+    public BasicBlock[] Blocks
+    {
+        get
+        {
+            var blocks = new BasicBlock[_loop.NumLoopBlocks()];
+            var index = 0;
+            _ = _loop.VisitLoopBlocks(block =>
+            {
+                blocks[index++] = block;
+                return BasicBlockVisit.Continue;
+            });
+            return blocks;
+        }
+    }
+}
+
+internal sealed class FlowGraphNaturalLoopsDebuggerProxy
+{
+    private readonly FlowGraphNaturalLoops _loops;
+
+    public FlowGraphNaturalLoopsDebuggerProxy(FlowGraphNaturalLoops loops)
+    {
+        _loops = loops;
+    }
+
+    [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+    public FlowGraphNaturalLoop[] Loops => [.. _loops.InReversePostOrder()];
+}
 #endif
 
 [DebuggerDisplay("{DebuggerDisplayText,nq}")]
@@ -73,10 +184,12 @@ public partial class GenTree
                 return $"CNS_STR, {valueNumbers}";
             }
 
+#if FEATURE_SIMD
             if (Oper is GT_CNS_VEC)
             {
                 return $"CNS_VEC, {valueNumbers}";
             }
+#endif
 
             if (this is GenTreeIntConCommon integerConstant)
             {
@@ -108,10 +221,12 @@ public partial class GenTree
                 return $"{prefix}[{cast.CastType.Name} <- {cast.CastOp.Type.Name}], {valueNumbers}";
             }
 
+#if FEATURE_HW_INTRINSICS
             if (this is GenTreeHWIntrinsic intrinsic)
             {
                 return $"{prefix}[{intrinsic.HWIntrinsicId}, {Type.Name}], {valueNumbers}";
             }
+#endif
 
             return $"{prefix}[{Oper.Name}, {Type.Name}], {valueNumbers}";
         }
@@ -161,7 +276,270 @@ public sealed partial class Interval
 }
 
 [DebuggerDisplay("[#{rpNum} - {refType}]")]
+[DebuggerTypeProxy(typeof(RefPositionDebuggerProxy))]
 public sealed partial class RefPosition
+{
+}
+
+public partial class Emitter
+{
+    [DebuggerTypeProxy(typeof(DebuggerProxy))]
+    public abstract partial class instrDesc
+    {
+        [DebuggerDisplay("{Display,nq}")]
+        public sealed class DebuggerProxy
+        {
+            private readonly instrDesc _descriptor;
+
+            public DebuggerProxy(instrDesc descriptor)
+            {
+                _descriptor = descriptor;
+            }
+
+            private string Display
+            {
+                get
+                {
+#if TARGET_XARCH
+                    var instruction = _descriptor.idIns();
+                    var register = _descriptor.idReg1();
+                    var format = _descriptor.idInsFmt();
+
+                    if (format is IF_RRD or IF_RWR or IF_RRW)
+                    {
+                        return $"{instruction} {register}";
+                    }
+
+                    if (format is IF_RRD_CNS or IF_RWR_CNS or IF_RRW_CNS)
+                    {
+                        return $"{instruction} {register}, {GetConstant()}";
+                    }
+
+                    if (format is IF_RRW_SHF)
+                    {
+                        return $"{instruction} {register}, {GetConstant()}";
+                    }
+#endif
+                    return _descriptor.idIns().ToString();
+                }
+            }
+
+            private nint GetConstant()
+            {
+#if TARGET_ARM
+                return _descriptor.idIsLargeCns()
+                    ? ((instrDescCns)_descriptor).idcCnsVal
+                    : _descriptor.idSmallCns();
+#else
+                return emitGetInsSC(_descriptor);
+#endif
+            }
+        }
+    }
+}
+#endif
+
+#if DEBUG
+[DebuggerDisplay("LinearScan")]
+[DebuggerTypeProxy(typeof(LinearScan.DebuggerProxy))]
+public sealed partial class LinearScan
+{
+    internal sealed class DebuggerProxy
+    {
+        private readonly LinearScan _linearScan;
+
+        public DebuggerProxy(LinearScan linearScan)
+        {
+            _linearScan = linearScan;
+        }
+
+        public DebuggerVarMapBlock[] InVarToRegMaps => GetVarToRegMaps(_linearScan._inVarToRegMaps);
+
+        public DebuggerVarMapBlock[] OutVarToRegMaps => GetVarToRegMaps(_linearScan._outVarToRegMaps);
+
+        public DebuggerRegisterSet[] AvailableRegs
+        {
+            get
+            {
+                var sets = new DebuggerRegisterSet[(int)TYP_COUNT];
+                for (var index = 0; index < sets.Length; index++)
+                {
+                    var type = (var_types)index;
+                    var registerMask = DebuggerDisplayHelpers.GetRegisterMask(
+                        _linearScan._availableRegs[index],
+                        type);
+                    sets[index] = new DebuggerRegisterSet(
+                        $"AvailableRegs[{type}]",
+                        DebuggerDisplayHelpers.GetRegisters(registerMask));
+                }
+
+                return sets;
+            }
+        }
+
+        public DebuggerRegisterSet RegistersWithConstants => new(
+            "RegistersWithConstants",
+            DebuggerDisplayHelpers.GetRegisters(_linearScan._registersWithConstants));
+
+        private DebuggerVarMapBlock[] GetVarToRegMaps(regNumber[]?[]? maps)
+        {
+            if (maps is null)
+            {
+                return [];
+            }
+
+            var blocks = new List<DebuggerVarMapBlock>();
+            for (var block = _linearScan._compiler.fgFirstBB; block is not null; block = block.Next)
+            {
+                var blockNumber = checked((int)block.bbNum);
+                if ((uint)blockNumber >= (uint)maps.Length || maps[blockNumber] is not regNumber[] map)
+                {
+                    continue;
+                }
+
+                var variables = new List<DebuggerVarReg>();
+                for (var index = 0; index < map.Length; index++)
+                {
+                    if (!VarSetOps.IsMember(_linearScan._compiler, block.bbLiveIn, index))
+                    {
+                        continue;
+                    }
+
+                    var interval = _linearScan.localVarIntervals is Interval?[] intervals &&
+                        (uint)index < (uint)intervals.Length
+                            ? intervals[index]
+                            : null;
+                    var variableNumber = interval is Interval liveInterval
+                        ? liveInterval.varNum
+                        : checked((uint)index);
+                    variables.Add(new DebuggerVarReg(variableNumber, map[index]));
+                }
+
+                blocks.Add(new DebuggerVarMapBlock(blockNumber, [.. variables]));
+            }
+
+            return [.. blocks];
+        }
+    }
+}
+
+[DebuggerDisplay("{Name,nq}")]
+internal sealed class DebuggerRegisterSet
+{
+    public DebuggerRegisterSet(string name, regNumber[] registers)
+    {
+        Name = name;
+        Registers = registers;
+    }
+
+    public string Name { get; }
+
+    [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+    public regNumber[] Registers { get; }
+}
+
+[DebuggerDisplay("---BB{BlockNumber,2}---")]
+internal sealed class DebuggerVarMapBlock
+{
+    public DebuggerVarMapBlock(int blockNumber, DebuggerVarReg[] variables)
+    {
+        BlockNumber = blockNumber;
+        Variables = variables;
+    }
+
+    public int BlockNumber { get; }
+
+    [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+    public DebuggerVarReg[] Variables { get; }
+}
+
+[DebuggerDisplay("V{VariableNumber,2}: {Register}")]
+internal readonly struct DebuggerVarReg
+{
+    public DebuggerVarReg(uint variableNumber, regNumber register)
+    {
+        VariableNumber = variableNumber;
+        Register = register;
+    }
+
+    public uint VariableNumber { get; }
+
+    public regNumber Register { get; }
+}
+
+internal static class DebuggerDisplayHelpers
+{
+    public static regMaskTP GetRegisterMask(SingleTypeRegSet registers, var_types type)
+    {
+        var mask = default(regMaskTP);
+        regMaskTP.AddRegsetForType(ref mask, registers, type);
+        return mask;
+    }
+
+    public static regNumber[] GetRegisters(regMaskTP mask)
+    {
+        var registers = new List<regNumber>();
+        for (var index = 0; index < (int)REG_COUNT; index++)
+        {
+            var register = (regNumber)index;
+            if (mask.IsSet(register))
+            {
+                registers.Add(register);
+            }
+        }
+
+        return [.. registers];
+    }
+}
+
+internal sealed class RefPositionDebuggerProxy
+{
+    private readonly RefPosition _reference;
+
+    public RefPositionDebuggerProxy(RefPosition reference)
+    {
+        _reference = reference;
+    }
+
+    public Referenceable? Referent => _reference.referent;
+
+    [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+    public regNumber[] Registers
+    {
+        get
+        {
+            if (_reference.registerAssignment is SRBM_NONE)
+            {
+                return [];
+            }
+
+            var referent = _reference.referent
+                ?? throw new InvalidOperationException("A non-empty register assignment requires a referent.");
+
+            return DebuggerDisplayHelpers.GetRegisters(
+                DebuggerDisplayHelpers.GetRegisterMask(_reference.registerAssignment, referent.registerType));
+        }
+    }
+}
+
+internal sealed class RegRecordDebuggerProxy
+{
+    private readonly RegRecord _record;
+
+    public RegRecordDebuggerProxy(RegRecord record)
+    {
+        _record = record;
+    }
+
+    public Interval? Assigned => _record.assignedInterval;
+
+    public Interval? Previous => _record.previousInterval;
+}
+#endif
+
+#if DEBUG
+[DebuggerTypeProxy(typeof(RegRecordDebuggerProxy))]
+public sealed partial class RegRecord
 {
 }
 #endif
