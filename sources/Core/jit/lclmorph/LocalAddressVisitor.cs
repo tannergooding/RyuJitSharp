@@ -114,7 +114,7 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
                 _stmtSideEffectsModified |= (call.Flags & GTF_ASG) == 0;
                 call.Flags |= GTF_ASG;
 
-                if (!_compiler.IsEntireAccess(lclNum, value.Offset, new ValueSize(unchecked((int)defSize))))
+                if (!_compiler.IsEntireAccess(lclNum, value.Offset, new ValueSize(defSize)))
                 {
                     defFlags |= GTF_VAR_USEASG;
                 }

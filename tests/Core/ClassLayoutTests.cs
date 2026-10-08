@@ -79,6 +79,17 @@ internal static class ClassLayoutTests
         Assert.That(second._gcPtrs, Is.Null);
     }
 
+    [TestCase(0x8000_0000u)]
+    [TestCase(uint.MaxValue)]
+    public static void LocalValueSizePreservesUnsignedLayoutSize(uint size)
+    {
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        compiler.lvaCount = 1;
+        compiler.lvaTable = [new LclVarDsc { Type = var_types.TYP_STRUCT, Layout = new ClassLayout(size) }];
+
+        Assert.That(compiler.IsEntireAccess(0, 0, new ValueSize(size)), Is.True);
+    }
+
     [TestCase(1, false)]
     [TestCase(1, true)]
     [TestCase(9, false)]

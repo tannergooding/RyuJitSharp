@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B170: inspect the implemented block-layout and ValueSize widths and their consumers against the native uint contract; port only any remaining signed-width dependency, then verify large-size behavior.",
+    "nextAction": "Resolve B175: verify the managed Debug sort postcondition against the pinned native implementation, and remove the backlog entry if its known one-pair check is already preserved.",
     "activeBatch": {
-      "scope": "B170 unsigned block-layout sizes, ValueSize representation, and consumers above Int32.MaxValue.",
-      "doneWhen": "All relevant sizes, offsets, keys, and consumers preserve native unsigned widths; boundary tests pass, B170 is removed, and the batch is committed locally.",
-      "validation": "Run focused ClassLayout, SegmentList, and ValueSize tests in Debug and Release; run the analyzer-enabled Debug acceptance test.",
-      "deferred": "Do not broaden into unrelated allocation statistics or change documented no-GC layout behavior."
+      "scope": "B175 Debug sort postcondition parity with the pinned native implementation.",
+      "doneWhen": "The managed diagnostic checks the same adjacent pair as native, B175 is removed, and the evidence is committed locally.",
+      "validation": "Inspect the managed Debug-only postcondition; no runtime behavior changes are needed if it matches native.",
+      "deferred": "Do not strengthen only the managed diagnostic or change sort behavior."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
