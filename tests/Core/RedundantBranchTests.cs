@@ -87,6 +87,9 @@ internal static unsafe class RedundantBranchTests
             Assert.That(entry.Kind, Is.EqualTo(BBJ_ALWAYS));
             Assert.That(entry.Target, Is.SameAs(taken ? trueTarget : falseTarget));
             Assert.That((taken ? falseTarget : trueTarget).CountOfInEdges, Is.Zero);
+            var rewrittenCondition = statement.RootNode.AsUnOp().Op1;
+            Assert.That(rewrittenCondition._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
+            Assert.That(rewrittenCondition._vnPair.Conservative, Is.EqualTo(ValueNumStore.NoVN));
             Assert.That(trueTarget.HasFlag(BasicBlockFlags.BBF_STALE_PREDICATE), Is.False);
             Assert.That(falseTarget.HasFlag(BasicBlockFlags.BBF_STALE_PREDICATE), Is.False);
             Assert.That(compiler._domTree, Is.Null);

@@ -10,11 +10,11 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Investigate B515: reproduce the optimized loop and range-check dump differences at pin 33baf8ee; trace optRedundantBranch value numbering and the BB05 phi-edge assertion reachability.",
+    "nextAction": "Recover or reconstruct the B515 range-check reproducer, then compare BB05 predecessor-list/reachability state at RangeCheck.MergeAssertion for BB05->BB02 against pin 33baf8ee. The optimized-branch VN mismatch is fixed by clearing copied VNs on the managed replacement constants.",
     "activeBatch": {
-      "scope": "B515 optimized loop and range-check diagnostic parity.",
-      "doneWhen": "Establish whether both dump differences are caused by managed translation defects or by differing compiler state, and fix only confirmed parity defects.",
-      "validation": "Compare the pinned native and managed paths and retain focused tests for any confirmed diagnostic or value-numbering change.",
+      "scope": "B515 remaining range-check phi-edge diagnostic parity; optimized-branch VN parity is fixed.",
+      "doneWhen": "Establish why managed reports assertions for the BB05->BB02 phi edge while native omits the report, then fix only a confirmed translation/CFG defect.",
+      "validation": "RedundantBranchTests and RangeAnalysisTests pass in Debug (66/66) and Release (62/62); compare a reproduced case against the pinned native path before closing the remaining mismatch.",
       "deferred": "Do not suppress the BB05 assertion output or rewrite value numbers without establishing reachability and semantic invariants."
     },
     "dynamicTlsInputBoundary": {

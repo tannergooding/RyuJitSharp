@@ -227,7 +227,8 @@ public partial class Compiler
             {
                 var constant = new GenTreeIntCon(TYP_INT, domRelopValue, null,
                     domTree, NodeThreading.AllTrees);
-                fgUpdateConstTreeValueNumber(constant);
+                // The source-based constructor copies the compare VN; native BashToConst clears it.
+                constant._vnPair.SetBoth(ValueNumStore.NoVN);
                 constant.Flags &= ~GTF_ALL_EFFECT;
                 domJumpTree.AsUnOp().Op1 = constant;
             }
