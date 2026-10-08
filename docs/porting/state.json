@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B246 hash-vector XOR insertion: trace `XorAction::LeftGap` and `MultiTraverse` cursor ownership to confirm the identified node loss in a bounded regression without invoking any potentially nonterminating comparison path.",
+    "nextAction": "Resolve B266 loop-inversion diagnostic: trace the zero-weight in-loop successor check against the block number passed to the diagnostic, then confirm whether the managed port prints the same incorrect preheader identifier.",
     "activeBatch": {
-      "scope": "B246 hash-vector XOR insertion.",
-      "doneWhen": "Establish whether the left-gap insertion loses a live node and whether the port must preserve the pinned result pending owner review.",
-      "validation": "Compare pinned hashbv.cpp with managed HashBitVector and use a finite operation-count assertion for the smallest reproducer; never call an unbounded traversal that may hang.",
-      "deferred": "Do not change native-parity behavior or run the known nonterminating intersection case while investigating XOR."
+      "scope": "B266 optimizer loop-inversion diagnostic.",
+      "doneWhen": "Establish whether the zero-weight successor branch formats the preheader instead of the successor and whether managed behavior matches the pinned diagnostic.",
+      "validation": "Compare pinned optimizer.cpp and managed loop-inversion diagnostic paths with any existing focused capture; keep diagnostic-only findings separate from loop transformation behavior.",
+      "deferred": "Do not alter loop inversion or diagnostic control flow solely from the apparent block-number mismatch."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
