@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B500: inspect each production isValidUimmFrom1 caller and its input bounds to determine whether a signed-minimum value can reach the subtraction.",
+    "nextAction": "Resolve B501: confirm whether MEASURE_PTRTAB_SIZE is a supported native configuration and compare its declaration, increment, and report behavior with the managed counters.",
     "activeBatch": {
-      "scope": "B500 ARM64 SVE from-one immediate overflow and caller input bounds.",
-      "doneWhen": "Establish whether signed-minimum input is reachable, then either close the concern with caller evidence or move an unresolved behavior choice to owner review.",
-      "validation": "Trace native and managed callers and inspect the narrowest surrounding immediate validations.",
-      "deferred": "Do not change unchecked subtraction or widen the validator without proving a valid production input can reach the boundary."
+      "scope": "B501 pointer-table statistics conditional compilation and native flag behavior.",
+      "doneWhen": "Establish whether the native flag combination is supported and whether the managed counters match all valid native configurations; correct or move only a proven discrepancy.",
+      "validation": "Trace the native preprocessor guards, managed option guards, and targeted build/test configuration.",
+      "deferred": "Do not repair native-only declaration or increment defects in the managed port without identifying a valid configuration and required parity behavior."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
