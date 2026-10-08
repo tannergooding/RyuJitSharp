@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B504: verify the LoongArch unwind decoder's boundary checks and determine whether a bounds-safe managed fix would require owner sign-off as a native-behavior deviation.",
+    "nextAction": "Investigate B505: compare inline JIT-time units at the pinned source and current upstream, then determine whether the second conversion is an upstream diagnostic defect or intended compatibility behavior.",
     "activeBatch": {
-      "scope": "B504 LoongArch unwind diagnostic bounds behavior.",
-      "doneWhen": "Determine the exact required encoded width, managed read boundary, native parity, and whether safe truncation handling needs owner approval.",
-      "validation": "Inspect the decoder and focused boundary tests, then preserve source parity or move a required behavior change to owner review.",
-      "deferred": "Do not alter decoded output for valid buffers or create an upstream issue."
+      "scope": "B505 inline JIT-time rescaling and output-unit contract.",
+      "doneWhen": "Verify the units used by the timer, stored estimate, and emitted inline diagnostics at the pinned and current upstream revisions.",
+      "validation": "Inspect the native and managed conversion paths and focused tests; preserve parity or move an intentional diagnostic change to owner review.",
+      "deferred": "Do not change emitted time units based only on variable names or unverified expectations."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
