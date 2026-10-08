@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B461: trace the ARM64 MVN/ROR and DUP recorder forms to native callsites and establish whether either reaches the contradictory sanity predicates in a valid pinned-runtime build.",
+    "nextAction": "Resolve B462: trace CodeGen::instGen_Set_Reg_To_Imm callers with INS_FLAGS_SET and a nonzero constant to determine whether the pinned zero-mask TST request is reachable.",
     "activeBatch": {
-      "scope": "B461 ARM64 recorder and sanity-check reachability.",
-      "doneWhen": "Establish whether valid native callers can reach either contradictory recorder/sanity-check pair.",
-      "validation": "Trace pinned native caller conditions and managed tests; use a pinned ARM64 runtime reproduction if available, and preserve descriptor assertions absent reachable evidence.",
-      "deferred": "Do not widen debug predicates or change descriptor encoding based only on direct invalid-input calls."
+      "scope": "B462 ARM64 zero-mask flag-setting instruction reachability.",
+      "doneWhen": "Establish whether a valid pinned caller can request TST with a zero mask through instGen_Set_Reg_To_Imm.",
+      "validation": "Trace native caller conditions and managed equivalents; preserve the encoding assertion unless a valid runtime path reproduces the request.",
+      "deferred": "Do not substitute a flag-setting instruction or widen immediate encoding based only on direct invalid-input calls."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
