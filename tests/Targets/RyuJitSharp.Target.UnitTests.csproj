@@ -130,6 +130,7 @@
     <Compile Include="..\Core\RiscVReservedRegisterCheckTests.cs" Link="RiscVReservedRegisterCheckTests.cs" />
     <Compile Include="..\Core\RiscVInstructionEncodingTests.cs" Link="RiscVInstructionEncodingTests.cs" />
     <Compile Include="..\Core\RiscVCodeGenPortTests.cs" Link="RiscVCodeGenPortTests.cs" />
+    <Compile Include="..\Core\RiscVZeroOperandInstructionTests.cs" Link="RiscVZeroOperandInstructionTests.cs" />
     <Compile Include="..\Core\RiscVCodeGenRegisterTransferTests.cs" Link="RiscVCodeGenRegisterTransferTests.cs" />
     <Compile Include="..\Core\RiscVLocalFieldCodeGenTests.cs" Link="RiscVLocalFieldCodeGenTests.cs" />
     <Compile Include="..\Core\RiscVLoweringPortTests.cs" Link="RiscVLoweringPortTests.cs" />

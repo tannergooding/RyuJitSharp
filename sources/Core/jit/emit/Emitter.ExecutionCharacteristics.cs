@@ -1156,7 +1156,7 @@ public partial class Emitter
         result.insMemoryAccessKind = memAccessKind;
         return result;
     }
-#elif DEBUG || LATE_DISASM
+#elif (DEBUG || LATE_DISASM) && !TARGET_ARM64
     internal insExecutionCharacteristics getInsExecutionCharacteristics(instrDesc id)
     {
 #if TARGET_WASM || TARGET_ARM

@@ -64,7 +64,7 @@ public partial class Emitter
     }
 #endif
 
-#if !TARGET_XARCH && !TARGET_WASM && !TARGET_ARM
+#if !TARGET_XARCH && !TARGET_WASM && !TARGET_ARM && !TARGET_ARM64
     public unsafe void emitDispIns(instrDesc id, bool isNew, bool doffs, bool asmfm,
         uint offset = 0, byte* code = null, nuint size = 0, insGroup? ig = null)
     {
