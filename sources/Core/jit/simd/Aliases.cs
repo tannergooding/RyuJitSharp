@@ -5,6 +5,8 @@
 
 #if TARGET_XARCH
 global using simd_t = RyuJitSharp.simd64_t;
+#elif TARGET_ARM64
+global using simd_t = RyuJitSharp.simd32_t;
 #else
 global using simd_t = RyuJitSharp.simd16_t;
 #endif

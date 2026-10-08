@@ -12,6 +12,15 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class Arm64SimdTypeSizeUtilityTests
 {
+#if TARGET_ARM64
+    [Test]
+    public static void SimdAliasUsesArm64MaximumVectorWidth()
+    {
+        var getterReturnType = typeof(GenTreeVecCon).GetProperty(nameof(GenTreeVecCon.SimdVal))?.GetMethod?.ReturnType;
+        Assert.That(getterReturnType, Is.EqualTo(typeof(simd32_t).MakeByRefType()));
+    }
+#endif
+
     [TestCase(TYP_BYTE, TYP_UBYTE)]
     [TestCase(TYP_UBYTE, TYP_UBYTE)]
     [TestCase(TYP_SHORT, TYP_USHORT)]

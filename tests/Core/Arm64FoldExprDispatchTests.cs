@@ -125,13 +125,31 @@ internal static unsafe class Arm64FoldExprDispatchTests
         WithCompiler(compiler =>
         {
             var condition = compiler.gtNewVconNode(TYP_SIMD16);
-            condition.SimdVal = simd16_t.AllBitsSet;
+            condition.SimdVal.v128[0] = simd16_t.AllBitsSet;
+            condition.SimdVal.v128[1] = default;
             var whenTrue = new GenTreeLclVar(TYP_SIMD16, 0);
             var whenFalse = new GenTreeLclVar(TYP_SIMD16, 1);
             var intrinsic = new GenTreeHWIntrinsic(TYP_SIMD16, NI_AdvSimd_BitwiseSelect,
                 TYP_INT, 16, condition, whenTrue, whenFalse);
 
             Assert.That(compiler.gtFoldExpr(intrinsic), Is.SameAs(whenTrue));
+        });
+    }
+
+    [Test]
+    public static void AdvSimdSelectWithZeroConditionReturnsFalseOperand()
+    {
+        WithCompiler(compiler =>
+        {
+            var condition = compiler.gtNewVconNode(TYP_SIMD16);
+            condition.SimdVal.v128[0] = default;
+            condition.SimdVal.v128[1] = simd16_t.AllBitsSet;
+            var whenTrue = new GenTreeLclVar(TYP_SIMD16, 0);
+            var whenFalse = new GenTreeLclVar(TYP_SIMD16, 1);
+            var intrinsic = new GenTreeHWIntrinsic(TYP_SIMD16, NI_AdvSimd_BitwiseSelect,
+                TYP_INT, 16, condition, whenTrue, whenFalse);
+
+            Assert.That(compiler.gtFoldExpr(intrinsic), Is.SameAs(whenFalse));
         });
     }
 

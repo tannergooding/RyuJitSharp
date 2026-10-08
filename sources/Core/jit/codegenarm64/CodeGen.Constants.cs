@@ -133,7 +133,7 @@ public partial class CodeGen
                                 }
                                 else
                                 {
-                                    handle = emit.emitSimd16Const(value);
+                                    handle = emit.emitSimd16Const(value.v128[0]);
                                 }
 
                                 emit.emitIns_R_C(INS_ldr, attr, targetReg, addrReg, handle, 0);
