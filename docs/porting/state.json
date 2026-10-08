@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B462: trace CodeGen::instGen_Set_Reg_To_Imm callers with INS_FLAGS_SET and a nonzero constant to determine whether the pinned zero-mask TST request is reachable.",
+    "nextAction": "Resolve B469: reproduce the Linux-target SIMD16 helper-return baseline failure in the test fixture, then determine the correct Unix return-descriptor setup and whether the failure is independent of the shared throw-helper path.",
     "activeBatch": {
-      "scope": "B462 ARM64 zero-mask flag-setting instruction reachability.",
-      "doneWhen": "Establish whether a valid pinned caller can request TST with a zero mask through instGen_Set_Reg_To_Imm.",
-      "validation": "Trace native caller conditions and managed equivalents; preserve the encoding assertion unless a valid runtime path reproduces the request.",
-      "deferred": "Do not substitute a flag-setting instruction or widen immediate encoding based only on direct invalid-input calls."
+      "scope": "B469 Linux-target SIMD16 helper-return test baseline.",
+      "doneWhen": "Identify whether the failure comes from invalid fixture metadata or a supported production descriptor contract, independently of throw-helper behavior.",
+      "validation": "Trace the return descriptor setup and native ABI contract, then run the focused Linux-target helper-return cases in Debug and Release.",
+      "deferred": "Do not attribute the failure to the shared throw-helper change or alter return-descriptor assertions without a production-valid case."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
