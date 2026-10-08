@@ -4,7 +4,9 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if LATE_DISASM && USE_COREDISTOOLS
+using System;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
@@ -23,10 +25,13 @@ public partial struct Disassembler
         Wasm32,
     }
 
+    internal static unsafe delegate* unmanaged[Cdecl]<CoreDisTarget, nuint> s_PtrInitBufferedDisasm;
     internal static unsafe delegate* unmanaged[Cdecl]<nuint, byte*, byte*, nuint, nuint> s_PtrDumpInstruction;
+    internal static unsafe delegate* unmanaged[Cdecl]<byte*> s_PtrGetOutputBuffer;
+    internal static unsafe delegate* unmanaged[Cdecl]<void> s_PtrClearOutputBuffer;
     internal static unsafe delegate* unmanaged[Cdecl]<nuint, void> s_PtrFinishDisasm;
 
-    private bool InitCoredistoolsDisasm()
+    private unsafe bool InitCoredistoolsDisasm()
     {
         if (!InitCoredistoolsLibrary())
         {
@@ -49,7 +54,13 @@ public partial struct Disassembler
 #else
 #error Unsupported target for LATE_DISASM with USE_COREDISTOOLS
 #endif
-        _corDisasm = NewCoredistoolsDisasm(architecture);
+        _corDisasm = s_PtrInitBufferedDisasm(architecture);
+        if (_corDisasm == 0)
+        {
+#pragma warning disable CA2201 // CoreDisTools returns null when it cannot create the disassembler.
+            throw new OutOfMemoryException();
+#pragma warning restore CA2201
+        }
 
         return true;
     }
@@ -63,7 +74,7 @@ public partial struct Disassembler
 
         if (s_PtrFinishDisasm == null)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "CoreDisTools decoder cleanup requires the native FinishDisasm lifecycle.");
+            throw new FatalJitException(CORJIT_SKIPPED, "CoreDisTools decoder cleanup requires the FinishDisasm export.");
         }
 
         s_PtrFinishDisasm(_corDisasm);
@@ -72,7 +83,6 @@ public partial struct Disassembler
 
     private readonly unsafe void DisasmBufferCoredistools(StreamWriter output, bool printit)
     {
-        s_disAsmFileCorDisTools = output;
         uint errorCount = 0;
 
         DisasmRegionCoredistools(output, 0, _hotCodeBlock, _hotCodeSize, ref errorCount);
@@ -93,10 +103,11 @@ public partial struct Disassembler
         {
             if (s_PtrDumpInstruction == null)
             {
-                throw new FatalJitException(CORJIT_SKIPPED, "CoreDisTools decoding requires DumpInstruction and the native logger ABI.");
+                throw new FatalJitException(CORJIT_SKIPPED, "CoreDisTools decoding requires the DumpInstruction export.");
             }
 
             var instrLen = s_PtrDumpInstruction(_corDisasm, address, codeBytes, codeSizeBytes);
+            output.Write(GetCoredistoolsOutput());
             if (instrLen == 0)
             {
                 errorCount++;
@@ -125,6 +136,25 @@ public partial struct Disassembler
             address += instrLen;
             codeBytes += instrLen;
             codeSizeBytes -= instrLen;
+        }
+    }
+
+    private static unsafe string GetCoredistoolsOutput()
+    {
+        var outputBuffer = s_PtrGetOutputBuffer();
+        try
+        {
+            if (outputBuffer == null)
+            {
+                throw new FatalJitException(CORJIT_SKIPPED, "CoreDisTools returned a null buffered output pointer.");
+            }
+
+            return Marshal.PtrToStringUTF8((nint)outputBuffer)
+                ?? throw new FatalJitException(CORJIT_SKIPPED, "CoreDisTools returned invalid buffered output.");
+        }
+        finally
+        {
+            s_PtrClearOutputBuffer();
         }
     }
 }

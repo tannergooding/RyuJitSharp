@@ -4,25 +4,156 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if LATE_DISASM
+using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 
 namespace RyuJitSharp;
 
 public partial struct Disassembler
 {
 #if USE_COREDISTOOLS
-    // B527: retain InitCoredistoolsLibrary until its loader/search and failure diagnostics are represented.
-    private static bool InitCoredistoolsLibrary()
+    // Match PAL errors for missing process paths and Unix dlopen/dlsym failures.
+    private const uint ErrorInternalError = 0x0000054F;
+    private const uint ErrorModuleNotFound = 0x0000007E;
+    private const uint ErrorProcedureNotFound = 0x0000007F;
+
+    private static int s_disCoreDisToolsLibraryInitializing;
+    private static bool s_disCoreDisToolsLibraryInitialized;
+    private static bool s_disCoreDisToolsLibraryLoadSuccessful;
+    private static nint s_disCoreDisToolsLibrary;
+
+    private static unsafe bool InitCoredistoolsLibrary()
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Late disassembly requires the native CoreDisTools callback ABI.");
+        while (Interlocked.CompareExchange(ref s_disCoreDisToolsLibraryInitializing, 1, 0) != 0)
+        {
+        }
+
+        try
+        {
+            if (s_disCoreDisToolsLibraryInitialized)
+            {
+                return s_disCoreDisToolsLibraryLoadSuccessful;
+            }
+
+            s_disCoreDisToolsLibraryInitialized = true;
+            s_disCoreDisToolsLibraryLoadSuccessful = false;
+
+            var libraryName = OperatingSystem.IsWindows()
+                ? "coredistools.dll"
+                : OperatingSystem.IsMacOS() ? "libcoredistools.dylib" : "libcoredistools.so";
+            var libraryPath = libraryName;
+
+            if (!OperatingSystem.IsWindows())
+            {
+                var processPath = Environment.ProcessPath;
+                var processDirectory = processPath is null ? null : Path.GetDirectoryName(processPath);
+                if (processDirectory is null)
+                {
+                    jitprintf($"GetModuleFileNameW failed (0x{ErrorInternalError:x8})");
+                    return false;
+                }
+
+                libraryPath = Path.Combine(processDirectory, libraryName);
+            }
+
+            uint errorCode;
+            if (OperatingSystem.IsWindows())
+            {
+                s_disCoreDisToolsLibrary = LoadLibraryExW(libraryPath, 0, 0);
+                errorCode = unchecked((uint)Marshal.GetLastPInvokeError());
+            }
+            else if (!NativeLibrary.TryLoad(libraryPath, out s_disCoreDisToolsLibrary))
+            {
+                errorCode = ErrorModuleNotFound;
+            }
+            else
+            {
+                errorCode = 0;
+            }
+
+            if (s_disCoreDisToolsLibrary == 0)
+            {
+                jitprintf($"LoadLibrary({libraryName}) failed (0x{errorCode:x8})");
+                return false;
+            }
+
+            if (!TryGetCoredistoolsExport("InitBufferedDisasm", out var initBufferedDisasm, out errorCode))
+            {
+                jitprintf($"GetProcAddress 'InitBufferedDisasm' failed (0x{errorCode:x8})");
+                return false;
+            }
+            s_PtrInitBufferedDisasm = (delegate* unmanaged[Cdecl]<CoreDisTarget, nuint>)initBufferedDisasm;
+
+            if (!TryGetCoredistoolsExport("DumpInstruction", out var dumpInstruction, out errorCode))
+            {
+                jitprintf($"GetProcAddress 'DumpInstruction' failed (0x{errorCode:x8})");
+                return false;
+            }
+            s_PtrDumpInstruction = (delegate* unmanaged[Cdecl]<nuint, byte*, byte*, nuint, nuint>)dumpInstruction;
+
+            if (!TryGetCoredistoolsExport("GetOutputBuffer", out var getOutputBuffer, out errorCode))
+            {
+                jitprintf($"GetProcAddress 'GetOutputBuffer' failed (0x{errorCode:x8})");
+                return false;
+            }
+            s_PtrGetOutputBuffer = (delegate* unmanaged[Cdecl]<byte*>)getOutputBuffer;
+
+            if (!TryGetCoredistoolsExport("ClearOutputBuffer", out var clearOutputBuffer, out errorCode))
+            {
+                jitprintf($"GetProcAddress 'ClearOutputBuffer' failed (0x{errorCode:x8})");
+                return false;
+            }
+            s_PtrClearOutputBuffer = (delegate* unmanaged[Cdecl]<void>)clearOutputBuffer;
+
+            if (!TryGetCoredistoolsExport("FinishDisasm", out var finishDisasm, out errorCode))
+            {
+                jitprintf($"GetProcAddress 'FinishDisasm' failed (0x{errorCode:x8})");
+                return false;
+            }
+            s_PtrFinishDisasm = (delegate* unmanaged[Cdecl]<nuint, void>)finishDisasm;
+
+            s_disCoreDisToolsLibraryLoadSuccessful = true;
+            return true;
+        }
+        finally
+        {
+            _ = Interlocked.Exchange(ref s_disCoreDisToolsLibraryInitializing, 0);
+        }
     }
 
-    private static nuint NewCoredistoolsDisasm(CoreDisTarget architecture)
+    private static unsafe bool TryGetCoredistoolsExport(string name, out nint address, out uint errorCode)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "NewDisasm requires PrintControl's variadic native logger ABI.");
+        if (OperatingSystem.IsWindows())
+        {
+            var symbolNameBytes = Encoding.ASCII.GetBytes(name + '\0');
+            fixed (byte* symbolName = symbolNameBytes)
+            {
+                address = GetProcAddress(s_disCoreDisToolsLibrary, (nint)symbolName);
+            }
+            errorCode = address == 0 ? unchecked((uint)Marshal.GetLastPInvokeError()) : 0;
+            return address != 0;
+        }
+
+        if (NativeLibrary.TryGetExport(s_disCoreDisToolsLibrary, name, out address))
+        {
+            errorCode = 0;
+            return true;
+        }
+
+        errorCode = ErrorProcedureNotFound;
+        return false;
     }
+
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", EntryPoint = "LoadLibraryExW", ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern nint LoadLibraryExW([MarshalAs(UnmanagedType.LPWStr)] string libraryName, nint file, uint flags);
+
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("kernel32.dll", EntryPoint = "GetProcAddress", ExactSpelling = true, SetLastError = true)]
+    private static extern nint GetProcAddress(nint library, nint symbolName);
 #endif
 
 #if DEBUG

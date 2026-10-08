@@ -2202,21 +2202,23 @@ for the other five sections. Native `all` with default encoding settings asserts
 at `UsePromotedEVEXEncoding()`; the port does not bypass that configuration
 requirement.
 
-### D009: Final metadata without optional late disassembly
+### D009: CoreDisTools buffered decoder-error routing
 
-**Status:** temporary implementation boundary along the existing
-`opts.doLateDisasm` predicate, not an accepted output difference.
+**Status:** accepted bounded output difference; a native bridge is tracked by
+B529.
 
-Requested `JitLateDisasm` terminates with `CORJIT_SKIPPED` before generation,
-emission allocation or final metadata publication. Ordinary emitter
-`jitdisasm` and immediate instruction diagnostics are separate from this mode.
+The managed backend uses CoreDisTools' `InitBufferedDisasm`,
+`GetOutputBuffer`, and `ClearOutputBuffer` exports. Valid instruction text is
+formatted by CoreDisTools and forwarded from its buffer to the selected JIT
+output stream, avoiding the variadic `PrintControl` callback ABI.
 
-CoreDisTools' buffered interface matches the native printer for the tested valid
-instructions, but sends decoder errors to stderr instead of returning the text
-that RyuJIT's callbacks write to the selected output stream. The native callbacks
-are variadic and cannot be supplied directly by `UnmanagedCallersOnly`. A native
-callback bridge or another exact ABI solution needs approval; the buffered draft
-is not used as a success-shaped approximation (B241).
+When `DumpInstruction` rejects an instruction, CoreDisTools sends its decoder
+diagnostic to stderr rather than returning it through the buffer. Native
+RyuJIT's custom callbacks write that diagnostic to the selected stream. The user
+approved the buffered behavior on 2026-10-08; the JIT's own target-specific
+failure-recovery output remains on the selected stream. This exception is
+limited to CoreDisTools decoder-error diagnostics and does not imply a
+generated-code or execution difference.
 
 ### D010: Deferred bitset operation-count tracking
 

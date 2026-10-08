@@ -29,7 +29,6 @@ public partial struct Disassembler
     private nuint _totalCodeSize;
     private nuint _startAddr;
 #if USE_COREDISTOOLS
-    private static StreamWriter? s_disAsmFileCorDisTools;
     private nuint _corDisasm;
 #endif
 
@@ -56,7 +55,6 @@ public partial struct Disassembler
         _disAsmFile = null;
 
 #if USE_COREDISTOOLS
-        s_disAsmFileCorDisTools = null;
         _corDisasm = 0;
 #endif
     }

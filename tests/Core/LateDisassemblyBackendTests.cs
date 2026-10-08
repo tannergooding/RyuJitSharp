@@ -8,12 +8,10 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using NUnit.Framework;
-using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.Disassembler;
 
 namespace RyuJitSharp.UnitTests;
@@ -58,30 +56,8 @@ internal static unsafe class LateDisassemblyBackendTests
     private static readonly List<(nuint Address, nuint Bytes, nuint Size)> s_calls = [];
     private static bool s_failDecode;
     private static nuint s_finished;
-
-    [Test]
-    public static void CoreDisToolsLibraryInitializationFailsClosedUntilNativeLoaderIsPorted()
-    {
-        var method = typeof(Disassembler).GetMethod("InitCoredistoolsLibrary", BindingFlags.NonPublic | BindingFlags.Static)
-            ?? throw new AssertionException("CoreDisTools initialization stub was not found.");
-        var invocation = Assert.Throws<TargetInvocationException>(() => method.Invoke(null, null));
-        var exception = invocation?.InnerException as FatalJitException;
-
-        Assert.That(exception?.Result, Is.EqualTo(CORJIT_SKIPPED));
-        Assert.That(exception?.Message, Does.Contain("native CoreDisTools callback ABI"));
-    }
-
-    [Test]
-    public static void NewCoreDisToolsDisassemblerFailsClosedUntilVariadicLoggerAbiIsPorted()
-    {
-        var method = typeof(Disassembler).GetMethod("NewCoredistoolsDisasm", BindingFlags.NonPublic | BindingFlags.Static)
-            ?? throw new AssertionException("CoreDisTools factory stub was not found.");
-        var invocation = Assert.Throws<TargetInvocationException>(() => method.Invoke(null, [CoreDisTarget.Host]));
-        var exception = invocation?.InnerException as FatalJitException;
-
-        Assert.That(exception?.Result, Is.EqualTo(CORJIT_SKIPPED));
-        Assert.That(exception?.Message, Does.Contain("variadic native logger ABI"));
-    }
+    private static nint s_outputBuffer;
+    private static int s_outputBufferClearCount;
 
     [TestCase(false)]
     [TestCase(true)]
@@ -97,24 +73,35 @@ internal static unsafe class LateDisassemblyBackendTests
         Decoder(ref disassembler) = 123;
         s_calls.Clear();
         s_failDecode = false;
-        var saved = s_PtrDumpInstruction;
+        s_outputBufferClearCount = 0;
+        var savedDumpInstruction = s_PtrDumpInstruction;
+        var savedGetOutputBuffer = s_PtrGetOutputBuffer;
+        var savedClearOutputBuffer = s_PtrClearOutputBuffer;
         s_PtrDumpInstruction = &Dump;
+        s_PtrGetOutputBuffer = &GetOutputBuffer;
+        s_PtrClearOutputBuffer = &ClearOutputBuffer;
 
         try
         {
             using var stream = new MemoryStream();
-            using var output = new StreamWriter(stream);
+            using var output = new StreamWriter(stream, leaveOpen: true);
             CoreBuffer(ref disassembler, output, printit);
+            output.Flush();
 
             Assert.That(s_calls, Is.EqualTo([
                 ((nuint)0, (nuint)hot, (nuint)8),
                 ((nuint)4, (nuint)(hot + 4), (nuint)4),
                 ((nuint)8, (nuint)cold, (nuint)4),
             ]));
+            Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo("instruction-1\ninstruction-2\ninstruction-3\n"));
+            Assert.That(s_outputBufferClearCount, Is.EqualTo(3));
         }
         finally
         {
-            s_PtrDumpInstruction = saved;
+            ClearTestOutputBuffer();
+            s_PtrDumpInstruction = savedDumpInstruction;
+            s_PtrGetOutputBuffer = savedGetOutputBuffer;
+            s_PtrClearOutputBuffer = savedClearOutputBuffer;
         }
     }
 
@@ -132,8 +119,13 @@ internal static unsafe class LateDisassemblyBackendTests
         ColdSize(ref disassembler) = 12;
         s_calls.Clear();
         s_failDecode = true;
-        var saved = s_PtrDumpInstruction;
+        s_outputBufferClearCount = 0;
+        var savedDumpInstruction = s_PtrDumpInstruction;
+        var savedGetOutputBuffer = s_PtrGetOutputBuffer;
+        var savedClearOutputBuffer = s_PtrClearOutputBuffer;
         s_PtrDumpInstruction = &Dump;
+        s_PtrGetOutputBuffer = &GetOutputBuffer;
+        s_PtrClearOutputBuffer = &ClearOutputBuffer;
 
         try
         {
@@ -151,10 +143,14 @@ internal static unsafe class LateDisassemblyBackendTests
             Assert.That(s_calls.Count, Is.EqualTo(2));
             Assert.That(text, Is.Empty);
 #endif
+            Assert.That(s_outputBufferClearCount, Is.EqualTo(s_calls.Count));
         }
         finally
         {
-            s_PtrDumpInstruction = saved;
+            ClearTestOutputBuffer();
+            s_PtrDumpInstruction = savedDumpInstruction;
+            s_PtrGetOutputBuffer = savedGetOutputBuffer;
+            s_PtrClearOutputBuffer = savedClearOutputBuffer;
         }
     }
 
@@ -185,14 +181,43 @@ internal static unsafe class LateDisassemblyBackendTests
     private static nuint Dump(nuint decoder, byte* address, byte* bytes, nuint size)
     {
         s_calls.Add(((nuint)address, (nuint)bytes, size));
+        SetTestOutputBuffer(s_failDecode ? string.Empty : $"instruction-{s_calls.Count}\n");
 
         return s_failDecode ? (nuint)0 : 4;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    private static byte* GetOutputBuffer()
+    {
+        return (byte*)s_outputBuffer;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    private static void ClearOutputBuffer()
+    {
+        s_outputBufferClearCount++;
+        ClearTestOutputBuffer();
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static void Finish(nuint decoder)
     {
         s_finished = decoder;
+    }
+
+    private static void SetTestOutputBuffer(string value)
+    {
+        ClearTestOutputBuffer();
+        s_outputBuffer = Marshal.StringToCoTaskMemUTF8(value);
+    }
+
+    private static void ClearTestOutputBuffer()
+    {
+        if (s_outputBuffer != 0)
+        {
+            Marshal.FreeCoTaskMem(s_outputBuffer);
+            s_outputBuffer = 0;
+        }
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "DisasmBufferCoredistools")]

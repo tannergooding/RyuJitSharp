@@ -149,7 +149,7 @@ internal static unsafe class LateDisassemblyTests
 
 #if USE_COREDISTOOLS
     [Test]
-    public static void CleanupRejectsAnUnportedLiveDecoderInsteadOfDiscardingItsHandle()
+    public static void CleanupRejectsMissingFinishExportWithoutDiscardingItsHandle()
     {
         var disassembler = default(Disassembler);
         Decoder(ref disassembler) = 1;
@@ -160,44 +160,6 @@ internal static unsafe class LateDisassemblyTests
         Assert.That(Decoder(ref disassembler), Is.EqualTo((nuint)1));
     }
 #endif
-
-    [Test]
-    public static void RequestedLateDisassemblyFailsClosedWithoutDecoding()
-    {
-        CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
-        {
-            compiler.opts.doLateDisasm = true;
-            codeGen.Disassembler.disInit(compiler);
-            var hot = stackalloc byte[1] { 0x90 };
-            var hotRW = stackalloc byte[1] { 0xC3 };
-            var cold = stackalloc byte[1] { 0xCC };
-            var coldRW = stackalloc byte[1] { 0xC3 };
-            HotCodeBlock(ref codeGen.Disassembler) = 0x1234;
-            ColdCodeBlock(ref codeGen.Disassembler) = 0x5678;
-            HotCodeSize(ref codeGen.Disassembler) = 3;
-            ColdCodeSize(ref codeGen.Disassembler) = 2;
-
-            void Request()
-            {
-                codeGen.Disassembler.disAsmCode(hot, hotRW, 1, cold, coldRW, 1);
-            }
-
-            var exception = Assert.Throws<FatalJitException>(Request);
-            Assert.That(exception?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(exception?.Message, Does.Contain("CoreDisTools callback ABI"));
-            Assert.That(*hot, Is.EqualTo(0x90));
-            Assert.That(*hotRW, Is.EqualTo(0xC3));
-            Assert.That(*cold, Is.EqualTo(0xCC));
-            Assert.That(*coldRW, Is.EqualTo(0xC3));
-            Assert.That(HotCodeBlock(ref codeGen.Disassembler), Is.EqualTo((nuint)0x1234));
-            Assert.That(ColdCodeBlock(ref codeGen.Disassembler), Is.EqualTo((nuint)0x5678));
-            Assert.That(HotCodeSize(ref codeGen.Disassembler), Is.EqualTo((nuint)3));
-            Assert.That(ColdCodeSize(ref codeGen.Disassembler), Is.EqualTo((nuint)2));
-            Assert.That(Labels(ref codeGen.Disassembler), Is.Null);
-            Assert.That(Output(ref codeGen.Disassembler), Is.Null);
-            codeGen.Disassembler.disDone();
-        });
-    }
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_hasName")]
     private static extern ref bool HasName(ref Disassembler disassembler);
