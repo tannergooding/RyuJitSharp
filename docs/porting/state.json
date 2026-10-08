@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "B145 is complete: AVX-512 MoveMask value numbering now performs signed-to-unsigned mask conversions in an unchecked bit-preserving context, with regression cases for negative and high-bit 64-lane masks; focused Debug coverage passed 52 ValueNumHardwareEvaluationClosureTests and 475 HardwareIntrinsicInitializationTests. B129 needs owner sign-off because the pinned EE consumes a native va_list, so managed text cannot safely pass through logMsg without a native bridge. B216 is complete at the current tree: the win-x86 target suite passed 409/409 and the linux-arm64 compiler build passed. B474 is complete: eeDispLineInfos now preserves the native unsigned count/index semantics, and all 14 CodeGenIPMappingPublicationTests passed in Debug with analyzers enabled. B134 still needs pinned native phase captures; its matching Core_Root/product path is not available in this workspace. Next take B141: add controlled-EE execution cases for conditional cloning and the remaining object-allocation layouts, and scope parity claims to the measured cases.",
+    "nextAction": "Next resolve B159: trace the native/managed SynchronizedReturn and GenericCatch block-order difference to its missing funclet preparation; port the coherent preparation dependency and compare both EH layouts before clearing the entry.",
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
       "finding": "Selected runtime-async adapters retain matching transformed-body instructions but use different EE-assigned TLS indices and offsets; the earlier slot allocations causing the managed shift are unidentified.",

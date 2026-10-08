@@ -6,8 +6,10 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
+using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.genTreeOps;
@@ -56,6 +58,7 @@ internal static unsafe class ObjectAllocatorCloneTransformationTests
         compiler.fgPredsComputed = true;
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
+        compiler.opts.SetMinOpts(false);
         JitTls.Compiler = compiler;
 
         try
@@ -117,8 +120,14 @@ internal static unsafe class ObjectAllocatorCloneTransformationTests
 
             var map = (IDictionary)Get(allocator, "_cloneMap");
             map.Add(2, info);
-            Call(allocator, "CloneAndSpecialize");
+            compiler.optMethodFlags = OMF_HAS_NEWOBJ;
+            alloc.SetFlags(BBF_HAS_NEWOBJ);
+            compiler._dfsTree = compiler.fgComputeDfs();
+            allocator.EnableObjectStackAllocation();
 
+            var phaseStatus = InvokePhase(allocator);
+
+            Assert.That(phaseStatus, Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
             var cloned = alloc.Target;
             Assert.That(cloned, Is.Not.SameAs(def));
             Assert.That(cloned.Kind, Is.EqualTo(BBKinds.BBJ_RETURN));
@@ -222,6 +231,24 @@ internal static unsafe class ObjectAllocatorCloneTransformationTests
         finally
         {
             JitTls.Compiler = previousCompiler;
+        }
+    }
+
+    private static PhaseStatus InvokePhase(ObjectAllocator allocator)
+    {
+        var phase = typeof(ObjectAllocator).GetMethod("DoPhase",
+            BindingFlags.NonPublic | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("Missing object allocation phase.");
+
+        try
+        {
+            return (PhaseStatus)(phase.Invoke(allocator, null)
+                ?? throw new InvalidOperationException("Object allocation phase returned no status."));
+        }
+        catch (TargetInvocationException exception) when (exception.InnerException is not null)
+        {
+            ExceptionDispatchInfo.Capture(exception.InnerException).Throw();
+            throw;
         }
     }
 
