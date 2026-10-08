@@ -27,15 +27,19 @@ public partial class Emitter
         public readonly int Size => (_offset + _alignment - 1) & -_alignment;
     }
 
-    private static void PrintField(string name, ref NativeLayout layout, int size, int alignment)
+    private static void AddField(ref NativeLayout layout, string name, int size, int alignment, bool print)
     {
         var (offset, width) = layout.Add(size, alignment);
-        jitprintf(FormattableString.Invariant($"Offset / size of {name}= {offset,3} / {width,2}\n"));
+
+        if (print)
+        {
+            jitprintf(FormattableString.Invariant($"Offset / size of {name}= {offset,3} / {width,2}\n"));
+        }
     }
 
     internal static void emitStaticStats()
     {
-        var (word, regMaskSize) = NativeStaticLayout();
+        var (word, regMaskSize, regMaskAlignment, doubleAlignment) = NativeStaticLayout();
 #if TARGET_ARM64
         const int cgcaSize = 80;
 #elif TARGET_RISCV64
@@ -47,62 +51,21 @@ public partial class Emitter
         var igBuffSize = (SC_IG_BUFFER_NUM_SMALL_DESCS * SMALL_IDSC_SIZE)
             + (SC_IG_BUFFER_NUM_LARGE_DESCS * INSTR_DESC_SIZE);
 
-        var group = new NativeLayout();
         jitprintf("\ninsGroup:\n");
-        PrintField("igNext             ", ref group, word, word);
-#if EMIT_BACKWARDS_NAVIGATION
-        PrintField("igPrev             ", ref group, word, word);
-#endif
-#if DEBUG
-        PrintField("igSelf             ", ref group, word, word);
-#endif
-#if DEBUG || LATE_DISASM
-        PrintField("igWeight           ", ref group, sizeof(double), sizeof(double));
-        PrintField("igPerfScore        ", ref group, sizeof(double), sizeof(double));
-#endif
-#if DEBUG
-        PrintField("lastGeneratedBlock ", ref group, word, word);
-        // The pinned jitstd::list<BasicBlock*> occupies five pointer-sized words.
-        PrintField("igBlocks           ", ref group, 5 * word, word);
-        PrintField("igDataSize         ", ref group, word, word);
-#endif
-        PrintField("igNum              ", ref group, sizeof(uint), sizeof(uint));
-        PrintField("igOffs             ", ref group, sizeof(uint), sizeof(uint));
-        PrintField("igFuncIdx          ", ref group, sizeof(uint), sizeof(uint));
-        PrintField("igFlags            ", ref group, sizeof(ushort), sizeof(ushort));
-        PrintField("igSize             ", ref group, sizeof(ushort), sizeof(ushort));
-#if FEATURE_LOOP_ALIGN
-        PrintField("igLoopBackEdge     ", ref group, word, word);
-#endif
-#if REGMASK_BITS_64
-        PrintField("igGCregs           ", ref group, sizeof(ulong), sizeof(ulong));
-#endif
-        var (groupDataOffset, groupDataSize) = group.Add(word, word);
-        jitprintf(FormattableString.Invariant($"Offset / size of igData             = {groupDataOffset,3} / {groupDataSize,2}\n"));
-        jitprintf(FormattableString.Invariant($"Offset / size of igPhData           = {groupDataOffset,3} / {groupDataSize,2}\n"));
-#if EMIT_BACKWARDS_NAVIGATION
-        PrintField("igLastIns          ", ref group, word, word);
-#endif
-#if EMIT_TRACK_STACK_DEPTH
-        PrintField("igStkLvl           ", ref group, sizeof(uint), sizeof(uint));
-#endif
-#if !REGMASK_BITS_64
-        PrintField("igGCregs           ", ref group, sizeof(uint), sizeof(uint));
-#endif
-        PrintField("igInsCnt           ", ref group, sizeof(byte), sizeof(byte));
+        var group = BuildNativeIGLayout(word, regMaskAlignment, doubleAlignment, true);
         jitprintf(FormattableString.Invariant($"\nSize of insGroup                    = {group.Size}\n"));
 
         var placeholder = new NativeLayout();
         jitprintf("\ninsPlaceholderGroupData:\n");
-        PrintField("igPhNext           ", ref placeholder, word, word);
-        PrintField("igPhBB             ", ref placeholder, word, word);
-        PrintField("igPhInitGCrefVars  ", ref placeholder, word, word);
-        PrintField("igPhInitGCrefRegs  ", ref placeholder, regMaskSize, word);
-        PrintField("igPhInitByrefRegs  ", ref placeholder, regMaskSize, word);
-        PrintField("igPhPrevGCrefVars  ", ref placeholder, word, word);
-        PrintField("igPhPrevGCrefRegs  ", ref placeholder, regMaskSize, word);
-        PrintField("igPhPrevByrefRegs  ", ref placeholder, regMaskSize, word);
-        PrintField("igPhType           ", ref placeholder, sizeof(byte), sizeof(byte));
+        AddField(ref placeholder, "igPhNext           ", word, word, true);
+        AddField(ref placeholder, "igPhBB             ", word, word, true);
+        AddField(ref placeholder, "igPhInitGCrefVars  ", word, word, true);
+        AddField(ref placeholder, "igPhInitGCrefRegs  ", regMaskSize, regMaskAlignment, true);
+        AddField(ref placeholder, "igPhInitByrefRegs  ", regMaskSize, regMaskAlignment, true);
+        AddField(ref placeholder, "igPhPrevGCrefVars  ", word, word, true);
+        AddField(ref placeholder, "igPhPrevGCrefRegs  ", regMaskSize, regMaskAlignment, true);
+        AddField(ref placeholder, "igPhPrevByrefRegs  ", regMaskSize, regMaskAlignment, true);
+        AddField(ref placeholder, "igPhType           ", sizeof(byte), sizeof(byte), true);
         jitprintf(FormattableString.Invariant($"\nSize of insPlaceholderGroupData     = {placeholder.Size}\n\n"));
 
         jitprintf(FormattableString.Invariant($"SMALL_IDSC_SIZE                = {SMALL_IDSC_SIZE,2}\n"));
@@ -160,7 +123,7 @@ public partial class Emitter
         var gcPointer = new NativeLayout();
         var (nextOffset, _) = gcPointer.Add(word, word);
         var (offsetOffset, _) = gcPointer.Add(sizeof(uint), sizeof(uint));
-        var (unionOffset, _) = gcPointer.Add(regMaskSize, word);
+        var (unionOffset, _) = gcPointer.Add(regMaskSize, regMaskAlignment);
         gcPointer.Add(sizeof(byte), sizeof(byte));
         gcPointer.Add(sizeof(ushort), sizeof(ushort));
         jitprintf("\nGCInfo::regPtrDsc:\n");
@@ -170,13 +133,79 @@ public partial class Emitter
         jitprintf(FormattableString.Invariant($"Size of GCInfo::regPtrDsc   = {gcPointer.Size,2}\n\n"));
     }
 
-    private static (int Word, int RegisterMaskSize) NativeStaticLayout()
+    internal static nuint emitNativeIGSize()
     {
-#if TARGET_64BIT && REGMASK_BITS_64 && HAS_MORE_THAN_64_REGISTERS && ((TARGET_AMD64 && WINDOWS_AMD64_ABI && !MULTIREG_HAS_SECOND_GC_RET) || (TARGET_ARM64 && TARGET_WINDOWS && MULTIREG_HAS_SECOND_GC_RET))
+        var (word, _, regMaskAlignment, doubleAlignment) = NativeStaticLayout();
+        return (nuint)BuildNativeIGLayout(word, regMaskAlignment, doubleAlignment, false).Size;
+    }
+
+    private static NativeLayout BuildNativeIGLayout(int word, int regMaskAlignment, int doubleAlignment, bool print)
+    {
+        var group = new NativeLayout();
+        AddField(ref group, "igNext             ", word, word, print);
+#if EMIT_BACKWARDS_NAVIGATION
+        AddField(ref group, "igPrev             ", word, word, print);
+#endif
+#if DEBUG
+        AddField(ref group, "igSelf             ", word, word, print);
+#endif
+#if DEBUG || LATE_DISASM
+        AddField(ref group, "igWeight           ", sizeof(double), doubleAlignment, print);
+        AddField(ref group, "igPerfScore        ", sizeof(double), doubleAlignment, print);
+#endif
+#if DEBUG
+        AddField(ref group, "lastGeneratedBlock ", word, word, print);
+        // The pinned jitstd::list<BasicBlock*> occupies five pointer-sized words.
+        AddField(ref group, "igBlocks           ", 5 * word, word, print);
+        AddField(ref group, "igDataSize         ", word, word, print);
+#endif
+        AddField(ref group, "igNum              ", sizeof(uint), sizeof(uint), print);
+        AddField(ref group, "igOffs             ", sizeof(uint), sizeof(uint), print);
+        AddField(ref group, "igFuncIdx          ", sizeof(uint), sizeof(uint), print);
+        AddField(ref group, "igFlags            ", sizeof(ushort), sizeof(ushort), print);
+        AddField(ref group, "igSize             ", sizeof(ushort), sizeof(ushort), print);
+#if FEATURE_LOOP_ALIGN
+        AddField(ref group, "igLoopBackEdge     ", word, word, print);
+#endif
+#if REGMASK_BITS_64
+        AddField(ref group, "igGCregs           ", sizeof(ulong), regMaskAlignment, print);
+#endif
+        var (groupDataOffset, groupDataSize) = group.Add(word, word);
+
+        if (print)
+        {
+            jitprintf(FormattableString.Invariant($"Offset / size of igData             = {groupDataOffset,3} / {groupDataSize,2}\n"));
+            jitprintf(FormattableString.Invariant($"Offset / size of igPhData           = {groupDataOffset,3} / {groupDataSize,2}\n"));
+        }
+
+#if EMIT_BACKWARDS_NAVIGATION
+        AddField(ref group, "igLastIns          ", word, word, print);
+#endif
+#if EMIT_TRACK_STACK_DEPTH
+        AddField(ref group, "igStkLvl           ", sizeof(uint), sizeof(uint), print);
+#endif
+#if !REGMASK_BITS_64
+        AddField(ref group, "igGCregs           ", sizeof(uint), sizeof(uint), print);
+#endif
+        AddField(ref group, "igInsCnt           ", sizeof(byte), sizeof(byte), print);
+        return group;
+    }
+
+    private static (int Word, int RegisterMaskSize, int RegisterMaskAlignment, int DoubleAlignment) NativeStaticLayout()
+    {
+#if TARGET_32BIT && TARGET_ARM && REGMASK_BITS_64
+#if TARGET_WINDOWS
+        // emit.h packs ARM32 structures to four-byte alignment for MSVC.
+        return (4, 8, 4, 4);
+#elif TARGET_UNIX
+        // ARM Unix uses the ABI's natural eight-byte alignment for double and regMaskSmall.
+        return (4, 8, 8, 8);
+#endif
+#elif TARGET_64BIT && REGMASK_BITS_64 && HAS_MORE_THAN_64_REGISTERS && ((TARGET_AMD64 && WINDOWS_AMD64_ABI && !MULTIREG_HAS_SECOND_GC_RET) || (TARGET_ARM64 && TARGET_WINDOWS && MULTIREG_HAS_SECOND_GC_RET))
         // target.h: two 64-bit register-mask words; emit.h:2484-2525 adds a
         // second-GC-return bitfield on ARM64. Windows places the following
         // bool bitfield in another storage unit, making that descriptor 80 bytes.
-        return (8, 16);
+        return (8, 16, 8, 8);
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Native emitter layout reporting requires the target-specific pointer, register-mask and descriptor layouts.");
 #endif

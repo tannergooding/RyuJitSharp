@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Investigate B513: locate the 32-bit emitter instruction-group size dependency used by ARM32 EMITTER_STATS and determine whether it is missing port work.",
+    "nextAction": "Investigate B515: reproduce the optimized loop and range-check dump differences at pin 33baf8ee; trace optRedundantBranch value numbering and the BB05 phi-edge assertion reachability.",
     "activeBatch": {
-      "scope": "B513 ARM32 emitter-statistics size accounting.",
-      "doneWhen": "Trace emitNativeIGSize and identify the minimal 32-bit instruction-group layout/accounting dependency needed for statistics parity.",
-      "validation": "Compare native and managed emitter statistics paths and inspect target-specific size representation before implementing any missing layout.",
-      "deferred": "Do not introduce guessed ARM32 instruction sizes or alter shared emitter layout."
+      "scope": "B515 optimized loop and range-check diagnostic parity.",
+      "doneWhen": "Establish whether both dump differences are caused by managed translation defects or by differing compiler state, and fix only confirmed parity defects.",
+      "validation": "Compare the pinned native and managed paths and retain focused tests for any confirmed diagnostic or value-numbering change.",
+      "deferred": "Do not suppress the BB05 assertion output or rewrite value numbers without establishing reachability and semantic invariants."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",

@@ -220,7 +220,7 @@ internal static class CompilerShutdownFamilyTests
                 "GC pointer table stats\n" +
                 "---------------------------------------------------\n"));
 #elif EMITTER_STATS
-#if TARGET_XARCH || TARGET_ARM64
+#if TARGET_XARCH || TARGET_ARM64 || TARGET_ARM
             Assert.That(text, Does.Contain("\nInstruction format frequency table:\n"));
             Assert.That(text, Does.Contain("Descriptor size distribution:\n"));
             Assert.That(text, Does.EndWith(" bytes allocated in the emitter\n"));

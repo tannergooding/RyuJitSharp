@@ -51,25 +51,6 @@ public partial class Emitter
         return ig;
     }
 
-#if EMITTER_STATS
-    private static nuint emitNativeIGSize()
-    {
-#if (TARGET_AMD64 || TARGET_ARM64) && FEATURE_LOOP_ALIGN && EMIT_TRACK_STACK_DEPTH && REGMASK_BITS_64 && !EMIT_BACKWARDS_NAVIGATION
-        // emit.h insGroup: the Debug jitstd::list holds five pointer-sized words; the remaining
-        // fields occupy 96 bytes in Debug and 56 bytes in Release (72 with late disassembly).
-#if DEBUG
-        return 136;
-#elif LATE_DISASM
-        return 72;
-#else
-        return 56;
-#endif
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Native instruction-group size is not yet ported for these emitter statistics.");
-#endif
-    }
-#endif
-
     private void emitInitIG(insGroup ig)
     {
         ig.InitializeNum(unchecked((uint)emitNxtIGnum));
