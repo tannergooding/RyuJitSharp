@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B207: inspect emitter group descriptor ownership, logical sizes/offsets, group splitting, and saved-reference relocation; finish only missing native-equivalent state, then test group boundaries and commit.",
+    "nextAction": "Resolve B208: enumerate remaining consumers of LclVarDsc.lvRegMask and replace relevant legacy single-bank shifts with CodeGen.genGetRegMask(in LclVarDsc); add target-specific high-bank/mask-register coverage and commit.",
     "activeBatch": {
-      "scope": "B207 emitter instruction-group descriptor storage, logical sizing, group splitting, and saved-reference relocation.",
-      "doneWhen": "Typed managed descriptors preserve native logical layout and every group/reference invariant; focused emitter tests pass, B207 is resolved or moved to sign-off if it requires an ABI deviation, and the batch is committed.",
-      "validation": "Run focused emitter group and descriptor ownership tests in Debug and Release; run analyzer-enabled Debug acceptance.",
-      "deferred": "Do not introduce byte-copying of managed descriptor objects or skip relocation-dependent behavior."
+      "scope": "B208 legacy local register masks and bank-aware mapping through CodeGen.genGetRegMask(in LclVarDsc).",
+      "doneWhen": "Every relevant consumer preserves native register-bank semantics; target tests cover high registers and mask registers; B208 is removed and the batch is committed.",
+      "validation": "Run focused local-register-mask tests in Debug and Release for the affected target families, plus analyzer-enabled Debug acceptance.",
+      "deferred": "Do not replace unrelated generic masks or duplicate the existing CodeGen classifier."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
