@@ -190,7 +190,7 @@ internal static unsafe class CodeGenAsyncTransferTests
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void* GetHelper(ICorJitInfo* self, CorInfoHelpFunc helper,
+    private static void GetHelper(ICorJitInfo* self, CorInfoHelpFunc helper,
         CORINFO_CONST_LOOKUP* lookup, CORINFO_METHOD_STRUCT_** method)
     {
         var context = (HelperContext*)self;
@@ -198,6 +198,5 @@ internal static unsafe class CodeGenAsyncTransferTests
         lookup->accessType = InfoAccessType.IAT_VALUE;
         lookup->addr = (void*)0x1234;
 
-        return (void*)0x1234;
     }
 }

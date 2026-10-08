@@ -101,7 +101,7 @@ internal static unsafe class CodeGenReturnTrapTests
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void* GetHelperFtn(ICorJitInfo* self, CorInfoHelpFunc helper,
+    private static void GetHelperFtn(ICorJitInfo* self, CorInfoHelpFunc helper,
         CORINFO_CONST_LOOKUP* lookup, CORINFO_METHOD_STRUCT_** method)
     {
         var context = (HelperContext*)self;
@@ -109,7 +109,6 @@ internal static unsafe class CodeGenReturnTrapTests
         lookup->accessType = context->Indirect ? InfoAccessType.IAT_PVALUE : InfoAccessType.IAT_VALUE;
         lookup->addr = context->Indirect ? (void*)0x100000000 : (void*)0x1234;
 
-        return lookup->addr;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]

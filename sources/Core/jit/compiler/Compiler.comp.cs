@@ -1580,7 +1580,7 @@ public partial class Compiler
 
         if (info.compMatchedVM)
         {
-            _ = info.compCompHnd->getHelperFtn(ftnNum, &lookup);
+            info.compCompHnd->getHelperFtn(ftnNum, &lookup);
 
             // The JIT only expects these two possible access types
             assert(lookup.accessType is IAT_VALUE or IAT_PVALUE);

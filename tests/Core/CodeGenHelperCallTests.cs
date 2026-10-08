@@ -294,7 +294,7 @@ internal static unsafe class CodeGenHelperCallTests
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void* GetHelperFtn(ICorJitInfo* self, CorInfoHelpFunc helper,
+    private static void GetHelperFtn(ICorJitInfo* self, CorInfoHelpFunc helper,
         CORINFO_CONST_LOOKUP* lookup, CORINFO_METHOD_STRUCT_** method)
     {
         var context = (HelperContext*)self;
@@ -302,7 +302,6 @@ internal static unsafe class CodeGenHelperCallTests
         lookup->accessType = context->Access;
         lookup->addr = context->Address;
 
-        return context->Address;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]

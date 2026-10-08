@@ -332,7 +332,7 @@ public unsafe partial struct ICorJitInfo : ICorJitInfo.Interface
 
     public int* getAddrOfCaptureThreadGlobal(void** ppIndirection = null) => lpVtbl->Base.getAddrOfCaptureThreadGlobal((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ppIndirection);
 
-    public void* getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE* pMethodHandle = null) => lpVtbl->Base.getHelperFtn((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftnNum, pNativeEntrypoint, pMethodHandle);
+    public void getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE* pMethodHandle = null) => lpVtbl->Base.getHelperFtn((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftnNum, pNativeEntrypoint, pMethodHandle);
 
     public void getFunctionEntryPoint(CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult, CORINFO_ACCESS_FLAGS accessFlags = CORINFO_ACCESS_ANY) => lpVtbl->Base.getFunctionEntryPoint((ICorJitInfo*)(Unsafe.AsPointer(ref this)), ftn, pResult, accessFlags);
 

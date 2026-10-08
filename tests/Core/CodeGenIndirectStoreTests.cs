@@ -391,14 +391,13 @@ internal static unsafe class CodeGenIndirectStoreTests
 #endif
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void* GetHelperFtn(ICorJitInfo* self, CorInfoHelpFunc helper,
+    private static void GetHelperFtn(ICorJitInfo* self, CorInfoHelpFunc helper,
         CORINFO_CONST_LOOKUP* lookup, CORINFO_METHOD_STRUCT_** method)
     {
         s_helper = helper;
         lookup->accessType = InfoAccessType.IAT_VALUE;
         lookup->addr = (void*)0x1234;
 
-        return lookup->addr;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]

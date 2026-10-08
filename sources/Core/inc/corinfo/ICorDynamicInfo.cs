@@ -322,7 +322,7 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
 
     public int* getAddrOfCaptureThreadGlobal(void** ppIndirection = null) => lpVtbl->getAddrOfCaptureThreadGlobal((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), ppIndirection);
 
-    public void* getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE* pMethodHandle = null) => lpVtbl->getHelperFtn((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), ftnNum, pNativeEntrypoint, pMethodHandle);
+    public void getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE* pMethodHandle = null) => lpVtbl->getHelperFtn((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), ftnNum, pNativeEntrypoint, pMethodHandle);
 
     public void getFunctionEntryPoint(CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult, CORINFO_ACCESS_FLAGS accessFlags = CORINFO_ACCESS_ANY) => lpVtbl->getFunctionEntryPoint((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), ftn, pResult, accessFlags);
 
@@ -413,7 +413,7 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
         int* getAddrOfCaptureThreadGlobal(void** ppIndirection = null);
 
         // return the native entry point to an EE helper (see CorInfoHelpFunc)
-        void* getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE* pMethodHandle = null);
+        void getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE* pMethodHandle = null);
 
         // return a callable address of the function (native code). This function
         // may return a different value (depending on whether the method has
@@ -556,7 +556,7 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<TSelf*, void**, int*> getAddrOfCaptureThreadGlobal;
 
-        public delegate* unmanaged[MemberFunction]<TSelf*, CorInfoHelpFunc, CORINFO_CONST_LOOKUP*, CORINFO_METHOD_HANDLE*, void*> getHelperFtn;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CorInfoHelpFunc, CORINFO_CONST_LOOKUP*, CORINFO_METHOD_HANDLE*, void> getHelperFtn;
 
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_METHOD_HANDLE, CORINFO_CONST_LOOKUP*, CORINFO_ACCESS_FLAGS, void> getFunctionEntryPoint;
 

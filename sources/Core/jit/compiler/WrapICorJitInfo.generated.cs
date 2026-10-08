@@ -1159,13 +1159,11 @@ public sealed unsafe partial class WrapICorJitInfo
         return temp;
     }
 
-    public void* getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE* pMethodHandle = null)
+    public void getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE* pMethodHandle = null)
     {
         wrapComp.CLR_API_Enter(API_getHelperFtn);
-        void* temp = wrapHnd->getHelperFtn(ftnNum, pNativeEntrypoint, pMethodHandle);
+        wrapHnd->getHelperFtn(ftnNum, pNativeEntrypoint, pMethodHandle);
         wrapComp.CLR_API_Leave(API_getHelperFtn);
-
-        return temp;
     }
 
     public void getFunctionEntryPoint(CORINFO_METHOD_HANDLE ftn, CORINFO_CONST_LOOKUP* pResult, CORINFO_ACCESS_FLAGS accessFlags = CORINFO_ACCESS_ANY)

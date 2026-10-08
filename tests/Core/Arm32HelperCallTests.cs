@@ -141,13 +141,12 @@ internal static unsafe class Arm32HelperCallTests
     private static int s_assertions;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void* GetHelperFtn(
+    private static void GetHelperFtn(
         ICorJitInfo* self, CorInfoHelpFunc helper, CORINFO_CONST_LOOKUP* lookup, CORINFO_METHOD_STRUCT_** method)
     {
         s_helper = helper;
         lookup->accessType = s_accessType;
         lookup->addr = s_address;
-        return lookup->addr;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]

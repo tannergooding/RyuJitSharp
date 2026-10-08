@@ -251,11 +251,10 @@ internal static unsafe class ControlFlowGuardLoweringTests
 #endif
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static void* GetHelperFtn(ICorJitInfo* self, CorInfoHelpFunc helper,
+    private static void GetHelperFtn(ICorJitInfo* self, CorInfoHelpFunc helper,
         CORINFO_CONST_LOOKUP* lookup, CORINFO_METHOD_STRUCT_** method)
     {
         lookup->accessType = InfoAccessType.IAT_VALUE;
         lookup->addr = (void*)0x5678;
-        return lookup->addr;
     }
 }
