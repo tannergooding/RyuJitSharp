@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B088 assertion-reset reachability: trace O2K_LCLVAR_COPY assertion insertion and optAssertionReset dependency removal in the local path, then prove whether an inequality-copy entry can occur within a block.",
+    "nextAction": "Resolve B115 deferred hash-vector semantics: inspect pinned native countBits and setLowest, establish their actual logical element width and callsites, and decide whether the quirks are reachable from the managed port or should remain an owner-review deviation.",
     "activeBatch": {
-      "scope": "B088 local assertion insertion/reset behavior for O2K_LCLVAR_COPY.",
-      "doneWhen": "Pinned native insertion and reset semantics are checked against reachable managed assertion creation; either add a regression for a real stale dependency or document why the suspected inequality-copy case is unreachable and remove the finding.",
-      "validation": "Run focused assertion table, local application, and reset tests in Debug and Release.",
-      "deferred": "Do not alter pinned assertion semantics without a reachable reproducer."
+      "scope": "B115 native hash-vector countBits and setLowest semantics and their managed reachability.",
+      "doneWhen": "The native algorithms' logical and physical bit widths, managed callsites, and observable consequences are established; close the finding if unreachable or move an intentional divergence to owner review.",
+      "validation": "Run relevant bit-vector tests in Debug and Release and compare exact native source at the pinned revision.",
+      "deferred": "Do not implement or correct general hashBv behavior without establishing the required native parity contract."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",

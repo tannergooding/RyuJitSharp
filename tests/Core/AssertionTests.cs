@@ -2062,6 +2062,20 @@ internal static unsafe class AssertionTests
         }, crossBlock: false);
     }
 
+    [Test]
+    public static void LocalResetModeDoesNotCreateInequalityCopyAssertions()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
+            var comparison = compiler.gtNewBinaryNode(GT_NE, TYP_INT,
+                compiler.gtNewLclvNode(TYP_INT, 0), compiler.gtNewLclvNode(TYP_INT, 1));
+            var jump = compiler.gtNewUnaryNode(GT_JTRUE, TYP_VOID, comparison);
+
+            Assert.That(compiler.optAssertionGenJtrue(jump).HasAssertion, Is.False);
+            Assert.That(compiler.AssertionCount, Is.Zero);
+        }, crossBlock: false);
+    }
+
     [TestCase(0, false, 16)]
     [TestCase(1, false, 20)]
     [TestCase(3, false, 15)]
