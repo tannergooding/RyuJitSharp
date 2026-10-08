@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Address B043 async execution coverage: identify an executable task-await fixture, run the managed path end-to-end, and compare async-version prefixes and await results against the pinned native runtime where available.",
+    "nextAction": "Resolve B052 LclVarSet::IsEmpty semantics: compare the managed predicate with pinned native behavior, verify the AliasSet and NodeInfo consumers, then add focused parity tests or retain the finding with concrete evidence.",
     "activeBatch": {
-      "scope": "B043 end-to-end async-version prefix production and task-await execution coverage.",
-      "doneWhen": "An executable task-await fixture verifies the managed selection, emitted async-version prefix, and await result against the pinned native runtime, or records the concrete native-runtime blocker.",
-      "validation": "Run focused async importer/runtime tests in Debug and Release; compare matching native execution when its Core_Root is available.",
-      "deferred": "Do not change established async selection or ownership behavior without evidence of a managed/native mismatch."
+      "scope": "B052 LclVarSet::IsEmpty parity and its AliasSet/NodeInfo consumers.",
+      "doneWhen": "The pinned native and managed empty-set contracts are established, affected consumers are verified, and any behavior change has focused tests.",
+      "validation": "Run focused local-set, alias-set, and node-interference tests in Debug and Release.",
+      "deferred": "Preserve pinned native behavior; do not introduce a C#-only correction for suspected native semantics."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
