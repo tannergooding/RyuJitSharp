@@ -19,6 +19,8 @@ public sealed partial class CodeGen
         genPushCalleeSavedRegistersArmCore(initReg, ref initRegZeroed);
 #elif TARGET_RISCV64
         genPushCalleeSavedRegistersRiscV(initReg, ref initRegZeroed);
+#elif TARGET_LOONGARCH64
+        genPushCalleeSavedRegistersLoongArch64(initReg, ref initRegZeroed);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Callee-save pushes require xarch.");
 #else

@@ -109,6 +109,8 @@ public sealed partial class CodeGen
         {
             initRegZeroed = false;
         }
+#elif TARGET_LOONGARCH64
+        genProfilingEnterCallbackLoongArch64(initReg, ref initRegZeroed);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Profiler enter callbacks require xarch.");
 #else

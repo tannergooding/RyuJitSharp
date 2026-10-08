@@ -250,6 +250,8 @@ public sealed partial class CodeGen
         }
 
         _compiler.unwindEndProlog();
+#elif TARGET_LOONGARCH64
+        genFuncletPrologLoongArch64(block);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Funclet prologs require xarch.");
 #else
@@ -493,6 +495,8 @@ public sealed partial class CodeGen
         Emitter.emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_R0, REG_RA, 0);
         _compiler.unwindReturn(REG_RA);
         _compiler.unwindEndEpilog();
+#elif TARGET_LOONGARCH64
+        genFuncletEpilogLoongArch64();
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Funclet epilogs require xarch.");
 #else
@@ -746,6 +750,8 @@ public sealed partial class CodeGen
 
         assert(genFuncletInfo.fiSP_to_CalleeSave_delta >= 0);
 #endif
+#elif TARGET_LOONGARCH64
+        genCaptureFuncletPrologEpilogInfoLoongArch64();
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Funclet frame capture requires xarch.");
 #else

@@ -198,6 +198,9 @@ public sealed partial class CodeGen
         }
 
         noway_assert(lclBytes == 0);
+#elif TARGET_LOONGARCH64
+        genZeroInitFrameUsingBlockInitLoongArch64(
+            untrLclHi, untrLclLo, initReg, ref initRegZeroed);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Prolog block initialization requires xarch.");
 #else

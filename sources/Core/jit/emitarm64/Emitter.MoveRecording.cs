@@ -259,8 +259,11 @@ public partial class Emitter
         return false;
     }
 
-    private static void emitInsSve_Mov(instruction ins, emitAttr attr, regNumber dstReg,
+    private void emitInsSve_Mov(instruction ins, emitAttr attr, regNumber dstReg,
         regNumber srcReg, bool canSkip, insOpts opt)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SVE move recording is not ported.");
+    {
+        emitInsSve_Mov(ins, attr, dstReg, srcReg, canSkip, opt,
+            insSveMovOpts.INS_SVE_MOV_OPTS_UNPRED);
+    }
 }
 #endif

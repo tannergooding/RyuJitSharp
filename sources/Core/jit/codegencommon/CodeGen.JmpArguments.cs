@@ -96,7 +96,9 @@ public sealed partial class CodeGen
     public void genJmpPlaceVarArgs()
     {
         assert(_compiler.info.compIsVarArgs);
-#if TARGET_X86
+#if TARGET_LOONGARCH64
+        genJmpPlaceVarArgsLoongArch64();
+#elif TARGET_X86
         // All x86 varargs are already on the stack.
 #elif WINDOWS_AMD64_ABI
         Emitter.RequireSupportedInstructionRecording();

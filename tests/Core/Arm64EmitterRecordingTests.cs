@@ -838,6 +838,8 @@ internal static unsafe class Arm64EmitterRecordingTests
         RecordMove(sve, INS_sve_movprfx, EA_SCALABLE, REG_V0, REG_V1, false, INS_OPTS_SCALABLE_B);
         var move = LastInstruction(sve) ?? throw new AssertionException("No SVE move-prefix instruction was recorded.");
         Assert.That(move.idIns(), Is.EqualTo(INS_sve_movprfx));
+        Assert.That(move.idInsFmt(), Is.EqualTo(IF_SVE_BI_2A));
+        Assert.That(move.idInsOpt(), Is.EqualTo(INS_OPTS_NONE));
         Assert.That(move.idReg1(), Is.EqualTo(REG_V0));
         Assert.That(move.idReg2(), Is.EqualTo(REG_V1));
 

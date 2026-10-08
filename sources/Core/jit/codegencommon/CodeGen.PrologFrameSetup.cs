@@ -11,6 +11,8 @@ public sealed partial class CodeGen
     {
 #if TARGET_ARM64
         genEstablishFramePointerArm64(delta, reportUnwindData);
+#elif TARGET_LOONGARCH64
+        genEstablishFramePointerLoongArch64(delta, reportUnwindData);
 #elif TARGET_ARM
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
         assert(arm_Valid_Imm_For_Add_SP(delta));
@@ -55,6 +57,8 @@ public sealed partial class CodeGen
     {
 #if TARGET_ARM64
         genAllocLclFrameArm64(frameSize, initReg, ref initRegZeroed, maskArgRegsLiveIn);
+#elif TARGET_LOONGARCH64
+        genAllocLclFrameLoongArch64(frameSize, initReg, ref initRegZeroed, maskArgRegsLiveIn);
 #elif TARGET_ARM
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
 

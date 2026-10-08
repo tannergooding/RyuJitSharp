@@ -113,6 +113,8 @@ public sealed partial class CodeGen
         Emitter.emitEnableGC();
 #elif TARGET_WASM
         genCallFinallyWasm(block);
+#elif TARGET_LOONGARCH64
+        genCallFinallyLoongArch64(block);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Finally-call generation requires xarch.");
 #else
@@ -172,6 +174,8 @@ public sealed partial class CodeGen
         GetEmitter().emitIns_I(INS_i32_const, EA_4BYTE, 0);
 #elif TARGET_RISCV64
         Emitter.emitIns_R_L(INS_lea, EA_PTRSIZE, block.Target, REG_INTRET);
+#elif TARGET_LOONGARCH64
+        genEHCatchRetLoongArch64(block);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Catch-return generation requires xarch.");
 #else

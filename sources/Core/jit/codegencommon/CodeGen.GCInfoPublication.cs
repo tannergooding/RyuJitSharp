@@ -124,6 +124,8 @@ public sealed partial class CodeGen
             , codePtr
 #endif
             );
+#elif TARGET_LOONGARCH64
+        genCreateAndStoreGCInfoLoongArch64(codeSize, prologSize, epilogSize);
 #elif !TARGET_AMD64
         throw new FatalJitException(CORJIT_SKIPPED, "GC-info publication requires Windows AMD64.");
 #else

@@ -149,6 +149,8 @@ public sealed partial class CodeGen
         GCInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_PROFILER_LEAVE_ARG_CALLER_SP));
 
         genEmitHelperCall(helper, 0, EA_UNKNOWN);
+#elif TARGET_LOONGARCH64
+        genProfilingLeaveCallbackLoongArch64(helper);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Profiler leave callbacks require xarch.");
 #else
