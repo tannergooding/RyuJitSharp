@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B135 inlinee profile-check state: compare compiler.h, fgprofilesynthesis.cpp, and fgprofile.cpp in the pinned native oracle with managed initialization, setters, and debug checking; determine whether the observed skipped-check output is only native uninitialized state or a reproducible port discrepancy.",
+    "nextAction": "Resolve B156 XOR rotation recognition: compare the pinned native and managed predicates for complementary masked variable shifts, then reproduce the zero-count case on the native oracle before proposing any algorithm change.",
     "activeBatch": {
-      "scope": "B135 inlinee profile consistency diagnostic state and its native initialization contract.",
-      "doneWhen": "The native field initialization/assignment lifecycle and managed tests are compared; close if the observed difference is only undefined native state, or move an actual output-correction decision to owner review.",
-      "validation": "Compare pinned compiler.h, fgprofilesynthesis.cpp, fgprofile.cpp and focused profile-synthesis tests.",
-      "deferred": "Do not emulate uninitialized native storage or alter diagnostic behavior without establishing a valid native contract."
+      "scope": "B156 recognition of complementary masked variable shifts as XOR rotations.",
+      "doneWhen": "The native and managed predicates and zero-count result are verified; preserve pinned behavior or move a demonstrated correctness correction to owner review with a native reproduction.",
+      "validation": "Compare pinned fgopt.cpp and managed rotation-recognition code, then run a focused native zero-count reproduction and matching managed test.",
+      "deferred": "Do not alter rotation recognition based only on algebraic inference or managed tests."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",

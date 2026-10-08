@@ -73,7 +73,7 @@ inliner's `InlineeCompiler` reference. Native reuses storage but invokes its
 constructor again with placement-new; retaining the managed instance instead
 retained the previous method's metadata and SIMD state (B132). Allocation reuse
 is not part of the semantic contract. The native inlinee's apparently
-uninitialized profile-diagnostic flag is tracked separately in B135; managed
+uninitialized profile-diagnostic flag is tracked separately in B322; managed
 fields are not poisoned to reproduce it, and full diagnostic parity is not
 claimed.
 
@@ -1241,7 +1241,7 @@ managed arrays replace the unused descriptor and clause-map pointers under D002;
 ref-returning accessors retain descriptor identity. Only the common function
 descriptor metadata is needed here; unwind/location payloads and final emission
 remain unported. All twenty funclet phase bodies and resulting graphs match
-native. The full sections including post-phase checks retain two B135 diagnostic
+native. The full sections including post-phase checks retain two B322 diagnostic
 differences, which are not accepted output exceptions.
 
 Internal-register definitions, call definitions and kill references retain
