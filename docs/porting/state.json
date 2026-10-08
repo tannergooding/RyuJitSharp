@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B475: determine whether the pinned native oracle and current workspace contain a runnable AOT/Core_Root path for comparing the corrected object-description diagnostic callback.",
+    "nextAction": "Resolve B480: determine whether the Swift block-driver caller can be exercised on a supported target without changing native feature gates; close the coverage gap or move the unresolved decision to owner review.",
     "activeBatch": {
-      "scope": "B475 object-description diagnostic parity evidence.",
-      "doneWhen": "Establish whether a pinned native AOT/Core_Root capture can be produced for the corrected object-description callback.",
-      "validation": "Inspect local native runtime artifacts and test harness commands, then compare representative output only if the pinned runtime is runnable.",
-      "deferred": "Do not conflate this callback with B322 inlinee-profile diagnostics or claim parity without a native capture."
+      "scope": "B480 Swift block-driver reachability and execution coverage.",
+      "doneWhen": "Exercise the restored caller on an implemented Swift block-driver target, or establish the target boundary and move any decision requiring a behavior change to owner review.",
+      "validation": "Inspect native and managed feature gates, then run the narrow target-specific driver tests if an enabled target is available.",
+      "deferred": "Preserve native Swift feature defaults and both false-predicate controls; do not enable unsupported targets only to satisfy coverage."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
