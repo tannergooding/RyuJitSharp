@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B382 physical-promotion remainder target gates: trace DetermineRemainderStrategy against native TARGET_64BIT and FEATURE_SIMD conditions, then determine which unsupported target configurations can reach the mismatches.",
+    "nextAction": "Resolve B387 ARM64 scalable assertion constants: trace the managed constant assertion construction/application call paths and native simdscalable_t representation to identify a complete support boundary.",
     "activeBatch": {
-      "scope": "B382 physical-promotion remainder target gates.",
-      "doneWhen": "Establish the native target guards for TYP_LONG and SIMD remainder selection and whether managed target configurations lacking those guards are supported.",
-      "validation": "Compare pinned localmorph/decomposition logic with managed DetermineRemainderStrategy and add narrow selection coverage for affected supported target configurations.",
-      "deferred": "Do not add target feature support or change remainder decomposition outside the existing cross-target contract."
+      "scope": "B387 ARM64 scalable assertion constants.",
+      "doneWhen": "Establish the managed and native boundaries for constructing and applying scalable-vector constant assertions, including payload representation and target reachability.",
+      "validation": "Trace pinned assertionprop.cpp and managed assertion/VN paths; preserve explicit unsupported behavior unless the complete simdscalable_t closure can be safely represented.",
+      "deferred": "Do not enable scalable assertions by partially treating their payloads as fixed-width SIMD constants."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
