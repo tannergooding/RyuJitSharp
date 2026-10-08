@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Investigate B512: compare managed startup/shutdown ownership behavior with native DllMain, including process termination and stdout lifetime.",
+    "nextAction": "Investigate B513: locate the 32-bit emitter instruction-group size dependency used by ARM32 EMITTER_STATS and determine whether it is missing port work.",
     "activeBatch": {
-      "scope": "B512 native module lifecycle and managed shutdown behavior.",
-      "doneWhen": "Determine which DllMain side effects are represented by managed initialization/disposal and what remains outside the current host contract.",
-      "validation": "Compare the pinned DllMain and jitShutdown semantics with managed initialization, ProcessShutdownWork, and stdout ownership.",
-      "deferred": "Do not add lifecycle hooks or change shutdown/disposal behavior without evidence and a host contract."
+      "scope": "B513 ARM32 emitter-statistics size accounting.",
+      "doneWhen": "Trace emitNativeIGSize and identify the minimal 32-bit instruction-group layout/accounting dependency needed for statistics parity.",
+      "validation": "Compare native and managed emitter statistics paths and inspect target-specific size representation before implementing any missing layout.",
+      "deferred": "Do not introduce guessed ARM32 instruction sizes or alter shared emitter layout."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
