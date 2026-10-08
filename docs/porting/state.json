@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B358 inline statistics CSV schema: compare the native header and emitted data around ReturnCount/ThrowCount and the post-ArgFeedsRangeCheck columns with the managed output, then decide whether the reported mismatch is confirmed against the pinned oracle.",
+    "nextAction": "Review B365 native forced-spill assertion limitation: determine whether the bounded native stress failures remain actionable port work or whether the recorded scoped comparison boundary fully resolves the item.",
     "activeBatch": {
-      "scope": "B358 inline statistics CSV header/data ordering.",
-      "doneWhen": "Establish whether the managed header and records match the pinned native schema, and whether any mismatch is itself an upstream native defect.",
-      "validation": "Trace header construction and emitted record order in native and managed sources; use existing captures if available, and do not silently repair a pinned output mismatch.",
-      "deferred": "Do not alter diagnostics or CSV output without confirming the exact field order and whether the difference is intentional."
+      "scope": "B365 native forced-spill stress limitation.",
+      "doneWhen": "Determine whether the assertion is a pinned-native limitation with adequate bounded evidence or whether any port code remains actionable.",
+      "validation": "Review the recorded global and method-hash-scoped native outcomes; do not rerun unrestricted GCStress4 or claim the managed path passed parity without equivalent native coverage.",
+      "deferred": "Do not change managed stress behavior or alter upstream assertion semantics."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
