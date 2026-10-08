@@ -19,6 +19,22 @@ namespace RyuJitSharp.Target.UnitTests;
 internal static unsafe class WasmSccTests
 {
     [Test]
+    public static void PhaseEntrypointsStopAtTheB508SuccessorOrderingBoundary()
+    {
+        WithCompiler(compiler =>
+        {
+            JitFlags flags = default;
+            compiler.opts.jitFlags = &flags;
+
+            var controlFlowFailure = Assert.Throws<FatalJitException>(() => compiler.fgWasmControlFlow());
+            Assert.That(controlFlowFailure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+
+            var transformFailure = Assert.Throws<FatalJitException>(() => compiler.fgWasmTransformSccs());
+            Assert.That(transformFailure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+        });
+    }
+
+    [Test]
     public static void EntryDiscoveryCountsEachHeaderOnceAndIgnoresExceptionalReturns()
     {
         WithCompiler(compiler =>

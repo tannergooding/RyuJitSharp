@@ -15492,9 +15492,17 @@ public partial class Compiler
     }
 
 #if TARGET_WASM
-    public PhaseStatus fgWasmControlFlow() => throw new NotImplementedException("Wasm control-flow layout is blocked on the successor-order port.");
+    public PhaseStatus fgWasmControlFlow()
+    {
+        NYI_WASM("fgWasmControlFlow requires B508 AddCodeDscMap key-order parity for VisitWasmSuccs");
+        throw new FatalJitException(CORJIT_SKIPPED);
+    }
 
-    public PhaseStatus fgWasmTransformSccs() => throw new NotImplementedException("Wasm SCC transformation is blocked on the successor-order port.");
+    public PhaseStatus fgWasmTransformSccs()
+    {
+        NYI_WASM("fgWasmTransformSccs requires B508 AddCodeDscMap key-order parity for VisitWasmSuccs");
+        throw new FatalJitException(CORJIT_SKIPPED);
+    }
 
 #endif
 
