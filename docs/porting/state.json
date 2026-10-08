@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B215 APX address-operand format: trace `emitIns_R_R_A` descriptor format selection and EVEX.ND encoding, then establish whether the classification changes emitted bytes or downstream processing.",
+    "nextAction": "Resolve B217 contained local-address load lifetime: trace `emitInsLoadInd` registration and subsequent `GT_LCL_ADDR` lifetime updates against the store counterpart, then establish whether the node choice can cause a native lifetime/GC defect.",
     "activeBatch": {
-      "scope": "B215 APX NDD address-form descriptor selection.",
-      "doneWhen": "Establish whether missing `useNDD` in address-form descriptor selection affects instruction encoding or downstream emitter behavior; preserve parity or move a demonstrated defect to owner review.",
-      "validation": "Compare pinned emitxarch.cpp address and stack forms with managed instruction-format selection and descriptor tests; require a targeted APX-capable repro before changing the format.",
-      "deferred": "Do not update format selection based only on its mismatch with the APX NDD flag."
+      "scope": "B217 local-address lifetime updates for contained indirect loads.",
+      "doneWhen": "Establish whether updating the contained address node rather than the indirection affects register, local, or GC lifetime state; preserve pinned behavior or move a demonstrated defect to owner review.",
+      "validation": "Compare pinned emitxarch.cpp load/store paths with managed helpers and lifetime-update call sites; require an optimized native GC/lifetime repro before changing the node.",
+      "deferred": "Do not replace the address node based only on the TODO or the store-side implementation."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
