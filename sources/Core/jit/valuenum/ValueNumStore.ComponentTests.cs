@@ -51,9 +51,8 @@ public sealed partial class ValueNumStore
         var application = new VNFuncApp();
         var found = store.GetVNFunc(sum, ref application);
         assert(found);
-        // Preserve the pinned self-test's stale constant-first expectation (B394).
         assert((application.Func is VNF_ADD) && (application.Arity == 2) &&
-            (application.GetArg(0) == one) && (application.GetArg(1) == random));
+            (application.GetArg(0) == random) && (application.GetArg(1) == one));
 
         var constantSum = store.VNForFunc(TYP_INT, VNF_ADD, one, hundred);
         assert(constantSum == store.VNForFunc(TYP_INT, VNF_ADD, one, hundred));

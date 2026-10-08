@@ -91,6 +91,14 @@ internal static unsafe class ValueNumBinaryInterningTests
         });
     }
 
+#if DEBUG
+    [Test]
+    public static void ComponentTestsMatchCommutativeCanonicalization()
+    {
+        WithStore((_, compiler) => ValueNumStore.RunTests(compiler));
+    }
+#endif
+
     [Test]
     public static void EqualityRetainsOperandOrder()
     {

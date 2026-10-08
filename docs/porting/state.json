@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B394: compare the pinned VN self-test's expected ADD argument order with VNForFunc canonicalization and managed tests; establish whether the mismatch is test-only without changing canonicalization.",
+    "nextAction": "Resolve B395: trace Unix AMD64 NativeAOT CFI unwind recording, reservation, and publication dependencies; preserve explicit rejection until the entire supported format is implemented and validated.",
     "activeBatch": {
-      "scope": "B394 VN component test argument-order mismatch.",
-      "doneWhen": "Determine whether the obsolete native self-test expectation is isolated from compiler behavior and managed regression coverage; preserve current canonicalization.",
-      "validation": "Compare pinned ValueNumStore.RunTests and VNForFunc with managed constant canonicalization and focused VN tests.",
-      "deferred": "Do not change VN canonical argument order or adopt the obsolete expected order without an upstream correction."
+      "scope": "B395 Unix AMD64 NativeAOT CFI unwind support.",
+      "doneWhen": "Port the complete CFI unwind lifecycle or establish a concrete blocker while retaining explicit rejection before state mutation or publication.",
+      "validation": "Trace pinned CFI recording, reservation, and publication against the managed SysV unwind path; run focused NativeAOT and CoreCLR unwind tests for supported configurations.",
+      "deferred": "Do not partially publish CFI data, accept unsupported NativeAOT requests, or alter the currently supported CoreCLR unwind format."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
