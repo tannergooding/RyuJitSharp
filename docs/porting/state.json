@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B210 filter-entry loops: inspect pinned fgCreateFuncletPrologBlocks and determine whether a filter-head backedge is legal; preserve the native omission unless a reproducer establishes a correction.",
+    "nextAction": "Resolve B211 reload GC state: trace pinned genUnspillLocal and LSRA resolution state to determine whether the register can already be live while requiring another GC-liveness update; preserve the native workaround unless a native GC/root repro demonstrates a hole.",
     "activeBatch": {
-      "scope": "B210 filter-entry loop legality and funclet-prolog insertion.",
-      "doneWhen": "Establish whether valid IL can create a filter-head backedge and whether native behavior exposes a correctness issue; preserve the pinned behavior or move a demonstrated correction to owner review.",
-      "validation": "Compare pinned fgCreateFuncletPrologBlocks and EH verification/import constraints; run a focused native repro only if the IL shape is valid.",
-      "deferred": "Do not add filter-head prologs based only on the native TODO comment."
+      "scope": "B211 reload register liveness and GC state after LSRA resolution.",
+      "doneWhen": "Trace the register-live invariant through resolution and genUnspillLocal; close if the direct mask update is required by existing state, or move a demonstrated GC-root gap to owner review.",
+      "validation": "Compare pinned codegenlinear.cpp and LSRA resolution paths; require an optimized native repro to change the update behavior.",
+      "deferred": "Do not replace the native mask update with genUpdateRegLife based on its name or the TODO alone."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
