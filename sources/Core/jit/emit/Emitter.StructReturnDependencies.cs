@@ -14,6 +14,8 @@ public partial class Emitter
     {
 #if TARGET_ARM
         recordArm32InsRS(ins, attr, reg, varNum, offset, out _);
+#elif TARGET_LOONGARCH64
+        emitInsRSLoongArch64(ins, attr, reg, varNum, offset);
 #elif TARGET_RISCV64
         assert(_compiler is not null);
         assert(codeGen is not null);

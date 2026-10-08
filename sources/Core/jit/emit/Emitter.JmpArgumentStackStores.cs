@@ -14,6 +14,8 @@ public partial class Emitter
     {
 #if TARGET_ARM
         recordArm32InsSR(ins, attr, reg, varNum, offset);
+#elif TARGET_LOONGARCH64
+        emitInsSRLoongArch64(ins, attr, reg, varNum, offset);
 #elif TARGET_RISCV64
         emitIns_S_R_R(ins, attr, reg, REG_NA, varNum, offset);
 #else

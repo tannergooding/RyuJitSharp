@@ -5,7 +5,6 @@ using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BarrierKind;
-using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.GenTreeBlk;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
@@ -18,27 +17,23 @@ namespace RyuJitSharp.Target.UnitTests;
 
 internal static unsafe class LoongArchBlockMemoryCodeGenTests
 {
-    [TestCase(8)]
-    [TestCase(16)]
-    [TestCase(4096)]
-    public static void LoopDispatchReachesTheFirstNullCheckingStore(int size)
+    [Test]
+    public static void LoopDispatchRecordsInstructions()
     {
         WithCodeGen((_, codeGen) => {
             var value = new GenTreeUnOp(GT_INIT_VAL, TYP_INT, new GenTreeIntCon(TYP_INT, 0))
             {
                 IsContained = true,
             };
-            var node = new GenTreeBlk(TYP_STRUCT, Physical(REG_S0), value, new ClassLayout((uint)size))
+            var node = new GenTreeBlk(TYP_STRUCT, Physical(REG_S0), value, new ClassLayout(8))
             {
                 _kind = BlkOpKindLoop,
             };
             codeGen.InternalRegisters.Add(node, genRegMask(REG_S1));
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreBlk(node));
+            codeGen.genCodeForStoreBlk(node);
 
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message,
-                Is.EqualTo("Two-register-immediate instruction recording requires xarch."));
+            Assert.That(CurrentGroupInstructionCount(codeGen.Emitter), Is.GreaterThan(0));
         });
     }
 
@@ -47,7 +42,7 @@ internal static unsafe class LoongArchBlockMemoryCodeGenTests
     [TestCase(16, false)]
     [TestCase(17, false)]
     [TestCase(16, true)]
-    public static void CopyDispatchReachesTheLoadRecorderOrPrecedingVolatileBarrier(int size, bool isVolatile)
+    public static void CopyDispatchRecordsInstructions(int size, bool isVolatile)
     {
         WithCodeGen((_, codeGen) => {
             var source = new GenTreeIndir(GT_IND, TYP_STRUCT, Physical(REG_S1))
@@ -64,25 +59,21 @@ internal static unsafe class LoongArchBlockMemoryCodeGenTests
             }
 
             codeGen.InternalRegisters.Add(node, genRegMask(REG_S2));
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreBlk(node));
+            codeGen.genCodeForStoreBlk(node);
 
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message, Is.EqualTo(isVolatile
-                ? "Immediate-only instruction recording requires xarch."
-                : "Two-register-immediate instruction recording requires xarch."));
+            Assert.That(CurrentGroupInstructionCount(codeGen.Emitter), Is.GreaterThan(0));
         });
     }
 
     [TestCase(BARRIER_FULL)]
     [TestCase(BARRIER_LOAD_ONLY)]
     [TestCase(BARRIER_STORE_ONLY)]
-    public static void EveryBarrierKindReachesTheImmediateInstructionRecorder(BarrierKind kind)
+    public static void EveryBarrierKindRecordsAnInstruction(BarrierKind kind)
     {
         WithCodeGen((_, codeGen) => {
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.instGen_MemoryBarrier(kind));
+            codeGen.instGen_MemoryBarrier(kind);
 
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message, Is.EqualTo("Immediate-only instruction recording requires xarch."));
+            Assert.That(CurrentGroupInstructionCount(codeGen.Emitter), Is.GreaterThan(0));
         });
     }
 
@@ -116,6 +107,13 @@ internal static unsafe class LoongArchBlockMemoryCodeGenTests
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);
             codeGen.GCInfo.gcRegPtrSetInit();
             codeGen.GCInfo.gcVarPtrSetInit();
+            codeGen.Emitter.emitBegCG(compiler, default);
+            codeGen.Emitter.Init();
+            codeGen.Emitter.emitBegFN(false
+#if DEBUG
+                , true
+#endif
+                );
             action(compiler, codeGen);
         }
         finally
@@ -126,5 +124,8 @@ internal static unsafe class LoongArchBlockMemoryCodeGenTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "treeLifeUpdater")]
     private static extern ref TreeLifeUpdater? LifeUpdater(CodeGen codeGen);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGinsCnt")]
+    private static extern ref int CurrentGroupInstructionCount(Emitter emitter);
 }
 #endif

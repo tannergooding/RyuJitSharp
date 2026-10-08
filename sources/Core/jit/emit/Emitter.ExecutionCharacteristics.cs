@@ -1168,6 +1168,8 @@ public partial class Emitter
         };
 #elif TARGET_RISCV64
         return getInsExecutionCharacteristicsRiscV64(id);
+#elif TARGET_LOONGARCH64
+        return getInsExecutionCharacteristicsLoongArch64(id);
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Execution characteristics outside xarch are not implemented.");
 #endif

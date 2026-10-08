@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using static RyuJitSharp.Emitter.insFormat;
+using static RyuJitSharp.GCInfo.GCtype;
 
 namespace RyuJitSharp;
 
@@ -222,14 +223,43 @@ public partial class Emitter
     }
 
 #if !TARGET_ARM64
-    public void emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, nint disp
+    public unsafe void emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, nint disp
 #if DEBUG
         , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY
 #endif
         )
     {
 #if TARGET_LOONGARCH64
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 relocated-address instruction recording is not ported.");
+        assert(EA_IS_RELOC(attr));
+        assert(ins == INS_bl);
+        assert(isGeneralRegister(ireg));
+
+        var id = emitNewInstr(attr);
+        id.idIns(ins);
+        assert(ireg != REG_R0);
+        id.idReg1(ireg);
+        id.idInsOpt(INS_OPTS_RELOC);
+
+        if (EA_IS_GCREF(attr))
+        {
+            id.idGCref(GCT_GCREF);
+            id.idOpSize(EA_PTRSIZE);
+        }
+        else if (EA_IS_BYREF(attr))
+        {
+            id.idGCref(GCT_BYREF);
+            id.idOpSize(EA_PTRSIZE);
+        }
+
+#if DEBUG
+        var debugInfo = id.idDebugOnlyInfo();
+        assert(debugInfo is not null);
+        debugInfo.idMemCookie = unchecked((nint)targetHandle);
+        debugInfo.idFlags = gtFlags;
+#endif
+        id.idAddr().iiaAddr = (byte*)disp;
+        id.idCodeSize(8);
+        appendToCurIG(id);
 #elif TARGET_ARM
         assert(!CodeGen.instIsFP(ins) && (EA_SIZE(attr) <= EA_8BYTE) && (ireg != REG_NA));
         if (emitInsIsLoad(ins))

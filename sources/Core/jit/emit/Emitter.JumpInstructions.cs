@@ -66,7 +66,7 @@ public partial class Emitter
 #elif TARGET_ARM64
         emitIns_R_LArm64(ins, attr, dst, reg);
 #elif TARGET_LOONGARCH64
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 block-relative address recording is not ported.");
+        emitInsRLoongArchLabel(ins, attr, dst, reg);
 #elif TARGET_RISCV64
         emitIns_R_LRiscV64(ins, attr, dst, reg);
 #elif !TARGET_XARCH
@@ -119,6 +119,9 @@ public partial class Emitter
 #elif TARGET_RISCV64
         assert(emitIsUncondJump(ins));
         emitIns_Jump(ins, dst, ins is INS_jal ? REG_RA : REG_ZERO, REG_ZERO);
+#elif TARGET_LOONGARCH64
+        assert(!keepShort && !isRemovableJmpCandidate);
+        emitInsJLoongArch64(ins, dst, 0);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Label jump instruction recording requires xarch.");
 #else

@@ -74,6 +74,8 @@ public partial class Emitter
     {
 #if TARGET_RISCV64
         emitDispInsRiscV64(id, isNew, doffs, asmfm, offset, code, size, ig);
+#elif TARGET_LOONGARCH64
+        emitDispInsLoongArch64(id, offset, ig);
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Instruction display outside xarch is not ported.");
 #endif

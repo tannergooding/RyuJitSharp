@@ -75,6 +75,8 @@ public partial class Emitter
 
         dispIns(id);
         appendToCurIG(id);
+#elif TARGET_LOONGARCH64
+        emitInsRILoongArch64(ins, attr, reg, val, instOptions);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Register-immediate instruction recording requires xarch.");
 #else
@@ -285,6 +287,8 @@ public partial class Emitter
         }
 
         recordArm32InsRR(ins, attr, reg1, reg2, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
+#elif TARGET_LOONGARCH64
+        emitInsRRLLoongArch64(ins, attr, reg1, reg2);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Register-register instruction recording requires xarch.");
 #else

@@ -115,8 +115,12 @@ public partial class Emitter
 #if !TARGET_XARCH && !TARGET_ARM && !TARGET_ARM64 && !TARGET_WASM && !TARGET_RISCV64
     public void emitIns(instruction ins)
     {
+#if TARGET_LOONGARCH64
+        emitInsLoongArch64(ins);
+#else
         throw new FatalJitException(CORJIT_SKIPPED,
             $"Zero-operand instruction recording outside xarch is not ported ({ins}).");
+#endif
     }
 #endif
 }

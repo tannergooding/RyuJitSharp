@@ -10,22 +10,22 @@ public partial class Emitter
 {
     public void emitIns_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 three-register instruction recording is not ported.");
+        emitInsRRRLoongArch64(ins, attr, reg1, reg2, reg3, INS_OPTS_NONE);
     }
 
     public void emitIns_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 two-register/two-immediate instruction recording is not ported.");
+        emitInsRRIIloongArch64(ins, attr, reg1, reg2, imm1, imm2, INS_OPTS_NONE);
     }
 
     public void emitIns_J(instruction ins, BasicBlock target, int regs)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 conditional-branch instruction recording is not ported.");
+        emitInsJLoongArch64(ins, target, regs);
     }
 
     public void emitIns_I_I(instruction ins, emitAttr attr, nint cc, nint offs)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 condition-code/immediate instruction recording is not ported.");
+        emitInsIILoongArch64(ins, attr, cc, offs);
     }
 
     public void emitIns_R_R_R_I(
@@ -38,9 +38,8 @@ public partial class Emitter
         insOpts opt = insOpts.INS_OPTS_NONE,
         emitAttr attrReg2 = emitAttr.EA_UNKNOWN)
     {
-        throw new FatalJitException(
-            CORJIT_SKIPPED,
-            "LoongArch64 three-register/immediate instruction recording is not ported.");
+        assert(attrReg2 == EA_UNKNOWN);
+        emitInsRRRIloongArch64(ins, attr, reg1, reg2, reg3, imm, opt);
     }
 }
 #endif

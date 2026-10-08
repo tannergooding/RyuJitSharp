@@ -13,7 +13,7 @@ public partial class Emitter
     public unsafe void emitJumpDistBind()
     {
 #if TARGET_LOONGARCH64
-        throw new FatalJitException(CORJIT_SKIPPED, "The separate LoongArch64 jump-distance binder is not ported.");
+        emitJumpDistBindLoongArch64();
 #else
 #if TARGET_ARM
         const uint smallConditionalSize = 2;

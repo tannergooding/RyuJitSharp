@@ -160,6 +160,9 @@ public partial class Emitter
         };
 #elif TARGET_RISCV64 && DEBUG
         return emitRegNameRiscV64(reg, attr, varName);
+#elif TARGET_LOONGARCH64
+        assert((uint)reg < (uint)REG_COUNT);
+        return reg.Name;
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Emitter register names outside xarch are not implemented.");
 #endif

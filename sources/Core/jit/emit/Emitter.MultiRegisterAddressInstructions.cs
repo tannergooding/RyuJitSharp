@@ -114,6 +114,8 @@ public partial class Emitter
         }
 
         recordArm32InsRRRR(ins, attr, targetReg, reg1, reg2, reg3);
+#elif TARGET_LOONGARCH64
+        emitInsRRRRIloongArch64(ins, attr, targetReg, reg1, reg2, reg3);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Four-register instruction recording requires xarch.");
 #else

@@ -218,6 +218,8 @@ public partial class Emitter
     {
 #if TARGET_RISCV64
         emitIns_R_R_I_RiscV(ins, attr, reg1, reg2, ival, instOptions);
+#elif TARGET_LOONGARCH64
+        emitInsRRILoongArch64(ins, attr, reg1, reg2, ival, instOptions);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Two-register-immediate instruction recording requires xarch.");
 #else
@@ -369,6 +371,8 @@ public partial class Emitter
         }
 
         recordArm32InsRRR(ins, attr, targetReg, reg1, reg2, INS_FLAGS_DONT_CARE);
+#elif TARGET_LOONGARCH64
+        emitInsRRRLoongArch64(ins, attr, targetReg, reg1, reg2, instOptions);
 #elif TARGET_RISCV64
         if (tryEmitCompressedIns_R_R_R(ins, attr, targetReg, reg1, reg2, instOptions))
         {
@@ -648,7 +652,9 @@ public partial class Emitter
     public void emitIns_R_R_R_I(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber reg1, regNumber reg2, int ival, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_XARCH
+#if TARGET_LOONGARCH64
+        emitInsRRRIloongArch64(ins, attr, targetReg, reg1, reg2, ival, instOptions);
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Three-register-immediate instruction recording requires xarch.");
 #else
 #if TARGET_AMD64

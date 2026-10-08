@@ -12,7 +12,9 @@ public partial class Emitter
 {
     public unsafe nuint emitOutputInstr(insGroup ig, instrDesc id, byte** dp)
     {
-#if TARGET_ARM64
+#if TARGET_LOONGARCH64
+        return emitOutputInstrLoongArch64(ig, id, dp);
+#elif TARGET_ARM64
         return emitOutputInstrArm64(ig, id, dp);
 #elif TARGET_ARM
         return emitOutputInstrArm32(ig, id, dp);

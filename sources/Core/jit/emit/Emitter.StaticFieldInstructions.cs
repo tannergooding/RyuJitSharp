@@ -132,6 +132,9 @@ public partial class Emitter
         {
             emitIns_R_R_I(ins, attr, reg, regTmp, offs, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
         }
+#elif TARGET_LOONGARCH64
+        assert(instOptions == INS_OPTS_NONE);
+        emitIns_R_C(ins, attr, reg, REG_NA, fldHnd, offs);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Static-field register instruction recording requires xarch.");
 #else

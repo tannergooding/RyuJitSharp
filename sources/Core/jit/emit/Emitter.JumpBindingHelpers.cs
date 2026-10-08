@@ -10,7 +10,16 @@ public partial class Emitter
     private unsafe insGroup emitBindJump(instrDescJmp jump)
     {
 #if TARGET_LOONGARCH64
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 jump target binding is not ported.");
+        assert(!jump.idIsBound());
+        var targetBlock = jump.idjTarget
+            ?? throw new FatalJitException("An unbound LoongArch64 jump requires a basic-block target.");
+        assert(targetBlock.HasFlag(BBF_HAS_LABEL));
+        var targetGroup = emitCodeGetCookie(targetBlock)
+            ?? throw new FatalJitException("A LoongArch64 jump target has no instruction-group cookie.");
+        jump.LoongArchIGlabel = targetGroup;
+        jump.idjTargetIG = targetGroup;
+        jump.idSetIsBound();
+        return targetGroup;
 #else
         assert(!jump.idIsBound());
         var block = jump.idjTarget ?? throw new FatalJitException("An unbound jump requires a basic-block target.");

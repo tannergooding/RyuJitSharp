@@ -42,6 +42,7 @@ internal static class Program
         GenerateInstruction();
         GenerateInstructionFormats();
         GenerateInstructionOpcodes();
+        GenerateLoongArchInstructionOpcodes();
         GenerateWasmInstructionOpcodes();
 
         GenerateJitConfigValues();
@@ -1892,7 +1893,76 @@ public partial class Emitter
 """);
     }
 
-    private static void GenerateWasmInstructionOpcodes()
+    private static void GenerateLoongArchInstructionOpcodes()
+    {
+        var codes = ProcessMacroBasedFile(@"Inputs\instrsloongarch64.h", "INST(", (builder, inputFile, line, prefix, parts) =>
+        {
+            var arguments = SplitOpcodeArguments(line);
+            if (arguments.Length != 6)
+            {
+                throw new InvalidDataException($"Invalid LoongArch64 instruction table entry: '{line}'");
+            }
+
+            var code = arguments[3].Trim();
+            if (code == "BAD_CODE")
+            {
+                code = "Globals.BAD_CODE";
+            }
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        unchecked((uint)({code})), // INS_{arguments[0].Trim()}");
+        });
+        var masks = ProcessMacroBasedFile(@"Inputs\instrsloongarch64.h", "INST(", (builder, inputFile, line, prefix, parts) =>
+        {
+            var arguments = SplitOpcodeArguments(line);
+            if (arguments.Length != 6)
+            {
+                throw new InvalidDataException($"Invalid LoongArch64 instruction table entry: '{line}'");
+            }
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        unchecked((uint)({arguments[4].Trim()})), // INS_{arguments[0].Trim()}");
+        });
+        var formats = ProcessMacroBasedFile(@"Inputs\instrsloongarch64.h", "INST(", (builder, inputFile, line, prefix, parts) =>
+        {
+            var arguments = SplitOpcodeArguments(line);
+            if (arguments.Length != 6)
+            {
+                throw new InvalidDataException($"Invalid LoongArch64 instruction table entry: '{line}'");
+            }
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        insDisasmFmt.{arguments[5].Trim()}, // INS_{arguments[0].Trim()}");
+        });
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\emitloongarch64");
+        File.WriteAllText(@"Outputs\jit\emitloongarch64\Emitter.InstructionOpcodes.generated.cs", $$"""
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+
+namespace RyuJitSharp;
+
+public partial class Emitter
+{
+#if TARGET_LOONGARCH64
+    private static ReadOnlySpan<uint> insCodes => [
+{{codes}}    ];
+
+    private static ReadOnlySpan<uint> insMasks => [
+{{masks}}    ];
+
+    private static ReadOnlySpan<insDisasmFmt> insDisasmFormats => [
+{{formats}}    ];
+#endif
+}
+""");
+    }
+
+        private static void GenerateWasmInstructionOpcodes()
     {
         var instructionRows = new List<(string Opcode, string Prefix, string Format, string Name)>();
         _ = ProcessInstrs((builder, inputFile, line, prefix, parts) =>
