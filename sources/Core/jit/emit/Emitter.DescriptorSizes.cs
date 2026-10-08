@@ -53,10 +53,20 @@ public partial class Emitter
 #endif
 #if TARGET_X86 || TARGET_ARM || (TARGET_WASM && !HOST_64BIT)
         internal const int DebugPrefix = 4;
+#if TARGET_WASM
+        // Wasm adds three 32-bit local-variable fields to the base debug record.
+        internal const int DebugInfo = 48;
+#else
         internal const int DebugInfo = 36;
+#endif
 #else
         internal const int DebugPrefix = 8;
+#if TARGET_WASM
+        // Wasm adds three 32-bit local-variable fields to the base debug record.
+        internal const int DebugInfo = 72;
+#else
         internal const int DebugInfo = 56;
+#endif
 #endif
 #if TARGET_ARM64
         // The four-byte emitLclVarAddr payload rounds each eight-byte-aligned

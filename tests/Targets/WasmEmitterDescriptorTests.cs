@@ -4,6 +4,9 @@
 #if TARGET_WASM
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
 
@@ -11,6 +14,42 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class WasmEmitterDescriptorTests
 {
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeDebugInfoLayout
+    {
+        public uint idNum;
+        public nuint idSize;
+        public uint idVarRefOffs;
+        public uint idVarRefOffs2;
+        public nuint idMemCookie;
+        public GenTreeFlags idFlags;
+        public byte idFinallyCall;
+        public byte idCatchRet;
+        public nint idCallSig;
+        public nint idTargetBlock;
+        public int lclBaseIndex;
+        public uint idLclNum;
+        public uint idLclOffset;
+    }
+
+    [Test]
+    public static void DebugInfoSizeIncludesWasmLocalMetadata()
+    {
+        var expectedSize = IntPtr.Size == 8 ? 72 : 48;
+        var firstLocalOffset = IntPtr.Size == 8 ? 56 : 36;
+        Assert.That(Unsafe.SizeOf<NativeDebugInfoLayout>(), Is.EqualTo(expectedSize));
+        Assert.That(Marshal.OffsetOf<NativeDebugInfoLayout>(nameof(NativeDebugInfoLayout.lclBaseIndex)),
+            Is.EqualTo((nint)firstLocalOffset));
+        Assert.That(Marshal.OffsetOf<NativeDebugInfoLayout>(nameof(NativeDebugInfoLayout.idLclNum)),
+            Is.EqualTo((nint)(firstLocalOffset + 4)));
+        Assert.That(Marshal.OffsetOf<NativeDebugInfoLayout>(nameof(NativeDebugInfoLayout.idLclOffset)),
+            Is.EqualTo((nint)(firstLocalOffset + 8)));
+
+        var sizes = typeof(Emitter).GetNestedType("DescriptorSizes", BindingFlags.NonPublic)!;
+        var debugInfoSize = sizes.GetField("DebugInfo", BindingFlags.Static | BindingFlags.NonPublic)!;
+        Assert.That(debugInfoSize.GetRawConstantValue(), Is.EqualTo(expectedSize));
+    }
+
     [Test]
     public static void SpecialDescriptorKindsPreserveTheirPayloads()
     {

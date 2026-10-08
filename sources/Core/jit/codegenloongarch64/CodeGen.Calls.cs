@@ -16,13 +16,13 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    private void inst_JMP_LoongArch64(emitJumpKind jumpKind, BasicBlock targetBlock)
+    public void inst_JMP(emitJumpKind jumpKind, BasicBlock targetBlock)
     {
 #if !FEATURE_FIXED_OUT_ARGS
         assert((targetBlock.bbTgtStkDepth * sizeof(int) == genStackLevel) || IsFramePointerUsed);
 #endif
 
-        Emitter.emitIns_J(Emitter.emitJumpKindToIns(jumpKind), targetBlock);
+        Emitter.emitIns_J(Emitter.emitJumpKindToIns(jumpKind), targetBlock, 0);
     }
 
     private void genCallFinallyLoongArch64(BasicBlock block)
@@ -54,7 +54,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            inst_JMP_LoongArch64(EJ_jmp, finallyContinuation);
+            inst_JMP(EJ_jmp, finallyContinuation);
         }
 
         Emitter.emitEnableGC();
