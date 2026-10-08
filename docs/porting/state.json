@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B480: determine whether the Swift block-driver caller can be exercised on a supported target without changing native feature gates; close the coverage gap or move the unresolved decision to owner review.",
+    "nextAction": "Resolve B498: establish which valid ARM64 immediate cases reach the width-64 shifts in the SVE bitmask helpers, then compare against the pinned native behavior before deciding whether any change is safe.",
     "activeBatch": {
-      "scope": "B480 Swift block-driver reachability and execution coverage.",
-      "doneWhen": "Exercise the restored caller on an implemented Swift block-driver target, or establish the target boundary and move any decision requiring a behavior change to owner review.",
-      "validation": "Inspect native and managed feature gates, then run the narrow target-specific driver tests if an enabled target is available.",
-      "deferred": "Preserve native Swift feature defaults and both false-predicate controls; do not enable unsupported targets only to satisfy coverage."
+      "scope": "B498 ARM64 SVE bitmask helper width-boundary semantics and caller reachability.",
+      "doneWhen": "Establish the valid caller input range and pinned native behavior, then either implement a proven parity-preserving fix or move the unresolved upstream behavior to owner review.",
+      "validation": "Compare the managed helpers and native callers, using focused boundary tests only for reachable inputs.",
+      "deferred": "Do not substitute a width-64 algorithm or infer native equivalence from C# shift masking without establishing the native contract."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",

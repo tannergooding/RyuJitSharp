@@ -1693,8 +1693,10 @@ remain terminating dependencies with native definitions retained.
 Non-AMD64 initial-SP conversion preserves native configurable `NYI` followed by
 return of the original offset bits; this path is not claimed always terminating.
 Six Swift stack-reassembly cases execute on Linux-target. Four Windows+Swift
-block-driver cases remain source-only under default feature settings (B480):
-Windows does not enable Swift, and Linux block generation remains Windows-gated.
+mixed-segment block-driver cases remain source-only under default feature
+settings (B480): Windows does not enable Swift, while SysV x64 passes aggregates
+entirely in registers or entirely on the stack, so it cannot reach the mixed
+segment reassembly condition.
 The 301 focused x64 executions and exact ARM64 diagnostic baseline do not
 establish other-target execution or broader block-driver support.
 
