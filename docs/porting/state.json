@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B404: trace ShiftLow/ShiftHigh call-argument categorization on 32-bit targets against pinned native helpers and determine whether the classification difference reaches ABI layout or register allocation before changing it.",
+    "nextAction": "Resolve B409: trace the nested struct-comma block-sinking shape in importer.cpp::impNormStructVal against the managed implementation and native invariants, then establish reachability before proposing an upstream fix or port deviation.",
     "activeBatch": {
-      "scope": "B404 32-bit ShiftLow/ShiftHigh call-argument classification.",
-      "doneWhen": "Establish whether the helper arguments are represented as non-IL arguments natively and whether the managed classification changes any target-visible argument/register behavior.",
-      "validation": "Trace pinned ShiftLow/ShiftHigh definitions and callsites, managed CallArg.IsUserArg consumers, and focused x86/ARM target tests.",
-      "deferred": "Do not globally reclassify special arguments or alter call ABI layout without a reachable case and target-specific evidence."
+      "scope": "B409 potential chained struct-comma ownership defect.",
+      "doneWhen": "Establish whether the nested comma/block shape is reachable under native invariants and whether managed behavior differs.",
+      "validation": "Trace pinned importer normalization, compare the managed implementation and existing tests, and add a focused regression only if a valid reachable case establishes a defect.",
+      "deferred": "Do not change upstream behavior or introduce a port deviation without reachability and parity evidence."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
