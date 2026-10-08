@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B236 data-section relocation aliases: trace the current `writeableOffset` value through data-section output and `emitRecordRelocation`, then establish whether writable-alias targets are correct for nonzero code aliases.",
+    "nextAction": "Consolidate the duplicate MinOpts cost-estimate finding: compare active B245 with owner-review B514 and retain a single sign-off record with the strongest evidence before proceeding to B246.",
     "activeBatch": {
-      "scope": "B236 data-section relocations using writable aliases.",
-      "doneWhen": "Establish the relocation address contract when the code and writable aliases differ; preserve pinned output or move a demonstrated defect to owner review.",
-      "validation": "Trace native emitOutputDataSec and emitRecordRelocation through the code/data output lifecycle and compare with the managed implementation; require a nonzero writable-alias regression before changing offsets.",
-      "deferred": "Do not reset or adjust writeableOffset based only on the apparent mismatch between blockRW pointers and the relocation wrapper."
+      "scope": "B245/B514 duplicate MinOpts cost-estimate tracking.",
+      "doneWhen": "Determine whether both entries describe the same uninitialized native diagnostic and consolidate without losing the existing owner-review evidence.",
+      "validation": "Compare the active backlog row and owner-review row against their shared native initialization/printing sites and preserved capture evidence.",
+      "deferred": "Do not emulate poisoned native memory or remove the owner-review item while the diagnostic difference still requires sign-off."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
