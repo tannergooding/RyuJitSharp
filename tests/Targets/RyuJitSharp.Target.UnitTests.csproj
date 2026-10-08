@@ -43,6 +43,7 @@
 
   <ItemGroup Condition="'$(RyuJitTargetRuntimeIdentifier)' == 'win-x86' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'win-x86')">
     <Compile Include="..\Core\Jit32GcInfoTests.cs" Link="Jit32GcInfoTests.cs" />
+    <Compile Include="..\Core\ValueNumConstantExtractionTests.cs" Link="ValueNumConstantExtractionTests.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-arm64')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-arm64')))">

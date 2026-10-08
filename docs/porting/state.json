@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B391 VN constant storage width: trace host-sized ref/byref constant storage and target-sized varType.Size validation, then design a narrow cross-target DEBUG regression without weakening type validation.",
+    "nextAction": "Resolve B392: compare BasicBlock dictionary hashing and iteration under JitSsaStress against the pinned native key behavior, and determine whether the difference reaches observable output; do not alter managed hashing based on hash values alone.",
     "activeBatch": {
-      "scope": "B391 VN constant storage width.",
-      "doneWhen": "Establish whether valid cross-target ref/byref constants are rejected because storage width is compared with target type width, and identify native's corresponding invariant.",
-      "validation": "Trace ConstantValue<T>, VN constant storage, and pinned VarTypConv<TYP_BYREF>; construct a DEBUG host/target-width regression while preserving conversion/type checks.",
-      "deferred": "Do not remove size validation or change unrelated host/target representation semantics."
+      "scope": "B392 basic-block map hash stress and iteration parity.",
+      "doneWhen": "Establish which managed maps use BasicBlock hashing and whether JitSsaStress changes their iteration/output behavior compared to native; preserve stable ID and ordering contracts.",
+      "validation": "Trace JitPtrKeyFuncs<BasicBlock>, managed BasicBlock.GetHashCode(), map consumers, and existing SSA stress tests; compare targeted hash iteration or phase-output evidence when available.",
+      "deferred": "Do not change general comparers, inject hash stress into all maps, or infer output differences solely from differing hashes."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
