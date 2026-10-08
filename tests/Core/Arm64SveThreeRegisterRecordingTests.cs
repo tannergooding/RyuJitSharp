@@ -533,19 +533,19 @@ internal static unsafe class Arm64SveThreeRegisterRecordingTests
     }
 
     [Test]
-    public static void DebugDisplayFailureOccursAfterDescriptorPreparationBeforeAppend()
+    public static void DebugDisplayPrintsDescriptorBeforeAppending()
     {
         WithEmitter(emitter =>
         {
             var compiler = JitTls.Compiler ?? throw new AssertionException("No test compiler is installed.");
             compiler.opts.dspCode = true;
             var (output, assertions) = Arm64SveInstructionSanityTests.Capture(() =>
-                Assert.Throws<FatalJitException>(() => emitter.emitInsSve_R_R_R(
-                    INS_sve_add, EA_SCALABLE, REG_V0, REG_V1, REG_V31, INS_OPTS_SCALABLE_B)));
+                emitter.emitInsSve_R_R_R(
+                    INS_sve_add, EA_SCALABLE, REG_V0, REG_V1, REG_V31, INS_OPTS_SCALABLE_B));
 
             Assert.That(assertions, Is.Empty);
-            Assert.That(output, Is.Empty);
-            Assert.That(GroupSize(emitter), Is.Zero);
+            Assert.That(output, Does.Contain("z0.b, z1.b, z31.b"));
+            Assert.That(GroupSize(emitter), Is.EqualTo(4));
             var id = LastInstruction(emitter) ?? throw new AssertionException("No descriptor was prepared.");
             AssertDescriptor(id, INS_sve_add, IF_SVE_AT_3A, INS_OPTS_SCALABLE_B,
                 EA_SCALABLE, REG_V0, REG_V1, REG_V31);

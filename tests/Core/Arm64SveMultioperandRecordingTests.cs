@@ -526,7 +526,7 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
-    public static void DisplayFailureOccursAfterDescriptorFieldsButBeforeAppend(int recorder)
+    public static void DisplayPrintsDescriptorFieldsBeforeAppending(int recorder)
     {
         WithEmitter(emitter =>
         {
@@ -558,10 +558,9 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
                     }
                 }
             }
-            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
-                () => Assert.Throws<FatalJitException>(() => RecordOperands()));
+            var (output, assertions) = Arm64SveInstructionSanityTests.Capture(RecordOperands);
             Assert.That(assertions, Is.Empty);
-            Assert.That(GroupSize(emitter), Is.Zero);
+            Assert.That(GroupSize(emitter), Is.EqualTo(4));
             var id = LastInstruction(emitter) ?? throw new AssertionException("No descriptor was prepared.");
             switch (recorder)
             {
@@ -569,6 +568,7 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
                 {
                     AssertDescriptor(id, INS_sve_cdot, IF_SVE_FA_3A, INS_OPTS_SCALABLE_B, REG_V0, REG_V31, REG_V7);
                     Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)14));
+                    Assert.That(output, Does.Contain("z0.s, z31.b, z7.b[3], #180"));
                     break;
                 }
 
@@ -576,6 +576,7 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
                 {
                     AssertDescriptor(id, INS_sve_cmpge, IF_SVE_CX_4A, INS_OPTS_SCALABLE_S,
                         REG_P15, REG_P7, REG_V31, REG_V0);
+                    Assert.That(output, Does.Contain("p15.s, p7/z, z31.s, z0.s"));
                     break;
                 }
 
@@ -584,6 +585,7 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
                     AssertDescriptor(id, INS_sve_fcmla, IF_SVE_GT_4A, INS_OPTS_SCALABLE_D,
                         REG_V0, REG_P7, REG_V1, REG_V31);
                     Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)3));
+                    Assert.That(output, Does.Contain("z0.d, p7/m, z1.d, z31.d, #270"));
                     break;
                 }
             }
@@ -626,22 +628,28 @@ internal static unsafe class Arm64SveMultioperandRecordingTests
     [TestCase(INS_OPTS_SCALABLE_D, INS_OPTS_SCALABLE_D)]
     [TestCase(INS_OPTS_H_TO_D, INS_OPTS_SCALABLE_D)]
     [TestCase(INS_OPTS_D_TO_S, INS_OPTS_SCALABLE_S)]
-    public static void ConversionPrefixUsesDestinationElementSizeBeforeDisplayFailure(insOpts opt, insOpts prefixOpt)
+    public static void ConversionPrefixUsesDestinationElementSizeBeforeDisplayingBothInstructions(insOpts opt, insOpts prefixOpt)
     {
         WithEmitter(emitter =>
         {
             var compiler = JitTls.Compiler ?? throw new AssertionException("No test compiler is installed.");
             compiler.opts.dspCode = true;
-            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() =>
-                Assert.Throws<FatalJitException>(() => emitter.emitInsSve_R_R_R_R(
+            var (output, assertions) = Arm64SveInstructionSanityTests.Capture(() =>
+                emitter.emitInsSve_R_R_R_R(
                     INS_sve_fcvt, EA_SCALABLE, REG_V0, REG_P7, REG_V1, REG_V31,
-                    opt, mopt: INS_SVE_MOV_OPTS_MERGING)));
+                    opt, mopt: INS_SVE_MOV_OPTS_MERGING));
 
-            Assert.That(assertions, Is.Empty);
-            Assert.That(GroupSize(emitter), Is.Zero);
-            var id = LastInstruction(emitter) ?? throw new AssertionException("No prefix descriptor was prepared.");
+            Assert.That(assertions, Is.EqualTo<string[]>(opt == INS_OPTS_SCALABLE_D
+                ? ["insOptsConvertFloatToFloat(id.idInsOpt())"]
+                : []));
+            Assert.That(GroupSize(emitter), Is.EqualTo(8));
+            var id = Arm64CodeGenLocalVariableTests.Descriptors(emitter)[0];
             AssertDescriptor(id, INS_sve_movprfx, IF_SVE_AH_3A, prefixOpt, REG_V0, REG_P7, REG_V1);
             Assert.That(id.idPredicateReg2Merge(), Is.True);
+            var suffix = prefixOpt == INS_OPTS_SCALABLE_D ? "d" : "s";
+            Assert.That(output, Does.Contain($"z0.{suffix}, p7/m, z1.{suffix}"));
+            Assert.That(output, Does.Contain("fcvt"));
+            Assert.That(LastInstruction(emitter)?.idIns(), Is.EqualTo(INS_sve_fcvt));
         });
     }
 #endif

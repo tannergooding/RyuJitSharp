@@ -23,6 +23,126 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64EmitterRecordingTests
 {
+#if DEBUG
+    [TestCase("general", false, 21u, INS_ldr, INS_isb)]
+    [TestCase("general", true, 21u, INS_ldr, INS_isb)]
+    [TestCase("advsimd", false, 10u, INS_ldr, INS_sm3ss1)]
+    [TestCase("sve", false, 1u, INS_sve_and, INS_sve_extq)]
+    [TestCase("pac", false, 1u, INS_retaa, INS_pacib)]
+    [TestCase("fp16", false, 1u, INS_fadd, INS_ucvtf)]
+    public static void DebugEmitterUnitTestEntryPointsRecordTheirCompleteSections(
+        string section, bool cssc, uint labelCount, instruction first, instruction last)
+    {
+        Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            compiler.compHndBBtab = [];
+            compiler.compCurBB = new BasicBlock(null, null);
+            if (cssc)
+            {
+                compiler.opts.compSupportsISA.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_Cssc);
+            }
+
+            var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() =>
+            {
+                switch (section)
+                {
+                    case "general":
+                    {
+                        GeneralUnitTests(codeGen);
+                        break;
+                    }
+
+                    case "advsimd":
+                    {
+                        AdvSimdUnitTests(codeGen);
+                        break;
+                    }
+
+                    case "sve":
+                    {
+                        SveUnitTests(codeGen);
+                        break;
+                    }
+
+                    case "pac":
+                    {
+                        PacUnitTests(codeGen);
+                        break;
+                    }
+
+                    case "fp16":
+                    {
+                        Fp16UnitTests(codeGen);
+                        break;
+                    }
+
+                    default:
+                    {
+                        throw new AssertionException($"Unknown emitter unit-test section: {section}.");
+                    }
+                }
+            });
+
+            Assert.That(assertions, Is.EqualTo<string[]>(section == "sve"
+                ? ["Please use emitIns_Mov() to correctly handle move elision"]
+                : []));
+            Assert.That(compiler.fgBBNumMax, Is.EqualTo(labelCount));
+            var instructions = new List<Emitter.instrDesc>();
+            for (var group = UnitTestGroups(emitter); group is not null; group = group.igNext)
+            {
+                if (group == emitter.emitCurIG)
+                {
+                    instructions.AddRange(CurrentInstructions(emitter));
+                }
+                else if (group.igData is Emitter.instrDesc[] saved)
+                {
+                    instructions.AddRange(saved);
+                }
+            }
+
+            Assert.That(instructions, Is.Not.Empty);
+            Assert.That(instructions[0].idIns(), Is.EqualTo(first));
+            Assert.That(instructions[^1].idIns(), Is.EqualTo(last));
+            if (section == "general")
+            {
+                var csscCount = 0;
+                foreach (var descriptor in instructions)
+                {
+                    if (descriptor.idIns() is INS_cnt or INS_ctz)
+                    {
+                        csscCount++;
+                    }
+                }
+
+                Assert.That(csscCount, Is.EqualTo(cssc ? 4 : 0));
+            }
+            else if (section is "pac" or "fp16")
+            {
+                Assert.That(instructions, Has.Count.EqualTo(section == "pac" ? 25 : 38));
+            }
+        });
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genArm64EmitterUnitTestsGeneral")]
+    private static extern void GeneralUnitTests(CodeGen codeGen);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genArm64EmitterUnitTestsAdvSimd")]
+    private static extern void AdvSimdUnitTests(CodeGen codeGen);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genArm64EmitterUnitTestsSve")]
+    private static extern void SveUnitTests(CodeGen codeGen);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genArm64EmitterUnitTestsPac")]
+    private static extern void PacUnitTests(CodeGen codeGen);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genArm64EmitterUnitTestsFp16")]
+    private static extern void Fp16UnitTests(CodeGen codeGen);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitIGlist")]
+    private static extern ref insGroup? UnitTestGroups(Emitter emitter);
+#endif
+
     [Test]
     public static void GeneratedMetadataMatchesPinnedNativeTables()
     {

@@ -513,13 +513,13 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
 
     [TestCase(false)]
     [TestCase(true)]
-    public static void DisplayFailureLeavesPreparedDescriptorUnappended(bool immediate)
+    public static void DisplayPrintsPreparedDescriptorBeforeAppending(bool immediate)
     {
         WithEmitter(emitter =>
         {
             var compiler = JitTls.Compiler ?? throw new AssertionException("No test compiler is installed.");
             compiler.opts.dspCode = true;
-            ExpectFailure(() =>
+            var (output, assertions) = Arm64SveInstructionSanityTests.Capture(() =>
             {
                 if (immediate)
                 {
@@ -531,17 +531,20 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
                     emitter.emitInsSve_R_R(INS_sve_dup, EA_8BYTE, REG_V0, REG_SP, INS_OPTS_SCALABLE_D);
                 }
             });
-            Assert.That(GroupSize(emitter), Is.Zero);
+            Assert.That(assertions, Is.Empty);
+            Assert.That(GroupSize(emitter), Is.EqualTo(4));
             var id = LastInstruction(emitter) ?? throw new AssertionException("No descriptor was prepared.");
             if (immediate)
             {
                 AssertDescriptor(id, INS_sve_mov, EA_SCALABLE, IF_SVE_BV_2A, INS_OPTS_SCALABLE_H, REG_V0, REG_P15);
                 AssertConstant(id, -128, true);
+                Assert.That(output, Does.Contain("z0.h, p15/z, #-128, LSL #8"));
             }
             else
             {
                 AssertDescriptor(id, INS_sve_mov, EA_8BYTE, IF_SVE_CB_2A, INS_OPTS_SCALABLE_D, REG_V0, REG_ZR);
                 Assert.That(id.idIsSmallDsc(), Is.True);
+                Assert.That(output, Does.Contain("z0.d, sp"));
             }
         });
     }

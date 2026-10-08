@@ -22,7 +22,7 @@ execution or parity on those targets.
 
 | Period | Capability |
 | --- | --- |
-| 2026-10 | Expanded whole-function backend translation across xarch, ARM/ARM64, LoongArch, RISC-V, and WebAssembly paths, including selected LoongArch frame/call/epilog/profiling support and ARM32 disassembly formatting. Ported legacy JIT32 GC header and pointer-table serialization; focused win-x86 compiler-semantic tests pass, but x86 execution and generated-code parity remain unverified. Target-specific code-generation coverage is not an execution or parity claim. |
+| 2026-10 | Expanded whole-function backend translation across xarch, ARM/ARM64, LoongArch, RISC-V, and WebAssembly paths, including selected LoongArch frame/call/epilog/profiling support, ARM32 disassembly formatting, ARM64 SVE display/scoring, and all five ARM64 debug emitter-test sections. ARM64-targeted managed tests pass; B528 alignment scoring and ARM64 execution/generated-code parity remain open. Also ported legacy JIT32 GC header and pointer-table serialization; focused win-x86 compiler-semantic tests pass, but x86 execution and generated-code parity remain unverified. Target-specific code-generation coverage is not an execution or parity claim. |
 | 2026-09 | Expanded managed Windows-x64 execution from the MinOpts baseline into selected optimized, tiered/PGO, and GC-stress scenarios. The supported scope remains corpus- and configuration-specific. |
 | 2026-06 | Advanced the importer through block-code import, calls, and intrinsics; hardware-intrinsic import was still an outstanding boundary at that point. |
 | 2026-05 | Established basic-block construction, local-variable table initialization, and first-block canonicalization. |
