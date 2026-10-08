@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B158 SideEffectSet::m_preciseExceptions initialization: trace its constructors, allocator/placement-new callsites, and AddNode writes in the pinned oracle; establish whether any runtime path reads the field before it is initialized.",
+    "nextAction": "Resolve B210 filter-entry loops: inspect pinned fgCreateFuncletPrologBlocks and determine whether a filter-head backedge is legal; preserve the native omission unless a reproducer establishes a correction.",
     "activeBatch": {
-      "scope": "B158 initialization and use of SideEffectSet::m_preciseExceptions.",
-      "doneWhen": "The complete native construction/initialization lifecycle and managed equivalent are compared; close if the field is initialized before every read, otherwise move the undefined-state difference to owner review without emulating poison.",
-      "validation": "Trace pinned sideeffect.h/cpp allocation, constructors, AddNode and read paths; run focused side-effect tests if the invariant is ambiguous.",
-      "deferred": "Do not reproduce uninitialized storage or alter side-effect classification without proving the valid native contract."
+      "scope": "B210 filter-entry loop legality and funclet-prolog insertion.",
+      "doneWhen": "Establish whether valid IL can create a filter-head backedge and whether native behavior exposes a correctness issue; preserve the pinned behavior or move a demonstrated correction to owner review.",
+      "validation": "Compare pinned fgCreateFuncletPrologBlocks and EH verification/import constraints; run a focused native repro only if the IL shape is valid.",
+      "deferred": "Do not add filter-head prologs based only on the native TODO comment."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
