@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B117 single-arm qmark likelihood assignments: compare sources/Core/jit/compiler/Compiler.fg.cs::fgExpandQmarkStmt and its focused tests with the pinned native implementation, establish affected edge and block weights, then close the parity finding or move an actual behavior-change decision to owner review.",
+    "nextAction": "Resolve B121 fat-pointer call likelihoods: compare sources/Core/jit/indirectcalltransformer/IndirectCallTransformer.FatPointerCallTransformer.cs and its focused tests with pinned src/coreclr/jit/indirectcalltransformer.cpp, then close if behavior is parity-only or move an actual behavior-change decision to owner review.",
     "activeBatch": {
-      "scope": "B117 single-arm qmark likelihood edge and block assignments.",
-      "doneWhen": "The translated assignments are compared with pinned native code and existing tests; close if parity is preserved, or record only a concrete decision needed to intentionally change native behavior.",
-      "validation": "Compare exact pinned fgprofile.cpp and focused profile-likelihood tests.",
-      "deferred": "Do not change likelihood assignments without establishing a native correction and parity contract."
+      "scope": "B121 fat-pointer check-edge and thin/fat block likelihood assignments.",
+      "doneWhen": "The translated assignments are compared with pinned native code and existing tests; close if parity is preserved, or record only a concrete decision needed to intentionally change profile behavior.",
+      "validation": "Compare exact pinned indirectcalltransformer.cpp and run focused fat-pointer transformation tests.",
+      "deferred": "Do not change profile likelihoods without establishing an upstream correction and parity contract."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
