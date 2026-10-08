@@ -318,7 +318,7 @@ public partial class Globals
     public const int VPTR_OFFS = 0;
 
 #if MEASURE_CLRAPI_CALLS
-#if FEATURE_JIT_METHOD_PERF
+#if !FEATURE_JIT_METHOD_PERF
 #error Can't time these calls without METHOD_PERF.
 #endif
 #if DEBUG

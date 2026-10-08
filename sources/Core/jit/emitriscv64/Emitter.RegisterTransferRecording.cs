@@ -7,6 +7,11 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    public void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insFlags flags)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "RISCV64: NYI");
+    }
+
     public void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
     {
         var code = emitInsCode(ins);

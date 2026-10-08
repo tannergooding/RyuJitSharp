@@ -1026,6 +1026,38 @@ public partial class Compiler
         mostRecentlyActivePhase = phase;
     }
 
+#if MEASURE_CLRAPI_CALLS
+    public void CLRApiCallEnter(uint apix)
+    {
+#if FEATURE_JIT_METHOD_PERF
+        if (compJitTimer is not null)
+        {
+            compJitTimer.ClrApiCallEnter(unchecked((API_ICorJitInfo_Names)apix));
+        }
+#endif
+    }
+
+    public void CLRApiCallLeave(uint apix)
+    {
+#if FEATURE_JIT_METHOD_PERF
+        if (compJitTimer is not null)
+        {
+            compJitTimer.ClrApiCallLeave(unchecked((API_ICorJitInfo_Names)apix));
+        }
+#endif
+    }
+
+    public void CLR_API_Enter(API_ICorJitInfo_Names ename)
+    {
+        CLRApiCallEnter(unchecked((uint)ename));
+    }
+
+    public void CLR_API_Leave(API_ICorJitInfo_Names ename)
+    {
+        CLRApiCallLeave(unchecked((uint)ename));
+    }
+#endif
+
 #if TARGET_XARCH
     /// <summary>Answer the question: Is Vex encoding supported on this target</summary>
     /// <returns></returns>
