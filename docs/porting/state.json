@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B211 reload GC state: trace pinned genUnspillLocal and LSRA resolution state to determine whether the register can already be live while requiring another GC-liveness update; preserve the native workaround unless a native GC/root repro demonstrates a hole.",
+    "nextAction": "Resolve B212 multi-register local indices: trace indexed genRegCopy and genConsumeReg call paths through native register and spill-state updates, then determine whether the parent-local arguments are intentional for every field transition.",
     "activeBatch": {
-      "scope": "B211 reload register liveness and GC state after LSRA resolution.",
-      "doneWhen": "Trace the register-live invariant through resolution and genUnspillLocal; close if the direct mask update is required by existing state, or move a demonstrated GC-root gap to owner review.",
-      "validation": "Compare pinned codegenlinear.cpp and LSRA resolution paths; require an optimized native repro to change the update behavior.",
-      "deferred": "Do not replace the native mask update with genUpdateRegLife based on its name or the TODO alone."
+      "scope": "B212 indexed register-copy and consume liveness for multi-register locals.",
+      "doneWhen": "Establish the required local identity at each update from LSRA field assignments and native state transitions; preserve pinned behavior or move a demonstrated field-specific correctness fix to owner review.",
+      "validation": "Compare pinned codegencommon.cpp/codegenlinear.cpp with managed multi-register local paths and tests; use a target build/repro if source invariants do not decide the index.",
+      "deferred": "Do not replace parent locals with field locals based only on indexed method names."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
