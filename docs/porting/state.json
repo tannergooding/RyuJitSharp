@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Investigate B505: compare inline JIT-time units at the pinned source and current upstream, then determine whether the second conversion is an upstream diagnostic defect or intended compatibility behavior.",
+    "nextAction": "Investigate B506: trace ARM64 GT_LEA lowering and codegen limits to determine whether the deferred address-mode work is a port omission or intentionally constrained upstream behavior.",
     "activeBatch": {
-      "scope": "B505 inline JIT-time rescaling and output-unit contract.",
-      "doneWhen": "Verify the units used by the timer, stored estimate, and emitted inline diagnostics at the pinned and current upstream revisions.",
-      "validation": "Inspect the native and managed conversion paths and focused tests; preserve parity or move an intentional diagnostic change to owner review.",
-      "deferred": "Do not change emitted time units based only on variable names or unverified expectations."
+      "scope": "B506 ARM64 GT_LEA lowering and target address-mode constraints.",
+      "doneWhen": "Establish supported lowering/codegen contracts and whether safe baseline-parity work can be completed without redesign.",
+      "validation": "Compare pinned native and managed lowering plus existing ARM64 LEA tests; do not expand supported forms without a valid design and tests.",
+      "deferred": "Do not change observable generated code or enable baseless arithmetic forms speculatively."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
