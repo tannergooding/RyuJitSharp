@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B208: enumerate remaining consumers of LclVarDsc.lvRegMask and replace relevant legacy single-bank shifts with CodeGen.genGetRegMask(in LclVarDsc); add target-specific high-bank/mask-register coverage and commit.",
+    "nextAction": "Address B024: add a controlled EE-backed successful UTF-16 string/span comparison expansion test; verify operand pop/store order and spill behavior, then update the backlog/state and commit.",
     "activeBatch": {
-      "scope": "B208 legacy local register masks and bank-aware mapping through CodeGen.genGetRegMask(in LclVarDsc).",
-      "doneWhen": "Every relevant consumer preserves native register-bank semantics; target tests cover high registers and mask registers; B208 is removed and the batch is committed.",
-      "validation": "Run focused local-register-mask tests in Debug and Release for the affected target families, plus analyzer-enabled Debug acceptance.",
-      "deferred": "Do not replace unrelated generic masks or duplicate the existing CodeGen classifier."
+      "scope": "B024 successful EE-backed UTF-16 string/span comparison expansion coverage.",
+      "doneWhen": "A controlled EE test successfully expands the comparison and verifies operand pop/store order and spill behavior against the importer contract.",
+      "validation": "Run the focused importer tests in Debug and Release, plus analyzer-enabled Debug acceptance.",
+      "deferred": "Do not alter importer behavior unless the successful expansion test exposes a parity defect."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",

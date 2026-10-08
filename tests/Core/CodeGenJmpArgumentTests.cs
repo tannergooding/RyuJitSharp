@@ -303,6 +303,7 @@ internal static unsafe class CodeGenJmpArgumentTests
             {
                 Type = types[i],
                 RegNum = homes[i],
+                lvLRACandidate = homes[i] != REG_STK,
                 lvIsParam = true,
                 lvIsRegArg = abiRegisters[i] != REG_NA,
                 lvTracked = true,

@@ -113,6 +113,23 @@ internal static unsafe class RegisterTrackingTests
         });
     }
 
+#if TARGET_AMD64 && FEATURE_MASKED_HW_INTRINSICS
+    [Test]
+    public static void LocalRegisterMaskPreservesVectorAndMaskRegisterBanks()
+    {
+        WithCompiler(minOpts: true, (compiler, codeGen) => {
+            compiler.lvaTable = [
+                new() { Type = TYP_SIMD16, lvLRACandidate = true, RegNum = REG_XMM31 },
+                new() { Type = TYP_MASK, lvLRACandidate = true, RegNum = REG_K1 },
+            ];
+            compiler.lvaCount = 2;
+
+            Assert.That(codeGen.genGetRegMask(in compiler.lvaTable[0]), Is.EqualTo(RBM_XMM31));
+            Assert.That(codeGen.genGetRegMask(in compiler.lvaTable[1]), Is.EqualTo(RBM_K1));
+        });
+    }
+#endif
+
     [Test]
     public static void GcRegisterStatePreservesLiveVariablesAndReclassifiesReferences()
     {

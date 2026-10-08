@@ -33,7 +33,7 @@ public sealed partial class CodeGen
 
             var storeType = varDsc.GetStackSlotHomeType();
             Emitter.emitIns_S_R(ins_Store(storeType), storeType.EmitSize, varDsc.RegNum, varNum, 0);
-            var tempMask = regMaskTP.CreateFromRegNum(varDsc.RegNum, varDsc.lvRegMask);
+            var tempMask = genGetRegMask(in varDsc);
             _regSet.RemoveMaskVars(tempMask);
             _gcInfo.gcMarkRegSetNpt(tempMask);
             if (_compiler.lvaIsGCTracked(in varDsc))
