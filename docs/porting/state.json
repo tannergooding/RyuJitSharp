@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B469: reproduce the Linux-target SIMD16 helper-return baseline failure in the test fixture, then determine the correct Unix return-descriptor setup and whether the failure is independent of the shared throw-helper path.",
+    "nextAction": "Resolve B475: determine whether the pinned native oracle and current workspace contain a runnable AOT/Core_Root path for comparing the corrected object-description diagnostic callback.",
     "activeBatch": {
-      "scope": "B469 Linux-target SIMD16 helper-return test baseline.",
-      "doneWhen": "Identify whether the failure comes from invalid fixture metadata or a supported production descriptor contract, independently of throw-helper behavior.",
-      "validation": "Trace the return descriptor setup and native ABI contract, then run the focused Linux-target helper-return cases in Debug and Release.",
-      "deferred": "Do not attribute the failure to the shared throw-helper change or alter return-descriptor assertions without a production-valid case."
+      "scope": "B475 object-description diagnostic parity evidence.",
+      "doneWhen": "Establish whether a pinned native AOT/Core_Root capture can be produced for the corrected object-description callback.",
+      "validation": "Inspect local native runtime artifacts and test harness commands, then compare representative output only if the pinned runtime is runnable.",
+      "deferred": "Do not conflate this callback with B322 inlinee-profile diagnostics or claim parity without a native capture."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
