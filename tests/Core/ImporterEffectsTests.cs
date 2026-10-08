@@ -145,6 +145,110 @@ internal static unsafe class ImporterEffectsTests
     }
 
     [Test]
+    public static void SuccessfulEeBackedStringComparisonPopsArgumentsBeforeOrderedSpills()
+    {
+        SsaLivenessTests.WithCompiler(2, compiler => {
+            compiler.opts.SetMinOpts(false);
+            compiler.compCurBB = new BasicBlock(null, null);
+            compiler.compCurBB.setBBProfileWeight(100);
+            compiler.lvaTable[0].Type = var_types.TYP_REF;
+            compiler.info.compMaxStack = 2;
+            compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
+            compiler.stackState.esStack = new StackEntry[2];
+
+            StringLiteralQuery query = default;
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.getStringLiteral = &GetStringLiteral;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+
+            var value = compiler.gtNewLclvNode(var_types.TYP_REF, 0);
+            var literal = new GenTreeStrCon(42, (CORINFO_MODULE_STRUCT_*)&query);
+            compiler.impPushOnStack(value, new typeInfo());
+            compiler.impPushOnStack(literal, new typeInfo());
+            CORINFO_SIG_INFO signature = new() { numArgs = 2 };
+
+            var result = compiler.impUtf16StringComparison(Compiler.StringComparisonKind.Equals,
+                signature, CorInfoFlag.CORINFO_FLG_STATIC);
+
+            Assert.That(query.Queries, Is.EqualTo(1));
+            Assert.That(query.Token, Is.EqualTo(42));
+            Assert.That(query.BufferSize, Is.EqualTo(Globals.MaxPossibleUnrollSize));
+            Assert.That(query.StartIndex, Is.Zero);
+            Assert.That(result, Is.Not.Null);
+            Assert.That(compiler.stackState.esStackDepth, Is.Zero);
+
+            var statements = ImporterStatements(compiler) ?? throw new AssertionException("Missing string spills.");
+            var valueSpill = statements.RootNode.AsLclVar();
+            var comparisonSpill = statements.NextStmt?.RootNode.AsLclVar()
+                ?? throw new AssertionException("Missing comparison spill.");
+            Assert.That(valueSpill.LclNum, Is.EqualTo(2));
+            Assert.That(valueSpill.Data, Is.SameAs(value));
+            Assert.That(comparisonSpill.LclNum, Is.EqualTo(3));
+            Assert.That(comparisonSpill.Data.Oper, Is.EqualTo(genTreeOps.GT_QMARK));
+            Assert.That(result!.Oper, Is.EqualTo(genTreeOps.GT_LCL_VAR));
+            Assert.That(result.AsLclVar().LclNum, Is.EqualTo(comparisonSpill.LclNum));
+        });
+    }
+
+    [Test]
+    public static void SuccessfulEeBackedSpanComparisonSpillsOnlyItsResult()
+    {
+        SsaLivenessTests.WithCompiler(2, compiler => {
+            fixed (byte* namespaceName = "System\0"u8)
+            fixed (byte* className = "MemoryExtensions\0"u8)
+            fixed (byte* methodName = "AsSpan\0"u8)
+            {
+                var metadata = new MethodMetadata(namespaceName, className, methodName);
+                StringLiteralQuery query = default;
+                ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+                vtable.Base.Base.getStringLiteral = &GetStringLiteral;
+                vtable.Base.Base.getMethodNameFromMetadata = &GetMethodName;
+                ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+                compiler.info.compCompHnd = &jitInfo;
+
+                compiler.opts.SetMinOpts(false);
+                compiler.compCurBB = new BasicBlock(null, null);
+                compiler.compCurBB.setBBProfileWeight(100);
+                compiler.lvaTable[0].Type = var_types.TYP_STRUCT;
+                compiler.lvaTable[0].Layout = new ClassLayout(16);
+                compiler.info.compMaxStack = 2;
+                compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
+                compiler.stackState.esStack = new StackEntry[2];
+
+                var span = compiler.gtNewLclvNode(var_types.TYP_STRUCT, 0);
+                var literal = new GenTreeStrCon(42, (CORINFO_MODULE_STRUCT_*)&query);
+                var asSpan = new GenTreeCall(var_types.TYP_STRUCT) {
+                    _callType = gtCallTypes.CT_USER_FUNC,
+                    _callMethHnd = (CORINFO_METHOD_STRUCT_*)&metadata,
+                    _callMoreFlags = GenTreeCallFlags.GTF_CALL_M_SPECIAL_INTRINSIC,
+                };
+                _ = asSpan.Args.PushBack(NewCallArg.CreateForPrimitive(literal));
+                compiler.impPushOnStack(span, new typeInfo());
+                compiler.impPushOnStack(asSpan, new typeInfo());
+                CORINFO_SIG_INFO signature = new() { numArgs = 2 };
+
+                var result = compiler.impUtf16SpanComparison(Compiler.StringComparisonKind.Equals,
+                    signature, CorInfoFlag.CORINFO_FLG_STATIC);
+
+                Assert.That(query.Queries, Is.EqualTo(1));
+                Assert.That(query.Token, Is.EqualTo(42));
+                Assert.That(query.StartIndex, Is.Zero);
+                Assert.That(result, Is.Not.Null);
+                Assert.That(compiler.stackState.esStackDepth, Is.Zero);
+
+                var statement = ImporterStatements(compiler) ?? throw new AssertionException("Missing span result spill.");
+                var resultSpill = statement.RootNode.AsLclVar();
+                Assert.That(statement.NextStmt, Is.Null);
+                Assert.That(resultSpill.LclNum, Is.EqualTo(2));
+                Assert.That(resultSpill.Data.Oper, Is.EqualTo(genTreeOps.GT_QMARK));
+                Assert.That(result!.Oper, Is.EqualTo(genTreeOps.GT_LCL_VAR));
+                Assert.That(result.AsLclVar().LclNum, Is.EqualTo(resultSpill.LclNum));
+            }
+        });
+    }
+
+    [Test]
     public static void ConstantStringComparisonUsesExactChunkWidths(
         [Values("AbC", "AbC-d", "AbC-deF", "AbC-deFGh")] string value,
         [Values(StringComparison.Ordinal, StringComparison.OrdinalIgnoreCase)] StringComparison comparison)
@@ -709,6 +813,47 @@ internal static unsafe class ImporterEffectsTests
                 additionalTree, args, compiler.gtNewLclVarNode(var_types.TYP_REF, 0), arguments);
             Assert.That(result, Is.EqualTo(region is 0 or 3));
         });
+    }
+
+    private struct StringLiteralQuery
+    {
+        public int Queries;
+        public int Token;
+        public int BufferSize;
+        public int StartIndex;
+    }
+
+    private readonly struct MethodMetadata(byte* namespaceName, byte* className, byte* methodName)
+    {
+        public readonly byte* Namespace = namespaceName;
+        public readonly byte* Class = className;
+        public readonly byte* Method = methodName;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int GetStringLiteral(ICorJitInfo* self, CORINFO_MODULE_STRUCT_* module, int token,
+        char* buffer, int bufferSize, int startIndex)
+    {
+        var query = (StringLiteralQuery*)module;
+        query->Queries++;
+        query->Token = token;
+        query->BufferSize = bufferSize;
+        query->StartIndex = startIndex;
+
+        const string contents = "text";
+        var copyLength = Math.Min(contents.Length, bufferSize);
+        contents.AsSpan(0, copyLength).CopyTo(new Span<char>(buffer, copyLength));
+        return contents.Length;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte* GetMethodName(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* method, byte** className,
+        byte** namespaceName, byte** enclosingClasses, nint maxEnclosingClasses)
+    {
+        var metadata = (MethodMetadata*)method;
+        *className = metadata->Class;
+        *namespaceName = metadata->Namespace;
+        return metadata->Method;
     }
 
     private static void WithCompiler(Action<Compiler> action)
