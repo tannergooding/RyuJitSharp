@@ -62,7 +62,7 @@ public partial class Compiler
     }
 
     private void optDuplicateLoop(FlowGraphNaturalLoop loop, ref BasicBlock insertAfter,
-        Dictionary<BasicBlock, BasicBlock> map, double weightScale, bool withEH)
+        BlockToBlockMap map, double weightScale, bool withEH)
     {
         assert(optCanDuplicateLoop(loop, withEH, out _));
         if (!withEH)
@@ -75,7 +75,7 @@ public partial class Compiler
                 clone.bbRefs = 0;
                 clone.scaleBBWeight(weightScale);
                 currentInsertAfter = clone;
-                map[block] = clone;
+                map.Set(block, clone);
                 return BasicBlockVisit.Continue;
             });
             insertAfter = currentInsertAfter;
@@ -86,7 +86,7 @@ public partial class Compiler
         }
 
         _ = loop.VisitLoopBlocks(block => {
-            var clone = map[block];
+            var clone = map.GetValue(block);
             assert(!clone.HasInitializedTarget);
             optSetMappedBlockTargets(block, clone, map);
             return BasicBlockVisit.Continue;
@@ -106,7 +106,7 @@ public partial class Compiler
     }
 
     private void optDuplicateLoopWithEH(FlowGraphNaturalLoop loop, ref BasicBlock insertAfter,
-        Dictionary<BasicBlock, BasicBlock> map, double weightScale)
+        BlockToBlockMap map, double weightScale)
     {
         var insertionPoint = insertAfter;
         var regionEnds = new Stack<(ushort Index, BasicBlock Block, bool IsTry)>();
@@ -168,7 +168,7 @@ public partial class Compiler
             BasicBlock.CloneBlockState(this, clone, block);
             clone.bbRefs = 0;
             clone.scaleBBWeight(weightScale);
-            map[block] = clone;
+            map.Set(block, clone);
             currentInsertAfter = clone;
             return BasicBlockVisit.Continue;
         });

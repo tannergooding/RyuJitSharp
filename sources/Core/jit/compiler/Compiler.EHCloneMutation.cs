@@ -67,7 +67,7 @@ public partial class Compiler
                 ?? throw new FatalJitException("Cloning a try region requires an insertion point.");
             var clone = fgNewBBafter(BBJ_ALWAYS, insertionPoint, extendRegion: false);
             JITDUMP($"Adding {FMT_BB(clone.bbNum)} (copy of {FMT_BB(block.bbNum)}) after {FMT_BB(insertionPoint.bbNum)}\n");
-            map[block] = clone;
+            map.Set(block, clone);
             BasicBlock.CloneBlockState(this, clone, block);
             clone.scaleBBWeight(info.ProfileScale);
             if (info.ScaleOriginalBlockProfile)
@@ -228,7 +228,7 @@ public partial class Compiler
             }
         }
 
-        var clonedTryEntry = map[tryEntry];
+        var clonedTryEntry = map.GetValue(tryEntry);
         JITDUMP($"Done cloning, cloned try entry is {FMT_BB(clonedTryEntry.bbNum)}\n");
         return clonedTryEntry;
     }

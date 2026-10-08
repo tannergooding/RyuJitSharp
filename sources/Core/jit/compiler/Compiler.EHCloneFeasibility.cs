@@ -15,7 +15,7 @@ public sealed class CloneTryInfo
 
     public List<BasicBlock>? BlocksToClone;
 
-    public Dictionary<BasicBlock, BasicBlock>? Map;
+    public BlockToBlockMap? Map;
 
     public weight_t ProfileScale;
 

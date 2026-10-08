@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BBKinds;
@@ -72,7 +73,7 @@ internal static class EHCloneMutationTests
             var root = compiler.gtNewIconNode(TYP_INT, 42);
             compiler.fgInsertStmtAtEnd(tryEntry, compiler.fgNewStmtFromTree(root));
             tryEntry.SetKindAndTargetEdge(BBJ_ALWAYS, compiler.fgAddRefPred(tryTail, tryEntry));
-            var map = new Dictionary<BasicBlock, BasicBlock>();
+            var map = new BlockToBlockMapDictionary();
             var collected = new List<BasicBlock>();
             var info = new CloneTryInfo(compiler)
             {
@@ -89,27 +90,83 @@ internal static class EHCloneMutationTests
 
             Assert.That(clonedEntry, Is.Not.Null);
             Assert.That(collected, Is.EqualTo([tryEntry, tryTail, handler]));
-            Assert.That(map[tryEntry], Is.SameAs(clonedEntry));
-            Assert.That(insertAfter, Is.SameAs(map[handler]));
+            Assert.That(map.GetValue(tryEntry), Is.SameAs(clonedEntry));
+            Assert.That(insertAfter, Is.SameAs(map.GetValue(handler)));
             Assert.That(after.Next, Is.SameAs(clonedEntry));
-            Assert.That(map[tryEntry].Next, Is.SameAs(map[tryTail]));
-            Assert.That(map[tryTail].Next, Is.SameAs(map[handler]));
+            Assert.That(map.GetValue(tryEntry).Next, Is.SameAs(map.GetValue(tryTail)));
+            Assert.That(map.GetValue(tryTail).Next, Is.SameAs(map.GetValue(handler)));
             Assert.That(compiler.compHndBBtabCount, Is.EqualTo(2));
             Assert.That(compiler.compHndBBtab[0], Is.EqualTo(originalTable));
             Assert.That(compiler.compHndBBtab[1].ebdTryBeg, Is.SameAs(clonedEntry));
-            Assert.That(compiler.compHndBBtab[1].ebdTryLast, Is.SameAs(map[tryTail]));
-            Assert.That(compiler.compHndBBtab[1].ebdHndBeg, Is.SameAs(map[handler]));
-            Assert.That(compiler.compHndBBtab[1].ebdHndLast, Is.SameAs(map[handler]));
+            Assert.That(compiler.compHndBBtab[1].ebdTryLast, Is.SameAs(map.GetValue(tryTail)));
+            Assert.That(compiler.compHndBBtab[1].ebdHndBeg, Is.SameAs(map.GetValue(handler)));
+            Assert.That(compiler.compHndBBtab[1].ebdHndLast, Is.SameAs(map.GetValue(handler)));
             Assert.That(info.EHIndexShift, Is.EqualTo(1));
             Assert.That(clonedEntry!.TryIndex, Is.EqualTo(1));
-            Assert.That(map[handler].HndIndex, Is.EqualTo(1));
-            Assert.That(map[handler].bbRefs, Is.EqualTo(1));
-            Assert.That(clonedEntry.Target, Is.SameAs(map[tryTail]));
+            Assert.That(map.GetValue(handler).HndIndex, Is.EqualTo(1));
+            Assert.That(map.GetValue(handler).bbRefs, Is.EqualTo(1));
+            Assert.That(clonedEntry.Target, Is.SameAs(map.GetValue(tryTail)));
             Assert.That(tryEntry.Target, Is.SameAs(tryTail));
             Assert.That(clonedEntry.FirstStmt!.RootNode, Is.Not.SameAs(root));
             Assert.That(clonedEntry.FirstStmt.RootNode.AsIntCon().IconValue, Is.EqualTo((nint)42));
             Assert.That(clonedEntry.bbWeight, Is.EqualTo(40));
             Assert.That(tryEntry.bbWeight, Is.EqualTo(scaleOriginal ? 60 : 100));
+        });
+    }
+
+    [Test]
+    public static void CloneRegionPreservesNativePredecessorInsertionOrder()
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.None, compiler =>
+        {
+            var tryTail = BasicBlock.New(compiler, BBJ_ALWAYS);
+            var handler = BasicBlock.New(compiler, BBJ_RETURN);
+            var tryEntry = BasicBlock.New(compiler, BBJ_COND);
+            var after = BasicBlock.New(compiler, BBJ_RETURN);
+            tryEntry.Next = tryTail;
+            tryTail.Next = handler;
+            handler.Next = after;
+            compiler.fgFirstBB = tryEntry;
+            compiler.fgLastBB = after;
+            tryEntry.TryIndex = 0;
+            tryTail.TryIndex = 0;
+            handler.HndIndex = 0;
+            compiler.compHndBBtab =
+            [
+                new EHblkDsc
+                {
+                    ebdTryBeg = tryEntry,
+                    ebdTryLast = tryTail,
+                    ebdHndBeg = handler,
+                    ebdHndLast = handler,
+                    ebdEnclosingTryIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+                    ebdEnclosingHndIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+                },
+            ];
+            compiler.compHndBBtabCount = 1;
+            var trueEdge = compiler.fgAddRefPred(tryTail, tryEntry);
+            var falseEdge = compiler.fgAddRefPred(after, tryEntry);
+            trueEdge.Likelihood = 0.5;
+            falseEdge.Likelihood = 0.5;
+            tryEntry.SetCond(trueEdge, falseEdge);
+            tryTail.SetKindAndTargetEdge(BBJ_ALWAYS, compiler.fgAddRefPred(after, tryTail));
+            var info = new CloneTryInfo(compiler)
+            {
+                Map = [],
+                ProfileScale = 1,
+                AddEdges = true,
+            };
+            var insertion = after;
+
+            Assert.That(compiler.fgCloneTryRegion(tryEntry, info, ref insertion), Is.Not.Null);
+
+            var nativeOrder = BlockToBlockMapTests.GetNativeOrder([tryEntry, tryTail, handler]);
+            var expected = nativeOrder
+                .Where(block => (block == tryEntry) || (block == tryTail))
+                .Select(block => info.Map!.GetValue(block))
+                .Reverse()
+                .ToArray();
+            Assert.That(after.PredBlocks.Take(expected.Length), Is.EqualTo(expected));
         });
     }
 
@@ -122,7 +179,7 @@ internal static class EHCloneMutationTests
             table[0] = compiler.compHndBBtab[0];
             compiler.compHndBBtab = table;
             compiler.compHndBBtabCount = MAX_XCPTN_INDEX;
-            var map = new Dictionary<BasicBlock, BasicBlock>();
+            var map = new BlockToBlockMapDictionary();
             var blocks = new List<BasicBlock>();
             var info = new CloneTryInfo(compiler)
             {
@@ -200,16 +257,16 @@ internal static class EHCloneMutationTests
             Assert.That(compiler.compHndBBtab[0].ebdTryBeg, Is.SameAs(entry));
             Assert.That(compiler.compHndBBtab[0].ebdEnclosingTryIndex, Is.EqualTo(2));
             Assert.That(compiler.compHndBBtab[1].ebdTryBeg, Is.SameAs(clone));
-            Assert.That(compiler.compHndBBtab[1].ebdHndBeg, Is.SameAs(info.Map![innerHandler]));
+            Assert.That(compiler.compHndBBtab[1].ebdHndBeg, Is.SameAs(info.Map!.GetValue(innerHandler)));
             Assert.That(compiler.compHndBBtab[1].ebdEnclosingTryIndex, Is.EqualTo(2));
             Assert.That(compiler.compHndBBtab[2].ebdTryBeg, Is.SameAs(outerEntry));
             Assert.That(compiler.compHndBBtab[2].ebdTryLast, Is.SameAs(outerTail));
             Assert.That(outerEntry.TryIndex, Is.EqualTo(2));
             Assert.That(clone!.TryIndex, Is.EqualTo(1));
-            Assert.That(info.Map[innerHandler].TryIndex, Is.EqualTo(2));
-            Assert.That(info.Map[innerHandler].HndIndex, Is.EqualTo(1));
-            Assert.That(info.Map[innerHandler].Kind, Is.EqualTo(BBJ_ALWAYS));
-            Assert.That(info.Map[innerHandler].HasInitializedTarget, Is.False);
+            Assert.That(info.Map!.GetValue(innerHandler).TryIndex, Is.EqualTo(2));
+            Assert.That(info.Map.GetValue(innerHandler).HndIndex, Is.EqualTo(1));
+            Assert.That(info.Map.GetValue(innerHandler).Kind, Is.EqualTo(BBJ_ALWAYS));
+            Assert.That(info.Map.GetValue(innerHandler).HasInitializedTarget, Is.False);
             Assert.That(insertion.Next, Is.SameAs(outerTail));
             Assert.That(info.EHIndexShift, Is.EqualTo(1));
         });
@@ -249,12 +306,12 @@ internal static class EHCloneMutationTests
 
             Assert.That(compiler.fgCloneTryRegion(entry, info, ref insertion), Is.Not.Null);
 
-            Assert.That(compiler.compHndBBtab[1].ebdFilter, Is.SameAs(info.Map![filter]));
-            Assert.That(compiler.compHndBBtab[1].ebdHndBeg, Is.SameAs(info.Map[handler]));
-            Assert.That(info.Map[filter].HndIndex, Is.EqualTo(1));
-            Assert.That(info.Map[filter].CatchType, Is.EqualTo(filter.CatchType));
-            Assert.That(info.Map[filter].HasInitializedTarget, Is.False);
-            Assert.That(info.Map[handler].bbRefs, Is.EqualTo(1));
+            Assert.That(compiler.compHndBBtab[1].ebdFilter, Is.SameAs(info.Map!.GetValue(filter)));
+            Assert.That(compiler.compHndBBtab[1].ebdHndBeg, Is.SameAs(info.Map!.GetValue(handler)));
+            Assert.That(info.Map.GetValue(filter).HndIndex, Is.EqualTo(1));
+            Assert.That(info.Map.GetValue(filter).CatchType, Is.EqualTo(filter.CatchType));
+            Assert.That(info.Map.GetValue(filter).HasInitializedTarget, Is.False);
+            Assert.That(info.Map.GetValue(handler).bbRefs, Is.EqualTo(1));
         });
     }
 
@@ -346,12 +403,12 @@ internal static class EHCloneMutationTests
 
             Assert.That(info.Map, Has.Count.EqualTo(4));
             Assert.That(info.Map!.ContainsKey(unrelatedCall), Is.False);
-            Assert.That(info.Map[call].Kind, Is.EqualTo(BBJ_CALLFINALLY));
-            Assert.That(info.Map[call].Target, Is.SameAs(info.Map[handler]));
-            Assert.That(info.Map[continuation].Kind, Is.EqualTo(BBJ_CALLFINALLYRET));
-            Assert.That(info.Map[continuation].Target, Is.SameAs(after));
-            Assert.That(info.Map[handler].HndIndex, Is.EqualTo(1));
-            Assert.That(compiler.compHndBBtab[1].ebdHndBeg, Is.SameAs(info.Map[handler]));
+            Assert.That(info.Map!.GetValue(call).Kind, Is.EqualTo(BBJ_CALLFINALLY));
+            Assert.That(info.Map.GetValue(call).Target, Is.SameAs(info.Map.GetValue(handler)));
+            Assert.That(info.Map.GetValue(continuation).Kind, Is.EqualTo(BBJ_CALLFINALLYRET));
+            Assert.That(info.Map.GetValue(continuation).Target, Is.SameAs(after));
+            Assert.That(info.Map.GetValue(handler).HndIndex, Is.EqualTo(1));
+            Assert.That(compiler.compHndBBtab[1].ebdHndBeg, Is.SameAs(info.Map.GetValue(handler)));
         });
     }
 
@@ -407,16 +464,16 @@ internal static class EHCloneMutationTests
             Assert.That(info.BlocksToClone, Is.EqualTo([outerEntry, innerEntry, innerHandler, outerHandler]));
             Assert.That(info.EHIndexShift, Is.EqualTo(2));
             Assert.That(compiler.compHndBBtab[2].ebdEnclosingTryIndex, Is.EqualTo(3));
-            Assert.That(compiler.compHndBBtab[2].ebdTryBeg, Is.SameAs(info.Map![innerEntry]));
-            Assert.That(compiler.compHndBBtab[2].ebdHndBeg, Is.SameAs(info.Map[innerHandler]));
+            Assert.That(compiler.compHndBBtab[2].ebdTryBeg, Is.SameAs(info.Map!.GetValue(innerEntry)));
+            Assert.That(compiler.compHndBBtab[2].ebdHndBeg, Is.SameAs(info.Map!.GetValue(innerHandler)));
             Assert.That(compiler.compHndBBtab[3].ebdTryBeg, Is.SameAs(clone));
-            Assert.That(compiler.compHndBBtab[3].ebdTryLast, Is.SameAs(info.Map[innerHandler]));
-            Assert.That(compiler.compHndBBtab[3].ebdHndBeg, Is.SameAs(info.Map[outerHandler]));
+            Assert.That(compiler.compHndBBtab[3].ebdTryLast, Is.SameAs(info.Map.GetValue(innerHandler)));
+            Assert.That(compiler.compHndBBtab[3].ebdHndBeg, Is.SameAs(info.Map.GetValue(outerHandler)));
             Assert.That(clone!.TryIndex, Is.EqualTo(3));
-            Assert.That(info.Map[innerEntry].TryIndex, Is.EqualTo(2));
-            Assert.That(info.Map[innerHandler].TryIndex, Is.EqualTo(3));
-            Assert.That(info.Map[innerHandler].HndIndex, Is.EqualTo(2));
-            Assert.That(info.Map[outerHandler].HndIndex, Is.EqualTo(3));
+            Assert.That(info.Map.GetValue(innerEntry).TryIndex, Is.EqualTo(2));
+            Assert.That(info.Map.GetValue(innerHandler).TryIndex, Is.EqualTo(3));
+            Assert.That(info.Map.GetValue(innerHandler).HndIndex, Is.EqualTo(2));
+            Assert.That(info.Map.GetValue(outerHandler).HndIndex, Is.EqualTo(3));
         });
     }
 

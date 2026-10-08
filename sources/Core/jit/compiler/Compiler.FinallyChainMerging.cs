@@ -62,7 +62,7 @@ public partial class Compiler
         // Process outside in so outer canonicalizations enable inner merges.
         var canMerge = false;
         var didMerge = false;
-        var continuationMap = new Dictionary<BasicBlock, BasicBlock>();
+        var continuationMap = new BlockToBlockMap();
         for (var xtnum = (int)compHndBBtabCount - 1; xtnum >= 0; xtnum--)
         {
             ref var clause = ref compHndBBtab[xtnum];
@@ -144,7 +144,7 @@ public partial class Compiler
     }
 
     private bool fgRetargetBranchesToCanonicalCallFinallyCore(
-        BasicBlock block, BasicBlock handler, Dictionary<BasicBlock, BasicBlock> continuationMap)
+        BasicBlock block, BasicBlock handler, BlockToBlockMap continuationMap)
     {
         if (block.Kind is not (BBJ_ALWAYS or BBJ_CALLFINALLYRET))
         {
@@ -160,7 +160,7 @@ public partial class Compiler
         var leave = callFinally.Next
             ?? throw new InvalidOperationException("A call-finally pair requires its leave block.");
         var continuation = fgGetFinallyContinuation(leave);
-        var canonical = continuationMap[continuation];
+        var canonical = continuationMap.GetValue(continuation);
         assert(canonical is not null);
 
         if (block.Target == canonical)

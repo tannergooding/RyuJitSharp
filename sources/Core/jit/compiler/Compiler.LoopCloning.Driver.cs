@@ -192,7 +192,7 @@ public partial class Compiler
             }
         }
 
-        var map = new Dictionary<BasicBlock, BasicBlock>();
+        var map = new BlockToBlockMap();
         var insertion = slowPreheader;
         optDuplicateLoop(loop, ref insertion, map, LoopCloneContext.SlowPathWeightScaleFactor, withEH);
         _ = loop.VisitLoopBlocks(block => {
@@ -201,7 +201,7 @@ public partial class Compiler
         });
         optPerformStaticOptimizations(loop, context, dynamicPath: true);
 
-        var slowHeader = map[loop.Header];
+        var slowHeader = map.GetValue(loop.Header);
         assert(slowPreheader.Kind is BBJ_ALWAYS && !slowPreheader.HasInitializedTarget);
         slowPreheader.TargetEdge = fgAddRefPred(slowHeader, slowPreheader);
         JITDUMP($"Adding {FMT_BB(slowPreheader.bbNum)} -> {FMT_BB(slowHeader.bbNum)}\n");

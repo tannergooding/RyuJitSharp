@@ -10,11 +10,11 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "B518: compare native bucket traversal with managed dictionary enumeration for BlockToBlockMap predecessor construction and stress-enabled BasicBlock maps; establish concrete order/output effects before changing collection behavior.",
+    "nextAction": "B520: inspect pinned GenTree node-size accounting and managed DumpNodeSizes/ReportOperBashing paths; determine whether target-correct statistics metadata can be supplied without restoring native arena allocation, then implement and compare the optional output.",
     "activeBatch": {
-      "scope": "B518 native hash-table bucket order versus managed map iteration.",
-      "doneWhen": "Compare concrete translated key users and classify observable ordering effects without reintroducing movable native object addresses.",
-      "validation": "Exercise the affected predecessor construction and stress-enabled BasicBlock map paths, then compare resulting order/output with the pinned oracle.",
+      "scope": "B520 target-correct GenTree node-size statistics metadata.",
+      "doneWhen": "Support optional statistics with target-correct metadata and oracle comparison, or establish the exact unsupported boundary without claiming parity.",
+      "validation": "Compare optional GenTree size-statistics output with the pinned oracle and run focused tests for the reporting path.",
       "deferred": "B515 remains blocked on its missing range-check reproducer; B516 remains blocked on matching native/managed PGO inputs and pre-import captures."
     },
     "dynamicTlsInputBoundary": {

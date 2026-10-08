@@ -189,7 +189,7 @@ public partial class Compiler
         var caseNumber = 0;
         JITDUMP($"Dispatch switch block is {FMT_BB(switchBlock.bbNum)}; {caseCount} cases\n");
 
-        var resumePads = new Dictionary<BasicBlock, BasicBlock>();
+        var resumePads = new BlockToBlockMap();
         var continuationEdges = new Dictionary<BasicBlock, FlowEdge>();
         var verifyGCModeTransitions =
             IsReadyToRun && opts.jitFlags->IsSet(JitFlags.JIT_FLAG_VERIFY_GC_MODE_TRANSITIONS);

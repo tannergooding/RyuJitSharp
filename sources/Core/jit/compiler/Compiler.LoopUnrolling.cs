@@ -262,7 +262,7 @@ public partial class Compiler
         }
 #endif
 
-        var blockMap = new Dictionary<BasicBlock, BasicBlock>();
+        var blockMap = new BlockToBlockMap();
         var bottom = loop.GetLexicallyBottomMostBlock();
         var insertAfter = bottom;
         BasicBlock? prevTestBlock = null;
@@ -274,12 +274,12 @@ public partial class Compiler
             var scaleWeight = 1.0 / BB_LOOP_WEIGHT_SCALE;
             optDuplicateLoop(loop, ref insertAfter, blockMap, scaleWeight, unrollLoopsWithEH);
             _ = loop.VisitLoopBlocks(block => {
-                optReplaceScalarUsesWithConst(blockMap[block], lvar, lval);
+                optReplaceScalarUsesWithConst(blockMap.GetValue(block), lvar, lval);
                 return BasicBlockVisit.Continue;
             });
 
-            var clonedTest = blockMap[testBlock];
-            optRedirectPrevUnrollIteration(loop, prevTestBlock, blockMap[loop.Header]);
+            var clonedTest = blockMap.GetValue(testBlock);
+            optRedirectPrevUnrollIteration(loop, prevTestBlock, blockMap.GetValue(loop.Header));
             prevTestBlock = clonedTest;
             lval = iterOper switch
             {

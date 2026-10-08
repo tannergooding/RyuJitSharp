@@ -30,5 +30,5 @@ global using BlkToBlkSetMap = System.Collections.Generic.Dictionary<RyuJitSharp.
 // A map of block -> vector of blocks, can be used as sparse block trees.
 global using BlkToBlkVectorMap = System.Collections.Generic.Dictionary<RyuJitSharp.BasicBlock, System.Collections.Generic.List<RyuJitSharp.BasicBlock>>;
 
-// Map from Block to Block.  Used for a variety of purposes.
-global using BlockToBlockMap = System.Collections.Generic.Dictionary<RyuJitSharp.BasicBlock, RyuJitSharp.BasicBlock>;
+// Map from Block to Block. Its enumeration follows the native JitHashTable bucket order.
+global using BlockToBlockMap = RyuJitSharp.BlockToBlockMapDictionary;

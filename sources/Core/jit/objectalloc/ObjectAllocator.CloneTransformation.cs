@@ -64,7 +64,7 @@ public sealed partial class ObjectAllocator
         var appearanceMap = info.AppearanceMap ?? throw new InvalidOperationException("Missing enumerator appearances.");
         JITDUMP($"\nCloning to ensure allocation at {FMT_BB(allocBlock.bbNum)} does not escape\n");
 
-        var map = new Dictionary<BasicBlock, BasicBlock>();
+        var map = new BlockToBlockMap();
         var insertionPoint = allocBlock;
         var enclosingEHRegion = compiler.ehGetMostNestedRegionIndex(insertionPoint, out var inTry);
         if (enclosingEHRegion != 0)

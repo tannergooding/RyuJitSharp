@@ -1,7 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
-using System.Collections.Generic;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
 
@@ -23,7 +22,7 @@ internal static class EHCloneMappedTargetsTests
         {
             source.SetKindAndTargetEdge(kind, compiler.fgAddRefPred(first, source));
             var originalEdge = source.TargetEdge;
-            var map = new Dictionary<BasicBlock, BasicBlock>();
+            var map = new BlockToBlockMapDictionary();
             if (redirect)
             {
                 map.Add(first, replacement);
@@ -51,10 +50,8 @@ internal static class EHCloneMappedTargetsTests
             originalFalse.Likelihood = 0.2;
             source.SetCond(originalTrue, originalFalse);
 
-            compiler.optSetMappedBlockTargets(source, clone, new Dictionary<BasicBlock, BasicBlock>
-            {
-                [first] = replacement,
-            });
+            var map = new BlockToBlockMapDictionary { { first, replacement } };
+            compiler.optSetMappedBlockTargets(source, clone, map);
 
             Assert.That(clone.TrueTarget, Is.SameAs(replacement));
             Assert.That(clone.FalseTarget, Is.SameAs(second));
@@ -75,10 +72,8 @@ internal static class EHCloneMappedTargetsTests
             shared.Likelihood = 1.0;
             source.SetCond(shared, shared);
 
-            compiler.optSetMappedBlockTargets(source, clone, new Dictionary<BasicBlock, BasicBlock>
-            {
-                [first] = replacement,
-            });
+            var map = new BlockToBlockMapDictionary { { first, replacement } };
+            compiler.optSetMappedBlockTargets(source, clone, map);
 
             Assert.That(clone.TrueEdge, Is.SameAs(clone.FalseEdge));
             Assert.That(clone.TrueEdge.DupCount, Is.EqualTo(2));
@@ -99,10 +94,8 @@ internal static class EHCloneMappedTargetsTests
             var originalTable = new BBJumpTable([originalFirst, originalSecond]);
             source.SetEhf(originalTable);
 
-            compiler.optSetMappedBlockTargets(source, clone, new Dictionary<BasicBlock, BasicBlock>
-            {
-                [first] = replacement,
-            });
+            var map = new BlockToBlockMapDictionary { { first, replacement } };
+            compiler.optSetMappedBlockTargets(source, clone, map);
 
             Assert.That(clone.Kind, Is.EqualTo(BBJ_EHFINALLYRET));
             Assert.That(clone.EhfTargets, Is.Not.SameAs(originalTable));
@@ -130,10 +123,8 @@ internal static class EHCloneMappedTargetsTests
             original.Cases[2] = distinct;
             source.SwitchTargets = original;
 
-            compiler.optSetMappedBlockTargets(source, clone, new Dictionary<BasicBlock, BasicBlock>
-            {
-                [first] = replacement,
-            });
+            var map = new BlockToBlockMapDictionary { { first, replacement } };
+            compiler.optSetMappedBlockTargets(source, clone, map);
 
             var targets = clone.SwitchTargets;
             Assert.That(targets, Is.Not.SameAs(original));
@@ -159,7 +150,7 @@ internal static class EHCloneMappedTargetsTests
         {
             source.SetKindAndTargetEdge(kind, null);
 
-            compiler.optSetMappedBlockTargets(source, clone, new Dictionary<BasicBlock, BasicBlock>());
+            compiler.optSetMappedBlockTargets(source, clone, new BlockToBlockMapDictionary());
 
             Assert.That(clone.Kind, Is.EqualTo(kind));
             Assert.That(clone.NumSucc, Is.Zero);

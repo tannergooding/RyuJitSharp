@@ -251,7 +251,7 @@ public partial class Compiler
 
             var finallyTryIndex = firstBlock.bbTryIndex;
             BasicBlock? insertAfter = null;
-            var blockMap = new Dictionary<BasicBlock, BasicBlock>();
+            var blockMap = new BlockToBlockMap();
             var cloneBBCount = 0;
             var originalWeight = BB_ZERO_WEIGHT;
             if (firstBlock.hasProfileWeight)
@@ -314,13 +314,13 @@ public partial class Compiler
             }
 
             assert(cloneBBCount == regionBBCount);
-            JITDUMP($"Cloned finally blocks are: {FMT_BB(blockMap[firstBlock].bbNum)} " +
-                $"... {FMT_BB(blockMap[lastBlock].bbNum)}\n");
+            JITDUMP($"Cloned finally blocks are: {FMT_BB(blockMap.GetValue(firstBlock).bbNum)} " +
+                $"... {FMT_BB(blockMap.GetValue(lastBlock).bbNum)}\n");
 
             for (var block = firstBlock; ; block = block.Next
                      ?? throw new InvalidOperationException("Finally handler range ended prematurely."))
             {
-                var clone = blockMap[block];
+                var clone = blockMap.GetValue(block);
                 assert(clone.Kind is BBJ_ALWAYS);
                 assert(!clone.HasInitializedTarget);
                 if (block.Kind is BBJ_EHFINALLYRET)
@@ -343,7 +343,7 @@ public partial class Compiler
                 }
             }
 
-            var firstClone = blockMap[firstBlock];
+            var firstClone = blockMap.GetValue(firstBlock);
             var retargetedAllCalls = true;
             var retargetedWeight = BB_ZERO_WEIGHT;
             var call = firstCallFinally;
@@ -427,7 +427,7 @@ public partial class Compiler
                     var weight = block.bbWeight;
                     block.setBBProfileWeight(weight * originalScale);
                     JITDUMP($"Set weight of {FMT_BB(block.bbNum)} to {FMT_WT(block.bbWeight)}\n");
-                    var clone = blockMap[block];
+                    var clone = blockMap.GetValue(block);
                     clone.setBBProfileWeight(weight * clonedScale);
                     JITDUMP($"Set weight of {FMT_BB(clone.bbNum)} to {FMT_WT(clone.bbWeight)}\n");
 

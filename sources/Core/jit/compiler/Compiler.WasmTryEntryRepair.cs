@@ -225,7 +225,7 @@ public partial class Compiler
             var caseCount = numTargets + 1;
             var cases = new FlowEdge[caseCount];
             var successors = new List<FlowEdge>(caseCount);
-            var resetPads = new Dictionary<BasicBlock, BasicBlock>();
+            var resetPads = new BlockToBlockMap();
             var caseEdges = new Dictionary<BasicBlock, FlowEdge>();
 
             for (var v = 0; v <= numTargets; v++)
