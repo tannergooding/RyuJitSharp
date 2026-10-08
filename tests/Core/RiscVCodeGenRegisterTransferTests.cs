@@ -2,8 +2,8 @@
 
 #if TARGET_RISCV64
 using NUnit.Framework;
-using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 
@@ -21,13 +21,20 @@ internal static class RiscVCodeGenRegisterTransferTests
     {
         RiscVCodeGenPortTests.WithCodeGen((_, codeGen) =>
         {
+            var descriptors = RiscVCodeGenPortTests.CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialCount = descriptors.Count;
+            var initialSize = RiscVCodeGenPortTests.CurrentInstructionGroupSize(codeGen.Emitter);
             var operand = new GenTreePhysReg(sourceReg, type) { RegNum = sourceReg };
             var tree = new GenTreeUnOp(GT_PUTARG_REG, type, operand) { RegNum = targetReg };
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genPutArgReg(tree));
+            Assert.DoesNotThrow(() => codeGen.genPutArgReg(tree));
 
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message, Does.Contain("Register move recording requires xarch."));
+            Assert.That(descriptors.Count, Is.EqualTo(initialCount + 1));
+            Assert.That(descriptors[^1].idReg1(), Is.EqualTo(targetReg));
+            Assert.That(descriptors[^1].idReg2(), Is.EqualTo(sourceReg));
+            Assert.That(descriptors[^1].idCodeSize(), Is.GreaterThan(0u));
+            Assert.That(RiscVCodeGenPortTests.CurrentInstructionGroupSize(codeGen.Emitter), Is.GreaterThan(initialSize));
         });
     }
 
@@ -36,12 +43,19 @@ internal static class RiscVCodeGenRegisterTransferTests
     {
         RiscVCodeGenPortTests.WithCodeGen((_, codeGen) =>
         {
+            var descriptors = RiscVCodeGenPortTests.CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialCount = descriptors.Count;
+            var initialSize = RiscVCodeGenPortTests.CurrentInstructionGroupSize(codeGen.Emitter);
             var tree = new GenTreePhysReg(REG_A0, TYP_BYREF) { RegNum = REG_A1 };
 
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForPhysReg(tree));
+            Assert.DoesNotThrow(() => codeGen.genCodeForPhysReg(tree));
 
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message, Does.Contain("Register move recording requires xarch."));
+            Assert.That(descriptors.Count, Is.EqualTo(initialCount + 1));
+            Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_A1));
+            Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_A0));
+            Assert.That(descriptors[^1].idCodeSize(), Is.GreaterThan(0u));
+            Assert.That(RiscVCodeGenPortTests.CurrentInstructionGroupSize(codeGen.Emitter), Is.GreaterThan(initialSize));
         });
     }
 }

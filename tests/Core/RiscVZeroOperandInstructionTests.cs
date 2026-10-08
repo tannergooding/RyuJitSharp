@@ -32,14 +32,8 @@ internal static class RiscVZeroOperandInstructionTests
                 failure = exception;
             }
 
-#if DEBUG
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message, Does.Contain("Instruction sanity checking outside AMD64 is not ported."));
-            Assert.That(RiscVCodeGenPortTests.CurrentInstructionGroupSize(emitter), Is.EqualTo(initialSize));
-#else
             Assert.That(failure, Is.Null);
             Assert.That(RiscVCodeGenPortTests.CurrentInstructionGroupSize(emitter), Is.EqualTo(initialSize + 4));
-#endif
 
             Assert.That(descriptors.Count, Is.EqualTo(initialCount + 1));
             var descriptor = descriptors[^1];

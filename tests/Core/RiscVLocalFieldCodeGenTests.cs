@@ -28,15 +28,9 @@ internal static class RiscVLocalFieldCodeGenTests
             var failure = RiscVCodeGenPortTests.CaptureFatalJitException(
                 () => codeGen.genCodeForLclFld(tree));
 
-#if DEBUG
-            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message, Does.Contain("Instruction sanity checking outside AMD64 is not ported."));
-            Assert.That(RiscVCodeGenPortTests.CurrentInstructionGroupSize(codeGen.Emitter), Is.EqualTo(initialSize));
-#else
             Assert.That(failure, Is.Null);
             Assert.That(RiscVCodeGenPortTests.CurrentInstructionGroupSize(codeGen.Emitter),
                 Is.EqualTo(initialSize + 4));
-#endif
             Assert.That(descriptors.Count, Is.EqualTo(initialCount + 1));
             Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_lw));
             Assert.That(descriptors[^1].idAddr().iiaLclVar.lvaVarNum(), Is.Zero);

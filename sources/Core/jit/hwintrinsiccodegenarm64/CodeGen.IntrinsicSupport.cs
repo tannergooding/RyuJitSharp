@@ -220,46 +220,46 @@ public sealed partial class CodeGen
         BasicBlock dst, regNumber reg)
         => Emitter.emitIns_J_R(ins, attr, dst, reg);
 
-    private static void Arm64IntrinsicEmitFiveRegisters(instruction ins, emitAttr attr,
+    private void Arm64IntrinsicEmitFiveRegisters(instruction ins, emitAttr attr,
         regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4, regNumber reg5,
         insOpts opt = INS_OPTS_NONE, insScalableOpts sopt = INS_SCALABLE_OPTS_NONE,
         insSveMovOpts mopt = INS_SVE_MOV_OPTS_UNPRED)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 emitInsSve_R_R_R_R_R recording is not ported.");
+        => Emitter.emitInsSve_R_R_R_R_R(ins, attr, reg1, reg2, reg3, reg4, reg5, opt, sopt, mopt);
 
-    private static void Arm64IntrinsicEmitFiveRegistersImmediate(instruction ins, emitAttr attr,
+    private void Arm64IntrinsicEmitFiveRegistersImmediate(instruction ins, emitAttr attr,
         regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4, regNumber reg5, nint imm,
         insOpts opt = INS_OPTS_NONE, insScalableOpts sopt = INS_SCALABLE_OPTS_NONE,
         insSveMovOpts mopt = INS_SVE_MOV_OPTS_UNPRED)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 emitInsSve_R_R_R_R_R_I recording is not ported.");
+        => Emitter.emitInsSve_R_R_R_R_R_I(ins, attr, reg1, reg2, reg3, reg4, reg5, imm, opt, sopt, mopt);
 
-    private static void Arm64IntrinsicEmitFourRegistersTwoImmediates(instruction ins, emitAttr attr,
+    private void Arm64IntrinsicEmitFourRegistersTwoImmediates(instruction ins, emitAttr attr,
         regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4, nint imm1, nint imm2,
         insOpts opt = INS_OPTS_NONE, insScalableOpts sopt = INS_SCALABLE_OPTS_NONE,
         insSveMovOpts mopt = INS_SVE_MOV_OPTS_UNPRED)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 emitInsSve_R_R_R_R_I_I recording is not ported.");
+        => Emitter.emitInsSve_R_R_R_R_I_I(ins, attr, reg1, reg2, reg3, reg4, imm1, imm2, opt, sopt, mopt);
 
-    private static void Arm64IntrinsicEmitRegisterPatternImmediate(instruction ins, emitAttr attr,
+    private void Arm64IntrinsicEmitRegisterPatternImmediate(instruction ins, emitAttr attr,
         regNumber reg, insSvePattern pattern, nint imm, insOpts opt = INS_OPTS_NONE)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 emitIns_R_PATTERN_I recording is not ported.");
+        => Emitter.emitIns_R_PATTERN_I(ins, attr, reg, pattern, imm, opt);
 
-    private static void Arm64IntrinsicEmitTwoRegistersPatternImmediate(instruction ins, emitAttr attr,
+    private void Arm64IntrinsicEmitTwoRegistersPatternImmediate(instruction ins, emitAttr attr,
         regNumber reg1, regNumber reg2, insSvePattern pattern, nint imm,
         insOpts opt = INS_OPTS_NONE, insScalableOpts sopt = INS_SCALABLE_OPTS_NONE,
         insSveMovOpts mopt = INS_SVE_MOV_OPTS_UNPRED)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 emitIns_R_R_PATTERN_I recording is not ported.");
+        => Emitter.emitIns_R_R_PATTERN_I(ins, attr, reg1, reg2, pattern, imm, opt, sopt, mopt);
 
-    private static void Arm64IntrinsicEmitPrefetchThreeRegisters(instruction ins, emitAttr attr,
+    private void Arm64IntrinsicEmitPrefetchThreeRegisters(instruction ins, emitAttr attr,
         insSvePrfop prfop, regNumber reg1, regNumber reg2, regNumber reg3,
         insOpts opt = INS_OPTS_NONE, insScalableOpts sopt = INS_SCALABLE_OPTS_NONE)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 emitIns_PRFOP_R_R_R recording is not ported.");
+        => Emitter.emitIns_PRFOP_R_R_R(ins, attr, prfop, reg1, reg2, reg3, opt, sopt);
 
-    private static void Arm64IntrinsicEmitPrefetchTwoRegistersImmediate(instruction ins, emitAttr attr,
+    private void Arm64IntrinsicEmitPrefetchTwoRegistersImmediate(instruction ins, emitAttr attr,
         insSvePrfop prfop, regNumber reg1, regNumber reg2, int imm, insOpts opt = INS_OPTS_NONE)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 emitIns_PRFOP_R_R_I recording is not ported.");
+        => Emitter.emitIns_PRFOP_R_R_I(ins, attr, prfop, reg1, reg2, imm, opt);
 
 #if DEBUG
     private static int Arm64IntrinsicSveReg1ListSize(instruction ins)
-        => throw new FatalJitException(CORJIT_SKIPPED, "ARM64 insGetSveReg1ListSize is not ported.");
+        => RyuJitSharp.Emitter.insGetSveReg1ListSize(ins);
 #endif
 
 #if DEBUG

@@ -19,6 +19,8 @@ public partial class Emitter
     {
 #if TARGET_ARM
         return recordArm32InsMov(ins, attr, dstReg, srcReg, canSkip, flags);
+#elif TARGET_RISCV64
+        return emitIns_MovRiscV64(ins, attr, dstReg, srcReg, canSkip);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Register move recording requires xarch.");
 #else

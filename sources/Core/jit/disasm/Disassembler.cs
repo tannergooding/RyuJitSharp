@@ -61,7 +61,7 @@ public partial struct Disassembler
 #endif
     }
 
-    public readonly void disDone()
+    public void disDone()
     {
 #if USE_COREDISTOOLS
         DoneCoredistoolsDisasm();

@@ -7,11 +7,49 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+#if TARGET_LOONGARCH64
+    public void emitIns_J_cond_la(instruction ins, BasicBlock target, regNumber reg1 = REG_R0, regNumber reg2 = REG_R0)
+#else
     public void emitIns_J_cond_la(instruction ins, BasicBlock target, regNumber reg1, regNumber reg2)
+#endif
     {
 #if TARGET_RISCV64
         assert(emitIsCmpJump(ins));
         emitIns_Jump(ins, target, reg1, reg2);
+#elif TARGET_LOONGARCH64
+        var compiler = _compiler ?? throw new FatalJitException("LoongArch64 jump recording requires an active compiler.");
+        var currentBlock = compiler.compCurBB
+            ?? throw new FatalJitException("LoongArch64 jump recording requires a current basic block.");
+        assert(target is not null);
+        assert(target.HasFlag(BBF_HAS_LABEL));
+
+        // Native records a single-instruction placeholder; long conditional branches are not supported here.
+        var id = emitNewInstrJmp();
+        id.idIns(ins);
+        id.idReg1(reg1);
+        id.idReg2(reg2);
+        id.idjShort = false;
+        id.idInsOpt(INS_OPTS_J_cond);
+        id.idjTarget = target;
+
+        id.idjKeepLong = compiler.fgInDifferentRegions(currentBlock, target);
+#if DEBUG
+        if (compiler.opts.compLongAddress)
+        {
+            id.idjKeepLong = true;
+        }
+#endif
+
+        id.idjIG = emitCurIG;
+        id.idjOffs = unchecked((uint)emitCurIGsize);
+        id.idjNext = emitCurIGjmpList;
+        emitCurIGjmpList = id;
+#if EMITTER_STATS
+        emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
+#endif
+
+        id.idCodeSize(4);
+        appendToCurIG(id);
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Target conditional-branch recording is not implemented.");
 #endif

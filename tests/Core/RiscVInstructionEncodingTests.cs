@@ -67,6 +67,18 @@ internal static class RiscVInstructionEncodingTests
         Assert.That(Emitter.getCompressedArithmeticIns(INS_subw), Is.EqualTo(INS_c_subw));
     }
 
+#if DEBUG
+    [Test]
+    public static void DisplaysRiscVRegisterNames()
+    {
+        var emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
+
+        Assert.That(emitter.emitRegNameRiscV64(REG_ZERO, default, varName: true), Is.EqualTo("zero"));
+        Assert.That(emitter.emitRegNameRiscV64(REG_A0, default, varName: false), Is.EqualTo("a0"));
+        Assert.That(emitter.emitRegNameRiscV64(REG_FT0, default, varName: false), Is.EqualTo("ft0"));
+    }
+#endif
+
     [Test]
     public static void SelectsCompressedRegisterArithmeticForms()
     {

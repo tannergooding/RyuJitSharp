@@ -18,6 +18,8 @@ public partial class Emitter
         return emitOutputInstrArm32(ig, id, dp);
 #elif TARGET_WASM
         return emitOutputInstrWasm(ig, id, dp);
+#elif TARGET_RISCV64
+        return emitOutputInstrRiscV64(ig, id, dp);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Instruction output requires xarch.");
 #else

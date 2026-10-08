@@ -16,12 +16,4 @@ public partial class Emitter
     private static readonly Histogram GCrefsTable = new([0, 1, 2, 5, 10, 20, 50, 128, 256, 512, 1024, 0]);
     private static readonly Histogram stkDepthTable = new([0, 1, 2, 5, 10, 16, 32, 128, 1024, 0]);
 #endif
-
-#if DEBUG && TARGET_ARM64
-    private void emitInsPairSanityCheck(instrDesc? previousId, instrDesc id)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 instruction-pair sanity checking is not ported.");
-    }
-#endif
-
 }

@@ -60,7 +60,11 @@ public partial class Emitter
 #if DEBUG && !TARGET_XARCH && !TARGET_ARM && !TARGET_ARM64 && !TARGET_WASM
     private static void emitInsSanityCheck(instrDesc id)
     {
+#if TARGET_RISCV64
+        emitInsSanityCheckRiscV64(id);
+#else
         throw new FatalJitException(CORJIT_SKIPPED, "Instruction sanity checking outside AMD64 is not ported.");
+#endif
     }
 #endif
 
@@ -68,7 +72,11 @@ public partial class Emitter
     public unsafe void emitDispIns(instrDesc id, bool isNew, bool doffs, bool asmfm,
         uint offset = 0, byte* code = null, nuint size = 0, insGroup? ig = null)
     {
+#if TARGET_RISCV64
+        emitDispInsRiscV64(id, isNew, doffs, asmfm, offset, code, size, ig);
+#else
         throw new FatalJitException(CORJIT_SKIPPED, "Instruction display outside xarch is not ported.");
+#endif
     }
 #endif
 

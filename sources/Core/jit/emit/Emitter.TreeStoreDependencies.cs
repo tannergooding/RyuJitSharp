@@ -18,6 +18,10 @@ public partial class Emitter
         // Pseudo instructions such as LEA are not represented in the instruction table.
         return ((uint)ins < (uint)CodeGen.instInfo.Length) &&
                ((CodeGen.instInfo[(int)ins] & RISCV64_ST) != 0);
+#elif TARGET_LOONGARCH64
+        // Pseudo instructions such as LEA are not represented in the instruction table.
+        return ((uint)ins < (uint)CodeGen.instInfo.Length) &&
+               ((CodeGen.instInfo[(int)ins] & LOONGARCH64_ST) != 0);
 #elif TARGET_ARM
         const byte ST = 4;
         return ((int)ins >= 0) &&

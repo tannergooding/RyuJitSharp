@@ -31,6 +31,7 @@
     <Compile Include="..\Core\HWIntrinsicCodegenClassificationTests.cs" Link="HWIntrinsicCodegenClassificationTests.cs" />
     <Compile Include="..\Core\HWIntrinsicXplatImportTests.cs" Link="HWIntrinsicXplatImportTests.cs" />
     <Compile Include="..\Core\LocalReferenceAccountingTargetTests.cs" Link="LocalReferenceAccountingTargetTests.cs" />
+    <Compile Include="..\Core\LateDisassemblyBackendTests.cs" Link="LateDisassemblyBackendTests.cs" />
     <Compile Include="..\Core\SideEffectSetTests.cs" Link="SideEffectSetTests.cs" />
     <Compile Include="..\Core\SwiftAbiTests.cs" Link="SwiftAbiTests.cs" />
     <Compile Include="..\Core\SysVX64ClassifierTests.cs" Link="SysVX64ClassifierTests.cs" />

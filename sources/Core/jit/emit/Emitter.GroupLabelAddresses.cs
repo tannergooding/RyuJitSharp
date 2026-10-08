@@ -21,6 +21,8 @@ public partial class Emitter
     {
 #if TARGET_ARM64
         emitIns_R_LArm64(ins, attr, dst, reg);
+#elif TARGET_RISCV64
+        emitIns_R_LRiscV64(ins, attr, dst, reg);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Instruction-group address recording requires xarch.");
 #else

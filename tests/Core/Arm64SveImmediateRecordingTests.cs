@@ -5,6 +5,7 @@
 
 #if TARGET_ARM64
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
@@ -14,6 +15,7 @@ using static RyuJitSharp.instruction;
 using static RyuJitSharp.insOpts;
 using static RyuJitSharp.insScalableOpts;
 using static RyuJitSharp.insSvePattern;
+using static RyuJitSharp.insSvePrfop;
 using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp.UnitTests;
@@ -33,6 +35,75 @@ internal static unsafe class Arm64SveImmediateRecordingTests
             Assert.That(id.idOpSize(), Is.EqualTo(EA_PTRSIZE));
             Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)0));
             Assert.That(id.idIsSmallDsc(), Is.True);
+        });
+    }
+
+    [TestCase(INS_sve_ld1b, 1)]
+    [TestCase(INS_sve_ld2b, 2)]
+    [TestCase(INS_sve_ld3d, 3)]
+    [TestCase(INS_sve_st4q, 4)]
+    public static void RegisterListSizeMatchesTheInstruction(instruction ins, int expected)
+    {
+        Assert.That(Emitter.insGetSveReg1ListSize(ins), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public static void SvePatternNamesCoverTheCompleteNativePatternRange()
+    {
+        var field = typeof(Emitter).GetField("s_svePatternNames", BindingFlags.NonPublic | BindingFlags.Static);
+        var names = field?.GetValue(null) as string[]
+            ?? throw new AssertionException("The SVE pattern-name table is unavailable.");
+
+        Assert.That(names, Has.Length.EqualTo(32));
+        Assert.That(names[29], Is.EqualTo("mul4"));
+        Assert.That(names[30], Is.EqualTo("mul3"));
+        Assert.That(names[31], Is.EqualTo("all"));
+    }
+
+    [Test]
+    public static void PatternAndImmediateRecordingKeepsThePatternAndEncodedImmediate()
+    {
+        WithEmitter(emitter =>
+        {
+            var id = Record(emitter, () => emitter.emitIns_R_PATTERN_I(
+                INS_sve_cntw, EA_8BYTE, REG_R0, SVE_PATTERN_VL4, 3));
+
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_SVE_BL_1A));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_R0));
+            Assert.That(id.idSvePattern(), Is.EqualTo(SVE_PATTERN_VL4));
+            Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)3));
+        });
+    }
+
+    [Test]
+    public static void PrefetchRecordingKeepsTheOperationAndAddressOperands()
+    {
+        WithEmitter(emitter =>
+        {
+            var id = Record(emitter, () => emitter.emitIns_PRFOP_R_R_R(
+                INS_sve_prfb, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P0, REG_R1, REG_R2));
+
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_SVE_IB_3A));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_P0));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_R1));
+            Assert.That(id.idReg3(), Is.EqualTo(REG_R2));
+            Assert.That(id.idSvePrfop(), Is.EqualTo(SVE_PRFOP_PLDL1KEEP));
+        });
+    }
+
+    [Test]
+    public static void PrefetchImmediateRecordingPreservesItsSignedOffset()
+    {
+        WithEmitter(emitter =>
+        {
+            var id = Record(emitter, () => emitter.emitIns_PRFOP_R_R_I(
+                INS_sve_prfb, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_P0, REG_R1, -1));
+
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_SVE_IA_2A));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_P0));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_R1));
+            Assert.That(id.idSvePrfop(), Is.EqualTo(SVE_PRFOP_PLDL1KEEP));
+            Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)(-1)));
         });
     }
 

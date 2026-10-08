@@ -80,6 +80,37 @@ internal static unsafe class Arm64SveInstructionSanityTests
         Assert.That(output, Is.Empty);
     }
 
+    [TestCase(IF_SVE_BI_2A, INS_OPTS_NONE, REG_V1)]
+    [TestCase(IF_SVE_AH_3A, INS_OPTS_SCALABLE_B, REG_P7)]
+    public static void MovprfxPairSanityAcceptsMatchingUnpredicatedAndPredicatedPairs(
+        Emitter.insFormat prefixFormat, insOpts prefixOptions, regNumber prefixSecondRegister)
+    {
+        var previous = SanityEmitter.Descriptor(prefixFormat, INS_sve_movprfx, prefixOptions,
+            REG_V0, prefixSecondRegister, REG_V0, REG_V0, EA_SCALABLE, 0);
+        var current = SanityEmitter.Descriptor(IF_SVE_AA_3A, INS_sve_add, INS_OPTS_SCALABLE_B,
+            REG_V0, REG_P7, REG_V2, REG_V3, EA_SCALABLE, 0);
+        var (_, assertions) = Capture(() => CheckPair(EmitterInstance(), previous, current));
+
+        Assert.That(assertions, Is.Empty);
+    }
+
+    [TestCase(IF_SVE_BN_1A, INS_sve_incd)]
+    [TestCase(IF_SVE_AA_3A, INS_sve_add)]
+    public static void MovprfxPairSanityRetainsPredicationAndPredicateChecks(
+        Emitter.insFormat format, instruction ins)
+    {
+        var previous = SanityEmitter.Descriptor(IF_SVE_AH_3A, INS_sve_movprfx, INS_OPTS_SCALABLE_B,
+            REG_V0, REG_P7, REG_V0, REG_V0, EA_SCALABLE, 0);
+        var secondPredicate = format is IF_SVE_AA_3A ? REG_P6 : REG_P7;
+        var current = SanityEmitter.Descriptor(format, ins, INS_OPTS_SCALABLE_B,
+            REG_V0, secondPredicate, REG_V2, REG_V3, EA_SCALABLE, 0);
+        var (_, assertions) = Capture(() => CheckPair(EmitterInstance(), previous, current));
+        string[] expectedAssertions = format is IF_SVE_BN_1A
+            ? ["!movprfxIsPredicated", "!movprfxIsPredicated"]
+            : ["previousId.idReg2() == id.idReg2()"];
+        Assert.That(assertions, Is.EqualTo<string[]>(expectedAssertions));
+    }
+
     [TestCase(IF_SVE_DU_3A, INS_OPTS_SCALABLE_B, REG_P0, REG_R0, REG_R1, EA_4BYTE, 0, "id.idOpSize() == EA_8BYTE")]
     [TestCase(IF_SVE_DW_2B, INS_OPTS_SCALABLE_D, REG_P0, REG_P8, REG_R0, EA_SCALABLE, 2, "isValidUimm(emitGetInsSC(id), 1)")]
     [TestCase(IF_SVE_EJ_3A, INS_OPTS_SCALABLE_B, REG_V0, REG_V1, REG_V2, EA_SCALABLE, 0, "insOptsScalableWords(id.idInsOpt())")]
@@ -325,6 +356,9 @@ internal static unsafe class Arm64SveInstructionSanityTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsSveSanityCheck")]
     private static extern void Check(Emitter emitter, Emitter.instrDesc id);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsPairSanityCheck")]
+    private static extern void CheckPair(Emitter emitter, Emitter.instrDesc? previousId, Emitter.instrDesc id);
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "insSveDecodeTwoSimm5")]
     private static extern void Decode(Emitter? emitter, nint immediate, nint* first, nint* second);

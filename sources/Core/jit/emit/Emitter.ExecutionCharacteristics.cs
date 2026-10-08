@@ -1166,6 +1166,8 @@ public partial class Emitter
             insThroughput = PERFSCORE_THROUGHPUT_1C,
             insLatency = PERFSCORE_LATENCY_1C,
         };
+#elif TARGET_RISCV64
+        return getInsExecutionCharacteristicsRiscV64(id);
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Execution characteristics outside xarch are not implemented.");
 #endif

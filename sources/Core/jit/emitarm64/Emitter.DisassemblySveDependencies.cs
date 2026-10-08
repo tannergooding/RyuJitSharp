@@ -14,11 +14,6 @@ public partial class Emitter
         throw new FatalJitException(CORJIT_SKIPPED, "ARM64 emitDispInsSveHelp is not ported.");
     }
 
-    private static double emitDecodeSmallFloatImm(nint imm, instruction ins)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 emitDecodeSmallFloatImm is not ported.");
-    }
-
 #if DEBUG || LATE_DISASM
     private static void getInsSveExecutionCharacteristics(instrDesc id, ref insExecutionCharacteristics result)
     {

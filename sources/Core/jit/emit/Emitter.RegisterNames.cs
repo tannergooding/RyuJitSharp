@@ -158,6 +158,8 @@ public partial class Emitter
             EA_SCALABLE => string.Concat("z", vectorIndex),
             _ => throw new FatalJitException(CORJIT_INTERNALERROR, $"Invalid ARM64 vector register size {size}."),
         };
+#elif TARGET_RISCV64 && DEBUG
+        return emitRegNameRiscV64(reg, attr, varName);
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Emitter register names outside xarch are not implemented.");
 #endif
