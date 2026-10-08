@@ -83,7 +83,7 @@ public partial class Compiler
     public unsafe void eeDispLineInfos()
     {
         jitprintf($"IP mapping count : {eeBoundariesCount}\n");
-        for (var index = 0; index < eeBoundariesCount; index++)
+        for (uint index = 0; index < unchecked((uint)eeBoundariesCount); index = unchecked(index + 1))
         {
             eeDispLineInfo(eeBoundaries + index);
         }

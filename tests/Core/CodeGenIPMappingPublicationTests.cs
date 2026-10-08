@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -170,6 +171,49 @@ internal static unsafe class CodeGenIPMappingPublicationTests
         Assert.That(output, Is.EqualTo(
             $"IL offs 0x0004 : 0x00000015 ( STACK_EMPTY CALL_INSTRUCTION ASYNC ){Environment.NewLine}" +
             $"IL offs PROLOG : 0x00000015 ( STACK_EMPTY CALL_INSTRUCTION ASYNC ){Environment.NewLine}"));
+    }
+
+    [Test]
+    public static void DiagnosticLineDumpTreatsBoundaryCountAsUnsigned()
+    {
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        var mapping = new ICorDebugInfo.OffsetMapping
+        {
+            ilOffset = (int)ICorDebugInfo.MappingTypes.PROLOG,
+        };
+        compiler.eeBoundariesCount = unchecked((int)0x80000000U);
+        compiler.eeBoundaries = &mapping;
+
+        var previous = Globals.s_jitstdout;
+        using var writer = new BoundaryCountWriter(compiler);
+        Globals.s_jitstdout = writer;
+        try
+        {
+            compiler.eeDispLineInfos();
+            writer.Flush();
+        }
+        finally
+        {
+            Globals.s_jitstdout = previous;
+        }
+
+        Assert.That(writer.SawLineInfo, Is.True);
+    }
+
+    private sealed class BoundaryCountWriter(Compiler compiler) : StreamWriter(new MemoryStream())
+    {
+        public bool SawLineInfo { get; private set; }
+
+        public override void Write(string? value)
+        {
+            if (value == "IL offs ")
+            {
+                SawLineInfo = true;
+                compiler.eeBoundariesCount = 1;
+            }
+
+            base.Write(value);
+        }
     }
 #endif
 
