@@ -276,6 +276,26 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
         });
     }
 
+    [TestCase(long.MinValue)]
+    [TestCase(-1L)]
+    [TestCase(0x0123456789ABCDEFL)]
+    public static void Avx512MoveMaskPreservesAllByteLaneBits(long bits)
+    {
+        WithStore((_, store) =>
+        {
+            var mask = default(simdmask_t);
+            mask.u64[0] = unchecked((ulong)bits);
+            var input = store.VNForSimdMaskCon(mask);
+            var tree = new GenTreeHWIntrinsic(TYP_LONG, NI_AVX512_MoveMask, TYP_BYTE, 64,
+                new GenTreeMskCon(mask));
+            var result = store.EvalHWIntrinsicFunUnary(tree, VNF_HWI_AVX512_MoveMask, input,
+                store.VNForSimdType(64, TYP_BYTE));
+
+            Assert.That(store.TypeOfVN(result), Is.EqualTo(TYP_LONG));
+            Assert.That(store.GetConstantInt64(result), Is.EqualTo(bits));
+        });
+    }
+
     [TestCase(NI_X86Base_Add, VNF_HWI_X86Base_Add, 0x80000000L, false, 1)]
     [TestCase(NI_X86Base_Add, VNF_HWI_X86Base_Add, 0L, false, 0)]
     [TestCase(NI_X86Base_Subtract, VNF_HWI_X86Base_Subtract, 0L, false, 1)]

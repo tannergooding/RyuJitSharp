@@ -503,7 +503,8 @@ public sealed partial class ValueNumStore
                 case NI_AVX512_MoveMask:
                 {
                     var count = simdSize / baseType.Size;
-                    var mask = (ulong)GetConstantSimdMask(arg0VN).RawBits & (ulong)simdmask_t.GetBitMask(count);
+                    var mask = unchecked((ulong)GetConstantSimdMask(arg0VN).RawBits &
+                        (ulong)simdmask_t.GetBitMask(count));
                     if (varTypeIsInt(type))
                     {
                         assert(count <= 32);
