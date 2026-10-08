@@ -14,6 +14,9 @@ public partial class Emitter
     {
 #if TARGET_ARM64
         NYI("emitIns_S");
+#elif TARGET_ARM
+        NYI("emitIns_S");
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 stack instruction recording is not ported.");
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Stack instruction recording requires xarch.");
 #else
@@ -47,6 +50,9 @@ public partial class Emitter
     {
 #if TARGET_ARM64
         NYI("emitIns_S_I");
+#elif TARGET_ARM
+        NYI("emitIns_S_I");
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 stack-immediate instruction recording is not ported.");
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Stack-immediate instruction recording requires xarch.");
 #else

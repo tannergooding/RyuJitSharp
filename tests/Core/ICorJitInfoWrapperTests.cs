@@ -39,20 +39,20 @@ internal static unsafe class ICorJitInfoWrapperTests
 
             for (var index = 0; index < 2; index++)
             {
-                Assert.That(wrapper.isIntrinsic((CORINFO_METHOD_HANDLE)(123 + index)), Is.True);
+                Assert.That(wrapper.isIntrinsic((CORINFO_METHOD_STRUCT_*)(123 + index)), Is.True);
                 Assert.That(s_observedApi, Is.EqualTo(API_isIntrinsic));
                 Assert.That(s_observedReceiver, Is.EqualTo((nint)(&jitInfo)));
-                Assert.That(s_observedArgument, Is.EqualTo(123 + index));
+                Assert.That(s_observedArgument, Is.EqualTo((nint)(123 + index)));
                 Assert.That(ActiveApi(s_timer), Is.EqualTo((API_ICorJitInfo_Names)(-1)));
             }
 
             wrapper.setEHcount(17);
             Assert.That(s_observedApi, Is.EqualTo(API_setEHcount));
-            Assert.That(s_observedArgument, Is.EqualTo(17));
+            Assert.That(s_observedArgument, Is.EqualTo((nint)17));
             Assert.That(ActiveApi(s_timer), Is.EqualTo((API_ICorJitInfo_Names)(-1)));
             Assert.That((nint)wrapper.allocGCInfo(29), Is.EqualTo((nint)456));
             Assert.That(s_observedApi, Is.EqualTo(API_allocGCInfo));
-            Assert.That(s_observedArgument, Is.EqualTo(29));
+            Assert.That(s_observedArgument, Is.EqualTo((nint)29));
             Assert.That(ActiveApi(s_timer), Is.EqualTo((API_ICorJitInfo_Names)(-1)));
 
             ref var info = ref TimerInfo(s_timer);
@@ -83,7 +83,7 @@ internal static unsafe class ICorJitInfoWrapperTests
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static byte IsIntrinsic(ICorJitInfo* receiver, CORINFO_METHOD_HANDLE method)
+    private static byte IsIntrinsic(ICorJitInfo* receiver, CORINFO_METHOD_STRUCT_* method)
     {
         Observe(receiver, (nint)method);
 

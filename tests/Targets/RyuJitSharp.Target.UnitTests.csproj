@@ -67,6 +67,7 @@
     <Compile Include="..\Core\Arm32ProfilingLeaveTests.cs" Link="Arm32ProfilingLeaveTests.cs" />
     <Compile Include="..\Core\Arm32InstructionSelectionTests.cs" Link="Arm32InstructionSelectionTests.cs" />
     <Compile Include="..\Core\Arm32ConstantSwitchRelocationTests.cs" Link="Arm32ConstantSwitchRelocationTests.cs" />
+    <Compile Include="..\Core\Arm32InstructionOutputTests.cs" Link="Arm32InstructionOutputTests.cs" />
     <Compile Include="..\Core\Arm32ThumbInstructionEncodingTests.cs" Link="Arm32ThumbInstructionEncodingTests.cs" />
     <Compile Include="..\Core\Arm32JumpRecordingTests.cs" Link="Arm32JumpRecordingTests.cs" />
     <Compile Include="..\Core\Arm32BlockLabelAddressTests.cs" Link="Arm32BlockLabelAddressTests.cs" />

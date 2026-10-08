@@ -36,6 +36,8 @@ public partial class Emitter
     {
 #if TARGET_ARM64
         return emitOutputLJArm64Core(ig, dst, i);
+#elif TARGET_ARM
+        return emitOutputLJArm32Core(ig, dst, i);
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Label output requires xarch.");
 #else

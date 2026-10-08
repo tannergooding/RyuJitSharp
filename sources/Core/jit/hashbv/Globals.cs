@@ -28,6 +28,20 @@ public static partial class Globals
         return 1 << BitOperations.Log2(number);
     }
 
+    internal static int log2(int number)
+    {
+        var result = 0;
+        number >>= 1;
+
+        while (number != 0)
+        {
+            result++;
+            number >>= 1;
+        }
+
+        return result;
+    }
+
     public static int nodeSort(hashBvNode x, hashBvNode y)
         => unchecked((int)(y.baseIndex - x.baseIndex));
 

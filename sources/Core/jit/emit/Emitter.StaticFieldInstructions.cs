@@ -11,7 +11,10 @@ public partial class Emitter
 {
     public unsafe void emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, regNumber reg, int offs)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM
+        NYI("emitIns_C_R");
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 static-field register instruction recording is not ported.");
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Static-field register stores require xarch.");
 #else
 #if TARGET_AMD64

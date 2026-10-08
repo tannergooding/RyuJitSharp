@@ -22,6 +22,8 @@ internal static unsafe class CompilerTimingTests
 {
 #if FEATURE_JIT_METHOD_PERF
 #if MEASURE_CLRAPI_CALLS
+    private static int _isIntrinsicCallCount;
+
     [Test]
     public static void ClrCountersUseNativeWidthsAndIndependentInlineStorage()
     {
@@ -157,6 +159,65 @@ internal static unsafe class CompilerTimingTests
         }
     }
 
+    [TestCase(0, false)]
+    [TestCase(1, true)]
+    public static void ManagedEeProxyInstallationRejectsEnabledTiming(int enabled, bool shouldReject)
+    {
+        var previousConfig = JitConfig;
+        JitConfig = new JitConfigValues();
+        ClrTimingEnabled(ref JitConfig) = enabled;
+
+        try
+        {
+            if (shouldReject)
+            {
+                var exception = Assert.Throws<FatalJitException>(() => WrapICorJitInfo.EnsureInstallationSupported());
+                Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+                Assert.That(exception?.Message, Does.Contain("unmanaged ICorJitInfo proxy"));
+            }
+            else
+            {
+                Assert.DoesNotThrow(() => WrapICorJitInfo.EnsureInstallationSupported());
+            }
+        }
+        finally
+        {
+            JitConfig = previousConfig;
+        }
+    }
+
+    [Test]
+    public static void ManagedEeWrapperForwardsAndAccountsForTheApiCall()
+    {
+        var previousConfig = JitConfig;
+        JitConfig = new JitConfigValues();
+        ClrTimingEnabled(ref JitConfig) = 1;
+
+        try
+        {
+            var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+            var timer = new JitTimer(0);
+            CompilerJitTimer(compiler) = timer;
+            _isIntrinsicCallCount = 0;
+
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.isIntrinsic = &IsIntrinsic;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            var wrapper = new WrapICorJitInfo(compiler, &jitInfo);
+
+            Assert.That(wrapper.isIntrinsic(default), Is.True);
+            Assert.That(_isIntrinsicCallCount, Is.EqualTo(1));
+            Assert.That(TimerInfo(timer)._allClrApiCalls, Is.EqualTo(1u));
+            Assert.That(TimerInfo(timer)._perClrApiCalls[(int)API_isIntrinsic], Is.EqualTo(1u));
+            Assert.That(ClrActiveApi(timer), Is.EqualTo((API_ICorJitInfo_Names)(-1)));
+            Assert.That(ClrCallStart(timer), Is.Zero);
+        }
+        finally
+        {
+            JitConfig = previousConfig;
+        }
+    }
+
     [Test]
     public static void ClrSummaryUsesNativeApiNamesHeaderAndInvariantNumbers()
     {
@@ -199,6 +260,16 @@ internal static unsafe class CompilerTimingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_clrCallApiNum")]
     private static extern ref API_ICorJitInfo_Names ClrActiveApi(JitTimer timer);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compJitTimer")]
+    private static extern ref JitTimer? CompilerJitTimer(Compiler compiler);
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte IsIntrinsic(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* ftn)
+    {
+        _isIntrinsicCallCount++;
+        return 1;
+    }
 #endif
 
     [Test]

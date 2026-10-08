@@ -101,6 +101,24 @@ internal static unsafe class Arm64InstructionOutputTests
         Assert.That(buffer[24], Is.EqualTo(0xA5));
     }
 
+    [Test]
+    public static void ShortBranchUsesTheNativeWordDisplacement()
+    {
+        var emitter = NewEmitter();
+        var buffer = stackalloc byte[16];
+        new Span<byte>(buffer, 16).Fill(0xA5);
+        emitter.emitCodeBlock = buffer;
+        emitter.emitTotalHotCodeSize = 16;
+        var jump = OutputEmitter.Jump(INS_b, IF_BI_0A, EA_8BYTE, 8);
+        jump.idjShort = true;
+
+        var end = emitter.emitOutputLJ(null, buffer, jump);
+
+        Assert.That((nuint)end, Is.EqualTo((nuint)(buffer + 4)));
+        Assert.That(Unsafe.ReadUnaligned<uint>(buffer), Is.EqualTo(0x14000002u));
+        Assert.That(buffer[4], Is.EqualTo(0xA5));
+    }
+
 #if FEATURE_LOOP_ALIGN
     [TestCase(false)]
     [TestCase(true)]

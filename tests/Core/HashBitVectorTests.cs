@@ -15,6 +15,19 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class HashBitVectorTests
 {
+    [TestCase(0, 0)]
+    [TestCase(1, 0)]
+    [TestCase(2, 1)]
+    [TestCase(3, 1)]
+    [TestCase(4, 2)]
+    [TestCase(31, 4)]
+    [TestCase(32, 5)]
+    [TestCase(int.MaxValue, 30)]
+    public static void IntegerLog2MatchesNativeShiftLoop(int number, int expected)
+    {
+        Assert.That(Globals.log2(number), Is.EqualTo(expected));
+    }
+
     [TestCase(4, 1)]
     [TestCase(5, 4)]
     [TestCase(16, 4)]

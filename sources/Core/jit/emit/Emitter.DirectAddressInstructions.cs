@@ -169,7 +169,10 @@ public partial class Emitter
     public void emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber reg, int disp,
         insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_XARCH
+#if TARGET_ARM
+        NYI("emitIns_I_AR");
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 immediate memory instruction recording is not ported.");
+#elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Immediate memory instruction recording requires xarch.");
 #else
 #if TARGET_AMD64

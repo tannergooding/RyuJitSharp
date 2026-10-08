@@ -302,6 +302,20 @@ public partial class Globals
 #endif
     }
 
+    /// <summary>sets each value of trees to garbage to catch extra references</summary>
+    /// <param name="tree">This node should not be referenced by anyone now</param>
+    /// <param name="rest">These nodes should not be referenced by anyone now</param>
+    [Conditional("DEBUG")]
+    public static void DEBUG_DESTROY_NODE(GenTree tree, params GenTree[] rest)
+    {
+        DEBUG_DESTROY_NODE(tree);
+
+        foreach (var node in rest)
+        {
+            DEBUG_DESTROY_NODE(node);
+        }
+    }
+
 #if DEBUG
     /// <summary>describe the detailed devirtualization reason</summary>
     /// <param name="detail">detail to describe</param>
@@ -432,15 +446,15 @@ public partial class Globals
 
                 try
                 {
+#if MEASURE_CLRAPI_CALLS
+                    WrapICorJitInfo.EnsureInstallationSupported();
+#endif
+
                     // Native placement-new reconstructs every attempt, even when reusing
                     // the inlinee's storage. A managed compiler must likewise start fresh.
                     compiler = new Compiler(methodHandle, jitInfo, methodInfo, inlineInfo);
 
                     inlineInfo?.InlinerCompiler.InlineeCompiler = compiler;
-
-#if MEASURE_CLRAPI_CALLS
-                    var wrapCLR = WrapICorJitInfo.makeOne(pParam->pAlloc, pComp, compHnd);
-#endif
 
                     // push this compiler on the stack (TLS)
                     previousCompiler = JitTls.Compiler;

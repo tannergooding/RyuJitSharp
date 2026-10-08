@@ -261,6 +261,12 @@ internal static class ArmEmitterPredicateTests
         {
             var emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
 
+            AssertSkipped(() => emitter.emitIns_C(INS_ldr, EA_4BYTE, default, 0));
+            AssertSkipped(() => emitter.emitIns_C_R(INS_str, EA_4BYTE, default, REG_R0, 0));
+            AssertSkipped(() => emitter.emitIns_S(INS_ldr, EA_4BYTE, 0, 0));
+            AssertSkipped(() => emitter.emitIns_S_I(INS_str, EA_4BYTE, 0, 0, 0));
+            AssertSkipped(() => emitter.emitIns_C_I(INS_str, EA_4BYTE, default, 0, 0));
+            AssertSkipped(() => emitter.emitIns_I_AR(INS_str, EA_4BYTE, 0, REG_R0, 0));
             AssertSkipped(() => emitter.emitIns_AR_R(INS_ldr, EA_4BYTE, REG_R0, REG_R1, 0, INS_OPTS_RRX));
             AssertSkipped(() => emitter.emitIns_R_C(INS_ldr, EA_4BYTE, REG_R0, default, 0, INS_OPTS_RRX));
             AssertSkipped(() => emitter.emitIns_R_AI(INS_b, EA_4BYTE, REG_R0, 0));

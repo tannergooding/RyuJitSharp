@@ -13,6 +13,9 @@ public partial class Emitter
     {
 #if TARGET_ARM64
         NYI("emitIns_C");
+#elif TARGET_ARM
+        NYI("emitIns_C");
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 static-field instruction recording is not ported.");
 #elif !TARGET_XARCH
         throw new FatalJitException(CORJIT_SKIPPED, "Single static-field instruction recording requires xarch.");
 #else
