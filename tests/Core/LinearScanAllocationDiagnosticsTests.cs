@@ -35,13 +35,26 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
                 DumpAllocationRegisterRecords(allocator);
             });
 
+            var expectedColumns = new StringBuilder();
+            var expectedRegisterCount = 0;
+            for (var registerIndex = (int)REG_INT_FIRST; registerIndex <= (int)codeGen.REG_INT_LAST; registerIndex++)
+            {
+                var register = (regNumber)registerIndex;
+                if (!AllocationDumpRegisters(allocator).IsSet(register))
+                {
+                    continue;
+                }
+
+                _ = expectedColumns.Append(separator).Append(register.Name.PadRight(4));
+                expectedRegisterCount++;
+            }
+
             Assert.That(output, Does.Contain(
                 "TreeID   LocRP#Name Type  Action    Reg  " +
-                $"{separator}rax {separator}rcx {separator}rdx {separator}rbx {separator}rbp " +
-                $"{separator}rsi {separator}rdi {separator}r8  {separator}r9  {separator}"));
+                $"{expectedColumns}{separator}"));
             Assert.That(output, Does.Contain(
                 new string(' ', 41) + string.Concat(
-                    System.Linq.Enumerable.Repeat(separator + "    ", 9)) + separator));
+                    System.Linq.Enumerable.Repeat(separator + "    ", expectedRegisterCount)) + separator));
         });
     }
 
