@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B398: compare ARM64 LSRA consecutive-candidate filtering, spill ranking, and reuse masks with the pinned native implementation; preserve exact wrap behavior and record any correction requiring sign-off.",
+    "nextAction": "Resolve B404: trace ShiftLow/ShiftHigh call-argument categorization on 32-bit targets against pinned native helpers and determine whether the classification difference reaches ABI layout or register allocation before changing it.",
     "activeBatch": {
-      "scope": "B398 ARM64 LSRA consecutive-candidate behavior.",
-      "doneWhen": "Determine whether managed candidate selection, spill ranking, and assigned-register reuse match the pinned wrap behavior; isolate any upstream defect from port parity.",
-      "validation": "Compare pinned lsraarm64.cpp with managed register-selection code and run focused ARM64 LSRA tests.",
-      "deferred": "Do not normalize wrap sequences or change masks without an upstream decision and native runtime evidence."
+      "scope": "B404 32-bit ShiftLow/ShiftHigh call-argument classification.",
+      "doneWhen": "Establish whether the helper arguments are represented as non-IL arguments natively and whether the managed classification changes any target-visible argument/register behavior.",
+      "validation": "Trace pinned ShiftLow/ShiftHigh definitions and callsites, managed CallArg.IsUserArg consumers, and focused x86/ARM target tests.",
+      "deferred": "Do not globally reclassify special arguments or alter call ABI layout without a reachable case and target-specific evidence."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
