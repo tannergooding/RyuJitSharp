@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B185: establish the valid ARM extended-code word bound in the pinned format and whether native indexing beyond the 64-word epilogStartAt array is reachable; then retain native behavior or record only a true undefined-behavior deviation.",
+    "nextAction": "Resolve B198: correct the TARGET_32BIT GenTree.IsMultiRegNode classifier to use the existing managed Oper.IsMultiRegOp property, add 32-bit target coverage, and confirm the target build.",
     "activeBatch": {
-      "scope": "B185 ARM unwind extended-code indexing bounds for epilogStartAt.",
-      "doneWhen": "The native valid format limit and managed behavior are reconciled; remove B185 or record a concrete required owner decision, then commit the evidence.",
-      "validation": "Inspect ARM unwind header/code-word limits and run focused ARM64 unwind diagnostics tests for valid boundary inputs.",
-      "deferred": "Do not treat malformed or native-undefined inputs as parity evidence; avoid changing valid unwind decode behavior."
+      "scope": "B198 TARGET_32BIT multi-register node classification.",
+      "doneWhen": "The classifier uses the existing property consistently with other targets, 32-bit target tests pass, B198 is removed, and the batch is committed.",
+      "validation": "Run focused target test coverage under a 32-bit target configuration and the analyzer-enabled Debug build.",
+      "deferred": "Do not broaden to unrelated multi-register classification or target cleanup."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
