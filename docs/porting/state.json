@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Review B365 native forced-spill assertion limitation: determine whether the bounded native stress failures remain actionable port work or whether the recorded scoped comparison boundary fully resolves the item.",
+    "nextAction": "Resolve B375 ARM64 string-constant cost reachability: trace whether unmorphed GT_CNS_STR can reach gtSetEvalOrder on ARM64 before evaluating the suspicious native integer-constant payload access.",
     "activeBatch": {
-      "scope": "B365 native forced-spill stress limitation.",
-      "doneWhen": "Determine whether the assertion is a pinned-native limitation with adequate bounded evidence or whether any port code remains actionable.",
-      "validation": "Review the recorded global and method-hash-scoped native outcomes; do not rerun unrestricted GCStress4 or claim the managed path passed parity without equivalent native coverage.",
-      "deferred": "Do not change managed stress behavior or alter upstream assertion semantics."
+      "scope": "B375 ARM64 string-constant cost reachability.",
+      "doneWhen": "Establish whether a GT_CNS_STR can reach the integer-constant access in ARM64 gtSetEvalOrder under native invariants.",
+      "validation": "Trace native and managed call paths and any morph/order guarantees; only reproduce with a valid IR shape, not a direct helper invocation that violates phase invariants.",
+      "deferred": "Do not synthesize a payload or change cost behavior until reachability is established."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
