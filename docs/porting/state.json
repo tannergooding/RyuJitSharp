@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B087 global assertion propagation: compare the pinned native VN/SSA-based dispatcher and range-analysis dependencies with the managed implementation, then port any missing coherent dependency closure without widening D004's local-assertion path.",
+    "nextAction": "Resolve B088 assertion-reset reachability: trace O2K_LCLVAR_COPY assertion insertion and optAssertionReset dependency removal in the local path, then prove whether an inequality-copy entry can occur within a block.",
     "activeBatch": {
-      "scope": "B087 global VN/SSA assertion propagation and required range-analysis dependencies.",
-      "doneWhen": "The complete global dispatcher and its required analysis dependencies match pinned native assertion, range, and edge semantics; D004's separate local path remains unchanged.",
-      "validation": "Run focused assertion, range-check, and VN/SSA test suites in Debug and Release.",
-      "deferred": "Do not widen or replace the established local-assertion application path."
+      "scope": "B088 local assertion insertion/reset behavior for O2K_LCLVAR_COPY.",
+      "doneWhen": "Pinned native insertion and reset semantics are checked against reachable managed assertion creation; either add a regression for a real stale dependency or document why the suspected inequality-copy case is unreachable and remove the finding.",
+      "validation": "Run focused assertion table, local application, and reset tests in Debug and Release.",
+      "deferred": "Do not alter pinned assertion semantics without a reachable reproducer."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",

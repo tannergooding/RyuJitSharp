@@ -2150,10 +2150,12 @@ retain their algorithms; the native arithmetic, division, bounds, ordered
 comparison, array-length, hardware-intrinsic and JTRUE cases make no changes in
 this mode. No optimization flag is disabled to obtain this boundary.
 
-The global VN/SSA-based dispatcher and its range-analysis dependencies remain
-unported. Their shared pinned native bodies remain the reference. This
-mode split prevents an optional later phase from blocking required morphing,
-without adding success-shaped fallbacks on the active path.
+The global VN/SSA-based dispatcher and range-analysis dependencies are
+implemented and active in `optAssertionPropMain`; the statement walker,
+forward dataflow callback, relational application and range helpers are covered
+by `ValueNumberPhaseTests`, `AssertionRelationalTests`, and `RangeAnalysisTests`.
+The mode split still prevents an optional later phase from blocking required
+morphing, without adding success-shaped fallbacks on the active path.
 
 ### D005: Instruction recording without optional disassembly
 
