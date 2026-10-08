@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B381 ARM64 non-flags conditional increment: trace the lowered GT_SELECT_INC shapes through pinned codegen dispatch and establish whether a reachable explicit-condition form reaches the inconsistent consumer.",
+    "nextAction": "Resolve B382 physical-promotion remainder target gates: trace DetermineRemainderStrategy against native TARGET_64BIT and FEATURE_SIMD conditions, then determine which unsupported target configurations can reach the mismatches.",
     "activeBatch": {
-      "scope": "B381 ARM64 non-flags conditional increment.",
-      "doneWhen": "Establish whether a valid lowering path can create GT_SELECT_INC without a condition-code operand and reach codegen that assumes one.",
-      "validation": "Trace pinned lowering and codegen callers; use a bounded valid IR reproducer if caller reachability is established, while preserving the pinned transformation until then.",
-      "deferred": "Do not change the lowering shape or codegen consumer without a valid native reproducer."
+      "scope": "B382 physical-promotion remainder target gates.",
+      "doneWhen": "Establish the native target guards for TYP_LONG and SIMD remainder selection and whether managed target configurations lacking those guards are supported.",
+      "validation": "Compare pinned localmorph/decomposition logic with managed DetermineRemainderStrategy and add narrow selection coverage for affected supported target configurations.",
+      "deferred": "Do not add target feature support or change remainder decomposition outside the existing cross-target contract."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
