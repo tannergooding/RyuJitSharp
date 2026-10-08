@@ -8,10 +8,12 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using NUnit.Framework;
+using static RyuJitSharp.CorJitResult;
 using static RyuJitSharp.Disassembler;
 
 namespace RyuJitSharp.UnitTests;
@@ -56,6 +58,30 @@ internal static unsafe class LateDisassemblyBackendTests
     private static readonly List<(nuint Address, nuint Bytes, nuint Size)> s_calls = [];
     private static bool s_failDecode;
     private static nuint s_finished;
+
+    [Test]
+    public static void CoreDisToolsLibraryInitializationFailsClosedUntilNativeLoaderIsPorted()
+    {
+        var method = typeof(Disassembler).GetMethod("InitCoredistoolsLibrary", BindingFlags.NonPublic | BindingFlags.Static)
+            ?? throw new AssertionException("CoreDisTools initialization stub was not found.");
+        var invocation = Assert.Throws<TargetInvocationException>(() => method.Invoke(null, null));
+        var exception = invocation?.InnerException as FatalJitException;
+
+        Assert.That(exception?.Result, Is.EqualTo(CORJIT_SKIPPED));
+        Assert.That(exception?.Message, Does.Contain("native CoreDisTools callback ABI"));
+    }
+
+    [Test]
+    public static void NewCoreDisToolsDisassemblerFailsClosedUntilVariadicLoggerAbiIsPorted()
+    {
+        var method = typeof(Disassembler).GetMethod("NewCoredistoolsDisasm", BindingFlags.NonPublic | BindingFlags.Static)
+            ?? throw new AssertionException("CoreDisTools factory stub was not found.");
+        var invocation = Assert.Throws<TargetInvocationException>(() => method.Invoke(null, [CoreDisTarget.Host]));
+        var exception = invocation?.InnerException as FatalJitException;
+
+        Assert.That(exception?.Result, Is.EqualTo(CORJIT_SKIPPED));
+        Assert.That(exception?.Message, Does.Contain("variadic native logger ABI"));
+    }
 
     [TestCase(false)]
     [TestCase(true)]
