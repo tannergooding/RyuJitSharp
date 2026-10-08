@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Investigate B511: determine how the managed JIT exports a stable build identity for SuperPMI without introducing an unapproved C ABI.",
+    "nextAction": "Investigate B512: compare managed startup/shutdown ownership behavior with native DllMain, including process termination and stdout lifetime.",
     "activeBatch": {
-      "scope": "B511 SuperPMI build identity export for the managed JIT.",
-      "doneWhen": "Identify the exact SuperPMI consumer contract and establish a managed-compatible source for the JIT build identity.",
-      "validation": "Inspect the pinned native symbol and script consumer plus current managed identity formatting; avoid introducing an unverified export ABI.",
-      "deferred": "Do not add a C data export or alter SuperPMI behavior without an approved integration contract."
+      "scope": "B512 native module lifecycle and managed shutdown behavior.",
+      "doneWhen": "Determine which DllMain side effects are represented by managed initialization/disposal and what remains outside the current host contract.",
+      "validation": "Compare the pinned DllMain and jitShutdown semantics with managed initialization, ProcessShutdownWork, and stdout ownership.",
+      "deferred": "Do not add lifecycle hooks or change shutdown/disposal behavior without evidence and a host contract."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
