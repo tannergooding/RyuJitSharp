@@ -34,8 +34,6 @@ global using SignatureToLookupInfoMap = System.Collections.Generic.Dictionary<Ry
 global using SwiftLoweringMap = System.Collections.Generic.Dictionary<RyuJitSharp.Pointer<RyuJitSharp.CORINFO_CLASS_STRUCT_>, System.Runtime.CompilerServices.StrongBox<RyuJitSharp.CORINFO_SWIFT_LOWERING>>;
 #endif
 
-global using AddCodeDscMap = System.Collections.Generic.Dictionary<RyuJitSharp.Compiler.AddCodeDscKey, RyuJitSharp.Compiler.AddCodeDsc>;
-
 // To represent sets of VN's that have already been hoisted in outer loops.
 global using VNSet = System.Collections.Generic.Dictionary<int, bool>;
 

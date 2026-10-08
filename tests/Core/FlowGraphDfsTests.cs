@@ -705,7 +705,7 @@ internal static unsafe class FlowGraphDfsTests
                 acdHndIndex = 1,
                 acdKeyDsg = Compiler.AcdKeyDesignator.KD_FLT
             };
-            var map = new Dictionary<Compiler.AddCodeDscKey, Compiler.AddCodeDsc> {
+            var map = new AddCodeDscMap {
                 [new Compiler.AddCodeDscKey(inner)] = inner,
                 [new Compiler.AddCodeDscKey(outer)] = outer,
                 [new Compiler.AddCodeDscKey(filter)] = filter

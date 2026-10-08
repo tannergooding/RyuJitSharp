@@ -11,7 +11,7 @@ public partial class Compiler
 {
     internal bool fgUseThrowHelperBlocks() => !opts.compDbgCode;
 
-    internal AddCodeDscMap fgGetAddCodeDscMap() => fgAddCodeDscMap ??= [];
+    internal AddCodeDscMap fgGetAddCodeDscMap() => fgAddCodeDscMap ??= new AddCodeDscMap();
 
     internal bool fgIsThrowHlpBlk(BasicBlock block) => block.HasFlag(BBF_THROW_HELPER);
 

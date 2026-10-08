@@ -9,15 +9,15 @@
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
-    "stage": "remaining-partial-boundaries",
-    "nextAction": "At native residual HEAD bfed15123bff4a4362b10edd85582604f912b7e9 (tree 4da8089b996d63380ca2df25ad1a828edcbaddfc; sole parent pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e), B527's CoreDisTools buffered backend is implemented, focused-tested, and retired from native disasm.cpp/disasm.h. B524's managed list merge now matches the pinned comparator/insertion/tail-alias algorithm, is covered in Debug/Release, and jitstd/list.h is retired. The B524 lifetime defect is reported in dotnet/runtime#135435; keep the managed behavior aligned with upstream until a fix lands. Four tracked JIT files remain: compiler.h (693 bytes), jit.h (1,099), fgwasm.h (15,615), and fgwasm.cpp (37,639). Next process the dependency-coherent B508 Wasm group, including the small headers and phase bodies; preserve mutation-sensitive AddCodeDscMap traversal order and do not redesign shared map semantics without approval. Preserve unrelated native WIP and do not claim runtime or generated-code parity.",
+    "stage": "native-residual-definitions-retired",
+    "nextAction": "At native residual HEAD c3b0f65359d01d1b06bfb733848a69e263e3e226 (tree 2fa99de5ea14e2b383662cdd575637e0fe6ffb5a; sole parent pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e), B508's AddCodeDscMap ordering, Wasm successor traversal, SCC transformation, and control-flow phase are implemented and source-tested; compiler.h, jit.h, fgwasm.h, and fgwasm.cpp are retired. No tracked native JIT source/header files remain. Recovery ref refs/recovery/native-before-b508-retirement-20261008 preserves the prior residual HEAD bfed15123bff4a4362b10edd85582604f912b7e9. Continue only with explicitly requested remaining parity or backlog work; do not claim Wasm runtime or generated-code parity.",
     "activeBatch": {
-      "latestBatchValidation": "The B209 closure uses two unsigned target-sized CORINFO_AsyncResumeInfo fields, target alignment/stride, target-width pointer writes, and native output/diagnostic behavior. Removing metadata-only instruction-recording gates lets ARM32/ARM64 genRecordAsyncResume and genAsyncResumeInfo callers reach their translated target instructions. Fresh Debug selections passed AMD64 46/46, ARM32 15/15, ARM64 15/15, and Wasm table 9/9; prior focused Release selections passed AMD64 41/41, ARM32 15/15, and ARM64 15/15. B527 uses CoreDisTools' buffered exports and retires disasm.cpp/disasm.h. B524 mirrors native list merge including the source-tail alias, has focused regression coverage, and is reported as dotnet/runtime#135435. The native commit is bfed15123bff4a4362b10edd85582604f912b7e9 with the pinned oracle as sole parent; recovery refs preserve the prior residual states. Unrelated static build-file deletions and untracked other/ remain untouched.",
-      "scope": "Port the B524 JITST list merge definitions as one complete unit, including default/custom comparator behavior, native insertion ordering, iterator end comparison, and the remaining source-tail alias. Add tests for merged order, retained source metadata, shared tail identity, and iterator termination; report the confirmed native lifetime defect and retire jitstd/list.h. Preserve the exact pinned bug until upstream corrects it.",
-      "doneWhen": "The managed merge matches both pinned overload behaviors, focused Debug and Release tests pass, the shared-tail lifetime defect is recorded in docs/porting/upstream-reports and dotnet/runtime, jitstd/list.h is retired, and the amended native residual commit remains based on the pinned oracle with unrelated WIP preserved.",
-      "validation": "The full Debug unit suite passed 17,407/17,407; the focused Release JitStdContainerTests selection passed 27/27. The exact pinned and current upstream implementations were compared, and the native JIT tree has no merge call sites. The source-level shared-tail defect was reported in dotnet/runtime#135435. Native jitstd/list.h was checked for remaining JIT references and retired; the consolidated native commit retains its sole pinned-oracle parent and recovery refs, with unrelated native WIP untouched.",
-      "mapping": "The remaining queue maps compiler.h/jit.h/fgwasm.h/fgwasm.cpp to Compiler/FgWasm (B508). Conventional native-to-managed mappings apply; only active non-obvious mappings should be added here.",
-      "latestValidation": "Fresh focused Debug runs passed AMD64 async-generation/data-section 46/46, ARM32 table/caller 15/15, ARM64 table/caller 15/15, and Wasm table serialization 9/9. Prior focused Release runs passed ARM32 15/15, ARM64 15/15, and AMD64 41/41; Wasm SCC Debug passed 8/8. B527 LateDisassembly Debug passed 52/52; the Core project built for win-arm64, while its test project failed compilation because x64-only instruction suites are included. The pinned Windows x64 CoreDisTools DLL smoke test verified decode and output clearing. B524's full Debug unit suite passed 17,407/17,407 and focused Release container tests passed 27/27. The native B524 issue is dotnet/runtime#135435. Consolidated native commit bfed15123bff4a4362b10edd85582604f912b7e9 has sole parent 33baf8ee337b20dd0f184b69a6f09be92850bf9e.",
+      "latestBatchValidation": "The full Debug target unit suite passed 263/263, and the focused Release Wasm SCC selection passed 13/13. The B508 tests cover native AddCodeDscMap bucket ordering after growth/rekey, used throw-helper successor ordering, irreducible SCC rewriting, acyclic phase execution, switch interval ordering, and conditional fallthrough reversal. These are managed source-level tests only; no Wasm runtime or generated-code parity is claimed.",
+      "scope": "Complete B508 as one dependency-coherent unit: port the native-compatible AddCodeDscMap iteration contract, Wasm successor enumeration and DFS, subgraph DFS/SCC support, both Wasm phase bodies and diagnostics; add ordering and phase regression tests; retire compiler.h, jit.h, fgwasm.h, and fgwasm.cpp.",
+      "doneWhen": "The AddCodeDscMap and Wasm traversal preserve pinned bucket/successor order, the phase and ordering tests pass, all four native residual files have no remaining JIT references and are retired, and the consolidated native commit retains the pinned oracle as sole parent with unrelated WIP preserved.",
+      "validation": "dotnet test tests\\Targets\\RyuJitSharp.Target.UnitTests.csproj --no-restore --configuration Debug -r win-x64 -p:TargetRuntimeIdentifier=linux-wasm passed 263/263. The focused Release selection with --filter \"FullyQualifiedName~WasmScc\" passed 13/13; the focused Debug Wasm SCC selection also passed 13/13. The four native files had no remaining source or build-list references after translation; the amended residual commit remains based solely on the pinned oracle, with prior HEAD preserved at refs/recovery/native-before-b508-retirement-20261008 and unrelated WIP untouched.",
+      "mapping": "compiler.h phase declarations -> Compiler.WasmPhases.cs and Compiler.WasmControlFlow.cs; jit.h JITDUMPEXEC support -> existing managed JITDUMP/DEBUG diagnostics; fgwasm.h/cpp -> FgWasm.Successors.cs, FgWasm.Scc.cs, WasmInterval.cs, Compiler.WasmPhases.cs, Compiler.WasmControlFlow.cs, and Compiler.WasmDiagnostics.cs.",
+      "latestValidation": "B508: full Debug target unit suite passed 263/263; focused Release Wasm SCC tests passed 13/13, with focused Debug Wasm SCC tests previously passing 13/13. Ordering coverage includes map growth/rekey and used throw helpers; phase coverage includes irreducible SCC rewriting, acyclic control flow, switch intervals, and conditional reversal. This establishes managed source-level behavior only, not Wasm runtime or generated-code parity. Prior B209, B527, and B524 evidence remains in the batch history and corresponding commits.",
       "deferred": [
         "B510 and B511 are post-port follow-ups, not retirement blockers: B510 tracks the unused managed allocator compatibility helpers, and B511 tracks the missing managed build-identity data export for SuperPMI. The empty native CodeGenInterface marker shell and its orphan instruction table are retired. No local other/CMakeLists.txt remains; preserve the untracked other/TODO.txt and other/clrjit.natvis user WIP.",
         "ARM64 SVE display/scoring and the five ARM64 debug emitter-test sections are translated and their native files are retired after ARM64-targeted Debug/Release tests. B528's non-Debug LATE_DISASM alignment-scoring placement metadata remains unresolved; do not claim ARM64 runtime, generated-code, or full disassembly parity.",
@@ -28,7 +28,7 @@
         "RISC-V constant, small-immediate, relocation, helper-address fallback, and local-stack memory sequences now record managed instruction descriptors. Debug descriptor display still reaches the existing sanity-check boundary; Release callers can reach block-relative-address and other instruction-recording dependencies. No generated-code or execution parity is claimed.",
         "The ARM32 relocation descriptor counter, increment, and statistics output are translated and their native definitions retired. Full ARM32 EMITTER_STATS parity remains open under B513 because `emitNativeIGSize()` lacks target-size instruction-group layout; this is a follow-up, not a retirement blocker.",
         "HashBv set-algebra differences B246/B247 are follow-up correctness work, not a reason to retain native bodies after translating the complete definitions. Port and retire the batch-3 source, track these differences, and do not claim parity until they are fixed.",
-        "Keep the open TLS input-ownership and Wasm successor-order blockers unchanged; do not claim global debt clearance or execution parity.",
+        "Keep the open TLS input-ownership blocker unchanged. B508 successor ordering and phase bodies are ported and retired; do not claim Wasm runtime or generated-code parity.",
         "B515 remains open for the RBO replacement VN annotation and the extra empty BB05/#NA phi-edge assertion diagnostic in optimized IndexedArray; do not change value-number or reachability behavior just to erase these differences.",
         "B516 records the optimized GenericCatch pre-import difference between native deferred profile-check failure and managed no-profiled-block output; it is outside the active B515 batch.",
         "The five RISC-V64 SIMD helper bodies retired in the fourth batch were native NYIs under FEATURE_SIMD; matching managed stubs remain guarded by TARGET_RISCV64 && FEATURE_SIMD and explicitly throw CORJIT_SKIPPED after NYI_RISCV64. FEATURE_SIMD is not enabled for the current RISC-V target, so no RISC-V SIMD execution support is claimed.",
@@ -43,9 +43,9 @@
       ],
       "retirement": {
         "oracleCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
-        "nativeResidualCommit": "bfed15123bff4a4362b10edd85582604f912b7e9",
+        "nativeResidualCommit": "c3b0f65359d01d1b06bfb733848a69e263e3e226",
         "completionGate": "Retire each native definition when its body and required support are translated. Known post-port fixes and test failures are tracked in BACKLOG and do not keep completed native bodies as fallback; do not claim parity until those gaps are fixed.",
-        "nextDebtCursor": "At native residual HEAD bfed15123bff4a4362b10edd85582604f912b7e9 (tree 4da8089b996d63380ca2df25ad1a828edcbaddfc; sole parent pinned at 33baf8ee337b20dd0f184b69a6f09be92850bf9e), 4 tracked JIT source/header files remain: compiler.h (693 bytes), jit.h (1,099), fgwasm.h (15,615), and fgwasm.cpp (37,639). The next dependency-coherent batch is the B508 Wasm declarations and phase bodies, with compiler.h/jit.h kept alongside fgwasm.h/cpp because JITDUMPEXEC and the phase declarations are used by those untranslated bodies. Preserve the AddCodeDscMap iteration-order boundary, B529/B528, and unrelated native WIP. Recovery refs preserve the pre-B524 state at refs/recovery/native-before-b524-retirement-20261008, pre-B527 state at refs/recovery/native-before-b527-retirement-20261008, and earlier residual state at refs/recovery/native-before-disasm-header-pruning-20261008."
+        "nextDebtCursor": "At native residual HEAD c3b0f65359d01d1b06bfb733848a69e263e3e226 (tree 2fa99de5ea14e2b383662cdd575637e0fe6ffb5a; sole parent pinned at 33baf8ee337b20dd0f184b69a6f09be92850bf9e), no tracked native JIT source/header files remain. The final four-file B508 unit (compiler.h, jit.h, fgwasm.h, fgwasm.cpp) is translated and retired; its managed map, successor, SCC, and control-flow tests pass. No runtime/generated-code parity is claimed. Recovery ref refs/recovery/native-before-b508-retirement-20261008 preserves prior HEAD bfed15123bff4a4362b10edd85582604f912b7e9. Unrelated static build-file deletions and untracked other/ remain untouched."
       }
     },
     "validationResourcePolicy": {
@@ -67,17 +67,17 @@
       "evidence": "artifacts\\dynamic-tls-inputs"
     },
     "wasmSuccessorTraversalBlocker": {
-      "status": "blocked-no-edits",
+      "status": "resolved",
       "native": [
         "src/coreclr/jit/fgwasm.cpp::WasmSuccessorEnumerator",
         "src/coreclr/jit/fgwasm.h::FgWasm::VisitWasmSuccs"
       ],
-      "managed": "Wasm successor traversal; proposed fixture tests/Targets/WasmSuccessorEnumeratorTests.cs",
-      "blocker": "Tracked as B508. VisitWasmSuccs depends on AddCodeDscMap key iteration order, which follows native hash buckets and changes as EH cleanup removes/rekeys entries. A final managed Dictionary enumeration does not preserve this contract; do not expand shared map semantics without resolving that design boundary."
+      "managed": "Compiler.AddCodeDscMap.cs, FgWasm.Successors.cs, FgWasm.Scc.cs, Compiler.WasmPhases.cs, Compiler.WasmControlFlow.cs, and tests/Targets/WasmSccTests.cs",
+      "blocker": "Resolved by replacing the AddCodeDscMap Dictionary alias with a wrapper over the existing native-compatible JitHashTable and porting the successor, DFS, SCC, and phase definitions. Regression tests cover bucket order through growth/rekey, helper successors, SCC rewriting, interval ordering, and branch reversal. Source-level validation only; no Wasm runtime/generated-code parity."
     },
     "residualReconciliation": {
-      "status": "remaining-partial-files",
-      "nextDebtCursor": "At native residual HEAD bfed15123bff4a4362b10edd85582604f912b7e9, 4 partial JIT files remain. B527's CoreDisTools backend and B524's JITST list merge are ported, with disasm.cpp/disasm.h and jitstd/list.h retired. The next dependency-coherent set is compiler.h, jit.h, fgwasm.h, and fgwasm.cpp for the B508 Wasm traversal bodies; preserve mutation-sensitive AddCodeDscMap key order and unrelated native WIP."
+      "status": "no-partial-files",
+      "nextDebtCursor": "No tracked native JIT source/header files remain at residual HEAD c3b0f65359d01d1b06bfb733848a69e263e3e226 (tree 2fa99de5ea14e2b383662cdd575637e0fe6ffb5a), whose sole parent is pinned oracle 33baf8ee337b20dd0f184b69a6f09be92850bf9e. All four B508 files are translated and retired. Continue only with explicitly requested parity or backlog items, not another residual-source sweep; preserve unrelated WIP."
     },
     "windowsCompletionAssessment": {
       "status": "remaining-source-review",
@@ -90,8 +90,13 @@
       "ref": "refs/porting/snapshots/2026-09-22-csharp-wip"
     },
     "nativeResidual": {
-      "commit": "bfed15123bff4a4362b10edd85582604f912b7e9",
+      "commit": "c3b0f65359d01d1b06bfb733848a69e263e3e226",
       "ref": "refs/heads/main",
+      "tree": "2fa99de5ea14e2b383662cdd575637e0fe6ffb5a"
+    },
+    "nativeBeforeB508Retirement": {
+      "commit": "bfed15123bff4a4362b10edd85582604f912b7e9",
+      "ref": "refs/recovery/native-before-b508-retirement-20261008",
       "tree": "4da8089b996d63380ca2df25ad1a828edcbaddfc"
     },
     "nativeBeforeBatchOneDeferralRetirement": {

@@ -15491,21 +15491,6 @@ public partial class Compiler
         return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }
 
-#if TARGET_WASM
-    public PhaseStatus fgWasmControlFlow()
-    {
-        NYI_WASM("fgWasmControlFlow requires B508 AddCodeDscMap key-order parity for VisitWasmSuccs");
-        throw new FatalJitException(CORJIT_SKIPPED);
-    }
-
-    public PhaseStatus fgWasmTransformSccs()
-    {
-        NYI_WASM("fgWasmTransformSccs requires B508 AddCodeDscMap key-order parity for VisitWasmSuccs");
-        throw new FatalJitException(CORJIT_SKIPPED);
-    }
-
-#endif
-
     protected PhaseStatus fgComputeDominators()
     {
         _dfsTree ??= fgComputeDfs();

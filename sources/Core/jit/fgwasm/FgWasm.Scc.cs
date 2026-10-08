@@ -181,21 +181,101 @@ internal sealed partial class FgWasm
         return modified;
     }
 
-    // B508: retain the native subgraph DFS until mutation-sensitive successor ordering is established.
     internal int WasmRunSubgraphDfs(
         Action<BasicBlock, int> visitPreorder, Action<BasicBlock, int> visitPostorder,
         Action<BasicBlock, BasicBlock> visitEdge, BitVec subgraph, bool useProfile = false)
     {
-        NYI_WASM("WasmRunSubgraphDfs requires B508 successor key-order parity");
-        throw new FatalJitException(CORJIT_SKIPPED);
+        JITDUMP($"Running Wasm subgraph DFS on {BitVecOps.Count(GetTraits(), subgraph)} blocks\n");
+
+        var dfsTree = GetDfsTree();
+        assert(dfsTree.IsForWasm);
+        var traits = GetTraits();
+        var visited = BitVecOps.MakeEmpty(traits);
+        var preorderIndex = 0;
+        var postorderIndex = 0;
+        var compiler = Comp();
+        var blocks = new Stack<WasmSuccessorEnumerator>();
+
+        void DfsFrom(BasicBlock firstBlock)
+        {
+            BitVecOps.AddElemD(traits, visited, firstBlock.bbPostorderNum);
+            blocks.Push(new WasmSuccessorEnumerator(compiler, firstBlock, useProfile));
+            JITDUMP($" visiting {FMT_BB(firstBlock.bbNum)}\n");
+            visitPreorder(firstBlock, preorderIndex++);
+
+            while (blocks.Count > 0)
+            {
+                var current = blocks.Peek();
+                var block = current.Block;
+                var successor = current.NextSuccessor();
+
+                if (successor is null)
+                {
+                    _ = blocks.Pop();
+                    visitPostorder(block, postorderIndex++);
+                    continue;
+                }
+
+                if (BitVecOps.IsMember(traits, subgraph, successor.bbPostorderNum))
+                {
+                    if (BitVecOps.TryAddElemD(traits, visited, successor.bbPostorderNum))
+                    {
+                        blocks.Push(new WasmSuccessorEnumerator(compiler, successor, useProfile));
+                        visitPreorder(successor, preorderIndex++);
+                    }
+
+                    visitEdge(block, successor);
+                }
+            }
+        }
+
+        var entries = new Stack<BasicBlock>();
+        var iterator = new BitVecOps.Iter(traits, subgraph);
+        uint postorderNum = 0;
+        while (iterator.NextElem(ref postorderNum))
+        {
+            var block = dfsTree.GetPostOrder((int)postorderNum);
+            var hasPreds = false;
+
+            foreach (var predecessor in block.PredBlocks)
+            {
+                hasPreds = true;
+                if (!BitVecOps.IsMember(traits, subgraph, predecessor.bbPostorderNum))
+                {
+                    JITDUMP($"{FMT_BB(block.bbNum)} is subgraph entry\n");
+                    entries.Push(block);
+                }
+            }
+
+            if (!hasPreds)
+            {
+                JITDUMP($"{FMT_BB(block.bbNum)} is an isolated subgraph entry\n");
+                entries.Push(block);
+            }
+        }
+
+        while (entries.Count > 0)
+        {
+            var block = entries.Pop();
+            if (!BitVecOps.IsMember(traits, visited, block.bbPostorderNum))
+            {
+                DfsFrom(block);
+            }
+        }
+
+        assert(preorderIndex == postorderIndex);
+        return preorderIndex;
     }
 
 #if DEBUG
-    // DumpDot and FindNested require the same ordered successors as WasmSuccessorEnumerator.
     internal IEnumerable<BasicBlock> SccDiagnosticSuccessors(BasicBlock block)
     {
-        NYI_WASM("Wasm SCC successor diagnostics require B508 successor key-order parity");
-        throw new FatalJitException(CORJIT_SKIPPED);
+        var successors = new WasmSuccessorEnumerator(Comp(), block, useProfile: true);
+        for (var successor = successors.NextSuccessor(); successor is not null;
+            successor = successors.NextSuccessor())
+        {
+            yield return successor;
+        }
     }
 #endif
 }
