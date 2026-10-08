@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B218 absolute indirect-call assertion: trace the no-base/no-index `emitIns_Call` branch through call-parameter construction and downstream consumers, then confirm which operand the native assertion should validate.",
+    "nextAction": "Resolve B225 xarch immediate-only opcode handling: trace `emitIns_I`'s `INS_jge` arm to its callers and confirm whether any valid call reaches `insCodeMI` with an opcode declared outside its MI table prefix.",
     "activeBatch": {
-      "scope": "B218 absolute indirect-call address assertion.",
-      "doneWhen": "Establish the valid parameter shape for no-base/no-index indirect calls and whether the assertion currently checks an impossible field; preserve pinned behavior or move an upstream correction to owner review.",
-      "validation": "Compare pinned emitxarch.cpp call formatting branches with call-parameter producers and managed emitter tests; avoid changing validation without confirming the ABI contract.",
-      "deferred": "Do not replace `params.addr` with `params.disp` solely from the assertion branch's apparent address representation."
+      "scope": "B225 xarch `emitIns_I` `INS_jge` case.",
+      "doneWhen": "Establish whether a valid caller reaches this case and whether the opcode-table prefix mismatch affects encoding; preserve the pinned dispatch or move a demonstrated defect to owner review.",
+      "validation": "Compare pinned emitxarch.cpp and instrsxarch.h with managed emitter tables and all relevant callers; require a reachable test case before changing opcode selection.",
+      "deferred": "Do not reclassify `INS_jge` or alter instruction-table dispatch solely from the table declaration."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
