@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Resolve B134 head-tail merge parity evidence: capture early and post-morph native/managed phase output for cases exercising common-successor moves and cross-jumps, or establish the precise missing oracle/harness blocker if those captures cannot be produced.",
+    "nextAction": "Resolve B135 inlinee profile-check state: compare compiler.h, fgprofilesynthesis.cpp, and fgprofile.cpp in the pinned native oracle with managed initialization, setters, and debug checking; determine whether the observed skipped-check output is only native uninitialized state or a reproducible port discrepancy.",
     "activeBatch": {
-      "scope": "B134 early and post-morph head-tail merge phase parity.",
-      "doneWhen": "Both modes have representative native/managed phase comparisons or a precisely documented external artifact/harness blocker.",
-      "validation": "Compare phase dumps for common-successor moves and cross-jumps in early and late modes.",
-      "deferred": "Do not change merge behavior based on structural tests alone or accept output differences without owner review."
+      "scope": "B135 inlinee profile consistency diagnostic state and its native initialization contract.",
+      "doneWhen": "The native field initialization/assignment lifecycle and managed tests are compared; close if the observed difference is only undefined native state, or move an actual output-correction decision to owner review.",
+      "validation": "Compare pinned compiler.h, fgprofilesynthesis.cpp, fgprofile.cpp and focused profile-synthesis tests.",
+      "deferred": "Do not emulate uninitialized native storage or alter diagnostic behavior without establishing a valid native contract."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
