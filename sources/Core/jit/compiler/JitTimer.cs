@@ -33,10 +33,10 @@ public sealed class JitTimer
     private long _clrCallStart;
 
     /// <summary>CLR API invokes under current outer so far</summary>
-    private long _clrCallInvokes;
+    private ulong _clrCallInvokes;
 
     /// <summary>CLR API  cycles under current outer so far.</summary>
-    private long _clrCallCycles;
+    private ulong _clrCallCycles;
 
     /// <summary>The enum/index of the current CLR API call (or -1).</summary>
     private API_ICorJitInfo_Names _clrCallApiNum;
@@ -164,9 +164,11 @@ public sealed class JitTimer
             _info._cyclesByPhase[(int)(phase)] += phaseCycles;
 
 #if MEASURE_CLRAPI_CALLS
-        // Record the CLR API timing info as well.
-        _info._CLRinvokesByPhase[(int)(phase)] += _CLRcallInvokes;
-        _info._CLRcyclesByPhase[(int)(phase)] += _CLRcallCycles;
+            // Record the CLR API timing info as well.
+            _info._clrInvokesByPhase[(int)phase] = unchecked(
+                _info._clrInvokesByPhase[(int)phase] + _clrCallInvokes);
+            _info._clrCyclesByPhase[(int)phase] = unchecked(
+                _info._clrCyclesByPhase[(int)phase] + _clrCallCycles);
 #endif
 
             // Credit the phase's ancestors, if any.
@@ -332,32 +334,30 @@ public sealed class JitTimer
         _clrCallApiNum = (API_ICorJitInfo_Names)(-1);
 
         // Ignore this one if we don't have a valid starting counter.
-        if (JitConfig.JitEECallTimingInfo is not 0)
+        if (_clrCallStart is not 0)
         {
-            // Compute the cycles spent in the call.
-            assert(_clrCallStart is not 0);
+            if (JitConfig.JitEECallTimingInfo is not 0)
+            {
+                var elapsed = unchecked((ulong)Stopwatch.GetTimestamp() - (ulong)_clrCallStart);
+                var index = (int)apix;
 
-            var elapsed = Stopwatch.GetTimestamp() - _clrCallStart;
+                _info._cyclesByPhase[(int)PHASE_CLR_API] = unchecked(
+                    _info._cyclesByPhase[(int)PHASE_CLR_API] + elapsed);
+                _info._invokesByPhase[(int)PHASE_CLR_API] = unchecked(
+                    _info._invokesByPhase[(int)PHASE_CLR_API] + 1);
+                _info._allClrApiCycles = unchecked(_info._allClrApiCycles + elapsed);
+                _info._allClrApiCalls = unchecked(_info._allClrApiCalls + 1);
+                _info._perClrApiCalls[index] = unchecked(_info._perClrApiCalls[index] + 1);
+                _info._perClrApiCycles[index] = unchecked(_info._perClrApiCycles[index] + elapsed);
+                _info._maxClrApiCycles[index] = uint.Max(_info._maxClrApiCycles[index], unchecked((uint)elapsed));
+
+                // Exclude EE time from the enclosing phase's exclusive time.
+                _curPhaseStart = unchecked(_curPhaseStart + (long)elapsed);
+                _clrCallInvokes = unchecked(_clrCallInvokes + 1);
+                _clrCallCycles = unchecked(_clrCallCycles + elapsed);
+            }
+
             _clrCallStart = 0;
-
-            // Add the cycles to the 'phase' and bump its use count.
-            _info._cyclesByPhase[PHASE_CLR_API] += elapsed;
-            _info._invokesByPhase[PHASE_CLR_API] += 1;
-
-            // Add the values to the "per API" info.
-            _info._allClrAPIcycles += elapsed;
-            _info._allClrAPIcalls += 1;
-
-            _info._perClrApiCalls[apix] += 1;
-            _info._perClrApiCycles[apix] += elapsed;
-            _info._maxClrApiCycles[apix] = long.Max(_info._maxClrApiCycles[apix], elapsed);
-
-            // Subtract the cycles from the enclosing phase by bumping its start time
-            _curPhaseStart += elapsed;
-
-            // Update the running totals.
-            _clrCallInvokes += 1;
-            _clrCallCycles += elapsed;
         }
     }
 #endif

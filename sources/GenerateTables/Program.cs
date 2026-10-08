@@ -22,6 +22,7 @@ internal static class Program
 
         GenerateApiICorJitInfoNames();
         GenerateApiICorJitInfoNamesExtensions();
+        GenerateWrapICorJitInfo();
 
         GenerateCodeSeqSM();
         GenerateCompiler();
@@ -135,6 +136,92 @@ public static partial class API_ICorJitInfo_NamesExtensions
     private static readonly string[] s_name = [
 {{builder}}    ];
 }
+""");
+    }
+
+    private static void GenerateWrapICorJitInfo()
+    {
+        // Use the managed ABI declarations for types/defaults, and the native API
+        // list for indices and order. Neither the EE layout nor its vtable changes.
+        var signatures = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        foreach (var line in File.ReadLines(@"..\Core\inc\corjit\ICorJitInfo.cs"))
+        {
+            var match = Regex.Match(line, @"^    public (?!static)(?<signature>.+? (?<name>\w+)\(.*\)) => ");
+
+            if (match.Success)
+            {
+                signatures.Add(match.Groups["name"].Value, match.Groups["signature"].Value);
+            }
+        }
+
+        var builder = ProcessMacroBasedFile(@"Inputs\ICorJitInfo_names_generated.h", "DEF_CLR_API(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 1)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].Trim();
+
+            if (!signatures.Remove(name, out var signature))
+            {
+                throw new InvalidDataException($"Missing or duplicate ICorJitInfo signature: '{name}'");
+            }
+
+            var openParen = signature.IndexOf('(', StringComparison.Ordinal);
+            var parameters = signature.AsSpan(openParen + 1, signature.Length - openParen - 2);
+            var arguments = new List<string>();
+
+            foreach (var parameter in parameters.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var declaration = parameter.Split('=')[0].Trim();
+                arguments.Add(declaration[(declaration.LastIndexOf(' ', StringComparison.Ordinal) + 1)..]);
+            }
+
+            var returnType = signature[..(openParen - name.Length - 1)];
+            var call = $"wrapHnd->{name}({string.Join(", ", arguments)})";
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    public {signature}");
+            _ = builder.AppendLine("    {");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        wrapComp.CLR_API_Enter(API_{name});");
+
+            if (returnType == "void")
+            {
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {call};");
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        wrapComp.CLR_API_Leave(API_{name});");
+            }
+            else
+            {
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {returnType} temp = {call};");
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        wrapComp.CLR_API_Leave(API_{name});");
+                _ = builder.AppendLine();
+                _ = builder.AppendLine("        return temp;");
+            }
+
+            _ = builder.AppendLine("    }");
+            _ = builder.AppendLine();
+        });
+
+        if (signatures.Count != 0)
+        {
+            throw new InvalidDataException($"ICorJitInfo APIs missing timing indices: {string.Join(", ", signatures.Keys)}");
+        }
+
+        _ = Directory.CreateDirectory(@"Outputs\jit\compiler");
+        File.WriteAllText(@"Outputs\jit\compiler\WrapICorJitInfo.generated.cs", $$"""
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+#if MEASURE_CLRAPI_CALLS
+using static RyuJitSharp.ICorJitInfo;
+
+namespace RyuJitSharp;
+
+public sealed unsafe partial class WrapICorJitInfo
+{
+{{builder}}}
+#endif
 """);
     }
 

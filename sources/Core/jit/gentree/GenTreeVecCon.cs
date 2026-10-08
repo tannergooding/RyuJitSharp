@@ -5,9 +5,7 @@
 
 #if FEATURE_SIMD
 using System;
-#if TARGET_ARM64
 using System.Diagnostics.CodeAnalysis;
-#endif
 
 namespace RyuJitSharp;
 
@@ -24,10 +22,8 @@ public sealed class GenTreeVecCon : GenTree
         assert(varTypeIsSimd(type));
     }
 
-#if TARGET_ARM64
     [SuppressMessage("Design", "CA1065:Do not raise exceptions in unexpected locations",
         Justification = "Invalid SIMD types must terminate compilation.")]
-#endif
     public bool IsAllBitsSet => Type switch {
         TYP_SIMD8 => _simdVal.v64[0].IsAllBitsSet,
         TYP_SIMD12 => _simdVal.v64[0].IsAllBitsSet && (_simdVal.u32[2] == uint.MaxValue),
@@ -43,17 +39,11 @@ public sealed class GenTreeVecCon : GenTree
         TYP_SIMD32 => _simdVal.v256[0].IsAllBitsSet,
         TYP_SIMD64 => _simdVal.IsAllBitsSet,
 #endif
-#if TARGET_ARM64
-        _ => throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unexpected ARM64 SIMD constant type."),
-#else
-        _ => false,
-#endif
+        _ => throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unexpected SIMD constant type."),
     };
 
-#if TARGET_ARM64
     [SuppressMessage("Design", "CA1065:Do not raise exceptions in unexpected locations",
         Justification = "Invalid SIMD types must terminate compilation.")]
-#endif
     public bool IsZero => Type switch {
         TYP_SIMD8 => _simdVal.v64[0].IsZero,
         TYP_SIMD12 => _simdVal.v64[0].IsZero && (_simdVal.u32[2] == 0),
@@ -69,11 +59,7 @@ public sealed class GenTreeVecCon : GenTree
         TYP_SIMD32 => _simdVal.v256[0].IsZero,
         TYP_SIMD64 => _simdVal.IsZero,
 #endif
-#if TARGET_ARM64
-        _ => throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unexpected ARM64 SIMD constant type."),
-#else
-        _ => false,
-#endif
+        _ => throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unexpected SIMD constant type."),
     };
 
 #if TARGET_ARM64

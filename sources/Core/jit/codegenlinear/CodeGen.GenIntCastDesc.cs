@@ -18,9 +18,11 @@ public sealed partial class CodeGen
             CHECK_NONE,
             CHECK_SMALL_INT_RANGE,
             CHECK_POSITIVE,
+#if TARGET_64BIT || TARGET_WASM
             CHECK_UINT_RANGE,
             CHECK_POSITIVE_INT_RANGE,
             CHECK_INT_RANGE,
+#endif
         }
 
         public enum ExtendKind
@@ -28,12 +30,16 @@ public sealed partial class CodeGen
             COPY,
             ZERO_EXTEND_SMALL_INT,
             SIGN_EXTEND_SMALL_INT,
+#if TARGET_64BIT || TARGET_WASM
             ZERO_EXTEND_INT,
             SIGN_EXTEND_INT,
+#endif
             LOAD_ZERO_EXTEND_SMALL_INT,
             LOAD_SIGN_EXTEND_SMALL_INT,
+#if TARGET_64BIT || TARGET_WASM
             LOAD_ZERO_EXTEND_INT,
             LOAD_SIGN_EXTEND_INT,
+#endif
             LOAD_SOURCE,
         }
 

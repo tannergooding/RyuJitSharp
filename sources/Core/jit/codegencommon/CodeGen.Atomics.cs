@@ -538,6 +538,7 @@ public sealed partial class CodeGen
 #endif
     }
 
+#if !TARGET_LOONGARCH64
     public void instGen_MemoryBarrier(BarrierKind barrierKind)
     {
 #if TARGET_ARM64
@@ -605,4 +606,5 @@ public sealed partial class CodeGen
         }
 #endif
     }
+#endif
 }

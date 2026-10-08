@@ -56,6 +56,27 @@ internal static unsafe class LateDisassemblyTests
     }
 
     [Test]
+    public static void LinearAddressAndRemainingSizeSpanHotAndColdCodeBuffers()
+    {
+        var hot = stackalloc byte[3] { 0x10, 0x11, 0x12 };
+        var cold = stackalloc byte[2] { 0x20, 0x21 };
+        var disassembler = default(Disassembler);
+        HotCodeBlock(ref disassembler) = (nuint)hot;
+        ColdCodeBlock(ref disassembler) = (nuint)cold;
+        HotCodeSize(ref disassembler) = 3;
+        ColdCodeSize(ref disassembler) = 2;
+
+        Assert.That(LinearAddress(ref disassembler, 0) == hot, Is.True);
+        Assert.That(LinearAddress(ref disassembler, 2) == hot + 2, Is.True);
+        Assert.That(LinearAddress(ref disassembler, 3) == cold, Is.True);
+        Assert.That(LinearAddress(ref disassembler, 4) == cold + 1, Is.True);
+        Assert.That(RemainingBufferSize(ref disassembler, 0), Is.EqualTo((nuint)3));
+        Assert.That(RemainingBufferSize(ref disassembler, 2), Is.EqualTo((nuint)1));
+        Assert.That(RemainingBufferSize(ref disassembler, 3), Is.EqualTo((nuint)2));
+        Assert.That(RemainingBufferSize(ref disassembler, 4), Is.EqualTo((nuint)1));
+    }
+
+    [Test]
     public static void RequestedLateDisassemblyFailsClosedWithoutDecoding()
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
@@ -84,5 +105,23 @@ internal static unsafe class LateDisassemblyTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_curClassName")]
     private static extern ref string? CurrentClassName(ref Disassembler disassembler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_hotCodeBlock")]
+    private static extern ref nuint HotCodeBlock(ref Disassembler disassembler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_coldCodeBlock")]
+    private static extern ref nuint ColdCodeBlock(ref Disassembler disassembler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_hotCodeSize")]
+    private static extern ref nuint HotCodeSize(ref Disassembler disassembler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_coldCodeSize")]
+    private static extern ref nuint ColdCodeSize(ref Disassembler disassembler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "disGetLinearAddr")]
+    private static extern byte* LinearAddress(ref Disassembler disassembler, nuint offset);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "disGetBufferSize")]
+    private static extern nuint RemainingBufferSize(ref Disassembler disassembler, nuint offset);
 }
 #endif

@@ -61,7 +61,7 @@ public partial class Emitter
         }
 #endif
 
-        assert((emitCurIGsize & (CODE_ALIGN - 1)) == 0);
+        assert(IsCodeAligned(emitCurIGsize));
         var fullSize = size + (nuint)_debugInfoSize;
 
         if (((emitCurIGfreeNext + fullSize) >= emitCurIGfreeEndp) || emitForceNewIG

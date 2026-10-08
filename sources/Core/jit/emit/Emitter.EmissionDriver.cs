@@ -445,7 +445,7 @@ public partial class Emitter
                 emitOffsAdj = newOffsAdj;
                 assert(emitOffsAdj >= 0);
                 ig.igOffs = emitCurCodeOffs(cp);
-                assert((ig.igOffs & (CODE_ALIGN - 1)) == 0);
+                assert(IsCodeAligned(ig.igOffs));
 
 #if EMIT_TRACK_STACK_DEPTH
                 if (ig.igStkLvl != (uint)emitCurStackLvl)

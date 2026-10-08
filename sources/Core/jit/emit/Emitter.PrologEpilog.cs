@@ -121,7 +121,7 @@ public partial class Emitter
         for (var group = emitIGlist; group is not null; group = group.igNext)
         {
             group.igOffs = offset;
-            assert((group.igOffs & (CODE_ALIGN - 1)) == 0);
+            assert(IsCodeAligned(group.igOffs));
             offset = unchecked(offset + group.igSize);
             assert(offset >= group.igOffs);
         }

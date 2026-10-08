@@ -9,6 +9,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using NUnit.Framework;
+#if FEATURE_JIT_METHOD_PERF && MEASURE_CLRAPI_CALLS
+using static RyuJitSharp.API_ICorJitInfo_Names;
+#endif
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.Phases;
 
@@ -18,6 +21,186 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class CompilerTimingTests
 {
 #if FEATURE_JIT_METHOD_PERF
+#if MEASURE_CLRAPI_CALLS
+    [Test]
+    public static void ClrCountersUseNativeWidthsAndIndependentInlineStorage()
+    {
+        var first = new CompTimeInfo(0);
+        first._allClrApiCalls = uint.MaxValue;
+        first._allClrApiCycles = ulong.MaxValue;
+        first._perClrApiCalls[(int)API_isIntrinsic] = uint.MaxValue;
+        first._perClrApiCycles[(int)API_isIntrinsic] = ulong.MaxValue;
+        first._maxClrApiCycles[(int)API_isIntrinsic] = uint.MaxValue;
+        first._clrInvokesByPhase[(int)PHASE_IMPORTATION] = ulong.MaxValue;
+        first._clrCyclesByPhase[(int)PHASE_IMPORTATION] = ulong.MaxValue;
+        var second = new CompTimeInfo(0);
+        second._allClrApiCalls = 2;
+        second._allClrApiCycles = 2;
+        second._perClrApiCalls[(int)API_isIntrinsic] = 2;
+        second._perClrApiCycles[(int)API_isIntrinsic] = 2;
+        second._maxClrApiCycles[(int)API_isIntrinsic] = 2;
+        second._clrInvokesByPhase[(int)PHASE_IMPORTATION] = 2;
+        second._clrCyclesByPhase[(int)PHASE_IMPORTATION] = 2;
+
+        var copy = first;
+        copy._perClrApiCalls[(int)API_isIntrinsic] = 0;
+        Assert.That(first._perClrApiCalls[(int)API_isIntrinsic], Is.EqualTo(uint.MaxValue));
+
+        CompTimeSummaryInfo summary = default;
+        summary.AddInfo(first, includePhases: true);
+        summary.AddInfo(second, includePhases: true);
+        summary.AddInfo(new CompTimeInfo(0) { _timerFailure = true }, includePhases: true);
+
+        ref var total = ref TotalInfo(ref summary);
+        ref var maximum = ref MaximumInfo(ref summary);
+        Assert.That(total._allClrApiCalls, Is.EqualTo(1u));
+        Assert.That(total._allClrApiCycles, Is.EqualTo(1UL));
+        Assert.That(total._perClrApiCalls[(int)API_isIntrinsic], Is.EqualTo(1u));
+        Assert.That(total._perClrApiCycles[(int)API_isIntrinsic], Is.EqualTo(1UL));
+        Assert.That(total._clrInvokesByPhase[(int)PHASE_IMPORTATION], Is.EqualTo(1UL));
+        Assert.That(total._clrCyclesByPhase[(int)PHASE_IMPORTATION], Is.EqualTo(1UL));
+        Assert.That(maximum._allClrApiCalls, Is.EqualTo(uint.MaxValue));
+        Assert.That(maximum._allClrApiCycles, Is.EqualTo(ulong.MaxValue));
+        Assert.That(maximum._maxClrApiCycles[(int)API_isIntrinsic], Is.EqualTo(uint.MaxValue));
+        Assert.That(maximum._clrCyclesByPhase[(int)PHASE_IMPORTATION], Is.EqualTo(ulong.MaxValue));
+        Assert.That(first._perClrApiCalls[(int)API_isIntrinsic], Is.EqualTo(uint.MaxValue));
+    }
+
+    [Test]
+    public static void PartialImportsPreservePinnedPerApiMaximumSlotAndDoNotCreditNormalPhases()
+    {
+        var first = new CompTimeInfo(7) { _allClrApiCalls = 2, _allClrApiCycles = 10 };
+        first._perClrApiCalls[(int)PHASE_CLR_API] = 6;
+        first._cyclesByPhase[(int)PHASE_IMPORTATION] = 100;
+        var second = new CompTimeInfo(9) { _allClrApiCalls = 1, _allClrApiCycles = 20 };
+        CompTimeSummaryInfo summary = default;
+        summary.AddInfo(first, includePhases: false);
+        summary.AddInfo(second, includePhases: false);
+
+        ref var total = ref TotalInfo(ref summary);
+        ref var maximum = ref MaximumInfo(ref summary);
+        Assert.That(total._byteCodeBytes, Is.Zero);
+        Assert.That(total._cyclesByPhase[(int)PHASE_IMPORTATION], Is.Zero);
+        Assert.That(total._invokesByPhase[(int)PHASE_CLR_API], Is.EqualTo(3UL));
+        Assert.That(total._cyclesByPhase[(int)PHASE_CLR_API], Is.EqualTo(30UL));
+        Assert.That(maximum._invokesByPhase[(int)PHASE_CLR_API], Is.EqualTo(6UL));
+        Assert.That(maximum._cyclesByPhase[(int)PHASE_CLR_API], Is.EqualTo(20UL));
+    }
+
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void ClrLeaveRequiresEnabledTimingAndAValidStartAndAlwaysClearsTheCall(bool enabled, bool validStart)
+    {
+        var previousConfig = JitConfig;
+        JitConfig = new JitConfigValues();
+        ClrTimingEnabled(ref JitConfig) = enabled ? 1 : 0;
+
+        try
+        {
+            var timer = new JitTimer(0);
+            timer.ClrApiCallEnter(API_isIntrinsic);
+
+            if (!validStart)
+            {
+                ClrCallStart(timer) = 0;
+            }
+
+            timer.ClrApiCallLeave(API_isIntrinsic);
+
+            Assert.That(TimerInfo(timer)._allClrApiCalls, Is.EqualTo(enabled && validStart ? 1u : 0u));
+            Assert.That(ClrCallStart(timer), Is.Zero);
+            Assert.That(ClrActiveApi(timer), Is.EqualTo((API_ICorJitInfo_Names)(-1)));
+        }
+        finally
+        {
+            JitConfig = previousConfig;
+        }
+    }
+
+    [Test]
+    public static void ClrLeaveTruncatesIndividualMaximumAndExcludesEeTimeFromThePhase()
+    {
+        var previousConfig = JitConfig;
+        JitConfig = new JitConfigValues();
+        ClrTimingEnabled(ref JitConfig) = 1;
+
+        try
+        {
+            var timer = new JitTimer(0);
+            var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+            var phaseStart = CurrentPhaseStart(timer);
+            timer.ClrApiCallEnter(API_isIntrinsic);
+            ClrCallStart(timer) = unchecked(Stopwatch.GetTimestamp() - (long)uint.MaxValue - 100);
+            timer.ClrApiCallLeave(API_isIntrinsic);
+
+            var elapsed = TimerInfo(timer)._allClrApiCycles;
+            Assert.That(elapsed, Is.GreaterThan((ulong)uint.MaxValue));
+            Assert.That(TimerInfo(timer)._maxClrApiCycles[(int)API_isIntrinsic], Is.EqualTo(unchecked((uint)elapsed)));
+            Assert.That(CurrentPhaseStart(timer), Is.EqualTo(unchecked(phaseStart + (long)elapsed)));
+
+            // EndPhase requires the exclusive phase clock to precede the current counter.
+            CurrentPhaseStart(timer) = Stopwatch.GetTimestamp() - 1;
+            timer.EndPhase(compiler, PHASE_IMPORTATION);
+            Assert.That(TimerInfo(timer)._clrInvokesByPhase[(int)PHASE_IMPORTATION], Is.EqualTo(1UL));
+            Assert.That(TimerInfo(timer)._clrCyclesByPhase[(int)PHASE_IMPORTATION], Is.EqualTo(elapsed));
+            Assert.That(TimerInfo(timer)._clrCyclesByPhase[(int)PHASE_PRE_IMPORT], Is.Zero);
+
+            timer.EndPhase(compiler, PHASE_IMPORTATION);
+            Assert.That(TimerInfo(timer)._clrInvokesByPhase[(int)PHASE_IMPORTATION], Is.EqualTo(1UL));
+            Assert.That(TimerInfo(timer)._clrCyclesByPhase[(int)PHASE_IMPORTATION], Is.EqualTo(elapsed));
+        }
+        finally
+        {
+            JitConfig = previousConfig;
+        }
+    }
+
+    [Test]
+    public static void ClrSummaryUsesNativeApiNamesHeaderAndInvariantNumbers()
+    {
+        var info = new CompTimeInfo(0) {
+            _totalCycles = (ulong)Stopwatch.Frequency,
+            _allClrApiCalls = 2,
+            _allClrApiCycles = (ulong)Stopwatch.Frequency
+        };
+        info._perClrApiCalls[(int)API_isIntrinsic] = 1;
+        info._perClrApiCycles[(int)API_isIntrinsic] = (ulong)Stopwatch.Frequency;
+        info._maxClrApiCycles[(int)API_isIntrinsic] = unchecked((uint)Stopwatch.Frequency);
+        info._perClrApiCalls[(int)API_getExpectedTargetArchitecture] = 1;
+        CompTimeSummaryInfo summary = default;
+        summary.AddInfo(info, includePhases: true);
+
+        var previousCulture = CultureInfo.CurrentCulture;
+
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
+            var output = PrintSummary(summary);
+            Assert.That(output, Does.Contain("     " + new string('-', 100) + "\n"));
+            Assert.That(output, Does.Contain("     isIntrinsic"));
+            Assert.That(output, Does.Contain("     getExpectedTargetArchitecture"));
+            Assert.That(output, Does.Not.Contain("API_isIntrinsic"));
+            Assert.That(output, Does.Contain("1000.0 ms"));
+            Assert.That(output, Does.Not.Contain("1000,0 ms"));
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previousCulture;
+        }
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitEECallTimingInfo")]
+    private static extern ref int ClrTimingEnabled(ref JitConfigValues config);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_clrCallStart")]
+    private static extern ref long ClrCallStart(JitTimer timer);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_clrCallApiNum")]
+    private static extern ref API_ICorJitInfo_Names ClrActiveApi(JitTimer timer);
+#endif
+
     [Test]
     public static void SummaryAggregatesCompletedMethodsAndSkipsFailuresAndPartialCompiles()
     {

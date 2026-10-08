@@ -11,6 +11,14 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public FuncInfoRange Funclets()
+    {
+        assert(fgFuncletsCreated);
+        assert(compFuncInfoCount > 0);
+
+        return new FuncInfoRange(compFuncInfos.AsSpan(1, compFuncInfoCount - 1));
+    }
+
     public PhaseStatus fgCreateFunclets()
     {
         assert(!fgFuncletsCreated);

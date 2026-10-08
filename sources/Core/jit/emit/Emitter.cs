@@ -24,6 +24,16 @@ public partial class Emitter
 
     public ref GCInfo GCInfo => ref codeGen.GCInfo;
 
+    internal static bool IsCodeAligned(int offset)
+    {
+        return (offset & (CODE_ALIGN - 1)) == 0;
+    }
+
+    internal static bool IsCodeAligned(uint offset)
+    {
+        return (offset & unchecked((uint)(CODE_ALIGN - 1))) == 0;
+    }
+
     private int _debugInfoSize;
 
     protected int emitInsCount;

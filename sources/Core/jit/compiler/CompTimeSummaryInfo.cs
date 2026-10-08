@@ -63,11 +63,11 @@ public struct CompTimeSummaryInfo
 
 #if MEASURE_CLRAPI_CALLS
                 // Update the CLR-API values.
-                _total._allClrApiCalls += info._allClrApiCalls;
-                _maximum._allClrApiCalls = int.Max(_maximum._allClrApiCalls, info._allClrApiCalls);
+                _total._allClrApiCalls = unchecked(_total._allClrApiCalls + info._allClrApiCalls);
+                _maximum._allClrApiCalls = uint.Max(_maximum._allClrApiCalls, info._allClrApiCalls);
 
-                _total._allClrApiCycles += info._allClrApiCycles;
-                _maximum._allClrApiCycles = long.Max(_maximum._allClrApiCycles, info._allClrApiCycles);
+                _total._allClrApiCycles = unchecked(_total._allClrApiCycles + info._allClrApiCycles);
+                _maximum._allClrApiCycles = ulong.Max(_maximum._allClrApiCycles, info._allClrApiCycles);
 #endif
 
                 if (includeInFiltered)
@@ -84,8 +84,10 @@ public struct CompTimeSummaryInfo
                     _total._cyclesByPhase[(int)(phase)] = unchecked(_total._cyclesByPhase[(int)(phase)] + info._cyclesByPhase[(int)(phase)]);
 
 #if MEASURE_CLRAPI_CALLS
-                    _total._clrInvokesByPhase[(int)(phase)] += info._clrInvokesByPhase[(int)(phase)];
-                    _total._clrCyclesByPhase[(int)(phase)] += info._clrCyclesByPhase[(int)(phase)];
+                    _total._clrInvokesByPhase[(int)phase] = unchecked(
+                        _total._clrInvokesByPhase[(int)phase] + info._clrInvokesByPhase[(int)phase]);
+                    _total._clrCyclesByPhase[(int)phase] = unchecked(
+                        _total._clrCyclesByPhase[(int)phase] + info._clrCyclesByPhase[(int)phase]);
 #endif
 
                     if (includeInFiltered)
@@ -94,15 +96,18 @@ public struct CompTimeSummaryInfo
                         _filtered._cyclesByPhase[(int)(phase)] = unchecked(_filtered._cyclesByPhase[(int)(phase)] + info._cyclesByPhase[(int)(phase)]);
 
 #if MEASURE_CLRAPI_CALLS
-                        _filtered._clrInvokesByPhase[(int)(phase)] += info._clrInvokesByPhase[(int)(phase)];
-                        _filtered._clrCyclesByPhase[(int)(phase)] += info._clrCyclesByPhase[(int)(phase)];
+                        _filtered._clrInvokesByPhase[(int)phase] = unchecked(
+                            _filtered._clrInvokesByPhase[(int)phase] + info._clrInvokesByPhase[(int)phase]);
+                        _filtered._clrCyclesByPhase[(int)phase] = unchecked(
+                            _filtered._clrCyclesByPhase[(int)phase] + info._clrCyclesByPhase[(int)phase]);
 #endif
                     }
 
                     _maximum._cyclesByPhase[(int)(phase)] = ulong.Max(_maximum._cyclesByPhase[(int)(phase)], info._cyclesByPhase[(int)(phase)]);
 
 #if MEASURE_CLRAPI_CALLS
-                    _maximum._CLRcyclesByPhase[(int)(phase)] = max(_maximum._CLRcyclesByPhase[(int)(phase)], info._CLRcyclesByPhase[(int)(phase)]);
+                    _maximum._clrCyclesByPhase[(int)phase] = ulong.Max(
+                        _maximum._clrCyclesByPhase[(int)phase], info._clrCyclesByPhase[(int)phase]);
 #endif
                 }
 
@@ -115,29 +120,35 @@ public struct CompTimeSummaryInfo
                 _totMethods++;
 
                 // Update the "global" CLR-API values.
-                _total._allClrApiCalls += info._allClrApiCalls;
-                _maximum._allClrApiCalls = int.Max(_maximum._allClrApiCalls, info._allClrApiCalls);
+                _total._allClrApiCalls = unchecked(_total._allClrApiCalls + info._allClrApiCalls);
+                _maximum._allClrApiCalls = uint.Max(_maximum._allClrApiCalls, info._allClrApiCalls);
 
-                _total._allClrApiCycles += info._allClrApiCycles;
-                _maximum._allClrApiCycles = long.Max(_maximum._allClrApiCycles, info._allClrApiCycles);
+                _total._allClrApiCycles = unchecked(_total._allClrApiCycles + info._allClrApiCycles);
+                _maximum._allClrApiCycles = ulong.Max(_maximum._allClrApiCycles, info._allClrApiCycles);
 
                 // Update the per-phase CLR-API values.
-                _total._invokesByPhase[PHASE_CLR_API] += info._allClrApiCalls;
-                _maximum._invokesByPhase[PHASE_CLR_API] = int.Max(_maximum._perClrApiCalls[PHASE_CLR_API], info._allClrApiCalls);
+                _total._invokesByPhase[(int)PHASE_CLR_API] = unchecked(
+                    _total._invokesByPhase[(int)PHASE_CLR_API] + info._allClrApiCalls);
 
-                _total._cyclesByPhase[PHASE_CLR_API] += info._allClrApiCycles;
-                _maximum._cyclesByPhase[PHASE_CLR_API] = long.Max(_maximum._cyclesByPhase[PHASE_CLR_API], info._allClrApiCycles);
+                // The pinned summary uses this per-API slot, not the phase maximum.
+                _maximum._invokesByPhase[(int)PHASE_CLR_API] = uint.Max(
+                    _maximum._perClrApiCalls[(int)PHASE_CLR_API], info._allClrApiCalls);
+
+                _total._cyclesByPhase[(int)PHASE_CLR_API] = unchecked(
+                    _total._cyclesByPhase[(int)PHASE_CLR_API] + info._allClrApiCycles);
+                _maximum._cyclesByPhase[(int)PHASE_CLR_API] = ulong.Max(
+                    _maximum._cyclesByPhase[(int)PHASE_CLR_API], info._allClrApiCycles);
             }
 
-            for (int i = 0; i < API_ICorJitInfo_Names.API_COUNT; i++)
+            for (var i = 0; i < (int)API_COUNT; i++)
             {
-                _total._perClrApiCalls[i] += info._perClrApiCalls[i];
-                _maximum._perClrApiCalls[i] = int.Max(_maximum._perClrApiCalls[i], info._perClrApiCalls[i]);
+                _total._perClrApiCalls[i] = unchecked(_total._perClrApiCalls[i] + info._perClrApiCalls[i]);
+                _maximum._perClrApiCalls[i] = uint.Max(_maximum._perClrApiCalls[i], info._perClrApiCalls[i]);
 
-                _total._perClrApiCycles[i] += info._perClrApiCycles[i];
-                _maximum._perClrApiCycles[i] = long.Max(_maximum._perClrApiCycles[i], info._perClrApiCycles[i]);
+                _total._perClrApiCycles[i] = unchecked(_total._perClrApiCycles[i] + info._perClrApiCycles[i]);
+                _maximum._perClrApiCycles[i] = ulong.Max(_maximum._perClrApiCycles[i], info._perClrApiCycles[i]);
 
-                _maximum._maxClrApiCycles[i] = long.Max(_maximum._maxClrApiCycles[i], info._maxClrApiCycles[i]);
+                _maximum._maxClrApiCycles[i] = uint.Max(_maximum._maxClrApiCycles[i], info._maxClrApiCycles[i]);
             }
 #endif
         }
@@ -219,13 +230,13 @@ public struct CompTimeSummaryInfo
 #if MEASURE_CLRAPI_CALLS
                 if (extraInfo && (phase != PHASE_CLR_API))
                 {
-                    var nest_tot_ms  = Stopwatch.GetTimestamp(0, _total._clrCyclesByPhase[(int)(phase)]).TotalMilliseconds;
+                    var nest_tot_ms = ((double)_total._clrCyclesByPhase[(int)phase] / countsPerSec) * 1000.0;
                     var nest_percent = (nest_tot_ms * 100.0) / totTime_ms;
                     var calls_per_fn = _total._clrInvokesByPhase[(int)(phase)] / (double)(_numMethods);
 
                     if ((nest_percent > 0.1) || (calls_per_fn > 10))
                     {
-                        streamWriter.Write($"       {calls_per_fn,5:F1}   {nest_percent,8:F2}%");
+                        streamWriter.Write(FormattableString.Invariant($"       {calls_per_fn,5:F1}   {nest_percent,8:F2}%"));
                     }
                 }
 #endif
@@ -287,18 +298,18 @@ public struct CompTimeSummaryInfo
 
             if (_totMethods > 0)
             {
-                streamWriter.WriteLine($"  Imported {_numMethods + _totMethods} methods.");
+                streamWriter.WriteLine(FormattableString.Invariant($"  Imported {unchecked((uint)(_numMethods + _totMethods))} methods."));
                 streamWriter.WriteLine();
             }
 
             streamWriter.WriteLine("     CLR API                                   # calls   total time    max time     avg time   % of total");
-            streamWriter.WriteLine("     -------------------------------------------------------------------------------");
+            streamWriter.Write("     -------------------------------------------------------------------------------");
             streamWriter.WriteLine("---------------------");
 
-            var shownCalls  = 0;
+            uint shownCalls = 0;
             var shownMillis = 0.0;
 #if DEBUG
-            var checkedCalls = 0;
+            uint checkedCalls = 0;
             var checkedMillis = 0.0;
 #endif
 
@@ -313,7 +324,7 @@ public struct CompTimeSummaryInfo
                         continue;
                     }
 
-                    var ms = Stopwatch.GetElapsedTime(0, _total._perClrApiCycles[(int)(api)]).TotalMilliseconds;
+                    var ms = 1000.0 * _total._perClrApiCycles[(int)api] / countsPerSec;
 
                     // Don't show the small fry to keep the results manageable
                     if (ms < 0.5)
@@ -334,18 +345,19 @@ public struct CompTimeSummaryInfo
                     // In the first pass we just compute the totals.
                     if (pass is 0)
                     {
-                        shownCalls += _total._perClrApiCalls[(int)(api)];
+                        shownCalls = unchecked(shownCalls + _total._perClrApiCalls[(int)api]);
                         shownMillis += ms;
                         continue;
                     }
 
-                    var max_ms = Stopwatch.GetElapsedTime(0, _maximum._maxClrApiCycles[(int)(api)]).TotalMilliseconds;
+                    var max_ms = 1000.0 * _maximum._maxClrApiCycles[(int)api] / countsPerSec;
 
                     //                        API name  #calls,    total time   max time          avg time                               % of total
-                    streamWriter.WriteLine($"     {api,-40} {calls,8} {ms,9:F1} ms {max_ms,8:F1} ms  {(1000000.0 * ms) / calls,8:F1} ns     {(100.0 * ms) / shownMillis,5:F1}%");
+                    streamWriter.WriteLine(FormattableString.Invariant(
+                        $"     {api.Name,-40} {calls,8} {ms,9:F1} ms {max_ms,8:F1} ms  {(1000000.0 * ms) / calls,8:F1} ns     {(100.0 * ms) / shownMillis,5:F1}%"));
 
 #if DEBUG
-                    checkedCalls += _total._perClrApiCalls[(int)(api)];
+                    checkedCalls = unchecked(checkedCalls + _total._perClrApiCalls[(int)api]);
                     checkedMillis += ms;
 #endif
                 }
@@ -359,11 +371,11 @@ public struct CompTimeSummaryInfo
             if ((shownCalls > 0) || (shownMillis > 0))
             {
                 streamWriter.WriteLine("     ----------------------------------------------------------------------------------------------------");
-                streamWriter.Write($"     Total for calls shown above              {shownCalls,8} {shownMillis,10:F1} ms");
+                streamWriter.Write(FormattableString.Invariant($"     Total for calls shown above              {shownCalls,8} {shownMillis,10:F1} ms"));
 
                 if (totTime_ms > 0.0)
                 {
-                    streamWriter.Write($" ({(shownMillis * 100.0) / totTime_ms,4:F1}% of overall JIT time)");
+                    streamWriter.Write(FormattableString.Invariant($" ({(shownMillis * 100.0) / totTime_ms,4:F1}% of overall JIT time)"));
                 }
                 streamWriter.WriteLine();
             }

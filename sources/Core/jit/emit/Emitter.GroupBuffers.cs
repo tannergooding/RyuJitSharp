@@ -191,7 +191,7 @@ public partial class Emitter
         }
 
         emitCurCodeOffset = unchecked(emitCurCodeOffset + emitCurIGsize);
-        assert((emitCurCodeOffset & (CODE_ALIGN - 1)) == 0);
+        assert(IsCodeAligned(emitCurCodeOffset));
 
 #if EMITTER_STATS
         emitTotalIGicnt = unchecked(emitTotalIGicnt + (uint)emitCurIGinsCnt);

@@ -20,6 +20,9 @@ public partial class Emitter
 #endif
         public partial struct idAddrUnion
         {
+            [FieldOffset(0)]
+            internal int iiaEncodedInstrCount;
+
 #if TARGET_LOONGARCH64
             [FieldOffset(4)]
 #else
@@ -51,6 +54,23 @@ public partial class Emitter
             [FieldOffset(0)]
             public bool iiaSecRel;
 #endif
+
+            public readonly bool iiaHasInstrCount()
+            {
+                return (iiaEncodedInstrCount & (int)iaut_MASK) == (int)iaut_INST_COUNT;
+            }
+
+            public readonly int iiaGetInstrCount()
+            {
+                assert(iiaHasInstrCount());
+                return iiaEncodedInstrCount >> (int)iaut_SHIFT;
+            }
+
+            public void iiaSetInstrCount(int count)
+            {
+                assert(count is > -10 and < 10);
+                iiaEncodedInstrCount = (count << (int)iaut_SHIFT) | (int)iaut_INST_COUNT;
+            }
         }
 
         public ref idAddrUnion idAddr()

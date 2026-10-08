@@ -2,6 +2,9 @@
 //
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+//
+// Instance forwarding signatures are inputs to GenerateTables' timing wrapper.
+// Keep each expression-bodied signature on one line; regeneration checks API coverage.
 
 using System.Runtime.CompilerServices;
 

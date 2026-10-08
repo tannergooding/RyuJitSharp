@@ -3,6 +3,10 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+#if FEATURE_JIT_METHOD_PERF && MEASURE_CLRAPI_CALLS
+using System.Runtime.CompilerServices;
+#endif
+
 namespace RyuJitSharp;
 
 #if FEATURE_JIT_METHOD_PERF
@@ -19,8 +23,8 @@ public struct CompTimeInfo
     public InlineArrayPhaseCount<ulong> _cyclesByPhase;
 
 #if MEASURE_CLRAPI_CALLS
-    public InlineArrayPhaseCount<long> _clrInvokesByPhase;
-    public InlineArrayPhaseCount<long> _clrCyclesByPhase;
+    public InlineArrayPhaseCount<ulong> _clrInvokesByPhase;
+    public InlineArrayPhaseCount<ulong> _clrCyclesByPhase;
 #endif
 
     public InlineArrayPhaseCount<uint> _nodeCountAfterPhase;
@@ -38,22 +42,22 @@ public struct CompTimeInfo
 
 #if MEASURE_CLRAPI_CALLS
     // The following measures the time spent inside each individual CLR API call.
-    public int _allClrApiCalls;
-    public int[] _perClrApiCalls;
-    public long _allClrApiCycles;
-    public long[] _perClrApiCycles;
-    public long[] _maxClrApiCycles;
+    public uint _allClrApiCalls;
+    public ClrApiArray<uint> _perClrApiCalls;
+    public ulong _allClrApiCycles;
+    public ClrApiArray<ulong> _perClrApiCycles;
+    public ClrApiArray<uint> _maxClrApiCycles;
+
+    [InlineArray((int)API_COUNT)]
+    public struct ClrApiArray<T>
+    {
+        public T e0;
+    }
 #endif
 
     public CompTimeInfo(int byteCodeBytes)
     {
         _byteCodeBytes = unchecked((uint)byteCodeBytes);
-
-#if MEASURE_CLRAPI_CALLS
-        _perClrApiCalls = new int[(int)(API_ICorJitInfo_Names.API_COUNT)];
-        _perClrApiCycles = new long[(int)(API_ICorJitInfo_Names.API_COUNT)];
-        _maxClrApiCycles = new long[(int)(API_ICorJitInfo_Names.API_COUNT)];
-#endif
     }
 }
 #endif

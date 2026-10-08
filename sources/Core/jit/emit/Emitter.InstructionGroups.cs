@@ -76,7 +76,7 @@ public partial class Emitter
         emitNxtIGnum = unchecked(emitNxtIGnum + 1);
 
         ig.igOffs = unchecked((uint)emitCurCodeOffset);
-        assert((ig.igOffs & (CODE_ALIGN - 1)) == 0);
+        assert(IsCodeAligned(ig.igOffs));
 
         var compiler = _compiler ?? throw new InvalidOperationException("Instruction groups require an active compiler.");
         ig.igFuncIdx = compiler.compCurrFuncIdx;

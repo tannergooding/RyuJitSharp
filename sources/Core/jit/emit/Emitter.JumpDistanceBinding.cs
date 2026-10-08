@@ -201,7 +201,7 @@ public partial class Emitter
                             }
 #endif
                             previousJumpIG.igOffs = unchecked(previousJumpIG.igOffs - groupAdjustment);
-                            assert((previousJumpIG.igOffs & (CODE_ALIGN - 1)) == 0);
+                            assert(IsCodeAligned(previousJumpIG.igOffs));
                         }
                         while (!ReferenceEquals(previousJumpIG, jumpIG));
                     }
@@ -479,7 +479,7 @@ public partial class Emitter
                 }
 #endif
                 group.igOffs = unchecked(group.igOffs - groupAdjustment);
-                assert((group.igOffs & (CODE_ALIGN - 1)) == 0);
+                assert(IsCodeAligned(group.igOffs));
             }
 
 #if DEBUG

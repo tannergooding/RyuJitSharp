@@ -77,11 +77,50 @@ public partial class Emitter
         public partial struct idAddrUnion
         {
 #if TARGET_LOONGARCH64
-            [FieldOffset(4)]
-#else
             [FieldOffset(0)]
-#endif
+            internal uint iiaEncodedInstr;
+
+            [FieldOffset(0)]
+            internal int iiaJmpOffset;
+
+            [FieldOffset(4)]
             internal uint iiaRegisterBits;
+#elif TARGET_RISCV64
+            [FieldOffset(0)]
+            internal uint iiaRegisterBits;
+#endif
+
+#if TARGET_LOONGARCH64 || TARGET_RISCV64
+            public void iiaSetInstrEncode(uint encode)
+            {
+#if TARGET_LOONGARCH64
+                iiaEncodedInstr = encode;
+#else
+                iiaInstrEncode = encode;
+#endif
+            }
+
+            public readonly uint iiaGetInstrEncode()
+            {
+#if TARGET_LOONGARCH64
+                return iiaEncodedInstr;
+#else
+                return iiaInstrEncode;
+#endif
+            }
+#endif
+
+#if TARGET_LOONGARCH64
+            public void iiaSetJmpOffset(int offset)
+            {
+                iiaJmpOffset = offset;
+            }
+
+            public readonly int iiaGetJmpOffset()
+            {
+                return iiaJmpOffset;
+            }
+#endif
         }
 
         public regNumber idReg3()

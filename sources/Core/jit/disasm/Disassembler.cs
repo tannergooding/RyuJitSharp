@@ -21,6 +21,10 @@ public partial struct Disassembler
     private StreamWriter? _disAsmFile;
     private string? _curMethodName;
     private string? _curClassName;
+    private nuint _hotCodeBlock;
+    private nuint _coldCodeBlock;
+    private nuint _hotCodeSize;
+    private nuint _coldCodeSize;
 
     private readonly nuint dspAddr(nuint addr)
     {
@@ -47,6 +51,26 @@ public partial struct Disassembler
 
     public readonly void disDone()
     {
+    }
+
+    private readonly unsafe byte* disGetLinearAddr(nuint offset)
+    {
+        if (offset < _hotCodeSize)
+        {
+            return (byte*)unchecked(_hotCodeBlock + offset);
+        }
+
+        return (byte*)unchecked(_coldCodeBlock + offset - _hotCodeSize);
+    }
+
+    private readonly nuint disGetBufferSize(nuint offset)
+    {
+        if (offset < _hotCodeSize)
+        {
+            return _hotCodeSize - offset;
+        }
+
+        return unchecked(_hotCodeSize + _coldCodeSize - offset);
     }
 
     public unsafe void disOpenForLateDisAsm(string curMethodName, string curClassName, PCCOR_SIGNATURE sig)
