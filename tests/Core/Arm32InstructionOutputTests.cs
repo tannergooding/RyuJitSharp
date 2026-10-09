@@ -219,6 +219,36 @@ internal static unsafe class Arm32InstructionOutputTests
     }
 
     [Test]
+    public static void ColdInstructionDisplayUsesCombinedOffsetAndWritableAlias()
+    {
+        var output = CaptureDisplay((compiler, emitter) =>
+        {
+            compiler.opts.disCodeBytes = true;
+            var buffer = stackalloc byte[64];
+            new Span<byte>(buffer, 64).Fill(0xA5);
+            var coldCode = buffer + 16;
+            var writableCode = coldCode + 16;
+            writableCode[1] = 0x34;
+            writableCode[2] = 0x12;
+            emitter.emitCodeBlock = buffer;
+            emitter.emitColdCodeBlock = coldCode;
+            emitter.emitTotalHotCodeSize = 8;
+            emitter.emitTotalColdCodeSize = 8;
+            emitter.writeableOffset = 16;
+            FirstColdGroup(emitter) = new insGroup();
+
+            var code = coldCode + 1;
+            var offset = CurrentCodeOffset(emitter, code);
+            var id = DisplayEmitter.Descriptor(INS_add, IF_T1_D0, 0);
+
+            emitter.emitDispIns(id, false, true, true, offset, code, 2);
+        });
+
+        Assert.That(output, Does.StartWith("000009  1234     "));
+        Assert.That(output, Does.Contain("add     r0, r1"));
+    }
+
+    [Test]
     public static void LargeConditionalBranchDisplaysBothSyntheticInstructions()
     {
         var target = new insGroup { igOffs = 16 };
@@ -284,6 +314,12 @@ internal static unsafe class Arm32InstructionOutputTests
     }
 
     private static Emitter.instrDesc? LastInstruction(Emitter emitter) => Last(emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitFirstColdIG")]
+    private static extern ref insGroup? FirstColdGroup(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitCurCodeOffs")]
+    private static extern uint CurrentCodeOffset(Emitter emitter, byte* address);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitLastIns")]
     private static extern ref Emitter.instrDesc? Last(Emitter emitter);

@@ -10,11 +10,11 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "B526: compare representative managed ARM32 instruction display and verbose output with the pinned native implementation across Thumb bytes, branch displacements, writable aliases, hot/cold offsets, and large conditional jumps; fix only confirmed differences.",
+    "nextAction": "B528: port ARM64 placement metadata through the instruction descriptor and recording path for non-Debug LATE_DISASM builds; then validate INS_align execution-characteristic scoring against the pinned implementation.",
     "activeBatch": {
-      "scope": "B526 ARM32 instruction display and verbose-output parity.",
-      "doneWhen": "Compare the listed encoding/display cases against the pinned native implementation, fix confirmed managed differences, and retain the exact comparison evidence.",
-      "validation": "Run focused ARM32 emitter/disassembly tests and compare outputs for Thumb encodings, positive/negative displacements and aliases, hot/cold offsets, and synthesized large conditional jumps.",
+      "scope": "B528 ARM64 non-Debug LATE_DISASM instruction-placement metadata and alignment scoring.",
+      "doneWhen": "Port placement metadata across the complete instruction descriptor and recording path for supported non-Debug LATE_DISASM builds, then validate alignment scoring against the pinned implementation.",
+      "validation": "Run focused ARM64 LATE_DISASM alignment-scoring tests in Release and relevant DEBUG coverage, then run full-analysis validation.",
       "deferred": "B515 remains blocked on its missing range-check reproducer; B516 remains blocked on matching native/managed PGO inputs and pre-import captures; B520, B523, and B525 await owner review."
     },
     "dynamicTlsInputBoundary": {
