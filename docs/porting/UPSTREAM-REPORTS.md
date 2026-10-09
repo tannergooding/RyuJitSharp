@@ -32,3 +32,236 @@ deviation is explicitly approved.
 | B381 | ARM64 conditional-select lowering and `CodeGen::genCodeForSelect` | Lowering can create `GT_SELECT_INC` for an explicit condition, but codegen handles explicit conditions only for `GT_SELECT`/`INV`/`NEG` and then requires a flags-based condition. The two-constant conversion can also select the wrong CSINC arm. | Keep explicit-condition CSEL nodes unless lowering and codegen agree on a valid CSINC representation, and correct constant-arm mapping. | Preserve the pinned lowering shape until the native correction is incorporated; no ARM64 runtime parity claim is made. |
 | B398 | ARM64 consecutive-register reuse (`src/coreclr/jit/lsraarm64.cpp`) | The V0 reuse calculation shifts by `firstRegNum - 1`; at V0 this is a negative shift count and therefore undefined in C++. C# defines a deterministic masked shift, so source-shaped expressions do not establish output parity. | Handle V0-to-V31 wrap explicitly and define all shift-count boundaries. | Keep the managed behavior deterministic and retain the other pinned masks; no ARM64 execution/parity claim is made. |
 | B514 | `Compiler::compSizeEstimate` / `compCycleEstimate` (`src/coreclr/jit/compiler.h`) | Native leaves both estimates uninitialized for verbose MinOpts compilations but prints them in `codegenlinear.cpp`; Checked Windows-x64 captures show arena poison values. Managed fields remain zero. | Initialize both estimates before any verbose diagnostic can print them. | Keep deterministic managed values; do not emulate poisoned native memory. |
+| B365 | `Compiler::gtCallGetDefinedRetBufLclAddr` | Forced register spilling with GC stress triggers a Checked assertion when an outer reload hides a `PUTARG_REG` wrapper around the retbuf local address. Ordinary configuration succeeds; no ordinary miscompilation or memory-safety impact is established. | Inspect reload/copy wrappers before checking the putarg and retbuf shape. | Preserve pinned managed behavior; report contains the native repro and supporting dump. |
+| B394 | `ValueNumStore::RunTests` | Enabling native component tests asserts because a self-test expects the pre-canonicalized operand order for a commutative VN expression. Production canonicalization puts the non-handle constant in argument one. | Update the self-test to assert the canonical operand order. | Preserve pinned canonicalization and assertion; report contains the native repro. |
+| B524 | `jitstd::list::merge` | When source nodes remain after merging, native links the source tail into the destination but does not clear the source's head, tail, or size. Both lists then share nodes, making later traversal/destruction unsafe. The pinned JIT has no `list.merge` call sites. | Clear the source list after transferring the remaining chain, while preserving merge ordering. | Preserve pinned managed behavior until the upstream correction is incorporated; the defect was reported in [dotnet/runtime#135435](https://github.com/dotnet/runtime/issues/135435). |
+
+## Detailed reports
+
+### B365: Forced register spilling exposes a retbuf wrapper-order assertion
+
+**Confirmed in native RyuJIT**, Windows x64 Checked, at dotnet/runtime
+`33baf8ee337b20dd0f184b69a6f09be92850bf9e`. With `JitStressRegs=0xC03`
+and `GCStress=4`, compilation of
+`Runtime_133521.ScalarFmaNegation(int, int)` asserts during linear scan register
+allocation. The same input with GC stress but without register stress succeeds.
+No ordinary-configuration miscompilation or memory-safety impact is established.
+
+#### Failure and relevant tree shape
+
+The assertion is in
+[`Compiler::gtCallGetDefinedRetBufLclAddr`](https://github.com/dotnet/runtime/blob/33baf8ee337b20dd0f184b69a6f09be92850bf9e/src/coreclr/jit/gentree.cpp#L22020-L22048):
+
+```cpp
+node->OperIs(GT_LCL_ADDR) &&
+lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress()
+```
+
+The retained post-allocation dump contains this retbuf argument for the call to
+`Runtime_133521.NegatedScalarFma(Vector128<float>, ...)`:
+
+```text
+t672 RELOAD
+  t579 PUTARG_REG rcx
+    t671 RELOAD
+      t28 LCL_ADDR V05
+```
+
+The helper checks for `PUTARG_REG` or `PUTARG_STK` **before** calling
+`gtSkipReloadOrCopy`. An outer `RELOAD` therefore bypasses the putarg check;
+the subsequent skip exposes `PUTARG_REG`, not the required `LCL_ADDR`.
+[`gtSkipReloadOrCopy`](https://github.com/dotnet/runtime/blob/33baf8ee337b20dd0f184b69a6f09be92850bf9e/src/coreclr/jit/gentree.h#L10176-L10184)
+intentionally removes one reload/copy layer, not a putarg wrapper.
+
+This strongly points to handling an outer reload/copy before inspecting the
+putarg, while preserving the existing inner reload/copy handling. No debugger
+capture identifies the exact failing call object, and no proposed native fix
+has been applied or tested; the dump and helper ordering are the supporting
+evidence, not a validated fix.
+
+#### Reproduction
+
+The verified input is the retained `UpstreamRegressionProbe.dll`, built from
+the pinned upstream regression sources, including
+[`src/tests/JIT/Regression_ro_2/Runtime_133521.cs`](https://github.com/dotnet/runtime/blob/33baf8ee337b20dd0f184b69a6f09be92850bf9e/src/tests/JIT/Regression_ro_2/Runtime_133521.cs).
+Its driver invokes `ScalarFmaNegation` with the upstream cases
+`(0, -11)`, `(1, -13)`, `(2, 13)` and `(3, 11)`, along with other regression
+entry points. It requires AVX and FMA; the verified host also supports AVX512F.
+The reproducer has not been minimized.
+
+In a fresh shell, with `$CoreRoot` pointing to the matching Checked build and
+`$Corpus` to that DLL:
+
+```powershell
+$env:DOTNET_ReadyToRun = '0'
+$env:DOTNET_TieredCompilation = '0'
+$env:DOTNET_JitName = 'clrjit.dll'
+$env:DOTNET_JitPath = Join-Path $CoreRoot 'clrjit.dll'
+$env:DOTNET_GCStress = '4'
+$env:DOTNET_JitStressRegs = 'c03'
+$env:DOTNET_JitStressRegsRange = '4f3e2341 8075f3c3 36970323 5eb69743 f18764f8 076e31f8'
+$env:DOTNET_JitDump = 'Runtime_133521:*'
+$env:DOTNET_JitDumpASCII = '1'
+$env:DOTNET_JitDisasmDiffable = '1'
+$env:DOTNET_JitStdOutFile = Join-Path $PWD 'spill-jitdump.txt'
+& (Join-Path $CoreRoot 'corerun.exe') $Corpus
+```
+
+The hashes above belong to the retained binary, not a portable method selector.
+If rebuilding or changing the harness, first capture its method hashes without
+register stress and update the range. Unrestricted `JitStressRegs=0xC03` also
+asserted in `EventSource.Initialize` before the selected regression compiled;
+the scoped range avoids that earlier failure.
+
+Observed failure:
+
+```text
+Runtime_133521:ScalarFmaNegation(int,int)
+phase: Linear scan register alloc
+IL size: 341
+method hash: 0x8075f3c3
+optimization: FullOpts
+source: gentree.cpp:22046
+process exit: 0xC0000602
+```
+
+With `DOTNET_JitStressRegs` and `DOTNET_JitStressRegsRange` removed, the fresh
+control exits zero, verifies the regression results, and reports 3,404 GC-stress
+collections. That collection count is observational, not a stable expectation.
+Both runs use native `clrjit.dll` and neither times out.
+
+#### Retained evidence
+
+Fresh captures, input hashes, stdout, stderr and dumps:
+
+- `artifacts/upstream-reports/spill-native-1/`
+- `artifacts/upstream-reports/spill-native-control-1/`
+
+The tree above is recorded in `spill-native-1/jitdump.txt` around lines
+112186-112202. Original source/dependency hashes and the original scoped failure
+remain under `artifacts/upstream-regressions/spill-selected-native-1/`.
+The exact driver and project are retained in
+`artifacts/upstream-regressions/corpus-built-3/source/`.
+
+Repeat with fresh output directories:
+
+```powershell
+python artifacts\upstream-reports\capture-native.py `
+  artifacts\upstream-regressions\spill-selected-native-1\Runtime_133521\manifest.json `
+  artifacts\upstream-reports\spill-native-2
+python artifacts\upstream-reports\capture-native.py `
+  artifacts\upstream-regressions\gcstress-native-1\Runtime_133521\manifest.json `
+  artifacts\upstream-reports\spill-native-control-2
+```
+
+The local runner verifies the recorded inputs, clears inherited runtime settings,
+and explicitly selects native `clrjit.dll`. The port retains pinned behavior;
+this report does not propose changing only RyuJitSharp to hide the assertion.
+
+### B394: VN component test asserts against the current commutative operand order
+
+**Confirmed in native RyuJIT**, Windows x64 Checked, at dotnet/runtime
+`33baf8ee337b20dd0f184b69a6f09be92850bf9e`. Enabling
+`DOTNET_JitComponentUnitTests=1` terminates the native process at
+`valuenum.cpp:11816`. The same application succeeds with the setting disabled.
+This is a stale self-test expectation, not a demonstrated generated-code defect.
+
+#### Cause
+
+[`ValueNumStore::VNForFunc`](https://github.com/dotnet/runtime/blob/33baf8ee337b20dd0f184b69a6f09be92850bf9e/src/coreclr/jit/valuenum.cpp#L2865-L2881)
+canonicalizes commutative operands by VN number, then moves a non-handle constant
+to argument one. Consequently, `ADD(1, vnRandom1)` is stored as
+`ADD(vnRandom1, 1)`.
+
+[`ValueNumStore::RunTests`](https://github.com/dotnet/runtime/blob/33baf8ee337b20dd0f184b69a6f09be92850bf9e/src/coreclr/jit/valuenum.cpp#L11806-L11816)
+constructs that expression, retrieves its function application, and asserts the
+opposite order:
+
+```cpp
+fa2a.GetArg(0) == vnFor1 && fa2a.GetArg(1) == vnRandom1
+```
+
+The likely correction is to update the test expectation to the canonical order,
+not change production canonicalization. No native patch has been applied or
+validated as part of this report.
+
+#### Reproduction
+
+Use a Checked Core_Root built from the revision above, in a fresh shell without
+other JIT stress settings. `$CoreRoot` denotes that build and `$Application`
+denotes a managed application compatible with it:
+
+```powershell
+$env:DOTNET_ReadyToRun = '0'
+$env:DOTNET_TieredCompilation = '0'
+$env:DOTNET_JitName = 'clrjit.dll'
+$env:DOTNET_JitPath = Join-Path $CoreRoot 'clrjit.dll'
+$env:DOTNET_JitComponentUnitTests = '1'
+& (Join-Path $CoreRoot 'corerun.exe') $Application
+```
+
+The verified application was the retained `ParameterCycles.dll` corpus. With
+component tests enabled, stderr contains the assertion above and the process
+exits `0xC0000602`, without timing out. With the setting changed to `0`, it exits
+zero and reports `ParameterCycles: 2048 floating permutations verified`.
+[`Compiler::compDoComponentUnitTestsOnce`](https://github.com/dotnet/runtime/blob/33baf8ee337b20dd0f184b69a6f09be92850bf9e/src/coreclr/jit/compiler.cpp#L1731-L1747)
+runs this test once during JIT initialization when the option is enabled;
+the corpus does not need to construct a particular expression.
+
+Exact local captures and verified input hashes are retained under:
+
+- `artifacts/upstream-reports/component-native-enabled-1/`
+- `artifacts/upstream-reports/component-native-control-1/`
+
+To repeat those captures from this repository, select fresh output directories:
+
+```powershell
+python artifacts\upstream-reports\capture-native.py `
+  artifacts\primary-parameter-cycles\reference-after\manifest.json `
+  artifacts\upstream-reports\component-native-enabled-2 --component-tests 1
+python artifacts\upstream-reports\capture-native.py `
+  artifacts\primary-parameter-cycles\reference-after\manifest.json `
+  artifacts\upstream-reports\component-native-control-2 --component-tests 0
+```
+
+The runner verifies the reference input hashes and explicitly selects native
+`clrjit.dll`; RyuJitSharp is not executing these tests. The C# port retains the
+pinned assertion and canonicalization pending an upstream correction.
+
+### B524: `jitstd::list::merge` leaves source tail nodes in both lists
+
+**Status:** reported in
+[dotnet/runtime#135435](https://github.com/dotnet/runtime/issues/135435).
+The implementation was verified at pinned revision
+`33baf8ee337b20dd0f184b69a6f09be92850bf9e` and current upstream commit
+`7fd4be4b29175b1007cb5a1bd701f057b2fe08be`.
+
+#### Defect
+
+`list<T, Allocator>::merge` copies source elements into the destination while
+the comparator selects them. If source nodes remain after that loop, it links
+the remaining source chain onto the destination and assigns the source tail to
+the destination tail, but does not update the source list's head, tail, or
+size. Both lists therefore retain links to the same nodes.
+
+The native `list` destructor calls `destroy_helper`, which walks backward from
+each list's tail and destroys/deallocates the nodes. Clearing or destroying
+either list can therefore leave the other list linked to already-destroyed
+nodes; later traversal or destruction can access or destroy those nodes again.
+Not using the source list after `merge` does not avoid its destructor.
+
+For example, with the default comparator, merging destination values
+`[1, 4, 6]` and source values `[2, 3, 5, 7]` produces destination values
+`[1, 2, 3, 4, 5, 6, 7]` while the source still reports `[2, 3, 5, 7]`; the
+destination and source share the final node. The pinned JIT tree contains no
+`list.merge` call sites, so this is a source-confirmed generic-container defect,
+not a demonstrated JIT execution failure.
+
+#### Port handling
+
+`JitStdList.merge` mirrors the pinned insertion and tail-link algorithm,
+including the shared tail, and its regression test verifies value order,
+source metadata, shared tail identity, and forward iterator termination. The
+test does not claim safe destruction of both lists after aliasing. Keep the
+managed behavior aligned until the upstream correction is accepted, then apply
+that correction to both implementations.

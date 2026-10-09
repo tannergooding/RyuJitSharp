@@ -1,15 +1,16 @@
 # Continuation plan
 
 The whole-function porting sequence below is historical context. The managed
-port is implemented; current work is the parity, correctness, and coverage
-burn-down in [BACKLOG.md](BACKLOG.md). Exact revisions and the resume cursor are
-in [state.json](state.json).
+port is implemented and its source-port backlog is retired. The current
+checkpoint and remaining parity evidence boundary are in [state.json](state.json).
+Accepted behavior differences and confirmed upstream defects are recorded in
+[DEVIATIONS.md](DEVIATIONS.md) and [UPSTREAM-REPORTS.md](UPSTREAM-REPORTS.md).
 
 ## Execution order and iteration
 
-Resume from `checkpoint.nextAction` in [state.json](state.json), and take the
-next dependency-coherent item from the backlog. Use the pinned upstream revision
-for behavior comparisons; do not replay completed translation or setup work.
+Resume from `checkpoint.nextAction` in [state.json]. Use the pinned upstream
+revision for behavior comparisons; do not replay completed translation or setup
+work.
 
 The compiler pipeline remains the main parity boundary: rationalization,
 lowering, LSRA, code generation and emission. Resolve tracked gaps without
@@ -249,13 +250,12 @@ regression/parity evidence, and a small continuation checkpoint naming the next
 dependency, committed together as one logical batch.
 Do not start the next batch with completed work still waiting for a commit.
 
-## 5. Restructure after establishing the clean port
+## 5. Post-port work
 
-Use [BACKLOG.md](BACKLOG.md) to preserve encountered bugs, rename/refactoring
-candidates, and restructuring ideas without implementing them incidentally.
-After the port is established, revisit module boundaries, stronger unit-test
-coverage, and more substantial C#-specific designs as a separately approved
-rewrite. Maintain the clean port as the behavioral reference for that work.
+The source port is established. Keep post-port refactoring, stronger unit-test
+coverage, and more substantial C#-specific designs outside the porting contract
+unless separately approved. Use the deviation and upstream-report registers for
+the existing behavior record; do not recreate the retired source-port backlog.
 
 ## Approval and escalation
 

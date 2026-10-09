@@ -6,8 +6,10 @@ checkpoint, and load only the relevant sections of the
 [plan](docs/porting/PLAN.md) and [deviations](docs/porting/DEVIATIONS.md).
 
 - Preserve the recognizable C# port while resolving its tracked correctness,
-  parity, and coverage work. Record newly discovered defects and design questions
-  in the [backlog](docs/porting/BACKLOG.md); do not bundle unrelated cleanup.
+  parity, and coverage work. Record confirmed native defects in
+  [UPSTREAM-REPORTS.md](docs/porting/UPSTREAM-REPORTS.md) and accepted observable
+  differences in [DEVIATIONS.md](docs/porting/DEVIATIONS.md); do not bundle
+  unrelated cleanup.
 - Validate changes at the relevant target frontier. Preserve target conditionals
   and dependency behavior; unsupported target paths must remain explicit and
   terminating rather than becoming silent no-ops or success-shaped fallbacks.

@@ -10,19 +10,17 @@ Read the [milestone journal](MILESTONES.md) to catch up on completed capabilitie
 project history and remaining work without replaying the conversation.
 The [continuation plan](PLAN.md) records the porting sequence; the
 [deviation register](DEVIATIONS.md) distinguishes accepted changes from existing
-limitations.
-Use the [backlog](BACKLOG.md) only for unresolved findings, decisions, blockers,
-coverage gaps, and deferred work; remove entries when their actions are complete.
+limitations. Confirmed native defects are listed in
+[UPSTREAM-REPORTS.md](UPSTREAM-REPORTS.md). The source-port backlog has been
+retired after its tracked items were resolved or explicitly accepted as
+limitations. The remaining dynamic TLS input-ownership evidence boundary is
+kept in [state.json](state.json); do not claim parity or change compiler
+constants until its EE-assigned slot inputs are understood.
 Keep completion evidence with tests, artifacts, and commits, and record accepted
 observable differences only in the deviation register. The port is implemented
 in this repository; the exact upstream source revision used for reference is
-recorded in [state.json](state.json). Remaining correctness, parity and coverage
-work belongs in the backlog, not in a parallel inventory of native definitions.
-Confirmed upstream defects that should be reported, but must remain unchanged in
-the managed port for parity, are listed in [UPSTREAM-REPORTS.md](UPSTREAM-REPORTS.md).
-Items needing an owner decision are separated under the backlog's
-owner-review section and should not be implemented as approved changes before
-sign-off.
+recorded in [state.json](state.json). Do not recreate a native-definition
+inventory.
 
 An implemented managed body, a passing build, or an explicit unsupported-target
 path does not by itself establish runtime or generated-code parity. Compare

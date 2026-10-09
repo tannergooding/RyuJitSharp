@@ -9,13 +9,13 @@
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
-    "stage": "backlog-burn-down",
-    "nextAction": "No actionable BACKLOG.md items remain; B129's native logging bridge is deferred as non-core.",
+    "stage": "port-closeout",
+    "nextAction": "Identify the EE allocation boundary behind the differing dynamic TLS indices in artifacts\\dynamic-tls-inputs before changing constants or claiming full parity.",
     "activeBatch": {
-      "scope": "Parity-first review of all owner-review/sign-off items is complete. B129's native logging bridge remains deferred as non-core.",
-      "doneWhen": "No pending owner-review/sign-off items remain; confirmed native defects and managed behavior differences are recorded in UPSTREAM-REPORTS.md and DEVIATIONS.md.",
-      "validation": "Verify there are no remaining owner-review rows and that report/deviation entries and the checkpoint agree.",
-      "deferred": "B129's native logging bridge remains deferred. No owner-review decisions are pending."
+      "scope": "Port source and owner-review closeout: B129 is accepted as a non-core diagnostic-routing limitation, and detailed upstream reports are consolidated.",
+      "doneWhen": "Retire the source-port backlog and references while preserving the unresolved dynamic TLS input-ownership boundary as a separate parity evidence limitation.",
+      "validation": "Verify all detailed reports are preserved in UPSTREAM-REPORTS.md, accepted differences are in DEVIATIONS.md, and no references to the retired backlog or report directory remain.",
+      "deferred": "Do not add the B129 native logging bridge unless EE-routed JIT diagnostics become a core requirement."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",

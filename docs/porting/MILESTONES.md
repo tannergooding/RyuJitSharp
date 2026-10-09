@@ -2,8 +2,9 @@
 
 This is a reader-facing summary of major capability transitions, not a commit
 journal. Git history contains implementation and retirement details; active
-decisions and unresolved work belong in [state.json](state.json),
-[BACKLOG.md](BACKLOG.md), and [DEVIATIONS.md](DEVIATIONS.md).
+evidence boundaries belong in [state.json](state.json), accepted differences in
+[DEVIATIONS.md](DEVIATIONS.md), and confirmed native defects in
+[UPSTREAM-REPORTS.md](UPSTREAM-REPORTS.md).
 
 ## Current capability
 
@@ -29,6 +30,6 @@ execution or parity on those targets.
 | 2026-04 | Retargeted the project to .NET 10 and resumed active porting. |
 | 2024-02 | Established the project, core interfaces, and native-facing machinery to load as a no-op AltJIT. |
 
-The [continuation plan](PLAN.md) describes upcoming work. The backlog tracks
-unresolved findings and the deviation register records accepted observable
-differences.
+The [continuation plan](PLAN.md) records the post-port boundary. There is no
+active source-port backlog; the deviation register records accepted observable
+differences and the upstream report register records confirmed native defects.

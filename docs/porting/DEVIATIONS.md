@@ -649,8 +649,9 @@ call flags; shared-counter lifetime, branch layout and probabilities are unchang
 scopes to replace the native destructor's decision reporting, including early
 returns, loop continues and unwinding. Reporting retains native suppression,
 Debug failure observations, permanent NOINLINE propagation and structured EE
-notifications. UTF-8 reason strings use the existing scoped marshaling helper. The shared `vlogf` EE text-logging stub is still unimplemented (B129);
-this is not an accepted diagnostic-output difference.
+notifications. UTF-8 reason strings use the existing scoped marshaling helper.
+The shared `vlogf` EE text-logging bridge is intentionally out of core scope;
+the accepted diagnostic-routing limitation is documented in D019.
 
 ##### EH, profile repair, and guarded devirtualization
 
@@ -2546,3 +2547,22 @@ uninitialized for verbose MinOpts compilations and are printed by
 values. Keep deterministic managed fields rather than emitting poisoned memory
 contents. The native defect is recorded as B514 in
 [UPSTREAM-REPORTS.md](UPSTREAM-REPORTS.md).
+
+### D019: EE-routed JIT logging is out of core scope
+
+**Status:** accepted diagnostic-routing limitation; a native bridge is deferred
+unless EE-routed JIT diagnostics become a core requirement.
+
+Native Debug `JITLOG` calls and verbose `logf` messages can be routed through
+the current compilation's `ICorJitInfo::logMsg` callback into the EE's
+configured logging filters and destinations. That API takes a `va_list`, so a
+managed string alone cannot satisfy the native ABI. The managed
+`sources/Core/jit/host/Globals.cs::vlogf` currently returns `false`; generic
+logging can fall back to stdout, and `Compiler.JITLOG` writes to stdout when
+verbose logging is enabled. Direct `jitprintf` output is independent.
+
+The omission affects diagnostic routing and filtering only; it does not affect
+optimization decisions or generated code. A bridge would require a native
+fixed-arity adapter, safe `va_list` construction, string-lifetime handling, and
+native build/package support for the six host RIDs. The owner has judged this
+non-core, so retain the current managed behavior rather than adding the bridge.

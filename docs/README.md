@@ -44,9 +44,9 @@ porting RyuJIT from dotnet/runtime to C#.
 
 See the [porting workflow](porting/README.md), [continuation plan](porting/PLAN.md),
 and [deviation register](porting/DEVIATIONS.md). Pinned upstream revisions and the
-current checkpoint are recorded in [state.json](porting/state.json).
-Encountered bugs and deferred improvements are tracked in the
-[port findings backlog](porting/BACKLOG.md).
+current checkpoint are recorded in [state.json](porting/state.json). Confirmed
+upstream defects are recorded in the
+[upstream report register](porting/UPSTREAM-REPORTS.md).
 
 ### Languages and Frameworks
 
