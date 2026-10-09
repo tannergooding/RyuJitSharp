@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Owner review: decide whether to correct volatile promoted-field handling through FIELD_ADDR (B144).",
+    "nextAction": "No actionable BACKLOG.md items remain; B129's native logging bridge is deferred as non-core.",
     "activeBatch": {
-      "scope": "Sequential owner review of the remaining decisions in BACKLOG.md, currently B144. B129's native logging bridge is deferred as non-core.",
-      "doneWhen": "Record each decision by removing resolved entries and updating DEVIATIONS.md or other relevant tracking; make no behavior change without explicit approval.",
-      "validation": "After each decision, verify the backlog disposition, deviation record, and checkpoint cursor are consistent.",
-      "deferred": "No unblocked implementation item remains. Pending owner-review decisions are listed in BACKLOG.md."
+      "scope": "Parity-first review of all owner-review/sign-off items is complete. B129's native logging bridge remains deferred as non-core.",
+      "doneWhen": "No pending owner-review/sign-off items remain; confirmed native defects and managed behavior differences are recorded in UPSTREAM-REPORTS.md and DEVIATIONS.md.",
+      "validation": "Verify there are no remaining owner-review rows and that report/deviation entries and the checkpoint agree.",
+      "deferred": "B129's native logging bridge remains deferred. No owner-review decisions are pending."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",

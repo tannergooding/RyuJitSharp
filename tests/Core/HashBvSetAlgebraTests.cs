@@ -58,6 +58,28 @@ internal static class HashBvSetAlgebraTests
         Assert.That(ReadBits(right), Is.EquivalentTo(s_right));
     }
 
+    [Test]
+    public static void XorPreservesTheLeftNodeWhenTheRightNodeHasAnEarlierBase()
+    {
+        var left = Create(1, 128);
+        var right = Create(1, 0);
+
+        Assert.That(left.XorWithChange(right), Is.True);
+        Assert.That(left.IsValid(), Is.True);
+        Assert.That(left.numNodes, Is.EqualTo(2));
+        Assert.That(ReadBits(left), Is.EquivalentTo(new indexType[] { 0, 128 }));
+    }
+
+    [Test]
+    [CancelAfter(10000)]
+    public static void IntersectsTerminatesWhenEqualBaseNodesHaveDisjointBits()
+    {
+        var left = Create(1, 0);
+        var right = Create(1, 1);
+
+        Assert.That(left.Intersects(right), Is.False);
+    }
+
     [TestCase("And")]
     [TestCase("Or")]
     [TestCase("Subtract")]

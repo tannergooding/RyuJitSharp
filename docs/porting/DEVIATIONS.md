@@ -73,11 +73,12 @@ inliner's `InlineeCompiler` reference. Native reuses storage but invokes its
 constructor again with placement-new; retaining the managed instance instead
 retained the previous method's metadata and SIMD state (B132). Allocation reuse
 is not part of the semantic contract. The native inlinee's apparently
-uninitialized profile-diagnostic flag is tracked separately in B322; managed
-fields are not poisoned to reproduce it, and full diagnostic parity is not
-claimed. A checked optimized `GenericCatch` capture confirms that when profile
-incorporation finds no profile data and synthesis does not run, native prints
-the deferred-check skip while managed reports that no blocks were profiled.
+uninitialized profile-diagnostic flag is tracked in B322; managed fields are
+not poisoned to reproduce it. The resulting checked diagnostic difference is
+documented in D015. A checked optimized `GenericCatch` capture confirms that
+when profile incorporation finds no profile data and synthesis does not run,
+native prints the deferred-check skip while managed reports that no blocks
+were profiled.
 
 **Remaining action:** audit identity/lifetime assumptions as functions are
 ported. If a comparator excludes allocation statistics, identify the exact
@@ -1244,7 +1245,7 @@ ref-returning accessors retain descriptor identity. Only the common function
 descriptor metadata is needed here; unwind/location payloads and final emission
 remain unported. All twenty funclet phase bodies and resulting graphs match
 native. The full sections including post-phase checks retain two B322 diagnostic
-differences, which are not accepted output exceptions.
+differences, documented in D015; the code shapes otherwise match.
 
 Internal-register definitions, call definitions and kill references retain
 native location ordering, register preferences and upper-vector save rules.
@@ -1889,8 +1890,10 @@ and full-allocation traversal now have managed ARM64 coverage. Fixed-reference
 conflicts remain excluded during stress recovery, and partial-vector restores
 retain their ARM64 allocation behavior. Local-interval construction, resolution
 and minimal-path consecutive allocation remain gated, as does the public
-allocation phase. B398 records preserved native wrap-mask quirks; there is no
-ARM64 execution/parity claim.
+allocation phase. B398 records preserved native wrap-mask quirks and undefined
+V0 shift behavior, with the undefined shift recorded in
+[UPSTREAM-REPORTS.md](UPSTREAM-REPORTS.md); there is no ARM64 execution/parity
+claim.
 
 `Lowering.IsCallTargetInRange` implements the xarch policy. Other targets report
 NYI and terminate with `fatal(CORJIT_IMPLLIMITATION)` pending their call-target
@@ -2473,3 +2476,73 @@ Keep the managed behavior and do not port the recursive call. This exception
 concerns compile-time evaluation of constant double `Math.ILogB`; no full native
 JIT run was captured to characterize its eventual runtime failure. The native
 defect is recorded in [UPSTREAM-REPORTS.md](UPSTREAM-REPORTS.md).
+
+### D014: Extended ARM unwind decoder bounds
+
+**Status:** accepted managed safety correction; native parity is not claimed
+for the range that indexes beyond the native table.
+
+The extended ARM `CodeWords` field permits streams longer than 64 words. The
+pinned native decoder indexes a fixed 256-entry epilog-start array across the
+stream, while managed
+`sources/Core/jit/unwindarm/Globals.Diagnostics.cs` sizes its span to the stream.
+For a 65-word stream, the native indexing exceeds the fixed array. Keep the
+managed span-sized decoder rather than reproducing the out-of-bounds read.
+`tests/Core/ArmUnwindPortTests.cs::DecoderHandlesExtendedCodeStreamsBeyondEpilogIndexRange`
+checks the 65-word case. The native defect is recorded as B185 in
+[UPSTREAM-REPORTS.md](UPSTREAM-REPORTS.md).
+
+### D015: Deterministic inlinee profile diagnostic
+
+**Status:** accepted deterministic managed behavior; Checked-JIT diagnostic
+text is not identical to the poisoned native result.
+
+Native `Compiler::fgPgoDeferredInconsistency` has no initializer and can be read
+before profile synthesis assigns it. Checked native arena allocations fill the
+storage with `0xCD`; managed `sources/Core/jit/compiler/Compiler.fg.cs`
+zero-initializes the `bool`. Do not emulate an invalid native `bool`. In the
+checked optimized `GenericCatch` case with no profile data and no synthesized
+methods, native prints the deferred-check skip while managed reports that no
+blocks were profiled. The source defect is recorded as B322 in
+[UPSTREAM-REPORTS.md](UPSTREAM-REPORTS.md).
+
+### D016: Hash-vector set operations
+
+**Status:** accepted managed correctness and termination differences from the
+pinned native defects.
+
+Managed `sources/Core/jit/hashbv/hashBv.SetAlgebra.cs` preserves the existing
+left node when XOR inserts an earlier-base right node, and advances after
+disjoint same-base nodes in `Intersects`. Pinned native XOR drops the left node,
+and native intersection can loop indefinitely. Keep the complete XOR result and
+terminating intersection behavior. `tests/Core/HashBvSetAlgebraTests.cs`
+contains bounded regressions for both cases. These operations do not claim
+parity with the pinned defects; B246 and B247 are recorded in
+[UPSTREAM-REPORTS.md](UPSTREAM-REPORTS.md).
+
+### D017: Checked mask-local diagnostic fallback
+
+**Status:** accepted Checked-JIT harness difference; no compiler-output parity
+claim is made for the failing diagnostic phase.
+
+The pinned Checked JIT asserts in `src/coreclr/jit/scopeinfo.cpp:722` while
+printing the positive mask local's debug live range after mask conversion and
+codegen IR. The managed checked run retries at MinOpts and exits successfully.
+FullOpts execution succeeds on both sides with the same 52-byte body; the
+MinOpts retry body is not parity evidence. Keep the managed retry and report the
+checked diagnostic discrepancy as B327 in
+[UPSTREAM-REPORTS.md](UPSTREAM-REPORTS.md).
+
+### D018: Deterministic MinOpts cost diagnostics
+
+**Status:** accepted deterministic managed values; verbose Checked MinOpts
+diagnostic text is not identical to native arena poison.
+
+The pinned native `compSizeEstimate` and `compCycleEstimate` remain
+uninitialized for verbose MinOpts compilations and are printed by
+`codegenlinear.cpp`. Managed
+`sources/Core/jit/compiler/Compiler.comp.cs` fields are zero-initialized, and
+`sources/Core/jit/codegenlinear/CodeGen.BlockDriver.cs` prints those defined
+values. Keep deterministic managed fields rather than emitting poisoned memory
+contents. The native defect is recorded as B514 in
+[UPSTREAM-REPORTS.md](UPSTREAM-REPORTS.md).
