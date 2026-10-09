@@ -344,7 +344,7 @@ public partial class Compiler
                     }
                     continue;
                 }
-                else if (lvaIsUnknownSizeLocal(lclNum))
+                else if (lvaLocalIsOnUnknownSizeFrame(lclNum))
                 {
 #if FEATURE_SIMD && TARGET_ARM64
                     lvaAllocUnknownSizeLocal(lclNum);

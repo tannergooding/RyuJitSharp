@@ -383,6 +383,44 @@ internal static unsafe class CallArgumentMorphTests
         });
     }
 
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void CovariantStoreRewritesDoNotLeaveStaleGcSafepoints(bool managedEquivalent, bool nullValue)
+    {
+        WithCompiler(compiler =>
+        {
+            compiler.compCurBB = new BasicBlock(null, null);
+            compiler.lvaTable[0].Type = TYP_REF;
+            compiler.lvaTable[1].Type = TYP_INT;
+            compiler.lvaTable[2].Type = TYP_REF;
+            var helper = Compiler.eeFindHelper(CorInfoHelpFunc.CORINFO_HELP_ARRADDR_ST);
+            var method = (CORINFO_METHOD_STRUCT_*)0x1234;
+            HelperMap(compiler) = new() { [helper] = method };
+            var call = compiler.gtNewCallNode(TYP_VOID, managedEquivalent ? CT_USER_FUNC : CT_HELPER,
+                managedEquivalent ? method : helper);
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_REF, 0)));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_INT, 1)));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(
+                nullValue ? compiler.gtNewNull() : compiler.gtNewLclvNode(TYP_REF, 2)));
+            Assert.That(Compiler.IsGcSafePoint(call), Is.EqualTo(managedEquivalent));
+
+            var result = compiler.fgMorphTree(call);
+
+            Assert.That(compiler.compCurBB.HasFlag(BasicBlockFlags.BBF_GC_SAFE_POINT), Is.False);
+            if (nullValue)
+            {
+                Assert.That(result.Oper, Is.EqualTo(GT_STOREIND));
+            }
+            else
+            {
+                Assert.That(result, Is.SameAs(call));
+                Assert.That(call.IsHelperCall(CorInfoHelpFunc.CORINFO_HELP_ARRADDR_ST), Is.True);
+            }
+        });
+    }
+
     [TestCase(TYP_INT, false)]
     [TestCase(TYP_LONG, true)]
     public static void PartialDefinitionsRetainUseFlags(var_types localType, bool partial)

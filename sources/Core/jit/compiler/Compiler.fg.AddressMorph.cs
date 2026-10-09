@@ -31,7 +31,6 @@ public partial class Compiler
         if (tree.Oper.IsSimple)
         {
             result = fgMorphSmpOp(tree, out _);
-            result.SetMorphed(this);
             if (isAddress && (result.Oper is GT_COMMA))
             {
                 result.Flags |= GTF_DONT_CSE;

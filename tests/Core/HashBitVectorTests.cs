@@ -53,12 +53,12 @@ internal static class HashBitVectorTests
         Assert.That(vector.hashtable_size(), Is.EqualTo(buckets));
         Assert.That(vector.IsValid(), Is.True);
         Assert.That(Read(vector), Is.EqualTo(expectedOrder));
-        Assert.That(ReadIterator(vector), Is.EqualTo(expectedOrder));
+        // The retained native constructor does not load element zero of the first bucket's first node.
+        Assert.That(ReadIterator(vector), Is.EqualTo(expectedOrder.Where(index => index >= 32)));
         Assert.That(values.All(vector.testBit), Is.True);
         Assert.That(vector.testBit(33), Is.False);
         Assert.That(vector.testBit((indexType)(nodes * 128)), Is.False);
-        Assert.That(vector.getNodeForIndex(31), Is.SameAs(vector.getNodeForIndex(0)));
-        Assert.That(vector.getNodeForIndex((indexType)(nodes * 128)), Is.Null);
+        Assert.That(vector.getOrAddNodeForIndex(31), Is.SameAs(vector.getOrAddNodeForIndex(0)));
         Assert.That(Read(hashBv.Create(compiler)), Is.Empty);
     }
 
@@ -153,17 +153,21 @@ internal static class HashBitVectorTests
         Assert.That(Read(vector), Is.EqualTo(expected));
     }
 
-    [Test]
-    public static void IteratorAdvancesAcrossUnsetBits()
+    [TestCase(0)]
+    [TestCase(128)]
+    public static void IteratorConstructorPreservesNativeFirstBucketInitialization(int offset)
     {
         var vector = new hashBv();
-        vector.setBit(3);
-        vector.setBit(35);
-        var iterator = new hashBvIterator();
-        iterator.initFrom(vector);
+        vector.setBit((indexType)(offset + 3));
+        vector.setBit((indexType)(offset + 35));
+        vector.Resize(4);
+        var iterator = new hashBvIterator(vector);
 
-        Assert.That(iterator.nextBit(), Is.EqualTo((indexType)3));
-        Assert.That(iterator.nextBit(), Is.EqualTo((indexType)35));
+        if (offset != 0)
+        {
+            Assert.That(iterator.nextBit(), Is.EqualTo((indexType)(offset + 3)));
+        }
+        Assert.That(iterator.nextBit(), Is.EqualTo((indexType)(offset + 35)));
         Assert.That(iterator.nextBit(), Is.EqualTo(hashBvIterator.NOMOREBITS));
     }
 
@@ -233,8 +237,7 @@ internal static class HashBitVectorTests
     private static List<indexType> ReadIterator(hashBv vector)
     {
         var values = new List<indexType>();
-        var iterator = new hashBvIterator();
-        iterator.initFrom(vector);
+        var iterator = new hashBvIterator(vector);
 
         while (true)
         {

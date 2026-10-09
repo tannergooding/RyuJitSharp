@@ -390,7 +390,7 @@ internal static unsafe class HardwareIntrinsicInitializationTests
 
     [TestCase(1)]
     [TestCase(4)]
-    public static void HardwareFoldingCreationRefreshesValueNumbersAndMorphState(int count)
+    public static void HardwareFoldingCreationRefreshesValueNumbers(int count)
     {
         WithCompiler(compiler => {
             compiler.fgGlobalMorph = true;
@@ -414,9 +414,6 @@ internal static unsafe class HardwareIntrinsicInitializationTests
             Assert.That(result._vnPair.Liberal, Is.EqualTo(expected));
             Assert.That(result._vnPair.Conservative, Is.EqualTo(expected));
             Assert.That(result.Flags & GTF_ALL_EFFECT, Is.EqualTo(GTF_EMPTY));
-#if DEBUG
-            Assert.That(result.WasMorphed, Is.True);
-#endif
         });
     }
 
@@ -1033,9 +1030,6 @@ internal static unsafe class HardwareIntrinsicInitializationTests
             Assert.That(result.Type, Is.EqualTo(TYP_MASK));
             Assert.That(conversion.GetOp(1), Is.SameAs(value));
             Assert.That(value.SimdVal, Is.EqualTo(before));
-#if DEBUG
-            Assert.That(result.WasMorphed, Is.False);
-#endif
             var secondResult = compiler.gtFoldExprConvertVecCnsToMask(conversion, value);
             Assert.That(secondResult, Is.Not.SameAs(result));
             var expanded = compiler.gtNewSimdCvtMaskToVectorNode(type, result, baseType, type.Size);

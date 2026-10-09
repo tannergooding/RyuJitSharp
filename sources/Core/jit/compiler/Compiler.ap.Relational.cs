@@ -91,57 +91,6 @@ public partial class Compiler
         isKnownNonNegative = nonNegative;
     }
 
-    public AssertionIndex optGlobalAssertionIsEqualOrNotEqual(ASSERT_TP assertions, GenTree op1, GenTree op2)
-    {
-        ArgumentNullException.ThrowIfNull(vnStore);
-        assert(apTraits is not null);
-
-        if (BitVecOps.IsEmpty(apTraits, assertions))
-        {
-            return NO_ASSERTION_INDEX;
-        }
-
-        var op1VN = vnStore.VNNormalValue(op1._vnPair.Conservative);
-        var op2VN = vnStore.VNNormalValue(op2._vnPair.Conservative);
-        var result = NO_ASSERTION_INDEX;
-        _ = BitVecOps.VisitBits(apTraits, assertions, bitIndex =>
-        {
-            var index = GetAssertionIndex((ushort)bitIndex);
-            if (index > optAssertionCount)
-            {
-                return false;
-            }
-
-            var assertion = optGetAssertion(index);
-            if (!assertion.CanPropEqualOrNotEqual)
-            {
-                return true;
-            }
-
-            if ((assertion.Op1.VN == op1VN) && (assertion.Op2.VN == op2VN))
-            {
-                result = index;
-                return false;
-            }
-
-            if (assertion.KindIs(OAK_EQUAL) && assertion.Op1.KindIs(O1K_EXACT_TYPE) &&
-                (assertion.Op2.VN == op2VN) && (op1.Type is TYP_I_IMPL))
-            {
-                var app = new VNFuncApp();
-                if (vnStore.GetVNFunc(op1VN, ref app) &&
-                    app.FuncIs(VNF_InvariantNonNullLoad) && (assertion.Op1.VN == app.GetArg(0)))
-                {
-                    result = index;
-                    return false;
-                }
-            }
-
-            return true;
-        });
-
-        return result;
-    }
-
     public GenTree? optAssertionProp_RelOp(ASSERT_TP? assertions, GenTree tree,
         Statement? statement, BasicBlock? block)
     {
@@ -293,179 +242,49 @@ public partial class Compiler
             return null;
         }
 
-        if ((op1.Flags & GTF_SIDE_EFFECT) != 0)
-        {
-            return null;
-        }
-
-        if (op1.Oper is not (GT_LCL_VAR or GT_IND))
-        {
-            return null;
-        }
-
-        if (op2.IsIntegralConst(0) && (op1.Type is TYP_REF))
+        if (op2.IsIntegralConst(0) && varTypeIsI(op1.Type) && optAssertionVNIsNonNull(op1VN, assertions))
         {
 #if DEBUG
-            JITDUMP($"Checking PHI [{op1.TreeId:D6}] arguments for non-nullness\n");
+            JITDUMP($"Proved [{op1.TreeId:D6}] non-null\n");
 #endif
-            var op1VNForPhi = vnStore.VNNormalValue(op1._vnPair.Conservative);
-            if (optVisitReachingAssertions(op1VNForPhi,
-                (reachingVN, reachingAssertions) =>
-                    optAssertionVNIsNonNull(reachingVN, reachingAssertions)
-                        ? AssertVisit.Continue : AssertVisit.Abort) is AssertVisit.Continue)
+            result = gtWrapWithSideEffects(tree.Oper is GT_EQ ? gtNewFalse() : gtNewTrue(), tree, GTF_ALL_EFFECT);
+            return optAssertionProp_Update(result, tree, statement);
+        }
+
+        var op1ObjectVN = ValueNumStore.NoVN;
+        var app = new VNFuncApp();
+        if ((op1.Type is TYP_I_IMPL) && vnStore.GetVNFunc(op1VN, ref app) &&
+            app.FuncIs(VNF_InvariantNonNullLoad))
+        {
+            op1ObjectVN = app.GetArg(0);
+        }
+
+        _ = BitVecOps.VisitBits(apTraits, assertions, bitIndex =>
+        {
+            var index = GetAssertionIndex((ushort)bitIndex);
+            var assertion = optGetAssertion(index);
+            if (!assertion.CanPropEqualOrNotEqual || (assertion.Op2.VN != op2VN))
             {
-                JITDUMP("... all of PHI's arguments are never null!\n");
-                result = gtNewIconNode(TYP_INT, tree.Oper is GT_EQ ? 0 : 1);
-                return optAssertionProp_Update(result, tree, statement);
+                return true;
             }
-        }
 
-        var assertionIndex = optGlobalAssertionIsEqualOrNotEqual(assertions, op1, op2);
-        if (assertionIndex == NO_ASSERTION_INDEX)
-        {
-            return null;
-        }
-
-        var matchingAssertion = optGetAssertion(assertionIndex);
-        var assertionIsEqual = matchingAssertion.KindIs(OAK_EQUAL);
-        var allowReverse = true;
-        var constantVN = vnStore.VNNormalValue(op2._vnPair.Conservative);
-        if (vnStore.IsVNConstant(constantVN))
-        {
+            if ((assertion.Op1.KindIs(O1K_VN) && (assertion.Op1.VN == op1VN)) ||
+                (assertion.Op1.KindIs(O1K_EXACT_TYPE) && (assertion.Op1.VN == op1ObjectVN)))
+            {
 #if DEBUG
-            if (verbose)
-            {
-                assert(compCurBB is not null);
-                jitprintf($"\nVN relop based constant assertion prop in {FMT_BB(compCurBB.bbNum)}:\n");
-                jitprintf($"Assertion index=#{assertionIndex:D2}: ");
-                printTreeId(op1);
-                jitprintf(assertionIsEqual ? " == " : " != ");
-                if (op1.Type.ActualType is TYP_INT)
-                {
-                    jitprintf($"{vnStore.ConstantValue<int>(constantVN)}\n");
-                }
-                else if (op1.Type is TYP_LONG)
-                {
-                    jitprintf($"{vnStore.ConstantValue<long>(constantVN)}\n");
-                }
-                else if (op1.Type is TYP_FLOAT)
-                {
-                    jitprintf($"{formatFloat(vnStore.ConstantValue<float>(constantVN), "F6")}\n");
-                }
-                else if (op1.Type is TYP_DOUBLE)
-                {
-                    jitprintf($"{formatFloat(vnStore.ConstantValue<double>(constantVN), "F6")}\n");
-                }
-                else
-                {
-                    jitprintf($"{vnStore.ConstantValue<nint>(constantVN)}\n");
-                }
-                gtDispTree(tree, topOnly: true);
-            }
+                JITDUMP($"Found matching assertion #{index:D2} for tree {tree.TreeId:D6}.");
 #endif
-            var threading = NodeThreading.AllTrees;
-            GenTree constant;
-            if (op1.Type.ActualType is TYP_INT)
-            {
-                constant = new GenTreeIntCon(TYP_INT, vnStore.ConstantValue<int>(constantVN),
-                    null, op1, threading);
-            }
-            else if (op1.Type is TYP_LONG)
-            {
-#if TARGET_64BIT
-                constant = new GenTreeIntCon(TYP_LONG, unchecked((nint)vnStore.ConstantValue<long>(constantVN)),
-                    null, op1, threading);
-#else
-                constant = new GenTreeLngCon(vnStore.ConstantValue<long>(constantVN), op1, threading);
-#endif
-            }
-            else if (op1.Type is TYP_DOUBLE)
-            {
-                var value = vnStore.ConstantValue<double>(constantVN);
-                constant = new GenTreeDblCon(TYP_DOUBLE, value, op1, threading);
-                allowReverse = !double.IsNaN(value);
-            }
-            else if (op1.Type is TYP_FLOAT)
-            {
-                var value = vnStore.ConstantValue<float>(constantVN);
-                constant = new GenTreeDblCon(TYP_FLOAT, value, op1, threading);
-                allowReverse = !float.IsNaN(value);
-            }
-            else if (op1.Type is TYP_REF or TYP_BYREF)
-            {
-                constant = new GenTreeIntCon(op1.Type,
-                    unchecked((nint)vnStore.ConstantValue<nuint>(constantVN)), null, op1, threading);
-            }
-            else
-            {
-                throw new InvalidOperationException($"Unknown global relop operand type {op1.Type}.");
+                var value = assertion.KindIs(OAK_EQUAL) == (tree.Oper is GT_EQ);
+                result = gtWrapWithSideEffects(value ? gtNewTrue() : gtNewFalse(), tree, GTF_ALL_EFFECT);
+                JITDUMP(". Folded into:\n");
+                DISPTREE(result);
+                result = optAssertionProp_Update(result, tree, statement);
+                return false;
             }
 
-            if (vnStore.IsVNHandle(constantVN) && constant.Oper.IsCnsIntOrI)
-            {
-                constant.Flags |= vnStore.GetHandleFlags(constantVN) & GTF_ICON_HDL_MASK;
-            }
+            return true;
+        });
 
-            constant._vnPair.SetBoth(constantVN);
-            tree.AsOp().Op1 = constant;
-
-            var foldResult = assertionIsEqual;
-            if (tree.Oper is GT_NE)
-            {
-                foldResult = !foldResult;
-            }
-
-            tree._vnPair.SetBoth(foldResult
-                ? vnStore.VNForIntCon(1) : vnStore.VNZeroForType(TYP_INT));
-        }
-        else if ((op1.Oper is GT_LCL_VAR) && (op2.Oper is GT_LCL_VAR))
-        {
-#if DEBUG
-            if (verbose)
-            {
-                assert(compCurBB is not null);
-                jitprintf($"\nVN relop based copy assertion prop in {FMT_BB(compCurBB.bbNum)}:\n");
-                jitprintf($"Assertion index=#{assertionIndex:D2}: V{op1.AsLclVarCommon().LclNum:D2}." +
-                    $"{op1.AsLclVarCommon().SsaNum:D2} {(assertionIsEqual ? "==" : "!=")} " +
-                    $"V{op2.AsLclVarCommon().LclNum:D2}.{op2.AsLclVarCommon().SsaNum:D2}\n");
-                gtDispTree(tree, topOnly: true);
-            }
-#endif
-            if (op1.Type is TYP_FLOAT or TYP_DOUBLE)
-            {
-                var first = new GenTreeDblCon(op1.Type, 0.0, op1, NodeThreading.AllTrees);
-                var second = new GenTreeDblCon(op2.Type, 0.0, op2, NodeThreading.AllTrees);
-                first._vnPair.SetBoth(ValueNumStore.NoVN);
-                second._vnPair.SetBoth(ValueNumStore.NoVN);
-                tree.AsOp().Op1 = first;
-                tree.AsOp().Op2 = second;
-            }
-            else
-            {
-                noway_assert(varTypeIsIntegralOrI(op1.Type));
-                var target = op2.AsLclVarCommon();
-                var source = op1.AsLclVarCommon();
-                source.LclNum = target.LclNum;
-                source.SsaNum = target.SsaNum;
-            }
-        }
-        else
-        {
-            return null;
-        }
-
-        if (allowReverse && matchingAssertion.KindIs(OAK_NOT_EQUAL))
-        {
-            _ = gtReverseCond(tree);
-        }
-
-        result = fgMorphTree(tree);
-#if DEBUG
-        if (verbose)
-        {
-            gtDispTree(result, topOnly: true);
-        }
-#endif
-        return optAssertionProp_Update(result, tree, statement);
+        return result != tree ? result : null;
     }
 }

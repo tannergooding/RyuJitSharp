@@ -121,26 +121,6 @@ internal static class HashBvSetAlgebraTests
         Assert.That(ReadBits(right), Is.EquivalentTo(new indexType[] { 128, 256 }));
     }
 
-    [TestCase(1, 1)]
-    [TestCase(1, 16)]
-    [TestCase(16, 1)]
-    [TestCase(4, 4)]
-    public static void CompareChecksBitsAndNodeShapeAcrossBucketSizes(int leftSize, int rightSize)
-    {
-        var left = Create(leftSize, 0, 31, 128, 384);
-        var equal = Create(rightSize, 384, 128, 31, 0);
-        var disjoint = Create(rightSize, 1, 32, 129, 385);
-
-        Assert.That(left.CompareWith(equal), Is.True);
-        Assert.That(equal.CompareWith(left), Is.True);
-        Assert.That(left.CompareWith(disjoint), Is.False);
-        Assert.That(ReadBits(left), Is.EquivalentTo(new indexType[] { 0, 31, 128, 384 }));
-
-        equal.setBit(512);
-        Assert.That(left.CompareWith(equal), Is.False);
-        Assert.That(equal.CompareWith(left), Is.False);
-    }
-
     [TestCase("And", false)]
     [TestCase("Or", false)]
     [TestCase("Subtract", true)]
@@ -149,7 +129,6 @@ internal static class HashBvSetAlgebraTests
         var vector = Create(4, 0, 32, 128);
         var count = vector.numNodes;
 
-        Assert.That(vector.CompareWith(vector), Is.True);
         var changed = operation switch
         {
             "And" => vector.AndWithChange(vector),
@@ -173,52 +152,54 @@ internal static class HashBvSetAlgebraTests
         var absent = new hashBv();
         var copy = Create(1, 128);
 
-        Assert.That(empty.CompareWith(absent), Is.False);
+        Assert.That(empty.anySet(), Is.False);
         Assert.That(empty.AndWithChange(copy), Is.False);
         Assert.That(empty.numNodes, Is.EqualTo(1));
-        Assert.That(empty.CompareWith(absent), Is.False);
+        Assert.That(absent.numNodes, Is.Zero);
         Assert.That(absent.OrWithChange(empty), Is.True);
         Assert.That(absent.numNodes, Is.EqualTo(1));
-        Assert.That(absent.CompareWith(empty), Is.True);
+        Assert.That(absent.anySet(), Is.False);
 
         Assert.That(copy.AndWithChange(empty), Is.True);
         Assert.That(copy.numNodes, Is.Zero);
         Assert.That(empty.numNodes, Is.EqualTo(1));
         empty.ZeroAll();
-        Assert.That(empty.CompareWith(copy), Is.True);
+        Assert.That(copy.numNodes, Is.Zero);
         Assert.That(empty.numNodes, Is.Zero);
     }
 
     [Test]
-    public static void CopyAndCompoundOperationsDoNotShareNodesOrChangeTheSource()
+    public static void CopyAndSetOperationsDoNotShareNodesOrChangeTheSource()
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         var source = Create(16, 0, 256, 512);
-        var copy = hashBv.CreateFrom(source, compiler);
+        var copy = hashBv.Create(compiler);
+        copy.copyFrom(source, compiler);
         var reused = Create(1, 31);
         reused.copyFrom(source, compiler);
 
-        Assert.That(copy.CompareWith(source), Is.True);
-        Assert.That(reused.CompareWith(source), Is.True);
+        Assert.That(ReadBits(copy), Is.EquivalentTo(ReadBits(source)));
+        Assert.That(ReadBits(reused), Is.EquivalentTo(ReadBits(source)));
         Assert.That(copy.hashtable_size(), Is.EqualTo(source.hashtable_size()));
         Assert.That(reused.hashtable_size(), Is.EqualTo(source.hashtable_size()));
-        Assert.That(copy.getNodeForIndex(256), Is.Not.SameAs(source.getNodeForIndex(256)));
+        Assert.That(copy.getOrAddNodeForIndex(256), Is.Not.SameAs(source.getOrAddNodeForIndex(256)));
         copy.clearBit(256);
         reused.setBit(384);
         Assert.That(ReadBits(source), Is.EquivalentTo(new indexType[] { 0, 256, 512 }));
 
         var second = Create(1, 256, 128);
         var third = Create(1, 384);
-        reused.Subtract3(source, second);
+        reused.copyFrom(source, compiler);
+        reused.Subtract(second);
         Assert.That(ReadBits(reused), Is.EquivalentTo(new indexType[] { 0, 512 }));
-        reused.UnionMinus(source, second, third);
+        reused.OrWith(third);
         Assert.That(ReadBits(reused), Is.EquivalentTo(new indexType[] { 0, 384, 512 }));
 
         var buckets = reused.hashtable_size();
         reused.ZeroAll();
         Assert.That(reused.hashtable_size(), Is.EqualTo(buckets));
         Assert.That(reused.numNodes, Is.Zero);
-        Assert.That(reused.CompareWith(new hashBv()), Is.True);
+        Assert.That(ReadBits(reused), Is.Empty);
         Assert.That(ReadBits(source), Is.EquivalentTo(new indexType[] { 0, 256, 512 }));
     }
 
@@ -238,9 +219,8 @@ internal static class HashBvSetAlgebraTests
 
         var identical = new hashBvNode(128);
         identical.copyFrom(source);
-        Assert.That(identical.sameAs(source), Is.True);
+        Assert.That(ReadBits(identical), Is.EquivalentTo(ReadBits(source)));
         Assert.That(identical.baseIndex, Is.Zero);
-        Assert.That(source.sameAs(new hashBvNode(128)), Is.False);
 
         var intersection = new hashBvNode(0);
         intersection.copyFrom(source);
@@ -248,7 +228,7 @@ internal static class HashBvSetAlgebraTests
         Assert.That(intersection.AndWithChange(other), Is.Not.Zero);
         Assert.That(ReadBits(intersection), Is.EquivalentTo(new indexType[] { 31, 96 }));
         Assert.That(intersection.AndWithChange(other), Is.Zero);
-        Assert.That(intersection.sameAs(other), Is.False);
+        Assert.That(ReadBits(intersection), Is.Not.EquivalentTo(ReadBits(other)));
 
         var union = new hashBvNode(0);
         union.copyFrom(source);
@@ -265,7 +245,7 @@ internal static class HashBvSetAlgebraTests
         xor.copyFrom(source);
         Assert.That(xor.XorWithChange(other), Is.Not.Zero);
         Assert.That(ReadBits(xor), Is.EquivalentTo(new indexType[] { 0, 32, 64 }));
-        Assert.That(xor.sameAs(source), Is.False);
+        Assert.That(ReadBits(xor), Is.Not.EquivalentTo(ReadBits(source)));
     }
 
     [TestCase("And", new int[] { 31 })]

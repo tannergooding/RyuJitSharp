@@ -281,8 +281,9 @@ internal static unsafe class Arm64CodeGenPortTests
         });
     }
 
-    [Test]
-    public static void LeaInstructionUnwrapsContainedCastIndex()
+    [TestCase(false, INS_OPTS_SXTW)]
+    [TestCase(true, INS_OPTS_UXTW)]
+    public static void LeaInstructionExtendsContainedCastIndex(bool isUnsigned, insOpts expectedExtend)
     {
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
@@ -290,7 +291,7 @@ internal static unsafe class Arm64CodeGenPortTests
             baseAddress.RegNum = REG_R1;
             var source = compiler.gtNewIconNode(TYP_INT, 0);
             source.RegNum = REG_R2;
-            var index = new GenTreeCast(TYP_I_IMPL, source, false, TYP_I_IMPL)
+            var index = new GenTreeCast(TYP_I_IMPL, source, isUnsigned, TYP_I_IMPL)
             {
                 IsContained = true,
             };
@@ -306,13 +307,14 @@ internal static unsafe class Arm64CodeGenPortTests
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R0));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R1));
             Assert.That(descriptor.idReg3(), Is.EqualTo(REG_R2));
-            Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_LSL));
+            Assert.That(descriptor.idInsOpt(), Is.EqualTo(expectedExtend));
             Assert.That(descriptor.idSmallCns(), Is.EqualTo(2));
         });
     }
 
-    [Test]
-    public static void LeaInstructionUnwrapsContainedBitfieldInsertIndex()
+    [TestCase(false, INS_OPTS_SXTW)]
+    [TestCase(true, INS_OPTS_UXTW)]
+    public static void LeaInstructionExtendsContainedBitfieldInsertIndex(bool isUnsigned, insOpts expectedExtend)
     {
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
@@ -320,7 +322,7 @@ internal static unsafe class Arm64CodeGenPortTests
             baseAddress.RegNum = REG_R1;
             var source = compiler.gtNewIconNode(TYP_INT, 0);
             source.RegNum = REG_R2;
-            var cast = new GenTreeCast(TYP_I_IMPL, source, false, TYP_I_IMPL)
+            var cast = new GenTreeCast(TYP_I_IMPL, source, isUnsigned, TYP_I_IMPL)
             {
                 IsContained = true,
             };
@@ -341,7 +343,7 @@ internal static unsafe class Arm64CodeGenPortTests
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R0));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R1));
             Assert.That(descriptor.idReg3(), Is.EqualTo(REG_R2));
-            Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_LSL));
+            Assert.That(descriptor.idInsOpt(), Is.EqualTo(expectedExtend));
             Assert.That(descriptor.idSmallCns(), Is.EqualTo(2));
         });
     }

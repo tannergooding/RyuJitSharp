@@ -149,15 +149,17 @@ internal static unsafe class EmitterRegisterOutputTests
         });
     }
 
-    [Test]
-    public static void RegisterExchangeKillsBothGCTypesBeforeRecordingTheirNewOwners()
+    [TestCase(EA_PTRSIZE)]
+    [TestCase(EA_GCREF)]
+    [TestCase(EA_BYREF)]
+    public static void RegisterExchangeKillsBothGCTypesBeforeRecordingTheirNewOwners(emitAttr attr)
     {
         CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
         {
             codeGen.IsFullPtrRegMapRequired = true;
             var emitter = codeGen.Emitter;
             emitter.emitFullGCinfo = true;
-            emitter.emitIns_R_R(INS_xchg, EA_GCREF, REG_RAX, REG_RCX);
+            emitter.emitIns_R_R(INS_xchg, attr, REG_RAX, REG_RCX);
             var id = Last(emitter);
             Assert.That(id.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_RRW_RRW));
 
@@ -170,7 +172,10 @@ internal static unsafe class EmitterRegisterOutputTests
 #if DEBUG
             emitter.emitIssuing = true;
 #endif
-            HandleGCrefRegs(emitter, buffer + 3, id);
+            var end = emitter.emitOutputRR(buffer, id);
+            Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
+                Is.EqualTo(Convert.FromHexString("4887C1")));
+            Assert.That((uint)(end - buffer), Is.EqualTo(id.idCodeSize()));
 
             var expected = new[]
             {
@@ -192,6 +197,54 @@ internal static unsafe class EmitterRegisterOutputTests
             Assert.That(record, Is.Null);
             Assert.That(GCrefRegs(emitter), Is.EqualTo(SRBM_RCX));
             Assert.That(ByrefRegs(emitter), Is.EqualTo(SRBM_RAX));
+        });
+    }
+
+    [Test]
+    public static void RegisterExchangeUsesIssuedGcClassesAndPreservesUnrelatedRoots(
+        [Values(GCT_NONE, GCT_GCREF, GCT_BYREF)] GCInfo.GCtype firstType,
+        [Values(GCT_NONE, GCT_GCREF, GCT_BYREF)] GCInfo.GCtype secondType,
+        [Values(false, true)] bool fullMap)
+    {
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (_, codeGen, _) =>
+        {
+            codeGen.IsFullPtrRegMapRequired = true;
+            var emitter = codeGen.Emitter;
+            emitter.emitFullGCinfo = fullMap;
+            emitter.emitIns_R_R(INS_xchg, EA_PTRSIZE, REG_RAX, REG_RCX);
+            var id = Last(emitter);
+            Assert.That(id.idGCref(), Is.EqualTo(GCT_NONE));
+
+            SyncThisReg(emitter) = REG_NA;
+            GCrefRegs(emitter) = SRBM_RDX | (firstType == GCT_GCREF ? SRBM_RAX : SRBM_NONE)
+                | (secondType == GCT_GCREF ? SRBM_RCX : SRBM_NONE);
+            ByrefRegs(emitter) = SRBM_R8 | (firstType == GCT_BYREF ? SRBM_RAX : SRBM_NONE)
+                | (secondType == GCT_BYREF ? SRBM_RCX : SRBM_NONE);
+            var buffer = stackalloc byte[32];
+            emitter.emitCodeBlock = buffer;
+            emitter.emitTotalHotCodeSize = 32;
+#if DEBUG
+            emitter.emitIssuing = true;
+#endif
+            var end = emitter.emitOutputRR(buffer, id);
+
+            Assert.That(GCrefRegs(emitter), Is.EqualTo(SRBM_RDX
+                | (firstType == GCT_GCREF ? SRBM_RCX : SRBM_NONE)
+                | (secondType == GCT_GCREF ? SRBM_RAX : SRBM_NONE)));
+            Assert.That(ByrefRegs(emitter), Is.EqualTo(SRBM_R8
+                | (firstType == GCT_BYREF ? SRBM_RCX : SRBM_NONE)
+                | (secondType == GCT_BYREF ? SRBM_RAX : SRBM_NONE)));
+
+            var records = 0;
+            for (var record = RegPtrList(ref codeGen.GCInfo); record is not null; record = record.rpdNext)
+            {
+                Assert.That(record.rpdOffs, Is.EqualTo((uint)(end - buffer)));
+                records++;
+            }
+            var expectedRecords = fullMap && firstType != secondType
+                ? (firstType == GCT_NONE ? 0 : 2) + (secondType == GCT_NONE ? 0 : 2)
+                : 0;
+            Assert.That(records, Is.EqualTo(expectedRecords));
         });
     }
 
@@ -311,7 +364,4 @@ internal static unsafe class EmitterRegisterOutputTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitSyncThisObjReg")]
     private static extern ref regNumber SyncThisReg(Emitter emitter);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitHandleGCrefRegs")]
-    private static extern void HandleGCrefRegs(Emitter emitter, byte* dst, Emitter.instrDesc id);
 }

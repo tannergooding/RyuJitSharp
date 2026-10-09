@@ -3,20 +3,15 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
-    "targetObservedAt": "2026-09-26",
-    "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    "targetCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605",
+    "targetObservedAt": "2026-10-08",
+    "reconciledCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
-    "stage": "port-closeout",
-    "nextAction": "Identify the EE allocation boundary behind the differing dynamic TLS indices in artifacts\\dynamic-tls-inputs before changing constants or claiming full parity.",
-    "activeBatch": {
-      "scope": "Port source and owner-review closeout: B129 is accepted as a non-core diagnostic-routing limitation, and detailed upstream reports are consolidated.",
-      "doneWhen": "Retire the source-port backlog and references while preserving the unresolved dynamic TLS input-ownership boundary as a separate parity evidence limitation.",
-      "validation": "Verify all detailed reports are preserved in UPSTREAM-REPORTS.md, accepted differences are in DEVIATIONS.md, and no references to the retired backlog or report directory remain.",
-      "deferred": "Do not add the B129 native logging bridge unless EE-routed JIT diagnostics become a core requirement."
-    },
+    "stage": "live-oracle",
+    "nextAction": "For a subsequent oracle refresh, capture the desired dotnet/runtime commit once and follow .github/skills/oracle-update/SKILL.md from reconciledCommit 6ff62b1d; preserve the unresolved dynamic TLS input-ownership boundary.",
+    "activeBatch": null,
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
       "finding": "Selected runtime-async adapters retain matching transformed-body instructions but use different EE-assigned TLS indices and offsets; the earlier slot allocations causing the managed shift are unidentified.",
@@ -242,6 +237,21 @@
         "sources\\GenerateTables\\Program.cs"
       ],
       "sourceCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e"
+    },
+    {
+      "area": "layout-identity-adapter",
+      "native": [
+        "src\\coreclr\\jit\\layout.cpp",
+        "src\\coreclr\\jit\\layout.h"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\layout\\ClassLayout.cs",
+        "sources\\Core\\jit\\layout\\ClassLayoutTable.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.cs",
+        "sources\\Core\\jit\\valuenum\\ValueNumStore.Diagnostics.cs"
+      ],
+      "disposition": "The managed compiler retains GetLayoutNum/GetLayoutByNum as internal per-compiler identity tokens for zero-object value numbering and diagnostics; native uses pointer identity. This is an implementation mapping, not an observable JIT/EE difference.",
+      "sourceCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605"
     }
   ],
   "generatorInputMapping": {
@@ -252,8 +262,8 @@
       "loglf.h": "src\\coreclr\\inc\\loglf.h",
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
-    "targetInputCommit": "206bf81aa71b157cb03ae7ed1a42d1ed7d3aa2dc",
-    "reconciledCommit": "33baf8ee337b20dd0f184b69a6f09be92850bf9e",
+    "targetInputCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605",
+    "reconciledCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "ternarylogic.inc": "Supplemental 256-row table mirrored from src/coreclr/jit/hwintrinsic.cpp::ternaryLogicFlags; no standalone native input file."

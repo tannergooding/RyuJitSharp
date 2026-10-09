@@ -39,9 +39,8 @@ public partial class Compiler
         public readonly bool IsCallArg => _parentNode is GenTreeCall;
         public readonly uint Complexity => _treeSize;
 
-        public readonly bool IsUse(GenTreeLclVarCommon local)
+        public readonly bool IsUse(int number)
         {
-            var number = local.LclNum;
             if ((number == lclNum) || (number == _parentLclNum))
             {
                 return true;
@@ -51,11 +50,10 @@ public partial class Compiler
             return descriptor.lvIsStructField && (descriptor.lvParentLcl == lclNum);
         }
 
-        public readonly bool IsLastUse(GenTreeLclVar local)
+        public readonly bool IsLastUse(GenTreeFlags flags)
         {
-            assert((local.Oper is GT_LCL_VAR) && (local.LclNum == lclNum));
-            var deathFlags = compiler.lvaGetDesc(local.LclNum).FullDeathFlags;
-            return (local.Flags & deathFlags) == deathFlags;
+            var deathFlags = compiler.lvaGetDesc(lclNum).FullDeathFlags;
+            return (flags & deathFlags) == deathFlags;
         }
 
         public readonly fgWalkResult PreOrderVisit(ref GenTree use, GenTree? user) => WALK_CONTINUE;
@@ -69,7 +67,7 @@ public partial class Compiler
             {
                 var isCallTarget = user is GenTreeCall call &&
                     (call._callType is CT_INDIRECT) && (call.ControlExpr == node);
-                if (!isCallTarget && IsLastUse(node.AsLclVar()))
+                if (!isCallTarget && IsLastUse(node.Flags))
                 {
                     _node = node;
                     _useFlags = _accumulatedFlags;
@@ -81,7 +79,7 @@ public partial class Compiler
             if (node.Oper.IsLocal)
             {
 #if DEBUG
-                if (IsUse(node.AsLclVarCommon()))
+                if (IsUse(node.AsLclVarCommon().LclNum))
                 {
                     _useCount++;
                 }

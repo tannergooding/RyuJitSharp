@@ -31,17 +31,20 @@ public partial class Compiler
         var totalFrameSize = codeGen.genTotalFrameSize;
         var offsetAdjust = unchecked(codeGen.genSPtoFPdelta - totalFrameSize);
 #endif
+#if TARGET_ARM64
+        if (compUsesUnknownSizeFrame)
+        {
+            var unknownSizeFrameSize = unchecked((int)(unkSizeFrame.FrameSizeInVectors() * getRuntimeVectorTByteLength()));
+            JITDUMP($"--OSR-- UnknownSizeFrame Size {unknownSizeFrameSize}\n");
+            totalFrameSize = unchecked(totalFrameSize + unknownSizeFrameSize);
+        }
+#endif
         patchpointInfo->Initialize(info.compLocalsCount, totalFrameSize);
         JITDUMP($"--OSR--- Total Frame Size {patchpointInfo->TotalFrameSize}, local offset adjust is {offsetAdjust}\n");
 
         for (var lclNum = 0; lclNum < info.compLocalsCount; lclNum++)
         {
             var varNum = lclNum;
-            if (lvaIsUnknownSizeLocal(varNum))
-            {
-                continue;
-            }
-
             if (gsShadowVarInfo is not null)
             {
                 var shadowNum = gsShadowVarInfo[lclNum].ShadowCopy;
@@ -58,8 +61,20 @@ public partial class Compiler
             assert(varDsc.lvFramePointerBased);
 
             // OSR partial importation may skip the original address-of operation.
-            patchpointInfo->SetOffsetAndExposure(lclNum, unchecked(varDsc.StackOffset + offsetAdjust),
-                varDsc.lvHasLdAddrOp);
+            var stackOffset = 0;
+#if TARGET_ARM64
+            if (lvaLocalIsOnUnknownSizeFrame(varNum))
+            {
+                var unknownSizeFrameOffset = unchecked(-codeGen.genTotalFrameSize);
+                stackOffset = unchecked(unknownSizeFrameOffset +
+                    unkSizeFrame.GetExactOffset(in varDsc, getRuntimeVectorTByteLength()));
+            }
+            else
+#endif
+            {
+                stackOffset = unchecked(varDsc.StackOffset + offsetAdjust);
+            }
+            patchpointInfo->SetOffsetAndExposure(lclNum, stackOffset, varDsc.lvHasLdAddrOp);
             JITDUMP($"--OSR-- V{lclNum:D2} is at virtual offset {patchpointInfo->Offset(lclNum)}" +
                 $"{(patchpointInfo->IsExposed(lclNum) ? " (exposed)" : "")}{(varNum != lclNum ? " (shadowed)" : "")}\n");
         }

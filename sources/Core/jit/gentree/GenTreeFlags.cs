@@ -255,9 +255,6 @@ public enum GenTreeFlags
     /// <summary>GT_BOX -- this box and its operand has been cloned, cannot assume it to be single-use anymore</summary>
     GTF_BOX_CLONED = 1 << 30,
 
-    /// <summary>GT_BOX -- "box" is on a value type</summary>
-    GTF_BOX_VALUE = 1 << 31,
-
     /// <summary>GT_QMARK -- early expansion of the QMARK node is required</summary>
     GTF_QMARK_EARLY_EXPAND = 1 << 24,
 
@@ -282,15 +279,6 @@ public enum GenTreeFlags
 
     /// <summary>GT_DIV, GT_MOD -- Div or mod definitely does not overflow.</summary>
     GTF_DIV_MOD_NO_OVERFLOW = 1 << 30,
-
-    /// <summary>GT_ARR_LENGTH  -- An array length operation that cannot fault. Same as GT_IND_NONFAULTING.</summary>
-    GTF_ARRLEN_NONFAULTING = 1 << 29,
-
-    /// <summary>GT_MDARR_LENGTH -- An MD array length operation that cannot fault. Same as GT_IND_NONFAULTING.</summary>
-    GTF_MDARRLEN_NONFAULTING = 1 << 29,
-
-    /// <summary>GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.</summary>
-    GTF_MDARRLOWERBOUND_NONFAULTING = 1 << 29,
 
     /// <summary>GT_ALLOCOBJ -- allocation site is part of an empty static pattern</summary>
     GTF_ALLOCOBJ_EMPTY_STATIC = 1 << 31,

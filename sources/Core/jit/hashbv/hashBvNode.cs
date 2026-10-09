@@ -261,22 +261,4 @@ public sealed class hashBvNode
             elements[i] &= ~other.elements[i];
         }
     }
-
-    public bool sameAs(hashBvNode other)
-    {
-        if (baseIndex != other.baseIndex)
-        {
-            return false;
-        }
-
-        for (var i = 0; i < numElements(); i++)
-        {
-            if (elements[i] != other.elements[i])
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
 }

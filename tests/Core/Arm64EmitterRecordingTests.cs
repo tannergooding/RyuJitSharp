@@ -2034,6 +2034,8 @@ internal static unsafe class Arm64EmitterRecordingTests
     {
         var emitter = CreateLocalStackEmitter(0, false);
         var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
         compiler.unkSizeFrame.nMask = 9;
         compiler.unkSizeFrame.nVector = 3;
         compiler.unkSizeFrame.FinalizeLayout();
@@ -2159,6 +2161,8 @@ internal static unsafe class Arm64EmitterRecordingTests
     {
         var emitter = CreateLocalStackEmitter(0, false);
         var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
         compiler.lvaTable[0].Type = var_types.TYP_SIMD;
         compiler.lvaTable[0].UnknownSizeFrameIndex = index;
         compiler.unkSizeFrame.nVector = (uint)(index + 1);

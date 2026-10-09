@@ -24,7 +24,6 @@ public partial class GenTree
         HKF_INVARIANT, // GTF_ICON_TOKEN_HDL
         HKF_INVARIANT, // GTF_ICON_TLS_HDL
         0, // GTF_ICON_FTN_ADDR
-        HKF_INVARIANT, // GTF_ICON_CIDMID_HDL
         0, // GTF_ICON_BBC_PTR
         0, // GTF_ICON_STATIC_BOX_PTR
         0, // GTF_ICON_FIELD_SEQ

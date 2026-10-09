@@ -25,24 +25,44 @@ public partial class Compiler
         var arg2 = call.Args.GetUserArgByIndex(1) ?? throw new InvalidOperationException();
         var lengthArg = call.Args.GetUserArgByIndex(2) ?? throw new InvalidOperationException();
         var lengthVN = optConservativeNormalVN(lengthArg.Node);
-        if (!vnStore.IsVNIntegralConstant(lengthVN, out nuint length))
-        {
-            var firstVN = optConservativeNormalVN(arg1.Node);
-            var secondVN = optConservativeNormalVN(arg2.Node);
-            if ((firstVN != ValueNumStore.NoVN) && (firstVN == secondVN))
-            {
-                JITDUMP("...both arguments have the same VN -> optimize to constant true.\n");
-                return gtWrapWithSideEffects(gtNewIconNode(TYP_INT, 1), call, GTF_ALL_EFFECT, true);
-            }
+        var hasConstantLength = vnStore.IsVNIntegralConstant(lengthVN, out nuint length);
 
-            JITDUMP("...length is not a constant - bail out.\n");
-            return null;
-        }
-
-        if (length == 0)
+        if (hasConstantLength && (length == 0))
         {
             JITDUMP("...length is 0 -> optimize to constant true.\n");
             return gtWrapWithSideEffects(gtNewIconNode(TYP_INT, 1), call, GTF_ALL_EFFECT, true);
+        }
+
+        var firstVN = optConservativeNormalVN(arg1.Node);
+        var secondVN = optConservativeNormalVN(arg2.Node);
+        if ((firstVN != ValueNumStore.NoVN) && (firstVN == secondVN))
+        {
+            var couldBeNull = !vnStore.IsKnownNonNull(firstVN) &&
+                fgAddrCouldBeNull(arg1.Node) && fgAddrCouldBeNull(arg2.Node);
+            if (couldBeNull && !hasConstantLength)
+            {
+                JITDUMP("...equal arguments may be null and length is not a constant - bail out.\n");
+                return null;
+            }
+
+            GenTree result = gtNewIconNode(TYP_INT, 1);
+            // Short nonempty sequences dereference both pointers before checking address equality.
+            if (couldBeNull && (length < TARGET_POINTER_SIZE))
+            {
+                var firstAddress = fgMakeMultiUse(ref arg1.NodeRef);
+                var secondAddress = fgMakeMultiUse(ref arg2.NodeRef);
+                result = gtNewBinaryNode(GT_COMMA, TYP_INT, gtNewNullCheck(secondAddress), result);
+                result = gtNewBinaryNode(GT_COMMA, TYP_INT, gtNewNullCheck(firstAddress), result);
+            }
+
+            JITDUMP("...both arguments have the same VN -> optimize to constant true.\n");
+            return gtWrapWithSideEffects(result, call, GTF_ALL_EFFECT, true);
+        }
+
+        if (!hasConstantLength)
+        {
+            JITDUMP("...length is not a constant - bail out.\n");
+            return null;
         }
 
         const nuint maxLength = 65536;

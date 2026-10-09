@@ -646,7 +646,7 @@ public partial class Compiler
             {
                 modHeap = true;
             }
-            if (allocation && ((call._callMoreFlags & GTF_CALL_M_STACK_ARRAY) != 0))
+            if (allocation && (call.Args.FindWellKnownArg(WellKnownArg.StackArrayLocal) is not null))
             {
                 if (vnf is VNF_JitNewArr)
                 {

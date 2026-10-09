@@ -202,7 +202,7 @@ internal partial struct LocalAddressVisitor
 
                 EscapeValue(ref TopValue(0), node);
                 PopValue();
-                SequenceLocal(node.AsLclVarCommon());
+                SequenceLocal(node);
                 break;
             }
 
@@ -213,13 +213,13 @@ internal partial struct LocalAddressVisitor
                     HandleLocalAssertions(node.AsLclVarCommon(), ref TopValue(0));
                 }
 
-                SequenceLocal(node.AsLclVarCommon());
+                SequenceLocal(node);
                 break;
             }
 
             case GT_LCL_FLD:
             {
-                SequenceLocal(node.AsLclVarCommon());
+                SequenceLocal(node);
                 break;
             }
 
@@ -227,7 +227,7 @@ internal partial struct LocalAddressVisitor
             {
                 assert(TopValue(0).Node == node);
                 TopValue(0).Address(node.AsLclFld());
-                SequenceLocal(node.AsLclVarCommon());
+                SequenceLocal(node);
                 break;
             }
 
@@ -608,7 +608,7 @@ internal partial struct LocalAddressVisitor
         }
     }
 
-    private void SequenceLocal(GenTreeLclVarCommon local)
+    private void SequenceLocal(GenTree local)
     {
         if (_sequenceLocals)
         {

@@ -159,6 +159,17 @@ immutable `33baf8e`; its raw JIT/interface delta contains 67 candidate files.
 Inventory size does not imply that every change needs translation. Preserve both
 revisions in `state.json`; do not chase a moving `main` while reconciling them.
 
+The 2026-10-08 refresh reconciles immutable `33baf8e` to `6ff62b1d` across all
+92 changed `src/coreclr/jit` and `src/coreclr/inc` paths (60 JIT, 32 include
+paths). The repeatable capture, disposition, validation, and pin-update procedure
+is [the oracle-update skill](../../.github/skills/oracle-update/SKILL.md).
+Isolated regeneration matches all five affected generated outputs. The
+21-method phase corpus matches for 20 methods; its sole `GenericCatch`
+diagnostic difference is the already accepted D015. This evidence ends before
+Importation and does not establish code-generation or runtime parity; the
+dynamic TLS input-ownership boundary also remains unresolved. Full-runtime
+parity is a separate stage in section 6.
+
 Prefer substantial source sections and their dependency closure over individual
 helper batches. Use builds and small focused checks for concrete behavior changes
 or translation defects; reserve NativeAOT publication and corpus recapture for
@@ -256,6 +267,81 @@ The source port is established. Keep post-port refactoring, stronger unit-test
 coverage, and more substantial C#-specific designs outside the porting contract
 unless separately approved. Use the deviation and upstream-report registers for
 the existing behavior record; do not recreate the retired source-port backlog.
+
+## 6. Full-runtime parity verification
+
+Start this stage only after the upstream synchronization exit in section 2 is
+accepted and its recorded baseline has advanced. The synchronization phase
+corpus is a prerequisite for accepting that update; the broader captures below
+are a separate completion gate and must not be generated early.
+
+### Primary-JIT setup
+
+Build the checked native runtime, libraries, and `Core_Root` from the accepted
+oracle revision. Publish RyuJitSharp for the same host, target, and ABI, then use
+an isolated `Core_Root` copy with the managed native image placed as `clrjit.dll`.
+Keep an untouched native control root. Record build identities, file hashes,
+JIT selection, flags, and environment; verify the managed JIT is the main JIT
+and that no AltJIT or native fallback supplied the observed output.
+
+Inspect `CILJit.compileMethod` for a process-wide compilation lock before
+parallel captures or suite runs. If it serializes independent compilations,
+remove it only after checking shared mutable state and adding concurrency
+coverage; do not trade correctness for throughput.
+
+### Differential sequence
+
+1. Start with `System.Private.CoreLib` disassembly. Use the same deterministic
+   workload or SPMI collection and capture its complete CoreLib compilation set,
+   not only hand-picked methods. Hold host/target/ISA, tier, PGO inputs, stress
+   settings, and JIT options constant for native and managed runs. Enable
+   upstream diffable disassembly, retain raw outputs, and establish a native
+   repeat control. Require exact method/compilation counts and investigate each
+   managed mismatch. Compare relocation-aware machine code and GC/EH/unwind
+   metadata where applicable; text disassembly alone is not a full code-generation
+   pass.
+2. Compare full compilation dumps for the same corpus and configuration.
+   Reuse `Compare-PortingDumps.ps1` where its phase coverage is sufficient;
+   extend the existing comparator narrowly when needed to cover the remaining
+   phases. Preserve raw captures and semantic output such as tree/block IDs,
+   ordering, diagnostics, and costs. Apply only applicable exceptions already
+   recorded in `DEVIATIONS.md`; D001 permits allocation-statistics differences
+   only and does not imply other allocator-related output. Investigate every
+   other mismatch instead of normalizing it away. Require comparison-tool checks
+   that prove real compiler differences are still detected.
+3. Expand the same disassembly and dump comparisons from CoreLib to the
+   relevant runtime libraries, then to the general runtime test corpus. Keep
+   a native-JIT control run for the same `Core_Root`, test selection, and
+   environment. Compare per-test outcomes and diagnostics as well as generated
+   code; investigate failures, timeouts, skipped compilations, and evidence of
+   fallback rather than treating them as passes.
+4. Run the required runtime/CoreCLR tests with RyuJitSharp as the primary JIT,
+   not as an AltJIT. The gate is the full required test selection passing under
+   the managed `clrjit.dll`, including the RyuJitSharp unit suite and the full
+   CoreCLR/runtime-library test suites supported by the built `Core_Root`.
+   Report suites blocked by infrastructure or unsupported configurations
+   explicitly; they do not count as passing. Selected-method AltJIT runs and
+   SPMI replay are useful diagnostics, not substitutes for this result.
+
+After the CoreLib baseline and common JIT setup are accepted, library-capture
+cohorts and independent test-suite groups may run in parallel when resources
+permit. Use separate `Core_Root` copies and output directories; do not share
+mutable build, capture, or comparison outputs between workers.
+
+Use the pinned runtime's SuperPMI tooling when its collection format and JIT/EE
+ABI match the accepted oracle. First verify that collection and replay select
+the intended JIT and produce non-empty, complete results. Parallelize
+independent deterministic cohorts only after confirming compilation is
+thread-safe; keep tiering, PGO, OSR, and concurrency as explicit later
+dimensions.
+
+The completion report must include both revisions and binary hashes, toolchain
+and `Core_Root` identity, host/target/ISA, exact commands and environment,
+corpus identity, expected and observed counts, native repeat-control results,
+failures/skips, every applied exception, and raw/diff artifact locations.
+Preserve captures outside maintained documentation; update the checkpoint and
+deviation register only for unresolved evidence or accepted observable
+differences.
 
 ## Approval and escalation
 

@@ -28,19 +28,21 @@ public partial class Compiler
                     continue;
                 }
 
-                foreach (var local in statement.LocalsTreeList)
-                {
-                    if (!varTypeIsStruct(local.Type) || !local.Oper.IsLocalRead)
+                _ = statement.VisitLogicalLocalOccurrencesViaLocalsTreeList(occurrence => {
+                    var local = occurrence.Node;
+                    if (!local.Oper.IsLocalRead || !varTypeIsStruct(occurrence.GetAccessType(this)))
                     {
-                        continue;
+                        return GenTree.VisitResult.Continue;
                     }
 
-                    if ((local.Flags & GTF_VAR_DEATH) != 0)
+                    if ((occurrence.Flags & GTF_VAR_DEATH) != 0)
                     {
                         _ = visitor.WalkTree(ref statement.RootNodeRef, null);
-                        break;
+                        return GenTree.VisitResult.Abort;
                     }
-                }
+
+                    return GenTree.VisitResult.Continue;
+                });
             }
         }
 #endif

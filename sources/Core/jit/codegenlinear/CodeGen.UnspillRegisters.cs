@@ -145,10 +145,6 @@ public sealed partial class CodeGen
                 // A later narrow use can rely on normalization performed by this reload,
                 // even when this node's type is wider than the normalize-on-load local.
                 var unspillType = varDsc.lvNormalizeOnLoad ? varDsc.Type : varDsc.GetStackSlotHomeType();
-                if (varTypeIsGC(lcl.Type))
-                {
-                    unspillType = lcl.Type;
-                }
 
                 var reSpill = (unspillTree.Flags & GTF_SPILL) != 0;
                 var isLastUse = lcl.IsLastUse(0);

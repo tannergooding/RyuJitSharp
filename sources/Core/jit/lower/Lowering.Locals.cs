@@ -567,11 +567,15 @@ public sealed partial class Lowering
     private unsafe GenTreeLclVar SpillStructCallResult(GenTreeCall call)
     {
         var compiler = CompilerInstance;
-        var spillNumber = compiler.lvaGrabTemp(true, "Return value temp for an odd struct return size");
+        var spillNumber = compiler.lvaGrabTemp(true, "Return value temp for a non-enregisterable struct return");
         compiler.lvaSetVarDoNotEnregister(spillNumber, DoNotEnregisterReason.LocalField);
         compiler.lvaSetStruct(spillNumber, call.RetClsHnd, false);
+#if FEATURE_MULTIREG_RET
         assert(call.ReturnTypeDesc.ReturnRegCount == 1);
         var offset = call.ReturnTypeDesc.GetReturnFieldOffset(0);
+#else
+        const uint offset = 0;
+#endif
         var spill = compiler.gtNewStoreLclFldNode(call.Type, spillNumber, checked((ushort)offset), call);
         BlockRange().InsertAfter(call, spill);
         ContainCheckStoreLoc(spill);

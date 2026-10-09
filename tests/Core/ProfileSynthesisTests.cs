@@ -167,24 +167,6 @@ internal static unsafe class ProfileSynthesisTests
             Assert.That(edges[0].Likelihood, Is.EqualTo(0.5));
             Assert.That(edges[1].Likelihood, Is.EqualTo(0.25));
             Assert.That(edges[2].Likelihood, Is.EqualTo(0.25));
-            ReverseLikelihoods(synthesis);
-#if DEBUG
-            Assert.That(edges[0].Likelihood, Is.EqualTo(0.25));
-            Assert.That(edges[2].Likelihood, Is.EqualTo(0.5));
-            var random = new CLRRandom(compiler.info.compMethodHash());
-            double[] expected = [random.NextDouble(), random.NextDouble(), random.NextDouble()];
-            var sum = expected[0] + expected[1] + expected[2];
-#else
-            double[] expected = [0.5, 0.25, 0.25];
-            const double sum = 1;
-#endif
-            RandomizeLikelihoods(synthesis);
-
-            for (var i = 0; i < edges.Length; i++)
-            {
-                Assert.That(edges[i].Likelihood, Is.EqualTo(expected[i] / sum));
-            }
-
             ClearLikelihoods(synthesis);
 
             foreach (var edge in edges)
@@ -969,12 +951,6 @@ internal static unsafe class ProfileSynthesisTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ClearLikelihoods")]
     private static extern void ClearLikelihoods(ProfileSynthesis synthesis);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ReverseLikelihoods")]
-    private static extern void ReverseLikelihoods(ProfileSynthesis synthesis);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "RandomizeLikelihoods")]
-    private static extern void RandomizeLikelihoods(ProfileSynthesis synthesis);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ComputeCyclicProbabilities")]
     private static extern void ComputeCyclicProbabilities(ProfileSynthesis synthesis);

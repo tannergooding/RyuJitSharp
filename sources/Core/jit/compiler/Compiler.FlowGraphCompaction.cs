@@ -241,6 +241,9 @@ public partial class Compiler
             }
         }
 
+        // Compaction can precede the first tracked-local epoch; even uninitialized sets need a defined size.
+        assert((CurLVEpoch != 0) || (lvaTrackedCount == 0));
+        assert((CurLVEpoch != 0) || (lvaTrackedCountInSizeTUnits == 0));
         VarSetOps.AssignAllowUninitRhs(this, ref block.bbLiveOut, target.bbLiveOut);
 
         // Merge the IL ranges, ignoring unknown offsets. If both are unknown,

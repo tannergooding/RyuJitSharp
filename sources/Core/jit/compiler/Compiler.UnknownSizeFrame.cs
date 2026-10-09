@@ -5,6 +5,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 
 namespace RyuJitSharp;
 
@@ -90,6 +91,15 @@ public partial class Compiler
             assert(temp.tdTempOffs >= 0);
             assert(varTypeHasUnknownSize(temp.tdTempType));
             return GetOffset(unchecked((uint)temp.tdTempOffs), temp.tdTempType is TYP_MASK);
+        }
+
+        // JIT mode knows the runtime VL, so scalable frame offsets can be expressed in bytes.
+        public readonly int GetExactOffset(in LclVarDsc local, uint vectorLength)
+        {
+            assert(BitOperations.IsPow2(vectorLength) && (vectorLength >= (uint)MIN_SVE_REGSIZE_BYTES)
+                && (vectorLength <= (uint)MAX_SVE_REGSIZE_BYTES));
+            var scale = local.Type is TYP_MASK ? vectorLength / 8 : vectorLength;
+            return unchecked(GetAddressingOffset(in local) * unchecked((int)scale));
         }
 
         [SuppressMessage("Style", "IDE0251:Make member readonly",

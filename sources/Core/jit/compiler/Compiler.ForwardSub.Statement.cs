@@ -70,28 +70,28 @@ public partial class Compiler
         var visitor = new ForwardSubVisitor(this, number);
         var found = false;
         var multiUse = false;
-        foreach (var local in nextStmt.LocalsTreeList)
-        {
-            if ((local.Oper is GT_LCL_VAR) && (local.LclNum == number))
+        _ = nextStmt.VisitLogicalLocalOccurrencesViaLocalsTreeList(occurrence => {
+            if ((occurrence.Node.Oper is GT_LCL_VAR) && (occurrence.LclNum == number))
             {
-                if (visitor.IsLastUse(local.AsLclVar()))
+                if (visitor.IsLastUse(occurrence.Flags))
                 {
                     found = true;
-                    break;
+                    return GenTree.VisitResult.Abort;
                 }
                 if (isCheapAddressTree)
                 {
                     multiUse = true;
-                    continue;
+                    return GenTree.VisitResult.Continue;
                 }
             }
 
-            if (visitor.IsUse(local))
+            if (visitor.IsUse(occurrence.LclNum))
             {
                 JITDUMP(" next stmt has non-last use\n");
-                return false;
+                return GenTree.VisitResult.Abort;
             }
-        }
+            return GenTree.VisitResult.Continue;
+        });
         if (!found)
         {
             JITDUMP(" no next stmt use\n");
@@ -293,6 +293,12 @@ public partial class Compiler
 
         if (varTypeIsSmall(descriptor.Type) && fgCastNeeded(fwdSubNode, descriptor.Type))
         {
+            if (multiUse)
+            {
+                JITDUMP(" multi-use sub needs a cast for small-typed local\n");
+                return false;
+            }
+
             JITDUMP(" [adding cast for small-typed local]");
             fwdSubNode = gtNewCastNode(TYP_INT, fwdSubNode, false, descriptor.Type);
         }
@@ -320,11 +326,11 @@ public partial class Compiler
         link.result = fwdSubNode;
 
         assert(defNode.Next is null);
-        var first = stmt.TreeListBegin?.AsLclVarCommon()
+        var first = stmt.TreeListBegin
             ?? throw new FatalJitException("A forwarded store must have a locals list.");
         fgForwardSubSpliceLocals(nextStmt, useLocal,
             first == defNode ? null : first,
-            first == defNode ? null : defNode.Prev?.AsLclVarCommon());
+            first == defNode ? null : defNode.Prev);
 
         if ((fwdSubNode.Flags & GTF_ALL_EFFECT) != 0)
         {

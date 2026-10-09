@@ -112,9 +112,7 @@ public partial class Compiler
         {
             Metrics.ProfileConsistentAfterMorph = 1;
         }
-#if DEBUG
-        fgPostGlobalMorphChecks();
-#endif
+
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 
@@ -304,7 +302,6 @@ public partial class Compiler
                     gtDispTree(morphedTree);
                 }
                 morphedTree = gtCloneExpr(morphedTree);
-                morphedTree.SetMorphed(this, doChilren: true);
                 if (verbose)
                 {
                     jitprintf("\nfgMorphTree (stressClone to):\n");
@@ -473,16 +470,25 @@ public partial class Compiler
             var cases = block.SwitchTargets.Cases;
             var foundValue = false;
             var profileInconsistent = false;
+            if (block.hasProfileWeight)
+            {
+                // Duplicate jump table entries share an edge; debit each unique successor once.
+                foreach (var edge in block.SwitchTargets.Succs)
+                {
+                    var target = edge.DestinationBlock;
+                    if (target.hasProfileWeight)
+                    {
+                        target.decreaseBBProfileWeight(edge.LikelyWeight);
+                        profileInconsistent |= target.NumSucc > 0;
+                    }
+                }
+            }
+
             for (var index = 0; index < cases.Length; index++)
             {
                 var edge = cases[index];
                 var target = edge.DestinationBlock;
                 assert(target.CountOfInEdges > 0);
-                if (block.hasProfileWeight && target.hasProfileWeight)
-                {
-                    target.decreaseBBProfileWeight(edge.LikelyWeight);
-                    profileInconsistent |= target.NumSucc > 0;
-                }
                 if (((nuint)index == switchValue) || (!foundValue && (index == cases.Length - 1)))
                 {
                     block.SetKindAndTargetEdge(BBJ_ALWAYS, edge);
@@ -542,7 +548,6 @@ public partial class Compiler
             assert(genReturnErrorLocal != BAD_VAR_NUM);
             assert(lastStatement is not null);
             var errorStore = gtNewTempStore(genReturnErrorLocal, ret.AsOp().Op1);
-            errorStore.SetMorphed(this);
             fgInsertStmtBefore(block, lastStatement, gtNewStmt(errorStore, lastStatement.DebugInfo));
         }
 #endif
@@ -555,7 +560,6 @@ public partial class Compiler
             var afterStatement = lastStatement;
             var debugInfo = lastStatement.DebugInfo;
             var tree = gtNewTempStore(genReturnLocal, returnValue, ref afterStatement, CHECK_SPILL_NONE, debugInfo, block);
-            tree.SetMorphed(this);
             if (tree.IsCopyBlkOp)
             {
                 tree = fgMorphCopyBlock(tree);

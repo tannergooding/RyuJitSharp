@@ -106,7 +106,9 @@ public sealed partial class RangeCheck
         var assertionRange = new Range(new Limit(LimitType.Unknown));
         MergeAssertion(block, local, ref assertionRange);
         var merged = RangeOps.Merge(range, assertionRange, false);
-        if (merged.LowerLimit.Equals(range.LowerLimit) && merged.UpperLimit.Equals(range.UpperLimit))
+        // Widen resolves dependent limits later assuming the definitions don't overflow.
+        if (!range.LowerLimit.IsDependent && !range.UpperLimit.IsDependent &&
+            merged.LowerLimit.Equals(range.LowerLimit) && merged.UpperLimit.Equals(range.UpperLimit))
         {
             return false;
         }

@@ -112,6 +112,30 @@ internal static unsafe class CopyPropagationTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void FieldReadDoesNotForceEnregisterableReplacementToTheStack(bool doNotEnregister)
+    {
+        WithCompiler((compiler, store) => {
+            var vn = store.VNForIntCon(7);
+            var oldDefinition = NewUse(compiler, 0, vn);
+            var old = compiler.gtNewLclFldNode(TYP_INT, 0, 0);
+            old.SsaNum = oldDefinition.SsaNum;
+            old._vnPair.SetBoth(vn);
+            var source = NewUse(compiler, 1, vn);
+            compiler.lvaTable[1].lvDoNotEnregister = doNotEnregister;
+            compiler.lvaTable[0].lvDoNotEnregister = doNotEnregister;
+            var map = new LclNumToLiveDefsMap();
+            compiler.optCopyPropPushDef(source, 1, source.SsaNum, map);
+            compiler.compCurLife = VarSetOps.MakeSingleton(compiler, 1);
+
+            Assert.That(compiler.optCopyProp(new BasicBlock(null, null), compiler.gtNewStmt(old),
+                old, 0, map), Is.EqualTo(doNotEnregister));
+            Assert.That(old.LclNum, Is.EqualTo(doNotEnregister ? 1 : 0));
+            Assert.That(compiler.lvaTable[1].lvDoNotEnregister, Is.EqualTo(doNotEnregister));
+        });
+    }
+
     [TestCase(false, true)]
     [TestCase(true, false)]
     public static void SmallSourceTypeUsesActualTypeUnlessNormalizedOnLoad(bool parameter, bool replaces)

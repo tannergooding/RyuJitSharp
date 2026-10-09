@@ -52,7 +52,7 @@ public sealed partial class ValueNumStore
         var found = store.GetVNFunc(sum, ref application);
         assert(found);
         assert((application.Func is VNF_ADD) && (application.Arity == 2) &&
-            (application.GetArg(0) == random) && (application.GetArg(1) == one));
+            (application.GetArg(0) == one) && (application.GetArg(1) == random));
 
         var constantSum = store.VNForFunc(TYP_INT, VNF_ADD, one, hundred);
         assert(constantSum == store.VNForFunc(TYP_INT, VNF_ADD, one, hundred));

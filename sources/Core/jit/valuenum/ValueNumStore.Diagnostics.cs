@@ -560,7 +560,6 @@ public sealed partial class ValueNumStore
         GTF_ICON_TOKEN_HDL => nameof(GTF_ICON_TOKEN_HDL),
         GTF_ICON_TLS_HDL => nameof(GTF_ICON_TLS_HDL),
         GTF_ICON_FTN_ADDR => nameof(GTF_ICON_FTN_ADDR),
-        GTF_ICON_CIDMID_HDL => nameof(GTF_ICON_CIDMID_HDL),
         GTF_ICON_BBC_PTR => nameof(GTF_ICON_BBC_PTR),
         GTF_ICON_STATIC_BOX_PTR => nameof(GTF_ICON_STATIC_BOX_PTR),
         GTF_ICON_FIELD_SEQ => nameof(GTF_ICON_FIELD_SEQ),

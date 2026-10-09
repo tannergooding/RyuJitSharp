@@ -269,10 +269,6 @@ public abstract partial class CSE_HeuristicCommon
                 replacement._vnPair = vnStore.VNPNormalPair(expression._vnPair);
             }
 
-#if DEBUG
-            replacement._debugFlags |= GTF_DEBUG_VAR_CSE_REF;
-#endif
-
             expression._cseNum = NO_CSE;
             var sideEffects = m_compiler.ExtractCseSideEffects(expression);
             if (sideEffects is not null)

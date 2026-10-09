@@ -5,10 +5,13 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.CORINFO_RUNTIME_ABI;
+using static RyuJitSharp.Emitter.insFormat;
+using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.insOpts;
+using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 
@@ -282,6 +285,81 @@ internal static unsafe class EmitterMemoryOutputTests
         });
     }
 
+    [TestCase(false, false, "C4E3FBF045F001", GCT_GCREF)]
+    [TestCase(false, false, "C4E3FBF045F001", GCT_BYREF)]
+    [TestCase(true, false, "C4E3FBF0051000000001", GCT_GCREF)]
+    [TestCase(true, false, "C4E3FBF0051000000001", GCT_BYREF)]
+    [TestCase(false, true, "660F7045F001", GCT_GCREF)]
+    [TestCase(false, true, "660F7045F001", GCT_BYREF)]
+    [TestCase(true, true, "660F70051000000001", GCT_GCREF)]
+    [TestCase(true, true, "660F70051000000001", GCT_BYREF)]
+    public static void MemoryImmediateWritesKillGcRootsOnlyForIntegerDestinations(
+        bool staticMemory, bool simdOnly, string hex, GCInfo.GCtype type)
+    {
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
+        {
+            compiler.eeInfoInitialized = true;
+            compiler.eeInfo.targetAbi = CORINFO_CORECLR_ABI;
+            codeGen.IsFullPtrRegMapRequired = true;
+            var emitter = codeGen.Emitter;
+            emitter.UseVexEncodings = !simdOnly;
+            emitter.UseEvexEncodings = false;
+            emitter.emitFullGCinfo = true;
+            var ins = simdOnly ? INS_pshufd : INS_rorx;
+            var size = simdOnly ? EA_16BYTE : EA_8BYTE;
+            var reg = simdOnly ? REG_XMM0 : REG_RAX;
+            if (staticMemory)
+            {
+                emitter.emitIns_R_C_I(ins, size, reg, FLD_GLOBAL_DS, 16, 1);
+            }
+            else
+            {
+                emitter.emitIns_R_S_I(ins, size, reg, 0, 0, 1);
+            }
+            var id = Last(emitter);
+            Assert.That(id.idInsFmt(), Is.EqualTo(staticMemory ? IF_RWR_MRD_CNS : IF_RWR_SRD_CNS));
+            Assert.That(id.idGCref(), Is.EqualTo(GCT_NONE));
+
+            SyncThisReg(emitter) = REG_NA;
+            GcReferenceRegs(emitter) = SRBM_RDX | (type == GCT_GCREF ? SRBM_RAX : SRBM_NONE);
+            GcByrefRegs(emitter) = SRBM_R8 | (type == GCT_BYREF ? SRBM_RAX : SRBM_NONE);
+            var buffer = stackalloc byte[32];
+            new Span<byte>(buffer, 32).Fill(0xA5);
+            emitter.emitCodeBlock = buffer;
+            emitter.emitTotalHotCodeSize = 32;
+            var end = buffer;
+            var group = emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");
+#if DEBUG
+            emitter.emitIssuing = true;
+#endif
+            emitter.emitOutputInstr(group, id, &end);
+
+            Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
+                Is.EqualTo(Convert.FromHexString(hex)));
+            Assert.That((uint)(end - buffer), Is.EqualTo(id.idCodeSize()));
+            Assert.That(buffer[end - buffer], Is.EqualTo(0xA5));
+            Assert.That(GcReferenceRegs(emitter), Is.EqualTo(SRBM_RDX
+                | (simdOnly && type == GCT_GCREF ? SRBM_RAX : SRBM_NONE)));
+            Assert.That(GcByrefRegs(emitter), Is.EqualTo(SRBM_R8
+                | (simdOnly && type == GCT_BYREF ? SRBM_RAX : SRBM_NONE)));
+
+            var death = RegPtrList(ref codeGen.GCInfo);
+            if (simdOnly)
+            {
+                Assert.That(death, Is.Null);
+            }
+            else
+            {
+                death = death ?? throw new AssertionException("Missing overwritten register's GC death.");
+                Assert.That(death.rpdGCtype, Is.EqualTo(type));
+                Assert.That(death.rpdOffs, Is.EqualTo((uint)(end - buffer)));
+                Assert.That(death.rpdCompiler.rpdAdd, Is.EqualTo(SRBM_NONE));
+                Assert.That(death.rpdCompiler.rpdDel, Is.EqualTo(SRBM_RAX));
+                Assert.That(death.rpdNext, Is.Null);
+            }
+        });
+    }
+
     [Test]
     public static void ConstantDataOffsetSearchPreservesChunkBoundaryIdentity()
     {
@@ -469,6 +547,18 @@ internal static unsafe class EmitterMemoryOutputTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitGCrFrameLiveTab")]
     private static extern ref GCInfo.varPtrDsc?[]? GcFrameLive(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisGCrefRegs")]
+    private static extern ref regMask GcReferenceRegs(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisByrefRegs")]
+    private static extern ref regMask GcByrefRegs(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitSyncThisObjReg")]
+    private static extern ref regNumber SyncThisReg(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "gcRegPtrList")]
+    private static extern ref GCInfo.regPtrDsc? RegPtrList(ref GCInfo info);
 
     private struct RelocationContext
     {

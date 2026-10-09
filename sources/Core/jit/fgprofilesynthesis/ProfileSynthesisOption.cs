@@ -12,6 +12,4 @@ public enum ProfileSynthesisOption
     RepairLikelihoods,
     BlendLikelihoods,
     ResetAndSynthesize,
-    ReverseLikelihoods,
-    RandomLikelihoods,
 }

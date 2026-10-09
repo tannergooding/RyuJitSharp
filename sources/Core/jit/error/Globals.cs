@@ -389,15 +389,7 @@ public partial class Globals
     public static void NYI_WASM(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
     {
 #if TARGET_WASM
-        if (JitConfig.JitWasmNyiToR2RUnsupported > 0)
-        {
-            JITDUMP($"NYI_WASM: {message}");
-            implReadyToRunUnsupported();
-        }
-        else
-        {
-            NYIRAW($"NYI_WASM: {message}", filePath, lineNumber);
-        }
+        NYIRAW($"NYI_WASM: {message}", filePath, lineNumber);
 #endif
     }
 

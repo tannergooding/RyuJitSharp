@@ -230,7 +230,7 @@ public partial class Compiler
         var valueHandle = gtGetClassHandle(value, out var valueIsExact, out var valueIsNonNull);
 
         // Array's type is sealed and equals to value's type
-        if (arrayTypeIsSealed && (valueHandle == arrayElementHandle))
+        if (arrayTypeIsSealed && (valueHandle == arrayElementHandle) && !eeIsSharedInst(arrayElementHandle))
         {
             JITDUMP("\nstelem to T[] with T exact: skipping covariant store check\n");
             return true;
@@ -2570,7 +2570,7 @@ public partial class Compiler
                 flags &= ~GTF_REVERSE_OPS;
             }
 
-            msgLength -= GenTree.gtDispFlags(flags, tree._debugFlags);
+            msgLength -= GenTree.gtDispFlags(flags);
             /*
                 jitprintf("%c", (flags & GTF_ASG           ) ? 'A' : '-');
                 jitprintf("%c", (flags & GTF_CALL          ) ? 'C' : '-');
@@ -4038,7 +4038,6 @@ public partial class Compiler
                 {
                     var result = (tree.Flags & GTF_RELOP_NAN_UN) != 0 ? 1 : 0;
                     var icon = gtNewIconNode(TYP_INT, result);
-                    icon.SetMorphed(this);
                     op = gtWrapWithSideEffects(icon, op, GTF_ALL_EFFECT);
                     goto DONE_FOLD;
                 }
@@ -4094,7 +4093,6 @@ public partial class Compiler
         DISPTREE(tree);
         JITDUMP("Transformed into:\n");
         DISPTREE(op);
-        op.SetMorphed(this);
         return op;
     }
 
@@ -5155,7 +5153,8 @@ public partial class Compiler
                 var cls0 = gtGetClassHandle(arg0.Node, out var isArg0Exact, out _);
                 var cls1 = gtGetClassHandle(arg1.Node, out var isArg1Exact, out var isArg1NonNull);
 
-                if ((cls0 != cls1) || (cls0 == NO_CLASS_HANDLE) || !isArg0Exact || !isArg1Exact || !isArg1NonNull)
+                if ((cls0 != cls1) || (cls0 == NO_CLASS_HANDLE) || !isArg0Exact || !isArg1Exact ||
+                    !isArg1NonNull || eeIsSharedInst(cls0))
                 {
                     break;
                 }
@@ -13834,7 +13833,7 @@ public partial class Compiler
 #endif
 
     /// <summary>Create an unthreaded helper-call replacement, preserving the source's value numbers and logical identity.</summary>
-    /// <remarks>The owner must install the replacement. Argument morphing and SetMorphed belong to the caller.</remarks>
+    /// <remarks>The owner must install the replacement. Argument morphing belongs to the caller.</remarks>
     internal unsafe GenTreeCall gtNewHelperCallNode(GenTree source, CorInfoHelpFunc helper, params ReadOnlySpan<GenTree> args)
     {
         var call = new GenTreeCall(source) {
@@ -14244,10 +14243,6 @@ public partial class Compiler
             var thisStoreStmt = thisBox.CopyStmtWhenInlinedBoxValue;
             thisStoreStmt.RootNode = thisStore;
             thisValOpt = gtNewLclvNode(type, thisTmp);
-
-            // If this is invoked during global morph we are adding code to a remote tree
-            // Despite this being a store, we can't meaningfully add assertions
-            thisStore.SetMorphed(this);
         }
 
         if (flagVal.Oper.IsIntegralConst)
@@ -14266,10 +14261,6 @@ public partial class Compiler
             flagStoreStmt.RootNode = flagStore;
             flagValOpt = gtNewLclvNode(type, flagTmp);
             flagValOptCopy = gtNewLclvNode(type, flagTmp);
-
-            // If this is invoked during global morph we are adding code to a remote tree
-            // Despite this being a store, we can't meaningfully add assertions
-            flagStore.SetMorphed(this);
         }
 
         // Turn the call into (thisValTmp & flagTmp) == flagTmp.
@@ -18223,7 +18214,6 @@ public partial class Compiler
             {
                 comma._vnPair = vnStore.VNPWithExc(tree._vnPair, vnStore.VNPExceptionSet(sideEffectsSource._vnPair));
             }
-            comma.SetMorphed(this);
             return comma;
         }
         return tree;

@@ -4,7 +4,9 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
+using static RyuJitSharp.CORINFO_InstructionSet;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
@@ -189,6 +191,54 @@ internal static unsafe class Arm64FrameLayoutTests
         });
     }
 
+#if DEBUG
+    [Test]
+    public static void OsrScalableLocalUsesItsTier0FrameAndRuntimeSizedHome()
+    {
+        WithFrame((compiler, _) => {
+            var previousScalableSetting = JitConfig.JitUseScalableVectorT;
+            Arm64ScalableMaskValueNumTests.SetScalableConfiguration(true);
+            try
+            {
+                ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+                vtable.Base.Base.getBuiltinClass = &GetVectorTClass;
+                vtable.Base.Base.getClassSize = &GetVectorTClassSize;
+                ICorJitInfo ee = new() { lpVtbl = &vtable };
+                compiler.info.compCompHnd = &ee;
+                compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_VectorT);
+                compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_VectorT);
+                compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_OSR);
+                compiler.lvaTable =
+                    [NewLocal(TYP_SIMD), NewLocal(TYP_LONG), compiler.lvaTable[1]];
+                compiler.lvaCount = 3;
+                compiler.info.compLocalsCount = 1;
+                compiler.lvaOutgoingArgSpaceVar = 2;
+                compiler.lvaTable[0].lvIsOSRLocal = true;
+                var bytes = stackalloc byte[PatchpointInfo.ComputeSize(1)];
+                var patchpoint = (PatchpointInfo*)bytes;
+                patchpoint->Initialize(1, 64);
+                patchpoint->SetOffsetAndExposure(0, -40, true);
+                compiler.info.compPatchpointInfo = patchpoint;
+
+                var runtimeVectorLength = compiler.getRuntimeVectorTByteLength();
+                Assert.That(runtimeVectorLength, Is.EqualTo(32u));
+                Assert.That(compiler.lvaIsUnknownSizeLocal(0), Is.True);
+                Assert.That(compiler.lvaLocalIsOnUnknownSizeFrame(0), Is.False);
+                Assert.That(compiler.lvaLclStackHomeSize(0), Is.EqualTo(unchecked((int)runtimeVectorLength)));
+
+                compiler.lvaAssignFrameOffsets(Compiler.FINAL_FRAME_LAYOUT);
+
+                Assert.That(compiler.compUsesUnknownSizeFrame, Is.False);
+                Assert.That(compiler.lvaGetCallerSPRelativeOffset(0), Is.EqualTo(-40));
+            }
+            finally
+            {
+                Arm64ScalableMaskValueNumTests.SetScalableConfiguration(previousScalableSetting != 0);
+            }
+        });
+    }
+#endif
+
     [TestCase(0, 16)]
     [TestCase(7, 64)]
     [TestCase(8, 80)]
@@ -321,6 +371,18 @@ internal static unsafe class Arm64FrameLayoutTests
     private static LclVarDsc NewLocal(var_types type)
     {
         return new LclVarDsc { Type = type, lvOnFrame = true, lvFramePointerBased = true, RegNum = REG_STK };
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CORINFO_CLASS_STRUCT_* GetVectorTClass(ICorJitInfo* self, CorInfoClassId id)
+    {
+        return id is CorInfoClassId.CLASSID_NUMERICS_VECTORT ? (CORINFO_CLASS_STRUCT_*)0x1234 : null;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int GetVectorTClassSize(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* cls)
+    {
+        return cls == (CORINFO_CLASS_STRUCT_*)0x1234 ? 32 : 0;
     }
 
     private static void WithFrame(Action<Compiler, CodeGen> action, bool minOpts = true)

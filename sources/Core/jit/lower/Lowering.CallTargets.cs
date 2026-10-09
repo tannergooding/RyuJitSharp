@@ -76,7 +76,7 @@ public sealed partial class Lowering
         ContainCheckIndir(newThis);
 
         var targetOffset = compiler.eeGetEEInfo().offsetOfDelegateFirstTarget;
-        var targetAddress = new GenTreeAddrMode(TYP_REF, baseAddress, null, 0, unchecked((int)targetOffset));
+        var targetAddress = new GenTreeAddrMode(TYP_BYREF, baseAddress, null, 0, unchecked((int)targetOffset));
         return Ind(targetAddress);
     }
 

@@ -1175,7 +1175,7 @@ public sealed partial class BasicBlock : LIR.Range
 
     public bool CanRemoveJumpToTarget(BasicBlock target, Compiler compiler)
     {
-        assert(((Kind is BBJ_ALWAYS) && (Target == target)) ||
+        assert(((Kind is BBJ_ALWAYS or BBJ_CALLFINALLYRET) && (Target == target)) ||
                ((Kind is BBJ_COND) && ((TrueTarget == target) || (FalseTarget == target))));
         if ((Next != target) || IsLastHotBlock(compiler))
         {

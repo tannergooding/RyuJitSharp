@@ -310,24 +310,15 @@ public partial class Compiler
         var value = constant.AsIntConCommon().IconValue;
         var unsigned = (tree.Flags & GTF_UNSIGNED) != 0;
 
-        GenTreeIntCon NewMorphedIntConNode(int result)
-        {
-            var icon = gtNewIconNode(TYP_INT, result);
-            icon.SetMorphed(this);
-            return icon;
-        }
-
         GenTree NewZeroExtendNode(var_types resultType, GenTree operand, var_types castToType)
         {
             assert(varTypeIsIntegral(resultType) && !varTypeIsSmall(resultType) && !varTypeIsUnsigned(resultType));
             assert(varTypeIsUnsigned(castToType));
             var cast = gtNewCastNode(TYP_INT, operand, false, castToType);
-            cast.SetMorphed(this);
             fgMorphTreeDone(cast);
             if (resultType == TYP_LONG)
             {
                 cast = gtNewCastNode(TYP_LONG, cast, true, TYP_LONG);
-                cast.SetMorphed(this);
                 fgMorphTreeDone(cast);
             }
 
@@ -346,7 +337,7 @@ public partial class Compiler
             {
                 if (unsigned && (value == 0) && (op1 == constant))
                 {
-                    op = gtWrapWithSideEffects(NewMorphedIntConNode(1), op, GTF_ALL_EFFECT);
+                    op = gtWrapWithSideEffects(gtNewIconNode(TYP_INT, 1), op, GTF_ALL_EFFECT);
                     goto DONE_FOLD;
                 }
 
@@ -357,7 +348,7 @@ public partial class Compiler
             {
                 if (unsigned && (value == 0) && (op2 == constant))
                 {
-                    op = gtWrapWithSideEffects(NewMorphedIntConNode(1), op, GTF_ALL_EFFECT);
+                    op = gtWrapWithSideEffects(gtNewIconNode(TYP_INT, 1), op, GTF_ALL_EFFECT);
                     goto DONE_FOLD;
                 }
 
@@ -368,7 +359,7 @@ public partial class Compiler
             {
                 if (unsigned && (value == 0) && (op2 == constant))
                 {
-                    op = gtWrapWithSideEffects(NewMorphedIntConNode(0), op, GTF_ALL_EFFECT);
+                    op = gtWrapWithSideEffects(gtNewIconNode(TYP_INT, 0), op, GTF_ALL_EFFECT);
                     goto DONE_FOLD;
                 }
 
@@ -381,7 +372,7 @@ public partial class Compiler
             {
                 if ((oper == GT_GT) && unsigned && (value == 0) && (op1 == constant))
                 {
-                    op = gtWrapWithSideEffects(NewMorphedIntConNode(0), op, GTF_ALL_EFFECT);
+                    op = gtWrapWithSideEffects(gtNewIconNode(TYP_INT, 0), op, GTF_ALL_EFFECT);
                     goto DONE_FOLD;
                 }
 
@@ -404,7 +395,7 @@ public partial class Compiler
                         }
 
                         var compareResult = oper == GT_GT ? (op1 == op ? 1 : 0) : (oper == GT_EQ ? 0 : 1);
-                        GenTree replacement = NewMorphedIntConNode(compareResult);
+                        GenTree replacement = gtNewIconNode(TYP_INT, compareResult);
                         if (wrapEffects)
                         {
                             replacement = gtWrapWithSideEffects(replacement, op, GTF_ALL_EFFECT);
@@ -540,7 +531,6 @@ public partial class Compiler
         DISPTREE(tree);
         JITDUMP("Transformed into:\n");
         DISPTREE(op);
-        op.SetMorphed(this);
         return op;
     }
 }

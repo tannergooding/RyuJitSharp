@@ -232,7 +232,8 @@ public sealed partial class FlowGraphNaturalLoop
         info.LimitVar = BAD_VAR_NUM;
 
         var compiler = _dfsTree.GetCompiler();
-        var relop = test.Oper is GT_JTRUE ? test.AsUnOp().Op1 : test.AsLclVarCommon().Data;
+        assert(test.Oper is GT_JTRUE);
+        var relop = test.AsUnOp().Op1;
         noway_assert(relop.Oper.IsCompare);
         var operands = relop.AsOp();
         GenTree iterOp;

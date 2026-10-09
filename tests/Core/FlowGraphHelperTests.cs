@@ -349,6 +349,41 @@ internal static unsafe class FlowGraphHelperTests
         }
     }
 
+    [TestCase(false, genTreeOps.GT_COPY)]
+    [TestCase(false, genTreeOps.GT_RELOAD)]
+    [TestCase(true, genTreeOps.GT_COPY)]
+    [TestCase(true, genTreeOps.GT_RELOAD)]
+    public static void StackAddressesRemainNonHeapAfterPeelingCopyOrReload(bool isReturnBuffer, genTreeOps wrapper)
+    {
+#if DEBUG
+        using var jitTls = new JitTls(null);
+#endif
+        var previous = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags jitFlags = default;
+        compiler.opts.jitFlags = &jitFlags;
+        compiler.lvaTable = [new LclVarDsc { Type = var_types.TYP_INT }];
+        compiler.lvaCount = 1;
+        compiler.info.compRetBuffArg = isReturnBuffer ? 0 : -1;
+        JitTls.Compiler = compiler;
+
+        try
+        {
+            GenTree address = isReturnBuffer
+                ? compiler.gtNewLclVarNode(var_types.TYP_BYREF, 0)
+                : compiler.gtNewLclVarAddrNode(var_types.TYP_BYREF, 0);
+            address = new GenTreeCopyOrReload(wrapper, var_types.TYP_BYREF, address);
+            address = compiler.gtNewBinaryNode(genTreeOps.GT_ADD, var_types.TYP_BYREF,
+                address, compiler.gtNewIconNode(Globals.TYP_I_IMPL, 8));
+
+            Assert.That(compiler.fgAddrCouldBeHeap(address), Is.False);
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void ImplicitByRefParameterIsNonHeapAndNonNull(bool asyncMethod)

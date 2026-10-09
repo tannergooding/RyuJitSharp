@@ -21,15 +21,7 @@ public sealed partial class hashBv
         Or,
         Xor,
         Subtract,
-        Compare,
         Intersects,
-    }
-
-    public static hashBv CreateFrom(hashBv other, Compiler compiler)
-    {
-        var result = Create(compiler);
-        result.copyFrom(other, compiler);
-        return result;
     }
 
     public void copyFrom(hashBv other, Compiler compiler) => copyFrom(other);
@@ -71,8 +63,6 @@ public sealed partial class hashBv
         numNodes = 0;
     }
 
-    public bool CompareWith(hashBv other) => MultiTraverse(other, SetAction.Compare);
-
     public bool AndWithChange(hashBv other) => MultiTraverse(other, SetAction.And);
 
     public bool OrWithChange(hashBv other) => MultiTraverse(other, SetAction.Or);
@@ -96,18 +86,6 @@ public sealed partial class hashBv
     public void Subtract(hashBv other)
     {
         _ = SubtractWithChange(other);
-    }
-
-    public void Subtract3(hashBv first, hashBv second)
-    {
-        copyFrom(first);
-        Subtract(second);
-    }
-
-    public void UnionMinus(hashBv first, hashBv second, hashBv third)
-    {
-        Subtract3(first, second);
-        _ = OrWithChange(third);
     }
 
     private bool MultiTraverse(hashBv other, SetAction action)
@@ -146,7 +124,7 @@ public sealed partial class hashBv
         var otherSize = other.hashtable_size();
         var expansionFactor = hashtable_size() / otherSize;
         var cursors = new hashBvNode?[expansionFactor];
-        var result = action is SetAction.Compare;
+        var result = false;
         var terminate = false;
 
         for (var bucket = 0; bucket < otherSize; bucket++)
@@ -223,7 +201,7 @@ public sealed partial class hashBv
     private bool MultiTraverseRHSBigger(hashBv other, SetAction action)
     {
         var otherSize = other.hashtable_size();
-        var result = action is SetAction.Compare;
+        var result = false;
         var terminate = false;
 
         for (var bucket = 0; bucket < otherSize; bucket++)
@@ -314,7 +292,7 @@ public sealed partial class hashBv
 
     private bool MultiTraverseEqual(hashBv other, SetAction action)
     {
-        var result = action is SetAction.Compare;
+        var result = false;
         var terminate = false;
 
         for (var bucket = 0; bucket < hashtable_size(); bucket++)
@@ -388,12 +366,7 @@ public sealed partial class hashBv
     private hashBvNode? ApplyLeftGap(SetAction action, ref hashBvNode? lhs, ref hashBvNode? rhs,
         ref bool result, ref bool terminate)
     {
-        if (action is SetAction.Compare)
-        {
-            result = false;
-            terminate = true;
-        }
-        else if (action is SetAction.Or or SetAction.Xor)
+        if (action is SetAction.Or or SetAction.Xor)
         {
             var source = rhs!;
             var node = new hashBvNode(source.baseIndex);
@@ -425,12 +398,7 @@ public sealed partial class hashBv
     private hashBvNode? ApplyRightGap(SetAction action, ref hashBvNode? lhs, ref hashBvNode? rhs,
         ref bool result, ref bool terminate)
     {
-        if (action is SetAction.Compare)
-        {
-            result = false;
-            terminate = true;
-        }
-        else if (action is SetAction.And)
+        if (action is SetAction.And)
         {
             lhs = lhs!.next;
 
@@ -477,16 +445,6 @@ public sealed partial class hashBv
                 break;
             }
 
-            case SetAction.Compare:
-            {
-                if (!node.sameAs(rhs!))
-                {
-                    result = false;
-                    terminate = true;
-                }
-                break;
-            }
-
             case SetAction.Intersects:
             {
                 if (node.Intersects(rhs!))
@@ -520,13 +478,6 @@ public sealed partial class hashBv
     private hashBvNode? ApplyLeftEmpty(SetAction action, ref hashBvNode? lhs, ref hashBvNode? rhs,
         ref bool result, ref bool terminate)
     {
-        if (action is SetAction.Compare)
-        {
-            result = false;
-            terminate = true;
-            return null;
-        }
-
         if (action is SetAction.Or or SetAction.Xor)
         {
             var source = rhs!;

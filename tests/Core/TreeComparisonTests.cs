@@ -2,6 +2,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.GenTreeFlags;
@@ -39,6 +40,47 @@ internal static unsafe class TreeComparisonTests
             Assert.That(GenTree.Compare(left, right), Is.EqualTo(expected));
         });
     }
+
+    [Test]
+    public static void IntegerConstantsCompareFieldAndHandleMetadata()
+    {
+        WithCompiler(compiler => {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.isFieldStatic = &IsInstanceFieldStatic;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+
+            var left = compiler.gtNewIconNode(TYP_INT, 42).AsIntCon();
+            var right = compiler.gtNewIconNode(TYP_INT, 42).AsIntCon();
+            Assert.That(GenTree.Compare(left, right), Is.True);
+
+            left.CompileTimeHandle = (nint)0x1000;
+            right.CompileTimeHandle = (nint)0x2000;
+            Assert.That(GenTree.Compare(left, right), Is.True);
+
+            var field = (CORINFO_FIELD_STRUCT_*)0x1000;
+            var fieldSequence = new FieldSeq(field, 8, FieldSeq.FieldKind.Instance);
+            left.FieldSeq = fieldSequence;
+            right.FieldSeq = fieldSequence;
+            Assert.That(GenTree.Compare(left, right), Is.True);
+            right.FieldSeq = new FieldSeq(field, 8, FieldSeq.FieldKind.Instance);
+            Assert.That(GenTree.Compare(left, right), Is.False);
+            right.FieldSeq = fieldSequence;
+
+            left.Flags |= Globals.GTF_ICON_CLASS_HDL;
+            Assert.That(GenTree.Compare(left, right), Is.False);
+            right.Flags |= Globals.GTF_ICON_OBJ_HDL;
+            Assert.That(GenTree.Compare(left, right), Is.False);
+
+            right.Flags = (right.Flags & ~GTF_ICON_HDL_MASK) | Globals.GTF_ICON_CLASS_HDL;
+            Assert.That(GenTree.Compare(left, right), Is.False);
+            right.CompileTimeHandle = left.CompileTimeHandle;
+            Assert.That(GenTree.Compare(left, right), Is.True);
+        });
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte IsInstanceFieldStatic(ICorJitInfo* self, CORINFO_FIELD_STRUCT_* field) => 0;
 
     [TestCase(GT_ADD, true)]
     [TestCase(GT_MUL, true)]
@@ -84,6 +126,56 @@ internal static unsafe class TreeComparisonTests
             Assert.That(GenTree.Compare(left, right), Is.True);
             right.Flags |= flag;
             Assert.That(GenTree.Compare(left, right), Is.False);
+        });
+    }
+
+    [Test]
+    public static void NaNOrderingAndIndirectionFlagsParticipateInEquality()
+    {
+        WithCompiler(compiler => {
+            var leftOperand = compiler.gtNewLclvNode(TYP_DOUBLE, 0);
+            var rightOperand = compiler.gtNewLclvNode(TYP_DOUBLE, 1);
+            var ordered = new GenTreeOp(GT_LT, TYP_INT, leftOperand, rightOperand);
+            var unordered = new GenTreeOp(GT_LT, TYP_INT, leftOperand, rightOperand);
+            unordered.Flags |= GTF_RELOP_NAN_UN;
+
+            Assert.That(GenTree.Compare(ordered, unordered), Is.False);
+            var outerEquality = new GenTreeOp(GT_EQ, TYP_INT, ordered, unordered);
+            Assert.That(compiler.gtFoldExprCompare(outerEquality), Is.SameAs(outerEquality));
+
+            var array = compiler.gtNewLclvNode(TYP_REF, 2);
+            var leftLength = new GenTreeArrLen(TYP_INT, array, 8);
+            var rightLength = new GenTreeArrLen(TYP_INT, array, 8);
+            rightLength.Flags |= GTF_IND_NONFAULTING;
+            Assert.That(GenTree.Compare(leftLength, rightLength), Is.False);
+        });
+    }
+
+    [Test]
+    public static void ArrayAddressAndBoxMetadataParticipateInEquality()
+    {
+        WithCompiler(compiler => {
+            var address = compiler.gtNewIconNode(Globals.TYP_I_IMPL, 0x4000);
+            var leftAddress = new GenTreeArrAddr(address, TYP_INT, null, 16);
+            var rightAddress = new GenTreeArrAddr(address, TYP_INT, null, 16);
+            Assert.That(GenTree.Compare(leftAddress, rightAddress), Is.True);
+            rightAddress.Flags |= GTF_ARR_ADDR_NONNULL;
+            Assert.That(GenTree.Compare(leftAddress, rightAddress), Is.False);
+
+            var boxValue = compiler.gtNewLclvNode(TYP_INT, 0);
+            var allocation = compiler.gtNewStmt(compiler.gtNewNothingNode());
+            var copy = compiler.gtNewStmt(compiler.gtNewNothingNode());
+            var leftBox = new GenTreeBox(TYP_REF, boxValue, allocation, copy);
+            var rightBox = new GenTreeBox(TYP_REF, boxValue, allocation, copy);
+            Assert.That(GenTree.Compare(leftBox, rightBox), Is.True);
+
+            var otherAllocation = compiler.gtNewStmt(compiler.gtNewNothingNode());
+            var boxWithDifferentAllocation = new GenTreeBox(TYP_REF, boxValue, otherAllocation, copy);
+            Assert.That(GenTree.Compare(leftBox, boxWithDifferentAllocation), Is.False);
+
+            var otherCopy = compiler.gtNewStmt(compiler.gtNewNothingNode());
+            var boxWithDifferentCopy = new GenTreeBox(TYP_REF, boxValue, allocation, otherCopy);
+            Assert.That(GenTree.Compare(leftBox, boxWithDifferentCopy), Is.False);
         });
     }
 

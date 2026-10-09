@@ -37,51 +37,12 @@ public partial class Compiler
         return store.LclNum;
     }
 
-    private bool optIsLoopTestEvalIntoTemp(Statement testStmt, out Statement? newTestStmt)
-    {
-        newTestStmt = null;
-        var test = testStmt.RootNode;
-        if (test.Oper is not GT_JTRUE)
-        {
-            return false;
-        }
-
-        var relop = test.AsUnOp().Op1;
-        noway_assert(relop.Oper.IsCompare);
-        var operands = relop.AsOp();
-
-        if (relop.Oper is GT_NE && operands.Op1.Oper is GT_LCL_VAR &&
-            operands.Op2.Oper is GT_CNS_INT && operands.Op2.IsIntegralConst(0))
-        {
-            var previous = testStmt.PrevStmt;
-            if (previous is null)
-            {
-                return false;
-            }
-            var tree = previous.RootNode;
-            if (tree.Oper is GT_STORE_LCL_VAR &&
-                tree.AsLclVarCommon().LclNum == operands.Op1.AsLclVarCommon().LclNum &&
-                tree.AsLclVarCommon().Data.Oper.IsCompare)
-            {
-                newTestStmt = previous;
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     public bool optExtractTestIncr(BasicBlock cond, out GenTree? test, out GenTree? increment)
     {
         test = null;
         increment = null;
         var testStmt = cond.LastStmt;
         noway_assert(testStmt is not null && testStmt.NextStmt is null);
-        if (optIsLoopTestEvalIntoTemp(testStmt, out var newTestStmt))
-        {
-            assert(newTestStmt is not null);
-            testStmt = newTestStmt;
-        }
 
         var firstStmt = cond.FirstStmt;
         var condInTry = cond.hasTryIndex;

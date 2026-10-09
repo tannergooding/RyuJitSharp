@@ -42,9 +42,6 @@ public static partial class Globals
         return result;
     }
 
-    public static int nodeSort(hashBvNode x, hashBvNode y)
-        => unchecked((int)(y.baseIndex - x.baseIndex));
-
     public static HbvWalk ForEachHbvBitSet(hashBv bv, Func<indexType, HbvWalk> func)
     {
         for (var hashNum = 0; hashNum < bv.hashtable_size(); hashNum++)

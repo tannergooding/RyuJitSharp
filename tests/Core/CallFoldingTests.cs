@@ -20,6 +20,10 @@ internal static unsafe class CallFoldingTests
     private static int s_gdvMethodQueries;
     private static (nint First, nint Second) s_comparedTypes;
     private static nint s_exactClass;
+    private static nint s_sharedClassHandle;
+    private static nint s_arrayClassHandle;
+    private static nint s_arrayElementClassHandle;
+    private static nint s_exactTypeHandle;
 
     [Test]
     public static void TypeComparisonsUseTheUserHandleArgument(
@@ -188,9 +192,11 @@ internal static unsafe class CallFoldingTests
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_BYREF, 16)));
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewIconNode(TYP_BYREF, 32)));
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(length));
+            InlineCandidateInfo? inlineInfo = null;
             if (inlineCandidate)
             {
-                call.SingleInlineCandidateInfo = new InlineCandidateInfo();
+                inlineInfo = new InlineCandidateInfo();
+                call.SingleInlineCandidateInfo = inlineInfo;
             }
 
             var result = compiler.impDuplicateWithProfiledArg(call, 12);
@@ -213,9 +219,28 @@ internal static unsafe class CallFoldingTests
             Assert.That(call.IsInlineCandidate, Is.False);
             Assert.That(call.Args.GetUserArgByIndex(2)?.Node.IsIntegralConst(8), Is.True);
             Assert.That(call.Args.GetUserArgByIndex(2)?.Node, Is.Not.SameAs(condition.Op2));
+            Assert.That(result.AsQmark().IsEarlyExpandableQmark, Is.EqualTo(inlineCandidate));
+            Assert.That((compiler.optMethodFlags & OMF_HAS_EARLY_QMARKS) != 0, Is.EqualTo(inlineCandidate));
 
-            var fallback = branches.ElseNode.AsCall();
-            Assert.That(fallback.IsInlineCandidate, Is.False);
+            var fallbackTree = branches.ElseNode;
+            if (inlineCandidate && (call.Type is not TYP_VOID))
+            {
+                Assert.That(fallbackTree.Oper, Is.EqualTo(GT_COMMA));
+                var comma = fallbackTree.AsOp();
+                var retExpr = comma.Op2.AsRetExpr();
+                Assert.That(retExpr, Is.SameAs(inlineInfo?.retExpr));
+                Assert.That(retExpr.InlineCandidate, Is.SameAs(comma.Op1));
+                Assert.That(retExpr.Type, Is.EqualTo(call.Type));
+                fallbackTree = comma.Op1;
+            }
+            else
+            {
+                Assert.That(inlineInfo?.retExpr, Is.Null);
+            }
+
+            var fallback = fallbackTree.AsCall();
+            Assert.That(fallback.IsInlineCandidate, Is.EqualTo(inlineCandidate));
+            Assert.That(fallback.SingleInlineCandidateInfo, Is.SameAs(inlineInfo));
             Assert.That(fallback.Args.GetUserArgByIndex(2)?.Node.Oper, Is.EqualTo(GT_LCL_VAR));
             Assert.That(fallback.Args.GetUserArgByIndex(2)?.Node.AsLclVar().LclNum, Is.Zero);
             Assert.That(fallback.Args.GetUserArgByIndex(2)?.Node, Is.Not.SameAs(length));
@@ -225,7 +250,27 @@ internal static unsafe class CallFoldingTests
     }
 
     [Test]
-    public static void BoxRemovalPreservesStatementIdentityAndMorphState(
+    public static void BoxRecognitionUsesOperatorInsteadOfAValueMarker(
+        [Values(false, true)] bool cloned, [Values(false, true)] bool bashed)
+    {
+        WithCompiler("Enum", "HasFlag", (compiler, _) =>
+        {
+            var statement = compiler.gtNewStmt(compiler.gtNewNothingNode());
+            var box = new GenTreeBox(TYP_REF, compiler.gtNewLclvNode(TYP_REF, 0), statement, statement)
+            {
+                WasCloned = cloned,
+            };
+            if (bashed)
+            {
+                box.BashToNOP();
+            }
+
+            Assert.That(box.IsBoxedValue, Is.EqualTo(!bashed));
+        });
+    }
+
+    [Test]
+    public static void BoxRemovalPreservesStatementIdentityAcrossMorphModes(
         [Values(false, true)] bool morphed, [Values(false, true)] bool sourceEffects)
     {
         WithCompiler("Enum", "HasFlag", (compiler, _) =>
@@ -240,16 +285,8 @@ internal static unsafe class CallFoldingTests
             var copyStatement = compiler.gtNewStmt(copy);
             var box = new GenTreeBox(TYP_REF, compiler.gtNewLclvNode(TYP_REF, 0),
                 allocationStatement, copyStatement);
-            box.Flags |= GTF_BOX_VALUE;
             allocation._vnPair.SetBoth(42);
             copy._vnPair.SetBoth(43);
-            if (morphed)
-            {
-                allocation.SetMorphed(compiler);
-                copy.SetMorphed(compiler);
-                value.SetMorphed(compiler);
-            }
-
             var result = compiler.gtTryRemoveBoxUpstreamEffects(box);
 
             Assert.That(result, Is.SameAs(value));
@@ -264,10 +301,6 @@ internal static unsafe class CallFoldingTests
                 Assert.That(copy.Flags & GTF_ALL_EFFECT, Is.EqualTo(GTF_EMPTY));
                 Assert.That(copy._vnPair.BothDefined, Is.False);
             }
-#if DEBUG
-            Assert.That(allocation.WasMorphed, Is.EqualTo(morphed));
-            Assert.That(copyStatement.RootNode.WasMorphed, Is.EqualTo(morphed));
-#endif
         });
     }
 
@@ -283,12 +316,10 @@ internal static unsafe class CallFoldingTests
             var source = compiler.gtNewBlkIndir(address, layout);
             source.Flags |= GTF_IND_VOLATILE | GTF_IND_UNALIGNED;
             source._vnPair.SetBoth(42);
-            source.SetMorphed(compiler);
             var allocationStatement = compiler.gtNewStmt(compiler.gtNewStoreLclVarNode(0, compiler.gtNewNull()));
             var copyStatement = compiler.gtNewStmt(compiler.gtNewStoreBlkNode(address, source, layout));
             var box = new GenTreeBox(TYP_REF, compiler.gtNewLclvNode(TYP_REF, 0),
                 allocationStatement, copyStatement);
-            box.Flags |= GTF_BOX_VALUE;
             var options = narrow ? Compiler.BoxRemovalOptions.BR_REMOVE_AND_NARROW
                 : Compiler.BoxRemovalOptions.BR_REMOVE_BUT_NOT_NARROW;
 
@@ -303,8 +334,6 @@ internal static unsafe class CallFoldingTests
             Assert.That(result._vnPair.BothDefined, Is.EqualTo(!narrow));
 #if DEBUG
             Assert.That(result.TreeId, Is.EqualTo(source.TreeId));
-            Assert.That(result.WasMorphed, Is.True);
-            Assert.That(result._morphCount, Is.EqualTo(source._morphCount));
 #endif
         });
     }
@@ -399,6 +428,32 @@ internal static unsafe class CallFoldingTests
         });
     }
 
+    [Test]
+    public static void EnumEqualityDoesNotFoldSharedInstantiations()
+    {
+        WithCompiler("Enum", "Equals", (compiler, call) => {
+            var enumType = CorInfoType.CORINFO_TYPE_INT;
+            var enumClassHandle = (CORINFO_CLASS_STRUCT_*)&enumType;
+            s_sharedClassHandle = (nint)enumClassHandle;
+
+            try
+            {
+                compiler.lvaTable[0].lvClassHnd = enumClassHandle;
+                compiler.lvaTable[0].lvClassIsExact = true;
+                compiler.lvaTable[1] = compiler.lvaTable[0];
+                _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(compiler.gtNewLclvNode(TYP_REF, 0)));
+                _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(NewBoxedLocal(compiler, 1)));
+
+                Assert.That(compiler.gtFoldExprCall(call), Is.SameAs(call));
+                Assert.That(((MethodMetadata*)call._callMethHnd)->Lookups, Is.EqualTo(1));
+            }
+            finally
+            {
+                s_sharedClassHandle = 0;
+            }
+        });
+    }
+
     [TestCase(CorInfoType.CORINFO_TYPE_UNDEF, true, true)]
     [TestCase(CorInfoType.CORINFO_TYPE_FLOAT, true, true)]
     [TestCase(CorInfoType.CORINFO_TYPE_DOUBLE, true, true)]
@@ -440,6 +495,39 @@ internal static unsafe class CallFoldingTests
         });
     }
 
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    public static void CovariantStoreCheckSkipsOnlyForNonSharedSealedElementTypes(bool shared, bool expected)
+    {
+        WithCompiler("Type", "Other", (compiler, _) => {
+            var arrayClassHandle = (CORINFO_CLASS_STRUCT_*)0x1000;
+            var elementClassHandle = (CORINFO_CLASS_STRUCT_*)0x2000;
+            s_arrayClassHandle = (nint)arrayClassHandle;
+            s_arrayElementClassHandle = (nint)elementClassHandle;
+            s_sharedClassHandle = shared ? (nint)elementClassHandle : 0;
+            s_exactTypeHandle = (nint)elementClassHandle;
+
+            try
+            {
+                compiler.lvaTable[0].lvClassHnd = arrayClassHandle;
+                compiler.lvaTable[0].lvClassIsExact = false;
+                compiler.lvaTable[1].lvClassHnd = elementClassHandle;
+                compiler.lvaTable[1].lvClassIsExact = true;
+                var array = compiler.gtNewLclvNode(TYP_REF, 0);
+                var value = compiler.gtNewLclvNode(TYP_REF, 1);
+
+                Assert.That(compiler.gtCanSkipCovariantStoreCheck(value, array), Is.EqualTo(expected));
+            }
+            finally
+            {
+                s_sharedClassHandle = 0;
+                s_arrayClassHandle = 0;
+                s_arrayElementClassHandle = 0;
+                s_exactTypeHandle = 0;
+            }
+        });
+    }
+
     private static GenTreeBox NewBoxedLocal(Compiler compiler, int local)
     {
         return new GenTreeBox(TYP_REF, compiler.gtNewLclvNode(TYP_REF, local),
@@ -460,6 +548,7 @@ internal static unsafe class CallFoldingTests
             vtable.Base.Base.getExactClasses = &GetExactClasses;
             vtable.Base.Base.compareTypesForEquality = &CompareTypesForEquality;
             vtable.Base.Base.getClassAttribs = &GetGdvClassAttributes;
+            vtable.Base.Base.getChildType = &GetChildType;
             vtable.Base.Base.getMethodAttribs = &GetGdvMethodAttributes;
             vtable.Base.Base.isExactType =
                 (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, byte>)&IsExactType;
@@ -530,13 +619,39 @@ internal static unsafe class CallFoldingTests
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static byte IsExactType(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => 0;
+    private static byte IsExactType(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type)
+        => (byte)((s_exactTypeHandle != 0) && ((nint)type == s_exactTypeHandle) ? 1 : 0);
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CorInfoFlag GetGdvClassAttributes(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type)
     {
         s_gdvClassQueries++;
-        return CorInfoFlag.CORINFO_FLG_ABSTRACT;
+        var attributes = CorInfoFlag.CORINFO_FLG_ABSTRACT;
+        if ((s_arrayClassHandle != 0) && ((nint)type == s_arrayClassHandle))
+        {
+            attributes |= CorInfoFlag.CORINFO_FLG_ARRAY;
+        }
+
+        if ((s_sharedClassHandle != 0) && ((nint)type == s_sharedClassHandle))
+        {
+            attributes |= CorInfoFlag.CORINFO_FLG_SHAREDINST;
+        }
+
+        return attributes;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoType GetChildType(
+        ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type, CORINFO_CLASS_STRUCT_** child)
+    {
+        if ((s_arrayClassHandle != 0) && ((nint)type == s_arrayClassHandle))
+        {
+            *child = (CORINFO_CLASS_STRUCT_*)s_arrayElementClassHandle;
+            return CorInfoType.CORINFO_TYPE_CLASS;
+        }
+
+        *child = null;
+        return CorInfoType.CORINFO_TYPE_UNDEF;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]

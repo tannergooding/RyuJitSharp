@@ -2490,15 +2490,16 @@ namespace RyuJitSharp;
         const int FLAG_RELEASE = 12;
         const int FLAG_DEFINE_MASK = 0b1100;
 
-        ReadOnlySpan<string> prefixes = [
+        string[] prefixes = [
             "CONFIG_INTEGER(", "CONFIG_STRING(", "CONFIG_METHODSET(",
             "OPT_CONFIG_INTEGER(", "OPT_CONFIG_STRING(", "OPT_CONFIG_METHODSET(",
             "RELEASE_CONFIG_INTEGER(", "RELEASE_CONFIG_STRING(", "RELEASE_CONFIG_METHODSET("
         ];
 
         var lastFlags = FLAG_NONE;
+        var inputLines = File.ReadAllLines(@"Inputs\jitconfigvalues.h");
 
-        var fieldBuilder = ProcessMacroBasedFile(@"Inputs\jitconfigvalues.h", prefixes, (builder, inputFile, line, prefix, parts) => {
+        var fieldBuilder = ProcessConfigValues((builder, inputFile, line, prefix, parts) => {
             var expectedPartCount = prefix.EndsWith("CONFIG_INTEGER(", StringComparison.Ordinal) ? 3 : 2;
 
             if (parts.Length != expectedPartCount)
@@ -2520,7 +2521,7 @@ namespace RyuJitSharp;
         EmitIfdefWhereRequired(fieldBuilder, FLAG_NONE, lastFlags);
         lastFlags = FLAG_NONE;
 
-        var propertyBuilder = ProcessMacroBasedFile(@"Inputs\jitconfigvalues.h", prefixes, (builder, inputFile, line, prefix, parts) => {
+        var propertyBuilder = ProcessConfigValues((builder, inputFile, line, prefix, parts) => {
             var expectedPartCount = prefix.EndsWith("CONFIG_INTEGER(", StringComparison.Ordinal) ? 3 : 2;
 
             if (parts.Length != expectedPartCount)
@@ -2544,7 +2545,7 @@ namespace RyuJitSharp;
         EmitIfdefWhereRequired(propertyBuilder, FLAG_NONE, lastFlags);
         lastFlags = FLAG_NONE;
 
-        var destroyBuilder = ProcessMacroBasedFile(@"Inputs\jitconfigvalues.h", prefixes, (builder, inputFile, line, prefix, parts) => {
+        var destroyBuilder = ProcessConfigValues((builder, inputFile, line, prefix, parts) => {
             var expectedPartCount = prefix.EndsWith("CONFIG_INTEGER(", StringComparison.Ordinal) ? 3 : 2;
 
             if (parts.Length != expectedPartCount)
@@ -2578,7 +2579,7 @@ namespace RyuJitSharp;
         EmitIfdefWhereRequired(destroyBuilder, FLAG_NONE, lastFlags);
         lastFlags = FLAG_NONE;
 
-        var initializeBuilder = ProcessMacroBasedFile(@"Inputs\jitconfigvalues.h", prefixes, (builder, inputFile, line, prefix, parts) => {
+        var initializeBuilder = ProcessConfigValues((builder, inputFile, line, prefix, parts) => {
             var expectedPartCount = prefix.EndsWith("CONFIG_INTEGER(", StringComparison.Ordinal) ? 3 : 2;
 
             if (parts.Length != expectedPartCount)
@@ -2658,6 +2659,20 @@ public partial struct JitConfigValues
     }
 }
 """);
+
+        StringBuilder ProcessConfigValues(Action<StringBuilder, string, string, string, string[]> callback)
+        {
+            return ProcessMacroBasedFile(
+                @"Inputs\jitconfigvalues.h", inputLines, prefixes, callback,
+                ResetConditionalConfigScope, ResetConditionalConfigScope);
+        }
+
+        void ResetConditionalConfigScope(StringBuilder builder)
+        {
+            // Config guards must not span preprocessor regions emitted by the input parser.
+            EmitIfdefWhereRequired(builder, FLAG_NONE, lastFlags);
+            lastFlags = FLAG_NONE;
+        }
 
         static void EmitIfdefWhereRequired(StringBuilder builder, int flags, int lastFlags)
         {
@@ -4638,7 +4653,11 @@ public partial class Globals
         return ProcessMacroBasedFile(inputFile, lines, prefixes, callback);
     }
 
-    private static StringBuilder ProcessMacroBasedFile(string inputFile, ReadOnlySpan<string> lines, ReadOnlySpan<string> prefixes, Action<StringBuilder, string, string, string, string[]> callback)
+    private static StringBuilder ProcessMacroBasedFile(
+        string inputFile, ReadOnlySpan<string> lines, ReadOnlySpan<string> prefixes,
+        Action<StringBuilder, string, string, string, string[]> callback,
+        Action<StringBuilder> onConditionalRegionStart = null,
+        Action<StringBuilder> onConditionalRegionEnd = null)
     {
         var builder = new StringBuilder();
 
@@ -4899,7 +4918,12 @@ public partial class Globals
 
                     if (regionEnd != -1)
                     {
-                        var regionBuilder = ProcessMacroBasedFile(inputFile, lines[(regionStart + 1)..regionEnd], prefixes, callback);
+                        var regionBuilder = new StringBuilder();
+                        onConditionalRegionStart?.Invoke(regionBuilder);
+                        _ = regionBuilder.Append(ProcessMacroBasedFile(
+                            inputFile, lines[(regionStart + 1)..regionEnd], prefixes, callback,
+                            onConditionalRegionStart, onConditionalRegionEnd));
+                        onConditionalRegionEnd?.Invoke(regionBuilder);
 
                         if (regionBuilder.Length >= 6 &&
                             regionBuilder[0] == '#' &&

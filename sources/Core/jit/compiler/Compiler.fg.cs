@@ -2411,6 +2411,9 @@ public partial class Compiler
         // Ignore the offset for locals
         gtPeelOffsets(ref op, out _);
 
+        // After LSRA the base of a contained address mode may be wrapped in a COPY/RELOAD.
+        op = op.SkipCopyOrReload;
+
         var result = true;
 
         if (op.Oper is GT_LCL_ADDR)
@@ -8941,39 +8944,8 @@ public partial class Compiler
         //      entries must keep the same "try" region begin/last block pointers. A block in this "try" region has a try index
         //      of the first ("most nested") EH table entry.
         //
-        //   3. No block is the last block of more than one try or handler region. Again, as described above,
-        //      filters need not be considered.
-        //
-        //      For example, we will transform this:
-        //
-        //               try3 ----------------- BB01
-        //               |      try2 ---------- BB02
-        //               |      |      handler1 BB03
-        //               |      |      |        BB04
-        //               |----- |----- |------- BB05
-        //
-        //      (where all three try regions end at BB05) to this:
-        //
-        //               try3 ----------------- BB01
-        //               |      try2 ---------- BB02
-        //               |      |      handler1 BB03
-        //               |      |      |        BB04
-        //               |      |      |------- BB05
-        //               |      |-------------- BB06 // empty BBJ_ALWAYS block
-        //               |--------------------- BB07 // empty BBJ_ALWAYS block
-        //
-        //      No branches need to change: if something branched to BB05, it will still branch to BB05. If BB05 is a
-        //      BBJ_ALWAYS block to the next block, then control flow will fall through the newly added blocks as well.
-        //      If it is anything else, it will retain that block branch type and BB06 and BB07 will be unreachable.
-        //
-        //      The benefit of this is, once again, to remove the need to consider every EH region when adding new blocks.
-        //
-        // Overall, a block can appear in the EH table exactly once: as the begin or last block of a single try, filter, or
-        // handler. There is one exception: for a single-block EH region, the block can appear as both the "begin" and "last"
-        // block of the try, or the "begin" and "last" block of the handler (note that filters don't have a "last" block stored,
-        // so this case doesn't apply.)
-        // (Note: we could remove this special case if we wanted, and if it helps anything, but it doesn't appear that it will
-        // help.)
+        // A block begins at most one EH region, except for mutually protecting try regions.
+        // Multiple EH regions may still share their last block.
         //
         // These invariants simplify a number of things. When inserting a new block into a region, it is not necessary to
         // traverse the entire EH table looking to see if any EH region needs to be updated. You only ever need to update a
@@ -9008,23 +8980,11 @@ public partial class Compiler
         // Case #1: Prevent the first block of a handler from also being the first block of a 'try'.
         modified |= fgNormalizeEHCase1();
 
-        // Case #2: Prevent any two EH regions from starting with the same block (after case #3, we only need to worry about 'try' blocks).
+        // Case #2: Prevent any two EH regions from starting with the same block (after case #1, we only need to worry about
+        // 'try' blocks).
         modified |= fgNormalizeEHCase2();
 
         _ = modified;
-
-#if false
-        // Case 3 normalization is disabled. The JIT really doesn't like having extra empty blocks around, especially
-        // blocks that are unreachable. There are lots of asserts when such things occur. We will re-evaluate whether we
-        // can do this normalization.
-        // Note: there are cases in fgVerifyHandlerTab() that are also disabled to match this.
-
-        // Case #3: Prevent any two EH regions from ending with the same block.
-        if (fgNormalizeEHCase3())
-        {
-            modified = true;
-        }
-#endif
 
 #if DEBUG
         fgNormalizeEHDone = true;
@@ -9400,440 +9360,6 @@ public partial class Compiler
         return modified;
     }
 
-    public bool fgNormalizeEHCase3()
-    {
-        var modified = false;
-
-        // Case #3: Make sure no two 'try' or handler regions have the same 'last' block (except for mutually protect 'try'
-        // regions). As above, there has to be EH region nesting for this to occur. However, since we need to consider
-        // handlers, there are more cases.
-        //
-        // There are four cases to consider:
-        //      (1) try     nested in try
-        //      (2) handler nested in try
-        //      (3) try     nested in handler
-        //      (4) handler nested in handler
-        //
-        // Note that, before funclet generation, it would be unusual, though legal IL, for a 'try' to come at the end
-        // of an EH region (either 'try' or handler region), since that implies that its corresponding handler precedes it.
-        // That will never happen in C#, but is legal in IL.
-        //
-        // Only one of these cases can happen. For example, if we have case (2), where a try/catch is nested in a 'try' and
-        // the nested handler has the same 'last' block as the outer handler, then, due to nesting rules, the nested 'try'
-        // must also be within the outer handler, and obviously cannot share the same 'last' block.
-
-        for (ushort XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
-        {
-            ref var eh = ref ehGetDsc(XTnum);
-
-            // Find the EH region 'eh' is most nested within, either 'try' or handler or none.
-            var outerIsTryRegion = false;
-            var ehOuterIndex = eh.ebdGetEnclosingRegionIndex(ref outerIsTryRegion);
-
-            if (ehOuterIndex is not EHblkDsc.NO_ENCLOSING_INDEX)
-            {
-                ref var ehInner = ref eh;    // This gets updated as we loop outwards in the EH nesting
-                var ehInnerIndex = XTnum; // This gets updated as we loop outwards in the EH nesting
-                bool innerIsTryRegion;
-
-                ref var ehOuter = ref ehGetDsc(ehOuterIndex);
-
-#if DEBUG
-                // Debugging: say what type of block we're updating.
-                var outerType = "";
-                var innerType = "";
-#endif
-
-                // 'insertAfterBlk' is the place we will insert new "normalization" blocks. We don't know yet if we will
-                // insert them after the innermost 'try' or handler's "last" block, so we set it to nullptr. Once we
-                // determine the innermost region that is equivalent, we set this, and then update it incrementally as we
-                // loop outwards.
-
-                var insertAfterBlk = null as BasicBlock;
-                var foundMatchingLastBlock = false;
-
-                // This is set to 'false' for mutual protect regions for which we will not insert a normalization block.
-                var insertNormalizationBlock = true;
-
-                // Keep track of what the 'try' index and handler index should be for any new normalization block that we
-                // insert. If we have a sequence of alternating nested 'try' and handlers with the same 'last' block, we'll
-                // need to update these as we go. For example:
-                //      try { // EH#5
-                //          ...
-                //          catch { // EH#4
-                //              ...
-                //              try { // EH#3
-                //                  ...
-                //                  catch { // EH#2
-                //                      ...
-                //                      try { // EH#1
-                //                          BB01 // try=1, hnd=2
-                //      }   }   }   }   } // all the 'last' blocks are the same
-                //
-                // after normalization:
-                //
-                //      try { // EH#5
-                //          ...
-                //          catch { // EH#4
-                //              ...
-                //              try { // EH#3
-                //                  ...
-                //                  catch { // EH#2
-                //                      ...
-                //                      try { // EH#1
-                //                          BB01 // try=1, hnd=2
-                //                      }
-                //                      BB02 // try=3, hnd=2
-                //                  }
-                //                  BB03 // try=3, hnd=4
-                //              }
-                //              BB04 // try=5, hnd=4
-                //          }
-                //          BB05 // try=5, hnd=0 (no enclosing hnd)
-                //      }
-
-                var nextTryIndex = EHblkDsc.NO_ENCLOSING_INDEX; // Initialization only needed to quell compiler warnings.
-                var nextHndIndex = EHblkDsc.NO_ENCLOSING_INDEX;
-
-                // We compare the outer region against the inner region's 'try' or handler, determined by the
-                // 'outerIsTryRegion' variable. Once we decide that, we know exactly the 'last' pointer that we will use to
-                // compare against all enclosing EH regions.
-                //
-                // For example, if we have these nested EH regions (omitting some corresponding try/catch clauses for each
-                // nesting level):
-                //
-                //      try {
-                //          ...
-                //          catch {
-                //              ...
-                //              try {
-                //      }   }   } // all the 'last' blocks are the same
-                //
-                // then we determine that the innermost region we are going to compare against is the 'try' region. There's
-                // no reason to compare against its handler region for any enclosing region (since it couldn't possibly
-                // share a 'last' block with the enclosing region). However, there's no harm, either (and it simplifies
-                // the code for the first set of comparisons to be the same as subsequent, more enclosing cases).
-                var lastBlockPtrToCompare = null as BasicBlock;
-
-                // We need to keep track of the last "mutual protect" region so we can properly not add additional blocks
-                // to the second and subsequent mutual protect try blocks. We can't just keep track of the EH region
-                // pointer, because we're updating the last blocks as we go. So, we need to keep track of the
-                // pre-update 'try' begin/last blocks themselves. These only matter if the "last" blocks that match are
-                // from two (or more) nested 'try' regions.
-                var mutualTryBeg = null as BasicBlock;
-                var mutualTryLast = null as BasicBlock;
-
-                if (outerIsTryRegion)
-                {
-                    nextTryIndex = EHblkDsc.NO_ENCLOSING_INDEX; // unused, since the outer block is a 'try' region.
-
-                    // The outer (enclosing) region is a 'try'
-                    if (ehOuter.ebdTryLast == ehInner.ebdTryLast)
-                    {
-                        // Case (1) try nested in try.
-                        foundMatchingLastBlock = true;
-
-#if DEBUG
-                        innerType = "try";
-                        outerType = "try";
-#endif
-
-                        insertAfterBlk = ehOuter.ebdTryLast;
-                        lastBlockPtrToCompare = insertAfterBlk;
-
-                        if (EHblkDsc.ebdIsSameTry(ehOuter, ehInner))
-                        {
-                            // We can't touch this 'try', since it's mutual protect.
-#if DEBUG
-                            if (verbose)
-                            {
-                                jitprintf($"Mutual protect regions EH#{ehOuterIndex} and EH#{ehInnerIndex}; leaving identical 'try' last blocks.\n");
-                            }
-#endif
-
-                            insertNormalizationBlock = false;
-                        }
-                        else
-                        {
-                            nextHndIndex = ehInner.ebdTryLast.hasHndIndex ? ehInner.ebdTryLast.HndIndex : EHblkDsc.NO_ENCLOSING_INDEX;
-                        }
-                    }
-                    else if (ehOuter.ebdTryLast == ehInner.ebdHndLast)
-                    {
-                        // Case (2) handler nested in try.
-                        foundMatchingLastBlock = true;
-
-#if DEBUG
-                        innerType = "handler";
-                        outerType = "try";
-#endif
-
-                        insertAfterBlk = ehOuter.ebdTryLast;
-                        lastBlockPtrToCompare = insertAfterBlk;
-
-                        assert(ehInner.ebdHndLast.HndIndex == ehInnerIndex);
-                        nextHndIndex = ehInner.ebdEnclosingHndIndex;
-                    }
-                    else
-                    {
-                        // No "last" pointers match!
-                    }
-
-                    if (foundMatchingLastBlock)
-                    {
-                        // The outer might be part of a new set of mutual protect regions (if it isn't part of one already).
-                        mutualTryBeg = ehOuter.ebdTryBeg;
-                        mutualTryLast = ehOuter.ebdTryLast;
-                    }
-                }
-                else
-                {
-                    nextHndIndex = EHblkDsc.NO_ENCLOSING_INDEX; // unused, since the outer block is a handler region.
-
-                    // The outer (enclosing) region is a handler (note that it can't be a filter; there is no nesting
-                    // within a filter).
-                    if (ehOuter.ebdHndLast == ehInner.ebdTryLast)
-                    {
-                        // Case (3) try nested in handler.
-                        foundMatchingLastBlock = true;
-
-#if DEBUG
-                        innerType = "try";
-                        outerType = "handler";
-#endif
-
-                        insertAfterBlk = ehOuter.ebdHndLast;
-                        lastBlockPtrToCompare = insertAfterBlk;
-
-                        assert(ehInner.ebdTryLast.TryIndex == ehInnerIndex);
-                        nextTryIndex = ehInner.ebdEnclosingTryIndex;
-                    }
-                    else if (ehOuter.ebdHndLast == ehInner.ebdHndLast)
-                    {
-                        // Case (4) handler nested in handler.
-                        foundMatchingLastBlock = true;
-#if DEBUG
-                        innerType = "handler";
-                        outerType = "handler";
-#endif
-                        insertAfterBlk = ehOuter.ebdHndLast;
-                        lastBlockPtrToCompare = insertAfterBlk;
-
-                        nextTryIndex = ehInner.ebdTryLast.hasTryIndex ? ehInner.ebdTryLast.TryIndex : EHblkDsc.NO_ENCLOSING_INDEX;
-                    }
-                    else
-                    {
-                        // No "last" pointers match!
-                    }
-                }
-
-                while (foundMatchingLastBlock)
-                {
-                    assert(lastBlockPtrToCompare is not null);
-                    assert(insertAfterBlk is not null);
-                    assert(ehOuterIndex is not EHblkDsc.NO_ENCLOSING_INDEX);
-                    assert(!Unsafe.IsNullRef(in ehOuter));
-
-                    // Add a normalization block
-
-                    if (insertNormalizationBlock)
-                    {
-                        // Add a new last block for 'ehOuter' that will be outside the EH region with which it encloses and
-                        // shares a 'last' pointer
-
-                        var newLast = BasicBlock.New(this);
-                        newLast.bbRefs = 0;
-
-                        assert(insertAfterBlk is not null);
-                        fgInsertBBafter(insertAfterBlk, newLast);
-
-#if DEBUG
-                        if (verbose)
-                        {
-                            jitprintf($"last {outerType} block for EH#{ehOuterIndex} and last {innerType} block for EH#{ehInnerIndex} are same block; inserted new {FMT_BB(newLast.bbNum)} after {FMT_BB(insertAfterBlk.bbNum)} as new last {outerType} block for EH#{ehOuterIndex}.\n");
-                        }
-#endif
-
-                        if (outerIsTryRegion)
-                        {
-                            ehOuter.ebdTryLast = newLast;
-                            newLast.TryIndex = ehOuterIndex;
-
-                            if (nextHndIndex is EHblkDsc.NO_ENCLOSING_INDEX)
-                            {
-                                newLast.clearHndIndex();
-                            }
-                            else
-                            {
-                                newLast.HndIndex = nextHndIndex;
-                            }
-                        }
-                        else
-                        {
-                            ehOuter.ebdHndLast = newLast;
-
-                            if (nextTryIndex is EHblkDsc.NO_ENCLOSING_INDEX)
-                            {
-                                newLast.clearTryIndex();
-                            }
-                            else
-                            {
-                                newLast.TryIndex = nextTryIndex;
-                            }
-
-                            newLast.HndIndex = ehOuterIndex;
-                        }
-
-                        newLast.CatchType = BBCT_NONE; // bbCatchType is only set on the first block of a handler, which is this not
-                        newLast.bbCodeOffs = insertAfterBlk.bbCodeOffsEnd;
-                        newLast.bbCodeOffsEnd = newLast.bbCodeOffs; // code size = 0. TODO: use BAD_IL_OFFSET instead?
-                        newLast.inheritWeight(insertAfterBlk);
-                        newLast.SetFlags(BBF_INTERNAL);
-                        var newEdge = fgAddRefPred(newLast, insertAfterBlk);
-                        insertAfterBlk.SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
-
-                        // Move the insert pointer. More enclosing equivalent 'last' blocks will be inserted after this.
-                        insertAfterBlk = newLast;
-
-                        modified = true;
-
-#if DEBUG
-                        if (false && verbose) // Normally this is way too verbose, but it is useful for debugging
-                        {
-                            jitprintf("*************** fgNormalizeEH() made a change\n");
-                            fgDispBasicBlocks();
-                            fgDispHandlerTab();
-                        }
-#endif
-                    }
-
-                    // Now find the next outer enclosing EH region and see if it also shares the last block.
-                    foundMatchingLastBlock = false; // assume nothing will match
-                    ehInner = ref ehOuter;
-                    ehInnerIndex = ehOuterIndex;
-                    innerIsTryRegion = outerIsTryRegion;
-
-                    // Loop outwards in the EH nesting.
-                    ehOuterIndex = ehOuter.ebdGetEnclosingRegionIndex(ref outerIsTryRegion);
-
-                    if (ehOuterIndex is not EHblkDsc.NO_ENCLOSING_INDEX)
-                    {
-                        // There are more enclosing regions; check for equivalent 'last' pointers.
-
-#if DEBUG
-                        innerType = outerType;
-                        outerType = "";
-#endif
-
-                        ehOuter = ref ehGetDsc(ehOuterIndex);
-
-                        insertNormalizationBlock = true; // assume it's not mutual protect
-
-                        if (outerIsTryRegion)
-                        {
-                            nextTryIndex = EHblkDsc.NO_ENCLOSING_INDEX; // unused, since the outer block is a 'try' region.
-
-                            // The outer (enclosing) region is a 'try'
-                            if (ehOuter.ebdTryLast == lastBlockPtrToCompare)
-                            {
-                                // Case (1) and (2): try or handler nested in try.
-                                foundMatchingLastBlock = true;
-
-#if DEBUG
-                                outerType = "try";
-#endif
-
-                                assert(mutualTryBeg is not null);
-                                assert(mutualTryLast is not null);
-
-                                if (innerIsTryRegion && ehOuter.ebdIsSameTry(mutualTryBeg, mutualTryLast))
-                                {
-                                    // We can't touch this 'try', since it's mutual protect.
-
-#if DEBUG
-                                    if (verbose)
-                                    {
-                                        jitprintf($"Mutual protect regions EH#{ehOuterIndex} and EH#{ehInnerIndex}; leaving identical 'try' last blocks.\n");
-                                    }
-#endif
-
-                                    insertNormalizationBlock = false;
-
-                                    // We still need to update the 'last' pointer, in case someone inserted a normalization
-                                    // block before the start of the mutual protect 'try' region.
-                                    ehOuter.ebdTryLast = insertAfterBlk;
-                                }
-                                else
-                                {
-                                    if (innerIsTryRegion)
-                                    {
-                                        // Case (1) try nested in try.
-                                        nextHndIndex = ehInner.ebdTryLast.hasHndIndex ? ehInner.ebdTryLast.HndIndex : EHblkDsc.NO_ENCLOSING_INDEX;
-                                    }
-                                    else
-                                    {
-                                        // Case (2) handler nested in try.
-                                        assert(ehInner.ebdHndLast.HndIndex == ehInnerIndex);
-                                        nextHndIndex = ehInner.ebdEnclosingHndIndex;
-                                    }
-                                }
-
-                                // The outer might be part of a new set of mutual protect regions (if it isn't part of one already).
-                                mutualTryBeg = ehOuter.ebdTryBeg;
-                                mutualTryLast = ehOuter.ebdTryLast;
-                            }
-                        }
-                        else
-                        {
-                            nextHndIndex = EHblkDsc.NO_ENCLOSING_INDEX; // unused, since the outer block is a handler region.
-
-                            // The outer (enclosing) region is a handler (note that it can't be a filter; there is no
-                            // nesting within a filter).
-                            if (ehOuter.ebdHndLast == lastBlockPtrToCompare)
-                            {
-                                // Case (3) and (4): try nested in try or handler.
-                                foundMatchingLastBlock = true;
-
-#if DEBUG
-                                outerType = "handler";
-#endif
-
-                                if (innerIsTryRegion)
-                                {
-                                    // Case (3) try nested in handler.
-                                    assert(ehInner.ebdTryLast.TryIndex == ehInnerIndex);
-                                    nextTryIndex = ehInner.ebdEnclosingTryIndex;
-                                }
-                                else
-                                {
-                                    // Case (4) handler nested in handler.
-                                    nextTryIndex = ehInner.ebdTryLast.hasTryIndex ? ehInner.ebdTryLast.TryIndex : EHblkDsc.NO_ENCLOSING_INDEX;
-                                }
-                            }
-                        }
-                    }
-
-                    // If we get to here and foundMatchingLastBlock is false, then the inner and outer region don't share
-                    // any 'last' blocks, so we're done. Note that we could have a situation like this:
-                    //
-                    //        try4   try3   try2   try1
-                    //        |----  |      |      |      BB01
-                    //        |      |----  |      |      BB02
-                    //        |      |      |----  |      BB03
-                    //        |      |      |      |----- BB04
-                    //        |      |      |----- |----- BB05
-                    //        |----  |------------------- BB06
-                    //
-                    // (Thus, try1 & try2 end at BB05, and are nested inside try3 & try4, which both end at BB06.)
-                    // In this case, we'll process try1 and try2, then break out. Later, as we iterate through the EH table,
-                    // we'll get to try3 and process it and try4.
-                }
-            }
-        }
-
-        return modified;
-    }
-
     /// <summary>try and optimize construction of a delegate</summary>
     /// <param name="call">call to original delegate constructor</param>
     /// <param name="exactContextHnd">context handle to update</param>
@@ -9938,7 +9464,13 @@ public partial class Compiler
         }
 
 #if FEATURE_READYTORUN
+#if TARGET_WASM
+        // Wasm can't use the dynamically composed ReadyToRun delegate constructor helpers,
+        // so ReadyToRun uses GetDelegateCtor below, like the JIT.
+        if (IsAot && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+#else
         if (IsAot)
+#endif
         {
             if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
             {
@@ -9993,10 +9525,6 @@ public partial class Compiler
 #if !TARGET_WASM
             else if ((oper is GT_FTN_ADDR) && (ldftnToken is not null))
             {
-                // TODO-WASM: Wasm doesn't use the dynamically composed helpers yet. When we do, we probably will
-                // need to use a different set of arguments to construct the right helper call to avoid dynamically
-                // composing a helper
-
                 JITDUMP("optimized\n");
 
                 arg = call.Args.GetArgByIndex(0);
@@ -10044,6 +9572,16 @@ public partial class Compiler
                 exactContextHnd = null;
 
                 call._callMethHnd = alternateCtor;
+
+#if FEATURE_READYTORUN
+                if (IsAot)
+                {
+                    // The importer computed the entry point for the original constructor.
+                    CORINFO_CONST_LOOKUP entryPoint;
+                    info.compCompHnd->getFunctionEntryPoint(alternateCtor, &entryPoint);
+                    call._entryPoint = entryPoint;
+                }
+#endif
 
                 var lastArg = null as CallArg;
 
@@ -14242,21 +13780,6 @@ public partial class Compiler
         return visitor.WalkTree(ref statement.RootNodeRef, user: null) == WALK_ABORT;
     }
 
-#if DEBUG
-    internal void fgPostGlobalMorphChecks()
-    {
-        var visitor = new PostGlobalMorphChecksVisitor();
-
-        foreach (var block in Blocks)
-        {
-            foreach (var statement in block.Statements)
-            {
-                _ = visitor.WalkTree(ref statement.RootNodeRef, user: null);
-            }
-        }
-    }
-#endif
-
     public unsafe PhaseStatus fgMorphInit()
     {
         var madeChanges = false;
@@ -15217,6 +14740,7 @@ public partial class Compiler
         }
     }
 
+    /// <remarks>Recomputing DFS invalidates annotations derived from the previous tree.</remarks>
     internal bool fgRemoveBlocksOutsideDfsTree()
     {
         var dfsTree = _dfsTree;
@@ -15262,6 +14786,8 @@ public partial class Compiler
                 break;
             }
 
+            // Lowering may have cached natural loops over this tree for store-to-load forwarding.
+            fgInvalidateDfsTree();
             dfsTree = fgComputeDfs();
             _dfsTree = dfsTree;
         }
@@ -15750,7 +15276,8 @@ public partial class Compiler
 
         var traits = new BitVecTraits(this, lvaCount);
         var unreadLocals = assertions.GetLocalsWithAssertions();
-        var stores = new List<(Statement Statement, GenTreeLclVarCommon Tree)>();
+        // Retain the data slot's owner; managed byrefs cannot be stored in this list.
+        var stores = new List<(Statement Statement, GenTree DataOwner, int LclNum)>();
         var dfs = _dfsTree;
         assert(dfs is not null);
 
@@ -15758,25 +15285,28 @@ public partial class Compiler
         {
             foreach (var stmt in dfs.GetPostOrder(i - 1).Statements)
             {
-                foreach (var local in stmt.LocalsTreeList)
-                {
-                    if (!BitVecOps.IsMember(traits, unreadLocals, local.LclNum))
+                _ = stmt.VisitLogicalLocalOccurrencesViaLocalsTreeList(occurrence => {
+                    var local = occurrence.Node;
+                    if (!BitVecOps.IsMember(traits, unreadLocals, occurrence.LclNum))
                     {
-                        continue;
+                        return GenTree.VisitResult.Continue;
                     }
 
-                    if (local.Oper is GT_STORE_LCL_VAR or GT_STORE_LCL_FLD)
+                    if (((occurrence.Flags & GTF_VAR_DEF) != 0) && (local.Oper is not GT_LCL_ADDR))
                     {
-                        if ((local.Type is TYP_I_IMPL or TYP_BYREF) && ((local.Data.Flags & GTF_SIDE_EFFECT) == 0))
+                        var accessType = occurrence.GetAccessType(this);
+                        if ((accessType is TYP_I_IMPL or TYP_BYREF) && ((local.Data.Flags & GTF_SIDE_EFFECT) == 0))
                         {
-                            stores.Add((stmt, local));
+                            stores.Add((stmt, local, occurrence.LclNum));
                         }
                     }
                     else
                     {
-                        BitVecOps.RemoveElemD(traits, unreadLocals, local.LclNum);
+                        BitVecOps.RemoveElemD(traits, unreadLocals, occurrence.LclNum);
                     }
-                }
+
+                    return GenTree.VisitResult.Continue;
+                });
             }
         }
 
@@ -15791,24 +15321,22 @@ public partial class Compiler
 
         foreach (var store in stores)
         {
-            assert(store.Tree.Type is TYP_I_IMPL or TYP_BYREF);
-
-            if (BitVecOps.IsMember(traits, unreadLocals, store.Tree.LclNum))
+            if (BitVecOps.IsMember(traits, unreadLocals, store.LclNum))
             {
 #if DEBUG
-                JITDUMP($"V{store.Tree.LclNum:D2} is unread; removing store data of [{store.Tree.TreeId:D6}]\n");
-                DISPTREE(store.Tree);
+                JITDUMP($"V{store.LclNum:D2} is unread; removing store data in {FMT_STMT(store.Statement.Id)}\n");
+                DISPSTMT(store.Statement);
 #endif
-                var data = store.Tree.Data;
+                var data = store.DataOwner.Data;
                 var constant = new GenTreeIntCon(data.Type, 0, fields: null, data, NodeThreading.AllLocals);
                 constant._vnPair.SetBoth(ValueNumStore.NoVN);
-                store.Tree.DataRef = constant;
+                store.DataOwner.DataRef = constant;
                 // Rebuild the entire list immediately; no transient link transfer
                 // is needed between this owner update and resequencing.
                 fgSequenceLocals(store.Statement);
 #if DEBUG
                 JITDUMP("\nResult:\n");
-                DISPTREE(store.Tree);
+                DISPSTMT(store.Statement);
                 JITDUMP("\n");
 #endif
                 changed = true;
@@ -15823,17 +15351,18 @@ public partial class Compiler
             {
                 foreach (var stmt in dfs.GetPostOrder(i - 1).Statements)
                 {
-                    foreach (var local in stmt.LocalsTreeList)
-                    {
+                    _ = stmt.VisitLogicalLocalOccurrencesViaLocalsTreeList(occurrence => {
+                        var local = occurrence.Node;
                         if (local.Oper is not GT_LCL_ADDR)
                         {
-                            continue;
+                            return GenTree.VisitResult.Continue;
                         }
 
-                        ref var varDsc = ref lvaGetDesc(local.LclNum);
-                        var exposedLclNum = varDsc.lvIsStructField ? varDsc.lvParentLcl : local.LclNum;
+                        ref var varDsc = ref lvaGetDesc(occurrence.LclNum);
+                        var exposedLclNum = varDsc.lvIsStructField ? varDsc.lvParentLcl : occurrence.LclNum;
                         BitVecOps.AddElemD(traits, exposedLocals, exposedLclNum);
-                    }
+                        return GenTree.VisitResult.Continue;
+                    });
                 }
             }
 
@@ -15923,11 +15452,11 @@ public partial class Compiler
             {
                 foreach (var stmt in block.Statements)
                 {
-                    foreach (var lcl in stmt.LocalsTreeList)
-                    {
+                    _ = stmt.VisitLogicalLocalOccurrencesViaLocalsTreeList(occurrence => {
+                        var lcl = occurrence.Node;
                         if (lcl.Oper is GT_STORE_LCL_VAR)
                         {
-                            var dstLclNum = lcl.LclNum;
+                            var dstLclNum = occurrence.LclNum;
                             ref var dstDsc = ref lvaGetDesc(dstLclNum);
                             var value = lcl.Data;
 
@@ -15987,12 +15516,12 @@ public partial class Compiler
                                     changed = true;
                                 }
 
-                                continue;
+                                return GenTree.VisitResult.Continue;
                             }
 
                             if (!BitVecOps.IsMember(traits, hasNoGcValue, dstLclNum))
                             {
-                                continue;
+                                return GenTree.VisitResult.Continue;
                             }
 
                             var isNoGcValue = value.IsNotGcDef();
@@ -16008,12 +15537,12 @@ public partial class Compiler
                                 changed = true;
                             }
 
-                            continue;
+                            return GenTree.VisitResult.Continue;
                         }
 
-                        if ((lcl.Flags & GTF_VAR_DEF) != 0)
+                        if ((occurrence.Flags & GTF_VAR_DEF) != 0)
                         {
-                            var dstLclNum = lcl.LclNum;
+                            var dstLclNum = occurrence.LclNum;
                             ref var dstDsc = ref lvaGetDesc(dstLclNum);
 
                             if (BitVecOps.IsMember(traits, hasNoGcValue, dstLclNum))
@@ -16036,7 +15565,9 @@ public partial class Compiler
                                 }
                             }
                         }
-                    }
+
+                        return GenTree.VisitResult.Continue;
+                    });
                 }
             }
         }

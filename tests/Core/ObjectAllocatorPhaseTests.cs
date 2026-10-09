@@ -184,8 +184,13 @@ internal static unsafe class ObjectAllocatorPhaseTests
             Assert.That(compiler.lvaGetDesc(1).lvStackAllocatedObject, Is.True);
             Assert.That(compiler.lvaGetDesc(1).Layout, Is.Not.Null);
             Assert.That(compiler.MethodHasStackAllocatedArray, Is.True);
-            Assert.That(call._callMoreFlags & GTF_CALL_M_STACK_ARRAY, Is.Not.Zero);
+            var stackArrayArg = call.Args.FindWellKnownArg(WellKnownArg.StackArrayLocal)
+                ?? throw new InvalidOperationException("Stack array address argument was not recorded.");
+            Assert.That(stackArrayArg.Node.Oper, Is.EqualTo(GT_LCL_ADDR));
+            Assert.That(stackArrayArg.Node.AsLclVarCommon().LclNum, Is.EqualTo(1));
+            Assert.That(stackArrayArg.Node.Type, Is.EqualTo(TYP_I_IMPL));
             Assert.That(call.Type, Is.EqualTo(TYP_I_IMPL));
+            Assert.That(call._returnType, Is.EqualTo(TYP_I_IMPL));
             Assert.That(compiler._dfsTree, Is.Null);
         }, enableArray: true);
     }

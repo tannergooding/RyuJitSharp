@@ -34,7 +34,6 @@ public partial class Compiler
             {
                 node._vnPair = vnStore.VNPWithExc(ValueNumStore.VNPForVoid(), vnStore.VNPExceptionSet(vnPair));
             }
-            node.SetMorphed(this);
 
             return node;
         }
@@ -144,7 +143,6 @@ public partial class Compiler
                 var compiler = _compiler;
 
                 var comma = compiler.gtNewCommaNode(TYP_VOID, result, node);
-                comma.SetMorphed(compiler);
 
                 // Both should have value numbers defined for both or for neither
                 // one (unless we are remorphing, in which case a prior transform

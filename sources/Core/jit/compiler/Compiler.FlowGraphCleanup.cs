@@ -201,12 +201,44 @@ public partial class Compiler
             return false;
         }
 
-        if (!store.Data.Oper.IsIntegralConst)
+        var data = store.Data;
+        var copyType = TYP_UNDEF;
+
+        // Look through one adjacent copy, retaining any normalization performed by the source local.
+        if (data.Oper is GT_LCL_VAR)
+        {
+            var sourceStmt = secondLastStmt.PrevStmt;
+            assert(sourceStmt is not null);
+            if (sourceStmt == lastStmt)
+            {
+                return false;
+            }
+
+            var sourceTree = sourceStmt.RootNode;
+            if (sourceTree.Oper is not GT_STORE_LCL_VAR)
+            {
+                return false;
+            }
+
+            var sourceStore = sourceTree.AsLclVarCommon();
+            if ((sourceStore.LclNum != data.AsLclVarCommon().LclNum) ||
+                !sourceStore.Data.Oper.IsIntegralConst ||
+                (sourceStore.Type.ActualType != sourceStore.Data.Type.ActualType) ||
+                (sourceStore.Type.ActualType != data.Type.ActualType))
+            {
+                return false;
+            }
+
+            copyType = lvaGetDesc(data.AsLclVarCommon().LclNum).Type;
+            data = sourceStore.Data;
+        }
+
+        if (!data.Oper.IsIntegralConst)
         {
             return false;
         }
 
-        if ((store.Type.ActualType != store.Data.Type.ActualType) || (store.Type.ActualType != lcl.Type.ActualType))
+        if ((store.Type.ActualType != data.Type.ActualType) || (store.Type.ActualType != lcl.Type.ActualType))
         {
             return false;
         }
@@ -216,9 +248,15 @@ public partial class Compiler
         JITDUMP("\nAfter:\n");
 
         ref var varDsc = ref lvaGetDesc(lcl.LclNum);
-        var newData = gtCloneExpr(store.Data);
+        var newData = gtCloneExpr(data);
         assert(newData is not null);
-        if (varTypeIsSmall(varDsc.Type) && fgCastNeeded(store.Data, varDsc.Type))
+        if ((copyType is not TYP_UNDEF) && varTypeIsSmall(copyType) && fgCastNeeded(newData, copyType))
+        {
+            newData = gtNewCastNode(TYP_INT, newData, false, copyType);
+            newData = gtFoldExpr(newData);
+        }
+
+        if (varTypeIsSmall(varDsc.Type) && fgCastNeeded(newData, varDsc.Type))
         {
             newData = gtNewCastNode(TYP_INT, newData, false, varDsc.Type);
             newData = gtFoldExpr(newData);
@@ -410,6 +448,12 @@ public partial class Compiler
         }
 
         var data = firstTree.AsLclVar().Data;
+        if (data.Oper is GT_LCL_VAR)
+        {
+            lclNum = data.AsLclVar().LclNum;
+            return true;
+        }
+
         if (!data.Oper.IsBinary)
         {
             return false;

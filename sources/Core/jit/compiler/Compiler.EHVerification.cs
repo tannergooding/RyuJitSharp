@@ -21,10 +21,9 @@ public partial class Compiler
         }
 
         // Normalization separates handler/try starts and distinct try starts.
-        // Separating shared region ends is currently disabled in native.
+        // Multiple EH regions may share their last block.
         var handlerBegIsTryBegNormalizationDone = fgNormalizeEHDone;
         var multipleBegBlockNormalizationDone = fgNormalizeEHDone;
-        var multipleLastBlockNormalizationDone = false;
         var traits = new BitVecTraits(this, impInlineRoot.compEHID);
         var ids = BitVecOps.MakeEmpty(traits);
 
@@ -210,14 +209,7 @@ public partial class Compiler
                                 assert(bbNumOuterTryBeg <= bbNumTryBeg);
                             }
 
-                            if (multipleLastBlockNormalizationDone)
-                            {
-                                assert(bbNumTryLast < bbNumOuterTryLast);
-                            }
-                            else
-                            {
-                                assert(bbNumTryLast <= bbNumOuterTryLast);
-                            }
+                            assert(bbNumTryLast <= bbNumOuterTryLast);
                         }
 
                         assert((bbNumHndLast < bbNumOuterTryBeg) || (bbNumOuterTryLast < bbNumHndBeg));
@@ -237,16 +229,8 @@ public partial class Compiler
 
                         assert(bbNumOuterTryBeg < bbNumHndBeg);
 
-                        if (multipleLastBlockNormalizationDone)
-                        {
-                            assert(bbNumTryLast < bbNumOuterTryLast);
-                            assert(bbNumHndLast < bbNumOuterTryLast);
-                        }
-                        else
-                        {
-                            assert(bbNumTryLast <= bbNumOuterTryLast);
-                            assert(bbNumHndLast <= bbNumOuterTryLast);
-                        }
+                        assert(bbNumTryLast <= bbNumOuterTryLast);
+                        assert(bbNumHndLast <= bbNumOuterTryLast);
                     }
                 }
             }
@@ -272,14 +256,7 @@ public partial class Compiler
                         assert(bbNumOuterHndBeg <= bbNumTryBeg);
                     }
 
-                    if (multipleLastBlockNormalizationDone)
-                    {
-                        assert(bbNumTryLast < bbNumOuterHndLast);
-                    }
-                    else
-                    {
-                        assert(bbNumTryLast <= bbNumOuterHndLast);
-                    }
+                    assert(bbNumTryLast <= bbNumOuterHndLast);
 
                     assert((bbNumHndLast < bbNumOuterHndBeg) || (bbNumOuterHndLast < bbNumHndBeg));
                 }
@@ -296,16 +273,8 @@ public partial class Compiler
 
                     assert(bbNumOuterHndBeg < bbNumHndBeg);
 
-                    if (multipleLastBlockNormalizationDone)
-                    {
-                        assert(bbNumTryLast < bbNumOuterHndLast);
-                        assert(bbNumHndLast < bbNumOuterHndLast);
-                    }
-                    else
-                    {
-                        assert(bbNumTryLast <= bbNumOuterHndLast);
-                        assert(bbNumHndLast <= bbNumOuterHndLast);
-                    }
+                    assert(bbNumTryLast <= bbNumOuterHndLast);
+                    assert(bbNumHndLast <= bbNumOuterHndLast);
                 }
             }
 

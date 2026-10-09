@@ -47,6 +47,24 @@ internal static class CodeGenRegisterValueTests
         });
     }
 
+    [Test]
+    public static void ReloadUsesTheLocalStackHomeGcKindInsteadOfTheUseType()
+    {
+        CodeGenSpillVariableTests.WithCompiler(TYP_I_IMPL, REG_RAX, (compiler, codeGen, tree) =>
+        {
+            compiler.lvaTable[0].RegNum = REG_STK;
+            codeGen.RegSet.ClearMaskVars();
+            tree.Type = TYP_BYREF;
+            tree.Flags = GTF_SPILLED;
+
+            codeGen.genUnspillRegIfNeeded(tree);
+
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur.IsEmpty, Is.True);
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur.IsEmpty, Is.True);
+            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(REG_RAX)));
+        });
+    }
+
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]

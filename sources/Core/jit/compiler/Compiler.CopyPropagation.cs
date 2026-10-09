@@ -202,6 +202,12 @@ public partial class Compiler
                 continue;
             }
 
+            // Do not force an otherwise enregisterable local onto the stack.
+            if ((tree.Oper is GT_LCL_FLD) && !newLclVarDsc.lvDoNotEnregister)
+            {
+                continue;
+            }
+
             if (varDsc.lvOnlyUsedOnSynchronousPath || newLclVarDsc.lvOnlyUsedOnSynchronousPath)
             {
                 continue;

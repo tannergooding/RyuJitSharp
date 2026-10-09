@@ -40,7 +40,11 @@ public sealed unsafe partial class GcInfoEncoder : IDisposable
 
         WriteUnsigned(m_Info1, (nuint)callSites.Length, NUM_SAFE_POINTS_ENCBASE, GcInfoField.NumCallSitesSize);
 
-        if (!slimHeader)
+        if (slimHeader || !HAS_INTERRUPTIBLE_RANGES)
+        {
+            assert(ranges.Length == 0);
+        }
+        else
         {
             WriteUnsigned(m_Info1, (nuint)ranges.Length, NUM_INTERRUPTIBLE_RANGES_ENCBASE, GcInfoField.NumRangesSize);
         }

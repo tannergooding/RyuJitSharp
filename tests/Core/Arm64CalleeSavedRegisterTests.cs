@@ -10,12 +10,16 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
+using static RyuJitSharp.GenTreeCallFlags;
+using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.gtCallTypes;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.insOpts;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
+using static RyuJitSharp.var_types;
 using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
 namespace RyuJitSharp.UnitTests;
@@ -34,6 +38,62 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         "reg1 + 1 == reg2",
         "reg1 + 1 == reg2",
     ];
+#endif
+
+#if DEBUG
+    [TestCase(TYP_REF, REG_R19, true, true, 1, true)]
+    [TestCase(TYP_BYREF, REG_R20, true, true, 1, true)]
+    [TestCase(TYP_REF, REG_R19, true, false, 0, false)]
+    [TestCase(TYP_REF, REG_R0, true, true, 1, false)]
+    [TestCase(TYP_REF, REG_R19, false, true, 0, false)]
+    public static void PInvokeRequiresCalleeSavedGcRootsToBeSpilled(
+        var_types type, regNumber reg, bool unmanaged, bool hasRoot, int expectedAssertions,
+        bool expectedCalleeSavedAssertion)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = true;
+#endif
+            var block = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            compiler.fgFirstBB = block;
+            compiler.fgLastBB = block;
+            compiler.compCurBB = block;
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = false;
+#endif
+
+            var call = new GenTreeCall(TYP_VOID)
+            {
+                _callType = CT_USER_FUNC,
+                _callMethHnd = (CORINFO_METHOD_STRUCT_*)0x4000,
+                _directCallAddress = (void*)0x1234,
+                _returnType = TYP_VOID,
+            };
+            if (unmanaged)
+            {
+                call.Flags |= GTF_CALL_UNMANAGED;
+                call._callMoreFlags |= GTF_CALL_M_PINVOKE;
+            }
+
+            if (hasRoot)
+            {
+                codeGen.GCInfo.gcMarkRegPtrVal(reg, type);
+            }
+
+            codeGen.genCall(call);
+
+            Assert.That(s_assertions, Has.Count.EqualTo(expectedAssertions));
+            if (expectedAssertions != 0)
+            {
+                Assert.That(s_assertions[0].Contains("SRBM_INT_CALLEE_SAVED", StringComparison.Ordinal),
+                    Is.EqualTo(expectedCalleeSavedAssertion));
+            }
+
+            s_assertions.Clear();
+        });
+    }
 #endif
 
     [TestCase(nameof(Compiler.FrameInfo.frameType))]

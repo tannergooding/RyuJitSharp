@@ -251,7 +251,6 @@ public partial class Compiler
                 }
 
                 var zero = gtNewZeroConNode(parentType);
-                zero.SetMorphed(this);
                 commaThrow.Op2 = zero;
                 commaThrow.ChangeType(parentType);
             }

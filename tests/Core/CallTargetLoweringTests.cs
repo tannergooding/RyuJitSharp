@@ -224,6 +224,7 @@ internal static unsafe class CallTargetLoweringTests
 
             var target = Invoke(lowering, "LowerDelegateInvoke", call);
             Assert.That(target?.Oper, Is.EqualTo(GT_IND));
+            Assert.That(target?.AsIndir().Addr.Type, Is.EqualTo(TYP_BYREF));
             Assert.That(target?.AsIndir().Addr.AsAddrMode().Offset, Is.EqualTo(24));
             Assert.That(target?.AsIndir().Addr.AsAddrMode().BaseAddress, Is.Not.SameAs(thisValue));
 

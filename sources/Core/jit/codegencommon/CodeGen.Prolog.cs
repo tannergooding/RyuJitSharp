@@ -145,7 +145,7 @@ public sealed partial class CodeGen
                 noway_assert(local.lvRefCnt() == 0);
                 continue;
             }
-            if (_compiler.lvaIsUnknownSizeLocal(varNum))
+            if (_compiler.lvaLocalIsOnUnknownSizeFrame(varNum))
             {
                 continue;
             }

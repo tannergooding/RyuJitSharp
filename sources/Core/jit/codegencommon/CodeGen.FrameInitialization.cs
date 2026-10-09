@@ -46,7 +46,7 @@ public sealed partial class CodeGen
                 varDsc.lvMustInit = false;
                 continue;
             }
-            if (_compiler.lvaIsUnknownSizeLocal(varNum))
+            if (_compiler.lvaLocalIsOnUnknownSizeFrame(varNum))
             {
                 continue;
             }

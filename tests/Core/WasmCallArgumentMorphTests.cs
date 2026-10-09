@@ -156,16 +156,13 @@ internal static unsafe class WasmCallArgumentMorphTests
 #endif
 
     [Test]
-    public static void WasmGSCookieChecksKeepTheConfiguredNYIBoundary()
+    public static void WasmGSCookieChecksUseTheNYIBoundary()
     {
         WithCompiler(compiler => {
             var codeGen = new CodeGen(compiler);
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genEmitGSCookieCheck(false));
 
-            var expected = (JitConfig.JitWasmNyiToR2RUnsupported > 0)
-                ? CorJitResult.CORJIT_R2R_UNSUPPORTED
-                : CorJitResult.CORJIT_SKIPPED;
-            Assert.That(failure?.Result, Is.EqualTo(expected));
+            Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
         });
     }
 

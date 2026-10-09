@@ -1260,26 +1260,6 @@ internal static unsafe class LocalMorphTests
         }, minOpts: true);
     }
 
-#if DEBUG
-    [Test]
-    public static void PostMorphChecksVisitFullyMarkedStatementTrees()
-    {
-        WithCompiler(compiler => {
-            compiler.lvaTable[0].Type = TYP_INT;
-            var value = compiler.gtNewBinaryNode(GT_ADD, TYP_INT,
-                compiler.gtNewIconNode(TYP_INT, 1), compiler.gtNewIconNode(TYP_INT, 2));
-            var store = compiler.gtNewStoreLclVarNode(0, value);
-            var block = new BasicBlock(null, null);
-            compiler.fgFirstBB = block;
-            compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(store));
-            compiler.fgGlobalMorph = true;
-            store.SetMorphed(compiler, doChilren: true);
-            compiler.fgGlobalMorph = false;
-            compiler.fgPostGlobalMorphChecks();
-        });
-    }
-#endif
-
     [TestCase(false, false)]
     [TestCase(false, true)]
     [TestCase(true, false)]
@@ -1374,6 +1354,225 @@ internal static unsafe class LocalMorphTests
             Assert.That(statement.NextStmt, Is.Null);
         });
     }
+
+    [Test]
+    public static void LogicalOccurrenceSequencingKeepsCallDefinitionsAfterArgumentReads()
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            compiler.lvaTable[0].Type = TYP_STRUCT;
+            compiler.lvaTable[0].Layout = new ClassLayout(8);
+            compiler.lvaTable[1].Type = TYP_I_IMPL;
+#if DEBUG
+            compiler.lvaTable[0].IsDefinedViaAddress = true;
+#endif
+            GenTree address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 4);
+            address.Flags |= GTF_VAR_DEF;
+            var read = compiler.gtNewLclvNode(TYP_I_IMPL, 1);
+            var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_RETBUFFARG_LCLOPT;
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(address).WithWellKnownArg(WellKnownArg.RetBuffer));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(read));
+            var statement = compiler.gtNewStmt(call);
+            var sequencer = new LocalSequencer(compiler);
+
+            sequencer.Sequence(statement);
+
+            GenTree[] expected = [read, address];
+            Assert.That(statement.LocalsTreeList, Is.EqualTo(expected));
+            Assert.That(statement.TreeListBegin, Is.SameAs(read));
+            Assert.That(statement.TreeListEnd, Is.SameAs(address));
+            Assert.That(read.Prev, Is.Null);
+            Assert.That(read.Next, Is.SameAs(address));
+            Assert.That(address.Prev, Is.SameAs(read));
+            Assert.That(address.Next, Is.Null);
+            Assert.That(new LocalOccurrence(address.AsLclVarCommon()).Flags & GTF_VAR_DEF, Is.Not.Zero);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void UnreadAddressStoresKeepTheirOwningDataSlotsAcrossResequencing(bool fieldStore)
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            compiler.lvaTable[0].Type = TYP_BYREF;
+            compiler.lvaTable[1].Type = TYP_BYREF;
+            var firstAddress = compiler.gtNewLclAddrNode(TYP_BYREF, 2, 0);
+            var secondAddress = compiler.gtNewLclAddrNode(TYP_BYREF, 2, 0);
+            GenTree first = fieldStore
+                ? compiler.gtNewStoreLclFldNode(TYP_BYREF, 0, 0, firstAddress)
+                : compiler.gtNewStoreLclVarNode(0, firstAddress);
+            var second = compiler.gtNewStoreLclVarNode(1, secondAddress);
+            var root = compiler.gtNewCommaNode(TYP_VOID, first, second);
+            var block = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            compiler.fgFirstBB = compiler.fgLastBB = block;
+            var statement = AppendLogicalOccurrenceStatement(compiler, block, root);
+            var assertions = CreateLogicalOccurrenceAssertions(compiler);
+            assertions.Record(0, 2, 0);
+            assertions.Record(1, 2, 0);
+            assertions.OnExposed(2);
+
+            Assert.That(ExposeUnpropagatedLocals(compiler, true, assertions), Is.True);
+
+            Assert.That(statement.RootNode, Is.SameAs(root));
+            Assert.That(root.AsOp().Op1, Is.SameAs(first));
+            Assert.That(root.AsOp().Op2, Is.SameAs(second));
+            Assert.That(first.Data.IsIntegralConst(0), Is.True);
+            Assert.That(second.Data.IsIntegralConst(0), Is.True);
+            Assert.That((first.Data.Type, second.Data.Type), Is.EqualTo((TYP_BYREF, TYP_BYREF)));
+            GenTree[] expected = [first, second];
+            Assert.That(statement.LocalsTreeList, Is.EqualTo(expected));
+            Assert.That(statement.TreeListBegin, Is.SameAs(first));
+            Assert.That(statement.TreeListEnd, Is.SameAs(second));
+            Assert.That(first.Prev, Is.Null);
+            Assert.That(first.Next, Is.SameAs(second));
+            Assert.That(second.Prev, Is.SameAs(first));
+            Assert.That(second.Next, Is.Null);
+            Assert.That(compiler.lvaTable[2].IsAddressExposed, Is.False);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void LocalAddressOccurrencesKeepDestinationsReadEvenWhenFlaggedAsDefinitions(bool definition)
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            compiler.lvaTable[0].Type = TYP_BYREF;
+            var sourceAddress = compiler.gtNewLclAddrNode(TYP_BYREF, 2, 0);
+            var store = compiler.gtNewStoreLclVarNode(0, sourceAddress);
+            var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
+            var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            var argument = NewCallArg.CreateForPrimitive(address);
+            if (definition)
+            {
+#if DEBUG
+                compiler.lvaTable[0].IsDefinedViaAddress = true;
+#endif
+                address.Flags |= GTF_VAR_DEF;
+                call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_RETBUFFARG_LCLOPT;
+                argument = argument.WithWellKnownArg(WellKnownArg.RetBuffer);
+            }
+            _ = call.Args.PushBack(argument);
+            var block = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            compiler.fgFirstBB = compiler.fgLastBB = block;
+            var storeStatement = AppendLogicalOccurrenceStatement(compiler, block, store);
+            _ = AppendLogicalOccurrenceStatement(compiler, block, call);
+            var assertions = CreateLogicalOccurrenceAssertions(compiler);
+            assertions.Record(0, 2, 0);
+            assertions.OnExposed(2);
+
+            Assert.That(ExposeUnpropagatedLocals(compiler, true, assertions), Is.False);
+
+            Assert.That(store.Data, Is.SameAs(sourceAddress));
+            GenTree[] expected = [sourceAddress, store];
+            Assert.That(storeStatement.LocalsTreeList, Is.EqualTo(expected));
+            Assert.That(compiler.lvaTable[2].IsAddressExposed, Is.True);
+        });
+    }
+
+    [Test]
+    public static void ExposureRescanMapsRemainingFieldAddressesToTheirPromotedParent()
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            compiler.lvaTable[0].Type = TYP_BYREF;
+            compiler.lvaTable[1].lvIsStructField = true;
+            compiler.lvaTable[1].lvParentLcl = 2;
+            compiler.lvaTable[2].Type = TYP_STRUCT;
+            compiler.lvaTable[2].Layout = new ClassLayout(8);
+            compiler.lvaTable[2].lvPromoted = true;
+            compiler.lvaTable[2].lvFieldLclStart = 1;
+            compiler.lvaTable[2].lvFieldCnt = 1;
+            var store = compiler.gtNewStoreLclVarNode(0, compiler.gtNewLclAddrNode(TYP_BYREF, 1, 0));
+            var remainingAddress = compiler.gtNewLclAddrNode(TYP_BYREF, 1, 0);
+            var block = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            compiler.fgFirstBB = compiler.fgLastBB = block;
+            _ = AppendLogicalOccurrenceStatement(compiler, block, store);
+            var remaining = AppendLogicalOccurrenceStatement(compiler, block,
+                compiler.gtNewUnaryNode(GT_KEEPALIVE, TYP_VOID, remainingAddress));
+            var assertions = CreateLogicalOccurrenceAssertions(compiler);
+            assertions.Record(0, 1, 0);
+            assertions.OnExposed(2);
+
+            Assert.That(ExposeUnpropagatedLocals(compiler, true, assertions), Is.True);
+
+            Assert.That(store.Data.IsIntegralConst(0), Is.True);
+            Assert.That(remaining.TreeListBegin, Is.SameAs(remainingAddress));
+            Assert.That(compiler.lvaTable[2].IsAddressExposed, Is.True);
+            Assert.That(compiler.lvaTable[1].IsAddressExposed, Is.True);
+        });
+    }
+
+    [TestCase(false, false)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void UnknownParentDefinitionsKeepPromotedFieldsPinned(bool unknownDefinition, bool addressDefinition)
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            compiler.lvaTable[0].Type = TYP_STRUCT;
+            compiler.lvaTable[0].Layout = new ClassLayout(TARGET_POINTER_SIZE);
+            compiler.lvaTable[0].lvPromoted = true;
+            compiler.lvaTable[0].lvFieldLclStart = 1;
+            compiler.lvaTable[0].lvFieldCnt = 1;
+            compiler.lvaTable[1].Type = TYP_BYREF;
+            compiler.lvaTable[1].lvPinned = true;
+            compiler.lvaTable[1].lvIsStructField = true;
+            compiler.lvaTable[1].lvParentLcl = 0;
+            var block = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            compiler.fgFirstBB = compiler.fgLastBB = block;
+            _ = AppendLogicalOccurrenceStatement(compiler, block,
+                compiler.gtNewStoreLclVarNode(1, compiler.gtNewIconNode(TYP_BYREF, 0)));
+            if (unknownDefinition)
+            {
+                GenTree definition;
+                if (addressDefinition)
+                {
+#if DEBUG
+                    compiler.lvaTable[0].IsDefinedViaAddress = true;
+#endif
+                    var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
+                    address.Flags |= GTF_VAR_DEF;
+                    var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+                    call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_RETBUFFARG_LCLOPT;
+                    _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(address)
+                        .WithWellKnownArg(WellKnownArg.RetBuffer));
+                    definition = call;
+                }
+                else
+                {
+                    definition = compiler.gtNewStoreLclFldNode(TYP_BYREF, 0, 0,
+                        compiler.gtNewIconNode(TYP_BYREF, 0));
+                }
+                _ = AppendLogicalOccurrenceStatement(compiler, block, definition);
+            }
+
+            Assert.That(UnpinNonMovableLocals(compiler), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
+
+            Assert.That(compiler.lvaTable[1].lvPinned, Is.EqualTo(unknownDefinition));
+        });
+    }
+
+    private static Statement AppendLogicalOccurrenceStatement(Compiler compiler, BasicBlock block, GenTree root)
+    {
+        var statement = compiler.gtNewStmt(root);
+        compiler.fgInsertStmtAtEnd(block, statement);
+        compiler.fgSequenceLocals(statement);
+
+        return statement;
+    }
+
+    private static LocalEqualsLocalAddrAssertions CreateLogicalOccurrenceAssertions(Compiler compiler)
+    {
+        var dfs = compiler._dfsTree = compiler.fgComputeDfs();
+        var loops = FlowGraphNaturalLoops.Find(dfs);
+
+        return new LocalEqualsLocalAddrAssertions(compiler, new LoopDefinitions(loops));
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgExposeUnpropagatedLocals")]
+    private static extern bool ExposeUnpropagatedLocals(
+        Compiler compiler, bool propagatedAny, LocalEqualsLocalAddrAssertions assertions);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "fgUnpinNonMovableLocals")]
+    private static extern PhaseStatus UnpinNonMovableLocals(Compiler compiler);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "fgBigOffsetMorphingTemps")]
     private static extern ref InlineArrayTypCount<int> BigOffsetMorphingTemps(Compiler compiler);

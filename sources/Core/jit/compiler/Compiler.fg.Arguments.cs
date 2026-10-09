@@ -109,10 +109,7 @@ public partial class Compiler
         {
             // Pseudo arguments such as AsyncAwaiter may be decomposed for the
             // later stores into a continuation.
-            if (fgTryReplaceStructLocalWithFields(ref argument.NodeRef))
-            {
-                argument.Node.SetMorphed(this, doChilren: true);
-            }
+            fgTryReplaceStructLocalWithFields(ref argument.NodeRef);
 
             return true;
         }
@@ -294,14 +291,10 @@ public partial class Compiler
                 {
                     address = gtNewBinaryNode(GT_ADD, address.Type, gtCloneExpr(address), gtNewIconNode(TYP_I_IMPL, offset));
                 }
-                var load = gtNewIndir(type, address);
-                load.SetMorphed(this, doChilren: true);
-
-                return load;
+                return gtNewIndir(type, address);
             }
 
             var fieldList = new GenTreeFieldList();
-            fieldList.SetMorphed(this);
             foreach (var segment in argument.AbiInfo.Segments)
             {
                 if (segment.IsPassedInRegister)
@@ -448,13 +441,11 @@ public partial class Compiler
         {
             argumentNode = gtNewLclvNode(lvaTable[temporary].Type, temporary);
         }
-        argumentNode.SetMorphed(this);
 #if FEATURE_FIXED_OUT_ARGS
         argument.EarlyNode = copy;
         argument.LateNode = argumentNode;
 #else
         argumentNode = gtNewCommaNode(argumentNode.Type, copy, argumentNode);
-        argumentNode.SetMorphed(this);
         argument.EarlyNode = argumentNode;
 #endif
         if (!argument.AbiInfo.IsPassedByReference)
@@ -521,7 +512,6 @@ public partial struct CallArgs
                         else
                         {
                             setup = compiler.gtNewCommaNode(TYP_VOID, setup, effect);
-                            setup.SetMorphed(compiler);
                         }
                     }
 
@@ -534,11 +524,9 @@ public partial struct CallArgs
                     {
                         var temporary = compiler.lvaGrabTemp(shortLifetime: true, "argument with side effect");
                         var store = compiler.gtNewTempStore(temporary, use.Node);
-                        store.SetMorphed(compiler);
                         AppendEffect(store);
 
                         var setupUse = compiler.gtNewLclvNode(use.Node.Type.ActualType, temporary);
-                        setupUse.SetMorphed(compiler);
                         use.Node = setupUse;
                         fields.AddAllEffectsFlags(use.Node);
                     }
@@ -549,7 +537,6 @@ public partial struct CallArgs
                 {
                     var temporary = compiler.lvaGrabTemp(shortLifetime: true, "argument with side effect");
                     setup = compiler.gtNewTempStore(temporary, value);
-                    setup.SetMorphed(compiler, doChilren: true);
                     var localType = value.Type.ActualType;
                     if (setup.IsCopyBlkOp)
                     {
@@ -557,7 +544,6 @@ public partial struct CallArgs
                     }
 
                     late = compiler.gtNewLclvNode(localType, temporary);
-                    late.SetMorphed(compiler);
                 }
 #if DEBUG
                 if (compiler.verbose)

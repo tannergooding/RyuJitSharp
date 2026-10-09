@@ -435,6 +435,7 @@ public partial class Compiler
 
             ref var func = ref funCurrentFunc();
             var cbProlog = unwindGetCurrentOffset(in func);
+            assert(func.cfiCodes is not null && func.cfiCodes.Count == 0);
             // Maps to DW_CFA_AARCH64_negate_ra_state.
             createCfiCode(in func, cbProlog, CFI_NEGATE_RA_STATE, DWARF_REG_ILLEGAL);
 

@@ -10,11 +10,20 @@ namespace RyuJitSharp;
 public partial class Compiler
 {
     internal sealed unsafe partial class PhysicalPromotionReplaceVisitor(
-        Compiler compiler, PhysicalPromotionAggregateInfoMap aggregates, PhysicalPromotionLiveness liveness)
+        Compiler compiler, PhysicalPromotionAggregateInfoMap aggregates, PhysicalPromotionLiveness liveness,
+        FlowGraphDfsTree dfsTree)
     {
         private readonly Compiler _compiler = compiler;
         private readonly PhysicalPromotionAggregateInfoMap _aggregates = aggregates;
         private readonly PhysicalPromotionLiveness _liveness = liveness;
+        private readonly FlowGraphDfsTree _dfsTree = dfsTree;
+        private readonly BitVecTraits _postOrderTraits = dfsTree.PostOrderTraits();
+        private BitVecTraits? _readBackTraits;
+        private BitVec[] _pendingReadBacksByBlock = [];
+        private BitVec[] _currentStructFields = [];
+        private BitVec _processedBlocks = [];
+        private BitVec _requiresAlreadyReadBackOnEntry = [];
+        private BitVec _requiresReadBackOnExit = [];
         private int _pendingReadBacks;
         private BasicBlock? _currentBlock;
         private Statement? _currentStatement;
@@ -24,71 +33,131 @@ public partial class Compiler
             throw new InvalidOperationException("Physical promotion has not started a block.");
         private Statement CurrentStatement => _currentStatement ??
             throw new InvalidOperationException("Physical promotion has not started a statement.");
+        private BitVecTraits ReadBackTraits => _readBackTraits ??
+            throw new InvalidOperationException("Physical promotion has not prepared readbacks.");
 
         public Statement? StartBlock(BasicBlock block)
         {
             _currentBlock = block;
             assert(_pendingReadBacks == 0);
-            if (!ReferenceEquals(block, _compiler.fgFirstBB))
-            {
-                return block.FirstStmt;
-            }
-
-            Statement? lastInserted = null;
             foreach (var aggregate in _aggregates.Aggregates)
             {
-                ref var descriptor = ref _compiler.lvaGetDesc(aggregate.LclNum);
-                if (!descriptor.lvIsParam && !descriptor.lvIsOSRLocal)
-                {
-                    continue;
-                }
-
-                JITDUMP($"Processing fields of {(descriptor.lvIsParam ? "parameter" : "OSR-local")} " +
-                    $"V{aggregate.LclNum:D2} in entry BB {FMT_BB(block.bbNum)}\n");
+                ref readonly var descriptor = ref _compiler.lvaGetDesc(aggregate.LclNum);
                 for (var index = 0; index < aggregate.Replacements.Count; index++)
                 {
                     var replacement = aggregate.Replacements[index];
-                    ClearNeedsWriteBack(replacement);
+                    assert(!replacement.NeedsReadBack);
+                    assert(replacement.NeedsWriteBack);
                     if (!_liveness.IsReplacementLiveIn(block, aggregate.LclNum, index))
                     {
-                        JITDUMP($"  V{replacement.LclNum:D2} ({replacement.Description}) " +
-                            "ignored because it is not live-in to entry BB\n");
                         continue;
                     }
 
-                    if (!descriptor.lvIsParam ||
-                        !_compiler.PhysicalPromotionMapsToParameterRegister(
-                            aggregate.LclNum, replacement.Offset, replacement.AccessType, allowBitwiseExtraction: true))
+                    var pending = false;
+                    var structCurrent = false;
+                    if (block == _compiler.fgFirstBB)
                     {
+                        pending = descriptor.lvIsParam || descriptor.lvIsOSRLocal;
+                        structCurrent = pending;
+                    }
+                    else if (!BitVecOps.IsMember(_postOrderTraits, _requiresAlreadyReadBackOnEntry,
+                                 block.bbPostorderNum))
+                    {
+                        var hasPred = false;
+                        pending = true;
+                        structCurrent = true;
+                        foreach (var edge in block.PredEdges)
+                        {
+                            var predecessor = edge.SourceBlock;
+                            if (!_dfsTree.Contains(predecessor))
+                            {
+                                continue;
+                            }
+
+                            assert(BitVecOps.IsMember(_postOrderTraits, _processedBlocks,
+                                predecessor.bbPostorderNum));
+                            hasPred = true;
+                            pending &= BitVecOps.IsMember(ReadBackTraits,
+                                _pendingReadBacksByBlock[predecessor.bbPostorderNum], replacement.ReadBackIndex);
+                            structCurrent &= BitVecOps.IsMember(ReadBackTraits,
+                                _currentStructFields[predecessor.bbPostorderNum], replacement.ReadBackIndex);
+                        }
+
+                        pending &= hasPred;
+                        structCurrent &= hasPred;
+                    }
+
+                    if (structCurrent)
+                    {
+                        ClearNeedsWriteBack(replacement);
+                    }
+
+                    if (pending)
+                    {
+                        assert(structCurrent);
                         SetNeedsReadBack(replacement);
-                        JITDUMP($"  V{replacement.LclNum:D2} ({replacement.Description}) " +
-                            "marked as needing read back\n");
-                        continue;
-                    }
-
-                    var tree = _compiler.PhysicalPromotionCreateReadBack(aggregate.LclNum, replacement);
-                    var statement = _compiler.fgNewStmtFromTree(tree);
-                    JITDUMP($"  V{replacement.LclNum:D2} ({replacement.Description}) " +
-                        "is read back eagerly because it is a register parameter\n");
-                    DISPSTMT(statement);
-                    if (lastInserted is null)
-                    {
-                        _compiler.fgInsertStmtAtBeg(block, statement);
                     }
                     else
                     {
-                        _compiler.fgInsertStmtAfter(block, lastInserted, statement);
-                    }
+                        // Only pending predecessors have current struct fields. A join load could
+                        // overwrite a replacement updated on another path with a stale field.
+                        foreach (var edge in block.PredEdges)
+                        {
+                            var predecessor = edge.SourceBlock;
+                            if (!_dfsTree.Contains(predecessor))
+                            {
+                                continue;
+                            }
 
-                    lastInserted = statement;
+                            if (BitVecOps.IsMember(_postOrderTraits, _processedBlocks, predecessor.bbPostorderNum) &&
+                                BitVecOps.IsMember(ReadBackTraits,
+                                    _pendingReadBacksByBlock[predecessor.bbPostorderNum], replacement.ReadBackIndex))
+                            {
+                                InsertReadBackAtEnd(predecessor, aggregate.LclNum, replacement);
+                                BitVecOps.RemoveElemD(ReadBackTraits,
+                                    _pendingReadBacksByBlock[predecessor.bbPostorderNum], replacement.ReadBackIndex);
+                            }
+                        }
+                    }
                 }
             }
 
-            return lastInserted is null ? block.FirstStmt : lastInserted.NextStmt;
+            return block.FirstStmt;
+        }
+
+        private void InsertReadBackAtEnd(BasicBlock block, int structLclNum, PhysicalPromotionReplacement replacement)
+        {
+            JITDUMP($"Reading back V{structLclNum:D2}.[{replacement.Offset:D3}.." +
+                $"{replacement.Offset + replacement.AccessType.Size:D3}) -> V{replacement.LclNum:D2} " +
+                $"near the end of {FMT_BB(block.bbNum)}\n");
+            var tree = _compiler.PhysicalPromotionCreateReadBack(structLclNum, replacement);
+            var statement = _compiler.fgNewStmtFromTree(tree);
+            _compiler.fgInsertStmtNearEnd(block, statement);
+        }
+
+        private bool MustMaterializeReadBacks(BasicBlock block)
+        {
+            if (block.HasPotentialEHSuccs(_compiler) ||
+                (block.Kind is BBJ_CALLFINALLY or BBJ_EHFINALLYRET or BBJ_EHFILTERRET or BBJ_EHCATCHRET))
+            {
+                return true;
+            }
+
+            return block.VisitRegularSuccs(_compiler, successor =>
+                BitVecOps.IsMember(_postOrderTraits, _requiresAlreadyReadBackOnEntry, successor.bbPostorderNum)
+                    ? BasicBlockVisit.Abort : BasicBlockVisit.Continue) == BasicBlockVisit.Abort;
         }
 
         public void EndBlock()
         {
+            var materialize = BitVecOps.IsMember(_postOrderTraits, _requiresReadBackOnExit,
+                CurrentBlock.bbPostorderNum);
+            var pendingReadBacks = _pendingReadBacksByBlock[CurrentBlock.bbPostorderNum] =
+                BitVecOps.MakeEmpty(ReadBackTraits);
+            var currentStructFields = _currentStructFields[CurrentBlock.bbPostorderNum] =
+                BitVecOps.MakeEmpty(ReadBackTraits);
+            BitVecOps.AddElemD(_postOrderTraits, _processedBlocks, CurrentBlock.bbPostorderNum);
+
             foreach (var aggregate in _aggregates.Aggregates)
             {
                 for (var index = 0; index < aggregate.Replacements.Count; index++)
@@ -99,13 +168,14 @@ public partial class Compiler
                     {
                         if (_liveness.IsReplacementLiveOut(CurrentBlock, aggregate.LclNum, index))
                         {
-                            JITDUMP($"Reading back replacement V{aggregate.LclNum:D2}." +
-                                $"[{replacement.Offset:D3}..{replacement.Offset + replacement.AccessType.Size:D3}) " +
-                                $"-> V{replacement.LclNum:D2} near the end of {FMT_BB(CurrentBlock.bbNum)}:\n");
-                            var tree = _compiler.PhysicalPromotionCreateReadBack(aggregate.LclNum, replacement);
-                            var statement = _compiler.fgNewStmtFromTree(tree);
-                            DISPSTMT(statement);
-                            _compiler.fgInsertStmtNearEnd(CurrentBlock, statement);
+                            if (materialize || (replacement.ReadBackPlacement == CurrentBlock))
+                            {
+                                InsertReadBackAtEnd(CurrentBlock, aggregate.LclNum, replacement);
+                            }
+                            else
+                            {
+                                BitVecOps.AddElemD(ReadBackTraits, pendingReadBacks, replacement.ReadBackIndex);
+                            }
                         }
                         else
                         {
@@ -115,6 +185,12 @@ public partial class Compiler
                         }
 
                         ClearNeedsReadBack(replacement);
+                    }
+
+                    if (!replacement.NeedsWriteBack)
+                    {
+                        // Reading back leaves the original current until a replacement store invalidates it.
+                        BitVecOps.AddElemD(ReadBackTraits, currentStructFields, replacement.ReadBackIndex);
                     }
 
                     SetNeedsWriteBack(replacement);
@@ -170,26 +246,28 @@ public partial class Compiler
                 return;
             }
 
-            foreach (var local in CurrentStatement.LocalsTreeList)
-            {
-                if (local.Type is TYP_STRUCT)
+            _ = CurrentStatement.VisitLogicalLocalOccurrencesViaLocalsTreeList(occurrence => {
+                if ((occurrence.Node.Oper is not GT_LCL_ADDR) && (occurrence.GetAccessType(_compiler) is TYP_STRUCT))
                 {
-                    continue;
+                    return GenTree.VisitResult.Continue;
                 }
 
-                var aggregate = _aggregates.Lookup(local.LclNum);
+                var aggregate = _aggregates.Lookup(occurrence.LclNum);
                 if (aggregate is null)
                 {
-                    continue;
+                    return GenTree.VisitResult.Continue;
                 }
 
-                var index = LowerBound(aggregate.Replacements, local.LclOffs, static replacement => replacement.Offset);
+                var index = LowerBound(aggregate.Replacements, occurrence.LclOffs,
+                    static replacement => replacement.Offset);
                 if ((index < aggregate.Replacements.Count) &&
-                    (aggregate.Replacements[index].Offset == local.LclOffs))
+                    (aggregate.Replacements[index].Offset == occurrence.LclOffs))
                 {
                     InsertPreStatementReadBackIfNecessary(aggregate.LclNum, aggregate.Replacements[index]);
                 }
-            }
+
+                return GenTree.VisitResult.Continue;
+            });
         }
 
         private void InsertPreStatementReadBackIfNecessary(int local, PhysicalPromotionReplacement replacement)

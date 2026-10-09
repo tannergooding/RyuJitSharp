@@ -6,8 +6,10 @@ using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.Emitter.insFormat;
+using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
+using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp.UnitTests;
@@ -38,6 +40,45 @@ internal static unsafe class X86EmitterStaticOutputTests
 
             Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
                 Is.EqualTo(Convert.FromHexString(hex)));
+        });
+    }
+
+    [TestCase(GCT_GCREF)]
+    [TestCase(GCT_BYREF)]
+    public static void StaticOffsetMoveKillsTheAccumulatorGcRoot(GCInfo.GCtype type)
+    {
+        WithEmitter((compiler, emitter) =>
+        {
+            var codeGen = compiler.codeGen ?? throw new AssertionException("Missing code generator.");
+            codeGen.IsFullPtrRegMapRequired = true;
+            emitter.emitFullGCinfo = true;
+            var id = NewInstructionDisplacement(emitter, EA_1BYTE, 0x12345678);
+            id.idIns(INS_mov);
+            id.idInsFmt(IF_RWR_MRD_OFF);
+            id.idReg1(REG_EAX);
+            id.idAddr().iiaFieldHnd = FLD_GLOBAL_DS;
+            SyncThisReg(emitter) = REG_NA;
+            ReferenceRegs(emitter) = SRBM_ECX | (type == GCT_GCREF ? SRBM_EAX : SRBM_NONE);
+            ByrefRegs(emitter) = type == GCT_BYREF ? SRBM_EAX : SRBM_NONE;
+            var buffer = stackalloc byte[32];
+            emitter.emitCodeBlock = buffer;
+            emitter.emitTotalHotCodeSize = 32;
+#if DEBUG
+            emitter.emitIssuing = true;
+#endif
+            var end = emitter.emitOutputCV(buffer, id, (ulong)insCode(INS_mov) | 0x30, null);
+
+            Assert.That(new ReadOnlySpan<byte>(buffer, (int)(end - buffer)).ToArray(),
+                Is.EqualTo(Convert.FromHexString("B878563412")));
+            Assert.That(ReferenceRegs(emitter), Is.EqualTo(SRBM_ECX));
+            Assert.That(ByrefRegs(emitter), Is.EqualTo(SRBM_NONE));
+            var death = RegPtrList(ref codeGen.GCInfo)
+                ?? throw new AssertionException("Missing overwritten accumulator's GC death.");
+            Assert.That(death.rpdGCtype, Is.EqualTo(type));
+            Assert.That(death.rpdOffs, Is.EqualTo((uint)(end - buffer)));
+            Assert.That(death.rpdCompiler.rpdAdd, Is.EqualTo(SRBM_NONE));
+            Assert.That(death.rpdCompiler.rpdDel, Is.EqualTo(SRBM_EAX));
+            Assert.That(death.rpdNext, Is.Null);
         });
     }
 
@@ -74,5 +115,17 @@ internal static unsafe class X86EmitterStaticOutputTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitNewInstrDsp")]
     private static extern Emitter.instrDesc NewInstructionDisplacement(Emitter emitter, emitAttr attr, nint displacement);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisGCrefRegs")]
+    private static extern ref regMask ReferenceRegs(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisByrefRegs")]
+    private static extern ref regMask ByrefRegs(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitSyncThisObjReg")]
+    private static extern ref regNumber SyncThisReg(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "gcRegPtrList")]
+    private static extern ref GCInfo.regPtrDsc? RegPtrList(ref GCInfo info);
 }
 #endif

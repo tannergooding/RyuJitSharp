@@ -20,7 +20,6 @@ public static partial class Globals
     public const GenTreeFlags GTF_ICON_TOKEN_HDL = (GenTreeFlags)((int)(HandleKindIndex.GTF_ICON_TOKEN_HDL + 1) << HANDLE_KIND_INDEX_SHIFT);
     public const GenTreeFlags GTF_ICON_TLS_HDL = (GenTreeFlags)((int)(HandleKindIndex.GTF_ICON_TLS_HDL + 1) << HANDLE_KIND_INDEX_SHIFT);
     public const GenTreeFlags GTF_ICON_FTN_ADDR = (GenTreeFlags)((int)(HandleKindIndex.GTF_ICON_FTN_ADDR + 1) << HANDLE_KIND_INDEX_SHIFT);
-    public const GenTreeFlags GTF_ICON_CIDMID_HDL = (GenTreeFlags)((int)(HandleKindIndex.GTF_ICON_CIDMID_HDL + 1) << HANDLE_KIND_INDEX_SHIFT);
     public const GenTreeFlags GTF_ICON_BBC_PTR = (GenTreeFlags)((int)(HandleKindIndex.GTF_ICON_BBC_PTR + 1) << HANDLE_KIND_INDEX_SHIFT);
     public const GenTreeFlags GTF_ICON_STATIC_BOX_PTR = (GenTreeFlags)((int)(HandleKindIndex.GTF_ICON_STATIC_BOX_PTR + 1) << HANDLE_KIND_INDEX_SHIFT);
     public const GenTreeFlags GTF_ICON_FIELD_SEQ = (GenTreeFlags)((int)(HandleKindIndex.GTF_ICON_FIELD_SEQ + 1) << HANDLE_KIND_INDEX_SHIFT);

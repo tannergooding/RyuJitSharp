@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.CorInfoHelpFunc;
-using static RyuJitSharp.GenTreeCallFlags;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
@@ -214,7 +213,6 @@ internal static unsafe class StackArrayExpansionTests
             var address = compiler.gtNewLclAddrNode(TYP_BYREF, local, 0);
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(address)
                 .WithWellKnownArg(WellKnownArg.StackArrayLocal));
-            call._callMoreFlags |= GTF_CALL_M_STACK_ARRAY;
         }
         return call;
     }

@@ -50,7 +50,6 @@ public sealed partial class ObjectAllocator
         var stackAddress = compiler.gtNewLclAddrNode(TYP_I_IMPL, local, 0);
         _ = newArr.Args.PushBack(NewCallArg.CreateForPrimitive(stackAddress)
             .WithWellKnownArg(WellKnownArg.StackArrayLocal));
-        newArr._callMoreFlags |= GTF_CALL_M_STACK_ARRAY;
         newArr.ChangeType(TYP_I_IMPL);
         newArr._returnType = TYP_I_IMPL;
         compiler.MethodHasStackAllocatedArray = true;

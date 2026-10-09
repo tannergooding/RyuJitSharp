@@ -124,7 +124,7 @@ public sealed class ClassLayout
 #if TARGET_64BIT || TARGET_WASM
                 8 => TYP_LONG,
 #endif
-#if FEATURE_SIMD && !TARGET_WASM
+#if FEATURE_SIMD
                 // TODO: check TYP_SIMD12 profitability, it will need additional support in `BuildStoreLoc`.
                 16 => TYP_SIMD16,
 #endif

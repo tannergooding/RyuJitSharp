@@ -3,8 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
-
 namespace RyuJitSharp;
 
 public static partial class FloatingPointUtils
@@ -23,44 +21,6 @@ public static partial class FloatingPointUtils
         }
 
         return isNegative(val2) ? val1 : val2;
-    }
-
-    // Magnitude comparisons select an original operand, preserving its sign and NaN payload.
-    public static double maximumMagnitude(double x, double y)
-    {
-        var ax = Math.Abs(x);
-        var ay = Math.Abs(y);
-
-        if ((ax > ay) || isNaN(ax))
-        {
-            return x;
-        }
-
-        if (ax == ay)
-        {
-            return isNegative(x) ? y : x;
-        }
-
-        return y;
-    }
-
-    // Number variants prefer the numeric operand when exactly one operand is NaN.
-    public static double maximumMagnitudeNumber(double x, double y)
-    {
-        var ax = Math.Abs(x);
-        var ay = Math.Abs(y);
-
-        if ((ax > ay) || isNaN(ay))
-        {
-            return x;
-        }
-
-        if (ax == ay)
-        {
-            return isNegative(x) ? y : x;
-        }
-
-        return y;
     }
 
     public static double maximumNumber(double x, double y)
@@ -91,42 +51,6 @@ public static partial class FloatingPointUtils
         }
 
         return isNegative(val2) ? val1 : val2;
-    }
-
-    public static float maximumMagnitude(float x, float y)
-    {
-        var ax = MathF.Abs(x);
-        var ay = MathF.Abs(y);
-
-        if ((ax > ay) || isNaN(ax))
-        {
-            return x;
-        }
-
-        if (ax == ay)
-        {
-            return isNegative(x) ? y : x;
-        }
-
-        return y;
-    }
-
-    public static float maximumMagnitudeNumber(float x, float y)
-    {
-        var ax = MathF.Abs(x);
-        var ay = MathF.Abs(y);
-
-        if ((ax > ay) || isNaN(ay))
-        {
-            return x;
-        }
-
-        if (ax == ay)
-        {
-            return isNegative(x) ? y : x;
-        }
-
-        return y;
     }
 
     public static float maximumNumber(float x, float y)
@@ -160,42 +84,6 @@ public static partial class FloatingPointUtils
         return isNegative(val1) ? val1 : val2;
     }
 
-    public static double minimumMagnitude(double x, double y)
-    {
-        var ax = Math.Abs(x);
-        var ay = Math.Abs(y);
-
-        if ((ax < ay) || isNaN(ax))
-        {
-            return x;
-        }
-
-        if (ax == ay)
-        {
-            return isNegative(x) ? x : y;
-        }
-
-        return y;
-    }
-
-    public static double minimumMagnitudeNumber(double x, double y)
-    {
-        var ax = Math.Abs(x);
-        var ay = Math.Abs(y);
-
-        if ((ax < ay) || isNaN(ay))
-        {
-            return x;
-        }
-
-        if (ax == ay)
-        {
-            return isNegative(x) ? x : y;
-        }
-
-        return y;
-    }
-
     public static double minimumNumber(double x, double y)
     {
         if (x != y)
@@ -224,42 +112,6 @@ public static partial class FloatingPointUtils
         }
 
         return isNegative(val1) ? val1 : val2;
-    }
-
-    public static float minimumMagnitude(float x, float y)
-    {
-        var ax = MathF.Abs(x);
-        var ay = MathF.Abs(y);
-
-        if ((ax < ay) || isNaN(ax))
-        {
-            return x;
-        }
-
-        if (ax == ay)
-        {
-            return isNegative(x) ? x : y;
-        }
-
-        return y;
-    }
-
-    public static float minimumMagnitudeNumber(float x, float y)
-    {
-        var ax = MathF.Abs(x);
-        var ay = MathF.Abs(y);
-
-        if ((ax < ay) || isNaN(ay))
-        {
-            return x;
-        }
-
-        if (ax == ay)
-        {
-            return isNegative(x) ? x : y;
-        }
-
-        return y;
     }
 
     public static float minimumNumber(float x, float y)

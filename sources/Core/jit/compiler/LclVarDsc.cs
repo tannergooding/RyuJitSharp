@@ -1425,13 +1425,13 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-            assert(Debugger.IsAttached || lvValueSize.IsExact);
+            assert(Debugger.IsAttached || lvValueSize.IsExact || lvIsOSRLocal);
             return lvStkOffs;
         }
 
         set
         {
-            assert(lvValueSize.IsExact);
+            assert(lvValueSize.IsExact || lvIsOSRLocal);
             lvStkOffs = value;
         }
     }

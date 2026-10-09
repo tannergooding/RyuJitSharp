@@ -419,7 +419,6 @@ public partial class Compiler
                 // re-index lvaTable because allocating this temp can grow it.
                 addressSpillTemp = _compiler.lvaGrabTemp(shortLifetime: true, "BlockOp address local");
                 addressSpillStore = _compiler.gtNewTempStore(addressSpillTemp, addressSpill);
-                addressSpillStore.SetMorphed(_compiler);
             }
 
             GenTree PostOrderAssertionProp(GenTree tree)
@@ -458,7 +457,6 @@ public partial class Compiler
                 {
                     assert(addressSpillTemp != BAD_VAR_NUM);
                     clone = _compiler.gtNewLclvNode(addressSpill.Type, addressSpillTemp);
-                    clone.SetMorphed(_compiler);
                 }
                 else
                 {
@@ -481,12 +479,10 @@ public partial class Compiler
                 if ((fullOffset != 0) || (addressBaseFields is not null))
                 {
                     var offsetNode = _compiler.gtNewIconNode(TYP_I_IMPL, (nint)fullOffset);
-                    offsetNode.SetMorphed(_compiler);
                     offsetNode.FieldSeq = addressBaseFields;
                     clone = _compiler.gtNewBinaryNode(GT_ADD, varTypeIsGC(clone.Type) ? TYP_BYREF : TYP_I_IMPL, clone, offsetNode);
                     // Do not propagate a large constant address into every field.
                     clone.Flags |= GTF_DONT_CSE;
-                    clone.SetMorphed(_compiler);
                 }
                 return clone;
             }
@@ -572,7 +568,6 @@ public partial class Compiler
                 }
                 assert(sourceField is not null);
                 sourceField = PostOrderAssertionProp(sourceField);
-                sourceField.SetMorphed(_compiler);
 
                 GenTree destinationStore;
                 if (_dstDoFldStore)
@@ -622,7 +617,6 @@ public partial class Compiler
                     assert(sourceField.Oper.IsIntegralConst);
                 }
                 destinationStore = PostOrderAssertionProp(destinationStore);
-                destinationStore.SetMorphed(_compiler);
                 if (_compiler.optLocalAssertionProp)
                 {
                     _compiler.fgAssertionGen(destinationStore);
@@ -631,12 +625,10 @@ public partial class Compiler
                 {
                     result = _compiler.gtNewCommaNode(TYP_VOID, addressSpillStore, destinationStore);
                     addressSpillStore = null;
-                    result.SetMorphed(_compiler);
                 }
                 else if (result is not null)
                 {
                     result = _compiler.gtNewCommaNode(TYP_VOID, result, destinationStore);
-                    result.SetMorphed(_compiler);
                 }
                 else
                 {

@@ -130,22 +130,44 @@ internal static unsafe class ValueNumCallTests
     }
 #endif
 
-    [Test]
-    public static void StackArrayUsesLocalAllocationFunction()
+    [TestCase(false, false)]
+    [TestCase(true, false)]
+#if FEATURE_READYTORUN
+    [TestCase(false, true)]
+    [TestCase(true, true)]
+#endif
+    public static void StackArrayArgumentSelectsLocalAllocationFunction(bool stackArgument, bool readyToRun)
     {
         WithStore((compiler, store) =>
         {
-            var call = Helper(CORINFO_HELP_NEWARR_1_DIRECT, TYP_REF);
-            call._callMoreFlags |= GTF_CALL_M_STACK_ARRAY;
-            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(
-                Argument(compiler, store, TYP_I_IMPL, store.VNForHandle(123, GTF_ICON_CLASS_HDL))));
+            var call = Helper(readyToRun ? CORINFO_HELP_READYTORUN_NEWARR_1 : CORINFO_HELP_NEWARR_1_DIRECT, TYP_REF);
+            if (readyToRun)
+            {
+                call._entryPoint.addr = (void*)0x321;
+            }
+            if (!readyToRun)
+            {
+                _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(
+                    Argument(compiler, store, TYP_I_IMPL, store.VNForHandle(123, GTF_ICON_CLASS_HDL))));
+            }
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(
                 Argument(compiler, store, TYP_INT, store.VNForIntCon(5))));
+            if (stackArgument)
+            {
+                _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(
+                    Argument(compiler, store, TYP_BYREF, store.VNForExpr(null, TYP_BYREF)))
+                    .WithWellKnownArg(WellKnownArg.StackArrayLocal));
+            }
             _ = compiler.fgValueNumberHelperCall(call);
             var normal = store.VNNormalValue(call._vnPair.Liberal);
             var app = new VNFuncApp();
             Assert.That(store.GetVNFunc(normal, ref app), Is.True);
-            Assert.That(app.Func, Is.EqualTo(VNF_JitNewLclArr));
+            var expected = stackArgument ? VNF_JitNewLclArr : VNF_JitNewArr;
+            if (readyToRun)
+            {
+                expected = stackArgument ? VNF_JitReadyToRunNewLclArr : VNF_JitReadyToRunNewArr;
+            }
+            Assert.That(app.Func, Is.EqualTo(expected));
         });
     }
 

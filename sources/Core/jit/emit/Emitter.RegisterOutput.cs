@@ -510,7 +510,8 @@ public partial class Emitter
             dst += emitOutputByte(dst, 0xC0 | regCode);
         }
 
-        if (id.idGCref() != GCT_NONE)
+        // xchg swaps GC classifications regardless of the instruction's attribute.
+        if (id.idGCref() != GCT_NONE || id.idInsFmt() == IF_RRW_RRW)
         {
             emitHandleGCrefRegs(dst, id);
         }

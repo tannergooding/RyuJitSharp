@@ -21,9 +21,12 @@ public partial class Compiler
         liveness.Run();
 
         JITDUMP("Making replacements\n\n");
-        var replacer = new PhysicalPromotionReplaceVisitor(this, aggregates, liveness);
-        foreach (var block in Blocks)
+        var dfsTree = _dfsTree ??= fgComputeDfs();
+        var replacer = new PhysicalPromotionReplaceVisitor(this, aggregates, liveness, dfsTree);
+        replacer.PrepareReadBacks();
+        for (var index = dfsTree.PostOrderCount; index > 0; index--)
         {
+            var block = dfsTree.GetPostOrder(index - 1);
             var first = replacer.StartBlock(block);
 #if DEBUG
             JITDUMP("\nReplacing in ");

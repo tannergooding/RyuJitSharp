@@ -2566,20 +2566,11 @@ public partial class Compiler
     public ClassLayout typGetBlkLayout(int blockSize)
         => typGetBlkLayout(checked((uint)blockSize));
 
-    public int typGetBlkLayoutNum(int blockSize)
-        => typGetBlkLayoutNum(checked((uint)blockSize));
-
     public ClassLayout typGetBlkLayout(uint blockSize)
         => typGetCustomLayout(new ClassLayoutBuilder(this, blockSize));
 
-    public int typGetBlkLayoutNum(uint blockSize)
-        => typGetCustomLayoutNum(new ClassLayoutBuilder(this, blockSize));
-
     public ClassLayout typGetCustomLayout(ClassLayoutBuilder builder)
         => typClassLayoutTable.GetCustomLayout(this, builder);
-
-    public int typGetCustomLayoutNum(ClassLayoutBuilder builder)
-        => typClassLayoutTable.GetCustomLayoutNum(this, builder);
 
     public ClassLayout typGetLayoutByNum(int layoutNum)
         => typClassLayoutTable.GetLayoutByNum(layoutNum);
@@ -2592,9 +2583,6 @@ public partial class Compiler
     /// <returns></returns>
     public unsafe ClassLayout typGetObjLayout(CORINFO_CLASS_HANDLE classHandle)
         => typClassLayoutTable.GetObjLayout(this, classHandle);
-
-    public unsafe int typGetObjLayoutNum(CORINFO_CLASS_HANDLE classHandle)
-        => typClassLayoutTable.GetObjLayoutNum(this, classHandle);
 
     public PhaseStatus rangeCheckPhase()
     {

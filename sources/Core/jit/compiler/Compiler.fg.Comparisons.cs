@@ -178,7 +178,7 @@ public partial class Compiler
         if (result is not null)
         {
             fgUpdateConstTreeValueNumber(result);
-            result.SetMorphed(this);
+
             return result;
         }
 
@@ -236,9 +236,7 @@ public partial class Compiler
                 {
                     operation = operation is GT_GT ? GT_NE : GT_EQ;
                     var count = gtNewIconNode(TYP_INT, 32);
-                    count.SetMorphed(this);
                     var shift = gtNewBinaryNode(GT_RSZ, TYP_LONG, left, count);
-                    shift.SetMorphed(this);
                     comparison.Op1 = shift;
                 }
             }
@@ -513,9 +511,7 @@ public partial class Compiler
             }
             else
             {
-                var cast = gtNewCastNode(TYP_INT, and.Op1, false, TYP_INT);
-                cast.SetMorphed(this);
-                and.Op1 = cast;
+                and.Op1 = gtNewCastNode(TYP_INT, and.Op1, false, TYP_INT);
             }
 
             var maskValue = unchecked((int)mask.IntegralValue);

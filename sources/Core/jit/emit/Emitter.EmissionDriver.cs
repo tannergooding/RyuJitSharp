@@ -307,7 +307,7 @@ public partial class Emitter
                     {
                         continue;
                     }
-                    if (compiler.lvaIsUnknownSizeLocal(num))
+                    if (compiler.lvaLocalIsOnUnknownSizeFrame(num))
                     {
                         continue;
                     }

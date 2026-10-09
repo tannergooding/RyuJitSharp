@@ -79,6 +79,11 @@ public partial class Compiler
         }
 
         assert(vnStore is not null);
+        if (!varTypeIsI(vnStore.TypeOfVN(vn)))
+        {
+            return false;
+        }
+
         if (vnStore.IsKnownNonNull(vn))
         {
             return true;

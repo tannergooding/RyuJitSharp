@@ -13,8 +13,11 @@ using System.Runtime.InteropServices;
 #endif
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
+using static RyuJitSharp.GenTreeCallFlags;
+using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.gtCallTypes;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
@@ -430,6 +433,67 @@ internal static unsafe class ArmCalleeSavedRegisterTests
 #endif
 
 #if DEBUG
+    [TestCase(TYP_REF, REG_R4, true, true, 1, true)]
+    [TestCase(TYP_BYREF, REG_R5, true, true, 1, true)]
+    [TestCase(TYP_REF, REG_R4, true, false, 0, false)]
+    [TestCase(TYP_REF, REG_R0, true, true, 1, false)]
+    [TestCase(TYP_REF, REG_R4, false, true, 0, false)]
+    public static void PInvokeRequiresCalleeSavedGcRootsToBeSpilled(
+        var_types type, regNumber reg, bool unmanaged, bool hasRoot, int expectedAssertions,
+        bool expectedCalleeSavedAssertion)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
+            compiler.info.compMatchedVM = false;
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = true;
+#endif
+            var block = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            compiler.fgFirstBB = block;
+            compiler.fgLastBB = block;
+            compiler.compCurBB = block;
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = false;
+#endif
+
+            var call = new GenTreeCall(TYP_VOID)
+            {
+                _callType = CT_USER_FUNC,
+                _callMethHnd = (CORINFO_METHOD_STRUCT_*)0x4000,
+                _directCallAddress = (void*)0x1234,
+                _returnType = TYP_VOID,
+            };
+            if (unmanaged)
+            {
+                call.Flags |= GTF_CALL_UNMANAGED;
+                call._callMoreFlags |= GTF_CALL_M_PINVOKE;
+            }
+
+            codeGen.InternalRegisters.Add(call, new regMaskTP(SRBM_R12));
+            if (hasRoot)
+            {
+                codeGen.GCInfo.gcMarkRegPtrVal(reg, type);
+            }
+
+            if (expectedAssertions != 0)
+            {
+                AssertFailure(() => codeGen.genCall(call), message: null);
+            }
+            else
+            {
+                codeGen.genCall(call);
+            }
+
+            Assert.That(s_assertions, Has.Count.EqualTo(expectedAssertions));
+            if (expectedAssertions != 0)
+            {
+                Assert.That(s_assertions[0].Contains("SRBM_INT_CALLEE_SAVED", StringComparison.Ordinal),
+                    Is.EqualTo(expectedCalleeSavedAssertion));
+            }
+        }, captureAssertions: true);
+    }
+
     [TestCase(true)]
     [TestCase(false)]
     public static void FloatMaskGapsKeepTheNativeContiguityAssertion(bool push)

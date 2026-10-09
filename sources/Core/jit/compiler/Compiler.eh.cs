@@ -787,7 +787,6 @@ public partial class Compiler
     {
         assert(block.isEmpty());
 
-        // Native normalization of multiple regions ending at one block is currently disabled.
         return true;
     }
 

@@ -295,9 +295,7 @@ public partial class Compiler
         if (!info.compIsStatic && (lvaArg0Var != info.compThisArg))
         {
             var thisArgument = gtNewLclVarNode(TYP_UNDEF, info.compThisArg);
-            thisArgument.SetMorphed(this);
             var store = gtNewStoreLclVarNode(lvaArg0Var, thisArgument);
-            store.SetMorphed(this);
             fgInsertStmtBefore(block, parameterInsertionPoint, gtNewStmt(store, callDebugInfo));
         }
 
@@ -347,9 +345,7 @@ public partial class Compiler
                 if ((info.compInitMem && (isUserLocal || structWithGcFields)) || variable.lvSuppressedZeroInit)
                 {
                     var zero = localType is TYP_STRUCT ? gtNewIconNode(TYP_INT, 0) : gtNewZeroConNode(localType);
-                    zero.SetMorphed(this);
                     GenTree initialization = gtNewStoreLclVarNode(localNumber, zero);
-                    initialization.SetMorphed(this);
                     initialization.Type = localType; // Preserve the native TODO-ASG zero-diff quirk.
                     if (localType is TYP_STRUCT)
                     {
@@ -414,17 +410,12 @@ public partial class Compiler
                 var temp = lvaGrabTemp(true, "arg temp");
                 lvaTable[temp].Type = argument.Type;
                 var store = gtNewStoreLclVarNode(temp, argument);
-                store.SetMorphed(this);
                 fgInsertStmtBefore(block, tempInsertionPoint, gtNewStmt(store, debugInfo));
                 argumentInTemp = gtNewLclvNode(argument.Type, temp);
-                argumentInTemp.SetMorphed(this);
             }
 
-            // The already-morphed entry block is now an opaque join, so no
-            // assertion propagation is needed for these stores.
             assert(lvaGetDesc(parameterNumber).lvIsParam);
             var parameterStore = gtNewStoreLclVarNode(parameterNumber, argumentInTemp);
-            parameterStore.SetMorphed(this);
             assignment = gtNewStmt(parameterStore, debugInfo);
             fgInsertStmtBefore(block, parameterInsertionPoint, assignment);
         }

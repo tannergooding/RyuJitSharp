@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
@@ -798,6 +799,11 @@ public partial class Compiler
             jitprintf(" tier0-frame");
         }
 
+        if (lvaLocalIsOnUnknownSizeFrame(lclNum))
+        {
+            jitprintf(" unknown-size-frame");
+        }
+
         if (varDsc.lvIsHoist)
         {
             jitprintf(" hoist");
@@ -905,7 +911,7 @@ public partial class Compiler
         var message = "";
 
 #if TARGET_ARM64
-        if (lvaIsUnknownSizeLocal(lclNum))
+        if (lvaLocalIsOnUnknownSizeFrame(lclNum))
         {
             ref var varDsc = ref lvaGetDesc(lclNum);
             var offset = unkSizeFrame.GetAddressingOffset(in varDsc);
@@ -972,7 +978,7 @@ public partial class Compiler
 
         if (varNum >= 0)
         {
-            assert(!lvaIsUnknownSizeLocal(varNum));
+            assert(!lvaLocalIsOnUnknownSizeFrame(varNum));
             ref var varDsc = ref lvaGetDesc(varNum);
 
 #if TARGET_ARM && PROFILING_SUPPORTED
@@ -1215,6 +1221,21 @@ public partial class Compiler
 #else
     public bool lvaIsUnknownSizeLocal(int varNum) => false;
 #endif
+
+    /// <summary>
+    /// Returns whether the local resides on the UnknownSizeFrame instead of the traditional stack frame.
+    /// OSR locals and fields of dependently promoted structs keep traditional stack homes.
+    /// </summary>
+    public bool lvaLocalIsOnUnknownSizeFrame(int varNum)
+    {
+        if (!lvaIsUnknownSizeLocal(varNum) || lvaIsOSRLocal(varNum))
+        {
+            return false;
+        }
+
+        ref var varDsc = ref lvaGetDesc(varNum);
+        return !lvaIsFieldOfDependentlyPromotedStruct(in varDsc);
+    }
 
 #if DEBUG
     public void lvaTableDump(FrameLayoutState curState = NO_FRAME_LAYOUT)
@@ -2486,6 +2507,22 @@ public partial class Compiler
 
             return varType.StSz * sizeof(int);
         }
+
+#if TARGET_ARM64
+        if (lvaIsUnknownSizeLocal(varNum))
+        {
+            assert(lvaIsOSRLocal(varNum));
+            var vectorLength = getRuntimeVectorTByteLength();
+            var size = varType switch
+            {
+                TYP_SIMD => unchecked((int)vectorLength),
+                TYP_MASK => unchecked((int)(vectorLength / 8)),
+                _ => throw new UnreachableException(),
+            };
+            assert(size != 0);
+            return size;
+        }
+#endif
 
         if (varDsc.lvIsParam && !varDsc.lvIsStructField)
         {

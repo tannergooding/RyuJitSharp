@@ -78,9 +78,8 @@ internal static class FloatingPointRoundingTests
     }
 
     [Test]
-    public static void InfinityHelpersReturnPositiveInfinityEncoding()
+    public static void DoubleInfinityHelperReturnsPositiveInfinityEncoding()
     {
-        Assert.That(SingleToUInt32Bits(FloatingPointUtils.infinite_float()), Is.EqualTo(0x7F800000U));
         Assert.That(DoubleToUInt64Bits(FloatingPointUtils.infinite_double()), Is.EqualTo(0x7FF0000000000000UL));
     }
 

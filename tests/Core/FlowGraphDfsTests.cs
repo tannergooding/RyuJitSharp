@@ -507,6 +507,119 @@ internal static unsafe class FlowGraphDfsTests
         }
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void UnreachableRemovalInvalidatesAnnotationsOnlyWhenDfsIsRecomputed(bool callFinallyPair)
+    {
+        var compiler = CreateCompiler();
+#if DEBUG
+        using var jitTls = new JitTls(null);
+        compiler.fgSafeFlowEdgeCreation = true;
+#endif
+        var previous = JitTls.Compiler;
+        JitTls.Compiler = compiler;
+
+        try
+        {
+            var entry = BasicBlock.New(compiler, callFinallyPair ? BBJ_THROW : BBJ_RETURN);
+            var dead = BasicBlock.New(compiler, callFinallyPair ? BBJ_CALLFINALLY : BBJ_THROW);
+            entry.Next = dead;
+            entry.bbRefs = 1;
+            dead.bbRefs = 0;
+            compiler.fgFirstBB = entry;
+            compiler.fgLastBB = dead;
+            BasicBlock? tail = null;
+            BasicBlock? continuation = null;
+            BasicBlock? handler = null;
+
+            if (callFinallyPair)
+            {
+                tail = BasicBlock.New(compiler, BBJ_CALLFINALLYRET);
+                continuation = BasicBlock.New(compiler, BBJ_RETURN);
+                handler = BasicBlock.New(compiler, BBJ_EHFINALLYRET);
+                tail.bbRefs = 0;
+                continuation.bbRefs = 0;
+                handler.bbRefs = 0;
+                dead.Next = tail;
+                tail.Next = continuation;
+                continuation.Next = handler;
+                compiler.fgLastBB = handler;
+                dead.SetKindAndTargetEdge(BBJ_CALLFINALLY,
+                    compiler.fgAddRefPred(handler, dead, initializingPreds: true));
+                tail.SetKindAndTargetEdge(BBJ_CALLFINALLYRET,
+                    compiler.fgAddRefPred(continuation, tail, initializingPreds: true));
+                var finallyReturnEdge = compiler.fgAddRefPred(tail, handler, initializingPreds: true);
+                finallyReturnEdge.Likelihood = 1.0;
+                handler.SetEhf(new BBJumpTable([finallyReturnEdge]));
+                entry.TryIndex = 0;
+                handler.HndIndex = 0;
+                handler.CatchType = bbCatchType.BBCT_FINALLY;
+                handler.bbRefs++;
+                entry.SetFlags(BasicBlockFlags.BBF_DONT_REMOVE);
+                tail.SetFlags(BasicBlockFlags.BBF_DONT_REMOVE);
+                handler.SetFlags(BasicBlockFlags.BBF_DONT_REMOVE);
+                compiler.compHndBBtab = [
+                    new EHblkDsc {
+                        ebdTryBeg = entry,
+                        ebdTryLast = entry,
+                        ebdHndBeg = handler,
+                        ebdHndLast = handler,
+                        ebdHandlerType = EHHandlerType.EH_HANDLER_FINALLY,
+                        ebdEnclosingTryIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+                        ebdEnclosingHndIndex = EHblkDsc.NO_ENCLOSING_INDEX
+                    }
+                ];
+                compiler.compHndBBtabCount = 1;
+            }
+
+            compiler.fgPredsComputed = true;
+            var dfs = ComputeDfs(compiler, false);
+            var loops = FlowGraphNaturalLoops.Find(dfs);
+            compiler._dfsTree = dfs;
+            compiler._loops = loops;
+            compiler.fgSsaValid = true;
+            Assert.That(dfs.Contains(dead), Is.False);
+            if (callFinallyPair)
+            {
+                Assert.That(dfs.Contains(tail ?? throw new AssertionException("Missing callfinally tail.")), Is.True);
+                Assert.That(dfs.Contains(continuation ?? throw new AssertionException("Missing continuation.")), Is.True);
+            }
+
+            Assert.That(compiler.fgRemoveBlocksOutsideDfsTree(), Is.True);
+            Assert.That(dead.HasFlag(BasicBlockFlags.BBF_REMOVED), Is.True);
+            var newDfs = compiler._dfsTree ?? throw new AssertionException("Missing DFS tree after removal.");
+
+            if (callFinallyPair)
+            {
+                if ((tail is not BasicBlock pairTail) || (continuation is not BasicBlock returnBlock) ||
+                    (handler is not BasicBlock finallyHandler))
+                {
+                    throw new AssertionException("Missing callfinally graph blocks.");
+                }
+
+                Assert.That(newDfs, Is.Not.SameAs(dfs));
+                Assert.That(compiler._loops, Is.Null);
+                Assert.That(compiler.fgSsaValid, Is.False);
+                Assert.That(pairTail.HasFlag(BasicBlockFlags.BBF_REMOVED), Is.True);
+                Assert.That(returnBlock.HasFlag(BasicBlockFlags.BBF_REMOVED), Is.True);
+                Assert.That(newDfs.PostOrderCount, Is.EqualTo(2));
+                Assert.That(newDfs.GetPostOrder(0), Is.SameAs(finallyHandler));
+                Assert.That(newDfs.GetPostOrder(1), Is.SameAs(entry));
+                Assert.That(entry.Next, Is.SameAs(finallyHandler));
+            }
+            else
+            {
+                Assert.That(newDfs, Is.SameAs(dfs));
+                Assert.That(compiler._loops, Is.SameAs(loops));
+                Assert.That(compiler.fgSsaValid, Is.True);
+            }
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
     [TestCase(0)]
     [TestCase(62)]
     [TestCase(63)]

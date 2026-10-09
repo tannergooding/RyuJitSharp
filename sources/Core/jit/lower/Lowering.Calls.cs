@@ -54,6 +54,14 @@ public sealed partial class Lowering
         {
             case IAT_VALUE:
             {
+#if TARGET_WASM
+                if (CompilerInstance.IsReadyToRun)
+                {
+                    // IAT_VALUE is a callable symbol, not a portable entrypoint cell.
+                    call._directCallAddress = address;
+                    break;
+                }
+#endif
                 if (!IsCallTargetInRange(address) || call.IsTailCallViaJitHelper)
                 {
                     result = AddrGen((nint)address);

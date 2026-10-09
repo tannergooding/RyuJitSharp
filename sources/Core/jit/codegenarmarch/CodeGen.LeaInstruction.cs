@@ -68,20 +68,23 @@ public sealed partial class CodeGen
                     {
                         assert(scale == 0);
                         scale = (int)index.AsOp().Op2.AsIntConCommon().IconValue;
-                        index = index.AsOp().Op1.AsCast().Op1;
+                        index = index.AsOp().Op1.AsCast();
                     }
-                    else if (index.Oper is GT_CAST)
-                    {
-                        index = index.AsCast().Op1;
-                    }
-                    else
+                    else if (index.Oper is not GT_CAST)
                     {
                         unreached();
                     }
-                }
-#endif
 
-                genScaledAdd(size, lea.RegNum, baseAddress.RegNum, index.RegNum, scale);
+                    var cast = index.AsCast();
+                    assert(genActualTypeIsInt(cast.CastOp.Type) && (scale <= 4));
+                    Emitter.emitIns_R_R_R_I(INS_add, size, lea.RegNum, baseAddress.RegNum, cast.CastOp.RegNum,
+                        scale, cast.IsUnsigned ? INS_OPTS_UXTW : INS_OPTS_SXTW);
+                }
+                else
+#endif
+                {
+                    genScaledAdd(size, lea.RegNum, baseAddress.RegNum, index.RegNum, scale);
+                }
             }
         }
         else if (lea.HasBaseAddress)

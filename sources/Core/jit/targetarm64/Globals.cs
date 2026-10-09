@@ -36,6 +36,8 @@ public partial class Globals
 
     public const regNumber REG_SCRATCH_P = REG_P4;
 
+    public const int MIN_SVE_REGSIZE_BYTES = 16;
+
     public const int MAX_SVE_REGSIZE_BYTES = 256;
 
     public const regNumber REG_SECRET_STUB_PARAM = REG_R12;

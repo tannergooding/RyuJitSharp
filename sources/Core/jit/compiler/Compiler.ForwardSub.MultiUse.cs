@@ -28,6 +28,8 @@ public partial class Compiler
 
     private bool fgForwardSubMultiUse(Statement nextStmt, int lclNum, GenTree fwdSubNode)
     {
+        assert(fgIsCheapReorderableAddressTree(fwdSubNode));
+
         const int maxUses = 4;
         var visitor = new ForwardSubCollectVisitor(lclNum);
         _ = visitor.WalkTree(ref nextStmt.RootNodeRef, null);

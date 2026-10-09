@@ -13,6 +13,9 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ValueNumBinaryInterningTests
 {
+    private static int s_assertions;
+    private static string? s_lastAssertion;
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "VNEvalFoldTypeCompare")]
     private static extern int FoldTypeCompare(ValueNumStore store, var_types type, VNFunc func, int left, int right);
 
@@ -93,9 +96,18 @@ internal static unsafe class ValueNumBinaryInterningTests
 
 #if DEBUG
     [Test]
-    public static void ComponentTestsMatchCommutativeCanonicalization()
+    public static void ComponentTestsPreserveNativeCanonicalizationAssertion()
     {
-        WithStore((_, compiler) => ValueNumStore.RunTests(compiler));
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.doAssert = &RecordAssertion;
+        ICorJitInfo ee = new() { lpVtbl = &vtable };
+        s_assertions = 0;
+        s_lastAssertion = null;
+
+        WithStore((_, compiler) => ValueNumStore.RunTests(compiler), &ee);
+
+        Assert.That(s_assertions, Is.EqualTo(1), s_lastAssertion);
+        Assert.That(s_lastAssertion, Does.Contain("application.GetArg(0) == one"));
     }
 #endif
 
@@ -558,8 +570,13 @@ internal static unsafe class ValueNumBinaryInterningTests
 
     private static void WithStore(Action<ValueNumStore, Compiler> action)
     {
+        WithStore(action, null);
+    }
+
+    private static void WithStore(Action<ValueNumStore, Compiler> action, ICorJitInfo* jitInfo)
+    {
 #if DEBUG
-        using var tls = new JitTls(null);
+        using var tls = new JitTls(jitInfo);
 #endif
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -575,6 +592,14 @@ internal static unsafe class ValueNumBinaryInterningTests
         {
             JitTls.Compiler = previous;
         }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int RecordAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
+    {
+        s_assertions++;
+        s_lastAssertion = Marshal.PtrToStringUTF8((nint)expression);
+        return 0;
     }
 
     private struct TestEE

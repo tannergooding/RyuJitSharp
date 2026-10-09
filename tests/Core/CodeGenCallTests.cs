@@ -70,12 +70,15 @@ internal static unsafe class CodeGenCallTests
     {
         public ICorJitInfo JitInfo;
         public int Assertions;
+        public byte* LastExpression;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int RecordEpilogAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
     {
-        ((EpilogAssertionContext*)self)->Assertions++;
+        var context = (EpilogAssertionContext*)self;
+        context->Assertions++;
+        context->LastExpression = expression;
         return 0;
     }
 #endif
@@ -243,6 +246,42 @@ internal static unsafe class CodeGenCallTests
             Assert.That(EmitterRefs(emitter), Is.EqualTo(SRBM_NONE));
         });
     }
+
+#if DEBUG
+    [TestCase(TYP_REF, REG_RBX, true, 1)]
+    [TestCase(TYP_BYREF, REG_RBX, true, 1)]
+    [TestCase(TYP_LONG, REG_RBX, true, 0)]
+    [TestCase(TYP_REF, REG_RAX, true, 1)]
+    [TestCase(TYP_BYREF, REG_RAX, true, 1)]
+    [TestCase(TYP_REF, REG_RBX, false, 0)]
+    [TestCase(TYP_BYREF, REG_RBX, false, 0)]
+    public static void PInvokeRequiresCalleeSavedGcRootsToBeSpilled(
+        var_types type, regNumber reg, bool unmanaged, int expectedAssertions)
+    {
+        EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
+        {
+            var call = Call(TYP_VOID);
+            if (unmanaged)
+            {
+                call.Flags |= GTF_CALL_UNMANAGED;
+                call._callMoreFlags |= GTF_CALL_M_PINVOKE;
+            }
+            codeGen.GCInfo.gcMarkRegPtrVal(reg, type);
+
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.doAssert = &RecordEpilogAssertion;
+            var context = new EpilogAssertionContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
+            using var tls = new JitTls(&context.JitInfo);
+            JitTls.Compiler = compiler;
+
+            codeGen.genCall(call);
+
+            Assert.That(context.Assertions, Is.EqualTo(expectedAssertions),
+                context.LastExpression is null ? "No assertion was reported." :
+                    Marshal.PtrToStringUTF8((nint)context.LastExpression));
+        });
+    }
+#endif
 
     [TestCase(false, false)]
     [TestCase(false, true)]

@@ -46,8 +46,7 @@ internal static class CodeGenSwapTests
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_8BYTE));
             Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_RAX));
             Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_RCX));
-            Assert.That(descriptors[0].idGCref(), Is.EqualTo(varTypeIsGC(firstType) != varTypeIsGC(secondType)
-                ? GCInfo.GCtype.GCT_GCREF : GCInfo.GCtype.GCT_NONE));
+            Assert.That(descriptors[0].idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_NONE));
 #if DEBUG
             Assert.That(tree.Op1._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
                 Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));

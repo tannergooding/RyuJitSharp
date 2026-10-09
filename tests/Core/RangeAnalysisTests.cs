@@ -17,6 +17,10 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class RangeAnalysisTests
 {
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "DoesVarDefOverflow")]
+    private static extern bool DoesVarDefOverflow(RangeCheck analysis, BasicBlock block,
+        GenTreeLclVarCommon local, Range range);
+
 #if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "MergeAssertion")]
     private static extern void MergeAssertion(RangeCheck analysis, BasicBlock block, GenTree tree, ref Range range);
@@ -214,6 +218,111 @@ internal static unsafe class RangeAnalysisTests
 
         Assert.That(result.IsConstantRange(), Is.True);
         Assert.That((result.LowerLimit.Constant, result.UpperLimit.Constant), Is.EqualTo((expectedLow, expectedHigh)));
+    }
+
+    [TestCase(false, 0)]
+    [TestCase(false, 31)]
+    [TestCase(true, 0)]
+    [TestCase(true, 31)]
+    public static void LogicalShiftIncludingZeroDoesNotInferBoundsForPossiblyNegativeInput(
+        bool unknownLower, int maximumShift)
+    {
+        var lower = unknownLower ? new Limit(LimitType.Unknown) : new Limit(LimitType.Constant, -1);
+        var left = new Range(lower, new Limit(LimitType.Constant, 1024));
+        var counts = new Range(new Limit(LimitType.Constant, 0),
+            new Limit(LimitType.Constant, maximumShift));
+
+        var result = RangeOps.ShiftRight(left, counts, logical: true);
+
+        Assert.That(result.LowerLimit.IsUnknown, Is.True);
+        Assert.That(result.UpperLimit.IsUnknown, Is.True);
+    }
+
+    [TestCase(1, int.MaxValue)]
+    [TestCase(31, 1)]
+    public static void PositiveLogicalShiftCountsUseUnsignedTypeBounds(int shift, int maximum)
+    {
+        var left = new Range(new Limit(LimitType.Constant, -1), new Limit(LimitType.Constant, 1024));
+
+        var result = RangeOps.ShiftRight(left, new(new Limit(LimitType.Constant, shift)), logical: true);
+
+        Assert.That(result.IsConstantRange(), Is.True);
+        Assert.That((result.LowerLimit.Constant, result.UpperLimit.Constant), Is.EqualTo((0, maximum)));
+    }
+
+    [TestCase(TYP_FLOAT)]
+    [TestCase(TYP_DOUBLE)]
+    public static void IntegerAssertionBoundsDoNotPassThroughFloatingPointCasts(var_types floatingType)
+    {
+        WithCompiler((compiler, store) =>
+        {
+            var source = store.VNForExpr(null, TYP_INT);
+            var lowerIndex = compiler.optAddAssertion(
+                Compiler.AssertionDsc.CreateConstantBound(compiler, VNF_GE, source, store.VNForIntCon(16_777_217)));
+            var upperIndex = compiler.optAddAssertion(
+                Compiler.AssertionDsc.CreateConstantBound(compiler, VNF_LE, source, store.VNForIntCon(16_777_217)));
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var active = BitOps.MakeEmpty(traits);
+            BitOps.AddElemD(traits, active, lowerIndex - 1);
+            BitOps.AddElemD(traits, active, upperIndex - 1);
+
+            var floating = store.VNForFuncNoFolding(floatingType, VNF_Cast, source,
+                store.VNForCastOper(floatingType, srcIsUnsigned: false));
+            var integer = store.VNForFuncNoFolding(TYP_INT, VNF_Cast, floating,
+                store.VNForCastOper(TYP_INT, srcIsUnsigned: false));
+            var floatingRange = RangeCheck.GetRangeFromAssertions(compiler, floating, active);
+            var integerRange = RangeCheck.GetRangeFromAssertions(compiler, integer, active);
+
+            Assert.That(floatingRange.LowerLimit.IsUnknown && floatingRange.UpperLimit.IsUnknown, Is.True);
+            Assert.That(integerRange.IsFullRange(), Is.True);
+        });
+    }
+
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void DependentLimitsStillRequireDefinitionOverflowChecks(bool dependentLower, bool dependentUpper)
+    {
+        WithCompiler((compiler, store) =>
+        {
+            var block = new BasicBlock(null, null);
+            var vn = store.VNForExpr(null, TYP_INT);
+            var lowerIndex = compiler.optAddAssertion(
+                Compiler.AssertionDsc.CreateConstantBound(compiler, VNF_GE, vn, store.VNForIntCon(0)));
+            var upperIndex = compiler.optAddAssertion(
+                Compiler.AssertionDsc.CreateConstantBound(compiler, VNF_LE, vn, store.VNForIntCon(9)));
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            block.bbAssertionIn = BitOps.MakeEmpty(traits);
+            BitOps.AddElemD(traits, block.bbAssertionIn, lowerIndex - 1);
+            BitOps.AddElemD(traits, block.bbAssertionIn, upperIndex - 1);
+
+            var left = compiler.gtNewIconNode(TYP_INT, int.MaxValue);
+            left._vnPair.SetBoth(store.VNForIntCon(int.MaxValue));
+            var right = compiler.gtNewIconNode(TYP_INT, 1);
+            right._vnPair.SetBoth(store.VNForIntCon(1));
+            var addition = compiler.gtNewBinaryNode(genTreeOps.GT_ADD, TYP_INT, left, right);
+            addition._vnPair.SetBoth(store.VNForFuncNoFolding(TYP_INT, VNF_ADD,
+                left._vnPair.Conservative, right._vnPair.Conservative));
+            var definition = compiler.gtNewStoreLclVarNode(0, addition);
+            ref var descriptor = ref compiler.lvaTable[0];
+            var number = descriptor.lvPerSsaData.AllocSsaNum();
+            definition.SsaNum = number;
+            descriptor.GetPerSsaData(number) = new LclSsaVarDsc(block, definition);
+            descriptor.GetPerSsaData(number)._vnPair.SetBoth(vn);
+
+            var local = compiler.gtNewLclvNode(TYP_INT, 0);
+            local.SsaNum = number;
+            local._vnPair.SetBoth(vn);
+            var range = new Range(
+                dependentLower ? new Limit(LimitType.Dependent) : new Limit(LimitType.Constant, 0),
+                dependentUpper ? new Limit(LimitType.Dependent) : new Limit(LimitType.Constant, 9));
+            var analysis = compiler.GetRangeCheck();
+            Assert.That(analysis.TryGetRange(block, addition, out _), Is.False);
+
+            Assert.That(DoesVarDefOverflow(analysis, block, local, range),
+                Is.EqualTo(dependentLower || dependentUpper));
+        });
     }
 
     [TestCase(32, 0, int.MaxValue)]

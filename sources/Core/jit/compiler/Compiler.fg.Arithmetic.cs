@@ -95,7 +95,6 @@ public partial class Compiler
         var result = sideEffects is not null
             ? gtNewBinaryNode(GT_COMMA, zero.Type, sideEffects, zero)
             : zero;
-        result.SetMorphed(this);
 
         return result;
     }
@@ -160,7 +159,6 @@ public partial class Compiler
             result = gtNewBinaryNode(GT_COMMA, type, temps[i].Store, result);
         }
 
-        result.SetMorphed(this);
         assert(compCurBB is not null);
         optRecordSsaUses(result, compCurBB);
         tree.CheckDivideByConstOptimized(this);
@@ -179,7 +177,6 @@ public partial class Compiler
         var type = tree.Type;
         var mask = unchecked((nint)(tree.Op2.AsIntConCommon().UnsignedIntegralValue - 1));
         var result = gtNewBinaryNode(GT_AND, type, tree.Op1, gtNewIconNodeWithVN(this, type, mask));
-        result.SetMorphed(this);
 
         return result;
     }
@@ -318,7 +315,7 @@ public partial class Compiler
         first.FieldSeq = constant.FieldSeq;
         left = tree.Op1;
         left._vnPair = tree._vnPair;
-        first.SetMorphed(this);
+
         return left.AsOp();
     }
 
@@ -461,7 +458,6 @@ public partial class Compiler
         else
         {
             rotateIndex = gtNewBinaryNode(GT_AND, rotateIndex.Type.ActualType, rotateIndex, gtNewIconNode(TYP_INT, minimumMask));
-            rotateIndex.SetMorphed(this, doChilren: true);
         }
 
         var effects = tree.Flags & GTF_ALL_EFFECT;
@@ -526,7 +522,7 @@ public partial class Compiler
             {
                 var clone = fgMakeMultiUse(ref left);
                 var add = gtNewBinaryNode(GT_ADD, multiply.Type, left, clone);
-                add.SetMorphed(this, doChilren: true);
+
                 return add;
             }
         }
@@ -611,7 +607,6 @@ public partial class Compiler
                     }
 
                     var factorNode = gtNewIconNodeWithVN(this, multiply.Type, (nint)factor);
-                    factorNode.SetMorphed(this);
                     left = gtNewBinaryNode(GT_MUL, multiply.Type, left, factorNode);
                     multiply.Op1 = left;
                     fgMorphTreeDone(left);

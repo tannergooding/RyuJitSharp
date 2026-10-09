@@ -342,14 +342,7 @@ public sealed partial class CodeGen
             default:
             {
 #if DEBUG
-                if (JitConfig.JitWasmNyiToR2RUnsupported > 0)
-                {
-                    NYI_WASM("Opcode not implemented");
-                }
-                else
-                {
-                    NYIRAW(treeNode.Oper.ToString());
-                }
+                NYIRAW(treeNode.Oper.ToString());
 #else
                 NYI_WASM("Opcode not implemented");
 #endif
@@ -504,7 +497,7 @@ public sealed partial class CodeGen
                         ?? throw new FatalJitException(
                             CORJIT_INTERNALERROR, "Wasm hardware intrinsic memory node has no address.");
                     var addrReg = GetMultiUseOperandReg(memoryAddress);
-                    genEmitNullCheck(addrReg);
+                    genEmitNullCheck(addrReg, memoryAddress.Type);
 
                     if (info.NeedsJumpTableFallback)
                     {
@@ -1026,7 +1019,7 @@ public sealed partial class CodeGen
             // The base is the address itself unless this is a contained address mode, which is never materialized.
             var baseNode = tree.Base
                 ?? throw new FatalJitException(CORJIT_INTERNALERROR, "GT_IND base is unavailable for null-check codegen.");
-            genEmitNullCheck(GetMultiUseOperandReg(baseNode));
+            genEmitNullCheck(GetMultiUseOperandReg(baseNode), baseNode.Type);
         }
 
         // TODO-WASM: Memory barriers
@@ -1097,7 +1090,7 @@ public sealed partial class CodeGen
                 ?? throw new FatalJitException(
                     CORJIT_INTERNALERROR,
                     "GT_STOREIND base is unavailable for null-check codegen.");
-            genEmitNullCheck(GetMultiUseOperandReg(baseNode));
+            genEmitNullCheck(GetMultiUseOperandReg(baseNode), baseNode.Type);
         }
 
         var writeBarrierForm = GCInfo.gcIsWriteBarrierCandidate(tree);
@@ -1163,12 +1156,14 @@ public sealed partial class CodeGen
 
     private void genCall(GenTreeCall call)
     {
+        var thisArg = call.NeedsNullCheck
+            ? call.Args.ThisArg
+                ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Call requiring a null check has no this argument.")
+            : null;
         var thisReg = REG_NA;
 
-        if (call.NeedsNullCheck)
+        if (thisArg is not null)
         {
-            var thisArg = call.Args.ThisArg
-                ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Call requiring a null check has no this argument.");
             thisReg = GetMultiUseOperandReg(thisArg.Node);
         }
 
@@ -1186,9 +1181,9 @@ public sealed partial class CodeGen
             genConsumeRegs(lateNode);
         }
 
-        if (call.NeedsNullCheck)
+        if (thisArg is not null)
         {
-            genEmitNullCheck(thisReg);
+            genEmitNullCheck(thisReg, thisArg.Node.Type);
         }
 
         genCallInstruction(call);
@@ -1471,10 +1466,18 @@ public sealed partial class CodeGen
 
         if (helperUsesPep)
         {
-            // Push the PEP value from the helper's indirection cell.
-            assert(helperFunction.accessType is IAT_PVALUE);
-            GetEmitter().emitAddressConstant(unchecked((nint)helperFunction.addr));
-            GetEmitter().emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+            if (helperFunction.accessType is IAT_VALUE)
+            {
+                // Direct same-image managed helpers do not need a portable entrypoint.
+                GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+            }
+            else
+            {
+                // Push the PEP address from the helper's indirection cell.
+                assert(helperFunction.accessType is IAT_PVALUE);
+                GetEmitter().emitAddressConstant(unchecked((nint)helperFunction.addr));
+                GetEmitter().emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+            }
         }
 
         if (parameters.callType is EC_INDIR_R)
@@ -1516,7 +1519,7 @@ public sealed partial class CodeGen
 
         if ((tree.Flags & GTF_IND_NONFAULTING) == 0)
         {
-            genEmitNullCheck(REG_NA);
+            genEmitNullCheck(REG_NA, tree.Addr.Type);
         }
         else
         {
@@ -1524,7 +1527,7 @@ public sealed partial class CodeGen
         }
     }
 
-    private void genEmitNullCheck(regNumber reg)
+    private void genEmitNullCheck(regNumber reg, var_types refType)
     {
         var emitter = GetEmitter();
 
@@ -1533,9 +1536,18 @@ public sealed partial class CodeGen
             genEmitLocalGet(reg, WasmValueType.I);
         }
 
-        emitter.emitIns_I(
-            INS_I_const, EA_PTRSIZE, unchecked((nint)_compiler.compMaxUncheckedOffsetForNullObject));
-        emitter.emitIns(INS_I_le_u);
+        if (refType is TYP_REF)
+        {
+            emitter.emitIns(INS_I_eqz);
+        }
+        else
+        {
+            assert(refType is TYP_BYREF || varTypeIsIntOrI(refType));
+            emitter.emitIns_I(
+                INS_I_const, EA_PTRSIZE, unchecked((nint)_compiler.compMaxUncheckedOffsetForNullObject));
+            emitter.emitIns(INS_I_le_u);
+        }
+
         genJumpToThrowHlpBlk(SCK_NULL_CHECK);
     }
 
@@ -1795,7 +1807,9 @@ public sealed partial class CodeGen
         var nullCheckDest = (blkOp.Flags & GTF_IND_NONFAULTING) == 0;
         var nullCheckSrc = false;
         var dest = blkOp.Addr;
+        var_types destType = TYP_UNKNOWN;
         var src = blkOp.Data;
+        var_types srcType = TYP_UNKNOWN;
         var destReg = REG_NA;
         var srcReg = REG_NA;
         uint destOffset = 0;
@@ -1818,6 +1832,7 @@ public sealed partial class CodeGen
             if (!isNativeOp || nullCheckSrc)
             {
                 srcReg = GetMultiUseOperandReg(src);
+                srcType = src.Type;
             }
 
             assert(!src.IsContained);
@@ -1840,6 +1855,7 @@ public sealed partial class CodeGen
             srcReg = GetFramePointerReg(_compiler.funCurrentFuncIdx());
             var frameOffset = _compiler.lvaFrameAddress(lclVar.LclNum, out var framePointerBased);
             srcOffset = unchecked((uint)(frameOffset + lclVar.LclOffs));
+            srcType = TYP_BYREF;
             assert(framePointerBased);
         }
 
@@ -1849,6 +1865,7 @@ public sealed partial class CodeGen
             destReg = GetFramePointerReg(_compiler.funCurrentFuncIdx());
             var frameOffset = _compiler.lvaFrameAddress(lclVar.LclNum, out var framePointerBased);
             destOffset = unchecked((uint)(frameOffset + lclVar.LclOffs));
+            destType = TYP_BYREF;
             assert(framePointerBased);
         }
         else if (isNativeOp && !nullCheckDest)
@@ -1858,6 +1875,7 @@ public sealed partial class CodeGen
         else if (isCopyBlk || nullCheckDest)
         {
             destReg = GetMultiUseOperandReg(dest);
+            destType = dest.Type;
         }
         else
         {
@@ -1866,12 +1884,14 @@ public sealed partial class CodeGen
 
         if (nullCheckDest)
         {
-            genEmitNullCheck(destReg);
+            assert(destType is not TYP_UNKNOWN);
+            genEmitNullCheck(destReg, destType);
         }
 
         if (nullCheckSrc)
         {
-            genEmitNullCheck(srcReg);
+            assert(srcType is not TYP_UNKNOWN);
+            genEmitNullCheck(srcReg, srcType);
         }
 
         var emit = GetEmitter();

@@ -185,9 +185,7 @@ public partial class Compiler
                             {
                                 assert(tree.Type is TYP_INT);
                                 ref var otherOperand = ref ((operandToNarrow == 1) ? ref binary.Op2Ref : ref binary.Op1Ref);
-                                var cast = gtNewCastNode(TYP_INT, otherOperand, false, TYP_INT);
-                                cast.SetMorphed(this);
-                                otherOperand = cast;
+                                otherOperand = gtNewCastNode(TYP_INT, otherOperand, false, TYP_INT);
                             }
                         }
 

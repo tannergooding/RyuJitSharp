@@ -119,6 +119,38 @@ internal static unsafe class EHVerificationTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void NormalizationPreservesSharedRegionEnds(bool insideHandler)
+    {
+        WithCompiler(compiler => {
+            CreateNestedTable(compiler, insideHandler, false, false);
+            ref var inner = ref compiler.compHndBBtab[0];
+            ref var outer = ref compiler.compHndBBtab[1];
+            var last = inner.ebdHndLast;
+            if (insideHandler)
+            {
+                outer.ebdHndLast.clearHndIndex();
+                outer.ebdHndLast = last;
+            }
+            else
+            {
+                outer.ebdTryLast.clearTryIndex();
+                outer.ebdTryLast = last;
+            }
+            var blocks = new List<BasicBlock>(compiler.Blocks);
+
+            compiler.fgNormalizeEH();
+            compiler.fgVerifyHandlerTab();
+
+            Assert.That(compiler.fgNormalizeEHDone, Is.True);
+            Assert.That(compiler.Blocks, Is.EqualTo(blocks));
+            Assert.That(inner.ebdHndLast, Is.SameAs(last));
+            Assert.That(insideHandler ? outer.ebdHndLast : outer.ebdTryLast, Is.SameAs(last));
+            Assert.That(s_assertions, Is.Empty);
+        });
+    }
+
     [TestCase(EH_HANDLER_CATCH)]
     [TestCase(EH_HANDLER_FILTER)]
     public static void HandlersMayLexicallyPrecedeTheirTry(EHHandlerType kind)

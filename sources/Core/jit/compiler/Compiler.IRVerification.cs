@@ -363,7 +363,7 @@ public partial class Compiler
             jitprintf($"{(((dispFlags & GTF_IND_NONNULL) != 0) ? '@' : '-')}");
         }
 
-        _ = GenTree.gtDispFlags(dispFlags, GTF_DEBUG_NONE);
+        _ = GenTree.gtDispFlags(dispFlags);
     }
 
     public void fgDebugCheckFlagsHelper(GenTree tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags)

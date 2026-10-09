@@ -201,7 +201,6 @@ public sealed partial class ObjectAllocator : Phase
         var helperCall = arg is null
             ? compiler.gtNewHelperCallNode(allocObj, helper)
             : compiler.gtNewHelperCallNode(allocObj, helper, arg);
-        helperCall.SetMorphed(compiler);
 
         if (helperHasSideEffects)
         {

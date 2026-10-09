@@ -74,11 +74,14 @@ public sealed partial class Lowering
             return false;
         }
 
+        var codeGen = CompilerInstance.codeGen;
+        assert(codeGen is not null);
+
 #if TARGET_ARM64
-        if (parent.Oper.IsIndir && parent.AsIndir().IsVolatile &&
-            !CompilerInstance.compOpportunisticallyDependsOn(InstructionSet_Rcpc2))
+        if ((parent.Oper is GT_STOREIND) && parent.AsIndir().IsVolatile &&
+            codeGen.GCInfo.gcIsWriteBarrierStoreIndNode(parent.AsStoreInd()))
         {
-            // LDAR/STLR require a register address; RCPC2 adds unscaled addressing.
+            // A write barrier will not use a volatile RCPC2 store; do not report that dependency.
             return false;
         }
 
@@ -94,14 +97,11 @@ public sealed partial class Lowering
 #else
         var naturalMul = 0;
 #endif
-        var codeGen = CompilerInstance.codeGen;
-        assert(codeGen is not null);
         var doAddrMode = codeGen.genCreateAddrMode(addr.AsOp(), true, naturalMul, out _, out var baseAddress,
             out var index, out var scale, out var offset);
 #if TARGET_ARM64
         if (parent.Oper.IsIndir && parent.AsIndir().IsVolatile)
         {
-            assert(CompilerInstance.compIsaSupportedDebugOnly(InstructionSet_Rcpc2));
             if ((scale > 1) || !Emitter.emitIns_valid_imm_for_unscaled_ldst_offset(offset) || (index is not null))
             {
                 return false;
@@ -127,6 +127,14 @@ public sealed partial class Lowering
             DISPNODE(addr);
             return false;
         }
+
+#if TARGET_ARM64
+        if (parent.Oper.IsIndir && parent.AsIndir().IsVolatile &&
+            !CompilerInstance.compOpportunisticallyDependsOn(InstructionSet_Rcpc2))
+        {
+            return false;
+        }
+#endif
 
         JITDUMP("Addressing mode:\n");
         JITDUMP("  Base\n    ");

@@ -92,6 +92,7 @@ internal static class XarchJmpArgumentTargetTests
                 {
                     Type = TYP_FLOAT,
                     RegNum = REG_XMM2,
+                    lvLRACandidate = true,
                     lvIsParam = true,
                     lvIsRegArg = true,
                     lvTracked = true,

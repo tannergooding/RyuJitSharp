@@ -58,7 +58,6 @@ public partial class Compiler
                 var expanded = fgMorphExpandLocal(tree.AsLclVarCommon());
                 if (expanded is not null)
                 {
-                    expanded.SetMorphed(this);
                     tree = expanded;
                     operation = tree.Oper;
                     op1 = tree.AsUnOp().Op1;
@@ -156,7 +155,6 @@ public partial class Compiler
                     var length = gtNewStringLiteralLength(op1.AsStrCon());
                     if (length is not null)
                     {
-                        length.SetMorphed(this);
                         return length;
                     }
                 }
@@ -171,7 +169,6 @@ public partial class Compiler
                     if (constant is not null)
                     {
                         assert(constant.Oper.IsConst);
-                        constant.SetMorphed(this);
                         return constant;
                     }
                 }
@@ -277,7 +274,6 @@ public partial class Compiler
                 else if ((type is TYP_LONG) && opts.OptimizationEnabled
                     && (op2.Oper is GT_CNS_NATIVELONG) && (op2.AsIntConCommon().IntegralValue is >= 2 and <= 0x3FFFFFFF))
                 {
-                    op2.SetMorphed(this);
                     tree.AsOp().Op1 = op1 = fgMorphTree(op1);
                     noway_assert(op1.Type is TYP_LONG);
                     tree.Flags = (tree.Flags & ~GTF_ALL_EFFECT) | (op1.Flags & GTF_ALL_EFFECT);
@@ -868,14 +864,12 @@ public partial class Compiler
                     var flags = tree.Flags;
                     comma.Type = type;
                     comma.Flags = flags & ~GTF_REVERSE_OPS;
-                    comma.SetMorphed(this);
                     while (comma.Op2.Oper is GT_COMMA)
                     {
                         comma = comma.Op2.AsOp();
                         comma.Type = type;
                         comma.Flags = (flags & ~(GTF_REVERSE_OPS | GTF_ASG | GTF_CALL))
                             | ((comma.Op1.Flags | comma.Op2.Flags) & (GTF_ASG | GTF_CALL));
-                        comma.SetMorphed(this);
                     }
                     tree = op1;
                     var address = comma.Op2;
@@ -887,7 +881,6 @@ public partial class Compiler
                         indirection.Flags &= ~GTF_EXCEPT;
                     }
                     indirection.Flags |= flags & GTF_GLOB_REF;
-                    indirection.SetMorphed(this);
                     comma.Op2 = indirection;
                     comma.Flags |= indirection.Flags & GTF_ALL_EFFECT;
                     return tree;
@@ -912,7 +905,6 @@ public partial class Compiler
                         if (effects is not null)
                         {
                             tree = effects;
-                            tree.SetMorphed(this, doChilren: true);
                         }
                         else
                         {
@@ -922,7 +914,6 @@ public partial class Compiler
                     else if ((op1.Flags & GTF_SIDE_EFFECT) != 0)
                     {
                         tree = gtUnusedValNode(op1);
-                        tree.SetMorphed(this, doChilren: true);
                     }
                     else
                     {
@@ -1014,10 +1005,9 @@ public partial class Compiler
                     {
                         JITDUMP("false\n");
                         tree = gtNewFalse();
-                        tree.SetMorphed(this);
                         tree = gtWrapWithSideEffects(tree, op1, GTF_ALL_EFFECT);
                     }
-                    tree.SetMorphed(this);
+
                     return tree;
                 }
                 break;

@@ -88,7 +88,6 @@ public partial class Compiler
             }
 
             vecCon.SimdVal = simdVal;
-            vecCon.SetMorphed(this);
             fgUpdateConstTreeValueNumber(vecCon);
             return vecCon;
         }
@@ -152,7 +151,6 @@ public partial class Compiler
 
                         DEBUG_DESTROY_NODE(op);
                         DEBUG_DESTROY_NODE(tree);
-                        vectorNode.SetMorphed(this);
                         return vectorNode;
                     }
                 }
@@ -324,10 +322,7 @@ public partial class Compiler
                         {
                             DEBUG_DESTROY_NODE(op2);
                         }
-                        tree.SetMorphed(this);
-
                         tree = gtNewSimdCvtMaskToVectorNode(retType, tree, simdBaseType, simdSize).AsHWIntrinsic();
-                        tree.SetMorphed(this);
 
                         return tree;
                     }
@@ -368,7 +363,6 @@ public partial class Compiler
                     else if (operand.IsVectorZero)
                     {
                         operand = gtNewSimdFalseMaskByteNode();
-                        operand.SetMorphed(this);
                     }
 
                     assert(varTypeIsMask(operand.Type));
@@ -377,9 +371,7 @@ public partial class Compiler
 
                 tree.ResetHWIntrinsicId(maskVariant, operands);
                 tree.Type = TYP_MASK;
-                tree.SetMorphed(this);
                 tree = gtNewSimdCvtMaskToVectorNode(retType, tree, simdBaseType, simdSize).AsHWIntrinsic();
-                tree.SetMorphed(this);
                 op1 = tree.GetOp(1);
                 op2 = null;
                 op3 = null;
@@ -1940,7 +1932,6 @@ public partial class Compiler
                     tree.ResetHWIntrinsicId(id, op1, op2);
                     DEBUG_DESTROY_NODE(op3);
 
-                    tree.SetMorphed(this);
                     return gtFoldExprHWIntrinsic(tree);
                 }
 
@@ -2018,21 +2009,12 @@ public partial class Compiler
         }
 #endif
 
-        if (resultNode != tree)
+        if ((resultNode != tree) && resultNode.Oper.IsConst)
         {
-            resultNode.SetMorphed(this);
-            if (resultNode.Oper == GT_COMMA)
-            {
-                resultNode.AsOp().Op2.SetMorphed(this);
-            }
+            fgUpdateConstTreeValueNumber(resultNode);
 
-            if (resultNode.Oper.IsConst)
-            {
-                fgUpdateConstTreeValueNumber(resultNode);
-
-                // Make sure no side effect flags are set on this constant node.
-                resultNode.Flags &= ~GTF_ALL_EFFECT;
-            }
+            // Make sure no side effect flags are set on this constant node.
+            resultNode.Flags &= ~GTF_ALL_EFFECT;
         }
 
         return resultNode;

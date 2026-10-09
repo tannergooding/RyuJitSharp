@@ -270,6 +270,46 @@ public partial class Compiler
                 }
             }
         }
+
+        // Crossing a try/wrapper end requires an explicit branch, even to the next block.
+        // A plain Block interval must provide the label for that branch.
+        for (var cursor = 0; cursor < numBlocks; cursor++)
+        {
+            var block = initialLayout[cursor];
+            var next = initialLayout[cursor + 1];
+            var fallsToNext = ((block.Kind is BBJ_ALWAYS or BBJ_CALLFINALLYRET) && (block.Target == next)) ||
+                ((block.Kind is BBJ_COND) && (block.FalseTarget == next));
+            if (!fallsToNext)
+            {
+                continue;
+            }
+
+            var endsTryOrWrapper = false;
+            var hasBlockTarget = false;
+            foreach (var interval in fgWasmIntervals)
+            {
+                if (interval.End() != cursor + 1)
+                {
+                    continue;
+                }
+
+                if (interval.IsTry() || interval.IsExnRefWrapper())
+                {
+                    endsTryOrWrapper = true;
+                }
+                else if (!interval.IsLoop() && (interval.Start() <= cursor))
+                {
+                    hasBlockTarget = true;
+                }
+            }
+
+            if (endsTryOrWrapper && !hasBlockTarget)
+            {
+                JITDUMP($"{FMT_BB(block.bbNum)}[{cursor}] -> {FMT_BB(next.bbNum)}[{cursor + 1}] " +
+                    "crosses a Try/ExnRefWrapper end without a Block target\n");
+                assert(false, "Wasm fall-through across a Try/ExnRefWrapper end needs a Block target");
+            }
+        }
 #endif
 
         fgWasmIntervals.Sort((left, right) => left.Start().CompareTo(right.Start()));

@@ -210,7 +210,9 @@ public partial struct JitConfigValues
     private int _jitStressRex2Encoding;
     private int _jitStressPromotedEvexEncoding;
 #endif
+#endif
 #if TARGET_AMD64 || TARGET_X86
+#if DEBUG
     private int _jitStressEvexEncoding;
 #endif
 #endif
@@ -473,16 +475,19 @@ public partial struct JitConfigValues
     private unsafe byte* _jitFunctionFile;
     private MethodSet _jitRawHexCode;
     private unsafe byte* _jitRawHexCodeFile;
+#endif
 #if TARGET_ARM64
+#if DEBUG
     private int _jitSaveFpLrWithCalleeSavedRegisters;
     private int _jitUseScalableVectorT;
 #endif
+#endif
 #if TARGET_LOONGARCH64
+#if DEBUG
     private int _jitDispIns;
 #endif
 #endif
 #if TARGET_WASM
-    private int _jitWasmNyiToR2RUnsupported;
 #if DEBUG
     private unsafe byte* _jitR2RUnsupportedRange;
 #endif
@@ -690,7 +695,9 @@ public partial struct JitConfigValues
     public int JitStressRex2Encoding => _jitStressRex2Encoding;
     public int JitStressPromotedEvexEncoding => _jitStressPromotedEvexEncoding;
 #endif
+#endif
 #if TARGET_AMD64 || TARGET_X86
+#if DEBUG
     public int JitStressEvexEncoding => _jitStressEvexEncoding;
 #endif
 #endif
@@ -953,16 +960,19 @@ public partial struct JitConfigValues
     public unsafe byte* JitFunctionFile => _jitFunctionFile;
     public MethodSet JitRawHexCode => _jitRawHexCode;
     public unsafe byte* JitRawHexCodeFile => _jitRawHexCodeFile;
+#endif
 #if TARGET_ARM64
+#if DEBUG
     public int JitSaveFpLrWithCalleeSavedRegisters => _jitSaveFpLrWithCalleeSavedRegisters;
     public int JitUseScalableVectorT => _jitUseScalableVectorT;
 #endif
+#endif
 #if TARGET_LOONGARCH64
+#if DEBUG
     public int JitDispIns => _jitDispIns;
 #endif
 #endif
 #if TARGET_WASM
-    public int JitWasmNyiToR2RUnsupported => _jitWasmNyiToR2RUnsupported;
 #if DEBUG
     public unsafe byte* JitR2RUnsupportedRange => _jitR2RUnsupportedRange;
 #endif
@@ -1177,7 +1187,9 @@ public partial struct JitConfigValues
         // _jitStressRex2Encoding = unchecked((int)(0xCDCDCDCD));
         // _jitStressPromotedEvexEncoding = unchecked((int)(0xCDCDCDCD));
 #endif
+#endif
 #if TARGET_AMD64 || TARGET_X86
+#if DEBUG
         // _jitStressEvexEncoding = unchecked((int)(0xCDCDCDCD));
 #endif
 #endif
@@ -1440,16 +1452,19 @@ public partial struct JitConfigValues
         jitHost->freeStringConfigValue(_jitFunctionFile);
         _jitRawHexCode.destroy(jitHost);
         jitHost->freeStringConfigValue(_jitRawHexCodeFile);
+#endif
 #if TARGET_ARM64
+#if DEBUG
         // _jitSaveFpLrWithCalleeSavedRegisters = unchecked((int)(0xCDCDCDCD));
         // _jitUseScalableVectorT = unchecked((int)(0xCDCDCDCD));
 #endif
+#endif
 #if TARGET_LOONGARCH64
+#if DEBUG
         // _jitDispIns = unchecked((int)(0xCDCDCDCD));
 #endif
 #endif
 #if TARGET_WASM
-        // _jitWasmNyiToR2RUnsupported = unchecked((int)(0xCDCDCDCD));
 #if DEBUG
         jitHost->freeStringConfigValue(_jitR2RUnsupportedRange);
 #endif
@@ -1684,7 +1699,9 @@ public partial struct JitConfigValues
         _jitStressRex2Encoding = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressRex2Encoding"u8))), 0);
         _jitStressPromotedEvexEncoding = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressPromotedEvexEncoding"u8))), 0);
 #endif
+#endif
 #if TARGET_AMD64 || TARGET_X86
+#if DEBUG
         _jitStressEvexEncoding = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressEvexEncoding"u8))), 0);
 #endif
 #endif
@@ -1951,16 +1968,19 @@ public partial struct JitConfigValues
         var jitRawHexCodeValue = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitRawHexCode"u8))));
         _jitRawHexCode = new MethodSet(jitRawHexCodeValue, jitHost);
         _jitRawHexCodeFile = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitRawHexCodeFile"u8))));
+#endif
 #if TARGET_ARM64
+#if DEBUG
         _jitSaveFpLrWithCalleeSavedRegisters = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitSaveFpLrWithCalleeSavedRegisters"u8))), 0);
         _jitUseScalableVectorT = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitUseScalableVectorT"u8))), 0);
 #endif
+#endif
 #if TARGET_LOONGARCH64
+#if DEBUG
         _jitDispIns = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDispIns"u8))), 0);
 #endif
 #endif
 #if TARGET_WASM
-        _jitWasmNyiToR2RUnsupported = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitWasmNyiToR2RUnsupported"u8))), 0);
 #if DEBUG
         _jitR2RUnsupportedRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitR2RUnsupportedRange"u8))));
 #endif

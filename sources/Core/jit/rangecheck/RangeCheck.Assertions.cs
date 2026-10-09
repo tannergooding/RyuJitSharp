@@ -95,6 +95,12 @@ public sealed partial class RangeCheck
                 : new(new(LimitType.Unknown));
         }
 
+        if (varTypeIsFloating(type))
+        {
+            // Integer ranges don't describe floating point values (e.g. int->float casts may round).
+            return new(new(LimitType.Unknown));
+        }
+
         var app = new VNFuncApp();
         if (store.GetVNFunc(vn, ref app))
         {

@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
@@ -152,6 +153,79 @@ internal static unsafe class LoopHoistingTests
         });
     }
 
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+    [TestCase(TYP_DOUBLE, false)]
+    [TestCase(TYP_DOUBLE, true)]
+    [TestCase(TYP_SIMD16, false)]
+    [TestCase(TYP_SIMD16, true)]
+#if TARGET_AMD64
+    [TestCase(TYP_SIMD32, false)]
+    [TestCase(TYP_SIMD32, true)]
+    [TestCase(TYP_SIMD64, true)]
+#endif
+    public static void HoistingDoesNotCountPartiallySavedVectorRegistersAcrossCalls(
+        var_types type, bool containsCall)
+    {
+        WithLoop((compiler, unusedPreheader, unusedHeader, unusedLatch) => {
+            compiler._loopSideEffects = [new LoopSideEffects { ContainsCall = containsCall }];
+            var loop = compiler._loops!.GetLoopByIndex(0);
+            compiler.lvaTable = [new LclVarDsc { Type = type }];
+            compiler.lvaCount = 1;
+            var tree = compiler.gtNewLclvNode(type, 0);
+            tree.SetCosts(1, 1);
+            var contextType = typeof(Compiler).GetNestedType("LoopHoistContext", BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException();
+            var context = Activator.CreateInstance(contextType, nonPublic: true)
+                ?? throw new InvalidOperationException();
+            var profitable = typeof(Compiler).GetMethod("optIsProfitableToHoistTree",
+                BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new InvalidOperationException();
+            var expected = !containsCall ||
+                ((CNT_CALLEE_SAVED_FLOAT > 0) && !Compiler.varTypeNeedsPartialCalleeSave(type));
+
+            Assert.That(profitable.Invoke(compiler, [tree, loop, context, true]), Is.EqualTo(expected));
+        });
+    }
+#endif
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void AllocationSideEffectsPreventHoistingLaterThrowingExpression(bool sideEffects)
+    {
+        WithLoop((compiler, preheader, header, unusedLatch) => {
+            var store = new ValueNumStore(compiler);
+            compiler.vnStore = store;
+            var call = compiler.gtNewCallNode(TYP_REF, gtCallTypes.CT_HELPER,
+                Compiler.eeFindHelper(CorInfoHelpFunc.CORINFO_HELP_NEWSFAST));
+            call.SetCosts(1, 1);
+            Assert.That(call.HelperNum.MutatesHeap, Is.False);
+            Assert.That(call.HelperNum.NoThrow, Is.True);
+            if (sideEffects)
+            {
+                call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_ALLOC_SIDE_EFFECTS;
+            }
+            call._vnPair.SetBoth(store.VNForExpr(header, TYP_REF));
+            var address = compiler.gtNewIconNode(TYP_BYREF, 0);
+            address._vnPair.SetBoth(ValueNumStore.VNForNull());
+            var nullCheck = compiler.gtNewNullCheck(address);
+            nullCheck._vnPair = ValueNumStore.VNPForVoid();
+            nullCheck.SetCosts(20, 20);
+            compiler.fgInsertStmtAtEnd(header, compiler.fgNewStmtFromTree(call));
+            compiler.fgInsertStmtAtEnd(header, compiler.fgNewStmtFromTree(nullCheck));
+            header.bbWeight = BB_UNITY_WEIGHT;
+            compiler._loopSideEffects = [new LoopSideEffects
+            {
+                ContainsCall = true,
+                VarInOut = VarSetOps.MakeEmpty(compiler),
+                VarUseDef = VarSetOps.MakeEmpty(compiler),
+            }];
+
+            Assert.That(Hoist(compiler), Is.EqualTo(sideEffects
+                ? PhaseStatus.MODIFIED_NOTHING : PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(compiler.Metrics.HoistedExpressions, Is.EqualTo(sideEffects ? 0 : 1));
+            Assert.That(preheader.FirstStmt is not null, Is.EqualTo(!sideEffects));
+        });
+    }
+
 #if DEBUG
     [TestCase(1)]
     [TestCase(-1)]
@@ -258,6 +332,7 @@ internal static unsafe class LoopHoistingTests
             compiler._dfsTree = compiler.fgComputeDfs(false);
             compiler._domTree = FlowGraphDominatorTree.Build(compiler._dfsTree);
             compiler._loops = FlowGraphNaturalLoops.Find(compiler._dfsTree);
+            compiler._blockToLoop = BlockToNaturalLoopMap.Build(compiler._loops);
             action(compiler, preheader, header, latch);
         });
     }

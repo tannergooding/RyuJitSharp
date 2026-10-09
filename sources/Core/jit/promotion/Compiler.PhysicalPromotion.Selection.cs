@@ -14,11 +14,15 @@ public partial class Compiler
 
     internal sealed class PhysicalPromotionReplacement(int offset, var_types accessType)
     {
+        public BasicBlock? ReadBackPlacement;
         public int Offset = offset;
         public var_types AccessType = accessType;
         public int LclNum = BAD_VAR_NUM;
+        // Dense index into the inter-block pending-readback sets.
+        public int ReadBackIndex = BAD_VAR_NUM;
         public string Description = "";
         public bool NeedsWriteBack = true;
+        // May remain true across blocks when all incoming paths have a current struct field.
         public bool NeedsReadBack;
 
         public bool Overlaps(int otherStart, int otherSize)
@@ -520,12 +524,8 @@ public partial class Compiler
             }
             else if (local.lvIsParam)
             {
-                const weight_t minRelativeAccessWeight = 0.10;
-                var allowBitwiseExtraction = !varTypeIsSmall(access.AccessType) ||
-                    ((access.CountWtd + inducedCountWtd) >= minRelativeAccessWeight * entryWeight);
-
                 if (compiler.PhysicalPromotionMapsToParameterRegister(lclNum, access.Offset,
-                        access.AccessType, allowBitwiseExtraction))
+                        access.AccessType))
                 {
                     costWithout += structCycles * entryWeight;
                     sizeWithout += structSize;

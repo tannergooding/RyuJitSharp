@@ -200,9 +200,13 @@ internal static unsafe class PatchpointMetadataTests
         compiler.gsShadowVarInfo[0].ShadowCopy = 9;
 #if TARGET_ARM64
         compiler.lvaTable[8].Type = TYP_SIMD;
-        compiler.lvaTable[8].lvOnFrame = false;
-        compiler.lvaTable[8].lvFramePointerBased = false;
-        compiler.gsShadowVarInfo[8].ShadowCopy = 1000;
+        compiler.lvaTable[8].lvOnFrame = true;
+        compiler.lvaTable[8].lvFramePointerBased = true;
+        compiler.gsShadowVarInfo[8].ShadowCopy = BAD_VAR_NUM;
+        compiler.compUsesUnknownSizeFrame = true;
+        compiler.lvaTable[8].UnknownSizeFrameIndex = unchecked((int)compiler.unkSizeFrame.AllocVector());
+        compiler.unkSizeFrame.FinalizeLayout();
+        var runtimeVectorLength = compiler.getRuntimeVectorTByteLength();
 #endif
         compiler.lvaCachedGenericContextArgOffs = saveFpLr ? -48 : 48;
         compiler.compGSReorderStackLayout = true;
@@ -251,15 +255,20 @@ internal static unsafe class PatchpointMetadataTests
             Assert.That(context.Bytes, Is.EqualTo((nint)PatchpointInfo.ComputeSize(9)));
             Assert.That(context.Published == initial, Is.True);
             var result = context.Published;
+#if TARGET_ARM64
+            Assert.That(result->TotalFrameSize, Is.EqualTo(unchecked(frameSize + (int)runtimeVectorLength)));
+#else
             Assert.That(result->TotalFrameSize, Is.EqualTo(frameSize));
+#endif
             Assert.That(result->NumberOfLocals, Is.EqualTo(9));
             Assert.That(result->Offset(0), Is.EqualTo(compiler.lvaTable[9].StackOffset + offsetAdjust));
             Assert.That(result->IsExposed(0), Is.True);
             Assert.That(result->Offset(1), Is.EqualTo(compiler.lvaTable[1].StackOffset + offsetAdjust));
             Assert.That(result->IsExposed(1), Is.True);
 #if TARGET_ARM64
-            Assert.That(result->Offset(8), Is.EqualTo(-1234));
-            Assert.That(result->IsExposed(8), Is.True);
+            Assert.That(result->Offset(8),
+                Is.EqualTo(unchecked(-codeGen.genTotalFrameSize - (int)runtimeVectorLength)));
+            Assert.That(result->IsExposed(8), Is.False);
 #else
             Assert.That(result->Offset(8), Is.EqualTo(compiler.lvaTable[8].StackOffset + offsetAdjust));
 #endif

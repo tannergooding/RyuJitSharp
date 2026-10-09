@@ -26,31 +26,42 @@ internal static unsafe class AssertionRelationalTests
     [TestCase(true, true)]
     [TestCase(false, true)]
     [TestCase(true, false)]
-    public static void GlobalEqualityLookupRequiresActiveMatchingConservativeVNs(bool equals, bool matches)
+    [TestCase(false, false)]
+    public static void GlobalEqualityFoldingRequiresActiveMatchingConservativeVNs(bool equals, bool matches)
     {
         WithCompiler((compiler, store) =>
         {
             var leftVN = store.VNForExpr(null, TYP_INT);
             var constantVN = store.VNForIntCon(17);
             var left = compiler.gtNewLclvNode(TYP_INT, 0);
-            left._vnPair.SetBoth(leftVN);
+            left._vnPair.SetBoth(matches ? leftVN : store.VNForExpr(null, TYP_INT));
             var right = compiler.gtNewIconNode(TYP_INT, 17);
-            right._vnPair.SetBoth(matches ? constantVN : store.VNForIntCon(18));
+            right._vnPair.SetBoth(constantVN);
             var assertion = AssertionDsc.CreateInt32ConstantVNAssertion(compiler, leftVN, constantVN, equals);
             var index = compiler.optAddAssertion(assertion);
             var traits = compiler.apTraits ?? throw new InvalidOperationException();
             var active = BitOps.MakeEmpty(traits);
+            var relop = compiler.gtNewBinaryNode(GT_EQ, TYP_INT, left, right);
+            relop._vnPair.SetBoth(store.VNForExpr(null, TYP_INT));
+            var statement = compiler.gtNewStmt(relop);
+            var block = new BasicBlock(null, null);
 
-            Assert.That(compiler.optGlobalAssertionIsEqualOrNotEqual(active, left, right), Is.Zero);
+            Assert.That(compiler.optAssertionPropGlobal_RelOp(active, relop, statement, block), Is.Null);
             BitOps.AddElemD(traits, active, index - 1);
-            Assert.That(compiler.optGlobalAssertionIsEqualOrNotEqual(active, left, right),
-                Is.EqualTo(matches ? index : 0));
+            var result = compiler.optAssertionPropGlobal_RelOp(active, relop, statement, block);
+            Assert.That(result is not null, Is.EqualTo(matches));
+            if (matches)
+            {
+                Assert.That(result?.AsIntCon().IconValue, Is.EqualTo(equals ? (nint)1 : 0));
+            }
         });
     }
 
-    [TestCase(true, 1)]
-    [TestCase(false, 0)]
-    public static void ExactTypeLookupRecognizesInvariantNonNullVtableLoad(bool exact, int expected)
+    [TestCase(true, GT_EQ, 1)]
+    [TestCase(true, GT_NE, 0)]
+    [TestCase(false, GT_EQ, -1)]
+    public static void ExactTypeFoldingRecognizesInvariantNonNullVtableLoad(
+        bool exact, genTreeOps oper, int expected)
     {
         WithCompiler((compiler, store) =>
         {
@@ -63,13 +74,17 @@ internal static unsafe class AssertionRelationalTests
             var active = BitOps.MakeEmpty(traits);
             BitOps.AddElemD(traits, active, index - 1);
 
-            var left = compiler.gtNewIconNode(TYP_I_IMPL, 0);
+            var left = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
             left._vnPair.SetBoth(store.VNForFunc(TYP_I_IMPL, VNF_InvariantNonNullLoad, objectVN));
-            var right = compiler.gtNewIconNode(TYP_I_IMPL, 0);
+            var right = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
             right._vnPair.SetBoth(typeVN);
 
-            Assert.That(compiler.optGlobalAssertionIsEqualOrNotEqual(active, left, right),
-                Is.EqualTo(expected));
+            var relop = compiler.gtNewBinaryNode(oper, TYP_INT, left, right);
+            relop._vnPair.SetBoth(store.VNForExpr(null, TYP_INT));
+            var result = compiler.optAssertionPropGlobal_RelOp(active, relop,
+                compiler.gtNewStmt(relop), new BasicBlock(null, null));
+            Assert.That(result?.AsIntCon().IconValue,
+                expected < 0 ? Is.Null : Is.EqualTo((nint)expected));
         });
     }
 
@@ -205,6 +220,92 @@ internal static unsafe class AssertionRelationalTests
         });
     }
 
+    [TestCase(GT_EQ, true, 1)]
+    [TestCase(GT_EQ, false, 0)]
+    [TestCase(GT_NE, true, 0)]
+    [TestCase(GT_NE, false, 1)]
+    public static void EqualityAssertionsFoldEffectfulNonLocalOperandsWithoutBashing(
+        genTreeOps oper, bool equals, int expected)
+    {
+        WithCompiler((compiler, store) => {
+            compiler.lvaTable[0].Type = TYP_DOUBLE;
+            var localVN = store.VNForExpr(null, TYP_DOUBLE);
+            var constantVN = store.VNForDoubleCon(0.0);
+            var effect = compiler.gtNewStoreLclVarNode(1, compiler.gtNewIconNode(TYP_INT, 42));
+            var value = compiler.gtNewBinaryNode(GT_ADD, TYP_DOUBLE,
+                compiler.gtNewLclvNode(TYP_DOUBLE, 0), new GenTreeDblCon(TYP_DOUBLE, 1.0));
+            var left = compiler.gtNewCommaNode(TYP_DOUBLE, effect, value);
+            left._vnPair.SetBoth(localVN);
+            var right = new GenTreeDblCon(TYP_DOUBLE, 0.0);
+            right._vnPair.SetBoth(constantVN);
+            var relop = compiler.gtNewBinaryNode(oper, TYP_INT, left, right);
+            relop._vnPair.SetBoth(store.VNForExpr(null, TYP_INT));
+            var statement = compiler.gtNewStmt(relop);
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var assertions = BitOps.MakeEmpty(traits);
+            var index = compiler.optAddAssertion(AssertionDsc.CreateConstLclVarAssertion(
+                compiler, BAD_VAR_NUM, localVN, 0.0, constantVN, equals));
+            BitOps.AddElemD(traits, assertions, index - 1);
+
+            var result = compiler.optAssertionPropGlobal_RelOp(assertions, relop, statement,
+                new BasicBlock(null, null));
+            Assert.That(result?.Oper, Is.EqualTo(GT_COMMA));
+            Assert.That(result?.AsOp().Op1, Is.SameAs(effect));
+            Assert.That(result?.AsOp().Op2.AsIntCon().IconValue, Is.EqualTo((nint)expected));
+            Assert.That(statement.RootNode, Is.SameAs(result));
+            Assert.That(relop.Op1, Is.SameAs(left));
+            Assert.That(relop.Oper, Is.EqualTo(oper));
+            Assert.That(value.Oper, Is.EqualTo(GT_ADD));
+        });
+    }
+
+    [TestCase(GT_EQ, 0)]
+    [TestCase(GT_NE, 1)]
+    public static void NonNullBaseAssertionFoldsEffectfulSmallOffsetAddress(
+        genTreeOps oper, int expected)
+    {
+        WithCompiler((compiler, store) => {
+            compiler.compMaxUncheckedOffsetForNullObject = 4095;
+            compiler.lvaTable[0].Type = TYP_BYREF;
+            var baseVN = store.VNForExpr(null, TYP_BYREF);
+            var baseAddress = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            baseAddress._vnPair.SetBoth(baseVN);
+            var offset = compiler.gtNewIconNode(TYP_I_IMPL, 8);
+            offset._vnPair.SetBoth(store.VNForIntPtrCon(8));
+            var address = compiler.gtNewBinaryNode(GT_ADD, TYP_BYREF, baseAddress, offset);
+            var addressVN = store.VNForFunc(TYP_BYREF, VNF_ADD, baseVN, offset._vnPair.Conservative);
+            var effect = compiler.gtNewStoreLclVarNode(1, compiler.gtNewIconNode(TYP_INT, 42));
+            var left = compiler.gtNewCommaNode(TYP_BYREF, effect, address);
+            left._vnPair.SetBoth(addressVN);
+            var right = compiler.gtNewIconNode(TYP_BYREF, 0);
+            right._vnPair.SetBoth(ValueNumStore.VNForNull());
+            var relop = compiler.gtNewBinaryNode(oper, TYP_INT, left, right);
+            relop._vnPair.SetBoth(store.VNForExpr(null, TYP_INT));
+            var statement = compiler.gtNewStmt(relop);
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var assertions = BitOps.MakeEmpty(traits);
+            var index = compiler.optAddAssertion(AssertionDsc.CreateVNNonNullAssertion(compiler, baseVN));
+            BitOps.AddElemD(traits, assertions, index - 1);
+
+            var result = compiler.optAssertionPropGlobal_RelOp(assertions, relop, statement,
+                new BasicBlock(null, null));
+            Assert.That(result?.Oper, Is.EqualTo(GT_COMMA));
+            Assert.That(result?.AsOp().Op1, Is.SameAs(effect));
+            Assert.That(result?.AsOp().Op2.AsIntCon().IconValue, Is.EqualTo((nint)expected));
+            Assert.That(statement.RootNode, Is.SameAs(result));
+        });
+    }
+
+    [Test]
+    public static void NonNullProofRejectsFloatingValueNumbersBeforePointerAnalysis()
+    {
+        WithCompiler((compiler, store) => {
+            Assert.That(compiler.optAssertionVNIsNonNull(ValueNumStore.NoVN, null), Is.False);
+            Assert.That(compiler.optAssertionVNIsNonNull(store.VNForFloatCon(1.0f), null), Is.False);
+            Assert.That(compiler.optAssertionVNIsNonNull(store.VNForDoubleCon(1.0), null), Is.False);
+        });
+    }
+
     [TestCase(TYP_FLOAT, true, 1)]
     [TestCase(TYP_FLOAT, false, 0)]
     [TestCase(TYP_DOUBLE, true, 1)]
@@ -236,17 +337,17 @@ internal static unsafe class AssertionRelationalTests
                 new BasicBlock(null, null));
             Assert.That(result?.AsIntCon().IconValue, Is.EqualTo((nint)expected));
             Assert.That(statement.RootNode, Is.SameAs(result));
-            Assert.That(relop.Oper, Is.EqualTo(equals ? GT_EQ : GT_NE));
+            Assert.That(relop.Oper, Is.EqualTo(GT_EQ));
         });
     }
 
 #if DEBUG
-    [TestCase(TYP_FLOAT, true, "inf")]
-    [TestCase(TYP_FLOAT, false, "-inf")]
-    [TestCase(TYP_DOUBLE, true, "inf")]
-    [TestCase(TYP_DOUBLE, false, "-inf")]
-    public static void VerboseFloatingAssertionUsesNativeInfinitySpelling(
-        var_types type, bool positive, string spelling)
+    [TestCase(TYP_FLOAT, true)]
+    [TestCase(TYP_FLOAT, false)]
+    [TestCase(TYP_DOUBLE, true)]
+    [TestCase(TYP_DOUBLE, false)]
+    public static void VerboseFloatingAssertionReportsDirectFold(
+        var_types type, bool positive)
     {
         WithCompiler((compiler, store) =>
         {
@@ -292,7 +393,7 @@ internal static unsafe class AssertionRelationalTests
             }
 
             Assert.That(Encoding.UTF8.GetString(stream.ToArray()),
-                Does.Contain($" == {spelling}\n"));
+                Does.Contain($"Found matching assertion #{index:D2} for tree {relop.TreeId:D6}.. Folded into:"));
         });
     }
 #endif

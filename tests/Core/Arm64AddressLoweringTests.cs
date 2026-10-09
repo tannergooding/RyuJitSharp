@@ -3,6 +3,7 @@
 #if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.CORINFO_InstructionSet;
 using static RyuJitSharp.GenTreeFlags;
@@ -85,6 +86,92 @@ internal static unsafe class Arm64AddressLoweringTests
                 Assert.That(original.Prev, Is.SameAs(displacement));
             }
         });
+    }
+
+    [TestCase("load", 8, false, true)]
+    [TestCase("store", 8, false, true)]
+    [TestCase("write-barrier", 8, false, false)]
+    [TestCase("null-ref", 8, false, true)]
+    [TestCase("stack-ref", 8, false, true)]
+    [TestCase("load", -257, false, false)]
+    [TestCase("load", 256, false, false)]
+    [TestCase("load", 8, true, false)]
+    public static void Rcpc2IsReportedOnlyForUsableVolatileAddressModes(
+        string operation, int offset, bool modified, bool expected)
+    {
+        WithLowering((compiler, lowering, block) => {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.notifyInstructionSetUsage =
+                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool, byte>)
+                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte, byte>)&Notify;
+            InstructionSetEE ee = new() { Interface = new ICorJitInfo { lpVtbl = &vtable } };
+            compiler.info.compCompHnd = &ee.Interface;
+            compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_Rcpc2);
+            compiler.lvaTable[0].Type = TYP_BYREF;
+            var local = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            block.InsertAtEnd(local);
+            if (modified)
+            {
+                compiler.lvaTable[1].Type = TYP_BYREF;
+                var value = compiler.gtNewLclvNode(TYP_BYREF, 1);
+                Append(block, value, compiler.gtNewStoreLclVarNode(0, value));
+            }
+
+            var displacement = compiler.gtNewIconNode(TYP_I_IMPL, offset);
+            var original = new GenTreeOp(GT_ADD, TYP_BYREF, local, displacement);
+            Append(block, displacement, original);
+            GenTreeIndir parent;
+            if (operation == "load")
+            {
+                parent = new GenTreeIndir(GT_IND, TYP_LONG, original) { IsUnusedValue = true };
+            }
+            else
+            {
+                var type = operation == "store" ? TYP_LONG : TYP_REF;
+                compiler.lvaTable[1].Type = type;
+                var value = operation == "null-ref"
+                    ? compiler.gtNewZeroConNode(TYP_REF)
+                    : compiler.gtNewLclvNode(type, 1);
+                block.InsertAtEnd(value);
+                parent = new GenTreeStoreInd(type, original, value);
+                if (operation == "stack-ref")
+                {
+                    parent.Flags |= GTF_IND_TGT_NOT_HEAP;
+                }
+            }
+
+            parent.Flags |= GTF_IND_VOLATILE;
+            block.InsertAtEnd(parent);
+            GenTree address = original;
+
+            Assert.That(TryCreateAddrMode(lowering, ref address, true, parent), Is.EqualTo(expected));
+            Assert.That(ee.Count, Is.EqualTo(expected ? 1 : 0));
+            Assert.That(compiler.opts.compSupportsISAReported.HasInstructionSet(InstructionSet_Rcpc2),
+                Is.EqualTo(expected));
+            Assert.That(parent.Addr, Is.SameAs(address));
+            Assert.That(address.Oper, Is.EqualTo(expected ? GT_LEA : GT_ADD));
+            if (expected)
+            {
+                Assert.That(ee.InstructionSet, Is.EqualTo(InstructionSet_Rcpc2));
+            }
+        });
+    }
+
+    private struct InstructionSetEE
+    {
+        public ICorJitInfo Interface;
+        public CORINFO_InstructionSet InstructionSet;
+        public int Count;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte Notify(ICorJitInfo* self, CORINFO_InstructionSet isa, byte supported, byte preserve)
+    {
+        var ee = (InstructionSetEE*)self;
+        ee->Count++;
+        ee->InstructionSet = isa;
+
+        return supported;
     }
 
     [TestCase(false, false, true)]

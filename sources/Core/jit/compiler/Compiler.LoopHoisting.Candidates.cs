@@ -55,6 +55,12 @@ public partial class Compiler
             loopVars = context.LoopVarFPCount;
             inOut = context.LoopVarInOutFPCount;
             available = CNT_CALLEE_SAVED_FLOAT;
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+            if (loopContainsCall && varTypeNeedsPartialCalleeSave(tree.Type))
+            {
+                available = 0;
+            }
+#endif
             if (!loopContainsCall)
             {
                 available += CNT_CALLEE_TRASH_FLOAT - 1;

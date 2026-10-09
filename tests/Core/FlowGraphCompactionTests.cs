@@ -569,6 +569,7 @@ internal static unsafe class FlowGraphCompactionTests
             var (_, block, target, _) = CreateGraph(compiler);
             compiler.lvaTrackedCount = 3;
             compiler.lvaTrackedCountInSizeTUnits = 1;
+            compiler.lvaCurEpoch = 1;
             block.bbCodeOffs = start;
             block.bbCodeOffsEnd = end;
             target.bbCodeOffs = targetStart;
@@ -602,8 +603,12 @@ internal static unsafe class FlowGraphCompactionTests
             compiler.fgLastBB = target;
             block.bbLiveOut = [1];
             target.bbLiveOut = [];
+            Assert.That(compiler.CurLVEpoch, Is.Zero);
+            Assert.That(compiler.lvaTrackedCount, Is.Zero);
+            Assert.That(compiler.lvaTrackedCountInSizeTUnits, Is.Zero);
             compiler.fgCompactBlock(block);
             Assert.That(block.bbLiveOut, Is.Empty);
+            Assert.That(compiler.CurLVEpoch, Is.Zero);
             Assert.That(compiler.fgLastBB, Is.SameAs(block));
             Assert.That(block.Next, Is.Null);
         });

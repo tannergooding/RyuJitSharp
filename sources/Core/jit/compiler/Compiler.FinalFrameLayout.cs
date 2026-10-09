@@ -249,6 +249,16 @@ public partial class Compiler
         {
             assert(curState == FINAL_FRAME_LAYOUT);
             unkSizeFrame.FinalizeLayout();
+
+            if (compUsesUnknownSizeFrame)
+            {
+                assert(codeGen is not null);
+                JITDUMP("*** Final UnknownSizeFrame ***\n");
+                JITDUMP($"Total Size in VL: {unkSizeFrame.VectorBlockSize()}\n");
+                JITDUMP($"Vector Count    : {unkSizeFrame.nVector}\n");
+                JITDUMP($"Mask Count      : {unkSizeFrame.nMask}\n");
+                JITDUMP($"Start offset    : {-codeGen.genTotalFrameSize}\n");
+            }
         }
 #endif
     }
@@ -277,7 +287,7 @@ public partial class Compiler
                 continue;
             }
 
-            assert(!lvaIsUnknownSizeLocal(lclNum));
+            assert(!lvaLocalIsOnUnknownSizeFrame(lclNum));
             ref var dsc = ref lvaGetDesc(lclNum);
             dsc.StackOffset = startOffset + relativeZero;
             JITDUMP($"Set V{lclNum:D2} to offset {startOffset}\n");
@@ -473,7 +483,7 @@ public partial class Compiler
         {
             ref var dsc = ref lvaGetDesc(lclNum);
             noway_assert(!dsc.lvFramePointerBased || lvaDoubleAlignOrFramePointerUsed());
-            if (lvaIsUnknownSizeLocal(lclNum))
+            if (lvaLocalIsOnUnknownSizeFrame(lclNum))
             {
                 continue;
             }

@@ -30,9 +30,7 @@ public partial class Compiler
 
         mul.SetAllEffectsFlags(op1, op2);
         op1.CanCse = false;
-        op1.SetMorphed(this);
         op2.CanCse = false;
-        op2.SetMorphed(this);
 
         return mul;
     }

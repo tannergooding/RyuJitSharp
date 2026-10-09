@@ -118,7 +118,7 @@ public partial class Compiler
             using var scope = new SharedTempsScope(this);
             result = fgMorphArgs(call);
         }
-        result.SetMorphed(this);
+
         return result;
     }
 

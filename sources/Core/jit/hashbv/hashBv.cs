@@ -29,10 +29,6 @@ public sealed partial class hashBv
 
     public int hashtable_size() => 1 << log2_hashSize;
 
-    public bool TooSmall() => numNodes > hashtable_size() * 4;
-
-    public bool TooBig() => hashtable_size() > numNodes * 4;
-
     private static int getHashForIndex(indexType index, int tableSize)
         => (int)((index >> LOG2_BITS_PER_NODE) & (indexType)(tableSize - 1));
 
@@ -85,28 +81,6 @@ public sealed partial class hashBv
         var node = getNodeForIndexHelper(index, true);
         assert(node is not null);
         return node;
-    }
-
-    public hashBvNode? getNodeForIndex(indexType index)
-    {
-        index &= ~(indexType)(BITS_PER_NODE - 1);
-        var node = getInsertionPointForIndex(index);
-        return ((node is not null) && node.belongsIn(index)) ? node : null;
-    }
-
-    public void removeNodeAtBase(indexType index)
-    {
-        ref var insertionPoint = ref getInsertionPointForIndex(index);
-        var node = insertionPoint;
-        assert(node is not null);
-
-        if (node is null)
-        {
-            throw new InvalidOperationException("The node to remove is missing.");
-        }
-
-        insertionPoint = node.next;
-        numNodes = unchecked((ushort)(numNodes - 1));
     }
 
     public void setAll(indexType numToSet)

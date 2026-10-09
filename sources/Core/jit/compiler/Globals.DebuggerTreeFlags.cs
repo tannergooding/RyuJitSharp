@@ -27,10 +27,6 @@ public static partial class Globals
             {
                 jitprintf("[NODE_SMALL]");
             }
-            if ((tree._debugFlags & GTF_DEBUG_NODE_MORPHED) is not 0)
-            {
-                jitprintf("[MORPHED]");
-            }
             if ((tree.Flags & GTF_COLON_COND) is not 0)
             {
                 jitprintf("[COLON_COND]");
@@ -87,10 +83,6 @@ public static partial class Globals
                     if ((tree.Flags & GTF_VAR_EXPLICIT_INIT) is not 0)
                     {
                         jitprintf("[VAR_EXPLICIT_INIT]");
-                    }
-                    if ((tree._debugFlags & GTF_DEBUG_VAR_CSE_REF) is not 0)
-                    {
-                        jitprintf("[VAR_CSE_REF]");
                     }
                     break;
                 }
@@ -198,10 +190,6 @@ public static partial class Globals
                 }
                 case GT_BOX:
                 {
-                    if ((tree.Flags & GTF_BOX_VALUE) is not 0)
-                    {
-                        jitprintf("[BOX_VALUE]");
-                    }
                     if ((tree.Flags & GTF_BOX_CLONED) is not 0)
                     {
                         jitprintf("[BOX_CLONED]");

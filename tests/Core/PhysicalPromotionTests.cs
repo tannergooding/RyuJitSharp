@@ -1,8 +1,11 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using System;
+using System.Collections.Generic;
 #if DEBUG
 using System.IO;
 #endif
+using System.Linq;
 using System.Reflection;
 #if DEBUG
 using System.Text;
@@ -37,7 +40,7 @@ internal static class PhysicalPromotionTests
             compiler.fgInsertStmtAtEnd(block, statement);
             var aggregates = new Compiler.PhysicalPromotionAggregateInfoMap(compiler.lvaCount);
             var liveness = new Compiler.PhysicalPromotionLiveness(compiler, aggregates);
-            var visitor = new Compiler.PhysicalPromotionReplaceVisitor(compiler, aggregates, liveness);
+            var visitor = CreateReplaceVisitor(compiler, aggregates, liveness);
             _ = visitor.StartBlock(block);
             visitor.StartStatement(statement);
 
@@ -350,6 +353,10 @@ internal static class PhysicalPromotionTests
             Assert.That(liveness.IsReplacementLiveOut(first, 0, 0), Is.True);
             Assert.That(liveness.IsReplacementLiveIn(second, 0, 0), Is.True);
             Assert.That(liveness.IsReplacementLiveOut(second, 0, 0), Is.False);
+            Assert.That(liveness.IsReplacementUsed(first, 0, 0), Is.False);
+            Assert.That(liveness.IsReplacementDefined(first, 0, 0), Is.EqualTo(defineBeforeUse));
+            Assert.That(liveness.IsReplacementUsed(second, 0, 0), Is.True);
+            Assert.That(liveness.IsReplacementDefined(second, 0, 0), Is.False);
             Assert.That(read.Flags & GTF_VAR_DEATH, Is.Not.Zero);
         });
     }
@@ -581,7 +588,7 @@ internal static class PhysicalPromotionTests
             var aggregate = new Compiler.PhysicalPromotionAggregateInfo(0);
             aggregateMap.Add(aggregate);
             var liveness = new Compiler.PhysicalPromotionLiveness(compiler, aggregateMap);
-            var replacer = new Compiler.PhysicalPromotionReplaceVisitor(compiler, aggregateMap, liveness);
+            var replacer = CreateReplaceVisitor(compiler, aggregateMap, liveness);
             var source = compiler.gtNewLclvNode(TYP_STRUCT, 1);
             var store = compiler.gtNewStoreLclVarNode(0, source);
             var plan = new Compiler.PhysicalPromotionDecompositionPlan(
@@ -754,7 +761,7 @@ internal static class PhysicalPromotionTests
             aggregateMap.Add(aggregate);
 
             var liveness = new Compiler.PhysicalPromotionLiveness(compiler, aggregateMap);
-            var replacer = new Compiler.PhysicalPromotionReplaceVisitor(compiler, aggregateMap, liveness);
+            var replacer = CreateReplaceVisitor(compiler, aggregateMap, liveness);
             var source = compiler.gtNewLclvNode(TYP_STRUCT, 1);
             var store = compiler.gtNewStoreLclVarNode(0, source);
             var plan = new Compiler.PhysicalPromotionDecompositionPlan(
@@ -791,7 +798,7 @@ internal static class PhysicalPromotionTests
         var aggregate = new Compiler.PhysicalPromotionAggregateInfo(0);
         aggregateMap.Add(aggregate);
         var liveness = new Compiler.PhysicalPromotionLiveness(compiler, aggregateMap);
-        var replacer = new Compiler.PhysicalPromotionReplaceVisitor(compiler, aggregateMap, liveness);
+        var replacer = CreateReplaceVisitor(compiler, aggregateMap, liveness);
         var store = compiler.gtNewStoreLclVarNode(0, source);
         return new Compiler.PhysicalPromotionDecompositionPlan(
             compiler, replacer, aggregateMap, liveness, store, source, false, false);
@@ -961,7 +968,7 @@ internal static class PhysicalPromotionTests
             Assert.That(firstDeaths.IsRemainderDying(), Is.True);
             Assert.That(secondDeaths.IsRemainderDying(), Is.True);
 
-            var replacer = new Compiler.PhysicalPromotionReplaceVisitor(compiler, aggregates, liveness);
+            var replacer = CreateReplaceVisitor(compiler, aggregates, liveness);
             for (var statement = replacer.StartBlock(block); statement is not null; statement = statement.NextStmt)
             {
                 replacer.StartStatement(statement);
@@ -1129,7 +1136,832 @@ internal static class PhysicalPromotionTests
     }
 
     [Test]
-    public static void ReplacementReadBackIsInsertedAtLiveBlockExit()
+    public static void LogicalOccurrencesPreserveListOrderSizesAndPromotedParents()
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            compiler.lvaTable[0].Type = TYP_STRUCT;
+            compiler.lvaTable[0].Layout = new ClassLayout(16);
+            compiler.lvaTable[1].Type = TYP_STRUCT;
+            compiler.lvaTable[1].Layout = new ClassLayout(8);
+            compiler.lvaTable[1].lvPromoted = true;
+            compiler.lvaTable[1].lvFieldLclStart = 2;
+            compiler.lvaTable[1].lvFieldCnt = 1;
+            var field = compiler.gtNewLclFldNode(TYP_SHORT, 0, 2);
+            var parent = compiler.gtNewLclvNode(TYP_STRUCT, 1);
+            var statement = compiler.gtNewStmt(compiler.gtNewCommaNode(TYP_STRUCT, field, parent));
+            compiler.fgSequenceLocals(statement);
+            var occurrences = new List<LocalOccurrence>();
+
+            var result = statement.VisitLogicalLocalOccurrencesViaLocalsTreeList(occurrence => {
+                occurrences.Add(occurrence);
+                return GenTree.VisitResult.Continue;
+            });
+
+            Assert.That(result, Is.EqualTo(GenTree.VisitResult.Continue));
+            GenTree[] expectedNodes = [field, parent];
+            Assert.That(occurrences.Select(occurrence => occurrence.Node), Is.EqualTo(expectedNodes));
+            Assert.That((occurrences[0].LclNum, occurrences[1].LclNum), Is.EqualTo((0, 1)));
+            Assert.That((occurrences[0].LclOffs, occurrences[1].LclOffs), Is.EqualTo((2, 0)));
+            Assert.That((occurrences[0].GetAccessSize(compiler), occurrences[1].GetAccessSize(compiler)),
+                Is.EqualTo((2, 8)));
+            Assert.That(occurrences[1].GetAccessType(compiler), Is.EqualTo(TYP_STRUCT));
+
+            occurrences.Clear();
+            result = statement.VisitLogicalLocalOccurrencesViaLocalsTreeList(occurrence => {
+                occurrences.Add(occurrence);
+                return GenTree.VisitResult.Abort;
+            });
+            Assert.That(result, Is.EqualTo(GenTree.VisitResult.Abort));
+            Assert.That(occurrences.Count, Is.EqualTo(1));
+            Assert.That(statement.LocalsTreeList, Is.EqualTo(expectedNodes));
+
+            var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 4);
+            address.Flags |= GTF_VAR_DEF;
+            var addressOccurrence = new LocalOccurrence(address);
+            Assert.That(addressOccurrence.Node, Is.SameAs(address));
+            Assert.That(addressOccurrence.LclNum, Is.Zero);
+            Assert.That(addressOccurrence.LclOffs, Is.EqualTo(4));
+            Assert.That(addressOccurrence.Flags & GTF_VAR_DEF, Is.Not.Zero);
+        });
+    }
+
+    [TestCase(0, 8, true)]
+    [TestCase(0, 4, false)]
+    [TestCase(4, 4, false)]
+    public static void LivenessDefinitionsRequireFullReplacementCoverage(int offset, int size, bool fullDefinition)
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            var blocks = CreatePromotionGraph(compiler, [[]]);
+            compiler.lvaTable[1].Type = TYP_STRUCT;
+            compiler.lvaTable[1].Layout = new ClassLayout(size);
+            var store = new GenTreeLclFld(TYP_STRUCT, 0, checked((ushort)offset),
+                compiler.gtNewLclvNode(TYP_STRUCT, 1), compiler.lvaTable[1].Layout);
+            store.Flags |= GTF_VAR_DEF;
+            _ = AddPromotionStatement(compiler, blocks[0], store);
+            _ = AddPromotionStatement(compiler, blocks[0], compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            var aggregates = CreatePromotionAggregates(compiler);
+            compiler._dfsTree = compiler.fgComputeDfs();
+            var liveness = new Compiler.PhysicalPromotionLiveness(compiler, aggregates);
+
+            liveness.Run();
+
+            Assert.That(liveness.IsReplacementDefined(blocks[0], 0, 0), Is.EqualTo(fullDefinition));
+            Assert.That(liveness.IsReplacementUsed(blocks[0], 0, 0), Is.EqualTo(!fullDefinition));
+            Assert.That(liveness.IsReplacementLiveIn(blocks[0], 0, 0), Is.EqualTo(!fullDefinition));
+        });
+    }
+
+    [TestCase(0, 8, true, 1)]
+    [TestCase(0, 4, false, 2)]
+    [TestCase(4, 4, false, 1)]
+    public static unsafe void RetbufferOccurrencesUseTheCallDefinitionSize(
+        int offset, int size, bool fullDefinition, int expectedReadBacks)
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            var blocks = CreatePromotionGraph(compiler, [[]]);
+            var handle = (CORINFO_CLASS_STRUCT_*)1;
+            var layout = new ClassLayout(handle, true, checked((uint)size), TYP_STRUCT, "Retbuffer", "Retbuffer");
+            var layouts = new ClassLayoutTable();
+            _ = layouts.AddObjLayout(compiler, layout);
+            typeof(Compiler).GetField("_classLayoutTable", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(compiler, layouts);
+#if DEBUG
+            compiler.lvaTable[0].IsDefinedViaAddress = true;
+#endif
+            var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, checked((ushort)offset));
+            address.Flags |= GTF_VAR_DEF;
+            var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            call.RetClsHnd = handle;
+            call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_RETBUFFARG_LCLOPT;
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(address).WithWellKnownArg(WellKnownArg.RetBuffer));
+            _ = AddPromotionStatement(compiler, blocks[0], call);
+            var fieldUse = AddPromotionStatement(compiler, blocks[0], compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            var aggregates = CreatePromotionAggregates(compiler);
+            var replacement = aggregates.Lookup(0)!.Replacements[0];
+            compiler._dfsTree = compiler.fgComputeDfs();
+            var liveness = new Compiler.PhysicalPromotionLiveness(compiler, aggregates);
+
+            liveness.Run();
+
+            Assert.That(liveness.IsReplacementDefined(blocks[0], 0, 0), Is.EqualTo(fullDefinition));
+            Assert.That(liveness.IsReplacementUsed(blocks[0], 0, 0), Is.EqualTo(!fullDefinition));
+            Assert.That(liveness.GetDeathsForStructLocal(address).IsReplacementDying(0), Is.False);
+            var visitor = CreateReplaceVisitor(compiler, aggregates, liveness);
+            RewritePromotionBlocks(compiler, visitor);
+            Assert.That(CountReadBacks(blocks[0], replacement), Is.EqualTo(expectedReadBacks));
+            Assert.That(fieldUse.RootNode.AsLclVarCommon().LclNum, Is.EqualTo(replacement.LclNum));
+            AssertReadBack(fieldUse.PrevStmt!, 0, replacement);
+        });
+    }
+
+    [Test]
+    public static void ConditionalDefinitionsDoNotKillIncomingReplacementLiveness()
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            var blocks = CreatePromotionGraph(compiler, [[]]);
+            compiler.compQmarkUsed = true;
+            var store = compiler.gtNewStoreLclFldNode(TYP_LONG, 0, 0, compiler.gtNewLconNode(17));
+            var colon = compiler.gtNewColonNode(TYP_VOID, store, compiler.gtNewNothingNode());
+            var condition = compiler.gtNewBinaryNode(GT_EQ, TYP_INT,
+                compiler.gtNewIconNode(TYP_INT, 1), compiler.gtNewIconNode(TYP_INT, 0));
+            _ = AddPromotionStatement(compiler, blocks[0], compiler.gtNewQmarkNode(TYP_VOID, condition, colon));
+            _ = AddPromotionStatement(compiler, blocks[0], compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            var aggregates = CreatePromotionAggregates(compiler);
+            compiler._dfsTree = compiler.fgComputeDfs();
+            var liveness = new Compiler.PhysicalPromotionLiveness(compiler, aggregates);
+
+            liveness.Run();
+
+            Assert.That(liveness.IsReplacementDefined(blocks[0], 0, 0), Is.False);
+            Assert.That(liveness.IsReplacementUsed(blocks[0], 0, 0), Is.True);
+            Assert.That(liveness.IsReplacementLiveIn(blocks[0], 0, 0), Is.True);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void MixedJoinsReadBackOnlyPendingPredecessors(bool storeOnOtherPath)
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            var blocks = CreatePromotionGraph(compiler, [[1, 2], [3], [3], []]);
+            blocks[1].bbWeight = 60;
+            blocks[2].bbWeight = 40;
+            var other = AddPromotionStatement(compiler, blocks[1], storeOnOtherPath
+                ? compiler.gtNewStoreLclFldNode(TYP_LONG, 0, 0, compiler.gtNewLconNode(17))
+                : compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            var use = AddPromotionStatement(compiler, blocks[3], compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            var aggregates = CreatePromotionAggregates(compiler);
+            var replacement = aggregates.Lookup(0)!.Replacements[0];
+            var visitor = PreparePromotion(compiler, aggregates);
+            Assert.That(replacement.ReadBackPlacement, Is.Null);
+
+            var dfs = compiler._dfsTree!;
+            for (var index = dfs.PostOrderCount; index > 0; index--)
+            {
+                var block = dfs.GetPostOrder(index - 1);
+                var first = visitor.StartBlock(block);
+                if (block == blocks[3])
+                {
+                    Assert.That(replacement.NeedsReadBack, Is.False);
+                    Assert.That(replacement.NeedsWriteBack, Is.EqualTo(storeOnOtherPath));
+                }
+
+                RewritePromotionStatements(visitor, first);
+                visitor.EndBlock();
+            }
+
+            Assert.That(CountReadBacks(blocks[0], replacement), Is.Zero);
+            Assert.That(CountReadBacks(blocks[1], replacement), Is.EqualTo(storeOnOtherPath ? 0 : 1));
+            Assert.That(CountReadBacks(blocks[2], replacement), Is.EqualTo(1));
+            AssertReadBack(blocks[2].LastStmt!, 0, replacement);
+            Assert.That(CountReadBacks(blocks[3], replacement), Is.Zero);
+            Assert.That(use.RootNode.AsLclVarCommon().LclNum, Is.EqualTo(replacement.LclNum));
+            Assert.That(other.RootNode.AsLclVarCommon().LclNum, Is.EqualTo(replacement.LclNum));
+            if (storeOnOtherPath)
+            {
+                Assert.That(other.RootNode.Data.IsIntegralConst(17), Is.True);
+            }
+        });
+    }
+
+    [TestCase(60, false, false, true)]
+    [TestCase(60, true, false, true)]
+    [TestCase(50, false, false, false)]
+    [TestCase(50.000025, false, false, false)]
+    [TestCase(60, false, true, false)]
+    public static void CommonReadBacksRequireReconciliationAndStrictWeightSavings(
+        double siteWeight, bool precomputedDominators, bool bothPathsUse, bool expectedPlacement)
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            var blocks = CreatePromotionGraph(compiler, [[1, 2], [3], [3], []]);
+            blocks[1].bbWeight = siteWeight;
+            blocks[2].bbWeight = siteWeight;
+            _ = AddPromotionStatement(compiler, blocks[1], compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            if (bothPathsUse)
+            {
+                _ = AddPromotionStatement(compiler, blocks[2], compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            }
+            _ = AddPromotionStatement(compiler, blocks[3], compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            compiler._dfsTree = compiler.fgComputeDfs();
+            if (precomputedDominators)
+            {
+                compiler._domTree = FlowGraphDominatorTree.Build(compiler._dfsTree);
+            }
+            var previousDominators = compiler._domTree;
+            var aggregates = CreatePromotionAggregates(compiler);
+            var replacement = aggregates.Lookup(0)!.Replacements[0];
+            var visitor = PreparePromotion(compiler, aggregates);
+
+            Assert.That(replacement.ReadBackPlacement, expectedPlacement ? Is.SameAs(blocks[0]) : Is.Null);
+            if (precomputedDominators)
+            {
+                Assert.That(compiler._domTree, Is.SameAs(previousDominators));
+            }
+            if (bothPathsUse)
+            {
+                Assert.That(compiler._domTree, Is.Null);
+            }
+
+            RewritePromotionBlocks(compiler, visitor);
+
+            Assert.That(CountReadBacks(blocks[0], replacement), Is.EqualTo(expectedPlacement ? 1 : 0));
+            Assert.That(blocks.Sum(block => CountReadBacks(block, replacement)), Is.EqualTo(expectedPlacement ? 1 : 2));
+            if (expectedPlacement)
+            {
+                AssertReadBack(blocks[0].FirstStmt!, 0, replacement);
+                Assert.That(blocks[0].LastStmt!.RootNode.Oper, Is.EqualTo(GT_JTRUE));
+            }
+        });
+    }
+
+    [Test]
+    public static void CommonReadBackDominatorsUseOnlyTheEntrySubtreeOfADfsForest()
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            var blocks = CreatePromotionGraph(compiler, [[1, 2], [3], [3], [], []]);
+            blocks[1].bbWeight = blocks[2].bbWeight = 60;
+            _ = AddPromotionStatement(compiler, blocks[1], compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            _ = AddPromotionStatement(compiler, blocks[3], compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            var dfs = compiler.fgComputeDfs();
+            Assert.That(dfs.Contains(blocks[4]), Is.False);
+            blocks[4].bbPostorderNum = dfs.PostOrderCount;
+            var postOrder = dfs.GetPostOrder().Take(dfs.PostOrderCount).Append(blocks[4]).ToArray();
+            compiler._dfsTree = new FlowGraphDfsTree(compiler, postOrder, postOrder.Length,
+                dfs.HasCycle, dfs.IsProfileAware);
+            var aggregates = CreatePromotionAggregates(compiler);
+            var replacement = aggregates.Lookup(0)!.Replacements[0];
+
+            var visitor = PreparePromotion(compiler, aggregates);
+
+            Assert.That(replacement.ReadBackPlacement, Is.SameAs(blocks[0]));
+            Assert.That(compiler._domTree, Is.Null);
+            RewritePromotionBlocks(compiler, visitor);
+            Assert.That(blocks.Sum(block => CountReadBacks(block, replacement)), Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public static void DefinitionsEndTheIncomingValueDuringReadBackPlanning()
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            var blocks = CreatePromotionGraph(compiler, [[1, 2], [3], [3], []]);
+            blocks[1].bbWeight = blocks[2].bbWeight = 60;
+            _ = AddPromotionStatement(compiler, blocks[1],
+                compiler.gtNewStoreLclFldNode(TYP_LONG, 0, 0, compiler.gtNewLconNode(17)));
+            _ = AddPromotionStatement(compiler, blocks[1], compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            _ = AddPromotionStatement(compiler, blocks[3], compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            var aggregates = CreatePromotionAggregates(compiler);
+            var replacement = aggregates.Lookup(0)!.Replacements[0];
+
+            var visitor = PreparePromotion(compiler, aggregates);
+
+            Assert.That(replacement.ReadBackPlacement, Is.Null);
+            Assert.That(compiler._domTree, Is.Null);
+            RewritePromotionBlocks(compiler, visitor);
+            Assert.That(CountReadBacks(blocks[0], replacement), Is.Zero);
+            Assert.That(CountReadBacks(blocks[1], replacement), Is.Zero);
+            Assert.That(CountReadBacks(blocks[2], replacement), Is.EqualTo(1));
+            Assert.That(CountReadBacks(blocks[3], replacement), Is.Zero);
+        });
+    }
+
+    [Test]
+    public static void DenseReadBackIndicesDistinguishAggregatesAcrossTheBitVectorBoundary()
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            var blocks = CreatePromotionGraph(compiler, [[1], []]);
+            compiler.lvaTable = new LclVarDsc[67];
+            compiler.lvaCount = compiler.lvaTable.Length;
+            for (var index = 0; index < compiler.lvaCount; index++)
+            {
+                compiler.lvaTable[index].Type = TYP_INT;
+            }
+            compiler.lvaTable[0].Type = TYP_STRUCT;
+            compiler.lvaTable[0].Layout = new ClassLayout(256);
+            compiler.lvaTable[0].lvIsOSRLocal = true;
+            compiler.lvaTable[1].Type = TYP_STRUCT;
+            compiler.lvaTable[1].Layout = new ClassLayout(4);
+            compiler.lvaTable[1].lvIsOSRLocal = true;
+            _ = AddPromotionStatement(compiler, blocks[1], compiler.gtNewLclFldNode(TYP_INT, 0, 252));
+            _ = AddPromotionStatement(compiler, blocks[1], compiler.gtNewLclFldNode(TYP_INT, 1, 0));
+            var aggregates = new Compiler.PhysicalPromotionAggregateInfoMap(compiler.lvaCount);
+            var first = new Compiler.PhysicalPromotionAggregateInfo(0);
+            for (var index = 0; index < 64; index++)
+            {
+                first.Replacements.Add(new Compiler.PhysicalPromotionReplacement(index * 4, TYP_INT)
+                {
+                    LclNum = index + 2,
+                });
+            }
+            var second = new Compiler.PhysicalPromotionAggregateInfo(1);
+            second.Replacements.Add(new Compiler.PhysicalPromotionReplacement(0, TYP_INT) { LclNum = 66 });
+            aggregates.Add(first);
+            aggregates.Add(second);
+            var visitor = PreparePromotion(compiler, aggregates);
+            Assert.That(first.Replacements.Select(replacement => replacement.ReadBackIndex),
+                Is.EqualTo(Enumerable.Range(0, 64)));
+            Assert.That(second.Replacements[0].ReadBackIndex, Is.EqualTo(64));
+
+            RewritePromotionBlocks(compiler, visitor);
+
+            Assert.That(blocks[0].FirstStmt, Is.Null);
+            Assert.That(CountReadBacks(blocks[1], first.Replacements[^1]), Is.EqualTo(1));
+            Assert.That(CountReadBacks(blocks[1], second.Replacements[0]), Is.EqualTo(1));
+            AssertReadBack(blocks[1].FirstStmt!, 0, first.Replacements[^1]);
+            AssertReadBack(blocks[1].FirstStmt!.NextStmt!.NextStmt!, 1, second.Replacements[0]);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void LoopEntryReadBacksAreSettledBeforeBackedges(bool irreducible)
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            var blocks = CreatePromotionGraph(compiler, irreducible
+                ? [[1, 2], [3], [3], [1, 4], []]
+                : [[1], [2, 3], [1], []]);
+            _ = AddPromotionStatement(compiler, blocks[^1], compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            var aggregates = CreatePromotionAggregates(compiler);
+            var replacement = aggregates.Lookup(0)!.Replacements[0];
+            var visitor = PreparePromotion(compiler, aggregates);
+            Assert.That(compiler._dfsTree!.HasCycle, Is.True);
+
+            RewritePromotionBlocks(compiler, visitor);
+
+            Assert.That(CountReadBacks(blocks[0], replacement), Is.EqualTo(1));
+            Assert.That(blocks.Sum(block => CountReadBacks(block, replacement)), Is.EqualTo(1));
+            Assert.That(replacement.ReadBackPlacement, irreducible ? Is.SameAs(blocks[0]) : Is.Null);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void EhBoundariesMaterializeReadBacksBeforeHandlerEntry(bool throwingStatement)
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            var blocks = CreatePromotionGraph(compiler, [[1], [2], [], []]);
+            var tryBlock = blocks[1];
+            var handler = blocks[3];
+            tryBlock.TryIndex = 0;
+            handler.HndIndex = 0;
+            compiler.compHndBBtab = [
+                new EHblkDsc
+                {
+                    ebdHandlerType = EHHandlerType.EH_HANDLER_CATCH,
+                    ebdTryBeg = tryBlock,
+                    ebdTryLast = tryBlock,
+                    ebdHndBeg = handler,
+                    ebdHndLast = handler,
+                    ebdEnclosingTryIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+                    ebdEnclosingHndIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+                },
+            ];
+            compiler.compHndBBtabCount = 1;
+            Statement? throwing = null;
+            if (throwingStatement)
+            {
+                compiler.lvaTable[1].Type = TYP_I_IMPL;
+                throwing = AddPromotionStatement(compiler, tryBlock,
+                    compiler.gtNewIndir(TYP_INT, compiler.gtNewLclvNode(TYP_I_IMPL, 1)));
+            }
+            _ = AddPromotionStatement(compiler, blocks[2], compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            _ = AddPromotionStatement(compiler, handler, compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            var aggregates = CreatePromotionAggregates(compiler);
+            var replacement = aggregates.Lookup(0)!.Replacements[0];
+            var visitor = PreparePromotion(compiler, aggregates);
+
+            RewritePromotionBlocks(compiler, visitor);
+
+            Assert.That(CountReadBacks(blocks[0], replacement), Is.Zero);
+            Assert.That(CountReadBacks(tryBlock, replacement), Is.EqualTo(1));
+            Assert.That(CountReadBacks(handler, replacement), Is.Zero);
+            Assert.That(CountReadBacks(blocks[2], replacement), Is.Zero);
+            AssertReadBack(tryBlock.FirstStmt!, 0, replacement);
+            if (throwing is not null)
+            {
+                Assert.That(tryBlock.FirstStmt!.NextStmt, Is.SameAs(throwing));
+            }
+        });
+    }
+
+    [TestCase(false, false)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void FiltersMaterializeReadBacksAtTransfersAndOuterExceptionBoundaries(
+        bool throwingStatement, bool outerHandler)
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            var blocks = CreatePromotionGraph(compiler, outerHandler
+                ? [[1], [2], [], [4], [], []] : [[1], [2], [], [4], []]);
+            var tryBlock = blocks[1];
+            var filter = blocks[3];
+            var handler = blocks[4];
+            tryBlock.TryIndex = 0;
+            filter.HndIndex = 0;
+            filter.CatchType = bbCatchType.BBCT_FILTER;
+            handler.HndIndex = 0;
+            handler.CatchType = bbCatchType.BBCT_FILTER_HANDLER;
+            filter.SetKindAndTargetEdge(BBJ_EHFILTERRET, filter.TargetEdge);
+            var filterReturn = compiler.gtNewStmt(new GenTreeUnOp(GT_RETFILT, TYP_INT,
+                compiler.gtNewIconNode(TYP_INT, 1)));
+            compiler.fgInsertStmtAtEnd(filter, filterReturn);
+            compiler.fgSequenceLocals(filterReturn);
+            compiler.compHndBBtab = [
+                new EHblkDsc
+                {
+                    ebdHandlerType = EHHandlerType.EH_HANDLER_FILTER,
+                    ebdTryBeg = tryBlock,
+                    ebdTryLast = tryBlock,
+                    ebdFilter = filter,
+                    ebdHndBeg = handler,
+                    ebdHndLast = handler,
+                    ebdEnclosingTryIndex = outerHandler ? (ushort)1 : EHblkDsc.NO_ENCLOSING_INDEX,
+                    ebdEnclosingHndIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+                },
+            ];
+            compiler.compHndBBtabCount = 1;
+            if (outerHandler)
+            {
+                blocks[5].HndIndex = 1;
+                var outer = new EHblkDsc
+                {
+                    ebdHandlerType = EHHandlerType.EH_HANDLER_CATCH,
+                    ebdTryBeg = tryBlock,
+                    ebdTryLast = tryBlock,
+                    ebdHndBeg = blocks[5],
+                    ebdHndLast = blocks[5],
+                    ebdEnclosingTryIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+                    ebdEnclosingHndIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+                };
+                compiler.compHndBBtab = [compiler.compHndBBtab[0], outer];
+                compiler.compHndBBtabCount = 2;
+                _ = AddPromotionStatement(compiler, blocks[5], compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            }
+            var call = AddPromotionStatement(compiler, filter, CreatePromotionRetbufferCall(compiler));
+            Statement? throwing = null;
+            if (throwingStatement)
+            {
+                compiler.lvaTable[1].Type = TYP_I_IMPL;
+                throwing = AddPromotionStatement(compiler, filter,
+                    compiler.gtNewIndir(TYP_INT, compiler.gtNewLclvNode(TYP_I_IMPL, 1)));
+            }
+            _ = AddPromotionStatement(compiler, blocks[2], compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            var use = AddPromotionStatement(compiler, handler, compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            var aggregates = CreatePromotionAggregates(compiler);
+            var replacement = aggregates.Lookup(0)!.Replacements[0];
+            var visitor = PreparePromotion(compiler, aggregates);
+
+            RewritePromotionBlocks(compiler, visitor);
+
+            Assert.That(CountReadBacks(filter, replacement), Is.EqualTo(1));
+            Assert.That(filter.FirstStmt, Is.SameAs(call));
+            var readBack = outerHandler ? throwing!.PrevStmt! : filterReturn.PrevStmt!;
+            AssertReadBack(readBack, 0, replacement);
+            if (outerHandler)
+            {
+                Assert.That(call.NextStmt, Is.SameAs(readBack));
+                Assert.That(readBack.NextStmt, Is.SameAs(throwing));
+            }
+            else
+            {
+                Assert.That(call.NextStmt, Is.SameAs(throwing ?? readBack));
+                Assert.That(readBack.NextStmt, Is.SameAs(filterReturn));
+            }
+            Assert.That(filter.LastStmt, Is.SameAs(filterReturn));
+            Assert.That(CountReadBacks(handler, replacement), Is.Zero);
+            Assert.That(use.RootNode.AsLclVarCommon().LclNum, Is.EqualTo(replacement.LclNum));
+        });
+    }
+
+    [Test]
+    public static void FinallyCallsAndReturnsMaterializeReadBacksOnBothTransfers()
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            var blocks = CreatePromotionGraph(compiler, [[1], [3], [4], [2], []]);
+            var callFinally = blocks[1];
+            var continuation = blocks[2];
+            var handler = blocks[3];
+            callFinally.SetKindAndTargetEdge(BBJ_CALLFINALLY, callFinally.TargetEdge);
+            continuation.SetKindAndTargetEdge(BBJ_CALLFINALLYRET, continuation.TargetEdge);
+            handler.HndIndex = 0;
+            handler.CatchType = bbCatchType.BBCT_FINALLY;
+            handler.SetEhf(new BBJumpTable([handler.TargetEdge]));
+            var finallyReturn = compiler.gtNewStmt(new GenTreeUnOp(GT_RETFILT, TYP_VOID, null));
+            compiler.fgInsertStmtAtEnd(handler, finallyReturn);
+            compiler.fgSequenceLocals(finallyReturn);
+            compiler.compHndBBtab = [
+                new EHblkDsc
+                {
+                    ebdHandlerType = EHHandlerType.EH_HANDLER_FINALLY,
+                    ebdTryBeg = callFinally,
+                    ebdTryLast = callFinally,
+                    ebdHndBeg = handler,
+                    ebdHndLast = handler,
+                    ebdEnclosingTryIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+                    ebdEnclosingHndIndex = EHblkDsc.NO_ENCLOSING_INDEX,
+                },
+            ];
+            compiler.compHndBBtabCount = 1;
+            var oldValue = AddPromotionStatement(compiler, handler, compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            var call = AddPromotionStatement(compiler, handler, CreatePromotionRetbufferCall(compiler));
+            var use = AddPromotionStatement(compiler, continuation, compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            var aggregates = CreatePromotionAggregates(compiler);
+            var replacement = aggregates.Lookup(0)!.Replacements[0];
+            var visitor = PreparePromotion(compiler, aggregates);
+
+            RewritePromotionBlocks(compiler, visitor);
+
+            Assert.That(CountReadBacks(callFinally, replacement), Is.EqualTo(1));
+            AssertReadBack(callFinally.LastStmt!, 0, replacement);
+            Assert.That(handler.FirstStmt, Is.SameAs(oldValue));
+            Assert.That(oldValue.RootNode.AsLclVarCommon().LclNum, Is.EqualTo(replacement.LclNum));
+            Assert.That(CountReadBacks(handler, replacement), Is.EqualTo(1));
+            AssertReadBack(call.NextStmt!, 0, replacement);
+            Assert.That(call.NextStmt!.NextStmt, Is.SameAs(finallyReturn));
+            Assert.That(handler.LastStmt, Is.SameAs(finallyReturn));
+            Assert.That(CountReadBacks(continuation, replacement), Is.Zero);
+            Assert.That(use.RootNode.AsLclVarCommon().LclNum, Is.EqualTo(replacement.LclNum));
+        });
+    }
+
+    [Test]
+    public static void PrivatePhaseVisitsForwardPredecessorsBeforeNonlexicalSuccessors()
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            var blocks = CreatePromotionGraph(compiler, [[2], [], [1]]);
+            var firstUse = AddPromotionStatement(compiler, blocks[1], compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            var lastUse = AddPromotionStatement(compiler, blocks[1], compiler.gtNewLclFldNode(TYP_LONG, 0, 0));
+            compiler._dfsTree = compiler.fgComputeDfs();
+            var run = typeof(Compiler).GetMethod("PhysicalPromotionRunImplementation",
+                BindingFlags.Instance | BindingFlags.NonPublic)!;
+
+            Assert.That((PhaseStatus)run.Invoke(compiler, null)!, Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+
+            Assert.That(blocks[0].FirstStmt, Is.Null);
+            Assert.That(blocks[2].FirstStmt, Is.Null);
+            var readBack = blocks[1].FirstStmt!.RootNode.AsLclVarCommon();
+            Assert.That(readBack.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
+            Assert.That(readBack.Data.AsLclFld().LclNum, Is.Zero);
+            Assert.That(firstUse.RootNode.AsLclVarCommon().LclNum, Is.EqualTo(readBack.LclNum));
+            Assert.That(lastUse.RootNode.AsLclVarCommon().LclNum, Is.EqualTo(readBack.LclNum));
+        });
+    }
+
+#if HAS_FIXED_REGISTER_SET
+    [TestCase(TYP_BYTE, 1)]
+    [TestCase(TYP_SHORT, 2)]
+    [TestCase(TYP_UBYTE, 1)]
+    [TestCase(TYP_USHORT, 2)]
+    public static void RareSmallRegisterParameterFieldsReceiveExtractionCredit(var_types type, int offset)
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            var blocks = CreatePromotionGraph(compiler, [[]], layoutSize: TARGET_POINTER_SIZE);
+            compiler.lvaTable[0].lvIsOSRLocal = false;
+            compiler.lvaTable[0].lvIsParam = true;
+            compiler.info.compArgsCount = 1;
+            compiler.lvaParameterPassingInfo = [
+                AbiPassingInformation.FromSegment(compiler, false,
+                    AbiPassingSegment.InRegister(IntArgRegs[0], 0, TARGET_POINTER_SIZE)),
+            ];
+            var uses = new Compiler.PhysicalPromotionLocalUses();
+            uses.RecordAccess(offset, type, null, Compiler.PhysicalPromotionAccessKindFlags.None, 1);
+            var aggregates = new Compiler.PhysicalPromotionAggregateInfoMap(compiler.lvaCount);
+
+            Assert.That(uses.PickPromotions(compiler, 0, aggregates), Is.EqualTo(1));
+
+            var replacement = aggregates.Lookup(0)!.Replacements[0];
+            replacement.LclNum = 2;
+            compiler.lvaTable[replacement.LclNum].Type = type;
+            var fieldUse = AddPromotionStatement(compiler, blocks[0],
+                compiler.gtNewLclFldNode(type, 0, checked((ushort)offset)));
+            var visitor = PreparePromotion(compiler, aggregates);
+            _ = visitor.StartBlock(blocks[0]);
+            Assert.That(blocks[0].FirstStmt, Is.SameAs(fieldUse));
+            Assert.That(replacement.NeedsReadBack, Is.True);
+            RewritePromotionStatements(visitor, fieldUse);
+            visitor.EndBlock();
+            AssertReadBack(blocks[0].FirstStmt!, 0, replacement);
+            Assert.That(blocks[0].FirstStmt!.RootNode.Data.Type, Is.EqualTo(type));
+        });
+    }
+#endif
+
+#if TARGET_AMD64
+    [TestCase("split", TYP_SHORT, 9, true)]
+    [TestCase("split", TYP_LONG, 4, false)]
+    [TestCase("floating", TYP_BYTE, 0, true)]
+    [TestCase("floating", TYP_SHORT, 1, false)]
+    [TestCase("floating", TYP_FLOAT, 0, false)]
+    [TestCase("integer", TYP_FLOAT, 0, true)]
+    [TestCase("mixed", TYP_BYTE, 8, true)]
+    [TestCase("mixed", TYP_SHORT, 9, false)]
+    [TestCase("stack", TYP_SHORT, 1, false)]
+    [TestCase("byref", TYP_SHORT, 1, false)]
+    public static void ParameterSegmentAndRegisterClassRulesPreserveLazyTypedReadBacks(
+        string shape, var_types type, int offset, bool mapsToRegister)
+    {
+        FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
+            var blocks = CreatePromotionGraph(compiler, [[]], layoutSize: 16);
+            compiler.lvaTable[0].lvIsOSRLocal = false;
+            compiler.lvaTable[0].lvIsParam = true;
+            compiler.info.compArgsCount = 1;
+            var first = AbiPassingSegment.InRegister(IntArgRegs[0], 0, 8);
+            var floating = AbiPassingSegment.InRegister(FltArgRegs[0], 0, 8);
+            var second = AbiPassingSegment.InRegister(IntArgRegs[1], 8, 8);
+            var secondFloating = AbiPassingSegment.InRegister(FltArgRegs[0], 8, 8);
+            var passing = shape switch {
+                "integer" => AbiPassingInformation.FromSegment(compiler, false, first),
+                "floating" => AbiPassingInformation.FromSegment(compiler, false, floating),
+                "split" => AbiPassingInformation.FromSegments(compiler, first, second),
+                "mixed" => AbiPassingInformation.FromSegments(compiler, first, secondFloating),
+                "stack" => AbiPassingInformation.FromSegments(compiler, first, AbiPassingSegment.OnStack(0, 8, 8)),
+                "byref" => AbiPassingInformation.FromSegment(compiler, true, first),
+                _ => throw new ArgumentException("Unknown parameter passing shape.", nameof(shape)),
+            };
+            compiler.lvaParameterPassingInfo = [passing];
+            var maps = typeof(Compiler).GetMethod("PhysicalPromotionMapsToParameterRegister",
+                BindingFlags.Instance | BindingFlags.NonPublic)!;
+            Assert.That((bool)maps.Invoke(compiler, [0, offset, type])!, Is.EqualTo(mapsToRegister));
+            var uses = new Compiler.PhysicalPromotionLocalUses();
+            uses.RecordAccess(offset, type, null, Compiler.PhysicalPromotionAccessKindFlags.None, 1);
+            var aggregates = new Compiler.PhysicalPromotionAggregateInfoMap(compiler.lvaCount);
+            Assert.That(uses.PickPromotions(compiler, 0, aggregates), Is.EqualTo(mapsToRegister ? 1 : 0));
+            if (!mapsToRegister)
+            {
+                uses.RecordAccess(offset, type, null, Compiler.PhysicalPromotionAccessKindFlags.None, 200);
+                Assert.That(uses.PickPromotions(compiler, 0, aggregates), Is.EqualTo(1));
+            }
+            var replacement = aggregates.Lookup(0)!.Replacements[0];
+            replacement.LclNum = 2;
+            compiler.lvaTable[2].Type = type;
+            var fieldUse = AddPromotionStatement(compiler, blocks[0],
+                compiler.gtNewLclFldNode(type, 0, checked((ushort)offset)));
+            var visitor = PreparePromotion(compiler, aggregates);
+            _ = visitor.StartBlock(blocks[0]);
+            Assert.That(blocks[0].FirstStmt, Is.SameAs(fieldUse));
+            Assert.That(replacement.NeedsReadBack, Is.True);
+
+            RewritePromotionStatements(visitor, fieldUse);
+            visitor.EndBlock();
+
+            Assert.That(CountReadBacks(blocks[0], replacement), Is.EqualTo(1));
+            AssertReadBack(blocks[0].FirstStmt!, 0, replacement);
+            Assert.That(blocks[0].FirstStmt!.RootNode.Data.Type, Is.EqualTo(type));
+            Assert.That(fieldUse.RootNode.AsLclVarCommon().LclNum, Is.EqualTo(replacement.LclNum));
+        });
+    }
+#endif
+
+    private static unsafe GenTreeCall CreatePromotionRetbufferCall(Compiler compiler)
+    {
+        var handle = (CORINFO_CLASS_STRUCT_*)1;
+        var layout = new ClassLayout(handle, true, 8, TYP_STRUCT, "Retbuffer", "Retbuffer");
+        var layouts = new ClassLayoutTable();
+        _ = layouts.AddObjLayout(compiler, layout);
+        typeof(Compiler).GetField("_classLayoutTable", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(compiler, layouts);
+#if DEBUG
+        compiler.lvaTable[0].IsDefinedViaAddress = true;
+#endif
+        var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
+        address.Flags |= GTF_VAR_DEF;
+        var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+        call.RetClsHnd = handle;
+        call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_RETBUFFARG_LCLOPT;
+        _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(address).WithWellKnownArg(WellKnownArg.RetBuffer));
+
+        return call;
+    }
+
+    private static BasicBlock[] CreatePromotionGraph(Compiler compiler, int[][] successors, int layoutSize = 8)
+    {
+        compiler.lvaTable[0].Type = TYP_STRUCT;
+        compiler.lvaTable[0].Layout = new ClassLayout(layoutSize);
+        compiler.lvaTable[0].lvIsOSRLocal = true;
+        compiler.lvaTable[2].Type = TYP_LONG;
+        var blocks = new BasicBlock[successors.Length];
+        for (var index = 0; index < blocks.Length; index++)
+        {
+            var block = blocks[index] = BasicBlock.New(compiler, BBJ_RETURN);
+            block.bbWeight = 100;
+            if (index > 0)
+            {
+                blocks[index - 1].Next = block;
+                block.Prev = blocks[index - 1];
+            }
+        }
+        compiler.fgFirstBB = blocks[0];
+        compiler.fgLastBB = blocks[^1];
+
+        for (var index = 0; index < blocks.Length; index++)
+        {
+            var block = blocks[index];
+            var targets = successors[index];
+            if (targets.Length == 1)
+            {
+                block.SetKindAndTargetEdge(BBJ_ALWAYS, compiler.fgAddRefPred(blocks[targets[0]], block));
+            }
+            else if (targets.Length == 2)
+            {
+                block.SetCond(compiler.fgAddRefPred(blocks[targets[0]], block),
+                    compiler.fgAddRefPred(blocks[targets[1]], block));
+                var jump = compiler.gtNewStmt(compiler.gtNewUnaryNode(GT_JTRUE, TYP_VOID,
+                    compiler.gtNewIconNode(TYP_INT, 1)));
+                compiler.fgInsertStmtAtEnd(block, jump);
+                compiler.fgSequenceLocals(jump);
+            }
+            else
+            {
+                Assert.That(targets, Is.Empty);
+                var ret = compiler.gtNewStmt(new GenTreeUnOp(GT_RETURN, TYP_VOID, null));
+                compiler.fgInsertStmtAtEnd(block, ret);
+                compiler.fgSequenceLocals(ret);
+            }
+        }
+
+        return blocks;
+    }
+
+    private static Statement AddPromotionStatement(Compiler compiler, BasicBlock block, GenTree tree)
+    {
+        var statement = compiler.gtNewStmt(tree);
+        compiler.fgInsertStmtNearEnd(block, statement);
+        compiler.fgSequenceLocals(statement);
+
+        return statement;
+    }
+
+    private static Compiler.PhysicalPromotionAggregateInfoMap CreatePromotionAggregates(Compiler compiler)
+    {
+        var aggregates = new Compiler.PhysicalPromotionAggregateInfoMap(compiler.lvaCount);
+        var aggregate = new Compiler.PhysicalPromotionAggregateInfo(0);
+        aggregate.Replacements.Add(new Compiler.PhysicalPromotionReplacement(0, TYP_LONG) { LclNum = 2 });
+        aggregates.Add(aggregate);
+
+        return aggregates;
+    }
+
+    private static Compiler.PhysicalPromotionReplaceVisitor PreparePromotion(
+        Compiler compiler, Compiler.PhysicalPromotionAggregateInfoMap aggregates)
+    {
+        compiler._dfsTree ??= compiler.fgComputeDfs();
+        var liveness = new Compiler.PhysicalPromotionLiveness(compiler, aggregates);
+        liveness.Run();
+
+        return CreateReplaceVisitor(compiler, aggregates, liveness);
+    }
+
+    private static Compiler.PhysicalPromotionReplaceVisitor CreateReplaceVisitor(
+        Compiler compiler, Compiler.PhysicalPromotionAggregateInfoMap aggregates,
+        Compiler.PhysicalPromotionLiveness liveness)
+    {
+        var dfs = compiler._dfsTree ??= compiler.fgFirstBB is null
+            ? new FlowGraphDfsTree(compiler, [], 0, false, false) : compiler.fgComputeDfs();
+        var visitor = new Compiler.PhysicalPromotionReplaceVisitor(compiler, aggregates, liveness, dfs);
+        visitor.PrepareReadBacks();
+
+        return visitor;
+    }
+
+    private static void RewritePromotionBlocks(Compiler compiler, Compiler.PhysicalPromotionReplaceVisitor visitor)
+    {
+        var dfs = compiler._dfsTree!;
+        for (var index = dfs.PostOrderCount; index > 0; index--)
+        {
+            var first = visitor.StartBlock(dfs.GetPostOrder(index - 1));
+            RewritePromotionStatements(visitor, first);
+            visitor.EndBlock();
+        }
+    }
+
+    private static void RewritePromotionStatements(Compiler.PhysicalPromotionReplaceVisitor visitor, Statement? first)
+    {
+        for (var statement = first; statement is not null; statement = statement.NextStmt)
+        {
+            visitor.StartStatement(statement);
+            visitor.WalkTree(ref statement.RootNodeRef);
+        }
+    }
+
+    private static int CountReadBacks(BasicBlock block, Compiler.PhysicalPromotionReplacement replacement)
+    {
+        return block.Statements.Count(statement => (statement.RootNode.Oper is GT_STORE_LCL_VAR) &&
+            (statement.RootNode.AsLclVarCommon().LclNum == replacement.LclNum) &&
+            (statement.RootNode.Data.Oper is GT_LCL_FLD));
+    }
+
+    private static void AssertReadBack(Statement statement, int structLcl, Compiler.PhysicalPromotionReplacement replacement)
+    {
+        var tree = statement.RootNode;
+        Assert.That(tree.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
+        Assert.That(tree.AsLclVarCommon().LclNum, Is.EqualTo(replacement.LclNum));
+        Assert.That(tree.Data.Oper, Is.EqualTo(GT_LCL_FLD));
+        Assert.That(tree.Data.AsLclFld().LclNum, Is.EqualTo(structLcl));
+        Assert.That(tree.Data.AsLclFld().LclOffs, Is.EqualTo(replacement.Offset));
+    }
+
+    [Test]
+    public static void ReplacementReadBackRemainsPendingAcrossForwardEdgesUntilUsed()
     {
         FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
             compiler.lvaTable[0].Type = TYP_STRUCT;
@@ -1139,7 +1971,7 @@ internal static class PhysicalPromotionTests
             var second = BasicBlock.New(compiler, BBJ_RETURN);
             first.Next = second;
             second.Prev = first;
-            first.SetKindAndTargetEdge(BBJ_ALWAYS, new FlowEdge(first, second, null));
+            first.SetKindAndTargetEdge(BBJ_ALWAYS, compiler.fgAddRefPred(second, first));
             compiler.fgFirstBB = first;
             compiler.fgLastBB = second;
 
@@ -1159,17 +1991,24 @@ internal static class PhysicalPromotionTests
             liveness.Run();
             Assert.That(liveness.IsReplacementLiveOut(first, 0, 0), Is.True);
 
-            var visitor = new Compiler.PhysicalPromotionReplaceVisitor(compiler, aggregates, liveness);
+            var visitor = CreateReplaceVisitor(compiler, aggregates, liveness);
             _ = visitor.StartBlock(first);
             visitor.ClearNeedsWriteBack(replacement);
             visitor.SetNeedsReadBack(replacement);
             visitor.EndBlock();
 
-            Assert.That(first.LastStmt, Is.Not.SameAs(firstStatement));
-            Assert.That(first.LastStmt!.RootNode.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
-            Assert.That(first.LastStmt.RootNode.AsLclVarCommon().LclNum, Is.EqualTo(2));
+            Assert.That(first.LastStmt, Is.SameAs(firstStatement));
             Assert.That(replacement.NeedsReadBack, Is.False);
             Assert.That(replacement.NeedsWriteBack, Is.True);
+
+            _ = visitor.StartBlock(second);
+            Assert.That(replacement.NeedsReadBack, Is.True);
+            Assert.That(replacement.NeedsWriteBack, Is.False);
+            visitor.StartStatement(use);
+            AssertReadBack(second.FirstStmt!, 0, replacement);
+            visitor.WalkTree(ref use.RootNodeRef);
+            visitor.EndBlock();
+            Assert.That(use.RootNode.AsLclVarCommon().LclNum, Is.EqualTo(2));
         });
     }
 

@@ -15,32 +15,34 @@ public partial class Compiler
         assert(nextStmtUse.Oper.IsLocalRead);
         var defNode = defStmt.RootNode.AsLclVarCommon();
 
-        foreach (var defLocal in defStmt.LocalsTreeList)
-        {
-            if (defLocal == defNode)
+        var interferes = false;
+        _ = defStmt.VisitLogicalLocalOccurrencesViaLocalsTreeList(defOccurrence => {
+            if (defOccurrence.Node == defNode)
             {
-                break;
+                return GenTree.VisitResult.Abort;
             }
 
-            var number = defLocal.LclNum;
+            var number = defOccurrence.LclNum;
             ref var descriptor = ref lvaGetDesc(number);
             var parentNumber = descriptor.lvIsStructField ? descriptor.lvParentLcl : BAD_VAR_NUM;
 
-            foreach (var useLocal in nextStmt.LocalsTreeList)
-            {
-                if (useLocal == nextStmtUse)
+            _ = nextStmt.VisitLogicalLocalOccurrencesViaLocalsTreeList(useOccurrence => {
+                if (useOccurrence.Node == nextStmtUse)
                 {
-                    break;
+                    return GenTree.VisitResult.Abort;
                 }
-                if (useLocal.Oper.IsLocalStore &&
-                    (useLocal.LclNum == number || useLocal.LclNum == parentNumber))
+                if (useOccurrence.Node.Oper.IsStore &&
+                    ((useOccurrence.LclNum == number) || (useOccurrence.LclNum == parentNumber)))
                 {
-                    return true;
+                    interferes = true;
+                    return GenTree.VisitResult.Abort;
                 }
-            }
-        }
+                return GenTree.VisitResult.Continue;
+            });
+            return interferes ? GenTree.VisitResult.Abort : GenTree.VisitResult.Continue;
+        });
 
-        return false;
+        return interferes;
     }
 
     private void fgForwardSubUpdateLiveness(GenTree first, GenTree last)
@@ -92,7 +94,7 @@ public partial class Compiler
     }
 
     private void fgForwardSubSpliceLocals(Statement nextStmt, GenTreeLclVarCommon use,
-        GenTreeLclVarCommon? first, GenTreeLclVarCommon? last)
+        GenTree? first, GenTree? last)
     {
         var before = use.Prev;
         var after = use.Next;

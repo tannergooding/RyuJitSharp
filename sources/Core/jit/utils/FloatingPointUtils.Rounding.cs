@@ -72,11 +72,6 @@ public static partial class FloatingPointUtils
         return UInt64BitsToDouble(0x7FF0000000000000UL);
     }
 
-    public static float infinite_float()
-    {
-        return UInt32BitsToSingle(0x7F800000U);
-    }
-
     public static bool isAllBitsSet(float val)
     {
         var bits = SingleToUInt32Bits(val);

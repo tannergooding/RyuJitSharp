@@ -148,9 +148,6 @@ internal static unsafe class ScalarFoldingTests
             var result = compiler.gtFoldExpr(tree);
             Assert.That(result.Oper, Is.EqualTo(GT_CAST));
             Assert.That(result.Type, Is.EqualTo(type));
-#if DEBUG
-            Assert.That(result.WasMorphed, Is.True);
-#endif
             if (wide)
             {
                 Assert.That(result.Flags & GTF_UNSIGNED, Is.EqualTo(GTF_UNSIGNED));

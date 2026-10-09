@@ -28,7 +28,7 @@ public partial class Emitter
 
         assert(offs >= 0);
 
-        if (((varx >= 0) && _compiler.lvaIsUnknownSizeLocal(varx)) ||
+        if (((varx >= 0) && _compiler.lvaLocalIsOnUnknownSizeFrame(varx)) ||
             ((varx < 0) && codeGen.RegSet.tmpIsUnknownSizeTemp(varx)))
         {
             // Scalable locals and temps use VL/PL offsets from the unknown-size frame.
@@ -363,7 +363,7 @@ public partial class Emitter
         var reg2 = REG_NA;
         nint imm = 0;
 
-        if (((varx >= 0) && _compiler.lvaIsUnknownSizeLocal(varx)) ||
+        if (((varx >= 0) && _compiler.lvaLocalIsOnUnknownSizeFrame(varx)) ||
             ((varx < 0) && codeGen.RegSet.tmpIsUnknownSizeTemp(varx)))
         {
             assert(ins == INS_sve_str);

@@ -46,7 +46,7 @@ public sealed partial class CodeGen
             }
             assert(varDsc.lvOnFrame);
 #if TARGET_ARM64
-            if (_compiler.lvaIsUnknownSizeLocal(varNum))
+            if (_compiler.lvaLocalIsOnUnknownSizeFrame(varNum))
             {
                 genPoisonUnknownSizeVariable(varNum, unchecked((sbyte)poisonVal));
                 continue;

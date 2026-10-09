@@ -11,9 +11,8 @@ namespace RyuJitSharp;
 
 public sealed class ClassLayoutTable
 {
-    // Each layout is assigned a number, starting with TYP_UNKNOWN + 1.
-    // This way one could use a single value to represent the notion of type
-    // - values below TYP_UNKNOWN are var_types and values above it are struct layouts.
+    // VNF_ZeroObj uses ClassLayout pointer identity natively. Keep a compiler-owned
+    // token for that identity because managed object references are not VN constants.
     private const int ZeroSizedBlockLayoutNum = (int)(TYP_UNKNOWN + 1);
     private const int FirstLayoutNum = (int)(TYP_UNKNOWN + 2);
 
@@ -64,26 +63,12 @@ public sealed class ClassLayoutTable
         return GetLayoutByIndex(GetCustomLayoutIndex(compiler, builder));
     }
 
-    // Get a number that uniquely identifies a layout having the specified size but no class handle.
-    public int GetCustomLayoutNum(Compiler compiler, in ClassLayoutBuilder builder)
-    {
-        if (builder._size == 0)
-        {
-            return ZeroSizedBlockLayoutNum;
-        }
-        return GetCustomLayoutIndex(compiler, builder) + FirstLayoutNum;
-    }
-
     /// <summary>Get the layout for the specified class handle.</summary>
     /// <param name="compiler"></param>
     /// <param name="classHandle"></param>
     /// <returns></returns>
     public unsafe ClassLayout GetObjLayout(Compiler compiler, CORINFO_CLASS_HANDLE classHandle)
         => GetLayoutByIndex(GetObjLayoutIndex(compiler, classHandle));
-
-    // Get a number that uniquely identifies a layout for the specified class handle.
-    public unsafe int GetObjLayoutNum(Compiler compiler, CORINFO_CLASS_HANDLE classHandle)
-        => GetObjLayoutIndex(compiler, classHandle) + FirstLayoutNum;
 
     public int AddCustomLayout(Compiler compiler, ClassLayout layout)
     {

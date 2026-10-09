@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Diagnostics;
 
 namespace RyuJitSharp;
@@ -161,6 +162,24 @@ public sealed partial class Statement
     }
 
     public ref GenTree? TreeListEndRef => ref _treeListEnd;
+
+    /// <summary>Visit occurrences in locals-list order without expanding promoted parents.</summary>
+    /// <remarks>The callback may abort, but must not change the list and continue.</remarks>
+    public GenTree.VisitResult VisitLogicalLocalOccurrencesViaLocalsTreeList(
+        Func<LocalOccurrence, GenTree.VisitResult> visitor)
+    {
+        assert(JitTls.Compiler!.fgNodeThreading == NodeThreading.AllLocals);
+
+        foreach (var node in LocalsTreeList)
+        {
+            if (visitor(new LocalOccurrence(node)) == GenTree.VisitResult.Abort)
+            {
+                return GenTree.VisitResult.Abort;
+            }
+        }
+
+        return GenTree.VisitResult.Continue;
+    }
 
     public void SetDebugInfo(in DebugInfo debugInfo)
     {

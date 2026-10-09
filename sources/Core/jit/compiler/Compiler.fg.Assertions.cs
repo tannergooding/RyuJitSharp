@@ -116,7 +116,6 @@ public partial class Compiler
             return;
         }
 
-        tree.SetMorphed(this);
         if (tree.Oper.IsConst || !optLocalAssertionProp || optAssertionPropDone)
         {
             return;

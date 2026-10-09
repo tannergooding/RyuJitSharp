@@ -72,7 +72,6 @@ public partial class Compiler
             PropagateExpansionAssertions();
             assert(_transformationDecision is not BlockTransformation.Undefined);
             assert(_result is not null);
-            _result.SetMorphed(_compiler);
 
             while (sideEffects is not null)
             {
@@ -92,7 +91,6 @@ public partial class Compiler
                     _result = _compiler.gtNewBinaryNode(GT_COMMA, TYP_VOID, sideEffects, _result);
                 }
 
-                _result.SetMorphed(_compiler);
                 sideEffects = sideEffects.Next;
             }
 
@@ -266,7 +264,6 @@ public partial class Compiler
 
                 var fieldType = _compiler.lvaGetDesc(fieldLclNum).Type;
                 var src = _compiler.gtNewConWithPattern(fieldType, initPattern);
-                src.SetMorphed(_compiler);
                 var store = _compiler.gtNewTempStore(fieldLclNum, src);
 
                 if (_compiler.optLocalAssertionProp)
@@ -274,11 +271,9 @@ public partial class Compiler
                     _compiler.fgAssertionGen(store);
                 }
 
-                store.SetMorphed(_compiler);
                 if (tree is not null)
                 {
                     tree = _compiler.gtNewBinaryNode(GT_COMMA, TYP_VOID, tree, store);
-                    tree.SetMorphed(_compiler);
                 }
                 else
                 {
@@ -286,11 +281,7 @@ public partial class Compiler
                 }
             }
 
-            if (tree is null)
-            {
-                tree = _compiler.gtNewNothingNode();
-                tree.SetMorphed(_compiler);
-            }
+            tree ??= _compiler.gtNewNothingNode();
 
             _result = tree;
             _transformationDecision = BlockTransformation.FieldByField;
@@ -304,7 +295,6 @@ public partial class Compiler
                 if (varTypeIsSimd(lclType))
                 {
                     _src = _compiler.gtNewZeroConNode(lclType);
-                    _src.SetMorphed(_compiler);
                 }
                 else
                 {
@@ -349,10 +339,8 @@ public partial class Compiler
                 {
                     var addressLclNum = _compiler.lvaGrabTemp(shortLifetime: true, "Block morph LHS addr");
                     var tempStore = _compiler.gtNewTempStore(addressLclNum, address);
-                    tempStore.SetMorphed(_compiler);
                     AddSideEffect(tempStore);
                     var tempRead = _compiler.gtNewLclvNode(address.Type.ActualType, addressLclNum);
-                    tempRead.SetMorphed(_compiler);
                     _store.AsUnOp().Op1 = tempRead;
                     _compiler.gtUpdateNodeSideEffects(_store);
                 }

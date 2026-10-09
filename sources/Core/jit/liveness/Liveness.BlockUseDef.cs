@@ -70,10 +70,10 @@ public partial class Liveness<TLiveness>
                         var qmark = _compiler.fgGetTopLevelQmark(statement.RootNode, out var destination);
                         if (qmark is null)
                         {
-                            foreach (var local in statement.LocalsTreeList)
-                            {
-                                MarkUseDef(local);
-                            }
+                            _ = statement.VisitLogicalLocalOccurrencesViaLocalsTreeList(occurrence => {
+                                MarkUseDef(occurrence);
+                                return GenTree.VisitResult.Continue;
+                            });
                         }
                         else
                         {
@@ -82,15 +82,16 @@ public partial class Liveness<TLiveness>
 
                             // Conditional defs must not hide exposed uses in either qmark arm.
                             // Only the unconditional destination at the end can kill a local.
-                            foreach (var local in statement.LocalsTreeList)
-                            {
-                                var isUse = (local.Flags & GTF_VAR_DEF) == 0;
-                                var conditional = local != destination;
+                            _ = statement.VisitLogicalLocalOccurrencesViaLocalsTreeList(occurrence => {
+                                var isUse = (occurrence.Flags & GTF_VAR_DEF) == 0;
+                                var conditional = occurrence.Node != destination;
                                 if (isUse || !conditional)
                                 {
-                                    MarkUseDef(local);
+                                    MarkUseDef(occurrence);
                                 }
-                            }
+
+                                return GenTree.VisitResult.Continue;
+                            });
                         }
                     }
                 }
@@ -98,10 +99,10 @@ public partial class Liveness<TLiveness>
                 {
                     foreach (var statement in block.Statements)
                     {
-                        foreach (var local in statement.LocalsTreeList)
-                        {
-                            MarkUseDef(local);
-                        }
+                        _ = statement.VisitLogicalLocalOccurrencesViaLocalsTreeList(occurrence => {
+                            MarkUseDef(occurrence);
+                            return GenTree.VisitResult.Continue;
+                        });
                     }
                 }
             }

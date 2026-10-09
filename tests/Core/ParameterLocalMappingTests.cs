@@ -3,6 +3,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 
@@ -90,6 +91,62 @@ internal static unsafe class ParameterLocalMappingTests
             Assert.That(compiler._paramRegLocalMappings, Is.Not.Null.And.Empty);
         });
     }
+
+    [TestCase(TYP_BYTE, 0, (ushort)0, true)]
+    [TestCase(TYP_BYTE, 0, (ushort)7, false)]
+    [TestCase(TYP_BYTE, 8, (ushort)8, true)]
+    [TestCase(TYP_BYTE, 8, (ushort)15, false)]
+    [TestCase(TYP_UBYTE, 8, (ushort)8, true)]
+    [TestCase(TYP_UBYTE, 8, (ushort)15, false)]
+    [TestCase(TYP_SHORT, 8, (ushort)8, true)]
+    [TestCase(TYP_SHORT, 8, (ushort)14, false)]
+    [TestCase(TYP_USHORT, 8, (ushort)14, false)]
+    public static void ParameterFieldNormalizationUsesItsOffsetWithinTheRegister(
+        var_types type, int segmentOffset, ushort fieldOffset, bool needsSmallCast)
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTable[0].Layout = new ClassLayout(16);
+            compiler.lvaTable[2].Type = TYP_INT;
+            var segment = AbiPassingSegment.InRegister(REG_RCX, segmentOffset, 8);
+            compiler.lvaParameterPassingInfo[0] = AbiPassingInformation.FromSegment(compiler, false, segment);
+            compiler._paramRegLocalMappings = [new ParameterRegisterLocalMapping(segment, 1, 0)];
+            var block = new BasicBlock(null, null);
+            block.MakeLir(null, null);
+            compiler.fgNodeThreading = NodeThreading.LIR;
+            var field = compiler.gtNewLclFldNode(type, 0, fieldOffset);
+            var user = compiler.gtNewStoreLclVarNode(2, field);
+            block.InsertAtEnd(field);
+            block.InsertAtEnd(user);
+
+            RewriteParameterField(new Rationalizer(compiler), block, field);
+
+            var value = user.Data;
+            var hasSmallCast = false;
+            while (value.Oper is GT_CAST)
+            {
+                hasSmallCast |= value.AsCast().CastType == type;
+                value = value.AsCast().CastOp;
+            }
+
+            Assert.That(hasSmallCast, Is.EqualTo(needsSmallCast));
+            if (fieldOffset > segmentOffset)
+            {
+                Assert.That(value.Oper, Is.EqualTo(type is TYP_BYTE or TYP_SHORT ? GT_RSH : GT_RSZ));
+                Assert.That(value.AsOp().Op2.AsIntCon().IconValue,
+                    Is.EqualTo((nint)((fieldOffset - segmentOffset) * 8)));
+                value = value.AsOp().Op1;
+            }
+
+            Assert.That(value.AsLclVar().LclNum, Is.EqualTo(1));
+            Assert.That(field.Prev, Is.Null);
+            Assert.That(field.Next, Is.Null);
+            Assert.That(block.LastNode, Is.SameAs(user));
+            Assert.That(compiler._paramRegLocalMappings.Count, Is.EqualTo(1));
+        });
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "RewriteParameterField")]
+    private static extern void RewriteParameterField(Rationalizer rationalizer, BasicBlock block, GenTreeLclFld field);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "MapParameterRegisterLocals")]
     private static extern void MapParameters(Lowering lowering);

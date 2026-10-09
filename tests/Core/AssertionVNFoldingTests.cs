@@ -16,7 +16,7 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class AssertionVNFoldingTests
 {
-    [TestCase(false, 1, true)]
+    [TestCase(false, 1, false)]
     [TestCase(false, 0, false)]
     [TestCase(true, 0, true)]
     public static void SequenceEqualFoldsEqualPointersOrZeroLength(bool zeroLength, int samePointer, bool folds)
@@ -39,6 +39,99 @@ internal static unsafe class AssertionVNFoldingTests
                 Assert.That(result?.Oper, Is.EqualTo(GT_CNS_INT));
                 Assert.That(result?.AsIntCon().IconValue, Is.EqualTo((nint)1));
             }
+        });
+    }
+
+    [TestCase(-1, false, false)]
+    [TestCase(-1, true, true)]
+    [TestCase(0, false, true)]
+    [TestCase(1, false, true)]
+    [TestCase(1, true, true)]
+    [TestCase(TARGET_POINTER_SIZE - 1, false, true)]
+    [TestCase(TARGET_POINTER_SIZE, false, true)]
+    [TestCase(65537, false, true)]
+    public static void EqualAddressesRespectLengthAndNullDereferenceBoundaries(
+        int count, bool knownNonNull, bool folds)
+    {
+        WithCompiler("SequenceEqual", (compiler, store) => {
+            var first = compiler.gtNewLclvNode(TYP_BYREF, 0);
+            var second = compiler.gtNewLclvNode(TYP_BYREF, 1);
+            var pointerVN = knownNonNull
+                ? store.VNForFunc(TYP_BYREF, VNF_PtrToLoc,
+                    store.VNForIntCon(0), store.VNForIntCon(0), store.VNForIntCon(0))
+                : store.VNForExpr(null, TYP_BYREF);
+            first._vnPair.SetBoth(pointerVN);
+            second._vnPair.SetBoth(pointerVN);
+            var length = compiler.gtNewLclvNode(TYP_I_IMPL, 2);
+            length._vnPair.SetBoth(count < 0
+                ? store.VNForExpr(null, TYP_I_IMPL)
+                : store.VNForIntPtrCon(count));
+            var call = NewCall(compiler, TYP_INT, first, second, length);
+
+            var result = compiler.optVNBasedFoldExpr_Call_Memcmp(call);
+            Assert.That(result is not null, Is.EqualTo(folds));
+            if (!folds)
+            {
+                return;
+            }
+
+            if (!knownNonNull && (count > 0) && (count < TARGET_POINTER_SIZE))
+            {
+                Assert.That(result?.Oper, Is.EqualTo(GT_COMMA));
+                Assert.That(result?.AsOp().Op1.Oper, Is.EqualTo(GT_NULLCHECK));
+                Assert.That(result?.AsOp().Op1.AsIndir().Addr.AsLclVar().LclNum, Is.Zero);
+                result = result?.AsOp().Op2;
+                Assert.That(result?.Oper, Is.EqualTo(GT_COMMA));
+                Assert.That(result?.AsOp().Op1.Oper, Is.EqualTo(GT_NULLCHECK));
+                Assert.That(result?.AsOp().Op1.AsIndir().Addr.AsLclVar().LclNum, Is.EqualTo(1));
+                result = result?.AsOp().Op2;
+            }
+            Assert.That(result?.Oper, Is.EqualTo(GT_CNS_INT));
+            Assert.That(result?.AsIntCon().IconValue, Is.EqualTo((nint)1));
+        });
+    }
+
+    [TestCase(0)]
+    [TestCase(1)]
+    public static void EqualAddressFoldingPreservesArgumentEffectsBeforeNullChecks(int count)
+    {
+        WithCompiler("SequenceEqual", (compiler, store) => {
+            var firstEffect = compiler.gtNewStoreLclVarNode(2, compiler.gtNewIconNode(TYP_I_IMPL, 7));
+            var secondEffect = compiler.gtNewStoreLclVarNode(2, compiler.gtNewIconNode(TYP_I_IMPL, 9));
+            var first = compiler.gtNewCommaNode(TYP_BYREF, firstEffect, compiler.gtNewLclvNode(TYP_BYREF, 0));
+            var second = compiler.gtNewCommaNode(TYP_BYREF, secondEffect, compiler.gtNewLclvNode(TYP_BYREF, 1));
+            var pointerVN = store.VNForExpr(null, TYP_BYREF);
+            first._vnPair.SetBoth(pointerVN);
+            second._vnPair.SetBoth(pointerVN);
+            var length = compiler.gtNewIconNode(TYP_I_IMPL, count);
+            length._vnPair.SetBoth(store.VNForIntPtrCon(count));
+            var call = NewCall(compiler, TYP_INT, first, second, length);
+
+            var result = compiler.optVNBasedFoldExpr_Call_Memcmp(call);
+            Assert.That(result?.Oper, Is.EqualTo(GT_COMMA));
+            var effects = result?.AsOp().Op1;
+            Assert.That(effects?.Oper, Is.EqualTo(GT_COMMA));
+            var value = result?.AsOp().Op2;
+            Assert.That(value?.Oper, Is.EqualTo(count == 0 ? GT_CNS_INT : GT_COMMA));
+            if (count == 0)
+            {
+                Assert.That(effects?.AsOp().Op1, Is.SameAs(firstEffect));
+                Assert.That(effects?.AsOp().Op2, Is.SameAs(secondEffect));
+            }
+            else
+            {
+                var firstTemp = effects?.AsOp().Op1.AsLclVar();
+                var secondTemp = effects?.AsOp().Op2.AsLclVar();
+                Assert.That(firstTemp?.Data.AsOp().Op1, Is.SameAs(firstEffect));
+                Assert.That(secondTemp?.Data.AsOp().Op1, Is.SameAs(secondEffect));
+                Assert.That(value?.AsOp().Op1.Oper, Is.EqualTo(GT_NULLCHECK));
+                Assert.That(value?.AsOp().Op1.AsIndir().Addr.AsLclVar().LclNum,
+                    Is.EqualTo(firstTemp?.LclNum));
+                Assert.That(value?.AsOp().Op2.AsOp().Op1.Oper, Is.EqualTo(GT_NULLCHECK));
+                Assert.That(value?.AsOp().Op2.AsOp().Op1.AsIndir().Addr.AsLclVar().LclNum,
+                    Is.EqualTo(secondTemp?.LclNum));
+            }
+            Assert.That(value?.EffectiveVal.AsIntCon().IconValue, Is.EqualTo((nint)1));
         });
     }
 
@@ -451,6 +544,7 @@ internal static unsafe class AssertionVNFoldingTests
                 compiler.lvaTable = [new LclVarDsc { Type = TYP_BYREF }, new LclVarDsc { Type = TYP_BYREF },
                     new LclVarDsc { Type = TYP_I_IMPL }];
                 compiler.lvaCount = 3;
+                compiler.info.compRetBuffArg = BAD_VAR_NUM;
                 compiler.info.compCompHnd = &ee;
                 compiler.info.compMethodHnd = (CORINFO_METHOD_STRUCT_*)&metadata;
                 compiler.vnStore = new ValueNumStore(compiler);

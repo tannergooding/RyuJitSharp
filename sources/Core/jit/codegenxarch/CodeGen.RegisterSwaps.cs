@@ -31,8 +31,7 @@ public sealed partial class CodeGen
         // Both locals remain live. Update their homes without consuming/producing the operand nodes.
         descriptor1.RegNum = oldReg2;
         descriptor2.RegNum = oldReg1;
-        var size = varTypeIsGC(type1) != varTypeIsGC(type2) ? EA_GCREF : EA_PTRSIZE;
-        inst_RV_RV(INS_xchg, oldReg1, oldReg2, TYP_I_IMPL, size);
+        inst_RV_RV(INS_xchg, oldReg1, oldReg2, TYP_I_IMPL, EA_PTRSIZE);
 
         GCInfo.gcRegByrefSetCur &= ~(oldMask1 | oldMask2);
         GCInfo.gcRegGCrefSetCur &= ~(oldMask1 | oldMask2);

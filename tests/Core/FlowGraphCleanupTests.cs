@@ -369,6 +369,7 @@ internal static unsafe class FlowGraphCleanupTests
     [TestCase("not-relop", false, -1)]
     [TestCase("not-jtrue", false, -1)]
     [TestCase("intermediate", true, 1)]
+    [TestCase("copy", true, 1)]
     [TestCase("intermediate-wrong-local", false, 0)]
     [TestCase("intermediate-unary", false, 0)]
     [TestCase("intermediate-distinct-locals", false, 0)]
@@ -437,6 +438,10 @@ internal static unsafe class FlowGraphCleanupTests
                     {
                         data = compiler.gtNewUnaryNode(GT_NEG, TYP_INT, compiler.gtNewLclvNode(TYP_INT, 1));
                     }
+                    else if (shape == "copy")
+                    {
+                        data = compiler.gtNewLclvNode(TYP_INT, 1);
+                    }
                     else if (shape == "intermediate-distinct-locals")
                     {
                         data.AsOp().Op2 = compiler.gtNewLclvNode(TYP_INT, 2);
@@ -450,6 +455,132 @@ internal static unsafe class FlowGraphCleanupTests
 
             Assert.That(IsCandidate(compiler, target, out var lclNum), Is.EqualTo(accepted));
             Assert.That(lclNum, Is.EqualTo(local));
+        });
+    }
+
+    [TestCase(NodeThreading.None)]
+    [TestCase(NodeThreading.AllTrees)]
+    [TestCase(NodeThreading.AllLocals)]
+    public static void TailDuplicationThroughACopyUsesTheSourceDefinitionAndPreservesProfile(NodeThreading threading)
+    {
+        WithCompiler(threading, compiler => {
+            var (source, target, trueBlock, falseBlock) = CreateTailGraph(compiler, true);
+            var copy = target.FirstStmt?.RootNode.AsLclVar() ??
+                throw new AssertionException("Missing target store.");
+            copy.DataRef = compiler.gtNewLclvNode(TYP_INT, 1);
+            source.setBBProfileWeight(40);
+            target.setBBProfileWeight(100);
+            target.TrueEdge.Likelihood = 0.25;
+            target.FalseEdge.Likelihood = 0.75;
+
+            Assert.That(compiler.fgOptimizeUncondBranchToSimpleCond(source, target), Is.True);
+            Assert.That(source.TrueTarget, Is.SameAs(trueBlock));
+            Assert.That(source.FalseTarget, Is.SameAs(falseBlock));
+            Assert.That(source.TrueEdge.Likelihood, Is.EqualTo(0.25));
+            Assert.That(source.FalseEdge.Likelihood, Is.EqualTo(0.75));
+            Assert.That(target.bbWeight, Is.EqualTo(60));
+
+            Assert.That(compiler.fgFoldSimpleCondByForwardSub(source), Is.True);
+            Assert.That(source.Target, Is.SameAs(falseBlock));
+            Assert.That(source.TargetEdge.Likelihood, Is.EqualTo(1));
+            Assert.That(source.Statements.Count(), Is.EqualTo(2));
+            Assert.That(copy.Data.Oper, Is.EqualTo(GT_LCL_VAR));
+        });
+    }
+
+    [TestCase(NodeThreading.None, TYP_INT, TYP_INT, 5, 5, true)]
+    [TestCase(NodeThreading.None, TYP_INT, TYP_INT, 5, 6, false)]
+    [TestCase(NodeThreading.None, TYP_BYTE, TYP_INT, 255, -1, true)]
+    [TestCase(NodeThreading.None, TYP_UBYTE, TYP_INT, 257, 1, true)]
+    [TestCase(NodeThreading.None, TYP_SHORT, TYP_INT, 65535, -1, true)]
+    [TestCase(NodeThreading.None, TYP_USHORT, TYP_INT, 65537, 1, true)]
+    [TestCase(NodeThreading.None, TYP_BYTE, TYP_UBYTE, 255, 255, true)]
+    [TestCase(NodeThreading.None, TYP_UBYTE, TYP_BYTE, 255, -1, true)]
+    [TestCase(NodeThreading.None, TYP_INT, TYP_BYTE, 255, -1, true)]
+    [TestCase(NodeThreading.AllTrees, TYP_INT, TYP_INT, 5, 5, true)]
+    [TestCase(NodeThreading.AllTrees, TYP_INT, TYP_INT, 5, 6, false)]
+    [TestCase(NodeThreading.AllTrees, TYP_BYTE, TYP_INT, 255, -1, true)]
+    [TestCase(NodeThreading.AllTrees, TYP_UBYTE, TYP_INT, 257, 1, true)]
+    [TestCase(NodeThreading.AllTrees, TYP_SHORT, TYP_INT, 65535, -1, true)]
+    [TestCase(NodeThreading.AllTrees, TYP_USHORT, TYP_INT, 65537, 1, true)]
+    [TestCase(NodeThreading.AllTrees, TYP_BYTE, TYP_UBYTE, 255, 255, true)]
+    [TestCase(NodeThreading.AllTrees, TYP_UBYTE, TYP_BYTE, 255, -1, true)]
+    [TestCase(NodeThreading.AllTrees, TYP_INT, TYP_BYTE, 255, -1, true)]
+    [TestCase(NodeThreading.AllLocals, TYP_INT, TYP_INT, 5, 5, true)]
+    [TestCase(NodeThreading.AllLocals, TYP_INT, TYP_INT, 5, 6, false)]
+    [TestCase(NodeThreading.AllLocals, TYP_BYTE, TYP_INT, 255, -1, true)]
+    [TestCase(NodeThreading.AllLocals, TYP_UBYTE, TYP_INT, 257, 1, true)]
+    [TestCase(NodeThreading.AllLocals, TYP_SHORT, TYP_INT, 65535, -1, true)]
+    [TestCase(NodeThreading.AllLocals, TYP_USHORT, TYP_INT, 65537, 1, true)]
+    [TestCase(NodeThreading.AllLocals, TYP_BYTE, TYP_UBYTE, 255, 255, true)]
+    [TestCase(NodeThreading.AllLocals, TYP_UBYTE, TYP_BYTE, 255, -1, true)]
+    [TestCase(NodeThreading.AllLocals, TYP_INT, TYP_BYTE, 255, -1, true)]
+    public static void ForwardSubstitutionNormalizesTheSourceCopyBeforeTheComparedLocal(
+        NodeThreading threading, var_types sourceType, var_types destinationType, int stored, int compared, bool expected)
+    {
+        WithCompiler(threading, compiler => {
+            compiler.lvaTable[0].Type = destinationType;
+            compiler.lvaTable[1].Type = sourceType;
+            var (block, trueBlock, falseBlock) = CreateConditional(compiler);
+            var source = Append(compiler, block,
+                compiler.gtNewStoreLclVarNode(1, compiler.gtNewIconNode(TYP_INT, stored)));
+            var copy = Append(compiler, block,
+                compiler.gtNewStoreLclVarNode(0, compiler.gtNewLclvNode(TYP_INT, 1)));
+            var condition = Comparison(compiler, 0, GT_EQ, compared);
+            var jump = new GenTreeUnOp(GT_JTRUE, TYP_VOID, condition);
+            _ = Append(compiler, block, jump);
+
+            Assert.That(compiler.fgFoldSimpleCondByForwardSub(block), Is.True);
+            Assert.That(block.Kind, Is.EqualTo(BBJ_ALWAYS));
+            Assert.That(block.Target, Is.SameAs(expected ? trueBlock : falseBlock));
+            Assert.That(block.TargetEdge.Likelihood, Is.EqualTo(1));
+            Statement[] expectedStatements = [source, copy];
+            Assert.That(block.Statements.ToArray(), Is.EqualTo(expectedStatements));
+            Assert.That(source.RootNode.AsLclVar().Data.IsIntegralConst(stored), Is.True);
+            Assert.That(copy.RootNode.AsLclVar().Data.Oper, Is.EqualTo(GT_LCL_VAR));
+            Assert.That(jump.Op1.IsIntegralConst(expected ? 1 : 0), Is.True);
+        });
+    }
+
+    [TestCase("no-source")]
+    [TestCase("different-source")]
+    [TestCase("non-store")]
+    [TestCase("nonconstant-source")]
+    [TestCase("source-type-mismatch")]
+    [TestCase("copy-type-mismatch")]
+    [TestCase("intervening")]
+    public static void ForwardSubstitutionRejectsNonAdjacentOrIncompatibleCopies(string reason)
+    {
+        WithCompiler(NodeThreading.None, compiler => {
+            var (block, _, _) = CreateConditional(compiler);
+            if (reason != "no-source")
+            {
+                GenTree source = compiler.gtNewStoreLclVarNode(reason == "different-source" ? 2 : 1,
+                    reason == "nonconstant-source"
+                        ? compiler.gtNewLclvNode(TYP_INT, 2)
+                        : compiler.gtNewIconNode(reason == "source-type-mismatch" ? TYP_LONG : TYP_INT, 5));
+                if (reason == "non-store")
+                {
+                    source = compiler.gtNewIconNode(TYP_INT, 5);
+                }
+
+                _ = Append(compiler, block, source);
+                if (reason == "intervening")
+                {
+                    _ = Append(compiler, block, compiler.gtNewIconNode(TYP_INT, 7));
+                }
+            }
+
+            var copiedLocal = compiler.gtNewLclvNode(reason == "copy-type-mismatch" ? TYP_LONG : TYP_INT, 1);
+            _ = Append(compiler, block, compiler.gtNewStoreLclVarNode(0, copiedLocal));
+            var condition = Comparison(compiler, 0, GT_EQ, 5);
+            var jump = new GenTreeUnOp(GT_JTRUE, TYP_VOID, condition);
+            _ = Append(compiler, block, jump);
+
+            Assert.That(compiler.fgFoldSimpleCondByForwardSub(block), Is.False);
+            Assert.That(block.Kind, Is.EqualTo(BBJ_COND));
+            Assert.That(jump.Op1, Is.SameAs(condition));
+            Assert.That(condition.Op1.Oper, Is.EqualTo(GT_LCL_VAR));
         });
     }
 

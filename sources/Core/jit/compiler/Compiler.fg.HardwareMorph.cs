@@ -19,12 +19,10 @@ public partial class Compiler
             if (optimized != node)
             {
                 assert(!fgIsCommaThrow(optimized));
-                optimized.SetMorphed(this);
                 return optimized;
             }
             else if (!optimized.Oper.IsHWIntrinsic)
             {
-                optimized.SetMorphed(this);
                 return optimized;
             }
         }
@@ -81,7 +79,7 @@ public partial class Compiler
                     {
                         node = inner;
                     }
-                    node.SetMorphed(this);
+
                     return node;
                 }
             }
@@ -189,9 +187,7 @@ public partial class Compiler
                         DEBUG_DESTROY_NODE(second);
                         DEBUG_DESTROY_NODE(node);
                         node = gtNewSimdUnOpNode(GT_NEG, type, first, baseType, size).AsHWIntrinsic();
-#if TARGET_XARCH
-                        node.GetOp(1).SetMorphed(this);
-#endif
+
                         return fgMorphHWIntrinsicRequired(node);
                     }
                 }
@@ -290,7 +286,6 @@ public partial class Compiler
                 {
                     var reciprocal = gtNewOneConNode(GetSimdTypeForSize(size), baseType).AsVecCon();
                     reciprocal.EvaluateBinaryInPlace(GT_DIV, isScalar, baseType, constant);
-                    reciprocal.SetMorphed(this);
                     fgUpdateConstTreeValueNumber(reciprocal);
                     var id = GetHWIntrinsicIdForBinOp(GT_MUL, first, reciprocal, baseType, size, isScalar);
                     node.ChangeHWIntrinsicId(id, first, reciprocal);
@@ -346,9 +341,6 @@ public partial class Compiler
                 if (multiplier == -1.0)
                 {
                     first = gtNewSimdUnOpNode(GT_NEG, type, first, baseType, size);
-#if TARGET_XARCH
-                    first.AsHWIntrinsic().GetOp(2).SetMorphed(this);
-#endif
                     DEBUG_DESTROY_NODE(second);
                     DEBUG_DESTROY_NODE(node);
                     return fgMorphHWIntrinsicRequired(first.AsHWIntrinsic());
@@ -360,7 +352,6 @@ public partial class Compiler
                     var clone = fgMakeMultiUse(ref first);
                     _ = GetHWIntrinsicIdForBinOp(GT_ADD, first, clone, baseType, size, isScalar);
                     var add = gtNewSimdBinOpNode(GT_ADD, GetSimdTypeForSize(size), first, clone, baseType, size);
-                    add.SetMorphed(this, doChilren: true);
                     DEBUG_DESTROY_NODE(second);
                     DEBUG_DESTROY_NODE(node);
                     return add;
@@ -667,7 +658,6 @@ public partial class Compiler
                     {
                         inner = fgMorphHWIntrinsicOptional(inner.AsHWIntrinsic());
                     }
-                    inner.SetMorphed(this);
                     tree.SetOp(operandIndex, inner);
                 }
             }
@@ -680,7 +670,6 @@ public partial class Compiler
         }
 
         assert(type == result.Type);
-        result.SetMorphed(this);
 
         return result;
     }
@@ -742,9 +731,6 @@ public partial class Compiler
 #endif
                     {
                         replacement = gtNewSimdUnOpNode(GT_NOT, firstType, first, baseType, size);
-#if TARGET_XARCH
-                        replacement.AsHWIntrinsic().GetOp(2).SetMorphed(this);
-#endif
                     }
 
                     if (replacement is not null)
@@ -759,7 +745,6 @@ public partial class Compiler
                             {
                                 replacement = fgMorphHWIntrinsicOptional(replacement.AsHWIntrinsic());
                             }
-                            replacement.SetMorphed(this);
                             replacement = type is TYP_MASK
                                 ? gtNewSimdCvtVectorToMaskNode(type, replacement, baseType, size)
                                 : gtNewSimdCvtMaskToVectorNode(type, replacement, baseType, size);
@@ -878,9 +863,6 @@ public partial class Compiler
                     else
                     {
                         second = gtNewSimdUnOpNode(GT_NEG, type, second, baseType, size);
-#if TARGET_XARCH
-                        second.AsHWIntrinsic().GetOp(varTypeIsFloating(baseType) ? 2 : 1).SetMorphed(this);
-#endif
                         var id = GetHWIntrinsicIdForBinOp(GT_ADD, second, first, baseType, size, isScalar);
                         tree.ChangeHWIntrinsicId(id, second, first);
                         second = fgMorphHWIntrinsicRequired(second.AsHWIntrinsic());
@@ -888,7 +870,6 @@ public partial class Compiler
                         {
                             second = fgMorphHWIntrinsicOptional(second.AsHWIntrinsic());
                         }
-                        second.SetMorphed(this);
                         tree.SetOp(1, second);
                         return fgMorphHWIntrinsicRequired(tree);
                     }

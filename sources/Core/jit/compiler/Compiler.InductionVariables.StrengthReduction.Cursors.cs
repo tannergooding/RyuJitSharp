@@ -313,6 +313,14 @@ public partial class Compiler
                 return null;
             }
 
+            // Avoid the signed MinValue / -1 edge case in the GCD and scaling.
+            if (isLong
+                ? (firstStep == long.MinValue) || (secondStep == long.MinValue)
+                : (unchecked((int)firstStep) == int.MinValue) || (unchecked((int)secondStep) == int.MinValue))
+            {
+                return null;
+            }
+
             var gcd = isLong
                 ? Gcd(firstStep, secondStep)
                 : Gcd(unchecked((int)firstStep), unchecked((int)secondStep));

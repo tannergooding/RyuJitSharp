@@ -60,9 +60,6 @@ public enum GenTreeCallFlags
     /// <summary>call does not return</summary>
     GTF_CALL_M_DOES_NOT_RETURN = 1 << 13,
 
-    /// <summary>this call is a new array helper for a stack allocated array.</summary>
-    GTF_CALL_M_STACK_ARRAY = 1 << 14,
-
     /// <summary>NativeAOT managed calli needs transformation, that checks special bit in calli address. If it is set, then it is necessary to restore real function address and load hidden argument as the first argument for calli.</summary>
     /// <remarks>It is NativeAOT replacement for instantiating stubs, because executable code cannot be generated at runtime.</remarks>
     GTF_CALL_M_FAT_POINTER_CHECK = 1 << 15,

@@ -27,6 +27,7 @@ internal static unsafe class GcInfoEncoderTests
             Assert.That(encoder.m_CurrentMethodSize.TotalSize, Is.EqualTo((nuint)16));
             Assert.That(encoder.m_CurrentMethodSize.GetFieldSize("FlagsSize"), Is.EqualTo((nuint)4));
             Assert.That(encoder.m_CurrentMethodSize.GetFieldSize("CodeLengthSize"), Is.EqualTo((nuint)9));
+            Assert.That(encoder.m_CurrentMethodSize.GetFieldSize("NumRangesSize"), Is.EqualTo((nuint)0));
             Assert.That(encoder.m_CurrentMethodSize.NumMethods, Is.EqualTo((nuint)1));
 #endif
 
@@ -49,6 +50,9 @@ internal static unsafe class GcInfoEncoderTests
             encoder.SetIsVarArg();
             encoder.SetSizeOfStackOutgoingAndScratchArea(0);
             encoder.Build();
+#if DEBUG
+            Assert.That(encoder.m_CurrentMethodSize.GetFieldSize("NumRangesSize"), Is.EqualTo((nuint)2));
+#endif
             var result = encoder.Emit();
 
             Assert.That(new ReadOnlySpan<byte>(result, (int)context->Size).ToArray(),
@@ -151,6 +155,10 @@ internal static unsafe class GcInfoEncoderTests
             encoder.SetSlotState(96, slot, GC_SLOT_DEAD);
             encoder.FinalizeSlotIds();
             encoder.Build();
+#if DEBUG
+            Assert.That(encoder.m_CurrentMethodSize.NumRanges, Is.EqualTo((nuint)1));
+            Assert.That(encoder.m_CurrentMethodSize.GetFieldSize("NumRangesSize"), Is.EqualTo((nuint)2));
+#endif
             var result = encoder.Emit();
 
             Assert.That(context->Calls, Is.EqualTo(1));

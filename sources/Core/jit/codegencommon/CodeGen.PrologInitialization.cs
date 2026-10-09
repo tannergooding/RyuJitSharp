@@ -134,7 +134,7 @@ public sealed partial class CodeGen
                 }
 
                 noway_assert(local.lvOnFrame);
-                if (_compiler.lvaIsUnknownSizeLocal(varNum))
+                if (_compiler.lvaLocalIsOnUnknownSizeFrame(varNum))
                 {
                     // This local belongs on the UnknownSizeFrame, which handles zeroing instead.
                     continue;

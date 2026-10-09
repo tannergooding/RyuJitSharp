@@ -283,7 +283,8 @@ public sealed partial class Rationalizer
                 value = CompilerInstance.gtNewBinaryNode(varTypeIsSmall(field.Type) && varTypeIsSigned(field.Type) ? GT_RSH : GT_RSZ,
                     value.Type, value, amount);
             }
-            if (varTypeIsSmall(field.Type) && (selected.Offset + field.Type.Size != registerType.Size))
+            if (varTypeIsSmall(field.Type) &&
+                (field.LclOffs - selected.Offset + field.Type.Size != registerType.Size))
             {
                 value = CompilerInstance.gtNewCastNode(TYP_INT, value, false, field.Type);
             }

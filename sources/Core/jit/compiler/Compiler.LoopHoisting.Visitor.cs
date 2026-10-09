@@ -312,7 +312,9 @@ public partial class Compiler
                     else
                     {
                         var helper = call.HelperNum;
-                        if (helper.MutatesHeap || (helper.MayRunCctor && (call.Flags & GTF_CALL_HOISTABLE) == 0) ||
+                        if (helper.MutatesHeap ||
+                            ((call._callMoreFlags & GTF_CALL_M_ALLOC_SIDE_EFFECTS) != 0) ||
+                            (helper.MayRunCctor && (call.Flags & GTF_CALL_HOISTABLE) == 0) ||
                             (!hoistable && !helper.NoThrow))
                         {
                             _canHoistSideEffects = false;

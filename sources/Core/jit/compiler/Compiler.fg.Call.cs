@@ -404,7 +404,6 @@ public partial class Compiler
 
             if (isRootReplaced)
             {
-                call.SetMorphed(this);
                 // Unwind the abandoned ancestors without remorphing the new root.
                 var zeroType = originalCallType is TYP_STRUCT ? TYP_INT : originalCallType.ActualType;
                 result = fgMorphTree(gtNewZeroConNode(zeroType));
@@ -587,7 +586,7 @@ public partial class Compiler
                 compCurBB.SetFlags(BBF_HAS_CALL);
                 JITDUMP("\nInserting store of a multi-reg call result to a temp:\n");
                 DISPSTMT(statement);
-                result.SetMorphed(this);
+
                 return result;
             }
 #endif
@@ -651,11 +650,6 @@ public partial class Compiler
         }
 
         assert(compCurBB is not null);
-        if (IsGcSafePoint(call))
-        {
-            compCurBB.SetFlags(BBF_GC_SAFE_POINT);
-        }
-
         if (fgGlobalMorph && call.IsUnmanaged && call.IsSuppressGCTransition)
         {
             compCurBB.SetFlags(BBF_HAS_SUPPRESSGC_CALL | BBF_GC_SAFE_POINT);
@@ -761,7 +755,6 @@ public partial class Compiler
                     else
                     {
                         argumentSetup = new GenTreeOp(GT_COMMA, TYP_VOID, argumentSetup, setup);
-                        argumentSetup.SetMorphed(this);
                     }
                 }
 
@@ -771,11 +764,16 @@ public partial class Compiler
                 if (argumentSetup is not null)
                 {
                     result = new GenTreeOp(GT_COMMA, TYP_VOID, argumentSetup, result);
-                    result.SetMorphed(this);
                 }
 
                 return result;
             }
+        }
+
+        // The covariant-store handling above may remove the call or convert it to a helper.
+        if (IsGcSafePoint(call))
+        {
+            compCurBB.SetFlags(BBF_GC_SAFE_POINT);
         }
 
         // Tail calls must retain their return block so their epilog is emitted.

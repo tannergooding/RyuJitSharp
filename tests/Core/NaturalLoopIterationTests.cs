@@ -203,7 +203,7 @@ internal static unsafe class NaturalLoopIterationTests
     }
 
     [Test]
-    public static void TemporaryComparisonStillFindsTheIncrement()
+    public static void TemporaryComparisonIsNotUsedAsTheLoopTest()
     {
         WithLoop((compiler, loop, preheader, unusedHeader, latch) =>
         {
@@ -220,9 +220,8 @@ internal static unsafe class NaturalLoopIterationTests
             compiler.fgInsertStmtAtEnd(latch,
                 compiler.gtNewStmt(compiler.gtNewUnaryNode(GT_JTRUE, TYP_VOID, tempNotZero)));
 
-            Assert.That(loop.AnalyzeIteration(out var info), Is.True);
-            Assert.That(info.TestTree, Is.SameAs(comparison));
-            Assert.That(info.IterTree, Is.SameAs(increment));
+            Assert.That(compiler.optExtractTestIncr(latch, out _, out _), Is.False);
+            Assert.That(loop.AnalyzeIteration(out _), Is.False);
         });
     }
 

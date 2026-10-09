@@ -127,6 +127,64 @@ internal static unsafe class MorphBlockStmtTests
         });
     }
 
+    [TestCase(0, false)]
+    [TestCase(1, false)]
+    [TestCase(2, false)]
+    [TestCase(3, false)]
+    [TestCase(-1, false)]
+    [TestCase(0, true)]
+    [TestCase(2, true)]
+    public static void ConstantSwitchDebitsEachUniqueProfileEdgeOnce(int switchValue, bool targetHasSuccessor)
+    {
+        WithCompiler(compiler =>
+        {
+            var block = new BasicBlock(null, null);
+            var first = new BasicBlock(null, null) { Kind = BBJ_RETURN };
+            var second = new BasicBlock(null, null) { Kind = BBJ_RETURN };
+            compiler.fgFirstBB = block;
+            compiler.fgPredsComputed = true;
+            compiler.fgPgoConsistent = true;
+#if DEBUG
+            compiler.fgSafeFlowEdgeCreation = true;
+#endif
+            var firstEdge = compiler.fgAddRefPred(first, block);
+            var duplicateEdge = compiler.fgAddRefPred(first, block);
+            var secondEdge = compiler.fgAddRefPred(second, block);
+            var defaultEdge = compiler.fgAddRefPred(first, block);
+            firstEdge.Likelihood = 0.75;
+            secondEdge.Likelihood = 0.25;
+            var targets = new BBswtDesc([firstEdge, secondEdge], new int[4], hasDefault: true);
+            targets.Cases[0] = firstEdge;
+            targets.Cases[1] = duplicateEdge;
+            targets.Cases[2] = secondEdge;
+            targets.Cases[3] = defaultEdge;
+            block.SwitchTargets = targets;
+            block.setBBProfileWeight(100);
+            first.setBBProfileWeight(200);
+            second.setBBProfileWeight(100);
+            if (targetHasSuccessor)
+            {
+                var successor = new BasicBlock(null, null) { Kind = BBJ_RETURN };
+                second.SetKindAndTargetEdge(BBJ_ALWAYS, compiler.fgAddRefPred(successor, second));
+            }
+
+            var statement = compiler.gtNewStmt(new GenTreeUnOp(GT_SWITCH, TYP_VOID,
+                compiler.gtNewIconNode(TYP_INT, switchValue)));
+            compiler.fgInsertStmtAtEnd(block, statement);
+
+            Assert.That(compiler.fgMorphBlockStmt(block, statement), Is.True);
+
+            var selectsSecond = switchValue == 2;
+            Assert.That(block.Kind, Is.EqualTo(BBJ_ALWAYS));
+            Assert.That(block.Target, Is.SameAs(selectsSecond ? second : first));
+            Assert.That(first.bbWeight, Is.EqualTo(selectsSecond ? 125 : 225));
+            Assert.That(second.bbWeight, Is.EqualTo(selectsSecond ? 175 : 75));
+            Assert.That(firstEdge.DupCount, Is.EqualTo(selectsSecond ? 0 : 1));
+            Assert.That(secondEdge.DupCount, Is.EqualTo(selectsSecond ? 1 : 0));
+            Assert.That(compiler.fgPgoConsistent, Is.EqualTo(!targetHasSuccessor));
+        });
+    }
+
     private static void WithCompiler(Action<Compiler> action)
     {
 #if DEBUG

@@ -119,9 +119,14 @@ public static class RangeOps
                 left.UpperLimit.GetConstant() >> right.LowerLimit.GetConstant());
         }
 
-        if (logical && (right.LowerLimit.GetConstant() >= 1) &&
-            !(left.LowerLimit.IsConstant && (left.LowerLimit.GetConstant() >= 0)))
+        if (logical && !(left.LowerLimit.IsConstant && (left.LowerLimit.GetConstant() >= 0)))
         {
+            if (right.LowerLimit.GetConstant() == 0)
+            {
+                // A shift by 0 may preserve a negative left operand, so nothing is known.
+                return new(new(LimitType.Unknown));
+            }
+
             result.LowerLimit = new(LimitType.Constant, 0);
             result.UpperLimit = new(LimitType.Constant,
                 unchecked((int)(uint.MaxValue >> right.LowerLimit.GetConstant())));

@@ -29,7 +29,7 @@ public struct LocalSequencer : IGenTreeVisitor<LocalSequencer>
 
         if (node.Oper.IsAnyLocal)
         {
-            SequenceLocal(node.AsLclVarCommon());
+            SequenceLocal(node);
         }
 
         if (node.Oper.IsCall)
@@ -89,7 +89,7 @@ public struct LocalSequencer : IGenTreeVisitor<LocalSequencer>
 
     /// <summary>Add a local to the list.</summary>
     /// <param name="lcl">the local</param>
-    public void SequenceLocal(GenTreeLclVarCommon lcl)
+    public void SequenceLocal(GenTree lcl)
     {
         assert(_prevNode is not null);
         lcl.Prev = _prevNode;
@@ -105,7 +105,7 @@ public struct LocalSequencer : IGenTreeVisitor<LocalSequencer>
     {
         var sequencer = this;
         _ = call.VisitPhysicalLocalDefNodes(_compiler, node => {
-            sequencer.MoveNodeToEnd(node.AsLclVarCommon());
+            sequencer.MoveNodeToEnd(node);
             return GenTree.VisitResult.Continue;
         });
         this = sequencer;
@@ -153,7 +153,7 @@ public struct LocalSequencer : IGenTreeVisitor<LocalSequencer>
 
     /// <summary>Move a node from its current position in the linked list to the end.</summary>
     /// <param name="node">The node</param>
-    private void MoveNodeToEnd(GenTreeLclVarCommon node)
+    private void MoveNodeToEnd(GenTree node)
     {
         if ((_prevNode == node) || (node.Next is null))
         {

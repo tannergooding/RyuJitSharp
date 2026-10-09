@@ -1125,9 +1125,6 @@ internal static unsafe class AssertionTests
             var tree = compiler.gtNewStoreLclVarNode(0, compiler.gtNewIconNode(TYP_INT, 3));
             compiler.fgMorphTreeDone(tree, alreadyPropagated);
             Assert.That(tree.GeneratesAssertion, Is.EqualTo(global && !alreadyPropagated));
-#if DEBUG
-            Assert.That(tree.WasMorphed, Is.EqualTo(global));
-#endif
         });
     }
 

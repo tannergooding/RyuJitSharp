@@ -25,7 +25,15 @@ public sealed class GenTreeBox : GenTreeUnOp
     /// <summary>This is the statement that contains the definition tree when the node is an inlined GT_BOX on a value type</summary>
     public Statement DefStmtWhenInlinedBoxValue => _defStmtWhenInlinedBoxValue;
 
-    public bool IsBoxedValue => (Flags & GTF_BOX_VALUE) != 0;
+    public bool IsBoxedValue
+    {
+        get
+        {
+            assert((Oper is not GT_BOX) || (BoxOp is not null));
+
+            return OperIs(GT_BOX);
+        }
+    }
 
     public bool WasCloned
     {

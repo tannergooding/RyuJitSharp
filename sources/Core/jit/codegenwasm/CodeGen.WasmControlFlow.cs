@@ -41,6 +41,8 @@ public sealed partial class CodeGen
         var funcletIndex = ehDsc.ebdFuncIndex;
         assert((funcletIndex >= 1) && (funcletIndex < _compiler.compFuncCount()));
 
+        ensureCurrentFuncIsUnwindable();
+
         var parameters = new EmitCallParams
         {
             callType = EC_INDIR_R,
@@ -85,8 +87,8 @@ public sealed partial class CodeGen
         assert(callFinallyRet.Kind is BBJ_CALLFINALLYRET);
 
         var continuation = callFinallyRet.Target;
-        // Branch to the continuation block if it is not the next block.
-        if (continuation != callFinallyRet.Next)
+        // Branch to the continuation block unless we can fall into it.
+        if (!callFinallyRet.CanRemoveJumpToTarget(continuation, _compiler))
         {
             inst_JMP(EJ_jmp, continuation);
         }

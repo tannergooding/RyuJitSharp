@@ -97,18 +97,6 @@ public sealed class ProfileSynthesis
                 break;
             }
 
-            case ProfileSynthesisOption.ReverseLikelihoods:
-            {
-                ReverseLikelihoods();
-                break;
-            }
-
-            case ProfileSynthesisOption.RandomLikelihoods:
-            {
-                RandomizeLikelihoods();
-                break;
-            }
-
             case ProfileSynthesisOption.RepairLikelihoods:
             {
                 RepairLikelihoods();
@@ -668,62 +656,6 @@ public sealed class ProfileSynthesis
                 edge.clearLikelihood();
             }
         }
-    }
-
-    private void ReverseLikelihoods()
-    {
-#if DEBUG
-        JITDUMP("Reversing likelihoods\n");
-        var likelihoods = new List<weight_t>();
-
-        foreach (var block in _comp.Blocks)
-        {
-            _ = SumOutgoingLikelihoods(block, likelihoods);
-
-            if (likelihoods.Count < 2)
-            {
-                continue;
-            }
-
-            likelihoods.Reverse();
-            var index = 0;
-
-            foreach (var edge in block.Succs.Edges)
-            {
-                edge.Likelihood = likelihoods[index++];
-            }
-        }
-#endif
-    }
-
-    private void RandomizeLikelihoods()
-    {
-#if DEBUG
-        JITDUMP("Randomizing likelihoods\n");
-        var likelihoods = new List<weight_t>();
-        var random = new CLRRandom(_comp.info.compMethodHash());
-
-        foreach (var block in _comp.Blocks)
-        {
-            var count = block.NumSucc;
-            likelihoods.Clear();
-            weight_t sum = 0;
-
-            for (var i = 0; i < count; i++)
-            {
-                var likelihood = random.NextDouble();
-                likelihoods.Add(likelihood);
-                sum += likelihood;
-            }
-
-            var index = 0;
-
-            foreach (var edge in block.Succs.Edges)
-            {
-                edge.Likelihood = likelihoods[index++] / sum;
-            }
-        }
-#endif
     }
 
     private void ComputeCyclicProbabilities()

@@ -3604,15 +3604,27 @@ public partial class Compiler
 
                 assert(argClone is not null);
 
+                InlineCandidateInfo? inlineInfo = null;
                 if (call.IsInlineCandidate)
                 {
-                    var inlineInfo = call.SingleInlineCandidateInfo
+                    inlineInfo = call.SingleInlineCandidateInfo
                         ?? throw new FatalJitException("Missing inline candidate information.");
                     assert(inlineInfo.retExpr is null);
                     call.ClearInlineInfo();
                 }
 
                 var fallbackCall = gtCloneExpr(call);
+                if (inlineInfo is not null)
+                {
+                    fallbackCall.AsCall().SingleInlineCandidateInfo = inlineInfo;
+                    if (call.Type is not TYP_VOID)
+                    {
+                        var retExpr = gtNewInlineCandidateReturnExpr(fallbackCall.AsCall(), call.Type);
+                        inlineInfo.retExpr = retExpr;
+                        fallbackCall = gtNewCommaNode(call.Type, fallbackCall, retExpr);
+                    }
+                }
+
                 var profiledValueNode = gtNewIconNode(argClone.Type, profiledValue);
                 argRef = profiledValueNode;
 
@@ -3620,6 +3632,12 @@ public partial class Compiler
                 var colon = gtNewColonNode(call.Type, call, fallbackCall);
                 var cond = gtNewBinaryNode(GT_EQ, TYP_INT, argClone, gtCloneExpr(profiledValueNode));
                 var qmark = gtNewQmarkNode(call.Type, cond, colon);
+                if (inlineInfo is not null)
+                {
+                    // Expose the fallback as a top-level call before inlining.
+                    optMethodFlags |= OMF_HAS_EARLY_QMARKS;
+                    qmark.IsEarlyExpandableQmark = true;
+                }
 
                 JITDUMP("\n\nResulting tree:\n");
                 DISPTREE(qmark);
@@ -5693,18 +5711,12 @@ public partial class Compiler
             op1 = gtNewLclvNode(TYP_REF, impBoxTemp);
 
             // Record that this is a "box" node and keep track of the matching parts.
-            var box = new GenTreeBox(TYP_REF, op1, allocBoxStmt, copyStmt);
-
-            // If it is a value class, mark the "box" node.  We can use this information
-            // to optimise several cases:
+            // We can use this information to optimise several cases:
             //    "box(x) is null" --> false
             //    "(box(x)).CallAnInterfaceMethod(...)" --> "(&x).CallAValueTypeMethod"
             //    "(box(x)).CallAnObjectMethod(...)" --> "(&x).CallAValueTypeMethod"
-
-            box.Flags |= GTF_BOX_VALUE;
-            assert(box.IsBoxedValue && (allocBoxStore.Oper is GT_STORE_LCL_VAR));
-
-            op1 = box;
+            op1 = new GenTreeBox(TYP_REF, op1, allocBoxStmt, copyStmt);
+            assert(allocBoxStore.Oper is GT_STORE_LCL_VAR);
         }
         else
         {

@@ -130,12 +130,6 @@ public partial class Compiler
                 break;
             }
 
-            case GTF_ICON_CIDMID_HDL:
-            {
-                jitprintf($" {"cid/mid"}");
-                break;
-            }
-
             case GTF_ICON_BBC_PTR:
             {
                 jitprintf($" {"bbc"}");

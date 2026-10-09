@@ -56,11 +56,12 @@ internal static unsafe class WasmIntervalAccessorTests
         Assert.That(first.Chain(), Is.SameAs(root));
     }
 
-    [Test]
-    public static void JumpElisionPreservesWasmIntervalBoundaries()
+    [TestCase(BBJ_ALWAYS)]
+    [TestCase(BBJ_CALLFINALLYRET)]
+    public static void JumpElisionPreservesWasmIntervalBoundaries(BBKinds kind)
     {
         WithCompiler(compiler => {
-            var jump = NewBlock(compiler, BBJ_ALWAYS);
+            var jump = NewBlock(compiler, kind);
             var target = NewBlock(compiler, BBJ_RETURN);
             var otherTarget = NewBlock(compiler, BBJ_RETURN);
             jump.bbPreorderNum = 0;

@@ -56,8 +56,6 @@ public partial class GenTree
 
 #if DEBUG
     internal GenTreeDebugFlags _debugFlags;
-
-    internal ushort _morphCount;
 #endif
 
     internal ValueNumPair _vnPair;
@@ -130,7 +128,6 @@ public partial class GenTree
         _costsInitialized = source._costsInitialized;
         _regTag = source._regTag;
         _debugFlags = source._debugFlags;
-        _morphCount = source._morphCount;
         _treeId = source._treeId;
         _seqNum = source._seqNum;
         _useNum = source._useNum;
@@ -1241,10 +1238,6 @@ public partial class GenTree
 
     public GenTreeUseEdgesList UseEdges => new GenTreeUseEdgesList(this);
 
-#if DEBUG
-    public bool WasMorphed => (_debugFlags & GTF_DEBUG_NODE_MORPHED) != 0;
-#endif
-
     protected internal GenTreeFlags Flags
     {
         get
@@ -1297,10 +1290,30 @@ public partial class GenTree
             }
         }
 
+        if (oper.IsCompare && ((op1.Flags & GTF_RELOP_NAN_UN) != (op2.Flags & GTF_RELOP_NAN_UN)))
+        {
+            return false;
+        }
+
+        if (oper.IsIndirOrArrMetaData && ((op1.Flags & GTF_IND_FLAGS) != (op2.Flags & GTF_IND_FLAGS)))
+        {
+            return false;
+        }
+
         if (oper.IsConst)
         {
+            if (oper is GT_CNS_INT)
+            {
+                var intCon1 = op1.AsIntCon();
+                var intCon2 = op2.AsIntCon();
+
+                return (intCon1.IconValue == intCon2.IconValue) &&
+                       (intCon1.FieldSeq == intCon2.FieldSeq) &&
+                       ((op1.Flags & GTF_ICON_HDL_MASK) == (op2.Flags & GTF_ICON_HDL_MASK)) &&
+                       (!intCon1.IsIconHandle() || (intCon1.CompileTimeHandle == intCon2.CompileTimeHandle));
+            }
+
             return oper switch {
-                GT_CNS_INT => op1.AsIntCon().IconValue == op2.AsIntCon().IconValue,
                 GT_CNS_LNG => op1.AsLngCon().LconValue == op2.AsLngCon().LconValue,
                 GT_CNS_DBL => op1.AsDblCon().IsBitwiseEqual(op2.AsDblCon()),
                 GT_CNS_STR => (op1.AsStrCon().SconCpx == op2.AsStrCon().SconCpx) &&
@@ -1372,7 +1385,7 @@ public partial class GenTree
             if (oper is GT_IND)
             {
                 // Struct indirections need contextual layout information.
-                if ((op1.Type is TYP_STRUCT) || ((op1.Flags & GTF_IND_FLAGS) != (op2.Flags & GTF_IND_FLAGS)))
+                if (op1.Type is TYP_STRUCT)
                 {
                     return false;
                 }
@@ -1436,8 +1449,7 @@ public partial class GenTree
 
                     case GT_BLK:
                     {
-                        if ((op1.AsBlk().Layout != op2.AsBlk().Layout) ||
-                            ((op1.Flags & GTF_IND_FLAGS) != (op2.Flags & GTF_IND_FLAGS)))
+                        if (op1.AsBlk().Layout != op2.AsBlk().Layout)
                         {
                             return false;
                         }
@@ -1459,7 +1471,8 @@ public partial class GenTree
                     {
                         if ((op1.AsArrAddr().ElemType != op2.AsArrAddr().ElemType) ||
                             (op1.AsArrAddr().ElemClassHandle != op2.AsArrAddr().ElemClassHandle) ||
-                            (op1.AsArrAddr().FirstElemOffset != op2.AsArrAddr().FirstElemOffset))
+                            (op1.AsArrAddr().FirstElemOffset != op2.AsArrAddr().FirstElemOffset) ||
+                            ((op1.Flags & GTF_ARR_ADDR_NONNULL) != (op2.Flags & GTF_ARR_ADDR_NONNULL)))
                         {
                             return false;
                         }
@@ -1468,6 +1481,19 @@ public partial class GenTree
                     }
 
                     case GT_BOX:
+                    {
+                        var box1 = op1.AsBox();
+                        var box2 = op2.AsBox();
+
+                        if (!ReferenceEquals(box1.DefStmtWhenInlinedBoxValue, box2.DefStmtWhenInlinedBoxValue) ||
+                            !ReferenceEquals(box1.CopyStmtWhenInlinedBoxValue, box2.CopyStmtWhenInlinedBoxValue))
+                        {
+                            return false;
+                        }
+
+                        break;
+                    }
+
                     case GT_RUNTIMELOOKUP:
                     {
                         break;
@@ -1503,11 +1529,6 @@ public partial class GenTree
 
                     case GT_STOREIND:
                     {
-                        if ((op1.Flags & GTF_IND_FLAGS) != (op2.Flags & GTF_IND_FLAGS))
-                        {
-                            return false;
-                        }
-
                         break;
                     }
 
@@ -1708,14 +1729,6 @@ public partial class GenTree
 
     public void ClearAssertion() => _assertionInfo.Clear();
 
-    [Conditional("DEBUG")]
-    public void ClearMorphed()
-    {
-#if DEBUG
-        _debugFlags &= ~GTF_DEBUG_NODE_MORPHED;
-#endif
-    }
-
     public void ClearRegNum()
     {
         _regNum = REG_NA;
@@ -1775,7 +1788,7 @@ public partial class GenTree
     }
 
 #if DEBUG
-    public static int gtDispFlags(GenTreeFlags flags, GenTreeDebugFlags debugFlags)
+    public static int gtDispFlags(GenTreeFlags flags)
     {
         // the "baseline" number of flag characters displayed
         var charsDisplayed = 10;
@@ -1785,8 +1798,7 @@ public partial class GenTree
         jitprintf($"{(((flags & GTF_EXCEPT) is not 0) ? 'X' : '-')}");
         jitprintf($"{(((flags & GTF_GLOB_REF) is not 0) ? 'G' : '-')}");
 
-        // First print '+' if GTF_DEBUG_NODE_MORPHED is set, otherwise print 'O' or '-'
-        jitprintf($"{(((debugFlags & GTF_DEBUG_NODE_MORPHED) is not 0) ? '+' : (((flags & GTF_ORDER_SIDEEFF) is not 0) ? 'O' : '-'))}");
+        jitprintf($"{(((flags & GTF_ORDER_SIDEEFF) is not 0) ? 'O' : '-')}");
         jitprintf($"{(((flags & GTF_COLON_COND) is not 0) ? '?' : '-')}");
 
         // N is for No cse, H is for Hoist this expr
@@ -2324,7 +2336,6 @@ public partial class GenTree
             GTF_ICON_TOKEN_HDL => nameof(GTF_ICON_TOKEN_HDL),
             GTF_ICON_TLS_HDL => nameof(GTF_ICON_TLS_HDL),
             GTF_ICON_FTN_ADDR => nameof(GTF_ICON_FTN_ADDR),
-            GTF_ICON_CIDMID_HDL => nameof(GTF_ICON_CIDMID_HDL),
             GTF_ICON_BBC_PTR => nameof(GTF_ICON_BBC_PTR),
             GTF_ICON_STATIC_BOX_PTR => nameof(GTF_ICON_STATIC_BOX_PTR),
             GTF_ICON_FIELD_SEQ => nameof(GTF_ICON_FIELD_SEQ),
@@ -2875,40 +2886,6 @@ public partial class GenTree
         assert(_oper.IsAnyLocal || _oper.IsCopyOrReload);
         var lastUseBit = GetLastUseBit(fieldIndex);
         _flags = (_flags & ~lastUseBit) | (value ? lastUseBit : 0);
-    }
-
-    /// <summary>mark a node as having been morphed</summary>
-    /// <param name="compiler">compiler instance</param>
-    /// <param name="doChilren">recursive mark child nodes</param>
-    /// <remarks>
-    ///   <para>Does nothing outside of global morph.</para>
-    ///   <para>Useful for morph post-order expansions / optimizations.</para>
-    ///   <para>Use care when invoking this on an assignment (or when doChildren is true, on trees containing assignments) as those usually will also require local assertion updates.</para>
-    /// </remarks>
-    [Conditional("DEBUG")]
-    public void SetMorphed(Compiler compiler, bool doChilren = false)
-    {
-#if DEBUG
-        if (!compiler.fgGlobalMorph)
-        {
-            return;
-        }
-
-        if (doChilren)
-        {
-            var node = this;
-
-            var visitor = new SetMorphedVisitor();
-            visitor.WalkTree(ref node, user: null);
-
-            assert(node == this);
-        }
-        else if (!WasMorphed)
-        {
-            _debugFlags |= GTF_DEBUG_NODE_MORPHED;
-            _morphCount++;
-        }
-#endif
     }
 
     /// <summary>Return a zero constant with this node's logical identity. The caller must replace its owning use.</summary>

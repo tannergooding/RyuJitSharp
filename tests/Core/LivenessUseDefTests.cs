@@ -428,6 +428,116 @@ internal static unsafe class LivenessUseDefTests
         });
     }
 
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [TestCase(true, true)]
+    public static void EarlyLogicalCallDefinitionsFollowArgumentReads(bool async, bool qmarkUsed)
+    {
+        WithCompiler(1, false, compiler => {
+            compiler.fgNodeThreading = NodeThreading.AllLocals;
+            compiler.compQmarkUsed = qmarkUsed;
+#if DEBUG
+            compiler.lvaTable[0].IsDefinedViaAddress = true;
+#endif
+            var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
+            address.Flags |= GTF_VAR_DEF;
+            var argumentRead = compiler.gtNewLclvNode(TYP_INT, 0);
+            var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            if (async)
+            {
+                call.SetIsAsync(default);
+            }
+            else
+            {
+                call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_RETBUFFARG_LCLOPT;
+            }
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(address).WithWellKnownArg(
+                async ? WellKnownArg.AsyncResumedDef : WellKnownArg.RetBuffer));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(argumentRead));
+            var block = Block(compiler, lir: false);
+            var statement = AddStatement(compiler, block, call, early: true);
+            _ = AddStatement(compiler, block, compiler.gtNewLclvNode(TYP_INT, 0), early: true);
+            GenTree[] expected = [argumentRead, address];
+            Assert.That(statement.LocalsTreeList, Is.EqualTo(expected));
+
+            Prepare<EarlyPolicy>(compiler).PerBlockLocalVarLiveness();
+
+            AssertLocal(compiler, block, 0, true, true);
+            Assert.That(statement.LocalsTreeList, Is.EqualTo(expected));
+            Assert.That(statement.TreeListEnd, Is.SameAs(address));
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void EarlyPromotedParentOccurrencesPreserveFullAndPartialDefinitionFlags(bool partial)
+    {
+        WithCompiler(4, false, compiler => {
+            compiler.fgNodeThreading = NodeThreading.AllLocals;
+            ref var parent = ref compiler.lvaTable[0];
+            parent.Type = TYP_STRUCT;
+            parent.Layout = new ClassLayout(12);
+            parent.lvPromoted = true;
+            parent.lvFieldLclStart = 1;
+            parent.lvFieldCnt = 3;
+            parent.setLvRefCnt(0);
+#if DEBUG
+            parent.IsDefinedViaAddress = true;
+#endif
+            compiler.lvaTable[3].lvPinned = true;
+            var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
+            address.Flags |= GTF_VAR_DEF;
+            if (partial)
+            {
+                address.Flags |= GTF_VAR_USEASG;
+            }
+            var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_RETBUFFARG_LCLOPT;
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(address).WithWellKnownArg(WellKnownArg.RetBuffer));
+            var block = Block(compiler, lir: false);
+            var statement = AddStatement(compiler, block, call, early: true);
+            _ = AddStatement(compiler, block, compiler.gtNewLclvNode(TYP_INT, 1), early: true);
+
+            Prepare<EarlyPolicy>(compiler).PerBlockLocalVarLiveness();
+
+            Assert.That(compiler.lvaTable[0].lvTracked, Is.False);
+            Assert.That(compiler.lvaTable[0].lvRefCnt(), Is.Zero);
+            Assert.That(compiler.lvaTable[3].lvTracked, Is.False);
+            AssertLocal(compiler, block, 1, partial, !partial);
+            AssertLocal(compiler, block, 2, false, !partial);
+            GenTree[] expected = [address];
+            Assert.That(statement.LocalsTreeList, Is.EqualTo(expected));
+        });
+    }
+
+    [Test]
+    public static void EarlyQmarkOccurrencesIdentifyTheUnconditionalDestinationByNodeIdentity()
+    {
+        WithCompiler(3, false, compiler => {
+            compiler.fgNodeThreading = NodeThreading.AllLocals;
+            compiler.compQmarkUsed = true;
+            var conditionalDefinition = Store(compiler, 0);
+            var conditionalRead = compiler.gtNewLclvNode(TYP_INT, 0);
+            var qmark = new GenTreeQmark(TYP_INT, compiler.gtNewLclvNode(TYP_INT, 2),
+                new GenTreeColon(TYP_INT, conditionalDefinition, conditionalRead));
+            var destination = compiler.gtNewStoreLclVarNode(0, qmark);
+            var block = Block(compiler, lir: false);
+            var statement = AddStatement(compiler, block, destination, early: true);
+            _ = AddStatement(compiler, block, compiler.gtNewLclvNode(TYP_INT, 0), early: true);
+            Assert.That(statement.TreeListEnd, Is.SameAs(destination));
+
+            Prepare<EarlyPolicy>(compiler).PerBlockLocalVarLiveness();
+
+            AssertLocal(compiler, block, 0, true, true);
+            AssertLocal(compiler, block, 1, false, false);
+            AssertLocal(compiler, block, 2, true, false);
+            Assert.That(statement.RootNode, Is.SameAs(destination));
+            Assert.That(destination.Data, Is.SameAs(qmark));
+            Assert.That(conditionalDefinition.Flags & GTF_VAR_DEF, Is.Not.Zero);
+        });
+    }
+
     [Test]
     public static void RegenerationClearsScratchMemoryAndByrefDivergenceWithoutChangingLiveOut()
     {

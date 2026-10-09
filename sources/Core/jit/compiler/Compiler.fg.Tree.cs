@@ -11,7 +11,6 @@ public partial class Compiler
     {
         // Constant-operand reordering below is not valid during CSE.
         assert(!optValnumCSE_phase);
-        tree.ClearMorphed();
         var thisMorphNum = 0;
 
 #if DEBUG

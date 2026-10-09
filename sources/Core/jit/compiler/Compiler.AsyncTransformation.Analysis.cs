@@ -44,41 +44,39 @@ public partial class Compiler
     {
         public readonly GenTree.VisitResult Visit<TDef>(TDef def) where TDef : struct, ILocalDef
         {
-            MarkAsyncMutatedVarDsc(compiler, def.LclNum, mutated);
+            MarkAsyncIfTracked(compiler, def.LclNum, mutated);
             return GenTree.VisitResult.Continue;
+        }
+    }
+
+    private static void MarkAsyncIfTracked(Compiler compiler, int lclNum, VARSET_TP mutated)
+    {
+        ref var descriptor = ref compiler.lvaGetDesc(lclNum);
+        if (descriptor.lvTracked)
+        {
+            VarSetOps.AddElemD(compiler, mutated, descriptor._varIndex);
         }
     }
 
     private static void MarkAsyncMutatedVarDsc(Compiler compiler, int lclNum, VARSET_TP mutated)
     {
         ref var descriptor = ref compiler.lvaGetDesc(lclNum);
-        if (descriptor.lvTracked)
-        {
-            VarSetOps.AddElemD(compiler, mutated, descriptor._varIndex);
-            return;
-        }
-
         if (descriptor.lvPromoted)
         {
             for (var i = 0; i < descriptor.lvFieldCnt; i++)
             {
-                ref var field = ref compiler.lvaGetDesc(descriptor.lvFieldLclStart + i);
-                if (field.lvTracked)
-                {
-                    VarSetOps.AddElemD(compiler, mutated, field._varIndex);
-                }
+                MarkAsyncIfTracked(compiler, descriptor.lvFieldLclStart + i, mutated);
             }
+        }
+        else
+        {
+            MarkAsyncIfTracked(compiler, lclNum, mutated);
         }
     }
 
-    private static void MarkAsyncMutatedLocal(Compiler compiler, GenTree node, VARSET_TP mutated)
+    private static void MarkAsyncMutatedLocals(Compiler compiler, GenTree node, VARSET_TP mutated)
     {
-        if (node.Oper.IsLocalStore || node is GenTreeCall)
-        {
-            var visitor = new AsyncMutationVisitor(compiler, mutated);
-            _ = node.VisitLogicalLocalDefs(compiler, ref visitor);
-        }
-        else if (node.Oper is GT_LCL_ADDR)
+        if (node.Oper is GT_LCL_ADDR)
         {
             MarkAsyncMutatedVarDsc(compiler, node.AsLclVarCommon().LclNum, mutated);
         }
@@ -87,6 +85,11 @@ public partial class Compiler
         {
             MarkAsyncMutatedVarDsc(compiler, node.AsLclVarCommon().LclNum, mutated);
         }
+        else
+        {
+            var visitor = new AsyncMutationVisitor(compiler, mutated);
+            _ = node.VisitLogicalLocalDefs(compiler, ref visitor);
+        }
     }
 
     internal static bool IsAsyncDefaultValue(GenTree node)
@@ -94,26 +97,22 @@ public partial class Compiler
         return node.IsIntegralConst(0) || node.IsFloatPositiveZero || node.IsVectorZero;
     }
 
-    private static void UpdateAsyncMutatedLocal(Compiler compiler, GenTree node, VARSET_TP mutated)
+    private static void UpdateAsyncMutatedLocals(Compiler compiler, GenTree node, VARSET_TP mutated)
     {
-        if (node.Oper.IsLocalStore)
+        if (node.Oper.IsLocalStore && IsAsyncDefaultValue(node.AsLclVarCommon().Data) &&
+            !compiler.fgVarNeedsExplicitZeroInit(node.AsLclVarCommon().LclNum, bbInALoop: false, bbIsReturn: false))
         {
-            var store = node.AsLclVarCommon();
-            var data = store.Data;
-            assert(data is not null);
-            if (IsAsyncDefaultValue(data) &&
-                !compiler.fgVarNeedsExplicitZeroInit(store.LclNum, bbInALoop: false, bbIsReturn: false))
-            {
-                return;
-            }
-
-            var visitor = new AsyncMutationVisitor(compiler, mutated);
-            _ = node.VisitLogicalLocalDefs(compiler, ref visitor);
+            return;
         }
-        else if (node.Oper is GT_LCL_ADDR)
+
+        if (node.Oper is GT_LCL_ADDR)
         {
             MarkAsyncMutatedVarDsc(compiler, node.AsLclVarCommon().LclNum, mutated);
+            return;
         }
+
+        var visitor = new AsyncMutationVisitor(compiler, mutated);
+        _ = node.VisitLogicalLocalDefs(compiler, ref visitor);
     }
 
     internal sealed class AsyncDefaultValueAnalysis(Compiler compiler)
@@ -144,7 +143,7 @@ public partial class Compiler
             {
                 foreach (var node in block)
                 {
-                    UpdateAsyncMutatedLocal(compiler, node, mutatedVars[block.bbNum]);
+                    UpdateAsyncMutatedLocals(compiler, node, mutatedVars[block.bbNum]);
                 }
             }
 
@@ -276,7 +275,7 @@ public partial class Compiler
 
                 while (node is not null)
                 {
-                    MarkAsyncMutatedLocal(compiler, node, mutatedVars[block.bbNum]);
+                    MarkAsyncMutatedLocals(compiler, node, mutatedVars[block.bbNum]);
                     node = node.Next;
                 }
             }
@@ -415,12 +414,12 @@ public partial class Compiler
         public void Update(GenTree node)
         {
             _updater.UpdateLife(node, generalLclAddrHandling: true);
-            UpdateAsyncMutatedLocal(_compiler, node, _mutatedValues);
+            UpdateAsyncMutatedLocals(_compiler, node, _mutatedValues);
 
             _resumeReachable |= node is GenTreeCall call && call.IsAsync;
             if (_resumeReachable)
             {
-                MarkAsyncMutatedLocal(_compiler, node, _mutatedSinceResumption);
+                MarkAsyncMutatedLocals(_compiler, node, _mutatedSinceResumption);
             }
         }
 

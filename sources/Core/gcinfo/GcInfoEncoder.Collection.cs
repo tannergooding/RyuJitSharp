@@ -92,6 +92,7 @@ public sealed unsafe partial class GcInfoEncoder
     public void DefineInterruptibleRange(uint startInstructionOffset, uint length)
     {
         EnsureMutable();
+        assert(HAS_INTERRUPTIBLE_RANGES);
         var stop = unchecked(startInstructionOffset + length);
         assert(m_InterruptibleRanges.Count == 0 || startInstructionOffset >= m_InterruptibleRanges[^1].NormStopOffset);
 

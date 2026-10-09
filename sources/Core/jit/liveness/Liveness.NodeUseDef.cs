@@ -156,10 +156,14 @@ public partial class Liveness<TLiveness>
 #endif
 
     private void MarkUseDef(GenTreeLclVarCommon tree)
+        => MarkUseDef(new LocalOccurrence(tree));
+
+    private void MarkUseDef(LocalOccurrence occurrence)
     {
+        var tree = occurrence.Node;
         assert((tree.Oper.IsLocal && (tree.Oper is not GT_PHI_ARG)) || (tree.Oper is GT_LCL_ADDR));
 
-        var lclNum = tree.LclNum;
+        var lclNum = occurrence.LclNum;
         ref var descriptor = ref _compiler.lvaGetDesc(lclNum);
         if ((descriptor.lvRefCnt(_compiler.lvaRefCountState) == 0) &&
             (!varTypeIsPromotable(descriptor.Type) || !descriptor.lvPromoted))
@@ -171,8 +175,8 @@ public partial class Liveness<TLiveness>
 
         // SSA models a partial store as a use and a def of the whole local.
         // Outside SSA, partial stores contribute neither to the local use nor def set.
-        var isDef = (tree.Flags & GTF_VAR_DEF) != 0;
-        var isFullDef = isDef && ((tree.Flags & GTF_VAR_USEASG) == 0);
+        var isDef = (occurrence.Flags & GTF_VAR_DEF) != 0;
+        var isFullDef = isDef && ((occurrence.Flags & GTF_VAR_USEASG) == 0);
         var isUse = TLiveness.SsaLiveness ? !isFullDef : !isDef;
 
         if (descriptor.lvTracked)

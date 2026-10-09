@@ -306,7 +306,15 @@ public sealed partial class Lowering
 #if TARGET_WASM
         if (!call.IsUnmanaged && compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PORTABLE_ENTRY_POINTS))
         {
-            LowerPEPCall(call);
+            if (call._directCallAddress is not null)
+            {
+                // Direct targets have no PEP, but still require the ABI's final argument.
+                AddWasmPortableEntryPointArg(call, compiler.gtNewIconNode(TYP_I_IMPL, 0));
+            }
+            else
+            {
+                LowerPEPCall(call);
+            }
         }
 #endif
 
@@ -323,6 +331,24 @@ public sealed partial class Lowering
     }
 
 #if TARGET_WASM
+    private void AddWasmPortableEntryPointArg(GenTreeCall call, GenTree value)
+    {
+        var compiler = CompilerInstance;
+        var portableEntryPointArg =
+            NewCallArg.CreateForPrimitive(value).WithWellKnownArg(WellKnownArg.WasmPortableEntryPoint);
+        var arg = call.Args.PushBack(portableEntryPointArg);
+        arg.EarlyNode = null;
+        arg.LateNode = value;
+        call.Args.PushLateBack(arg);
+
+        var argIndex = unchecked((uint)(call.Args.CountArgs() - 1));
+        var argReg = regNumberExtensions.MakeWasmReg(argIndex, WasmValueType.I);
+        var segment = AbiPassingSegment.InRegister(argReg, 0, TARGET_POINTER_SIZE);
+        arg.AbiInfo = AbiPassingInformation.FromSegmentByValue(compiler, segment);
+        BlockRange().InsertBefore(call, value);
+        LowerArg(call, arg);
+    }
+
     private void LowerPEPCall(GenTreeCall call)
     {
         var compiler = CompilerInstance;
@@ -339,21 +365,7 @@ public sealed partial class Lowering
         DISPTREE(call);
 
         JITDUMP("Add new arg to call arg list corresponding to PEP target\n");
-        var pepTargetArg =
-            NewCallArg.CreateForPrimitive(callTargetLclForArg).WithWellKnownArg(WellKnownArg.WasmPortableEntryPoint);
-        var pepArg = call.Args.PushBack(pepTargetArg);
-        pepArg.EarlyNode = null;
-        pepArg.LateNode = callTargetLclForArg;
-        call.Args.PushLateBack(pepArg);
-
-        // Wasm portable-entrypoint metadata is always the last argument.
-        var pepIndex = unchecked((uint)(call.Args.CountArgs() - 1));
-        var pepReg = regNumberExtensions.MakeWasmReg(pepIndex, WasmValueType.I);
-        var pepSegment = AbiPassingSegment.InRegister(pepReg, 0, TARGET_POINTER_SIZE);
-        pepArg.AbiInfo = AbiPassingInformation.FromSegmentByValue(compiler, pepSegment);
-        BlockRange().InsertBefore(call, callTargetLclForArg);
-
-        LowerArg(call, pepArg);
+        AddWasmPortableEntryPointArg(call, callTargetLclForArg);
         DISPTREE(call);
 
         JITDUMP("Rewrite PEP call's control expression to indirect through the new local variable\n");

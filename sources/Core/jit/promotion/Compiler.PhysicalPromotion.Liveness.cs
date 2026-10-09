@@ -107,6 +107,18 @@ public partial class Compiler
                 _structLclToTrackedIndex[structLcl] + 1 + replacementIndex);
         }
 
+        public bool IsReplacementUsed(BasicBlock block, int structLcl, int replacementIndex)
+        {
+            return BitVecOps.IsMember(_traits, GetBlockInfo(block).VarUse,
+                _structLclToTrackedIndex[structLcl] + 1 + replacementIndex);
+        }
+
+        public bool IsReplacementDefined(BasicBlock block, int structLcl, int replacementIndex)
+        {
+            return BitVecOps.IsMember(_traits, GetBlockInfo(block).VarDef,
+                _structLclToTrackedIndex[structLcl] + 1 + replacementIndex);
+        }
+
         public bool IsReplacementLiveOut(BasicBlock block, int structLcl, int replacementIndex)
         {
             return BitVecOps.IsMember(_traits, GetBlockInfo(block).LiveOut,
@@ -139,13 +151,14 @@ public partial class Compiler
                 {
                     var qmark = _compiler.compQmarkUsed
                         ? _compiler.fgGetTopLevelQmark(statement.RootNode, out _) : null;
-                    foreach (var local in statement.LocalsTreeList)
-                    {
-                        if ((qmark is null) || ((local.Flags & GTF_VAR_DEF) == 0))
+                    _ = statement.VisitLogicalLocalOccurrencesViaLocalsTreeList(occurrence => {
+                        if ((qmark is null) || ((occurrence.Flags & GTF_VAR_DEF) == 0))
                         {
-                            MarkUseDef(statement, local, info.VarUse, info.VarDef);
+                            MarkUseDef(statement, occurrence, info.VarUse, info.VarDef);
                         }
-                    }
+
+                        return GenTree.VisitResult.Continue;
+                    });
                 }
 
 #if DEBUG
@@ -162,20 +175,21 @@ public partial class Compiler
             }
         }
 
-        private void MarkUseDef(Statement statement, GenTreeLclVarCommon local,
+        private void MarkUseDef(Statement statement, LocalOccurrence occurrence,
                                 BitVec useSet, BitVec defSet)
         {
-            var aggregate = _aggregates.Lookup(local.LclNum);
+            var aggregate = _aggregates.Lookup(occurrence.LclNum);
             if (aggregate is null)
             {
                 return;
             }
 
-            var isDef = (local.Flags & GTF_VAR_DEF) != 0;
+            var local = occurrence.Node;
+            var isDef = (occurrence.Flags & GTF_VAR_DEF) != 0;
             var isUse = !isDef;
-            var baseIndex = _structLclToTrackedIndex[local.LclNum];
+            var baseIndex = _structLclToTrackedIndex[occurrence.LclNum];
             var replacements = aggregate.Replacements;
-            if ((local.Type is TYP_STRUCT) || (local.Oper is GT_LCL_ADDR))
+            if ((local.Oper is GT_LCL_ADDR) || (occurrence.GetAccessType(_compiler) is TYP_STRUCT))
             {
                 if (local.Oper.IsScalarLocal)
                 {
@@ -186,8 +200,9 @@ public partial class Compiler
                 }
                 else
                 {
-                    var offset = local.LclOffs;
-                    var size = GetSizeOfStructLocal(statement, local);
+                    var offset = occurrence.LclOffs;
+                    var size = local.Oper is GT_LCL_ADDR
+                        ? GetSizeOfLocalAddrDef(statement, local) : occurrence.GetAccessSize(_compiler);
                     var index = FirstOverlappingReplacement(replacements, offset, size);
                     while ((index < replacements.Count) && (replacements[index].Offset < offset + size))
                     {
@@ -207,12 +222,12 @@ public partial class Compiler
             }
             else
             {
-                var offset = local.LclOffs;
+                var offset = occurrence.LclOffs;
                 var index = LowerBound(replacements, offset, static rep => rep.Offset);
                 if ((index == replacements.Count) || (replacements[index].Offset != offset))
                 {
                     var isFullRemainderDef = isDef && (aggregate.UnpromotedMin >= offset) &&
-                        (aggregate.UnpromotedMax <= offset + local.Type.Size);
+                        (aggregate.UnpromotedMax <= offset + occurrence.GetAccessSize(_compiler));
                     MarkIndex(baseIndex, isUse, isFullRemainderDef, useSet, defSet);
                 }
                 else
@@ -234,16 +249,12 @@ public partial class Compiler
             return index;
         }
 
-        private int GetSizeOfStructLocal(Statement statement, GenTreeLclVarCommon local)
+        private int GetSizeOfLocalAddrDef(Statement statement, GenTree local)
         {
-            if (local.Oper is not GT_LCL_ADDR)
-            {
-                return checked((int)local.GetLayout(_compiler)!.Size);
-            }
-
+            assert(local.Oper is GT_LCL_ADDR);
             var parent = _compiler.gtFindLink(statement, local).parent;
             assert(parent is GenTreeCall);
-            var visitor = new DefinitionSizeVisitor(_compiler, local);
+            var visitor = new DefinitionSizeVisitor(_compiler, local.AsLclVarCommon());
             var result = parent.VisitLogicalLocalDefs(_compiler, ref visitor);
             assert(result is GenTree.VisitResult.Abort);
             return visitor.Size >= 0 ? visitor.Size :
@@ -401,7 +412,8 @@ public partial class Compiler
                 else
                 {
                     var offset = local.LclOffs;
-                    var size = GetSizeOfStructLocal(statement, local);
+                    var size = local.Oper is GT_LCL_ADDR
+                        ? GetSizeOfLocalAddrDef(statement, local) : new LocalOccurrence(local).GetAccessSize(_compiler);
                     var index = FirstOverlappingReplacement(replacements, offset, size);
                     while ((index < replacements.Count) && (replacements[index].Offset < offset + size))
                     {

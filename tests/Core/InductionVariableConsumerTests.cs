@@ -169,6 +169,50 @@ internal static unsafe class InductionVariableConsumerTests
     public static void RephrasingUsesShiftOnlyForPositivePowerOfTwoScales(
         var_types type, long sourceStep, long targetStep, genTreeOps expectedOperation)
     {
+        WithStrengthReduction((compiler, scevContext, context, rephraseMethod, _) => {
+            var zero = scevContext.NewConstant(type, 0);
+            var source = scevContext.NewAddRec(zero, scevContext.NewConstant(type, sourceStep));
+            var target = scevContext.NewAddRec(zero, scevContext.NewConstant(type, targetStep));
+            var sourceTree = type is TYP_INT
+                ? compiler.gtNewIconNode(TYP_INT, 1)
+                : compiler.gtNewLconNode(1);
+            var result = (GenTree)rephraseMethod.Invoke(context, [target, source, sourceTree])!;
+
+            Assert.That(result.Oper, Is.EqualTo(expectedOperation));
+            Assert.That(result.Type, Is.EqualTo(type));
+        });
+    }
+
+    [TestCase(TYP_INT, int.MinValue, -1L, false)]
+    [TestCase(TYP_INT, -1L, int.MinValue, false)]
+    [TestCase(TYP_INT, int.MinValue, 2L, false)]
+    [TestCase(TYP_INT, 2L, int.MinValue, false)]
+    [TestCase(TYP_LONG, long.MinValue, -1L, false)]
+    [TestCase(TYP_LONG, -1L, long.MinValue, false)]
+    [TestCase(TYP_LONG, long.MinValue, 2L, false)]
+    [TestCase(TYP_LONG, 2L, long.MinValue, false)]
+    [TestCase(TYP_INT, 4L, 6L, true)]
+    [TestCase(TYP_LONG, 4L, 6L, true)]
+    public static void ScalingRejectsMinimumStepBeforeGcdForEitherOperand(
+        var_types type, long firstStep, long secondStep, bool scales)
+    {
+        WithStrengthReduction((compiler, scevContext, context, _, computeMethod) => {
+            var zero = scevContext.NewConstant(type, 0);
+            var first = scevContext.NewAddRec(zero, scevContext.NewConstant(type, firstStep));
+            var second = scevContext.NewAddRec(zero, scevContext.NewConstant(type, secondStep));
+            var result = (ScevAddRec?)computeMethod.Invoke(context, [first, true, second, true]);
+            Assert.That(result is not null, Is.EqualTo(scales));
+            if (result is ScevAddRec recurrence)
+            {
+                Assert.That(recurrence.Step.GetConstantValue(compiler, out var step), Is.True);
+                Assert.That(step, Is.EqualTo(2));
+            }
+        });
+    }
+
+    private static void WithStrengthReduction(
+        Action<Compiler, ScalarEvolutionContext, object, MethodInfo, MethodInfo> action)
+    {
 #if DEBUG
         using var tls = new JitTls(null);
 #endif
@@ -192,13 +236,6 @@ internal static unsafe class InductionVariableConsumerTests
             var loop = loops.GetLoopByHeader(blocks[2])!;
             var scevContext = new ScalarEvolutionContext(compiler);
             scevContext.ResetForLoop(loop);
-            var zero = scevContext.NewConstant(type, 0);
-            var source = scevContext.NewAddRec(zero, scevContext.NewConstant(type, sourceStep));
-            var target = scevContext.NewAddRec(zero, scevContext.NewConstant(type, targetStep));
-            var sourceTree = type is TYP_INT
-                ? compiler.gtNewIconNode(TYP_INT, 1)
-                : compiler.gtNewLconNode(1);
-
             var contextType = typeof(Compiler).GetNestedType("StrengthReductionContext", BindingFlags.NonPublic)
                 ?? throw new InvalidOperationException("Strength reduction context is missing.");
             var constructor = contextType.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
@@ -206,12 +243,11 @@ internal static unsafe class InductionVariableConsumerTests
                     typeof(FlowGraphNaturalLoop), typeof(PerLoopInfo)], null)
                 ?? throw new InvalidOperationException("Strength reduction constructor is missing.");
             var context = constructor.Invoke([compiler, scevContext, loop, new PerLoopInfo(loops)]);
-            var rephrase = contextType.GetMethod("RephraseIV", BindingFlags.Instance | BindingFlags.NonPublic)
+            var rephraseMethod = contextType.GetMethod("RephraseIV", BindingFlags.Instance | BindingFlags.NonPublic)
                 ?? throw new InvalidOperationException("IV rephrasing is missing.");
-            var result = (GenTree)rephrase.Invoke(context, [target, source, sourceTree])!;
-
-            Assert.That(result.Oper, Is.EqualTo(expectedOperation));
-            Assert.That(result.Type, Is.EqualTo(type));
+            var computeMethod = contextType.GetMethod("ComputeRephrasableIV", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("IV scaling is missing.");
+            action(compiler, scevContext, context, rephraseMethod, computeMethod);
         }
         finally
         {

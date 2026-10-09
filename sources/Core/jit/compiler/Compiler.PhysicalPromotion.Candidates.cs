@@ -65,8 +65,7 @@ public partial class Compiler
         return copy;
     }
 
-    private bool PhysicalPromotionMapsToParameterRegister(int lclNum, int offset, var_types accessType,
-                                                           bool allowBitwiseExtraction)
+    private bool PhysicalPromotionMapsToParameterRegister(int lclNum, int offset, var_types accessType)
     {
         assert(lclNum < info.compArgsCount);
         if (opts.IsOSR)
@@ -98,13 +97,6 @@ public partial class Compiler
                 continue;
             }
 
-            if (!allowBitwiseExtraction &&
-                ((offset != segment.Offset) || (accessType.Size != segment.Size) ||
-                 (varTypeUsesIntReg(accessType) != genIsValidIntReg(segment.Register))))
-            {
-                continue;
-            }
-
             return true;
         }
 
@@ -126,14 +118,15 @@ public partial class Compiler
             visitor.SetBB(block);
             foreach (var statement in block.Statements)
             {
-                foreach (var local in statement.LocalsTreeList)
-                {
-                    if (PhysicalPromotionIsCandidate(lvaGetDesc(local.LclNum)))
+                _ = statement.VisitLogicalLocalOccurrencesViaLocalsTreeList(occurrence => {
+                    if (PhysicalPromotionIsCandidate(lvaGetDesc(occurrence.LclNum)))
                     {
                         _ = visitor.WalkTree(ref statement.RootNodeRef, null);
-                        break;
+                        return GenTree.VisitResult.Abort;
                     }
-                }
+
+                    return GenTree.VisitResult.Continue;
+                });
             }
         }
 

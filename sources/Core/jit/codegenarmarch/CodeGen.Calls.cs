@@ -68,6 +68,10 @@ public sealed partial class CodeGen
         if (_compiler.killGCRefs(call))
         {
             genDefineTempLabel(genCreateTempLabel());
+
+            // The runtime can't find callee-saved registers through an InlinedCallFrame.
+            assert(((GCInfo.gcRegGCrefSetCur | GCInfo.gcRegByrefSetCur)
+                & new regMaskTP(SRBM_INT_CALLEE_SAVED)).IsEmpty);
         }
 
         genCallInstruction(call);

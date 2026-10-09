@@ -40,17 +40,17 @@ public partial class Compiler
         {
             foreach (var statement in block.Statements)
             {
-                foreach (var local in statement.LocalsTreeList)
-                {
-                    if (varTypeIsSimdOrMask(lvaGetDesc(local.LclNum).Type))
+                _ = statement.VisitLogicalLocalOccurrencesViaLocalsTreeList(occurrence => {
+                    if (varTypeIsSimdOrMask(lvaGetDesc(occurrence.LclNum).Type))
                     {
                         var visitor = new MaskConversionsCheckVisitor(this, block.getBBWeight(this), weights);
                         var root = statement.RootNode;
                         _ = visitor.WalkTree(ref root, null);
                         foundConversion |= visitor.FoundConversions;
-                        break;
+                        return GenTree.VisitResult.Abort;
                     }
-                }
+                    return GenTree.VisitResult.Continue;
+                });
             }
         }
 
@@ -65,9 +65,9 @@ public partial class Compiler
         {
             foreach (var statement in block.Statements)
             {
-                foreach (var local in statement.LocalsTreeList)
-                {
-                    if (varTypeIsSimdOrMask(local.Type))
+                _ = statement.VisitLogicalLocalOccurrencesViaLocalsTreeList(occurrence => {
+                    if ((occurrence.Node.Oper is not GT_LCL_ADDR) &&
+                        varTypeIsSimdOrMask(occurrence.GetAccessType(this)))
                     {
                         var visitor = new MaskConversionsUpdateVisitor(this, weights);
                         var root = statement.RootNode;
@@ -77,9 +77,10 @@ public partial class Compiler
                         {
                             fgSequenceLocals(statement);
                         }
-                        break;
+                        return GenTree.VisitResult.Abort;
                     }
-                }
+                    return GenTree.VisitResult.Continue;
+                });
             }
         }
 
