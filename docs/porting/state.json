@@ -10,11 +10,11 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "B043: inspect the pinned runtime-oracle checkout for an existing native Core_Root/corerun harness or artifacts; if absent, keep the async execution comparison blocked rather than substitute a different runtime.",
+    "nextAction": "B134: revisit head-tail merge phase-dump parity using the pinned Checked Core_Root now present in runtime-oracle; determine whether native and managed dumps can be captured through existing harnesses without introducing a new runtime bridge.",
     "activeBatch": {
-      "scope": "B043 async execution parity coverage and pinned native runtime artifact availability.",
-      "doneWhen": "Establish whether the pinned Core_Root or a matching native runtime runner is available locally; compare async execution only if the correct artifacts exist, otherwise retain a precise blocker.",
-      "validation": "Check documented local artifact locations and runner availability without substituting the installed runtime; run matched async cases only against the pinned native build.",
+      "scope": "B134 head-tail merge native/managed phase-dump parity.",
+      "doneWhen": "Use the verified pinned Core_Root and existing managed tests to establish whether matching early/post-morph dumps are feasible; capture and compare when a supported harness exists, otherwise move the integration-harness requirement to owner review.",
+      "validation": "Verify the native runtime identity and execute only matched native test inputs; do not claim parity from managed tests or native execution alone.",
       "deferred": "B515 remains blocked on its missing range-check reproducer; B516 remains blocked on matching native/managed PGO inputs and pre-import captures; B520, B523, and B525 await owner review."
     },
     "dynamicTlsInputBoundary": {
