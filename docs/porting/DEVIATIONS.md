@@ -75,7 +75,9 @@ retained the previous method's metadata and SIMD state (B132). Allocation reuse
 is not part of the semantic contract. The native inlinee's apparently
 uninitialized profile-diagnostic flag is tracked separately in B322; managed
 fields are not poisoned to reproduce it, and full diagnostic parity is not
-claimed.
+claimed. A checked optimized `GenericCatch` capture confirms that when profile
+incorporation finds no profile data and synthesis does not run, native prints
+the deferred-check skip while managed reports that no blocks were profiled.
 
 **Remaining action:** audit identity/lifetime assumptions as functions are
 ported. If a comparator excludes allocation statistics, identify the exact
