@@ -21,11 +21,15 @@ internal static unsafe class RangeAnalysisTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "MergeAssertion")]
     private static extern void MergeAssertion(RangeCheck analysis, BasicBlock block, GenTree tree, ref Range range);
 
-    [TestCase(false, false)]
-    [TestCase(false, true)]
-    [TestCase(true, false)]
-    [TestCase(true, true)]
-    public static void AssertionMergeDiagnosticsPrintConservativeNormalValueAndPhiEdge(bool phi, bool verbose)
+    [TestCase(false, false, false)]
+    [TestCase(false, true, false)]
+    [TestCase(true, false, false)]
+    [TestCase(true, true, false)]
+    [TestCase(true, true, true)]
+    public static void AssertionMergeDiagnosticsPrintConservativeNormalValueAndPhiEdge(
+        bool phi,
+        bool verbose,
+        bool emptyPhiEdgeAssertions)
     {
         WithCompiler((compiler, store) =>
         {
@@ -44,7 +48,11 @@ internal static unsafe class RangeAnalysisTests
                 Assert.That(assertionIndex, Is.EqualTo(1));
                 var traits = compiler.apTraits ?? throw new InvalidOperationException();
                 predecessor.bbAssertionOut = BitOps.MakeEmpty(traits);
-                BitOps.AddElemD(traits, predecessor.bbAssertionOut, assertionIndex - 1);
+                if (!emptyPhiEdgeAssertions)
+                {
+                    BitOps.AddElemD(traits, predecessor.bbAssertionOut, assertionIndex - 1);
+                }
+
                 block.bbPreds = new FlowEdge(predecessor, block, null);
                 tree = new GenTreePhiArg(TYP_INT, 0, SsaConfig.RESERVED_SSA_NUM, predecessor);
             }
@@ -71,7 +79,7 @@ internal static unsafe class RangeAnalysisTests
                 {
                     expected = $"Merging assertions from pred edges of BB12 for op [{tree.TreeId:D6}] ${normal:x}\n";
 
-                    if (phi)
+                    if (phi && !emptyPhiEdgeAssertions)
                     {
                         expected += "Merge assertions created by BB07 for BB12\n#01\n";
                     }
