@@ -12889,6 +12889,12 @@ public partial class Compiler
         return op1;
     }
 
+    internal static bool HasNonZeroStaticFieldContent(ReadOnlySpan<byte> buffer, int fieldSize)
+    {
+        // The EE fills only fieldSize bytes; the rest of the backing buffer is uninitialized.
+        return buffer[..fieldSize].ContainsAnyExcept((byte)(0));
+    }
+
     /// <summary>Tries to import 'static readonly' field as a constant if the host type is statically initialized</summary>
     /// <param name="field">'static readonly' field</param>
     /// <param name="ownerCls">class handle of the type the given field defined in</param>
@@ -12987,7 +12993,7 @@ public partial class Compiler
                     }
 #endif
 
-                    if (((ReadOnlySpan<byte>)(largeStructBuffer)).ContainsAnyExcept((byte)(0)))
+                    if (HasNonZeroStaticFieldContent(largeStructBuffer, totalSize))
                     {
                         // Value is not all zeroes - bail out.
                         // Although, We might eventually support that too.

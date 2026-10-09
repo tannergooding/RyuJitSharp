@@ -20,15 +20,23 @@ and other-target implementation and runtime validation remain open.
 Target-specific translations and fixtures do not by themselves establish
 execution or parity on those targets.
 
-At pinned oracle `6ff62b1d7ff0`, Windows x64 CoreLib assembly listings match
-across 762 method blocks after canonicalizing generated `G_M` label identifiers.
+At pinned oracle `6ff62b1d7ff0`, a fresh Windows x64 primary-JIT comparison is
+byte-for-byte equal for the 762 `System.Private.CoreLib` methods compiled by
+the `PortingCorpus` workload, with diffable disassembly and no normalization.
+This is not a full CoreLib method inventory or relocation-aware machine-code
+and metadata parity. One native repeat uses a resolved `LocalFree` P/Invoke
+target instead of the late-bound target slot; that EE lookup-state variant is
+retained, not normalized.
+
 Focused dump captures match through Importation and Redundant Branch Opts for
 nine `System.Resources.ResourceManager` methods, and through Importation for
 `System.SpanHelpers.IndexOf`; only process-local CorInfo handle fields are
-canonicalized in those comparisons. The ResourceManager phase capture is a
-selected-method AltJIT run; these focused captures do not establish full
-CoreLib primary-JIT dump parity. The dynamic TLS input-ownership boundary also
-remains unresolved.
+canonicalized in those comparisons. A focused `EventSource` capture now
+matches the static-readonly fold and local table, but still differs in the
+`volatile.stfld` versus `stfld` Importation annotation at IL_00E6 while the
+`STOREIND` flags/tree match. The ResourceManager phase capture is a
+selected-method AltJIT run; full CoreLib primary-JIT phase-dump parity remains
+open. The dynamic TLS input-ownership boundary also remains unresolved.
 
 ## Major milestones
 

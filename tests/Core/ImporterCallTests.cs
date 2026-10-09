@@ -495,6 +495,16 @@ internal static unsafe class ImporterCallTests
             expectedSize < 0 ? null : checked((uint)expectedSize));
     }
 
+    [Test]
+    public static void StaticReadonlyStructZeroCheckUsesReportedFieldSize()
+    {
+        var buffer = new byte[64];
+        buffer[16] = 1;
+
+        Assert.That(Compiler.HasNonZeroStaticFieldContent(buffer, 16), Is.False);
+        Assert.That(Compiler.HasNonZeroStaticFieldContent(buffer, 17), Is.True);
+    }
+
     private static void VerifyArrayInitialization(
         long[] lengths, int? lowerBound, bool isSzArray, CorInfoType elementType, bool indirectField, uint? expectedSize)
     {

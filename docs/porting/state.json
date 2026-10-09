@@ -10,16 +10,27 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Capture full compilation dumps for the same 762-method Windows x64 CoreLib corpus using native and managed primary-JIT Core_Roots; verify identical method/compilation counts and native-repeat stability, then compare every phase with scripts\\porting\\Compare-PortingDumps.ps1, extending phase support narrowly as needed. Selected-method AltJIT phase matches are diagnostic evidence only. Keep dynamic TLS input ownership unresolved until its allocation boundary is identified.",
+    "nextAction": "Capture and compare full primary-JIT phase dumps for the same 762-method Windows x64 CoreLib workload. Start at EventSource.Initialize IL_00E6 (native volatile.stfld versus managed stfld); its STOREIND flags/tree appear identical, so verify downstream IR before deciding whether this is diagnostic-only. Compare every phase with scripts\\porting\\Compare-PortingDumps.ps1, extending phase support narrowly as needed. Keep dynamic TLS input ownership unresolved until its allocation boundary is identified.",
     "activeBatch": null,
     "parityEvidence": {
       "oracleCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605",
       "corelibAssemblyListing": {
         "architecture": "Windows x64",
         "methodBlocks": 762,
+        "methodOrderMatches": true,
         "differences": 0,
-        "normalization": "Generated G_M label identifiers only",
-        "scope": "Text assembly listings; not relocation-aware machine-code or GC/EH/unwind metadata parity"
+        "outputBytes": 6134421,
+        "outputSha256": "958490566220eebd70136aa58061f476402f557ad59c996bbb190959b16a88fc",
+        "normalization": "None; native and managed diffable stdout files are byte-for-byte equal.",
+        "fix": "Large static-readonly struct zero checks inspect only the EE-reported field size; the regression verifies uninitialized tail bytes are ignored.",
+        "nativeRepeatControl": {
+          "captures": 6,
+          "matchingCaptures": 5,
+          "outlierMethod": "Interop+Kernel32:LocalFree(nint):nint (FullOpts)",
+          "outlierExplanation": "CoreCLR supplied a resolved IAT_VALUE target in the outlier and a late-bound IAT_PVALUE slot in the matching captures. The variant is retained, not normalized."
+        },
+        "evidence": "artifacts\\parity-6ff62b1d-20261009-retry1\\corelib-asm-diffable-e1dc68b0\\assembly-comparison-post-staticreadonly-fix.json",
+        "scope": "Diffable listings for the 762 System.Private.CoreLib methods compiled by the PortingCorpus workload; not a full CoreLib method inventory or relocation-aware machine-code and GC/EH/unwind metadata parity."
       },
       "focusedDumpComparisons": {
         "System.Resources.ResourceManager": {
@@ -31,6 +42,12 @@
         "System.SpanHelpers.IndexOf": {
           "phase": "Importation",
           "result": "Equal after canonicalizing process-local CorInfo handle fields"
+        },
+        "System.Diagnostics.Tracing.EventSource": {
+          "methods": 25,
+          "phase": "Importation",
+          "result": "Static-readonly folding and the local table now match; native prints volatile.stfld and managed prints stfld at IL_00E6 while the STOREIND flags/tree match.",
+          "capture": "Focused primary-JIT; not full CoreLib phase parity"
         }
       },
       "comparator": {
