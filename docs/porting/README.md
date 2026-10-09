@@ -123,6 +123,15 @@ execution of generated code on those targets or a pass of the entire Core suite.
 Wasm normally excludes profiler support; pass
 `-p:RyuJitEnableWasmProfilingTests=true` to compile and run the Wasm profiling
 leave-callback boundary tests without changing the default target configuration.
+For the non-Debug ARM64 late-disassembly path, pass
+`-p:RyuJitEnableArm64LateDisasm=true` with an ARM64 target RID:
+
+```powershell
+dotnet test tests\Targets\RyuJitSharp.Target.UnitTests.csproj -c Release -r win-x64 -p:TargetRuntimeIdentifier=win-arm64 -p:RyuJitEnableArm64LateDisasm=true --filter "FullyQualifiedName~Arm64EmitterAlignmentCostTests"
+```
+
+This enables the `LATE_DISASM` and `USE_COREDISTOOLS` symbols for that target
+without changing the ordinary Release configuration.
 
 ### C# layout
 

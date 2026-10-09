@@ -44,7 +44,7 @@ internal static class Arm64EmitterDescriptorSizeTests
 #if TARGET_WINDOWS
     [TestCase("instrDescCGCA", 80)]
 #endif
-#if DEBUG
+#if DEBUG || LATE_DISASM
     [TestCase("instrDescAlign", 48)]
 #else
     [TestCase("instrDescAlign", 40)]
@@ -137,7 +137,7 @@ internal static class Arm64EmitterDescriptorSizeTests
     public static void AlignmentStorageIncludesTheDebugField()
     {
         Assert.That(Size(CreateEmitter(), Descriptor(INS_align, IF_SN_0A)), Is.EqualTo(
-#if DEBUG
+#if DEBUG || LATE_DISASM
             48
 #else
             40

@@ -70,7 +70,7 @@ internal static unsafe class EmitterInstructionAllocationTests
     }
 
     [TestCase("emitNewInstrJmp", INS_jmp, 48)]
-#if DEBUG
+#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
     [TestCase("emitNewInstrAlign", INS_align, 48)]
 #else
     [TestCase("emitNewInstrAlign", INS_align, 40)]

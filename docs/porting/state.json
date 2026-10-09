@@ -10,11 +10,11 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "B528: port ARM64 placement metadata through the instruction descriptor and recording path for non-Debug LATE_DISASM builds; then validate INS_align execution-characteristic scoring against the pinned implementation.",
+    "nextAction": "B529: investigate CoreDisTools PrintControl varargs formatting and error-stream routing; determine whether an already-formatted-string callback can preserve selected-stream behavior without a varargs P/Invoke.",
     "activeBatch": {
-      "scope": "B528 ARM64 non-Debug LATE_DISASM instruction-placement metadata and alignment scoring.",
-      "doneWhen": "Port placement metadata across the complete instruction descriptor and recording path for supported non-Debug LATE_DISASM builds, then validate alignment scoring against the pinned implementation.",
-      "validation": "Run focused ARM64 LATE_DISASM alignment-scoring tests in Release and relevant DEBUG coverage, then run full-analysis validation.",
+      "scope": "B529 CoreDisTools decoder-error routing and variadic PrintControl callback boundary.",
+      "doneWhen": "Establish whether a safe formatted-string bridge restores selected-stream routing; implement and test it if supported by existing native interop, otherwise preserve the accepted D009 deviation with precise evidence.",
+      "validation": "Compare the managed adapter and pinned CoreDisTools callback contract, then run focused disassembly/error-routing tests and full-analysis validation for any implementation.",
       "deferred": "B515 remains blocked on its missing range-check reproducer; B516 remains blocked on matching native/managed PGO inputs and pre-import captures; B520, B523, and B525 await owner review."
     },
     "dynamicTlsInputBoundary": {

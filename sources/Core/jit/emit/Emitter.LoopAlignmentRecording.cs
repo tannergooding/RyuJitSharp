@@ -39,7 +39,7 @@ public partial class Emitter
     }
 
     public void emitLoopAlignment(
-#if DEBUG
+#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
         bool isPlacedBehindJmp
 #endif
         )
@@ -54,7 +54,7 @@ public partial class Emitter
         {
             paddingBytes = _compiler.opts.compJitAlignLoopBoundary;
             emitLongLoopAlign(paddingBytes
-#if DEBUG
+#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
                 , isPlacedBehindJmp
 #endif
                 );
@@ -64,7 +64,7 @@ public partial class Emitter
             emitCheckAlignFitInCurIG(1);
             paddingBytes = MAX_ENCODED_SIZE;
             emitLoopAlign(paddingBytes, true
-#if DEBUG
+#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
                 , isPlacedBehindJmp
 #endif
                 );
@@ -74,7 +74,7 @@ public partial class Emitter
             ? (uint)_compiler.opts.compJitAlignLoopBoundary >> 1
             : _compiler.opts.compJitAlignLoopBoundary;
         emitLongLoopAlign(paddingBytes
-#if DEBUG
+#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
             , isPlacedBehindJmp
 #endif
             );
@@ -231,7 +231,7 @@ public partial class Emitter
     }
 
     private void emitLoopAlign(uint paddingBytes, bool isFirstAlign
-#if DEBUG
+#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
         , bool isPlacedBehindJmp
 #endif
         )
@@ -269,7 +269,7 @@ public partial class Emitter
         {
             id.idaLoopHeadPredIG = null;
         }
-#if DEBUG
+#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
         id.isPlacedAfterJmp = isPlacedBehindJmp;
 #endif
         id.idaNext = emitCurIGAlignList;
@@ -279,7 +279,7 @@ public partial class Emitter
     }
 
     private void emitLongLoopAlign(uint alignmentBoundary
-#if DEBUG
+#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
         , bool isPlacedBehindJmp
 #endif
         )
@@ -303,7 +303,7 @@ public partial class Emitter
         while (insAlignCount != 0)
         {
             emitLoopAlign(paddingBytes, isFirstAlign
-#if DEBUG
+#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
                 , isPlacedBehindJmp
 #endif
                 );
@@ -314,7 +314,7 @@ public partial class Emitter
 #if TARGET_XARCH
         // Native also records the zero-sized remainder when padding is a multiple of 15.
         emitLoopAlign(lastInsAlignSize, isFirstAlign
-#if DEBUG
+#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
             , isPlacedBehindJmp
 #endif
             );

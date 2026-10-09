@@ -493,6 +493,10 @@
     <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);USE_COREDISTOOLS</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(RyuJitEnableArm64LateDisasm)' == 'true' and '$(RyuJitTargetArchitecture)' == 'arm64'">
+    <DefineConstants>$(DefineConstants);LATE_DISASM;USE_COREDISTOOLS</DefineConstants>
+  </PropertyGroup>
+
   <PropertyGroup>
     <!-- EMIT_GENERATE_GCINFO: Required GC liveness and metadata support in all configurations. -->
     <DefineConstants>$(DefineConstants);EMIT_GENERATE_GCINFO</DefineConstants>

@@ -57,7 +57,7 @@ public sealed partial class CodeGen
             }
         }
 #endif
-#if DEBUG && FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN && (DEBUG || (TARGET_ARM64 && LATE_DISASM))
         var removedJmp = false;
 #endif
         switch (block.Kind)
@@ -138,7 +138,7 @@ public sealed partial class CodeGen
                         instGen(INS_nop);
                     }
 #endif
-#if DEBUG && FEATURE_LOOP_ALIGN
+#if FEATURE_LOOP_ALIGN && (DEBUG || (TARGET_ARM64 && LATE_DISASM))
                     removedJmp = true;
 #endif
                     break;
@@ -182,7 +182,7 @@ public sealed partial class CodeGen
             assert(!block.isBBCallFinallyPairTail);
             assert(block.Kind != BBJ_CALLFINALLY);
             Emitter.emitLoopAlignment(
-#if DEBUG
+#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
                 (block.Kind == BBJ_ALWAYS) && !removedJmp
 #endif
             );

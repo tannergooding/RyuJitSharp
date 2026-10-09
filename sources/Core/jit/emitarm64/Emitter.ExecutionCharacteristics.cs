@@ -20,11 +20,8 @@ public partial class Emitter
 #if FEATURE_LOOP_ALIGN
     private static bool emitAlignIsPlacedAfterJmpArm64(instrDesc id)
     {
-#if DEBUG
+#if DEBUG || LATE_DISASM
         return ((instrDescAlign)id).isPlacedAfterJmp;
-#else
-        throw new FatalJitException(CORJIT_SKIPPED,
-            "Non-debug ARM64 alignment performance scoring requires the native debug-only placement metadata.");
 #endif
     }
 #endif

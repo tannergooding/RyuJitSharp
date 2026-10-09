@@ -13,7 +13,7 @@ public partial class Emitter
         public instrDescAlign? idaNext;
         public insGroup? idaIG;
         public insGroup? idaLoopHeadPredIG;
-#if DEBUG
+#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
         public bool isPlacedAfterJmp;
 #endif
 

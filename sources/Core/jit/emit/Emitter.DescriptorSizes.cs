@@ -16,8 +16,8 @@ public partial class Emitter
     // payload sizes, not managed object sizes. AMD64's 16-byte base includes an
     // eight-byte address union; x86 uses a 12-byte base and four-byte pointers.
     // Jump adds three pointers and a four-byte bitfield. Align adds three pointers
-    // and a Debug bool (40/48 bytes on AMD64). Debug info and its separately
-    // owned pointer prefix have target-dependent native sizes.
+    // and a bool in Debug or ARM64 late-disassembly builds (40/48 bytes on AMD64).
+    // Debug info and its separately owned pointer prefix have target-dependent native sizes.
     internal static class DescriptorSizes
     {
         internal const int Small = 8;
@@ -44,6 +44,8 @@ public partial class Emitter
 #else
         internal const int Align = 48;
 #endif
+#elif TARGET_ARM64 && LATE_DISASM
+        internal const int Align = 48;
 #else
 #if TARGET_X86 || TARGET_ARM
         internal const int Align = 24;

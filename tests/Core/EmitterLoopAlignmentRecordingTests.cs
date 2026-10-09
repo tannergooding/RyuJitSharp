@@ -47,7 +47,7 @@ internal static class EmitterLoopAlignmentRecordingTests
                 Assert.That(Access.Group(id), Is.SameAs(group));
                 Assert.That(Access.Predecessor(id), Is.SameAs(i == 0 ? group : null));
                 Assert.That(Access.Next(id), Is.SameAs(i == 0 ? null : descriptors[i - 1]));
-#if DEBUG
+#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
                 Assert.That(Access.AfterJump(id), Is.True);
                 Assert.That(id.NativeLogicalSize, Is.EqualTo(48));
 #else
@@ -249,6 +249,8 @@ internal static class EmitterLoopAlignmentRecordingTests
     private static int FullAlignSize =>
 #if DEBUG
         48 + IntPtr.Size;
+#elif TARGET_ARM64 && LATE_DISASM
+        48;
 #else
         40;
 #endif
@@ -256,7 +258,7 @@ internal static class EmitterLoopAlignmentRecordingTests
     private static void Align(Emitter emitter, bool afterJump = false)
     {
         emitter.emitLoopAlignment(
-#if DEBUG
+#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
             afterJump
 #endif
             );
@@ -308,7 +310,7 @@ internal static class EmitterLoopAlignmentRecordingTests
         public static insGroup? Group(instrDesc id) => ((instrDescAlign)id).idaIG;
         public static insGroup? Predecessor(instrDesc id) => ((instrDescAlign)id).idaLoopHeadPredIG;
         public static insGroup? Header(instrDesc id) => ((instrDescAlign)id).loopHeadIG();
-#if DEBUG
+#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
         public static bool AfterJump(instrDesc id) => ((instrDescAlign)id).isPlacedAfterJmp;
 #endif
 
