@@ -41,13 +41,27 @@ for both relevant trees and account for additions, modifications, deletions,
 and renames:
 
 ```powershell
-git -C $oraclePath diff --name-status --find-renames $oldCommit $newCommit -- src/coreclr/jit src/coreclr/inc
-git -C $oraclePath diff --numstat $oldCommit $newCommit -- src/coreclr/jit src/coreclr/inc
-git -C $oraclePath diff --stat $oldCommit $newCommit -- src/coreclr/jit src/coreclr/inc
-git -C $oraclePath diff --binary $oldCommit $newCommit -- src/coreclr/jit src/coreclr/inc
+$diffDirectory = Join-Path $sessionArtifactDirectory "oracle-update-$oldCommit-$newCommit"
+New-Item -ItemType Directory -Path $diffDirectory -Force | Out-Null
+$diffBase = "runtime-diff-$oldCommit-$newCommit"
+$nameStatusPath = Join-Path $diffDirectory "$diffBase-name-status.tsv"
+$numStatPath = Join-Path $diffDirectory "$diffBase-numstat.tsv"
+$statPath = Join-Path $diffDirectory "$diffBase-stat.txt"
+$patchPath = Join-Path $diffDirectory "$diffBase.patch"
+
+git -C $oraclePath diff --name-status --find-renames $oldCommit $newCommit -- src/coreclr/jit src/coreclr/inc |
+    Set-Content -LiteralPath $nameStatusPath
+git -C $oraclePath diff --numstat --find-renames $oldCommit $newCommit -- src/coreclr/jit src/coreclr/inc |
+    Set-Content -LiteralPath $numStatPath
+git -C $oraclePath diff --stat --find-renames $oldCommit $newCommit -- src/coreclr/jit src/coreclr/inc |
+    Set-Content -LiteralPath $statPath
+git -C $oraclePath diff --binary --find-renames $oldCommit $newCommit -- src/coreclr/jit src/coreclr/inc > $patchPath
 ```
 
-Retain the complete path inventory and patch until reconciliation is accepted.
+Set `$sessionArtifactDirectory` to the session-local `files` directory provided
+by the current session setup. Use native PowerShell redirection for the patch;
+do not pass it through text-encoding commands. Retain the complete path
+inventory and patch until reconciliation is accepted.
 Review every changed path and every hunk, including declarations, target
 conditionals, shared headers, and table inputs. Record a disposition for each
 path in the temporary inventory; do not leave changes unexplained because a
@@ -113,10 +127,13 @@ Only after all relevant hunks are reconciled and validation passes:
 
 - Update `state.json:upstream.targetCommit`, `targetObservedAt`, and
   `reconciledCommit` to the captured revision. Update
-  `generatorInputMapping.targetInputCommit` and its reconciled revision only
-  when the corresponding inputs were fully checked against that revision.
+  `generatorInputMapping.reconciledCommit` after checking all changed mapped
+  inputs and generated outputs. Change `targetInputCommit` only when the input
+  set's own provenance is being re-pinned, not merely because the overall
+  oracle revision advanced.
 - Advance the checkpoint to the next concrete action, summarize the validated
   scope and remaining evidence limits, and preserve unresolved boundaries.
+  Clear `checkpoint.activeBatch` when no work remains active.
   Update milestone or other maintained evidence only where the change requires
   it; keep large inventories, raw dumps, and machine-local paths outside the
   repository.
