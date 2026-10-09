@@ -10,11 +10,11 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "B003: inspect GenerateTables.Program's working-directory-relative inputs and Outputs deletion; determine whether a safe explicit-path interface and reproducibility check can close the deferred tooling item without changing generated outputs.",
+    "nextAction": "B017: verify whether the pinned diagnostic typo is limited to output text and preserve it as an owner-review item unless an upstream correction is present.",
     "activeBatch": {
-      "scope": "B003 table-generator working-directory assumptions and output cleanup safety.",
-      "doneWhen": "Either add a minimal explicit input/output path interface with reproducibility coverage, or close the deferred finding with evidence that the existing invocation contract is sufficient and non-destructive.",
-      "validation": "Run the generator from the documented invocation directory, compare generated output, and verify cleanup is limited to the selected output directory.",
+      "scope": "B017 native diagnostic wording for non-exact argument-unbox multiplier policy.",
+      "doneWhen": "Confirm the pinned and managed control flow and message operands, then classify the finding as owner review or close it if an upstream correction is already represented.",
+      "validation": "Compare the native oracle definition and managed implementation; ensure any recommendation does not change pinned output without approval.",
       "deferred": "B515 remains blocked on its missing range-check reproducer; B516 remains blocked on matching native/managed PGO inputs and pre-import captures; B520, B523, and B525 await owner review."
     },
     "dynamicTlsInputBoundary": {

@@ -15,9 +15,18 @@ internal static class Program
 {
     public static void Main()
     {
-        if (Directory.Exists(@"Outputs"))
+        var workingDirectory = Environment.CurrentDirectory;
+        if (!File.Exists(Path.Combine(workingDirectory, "GenerateTables.csproj"))
+            || !Directory.Exists(Path.Combine(workingDirectory, "Inputs")))
         {
-            Directory.Delete(@"Outputs", recursive: true);
+            throw new InvalidOperationException(
+                "GenerateTables must run from its project directory, which contains GenerateTables.csproj and Inputs.");
+        }
+
+        var outputDirectory = Path.Combine(workingDirectory, "Outputs");
+        if (Directory.Exists(outputDirectory))
+        {
+            Directory.Delete(outputDirectory, recursive: true);
         }
 
         GenerateApiICorJitInfoNames();

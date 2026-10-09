@@ -458,10 +458,12 @@ rediscovery; keep the Visual Studio Installer directory containing `vswhere.exe`
 on that process's `PATH`.
 
 `sources\GenerateTables\Program.cs` reads `Inputs` and writes `Outputs` relative
-to its working directory, deleting an existing `Outputs` subtree first. Run it
-only in an explicitly identified generator workspace, never an arbitrary root.
-Check input provenance, review generated output, and update the corresponding
-files under `sources\Core`; generating output does not integrate it automatically.
+to its working directory. It verifies that the working directory contains
+`GenerateTables.csproj` and `Inputs` before deleting an existing `Outputs`
+subtree, preventing an invocation from an unrelated directory from deleting its
+`Outputs`. Run it from `sources\GenerateTables`, check input provenance, review
+generated output, and update the corresponding files under `sources\Core`;
+generating output does not integrate it automatically.
 Establish clean-baseline reproducibility before regenerating against new inputs.
 `NamedIntrinsic` uses the pinned `namedintrinsiclist.h` enum body as well as the
 hardware tables; validate the complete ordered enum, not just HWI row counts.
