@@ -10,9 +10,9 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Owner review: decide whether the pinned non-exact argument-unbox diagnostic typo (B017) should remain for parity or be corrected in a coordinated native and managed change.",
+    "nextAction": "Owner review: decide whether to add a native runtime integration harness for end-to-end async execution (B043), or treat the existing focused compiler tests as sufficient port coverage.",
     "activeBatch": {
-      "scope": "Sequential owner review of the remaining decisions in BACKLOG.md, beginning with B017.",
+      "scope": "Sequential owner review of the remaining decisions in BACKLOG.md, beginning with B043 and B134.",
       "doneWhen": "Record each decision by removing resolved entries and updating DEVIATIONS.md or other relevant tracking; make no behavior change without explicit approval.",
       "validation": "After each decision, verify the backlog disposition, deviation record, and checkpoint cursor are consistent.",
       "deferred": "No unblocked implementation item remains. Pending owner-review decisions are listed in BACKLOG.md."

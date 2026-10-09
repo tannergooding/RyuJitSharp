@@ -18,6 +18,8 @@ observable differences only in the deviation register. The port is implemented
 in this repository; the exact upstream source revision used for reference is
 recorded in [state.json](state.json). Remaining correctness, parity and coverage
 work belongs in the backlog, not in a parallel inventory of native definitions.
+Confirmed upstream defects that should be reported, but must remain unchanged in
+the managed port for parity, are listed in [UPSTREAM-REPORTS.md](UPSTREAM-REPORTS.md).
 Items needing an owner decision are separated under the backlog's
 owner-review section and should not be implemented as approved changes before
 sign-off.
