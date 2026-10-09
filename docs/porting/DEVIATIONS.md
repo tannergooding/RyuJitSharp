@@ -2453,3 +2453,21 @@ but pointer values must not be compared as parity evidence.
 checks the pointer-shaped fields and the retained dump details. This exception
 is limited to the diagnostic identity values; it does not accept other dump,
 generated-code, or execution differences.
+
+### D013: Managed double `ILogB` constant evaluation
+
+**Status:** owner-approved behavior difference; the managed evaluator does not
+reproduce the pinned native helper's recursion.
+
+At the pinned source revision, native value numbering maps `Math.ILogB` to
+`VNF_ILogB` and calls `FloatingPointUtils::ilogb` for constant double and float
+arguments. The double helper handles zero and NaN, then calls unqualified
+`ilogb(value)` from within the `FloatingPointUtils::ilogb(double)` member. An
+MSVC overload-context reproduction resolves that call back to the same member,
+so finite double constant evaluation enters recursion. The managed evaluator
+uses `Math.ILogB` and computes the mathematical exponent instead.
+
+Keep the managed behavior and do not port the recursive call. This exception
+concerns compile-time evaluation of constant double `Math.ILogB`; no full native
+JIT run was captured to characterize its eventual runtime failure. The native
+defect is recorded in [UPSTREAM-REPORTS.md](UPSTREAM-REPORTS.md).
